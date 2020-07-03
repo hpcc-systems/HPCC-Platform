@@ -35,6 +35,7 @@
 #define WRN_MismatchCompressInfo            5405
 #define WRN_RemoteReadFailure               5406
 
+class EclGraph;
 struct IHThorGraphResult : extends IInterface
 {
     virtual void addRowOwn(const void * row) = 0;
@@ -100,7 +101,7 @@ struct IAgentContext : extends IGlobalCodeContext
     virtual void reloadWorkUnit() = 0;
 
     virtual char *resolveName(const char *in, char *out, unsigned outlen) = 0;
-    virtual void logFileAccess(IDistributedFile * file, char const * component, char const * type) = 0;
+    virtual void logFileAccess(IDistributedFile * file, char const * component, char const * type, EclGraph & graph) = 0;
     virtual void addWuException(const char * text, unsigned code, unsigned severity, char const * source) = 0;
 
     virtual IHThorGraphResults * executeLibraryGraph(const char * libraryName, unsigned expectedInterfaceHash, unsigned activityId, const char * embeddedGraphName, const byte * parentExtract) = 0;

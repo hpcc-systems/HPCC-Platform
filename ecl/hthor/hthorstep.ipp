@@ -46,7 +46,7 @@ protected:
     InputArrayType expandedInputs;
 
 public:
-    CHThorNaryActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind);
+    CHThorNaryActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind, EclGraph & _graph);
 
     //interface IHThorInput
     virtual void stop();
@@ -61,7 +61,7 @@ public:
 class CHThorNWayMergeActivity : public CHThorNaryActivity
 {
 public:
-    CHThorNWayMergeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeArg &_arg, ThorActivityKind _kind);
+    CHThorNWayMergeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeArg &_arg, ThorActivityKind _kind, EclGraph & _graph);
     ~CHThorNWayMergeActivity();
 
     virtual void ready();
@@ -81,7 +81,7 @@ protected:
 class CHThorMergeJoinBaseActivity : public CHThorNaryActivity
 {
 public:
-    CHThorMergeJoinBaseActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind, CMergeJoinProcessor & _processor);
+    CHThorMergeJoinBaseActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind, EclGraph & _graph, CMergeJoinProcessor & _processor);
 
     //interface IHThorInput
     virtual void ready();
@@ -104,7 +104,7 @@ protected:
 class CHThorAndMergeJoinActivity : public CHThorMergeJoinBaseActivity
 {
 public:
-    CHThorAndMergeJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind);
+    CHThorAndMergeJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind, EclGraph & _graph);
 
 protected:
     CAndMergeJoinProcessor andProcessor;
@@ -114,7 +114,7 @@ protected:
 class CHThorAndLeftMergeJoinActivity : public CHThorMergeJoinBaseActivity
 {
 public:
-    CHThorAndLeftMergeJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind);
+    CHThorAndLeftMergeJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind, EclGraph & _graph);
 
 protected:
     CAndLeftMergeJoinProcessor andLeftProcessor;
@@ -123,7 +123,7 @@ protected:
 class CHThorMofNMergeJoinActivity : public CHThorMergeJoinBaseActivity
 {
 public:
-    CHThorMofNMergeJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind);
+    CHThorMofNMergeJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind, EclGraph & _graph);
 
 protected:
     CMofNMergeJoinProcessor mofNProcessor;
@@ -133,7 +133,7 @@ protected:
 class CHThorProximityJoinActivity : public CHThorMergeJoinBaseActivity
 {
 public:
-    CHThorProximityJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind);
+    CHThorProximityJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind, EclGraph & _graph);
 
 protected:
     CProximityJoinProcessor proximityProcessor;

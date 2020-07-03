@@ -188,7 +188,7 @@ bool isRemoteReadCandidate(const IAgentContext &agent, const RemoteFilename &rfn
 
 //=====================================================================================================
 
-CHThorActivityBase::CHThorActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _help, ThorActivityKind _kind) : agent(_agent), help(_help),  outputMeta(help.queryOutputMeta()), kind(_kind), activityId(_activityId), subgraphId(_subgraphId)
+CHThorActivityBase::CHThorActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _help, ThorActivityKind _kind, EclGraph & _graph) : agent(_agent), help(_help),  outputMeta(help.queryOutputMeta()), kind(_kind), activityId(_activityId), subgraphId(_subgraphId), graph(_graph)
 {
     input = NULL;
     processed = 0;
@@ -305,7 +305,7 @@ bool CHThorActivityBase::isPassThrough()
 
 //=====================================================================================================
 
-CHThorSimpleActivityBase::CHThorSimpleActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _help, ThorActivityKind _kind) : CHThorActivityBase(_agent, _activityId, _subgraphId, _help, _kind)
+CHThorSimpleActivityBase::CHThorSimpleActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _help, ThorActivityKind _kind, EclGraph & _graph) : CHThorActivityBase(_agent, _activityId, _subgraphId, _help, _kind, _graph)
 {
 }
 
@@ -387,7 +387,7 @@ ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndex
 
 //=====================================================================================================
 
-CHThorDiskWriteActivity::CHThorDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskWriteArg &_arg, ThorActivityKind _kind) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorDiskWriteActivity::CHThorDiskWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     incomplete = false;
 }
@@ -458,10 +458,10 @@ void CHThorDiskWriteActivity::resolve()
             {
                 // An already existing dali file
                 if(extend)
-                    agent.logFileAccess(f->queryDistributedFile(), "HThor", "EXTENDED");
+                    agent.logFileAccess(f->queryDistributedFile(), "HThor", "EXTENDED", graph);
                 else if(overwrite) {
                     LOG(MCoperatorInfo, "Removing %s from DFS", lfn.str());
-                    agent.logFileAccess(f->queryDistributedFile(), "HThor", "DELETED");
+                    agent.logFileAccess(f->queryDistributedFile(), "HThor", "DELETED", graph);
                     if (!agent.queryResolveFilesLocally())
                         f->queryDistributedFile()->detach();
                     else
@@ -746,7 +746,7 @@ void CHThorDiskWriteActivity::publish()
         if(file->getModificationTime(modifiedTime))
             file->setAccessedTime(modifiedTime);
         file->attach(logicalName.get(), agent.queryCodeContext()->queryUserDescriptor());
-        agent.logFileAccess(file, "HThor", "CREATED");
+        agent.logFileAccess(file, "HThor", "CREATED", graph);
     }
 }
 
@@ -817,7 +817,7 @@ void CHThorDiskWriteActivity::checkSizeLimit()
 
 //=====================================================================================================
 
-CHThorSpillActivity::CHThorSpillActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSpillArg &_arg, ThorActivityKind _kind) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind)
+CHThorSpillActivity::CHThorSpillActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSpillArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph)
 {
 }
 
@@ -867,7 +867,7 @@ void CHThorSpillActivity::stop()
 //=====================================================================================================
 
 
-CHThorCsvWriteActivity::CHThorCsvWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvWriteArg &_arg, ThorActivityKind _kind) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorCsvWriteActivity::CHThorCsvWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     csvOutput.init(helper.queryCsvParameters(),agent.queryWorkUnit()->getDebugValueBool("oldCSVoutputFormat", false));
 }
@@ -944,7 +944,7 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
 
 //=====================================================================================================
 
-CHThorXmlWriteActivity::CHThorXmlWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlWriteArg &_arg, ThorActivityKind _kind) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), headerLength(0), footerLength(0)
+CHThorXmlWriteActivity::CHThorXmlWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg), headerLength(0), footerLength(0)
 {
     OwnedRoxieString xmlpath(helper.getXmlIteratorPath());
     if (!xmlpath)
@@ -1061,7 +1061,7 @@ void throwPipeProcessError(unsigned err, char const * preposition, char const * 
 
 //=====================================================================================================
 
-CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexWriteArg &_arg, ThorActivityKind _kind) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     incomplete = false;
     StringBuffer lfn;
@@ -1076,7 +1076,7 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
             if (TIWoverwrite & helper.getFlags()) 
             {
                 LOG(MCuserInfo, "Removing %s from DFS", lfn.str());
-                agent.logFileAccess(f, "HThor", "DELETED");
+                agent.logFileAccess(f, "HThor", "DELETED", _graph);
                 f->detach();
             }
             else // not quite sure about raising exceptions in constructors
@@ -1324,7 +1324,7 @@ void CHThorIndexWriteActivity::execute()
         OwnedRoxieString fname(helper.getFileName());
         expandLogicalFilename(lfn, fname, agent.queryWorkUnit(), agent.queryResolveFilesLocally(), false);
         dfile->attach(lfn.str(),agent.queryCodeContext()->queryUserDescriptor());
-        agent.logFileAccess(dfile, "HThor", "CREATED");
+        agent.logFileAccess(dfile, "HThor", "CREATED", graph);
     }
     else
         lfn = filename;
@@ -1393,8 +1393,8 @@ class CHThorPipeReadActivity : public CHThorSimpleActivityBase
     Owned<IReadRowStream> readTransformer;
     bool groupSignalled;
 public:
-    CHThorPipeReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorPipeReadArg &_arg, ThorActivityKind _kind)
-        : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+    CHThorPipeReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorPipeReadArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
+        : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
     {
         groupSignalled = true;
     }
@@ -1564,8 +1564,8 @@ class CHThorPipeThroughActivity : public CHThorSimpleActivityBase, implements IP
     bool groupSignalled;
 
 public:
-    CHThorPipeThroughActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorPipeThroughArg &_arg, ThorActivityKind _kind)
-        : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+    CHThorPipeThroughActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorPipeThroughArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
+        : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
     {
         recreate = helper.recreateEachRow();
         groupSignalled = true;
@@ -1775,8 +1775,8 @@ class CHThorPipeWriteActivity : public CHThorActivityBase
 public:
     IMPLEMENT_SINKACTIVITY;
 
-    CHThorPipeWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorPipeWriteArg &_arg, ThorActivityKind _kind)
-        : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+    CHThorPipeWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorPipeWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
+        : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
     {
         recreate = helper.recreateEachRow();
         firstRead = false;
@@ -1882,7 +1882,7 @@ private:
 
 //=====================================================================================================
 
-CHThorIterateActivity::CHThorIterateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIterateArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorIterateActivity::CHThorIterateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIterateArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -1938,7 +1938,7 @@ const void *CHThorIterateActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorProcessActivity::CHThorProcessActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorProcessArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorProcessActivity::CHThorProcessActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorProcessArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -2000,7 +2000,7 @@ const void *CHThorProcessActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorNormalizeActivity::CHThorNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNormalizeArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorNormalizeActivity::CHThorNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNormalizeArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     IRecordSize* recSize = outputMeta;
     if (recSize == NULL)
@@ -2059,7 +2059,7 @@ const void *CHThorNormalizeActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorNormalizeChildActivity::CHThorNormalizeChildActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNormalizeChildArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorNormalizeChildActivity::CHThorNormalizeChildActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNormalizeChildArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -2154,8 +2154,8 @@ bool CHThorNormalizeLinkedChildActivity::advanceInput()
     }
 }
 
-CHThorNormalizeLinkedChildActivity::CHThorNormalizeLinkedChildActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNormalizeLinkedChildArg &_arg, ThorActivityKind _kind) 
-    : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorNormalizeLinkedChildActivity::CHThorNormalizeLinkedChildActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNormalizeLinkedChildArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
+    : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 CHThorNormalizeLinkedChildActivity::~CHThorNormalizeLinkedChildActivity()
@@ -2204,7 +2204,7 @@ const void * CHThorNormalizeLinkedChildActivity::nextRow()
 }
 
 //=====================================================================================================
-CHThorProjectActivity::CHThorProjectActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorProjectArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorProjectActivity::CHThorProjectActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorProjectArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -2253,7 +2253,7 @@ const void * CHThorProjectActivity::nextRow()
 }
 
 //=====================================================================================================
-CHThorPrefetchProjectActivity::CHThorPrefetchProjectActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorPrefetchProjectArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorPrefetchProjectActivity::CHThorPrefetchProjectActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorPrefetchProjectArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -2312,7 +2312,7 @@ const void * CHThorPrefetchProjectActivity::nextRow()
 }
 
 //=====================================================================================================
-CHThorFilterProjectActivity::CHThorFilterProjectActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFilterProjectArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorFilterProjectActivity::CHThorFilterProjectActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFilterProjectArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -2366,7 +2366,7 @@ const void * CHThorFilterProjectActivity::nextRow()
 }
 //=====================================================================================================
 
-CHThorCountProjectActivity::CHThorCountProjectActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCountProjectArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorCountProjectActivity::CHThorCountProjectActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCountProjectArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -2418,7 +2418,7 @@ const void * CHThorCountProjectActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorRollupActivity::CHThorRollupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRollupArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorRollupActivity::CHThorRollupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRollupArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -2479,7 +2479,7 @@ const void *CHThorRollupActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorGroupDedupActivity::CHThorGroupDedupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorGroupDedupActivity::CHThorGroupDedupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -2492,7 +2492,7 @@ void CHThorGroupDedupActivity::ready()
 
 //=====================================================================================================
 
-CHThorGroupDedupKeepLeftActivity::CHThorGroupDedupKeepLeftActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind) : CHThorGroupDedupActivity(_agent, _activityId, _subgraphId, _arg, _kind)
+CHThorGroupDedupKeepLeftActivity::CHThorGroupDedupKeepLeftActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorGroupDedupActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph)
 {
 }
 
@@ -2585,7 +2585,7 @@ void CHThorGroupDedupKeepLeftActivity::resetEOF()
 
 //=====================================================================================================
 
-CHThorGroupDedupKeepRightActivity::CHThorGroupDedupKeepRightActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind) : CHThorGroupDedupActivity(_agent, _activityId, _subgraphId, _arg, _kind), compareBest(nullptr)
+CHThorGroupDedupKeepRightActivity::CHThorGroupDedupKeepRightActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorGroupDedupActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph), compareBest(nullptr)
 {
 }
 
@@ -2648,7 +2648,7 @@ const void *CHThorGroupDedupKeepRightActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorGroupDedupAllActivity::CHThorGroupDedupAllActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorGroupDedupAllActivity::CHThorGroupDedupAllActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -2800,8 +2800,8 @@ bool HashDedupTable::insertBest(const void * nextrow)
     return true;
 }
 
-CHThorHashDedupActivity::CHThorHashDedupActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorHashDedupArg & _arg, ThorActivityKind _kind)
-: CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), table(_arg, activityId), hashTableFilled(false), hashDedupTableIter(table)
+CHThorHashDedupActivity::CHThorHashDedupActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorHashDedupArg & _arg, ThorActivityKind _kind, EclGraph & _graph)
+: CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg), table(_arg, activityId), hashTableFilled(false), hashDedupTableIter(table)
 {
     keepBest = helper.keepBest();
 }
@@ -2866,7 +2866,7 @@ const void * CHThorHashDedupActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorSteppableActivityBase::CHThorSteppableActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _help, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _help, _kind)
+CHThorSteppableActivityBase::CHThorSteppableActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _help, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _help, _kind, _graph)
 {
     inputStepping = NULL;
     stepCompare = NULL;
@@ -2890,7 +2890,7 @@ IInputSteppingMeta * CHThorSteppableActivityBase::querySteppingMeta()
 
 //=====================================================================================================
 
-CHThorFilterActivity::CHThorFilterActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFilterArg &_arg, ThorActivityKind _kind) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorFilterActivity::CHThorFilterActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFilterArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -2968,7 +2968,7 @@ void CHThorFilterActivity::resetEOF()
 
 //=====================================================================================================
 
-CHThorFilterGroupActivity::CHThorFilterGroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFilterGroupArg &_arg, ThorActivityKind _kind) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorFilterGroupActivity::CHThorFilterGroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFilterGroupArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -3064,7 +3064,7 @@ const void * CHThorFilterGroupActivity::nextRowGE(const void * seek, unsigned nu
 
 //=====================================================================================================
 
-CHThorLimitActivity::CHThorLimitActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLimitArg &_arg, ThorActivityKind _kind) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorLimitActivity::CHThorLimitActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLimitArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -3113,7 +3113,7 @@ const void * CHThorLimitActivity::nextRowGE(const void * seek, unsigned numField
 
 //=====================================================================================================
 
-CHThorSkipLimitActivity::CHThorSkipLimitActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLimitArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorSkipLimitActivity::CHThorSkipLimitActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLimitArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -3149,7 +3149,7 @@ const void * CHThorSkipLimitActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorCatchActivity::CHThorCatchActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCatchArg &_arg, ThorActivityKind _kind) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorCatchActivity::CHThorCatchActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCatchArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -3197,7 +3197,7 @@ const void * CHThorCatchActivity::nextRowGE(const void * seek, unsigned numField
 
 //=====================================================================================================
 
-CHThorSkipCatchActivity::CHThorSkipCatchActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCatchArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorSkipCatchActivity::CHThorSkipCatchActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCatchArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -3248,7 +3248,7 @@ const void * CHThorSkipCatchActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorOnFailLimitActivity::CHThorOnFailLimitActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLimitArg &_arg, ThorActivityKind _kind) : CHThorSkipLimitActivity(_agent, _activityId, _subgraphId, _arg, _kind)
+CHThorOnFailLimitActivity::CHThorOnFailLimitActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLimitArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSkipLimitActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph)
 {
 }
 
@@ -3264,7 +3264,7 @@ void CHThorOnFailLimitActivity::onLimitExceeded()
 
 //=====================================================================================================
 
-CHThorIfActivity::CHThorIfActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIfArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorIfActivity::CHThorIfActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIfArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     inputTrue = NULL;
     inputFalse = NULL;
@@ -3312,7 +3312,7 @@ const void * CHThorIfActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorCaseActivity::CHThorCaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCaseArg &_arg, ThorActivityKind _kind) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorCaseActivity::CHThorCaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCaseArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -3348,7 +3348,7 @@ const void *CHThorCaseActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorSampleActivity::CHThorSampleActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSampleArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorSampleActivity::CHThorSampleActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSampleArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -3394,7 +3394,7 @@ const void * CHThorSampleActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorAggregateActivity::CHThorAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorAggregateArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorAggregateActivity::CHThorAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorAggregateArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -3448,8 +3448,8 @@ const void * CHThorAggregateActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorHashAggregateActivity::CHThorHashAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorHashAggregateArg &_arg, ThorActivityKind _kind, bool _isGroupedAggregate)
-: CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg),
+CHThorHashAggregateActivity::CHThorHashAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorHashAggregateArg &_arg, ThorActivityKind _kind, EclGraph & _graph, bool _isGroupedAggregate)
+: CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg),
   isGroupedAggregate(_isGroupedAggregate),
   aggregated(_arg, _arg)
 {
@@ -3523,7 +3523,7 @@ const void * CHThorHashAggregateActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorSelectNActivity::CHThorSelectNActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSelectNArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorSelectNActivity::CHThorSelectNActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSelectNArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -3573,7 +3573,7 @@ const void * CHThorSelectNActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorFirstNActivity::CHThorFirstNActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFirstNArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorFirstNActivity::CHThorFirstNActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFirstNArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     grouped = outputMeta.isGrouped();
 }
@@ -3643,7 +3643,7 @@ const void * CHThorFirstNActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorChooseSetsActivity::CHThorChooseSetsActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChooseSetsArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorChooseSetsActivity::CHThorChooseSetsActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChooseSetsArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     numSets = helper.getNumSets();
     setCounts = new unsigned[numSets];
@@ -3690,7 +3690,7 @@ const void * CHThorChooseSetsActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorChooseSetsExActivity::CHThorChooseSetsExActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChooseSetsExArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorChooseSetsExActivity::CHThorChooseSetsExActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChooseSetsExArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     numSets = helper.getNumSets();
     setCounts = new unsigned[numSets];
@@ -3762,7 +3762,7 @@ const void * CHThorChooseSetsExActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorChooseSetsLastActivity::CHThorChooseSetsLastActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChooseSetsExArg &_arg, ThorActivityKind _kind) : CHThorChooseSetsExActivity(_agent, _activityId, _subgraphId, _arg, _kind)
+CHThorChooseSetsLastActivity::CHThorChooseSetsLastActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChooseSetsExArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorChooseSetsExActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph)
 { 
     numToSkip = (unsigned *)checked_calloc(sizeof(unsigned), numSets, "choose sets last");
 }
@@ -3805,7 +3805,7 @@ bool CHThorChooseSetsLastActivity::includeRow(const void * row)
 
 //=====================================================================================================
 
-CHThorChooseSetsEnthActivity::CHThorChooseSetsEnthActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChooseSetsExArg &_arg, ThorActivityKind _kind) : CHThorChooseSetsExActivity(_agent, _activityId, _subgraphId, _arg, _kind)
+CHThorChooseSetsEnthActivity::CHThorChooseSetsEnthActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChooseSetsExArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorChooseSetsExActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph)
 { 
     counter = (unsigned __int64 *)checked_calloc(sizeof(unsigned __int64), numSets, "choose sets enth");
 }
@@ -3844,7 +3844,7 @@ bool CHThorChooseSetsEnthActivity::includeRow(const void * row)
 
 //=====================================================================================================
 
-CHThorDegroupActivity::CHThorDegroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDegroupArg &_arg, ThorActivityKind _kind) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorDegroupActivity::CHThorDegroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDegroupArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -3872,7 +3872,7 @@ bool CHThorDegroupActivity::isGrouped()
 
 //=====================================================================================================
 
-CHThorGroupActivity::CHThorGroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGroupArg &_arg, ThorActivityKind _kind) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorGroupActivity::CHThorGroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGroupArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -3942,7 +3942,7 @@ const void * CHThorGroupActivity::nextRowGE(const void * seek, unsigned numField
 
 //=====================================================================================================
 
-CHThorGroupSortActivity::CHThorGroupSortActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSortArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorGroupSortActivity::CHThorGroupSortActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSortArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     gotSorted = false;
 }
@@ -4361,7 +4361,7 @@ void CStableInsertionSorter::performSort()
 
 //=====================================================================================================
 
-CHThorGroupedActivity::CHThorGroupedActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGroupedArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorGroupedActivity::CHThorGroupedActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGroupedArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -4414,7 +4414,7 @@ const void *CHThorGroupedActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorSortedActivity::CHThorSortedActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSortedArg &_arg, ThorActivityKind _kind) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorSortedActivity::CHThorSortedActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSortedArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     //MORE: Should probably have a inter group and intra group sort functions
     compare = helper.queryCompare();
@@ -4466,8 +4466,8 @@ const void * CHThorSortedActivity::nextRowGE(const void * seek, unsigned numFiel
 
 //=====================================================================================================
 
-CHThorTraceActivity::CHThorTraceActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorTraceArg &_arg, ThorActivityKind _kind)
-: CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind),
+CHThorTraceActivity::CHThorTraceActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorTraceArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
+: CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph),
   helper(_arg),  keepLimit(0), skip(0), sample(0), traceEnabled(false)
 {
 }
@@ -4557,8 +4557,8 @@ void getLimitType(unsigned flags, bool & limitFail, bool & limitOnFail)
     }
 }
 
-CHThorJoinActivity::CHThorJoinActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorJoinArg &_arg, ThorActivityKind _kind) 
-                : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), outBuilder(NULL)
+CHThorJoinActivity::CHThorJoinActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorJoinArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
+                : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg), outBuilder(NULL)
 {
 }
 
@@ -5177,8 +5177,8 @@ bool CHThorJoinActivity::isGrouped()
 
 //=====================================================================================================
 
-CHThorSelfJoinActivity::CHThorSelfJoinActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorJoinArg &_arg, ThorActivityKind _kind) 
-        : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), outBuilder(NULL)
+CHThorSelfJoinActivity::CHThorSelfJoinActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorJoinArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
+        : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg), outBuilder(NULL)
 {
     dualCacheInput = NULL;
 }
@@ -5589,7 +5589,7 @@ const void * CHThorLookupJoinActivity::LookupTable::doFind(const void * left) co
     return NULL;
 }
 
-CHThorLookupJoinActivity::CHThorLookupJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorHashJoinArg &_arg, ThorActivityKind _kind) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), table(0), outBuilder(NULL)
+CHThorLookupJoinActivity::CHThorLookupJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorHashJoinArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg), table(0), outBuilder(NULL)
 {
 }
 
@@ -5989,7 +5989,7 @@ unsigned const CHThorLookupJoinActivity::LookupTable::BadIndex(static_cast<unsig
 
 //=====================================================================================================
 
-CHThorAllJoinActivity::CHThorAllJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorAllJoinArg &_arg, ThorActivityKind _kind) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), outBuilder(NULL)
+CHThorAllJoinActivity::CHThorAllJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorAllJoinArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg), outBuilder(NULL)
 {
 }
 
@@ -6291,8 +6291,8 @@ bool CHThorAllJoinActivity::isGrouped()
 //=====================================================================================================
 //=====================================================================================================
 
-CHThorWorkUnitWriteActivity::CHThorWorkUnitWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorWorkUnitWriteArg &_arg, ThorActivityKind _kind)
- : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorWorkUnitWriteActivity::CHThorWorkUnitWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorWorkUnitWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
+ : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -6419,8 +6419,8 @@ void CHThorWorkUnitWriteActivity::execute()
 
 //=====================================================================================================
 
-CHThorDictionaryWorkUnitWriteActivity::CHThorDictionaryWorkUnitWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDictionaryWorkUnitWriteArg &_arg, ThorActivityKind _kind)
- : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorDictionaryWorkUnitWriteActivity::CHThorDictionaryWorkUnitWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDictionaryWorkUnitWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
+ : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -6476,8 +6476,8 @@ void CHThorDictionaryWorkUnitWriteActivity::execute()
 //=====================================================================================================
 
 
-CHThorRemoteResultActivity::CHThorRemoteResultActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRemoteResultArg &_arg, ThorActivityKind _kind)
- : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorRemoteResultActivity::CHThorRemoteResultActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRemoteResultArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
+ : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -6490,8 +6490,8 @@ void CHThorRemoteResultActivity::execute()
 
 //=====================================================================================================
 
-CHThorInlineTableActivity::CHThorInlineTableActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorInlineTableArg &_arg, ThorActivityKind _kind) :
-                 CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorInlineTableActivity::CHThorInlineTableActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorInlineTableArg &_arg, ThorActivityKind _kind, EclGraph & _graph) :
+                 CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -6521,7 +6521,7 @@ const void *CHThorInlineTableActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorNullActivity::CHThorNullActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorNullActivity::CHThorNullActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -6532,7 +6532,7 @@ const void *CHThorNullActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorActionActivity::CHThorActionActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorActionArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorActionActivity::CHThorActionActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorActionArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -6547,7 +6547,7 @@ const void *CHThorActionActivity::nextRow()
 }
 //=====================================================================================================
 
-CHThorSideEffectActivity::CHThorSideEffectActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSideEffectArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorSideEffectActivity::CHThorSideEffectActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSideEffectArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -6567,7 +6567,7 @@ const void *CHThorSideEffectActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorDummyActivity::CHThorDummyActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind)
+CHThorDummyActivity::CHThorDummyActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph)
 {
 }
 
@@ -6582,8 +6582,8 @@ const void *CHThorDummyActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorWhenActionActivity::CHThorWhenActionActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind, EclGraphElement * _graphElement)
-                         : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), graphElement(_graphElement)
+CHThorWhenActionActivity::CHThorWhenActionActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind, EclGraph & _graph, EclGraphElement * _graphElement)
+                         : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), graphElement(_graphElement)
 {
 }
 
@@ -6612,7 +6612,7 @@ void CHThorWhenActionActivity::stop()
 
 //=====================================================================================================
 
-CHThorMultiInputActivity::CHThorMultiInputActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind)
+CHThorMultiInputActivity::CHThorMultiInputActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph)
 {
 }
 
@@ -6664,7 +6664,7 @@ void CHThorMultiInputActivity::updateProgress(IStatisticGatherer &progress) cons
 
 //=====================================================================================================
 
-CHThorConcatActivity::CHThorConcatActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFunnelArg &_arg, ThorActivityKind _kind) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorConcatActivity::CHThorConcatActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFunnelArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -6724,7 +6724,7 @@ const void *CHThorConcatActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorNonEmptyActivity::CHThorNonEmptyActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNonEmptyArg &_arg, ThorActivityKind _kind) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorNonEmptyActivity::CHThorNonEmptyActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNonEmptyArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -6761,7 +6761,7 @@ const void *CHThorNonEmptyActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorRegroupActivity::CHThorRegroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRegroupArg &_arg, ThorActivityKind _kind) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorRegroupActivity::CHThorRegroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRegroupArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -6822,7 +6822,7 @@ const void * CHThorRegroupActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorRollupGroupActivity::CHThorRollupGroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRollupGroupArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorRollupGroupActivity::CHThorRollupGroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRollupGroupArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -6875,7 +6875,7 @@ const void * CHThorRollupGroupActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorCombineActivity::CHThorCombineActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCombineArg &_arg, ThorActivityKind _kind) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorCombineActivity::CHThorCombineActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCombineArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -6933,7 +6933,7 @@ const void *CHThorCombineActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorCombineGroupActivity::CHThorCombineGroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCombineGroupArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorCombineGroupActivity::CHThorCombineGroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCombineGroupArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -7013,7 +7013,7 @@ const void *CHThorCombineGroupActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorApplyActivity::CHThorApplyActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorApplyArg &_arg, ThorActivityKind _kind) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorApplyActivity::CHThorApplyActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorApplyArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -7043,8 +7043,8 @@ void CHThorApplyActivity::execute()
 
 //=====================================================================================================
 
-CHThorDistributionActivity::CHThorDistributionActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDistributionArg &_arg, ThorActivityKind _kind)
- : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorDistributionActivity::CHThorDistributionActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDistributionArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
+ : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -7077,7 +7077,7 @@ void CHThorDistributionActivity::execute()
 
 //---------------------------------------------------------------------------
 
-CHThorWorkunitReadActivity::CHThorWorkunitReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorWorkunitReadArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorWorkunitReadActivity::CHThorWorkunitReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorWorkunitReadArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     first = true;
     bufferStream.setown(createMemoryBufferSerialStream(resultBuffer));
@@ -7134,7 +7134,7 @@ void CHThorWorkunitReadActivity::checkForDiskRead()
         {
             throw makeWrappedException(e);
         }
-        diskread.setown(new CHThorDiskReadActivity(agent, activityId, subgraphId, *diskreadHelper, TAKdiskread, nullptr));
+        diskread.setown(new CHThorDiskReadActivity(agent, activityId, subgraphId, *diskreadHelper, TAKdiskread, graph, nullptr));
     }
 }
 
@@ -7175,7 +7175,7 @@ const void *CHThorWorkunitReadActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorParseActivity::CHThorParseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorParseArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorParseActivity::CHThorParseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorParseArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     //DebugBreak();
     anyThisGroup = false;
@@ -7270,7 +7270,7 @@ const void * CHThorParseActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorEnthActivity::CHThorEnthActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorEnthArg & _arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), outBuilder(NULL)
+CHThorEnthActivity::CHThorEnthActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorEnthArg & _arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg), outBuilder(NULL)
 {
 }
 
@@ -7319,8 +7319,8 @@ const void * CHThorEnthActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorTopNActivity::CHThorTopNActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorTopNArg & _arg, ThorActivityKind _kind)
-    : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), compare(*helper.queryCompare())
+CHThorTopNActivity::CHThorTopNActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorTopNArg & _arg, ThorActivityKind _kind, EclGraph & _graph)
+    : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg), compare(*helper.queryCompare())
 {
     hasBest = helper.hasBest();
     grouped = outputMeta.isGrouped();
@@ -7442,8 +7442,8 @@ void CHThorTopNActivity::getSorted()
 
 //=====================================================================================================
 
-CHThorXmlParseActivity::CHThorXmlParseActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlParseArg & _arg, ThorActivityKind _kind)
-    : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorXmlParseActivity::CHThorXmlParseActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlParseArg & _arg, ThorActivityKind _kind, EclGraph & _graph)
+    : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     srchStrNeedsFree = helper.searchTextNeedsFree();
     srchStr = NULL;
@@ -7543,7 +7543,7 @@ protected:
     CHThorStreamMerger merger;
 
 public:
-    CHThorMergeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorMergeArg &_arg, ThorActivityKind _kind) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+    CHThorMergeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorMergeArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
     {
         merger.init(helper.queryCompare(), helper.dedup(), NULL);       // can mass null for range because merger.nextGE() never called
     }
@@ -7576,13 +7576,13 @@ public:
 
 //=====================================================================================================
 //Web Service Call base
-CHThorWSCBaseActivity::CHThorWSCBaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorWebServiceCallArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorWSCBaseActivity::CHThorWSCBaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorWebServiceCallArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     callHelper = &_arg;
     init();
 }
 
-CHThorWSCBaseActivity::CHThorWSCBaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorWebServiceCallActionArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorWSCBaseActivity::CHThorWSCBaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorWebServiceCallActionArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     callHelper = NULL;
     init();
@@ -7611,7 +7611,7 @@ void CHThorWSCBaseActivity::init()
 
 //---------------------------------------------------------------------------
 
-CHThorWSCRowCallActivity::CHThorWSCRowCallActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorWebServiceCallArg &_arg, ThorActivityKind _kind) : CHThorWSCBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind)
+CHThorWSCRowCallActivity::CHThorWSCRowCallActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorWebServiceCallArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorWSCBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph)
 {
 }
 
@@ -7674,7 +7674,7 @@ const void *CHThorSoapRowCallActivity::nextRow()
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 
-CHThorSoapRowActionActivity::CHThorSoapRowActionActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSoapActionArg &_arg, ThorActivityKind _kind) : CHThorWSCBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind)
+CHThorSoapRowActionActivity::CHThorSoapRowActionActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSoapActionArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorWSCBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph)
 {
 }
 
@@ -7697,7 +7697,7 @@ void CHThorSoapRowActionActivity::execute()
 
 //---------------------------------------------------------------------------
 
-CHThorSoapDatasetCallActivity::CHThorSoapDatasetCallActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSoapCallArg &_arg, ThorActivityKind _kind) : CHThorWSCBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind)
+CHThorSoapDatasetCallActivity::CHThorSoapDatasetCallActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSoapCallArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorWSCBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph)
 {
 }
 
@@ -7738,7 +7738,7 @@ const void * CHThorSoapDatasetCallActivity::getNextRow()
 
 //---------------------------------------------------------------------------
 
-CHThorSoapDatasetActionActivity::CHThorSoapDatasetActionActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSoapActionArg &_arg, ThorActivityKind _kind) : CHThorWSCBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind)
+CHThorSoapDatasetActionActivity::CHThorSoapDatasetActionActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSoapActionArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorWSCBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph)
 {
 }
 
@@ -7778,8 +7778,8 @@ const void * CHThorSoapDatasetActionActivity::getNextRow()
 
 //=====================================================================================================
 
-CHThorResultActivity::CHThorResultActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind)
- : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind)
+CHThorResultActivity::CHThorResultActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
+ : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph)
 {
 }
 
@@ -7799,8 +7799,8 @@ void CHThorResultActivity::extractResult(unsigned & retSize, void * & ret)
 
 //=====================================================================================================
 
-CHThorDatasetResultActivity::CHThorDatasetResultActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDatasetResultArg &_arg, ThorActivityKind _kind)
- : CHThorResultActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorDatasetResultActivity::CHThorDatasetResultActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDatasetResultArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
+ : CHThorResultActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -7824,8 +7824,8 @@ void CHThorDatasetResultActivity::execute()
 
 //=====================================================================================================
 
-CHThorRowResultActivity::CHThorRowResultActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRowResultArg &_arg, ThorActivityKind _kind)
- : CHThorResultActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorRowResultActivity::CHThorRowResultActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRowResultArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
+ : CHThorResultActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -7840,7 +7840,7 @@ void CHThorRowResultActivity::execute()
 
 //=====================================================================================================
 
-CHThorChildIteratorActivity::CHThorChildIteratorActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChildIteratorArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorChildIteratorActivity::CHThorChildIteratorActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChildIteratorArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -7891,8 +7891,8 @@ void CHThorChildIteratorActivity::ready()
 
 //=====================================================================================================
 
-CHThorLinkedRawIteratorActivity::CHThorLinkedRawIteratorActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLinkedRawIteratorArg &_arg, ThorActivityKind _kind) 
-    : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorLinkedRawIteratorActivity::CHThorLinkedRawIteratorActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLinkedRawIteratorArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
+    : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -7912,7 +7912,7 @@ const void *CHThorLinkedRawIteratorActivity::nextRow()
 //== New implementations - none are currently used, created or tested =================================
 //=====================================================================================================
 
-CHThorChildNormalizeActivity::CHThorChildNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChildNormalizeArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorChildNormalizeActivity::CHThorChildNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChildNormalizeArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -7966,7 +7966,7 @@ void CHThorChildNormalizeActivity::ready()
 
 //=====================================================================================================
 
-CHThorChildAggregateActivity::CHThorChildAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChildAggregateArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorChildAggregateActivity::CHThorChildAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChildAggregateArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -8000,8 +8000,8 @@ void CHThorChildAggregateActivity::ready()
 
 //=====================================================================================================
 
-CHThorChildGroupAggregateActivity::CHThorChildGroupAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChildGroupAggregateArg &_arg, ThorActivityKind _kind) 
-  : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), 
+CHThorChildGroupAggregateActivity::CHThorChildGroupAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChildGroupAggregateArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
+  : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph),
     helper(_arg), 
     aggregated(_arg, _arg)
 {
@@ -8052,7 +8052,7 @@ const void * CHThorChildGroupAggregateActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorChildThroughNormalizeActivity::CHThorChildThroughNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChildThroughNormalizeArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), outBuilder(NULL)
+CHThorChildThroughNormalizeActivity::CHThorChildThroughNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorChildThroughNormalizeArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg), outBuilder(NULL)
 {
 }
 
@@ -8120,7 +8120,7 @@ const void *CHThorChildThroughNormalizeActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorDiskReadBaseActivity::CHThorDiskReadBaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, ThorActivityKind _kind, IPropertyTree *_node) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorDiskReadBaseActivity::CHThorDiskReadBaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, ThorActivityKind _kind, IPropertyTree *_node, EclGraph & _graph) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     helper.setCallback(this);
     expectedDiskMeta = helper.queryDiskRecordSize();
@@ -8304,7 +8304,7 @@ void CHThorDiskReadBaseActivity::resolve()
                     }
                 }
                 if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
-                    agent.logFileAccess(dFile, "HThor", "READ");
+                    agent.logFileAccess(dFile, "HThor", "READ", graph);
                 if(getLayoutTranslationMode()==RecordTranslationMode::None)
                     verifyRecordFormatCrc();
             }
@@ -8730,8 +8730,8 @@ void CHThorDiskReadBaseActivity::open()
 
 //=====================================================================================================
 
-CHThorBinaryDiskReadBase::CHThorBinaryDiskReadBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind, IPropertyTree *_node)
-: CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, _node),
+CHThorBinaryDiskReadBase::CHThorBinaryDiskReadBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind, IPropertyTree *_node, EclGraph & _graph)
+: CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, _node, _graph),
   segHelper(_segHelper), prefetchBuffer(NULL)
 {
     readType = rt_binary;
@@ -8806,7 +8806,7 @@ void CHThorBinaryDiskReadBase::open()
 
 //=====================================================================================================
 
-CHThorDiskReadActivity::CHThorDiskReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadArg &_arg, ThorActivityKind _kind, IPropertyTree *_node) : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _node), helper(_arg), outBuilder(NULL)
+CHThorDiskReadActivity::CHThorDiskReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node) : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _node, _graph), helper(_arg), outBuilder(NULL)
 {
     needTransform = false;
     eogPending = 0;
@@ -8943,7 +8943,7 @@ const void *CHThorDiskReadActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorDiskNormalizeActivity::CHThorDiskNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskNormalizeArg &_arg, ThorActivityKind _kind, IPropertyTree *_node) : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _node), helper(_arg), outBuilder(NULL)
+CHThorDiskNormalizeActivity::CHThorDiskNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskNormalizeArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node) : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _node, _graph), helper(_arg), outBuilder(NULL)
 {
 }
 
@@ -9061,7 +9061,7 @@ const void * CHThorDiskNormalizeActivity::createNextRow()
 
 //=====================================================================================================
 
-CHThorDiskAggregateActivity::CHThorDiskAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskAggregateArg &_arg, ThorActivityKind _kind, IPropertyTree *_node) : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _node), helper(_arg), outBuilder(NULL)
+CHThorDiskAggregateActivity::CHThorDiskAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskAggregateArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node) : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _node, _graph), helper(_arg), outBuilder(NULL)
 {
 }
 
@@ -9124,7 +9124,7 @@ const void *CHThorDiskAggregateActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorDiskCountActivity::CHThorDiskCountActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskCountArg &_arg, ThorActivityKind _kind, IPropertyTree *_node) : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _node), helper(_arg)
+CHThorDiskCountActivity::CHThorDiskCountActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskCountArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node) : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _node, _graph), helper(_arg)
 {
     finished = true;
 }
@@ -9227,8 +9227,8 @@ const void *CHThorDiskCountActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorDiskGroupAggregateActivity::CHThorDiskGroupAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskGroupAggregateArg &_arg, ThorActivityKind _kind, IPropertyTree *_node)
-  : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _node),
+CHThorDiskGroupAggregateActivity::CHThorDiskGroupAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskGroupAggregateArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
+  : CHThorBinaryDiskReadBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _node, _graph),
     helper(_arg), 
     aggregated(_arg, _arg)
 {
@@ -9303,7 +9303,7 @@ const void *CHThorDiskGroupAggregateActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorCsvReadActivity::CHThorCsvReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvReadArg &_arg, ThorActivityKind _kind, IPropertyTree *_node) : CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, _node), helper(_arg)
+CHThorCsvReadActivity::CHThorCsvReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvReadArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node) : CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, _node, _graph), helper(_arg)
 {
     maxRowSize = agent.queryWorkUnit()->getDebugValueInt(OPT_MAXCSVROWSIZE, defaultMaxCsvRowSize) * 1024 * 1024;
     readType = rt_csv;
@@ -9444,7 +9444,7 @@ void CHThorCsvReadActivity::checkOpenNext()
 
 //=====================================================================================================
 
-CHThorXmlReadActivity::CHThorXmlReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlReadArg &_arg, ThorActivityKind _kind, IPropertyTree *_node) : CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, _node), helper(_arg)
+CHThorXmlReadActivity::CHThorXmlReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlReadArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node) : CHThorDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, _node, _graph), helper(_arg)
 {
     readType = (kind==TAKjsonread) ? rt_json : rt_xml;
 }
@@ -9559,7 +9559,7 @@ void CHThorXmlReadActivity::closepart()
 
 //---------------------------------------------------------------------------
 
-CHThorLocalResultReadActivity::CHThorLocalResultReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLocalResultReadArg &_arg, ThorActivityKind _kind, __int64 graphId) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorLocalResultReadActivity::CHThorLocalResultReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLocalResultReadArg &_arg, ThorActivityKind _kind, EclGraph & _graph, __int64 graphId) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     physicalRecordSize = outputMeta;
     grouped = outputMeta.isGrouped();
@@ -9589,8 +9589,8 @@ const void *CHThorLocalResultReadActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorLocalResultWriteActivity::CHThorLocalResultWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLocalResultWriteArg &_arg, ThorActivityKind _kind, __int64 graphId)
- : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorLocalResultWriteActivity::CHThorLocalResultWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLocalResultWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph, __int64 graphId)
+ : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     graph = resolveLocalQuery(graphId);
 }
@@ -9614,8 +9614,8 @@ void CHThorLocalResultWriteActivity::execute()
 
 //=====================================================================================================
 
-CHThorDictionaryResultWriteActivity::CHThorDictionaryResultWriteActivity (IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDictionaryResultWriteArg &_arg, ThorActivityKind _kind, __int64 graphId)
- : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorDictionaryResultWriteActivity::CHThorDictionaryResultWriteActivity (IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDictionaryResultWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph, __int64 graphId)
+ : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     graph = resolveLocalQuery(graphId);
 }
@@ -9648,8 +9648,8 @@ void CHThorDictionaryResultWriteActivity::execute()
 
 //=====================================================================================================
 
-CHThorLocalResultSpillActivity::CHThorLocalResultSpillActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLocalResultSpillArg &_arg, ThorActivityKind _kind, __int64 graphId)
- : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorLocalResultSpillActivity::CHThorLocalResultSpillActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLocalResultSpillArg &_arg, ThorActivityKind _kind, EclGraph & _graph, __int64 graphId)
+ : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     result = NULL;
     nullPending = false;
@@ -9712,8 +9712,8 @@ void CHThorLocalResultSpillActivity::stop()
 
 //=====================================================================================================
 
-CHThorLoopActivity::CHThorLoopActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLoopArg &_arg, ThorActivityKind _kind)
- : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorLoopActivity::CHThorLoopActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLoopArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
+ : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     flags = helper.getFlags();
     maxIterations = 0;
@@ -9857,7 +9857,7 @@ void CHThorLoopActivity::stop()
 
 //---------------------------------------------------------------------------
 
-CHThorGraphLoopResultReadActivity::CHThorGraphLoopResultReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGraphLoopResultReadArg &_arg, ThorActivityKind _kind, __int64 graphId) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(&_arg)
+CHThorGraphLoopResultReadActivity::CHThorGraphLoopResultReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGraphLoopResultReadArg &_arg, ThorActivityKind _kind, EclGraph & _graph, __int64 graphId) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(&_arg)
 {
     physicalRecordSize = outputMeta;
     grouped = outputMeta.isGrouped();
@@ -9865,7 +9865,7 @@ CHThorGraphLoopResultReadActivity::CHThorGraphLoopResultReadActivity(IAgentConte
     graph = resolveLocalQuery(graphId);
 }
 
-CHThorGraphLoopResultReadActivity::CHThorGraphLoopResultReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _arg, ThorActivityKind _kind, __int64 graphId, unsigned _sequence, bool _grouped) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(NULL)
+CHThorGraphLoopResultReadActivity::CHThorGraphLoopResultReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _arg, ThorActivityKind _kind, EclGraph & _graph, __int64 graphId, unsigned _sequence, bool _grouped) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(NULL)
 {
     physicalRecordSize = outputMeta;
     sequence = _sequence;
@@ -9904,8 +9904,8 @@ const void *CHThorGraphLoopResultReadActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorGraphLoopResultWriteActivity::CHThorGraphLoopResultWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGraphLoopResultWriteArg &_arg, ThorActivityKind _kind, __int64 graphId)
- : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorGraphLoopResultWriteActivity::CHThorGraphLoopResultWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGraphLoopResultWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph, __int64 graphId)
+ : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     graph = resolveLocalQuery(graphId);
 }
@@ -9956,8 +9956,8 @@ public:
 
 //=====================================================================================================
 
-CHThorGraphLoopActivity::CHThorGraphLoopActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGraphLoopArg &_arg, ThorActivityKind _kind)
- : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorGraphLoopActivity::CHThorGraphLoopActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGraphLoopArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
+ : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     flags = helper.getFlags();
     maxIterations = 0;
@@ -10032,8 +10032,8 @@ void CHThorGraphLoopActivity::stop()
 
 //=====================================================================================================
 
-CHThorParallelGraphLoopActivity::CHThorParallelGraphLoopActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGraphLoopArg &_arg, ThorActivityKind _kind)
- : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorParallelGraphLoopActivity::CHThorParallelGraphLoopActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGraphLoopArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
+ : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     flags = helper.getFlags();
     maxIterations = 0;
@@ -10151,8 +10151,8 @@ void LibraryCallOutput::updateProgress(IStatisticGatherer &progress) const
 }
 
 
-CHThorLibraryCallActivity::CHThorLibraryCallActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLibraryCallArg &_arg, ThorActivityKind _kind, IPropertyTree * node)
- : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorLibraryCallActivity::CHThorLibraryCallActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLibraryCallArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree * node)
+ : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     libraryName.set(node->queryProp("att[@name=\"libname\"]/@value"));
     interfaceHash = node->getPropInt("att[@name=\"_interfaceHash\"]/@value", 0);
@@ -10242,7 +10242,7 @@ class CHThorNWayInputActivity : public CHThorSimpleActivityBase, implements IHTh
     InputArrayType selectedInputs;
 
 public:
-    CHThorNWayInputActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayInputArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+    CHThorNWayInputActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayInputArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
     {
     }
 
@@ -10323,7 +10323,7 @@ class CHThorNWayGraphLoopResultReadActivity : public CHThorSimpleActivityBase, i
     bool grouped;
 
 public:
-    CHThorNWayGraphLoopResultReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayGraphLoopResultReadArg &_arg, ThorActivityKind _kind, __int64 _graphId) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+    CHThorNWayGraphLoopResultReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayGraphLoopResultReadArg &_arg, ThorActivityKind _kind, EclGraph & _graph, __int64 _graphId) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
     {
         grouped = helper.isGrouped();
         graphId = _graphId;
@@ -10347,7 +10347,7 @@ public:
         const size32_t * selections = (const size32_t *)selection.getdata();
         for (unsigned i = 0; i < max; i++)
         {
-            CHThorActivityBase * resultInput = new CHThorGraphLoopResultReadActivity(agent, activityId, subgraphId, helper, kind, graphId, selections[i], grouped);
+            CHThorActivityBase * resultInput = new CHThorGraphLoopResultReadActivity(agent, activityId, subgraphId, helper, kind, graph, graphId, selections[i], grouped);
             inputs.append(*resultInput);
             resultInput->ready();
         }
@@ -10383,7 +10383,7 @@ public:
 
 //=====================================================================================================
 
-CHThorNWaySelectActivity::CHThorNWaySelectActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNWaySelectArg &_arg, ThorActivityKind _kind) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorNWaySelectActivity::CHThorNWaySelectActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNWaySelectArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     selectedInput = NULL;
 }
@@ -10448,8 +10448,8 @@ IInputSteppingMeta * CHThorNWaySelectActivity::querySteppingMeta()
 }
 
 //=====================================================================================================
-CHThorStreamedIteratorActivity::CHThorStreamedIteratorActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorStreamedIteratorArg &_arg, ThorActivityKind _kind) 
-    : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorStreamedIteratorActivity::CHThorStreamedIteratorActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorStreamedIteratorArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
+    : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
 }
 
@@ -10480,8 +10480,8 @@ void CHThorStreamedIteratorActivity::stop()
 
 //=====================================================================================================
 
-CHThorExternalActivity::CHThorExternalActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorExternalArg &_arg, ThorActivityKind _kind, IPropertyTree * _graphNode) 
-: CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), graphNode(_graphNode), activityContext(1, 0)
+CHThorExternalActivity::CHThorExternalActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorExternalArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree * _graphNode)
+: CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg), graphNode(_graphNode), activityContext(1, 0)
 {
 }
 
@@ -10528,8 +10528,8 @@ void CHThorExternalActivity::stop()
 
 //=====================================================================================================
 
-CHThorNewDiskReadBaseActivity::CHThorNewDiskReadBaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNewDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind, IPropertyTree *_node)
-: CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), segHelper(_segHelper)
+CHThorNewDiskReadBaseActivity::CHThorNewDiskReadBaseActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNewDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind, IPropertyTree *_node, EclGraph & _graph)
+: CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg), segHelper(_segHelper)
 {
     helper.setCallback(this);
     expectedDiskMeta = helper.queryDiskRecordSize();
@@ -10657,7 +10657,7 @@ void CHThorNewDiskReadBaseActivity::resolveFile()
                     subfiles.append(*extractFileInformation(dFile, curFormatOptions));
 
                 if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
-                    agent.logFileAccess(dFile, "HThor", "READ");
+                    agent.logFileAccess(dFile, "HThor", "READ", graph);
             }
             else
                 subfiles.append(*extractFileInformation(nullptr, curFormatOptions));
@@ -11107,8 +11107,8 @@ void CHThorNewDiskReadBaseActivity::append(FFoption option, const IFieldFilter *
 
 //=====================================================================================================
 
-CHThorNewDiskReadActivity::CHThorNewDiskReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNewDiskReadArg &_arg, ThorActivityKind _kind, IPropertyTree *_node)
-: CHThorNewDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _node), helper(_arg), outBuilder(NULL)
+CHThorNewDiskReadActivity::CHThorNewDiskReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNewDiskReadArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
+: CHThorNewDiskReadBaseActivity(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _node, _graph), helper(_arg), outBuilder(NULL)
 {
     needTransform = false;
     lastGroupProcessed = 0;
@@ -11276,14 +11276,14 @@ MAKEFACTORY(Project);
 MAKEFACTORY(PrefetchProject);
 MAKEFACTORY(FilterProject);
 
-extern HTHOR_API IHThorActivity * createGroupDedupActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg & arg, ThorActivityKind kind)
+extern HTHOR_API IHThorActivity * createGroupDedupActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg & arg, ThorActivityKind kind, EclGraph & _graph)
 {
     if(arg.compareAll())
-        return new CHThorGroupDedupAllActivity(_agent, _activityId, _subgraphId, arg, kind);
+        return new CHThorGroupDedupAllActivity(_agent, _activityId, _subgraphId, arg, kind, _graph);
     else if (arg.keepLeft() && !arg.keepBest())
-        return new CHThorGroupDedupKeepLeftActivity(_agent, _activityId, _subgraphId, arg, kind);
+        return new CHThorGroupDedupKeepLeftActivity(_agent, _activityId, _subgraphId, arg, kind, _graph);
     else
-        return new CHThorGroupDedupKeepRightActivity(_agent, _activityId, _subgraphId, arg, kind);
+        return new CHThorGroupDedupKeepRightActivity(_agent, _activityId, _subgraphId, arg, kind, _graph);
 }
 
 MAKEFACTORY(HashDedup);
@@ -11317,14 +11317,14 @@ MAKEFACTORY(XmlWrite);
 MAKEFACTORY(PipeThrough);
 MAKEFACTORY(If);
 
-extern HTHOR_API IHThorActivity *createChildIfActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIfArg &arg, ThorActivityKind kind)
+extern HTHOR_API IHThorActivity *createChildIfActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIfArg &arg, ThorActivityKind kind, EclGraph & _graph)
 {
-    return new CHThorIfActivity(_agent, _activityId, _subgraphId, arg, kind);
+    return new CHThorIfActivity(_agent, _activityId, _subgraphId, arg, kind, _graph);
 }
 
-extern HTHOR_API IHThorActivity *createHashAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorHashAggregateArg &arg, ThorActivityKind kind, bool _isGroupedAggregate)
+extern HTHOR_API IHThorActivity *createHashAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorHashAggregateArg &arg, ThorActivityKind kind, EclGraph & _graph, bool _isGroupedAggregate)
 {
-    return new CHThorHashAggregateActivity(_agent, _activityId, _subgraphId, arg, kind, _isGroupedAggregate);
+    return new CHThorHashAggregateActivity(_agent, _activityId, _subgraphId, arg, kind, _graph, _isGroupedAggregate);
 }
 
 MAKEFACTORY(Null);
@@ -11353,9 +11353,9 @@ MAKEFACTORY(DatasetResult);
 MAKEFACTORY(RowResult);
 MAKEFACTORY(ChildIterator);
 
-extern HTHOR_API IHThorActivity *createDummyActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &arg, ThorActivityKind kind)
+extern HTHOR_API IHThorActivity *createDummyActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &arg, ThorActivityKind kind, EclGraph & _graph)
 {
-    return new CHThorDummyActivity(_agent, _activityId, _subgraphId, arg, kind);
+    return new CHThorDummyActivity(_agent, _activityId, _subgraphId, arg, kind, _graph);
 }
 
 MAKEFACTORY_EXTRA(WhenAction,EclGraphElement *)

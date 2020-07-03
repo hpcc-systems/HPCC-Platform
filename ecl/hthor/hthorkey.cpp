@@ -148,7 +148,7 @@ void enterSingletonSuperfiles(Shared<IDistributedFile> & file)
 class CHThorNullAggregateActivity : public CHThorNullActivity
 {
 public:
-    CHThorNullAggregateActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _arg, IHThorCompoundAggregateExtra &_extra, ThorActivityKind _kind) : CHThorNullActivity(agent, _activityId, _subgraphId, _arg, _kind), helper(_extra) {}
+    CHThorNullAggregateActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _arg, IHThorCompoundAggregateExtra &_extra, ThorActivityKind _kind, EclGraph & _graph) : CHThorNullActivity(agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_extra) {}
 
     //interface IHThorInput
     virtual void ready();
@@ -190,8 +190,8 @@ const void *CHThorNullAggregateActivity::nextRow()
 class CHThorNullCountActivity : public CHThorNullActivity
 {
 public:
-    CHThorNullCountActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _arg, ThorActivityKind _kind)
-        : CHThorNullActivity(agent, _activityId, _subgraphId, _arg, _kind), finished(false) {}
+    CHThorNullCountActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _arg, ThorActivityKind _kind, EclGraph & _graph)
+        : CHThorNullActivity(agent, _activityId, _subgraphId, _arg, _kind, _graph), finished(false) {}
 
     //interface IHThorInput
     virtual void ready();
@@ -233,7 +233,7 @@ class CHThorIndexReadActivityBase : public CHThorActivityBase
 {
 
 public:
-    CHThorIndexReadActivityBase(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexReadBaseArg &_arg, ThorActivityKind _kind, IPropertyTree *_node);
+    CHThorIndexReadActivityBase(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexReadBaseArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node);
     ~CHThorIndexReadActivityBase();
 
     virtual void ready();
@@ -350,8 +350,8 @@ protected:
 
 };
 
-CHThorIndexReadActivityBase::CHThorIndexReadActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexReadBaseArg &_arg, ThorActivityKind _kind, IPropertyTree *_node)
-    : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorIndexReadActivityBase::CHThorIndexReadActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexReadBaseArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
+    : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     nextPartNumber = 0;
 
@@ -401,7 +401,7 @@ void CHThorIndexReadActivityBase::resolveIndexFilename()
     }
     else
     {
-        agent.logFileAccess(df, "HThor", "READ");
+        agent.logFileAccess(df, "HThor", "READ", graph);
         enterSingletonSuperfiles(df);
 
         singlePart = false;
@@ -790,7 +790,7 @@ class CHThorIndexReadActivity : public CHThorIndexReadActivityBase
 {
 
 public:
-    CHThorIndexReadActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexReadArg &_arg, ThorActivityKind _kind, IPropertyTree *_node);
+    CHThorIndexReadActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexReadArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node);
     ~CHThorIndexReadActivity();
 
     //interface IHThorInput
@@ -823,8 +823,8 @@ protected:
     bool keyedLimitRowCreated;
 };
 
-CHThorIndexReadActivity::CHThorIndexReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexReadArg &_arg, ThorActivityKind _kind, IPropertyTree *_node)
-    : CHThorIndexReadActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _node), helper(_arg)
+CHThorIndexReadActivity::CHThorIndexReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexReadArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
+    : CHThorIndexReadActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph, _node), helper(_arg)
 {
     limitTransformExtra = &helper;
     steppedExtra = helper.querySteppingExtra();
@@ -1116,9 +1116,9 @@ IInputSteppingMeta * CHThorIndexReadActivity::querySteppingMeta()
 }
 
 
-extern HTHOR_API IHThorActivity *createIndexReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexReadArg &arg, ThorActivityKind _kind, IPropertyTree *_node)
+extern HTHOR_API IHThorActivity *createIndexReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexReadArg &arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
 {
-    return new CHThorIndexReadActivity(_agent, _activityId, _subgraphId, arg, _kind, _node);
+    return new CHThorIndexReadActivity(_agent, _activityId, _subgraphId, arg, _kind, _graph, _node);
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -1128,7 +1128,7 @@ class CHThorIndexNormalizeActivity : public CHThorIndexReadActivityBase
 {
 
 public:
-    CHThorIndexNormalizeActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexNormalizeArg &_arg, ThorActivityKind _kind, IPropertyTree *_node);
+    CHThorIndexNormalizeActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexNormalizeArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node);
     ~CHThorIndexNormalizeActivity();
 
     virtual void ready();
@@ -1151,7 +1151,7 @@ protected:
 };
 
 
-CHThorIndexNormalizeActivity::CHThorIndexNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexNormalizeArg &_arg, ThorActivityKind _kind, IPropertyTree *_node) : CHThorIndexReadActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _node), helper(_arg), outBuilder(NULL)
+CHThorIndexNormalizeActivity::CHThorIndexNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexNormalizeArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node) : CHThorIndexReadActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph, _node), helper(_arg), outBuilder(NULL)
 {
     limitTransformExtra = &helper;
     keyedLimit = (unsigned __int64)-1;
@@ -1290,9 +1290,9 @@ const void * CHThorIndexNormalizeActivity::createNextRow()
 
 }
 
-extern HTHOR_API IHThorActivity *createIndexNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexNormalizeArg &arg, ThorActivityKind _kind, IPropertyTree *_node)
+extern HTHOR_API IHThorActivity *createIndexNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexNormalizeArg &arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
 {
-    return new CHThorIndexNormalizeActivity(_agent, _activityId, _subgraphId, arg, _kind, _node);
+    return new CHThorIndexNormalizeActivity(_agent, _activityId, _subgraphId, arg, _kind, _graph, _node);
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -1302,7 +1302,7 @@ class CHThorIndexAggregateActivity : public CHThorIndexReadActivityBase
 {
 
 public:
-    CHThorIndexAggregateActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexAggregateArg &_arg, ThorActivityKind _kind, IPropertyTree *_node);
+    CHThorIndexAggregateActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexAggregateArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node);
     ~CHThorIndexAggregateActivity();
 
     //interface IHThorInput
@@ -1322,8 +1322,8 @@ protected:
 };
 
 
-CHThorIndexAggregateActivity::CHThorIndexAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexAggregateArg &_arg, ThorActivityKind _kind, IPropertyTree *_node)
-    : CHThorIndexReadActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _node), helper(_arg), outBuilder(NULL)
+CHThorIndexAggregateActivity::CHThorIndexAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexAggregateArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
+    : CHThorIndexReadActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph, _node), helper(_arg), outBuilder(NULL)
 {
 }
 
@@ -1396,9 +1396,9 @@ const void *CHThorIndexAggregateActivity::nextRow()
 }
 
 
-extern HTHOR_API IHThorActivity *createIndexAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexAggregateArg &arg, ThorActivityKind _kind, IPropertyTree *_node)
+extern HTHOR_API IHThorActivity *createIndexAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexAggregateArg &arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
 {
-    return new CHThorIndexAggregateActivity(_agent, _activityId, _subgraphId, arg, _kind, _node);
+    return new CHThorIndexAggregateActivity(_agent, _activityId, _subgraphId, arg, _kind, _graph, _node);
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -1411,7 +1411,7 @@ class CHThorIndexCountActivity : public CHThorIndexReadActivityBase
     unsigned __int64 rowLimit = (unsigned __int64)-1;
 
 public:
-    CHThorIndexCountActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexCountArg &_arg, ThorActivityKind _kind, IPropertyTree *_node);
+    CHThorIndexCountActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexCountArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node);
 
     //interface IHThorInput
     virtual void ready();
@@ -1427,8 +1427,8 @@ protected:
 };
 
 
-CHThorIndexCountActivity::CHThorIndexCountActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexCountArg &_arg, ThorActivityKind _kind, IPropertyTree *_node)
-    : CHThorIndexReadActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _node), helper(_arg)
+CHThorIndexCountActivity::CHThorIndexCountActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexCountArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
+    : CHThorIndexReadActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph, _node), helper(_arg)
 {
     choosenLimit = (unsigned __int64)-1;
     finished = false;
@@ -1541,9 +1541,9 @@ const void *CHThorIndexCountActivity::nextRow()
 }
 
 
-extern HTHOR_API IHThorActivity *createIndexCountActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexCountArg &arg, ThorActivityKind _kind, IPropertyTree *_node)
+extern HTHOR_API IHThorActivity *createIndexCountActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexCountArg &arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
 {
-    return new CHThorIndexCountActivity(_agent, _activityId, _subgraphId, arg, _kind, _node);
+    return new CHThorIndexCountActivity(_agent, _activityId, _subgraphId, arg, _kind, _graph, _node);
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -1552,7 +1552,7 @@ class CHThorIndexGroupAggregateActivity : public CHThorIndexReadActivityBase, im
 {
 
 public:
-    CHThorIndexGroupAggregateActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexGroupAggregateArg &_arg, ThorActivityKind _kind, IPropertyTree *_node);
+    CHThorIndexGroupAggregateActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexGroupAggregateArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node);
     IMPLEMENT_IINTERFACE
 
     //interface IHThorInput
@@ -1573,7 +1573,7 @@ protected:
 };
 
 
-CHThorIndexGroupAggregateActivity::CHThorIndexGroupAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexGroupAggregateArg &_arg, ThorActivityKind _kind, IPropertyTree *_node) : CHThorIndexReadActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _node), helper(_arg), aggregated(_arg, _arg)
+CHThorIndexGroupAggregateActivity::CHThorIndexGroupAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexGroupAggregateArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node) : CHThorIndexReadActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph, _node), helper(_arg), aggregated(_arg, _arg)
 {
     eof = false;
     gathered = false;
@@ -1641,9 +1641,9 @@ const void *CHThorIndexGroupAggregateActivity::nextRow()
 }
 
 
-extern HTHOR_API IHThorActivity *createIndexGroupAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexGroupAggregateArg &arg, ThorActivityKind _kind, IPropertyTree *_node)
+extern HTHOR_API IHThorActivity *createIndexGroupAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexGroupAggregateArg &arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
 {
-    return new CHThorIndexGroupAggregateActivity(_agent, _activityId, _subgraphId, arg, _kind, _node);
+    return new CHThorIndexGroupAggregateActivity(_agent, _activityId, _subgraphId, arg, _kind, _graph, _node);
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -2113,8 +2113,8 @@ class CHThorThreadedActivityBase : public CHThorActivityBase, implements IThread
     };
 
 public:
-    CHThorThreadedActivityBase (IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, IHThorFetchContext &_fetch, ThorActivityKind _kind, IRecordSize *diskSize, IPropertyTree *_node)
-        : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), fetch(_fetch)
+    CHThorThreadedActivityBase (IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, IHThorFetchContext &_fetch, ThorActivityKind _kind, EclGraph & _graph, IRecordSize *diskSize, IPropertyTree *_node)
+        : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), fetch(_fetch)
     {
         exception = NULL;
         rowLimit = 0;
@@ -2252,7 +2252,7 @@ public:
             if(dFile)
             {
                 verifyFetchFormatCrc(dFile);
-                agent.logFileAccess(dFile, "HThor", "READ");
+                agent.logFileAccess(dFile, "HThor", "READ", graph);
                 initParts(dFile);
             }
             else
@@ -2273,8 +2273,8 @@ protected:
 class CHThorFetchActivityBase : public CHThorThreadedActivityBase, public IFetchHandlerFactory<SimpleFetchPartHandlerBase>
 {
 public:
-    CHThorFetchActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, IHThorFetchContext &_fetch, ThorActivityKind _kind, IRecordSize *diskSize, IPropertyTree *_node)
-      : CHThorThreadedActivityBase (_agent, _activityId, _subgraphId, _arg, _fetch, _kind, diskSize, _node)
+    CHThorFetchActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, IHThorFetchContext &_fetch, ThorActivityKind _kind, EclGraph & _graph, IRecordSize *diskSize, IPropertyTree *_node)
+      : CHThorThreadedActivityBase (_agent, _activityId, _subgraphId, _arg, _fetch, _kind, _graph, diskSize, _node)
     {
         pendingSeq = 0;
         signalSeq = 0;
@@ -2426,8 +2426,8 @@ protected:
 class CHThorFlatFetchActivity : public CHThorFetchActivityBase, public IFlatFetchHandlerCallback
 {
 public:
-    CHThorFlatFetchActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFetchArg &_arg, IHThorFetchContext &_fetch, ThorActivityKind _kind, IRecordSize *diskSize, IPropertyTree *_node, MemoryAttr &encryptionkey)
-        : CHThorFetchActivityBase (_agent, _activityId, _subgraphId, _arg, _fetch, _kind, diskSize, _node), helper(_arg)
+    CHThorFlatFetchActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFetchArg &_arg, IHThorFetchContext &_fetch, ThorActivityKind _kind, EclGraph & _graph, IRecordSize *diskSize, IPropertyTree *_node, MemoryAttr &encryptionkey)
+        : CHThorFetchActivityBase (_agent, _activityId, _subgraphId, _arg, _fetch, _kind, _graph, diskSize, _node), helper(_arg)
     {}
 
     ~CHThorFlatFetchActivity()
@@ -2539,14 +2539,14 @@ protected:
     IHThorFetchArg & helper;
 };
 
-extern HTHOR_API IHThorActivity *createFetchActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFetchArg &arg, ThorActivityKind _kind, IPropertyTree *_node)
+extern HTHOR_API IHThorActivity *createFetchActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorFetchArg &arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
 {
     size32_t kl;
     void *k;
     arg.getFileEncryptKey(kl,k);
     MemoryAttr encryptionkey;
     encryptionkey.setOwn(kl,k);
-    return new CHThorFlatFetchActivity(_agent, _activityId, _subgraphId, arg, arg, _kind, arg.queryDiskRecordSize(), _node, encryptionkey);
+    return new CHThorFlatFetchActivity(_agent, _activityId, _subgraphId, arg, arg, _kind, _graph, arg.queryDiskRecordSize(), _node, encryptionkey);
 }
 
 //------------------------------------------------------------------------------------------
@@ -2554,8 +2554,8 @@ extern HTHOR_API IHThorActivity *createFetchActivity(IAgentContext &_agent, unsi
 class CHThorCsvFetchActivity : public CHThorFetchActivityBase, public IFlatFetchHandlerCallback
 {
 public:
-    CHThorCsvFetchActivity (IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvFetchArg &_arg, ThorActivityKind _kind, IPropertyTree *_node)
-        : CHThorFetchActivityBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, NULL, _node), helper(_arg)
+    CHThorCsvFetchActivity (IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvFetchArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
+        : CHThorFetchActivityBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _graph, NULL, _node), helper(_arg)
     {
         //MORE: I have no idea what should be passed for recordSize in the line above, either something that reads a fixed size, or
         //reads a record based on the csv information
@@ -2575,7 +2575,7 @@ public:
             separators = options.queryProp("@csvSeparate");
             terminators = options.queryProp("@csvTerminate");
             escapes = options.queryProp("@csvEscape");
-            agent.logFileAccess(dFile, "HThor", "READ");
+            agent.logFileAccess(dFile, "HThor", "READ", graph);
         }
         else
         {
@@ -2643,9 +2643,9 @@ protected:
     IHThorCsvFetchArg & helper;
 };
 
-extern HTHOR_API IHThorActivity *createCsvFetchActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvFetchArg &arg, ThorActivityKind _kind, IPropertyTree *_node)
+extern HTHOR_API IHThorActivity *createCsvFetchActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCsvFetchArg &arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
 {
-    return new CHThorCsvFetchActivity(_agent, _activityId, _subgraphId, arg, _kind, _node);
+    return new CHThorCsvFetchActivity(_agent, _activityId, _subgraphId, arg, _kind, _graph, _node);
 }
 
 //------------------------------------------------------------------------------------------
@@ -2722,8 +2722,8 @@ protected:
 class CHThorXmlFetchActivity : public CHThorFetchActivityBase, public IXmlFetchHandlerCallback
 {
 public:
-    CHThorXmlFetchActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlFetchArg & _arg, ThorActivityKind _kind, IPropertyTree *_node)
-        : CHThorFetchActivityBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, NULL, _node), helper(_arg)
+    CHThorXmlFetchActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlFetchArg & _arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
+        : CHThorFetchActivityBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _graph, NULL, _node), helper(_arg)
     {
     }
 
@@ -2782,9 +2782,9 @@ protected:
     IHThorXmlFetchArg & helper;
 };
 
-extern HTHOR_API IHThorActivity *createXmlFetchActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlFetchArg & arg, ThorActivityKind _kind, IPropertyTree *_node)
+extern HTHOR_API IHThorActivity *createXmlFetchActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlFetchArg & arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
 {
-    return new CHThorXmlFetchActivity(_agent, _activityId, _subgraphId, arg, _kind, _node);
+    return new CHThorXmlFetchActivity(_agent, _activityId, _subgraphId, arg, _kind, _graph, _node);
 }
 
 //------------------------------------------------------------------------------------------
@@ -3462,8 +3462,8 @@ class CHThorKeyedJoinActivity  : public CHThorThreadedActivityBase, implements I
     RecordTranslationMode recordTranslationModeHint = RecordTranslationMode::Unspecified;
     bool isCodeSigned = false;
 public:
-    CHThorKeyedJoinActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorKeyedJoinArg &_arg, ThorActivityKind _kind, IPropertyTree *_node)
-        : CHThorThreadedActivityBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _arg.queryDiskRecordSize(), _node), helper(_arg)
+    CHThorKeyedJoinActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorKeyedJoinArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
+        : CHThorThreadedActivityBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _graph, _arg.queryDiskRecordSize(), _node), helper(_arg)
     {
         atomic_set(&prefiltered, 0);
         atomic_set(&postfiltered, 0);
@@ -4028,7 +4028,7 @@ public:
                 lookup.setown(new MonolithicKeyLookupHandler(dFile, *this, agent));
             else
                 lookup.setown(new DistributedKeyLookupHandler(dFile, *this, agent));
-            agent.logFileAccess(dFile, "HThor", "READ");
+            agent.logFileAccess(dFile, "HThor", "READ", graph);
         }
         else
         {
@@ -4236,7 +4236,7 @@ protected:
     }
 };
 
-extern HTHOR_API IHThorActivity *createKeyedJoinActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorKeyedJoinArg &arg, ThorActivityKind _kind, IPropertyTree *_node)
+extern HTHOR_API IHThorActivity *createKeyedJoinActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorKeyedJoinArg &arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
 {
-    return new CHThorKeyedJoinActivity(_agent, _activityId, _subgraphId, arg, _kind, _node);
+    return new CHThorKeyedJoinActivity(_agent, _activityId, _subgraphId, arg, _kind, _graph, _node);
 }

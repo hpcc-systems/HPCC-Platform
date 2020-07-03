@@ -197,9 +197,9 @@ public:
     {
         return ctx->resolveName(in, out, outlen);
     }
-    virtual void logFileAccess(IDistributedFile * file, char const * component, char const * type)
+    virtual void logFileAccess(IDistributedFile * file, char const * component, char const * type, EclGraph & graph)
     {
-        ctx->logFileAccess(file, component, type);
+        ctx->logFileAccess(file, component, type, graph);
     }
     virtual void addWuException(const char * text, unsigned code, unsigned severity, char const * source)
     {
@@ -385,7 +385,8 @@ private:
     unsigned int clusterWidth;
     Owned<IDistributedFileTransaction> superfiletransaction;
     mutable Owned<IRowAllocatorMetaActIdCache> allocatorMetaCache;
-    Owned<EclGraph> activeGraph;
+    CriticalSection activeGraphCritSec;
+    PointerArrayOf<EclGraph> activeGraphs;
     Owned<CHThorDebugContext> debugContext;
     Owned<IProbeManager> probeManager;
     StringAttr allowedPipeProgs;
@@ -425,6 +426,9 @@ private:
     virtual bool getWorkunitResultFilename(StringBuffer & diskFilename, const char * wuid, const char * name, int seq);
     virtual IDebuggableContext *queryDebugContext() const { return debugContext; };
 
+    //protected by critical section
+    EclGraph * addGraph(const char * graphName);
+    void removeGraph(EclGraph * g);
     EclGraph * loadGraph(const char * graphName, IConstWorkUnit * wu, ILoadedDllEntry * dll, bool isLibrary);
     virtual bool forceNewDiskReadActivity() const { return useNewDiskReadActivity; }
 
@@ -584,7 +588,7 @@ public:
     virtual void getEventExtra(size32_t & outLen, char * & outStr, const char * tag);
     //virtual void logException(IEclException *e);
     virtual char *resolveName(const char *in, char *out, unsigned outlen);
-    virtual void logFileAccess(IDistributedFile * file, char const * component, char const * type);
+    virtual void logFileAccess(IDistributedFile * file, char const * component, char const * type, EclGraph & graph);
     virtual ILocalOrDistributedFile  *resolveLFN(const char *logicalName, const char *errorTxt, bool optional, bool noteRead, bool write, StringBuffer * expandedlfn, bool isPrivilegedUser);
 
     virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract);
