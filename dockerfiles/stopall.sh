@@ -20,4 +20,5 @@
 # Utility script for stopping a local cluster started by startall.sh
 
 helm uninstall mycluster
+helm uninstall localfile
 kubectl delete jobs --all 
