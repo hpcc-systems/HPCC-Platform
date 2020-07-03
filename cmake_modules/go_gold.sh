@@ -94,3 +94,8 @@ if [ -e helm/hpcc/Chart.yaml ] ; then
   doit "git push $REMOTE master $FORCE"
   popd
 fi
+
+# upmerge back to minor closedown branch to ensure incr.sh works
+doit "git checkout candidate_$HPCC_MAJOR.$NEW_MINOR.x"
+doit "git merge --no-ff --no-commit -X ours candidate-$HPCC_MAJOR.$NEW_MINOR.$NEW_POINT"
+doit "if ! git diff HEAD --exit-code ; then git merge --abort ; else git commit -s && git push origin candidate-$HPCC_MAJOR.$NEW_MINOR.x ; fi" 
