@@ -1,1 +1,5 @@
-/lws.target.txt
+build/
+hpcc-js/
+lib/
+node_modules/
+lws.target.txt
