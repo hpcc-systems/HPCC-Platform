@@ -429,6 +429,13 @@ bool CDfuPlusHelper::fixedSpray(const char* srcxml,const char* srcip,const char*
     if(globals->hasProp("expireDays"))
         req->setExpireDays(globals->getPropInt("expireDays"));
 
+    const char* encoding = globals->queryProp("encoding");
+    DFUfileformat formatCode = CDFUfileformat::decode(encoding);
+    if (formatCode != DFUff_unknown)
+        req->setSourceFormat(encoding);
+    else
+        throw MakeStringException(0, "Unknown source file format: '%s'", encoding);
+
     if(srcxml == nullptr)
         info("\nFixed spraying from %s on %s to %s\n", srcfile, srcip, dstname);
     else
@@ -525,7 +532,14 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
     else
         encoding = format; // may need extra later
 
-    req->setSourceFormat(CDFUfileformat::decode(encoding));
+    DFUfileformat formatCode = CDFUfileformat::decode(encoding);
+    if (formatCode != DFUff_unknown)
+        req->setSourceFormat(formatCode);
+    else
+        throw MakeStringException(0, "Unknown source file format: '%s'", encoding);
+
+    req->setKeepSourceEncoding(globals->getPropBool("keepSourceEncoding", true));
+
     if(rowtag != nullptr)
         req->setSourceRowTag(rowtag);
 

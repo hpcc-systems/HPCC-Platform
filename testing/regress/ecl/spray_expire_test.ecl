@@ -185,7 +185,7 @@ sequential (
                         recordStructurePresent :=FALSE,
                         quotedTerminator :=TRUE,
                         encoding :='ascii',
-                        expireDays :=expireDaysOut1
+                        expireDays := expireDaysOut1
                         ),
     output(res1,NAMED('SprayVariable')),
     FileServices.SprayDelimited(
@@ -208,7 +208,7 @@ sequential (
                           recordStructurePresent :=FALSE,
                           quotedTerminator :=TRUE,
                           encoding :='ascii',
-                          expireDays :=expireDaysOut2
+                          expireDays := expireDaysOut2
                         ),
     output(res2,NAMED('SprayDelimited')),
     FileServices.SprayFixed(
@@ -220,7 +220,7 @@ sequential (
                             TIMEOUT := -1,
                             ESPSERVERIPPORT := ESPportIP,
                             ALLOWOVERWRITE := true,
-                            expireDays :=expireDaysOut3
+                            expireDays := expireDaysOut3
                             );
     output(res3,NAMED('SprayFixed')),
     FileServices.SprayXml(
@@ -232,7 +232,7 @@ sequential (
                             TIMEOUT := -1,
                             ESPSERVERIPPORT := ESPportIP,
                             ALLOWOVERWRITE := true,
-                            expireDays :=expireDaysOut4
+                            expireDays := expireDaysOut4
                             );
     output(res4,NAMED('SprayXml')),
 

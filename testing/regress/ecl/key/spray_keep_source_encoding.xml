@@ -1,0 +1,34 @@
+<Dataset name='Result 1'>
+</Dataset>
+<Dataset name='format1'>
+ <Row><format1>utf8</format1></Row>
+</Dataset>
+<Dataset name='kind1'>
+ <Row><kind1>csv</kind1></Row>
+</Dataset>
+<Dataset name='Ds1'>
+ <Row><field1>﻿﻿&apos;Id&apos;</field1><field2>&apos;Field1&apos;</field2><field3>Field2</field3><field4>Field3</field4><field5>&apos;Field4&apos;</field5></Row>
+ <Row><field1>﻿&apos;0000000000&apos;</field1><field2>&apos;ab de&apos;</field2><field3>162</field3><field4>722</field4><field5>&apos;a cdefghi k  nopqrstuvwxyz012   678 &apos;</field5></Row>
+ <Row><field1>﻿</field1><field2></field2><field3></field3><field4></field4><field5></field5></Row>
+ <Row><field1>﻿</field1><field2></field2><field3></field3><field4></field4><field5></field5></Row>
+</Dataset>
+<Dataset name='format2'>
+ <Row><format2>utf16le</format2></Row>
+</Dataset>
+<Dataset name='kind2'>
+ <Row><kind2>csv</kind2></Row>
+</Dataset>
+<Dataset name='Ds2'>
+ <Row><utf16>FFFE27004900640027002C0027004600690065006C006400310027002C004600690065006C00640032002C004600690065006C00640033002C0027004600690065006C006400340027000D000A00</utf16></Row>
+ <Row><utf16>2700300030003000300030003000300030003000300027002C0027006100620020006400650027002C003100360032002C003700320032002C00270061002000630064006500660067006800690020006B00200020006E006F0070007100720073007400750076007700780079007A00300031003200200020002000360037003800200027000D000A00</utf16></Row>
+</Dataset>
+<Dataset name='format3'>
+ <Row><format3>utf16le</format3></Row>
+</Dataset>
+<Dataset name='kind3'>
+ <Row><kind3>csv</kind3></Row>
+</Dataset>
+<Dataset name='Ds3'>
+ <Row><utf16>FFFE27004900640027002C0027004600690065006C006400310027002C004600690065006C00640032002C004600690065006C00640033002C0027004600690065006C006400340027000D000A00</utf16></Row>
+ <Row><utf16>2700300030003000300030003000300030003000300027002C0027006100620020006400650027002C003100360032002C003700320032002C00270061002000630064006500660067006800690020006B00200020006E006F0070007100720073007400750076007700780079007A00300031003200200020002000360037003800200027000D000A00</utf16></Row>
+</Dataset>
