@@ -1,0 +1,5 @@
+<Exception><Code>5103</Code><Source>eclagent</Source><Message>Error: 5103: </Message></Exception>
+<Dataset name='logging'>
+ <Row><text>a</text></Row>
+ <Row><text>failure contingency for b</text></Row>
+</Dataset>

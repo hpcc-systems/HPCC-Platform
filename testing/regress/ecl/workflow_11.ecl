@@ -23,13 +23,20 @@ optParallel := #IFDEFINED(root.parallel, false);
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
 
-display(String8 thisString) := FUNCTION
-  ds := dataset([thisString], {String8 text});
+//Checks that the class member "condition" in workflow machine is being protected by a critical section.
+display(Integer8 thisInteger) := FUNCTION
+  ds := dataset([thisInteger], {Integer8 value});
   RETURN Output(ds, NAMED('logging'), EXTEND);
 END;
 
-//Workflow item x is referenced twice, but should only be executed once
-x := display('one') : independent;
-y := SEQUENTIAL(x, display('two')) : independent;
+A := display(1) : independent;
+B := display(2) : independent;
+X := display(3) : independent;
 
-Parallel(y, x);
+condition1 := TRUE : independent;
+
+condition2 := FALSE : independent;
+
+
+//It should output 1 then 3
+SEQUENTIAL(IF(condition1, A), IF(condition2, B), IF(condition1, X));

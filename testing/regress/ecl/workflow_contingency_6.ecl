@@ -22,14 +22,12 @@ optParallel := #IFDEFINED(root.parallel, false);
 
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
+#onwarning(5102, ignore);
 
-display(String8 thisString) := FUNCTION
-  ds := dataset([thisString], {String8 text});
-  RETURN Output(ds, NAMED('logging'), EXTEND);
-END;
+//Contingency failure should not cause workflow to abort
+//The nested contingency should be processed
+x := 1 : independent;
+z := OUTPUT(7) : independent;
+y := SEQUENTIAl(Output(6), FAIL(5102)) : FAILURE(Z),independent;
 
-//Workflow item x is referenced twice, but should only be executed once
-x := display('one') : independent;
-y := SEQUENTIAL(x, display('two')) : independent;
-
-Parallel(y, x);
+x : SUCCESS(y);

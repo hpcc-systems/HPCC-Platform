@@ -23,13 +23,15 @@ optParallel := #IFDEFINED(root.parallel, false);
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
 
-display(String8 thisString) := FUNCTION
-  ds := dataset([thisString], {String8 text});
+display(String thisString) := FUNCTION
+  ds := dataset([thisString], {String text});
   RETURN Output(ds, NAMED('logging'), EXTEND);
 END;
+Import sleep from std.System.Debug;
 
-//Workflow item x is referenced twice, but should only be executed once
-x := display('one') : independent;
-y := SEQUENTIAL(x, display('two')) : independent;
+//independent item A is shared between two sequential clauses, but should execute once
+x := 'hello there' : independent;
+A := display(x) : independent;
+C := display('C') : independent;
 
-Parallel(y, x);
+SEQUENTIAL(SEQUENTIAL(C, SEQUENTIAL(Sleep(10), A)),A);

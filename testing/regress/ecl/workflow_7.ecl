@@ -27,9 +27,13 @@ display(String8 thisString) := FUNCTION
   ds := dataset([thisString], {String8 text});
   RETURN Output(ds, NAMED('logging'), EXTEND);
 END;
+Import sleep from std.System.Debug;
 
-//Workflow item x is referenced twice, but should only be executed once
-x := display('one') : independent;
-y := SEQUENTIAL(x, display('two')) : independent;
+//this test makes sure that item c is not activated too early (before item b has finished)
+a := display('a') : independent;
+b := ORDERED(sleep(1000), display('b')) : independent;
+c := display('c');
 
-Parallel(y, x);
+a0 := a : independent;
+
+SEQUENTIAL(a0, b, ORDERED(a,c));

@@ -23,6 +23,9 @@
 #include "jlog.hpp"
 #include "eclhelper.hpp"
 
+#define WFERR_ExecutingInWaitState      5100
+#define WFERR_ExecutingInBlockedState   5101
+
 class WORKUNIT_API WorkflowException : public IException, public CInterface
 {
 public:

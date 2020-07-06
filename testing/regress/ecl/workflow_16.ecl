@@ -23,13 +23,29 @@ optParallel := #IFDEFINED(root.parallel, false);
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
 
-display(String8 thisString) := FUNCTION
-  ds := dataset([thisString], {String8 text});
+Import sleep from std.System.Debug;
+
+display(Integer8 thisInteger) := FUNCTION
+  ds := dataset([thisInteger], {Integer8 value});
   RETURN Output(ds, NAMED('logging'), EXTEND);
 END;
 
-//Workflow item x is referenced twice, but should only be executed once
-x := display('one') : independent;
-y := SEQUENTIAL(x, display('two')) : independent;
 
-Parallel(y, x);
+cond := true;
+
+ctrue := sleep(2001) : independent;
+cfalse := display(0);
+
+b := ctrue : independent;
+d := display(2) : independent;
+b2 := SEQUENTIAL(sleep(2000),IF(NOFOLD(cond), ctrue, cfalse),b,d);
+
+c10 := sleep(3000) : independent;
+c11 := display(1) : independent;
+c1 := SEQUENTIAL(c10, c11);
+
+c0 := display(0) : independent;
+
+//use sequential to get a consistent order in output. This can be changed once the parallel code is merged
+SEQUENTIAL(c0,c1,b2);
+//IF(optParallel, PARALLEL(c0,c1,b2), SEQUENTIAL(c0,c1,b2));

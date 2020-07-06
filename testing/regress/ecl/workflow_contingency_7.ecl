@@ -28,8 +28,11 @@ display(String8 thisString) := FUNCTION
   RETURN Output(ds, NAMED('logging'), EXTEND);
 END;
 
-//Workflow item x is referenced twice, but should only be executed once
-x := display('one') : independent;
-y := SEQUENTIAL(x, display('two')) : independent;
+//Although two contingencies share the same workflow items, either once should be able to activate the clause.
+sharedContingencyChild := display('c0') : independent;
+sharedContingencyHead := ORDERED(sharedContingencyChild, display('c1'));
 
-Parallel(y, x);
+action0 := display('a0') : FAILURE(sharedContingencyHead);
+action1 := display('a1') : SUCCESS(sharedContingencyHead);
+
+SEQUENTIAL(action0, action1);

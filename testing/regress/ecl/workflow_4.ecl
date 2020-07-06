@@ -14,24 +14,30 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
+//version parallel=false
+//version parallel=true
 
-//The sleep times mean that when executed in parallel, the numbers should be in order. Currently, they are out of order.
-Import sleep from std.System.Debug;
+import ^ as root;
+optParallel := #IFDEFINED(root.parallel, false);
+
+#option ('parallelWorkflow', optParallel);
+#option('numWorkflowThreads', 5);
 
 display(String8 thisString) := FUNCTION
   ds := dataset([thisString], {String8 text});
   RETURN Output(ds, NAMED('logging'), EXTEND);
 END;
+Import sleep from std.System.Debug;
 
-
+//The sleep times mean that when executed in parallel, the numbers should be in order. Currently, they are out of order.
 x := SEQUENTIAL(display('one'),
-           sleep(2000),
-           display('three'));
-y := SEQUENTIAL(sleep(1000),
-           display('two'),
-           sleep(2000),
+           sleep(1000),
+           display('two'));
+y := SEQUENTIAL(sleep(2000),
+           display('three'),
+           sleep(1000),
            display('four'));
 
 //Use sequential to get a consistent order in Output
-sequential(x,y);
+IF(optParallel, PARALLEL(x,y), SEQUENTIAL(x,y));
 //PARALLEL(x,y);

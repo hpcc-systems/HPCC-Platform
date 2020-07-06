@@ -23,13 +23,21 @@ optParallel := #IFDEFINED(root.parallel, false);
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
 
-display(String8 thisString) := FUNCTION
-  ds := dataset([thisString], {String8 text});
-  RETURN Output(ds, NAMED('logging'), EXTEND);
+//graphs are going to run concurrently in eclagent/roxie
+MyRec := RECORD
+    STRING1 Value1;
+    STRING1 Value2;
+    UNSIGNED1 Value3;
 END;
 
-//Workflow item x is referenced twice, but should only be executed once
-x := display('one') : independent;
-y := SEQUENTIAL(x, display('two')) : independent;
+SomeFile := DATASET([   {'C','G',1},
+                        {'C','C',2},
+                        {'A','X',3},
+                        {'B','G',4},
+                        {'A','B',5}],MyRec);
 
-Parallel(y, x);
+SortedTable1 := SORT(SomeFile,-Value1):independent; //sort in reverse order
+SortedTable2 := SORT(SomeFile,Value1):independent;
+
+
+OUTPUT(COUNT(NOFOLD(SortedTable1)) + COUNT(NOFOLD(SortedTable2)));

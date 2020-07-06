@@ -23,13 +23,13 @@ optParallel := #IFDEFINED(root.parallel, false);
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
 
-display(String8 thisString) := FUNCTION
-  ds := dataset([thisString], {String8 text});
-  RETURN Output(ds, NAMED('logging'), EXTEND);
-END;
+#onwarning(5102, ignore);
+//This is to check that the workflow terminates and doesn't run forever.
+//Two items depend on item x, which is the item that will fail.
+x := SEQUENTIAL(OUTPUT(2), FAIL(5102)) : INDEPENDENT;
+A0 := x;
+A := OUTPUT(1) : INDEPENDENT, SUCCESS(A0);
 
-//Workflow item x is referenced twice, but should only be executed once
-x := display('one') : independent;
-y := SEQUENTIAL(x, display('two')) : independent;
+B := PARALLEL(OUTPUT(3), x) : INDEPENDENT;
 
-Parallel(y, x);
+SEQUENTIAL(A,B);
