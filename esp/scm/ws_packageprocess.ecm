@@ -212,15 +212,27 @@ ESPstruct ValidatePackageFiles
     ESParray<string, File> NotInDFS;
 };
 
-ESPresponse [exceptions_inline] ValidatePackageResponse
+ESPstruct ValidateResult
 {
+    string Target;
     string PMID;
-    ESPstruct BasePackageStatus status;
     ESParray<string> Warnings;
     ESParray<string> Errors;
     ESPstruct ValidatePackageInfo packages;
     ESPstruct ValidatePackageQueries queries;
     ESPstruct ValidatePackageFiles files;
+};
+
+ESPresponse [exceptions_inline] ValidatePackageResponse
+{
+    [depr_ver("1.04")] string PMID;
+    [depr_ver("1.04")] ESPstruct BasePackageStatus status;
+    [depr_ver("1.04")] ESParray<string> Warnings;
+    [depr_ver("1.04")] ESParray<string> Errors;
+    [depr_ver("1.04")] ESPstruct ValidatePackageInfo packages;
+    [depr_ver("1.04")] ESPstruct ValidatePackageQueries queries;
+    [depr_ver("1.04")] ESPstruct ValidatePackageFiles files;
+    [min_ver("1.04")] ESParray<ESPstruct ValidateResult, Result> Results;
 };
 
 ESPrequest GetQueryFileMappingRequest
@@ -316,7 +328,7 @@ ESPresponse [exceptions_inline] GetPartFromPackageMapResponse
     string Content;
 };
 
-ESPservice [auth_feature("NONE"), version("1.03"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsPackageProcess
+ESPservice [auth_feature("NONE"), version("1.04"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsPackageProcess
 {
     ESPmethod Echo(EchoRequest, EchoResponse);
     ESPmethod [auth_feature("PackageMapAccess:WRITE")] AddPackage(AddPackageRequest, AddPackageResponse);
