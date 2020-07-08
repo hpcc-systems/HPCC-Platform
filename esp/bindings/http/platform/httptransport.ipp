@@ -99,6 +99,9 @@ protected:
     virtual StringBuffer& constructHeaderBuffer(StringBuffer& headerbuf, bool inclLength);
     virtual int processHeaders(IMultiException *me);
 
+protected:
+    virtual bool checkPersistentEligible();
+
 public:
     IMPLEMENT_IINTERFACE;
     
@@ -327,11 +330,11 @@ private:
     virtual StringBuffer& constructHeaderBuffer(StringBuffer& headerbuf, bool inclLen);
     virtual int processHeaders(IMultiException *me);
     virtual void parseCookieHeader(char* cookiestr);
-    inline bool checkPersistentEligible();
+
+protected:
+    virtual bool checkPersistentEligible() override;
 
 public:
-    
-
     CHttpRequest(ISocket& socket);
     virtual ~CHttpRequest();
     
@@ -378,6 +381,9 @@ private:
     virtual int processHeaders(IMultiException *me);
     virtual void parseCookieHeader(char* cookiestr);
     virtual void parseOneCookie(char* cookiestr);
+
+protected:
+    virtual bool checkPersistentEligible() override;
 
 public:
     CHttpResponse(ISocket& socket);

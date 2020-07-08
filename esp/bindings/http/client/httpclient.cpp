@@ -189,7 +189,7 @@ CHttpClient::~CHttpClient()
         }
         else if (m_persistentHandler && !m_disableKeepAlive && m_persistable)
         {
-            m_persistentHandler->add(m_socket, &m_ep);
+            m_persistentHandler->add(m_socket, &m_ep, strieq(m_protocol.get(), "HTTPS")?PersistentProtocol::ProtoTLS:PersistentProtocol::ProtoTCP);
         }
         else
         {
@@ -288,7 +288,8 @@ int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
         m_disableKeepAlive = true;
 
     bool shouldClose = false;
-    Linked<ISocket> pSock = (m_disableKeepAlive || forceNewConnection)?nullptr:m_persistentHandler->getAvailable(&ep, &shouldClose);
+    Owned<ISocket> pSock = (m_disableKeepAlive || forceNewConnection)?nullptr:m_persistentHandler->getAvailable(&ep, &shouldClose,
+            strieq(m_protocol.get(), "HTTPS")?PersistentProtocol::ProtoTLS:PersistentProtocol::ProtoTCP);
     if(pSock)
     {
         m_isPersistentSocket = true;

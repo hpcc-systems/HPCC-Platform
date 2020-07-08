@@ -52,6 +52,7 @@ include_directories (
          ./../../fs/dafsserver
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
+         ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
 set_source_files_properties (dfuplus.cpp PROPERTIES COMPILE_FLAGS -DDAFILESRV_LOCAL)

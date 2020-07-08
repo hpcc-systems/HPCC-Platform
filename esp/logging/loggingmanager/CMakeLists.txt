@@ -48,6 +48,7 @@ include_directories (
     ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
 #    ./../../protocols/sidex
     ${HPCC_SOURCE_DIR}/esp/logging/logginglib
+    ${HPCC_SOURCE_DIR}/common/thorhelper
     ./..
 )
 

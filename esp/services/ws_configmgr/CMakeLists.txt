@@ -51,6 +51,7 @@ include_directories(
     ${CMAKE_BINARY_DIR}/oss
     ${CMAKE_BINARY_DIR}/esp/services/ws_configmgr
     ${BOOST_REGEX_INCLUDE_DIR}
+    ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
 add_definitions(-D_USRDLL)

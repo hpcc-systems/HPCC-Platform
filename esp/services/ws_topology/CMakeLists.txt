@@ -56,6 +56,7 @@ include_directories (
          ./../../smc/SMCLib 
          ./../../bindings/SOAP/xpp 
          ./../..//esplib
+         ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DWS_TOPOLOGY_EXPORTS )

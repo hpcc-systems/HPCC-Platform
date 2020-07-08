@@ -59,6 +59,7 @@ include_directories (
          ./../../bindings/SOAP/xpp 
          ./../../../fs/dafsclient 
          ./../../../common/workunit
+         ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
 ADD_DEFINITIONS( -D_USRDLL )

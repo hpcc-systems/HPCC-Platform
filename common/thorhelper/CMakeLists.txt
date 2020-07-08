@@ -68,6 +68,8 @@ set (    SRCS
          thorrparse.ipp
          thorsort.cpp
          thorsort.hpp
+         persistent.cpp
+         persistent.hpp
          
          roxiedebug.hpp
          roxiedebug.ipp
@@ -80,24 +82,24 @@ set (    SRCS
 include_directories ( 
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
-         ./../../system/security/securesocket 
-         ./../../common/remote 
-         ./../../system/jhtree 
-         ./../../rtl/eclrtl 
-         ./../../rtl/nbcd 
-         ./../../system/include 
-         ./../../system/mp
-         ./../../system/jlib
-         ./../../system/security/zcrypt
-         ./../../dali/base
-         ./../deftype 
-         ./../workunit
-         ./../../rtl/include 
-         ./../../ecl/hql
-         ./../../roxie/roxiemem
-         ./../../testing/unittests
-         ./../../system/tbb_sm/tbb/include
-         ./../../system/security/shared
+         ${HPCC_SOURCE_DIR}/system/security/securesocket
+         ${HPCC_SOURCE_DIR}/common/remote
+         ${HPCC_SOURCE_DIR}/system/jhtree
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
+         ${HPCC_SOURCE_DIR}/rtl/nbcd
+         ${HPCC_SOURCE_DIR}/system/include
+         ${HPCC_SOURCE_DIR}/system/mp
+         ${HPCC_SOURCE_DIR}/system/jlib
+         ${HPCC_SOURCE_DIR}/system/security/zcrypt
+         ${HPCC_SOURCE_DIR}/dali/base
+         ${HPCC_SOURCE_DIR}/common/deftype
+         ${HPCC_SOURCE_DIR}/common/workunit
+         ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/ecl/hql
+         ${HPCC_SOURCE_DIR}/roxie/roxiemem
+         ${HPCC_SOURCE_DIR}/testing/unittests
+         ${HPCC_SOURCE_DIR}/system/tbb_sm/tbb/include
+         ${HPCC_SOURCE_DIR}/system/security/shared
          ${HPCC_SOURCE_DIR}/fs/dafsclient
     )
 

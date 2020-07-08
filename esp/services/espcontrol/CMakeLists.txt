@@ -48,6 +48,7 @@ include_directories (
          ./../../bindings/SOAP/xpp
          ./../../smc/SMCLib
          ./../../../common/environment
+         ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
 ADD_DEFINITIONS( -D_USRDLL )

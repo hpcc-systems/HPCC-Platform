@@ -30,6 +30,7 @@
 #include "eclrtl.hpp"
 #include "roxiemem.hpp"
 #include "zcrypt.hpp"
+#include "persistent.hpp"
 
 using roxiemem::OwnedRoxieString;
 
@@ -42,6 +43,7 @@ using roxiemem::OwnedRoxieString;
 #define CONTENT_LENGTH "Content-Length: "
 #define CONTENT_ENCODING "Content-Encoding"
 #define ACCEPT_ENCODING "Accept-Encoding"
+#define CONNECTION "Connection"
 
 unsigned soapTraceLevel = 1;
 
@@ -507,6 +509,28 @@ public:
     }
 } *blacklist;
 
+static IPersistentHandler* persistentHandler = nullptr;
+static CriticalSection persistentCrit;
+static std::atomic<bool> persistentInitDone{false};
+
+void initPersistentHandler()
+{
+    CriticalBlock block(persistentCrit);
+    if (!persistentInitDone)
+    {
+#ifndef _CONTAINERIZED
+        const IProperties &conf = queryEnvironmentConf();
+        int maxPersistentRequests = conf.getPropInt("maxPersistentRequests", DEFAULT_MAX_PERSISTENT_REQUESTS);
+#else
+        const IPropertyTree& conf = queryComponentConfig();
+        int maxPersistentRequests = conf.getPropInt("@maxPersistentRequests", DEFAULT_MAX_PERSISTENT_REQUESTS);
+#endif
+        if (maxPersistentRequests != 0)
+            persistentHandler = createPersistentHandler(nullptr, DEFAULT_MAX_PERSISTENT_IDLE_TIME, maxPersistentRequests, PersistentLogLevel::PLogMin, true);
+        persistentInitDone = true;
+    }
+}
+
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     blacklist = new BlackLister;
@@ -518,6 +542,12 @@ MODULE_EXIT()
 {
     blacklist->stop();
     delete blacklist;
+
+    if (persistentHandler)
+    {
+        persistentHandler->stop(true);
+        ::Release(persistentHandler);
+    }
 }
 
 //=================================================================================================
@@ -644,7 +674,7 @@ interface IWSCAsyncFor: public IInterface
     virtual void checkTimeLimitExceeded(unsigned * _remainingMS) = 0;
 
     virtual void createHttpRequest(Url &url, StringBuffer &request) = 0;
-    virtual int readHttpResponse(StringBuffer &response, ISocket *socket) = 0;
+    virtual int readHttpResponse(StringBuffer &response, ISocket *socket, bool &keepAlive) = 0;
     virtual void processResponse(Url &url, StringBuffer &response, ColumnProvider * meta) = 0;
 
     virtual const char *getResponsePath() = 0;
@@ -1502,7 +1532,7 @@ private:
     Owned<CSocketDataProvider> dataProvider;
     PTreeReaderOptions options;
     unsigned remainingMS;
-    cycle_t startSoapCallCycles;
+    CCycleTimer mTimer;
 
     inline void checkRoxieAbortMonitor(IRoxieAbortMonitor * roxieAbortMonitor)
     {
@@ -1712,7 +1742,7 @@ private:
             master->logctx.CTXLOG("%s: request(%s:%u)", master->wscCallTypeText(), url.host.str(), url.port);
     }
 
-    int readHttpResponse(StringBuffer &response, ISocket *socket)
+    int readHttpResponse(StringBuffer &response, ISocket *socket, bool &keepAlive)
     {
         // Read the POST reply
         // not doesn't *assume* is valid HTTP post format but if it is takes advantage of
@@ -1721,6 +1751,7 @@ private:
         MemoryAttr buf;
         char *buffer=(char *)buf.allocate(WSCBUFFERSIZE+1);
         int rval = 200;
+        keepAlive = false;
 
         // first read header
         size32_t payloadofs = 0;
@@ -1866,6 +1897,8 @@ private:
                 }
             }
         }
+        if (rval == 200 && response.length() > 0)
+            keepAlive = checkKeepAlive(dbgheader);
         if (checkContentDecoding(dbgheader, response, contentEncoding))
             decodeContent(contentEncoding.str(), response);
         if (soapTraceLevel > 6 || master->logXML)
@@ -2012,6 +2045,20 @@ private:
             throw MakeStringException(TIMELIMIT_EXCEEDED, "%sCALL TIMELIMIT(%ums) exceeded", master->wscType == STsoap ? "SOAP" : "HTTP", master->timeLimitMS);
     }
 
+    inline bool checkKeepAlive(StringBuffer& headers)
+    {
+        size32_t verOffset = httpVerOffset();
+        if (headers.length() <= verOffset)
+            return false;
+        StringBuffer httpVer;
+        const char* ptr = headers.str() + verOffset;
+        while (*ptr && !isspace(*ptr))
+            httpVer.append(*ptr++);
+        StringBuffer conHeader;
+        getHTTPHeader(ptr, CONNECTION, conHeader);
+        return isHttpPersistable(httpVer.str(), conHeader.str());
+    }
+
 public:
     CWSCAsyncFor(CWSCHelper * _master, IXmlWriterExt &_xmlWriter, ConstPointerArray &_inputRows, PTreeReaderOptions _options): xmlWriter(_xmlWriter), inputRows(_inputRows), options(_options)
     {
@@ -2027,14 +2074,11 @@ public:
         }
         responsePath.append(master->service).append("Response");
         remainingMS = 0;
-        startSoapCallCycles = get_cycles_now();
     }
 
     ~CWSCAsyncFor()
     {
-        cycle_t endCycles = get_cycles_now();
-        __int64 elapsedNs = cycle_to_nanosec(endCycles-startSoapCallCycles);
-        master->logctx.noteStatistic(StTimeSoapcall, elapsedNs);
+        master->logctx.noteStatistic(StTimeSoapcall, mTimer.elapsedNs());
     }
 
     IMPLEMENT_IINTERFACE;
@@ -2056,41 +2100,61 @@ public:
         unsigned startidx = idx;
         while (!master->aborted)
         {
+            bool keepAlive = false;
+            bool isReused = false;
+            PersistentProtocol proto = PersistentProtocol::ProtoTCP;
+            SocketEndpoint ep;
             Owned<ISocket> socket;
-            cycle_t startCycles;
-            startCycles = get_cycles_now();
+            CCycleTimer timer;
             for (;;)
             {
                 try
                 {
                     checkTimeLimitExceeded(&remainingMS);
                     Url &connUrl = master->proxyUrlArray.empty() ? url : master->proxyUrlArray.item(0);
-                    socket.setown(blacklist->connect(connUrl.port, connUrl.host, master->logctx, (unsigned)master->maxRetries, master->timeoutMS, master->roxieAbortMonitor));
-                    if (stricmp(url.method, "https") == 0)
+                    ep.set(connUrl.host.get(), connUrl.port);
+                    if (strieq(url.method, "https"))
+                        proto = PersistentProtocol::ProtoTLS;
+                    bool shouldClose = false;
+                    Owned<ISocket> psock = persistentHandler?persistentHandler->getAvailable(&ep, &shouldClose, proto):nullptr;
+                    if (psock)
                     {
-#ifdef _USE_OPENSSL
-                        Owned<ISecureSocket> ssock = master->createSecureSocket(socket.getClear());
-                        if (ssock) 
+                        isReused = true;
+                        keepAlive = !shouldClose;
+                        socket.setown(psock.getClear());
+                    }
+                    else
+                    {
+                        isReused = false;
+                        keepAlive = true;
+                        socket.setown(blacklist->connect(connUrl.port, connUrl.host, master->logctx, (unsigned)master->maxRetries, master->timeoutMS, master->roxieAbortMonitor));
+                        if (proto == PersistentProtocol::ProtoTLS)
                         {
-                            checkTimeLimitExceeded(&remainingMS);
-                            int status = ssock->secure_connect();
-                            if (status < 0)
+#ifdef _USE_OPENSSL
+                            Owned<ISecureSocket> ssock = master->createSecureSocket(socket.getClear());
+                            if (ssock)
                             {
-                                StringBuffer err;
-                                err.append("Failure to establish secure connection to ");
-                                connUrl.getUrlString(err);
-                                err.append(": returned ").append(status);
-                                throw MakeStringExceptionDirect(0, err.str());
+                                checkTimeLimitExceeded(&remainingMS);
+                                int status = ssock->secure_connect();
+                                if (status < 0)
+                                {
+                                    StringBuffer err;
+                                    err.append("Failure to establish secure connection to ");
+                                    connUrl.getUrlString(err);
+                                    err.append(": returned ").append(status);
+                                    throw makeStringException(0, err.str());
+                                }
+                                socket.setown(ssock.getClear());
                             }
-                            socket.setown(ssock.getLink());
-                        }
 #else
-                        StringBuffer err;
-                        err.append("Failure to establish secure connection to ");
-                        connUrl.getUrlString(err);
-                        err.append(": OpenSSL disabled in build");
-                        throw MakeStringExceptionDirect(0, err.str());
+                            StringBuffer err;
+                            err.append("Failure to establish secure connection to ");
+                            connUrl.getUrlString(err);
+                            err.append(": OpenSSL disabled in build");
+                            throw makeStringExceptionDirect(0, err.str());
 #endif
+
+                        }
                     }
                     break;
                 }
@@ -2135,7 +2199,9 @@ public:
                 checkTimeLimitExceeded(&remainingMS);
                 checkRoxieAbortMonitor(master->roxieAbortMonitor);
 
-                int rval = readHttpResponse(response, socket);
+                bool keepAlive2;
+                int rval = readHttpResponse(response, socket, keepAlive2);
+                keepAlive = keepAlive && keepAlive2;
 
                 if (soapTraceLevel > 4)
                     multiLog(master->logctx, "%sCALL: received response (%s) from %s:%d", master->wscType == STsoap ? "SOAP" : "HTTP",master->service.str(), url.host.str(), url.port);
@@ -2154,16 +2220,24 @@ public:
                 {
                     throw MakeStringException(-1, "Zero length response in processQuery");
                 }
-                cycle_t endCycles = get_cycles_now();
-                __int64 elapsedNs = cycle_to_nanosec(endCycles-startCycles);
                 checkTimeLimitExceeded(&remainingMS);
-                ColumnProvider * meta = (ColumnProvider*)CreateColumnProvider((unsigned)nanoToMilli(elapsedNs), master->flags&SOAPFencoding?true:false);
+                ColumnProvider * meta = (ColumnProvider*)CreateColumnProvider((unsigned)nanoToMilli(timer.elapsedNs()), master->flags&SOAPFencoding?true:false);
                 processResponse(url, response, meta);
                 delete meta;
+
+                if (persistentHandler)
+                {
+                    if (isReused)
+                        persistentHandler->doneUsing(socket, keepAlive);
+                    else if (keepAlive)
+                        persistentHandler->add(socket, &ep, proto);
+                }
                 break;
             }
             catch (IReceivedRoxieException *e)
             {
+                if (persistentHandler && isReused)
+                    persistentHandler->doneUsing(socket, false);
                 // server busy ... Sleep and retry
                 if (e->errorCode() == 1001)
                 {
@@ -2194,6 +2268,8 @@ public:
             }
             catch (IException *e)
             {
+                if (persistentHandler && isReused)
+                    persistentHandler->doneUsing(socket, false);
                 if (master->timeLimitExceeded)
                 {
                     processException(url, inputRows, e);
@@ -2225,12 +2301,16 @@ public:
             }
             catch (std::exception & es)
             {
+                if (persistentHandler && isReused)
+                    persistentHandler->doneUsing(socket, false);
                 if(dynamic_cast<std::bad_alloc *>(&es))
                     throw MakeStringException(-1, "std::exception: out of memory (std::bad_alloc) in CWSCAsyncFor processQuery");
                 throw MakeStringException(-1, "std::exception: standard library exception (%s) in CWSCAsyncFor processQuery",es.what());
             }
             catch (...)
             {
+                if (persistentHandler && isReused)
+                    persistentHandler->doneUsing(socket, false);
                 throw MakeStringException(-1, "Unknown exception in processQuery");
             }
         }
@@ -2243,5 +2323,7 @@ public:
 
 IWSCAsyncFor * createWSCAsyncFor(CWSCHelper * _master, IXmlWriterExt &_xmlWriter, ConstPointerArray &_inputRows, PTreeReaderOptions _options)
 {
+    if (!persistentInitDone)
+        initPersistentHandler();
     return new CWSCAsyncFor(_master, _xmlWriter, _inputRows, _options);
 }

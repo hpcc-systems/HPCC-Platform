@@ -57,6 +57,7 @@ include_directories (
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
          ${CMAKE_BINARY_DIR}/esp/services/ws_codesign
+         ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
 ADD_DEFINITIONS( -D_USRDLL )
