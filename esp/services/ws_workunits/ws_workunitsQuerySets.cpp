@@ -1937,32 +1937,41 @@ bool CWsWorkunitsEx::onWURecreateQuery(IEspContext &context, IEspWURecreateQuery
     return true;
 }
 
-
 bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRequest & req, IEspWUQueryDetailsResponse & resp)
 {
-    const char* querySet = req.getQuerySet();
-    const char* queryIdOrAlias = req.getQueryId();
-    bool  includeStateOnClusters = req.getIncludeStateOnClusters();
-    if (!querySet || !*querySet)
-        throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "QuerySet not specified");
-    if (!queryIdOrAlias || !*queryIdOrAlias)
-        throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "QueryId not specified");
+    try
+    {
+        CWUQueryDetailsReq request(req);
+        getWUQueryDetails(context, request, resp);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+void CWsWorkunitsEx::getWUQueryDetails(IEspContext &context, CWUQueryDetailsReq &req, IEspWUQueryDetailsResponse &resp)
+{
+    const char *querySet = req.getQuerySet();
+    if (isEmptyString(querySet))
+        throw makeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "QuerySet not specified");
+    const char *queryIdOrAlias = req.getQueryIdOrAlias();
+    if (isEmptyString(queryIdOrAlias))
+        throw makeStringException(ECLWATCH_QUERYID_NOT_FOUND, "QueryId not specified");
 
     Owned<IPropertyTree> queryRegistry = getQueryRegistry(querySet, false);
     Owned<IPropertyTree> query = resolveQueryAlias(queryRegistry, queryIdOrAlias);
     if (!query)
-    {
-        DBGLOG("No matching Query");
-        throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND,"No matching query for given id or alias %s.", queryIdOrAlias);
-    }
+        throw makeStringExceptionV(ECLWATCH_QUERYID_NOT_FOUND, "No matching query for given id or alias %s.", queryIdOrAlias);
+
     const char* queryId = query->queryProp("@id");
     resp.setQueryId(queryId);
     resp.setQuerySet(querySet);
     PROGLOG("WUQueryDetails: QuerySet %s, query %s", querySet, queryId);
 
-    const char* queryName = query->queryProp("@name");
     const char* wuid = query->queryProp("@wuid");
-    resp.setQueryName(queryName);
+    resp.setQueryName(query->queryProp("@name"));
     resp.setWuid(wuid);
     resp.setDll(query->queryProp("@dll"));
     resp.setPublishedBy(query->queryProp("@publishedBy"));
@@ -1972,47 +1981,76 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
     double version = context.getClientVersion();
     if (version >= 1.46)
     {
-        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
-        if(!cw)
-            throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT,"Cannot open workunit %s.",wuid);
-        ensureWsWorkunitAccess(context, *cw, SecAccess_Read);
-
         if (query->hasProp("@priority"))
             resp.setPriority(getQueryPriorityName(query->getPropInt("@priority")));
         resp.setIsLibrary(query->getPropBool("@isLibrary"));
-        SCMStringBuffer s;
-        resp.setWUSnapShot(cw->getSnapshot(s).str()); //Label
 
-        stat_type whenCompiled;
-        if (cw->getStatistic(whenCompiled, "", StWhenCompiled))
-        {
-            formatStatistic(s.s.clear(), whenCompiled, StWhenCompiled);
-            resp.setCompileTime(s.str());
-        }
-
-        StringArray libUsed, graphIds;
-        Owned<IConstWULibraryIterator> libs = &cw->getLibraries();
-        ForEach(*libs)
-            libUsed.append(libs->query().getName(s).str());
-        if (libUsed.length())
-            resp.setLibrariesUsed(libUsed);
         if (version < 1.64)
         {
+            StringArray graphIds;
             unsigned numGraphIds = getGraphIdsByQueryId(querySet, queryId, graphIds);
             resp.setCountGraphs(numGraphIds);
             if (numGraphIds > 0)
                 resp.setGraphIds(graphIds);
         }
+
+        if (req.getIncludeWUDetails())
+        {
+            Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+            Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
+            if (!cw)
+                throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT,"Cannot open workunit %s.",wuid);
+            ensureWsWorkunitAccess(context, *cw, SecAccess_Read);
+    
+            SCMStringBuffer s;
+            resp.setWUSnapShot(cw->getSnapshot(s).str()); //Label
+    
+            stat_type whenCompiled;
+            if (cw->getStatistic(whenCompiled, "", StWhenCompiled))
+            {
+                formatStatistic(s.s.clear(), whenCompiled, StWhenCompiled);
+                resp.setCompileTime(s.str());
+            }
+    
+            StringArray libUsed;
+            Owned<IConstWULibraryIterator> libs = &cw->getLibraries();
+            ForEach(*libs)
+                libUsed.append(libs->query().getName(s).str());
+            if (libUsed.length())
+                resp.setLibrariesUsed(libUsed);
+
+            if (version >= 1.50)
+            {
+                WsWuInfo winfo(context, cw);
+                resp.setResourceURLCount(winfo.getResourceURLCount());
+                if (version >= 1.64)
+                {
+                    IArrayOf<IEspECLTimer> timers;
+                    winfo.doGetTimers(timers); //Graph Duration
+                    if (timers.length())
+                        resp.setWUTimers(timers);
+
+                    IArrayOf<IEspECLGraph> graphs;
+                    winfo.doGetGraphs(graphs); //Graph Name, Label, Started, Finished, Type
+                    unsigned numGraphIds = graphs.length();
+                    resp.setCountGraphs(numGraphIds);
+                    if (numGraphIds > 0)
+                        resp.setWUGraphs(graphs);
+                }
+            }
+        }
     }
 
-    StringArray logicalFiles;
-    IArrayOf<IEspQuerySuperFile> superFiles;
-    getQueryFiles(context, wuid, queryId, querySet, logicalFiles, req.getIncludeSuperFiles() ? &superFiles : NULL);
-    if (logicalFiles.length())
-        resp.setLogicalFiles(logicalFiles);
-    if (superFiles.length())
-        resp.setSuperFiles(superFiles);
+    if (req.getIncludeWUQueryFiles())
+    {
+        StringArray logicalFiles;
+        IArrayOf<IEspQuerySuperFile> superFiles;
+        getQueryFiles(context, wuid, queryId, querySet, logicalFiles, req.getIncludeSuperFiles() ? &superFiles : nullptr);
+        if (logicalFiles.length())
+            resp.setLogicalFiles(logicalFiles);
+        if (superFiles.length())
+            resp.setSuperFiles(superFiles);
+    }
 
     if (version >= 1.42)
     {
@@ -2023,7 +2061,8 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
         else
             resp.setActivated(true);
     }
-    if (includeStateOnClusters && (version >= 1.43))
+    
+    if (req.getIncludeStateOnClusters() && (version >= 1.43))
     {
         StringArray queryIds;
         queryIds.append(queryId);
@@ -2036,25 +2075,7 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
             resp.setClusters(clusterStates);
         }
     }
-    if (version >= 1.50)
-    {
-        WsWuInfo winfo(context, wuid);
-        resp.setResourceURLCount(winfo.getResourceURLCount());
-        if (version >= 1.64)
-        {
-            IArrayOf<IEspECLTimer> timers;
-            winfo.doGetTimers(timers); //Graph Duration
-            if (timers.length())
-                resp.setWUTimers(timers);
 
-            IArrayOf<IEspECLGraph> graphs;
-            winfo.doGetGraphs(graphs); //Graph Name, Label, Started, Finished, Type
-            unsigned numGraphIds = graphs.length();
-            resp.setCountGraphs(numGraphIds);
-            if (numGraphIds > 0)
-                resp.setWUGraphs(graphs);
-        }
-    }
     if (req.getIncludeWsEclAddresses())
     {
         StringArray wseclAddresses;
@@ -2107,8 +2128,44 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
         }
         resp.setWsEclAddresses(wseclAddresses);
     }
+}
 
+bool CWsWorkunitsEx::onWUQueryDetailsLightWeight(IEspContext &context, IEspWUQueryDetailsLightWeightRequest & req, IEspWUQueryDetailsResponse & resp)
+{
+    try
+    {
+        CWUQueryDetailsReq request(req);
+        getWUQueryDetails(context, request, resp);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
     return true;
+}
+
+CWUQueryDetailsReq::CWUQueryDetailsReq(IEspWUQueryDetailsRequest &req)
+{
+    querySet = req.getQuerySet();
+    queryIdOrAlias = req.getQueryId();
+    includeWUDetails = req.getIncludeWUDetails();
+    IncludeWUQueryFiles = req.getIncludeWUQueryFiles();
+    includeSuperFiles = req.getIncludeSuperFiles();
+    includeWsEclAddresses = req.getIncludeWsEclAddresses();
+    includeStateOnClusters = req.getIncludeStateOnClusters();
+    checkAllNodes = req.getCheckAllNodes();
+}
+
+CWUQueryDetailsReq::CWUQueryDetailsReq(IEspWUQueryDetailsLightWeightRequest &req)
+{
+    querySet = req.getQuerySet();
+    queryIdOrAlias = req.getQueryId();
+    includeWUDetails = req.getIncludeWUDetails();
+    IncludeWUQueryFiles = req.getIncludeWUQueryFiles();
+    includeSuperFiles = req.getIncludeSuperFiles();
+    includeWsEclAddresses = req.getIncludeWsEclAddresses();
+    includeStateOnClusters = req.getIncludeStateOnClusters();
+    checkAllNodes = req.getCheckAllNodes();
 }
 
 int EspQuerySuperFileCompareFunc(IInterface * const *i1, IInterface * const *i2)
