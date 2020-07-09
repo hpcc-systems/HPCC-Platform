@@ -5,6 +5,7 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/dom",
     "dojo/dom-form",
+    "dojo/_base/array",
 
     "dijit/registry",
 
@@ -24,7 +25,8 @@ define([
 
     "dojox/form/PasswordValidator"
 
-], function (declare, lang, i18n, nlsHPCC, dom, domForm,
+],
+function (declare, lang, i18n, nlsHPCC, dom, domForm, arrayUtil,
     registry,
     _Widget, WsAccount,
     template) {
@@ -51,7 +53,9 @@ define([
 
         //  Hitched actions  ---
         _onSave: function (event) {
-            var dialog = dijit.byId("stubUserDialog");
+            var context = this;
+            var dialog = this.params.Widget;
+
             if (this.userForm.validate()) {
                 var formInfo = domForm.toObject(this.id + "UserForm");
                 WsAccount.UpdateUser({
@@ -61,6 +65,12 @@ define([
                         oldpass: formInfo.oldPassword,
                         newpass1: formInfo.newPassword,
                         newpass2: formInfo.newPassword
+                    }
+                }).then(function (response) {
+                    if (lang.exists("UpdateUserResponse", response)) {
+                        arrayUtil.forEach(context.userForm.getDescendants(), function (item, idx) {
+                            item.set('value', "");
+                        });
                     }
                 });
                 dialog.hide();
