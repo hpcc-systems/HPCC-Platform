@@ -8449,11 +8449,8 @@ IConstWUScopeIterator & CLocalWorkUnit::getScopeIterator(const WuScopeFilter & f
     Owned<CompoundStatisticsScopeIterator> compoundIter = new CompoundStatisticsScopeIterator(filter);
     if (sources & SSFsearchGlobalStats)
     {
-        {
-            CriticalBlock block(crit);
-            statistics.loadBranch(p,"Statistics");
-        }
-
+        CriticalBlock block(crit);
+        statistics.loadBranch(p,"Statistics");
         Owned<IConstWUScopeIterator> localStats(new WorkUnitStatisticsScopeIterator(statistics, filter.queryIterFilter()));
         compoundIter->addIter(localStats);
     }
