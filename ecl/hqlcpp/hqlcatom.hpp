@@ -50,6 +50,8 @@ extern IAtom * dictionaryAtom;
 extern IAtom * eclAtom;
 extern IAtom * endAtom;
 extern IAtom * ensureCapacityAtom;
+extern IAtom * externAtom;
+extern IAtom * externCAtom;
 extern IAtom * fileAtom;
 extern IAtom * forceAllCheckAtom;
 extern IAtom * funnelAtom;
