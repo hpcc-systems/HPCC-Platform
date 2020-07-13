@@ -278,6 +278,7 @@ class ECLFile:
         self.wuid = wuid.strip()
 
     def addResults(self, results, wuid):
+        logging.debug("%3d. addResults (results:'%s', wuid:'%s')", self.taskId, results,  wuid)
         filename = self.getResults()
         self.wuid = wuid
         if not os.path.isdir(self.dir_r):
