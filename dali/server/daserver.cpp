@@ -377,9 +377,8 @@ int main(int argc, const char* argv[])
 #endif
         setAllocHook(true);
 
-#ifdef _CONTAINERIZED
-        serverConfig.setown(loadConfiguration(defaultYaml, argv, "dali", "DALI", "daliconf.xml", nullptr));
-#else
+        serverConfig.setown(loadConfiguration(defaultYaml, argv, "dali", "DALI", DALICONF, nullptr));
+#ifndef _CONTAINERIZED
         Owned<IFile> sentinelFile = createSentinelTarget();
         removeSentinelFile(sentinelFile);
 	
@@ -401,13 +400,7 @@ int main(int argc, const char* argv[])
                 return EXIT_FAILURE;
             }
         }
-
-        OwnedIFile confIFile = createIFile(DALICONF);
-        if (confIFile->exists())
-            serverConfig.setown(createPTreeFromXMLFile(DALICONF));
 #endif
-        if (!serverConfig)
-            serverConfig.setown(createPTree());
 
 #ifndef _CONTAINERIZED
         ILogMsgHandler * fileMsgHandler;
