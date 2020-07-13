@@ -2318,10 +2318,14 @@ void EclAgentWorkflowMachine::syncWorkflow()
 
 void EclAgentWorkflowMachine::reportContingencyFailure(char const * type, IException * e)
 {
-    StringBuffer msg;
-    msg.append(type).append(" clause failed (execution will continue): ").append(e->errorCode()).append(": ");
-    e->errorMessage(msg);
-    agent.logException(SeverityWarning, MSGAUD_user, e->errorCode(), msg.str(), false);
+    ErrorSeverity severity = agent.wuRead->getWarningSeverity(e->errorCode(), SeverityWarning);
+    if (severity != SeverityIgnore)
+    {
+        StringBuffer msg;
+        msg.append(type).append(" clause failed (execution will continue): ").append(e->errorCode()).append(": ");
+        e->errorMessage(msg);
+        agent.logException(severity, MSGAUD_user, e->errorCode(), msg.str(), false);
+    }
 }
 
 void EclAgentWorkflowMachine::checkForAbort(unsigned wfid, IException * handling)
