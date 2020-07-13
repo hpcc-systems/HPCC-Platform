@@ -199,6 +199,7 @@ public:
 class CFileCrcList
 {
     CIpTable dafilesrvips;
+    Owned<IUserDescriptor> udesc;
 public:
     bool &stopped;
     CIArrayOf<CFileCrcItem> list;
@@ -206,6 +207,10 @@ public:
     CFileCrcList(bool &_stopped)
         : stopped(_stopped)
     {
+        StringBuffer userName;
+        serverConfig->getProp("@sashaUser", userName);
+        udesc.setown(createUserDescriptor());
+        udesc->set(userName.str(), nullptr);
     }
 
     void add(RemoteFilename &filename,unsigned partno,unsigned copy,unsigned crc)
@@ -221,7 +226,7 @@ public:
 
     void verifyFile(const char *name,CDateTime *cutoff)
     {
-        Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(name,UNKNOWN_USER,false,false,false,nullptr,defaultPrivilegedUser);
+        Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(name,udesc,false,false,false,nullptr,defaultPrivilegedUser);
         if (!file)
             return;
         IPropertyTree &fileprops = file->queryAttributes();
@@ -343,7 +348,7 @@ public:
             }
         }
         if (!stopped) {
-            file.setown(queryDistributedFileDirectory().lookup(name,UNKNOWN_USER,false,false,false,nullptr,defaultPrivilegedUser));
+            file.setown(queryDistributedFileDirectory().lookup(name,udesc,false,false,false,nullptr,defaultPrivilegedUser));
             if (!file)
                 return;
             if (afor.ok) {
@@ -365,6 +370,7 @@ class CSashaVerifierServer: public ISashaServer, public Thread
 
     bool stopped;
     Semaphore stopsem;
+    Owned<IUserDescriptor> udesc;
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -372,6 +378,11 @@ public:
         : Thread("CSashaVerifierServer")
     {
         stopped = false;
+
+        StringBuffer userName;
+        serverConfig->getProp("@sashaUser", userName);
+        udesc.setown(createUserDescriptor());
+        udesc->set(userName.str(), nullptr);
     }
 
     ~CSashaVerifierServer()
@@ -411,7 +422,7 @@ public:
             try {
                 PROGLOG("VERIFIER: Started");
                 CFileCrcList filelist(stopped);
-                Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator("*",UNKNOWN_USER,true,false);//MORE:Pass IUserDescriptor
+                Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator("*",udesc,true,false);
                 if (iter) {
                     CDateTime mincutoff;
                     mincutoff.setNow();
