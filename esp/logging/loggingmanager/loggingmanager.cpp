@@ -106,7 +106,7 @@ bool CLoggingManager::updateLog(IEspLogEntry* entry, StringBuffer& status)
     if (entry->getLogInfoTree())
         return updateLog(entry->getEspContext(), entry->getOption(), entry->getLogInfoTree(), entry->getExtraLog(), status);
 
-    return updateLog(entry->getEspContext(), entry->getOption(), entry->getUserContextTree(), entry->getUserRequestTree(),
+    return updateLog(entry->getEspContext(), entry->getOption(), entry->getUserContextTree(), entry->getUserRequestTree(), entry->getScriptValuesTree(),
         entry->getBackEndReq(), entry->getBackEndResp(), entry->getUserResp(), entry->getLogDatasets(), status);
 }
 
@@ -156,7 +156,7 @@ bool CLoggingManager::updateLog(IEspContext* espContext, const char* option, IPr
     return bRet;
 }
 
-bool CLoggingManager::updateLog(IEspContext* espContext, const char* option, IPropertyTree* userContext, IPropertyTree* userRequest,
+bool CLoggingManager::updateLog(IEspContext* espContext, const char* option, IPropertyTree* userContext, IPropertyTree* userRequest, IPropertyTree *scriptValues,
     const char* backEndReq, const char* backEndResp, const char* userResp, const char* logDatasets, StringBuffer& status)
 {
     if (!initialized)
@@ -189,6 +189,8 @@ bool CLoggingManager::updateLog(IEspContext* espContext, const char* option, IPr
         }
         Owned<IEspUpdateLogRequestWrap> req =  new CUpdateLogRequestWrap(nullptr, option, espContextTree.getClear(), LINK(userContext), LINK(userRequest),
             backEndReq, backEndResp, userResp, logDatasets);
+        if (scriptValues)
+            req->setScriptValuesTree(scriptValues);
         Owned<IEspUpdateLogResponse> resp =  createUpdateLogResponse();
         bRet = updateLog(espContext, *req, *resp, status);
     }
@@ -218,6 +220,50 @@ bool CLoggingManager::updateLog(IEspContext* espContext, IEspUpdateLogRequestWra
     return bRet;
 }
 
+static bool checkEnabledLogVariant(IPropertyTree *scriptValues, const char *profile, const char *tracename, const char *group, const char *logtype)
+{
+    bool checkProfile = !isEmptyString(profile);
+    bool checkType = !isEmptyString(logtype);
+
+    if (checkProfile && (isEmptyString(group) || !strieq(profile, group)))
+    {
+        ESPLOG(LogNormal, "'%s' log entry disabled - log profile '%s' disabled", tracename, profile);
+        return false;
+    }
+    else if (checkType)
+    {
+        VStringBuffer xpath("@disable-log-type-%s", logtype);
+        if (scriptValues->getPropBool(xpath, false))
+        {
+            ESPLOG(LogNormal, "'%s' log entry disabled - log type '%s' disabled", tracename, logtype);
+            return false;
+        }
+     }
+    return true;
+}
+
+bool checkSkipThreadQueue(IPropertyTree *scriptValues, IUpdateLogThread &logthread)
+{
+    if (!scriptValues)
+        return false;
+    Linked<IEspLogAgent> agent = logthread.getLogAgent(); //badly named function get functions should link
+    if (!agent)
+        return false;
+
+    const char *profile = scriptValues->queryProp("@profile");
+    Owned<IEspLogAgentVariantIterator> variants = agent->getVariants();
+    if (isEmptyString(profile) && !variants->first())
+        return false;
+
+    ForEach(*variants)
+    {
+        const IEspLogAgentVariant& variant = variants->query();
+        if (checkEnabledLogVariant(scriptValues, profile, variant.getName(), variant.getGroup(), variant.getType()))
+            return false;
+    }
+    return true;
+}
+
 bool CLoggingManager::updateLog(IEspContext* espContext, IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp)
 {
     if (!initialized)
@@ -228,6 +274,7 @@ bool CLoggingManager::updateLog(IEspContext* espContext, IEspUpdateLogRequestWra
         if (espContext)
             espContext->addTraceSummaryTimeStamp(LogMin, "LMgr:startQLog");
 
+        Linked<IPropertyTree> scriptValues = req.getScriptValuesTree();
         if (oneTankFile || decoupledLogging)
         {
             Owned<CLogRequestInFile> reqInFile = new CLogRequestInFile();
@@ -253,6 +300,8 @@ bool CLoggingManager::updateLog(IEspContext* espContext, IEspUpdateLogRequestWra
                     IUpdateLogThread* loggingThread = loggingAgentThreads[x];
                     if (loggingThread->hasService(LGSTUpdateLOG))
                     {
+                        if (checkSkipThreadQueue(scriptValues, *loggingThread))
+                            continue;
                         loggingThread->queueLog(logRequest);
                     }
                 }
@@ -265,6 +314,11 @@ bool CLoggingManager::updateLog(IEspContext* espContext, IEspUpdateLogRequestWra
                 IUpdateLogThread* loggingThread = loggingAgentThreads[x];
                 if (loggingThread->hasService(LGSTUpdateLOG))
                 {
+                    //leave the fact that a script can control the thread queue as an option undocumented, naming scheme could change,
+                    //  controlling the queue is a very low level mechanism and should be frowned upon
+                    //  once scripts can communicate with the agent that should be the mechanism to skip a particular type of logging
+                    if (checkSkipThreadQueue(scriptValues, *loggingThread))
+                        continue;
                     loggingThread->queueLog(&req);
                 }
             }

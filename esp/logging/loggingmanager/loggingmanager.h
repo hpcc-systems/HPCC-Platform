@@ -31,6 +31,7 @@ interface IEspLogEntry  : implements IInterface
     virtual void setOwnUserContextTree(IPropertyTree* tree) = 0;
     virtual void setOwnUserRequestTree(IPropertyTree* tree) = 0;
     virtual void setOwnLogInfoTree(IPropertyTree* tree) = 0;
+    virtual void setOwnScriptValuesTree(IPropertyTree* extra) = 0;
     virtual void setOwnExtraLog(IInterface* extra) = 0;
     virtual void setOption(const char* ptr) = 0;
     virtual void setLogContent(const char* ptr) = 0;
@@ -43,6 +44,7 @@ interface IEspLogEntry  : implements IInterface
     virtual IPropertyTree* getUserContextTree() = 0;
     virtual IPropertyTree* getUserRequestTree() = 0;
     virtual IPropertyTree* getLogInfoTree() = 0;
+    virtual IPropertyTree* getScriptValuesTree() = 0;
     virtual IInterface* getExtraLog() = 0;
     virtual const char* getOption() = 0;
     virtual const char* getLogContent() = 0;
