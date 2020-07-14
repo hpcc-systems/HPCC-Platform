@@ -134,6 +134,7 @@ private:
 #define WUINFO_IncludeHelpers           0x8000
 #define WUINFO_IncludeAllowedClusters   0x10000
 #define WUINFO_IncludeTotalClusterTime  0x20000
+#define WUINFO_IncludeServiceNames      0x40000
 #define WUINFO_All                      0xFFFFFFFF
 
 class WsWuInfo
@@ -199,6 +200,7 @@ public:
     bool getResultEclSchemas(IConstWUResult &r, IArrayOf<IEspECLSchemaItem>& schemas);
     void getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, unsigned long flags);
     void getStats(const WuScopeFilter & filter, const StatisticsFilter& statsFilter, bool createDescriptions, IArrayOf<IEspWUStatisticItem>& statistics);
+    void getServiceNames(IEspECLWorkunit &info, unsigned long flags);
 
     void getWorkunitEclAgentLog(const char* eclAgentInstance, const char* agentPid, MemoryBuffer& buf, const char* outFile);
     void getWorkunitThorLog(const char *processName, MemoryBuffer& buf, const char* outFile);
