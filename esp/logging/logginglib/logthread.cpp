@@ -622,6 +622,89 @@ void CLogRequestReader::threadmain()
     PROGLOG("LogRequest Reader Thread terminated.");
 }
 
+void CLogRequestReader::reportAckedLogFiles(StringArray& ackedLogFiles)
+{
+    CriticalBlock b(crit);
+    for (auto r : ackedLogFileCheckList)
+        ackedLogFiles.append(r.c_str());
+    ESPLOG(LogMax, "#### The reportAckedLogFiles() done.");
+}
+
+//This method is used to setup an acked file list which contains the acked files for all agents.
+//The first agent reports all the acked files in that agent using the reportAckedLogFiles().
+//Using this method, the list of the acked files is given to the rest agents. If any file inside
+//the list has not been acked in the rest agents, the file should be removed from the list.
+void CLogRequestReader::removeUnknownAckedLogFiles(StringArray& ackedLogFiles)
+{
+    CriticalBlock b(crit);
+    ForEachItemInRev(i, ackedLogFiles)
+    {
+        const char* node = ackedLogFiles.item(i);
+        if (ackedLogFileCheckList.find(node) == ackedLogFileCheckList.end())
+            ackedLogFiles.remove(i);
+    }
+    ESPLOG(LogMax, "#### The removeUnknownAckedLogFiles() done.");
+}
+
+void CLogRequestReader::addNewAckedFileList(const char* list, StringArray& fileNames)
+{
+    OwnedIFile newList = createIFile(list);
+    if (!newList)
+        throw makeStringExceptionV(EspLoggingErrors::UpdateLogFailed, "Failed to access %s", list);
+    if (newList->exists())
+    {
+        if (!newList->remove())
+            throw makeStringExceptionV(EspLoggingErrors::UpdateLogFailed, "Failed to remove old %s", list);
+    }
+    OwnedIFileIO newListIO = newList->open(IFOwrite);
+    if (!newListIO)
+        throw makeStringExceptionV(EspLoggingErrors::UpdateLogFailed, "Failed to open %s", list);
+
+    offset_t pos = 0;
+    ForEachItemIn(i, fileNames)
+    {
+        const char* fileName = fileNames.item(i);
+        StringBuffer line(fileName);
+        line.append("\r\n");
+
+        unsigned len = line.length();
+        newListIO->write(pos, len, line.str());
+        pos += len;
+        PROGLOG("Add AckedLogFile %s to %s", fileName, list);
+    }
+}
+//The file names in the fileNames should be removed from both ackedLogFileCheckList
+//and settings->ackedFileList.
+void CLogRequestReader::cleanAckedLogFiles(StringArray& fileNames)
+{
+    CriticalBlock b(crit);
+
+    //Find which file should not be removed from ackedLogFileCheckList.
+    StringArray fileNamesToKeep;
+    for (auto r : ackedLogFileCheckList)
+    {
+        if (!fileNames.contains(r.c_str()))
+            fileNamesToKeep.append(r.c_str());
+    }
+
+    //Create a temp file with the fileNamesToKeep for replacing the settings->ackedFileList
+    VStringBuffer tempFileName("%s.tmp", settings->ackedFileList.str());
+    addNewAckedFileList(tempFileName, fileNamesToKeep);
+
+    //Replace the settings->ackedFileList with the temp file
+    renameFile(settings->ackedFileList, tempFileName, true);
+    PROGLOG("Rename %s to %s", tempFileName.str(), settings->ackedFileList.str());
+
+    //Create new ackedLogFileCheckList based on fileNamesToKeep
+    ackedLogFileCheckList.clear();
+    ForEachItemIn(j, fileNamesToKeep)
+    {
+        const char* name = fileNamesToKeep.item(j);
+        ackedLogFileCheckList.insert(name);
+        PROGLOG("Add %s to new ackedLogFileCheckList", name);
+    }
+}
+
 void CLogRequestReader::readAcked(const char* fileName, std::set<std::string>& acked)
 {
     Owned<IFile> f = createIFile(fileName);
