@@ -241,15 +241,15 @@ typedef unsigned LogMsgDetail;
  * It represents the lowest logging level (detail) required to output
  * messages of the given category.
  */
-constexpr int CriticalMsgThreshold    = 1;  //Use to declare categories reporting critical events (log level => 1)
-constexpr int FatalMsgThreshold       = 1;  //Use to declare categories reporting Fatal events (log level => 1)
-constexpr int ErrMsgThreshold         = 10; //Use to declare categories reporting Err messages (log level => 10)
-constexpr int WarnMsgThreshold        = 20; //Use to declare categories reporting Warn messages (log level => 20)
-constexpr int AudMsgThreshold         = 30; //Use to declare categories reporting Aud messages (log level => 30)
-constexpr int ProgressMsgThreshold    = 50; //Use to declare categories reporting Progress messages (log level => 50)
-constexpr int InfoMsgThreshold        = 60; //Use to declare categories reporting Info messages (log level => 60)
-constexpr int DebugMsgThreshold       = 80; //Use to declare categories reporting Debug messages (log level => 80)
-constexpr int ExtraneousMsgThreshold  = 90; //Use to declare categories reporting Extraneous messages (log level => 90)
+constexpr LogMsgDetail CriticalMsgThreshold    = 1;  //Use to declare categories reporting critical events (log level => 1)
+constexpr LogMsgDetail FatalMsgThreshold       = 1;  //Use to declare categories reporting Fatal events (log level => 1)
+constexpr LogMsgDetail ErrMsgThreshold         = 10; //Use to declare categories reporting Err messages (log level => 10)
+constexpr LogMsgDetail WarnMsgThreshold        = 20; //Use to declare categories reporting Warn messages (log level => 20)
+constexpr LogMsgDetail AudMsgThreshold         = 30; //Use to declare categories reporting Aud messages (log level => 30)
+constexpr LogMsgDetail ProgressMsgThreshold    = 50; //Use to declare categories reporting Progress messages (log level => 50)
+constexpr LogMsgDetail InfoMsgThreshold        = 60; //Use to declare categories reporting Info messages (log level => 60)
+constexpr LogMsgDetail DebugMsgThreshold       = 80; //Use to declare categories reporting Debug messages (log level => 80)
+constexpr LogMsgDetail ExtraneousMsgThreshold  = 90; //Use to declare categories reporting Extraneous messages (log level => 90)
 
 // Typedef for LogMsgSysInfo
 
@@ -829,7 +829,33 @@ constexpr LogMsgCategory MCauditInfo(MSGAUD_audit, MSGCLS_information, AudMsgThr
 constexpr LogMsgCategory MCstats(MSGAUD_operator, MSGCLS_progress, ProgressMsgThreshold);
 constexpr LogMsgCategory MCoperatorInfo(MSGAUD_operator, MSGCLS_information, InfoMsgThreshold);
 
-inline LogMsgCategory MCexception(IException * e, LogMsgClass cls = MSGCLS_error) { return LogMsgCategory((e)->errorAudience(),cls); }
+/*
+ * Function to determine log level (detail) for exceptions, based on log message class
+ */
+inline LogMsgDetail mapClassToDefaultDetailLevel(LogMsgClass cls)
+{
+    switch (cls)
+    {
+    case MSGCLS_disaster:
+    case MSGCLS_all:
+        return FatalMsgThreshold;
+    case MSGCLS_error:
+        return ErrMsgThreshold;
+    case MSGCLS_warning:
+        return WarnMsgThreshold;
+    case MSGCLS_information:
+        return InfoMsgThreshold;
+    case MSGCLS_progress:
+        return ProgressMsgThreshold;
+    default:
+        return DefaultDetail;
+    }
+}
+
+inline LogMsgCategory MCexception(IException * e, LogMsgClass cls = MSGCLS_error)
+{
+    return LogMsgCategory((e)->errorAudience(),cls, mapClassToDefaultDetailLevel(cls));
+}
 
 #define MCerror MCuserError
 #define MCwarning MCuserWarning
