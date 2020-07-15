@@ -88,6 +88,7 @@ ESPservice [
     ESPmethod [cache_group("ESPWsWUQS"), cache_seconds(60), resp_xsl_default("/esp/xslt/WUQuerysets.xslt")] WUQuerysets(WUQuerysetsRequest, WUQuerysetsResponse);
     ESPmethod [cache_group("ESPWsWUQS"), cache_seconds(60), resp_xsl_default("/esp/xslt/WUQuerysetQueries.xslt")] WUQuerysetDetails(WUQuerySetDetailsRequest, WUQuerySetDetailsResponse);
     ESPmethod [cache_group("ESPWsWUQS"), cache_seconds(60), resp_xsl_default("/esp/xslt/WUQueryDetails.xslt")] WUQueryDetails(WUQueryDetailsRequest, WUQueryDetailsResponse);
+    ESPmethod [cache_group("ESPWsWUQS"), cache_seconds(60), min_ver("1.78")] WUQueryDetailsLightWeight(WUQueryDetailsLightWeightRequest, WUQueryDetailsResponse);
     ESPmethod [cache_seconds(60)] WUMultiQuerysetDetails(WUMultiQuerySetDetailsRequest, WUMultiQuerySetDetailsResponse);
     ESPmethod [clear_cache_group("ESPWsWUQS"), min_ver("1.71")] WUQuerysetImport(WUQuerysetImportRequest, WUQuerysetImportResponse);
     ESPmethod [cache_group("ESPWsWUQS"), min_ver("1.71")] WUQuerysetExport(WUQuerysetExportRequest, WUQuerysetExportResponse);

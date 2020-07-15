@@ -177,6 +177,29 @@ struct WUShowScheduledFilters
         jobName(_jobName), eventName(_eventName), eventText(_eventText) {};
 };
 
+class CWUQueryDetailsReq
+{
+    StringAttr querySet, queryIdOrAlias;
+    bool includeWUDetails = false;
+    bool IncludeWUQueryFiles = false;
+    bool includeSuperFiles = false;
+    bool includeWsEclAddresses = false;
+    bool includeStateOnClusters = false;
+    bool checkAllNodes = false;
+public:
+    CWUQueryDetailsReq(IEspWUQueryDetailsRequest &req);
+    CWUQueryDetailsReq(IEspWUQueryDetailsLightWeightRequest &req);
+
+    const char *getQuerySet() const { return querySet.get(); }
+    const char *getQueryIdOrAlias() const { return queryIdOrAlias.get(); }
+    const bool getIncludeWUDetails() const { return includeWUDetails; }
+    const bool getIncludeWUQueryFiles() const { return IncludeWUQueryFiles; }
+    const bool getIncludeSuperFiles() const { return includeSuperFiles; }
+    const bool getIncludeWsEclAddresses() const { return includeWsEclAddresses; }
+    const bool getIncludeStateOnClusters() const { return includeStateOnClusters; }
+    const bool getCheckAllNodes() const { return checkAllNodes; }
+};
+
 class CWsWorkunitsEx : public CWsWorkunits
 {
 public:
@@ -223,6 +246,7 @@ public:
     bool onWUCopyQuerySet(IEspContext &context, IEspWUCopyQuerySetRequest &req, IEspWUCopyQuerySetResponse &resp);
     bool onWUCopyLogicalFiles(IEspContext &context, IEspWUCopyLogicalFilesRequest &req, IEspWUCopyLogicalFilesResponse &resp);
     bool onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRequest & req, IEspWUQueryDetailsResponse & resp);
+    bool onWUQueryDetailsLightWeight(IEspContext &context, IEspWUQueryDetailsLightWeightRequest & req, IEspWUQueryDetailsResponse & resp);
     bool onWUListQueries(IEspContext &context, IEspWUListQueriesRequest &req, IEspWUListQueriesResponse &resp);
     bool onWUListQueriesUsingFile(IEspContext &context, IEspWUListQueriesUsingFileRequest &req, IEspWUListQueriesUsingFileResponse &resp);
     bool onWUQueryFiles(IEspContext &context, IEspWUQueryFilesRequest &req, IEspWUQueryFilesResponse &resp);
@@ -369,6 +393,7 @@ private:
     IDistributedFile *lookupLogicalName(IEspContext &contcontext, const char *logicalName);
     void getSuspendedQueriesByCluster(MapStringTo<bool> &suspendedByCluster, const char *querySet, const char *queryID, bool checkAllNodes);
     void addSuspendedQueryIDs(MapStringTo<bool> &suspendedQueryIDs, IPropertyTree *queriesOnCluster, const char *target);
+    void getWUQueryDetails(IEspContext &context, CWUQueryDetailsReq &req, IEspWUQueryDetailsResponse &resp);
 
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;
