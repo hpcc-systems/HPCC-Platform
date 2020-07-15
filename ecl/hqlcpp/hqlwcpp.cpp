@@ -1751,7 +1751,7 @@ void HqlCppWriter::generateStmt(IHqlStmt * stmt)
                     indent(-1);
                     indent().append("}");
                     IHqlExpression * extra = stmt->queryExpr(0);
-                    if (extra)
+                    if (extra && !extra->isAttribute())
                         generateExprCpp(extra);
                     newline();
                 }

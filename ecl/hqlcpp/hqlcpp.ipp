@@ -20,6 +20,7 @@
 #include <stdio.h>
 
 #include "jfile.hpp"
+#include "jexcept.hpp"
 #include "hqlattr.hpp"
 #include "hqlcpp.hpp"
 #include "hqlstmt.ipp"
@@ -463,6 +464,7 @@ public:
     unsigned numStmts() const;
     void setIncomplete(bool value);
     void setIncluded(bool value);
+    void addOption(IAtom * name) { dbgassertex(stmt); stmt->addOption(name); }
 
     inline bool isExecutedOnce() const { return (flags & MFsingle) != 0; }
 

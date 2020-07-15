@@ -581,8 +581,7 @@ define([
             return new Tooltip({
                 connectId: [this.id + "StackController_" + widgetID],
                 label: text,
-                showDelay: 1,
-                position: ["below"]
+                position: ["above"]
             });
         }
     });
