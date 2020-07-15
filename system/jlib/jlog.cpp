@@ -1002,14 +1002,24 @@ void FileLogMsgHandlerXML::addToPTree(IPropertyTree * tree) const
 }
 
 // RollingFileLogMsgHandler
+#define MIN_LOGFILE_SIZE_LIMIT 10000
+#define LOG_LINE_SIZE_ESTIMATE 80
 
-RollingFileLogMsgHandler::RollingFileLogMsgHandler(const char * _filebase, const char * _fileextn, unsigned _fields, bool _append, bool _flushes, const char *initialName, const char *_alias, bool daily)
-  : handle(0), messageFields(_fields), alias(_alias), filebase(_filebase), fileextn(_fileextn), append(_append), flushes(_flushes)
+RollingFileLogMsgHandler::RollingFileLogMsgHandler(const char * _filebase, const char * _fileextn, unsigned _fields, bool _append, bool _flushes, const char *initialName, const char *_alias, bool daily, long _maxLogFileSize)
+  : handle(0), messageFields(_fields), alias(_alias), filebase(_filebase), fileextn(_fileextn), append(_append), flushes(_flushes), maxLogFileSize(_maxLogFileSize)
 {
+    if (_maxLogFileSize)
+    {
+        if (_maxLogFileSize < MIN_LOGFILE_SIZE_LIMIT)                 // Setting the cap too low, doesn't work well
+            maxLogFileSize = MIN_LOGFILE_SIZE_LIMIT;
+        maxLogFileSize = _maxLogFileSize - (LOG_LINE_SIZE_ESTIMATE*2); // Trying to keep log file size below capped
+    };
+
     time_t tNow;
     time(&tNow);
     localtime_r(&tNow, &startTime);
     doRollover(daily, initialName);
+    checkRollover();
 }
 
 RollingFileLogMsgHandler::~RollingFileLogMsgHandler()
@@ -1047,8 +1057,6 @@ void RollingFileLogMsgHandler::addToPTree(IPropertyTree * tree) const
     tree->addPropTree("handler", handlerTree);
 }
 
-#define ROLLOVER_PERIOD 86400
-
 void RollingFileLogMsgHandler::checkRollover()
 {
     time_t tNow;
@@ -1059,6 +1067,24 @@ void RollingFileLogMsgHandler::checkRollover()
     {
         localtime_r(&tNow, &startTime);  // reset the start time for next rollover check
         doRollover(true);
+    }
+    else if (maxLogFileSize)
+    {
+        linesSinceSizeChecked++;
+        if (linesSinceSizeChecked > sizeCheckNext)
+        {
+            long fsize = ftell(handle);
+            if ((fsize==-1 && errno==EOVERFLOW) || (fsize >= maxLogFileSize))
+            {
+                localtime_r(&tNow, &startTime);
+                doRollover(false);
+            }
+            else
+                // Calc how many lines to skip before next log file size check
+                //  - using (LOG_LINE_SIZE_ESTIMATE*2) to ensure the size check is done well before limit
+                sizeCheckNext = (maxLogFileSize - fsize) / (LOG_LINE_SIZE_ESTIMATE*2);
+            linesSinceSizeChecked = 0;
+        }
     }
 }
 
@@ -2178,9 +2204,9 @@ ILogMsgHandler * getFileLogMsgHandler(const char * filename, const char * header
     return new FileLogMsgHandlerTable(filename, headertext, fields, append, flushes);
 }
 
-ILogMsgHandler * getRollingFileLogMsgHandler(const char * filebase, const char * fileextn, unsigned fields, bool append, bool flushes, const char *initialName, const char *alias, bool daily)
+ILogMsgHandler * getRollingFileLogMsgHandler(const char * filebase, const char * fileextn, unsigned fields, bool append, bool flushes, const char *initialName, const char *alias, bool daily, long maxLogSize)
 {
-    return new RollingFileLogMsgHandler(filebase, fileextn, fields, append, flushes, initialName, alias, daily);
+    return new RollingFileLogMsgHandler(filebase, fileextn, fields, append, flushes, initialName, alias, daily, maxLogSize);
 }
 
 ILogMsgHandler * getBinLogMsgHandler(const char * filename, bool append)
@@ -2867,6 +2893,7 @@ private:
     StringBuffer logDir;        //access via queryLogDir()
     StringBuffer aliasFileSpec; //access via queryAliasFileSpec()
     StringBuffer expandedLogSpec;//access via queryLogFileSpec()
+    long         maxLogFileSize = 0;
 
 private:
     void setDefaults()
@@ -2921,7 +2948,7 @@ public:
     void setAliasName(const char * _aliasName)   { aliasName.set(_aliasName); }
     void setLogDirSubdir(const char * _subdir)   { logDirSubdir.set(_subdir); }
     void setRolling(const bool _rolls)       { rolling = _rolls; }
-
+    void setMaxLogFileSize( const long _size)    { maxLogFileSize = _size; }
     //ILogMsgHandler fields
     void setAppend(const bool _append)       { append = _append; }
     void setFlushes(const bool _flushes)     { flushes = _flushes; }
@@ -2979,7 +3006,7 @@ public:
         ILogMsgHandler * lmh;
         if (rolling)
         {
-            lmh = getRollingFileLogMsgHandler(logFileSpec.str(), extension, msgFields, append, flushes, NULL, aliasFileSpec.str(), true);
+            lmh = getRollingFileLogMsgHandler(logFileSpec.str(), extension, msgFields, append, flushes, NULL, aliasFileSpec.str(), true, maxLogFileSize);
         }
         else
         {

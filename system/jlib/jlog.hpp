@@ -1213,6 +1213,7 @@ interface IComponentLogFileCreator : extends IInterface
     virtual void setAliasName(const char * _aliasName) = 0; //alias file name, overrides default of component name
     virtual void setLogDirSubdir(const char * _subdir) = 0; //subdir be appended to config log dir (eg "server" or "audit")
     virtual void setRolling(const bool _rolls) = 0;         //daily rollover to new file
+    virtual void setMaxLogFileSize(const long _size) = 0;   //maximum log file size (files too large rolled over)
     virtual void setCompleteFilespec(const char * _fs) = 0; //Full filespec (path/fn.ext), overrides everything else
 
     //ILogMsgHandler fields
