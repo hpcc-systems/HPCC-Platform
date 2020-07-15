@@ -1,0 +1,4 @@
+build/
+EN_US/common/
+node_modules/
+resources/docbook-xsl/
