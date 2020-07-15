@@ -33,6 +33,7 @@
 #define WFERR_ExecutingInWaitState      5100
 #define WFERR_ExecutingInBlockedState   5101
 #define WFERR_ExecutingItemMoreThanOnce 5103
+#define DEFAULT_PERSIST_COPIES (-1)
 
 class WORKUNIT_API WorkflowException : public IException, public CInterface
 {
@@ -74,6 +75,15 @@ private:
   *  - Support once, stored, persist workflow items.
   *
   */
+class WORKUNIT_API PersistVersion : public CInterface
+{
+public:
+    PersistVersion(char const * _logicalName, unsigned _eclCRC, unsigned __int64 _allCRC, bool _isFile) : logicalName(_logicalName), eclCRC(_eclCRC), allCRC(_allCRC), isFile(_isFile) {}
+    StringAttr logicalName;
+    unsigned eclCRC;
+    unsigned __int64 allCRC;
+    bool isFile;
+};
 class CCloneWorkflowItem;
 class WORKUNIT_API WorkflowMachine : public CInterface
 {
@@ -156,6 +166,17 @@ protected:
     void startContingency();
     void endContingency();
 
+    virtual IRemoteConnection *startPersist(const char * logicalName) = 0;
+    virtual void finishPersist(const char * persistName, IRemoteConnection *persistLock) = 0;
+    virtual void deleteLRUPersists(const char * logicalName, unsigned keep) = 0;
+    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC) = 0;
+    virtual bool checkFreezePersists(const char *logicalName, unsigned eclCRC) = 0;
+    virtual bool isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntimeWorkflowItem & item, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile) = 0;
+    virtual void isPersistSupported() = 0;
+    virtual bool isPersistAlreadyLocked(const char * logicalName) = 0;
+    void doExecutePersistItemParallel(CCloneWorkflowItem & item);
+    void doExecutePersistActivator(CCloneWorkflowItem & item);
+
     void processDependentSuccessors(CCloneWorkflowItem &item);
     void processLogicalSuccessors(CCloneWorkflowItem &item);
     //when an item fails, this marks dependentSuccessors with the exception belonging to their predecessor
@@ -172,6 +193,11 @@ protected:
 protected:
     const IContextLogger &logctx;
     Owned<IWorkflowItemArray> workflow;
+    Owned<PersistVersion> persist;
+    //this protects the global persist variable
+    CriticalSection persistCritSec;
+    //this protects finishPersist() internals from race conditions
+    CriticalSection finishPersistCritSec;
     //contains extra workflow items that are created at runtime. These support logical successorships
     std::vector<Shared<IRuntimeWorkflowItem>> logicalWorkflow;
     std::queue<unsigned> wfItemQueue;

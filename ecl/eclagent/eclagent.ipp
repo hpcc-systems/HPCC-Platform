@@ -37,7 +37,6 @@
 
 #define MAX_EDGEDATA_LENGTH 30000
 #define MAX_HEX_SIZE 500
-#define DEFAULT_PERSIST_COPIES (-1)
 
 class EclGraph;
 typedef unsigned __int64 graphid_t;
@@ -262,17 +261,6 @@ class EclAgent;
 
 class EclAgentWorkflowMachine : public WorkflowMachine
 {
-private:
-    class PersistVersion : public CInterface
-    {
-    public:
-        PersistVersion(char const * _logicalName, unsigned _eclCRC, unsigned __int64 _allCRC, bool _isFile) : logicalName(_logicalName), eclCRC(_eclCRC), allCRC(_allCRC), isFile(_isFile) {}
-        StringAttr logicalName;
-        unsigned eclCRC;
-        unsigned __int64 allCRC;
-        bool isFile;
-    };
-
 public:
     EclAgentWorkflowMachine(EclAgent & _agent);
     void returnPersistVersion(char const * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile)
@@ -282,7 +270,14 @@ public:
 
 protected:
     virtual void begin();
-
+    virtual IRemoteConnection *startPersist(const char * logicalName);
+    virtual void finishPersist(const char * persistName, IRemoteConnection *persistLock);
+    virtual void deleteLRUPersists(const char * logicalName, unsigned keep);
+    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC);
+    virtual bool checkFreezePersists(const char *logicalName, unsigned eclCRC);
+    virtual bool isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntimeWorkflowItem & item, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile);
+    virtual void isPersistSupported();
+    virtual bool isPersistAlreadyLocked(const char * logicalName);
     virtual bool getParallelFlag() const;
     virtual unsigned getThreadNumFlag() const;
 
@@ -309,7 +304,6 @@ private:
     IRemoteConnection * obtainCriticalLock(const char *name);
     void releaseCriticalLock(IRemoteConnection *r);
     Owned<IWorkflowScheduleConnection> wfconn;
-    Owned<PersistVersion> persist;
     bool persistsPrelocked;
     MapStringToMyClass<IRemoteConnection> persistCache;
 };
@@ -519,7 +513,7 @@ public:
     virtual void selectCluster(const char * cluster);
     virtual void restoreCluster();
 
-    IRemoteConnection *startPersist(const char * name);
+    virtual IRemoteConnection *startPersist(const char * name);
     bool alreadyLockedPersist(const char * persistName);
     void finishPersist(const char * persistName, IRemoteConnection *persistLock);
     void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC);
