@@ -575,9 +575,11 @@ enum WFMode
     WFModeUnused = 8,
     WFModeCritical = 9,
     WFModeOrdered = 10,
+    //for parallel workflow at runtime
     WFModeConditionExpression = 11,
+    WFModePersistActivator = 12,
     //Size needs to be the last mode
-    WFModeSize = 12
+    WFModeSize = 13
 };
 
 enum WFState
