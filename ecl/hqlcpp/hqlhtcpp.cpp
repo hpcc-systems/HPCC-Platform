@@ -2461,8 +2461,9 @@ void ActivityInstance::buildSuffix()
             addConstructorMetaParameter();
 
             StringBuffer s;
-            s.append("extern \"C\" ECL_API IHThorArg * ").append(factoryName).append("()");
-            globalctx.addQuotedFunction(s, true);
+            s.append("IHThorArg * ").append(factoryName).append("()");
+            IHqlStmt * stmt = globalctx.addQuotedFunction(s, true);
+            stmt->addOption(externCAtom);
             OwnedHqlExpr call = translator.bindFunctionCall(implementationClassName, constructorArgs);
 
             //Don't call buildReturn because we're lying about the return type, and we don't want a boolean temporary created.
@@ -11238,17 +11239,18 @@ IWUResult * HqlCppTranslator::createDatasetResultSchema(IHqlExpression * sequenc
 
             BuildCtx transformctx(*code, declareAtom);
             transformctx.setNextPriority(RecordTranslatorPrio);
-            s.clear().append("extern \"C\" ECL_API size32_t ").append(name).append("(ARowBuilder & crSelf, const byte * src)");
+            s.clear().append("size32_t ").append(name).append("(ARowBuilder & crSelf, const byte * src)");
 
-            MemberFunction tranformFunc(*this, transformctx, s, MFdynamicproto);
+            MemberFunction transformFunc(*this, transformctx, s, MFdynamicproto);
+            transformFunc.addOption(externCAtom);
 
-            BoundRow * selfCursor = bindSelf(tranformFunc.ctx, tds, "crSelf");
-            bindTableCursor(tranformFunc.ctx, ds, "src", no_left, seq);
-            associateSkipReturnMarker(tranformFunc.ctx, queryZero(), selfCursor);
-            ensureRowAllocated(tranformFunc.ctx, "crSelf");
+            BoundRow * selfCursor = bindSelf(transformFunc.ctx, tds, "crSelf");
+            bindTableCursor(transformFunc.ctx, ds, "src", no_left, seq);
+            associateSkipReturnMarker(transformFunc.ctx, queryZero(), selfCursor);
+            ensureRowAllocated(transformFunc.ctx, "crSelf");
 
-            doTransform(tranformFunc.ctx, transform, selfCursor);
-            buildReturnRecordSize(tranformFunc.ctx, selfCursor);
+            doTransform(transformFunc.ctx, transform, selfCursor);
+            buildReturnRecordSize(transformFunc.ctx, selfCursor);
 
             result->setResultTransformerEntry(name.str());
         }
