@@ -2724,6 +2724,7 @@ WuScopeFilter::WuScopeFilter(const char * filter)
 
 WuScopeFilter & WuScopeFilter::addFilter(const char * filter)
 {
+    checkModifiable();
     if (!filter)
         return *this;
 
@@ -2829,6 +2830,7 @@ WuScopeFilter & WuScopeFilter::addFilter(const char * filter)
 
 WuScopeFilter & WuScopeFilter::addScope(const char * scope)
 {
+    checkModifiable();
     if (scope)
     {
         validateScope(scope);
@@ -2837,8 +2839,16 @@ WuScopeFilter & WuScopeFilter::addScope(const char * scope)
     return *this;
 }
 
+WuScopeFilter & WuScopeFilter::addScopeType(StatisticScopeType scopeType)
+{
+    checkModifiable();
+    scopeFilter.addScopeType(scopeType);
+    return *this;
+}
+
 WuScopeFilter & WuScopeFilter::addScopeType(const char * scopeType)
 {
+    checkModifiable();
     if (scopeType)
     {
         StatisticScopeType sst = queryScopeType(scopeType, SSTmax);
@@ -2852,6 +2862,7 @@ WuScopeFilter & WuScopeFilter::addScopeType(const char * scopeType)
 
 WuScopeFilter & WuScopeFilter::addId(const char * id)
 {
+    checkModifiable();
     validateScopeId(id);
     scopeFilter.addId(id);
     return *this;
@@ -2859,6 +2870,7 @@ WuScopeFilter & WuScopeFilter::addId(const char * id)
 
 WuScopeFilter & WuScopeFilter::addOutput(const char * prop)
 {
+    checkModifiable();
     WuAttr attr = queryWuAttribute(prop, WaNone);
     if (attr != WaNone)
     {
@@ -2877,6 +2889,7 @@ WuScopeFilter & WuScopeFilter::addOutput(const char * prop)
 
 WuScopeFilter & WuScopeFilter::addOutputStatistic(const char * prop)
 {
+    checkModifiable();
     if (!prop)
         return *this;
 
@@ -2889,6 +2902,7 @@ WuScopeFilter & WuScopeFilter::addOutputStatistic(const char * prop)
 
 WuScopeFilter & WuScopeFilter::addOutputStatistic(StatisticKind stat)
 {
+    checkModifiable();
     if (stat != StKindNone)
     {
         if (stat != StKindAll)
@@ -2904,6 +2918,7 @@ WuScopeFilter & WuScopeFilter::addOutputStatistic(StatisticKind stat)
 
 WuScopeFilter & WuScopeFilter::addOutputAttribute(const char * prop)
 {
+    checkModifiable();
     if (!prop)
         return *this;
 
@@ -2916,6 +2931,7 @@ WuScopeFilter & WuScopeFilter::addOutputAttribute(const char * prop)
 
 WuScopeFilter & WuScopeFilter::addOutputAttribute(WuAttr attr)
 {
+    checkModifiable();
     if (attr != WaNone)
     {
         if (attr != WaAll)
@@ -2932,6 +2948,7 @@ WuScopeFilter & WuScopeFilter::addOutputAttribute(WuAttr attr)
 
 WuScopeFilter & WuScopeFilter::addOutputHint(const char * prop)
 {
+    checkModifiable();
     if (strieq(prop, "none"))
     {
         desiredHints.kill();
@@ -2950,18 +2967,21 @@ WuScopeFilter & WuScopeFilter::addOutputHint(const char * prop)
 
 WuScopeFilter & WuScopeFilter::setIncludeMatch(bool value)
 {
+    checkModifiable();
     include.matchedScope = value;
     return *this;
 }
 
 WuScopeFilter & WuScopeFilter::setIncludeNesting(unsigned depth)
 {
+    checkModifiable();
     include.nestedDepth = depth;
     return *this;
 }
 
 WuScopeFilter & WuScopeFilter::setIncludeScopeType(const char * scopeType)
 {
+    checkModifiable();
     if (scopeType)
     {
         StatisticScopeType sst = queryScopeType(scopeType, SSTmax);
@@ -2975,6 +2995,7 @@ WuScopeFilter & WuScopeFilter::setIncludeScopeType(const char * scopeType)
 
 WuScopeFilter & WuScopeFilter::setMeasure(const char * measure)
 {
+    checkModifiable();
     if (measure)
     {
         desiredMeasure = queryMeasure(measure, SMeasureNone);
@@ -2987,6 +3008,7 @@ WuScopeFilter & WuScopeFilter::setMeasure(const char * measure)
 
 WuScopeFilter & WuScopeFilter::addOutputProperties(WuPropertyTypes mask)
 {
+    checkModifiable();
     if (properties == PTnone)
         properties = mask;
     else
@@ -2996,18 +3018,21 @@ WuScopeFilter & WuScopeFilter::addOutputProperties(WuPropertyTypes mask)
 
 WuScopeFilter & WuScopeFilter::addRequiredStat(StatisticKind statKind, stat_type lowValue, stat_type highValue)
 {
+    checkModifiable();
     requiredStats.emplace_back(statKind, lowValue, highValue);
     return *this;
 }
 
 WuScopeFilter & WuScopeFilter::addRequiredStat(StatisticKind statKind)
 {
+    checkModifiable();
     requiredStats.emplace_back(statKind, 0, MaxStatisticValue);
     return *this;
 }
 
 WuScopeFilter & WuScopeFilter::addRequiredAttr(WuAttr attr, const char * value)
 {
+    checkModifiable();
     requiredAttrs.emplace_back(attr, value);
     return *this;
 }
@@ -3019,6 +3044,7 @@ WuScopeFilter & WuScopeFilter::addRequiredAttr(WuAttr attr, const char * value)
 
 void WuScopeFilter::addRequiredStat(const char * filter)
 {
+    checkModifiable();
     const char * stat = filter;
     const char * cur = stat;
     while (isalpha(*cur))
@@ -3117,6 +3143,7 @@ void WuScopeFilter::addRequiredStat(const char * filter)
 
 WuScopeFilter & WuScopeFilter::addSource(const char * source)
 {
+    checkModifiable();
     WuScopeSourceFlags mask = querySource(source);
     if (mask == SSFunknown)
         throw makeStringExceptionV(0, "Unexpected source '%s'", source);
@@ -3129,6 +3156,7 @@ WuScopeFilter & WuScopeFilter::addSource(const char * source)
 
 WuScopeFilter & WuScopeFilter::setDepth(unsigned low, unsigned high)
 {
+    checkModifiable();
     scopeFilter.setDepth(low, high);
     return *this;
 }
@@ -3148,14 +3176,19 @@ bool WuScopeFilter::matchOnly(StatisticScopeType scopeType) const
     return false;
 }
 
+void WuScopeFilter::reportModifyTooLate()
+{
+    throw makeStringException(WUERR_ModifyFilterAfterFinalize, "Attempting to modify WuScopefilter after finish() has been called");
+}
+
 
 //Called once the filter has been updated to optimize the filter
 void WuScopeFilter::finishedFilter()
 {
-    scopeFilter.finishedFilter();
+    if (optimized)
+        throw makeStringException(WUERR_FinalizeAfterFinalize, "Calling finishedFilter() more than once");
 
-    assertex(!optimized);
-    optimized = true;
+    scopeFilter.finishedFilter();
 
     if ((include.nestedDepth == 0) && !include.matchedScope)
         include.nestedDepth = UINT_MAX;
@@ -3259,6 +3292,8 @@ void WuScopeFilter::finishedFilter()
     {
         sourceFlags &= ~(SSFsearchGraph|SSFsearchWorkflow);
     }
+
+    optimized = true;
 }
 
 
@@ -8492,7 +8527,7 @@ bool CLocalWorkUnit::getStatistic(stat_type & value, const char * scope, Statist
 IConstWUScopeIterator & CLocalWorkUnit::getScopeIterator(const WuScopeFilter & filter) const
 {
     assertex(filter.isOptimized());
-    WuScopeSourceFlags sources = filter.sourceFlags;
+    WuScopeSourceFlags sources = filter.querySources();
 
     Owned<CompoundStatisticsScopeIterator> compoundIter = new CompoundStatisticsScopeIterator(filter);
     if (sources & SSFsearchGlobalStats)
@@ -8506,7 +8541,7 @@ IConstWUScopeIterator & CLocalWorkUnit::getScopeIterator(const WuScopeFilter & f
     if (sources & SSFsearchGraphStats)
     {
         const char * wuid = p->queryName();
-        Owned<IConstWUScopeIterator> scopeIter(new CConstGraphProgressScopeIterator(wuid, filter.queryIterFilter(), filter.minVersion));
+        Owned<IConstWUScopeIterator> scopeIter(new CConstGraphProgressScopeIterator(wuid, filter.queryIterFilter(), filter.queryMinVersion()));
         compoundIter->addIter(scopeIter);
     }
 

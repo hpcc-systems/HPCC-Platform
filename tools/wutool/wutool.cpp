@@ -258,7 +258,7 @@ static void process(IConstWorkUnit &w, IProperties *globals, const StringArray &
         ScopeDumper dumper;
         WuScopeFilter filter;
         filter.addFilter(args.item(0));
-        if (filter.properties == PTnone)
+        if (!filter.outputDefined())
             filter.addOutputProperties(PTall);
         filter.finishedFilter();
 
