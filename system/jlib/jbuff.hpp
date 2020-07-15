@@ -325,7 +325,7 @@ public:
 
     virtual const void * data() const { return *pData; };
     virtual void clear() { free(*pData); *pData = NULL; *pLen = 0; };
-    virtual void setLen(const void * val, size_t length) { free(*pData); *pData = malloc(length); memcpy(*pData, val, length); *pLen = (size32_t)length; }
+    virtual void setLen(const void * val, size_t length) { free(*pData); *pData = malloc(length); memcpy_iflen(*pData, val, length); *pLen = (size32_t)length; }
     virtual size_t length() const { return *pLen; };
     virtual void * reserve(size_t length) { free(*pData); *pData = malloc(length); *pLen = (size32_t)length; return *pData; }
 
@@ -342,7 +342,7 @@ public:
 
     virtual const void * data() const { return ptr; };
     virtual void clear() { memset(ptr, 0, len); };
-    virtual void setLen(const void * val, size_t length) { assertex(length <= len); memcpy(ptr, val, length); }
+    virtual void setLen(const void * val, size_t length) { assertex(length <= len); memcpy_iflen(ptr, val, length); }
     virtual size_t length() const { return len; };
     virtual void * reserve(size_t length) { assertex(length <= len); return ptr; }
 
