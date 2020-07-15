@@ -291,9 +291,11 @@ void openEspLogFile(IPropertyTree* envpt, IPropertyTree* procpt)
     //logDir="-" is the default in application mode and logs to stderr, not to a file
     if (logdir.length() && !streq(logdir, "-"))
     {
+        long maxLogFileSize = procpt->getPropInt64("@maxLogFileSize", 0);
         Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logdir.str(), "esp");
         lf->setName("esp_main");//override default filename
         lf->setAliasName("esp");
+        lf->setMaxLogFileSize(maxLogFileSize);
         lf->beginLogging();
     }
 #else

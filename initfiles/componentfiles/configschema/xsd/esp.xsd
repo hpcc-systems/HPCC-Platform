@@ -328,6 +328,9 @@
                 <xs:attribute name="formOptionsAccess" type="xs:boolean" hpcc:presetValue="false"
                               hpcc:displayName="Form Options Access"
                               hpcc:tooltip="Allows show Options in test form page"/>
+                <xs:attribute name="maxLogFileSize" type="xs:nonNegativeInteger"
+                              hpcc:presetValue="0" hpcc:displayName="Max log file size"
+                              hpcc:tooltip="The maximum log file size (0 for no size limit)"/>
                 <xs:attribute name="maxRequestEntityLength" type="xs:nonNegativeInteger"
                               hpcc:presetValue="8000000" hpcc:displayName="Max Request Entity Length"
                               hpcc:tooltip="The maximum length of request entity allowed"/>
