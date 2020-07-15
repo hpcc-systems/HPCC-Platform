@@ -4123,6 +4123,8 @@ BoundRow * HqlCppTranslator::buildDatasetIterate(BuildCtx & ctx, IHqlExpression 
         }
     case no_null:
         buildFilter(ctx, queryBoolExpr(false));
+        //Ensure that a table is bound into the context - in case code is generated within it (will be thrown away later)
+        bindTableCursor(ctx, expr, "<invalid>", no_none, NULL);
         return NULL;
     case no_filter:
         {
