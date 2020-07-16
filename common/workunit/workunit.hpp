@@ -1016,6 +1016,27 @@ enum WuScopeSourceFlags : unsigned
 };
 BITMASK_ENUM(WuScopeSourceFlags);
 
+class WORKUNIT_API AttributeValueFilter
+{
+public:
+    AttributeValueFilter(WuAttr _attr, const char * _value) : attr(_attr), value(_value)
+    {
+    }
+
+    bool matches(const char * curValue) const
+    {
+        return !value || strsame(curValue, value);
+    }
+
+    WuAttr queryKind() const { return attr; }
+    StringBuffer & describe(StringBuffer & out) const;
+
+protected:
+    WuAttr attr;
+    StringAttr value;
+};
+
+
 /* WuScopeFilter syntax:
  * initial match:   scope[<scope-id>] | stype[<scope-type>] | id[<scope-id>] | depth[<value>| <min>,<max>]
  *                  source[global|stats|graph|exception]
@@ -1054,6 +1075,7 @@ public:
 
     WuScopeFilter & addRequiredStat(StatisticKind statKind);
     WuScopeFilter & addRequiredStat(StatisticKind statKind, stat_type lowValue, stat_type highValue);
+    WuScopeFilter & addRequiredAttr(WuAttr attr, const char * value = nullptr);
 
     void finishedFilter(); // Call once filter has been completely set up
     StringBuffer & describe(StringBuffer & out) const; // describe the filter - each option is preceded by a comma
@@ -1077,6 +1099,7 @@ public:
 //The following members control which scopes are matched by the iterator
     ScopeFilter scopeFilter;                            // Filter that must be matched by a scope
     std::vector<StatisticValueFilter> requiredStats;    // The attributes that must be present for a particular scope
+    std::vector<AttributeValueFilter> requiredAttrs;
     WuScopeSourceFlags sourceFlags = SSFsearchDefault;  // Which sources within the workunit should be included.  Default is to calculate from the properties.
 
 // Once a match has been found which scopes are returned?

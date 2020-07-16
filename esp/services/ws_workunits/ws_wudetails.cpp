@@ -583,29 +583,48 @@ void WUDetails::buildPropertyFilter(IArrayOf<IConstWUPropertyFilter> & reqProper
         const char *exactValue = attribFilterItem.getExactValue();
         const char *minValue = attribFilterItem.getMinValue();
         const char *maxValue = attribFilterItem.getMaxValue();
-        const bool hasExactValue = *exactValue!=0;
-        const bool hasMinValue = *minValue!=0;
-        const bool hasMaxValue = *maxValue!=0;
+        const bool hasExactValue = exactValue && *exactValue!=0;
+        const bool hasMinValue = minValue && *minValue!=0;
+        const bool hasMaxValue = maxValue && *maxValue!=0;
 
         if (hasExactValue && (hasMinValue||hasMaxValue))
             throw MakeStringException(ECLWATCH_INVALID_INPUT,
                                       "Invalid Property Filter ('%s') - ExactValue may not be used with MinValue or MaxValue",
                                       propertyName);
+
         const StatisticKind sk = queryStatisticKind(propertyName, StKindNone);
-        if (sk==StKindAll || sk==StKindNone)
+        if (sk==StKindAll)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Property Name ('%s') in Property Filter", propertyName);
-        if (hasExactValue)
+
+        if (sk==StKindNone)
         {
-            stat_type exactVal = atoi64(exactValue);
-            wuScopeFilter.addRequiredStat(sk,exactVal,exactVal);
-        }
-        else if (hasMinValue||hasMaxValue)
-        {
-            stat_type minVal = atoi64(minValue);
-            stat_type maxVal = atoi64(maxValue);
-            wuScopeFilter.addRequiredStat(sk,minVal,maxVal);
+            WuAttr attr = queryWuAttribute(propertyName, WaNone);
+            if (attr == WaNone || attr == WaAll)
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Property Name ('%s') in Property Filter", propertyName);
+
+            if (hasMinValue || hasMaxValue)
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Range comparisons not supported for attribute '%s' in Property Filter", propertyName);
+
+            if (hasExactValue)
+                wuScopeFilter.addRequiredAttr(attr, exactValue);
+            else
+                wuScopeFilter.addRequiredAttr(attr, nullptr);
         }
         else
-            wuScopeFilter.addRequiredStat(sk);
+        {
+            if (hasExactValue)
+            {
+                stat_type exactVal = atoi64(exactValue);
+                wuScopeFilter.addRequiredStat(sk,exactVal,exactVal);
+            }
+            else if (hasMinValue||hasMaxValue)
+            {
+                stat_type minVal = atoi64(minValue);
+                stat_type maxVal = atoi64(maxValue);
+                wuScopeFilter.addRequiredStat(sk,minVal,maxVal);
+            }
+            else
+                wuScopeFilter.addRequiredStat(sk);
+        }
     }
 }

@@ -2282,24 +2282,38 @@ protected:
                     activeScopes.append(scope);
             }
 
-            if (include)
+            if (include && !filter.includeScope(scope))
+                include = false;
+
+            if (include && filter.requiredStats.size())
             {
-                if (!filter.includeScope(scope))
-                    include = false;
-                else if (filter.requiredStats.size())
+                //MORE: This would be cleaner as a member of filter - but it needs access to the stats.
+                for (unsigned iReq=0; iReq < filter.requiredStats.size(); iReq++)
                 {
-                    //MORE: This would be cleaner as a member of filter - but it needs access to the stats.
-                    for (unsigned iReq=0; iReq < filter.requiredStats.size(); iReq++)
+                    const StatisticValueFilter & cur = filter.requiredStats[iReq];
+                    unsigned __int64 value;
+                    if (getStat(cur.queryKind(), value))
                     {
-                        const StatisticValueFilter & cur = filter.requiredStats[iReq];
-                        unsigned __int64 value;
-                        if (getStat(cur.queryKind(), value))
-                        {
-                            if (!cur.matches(value))
-                                include = false;
-                        }
-                        else
+                        if (!cur.matches(value))
                             include = false;
+                    }
+                    else
+                        include = false;
+                }
+            }
+
+            if (include && filter.requiredAttrs.size())
+            {
+                //MORE: This would be cleaner as a member of filter - but it needs access to the stats.
+                StringBuffer temp;
+                for (unsigned iReq=0; iReq < filter.requiredAttrs.size(); iReq++)
+                {
+                    const AttributeValueFilter & cur = filter.requiredAttrs[iReq];
+                    const char * value = queryAttribute(cur.queryKind(), temp.clear());
+                    if (!value || !cur.matches(value))
+                    {
+                        include = false;
+                        break;
                     }
                 }
             }
@@ -2648,6 +2662,15 @@ static unsigned readValue(const char * start, const char * type)
     return value;
 }
 
+StringBuffer & AttributeValueFilter::describe(StringBuffer & out) const
+{
+    out.append(queryWuAttributeName(attr));
+    if (value)
+        out.append("=").append(value);
+    return out;
+}
+
+
 /*
 Scope service matching Syntax:  * indicates
 Which items are matched:
@@ -2983,6 +3006,12 @@ WuScopeFilter & WuScopeFilter::addRequiredStat(StatisticKind statKind)
     return *this;
 }
 
+WuScopeFilter & WuScopeFilter::addRequiredAttr(WuAttr attr, const char * value)
+{
+    requiredAttrs.emplace_back(attr, value);
+    return *this;
+}
+
 //process a filter in one of the following forms:
 //  <statistic-name>
 //  <statistic-name> (=|<|<=|>|>=) <value>
@@ -2996,13 +3025,25 @@ void WuScopeFilter::addRequiredStat(const char * filter)
         cur++;
 
     StringBuffer statisticName(cur-stat, stat);
-    StatisticKind statKind = queryStatisticKind(statisticName, StKindNone);
-    if (statKind == StKindNone)
-        throw makeStringExceptionV(0, "Unknown statistic name '%s'", statisticName.str());
-
     //Skip any spaces before a comparison operator.
     while (*cur && isspace(*cur))
         cur++;
+
+    StatisticKind statKind = queryStatisticKind(statisticName, StKindNone);
+    if (statKind == StKindNone)
+    {
+        WuAttr attr = queryWuAttribute(statisticName, WaNone);
+        if (attr == WaNone)
+            throw makeStringExceptionV(0, "Unknown property name '%s'", statisticName.str());
+
+        if (*cur == '=')
+            requiredAttrs.emplace_back(attr, cur+1);
+        else if (*cur == '\0')
+            requiredAttrs.emplace_back(attr, nullptr);
+        else
+            throw makeStringExceptionV(0, "Unknown attribute comparison '%s'", cur);
+        return;
+    }
 
     //Save the operator, and skip over any non digits.
     const char * op = cur;
@@ -3132,11 +3173,11 @@ void WuScopeFilter::finishedFilter()
         if (!(properties & PTscope))
         {
             //Global stats and graph stats only contain stats => remove if not interested in them
-            if (!(properties & PTstatistics))
+            if (!(properties & PTstatistics) && (requiredStats.size() == 0))
                 sourceFlags &= ~(SSFsearchGlobalStats|SSFsearchGraphStats);
 
             //graph, workflow only contains attributes and hints => remove if not interested
-            if (!(properties & (PTattributes|PThints)))
+            if (!(properties & (PTattributes|PThints)) && (requiredAttrs.size() == 0))
                 sourceFlags &= ~(SSFsearchGraph|SSFsearchWorkflow);
         }
 
@@ -3280,7 +3321,7 @@ ScopeCompare WuScopeFilter::compareMatchScopes(const char * scope) const
 StringBuffer & WuScopeFilter::describe(StringBuffer & out) const
 {
     scopeFilter.describe(out);
-    if (requiredStats.size())
+    if (requiredStats.size() || requiredAttrs.size())
     {
         out.append(",where[");
         bool first = false;
@@ -3289,6 +3330,13 @@ StringBuffer & WuScopeFilter::describe(StringBuffer & out) const
             if (!first)
                 out.append(",");
             stat.describe(out);
+            first = false;
+        }
+        for (const auto & attr : requiredAttrs)
+        {
+            if (!first)
+                out.append(",");
+            attr.describe(out);
             first = false;
         }
         out.append("]");
