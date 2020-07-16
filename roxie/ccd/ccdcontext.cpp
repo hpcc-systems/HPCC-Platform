@@ -310,11 +310,15 @@ protected:
     {
         if (workunit)
         {
-            StringBuffer msg;
-            msg.append(type).append(" clause failed (execution will continue): ").append(e->errorCode()).append(": ");
-            e->errorMessage(msg);
-            WorkunitUpdate wu(&workunit->lock());
-            addExceptionToWorkunit(wu, SeverityWarning, "user", e->errorCode(), msg.str(), NULL, 0, 0, 0);
+            ErrorSeverity severity = workunit->getWarningSeverity(e->errorCode(), SeverityWarning);
+            if (severity != SeverityIgnore)
+            {
+                StringBuffer msg;
+                msg.append(type).append(" clause failed (execution will continue): ").append(e->errorCode()).append(": ");
+                e->errorMessage(msg);
+                WorkunitUpdate wu(&workunit->lock());
+                addExceptionToWorkunit(wu, severity, "user", e->errorCode(), msg.str(), NULL, 0, 0, 0);
+            }
         }
     }
     virtual void checkForAbort(unsigned wfid, IException * handling)
