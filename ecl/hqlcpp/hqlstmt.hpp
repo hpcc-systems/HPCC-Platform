@@ -228,6 +228,7 @@ public:
     virtual void            setIncomplete(bool incomplete) = 0;
     virtual void            setIncluded(bool _included) = 0;
     virtual void            finishedFramework() = 0;
+    virtual void            addOption(IAtom * name) = 0;
 };
 
 class HqlCppTranslator;

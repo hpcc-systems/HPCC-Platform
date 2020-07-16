@@ -562,12 +562,12 @@
 
         <para><emphasis role="bold">Observação</emphasis>: O valor do
         <emphasis role="bold">cacheTimeout </emphasis> corresponde ao número
-        de minutos em que as permissões estão armazenadas em cache no ESP. Ao
-        alterar qualquer permissão no LDAP, as novas configurações não estarão
-        em vigor até que o ESP e o Dali atualizem as permissões. Isso pode
-        demorar a mesma quantidade de tempo do cacheTimeout. A definição disso
-        para 0 significa sem cache, porém gera sobrecarga de desempenho. Por
-        isso, não deve ser usado em produção.</para>
+        de minutos em que as permissões estão em cache no ESP. Ao alterar
+        qualquer permissão no LDAP, as novas configurações não estarão em
+        vigor até que o ESP e o Dali atualizem. Isso pode demorar a mesma
+        quantidade de tempo do cacheTimeout. A definição disso para 0
+        significa sem cache, porém sobrecarrega o desempenho, assim não dever
+        ser usado em produção.</para>
       </listitem>
     </orderedlist>
 
@@ -599,7 +599,7 @@
             <listitem>
               <para>Altere o <emphasis role="bold">ldapConnections</emphasis>
               para o número adequado ao seu sistema (o número 10 é apenas um
-              exemplo, pode não vir a ser adequado para seu ambiente).</para>
+              exemplo).</para>
             </listitem>
 
             <listitem>
@@ -631,8 +631,8 @@
       <listitem>
         <?dbfo keep-together="always"?>
 
-        <para>Para habilitar as permissões do escopo de arquivos, configure a
-        segurança do escopo de arquivos do servidor Dali.</para>
+        <para>Para habilitar as permissões do escopo de arquivos, realize a
+        configuração no servidor Dali.</para>
 
         <para>No painel do navegador, clique em <emphasis role="bold">Dali
         Server -- mydali </emphasis><graphic
@@ -682,21 +682,20 @@
               correspondam às configurações do componente de seu servidor LDAP
               no Configuration Manager.</para>
 
-              <para>Por exemplo, altere o <emphasis
-              role="bold">ldapServer</emphasis> para o mesmo valor dado ao seu
-              LDAP Server. Em nosso exemplo, esse valor é:
+              <para>Exemplo: altere o <emphasis
+              role="bold">ldapServer</emphasis> para o mesmo valor do seu LDAP
+              Server. Ness caso, o valor é:
               <emphasis>ldapserver.</emphasis></para>
 
               <para>Confirme a alteração quando solicitado.</para>
 
               <para>O <emphasis role="bold">filesDefaultUser</emphasis> é uma
-              conta do LDAP usada para acessar arquivos quando nenhuma
-              credencial de usuário tiver sido fornecida. Esta conta é
-              semelhante a uma conta do tipo “convidado”, por isso deve ter
-              acesso <emphasis role="bold">bastante</emphasis> limitado caso
-              seja utilizada. Para desabilitar o acesso sem credenciais, deixe
-              o <emphasis role="bold">filesDefaultUser</emphasis> em
-              branco.</para>
+              conta do LDAP usada para acessar arquivos quando nenhuma não há
+              nenhuma credencial. É semelhante a conta “convidado”, por isso
+              deve ter acesso <emphasis role="bold">bastante</emphasis>
+              limitado em seu uso. Deixe o <emphasis
+              role="bold">filesDefaultUser</emphasis> em branco para
+              desabilitar esse tipo de acesso.</para>
 
               <para>O <emphasis role="bold">filesDefaultPassword</emphasis>
               corresponde a senha dessa conta.</para>

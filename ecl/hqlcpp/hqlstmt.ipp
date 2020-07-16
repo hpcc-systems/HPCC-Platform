@@ -43,6 +43,7 @@ public:
             bool                    isIncomplete()  { return incomplete; }
             unsigned                queryPriority() { return priority; }
     virtual void                    mergeScopeWithContainer()  override {}
+    virtual void                    addOption(IAtom * name) override;
     virtual void                    setIncomplete(bool _incomplete) override { incomplete = _incomplete; }
     virtual void                    setIncluded(bool _included) override { included = _included; }
     virtual void                    setForceOptimize(bool value) override;

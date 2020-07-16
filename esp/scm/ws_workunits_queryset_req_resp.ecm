@@ -248,6 +248,18 @@ ESPresponse [exceptions_inline] WUQueryFilesResponse
     ESParray<ESPstruct FileUsedByQuery, File> Files;
 };
 
+ESPrequest WUQueryDetailsLightWeightRequest
+{
+    string QueryId;
+    string QuerySet;
+    bool IncludeWUDetails(false);
+    bool IncludeWUQueryFiles(false);
+    bool IncludeSuperFiles(false);
+    bool IncludeWsEclAddresses(false);
+    bool IncludeStateOnClusters(false);
+    bool CheckAllNodes(false);
+};
+
 ESPrequest WUQueryDetailsRequest
 {
     string QueryId;
@@ -256,6 +268,8 @@ ESPrequest WUQueryDetailsRequest
     bool IncludeSuperFiles(false);
     bool IncludeWsEclAddresses(false);
     [min_ver("1.57")] bool CheckAllNodes(true);
+    [min_ver("1.78")] bool IncludeWUDetails(true);
+    [min_ver("1.78")] bool IncludeWUQueryFiles(true);
 };
 
 ESPresponse [exceptions_inline] WUQueryDetailsResponse

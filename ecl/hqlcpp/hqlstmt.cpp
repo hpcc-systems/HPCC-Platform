@@ -1226,6 +1226,11 @@ void HqlStmt::addExpr(IHqlExpression * expr)
     exprs.append(*expr);
 }
 
+void HqlStmt::addOption(IAtom * name)
+{
+    addExpr(createAttribute(name));
+}
+
 StmtKind HqlStmt::getStmt() const
 {
     return (StmtKind)kind;
@@ -1251,6 +1256,10 @@ static bool isEmptyGroup(IHqlStmt * stmt)
 
 StringBuffer & HqlStmt::appendTextPrefix(StringBuffer & out) const
 {
+    if (hasAttribute(externAtom, exprs))
+        out.append("extern ");
+    if (hasAttribute(externCAtom, exprs))
+        out.append("extern \"C\" ECL_API ");
     if (noOptimize)
         out.append("NOOPTIMIZE ");
     if (optimize)

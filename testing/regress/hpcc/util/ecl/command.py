@@ -202,9 +202,15 @@ class ECLcmd(Shell):
                         eclfile.diff += data
                     test = True
                 elif (res['state'] == 'failed'):
-                    eclfile.diff = ("%3d. Test: %s\n") % (eclfile.taskId, eclfile.getBaseEclRealName())
-                    eclfile.diff += repr(data)
-                    test = False
+                    resultLines = data.strip().split('\n')
+                    resultLineIndex = 0;
+                    while not resultLines[resultLineIndex].startswith('<'):
+                        resultLineIndex += 1
+                    logging.debug("%3d. State is fail (resultLineIndex:%d, resultLines:'%s' )", eclfile.getTaskId(), resultLineIndex,  resultLines)
+                    data = '\n'.join(resultLines[resultLineIndex:])+ "\n"
+                    eclfile.addResults(data, wuid)
+                    logging.debug("%3d. State is fail (resultLineIndex:%d, data:'%s' )", eclfile.getTaskId(), resultLineIndex,  data)
+                    test = eclfile.testResults()
                 else:
                     test = eclfile.testResults()
             report.addResult(eclfile)

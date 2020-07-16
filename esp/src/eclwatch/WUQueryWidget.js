@@ -308,7 +308,7 @@ define([
             this.filter.on("apply", function (evt) {
                 context.refreshHRef();
                 context.workunitsGrid._currentPage = 0;
-                context.refreshGrid();
+                context.refreshGrid(true);
             });
 
             topic.subscribe("hpcc/session_management_status", function (publishedMessage) {

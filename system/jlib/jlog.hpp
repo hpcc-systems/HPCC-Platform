@@ -236,6 +236,21 @@ typedef unsigned LogMsgDetail;
 #define DefaultDetail   100
 #define TopDetail (LogMsgDetail)-1
 
+/*
+ * Log message thresholds, assigned to log message category types.
+ * It represents the lowest logging level (detail) required to output
+ * messages of the given category.
+ */
+constexpr LogMsgDetail CriticalMsgThreshold    = 1;  //Use to declare categories reporting critical events (log level => 1)
+constexpr LogMsgDetail FatalMsgThreshold       = 1;  //Use to declare categories reporting Fatal events (log level => 1)
+constexpr LogMsgDetail ErrMsgThreshold         = 10; //Use to declare categories reporting Err messages (log level => 10)
+constexpr LogMsgDetail WarnMsgThreshold        = 20; //Use to declare categories reporting Warn messages (log level => 20)
+constexpr LogMsgDetail AudMsgThreshold         = 30; //Use to declare categories reporting Aud messages (log level => 30)
+constexpr LogMsgDetail ProgressMsgThreshold    = 50; //Use to declare categories reporting Progress messages (log level => 50)
+constexpr LogMsgDetail InfoMsgThreshold        = 60; //Use to declare categories reporting Info messages (log level => 60)
+constexpr LogMsgDetail DebugMsgThreshold       = 80; //Use to declare categories reporting Debug messages (log level => 80)
+constexpr LogMsgDetail ExtraneousMsgThreshold  = 90; //Use to declare categories reporting Extraneous messages (log level => 90)
+
 // Typedef for LogMsgSysInfo
 
 typedef unsigned LogMsgId;
@@ -796,25 +811,51 @@ extern jlib_decl ILogMsgHandler * attachLogMsgMonitorFromPTree(IPropertyTree * t
 extern jlib_decl void attachManyLogMsgMonitorsFromPTree(IPropertyTree * tree);            // Takes tree containing many <monitor> elements
 
 // Standard categories and unknown jobInfo
-constexpr LogMsgCategory MCdisaster(MSGAUD_all, MSGCLS_disaster);
-constexpr LogMsgCategory MCuserError(MSGAUD_user, MSGCLS_error);
-constexpr LogMsgCategory MCoperatorError(MSGAUD_operator, MSGCLS_error);
-constexpr LogMsgCategory MCinternalError(MSGAUD_programmer, MSGCLS_error, 1);
-constexpr LogMsgCategory MCauditError(MSGAUD_audit, MSGCLS_error);
-constexpr LogMsgCategory MCuserWarning(MSGAUD_user, MSGCLS_warning);
-constexpr LogMsgCategory MCoperatorWarning(MSGAUD_operator, MSGCLS_warning);
-constexpr LogMsgCategory MCinternalWarning(MSGAUD_programmer, MSGCLS_warning, 1);
-constexpr LogMsgCategory MCauditWarning(MSGAUD_audit, MSGCLS_warning);
-constexpr LogMsgCategory MCuserProgress(MSGAUD_user, MSGCLS_progress);
-constexpr LogMsgCategory MCoperatorProgress(MSGAUD_operator, MSGCLS_progress);
-constexpr LogMsgCategory MCdebugProgress(MSGAUD_programmer, MSGCLS_progress);
-constexpr LogMsgCategory MCuserInfo(MSGAUD_user, MSGCLS_information);
-constexpr LogMsgCategory MCdebugInfo(MSGAUD_programmer, MSGCLS_information);
-constexpr LogMsgCategory MCauditInfo(MSGAUD_audit, MSGCLS_information);
-constexpr LogMsgCategory MCstats(MSGAUD_operator, MSGCLS_progress);
-constexpr LogMsgCategory MCoperatorInfo(MSGAUD_operator, MSGCLS_information);
+constexpr LogMsgCategory MCdisaster(MSGAUD_all, MSGCLS_disaster, FatalMsgThreshold);
+constexpr LogMsgCategory MCuserError(MSGAUD_user, MSGCLS_error, ErrMsgThreshold);
+constexpr LogMsgCategory MCoperatorError(MSGAUD_operator, MSGCLS_error, ErrMsgThreshold);
+constexpr LogMsgCategory MCinternalError(MSGAUD_programmer, MSGCLS_error, ErrMsgThreshold);
+constexpr LogMsgCategory MCauditError(MSGAUD_audit, MSGCLS_error, ErrMsgThreshold);
+constexpr LogMsgCategory MCuserWarning(MSGAUD_user, MSGCLS_warning, WarnMsgThreshold);
+constexpr LogMsgCategory MCoperatorWarning(MSGAUD_operator, MSGCLS_warning, WarnMsgThreshold);
+constexpr LogMsgCategory MCinternalWarning(MSGAUD_programmer, MSGCLS_warning, WarnMsgThreshold);
+constexpr LogMsgCategory MCauditWarning(MSGAUD_audit, MSGCLS_warning, WarnMsgThreshold);
+constexpr LogMsgCategory MCuserProgress(MSGAUD_user, MSGCLS_progress, ProgressMsgThreshold);
+constexpr LogMsgCategory MCoperatorProgress(MSGAUD_operator, MSGCLS_progress, ProgressMsgThreshold);
+constexpr LogMsgCategory MCdebugProgress(MSGAUD_programmer, MSGCLS_progress, DebugMsgThreshold);
+constexpr LogMsgCategory MCuserInfo(MSGAUD_user, MSGCLS_information, InfoMsgThreshold);
+constexpr LogMsgCategory MCdebugInfo(MSGAUD_programmer, MSGCLS_information, DebugMsgThreshold);
+constexpr LogMsgCategory MCauditInfo(MSGAUD_audit, MSGCLS_information, AudMsgThreshold);
+constexpr LogMsgCategory MCstats(MSGAUD_operator, MSGCLS_progress, ProgressMsgThreshold);
+constexpr LogMsgCategory MCoperatorInfo(MSGAUD_operator, MSGCLS_information, InfoMsgThreshold);
 
-inline LogMsgCategory MCexception(IException * e, LogMsgClass cls = MSGCLS_error) { return LogMsgCategory((e)->errorAudience(),cls); }
+/*
+ * Function to determine log level (detail) for exceptions, based on log message class
+ */
+inline LogMsgDetail mapClassToDefaultDetailLevel(LogMsgClass cls)
+{
+    switch (cls)
+    {
+    case MSGCLS_disaster:
+    case MSGCLS_all:
+        return FatalMsgThreshold;
+    case MSGCLS_error:
+        return ErrMsgThreshold;
+    case MSGCLS_warning:
+        return WarnMsgThreshold;
+    case MSGCLS_information:
+        return InfoMsgThreshold;
+    case MSGCLS_progress:
+        return ProgressMsgThreshold;
+    default:
+        return DefaultDetail;
+    }
+}
+
+inline LogMsgCategory MCexception(IException * e, LogMsgClass cls = MSGCLS_error)
+{
+    return LogMsgCategory((e)->errorAudience(),cls, mapClassToDefaultDetailLevel(cls));
+}
 
 #define MCerror MCuserError
 #define MCwarning MCuserWarning

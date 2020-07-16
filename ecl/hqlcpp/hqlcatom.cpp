@@ -52,6 +52,8 @@ IAtom * dictionaryAtom;
 IAtom * eclAtom;
 IAtom * endAtom;
 IAtom * ensureCapacityAtom;
+IAtom * externAtom;
+IAtom * externCAtom;
 IAtom * fileAtom;
 IAtom * funnelAtom;
 IAtom * forceAllCheckAtom;
@@ -1467,6 +1469,8 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEATOM(ecl);
     MAKEATOM(end);
     MAKEATOM(ensureCapacity);
+    MAKEATOM(extern);
+    MAKEATOM(externC);
     MAKEATOM(file);
     MAKEATOM(forceAllCheck);
     MAKEATOM(funnel);

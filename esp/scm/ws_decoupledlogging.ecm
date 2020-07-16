@@ -17,6 +17,15 @@
 
 EspInclude(common);
 
+ESPenum LogAgentActions : string
+{
+    Pause("Pause"),
+    Resume("Resume"),
+    GetSettings("GetSettings"),
+    GetAckedLogFileNames("GetAckedLogFileNames"),
+    CleanAckedLogFiles("CleanAckedLogFiles"),
+};
+
 ESPStruct [nil_remove] LogAgentGroup
 {
     string GroupName;
@@ -55,6 +64,13 @@ ESPStruct [nil_remove] LogAgentGroupSetting
     ESParray<ESPstruct LogAgentSetting> AgentSettings;
 };
 
+ESPStruct [nil_remove] LogAgentGroupTankFiles
+{
+    string GroupName;
+    string TankFileDir;
+    ESParray<string> TankFileNames;
+};
+
 ESPrequest [nil_remove] GetLogAgentSettingRequest
 {
     ESParray<ESPstruct LogAgentGroup> Groups;
@@ -76,10 +92,32 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] PauseLogResponse
     ESParray<ESPstruct LogAgentGroupStatus> Statuses;
 };
 
+ESPrequest [nil_remove] GetAckedLogFilesRequest
+{
+    ESParray<ESPstruct LogAgentGroup> Groups;
+};
+
+ESPresponse [exceptions_inline, nil_remove, http_encode(0)] GetAckedLogFilesResponse
+{
+    ESParray<ESPstruct LogAgentGroupTankFiles> AckedLogFilesInGroups;
+};
+
+ESPrequest [nil_remove] CleanAckedFilesRequest
+{
+    string GroupName;
+    ESParray<string> FileNames;
+};
+
+ESPresponse [exceptions_inline, nil_remove, http_encode(0)] CleanAckedFilesResponse
+{
+};
+
 ESPservice [auth_feature("NONE"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSDecoupledLog
 {
     ESPmethod GetLogAgentSetting(GetLogAgentSettingRequest, GetLogAgentSettingResponse);
     ESPmethod PauseLog(PauseLogRequest, PauseLogResponse);
+    ESPmethod GetAckedLogFiles(GetAckedLogFilesRequest, GetAckedLogFilesResponse);
+    ESPmethod CleanAckedFiles(CleanAckedFilesRequest, CleanAckedFilesResponse);
 };
 
 SCMexportdef(WSDecoupledLog);

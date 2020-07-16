@@ -336,6 +336,11 @@ bool FileTransferThread::performTransfer()
 
         //Send message and wait for response...
         msg.append(action);
+
+        // send 0 for password info that was in <= 7.6 versions
+        unsigned zero = 0;
+        msg.append(zero);
+
         ep.serialize(msg);
         sprayer.srcFormat.serialize(msg);
         sprayer.tgtFormat.serialize(msg);

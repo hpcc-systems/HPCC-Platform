@@ -2552,6 +2552,10 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchOption(optConfig, "--config"))
         {
         }
+        else if (iter.matchOption(tempArg, "--daemon"))
+        {
+            //Ignore any --daemon option supplied to eclccserver which may be passed onto eclcc
+        }
         else if (iter.matchOption(optDFS, "-dfs") || /*deprecated*/ iter.matchOption(optDFS, "-dali"))
         {
             // Note - we wait until first use before actually connecting to dali

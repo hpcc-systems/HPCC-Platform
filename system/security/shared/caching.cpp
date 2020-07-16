@@ -225,6 +225,7 @@ CPermissionsCache::~CPermissionsCache()
         CriticalBlock block(mapCacheCS);
         g_mapCache.erase(m_secMgrClass.str());
     }
+    removeAllManagedFileScopes();
     flush();
 }
 

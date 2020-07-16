@@ -352,7 +352,10 @@ define([
         _onUserID: function(evt) {
             var userDialog = registry.byId(this.id + "UserDialog");
             var userInfo = registry.byId(this.id + "UserInfo");
-            if (!userInfo.init({ Username: this.userName })) {
+            if (!userInfo.init({
+                Username: this.userName,
+                Widget: userDialog
+            })) {
                 userInfo.refresh();
             }
             userDialog.show();
@@ -578,8 +581,7 @@ define([
             return new Tooltip({
                 connectId: [this.id + "StackController_" + widgetID],
                 label: text,
-                showDelay: 1,
-                position: ["below"]
+                position: ["above"]
             });
         }
     });

@@ -79,6 +79,10 @@ module.exports = function (env) {
                             name: '[name].[ext]'
                         }
                     }]
+                }, {
+                    test: /\.js$/,
+                    use: ["source-map-loader"],
+                    enforce: "pre"
                 }]
         },
         resolve: {
@@ -90,6 +94,7 @@ module.exports = function (env) {
         resolveLoader: {
             modules: ["node_modules"]
         },
-        mode: isProduction ? "production" : "development"
+        mode: isProduction ? "production" : "development",
+        devtool: isProduction ? undefined : 'source-map'
     }
 };
