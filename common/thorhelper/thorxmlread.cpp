@@ -359,7 +359,9 @@ __uint64 XmlSetColumnProvider::getUInt(const char * name)
 #ifdef _DEBUG
     assertex(stricmp(name, "value")==0);
 #endif
-    return readUInt(name, 0);
+    //MORE: Note nullptr is passed in all of these XmlSetColumnProvider::get functions
+    //The code generator incorrectly generates "value" as the name to read.  Really it should be fixed there.
+    return readUInt(nullptr, 0);
 }
 
 void XmlSetColumnProvider::getData(size32_t len, void * target, const char * name)
