@@ -1144,8 +1144,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         }
         virtual void end()
         {
+#ifdef _DEBUG
             VStringBuffer log("processed: %" I64F "u", total);
             trace(log);
+#endif
         }
         virtual void process(CThorExpandingRowArray &processing, unsigned selected) = 0;
     // IThreaded
@@ -2822,7 +2824,9 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 ++p;
             }
         }
+#ifdef _DEBUG
         handlerContainer.trace();
+#endif
     }
 public:
     IMPLEMENT_IINTERFACE_USING(PARENT);
