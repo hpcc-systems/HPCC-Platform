@@ -2942,6 +2942,19 @@ ENDMACRO;
                 </row>
 
                 <row>
+                  <entry>Alt+0</entry>
+
+                  <entry>Fold All - collapses all elements that can be
+                  collapsed</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+Alt+0</entry>
+
+                  <entry>Unfold All - expands all collapsed elements</entry>
+                </row>
+
+                <row>
                   <entry>Ctrl+A</entry>
 
                   <entry>Select All</entry>
