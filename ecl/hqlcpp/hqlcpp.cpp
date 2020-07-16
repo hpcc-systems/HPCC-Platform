@@ -9336,8 +9336,8 @@ void HqlCppTranslator::doBuildAssignHashElement(BuildCtx & ctx, HashCodeCreator 
             {
                 creator.beginCondition(ctx);
                 BuildCtx iterctx(ctx);
-                buildDatasetIterate(iterctx, elem, false);
-                doBuildAssignHashElement(iterctx, creator, elem->queryNormalizedSelector(), elem->queryRecord());
+                if (buildDatasetIterate(iterctx, elem, false))
+                    doBuildAssignHashElement(iterctx, creator, elem->queryNormalizedSelector(), elem->queryRecord());
                 creator.endCondition(iterctx);
                 return;
             }
