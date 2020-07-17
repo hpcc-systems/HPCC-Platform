@@ -264,6 +264,7 @@
               txSummaryResourceReq="false"
               maxBacklogQueueSize="200"
               maxConcurrentThreads="0"
+              maxLogFileSize="0"
               maxRequestEntityLength="8000000"
               minCompressLength="1000"
               name="myesp"

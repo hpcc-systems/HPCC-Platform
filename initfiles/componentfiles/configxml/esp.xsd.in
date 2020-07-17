@@ -924,6 +924,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="maxLogFileSize" type="xs:nonNegativeInteger" use="optional" default="0">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>The maximum log file size (0 for no size limit)</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="maxRequestEntityLength" type="xs:nonNegativeInteger" use="optional" default="8000000">
                 <xs:annotation>
                     <xs:appinfo>

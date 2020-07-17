@@ -588,7 +588,8 @@ private:
 class RollingFileLogMsgHandler : implements ILogMsgHandler, public CInterface
 {
 public:
-    RollingFileLogMsgHandler(const char * _filebase, const char * _fileextn, unsigned _fields = MSGFIELD_all, bool _append = false, bool _flushes = true, const char *initialName = NULL, const char *alias = NULL, bool daily = false);
+    RollingFileLogMsgHandler(const char * _filebase, const char * _fileextn, unsigned _fields = MSGFIELD_all, bool _append = false, bool _flushes = true,
+                             const char *initialName = NULL, const char *alias = NULL, bool daily = false, long _maxLogFileSize = 0);
     virtual ~RollingFileLogMsgHandler();
     IMPLEMENT_IINTERFACE;
     void                      handleMessage(const LogMsg & msg)
@@ -633,6 +634,9 @@ protected:
     mutable CriticalSection   crit;
     mutable struct tm         startTime;
     bool printHeader = true;
+    long                      maxLogFileSize = 0;
+    long                      linesSinceSizeChecked = 0; // How many lines logged since last size check for rollover
+    long                      sizeCheckNext = 0;         // how many lines to skip before checking size again
 };
 
 // Implementation of handler which writes message to file in binary form
