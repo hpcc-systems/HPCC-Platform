@@ -438,6 +438,7 @@ ESPStruct [nil_remove] ECLWorkunit
     [min_ver("1.50")] int DebugValueCount;
     [min_ver("1.50")] int WorkflowCount;
     [min_ver("1.67")] int HelpersCount;
+    [min_ver("1.78")] ESParray<string> ServiceNames;
 };
 
 ESPStruct [nil_remove] WUECLAttribute
