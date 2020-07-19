@@ -14,6 +14,7 @@ service_plugins:
   WsFileIO: ws_fileio
   ws_machine: ws_machine
   WsPackageProcess: ws_packageprocess
+  ws_sql: ws_sql
   ws_store: ws_store
   WSESPControl: wsespcontrol
   WsSMC: ws_smc
@@ -32,6 +33,7 @@ binding_plugins:
   WsFileIO: ws_fileio
   ws_machine: ws_machine
   WsPackageProcess: ws_packageprocess
+  ws_sql: ws_sql
   ws_store: ws_store
   WsTopology: ws_topology
   WsWorkunits: ws_workunits
