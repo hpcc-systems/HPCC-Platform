@@ -96,11 +96,11 @@ done
 
 pckname=$(apt-cache pkgnames hpccsystems-platform 2> /dev/null)
 
-if [ $purge != 'purge' ];then
+if [ "$purge" != "purge" ];then
     read -p "This action will purge ${pckname} and all related data. Are you sure you want to proceed? (purge/quit): " purge
 fi
 
-if [ $purge = "purge" ]; then
+if [ "$purge" = "purge" ]; then
     set_environmentvars
 
     mklink=""
