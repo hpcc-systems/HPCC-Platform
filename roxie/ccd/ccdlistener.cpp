@@ -73,7 +73,7 @@ class CascadeManager : public CInterface
     UnsignedArray activeIdxes;
     bool entered;
     bool connected;
-    bool isMaster;
+    bool isOriginal;
     CriticalSection revisionCrit;
     int myEndpoint;
     const IRoxieContextLogger &logctx;
@@ -293,7 +293,7 @@ public:
     {
         entered = false;
         connected = false;
-        isMaster = false;
+        isOriginal = false;
         myEndpoint = -1;
         logctx.Link();
     }
@@ -308,7 +308,7 @@ public:
     {
         if (traceLevel > 5)
             DBGLOG("doLockChild: %s", logText);
-        isMaster = false;
+        isOriginal = false;
         bool unlock = xml->getPropBool("@unlock", false);
         if (unlock)
         {
@@ -353,7 +353,7 @@ public:
     {
         assertex(!entered);
         assertex(!connected);
-        isMaster = true;
+        isOriginal = true;
         myEndpoint = -1;
         unsigned attemptsLeft = maxLockAttempts;
         connectChild(0);
@@ -407,7 +407,7 @@ public:
     void doControlQuery(SocketEndpoint &ep, IPropertyTree *xml, const char *queryText, StringBuffer &reply)
     {
         if (logctx.queryTraceLevel() > 5)
-            logctx.CTXLOG("doControlQuery (%d): %.80s", isMaster, queryText);
+            logctx.CTXLOG("doControlQuery (%d): %.80s", isOriginal, queryText);
         // By this point we should have cascade-connected thanks to a prior <control:lock>
         // So do the query ourselves and in all child threads;
         const char *name = xml->queryName();
@@ -505,12 +505,12 @@ public:
                     reply.append(myReply);
             }
         } afor(xml, queryText, this, mergedReply, mergeType, reply, ep, activeChildren.ordinality(), logctx);
-        afor.For(activeChildren.ordinality()+(isMaster ? 0 : 1), 10);
+        afor.For(activeChildren.ordinality()+(isOriginal ? 0 : 1), 10);
         activeChildren.kill();
         if (mergedReply)
             toXML(mergedReply, reply, 0, (mergeType == CascadeMergeQueries) ? XML_Embed|XML_LineBreak|XML_SortTags : XML_Format);
         if (logctx.queryTraceLevel() > 5)
-            logctx.CTXLOG("doControlQuery (%d) finished: %.80s", isMaster, queryText);
+            logctx.CTXLOG("doControlQuery (%d) finished: %.80s", isOriginal, queryText);
     }
 
 };
