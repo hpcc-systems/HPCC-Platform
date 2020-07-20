@@ -1152,7 +1152,8 @@ public:
         else
         {
             unsigned _snum = (rowidx_t)snum; // only support 2^32 rows in memory
-            assertex(snum==_snum);
+            if (snum != _snum)
+                throw MakeActivityException(activity, 0, "Local sort limit exceeeded (max = 2^32 rows), trying to sort %" RCPF "u rows", snum);
             return rowArray.createRowStream((rowidx_t)sstart, _snum, false); // must be false as rows may overlap (between join)
         }
     }
