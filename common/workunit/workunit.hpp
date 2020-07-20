@@ -52,6 +52,12 @@ typedef unsigned short UChar;
 #endif //_WIN32
 
 
+enum : unsigned
+{
+    WUERR_ModifyFilterAfterFinalize = WORKUNIT_ERROR_START,
+    WUERR_FinalizeAfterFinalize,
+};
+
 // error codes
 #define QUERRREG_ADD_NAMEDQUERY     QUERYREGISTRY_ERROR_START
 #define QUERRREG_REMOVE_NAMEDQUERY  QUERYREGISTRY_ERROR_START+1
@@ -1049,12 +1055,14 @@ protected:
  */
 class WORKUNIT_API WuScopeFilter
 {
+    friend class CompoundStatisticsScopeIterator;
 public:
     WuScopeFilter() = default;
     WuScopeFilter(const char * filter);
 
     WuScopeFilter & addFilter(const char * filter);
     WuScopeFilter & addScope(const char * scope);
+    WuScopeFilter & addScopeType(StatisticScopeType scopeType);
     WuScopeFilter & addScopeType(const char * scopeType);
     WuScopeFilter & addId(const char * id);
     WuScopeFilter & setDepth(unsigned low, unsigned high);
@@ -1089,13 +1097,17 @@ public:
     const ScopeFilter & queryIterFilter() const;
     bool isOptimized() const { return optimized; }
     bool onlyIncludeScopes() const { return (properties & ~PTscope) == 0; }
+    WuScopeSourceFlags querySources() const { return sourceFlags; }
+    unsigned queryMinVersion() const { return minVersion; }
+    bool outputDefined() const { return properties != PTnone; }
 
 protected:
     void addRequiredStat(const char * filter);
+    void checkModifiable() { if (unlikely(optimized)) reportModifyTooLate(); }
     bool matchOnly(StatisticScopeType scopeType) const;
+    void reportModifyTooLate();
 
-    //MORE: Make the following protected/private
-public:
+protected:
 //The following members control which scopes are matched by the iterator
     ScopeFilter scopeFilter;                            // Filter that must be matched by a scope
     std::vector<StatisticValueFilter> requiredStats;    // The attributes that must be present for a particular scope
