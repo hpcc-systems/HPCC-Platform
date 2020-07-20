@@ -2019,8 +2019,8 @@ void CEspHttpServer::logoutSession(EspAuthRequest& authReq, unsigned sessionID, 
                 if (user)
                 {
                     //inform security manager that user is logged out
-                    Owned<ISecUser> secUser = secmgr->createUser(user);
-                    secmgr->logoutUser(*secUser);
+                    Owned<ISecUser> secUser = secmgr->createUser(user, ctx->querySecureContext());
+                    secmgr->logoutUser(*secUser, ctx->querySecureContext());
                 }
             }
 

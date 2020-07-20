@@ -29,6 +29,8 @@
 
 class CBaseSecurityManager : implements ISecManager, public CInterface
 {
+    static const SecFeatureSet s_implementedFeatureMask = SMF_CreateUser | SMF_CreateResourceList;
+    static const SecFeatureSet s_safeFeatureMask = s_implementedFeatureMask | SMF_CreateSettingMap;
 public:
     IMPLEMENT_IINTERFACE
 
@@ -47,52 +49,67 @@ public:
 
 
     //ISecManager
-    ISecUser * createUser(const char * user_name)
+    SecFeatureSet queryFeatures(SecFeatureSupportLevel level) const override
+    {
+        switch (level)
+        {
+        case SFSL_Unsafe:
+            return (SMF_ALL_FEATURES & ~s_safeFeatureMask);
+        case SFSL_Safe:
+            return s_safeFeatureMask;
+        case SFSL_Implemented:
+            return s_implementedFeatureMask;
+        default:
+            return SMF_NO_FEATURES;
+        }
+    }
+
+    ISecUser * createUser(const char * user_name, IEspSecureContext* secureContext = nullptr) override
     {
         return new CSecureUser(user_name, NULL);
     }
 
-    ISecResourceList * createResourceList(const char * rlname)
+    ISecResourceList * createResourceList(const char * rlname, IEspSecureContext* secureContext = nullptr) override
     {
         return new CSecurityResourceList(rlname);
     }
 
-    bool subscribe(ISecAuthenticEvents & events)
+    bool subscribe(ISecAuthenticEvents & events, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    bool unsubscribe(ISecAuthenticEvents & events)
+    bool unsubscribe(ISecAuthenticEvents & events, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    bool authorize(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext)
+    bool authorize(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    bool authorizeEx(SecResourceType rtype, ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext)
+    bool authorizeEx(SecResourceType rtype, ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext) override
     {
         throwUnexpected();
     }
 
-    SecAccessFlags authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext)
+    SecAccessFlags authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext) override
     {
         throwUnexpected();
     }
 
-    SecAccessFlags getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename)
+    SecAccessFlags getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    SecAccessFlags authorizeFileScope(ISecUser & user, const char * filescope)
+    SecAccessFlags authorizeFileScope(ISecUser & user, const char * filescope, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    bool authorizeFileScope(ISecUser & user, ISecResourceList * resources)
+    bool authorizeFileScope(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
@@ -102,87 +119,87 @@ public:
         throwUnexpected();
     }
 
-    bool addResources(ISecUser & user, ISecResourceList * resources)
+    bool addResources(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    bool addResourcesEx(SecResourceType rtype, ISecUser & user, ISecResourceList * resources, SecPermissionType ptype, const char * basedn)
+    bool addResourcesEx(SecResourceType rtype, ISecUser & user, ISecResourceList * resources, SecPermissionType ptype, const char * basedn, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    bool addResourceEx(SecResourceType rtype, ISecUser & user, const char * resourcename, SecPermissionType ptype, const char * basedn)
+    bool addResourceEx(SecResourceType rtype, ISecUser & user, const char * resourcename, SecPermissionType ptype, const char * basedn, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    bool getResources(SecResourceType rtype, const char * basedn, IResourceArray & resources)
+    bool getResources(SecResourceType rtype, const char * basedn, IResourceArray & resources, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    bool updateResources(ISecUser & user, ISecResourceList * resources)
+    bool updateResources(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    bool updateSettings(ISecUser & user, ISecPropertyList * resources, IEspSecureContext* secureContext)
+    bool updateSettings(ISecUser & user, ISecPropertyList * resources, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    bool addUser(ISecUser & user)
+    bool addUser(ISecUser & user, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    ISecUser * findUser(const char * username)
+    ISecUser * findUser(const char * username, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    ISecUser * lookupUser(unsigned uid)
+    ISecUser * lookupUser(unsigned uid, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    ISecUserIterator * getAllUsers()
+    ISecUserIterator * getAllUsers(IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    void getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions )
+    void getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    bool updateUserPassword(ISecUser & user, const char * newPassword, const char* currPassword = 0)
+    bool updateUserPassword(ISecUser & user, const char * newPassword, const char* currPassword = nullptr, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    bool initUser(ISecUser & user)
+    bool initUser(ISecUser & user, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    void setExtraParam(const char * name, const char * value)
+    void setExtraParam(const char * name, const char * value, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    IAuthMap * createAuthMap(IPropertyTree * authconfig)
+    IAuthMap * createAuthMap(IPropertyTree * authconfig, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    IAuthMap * createFeatureMap(IPropertyTree * authconfig)
+    IAuthMap * createFeatureMap(IPropertyTree * authconfig, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    IAuthMap * createSettingMap(IPropertyTree * authconfig)
+    IAuthMap * createSettingMap(IPropertyTree * authconfig, IEspSecureContext* secureContext = nullptr) override
     {
 #ifdef _DEBUG
         DBGLOG("using CBaseSecurityManager::createSettingMap; override with desired behavior");
@@ -190,87 +207,97 @@ public:
         return nullptr;
     }
 
-    void deleteResource(SecResourceType rtype, const char * name, const char * basedn)
+    void deleteResource(SecResourceType rtype, const char * name, const char * basedn, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    void renameResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn)
+    void renameResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    void copyResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn)
+    void copyResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    void cacheSwitch(SecResourceType rtype, bool on)
+    void cacheSwitch(SecResourceType rtype, bool on, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    bool authTypeRequired(SecResourceType rtype)
+    bool authTypeRequired(SecResourceType rtype, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    SecAccessFlags authorizeWorkunitScope(ISecUser & user, const char * filescope)
+    SecAccessFlags authorizeWorkunitScope(ISecUser & user, const char * filescope, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    bool authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources)
+    bool authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    const char * getDescription()
+    const char * getDescription() override
     {
         throwUnexpected();
     }
 
-    unsigned getPasswordExpirationWarningDays()
+    unsigned getPasswordExpirationWarningDays(IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    bool createUserScopes()
+    bool createUserScopes(IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    aindex_t getManagedScopeTree(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes)
+    aindex_t getManagedScopeTree(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    SecAccessFlags queryDefaultPermission(ISecUser& user)
+    SecAccessFlags queryDefaultPermission(ISecUser& user, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    bool clearPermissionsCache(ISecUser & user)
+    bool clearPermissionsCache(ISecUser & user, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    bool authenticateUser(ISecUser & user, bool *superUser)
+    bool authenticateUser(ISecUser & user, bool *superUser, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }
 
-    secManagerType querySecMgrType()
+    secManagerType querySecMgrType() override
     {
         throwUnexpected();
     }
 
-    const char* querySecMgrTypeName()
+    const char* querySecMgrTypeName() override
     {
         throwUnexpected();
     }
 
-    bool logoutUser(ISecUser & user)
+    bool logoutUser(ISecUser & user, IEspSecureContext* secureContext = nullptr) override
+    {
+        throwUnexpected();
+    }
+
+    bool retrieveUserData(ISecUser& requestedUser, ISecUser* requestingUser = nullptr, IEspSecureContext* secureContext = nullptr) override
+    {
+        throwUnexpected();
+    }
+
+    bool removeResources(ISecUser& sec_user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) override
     {
         throwUnexpected();
     }

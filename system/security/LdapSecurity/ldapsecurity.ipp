@@ -72,6 +72,8 @@ private:
     StringBuffer m_signature;//User's digital signature
 
     static Owned<IProperties> sm_emptyParameters;
+    static const SecFeatureSet s_safeFeatures = SUF_ALL_FEATURES;
+    static const SecFeatureSet s_implementedFeatures = s_safeFeatures & ~(SUF_GetDataElement | SUF_GetDataElements);
 
 public:
     IMPLEMENT_IINTERFACE
@@ -84,6 +86,7 @@ public:
     void setUserSid(int sidlen, const char* sid);
     MemoryBuffer& getUserSid();
 //interface ISecUser
+    SecFeatureSet queryFeatures(SecFeatureSupportLevel level) const override;
     const char * getName();
     bool setName(const char * name);
     virtual const char * getFullName();
@@ -155,7 +158,8 @@ public:
     virtual void setPropertyInt(const char* name, int value){}
     virtual int getPropertyInt(const char* name){ return 0;}
     IPropertyIterator * getPropertyIterator() const override { return sm_emptyParameters->getIterator();}
-
+    IPropertyTree* getDataElement(const char* xpath = ".") const override { return nullptr; }
+    IPropertyTreeIterator* getDataElements(const char* xpath = ".") const override { return nullptr; }
 
 //interface ISecCredentials
     bool setPassword(const char * pw);
@@ -361,6 +365,8 @@ private:
     StringBuffer m_description;
     unsigned m_passwordExpirationWarningDays;
     bool m_checkViewPermissions;
+    static const SecFeatureSet s_safeFeatures = SMF_ALL_FEATURES;
+    static const SecFeatureSet s_implementedFeatures = s_safeFeatures & ~(SMF_RetrieveUserData | SMF_RemoveResources);
 
 public:
     IMPLEMENT_IINTERFACE
@@ -370,50 +376,51 @@ public:
     virtual ~CLdapSecManager();
 
 //interface ISecManager : extends IInterface
-    ISecUser * createUser(const char * user_name);
-    ISecResourceList * createResourceList(const char * rlname);
-    bool subscribe(ISecAuthenticEvents & events);
-    bool unsubscribe(ISecAuthenticEvents & events);
-    bool authorize(ISecUser& sec_user, ISecResourceList * Resources, IEspSecureContext* secureContext);
-    bool authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * Resources, IEspSecureContext* secureContext = NULL);
-    SecAccessFlags authorizeEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename, IEspSecureContext* secureContext = NULL);
-    virtual SecAccessFlags authorizeFileScope(ISecUser & user, const char * filescope);
-    virtual bool authorizeFileScope(ISecUser & user, ISecResourceList * resources);
-    virtual SecAccessFlags authorizeWorkunitScope(ISecUser & user, const char * wuscope);
+    SecFeatureSet queryFeatures(SecFeatureSupportLevel level) const override;
+    ISecUser * createUser(const char * user_name, IEspSecureContext* secureContext = nullptr) override;
+    ISecResourceList * createResourceList(const char * rlname, IEspSecureContext* secureContext = nullptr) override;
+    bool subscribe(ISecAuthenticEvents & events, IEspSecureContext* secureContext = nullptr) override;
+    bool unsubscribe(ISecAuthenticEvents & events, IEspSecureContext* secureContext = nullptr) override;
+    bool authorize(ISecUser& sec_user, ISecResourceList * Resources, IEspSecureContext* secureContext = nullptr) override;
+    bool authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * Resources, IEspSecureContext* secureContext = nullptr) override;
+    SecAccessFlags authorizeEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename, IEspSecureContext* secureContext = nullptr) override;
+    SecAccessFlags authorizeFileScope(ISecUser & user, const char * filescope, IEspSecureContext* secureContext = nullptr) override;
+    bool authorizeFileScope(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) override;
+    SecAccessFlags authorizeWorkunitScope(ISecUser & user, const char * wuscope, IEspSecureContext* secureContext = nullptr) override;
     virtual bool authorizeViewScope(ISecUser & user, StringArray & filenames, StringArray & columnnames);
-    virtual bool authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources);
-    virtual bool addResources(ISecUser& sec_user, ISecResourceList * resources);
-    virtual SecAccessFlags getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename);
-    virtual bool addResourcesEx(SecResourceType rtype, ISecUser &user, ISecResourceList* resources, SecPermissionType ptype = PT_DEFAULT, const char* basedn = NULL);
-    virtual bool addResourceEx(SecResourceType rtype, ISecUser& user, const char* resourcename, SecPermissionType ptype = PT_DEFAULT, const char* basedn = NULL);
-    virtual bool updateResources(ISecUser& sec_user, ISecResourceList * resources){return false;}
-    virtual bool addUser(ISecUser & user);
-    virtual ISecUser * lookupUser(unsigned uid);
-    virtual ISecUser * findUser(const char * username);
-    virtual ISecUserIterator * getAllUsers();
+    bool authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) override;
+    bool addResources(ISecUser& sec_user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) override;
+    SecAccessFlags getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext = nullptr) override;
+    bool addResourcesEx(SecResourceType rtype, ISecUser &user, ISecResourceList* resources, SecPermissionType ptype = PT_DEFAULT, const char* basedn = NULL, IEspSecureContext* secureContext = nullptr) override;
+    bool addResourceEx(SecResourceType rtype, ISecUser& user, const char* resourcename, SecPermissionType ptype = PT_DEFAULT, const char* basedn = NULL, IEspSecureContext* secureContext = nullptr) override;
+    bool updateResources(ISecUser& sec_user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) override {return false;}
+    bool addUser(ISecUser & user, IEspSecureContext* secureContext = nullptr) override;
+    ISecUser * lookupUser(unsigned uid, IEspSecureContext* secureContext = nullptr) override;
+    ISecUser * findUser(const char * username, IEspSecureContext* secureContext = nullptr) override;
+    ISecUserIterator * getAllUsers(IEspSecureContext* secureContext = nullptr) override;
     virtual void searchUsers(const char* searchstr, IUserArray& users);
     virtual ISecItemIterator* getUsersSorted(const char* userName, UserField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint);
     virtual void getAllUsers(IUserArray& users);
-    virtual void setExtraParam(const char * name, const char * value);
-    virtual IAuthMap * createAuthMap(IPropertyTree * authconfig);
-    virtual IAuthMap * createFeatureMap(IPropertyTree * authconfig);
-    virtual IAuthMap * createSettingMap(struct IPropertyTree *){return 0;}
-    virtual bool updateSettings(ISecUser & User,ISecPropertyList * settings, IEspSecureContext* secureContext){return false;}
-    virtual bool updateUserPassword(ISecUser& user, const char* newPassword, const char* currPassword = 0);
+    void setExtraParam(const char * name, const char * value, IEspSecureContext* secureContext = nullptr) override;
+    IAuthMap * createAuthMap(IPropertyTree * authconfig, IEspSecureContext* secureContext = nullptr) override;
+    IAuthMap * createFeatureMap(IPropertyTree * authconfig, IEspSecureContext* secureContext = nullptr) override;
+    IAuthMap * createSettingMap(struct IPropertyTree *, IEspSecureContext* secureContext = nullptr) override {return 0;}
+    bool updateSettings(ISecUser & User,ISecPropertyList * settings, IEspSecureContext* secureContext = nullptr) override {return false;}
+    bool updateUserPassword(ISecUser& user, const char* newPassword, const char* currPassword = nullptr, IEspSecureContext* secureContext = nullptr) override;
     virtual bool updateUser(const char* type, ISecUser& user);
     virtual bool updateUserPassword(const char* username, const char* newPassword);
-    virtual bool initUser(ISecUser& user){return false;}
+    bool initUser(ISecUser& user, IEspSecureContext* secureContext = nullptr) override {return false;}
 
-    virtual bool getResources(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& resources);
+    bool getResources(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& resources, IEspSecureContext* secureContext = nullptr) override;
     virtual bool getResourcesEx(SecResourceType rtype, const char * basedn, const char * searchstr, IArrayOf<ISecResource>& resources);
     virtual ISecItemIterator* getResourcesSorted(SecResourceType rtype, const char* basedn, const char* resourceName, unsigned extraNameFilter,
         ResourceField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint);
     virtual ISecItemIterator* getResourcePermissionsSorted(const char* name, enum ACCOUNT_TYPE_REQ accountType, const char* baseDN, const char* rtype, const char* prefix,
         ResourcePermissionField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint);
-    virtual void cacheSwitch(SecResourceType rtype, bool on);
+    void cacheSwitch(SecResourceType rtype, bool on, IEspSecureContext* secureContext = nullptr) override;
 
     virtual bool getPermissionsArray(const char* basedn, SecResourceType rtype, const char* name, IArrayOf<CPermission>& permissions);
-    virtual void getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions);
+    void getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions, IEspSecureContext* secureContext = nullptr) override;
     virtual ISecItemIterator* getGroupsSorted(GroupField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint);
     virtual ISecItemIterator* getGroupMembersSorted(const char* groupName, UserField* sortOrder, const unsigned pageStartFrom, const unsigned pageSize, unsigned* total, __int64* cacheHint);
     virtual void getGroups(const char* username, StringArray & groups);
@@ -423,9 +430,9 @@ public:
     virtual void addGroup(const char* groupname, const char * groupOwner, const char * groupDesc);
     virtual void deleteGroup(const char* groupname);
     virtual void getGroupMembers(const char* groupname, StringArray & users);
-    virtual void deleteResource(SecResourceType rtype, const char * name, const char * basedn);
-    virtual void renameResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn);
-    virtual void copyResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn);
+    void deleteResource(SecResourceType rtype, const char * name, const char * basedn, IEspSecureContext* secureContext = nullptr) override;
+    void renameResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn, IEspSecureContext* secureContext = nullptr) override;
+    void copyResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn, IEspSecureContext* secureContext = nullptr) override;
 
     virtual bool authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * Resources, bool doAuthentication);
     virtual SecAccessFlags authorizeEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename, bool doAuthentication);
@@ -436,7 +443,7 @@ public:
 
     virtual int countResources(const char* basedn, const char* searchstr, int limit);
     virtual int countUsers(const char* searchstr, int limit);
-    virtual bool authTypeRequired(SecResourceType rtype) {return true;};
+    bool authTypeRequired(SecResourceType rtype, IEspSecureContext* secureContext = nullptr) override {return true;};
 
     virtual bool getUserInfo(ISecUser& user, const char* infotype = NULL);
     
@@ -456,12 +463,12 @@ public:
             return NULL;
     }
         
-    virtual const char* getDescription()
+    const char* getDescription() override
     {
         return m_description.str();
     }
 
-    virtual unsigned getPasswordExpirationWarningDays()
+    unsigned getPasswordExpirationWarningDays(IEspSecureContext* secureContext = nullptr) override
     {
         return m_passwordExpirationWarningDays;
     }
@@ -471,14 +478,16 @@ public:
         return m_checkViewPermissions;
     }
 
-    virtual bool createUserScopes();
-    virtual aindex_t getManagedScopeTree(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes);
-    virtual SecAccessFlags queryDefaultPermission(ISecUser& user);
-    virtual bool clearPermissionsCache(ISecUser &user);
-    virtual bool authenticateUser(ISecUser & user, bool * superUser);
-    virtual secManagerType querySecMgrType() { return SMT_LDAP; }
-    inline virtual const char* querySecMgrTypeName() { return "LdapSecurity"; }
-    virtual bool logoutUser(ISecUser & user);
+    bool createUserScopes(IEspSecureContext* secureContext = nullptr) override;
+    aindex_t getManagedScopeTree(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes, IEspSecureContext* secureContext = nullptr) override;
+    SecAccessFlags queryDefaultPermission(ISecUser& user, IEspSecureContext* secureContext = nullptr) override;
+    bool clearPermissionsCache(ISecUser &user, IEspSecureContext* secureContext = nullptr) override;
+    bool authenticateUser(ISecUser & user, bool * superUser, IEspSecureContext* secureContext = nullptr) override;
+    secManagerType querySecMgrType() override { return SMT_LDAP; }
+    inline const char* querySecMgrTypeName() override { return "LdapSecurity"; }
+    bool logoutUser(ISecUser & user, IEspSecureContext* secureContext = nullptr) override;
+    bool retrieveUserData(ISecUser& requestedUser, ISecUser* requestingUser = nullptr, IEspSecureContext* secureContext = nullptr) override;
+    bool removeResources(ISecUser& sec_user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) override { return false; }
 
     //Data View related interfaces
     virtual void createView(const char * viewName, const char * viewDescription);

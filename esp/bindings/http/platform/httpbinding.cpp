@@ -648,7 +648,7 @@ void EspHttpBinding::populateRequest(CHttpRequest *request)
     }
 
 
-    ISecUser *user = m_secmgr->createUser(userid.str());
+    ISecUser *user = m_secmgr->createUser(userid.str(), ctx->querySecureContext());
     if(user == NULL)
     {
         UWARNLOG("Couldn't create ISecUser object for %s", userid.str());

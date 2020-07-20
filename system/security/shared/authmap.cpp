@@ -112,9 +112,9 @@ bool CAuthMap::shouldAuth(const char* path)
     return false;
 }
 
-bool CAuthMap::addToBackend()
+bool CAuthMap::shareWithManager(ISecManager& manager, IEspSecureContext* secureContext)
 {
-    if(m_secmgr == NULL)
+    if(!manager.checkImplementedFeatures(SMF_AddResources))
         return false;
 
     bool ok = true;
@@ -124,7 +124,26 @@ bool CAuthMap::addToBackend()
         if(curlist == NULL)
             continue;
         ISecUser* usr = NULL;
-        bool ret = m_secmgr->addResources(*usr, curlist);
+        bool ret = manager.addResources(*usr, curlist, secureContext);
+        ok = ok && ret;
+    }
+
+    return ok;
+}
+
+bool CAuthMap::removeFromManager(ISecManager& manager, IEspSecureContext* secureContext)
+{
+    if(!manager.checkImplementedFeatures(SMF_RemoveResources))
+        return false;
+
+    bool ok = true;
+    ForEachItemIn(x, m_resourcelists)
+    {
+        ISecResourceList* curlist = (ISecResourceList*)m_resourcelists.item(x).list();
+        if(curlist == NULL)
+            continue;
+        ISecUser* usr = NULL;
+        bool ret = manager.removeResources(*usr, curlist, secureContext);
         ok = ok && ret;
     }
 

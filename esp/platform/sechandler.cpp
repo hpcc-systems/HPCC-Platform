@@ -96,17 +96,17 @@ bool SecHandler::authorizeSecFeature(const char * pszFeatureUrl, const char* Use
     //see do we have a cached version of our secondary user.....
     //.. if we do then check it...
     Owned<ISecUser> pSecondaryUser;
-    pSecondaryUser.set(m_secmgr->findUser(UserID));
+    pSecondaryUser.set(m_secmgr->findUser(UserID, m_secureContext));
     if(pSecondaryUser.get()== NULL)
     {
-        pSecondaryUser.setown(m_secmgr->createUser(UserID));
+        pSecondaryUser.setown(m_secmgr->createUser(UserID, m_secureContext));
         if (!pSecondaryUser)
             return false;
         pSecondaryUser->setRealm(CompanyID);
-        bool bSecondaryAccessAllowed = m_secmgr->initUser(*pSecondaryUser.get());
+        bool bSecondaryAccessAllowed = m_secmgr->initUser(*pSecondaryUser.get(), m_secureContext);
         if(bSecondaryAccessAllowed==false)
             return false;
-        m_secmgr->addUser(*pSecondaryUser.get());
+        m_secmgr->addUser(*pSecondaryUser.get(), m_secureContext);
     }
 
     // currently not the responsibility of this service to authenticate the secondary user.
@@ -228,7 +228,7 @@ bool SecHandler::authorizeSecReqFeatures(StringArray & features, IEspStringIntMa
     }
 
 
-    Owned<ISecResourceList> plist = m_secmgr->createResourceList("FeatureMap");
+    Owned<ISecResourceList> plist = m_secmgr->createResourceList("FeatureMap", m_secureContext);
 
     std::map<std::string, std::string> namemap;
 

@@ -98,7 +98,7 @@ bool Cws_accountEx::onUpdateUser(IEspContext &context, IEspUpdateUserRequest & r
         bool ok = false;
         try
         {
-            ok = secmgr->updateUserPassword(*user, newpass1, oldpass);
+            ok = secmgr->updateUserPassword(*user, newpass1, oldpass, context.querySecureContext());
         }
         catch(IException* e)
         {
@@ -167,7 +167,7 @@ bool Cws_accountEx::onMyAccount(IEspContext &context, IEspMyAccountRequest &req,
         }
         double version = context.getClientVersion();
         const char* userName = userInContext->getName();
-        Owned<ISecUser> user = secmgr->findUser(userName);
+        Owned<ISecUser> user = secmgr->findUser(userName, context.querySecureContext());
         if(user != NULL)
         {
             CDateTime dt;
@@ -193,7 +193,7 @@ bool Cws_accountEx::onMyAccount(IEspContext &context, IEspMyAccountRequest &req,
             resp.setUsername(user->getName());
 
             if (version >= 1.01)
-                resp.setPasswordExpirationWarningDays(context.querySecManager()->getPasswordExpirationWarningDays());
+                resp.setPasswordExpirationWarningDays(context.querySecManager()->getPasswordExpirationWarningDays(context.querySecureContext()));
 
             if (version >= 1.02)
                 resp.setEmployeeID(user->getEmployeeID());

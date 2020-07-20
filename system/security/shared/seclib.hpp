@@ -187,6 +187,36 @@ interface ISecCredentials : extends IInterface
     virtual int getPasswordDaysRemaining() = 0;
 };
 
+// Bit-field value associate with a security entity method. Bits are reused by multiple entities.
+// As a convenience to developers, named feature bits should be named such that the relationship
+// can be inferred.
+using SecFeatureBit = uint64_t;
+// Any combination of SecFeatureBit values. Combinations of bits describing multiple entities can't
+// be detected by code. Developers are responsible for properly defining combinations of interest.
+using SecFeatureSet = SecFeatureBit;
+// A selector for the entity feature set to be used in a query or comparison.
+enum SecFeatureSupportLevel
+{
+    SFSL_Unsafe,      // request results in an exception
+    SFSL_Safe,        // request is consumed without error
+    SFSL_Implemented, // request is handled logically
+};
+
+interface ISecObject : extends IInterface
+{
+    // Returns a mask representing an arbitrary number of features with the request level of support.
+    virtual SecFeatureSet queryFeatures(SecFeatureSupportLevel level) const = 0;
+    inline SecFeatureSet queryUnsafeFeatures() const { return queryFeatures(SFSL_Unsafe); }
+    inline SecFeatureSet querySafeFeatures() const { return queryFeatures(SFSL_Safe); }
+    inline SecFeatureSet queryImplementedFeatures() const { return queryFeatures(SFSL_Implemented); }
+
+    // Returns true if all features in the input mask are included in the indicated feature set.
+    inline bool checkFeatures(SecFeatureSupportLevel level, SecFeatureSet featureMask) const { return ((queryFeatures(level) & featureMask) == featureMask); }
+    inline bool checkUnsafeFeatures(SecFeatureSet featureMask) const { return checkFeatures(SFSL_Unsafe, featureMask); }
+    inline bool checkSafeFeatures(SecFeatureSet featureMask) const { return checkFeatures(SFSL_Safe, featureMask); }
+    inline bool checkImplementedFeatures(SecFeatureSet featureMask) const { return checkFeatures(SFSL_Implemented, featureMask); }
+};
+
 //LDAP authentication status
 enum authStatus : int
 {
@@ -198,9 +228,51 @@ enum authStatus : int
     AS_PASSWORD_VALID_BUT_EXPIRED = 5//user entered valid password, but authentication failed because it is expired
 };
 
+static const SecFeatureBit SUF_NO_FEATURES                 = 0x00;
+static const SecFeatureBit SUF_GetName                     = 0x01;
+static const SecFeatureBit SUF_SetName                     = 0x02;
+static const SecFeatureBit SUF_GetFullname                 = 0x04;
+static const SecFeatureBit SUF_SetFullName                 = 0x08;
+static const SecFeatureBit SUF_GetFirstName                = 0x10;
+static const SecFeatureBit SUF_SetFirstName                = 0x20;
+static const SecFeatureBit SUF_GetLastName                 = 0x40;
+static const SecFeatureBit SUF_SetLastName                 = 0x80;
+static const SecFeatureBit SUF_GetEmployeeID               = 0x0100;
+static const SecFeatureBit SUF_SetEmployeeID               = 0x0200;
+static const SecFeatureBit SUF_GetEmployeeNumber           = 0x0400;
+static const SecFeatureBit SUF_SetEmployeeNumber           = 0x0800;
+static const SecFeatureBit SUF_GetDistinguishedName        = 0x1000;
+static const SecFeatureBit SUF_SetDistinguishedName        = 0x2000;
+static const SecFeatureBit SUF_GetRealm                    = 0x4000;
+static const SecFeatureBit SUF_SetRealm                    = 0x8000;
+static const SecFeatureBit SUF_GetFqdn                     = 0x010000;
+static const SecFeatureBit SUF_SetFqdn                     = 0x020000;
+static const SecFeatureBit SUF_GetPeer                     = 0x040000;
+static const SecFeatureBit SUF_SetPeer                     = 0x080000;
+static const SecFeatureBit SUF_GetStatus                   = 0x100000;
+static const SecFeatureBit SUF_SetStatus                   = 0x200000;
+static const SecFeatureBit SUF_GetAuthenticateStatus       = 0x400000;
+static const SecFeatureBit SUF_SetAuthenticateStatus       = 0x800000;
+static const SecFeatureBit SUF_Credentials                 = 0x01000000;
+static const SecFeatureBit SUF_GetUserID                   = 0x02000000;
+static const SecFeatureBit SUF_CopyTo                      = 0x04000000;
+static const SecFeatureBit SUF_GetPasswordExpiration       = 0x08000000;
+static const SecFeatureBit SUF_SetPasswordExpiration       = 0x10000000;
+static const SecFeatureBit SUF_GetPasswordDaysRemaining    = 0x20000000;
+static const SecFeatureBit SUF_GetProperty                 = 0x40000000;
+static const SecFeatureBit SUF_SetProperty                 = 0x80000000;
+static const SecFeatureBit SUF_GetPropertyInt              = 0x0100000000;
+static const SecFeatureBit SUF_SetPropertyInt              = 0x0200000000;
+static const SecFeatureBit SUF_GetPropertyIterator         = 0x0400000000;
+static const SecFeatureBit SUF_Clone                       = 0x0800000000;
+static const SecFeatureBit SUF_GetDataElement              = 0x1000000000;
+static const SecFeatureBit SUF_GetDataElements             = 0x2000000000;
+static const SecFeatureSet SUF_ALL_FEATURES                = 0x3FFFFFFFFF; // update to include all added feature bits
+
 class CDateTime;
 interface IPropertyIterator;
-interface ISecUser : extends IInterface
+interface IPropertyTreeIterator;
+interface ISecUser : implements ISecObject
 {
     virtual const char * getName() = 0;
     virtual bool setName(const char * name) = 0;
@@ -238,6 +310,8 @@ interface ISecUser : extends IInterface
     virtual int getPropertyInt(const char * name) = 0;
     virtual IPropertyIterator * getPropertyIterator() const = 0;
     virtual ISecUser * clone() = 0;
+    virtual IPropertyTree* getDataElement(const char* xpath = ".") const = 0;
+    virtual IPropertyTreeIterator* getDataElements(const char* xpath = ".") const = 0;
 };
 
 
@@ -319,12 +393,16 @@ interface ISecUserIterator : extends IIteratorOf<ISecUser>
 {
 };
 
+interface ISecManager;
+interface IEspSecureContext;
 interface IAuthMap : extends IInterface
 {
     virtual int add(const char * path, ISecResourceList * resourceList) = 0;
     virtual bool shouldAuth(const char * path) = 0;
     virtual ISecResourceList * queryResourceList(const char * path) = 0;
     virtual ISecResourceList * getResourceList(const char * path) = 0;
+    virtual bool shareWithManager(ISecManager& manager, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual bool removeFromManager(ISecManager& manager, IEspSecureContext* secureContext = nullptr) = 0;
 };
 
 enum secManagerType : int
@@ -337,53 +415,104 @@ enum secManagerType : int
     SMT_SingleUser,
     SMT_HTPluggable
 };
-interface IEspSecureContext;
-interface ISecManager : extends IInterface
+
+static const SecFeatureBit SMF_NO_FEATURES                    = 0x00;
+static const SecFeatureBit SMF_CreateUser                     = 0x01;
+static const SecFeatureBit SMF_CreateResourceList             = 0x02;
+static const SecFeatureBit SMF_SubscribeFullname              = 0x04;
+static const SecFeatureBit SMF_Unsubscribe                    = 0x08;
+static const SecFeatureBit SMF_Authorize                      = 0x10;
+static const SecFeatureBit SMF_AuthorizeEx_List               = 0x20;
+static const SecFeatureBit SMF_AuthorizeEx_Named              = 0x40;
+static const SecFeatureBit SMF_GetAccessFlagsEx               = 0x80;
+static const SecFeatureBit SMF_AuthorizeFileScope_List        = 0x0100;
+static const SecFeatureBit SMF_AuthorizeFileScope_Named       = 0x0200;
+static const SecFeatureBit SMF_AddResources                   = 0x0400;
+static const SecFeatureBit SMF_AddResourcesEx_List            = 0x0800;
+static const SecFeatureBit SMF_AddResourcesEx_Named           = 0x1000;
+static const SecFeatureBit SMF_GetResources                   = 0x2000;
+static const SecFeatureBit SMF_UpdateResources                = 0x4000;
+static const SecFeatureBit SMF_UpdateSettings                 = 0x8000;
+static const SecFeatureBit SMF_AddUser                        = 0x010000;
+static const SecFeatureBit SMF_FindUser                       = 0x020000;
+static const SecFeatureBit SMF_LookupUser                     = 0x040000;
+static const SecFeatureBit SMF_GetAllUsers                    = 0x080000;
+static const SecFeatureBit SMF_GetAllGroups                   = 0x100000;
+static const SecFeatureBit SMF_UpdateUserPassword             = 0x200000;
+static const SecFeatureBit SMF_InitUser                       = 0x400000;
+static const SecFeatureBit SMF_SetExtraParam                  = 0x800000;
+static const SecFeatureBit SMF_CreateAuthMap                  = 0x01000000;
+static const SecFeatureBit SMF_CreateFeatureMap               = 0x02000000;
+static const SecFeatureBit SMF_CreateSettingMap               = 0x04000000;
+static const SecFeatureBit SMF_DeleteResource                 = 0x08000000;
+static const SecFeatureBit SMF_RenameResource                 = 0x10000000;
+static const SecFeatureBit SMF_CopyResource                   = 0x20000000;
+static const SecFeatureBit SMF_CacheSwitch                    = 0x40000000;
+static const SecFeatureBit SMF_AuthTypeRequired               = 0x80000000;
+static const SecFeatureBit SMF_AuthorizeWorkUnitScope_List    = 0x0100000000;
+static const SecFeatureBit SMF_AuthorizeWorkUnitScope_Named   = 0x0200000000;
+static const SecFeatureBit SMF_GetDescription                 = 0x0400000000;
+static const SecFeatureBit SMF_GetPasswordExpirationDays      = 0x0800000000;
+static const SecFeatureBit SMF_CreateUserScopes               = 0x1000000000;
+static const SecFeatureBit SMF_GetManagedScopeTree            = 0x2000000000;
+static const SecFeatureBit SMF_QueryDefaultPermission         = 0x4000000000;
+static const SecFeatureBit SMF_ClearPermissionsCache          = 0x8000000000;
+static const SecFeatureBit SMF_AuthenticateUser               = 0x010000000000;
+static const SecFeatureBit SMF_QuerySecMgrType                = 0x020000000000;
+static const SecFeatureBit SMF_QuerySecMgrTypeName            = 0x040000000000;
+static const SecFeatureBit SMF_LogoutUser                     = 0x080000000000;
+static const SecFeatureBit SMF_RetrieveUserData               = 0x100000000000;
+static const SecFeatureBit SMF_RemoveResources                = 0x200000000000;
+static const SecFeatureSet SMF_ALL_FEATURES                   = 0x3FFFFFFFFFFF; // update to include all added feature bits
+
+interface ISecManager : extends ISecObject
 {
-    virtual ISecUser * createUser(const char * user_name) = 0;
-    virtual ISecResourceList * createResourceList(const char * rlname) = 0;
-    virtual bool subscribe(ISecAuthenticEvents & events) = 0;
-    virtual bool unsubscribe(ISecAuthenticEvents & events) = 0;
-    virtual bool authorize(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext) = 0;
-    virtual bool authorizeEx(SecResourceType rtype, ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = NULL) = 0;
-    virtual SecAccessFlags authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext = NULL) = 0;
-    virtual SecAccessFlags getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename) = 0;
-    virtual SecAccessFlags authorizeFileScope(ISecUser & user, const char * filescope) = 0;
-    virtual bool authorizeFileScope(ISecUser & user, ISecResourceList * resources) = 0;
-    virtual bool addResources(ISecUser & user, ISecResourceList * resources) = 0;
-    virtual bool addResourcesEx(SecResourceType rtype, ISecUser & user, ISecResourceList * resources, SecPermissionType ptype, const char * basedn) = 0;
-    virtual bool addResourceEx(SecResourceType rtype, ISecUser & user, const char * resourcename, SecPermissionType ptype, const char * basedn) = 0;
-    virtual bool getResources(SecResourceType rtype, const char * basedn, IResourceArray & resources) = 0;
-    virtual bool updateResources(ISecUser & user, ISecResourceList * resources) = 0;
-    virtual bool updateSettings(ISecUser & user, ISecPropertyList * resources, IEspSecureContext* secureContext) = 0;
-    virtual bool addUser(ISecUser & user) = 0;
-    virtual ISecUser * findUser(const char * username) = 0;
-    virtual ISecUser * lookupUser(unsigned uid) = 0;
-    virtual ISecUserIterator * getAllUsers() = 0;
-    virtual void getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions ) = 0;
-    virtual bool updateUserPassword(ISecUser & user, const char * newPassword, const char* currPassword = 0) = 0;
-    virtual bool initUser(ISecUser & user) = 0;
-    virtual void setExtraParam(const char * name, const char * value) = 0;
-    virtual IAuthMap * createAuthMap(IPropertyTree * authconfig) = 0;
-    virtual IAuthMap * createFeatureMap(IPropertyTree * authconfig) = 0;
-    virtual IAuthMap * createSettingMap(IPropertyTree * authconfig) = 0;
-    virtual void deleteResource(SecResourceType rtype, const char * name, const char * basedn) = 0;
-    virtual void renameResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn) = 0;
-    virtual void copyResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn) = 0;
-    virtual void cacheSwitch(SecResourceType rtype, bool on) = 0;
-    virtual bool authTypeRequired(SecResourceType rtype) = 0;
-    virtual SecAccessFlags authorizeWorkunitScope(ISecUser & user, const char * filescope) = 0;
-    virtual bool authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources) = 0;
+    virtual ISecUser * createUser(const char * user_name, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual ISecResourceList * createResourceList(const char * rlname, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual bool subscribe(ISecAuthenticEvents & events, IEspSecureContext* secureContext) = 0;
+    virtual bool unsubscribe(ISecAuthenticEvents & events, IEspSecureContext* secureContext) = 0;
+    virtual bool authorize(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual bool authorizeEx(SecResourceType rtype, ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual SecAccessFlags authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual SecAccessFlags getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual SecAccessFlags authorizeFileScope(ISecUser & user, const char * filescope, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual bool authorizeFileScope(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual bool addResources(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual bool addResourcesEx(SecResourceType rtype, ISecUser & user, ISecResourceList * resources, SecPermissionType ptype, const char * basedn, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual bool addResourceEx(SecResourceType rtype, ISecUser & user, const char * resourcename, SecPermissionType ptype, const char * basedn, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual bool getResources(SecResourceType rtype, const char * basedn, IResourceArray & resources, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual bool updateResources(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual bool updateSettings(ISecUser & user, ISecPropertyList * resources, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual bool addUser(ISecUser & user, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual ISecUser * findUser(const char * username, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual ISecUser * lookupUser(unsigned uid, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual ISecUserIterator * getAllUsers(IEspSecureContext* secureContext = nullptr) = 0;
+    virtual void getAllGroups(StringArray & groups, StringArray & managedBy, StringArray & descriptions, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual bool updateUserPassword(ISecUser & user, const char * newPassword, const char* currPassword = nullptr, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual bool initUser(ISecUser & user, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual void setExtraParam(const char * name, const char * value, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual IAuthMap * createAuthMap(IPropertyTree * authconfig, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual IAuthMap * createFeatureMap(IPropertyTree * authconfig, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual IAuthMap * createSettingMap(IPropertyTree * authconfig, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual void deleteResource(SecResourceType rtype, const char * name, const char * basedn, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual void renameResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual void copyResource(SecResourceType rtype, const char * oldname, const char * newname, const char * basedn, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual void cacheSwitch(SecResourceType rtype, bool on, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual bool authTypeRequired(SecResourceType rtype, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual SecAccessFlags authorizeWorkunitScope(ISecUser & user, const char * filescope, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual bool authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) = 0;
     virtual const char * getDescription() = 0;
-    virtual unsigned getPasswordExpirationWarningDays() = 0;
-    virtual bool createUserScopes() = 0;
-    virtual aindex_t getManagedScopeTree(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes) = 0;
-    virtual SecAccessFlags queryDefaultPermission(ISecUser& user) = 0;
-    virtual bool clearPermissionsCache(ISecUser & user) = 0;
-    virtual bool authenticateUser(ISecUser & user, bool * superUser) = 0;
+    virtual unsigned getPasswordExpirationWarningDays(IEspSecureContext* secureContext = nullptr) = 0;
+    virtual bool createUserScopes(IEspSecureContext* secureContext = nullptr) = 0;
+    virtual aindex_t getManagedScopeTree(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& scopes, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual SecAccessFlags queryDefaultPermission(ISecUser& user, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual bool clearPermissionsCache(ISecUser & user, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual bool authenticateUser(ISecUser & user, bool * superUser, IEspSecureContext* secureContext = nullptr) = 0;
     virtual secManagerType querySecMgrType() = 0;
     virtual const char* querySecMgrTypeName() = 0;
-    virtual bool logoutUser(ISecUser & user) = 0;
+    virtual bool logoutUser(ISecUser & user, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual bool retrieveUserData(ISecUser& requestedUser, ISecUser* requestingUser = nullptr, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual bool removeResources(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) = 0;
 };
 
 interface IRestartHandler : extends IInterface

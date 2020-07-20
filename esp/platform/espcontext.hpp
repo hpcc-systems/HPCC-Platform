@@ -107,7 +107,7 @@ static const char* const PropSessionLoginURL = "@loginurl";
 
 interface IEspSecureContext;
 
-esp_http_decl IEspContext* createEspContext(IEspSecureContext* secureContext = NULL);
+esp_http_decl IEspContext* createEspContext(IEspSecureContext* secureContext = nullptr);
 
 // Get URL parameters (include these from Content)
 // Return: a=b&c=d format. 
