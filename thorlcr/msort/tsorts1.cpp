@@ -336,28 +336,38 @@ public:
         DBGLOG("CSortTransferServerThread started port %d",slave.getTransferPort());
         unsigned numretries = 10;
         try {
-            while (!term) {
-                ISocket* socket = server->accept(true);
-                if (!socket) {
+            while (!term)
+            {
+                Owned<ISocket> socket = server->accept(true);
+                if (!socket)
                     break;
-                }
 
                 rowcount_t poscount=0;
                 rowcount_t numrecs=0;
                 ISocketRowWriter *strm=NULL;
-                try {
+                try
+                {
                     waitRowIF();
                     strm = ConnectMergeWrite(rowif,socket,0x100000,poscount,numrecs);
                 }
-                catch (IJSOCK_Exception *e) { // retry if failed
-                    PrintExceptionLog(e,"WARNING: Exception(ConnectMergeWrite)");
+                catch (IJSOCK_Exception *e) // retry if failed
+                {
+                    PrintExceptionLog(e, "WARNING: Exception(ConnectMergeWrite)");
                     if (--numretries==0)
-                        throw e;
+                        throw;
+                    e->Release();
+                    continue;
+                }
+                catch (IException *e) // only retry if serialization check failed, indicating possible foreign client connect
+                {
+                    PrintExceptionLog(e, "WARNING: Exception(ConnectMergeWrite)");
+                    if (TE_InvalidSortConnect != e->errorCode() || (--numretries==0))
+                        throw;
                     e->Release();
                     continue;
                 }
                 CriticalBlock block(childsect);
-                add(strm,socket,poscount,numrecs);
+                add(strm, socket.getClear(), poscount, numrecs);
             }
         }
         catch (IJSOCK_Exception *e)
@@ -414,7 +424,7 @@ public:
             selecthandler.setown(createSocketSelectHandler("SORT"));
             selecthandler->start();
         }
-        CSortMerge *sub = new CSortMerge(this,socket,strm,poscount,numrecs,selecthandler);
+        CSortMerge *sub = new CSortMerge(this,socket,strm,poscount,numrecs,selecthandler); // NB: takes ownership of 'socket'
         children.append(*sub);
         selecthandler->add(socket,SELECTMODE_READ,sub);
 
