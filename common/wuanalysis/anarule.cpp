@@ -41,16 +41,16 @@ class DistributeSkewRule : public ActivityKindRule
 public:
     DistributeSkewRule() : ActivityKindRule(TAKhashdistribute) {}
 
-    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const WuAnalyseOptions & options) override
+    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const IAnalyserOptions & options) override
     {
         IWuEdge * outputEdge = activity.queryOutput(0);
         if (!outputEdge)
             return false;
         stat_type rowsAvg = outputEdge->getStatRaw(StNumRowsProcessed, StAvgX);
-        if (rowsAvg < rowsThreshold)
+        if (rowsAvg < options.queryOption(watOptMinRowsPerNode))
             return false;
         stat_type rowsMaxSkew = outputEdge->getStatRaw(StNumRowsProcessed, StSkewMax);
-        if (rowsMaxSkew > options.skewThreshold)
+        if (rowsMaxSkew > options.queryOption(watOptSkewThreshold))
         {
             // Use downstream activity time to calculate approximate cost
             IWuActivity * targetActivity = outputEdge->queryTarget();
@@ -70,9 +70,6 @@ public:
         }
         return false;
     }
-
-protected:
-    static const stat_type rowsThreshold = 100;                // avg rows per node.
 };
 
 class IoSkewRule : public AActivityRule
@@ -128,12 +125,11 @@ public:
         return false;
     }
 
-    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const WuAnalyseOptions & options) override
+    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const IAnalyserOptions & options) override
     {
         stat_type ioAvg = activity.getStatRaw(stat, StAvgX);
         stat_type ioMaxSkew = activity.getStatRaw(stat, StSkewMax);
-
-        if (ioMaxSkew > options.skewThreshold)
+        if (ioMaxSkew > options.queryOption(watOptSkewThreshold))
         {
             stat_type timeMaxLocalExecute = activity.getStatRaw(StTimeLocalExecute, StMaxX);
             stat_type timeAvgLocalExecute = activity.getStatRaw(StTimeLocalExecute, StAvgX);

@@ -111,6 +111,7 @@
           <xsl:value-of select="@httpGlobalIdHeader"/>
         </xsl:attribute>
       </xsl:if>
+      <xsl:copy-of select="analyzerOptions"/>
       <xsl:copy-of select="/Environment/Software/Directories"/>  
 
     </agentexec>
