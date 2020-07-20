@@ -43,7 +43,7 @@ interface IWorkUnitRowReader : public IInterface
 
 interface IRoxieServerContext;
 
-interface IRoxieSlaveContext : extends IRoxieContextLogger
+interface IRoxieAgentContext : extends IRoxieContextLogger
 {
     virtual ICodeContext *queryCodeContext() = 0;
     virtual void checkAbort() = 0;
@@ -52,7 +52,7 @@ interface IRoxieSlaveContext : extends IRoxieContextLogger
     virtual void noteChildGraph(unsigned id, IActivityGraph *childGraph) = 0;
     virtual roxiemem::IRowManager &queryRowManager() = 0;
     virtual const QueryOptions &queryOptions() const = 0;
-    virtual void addSlavesReplyLen(unsigned len) = 0;
+    virtual void addAgentsReplyLen(unsigned len) = 0;
     virtual const char *queryAuthToken() = 0;
     virtual const IResolvedFile *resolveLFN(const char *filename, bool isOpt, bool isPrivilegedUser) = 0;
     virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters, bool isPrivilegedUser) = 0;
@@ -83,7 +83,7 @@ interface IRoxieServerContext : extends IInterface
     virtual void done(bool failed) = 0;
     virtual void finalize(unsigned seqNo) = 0;
     virtual memsize_t getMemoryUsage() = 0;
-    virtual unsigned getSlavesReplyLen() = 0;
+    virtual unsigned getAgentsReplyLen() = 0;
 
     virtual unsigned getXmlFlags() const = 0;
     virtual IConstWorkUnit *queryWorkUnit() const = 0;
@@ -107,7 +107,7 @@ typedef IEclProcess* (* EclProcessFactory)();
 class CRoxieWorkflowMachine;
 
 extern IDeserializedResultStore *createDeserializedResultStore();
-extern IRoxieSlaveContext *createSlaveContext(const IQueryFactory *factory, const SlaveContextLogger &logctx, IRoxieQueryPacket *packet, bool hasRemoteChildren);
+extern IRoxieAgentContext *createAgentContext(const IQueryFactory *factory, const AgentContextLogger &logctx, IRoxieQueryPacket *packet, bool hasRemoteChildren);
 extern IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, IHpccProtocolResponse *protocol, const IQueryFactory *factory, unsigned flags, const ContextLogger &logctx, PTreeReaderOptions xmlReadFlags, const char *querySetName);
 extern IRoxieServerContext *createOnceServerContext(const IQueryFactory *factory, const IRoxieContextLogger &_logctx);
 extern IRoxieServerContext *createWorkUnitServerContext(IConstWorkUnit *wu, const IQueryFactory *factory, const ContextLogger &logctx);

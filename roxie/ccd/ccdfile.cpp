@@ -1172,7 +1172,7 @@ public:
                 if ((dfsSize != (offset_t) -1 && dfsSize != f->getSize()) ||
                     (!dfsDate.isNull() && !dfsDate.equals(*f->queryDateTime(), false)))
                 {
-                    releaseSlaveDynamicFileCache();  // Slave dynamic file cache or...
+                    releaseAgentDynamicFileCache();  // Agent dynamic file cache or...
                     if (fileType == ROXIE_KEY)       // ...jhtree cache can keep files active and thus prevent us from loading a new version
                         clearKeyStoreCacheEntry(f);  // Will release iff that is the only link
                     f.clear(); // Note - needs to be done before calling getValue() again, hence the need to make it separate from the f.set below
@@ -1817,7 +1817,7 @@ protected:
     IResolvedFileCache *cached;
     StringAttr lfn;
     StringAttr physicalName;
-    Owned<IDistributedFile> dFile; // NULL on copies serialized to slaves. Note that this implies we keep a lock on dali file for the lifetime of this object.
+    Owned<IDistributedFile> dFile; // NULL on copies serialized to agents. Note that this implies we keep a lock on dali file for the lifetime of this object.
     CDateTime fileTimeStamp;
     offset_t fileSize;
     unsigned fileCheckSum;
@@ -1825,8 +1825,8 @@ protected:
     bool isSuper;
 
     StringArray subNames;
-    IPointerArrayOf<IFileDescriptor> subFiles; // note - on slaves, the file descriptors may have incomplete info. On originating server is always complete
-    IPointerArrayOf<IFileDescriptor> remoteSubFiles; // note - on slaves, the file descriptors may have incomplete info. On originating server is always complete
+    IPointerArrayOf<IFileDescriptor> subFiles; // note - on agents, the file descriptors may have incomplete info. On originating server is always complete
+    IPointerArrayOf<IFileDescriptor> remoteSubFiles; // note - on agents, the file descriptors may have incomplete info. On originating server is always complete
     IntArray formatCrcs;
     IPointerArrayOf<IOutputMetaData> diskTypeInfo;  // New info using RtlTypeInfo structures
     IArrayOf<IDistributedFile> subDFiles;  // To make sure subfiles get locked too
@@ -2543,7 +2543,7 @@ MORE
     - on remote() calls we can't pass the expected file date but we will pass it back with the file info.
 ------------------------------------------------------------------------------------------------------------*/
 
-class CSlaveDynamicFile : public CResolvedFile
+class CAgentDynamicFile : public CResolvedFile
 {
 public:
     bool isOpt; // MORE - this is not very good. Needs some thought unless you cache opt / nonOpt separately which seems wasteful
@@ -2552,7 +2552,7 @@ public:
     ServerIdentifier serverId;
 
 public:
-    CSlaveDynamicFile(const IRoxieContextLogger &logctx, const char *_lfn, RoxiePacketHeader *header, bool _isOpt, bool _isLocal)
+    CAgentDynamicFile(const IRoxieContextLogger &logctx, const char *_lfn, RoxiePacketHeader *header, bool _isOpt, bool _isLocal)
         : CResolvedFile(_lfn, NULL, NULL, ROXIE_FILE, NULL, true, false, false, false), isOpt(_isOpt), isLocal(_isLocal), channel(header->channel), serverId(header->serverId)
     {
         // call back to the server to get the info
@@ -2677,15 +2677,15 @@ extern IResolvedFile *createResolvedFile(const char *lfn, const char *physical, 
     return new CResolvedFile(lfn, physical, dFile, kind && stricmp(kind, "key")==0 ? ROXIE_KEY : ROXIE_FILE, daliHelper, isDynamic, cacheIt, writeAccess, false);
 }
 
-class CSlaveDynamicFileCache : implements ISlaveDynamicFileCache, public CInterface
+class CAgentDynamicFileCache : implements IAgentDynamicFileCache, public CInterface
 {
     unsigned tableSize;
     mutable CriticalSection crit;
-    CIArrayOf<CSlaveDynamicFile> files; // expect numbers to be small - probably not worth hashing
+    CIArrayOf<CAgentDynamicFile> files; // expect numbers to be small - probably not worth hashing
 
 public:
     IMPLEMENT_IINTERFACE;
-    CSlaveDynamicFileCache(unsigned _limit) : tableSize(_limit) {}
+    CAgentDynamicFileCache(unsigned _limit) : tableSize(_limit) {}
 
     virtual IResolvedFile *lookupDynamicFile(const IRoxieContextLogger &logctx, const char *lfn, CDateTime &cacheDate, unsigned checksum, RoxiePacketHeader *header, bool isOpt, bool isLocal) override
     {
@@ -2701,7 +2701,7 @@ public:
             unsigned idx = 0;
             while (files.isItem(idx))
             {
-                CSlaveDynamicFile &f = files.item(idx);
+                CAgentDynamicFile &f = files.item(idx);
                 if (f.channel==header->channel && f.serverId==header->serverId && stricmp(f.queryFileName(), lfn)==0)
                 {
                     if (!cacheDate.equals(f.queryTimeStamp()) || checksum != f.queryCheckSum())
@@ -2720,11 +2720,11 @@ public:
                 idx++;
             }
         }
-        Owned<CSlaveDynamicFile> ret;
+        Owned<CAgentDynamicFile> ret;
         {
             // Don't prevent access to the cache while waiting for server to reply. Can deadlock if you do, apart from being inefficient
             CriticalUnblock b1(crit);
-            ret.setown(new CSlaveDynamicFile(logctx, lfn, header, isOpt, isLocal));
+            ret.setown(new CAgentDynamicFile(logctx, lfn, header, isOpt, isLocal));
         }
         if (!ret->isSuperFile())
         {
@@ -2745,25 +2745,25 @@ public:
     }
 };
 
-static CriticalSection slaveDynamicFileCacheCrit;
-static Owned<ISlaveDynamicFileCache> slaveDynamicFileCache;
+static CriticalSection agentDynamicFileCacheCrit;
+static Owned<IAgentDynamicFileCache> agentDynamicFileCache;
 
-extern ISlaveDynamicFileCache *querySlaveDynamicFileCache()
+extern IAgentDynamicFileCache *queryAgentDynamicFileCache()
 {
-    if (!slaveDynamicFileCache)
+    if (!agentDynamicFileCache)
     {
-        CriticalBlock b(slaveDynamicFileCacheCrit);
-        if (!slaveDynamicFileCache)
-            slaveDynamicFileCache.setown(new CSlaveDynamicFileCache(20));
+        CriticalBlock b(agentDynamicFileCacheCrit);
+        if (!agentDynamicFileCache)
+            agentDynamicFileCache.setown(new CAgentDynamicFileCache(20));
     }
-    return slaveDynamicFileCache;
+    return agentDynamicFileCache;
 }
 
-extern void releaseSlaveDynamicFileCache()
+extern void releaseAgentDynamicFileCache()
 {
-    CriticalBlock b(slaveDynamicFileCacheCrit);
-    if (slaveDynamicFileCache)
-        slaveDynamicFileCache->releaseAll();
+    CriticalBlock b(agentDynamicFileCacheCrit);
+    if (agentDynamicFileCache)
+        agentDynamicFileCache->releaseAll();
 }
 
 

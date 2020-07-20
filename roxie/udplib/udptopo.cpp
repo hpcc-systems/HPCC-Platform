@@ -70,13 +70,13 @@ ChannelInfo::ChannelInfo(unsigned _mySubChannel, unsigned _numSubChannels, unsig
         currentDelay.emplace_back(initIbytiDelay);
 }
 
-bool ChannelInfo::otherSlaveHasPriority(unsigned priorityHash, unsigned otherSlaveSubChannel) const
+bool ChannelInfo::otherAgentHasPriority(unsigned priorityHash, unsigned otherAgentSubChannel) const
 {
     unsigned primarySubChannel = (priorityHash % numSubChannels);
     // could be coded smarter! Basically mysub - prim < theirsub - prim using modulo arithmetic, I think
     while (primarySubChannel != mySubChannel)
     {
-        if (primarySubChannel == otherSlaveSubChannel)
+        if (primarySubChannel == otherAgentSubChannel)
             return true;
         primarySubChannel++;
         if (primarySubChannel >= numSubChannels)
@@ -92,13 +92,13 @@ public:
     CTopologyServer();
     CTopologyServer(const char *topologyInfo);
 
-    virtual const SocketEndpointArray &querySlaves(unsigned channel) const override;
+    virtual const SocketEndpointArray &queryAgents(unsigned channel) const override;
     virtual const SocketEndpointArray &queryServers(unsigned port) const override;
     virtual const ChannelInfo &queryChannelInfo(unsigned channel) const override;
     virtual const std::vector<unsigned> &queryChannels() const override;
 
 private:
-    std::map<unsigned, SocketEndpointArray> slaves;  // indexed by channel
+    std::map<unsigned, SocketEndpointArray> agents;  // indexed by channel
     std::map<unsigned, SocketEndpointArray> servers; // indexed by port
     static const SocketEndpointArray nullArray;
     std::map<unsigned, ChannelInfo> channelInfo;
@@ -107,7 +107,7 @@ private:
     std::vector<unsigned> replicationLevels;
 };
 
-SocketEndpoint mySlaveEP;
+SocketEndpoint myAgentEP;
 
 CTopologyServer::CTopologyServer()
 {
@@ -147,16 +147,16 @@ CTopologyServer::CTopologyServer(const char *topologyInfo)
                 DBGLOG("Unable to process endpoint information in topology entry %s", line.c_str());
                 continue;
             }
-            if (streq(role, "slave"))
+            if (streq(role, "agent"))
             {
-                slaves[channel].append(ep);
-                if (ep.equals(mySlaveEP))
+                agents[channel].append(ep);
+                if (ep.equals(myAgentEP))
                 {
-                    mySubChannels[channel] = slaves[channel].ordinality()-1;
+                    mySubChannels[channel] = agents[channel].ordinality()-1;
                     channels.push_back(channel);
                     replicationLevels.push_back(repl);
                 }
-                slaves[0].append(ep);
+                agents[0].append(ep);
             }
             else if (streq(role, "server"))
                 servers[ep.port].append(ep);
@@ -167,14 +167,14 @@ CTopologyServer::CTopologyServer(const char *topologyInfo)
         unsigned channel = channels[i];
         unsigned repl = replicationLevels[i];
         unsigned subChannel = mySubChannels[channel];
-        channelInfo.emplace(std::make_pair(channel, ChannelInfo(subChannel, slaves[channel].ordinality(), repl)));
+        channelInfo.emplace(std::make_pair(channel, ChannelInfo(subChannel, agents[channel].ordinality(), repl)));
     }
 }
 
-const SocketEndpointArray &CTopologyServer::querySlaves(unsigned channel) const
+const SocketEndpointArray &CTopologyServer::queryAgents(unsigned channel) const
 {
-    auto match = slaves.find(channel);
-    if (match == slaves.end())
+    auto match = agents.find(channel);
+    if (match == agents.end())
         return nullArray;
     return match->second;
 }
@@ -321,7 +321,7 @@ void TopologyManager::setRoles(const std::vector<RoxieEndpointInfo> &myRoles)
         switch (role.role)
         {
         case RoxieEndpointInfo::RoxieServer: topoBuf.append("server|"); break;
-        case RoxieEndpointInfo::RoxieSlave: topoBuf.append("slave|"); break;
+        case RoxieEndpointInfo::RoxieAgent: topoBuf.append("agent|"); break;
         default: throwUnexpected();
         }
         topoBuf.append(role.channel).append('|');
@@ -339,10 +339,10 @@ extern UDPLIB_API const ITopologyServer *getTopology()
     return &topologyManager.getCurrent();
 }
 
-extern UDPLIB_API unsigned getNumSlaves(unsigned channel)
+extern UDPLIB_API unsigned getNumAgents(unsigned channel)
 {
     Owned<const ITopologyServer> topology = getTopology();
-    return topology->querySlaves(channel).ordinality();
+    return topology->queryAgents(channel).ordinality();
 }
 
 #ifndef _CONTAINERIZED
@@ -372,11 +372,11 @@ extern UDPLIB_API void initializeTopology(const StringArray &topoValues, const s
                 {
                     DBGLOG("Topology information updated:");
                     Owned<const ITopologyServer> c = getTopology();
-                    const SocketEndpointArray &eps = c->querySlaves(0);
+                    const SocketEndpointArray &eps = c->queryAgents(0);
                     ForEachItemIn(idx, eps)
                     {
                         StringBuffer s;
-                        DBGLOG("Slave %d: %s", idx, eps.item(idx).getIpText(s).str());
+                        DBGLOG("Agent %d: %s", idx, eps.item(idx).getIpText(s).str());
                     }
                 }
                 waitTime = topoUpdateInterval;

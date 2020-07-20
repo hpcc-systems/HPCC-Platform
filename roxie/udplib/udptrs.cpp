@@ -45,7 +45,7 @@ using roxiemem::DataBuffer;
 
 /*
  *
- * There are 3 threads running to manage the data transfer from slave back to server:
+ * There are 3 threads running to manage the data transfer from agent back to server:
  * send_resend_flow
  *   - checks periodically that nothing is waiting for a "request to send" that timed out
  * send_receive_flow
@@ -59,12 +59,12 @@ using roxiemem::DataBuffer;
  *   - broadcasts "no longer "
  *   - sends "completed" or "completed but I want to send more" flow message to server
  *
- * Queueing up data packets is done by the slave worker threads.
+ * Queueing up data packets is done by the agent worker threads.
  * *
 
  *
  * Data races to watch for
- * 1. Two slave threads add data at same time - only one should sent rts (use atomic_inc for the count)
+ * 1. Two agent threads add data at same time - only one should sent rts (use atomic_inc for the count)
  * 2. We check for timeout and resend rts or fail just as permission comes in
  *    - resend rts is harmless ?
  *    - fail is acceptable

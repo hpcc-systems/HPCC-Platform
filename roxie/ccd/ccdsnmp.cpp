@@ -84,8 +84,8 @@ RelaxedAtomic<unsigned> packetRunCount;
 
 RelaxedAtomic<unsigned> lastQueryDate;
 RelaxedAtomic<unsigned> lastQueryTime;
-RelaxedAtomic<unsigned> slavesActive;
-RelaxedAtomic<unsigned> maxSlavesActive;
+RelaxedAtomic<unsigned> agentsActive;
+RelaxedAtomic<unsigned> maxAgentsActive;
 
 #define addMetric(a, b) doAddMetric(a, #a, b)
 
@@ -366,8 +366,8 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     addMetric(packetsReceived, 1000);
     addMetric(packetsSent, 1000);
     addMetric(resultsReceived, 1000);
-    addMetric(slavesActive, 0);
-    addMetric(maxSlavesActive, 0);
+    addMetric(agentsActive, 0);
+    addMetric(maxAgentsActive, 0);
     addMetric(indexRecordsRead, 1000);
     addMetric(postFiltered, 1000);
     addMetric(abortsSent, 0);
@@ -565,18 +565,18 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
         time_t startTime; // more interesting than end-time
         unsigned elapsedTimeMs;
         unsigned memUsed;
-        unsigned slavesReplyLen;
+        unsigned agentsReplyLen;
         unsigned bytesOut;
         bool failed;
 
     public:
-        QueryStatsRecord(time_t _startTime, bool _failed, unsigned _elapsedTimeMs, unsigned _memused, unsigned _slavesReplyLen, unsigned _bytesOut)
+        QueryStatsRecord(time_t _startTime, bool _failed, unsigned _elapsedTimeMs, unsigned _memused, unsigned _agentsReplyLen, unsigned _bytesOut)
         {
             startTime = _startTime;
             failed = _failed;
             elapsedTimeMs = _elapsedTimeMs;
             memUsed = _memused;
-            slavesReplyLen = _slavesReplyLen;
+            agentsReplyLen = _agentsReplyLen;
             bytesOut = _bytesOut;
         }
 
@@ -609,7 +609,7 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
             unsigned i = 0;
             for (auto r : useStats)
             {
-                aggregator.noteQuery(r.failed, r.elapsedTimeMs, r.memUsed, r.slavesReplyLen, r.bytesOut);
+                aggregator.noteQuery(r.failed, r.elapsedTimeMs, r.memUsed, r.agentsReplyLen, r.bytesOut);
                 times[i++] = r.elapsedTimeMs;
             }
             aggregator.getStats(result, false);
@@ -635,7 +635,7 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
                 queryStatsRecord->setProp("@startTime", dt.getString(s.clear(), true).str());
                 queryStatsRecord->setPropInt("elapsedTimeMs", r.elapsedTimeMs);
                 queryStatsRecord->setPropInt("memUsed", r.memUsed);
-                queryStatsRecord->setPropInt("slavesReplyLen", r.slavesReplyLen);
+                queryStatsRecord->setPropInt("agentsReplyLen", r.agentsReplyLen);
                 queryStatsRecord->setPropInt("bytesOut", r.bytesOut);
                 queryStatsRecord->setPropBool("failed", r.failed);
                 result.addPropTree(queryStatsRecord->queryName(), LINK(queryStatsRecord));
@@ -661,7 +661,7 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
         unsigned __int64 totalTimeMs;
         unsigned __int64 totalTimeMsSquared;
         unsigned __int64 totalMemUsed;
-        unsigned __int64 totalSlavesReplyLen;
+        unsigned __int64 totalAgentsReplyLen;
         unsigned __int64 totalBytesOut;
         unsigned maxTimeMs;
         unsigned minTimeMs;
@@ -679,7 +679,7 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
             totalTimeMs = 0;
             totalTimeMsSquared = 0;
             totalMemUsed = 0;
-            totalSlavesReplyLen = 0;
+            totalAgentsReplyLen = 0;
             totalBytesOut = 0;
             maxTimeMs = 0;
             minTimeMs = 0;
@@ -724,7 +724,7 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
             totalTimeMs += other.totalTimeMs;
             totalTimeMsSquared += other.totalTimeMsSquared;
             totalMemUsed += other.totalMemUsed;
-            totalSlavesReplyLen += other.totalSlavesReplyLen;
+            totalAgentsReplyLen += other.totalAgentsReplyLen;
             totalBytesOut += other.totalBytesOut;
             maxTimeMs = std::max(maxTimeMs, other.maxTimeMs);
             if (other.countTotal)
@@ -739,14 +739,14 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
             
         }
 
-        void noteQuery(bool failed, unsigned elapsedTimeMs, unsigned memUsed, unsigned slavesReplyLen, unsigned bytesOut)
+        void noteQuery(bool failed, unsigned elapsedTimeMs, unsigned memUsed, unsigned agentsReplyLen, unsigned bytesOut)
         {
             totalTimeMs += elapsedTimeMs;
             unsigned __int64 timeSquared = elapsedTimeMs;
             timeSquared *= timeSquared;
             totalTimeMsSquared += timeSquared;
             totalMemUsed += memUsed;
-            totalSlavesReplyLen += slavesReplyLen;
+            totalAgentsReplyLen += agentsReplyLen;
             totalBytesOut += bytesOut;
             if (elapsedTimeMs > maxTimeMs)
                 maxTimeMs = elapsedTimeMs;
@@ -787,7 +787,7 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
             result.setPropInt64("countFailed", countFailed);
             result.setPropInt64("averageTimeMs", countTotal ? totalTimeMs/countTotal : 0);
             result.setPropInt64("averageMemUsed", countTotal ? totalMemUsed/countTotal : 0);
-            result.setPropInt64("averageSlavesReplyLen", countTotal ? totalSlavesReplyLen/countTotal : 0);
+            result.setPropInt64("averageAgentsReplyLen", countTotal ? totalAgentsReplyLen/countTotal : 0);
             result.setPropInt64("averageBytesOut", countTotal ? totalBytesOut/countTotal : 0);
             // MORE - do something funky and statistical using totalTimeMsSquared
             result.setPropInt("maxTimeMs", maxTimeMs);
@@ -962,13 +962,13 @@ public:
         return result.getClear();
     }
 
-    virtual void noteQuery(time_t startTime, bool failed, unsigned elapsedTimeMs, unsigned memUsed, unsigned slavesReplyLen, unsigned bytesOut)
+    virtual void noteQuery(time_t startTime, bool failed, unsigned elapsedTimeMs, unsigned memUsed, unsigned agentsReplyLen, unsigned bytesOut)
     {
         time_t timeNow;
         time(&timeNow);
         CriticalBlock b(statsLock);
         if (expirySeconds)
-            recent.emplace(recent.end(), startTime, failed, elapsedTimeMs, memUsed, slavesReplyLen, bytesOut);
+            recent.emplace(recent.end(), startTime, failed, elapsedTimeMs, memUsed, agentsReplyLen, bytesOut);
         // Now remove any that have expired
         if (expirySeconds != (unsigned) -1)
         {
@@ -977,7 +977,7 @@ public:
         }
 
         QueryStatsAggregateRecord &aggregator = findAggregate(startTime);
-        aggregator.noteQuery(failed, elapsedTimeMs, memUsed, slavesReplyLen, bytesOut);
+        aggregator.noteQuery(failed, elapsedTimeMs, memUsed, agentsReplyLen, bytesOut);
     }
 
     virtual IPropertyTree *getStats(time_t from, time_t to)
