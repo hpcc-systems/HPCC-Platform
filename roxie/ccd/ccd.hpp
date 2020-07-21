@@ -96,7 +96,7 @@ void setMulticastEndpoints(unsigned numChannels);
 
 //#define TIME_PACKETS
 
-#define ROXIE_FASTLANE      0x8000u         // mask in retries indicating slave reply goes on the fast queue
+#define ROXIE_FASTLANE      0x8000u         // mask in retries indicating agent reply goes on the fast queue
 #define ROXIE_BROADCAST     0x4000u         // mask in retries indicating original request was a broadcast
 #define ROXIE_RETRIES_MASK  (~(ROXIE_FASTLANE|ROXIE_BROADCAST)) // retries bits mask
 #define QUERY_ABORTED       0xffffu         // special value for retries to indicate abandoned query
@@ -145,7 +145,7 @@ public:
     unsigned packetlength;
     unsigned short retries;         // how many retries on this query, the high bits are used as flags, see above
     unsigned short overflowSequence;// Used if more than one packet-worth of data from server - eg keyed join. We don't mind if we wrap...
-    unsigned short continueSequence;// Used if more than one chunk-worth of data from slave. We don't mind if we wrap
+    unsigned short continueSequence;// Used if more than one chunk-worth of data from agent. We don't mind if we wrap
     unsigned short channel;         // multicast family to send on
     unsigned activityId;            // identifies the helper factory to be used (activityId in graph)
     hash64_t queryHash;             // identifies the query
@@ -235,7 +235,7 @@ extern bool debugPermitted;
 extern bool useRemoteResources;
 extern bool checkFileDate;
 extern bool lazyOpen;
-extern bool localSlave;
+extern bool localAgent;
 extern bool useAeron;
 extern bool ignoreOrphans;
 extern bool doIbytiDelay;
@@ -267,7 +267,7 @@ extern unsigned minFilesOpen[2];
 extern unsigned maxFilesOpen[2];
 extern RelaxedAtomic<unsigned> restarts;
 extern bool checkCompleted;
-extern bool prestartSlaveThreads;
+extern bool prestartAgentThreads;
 extern unsigned preabortKeyedJoinsThreshold;
 extern unsigned preabortIndexReadsThreshold;
 extern bool traceStartStop;
@@ -277,7 +277,7 @@ extern bool defaultTimeActivities;
 extern bool defaultTraceEnabled;
 extern unsigned defaultTraceLimit;
 extern unsigned watchActivityId;
-extern unsigned testSlaveFailure;
+extern unsigned testAgentFailure;
 extern unsigned dafilesrvLookupTimeout;
 extern bool fastLaneQueue;
 extern unsigned mtu_size;
@@ -296,14 +296,14 @@ extern bool steppingEnabled;
 extern bool simpleLocalKeyedJoins;
 extern bool enableKeyDiff;
 extern PTreeReaderOptions defaultXmlReadFlags;
-extern bool mergeSlaveStatistics;
+extern bool mergeAgentStatistics;
 extern bool defaultNoSeekBuildIndex;
 extern unsigned parallelLoadQueries;
 
 #ifdef _CONTAINERIZED
 static constexpr bool roxieMulticastEnabled = false;
 #else
-extern bool roxieMulticastEnabled;   // enable use of multicast for sending requests to slaves
+extern bool roxieMulticastEnabled;   // enable use of multicast for sending requests to agents
 #endif
 extern bool preloadOnceData;
 extern bool reloadRetriesFailed;
@@ -350,7 +350,7 @@ extern unsigned defaultHeapFlags;
 extern bool defaultCheckingHeap;
 extern bool defaultDisableLocalOptimizations;
 
-extern unsigned slaveQueryReleaseDelaySeconds;
+extern unsigned agentQueryReleaseDelaySeconds;
 extern unsigned coresPerQuery;
 
 extern StringBuffer logDirectory;
@@ -391,7 +391,7 @@ extern void saveTopology();
 
 class LogItem : public CInterface
 {
-    friend class SlaveContextLogger;
+    friend class AgentContextLogger;
 
     TracingCategory category;
     StringAttr prefix;
@@ -557,7 +557,7 @@ public:
     }
     virtual void CTXLOGl(LogItem *logItem) const
     {
-        // NOTE - we don't actually print anything to logfile here - was already printed on slave
+        // NOTE - we don't actually print anything to logfile here - was already printed on agent
         CriticalBlock b(crit);
         log.append(*logItem);
     }
@@ -678,7 +678,7 @@ public:
     virtual bool collectingDetailedStatistics() const { return false; }
 };
 
-class SlaveContextLogger : public StringContextLogger
+class AgentContextLogger : public StringContextLogger
 {
     Owned<IMessagePacker> output;
     mutable bool anyOutput; // messy
@@ -687,8 +687,8 @@ class SlaveContextLogger : public StringContextLogger
     IpAddress ip;
     StringAttr wuid;
 public:
-    SlaveContextLogger();
-    SlaveContextLogger(IRoxieQueryPacket *packet);
+    AgentContextLogger();
+    AgentContextLogger(IRoxieQueryPacket *packet);
     void set(IRoxieQueryPacket *packet);
     void putStatProcessed(unsigned subGraphId, unsigned actId, unsigned idx, unsigned processed, unsigned strands) const;
     void putStats(unsigned subGraphId, unsigned actId, const CRuntimeStatisticCollection &stats) const;

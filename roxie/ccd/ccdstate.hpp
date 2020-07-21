@@ -75,13 +75,13 @@ interface IResolvedFileCache
 
 extern IRoxiePackage *createRoxiePackage(IPropertyTree *p, IRoxiePackageMap *packages);
 
-interface ISlaveDynamicFileCache : extends IInterface
+interface IAgentDynamicFileCache : extends IInterface
 {
     virtual IResolvedFile *lookupDynamicFile(const IRoxieContextLogger &logctx, const char *lfn, CDateTime &cacheDate, unsigned checksum, RoxiePacketHeader *header, bool isOpt, bool isLocal) = 0;
     virtual void releaseAll() = 0;
 };
-extern ISlaveDynamicFileCache *querySlaveDynamicFileCache();
-extern void releaseSlaveDynamicFileCache();
+extern IAgentDynamicFileCache *queryAgentDynamicFileCache();
+extern void releaseAgentDynamicFileCache();
 
 interface IDynamicTransform;
 
@@ -128,7 +128,7 @@ interface IRoxieQuerySetManager : extends IInterface
     virtual void resetQueryTimings(const char *queryName, const IRoxieContextLogger &logctx) = 0;
     virtual void resetAllQueryTimings() = 0;
     virtual void getActivityMetrics(StringBuffer &reply) const = 0;
-    virtual void getAllQueryInfo(StringBuffer &reply, bool full, const IRoxieQuerySetManagerSet *slaves, const IRoxieContextLogger &logctx) const = 0;
+    virtual void getAllQueryInfo(StringBuffer &reply, bool full, const IRoxieQuerySetManagerSet *agents, const IRoxieContextLogger &logctx) const = 0;
 };
 
 interface IRoxieDebugSessionManager : extends IInterface
@@ -143,7 +143,7 @@ interface IRoxieQueryPackageManagerSet : extends IInterface
     virtual void requestReload(bool wait, bool force) = 0;
     virtual void load() = 0;
     virtual void doControlMessage(IPropertyTree *xml, StringBuffer &reply, const IRoxieContextLogger &ctx) = 0;
-    virtual IQueryFactory *getQuery(const char *id, StringBuffer *querySet, IArrayOf<IQueryFactory> *slaves, const IRoxieContextLogger &logctx) const = 0;
+    virtual IQueryFactory *getQuery(const char *id, StringBuffer *querySet, IArrayOf<IQueryFactory> *agents, const IRoxieContextLogger &logctx) const = 0;
     virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
     virtual int getActivePackageCount() const = 0;
 };
@@ -151,7 +151,7 @@ interface IRoxieQueryPackageManagerSet : extends IInterface
 extern IRoxieDebugSessionManager &queryRoxieDebugSessionManager();
 
 extern IRoxieQuerySetManager *createServerManager(const char *querySet);
-extern IRoxieQuerySetManager *createSlaveManager();
+extern IRoxieQuerySetManager *createAgentManager();
 extern IRoxieQueryPackageManagerSet *createRoxiePackageSetManager(const IQueryDll *standAloneDll);
 extern IRoxieQueryPackageManagerSet *globalPackageSetManager;
 

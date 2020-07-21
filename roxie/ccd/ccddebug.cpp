@@ -80,11 +80,11 @@ public:
         return in->gatherConjunctions(collector);
     }
 
-    virtual IStrandJunction *getOutputStreams(IRoxieSlaveContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
+    virtual IStrandJunction *getOutputStreams(IRoxieAgentContext *ctx, unsigned idx, PointerArrayOf<IEngineRowStream> &streams, const StrandOptions * consumerOptions, bool consumerOrdered, IOrderedCallbackCollection * orderedCallbacks)
     {
         assertex (!idx);
         //Need to call
-        //extern IEngineRowStream *connectSingleStream(IRoxieSlaveContext *ctx, IFinalRoxieInput *input, unsigned idx, Owned<IStrandJunction> &junction, bool consumerOrdered)
+        //extern IEngineRowStream *connectSingleStream(IRoxieAgentContext *ctx, IFinalRoxieInput *input, unsigned idx, Owned<IStrandJunction> &junction, bool consumerOrdered)
         PointerArrayOf<IEngineRowStream> instreams;
         Owned<IStrandJunction> junction = in->getOutputStreams(ctx, sourceIdx, instreams, NULL, consumerOrdered, nullptr);
         //MORE: This needs to create a junction if instreams > 1
@@ -1537,7 +1537,7 @@ public:
     virtual unsigned queryHistoryCapacity() const { UNIMPLEMENTED; };
     virtual IBreakpointInfo *debuggerCallback(unsigned sequence, const void *row)
     {
-        // was done on slave, don't do here too
+        // was done on agent, don't do here too
         return NULL;
     };
     virtual void setHistoryCapacity(unsigned newCapacity) { UNIMPLEMENTED; };
@@ -1634,7 +1634,7 @@ public:
         // MORE - should I do anything here?
         return NULL;
     }
-    virtual void noteSlaveGraph(IActivityBase *parentActivity, unsigned graphId, unsigned channel, memsize_t remoteGraphId)
+    virtual void noteAgentGraph(IActivityBase *parentActivity, unsigned graphId, unsigned channel, memsize_t remoteGraphId)
     {
         UNIMPLEMENTED; // MORE - can this happen? nested graphs?
     }

@@ -47,7 +47,7 @@ interface IActivityGraph : extends IInterface
     virtual IThorChildGraph * queryChildGraph() = 0;
     virtual IEclGraphResults * queryLocalGraph() = 0;
     virtual IRoxieServerChildGraph * queryLoopGraph() = 0;
-    virtual IRoxieServerChildGraph * createGraphLoopInstance(IRoxieSlaveContext *ctx, unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx) = 0;
+    virtual IRoxieServerChildGraph * createGraphLoopInstance(IRoxieAgentContext *ctx, unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx) = 0;
     virtual const char *queryName() const = 0;
     virtual void gatherStatistics(IStatisticGatherer * statsBuilder) const = 0;
     virtual void setPrefix(const char *prefix) = 0;
@@ -77,7 +77,7 @@ public:
 
     void setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stateInfo);
     void setFromContext(const IPropertyTree *ctx);
-    void setFromSlaveLoggingFlags(unsigned loggingFlags);
+    void setFromAgentLoggingFlags(unsigned loggingFlags);
 
 
     unsigned priority;
@@ -124,9 +124,9 @@ private:
 
 interface IQueryFactory : extends IInterface
 {
-    virtual IRoxieSlaveContext *createSlaveContext(const SlaveContextLogger &logctx, IRoxieQueryPacket *packet, bool hasChildren) const = 0;
-    virtual IActivityGraph *lookupGraph(IRoxieSlaveContext *ctx, const char *name, IProbeManager *probeManager, const IRoxieContextLogger &logctx, IRoxieServerActivity *parentActivity) const = 0;
-    virtual ISlaveActivityFactory *getSlaveActivityFactory(unsigned id) const = 0;
+    virtual IRoxieAgentContext *createAgentContext(const AgentContextLogger &logctx, IRoxieQueryPacket *packet, bool hasChildren) const = 0;
+    virtual IActivityGraph *lookupGraph(IRoxieAgentContext *ctx, const char *name, IProbeManager *probeManager, const IRoxieContextLogger &logctx, IRoxieServerActivity *parentActivity) const = 0;
+    virtual IAgentActivityFactory *getAgentActivityFactory(unsigned id) const = 0;
     virtual IRoxieServerActivityFactory *getRoxieServerActivityFactory(unsigned id) const = 0;
     virtual hash64_t queryHash() const = 0;
     virtual const char *queryQueryName() const = 0;
@@ -156,12 +156,12 @@ interface IQueryFactory : extends IInterface
 
     virtual IRoxieServerContext *createContext(IPropertyTree *xml, IHpccProtocolResponse *protocol, unsigned flags, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags, const char *querySetName) const = 0;
     virtual IRoxieServerContext *createContext(IConstWorkUnit *wu, const ContextLogger &_logctx) const = 0;
-    virtual void noteQuery(time_t startTime, bool failed, unsigned elapsed, unsigned memused, unsigned slavesReplyLen, unsigned bytesOut) = 0;
+    virtual void noteQuery(time_t startTime, bool failed, unsigned elapsed, unsigned memused, unsigned agentsReplyLen, unsigned bytesOut) = 0;
     virtual IPropertyTree *getQueryStats(time_t from, time_t to) = 0;
     virtual void getGraphNames(StringArray &ret) const = 0;
 
     virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
-    virtual void getQueryInfo(StringBuffer &result, bool full, IArrayOf<IQueryFactory> *slaveQueries,const IRoxieContextLogger &logctx) const = 0;
+    virtual void getQueryInfo(StringBuffer &result, bool full, IArrayOf<IQueryFactory> *agentQueries,const IRoxieContextLogger &logctx) const = 0;
     virtual bool isDynamic() const = 0;
     virtual void checkSuspended() const = 0;
     virtual void onTermination(TerminationCallbackInfo *info) const= 0;
@@ -207,7 +207,7 @@ typedef MapStringTo<ActivityGraphPtr> MapStringToActivityGraph; // Note not link
 typedef IActivityFactory *IActivityFactoryPtr;
 typedef MapBetween<unsigned, unsigned, IActivityFactoryPtr, IActivityFactoryPtr> MapIdToActivityFactory;
 
-// Common base class for Roxie server and slave activity code - see IActivityFactory
+// Common base class for Roxie server and agent activity code - see IActivityFactory
 
 class CActivityFactory : public CInterface
 {
@@ -250,7 +250,7 @@ public:
 
     virtual void getEdgeProgressInfo(unsigned idx, IPropertyTree &edge) const
     {
-        // No meaningful edge info for remote slave activities...
+        // No meaningful edge info for remote agent activities...
     }
 
     virtual void getNodeProgressInfo(IPropertyTree &node) const
@@ -324,10 +324,10 @@ extern const IQueryDll *createExeQueryDll(const char *exeName);
 extern const IQueryDll *createWuQueryDll(IConstWorkUnit *wu);
 
 extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry);
-extern IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, unsigned _channelNo, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry);
+extern IQueryFactory *createAgentQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, unsigned _channelNo, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry);
 extern IQueryFactory *getQueryFactory(hash64_t hashvalue, unsigned channel);
 extern IQueryFactory *createServerQueryFactoryFromWu(IConstWorkUnit *wu, const IQueryDll *_dll);
-extern IQueryFactory *createSlaveQueryFactoryFromWu(IConstWorkUnit *wu, unsigned channelNo);
+extern IQueryFactory *createAgentQueryFactoryFromWu(IConstWorkUnit *wu, unsigned channelNo);
 extern unsigned checkWorkunitVersionConsistency(const IConstWorkUnit *wu );
 
 inline unsigned findParentId(IPropertyTree &node)

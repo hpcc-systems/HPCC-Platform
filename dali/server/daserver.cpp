@@ -251,7 +251,7 @@ static bool populateWhiteListFromEnvironment(IWhiteListWriter &writer)
                         StringBuffer ipSB;
                         const char *ip = resolveComputer(serverCompName, server.queryProp("@netAddress"), ipSB);
                         if (ip)
-                            writer.add(ip, DCR_RoxyMaster);
+                            writer.add(ip, DCR_Roxie);
                     }
                     break;
                 }

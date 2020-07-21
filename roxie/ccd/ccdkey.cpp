@@ -258,7 +258,7 @@ public:
     void serializeCursorPos(MemoryBuffer &mb) const
     {
         // We are saving a unique signature of this index that can be used to ensure that any continuation will identify the same index
-        // Note that the continuation may be executed by a different slave
+        // Note that the continuation may be executed by a different agent
         // This code is not great but is probably ok.
         StringBuffer b;
         toString(b);

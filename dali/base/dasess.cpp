@@ -61,7 +61,7 @@ static std::unordered_map<std::string, DaliClientRole> daliClientRoleMap = {
     { "EspServer", DCR_EspServer },
     { "Config", DCR_Config },
     { "SchedulerAdmin", DCR_ScheduleAdmin },
-    { "RoxieMaster", DCR_RoxyMaster },
+    { "Roxie", DCR_Roxie },
     { "BackupGen", DCR_BackupGen },
     { "DaFsControl", DCR_DaFsControl },
     { "SwapNode", DCR_SwapNode },
@@ -103,7 +103,7 @@ const char *queryRoleName(DaliClientRole role)
     case DCR_EspServer: return "EspServer";
     case DCR_Config: return "Config";
     case DCR_ScheduleAdmin: return "SchedulerAdmin";
-    case DCR_RoxyMaster: return "RoxieMaster";
+    case DCR_Roxie: return "Roxie";
     case DCR_BackupGen: return "BackupGen";
     case DCR_DaFsControl: return "DaFsControl";
     case DCR_SwapNode: return "SwapNode";

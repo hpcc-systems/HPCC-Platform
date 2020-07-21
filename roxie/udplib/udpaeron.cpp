@@ -227,7 +227,7 @@ public:
                 if (!msgColl)
                 {
                     msgColl.set(collators[RUID_DISCARD]);
-                    // We could consider sending an abort to the slave, but it should have already been done by ccdserver code
+                    // We could consider sending an abort to the agent, but it should have already been done by ccdserver code
                     isDefault = true;
                     unwantedDiscarded++;
                 }

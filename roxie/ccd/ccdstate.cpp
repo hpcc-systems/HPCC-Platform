@@ -885,12 +885,12 @@ MODULE_EXIT()
 // IRoxieQuerySetManager
 //  - CRoxieQuerySetManager -
 //    - CRoxieServerQuerySetManager
-//    - CRoxieSlaveQuerySetManager
+//    - CRoxieAgentQuerySetManager
 //
 // Manages a set of instantiated queries and allows us to look them up by queryname or alias
 //
 // IRoxieQuerySetManagerSet
-// - CRoxieSlaveQuerySetManagerSet
+// - CRoxieAgentQuerySetManagerSet
 //
 // Manages the IRoxieQuerySetManager for multiple channels
 //
@@ -898,14 +898,14 @@ MODULE_EXIT()
 // - CRoxieDaliQueryPackageManager
 // - CStandaloneQueryPackageManager
 //
-// Groups a server resource manager and a set of slave resource managers (one per channel) together.
+// Groups a server resource manager and a set of agent resource managers (one per channel) together.
 // There is one per PackageMap
 //
 // CQueryPackageSetManager at outer level
 // There will be exactly one of these. It will reload the CQueryPackageManager's if dali Package info changes
 
 //================================================================================================
-// CRoxieQuerySetManager - shared base class for slave and server query set manager classes
+// CRoxieQuerySetManager - shared base class for agent and server query set manager classes
 // Manages a set of instantiated queries and allows us to look them up by queryname or alias,
 // as well as controlling their lifespan
 //================================================================================================
@@ -1102,16 +1102,16 @@ public:
         }
     }
 
-    virtual void getAllQueryInfo(StringBuffer &reply, bool full, const IRoxieQuerySetManagerSet *slaves, const IRoxieContextLogger &logctx) const
+    virtual void getAllQueryInfo(StringBuffer &reply, bool full, const IRoxieQuerySetManagerSet *agents, const IRoxieContextLogger &logctx) const
     {
         HashIterator elems(queries);
         for (elems.first(); elems.isValid(); elems.next())
         {
             IMapping &cur = elems.query();
             IQueryFactory *query = queries.mapToValue(&cur);
-            IArrayOf<IQueryFactory> slaveQueries;
-            slaves->getQueries(query->queryQueryName(), slaveQueries, logctx);
-            query->getQueryInfo(reply, full, &slaveQueries, logctx);
+            IArrayOf<IQueryFactory> agentQueries;
+            agents->getQueries(query->queryQueryName(), agentQueries, logctx);
+            query->getQueryInfo(reply, full, &agentQueries, logctx);
         }
         HashIterator aliasIterator(aliases);
         for (aliasIterator.first(); aliasIterator.isValid(); aliasIterator.next())
@@ -1162,10 +1162,10 @@ extern IRoxieQuerySetManager *createServerManager(const char *querySet)
 
 //===============================================================================================================
 
-class CRoxieSlaveQuerySetManager : public CRoxieQuerySetManager
+class CRoxieAgentQuerySetManager : public CRoxieQuerySetManager
 {
 public:
-    CRoxieSlaveQuerySetManager(unsigned _channelNo, const char *_querySetName)
+    CRoxieAgentQuerySetManager(unsigned _channelNo, const char *_querySetName)
         : CRoxieQuerySetManager(_channelNo, _querySetName)
     {
         channelNo = _channelNo;
@@ -1173,39 +1173,39 @@ public:
 
     virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, bool forceRetry)
     {
-        return createSlaveQueryFactory(id, dll, package, channelNo, stateInfo, false, forceRetry);
+        return createAgentQueryFactory(id, dll, package, channelNo, stateInfo, false, forceRetry);
     }
 
 };
 
-class CRoxieSlaveQuerySetManagerSet : public CInterface, implements IRoxieQuerySetManagerSet
+class CRoxieAgentQuerySetManagerSet : public CInterface, implements IRoxieQuerySetManagerSet
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CRoxieSlaveQuerySetManagerSet(unsigned _numChannels, const char *querySetName)
+    CRoxieAgentQuerySetManagerSet(unsigned _numChannels, const char *querySetName)
         : numChannels(_numChannels)
     {
-        managers = new CRoxieSlaveQuerySetManager *[numChannels];
-        memset(managers, 0, sizeof(CRoxieSlaveQuerySetManager *) * numChannels);
+        managers = new CRoxieAgentQuerySetManager *[numChannels];
+        memset(managers, 0, sizeof(CRoxieAgentQuerySetManager *) * numChannels);
         Owned<const ITopologyServer> topology = getTopology();
         for (unsigned channelNo : topology->queryChannels())
         {
             assertex(channelNo>0 && channelNo<=numChannels);
             if (managers[channelNo-1] == NULL)
-                managers[channelNo-1] = new CRoxieSlaveQuerySetManager(channelNo, querySetName);
+                managers[channelNo-1] = new CRoxieAgentQuerySetManager(channelNo, querySetName);
             else
-                throw MakeStringException(ROXIE_INVALID_TOPOLOGY, "Invalid topology file - channel %d repeated for this slave", channelNo);
+                throw MakeStringException(ROXIE_INVALID_TOPOLOGY, "Invalid topology file - channel %d repeated for this agent", channelNo);
         }
     }
 
-    ~CRoxieSlaveQuerySetManagerSet()
+    ~CRoxieAgentQuerySetManagerSet()
     {
         for (unsigned channel = 0; channel < numChannels; channel++)
             ::Release(managers[channel]);
         delete [] managers;
     }
 
-    inline CRoxieSlaveQuerySetManager *item(int idx)
+    inline CRoxieAgentQuerySetManager *item(int idx)
     {
         return managers[idx];
     }
@@ -1230,7 +1230,7 @@ public:
 
 private:
     unsigned numChannels;
-    CRoxieSlaveQuerySetManager **managers;
+    CRoxieAgentQuerySetManager **managers;
 };
 
 //===============================================================================================================
@@ -1347,10 +1347,10 @@ public:
         return serverManager.getLink();
     }
 
-    IRoxieQuerySetManagerSet* getRoxieSlaveManagers()
+    IRoxieQuerySetManagerSet* getRoxieAgentManagers()
     {
         CriticalBlock b2(updateCrit);
-        return slaveManagers.getLink();
+        return agentManagers.getLink();
     }
 
     void getInfo(StringBuffer &reply, const IRoxieContextLogger &logctx) const
@@ -1379,17 +1379,17 @@ public:
             const char *id = query->queryQueryName();
             serverManager->resetQueryTimings(id, logctx);
             for (unsigned channel = 0; channel < numChannels; channel++)
-                if (slaveManagers->item(channel))
+                if (agentManagers->item(channel))
                 {
-                    slaveManagers->item(channel)->resetQueryTimings(id, logctx);
+                    agentManagers->item(channel)->resetQueryTimings(id, logctx);
                 }
         }
         else
         {
             serverManager->resetAllQueryTimings();
             for (unsigned channel = 0; channel < numChannels; channel++)
-                if (slaveManagers->item(channel))
-                    slaveManagers->item(channel)->resetAllQueryTimings();
+                if (agentManagers->item(channel))
+                    agentManagers->item(channel)->resetAllQueryTimings();
         }
         return true;
     }
@@ -1406,10 +1406,10 @@ public:
                 serverManager->getStats(queryId, graphName, freply, logctx);
                 Owned<IPropertyTree> stats = createPTreeFromXMLString(freply.str(), ipt_fast);
                 for (unsigned channel = 0; channel < numChannels; channel++)
-                    if (slaveManagers->item(channel))
+                    if (agentManagers->item(channel))
                     {
                         StringBuffer sreply;
-                        slaveManagers->item(channel)->getStats(queryId, graphName, sreply, logctx);
+                        agentManagers->item(channel)->getStats(queryId, graphName, sreply, logctx);
                         Owned<IPropertyTree> cstats = createPTreeFromXMLString(sreply.str(), ipt_fast);
                         mergeStats(stats, cstats, 1);
                     }
@@ -1425,16 +1425,16 @@ public:
         serverManager->getActivityMetrics(reply);
         for (unsigned channel = 0; channel < numChannels; channel++)
         {
-            if (slaveManagers->item(channel))
+            if (agentManagers->item(channel))
             {
-                slaveManagers->item(channel)->getActivityMetrics(reply);
+                agentManagers->item(channel)->getActivityMetrics(reply);
             }
         }
     }
     void getAllQueryInfo(StringBuffer &reply, bool full, const IRoxieContextLogger &logctx) const
     {
         CriticalBlock b2(updateCrit);
-        serverManager->getAllQueryInfo(reply, full, slaveManagers, logctx);
+        serverManager->getAllQueryInfo(reply, full, agentManagers, logctx);
     }
     const char *queryQuerySetName()
     {
@@ -1442,25 +1442,25 @@ public:
     }
 protected:
 
-    void reloadQueryManagers(CRoxieSlaveQuerySetManagerSet *newSlaveManagers, IRoxieQuerySetManager *newServerManager, hash64_t newHash)
+    void reloadQueryManagers(CRoxieAgentQuerySetManagerSet *newAgentManagers, IRoxieQuerySetManager *newServerManager, hash64_t newHash)
     {
-        Owned<CRoxieSlaveQuerySetManagerSet> oldSlaveManagers;
+        Owned<CRoxieAgentQuerySetManagerSet> oldAgentManagers;
         Owned<IRoxieQuerySetManager> oldServerManager;
         {
             // Atomically, replace the existing query managers with the new ones
             CriticalBlock b2(updateCrit);
-            oldSlaveManagers.setown(slaveManagers.getClear()); // so that the release happens outside the critblock
+            oldAgentManagers.setown(agentManagers.getClear()); // so that the release happens outside the critblock
             oldServerManager.setown(serverManager.getClear()); // so that the release happens outside the critblock
-            slaveManagers.setown(newSlaveManagers);
+            agentManagers.setown(newAgentManagers);
             serverManager.setown(newServerManager);
             queryHash = newHash;
         }
-        if (slaveQueryReleaseDelaySeconds)
-            delayedReleaser->delayedRelease(oldSlaveManagers.getClear(), slaveQueryReleaseDelaySeconds);
+        if (agentQueryReleaseDelaySeconds)
+            delayedReleaser->delayedRelease(oldAgentManagers.getClear(), agentQueryReleaseDelaySeconds);
     }
 
-    mutable CriticalSection updateCrit;  // protects updates of slaveManagers and serverManager
-    Owned<CRoxieSlaveQuerySetManagerSet> slaveManagers;
+    mutable CriticalSection updateCrit;  // protects updates of agentManagers and serverManager
+    Owned<CRoxieAgentQuerySetManagerSet> agentManagers;
     Owned<IRoxieQuerySetManager> serverManager;
 
     Owned<const IRoxiePackageMap> packages;
@@ -1478,7 +1478,7 @@ protected:
  * at a given time (the one associated with the active PackageSet).
  *
  * To deploy new data, typically we will load a new PackageSet, make it active, then release the old one
- * A packageSet is not modified while loaded, to avoid timing issues between slaves and server.
+ * A packageSet is not modified while loaded, to avoid timing issues between agents and server.
  *
  * We need to be able to spot a change (in dali) to the active package indicator (and switch the active CRoxieDaliQueryPackageManager)
  * We need to be able to spot a change (in dali) that adds a new PackageSet
@@ -1527,11 +1527,11 @@ public:
     {
         hash64_t newHash = numChannels;
         Owned<IPropertyTree> newQuerySet = daliHelper->getQuerySet(querySet);
-        Owned<CRoxieSlaveQuerySetManagerSet> newSlaveManagers = new CRoxieSlaveQuerySetManagerSet(numChannels, querySet);
+        Owned<CRoxieAgentQuerySetManagerSet> newAgentManagers = new CRoxieAgentQuerySetManagerSet(numChannels, querySet);
         Owned<IRoxieQuerySetManager> newServerManager = createServerManager(querySet);
         newServerManager->load(newQuerySet, *packages, newHash, forceRetry);
-        newSlaveManagers->load(newQuerySet, *packages, newHash, forceRetry);
-        reloadQueryManagers(newSlaveManagers.getClear(), newServerManager.getClear(), newHash);
+        newAgentManagers->load(newQuerySet, *packages, newHash, forceRetry);
+        reloadQueryManagers(newAgentManagers.getClear(), newServerManager.getClear(), newHash);
         clearKeyStoreCache(false);   // Allows us to fully release files we no longer need because of unloaded queries
     }
 
@@ -1558,11 +1558,11 @@ public:
         Owned<IPropertyTree> newQuerySet = createPTree("QuerySet", ipt_lowmem);
         newQuerySet->setProp("@name", "_standalone");
         newQuerySet->addPropTree("Query", standaloneDll.getLink());
-        Owned<CRoxieSlaveQuerySetManagerSet> newSlaveManagers = new CRoxieSlaveQuerySetManagerSet(numChannels, querySet);
+        Owned<CRoxieAgentQuerySetManagerSet> newAgentManagers = new CRoxieAgentQuerySetManagerSet(numChannels, querySet);
         Owned<IRoxieQuerySetManager> newServerManager = createServerManager(querySet);
         newServerManager->load(newQuerySet, *packages, newHash, forceReload);
-        newSlaveManagers->load(newQuerySet, *packages, newHash, forceReload);
-        reloadQueryManagers(newSlaveManagers.getClear(), newServerManager.getClear(), newHash);
+        newAgentManagers->load(newQuerySet, *packages, newHash, forceReload);
+        reloadQueryManagers(newAgentManagers.getClear(), newServerManager.getClear(), newHash);
     }
 };
 
@@ -1626,7 +1626,7 @@ public:
         throw MakeStringException(ROXIE_LIBRARY_ERROR, "No library available for %s", libraryName);
     }
 
-    IQueryFactory *getQuery(const char *id, StringBuffer *querySet, IArrayOf<IQueryFactory> *slaveQueries, const IRoxieContextLogger &logctx) const
+    IQueryFactory *getQuery(const char *id, StringBuffer *querySet, IArrayOf<IQueryFactory> *agentQueries, const IRoxieContextLogger &logctx) const
     {
         if (querySet && querySet->length() && !allQuerySetNames.contains(querySet->str()))
             throw MakeStringException(ROXIE_INVALID_TARGET, "Target %s not found", querySet->str());
@@ -1638,10 +1638,10 @@ public:
                 IQueryFactory *query = sm->getQuery(id, querySet, logctx);
                 if (query)
                 {
-                    if (slaveQueries)
+                    if (agentQueries)
                     {
-                        Owned<IRoxieQuerySetManagerSet> slaveManagers = allQueryPackages.item(idx).getRoxieSlaveManagers();
-                        slaveManagers->getQueries(id, *slaveQueries, logctx);
+                        Owned<IRoxieQuerySetManagerSet> agentManagers = allQueryPackages.item(idx).getRoxieAgentManagers();
+                        agentManagers->getQueries(id, *agentQueries, logctx);
                     }
                     return query;
                 }
@@ -1675,8 +1675,8 @@ public:
             Owned<IRoxieQuerySetManager> serverManager = allQueryPackages.item(idx).getRoxieServerManager();
             if (serverManager->isActive())
             {
-                Owned<IRoxieQuerySetManagerSet> slaveManagers = allQueryPackages.item(idx).getRoxieSlaveManagers();
-                serverManager->getAllQueryInfo(reply, full, slaveManagers, logctx);
+                Owned<IRoxieQuerySetManagerSet> agentManagers = allQueryPackages.item(idx).getRoxieAgentManagers();
+                serverManager->getAllQueryInfo(reply, full, agentManagers, logctx);
             }
         }
     }
@@ -1915,10 +1915,10 @@ public:
         return allQueryPackages->lookupLibrary(libraryName, expectedInterfaceHash, logctx);
     }
 
-    virtual IQueryFactory *getQuery(const char *id, StringBuffer *querySet, IArrayOf<IQueryFactory> *slaveQueries, const IRoxieContextLogger &logctx) const
+    virtual IQueryFactory *getQuery(const char *id, StringBuffer *querySet, IArrayOf<IQueryFactory> *agentQueries, const IRoxieContextLogger &logctx) const
     {
         ReadLockBlock b(packageCrit);
-        return allQueryPackages->getQuery(id, querySet, slaveQueries, logctx);
+        return allQueryPackages->getQuery(id, querySet, agentQueries, logctx);
     }
 
     virtual int getActivePackageCount() const
@@ -2048,10 +2048,10 @@ private:
                 const char *id = ids->query().queryProp("@id");
                 if (id)
                 {
-                    IArrayOf<IQueryFactory> slaveQueries;
-                    Owned<IQueryFactory> query = getQuery(id, NULL, &slaveQueries, logctx);
+                    IArrayOf<IQueryFactory> agentQueries;
+                    Owned<IQueryFactory> query = getQuery(id, NULL, &agentQueries, logctx);
                     if (query)
-                        query->getQueryInfo(reply, full, &slaveQueries, logctx);
+                        query->getQueryInfo(reply, full, &agentQueries, logctx);
                     else
                         reply.appendf(" <Query id=\"%s\" error=\"Query not found\"/>\n", id);
                 }
@@ -2583,7 +2583,7 @@ private:
             }
             else if (stricmp(queryName, "control:resetcache")==0)
             {
-                releaseSlaveDynamicFileCache();
+                releaseAgentDynamicFileCache();
             }
             else if (stricmp(queryName, "control:resetindexmetrics")==0)
             {
@@ -2702,9 +2702,9 @@ private:
             break;
 
         case 'T':
-            if (stricmp(queryName, "control:testSlaveFailure")==0)
+            if (stricmp(queryName, "control:testAgentFailure")==0)
             {
-                testSlaveFailure = control->getPropInt("@val", 20);
+                testAgentFailure = control->getPropInt("@val", 20);
             }
             else if (stricmp(queryName, "control:timeActivities")==0)
             {

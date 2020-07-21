@@ -76,8 +76,8 @@ unsigned RoxiePacketHeader::getSubChannelMask(unsigned subChannel)
 
 unsigned RoxiePacketHeader::priorityHash() const
 {
-    // Used to determine which slave to act as primary and which as secondary for a given packet (thus spreading the load)
-    // It's important that we do NOT include channel (since that would result in different values for the different slaves responding to a broadcast)
+    // Used to determine which agent to act as primary and which as secondary for a given packet (thus spreading the load)
+    // It's important that we do NOT include channel (since that would result in different values for the different agents responding to a broadcast)
     // We also don't include continueSequence since we'd prefer continuations to go the same way as original
     unsigned hash = serverId.hash();
     hash = hashc((const unsigned char *) &uid, sizeof(uid), hash);
@@ -165,7 +165,7 @@ StringBuffer &RoxiePacketHeader::toString(StringBuffer &ret) const
 
 bool RoxiePacketHeader::allChannelsFailed()
 {
-    unsigned mask = (1 << (getNumSlaves(channel) * SUBCHANNEL_BITS)) - 1;
+    unsigned mask = (1 << (getNumAgents(channel) * SUBCHANNEL_BITS)) - 1;
     return (retries & mask) == mask;
 }
 
@@ -173,8 +173,8 @@ bool RoxiePacketHeader::retry()
 {
     bool worthRetrying = false;
     unsigned mask = SUBCHANNEL_MASK;
-    unsigned numSlaves = getNumSlaves(channel);
-    for (unsigned subChannel = 0; subChannel < numSlaves; subChannel++)
+    unsigned numAgents = getNumAgents(channel);
+    for (unsigned subChannel = 0; subChannel < numAgents; subChannel++)
     {
         unsigned subRetries = (retries & mask) >> (subChannel * SUBCHANNEL_BITS);
         if (subRetries != SUBCHANNEL_MASK)
@@ -211,7 +211,7 @@ unsigned getReplicationLevel(unsigned channel)
 
 //============================================================================================
 
-// This function maps a slave number to the multicast ip used to talk to it.
+// This function maps a agent number to the multicast ip used to talk to it.
 
 IpAddress multicastBase("239.1.1.1");           // TBD IPv6 (need IPv6 multicast addresses?
 IpAddress multicastLast("239.1.5.254");
@@ -275,7 +275,7 @@ void openMulticastSocket()
         }
         if (traceLevel)
             DBGLOG("Roxie: multicast socket created port=%d sockbuffsize=%d actual %d", ccdMulticastPort, udpMulticastBufferSize, actualSize);
-        if (roxieMulticastEnabled && !localSlave)
+        if (roxieMulticastEnabled && !localAgent)
         {
             Owned<const ITopologyServer> topology = getTopology();
             for (unsigned channel : topology->queryChannels())
@@ -283,7 +283,7 @@ void openMulticastSocket()
                 assertex(channel);
                 joinMulticastChannel(channel);
             }
-            joinMulticastChannel(0); // all slaves also listen on channel 0
+            joinMulticastChannel(0); // all agents also listen on channel 0
 
         }
     }
@@ -304,9 +304,9 @@ size32_t channelWrite(unsigned channel, void const* buf, size32_t size)
     else
     {
         Owned<const ITopologyServer> topo = getTopology();
-        const SocketEndpointArray &eps = topo->querySlaves(channel);
+        const SocketEndpointArray &eps = topo->queryAgents(channel);
         if (!eps.ordinality())
-            throw makeStringExceptionV(0, "No slaves available for channel %d", channel);
+            throw makeStringExceptionV(0, "No agents available for channel %d", channel);
         ForEachItemIn(idx, eps)
         {
             size32_t wrote = multicastSocket->udp_write_to(eps.item(idx), buf, size);
@@ -533,7 +533,7 @@ public:
 
 extern IRoxieQueryPacket *createRoxiePacket(void *_data, unsigned _len)
 {
-    if ((unsigned short)_len != _len && !localSlave)
+    if ((unsigned short)_len != _len && !localAgent)
     {
         StringBuffer s;
         RoxiePacketHeader *header = (RoxiePacketHeader *) _data;
@@ -552,19 +552,19 @@ extern IRoxieQueryPacket *createRoxiePacket(MemoryBuffer &m)
 
 //=================================================================================
 
-SlaveContextLogger::SlaveContextLogger()
+AgentContextLogger::AgentContextLogger()
 {
     GetHostIp(ip);
     set(NULL);
 }
 
-SlaveContextLogger::SlaveContextLogger(IRoxieQueryPacket *packet)
+AgentContextLogger::AgentContextLogger(IRoxieQueryPacket *packet)
 {
     GetHostIp(ip);
     set(packet);
 }
 
-void SlaveContextLogger::set(IRoxieQueryPacket *packet)
+void AgentContextLogger::set(IRoxieQueryPacket *packet)
 {
     anyOutput = false;
     intercept = false;
@@ -622,7 +622,7 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
         ip.getIpText(s);
         s.append(':').append(channel);
         StringContextLogger::set(s.str());
-        if (intercept || mergeSlaveStatistics)
+        if (intercept || mergeAgentStatistics)
         {
             RoxiePacketHeader newHeader(header, ROXIE_TRACEINFO, 0);  // subchannel not relevant
             output.setown(ROQ->createOutputStream(newHeader, true, *this));
@@ -636,9 +636,9 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
 }
 
 
-void SlaveContextLogger::putStatProcessed(unsigned subGraphId, unsigned actId, unsigned idx, unsigned processed, unsigned strands) const
+void AgentContextLogger::putStatProcessed(unsigned subGraphId, unsigned actId, unsigned idx, unsigned processed, unsigned strands) const
 {
-    if (output && mergeSlaveStatistics)
+    if (output && mergeAgentStatistics)
     {
         MemoryBuffer buf;
         buf.append((char) LOG_CHILDCOUNT); // A special log entry for the stats
@@ -650,9 +650,9 @@ void SlaveContextLogger::putStatProcessed(unsigned subGraphId, unsigned actId, u
     }
 }
 
-void SlaveContextLogger::putStats(unsigned subGraphId, unsigned actId, const CRuntimeStatisticCollection &stats) const
+void AgentContextLogger::putStats(unsigned subGraphId, unsigned actId, const CRuntimeStatisticCollection &stats) const
 {
-    if (output && mergeSlaveStatistics)
+    if (output && mergeAgentStatistics)
     {
         MemoryBuffer buf;
         buf.append((char) LOG_CHILDSTATS); // A special log entry for the stats
@@ -669,12 +669,12 @@ void SlaveContextLogger::putStats(unsigned subGraphId, unsigned actId, const CRu
     }
 }
 
-void SlaveContextLogger::flush()
+void AgentContextLogger::flush()
 {
     if (output)
     {
         CriticalBlock b(crit);
-        if (mergeSlaveStatistics)
+        if (mergeAgentStatistics)
         {
             MemoryBuffer buf;
             buf.append((char) LOG_STATVALUES); // A special log entry for the stats
@@ -825,7 +825,7 @@ public:
 
     void start()
     {
-        if (prestartSlaveThreads)
+        if (prestartAgentThreads)
         {
             while (started < numWorkers)
             {
@@ -893,7 +893,7 @@ public:
             if (traceLevel > 0)
             {
                 StringBuffer xx;
-                SlaveContextLogger l(x);
+                AgentContextLogger l(x);
                 l.CTXLOG("Ignored retry on subchannel %u for queued activity %s", subChannel, header.toString(xx).str());
             }
             if (!subChannel)
@@ -908,7 +908,7 @@ public:
             noteQueued();
             if (traceLevel > 10)
             {
-                SlaveContextLogger l(x);
+                AgentContextLogger l(x);
                 StringBuffer xx; 
                 l.CTXLOG("enqueued %s", header.toString(xx).str());
             }
@@ -942,7 +942,7 @@ public:
         {
 #ifdef _DEBUG
             RoxiePacketHeader &header = found->queryHeader();
-            SlaveContextLogger l(found);
+            AgentContextLogger l(found);
             StringBuffer xx;
             l.CTXLOG("discarded %s", header.toString(xx).str());
 #endif
@@ -1009,10 +1009,10 @@ class CRoxieWorker : public CInterface, implements IPooledThread
     bool stopped;
     bool abortJob;
     bool busy;
-    Owned<IRoxieSlaveActivity> activity;
+    Owned<IRoxieAgentActivity> activity;
     Owned<IRoxieQueryPacket> packet;
     Owned<const ITopologyServer> topology;
-    SlaveContextLogger logctx;
+    AgentContextLogger logctx;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -1039,7 +1039,7 @@ public:
         stopped = true;
         return true; 
     }
-    inline void setActivity(IRoxieSlaveActivity *act)
+    inline void setActivity(IRoxieAgentActivity *act)
     {
         CriticalBlock b(actCrit);
         activity.setown(act);
@@ -1076,9 +1076,9 @@ public:
                 ibytiSem.signal();
             if (activity) 
             {
-                // Try to stop/abort a job after it starts only if IBYTI comes from a higher priority slave 
-                // (more primary in the rank). The slaves with higher rank will hold the lower bits of the retries field in IBYTI packet).
-                if (!checkRank || topology->queryChannelInfo(h.channel).otherSlaveHasPriority(h.priorityHash(), h.getRespondingSubChannel()))
+                // Try to stop/abort a job after it starts only if IBYTI comes from a higher priority agent 
+                // (more primary in the rank). The agents with higher rank will hold the lower bits of the retries field in IBYTI packet).
+                if (!checkRank || topology->queryChannelInfo(h.channel).otherAgentHasPriority(h.priorityHash(), h.getRespondingSubChannel()))
                 {
                     activity->abort();
                     return true;
@@ -1097,7 +1097,7 @@ public:
         return false;
     }
 
-    void throwRemoteException(IException *E, IRoxieSlaveActivity *activity, IRoxieQueryPacket *packet, bool isUser)
+    void throwRemoteException(IException *E, IRoxieAgentActivity *activity, IRoxieQueryPacket *packet, bool isUser)
     {
         try 
         {
@@ -1116,14 +1116,14 @@ public:
             if (!isUser)
             {
                 StringBuffer s;
-                s.append("Exception in slave for packet ");
+                s.append("Exception in agent for packet ");
                 header.toString(s);
                 logctx.logOperatorException(E, NULL, 0, "%s", s.str());
                 header.setException(mySubChannel);
-                if (!header.allChannelsFailed() && !localSlave)
+                if (!header.allChannelsFailed() && !localAgent)
                 {
                     if (logctx.queryTraceLevel() > 1) 
-                        logctx.CTXLOG("resending packet from slave in case others want to try it");
+                        logctx.CTXLOG("resending packet from agent in case others want to try it");
                     ROQ->sendPacket(packet, logctx);
                 }
             }
@@ -1164,20 +1164,20 @@ public:
         hash64_t queryHash = packet->queryHeader().queryHash;
         unsigned activityId = packet->queryHeader().activityId & ~ROXIE_PRIORITY_MASK;
         Owned<IQueryFactory> queryFactory = getQueryFactory(queryHash, channel);
-        unsigned numSlaves = topology->querySlaves(channel).ordinality();
+        unsigned numAgents = topology->queryAgents(channel).ordinality();
         unsigned mySubChannel = topology->queryChannelInfo(channel).subChannel();
         if (!queryFactory && logctx.queryWuid())
         {
             Owned <IRoxieDaliHelper> daliHelper = connectToDali();
             Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(logctx.queryWuid(), NULL);
-            queryFactory.setown(createSlaveQueryFactoryFromWu(wu, channel));
+            queryFactory.setown(createAgentQueryFactoryFromWu(wu, channel));
             if (queryFactory)
                 cacheOnDemandQuery(queryHash, channel, queryFactory);
         }
         if (!queryFactory)
         {
             StringBuffer hdr;
-            IException *E = MakeStringException(MSGAUD_operator, ROXIE_UNKNOWN_QUERY, "Roxie slave received request for unregistered query: %s", packet->queryHeader().toString(hdr).str());
+            IException *E = MakeStringException(MSGAUD_operator, ROXIE_UNKNOWN_QUERY, "Roxie agent received request for unregistered query: %s", packet->queryHeader().toString(hdr).str());
             EXCLOG(E, "doActivity");
             throwRemoteException(E, activity, packet, false);
             return;
@@ -1187,9 +1187,9 @@ public:
             if (logctx.queryTraceLevel() > 8) 
             {
                 StringBuffer x;
-                logctx.CTXLOG("IBYTI delay controls : doIbytiDelay=%s numslaves=%u subchnl=%u : %s",
+                logctx.CTXLOG("IBYTI delay controls : doIbytiDelay=%s numagents=%u subchnl=%u : %s",
                     doIbytiDelay?"YES":"NO", 
-                    numSlaves, topology->queryChannelInfo(channel).subChannel(),
+                    numAgents, topology->queryChannelInfo(channel).subChannel(),
                     header.toString(x).str());
             }
             bool debugging = logctx.queryDebuggerActive();
@@ -1198,10 +1198,10 @@ public:
                 if (mySubChannel)
                     abortJob = true;  // when debugging, we always run on primary only...
             }
-            else if (doIbytiDelay && (numSlaves > 1))
+            else if (doIbytiDelay && (numAgents > 1))
             {
                 unsigned hdrHashVal = header.priorityHash();
-                unsigned primarySubChannel = (hdrHashVal % numSlaves);
+                unsigned primarySubChannel = (hdrHashVal % numAgents);
                 if (primarySubChannel != mySubChannel)
                 {
                     unsigned delay = topology->queryChannelInfo(channel).getIbytiDelay(primarySubChannel);
@@ -1256,7 +1256,7 @@ public:
             if (!debugging)
                 ROQ->sendIbyti(header, logctx, mySubChannel);
             activitiesStarted++;
-            Owned <ISlaveActivityFactory> factory = queryFactory->getSlaveActivityFactory(activityId);
+            Owned <IAgentActivityFactory> factory = queryFactory->getAgentActivityFactory(activityId);
             assertex(factory);
             setActivity(factory->createActivity(logctx, packet));
             Owned<IMessagePacker> output = activity->process();
@@ -1304,8 +1304,8 @@ public:
                     queue->wait();
                     if (stopped)
                         break;
-                    slavesActive++;
-                    maxSlavesActive.store_max(slavesActive);
+                    agentsActive++;
+                    maxAgentsActive.store_max(agentsActive);
                     abortJob = false;
                     busy = true;
                     if (doIbytiDelay) 
@@ -1368,7 +1368,7 @@ public:
                         topology.clear();
                         logctx.set(NULL);
                     }
-                    slavesActive--;
+                    agentsActive--;
                 }
             }
             catch(IException *E)
@@ -1545,7 +1545,7 @@ public:
 protected:
     void doFileCallback(IRoxieQueryPacket *packet)
     {
-        // This is called on the main slave reader thread so needs to be as fast as possible to avoid lost packets
+        // This is called on the main agent reader thread so needs to be as fast as possible to avoid lost packets
         const char *lfn;
         const char *data;
         unsigned len;
@@ -1869,7 +1869,7 @@ public:
 
     void doIbyti(RoxiePacketHeader &header, RoxieQueue &queue, const ITopologyServer* topology)
     {
-        assertex(!localSlave);
+        assertex(!localAgent);
         bool preActivity = false;
         const ChannelInfo &channelInfo = topology->queryChannelInfo(header.channel);
         unsigned mySubChannel = channelInfo.subChannel();
@@ -1969,7 +1969,7 @@ public:
         else
         {
             Owned<IRoxieQueryPacket> packet = createRoxiePacket(mb);
-            SlaveContextLogger logctx(packet);
+            AgentContextLogger logctx(packet);
             unsigned retries = header.thisChannelRetries(mySubchannel);
             if (retries)
             {
@@ -1979,7 +1979,7 @@ public:
                     return; // someone sent a failure or something - ignore it
 
                 // Send back an out-of-band immediately, to let Roxie server know that channel is still active
-                if (!(testSlaveFailure & 0x800))
+                if (!(testAgentFailure & 0x800))
                 {
                     RoxiePacketHeader newHeader(header, ROXIE_ALIVE, mySubchannel);
                     Owned<IMessagePacker> output = ROQ->createOutputStream(newHeader, true, logctx);
@@ -2260,7 +2260,7 @@ public:
 
     virtual bool isSerialized() const
     {
-        // NOTE: tempting to think that we could avoid serializing in localSlave case, but have to be careful about the lifespan of the rowManager...
+        // NOTE: tempting to think that we could avoid serializing in localAgent case, but have to be careful about the lifespan of the rowManager...
         return true;
     }
 
@@ -2420,7 +2420,7 @@ public:
 
 void LocalMessagePacker::flush()
 {
-    // MORE - I think this means we don't send anything until whole message available in localSlave mode, which
+    // MORE - I think this means we don't send anything until whole message available in localAgent mode, which
     // may not be optimal.
     data.setLength(lastput);
     Owned<ILocalMessageCollator> collator = rm->lookupCollator(id);
@@ -2484,7 +2484,7 @@ public:
                 RoxiePacketHeader newHeader(header, ROXIE_ALIVE, 0);
                 Owned<IMessagePacker> output = createOutputStream(newHeader, true, logctx);
                 output->flush();
-                return; // No point sending the retry in localSlave mode
+                return; // No point sending the retry in localAgent mode
             }
             RoxieQueue *targetQueue;
 #ifdef ROXIE_SLA_LOGIC
@@ -2515,7 +2515,7 @@ public:
 
     virtual void sendIbyti(RoxiePacketHeader &header, const IRoxieContextLogger &logctx, unsigned subChannel) override
     {
-        // Don't do IBYTI's when local slave - no buddy to talk to anyway
+        // Don't do IBYTI's when local agent - no buddy to talk to anyway
     }
 
     virtual void sendAbort(RoxiePacketHeader &header, const IRoxieContextLogger &logctx) override
@@ -2578,7 +2578,7 @@ IRoxieOutputQueueManager *ROQ;
 
 extern IRoxieOutputQueueManager *createOutputQueueManager(unsigned snifferChannel, unsigned numWorkers)
 {
-    if (localSlave)
+    if (localAgent)
         return new RoxieLocalQueueManager(numWorkers);
     else if (useAeron)
         return new RoxieAeronSocketQueueManager(numWorkers);
@@ -2689,7 +2689,7 @@ IPacketDiscarder *createPacketDiscarder()
 
 // There are various possibly interesting ways to reply to a ping:
 // Reply as soon as receive, or put it on the queue like other messages?
-// Reply for every channel, or just once for every slave?
+// Reply for every channel, or just once for every agent?
 // Should I send on channel 0 or round-robin the channels?
 // My gut feeling is that knowing what channels are responding is useful so should reply on every unsuspended channel, 
 // and that the delay caused by queuing system is an interesting part of what we want to measure (though nice to know minimum possible too)
