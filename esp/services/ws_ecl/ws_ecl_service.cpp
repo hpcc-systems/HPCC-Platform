@@ -196,57 +196,36 @@ static void appendServerAddress(StringBuffer &s, IPropertyTree &env, IPropertyTr
     s.append(netAddress).append(':').append(port ? port : "9876");
 }
 
-bool CWsEclService::init(const char * name, const char * type, IPropertyTree * cfg, const char * process)
+void initContainerRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap)
 {
-    StringBuffer xpath;
-    xpath.appendf("Software/EspProcess[@name='%s']", process);
-    IPropertyTree *prc = cfg->queryPropTree(xpath.str());
-    if (!prc)
-        throw MakeStringException(-1, "ESP Process %s not configured", process);
-
-    auth_method.set(prc->queryProp("Authentication/@method"));
-    portal_URL.set(prc->queryProp("@portalurl"));
-
-    StringBuffer daliAddress;
-    const char *daliServers = prc->queryProp("@daliServers");
-    if (daliServers)
+    Owned<IPropertyTreeIterator> services = queryComponentConfig().getElements("services[@type='roxie']");
+    ForEach(*services)
     {
-        while (*daliServers && !strchr(":;,", *daliServers))
-            daliAddress.append(*daliServers++);
+        IPropertyTree &service = services->query();
+        const char *name = service.queryProp("@name");
+        const char *target = service.queryProp("@target");
+        const char *port = service.queryProp("@port");
+
+        if (isEmptyString(target) || isEmptyString(name)) //bad config?
+            continue;
+
+        StringBuffer s;
+        s.append(name).append(':').append(port ? port : "9876");
+        Owned<ISmartSocketFactory> sf = new RoxieSocketFactory(s.str(), false, true, nullptr, (unsigned) -1);
+        connMap.setValue(target, sf.get());
     }
+}
+
+void initBareMetalRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap, IPropertyTree *serviceTree, const char *daliAddress)
+{
+    IPropertyTree *vips = serviceTree->queryPropTree("VIPS");
+    Owned<IStringIterator> roxieTargets = getTargetClusters("RoxieCluster", NULL);
 
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> environment = factory->openEnvironment();
     Owned<IPropertyTree> pRoot = &environment->getPTree();
 
-    xpath.clear().appendf("EspService[@name='%s']", name);
-    IPropertyTree *serviceTree = prc->queryPropTree(xpath);
-    if (!serviceTree)
-        throw MakeStringException(-1, "ESP Service %s not configured", name);
-
-    roxieTimeout = serviceTree->getPropInt("RoxieTimeout", 10 * 60);
-    if (!roxieTimeout)
-        roxieTimeout = WAIT_FOREVER;
-    workunitTimeout = serviceTree->getPropInt("WorkunitTimeout", 10 * 60);
-    if (workunitTimeout)
-        workunitTimeout *= 1000;
-    else
-        workunitTimeout = WAIT_FOREVER;
-
-    const char *headerName = serviceTree->queryProp("HttpGlobalIdHeader");
-    if (headerName && *headerName && !streq(headerName, "Global-Id") && !streq(headerName, "HPCC-Global-Id")) //defaults will be checked anyway
-        globalIdHttpHeader.set(headerName);
-    headerName = serviceTree->queryProp("HttpCallerIdHeader");
-    if (headerName && *headerName && !streq(headerName, "Caller-Id") && !streq(headerName, "HPCC-Caller-Id")) //defaults will be checked anyway
-        callerIdHttpHeader.set(headerName);
-
-    Owned<IPropertyTreeIterator> cfgTargets = serviceTree->getElements("Targets/Target");
-    ForEach(*cfgTargets)
-        targets.append(cfgTargets->query().queryProp(NULL));
-
-    IPropertyTree *vips = serviceTree->queryPropTree("VIPS");
-    Owned<IStringIterator> roxieTargets = getTargetClusters("RoxieCluster", NULL);
-
+    StringBuffer xpath;
     ForEach(*roxieTargets)
     {
         SCMStringBuffer target;
@@ -289,7 +268,7 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
             {
                 Owned<IPropertyTreeIterator> servers = it->query().getElements("RoxieServerProcess");
                 ForEach(*servers)
-                    appendServerAddress(list, *pRoot, servers->query(), daliAddress.str());
+                    appendServerAddress(list, *pRoot, servers->query(), daliAddress);
             }
         }
         if (list.length())
@@ -301,7 +280,56 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
                 connMap.setValue(alias.str(), sf.get());
         }
     }
+}
+bool CWsEclService::init(const char * name, const char * type, IPropertyTree * cfg, const char * process)
+{
+    StringBuffer xpath;
+    xpath.appendf("Software/EspProcess[@name='%s']", process);
+    IPropertyTree *prc = cfg->queryPropTree(xpath.str());
+    if (!prc)
+        throw MakeStringException(-1, "ESP Process %s not configured", process);
 
+    auth_method.set(prc->queryProp("Authentication/@method"));
+    portal_URL.set(prc->queryProp("@portalurl"));
+
+    StringBuffer daliAddress;
+    const char *daliServers = prc->queryProp("@daliServers");
+    if (daliServers)
+    {
+        while (*daliServers && !strchr(":;,", *daliServers))
+            daliAddress.append(*daliServers++);
+    }
+
+    xpath.clear().appendf("EspService[@name='%s']", name);
+    IPropertyTree *serviceTree = prc->queryPropTree(xpath);
+    if (!serviceTree)
+        throw MakeStringException(-1, "ESP Service %s not configured", name);
+
+    roxieTimeout = serviceTree->getPropInt("RoxieTimeout", 10 * 60);
+    if (!roxieTimeout)
+        roxieTimeout = WAIT_FOREVER;
+    workunitTimeout = serviceTree->getPropInt("WorkunitTimeout", 10 * 60);
+    if (workunitTimeout)
+        workunitTimeout *= 1000;
+    else
+        workunitTimeout = WAIT_FOREVER;
+
+    const char *headerName = serviceTree->queryProp("HttpGlobalIdHeader");
+    if (headerName && *headerName && !streq(headerName, "Global-Id") && !streq(headerName, "HPCC-Global-Id")) //defaults will be checked anyway
+        globalIdHttpHeader.set(headerName);
+    headerName = serviceTree->queryProp("HttpCallerIdHeader");
+    if (headerName && *headerName && !streq(headerName, "Caller-Id") && !streq(headerName, "HPCC-Caller-Id")) //defaults will be checked anyway
+        callerIdHttpHeader.set(headerName);
+
+    Owned<IPropertyTreeIterator> cfgTargets = serviceTree->getElements("Targets/Target");
+    ForEach(*cfgTargets)
+        targets.append(cfgTargets->query().queryProp(NULL));
+
+#ifdef _CONTAINERIZED
+    initContainerRoxieTargets(connMap);
+#else
+    initBareMetalRoxieTargets(connMap, serviceTree, daliAddress.str());
+#endif
     translator = new wsEclTypeTranslator();
 
     Owned<IPropertyTreeIterator> xsltProps = serviceTree->getElements("xslt*");
@@ -332,6 +360,28 @@ void CWsEclBinding::getNavigationData(IEspContext &context, IPropertyTree & data
     ensureNavDynFolder(data, "Targets", "Targets", "root=true", NULL);
 }
 
+static IStringIterator *getContainerTargetClusters()
+{
+    Owned<CStringArrayIterator> ret = new CStringArrayIterator;
+    Owned<IPropertyTreeIterator> queues = queryComponentConfig().getElements("queues");
+    ForEach(*queues)
+    {
+        IPropertyTree &queue = queues->query();
+        const char *qName = queue.queryProp("@name");
+        if (!isEmptyString(qName))
+            ret->append_unique(qName);
+    }
+    Owned<IPropertyTreeIterator> services = queryComponentConfig().getElements("services[@type='roxie']");
+    ForEach(*services)
+    {
+        IPropertyTree &service = services->query();
+        const char *targetName = service.queryProp("@target");
+        if (!isEmptyString(targetName))
+            ret->append_unique(targetName);
+    }
+    return ret.getClear();
+}
+
 void CWsEclBinding::getRootNavigationFolders(IEspContext &context, IPropertyTree & data)
 {
     DBGLOG("CScrubbedXmlBinding::getNavigationData");
@@ -343,7 +393,11 @@ void CWsEclBinding::getRootNavigationFolders(IEspContext &context, IPropertyTree
     data.addProp("@action", "NavMenuEvent");
     data.addProp("@appName", "WsECL 3.0");
 
+#ifdef _CONTAINERIZED
+    Owned<IStringIterator> envTargets = getContainerTargetClusters();
+#else
     Owned<IStringIterator> envTargets = getTargetClusters(NULL, NULL);
+#endif
 
     SCMStringBuffer target;
     ForEach(*envTargets)
@@ -2142,13 +2196,12 @@ int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* r
     StringBuffer status;
     StringBuffer html;
 
-    SCMStringBuffer clustertype;
-    wu->getDebugValue("targetclustertype", clustertype);
-
     StringBuffer xsltfile(getCFD());
     xsltfile.append("xslt/wsecl3_result.xslt");
     const char *view = context.queryRequestParameters()->queryProp("view");
-    if (!forceCreateWorkunit && strieq(clustertype.str(), "roxie"))
+
+    bool callRoxieQuery = !forceCreateWorkunit && nullptr!=wsecl->connMap.getValue(wsinfo.qsetname.get());
+    if (callRoxieQuery)
     {
         sendRoxieRequest(wsinfo.qsetname.get(), soapmsg, output, status, wsinfo.queryname, false, "text/xml", request);
         Owned<IWuWebView> web = createWuWebView(*wu, wsinfo.qsetname.get(), wsinfo.queryname.get(), getCFD(), true, queryXsltConfig());

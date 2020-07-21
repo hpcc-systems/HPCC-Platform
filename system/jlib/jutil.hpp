@@ -268,6 +268,7 @@ class jlib_decl CStringArrayIterator : implements CInterfaceOf<IStringIterator>
     StringArray strings;
 public:
     void append(const char *str) { strings.append(str); }
+    void append_unique(const char *str) { strings.appendUniq(str); }
     virtual bool first() { idx = 0; return strings.isItem(idx); }
     virtual bool next() { idx ++; return strings.isItem(idx); }
     virtual bool isValid() { return strings.isItem(idx); }

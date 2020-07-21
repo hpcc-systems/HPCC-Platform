@@ -49,6 +49,8 @@ data:
 {{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" .) | indent 6 }}
       queues:
 {{ include "hpcc.generateConfigMapQueues" $ | indent 6 }}
+      services:
+{{ include "hpcc.generateConfigMapServices" $ | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
 ---

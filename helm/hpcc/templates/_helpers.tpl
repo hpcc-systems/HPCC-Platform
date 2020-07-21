@@ -317,3 +317,28 @@ Generate instance queue names
  {{- end }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Generate list of available services
+*/}}
+{{- define "hpcc.generateConfigMapServices" -}}
+{{- range $roxie := $.Values.roxie -}}
+ {{- if not $roxie.disabled -}}
+  {{- range $service := $roxie.services -}}
+   {{- if ne (int $service.port) 0 -}}
+- name: {{ $service.name }}
+  type: roxie
+  port: {{ $service.port }}
+  target: {{ $roxie.name }}
+   {{- end -}}
+  {{- end }}
+{{ end -}}
+{{- end -}}
+{{- range $esp := $.Values.esp -}}
+- name: {{ $esp.name }}
+  type: {{ $esp.application }}
+  port: {{ $esp.servicePort }}
+  tls: {{ $esp.tls }}
+  public: {{ $esp.public }}
+{{ end -}}
+{{- end -}}

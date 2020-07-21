@@ -97,9 +97,9 @@ eclagent:
   ## type may be 'hthor' (the default) or 'roxie', to specify that the roxie engine rather than the hthor engine should be used for eclagent workunit processing
   type: hthor
 
-- name: roxie
+- name: roxie-workunit
   replicas: 1
-  prefix: roxie
+  prefix: roxie_workunit
   maxActive: 20
   useChildProcesses: true
   type: roxie
@@ -145,17 +145,15 @@ esp:
   servicePort: 8002
 
 roxie:
-- name: roxie-cluster
+- name: roxie
   disabled: false
-  prefix: roxiecluster
+  prefix: roxie
   services:
-  - name: query
+  - name: roxie
     port: 9876
     listenQueue: 200
     numThreads: 0
     external: true
-  - name: on-demand
-    port: 0
   numChannels: 2
   ## Set serverReplicas to indicate a separate replicaSet of roxie servers, with slave nodes not acting as servers
   serverReplicas: 0
