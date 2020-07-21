@@ -40,16 +40,14 @@
   <para>The <emphasis role="bold">ORDERED </emphasis>action executes the items
   in the <emphasis>actionlist</emphasis> in the order in which they appear in
   the <emphasis>actionlist</emphasis>. This is useful when a subsequent action
-  requires the output of a precedent action. </para>
+  requires the output of a precedent action.</para>
 
   <para>It has the ordering requirements of SEQUENTIAL. This is most useful
   for ordering actions which do not have anything in common, for example,
   generating files and then sending email. If there is any chance of a shared
   value which may change meaning, you should use SEQUENTIAL.</para>
 
-  <para>By definition, PERSIST on an attribute means the attribute is
-  evaluated outside of any given evaluation order. Therefore, ORDERED has no
-  effect on PERSISTed attributes.</para>
+  <para>ORDERED has no effect on PERSISTed attributes.</para>
 
   <para>Example:</para>
 
