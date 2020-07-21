@@ -2402,7 +2402,10 @@ public:
         if (reload) {
             if (!checkconn())
                 return NULL;
-            conn->commit();
+            if (updating)
+                conn->commit();
+            else
+                conn->rollback(); // prevent writing created branches
             conn->reload("Progress");
             if (!checkconn())
                 return NULL;
@@ -2417,7 +2420,10 @@ public:
         if (reload) {
             if (!checkconn())
                 return NULL;
-            conn->commit();
+            if (updating)
+                conn->commit();
+            else
+                conn->rollback(); // prevent writing created branches
             conn->reload("Monitor");
             if (!checkconn())
                 return NULL;
@@ -2522,6 +2528,7 @@ public:
         CriticalBlock block(crit);
         if (!conn)
             return 0;
+        assertex(updating);
         localedition++;
         root->setPropInt("Progress/Edition",localedition);
         conn->commit();
