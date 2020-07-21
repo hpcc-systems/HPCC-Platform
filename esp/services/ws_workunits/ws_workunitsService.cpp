@@ -1622,6 +1622,8 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
                     flags|=WUINFO_IncludeAllowedClusters;
                 if (req.getIncludeTotalClusterTime())
                     flags|=WUINFO_IncludeTotalClusterTime;
+                if (req.getIncludeServiceNames())
+                    flags|=WUINFO_IncludeServiceNames;
 
                 PROGLOG("WUInfo: %s %lx", wuid.str(), flags);
 

@@ -64,8 +64,8 @@ unsigned lowTimeout = 10000;
 unsigned highTimeout = 2000;
 unsigned slaTimeout = 2000;
 unsigned numServerThreads = 30;
-unsigned numSlaveThreads = 30;
-bool prestartSlaveThreads = false;
+unsigned numAgentThreads = 30;
+bool prestartAgentThreads = false;
 unsigned numRequestArrayThreads = 5;
 unsigned headRegionSize;
 unsigned ccdMulticastPort;
@@ -87,10 +87,10 @@ bool defaultTraceEnabled = false;
 bool traceTranslations = true;
 unsigned defaultTraceLimit = 10;
 unsigned watchActivityId = 0;
-unsigned testSlaveFailure = 0;
+unsigned testAgentFailure = 0;
 RelaxedAtomic<unsigned> restarts;
 RecordTranslationMode fieldTranslationEnabled = RecordTranslationMode::Payload;
-bool mergeSlaveStatistics = true;
+bool mergeAgentStatistics = true;
 PTreeReaderOptions defaultXmlReadFlags = ptr_ignoreWhiteSpace;
 bool runOnce = false;
 bool oneShotRoxie = false;
@@ -112,7 +112,7 @@ bool lockSuperFiles;
 bool useRemoteResources;
 bool checkFileDate;
 bool lazyOpen;
-bool localSlave;
+bool localAgent;
 bool useAeron;
 bool ignoreOrphans;
 bool doIbytiDelay = true; 
@@ -156,7 +156,7 @@ unsigned defaultStrandBlockSize = 512;
 unsigned defaultForceNumStrands = 0;
 unsigned defaultHeapFlags = roxiemem::RHFnone;
 
-unsigned slaveQueryReleaseDelaySeconds = 60;
+unsigned agentQueryReleaseDelaySeconds = 60;
 unsigned coresPerQuery = 0;
 
 unsigned logQueueLen;
@@ -416,7 +416,7 @@ public:
 };
 
 static std::vector<RoxieEndpointInfo> myRoles;
-static std::vector<std::pair<unsigned, unsigned>> slaveChannels;
+static std::vector<std::pair<unsigned, unsigned>> agentChannels;
 
 #ifndef _CONTAINERIZED
 void readStaticTopology()
@@ -426,7 +426,7 @@ void readStaticTopology()
     std::vector<RoxieEndpointInfo> allRoles;
     IpAddressArray nodeTable;
     unsigned numNodes = topology->getCount("./RoxieServerProcess");
-    if (!numNodes && localSlave)
+    if (!numNodes && localAgent)
     {
         topology->addPropTree("RoxieServerProcess")->setProp("@netAddress", ".");
         numNodes = 1;
@@ -446,7 +446,7 @@ void readStaticTopology()
         {
             myNodeSet = true;
             myNode.setIp(ip);
-            mySlaveEP.set(ccdMulticastPort, myNode.getNodeAddress());
+            myAgentEP.set(ccdMulticastPort, myNode.getNodeAddress());
         }
         ForEachItemIn(idx, nodeTable)
         {
@@ -466,17 +466,19 @@ void readStaticTopology()
     if (!myNodeSet)
         throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - current node is not in server list");
 
-    // Generate the slave channels
+    // Generate the agent channels
 
     unsigned numDataCopies = topology->getPropInt("@numDataCopies", 1);
     if (!numDataCopies)
         throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numDataCopies should be > 0");
     unsigned channelsPerNode = topology->getPropInt("@channelsPerNode", 1);
-    const char *slaveConfig = topology->queryProp("@slaveConfig");
-    if (!slaveConfig)
-        slaveConfig = "simple";
+    const char *agentConfig = topology->queryProp("@agentConfig");
+    if (!agentConfig)
+        agentConfig = topology->queryProp("@slaveConfig");  // legacy name
+    if (!agentConfig)
+        agentConfig = "simple";
 
-    if (strnicmp(slaveConfig, "cyclic", 6) == 0)
+    if (strnicmp(agentConfig, "cyclic", 6) == 0)
     {
         calcNumChannels = numNodes;
         unsigned cyclicOffset = topology->getPropInt("@cyclicOffset", 1);
@@ -489,12 +491,12 @@ void readStaticTopology()
                 int channel = (int)i+1 - (copy * cyclicOffset);
                 while (channel < 1)
                     channel = channel + numNodes;
-                RoxieEndpointInfo slave = {RoxieEndpointInfo::RoxieSlave, (unsigned) channel, { (unsigned short) ccdMulticastPort, nodeTable.item(i) }, copy};
-                allRoles.push_back(slave);
+                RoxieEndpointInfo agent = {RoxieEndpointInfo::RoxieAgent, (unsigned) channel, { (unsigned short) ccdMulticastPort, nodeTable.item(i) }, copy};
+                allRoles.push_back(agent);
             }
         }
     }
-    else if (strnicmp(slaveConfig, "overloaded", 10) == 0)
+    else if (strnicmp(agentConfig, "overloaded", 10) == 0)
     {
         if (!channelsPerNode)
             throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - channelsPerNode should be > 0");
@@ -504,8 +506,8 @@ void readStaticTopology()
             for (unsigned i=0; i<numNodes; i++)
             {
                 unsigned channel = i+1;
-                RoxieEndpointInfo slave = {RoxieEndpointInfo::RoxieSlave, channel, { (unsigned short) ccdMulticastPort, nodeTable.item(i) }, copy};
-                allRoles.push_back(slave);
+                RoxieEndpointInfo agent = {RoxieEndpointInfo::RoxieAgent, channel, { (unsigned short) ccdMulticastPort, nodeTable.item(i) }, copy};
+                allRoles.push_back(agent);
                 channel += numNodes;
             }
         }
@@ -518,8 +520,8 @@ void readStaticTopology()
         unsigned channel = 1;
         for (unsigned i=0; i<numNodes; i++)
         {
-            RoxieEndpointInfo slave = {RoxieEndpointInfo::RoxieSlave, channel, { (unsigned short) ccdMulticastPort, nodeTable.item(i) }, 0 };
-            allRoles.push_back(slave);
+            RoxieEndpointInfo agent = {RoxieEndpointInfo::RoxieAgent, channel, { (unsigned short) ccdMulticastPort, nodeTable.item(i) }, 0 };
+            allRoles.push_back(agent);
             channel++;
             if (channel > calcNumChannels)
                 channel = 1;
@@ -529,8 +531,8 @@ void readStaticTopology()
         throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels calculated at %u but specified as %u", calcNumChannels, numChannels);
     if (!calcNumChannels)
         throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels calculated at 0");
-    if (calcNumChannels > 1 && localSlave)
-        throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - localSlave requires single channel (%d channels specified)", calcNumChannels);
+    if (calcNumChannels > 1 && localAgent)
+        throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - localAgent requires single channel (%d channels specified)", calcNumChannels);
     numChannels = calcNumChannels;
     createStaticTopology(allRoles, traceLevel);
 }
@@ -642,7 +644,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         useOldTopology = checkFileExists(topologyFile.str());
         topology = loadConfiguration(useOldTopology ? nullptr : defaultYaml, argv, "roxie", "ROXIE", topologyFile, nullptr, "@netAddress");
         saveTopology();
-        localSlave = topology->getPropBool("@localSlave", false);
+        localAgent = topology->getPropBool("@localAgent", topology->getPropBool("@localSlave", false));  // legacy name
         const char *channels = topology->queryProp("@channels");
         if (channels)
         {
@@ -660,12 +662,12 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                 }
                 else if (*tail)
                     throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "Invalid channel specification %s", channels);
-                slaveChannels.push_back(std::pair<unsigned, unsigned>(channel, repl));
+                agentChannels.push_back(std::pair<unsigned, unsigned>(channel, repl));
             }
         }
 #ifdef _CONTAINERIZED
-        else if (localSlave)
-            slaveChannels.push_back(std::pair<unsigned, unsigned>(1, 0));
+        else if (localAgent)
+            agentChannels.push_back(std::pair<unsigned, unsigned>(1, 0));
 #endif
         const char *topos = topology->queryProp("@topologyServers");
         StringArray topoValues;
@@ -939,7 +941,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         udpFlowSocketsSize = topology->getPropInt("@udpFlowSocketsSize", 131072);
         udpLocalWriteSocketSize = topology->getPropInt("@udpLocalWriteSocketSize", 1024000);
 #ifndef _CONTAINERIZED
-        roxieMulticastEnabled = topology->getPropBool("@roxieMulticastEnabled", true) && !useAeron;   // enable use of multicast for sending requests to slaves
+        roxieMulticastEnabled = topology->getPropBool("@roxieMulticastEnabled", true) && !useAeron;   // enable use of multicast for sending requests to agents
 #endif
         if (udpSnifferEnabled && !roxieMulticastEnabled)
         {
@@ -962,14 +964,14 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             multicastTTL = ttlTmp;
 
         indexReadChunkSize = topology->getPropInt("@indexReadChunkSize", 60000);
-        numSlaveThreads = topology->getPropInt("@slaveThreads", 30);
+        numAgentThreads = topology->getPropInt("@agentThreads", topology->getPropInt("@slaveThreads", 30));  // legacy name
         numServerThreads = topology->getPropInt("@serverThreads", 30);
         numRequestArrayThreads = topology->getPropInt("@requestArrayThreads", 5);
         maxBlockSize = topology->getPropInt("@maxBlockSize", 10000000);
         maxLockAttempts = topology->getPropInt("@maxLockAttempts", 5);
         enableHeartBeat = topology->getPropBool("@enableHeartBeat", true);
         checkCompleted = topology->getPropBool("@checkCompleted", true);
-        prestartSlaveThreads = topology->getPropBool("@prestartSlaveThreads", false);
+        prestartAgentThreads = topology->getPropBool("@prestartAgentThreads", topology->getPropBool("@prestartSlaveThreads", false));  // legacy name
         preabortKeyedJoinsThreshold = topology->getPropInt("@preabortKeyedJoinsThreshold", 100);
         preabortIndexReadsThreshold = topology->getPropInt("@preabortIndexReadsThreshold", 100);
         defaultMemoryLimit = (memsize_t) topology->getPropInt64("@defaultMemoryLimit", 0);
@@ -993,7 +995,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         defaultCheckingHeap = topology->getPropBool("@checkingHeap", false);  // NOTE - not in configmgr - too dangerous!
         defaultDisableLocalOptimizations = topology->getPropBool("@disableLocalOptimizations", false);  // NOTE - not in configmgr - too dangerous!
 
-        slaveQueryReleaseDelaySeconds = topology->getPropInt("@slaveQueryReleaseDelaySeconds", 60);
+        agentQueryReleaseDelaySeconds = topology->getPropInt("@agentQueryReleaseDelaySeconds", topology->getPropInt("@slaveQueryReleaseDelaySeconds", 60));  // legacy name
         coresPerQuery = topology->getPropInt("@coresPerQuery", 0);
 
         diskReadBufferSize = topology->getPropInt("@diskReadBufferSize", 0x10000);
@@ -1037,7 +1039,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         trapTooManyActiveQueries = topology->getPropBool("@trapTooManyActiveQueries", true);
         maxEmptyLoopIterations = topology->getPropInt("@maxEmptyLoopIterations", 1000);
         maxGraphLoopIterations = topology->getPropInt("@maxGraphLoopIterations", 1000);
-        mergeSlaveStatistics = topology->getPropBool("@mergeSlaveStatistics", true);
+        mergeAgentStatistics = topology->getPropBool("@mergeAgentStatistics", topology->getPropBool("@mergeSlaveStatistics", true));  // legacy name
         defaultCollectFactoryStatistics = topology->getPropBool("@collectFactoryStatistics", true);
         defaultNoSeekBuildIndex = topology->getPropBool("@noSeekBuildIndex", isContainerized());
         parallelLoadQueries = topology->getPropInt("@parallelLoadQueries", 8);
@@ -1147,15 +1149,15 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                 myRoles.push_back(me);
             }
         }
-        for (std::pair<unsigned, unsigned> channel: slaveChannels)
+        for (std::pair<unsigned, unsigned> channel: agentChannels)
         {
-            mySlaveEP.set(ccdMulticastPort, myIP);
-            RoxieEndpointInfo me = { RoxieEndpointInfo::RoxieSlave, channel.first, mySlaveEP, channel.second };
+            myAgentEP.set(ccdMulticastPort, myIP);
+            RoxieEndpointInfo me = { RoxieEndpointInfo::RoxieAgent, channel.first, myAgentEP, channel.second };
             myRoles.push_back(me);
         }
 #else
-        // Set multicast base addresses - must be done before generating slave channels
-        if (roxieMulticastEnabled && !localSlave)
+        // Set multicast base addresses - must be done before generating agent channels
+        if (roxieMulticastEnabled && !localAgent)
         {
             if (topology->queryProp("@multicastBase"))
                 multicastBase.ipset(topology->queryProp("@multicastBase"));
@@ -1169,7 +1171,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         readStaticTopology();
 #endif
         // Now we know all the channels, we can open and subscribe the multicast channels
-        if (!localSlave)
+        if (!localAgent)
         {
             openMulticastSocket();
             if (roxieMulticastEnabled)
@@ -1187,7 +1189,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #ifdef _CONTAINERIZED
         initializeTopology(topoValues, myRoles, traceLevel);
 #endif
-        ROQ = createOutputQueueManager(snifferChannel, numSlaveThreads);
+        ROQ = createOutputQueueManager(snifferChannel, numAgentThreads);
         ROQ->setHeadRegionSize(headRegionSize);
         ROQ->start();
         Owned<IPacketDiscarder> packetDiscarder = createPacketDiscarder();
@@ -1392,7 +1394,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
     cleanupPlugins();
     unloadHpccProtocolPlugin();
     closeMulticastSockets();
-    releaseSlaveDynamicFileCache();
+    releaseAgentDynamicFileCache();
     releaseRoxieStateCache();
     setDaliServixSocketCaching(false);  // make sure it cleans up or you get bogus memleak reports
     setNodeCaching(false); // ditto
@@ -1429,7 +1431,7 @@ static constexpr const char * standaloneDefaultYaml = R"!!(
 version: "1.0"
 roxie:
   allFilesDynamic: true
-  localSlave: true
+  localAgent: true
   numChannels: 1
   queueNames: roxie.roxie
   traceLevel: 0

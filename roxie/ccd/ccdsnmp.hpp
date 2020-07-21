@@ -69,7 +69,7 @@ public:
 
 interface IQueryStatsAggregator : public IInterface
 {
-    virtual void noteQuery(time_t startTime, bool failed, unsigned elapsedTimeMs, unsigned memUsed, unsigned slavesReplyLen, unsigned bytesOut) = 0;
+    virtual void noteQuery(time_t startTime, bool failed, unsigned elapsedTimeMs, unsigned memUsed, unsigned agentsReplyLen, unsigned bytesOut) = 0;
     virtual IPropertyTree *getStats(time_t from, time_t to) = 0;
 };
 
@@ -112,8 +112,8 @@ extern RelaxedAtomic<unsigned> diskReadCompleted;
 extern RelaxedAtomic<unsigned> globalSignals;
 extern RelaxedAtomic<unsigned> globalLocks;
 
-extern RelaxedAtomic<unsigned> maxSlavesActive;
-extern RelaxedAtomic<unsigned> slavesActive;
+extern RelaxedAtomic<unsigned> maxAgentsActive;
+extern RelaxedAtomic<unsigned> agentsActive;
 extern RelaxedAtomic<unsigned> rowsOut;
 extern RelaxedAtomic<unsigned> queueLength;
 extern RelaxedAtomic<unsigned> maxQueueLength;

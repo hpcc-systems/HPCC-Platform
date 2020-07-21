@@ -32,7 +32,7 @@ interface IRoxiePackage;
 interface IQueryFactory;
 interface IIndexReadActivityInfo;
 
-// That which is common between Activity factory on slave and Roxie server....
+// That which is common between Activity factory on agent and Roxie server....
 
 interface IActivityFactory : extends IInterface
 {
@@ -49,7 +49,7 @@ interface IActivityFactory : extends IInterface
     virtual void mergeStats(const CRuntimeStatisticCollection &from) const = 0;
 };
 
-interface IRoxieSlaveActivity : extends IInterface
+interface IRoxieAgentActivity : extends IInterface
 {
     virtual IMessagePacker *process() = 0;
     virtual bool check() = 0;
@@ -60,9 +60,9 @@ interface IRoxieSlaveActivity : extends IInterface
     virtual IIndexReadActivityInfo *queryIndexReadActivity() = 0;
 };
 
-interface ISlaveActivityFactory : extends IActivityFactory
+interface IAgentActivityFactory : extends IActivityFactory
 {
-    virtual IRoxieSlaveActivity *createActivity(SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const = 0;
+    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const = 0;
     virtual StringBuffer &toString(StringBuffer &ret) const = 0;
     virtual const char *queryQueryName() const = 0;
     virtual void addChildQuery(unsigned id, ActivityArray *childQuery) = 0;
@@ -85,29 +85,29 @@ static inline int KEYEDJOIN_RECORD_SIZE(int dataSize)
     return offsetof(KeyedJoinHeader, rhsdata) + dataSize;
 }
 
-ISlaveActivityFactory *createRoxieCsvReadActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
-ISlaveActivityFactory *createRoxieXmlReadActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
-ISlaveActivityFactory *createRoxieDiskReadActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
-ISlaveActivityFactory *createRoxieDiskNormalizeActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
-ISlaveActivityFactory *createRoxieDiskCountActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
-ISlaveActivityFactory *createRoxieDiskAggregateActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
-ISlaveActivityFactory *createRoxieDiskGroupAggregateActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
-ISlaveActivityFactory *createRoxieIndexReadActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
-ISlaveActivityFactory *createRoxieIndexNormalizeActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
-ISlaveActivityFactory *createRoxieIndexCountActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
-ISlaveActivityFactory *createRoxieIndexAggregateActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
-ISlaveActivityFactory *createRoxieIndexGroupAggregateActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory, ThorActivityKind _kind);
-ISlaveActivityFactory *createRoxieFetchActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
-ISlaveActivityFactory *createRoxieXMLFetchActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
-ISlaveActivityFactory *createRoxieCSVFetchActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
-ISlaveActivityFactory *createRoxieKeyedJoinIndexActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
-ISlaveActivityFactory *createRoxieKeyedJoinFetchActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
-ISlaveActivityFactory *createRoxieRemoteActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory, unsigned _remoteId);
+IAgentActivityFactory *createRoxieCsvReadActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
+IAgentActivityFactory *createRoxieXmlReadActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
+IAgentActivityFactory *createRoxieDiskReadActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
+IAgentActivityFactory *createRoxieDiskNormalizeActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
+IAgentActivityFactory *createRoxieDiskCountActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
+IAgentActivityFactory *createRoxieDiskAggregateActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
+IAgentActivityFactory *createRoxieDiskGroupAggregateActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
+IAgentActivityFactory *createRoxieIndexReadActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
+IAgentActivityFactory *createRoxieIndexNormalizeActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
+IAgentActivityFactory *createRoxieIndexCountActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
+IAgentActivityFactory *createRoxieIndexAggregateActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
+IAgentActivityFactory *createRoxieIndexGroupAggregateActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory, ThorActivityKind _kind);
+IAgentActivityFactory *createRoxieFetchActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
+IAgentActivityFactory *createRoxieXMLFetchActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
+IAgentActivityFactory *createRoxieCSVFetchActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
+IAgentActivityFactory *createRoxieKeyedJoinIndexActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
+IAgentActivityFactory *createRoxieKeyedJoinFetchActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory);
+IAgentActivityFactory *createRoxieRemoteActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &queryFactory, HelperFactory *_factory, unsigned _remoteId);
 
-ISlaveActivityFactory *createRoxieDummyActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, bool isLoadDataOnly);
+IAgentActivityFactory *createRoxieDummyActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, bool isLoadDataOnly);
 
 
-// Code for processing in-memory data quickly, shared between Roxie server and slave implementations
+// Code for processing in-memory data quickly, shared between Roxie server and agent implementations
 
 interface IInMemoryFileProcessor : extends IInterface
 {

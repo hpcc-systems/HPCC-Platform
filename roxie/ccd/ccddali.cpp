@@ -768,7 +768,7 @@ public:
                         throw MakeStringException(ROXIE_DALI_ERROR, "Could not instantiate dali IGroup");
 
                     // Initialize client process
-                    if (!initClientProcess(serverGroup, DCR_RoxyMaster, 0, NULL, NULL, timeout))
+                    if (!initClientProcess(serverGroup, DCR_Roxie, 0, NULL, NULL, timeout))
                         throw MakeStringException(ROXIE_DALI_ERROR, "Could not initialize dali client");
                     serverStatus = new CSDSServerStatus("RoxieServer");
                     serverStatus->queryProperties()->setProp("@cluster", roxieName.str());

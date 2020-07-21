@@ -61,7 +61,7 @@ enum DaliClientRole // if changed must update queryRoleName()
     DCR_Deprecated7,
     DCR_Config,
     DCR_Deprecated8,
-    DCR_RoxyMaster,
+    DCR_Roxie,
     DCR_Deprecated9,
     DCR_Deprecated10,
     DCR_BackupGen,

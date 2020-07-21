@@ -49,17 +49,17 @@ using roxiemem::IRowManager;
 //=======================================================================================================================
 
 #define DEBUGEE_TIMEOUT 10000
-class CSlaveDebugContext : public CBaseDebugContext
+class CAgentDebugContext : public CBaseDebugContext
 {
     /*
 
-    Some thoughts on slave debugging
-    1. Something like a ping can be used to get data from slave when needed
+    Some thoughts on agent debugging
+    1. Something like a ping can be used to get data from agent when needed
     2. Should disable IBYTI processing (always use primary) - DONE
        and server-side caching - DONE
-    3. Roxie server can know what slave transactions are pending by intercepting the sends - no need for slave to call back just to indicate start of slave subgraph
-    4. There is a problem when a slave hits a breakpoint in that the breakpoint cound have been deleted by the time it gets a chance to tell the Roxie server - can't
-       happen in local case because of the critical block at the head of checkBreakpoint but the local copy of BPs out on slave CAN get out of date. Should we care?
+    3. Roxie server can know what agent transactions are pending by intercepting the sends - no need for agent to call back just to indicate start of agent subgraph
+    4. There is a problem when a agent hits a breakpoint in that the breakpoint cound have been deleted by the time it gets a chance to tell the Roxie server - can't
+       happen in local case because of the critical block at the head of checkBreakpoint but the local copy of BPs out on agent CAN get out of date. Should we care?
        Should there be a "Sorry, your breakpoints are out of date, here's the new set" response?
        Actually what we do is recheck the BP on the server, and ensure that breakpoint indexes are persistent. DONE
     5. We need to serialize over our graph info if changed since last time.
@@ -75,7 +75,7 @@ class CSlaveDebugContext : public CBaseDebugContext
     const IRoxieContextLogger &logctx; // hides base class definition with more derived class pointer
 
 public:
-    CSlaveDebugContext(IRoxieSlaveContext *_ctx, const IRoxieContextLogger &_logctx, RoxiePacketHeader &_header)
+    CAgentDebugContext(IRoxieAgentContext *_ctx, const IRoxieContextLogger &_logctx, RoxiePacketHeader &_header)
         : CBaseDebugContext(_logctx), header(_header), logctx(_logctx)
     {
         channel = header.channel;
@@ -167,7 +167,7 @@ public:
 
     virtual IRoxieQueryPacket *onDebugCallback(const RoxiePacketHeader &header, size32_t len, char *data)
     {
-        // MORE - Implies a server -> slave child -> slave grandchild type situation - need to pass call on to Roxie server (rather as I do for file callback)
+        // MORE - Implies a server -> agent child -> agent grandchild type situation - need to pass call on to Roxie server (rather as I do for file callback)
         UNIMPLEMENTED;
     }
 
@@ -1157,7 +1157,7 @@ public:
 //---------------------------------------------------------------------------------------
 
 static const StatisticsMapping graphStatistics({});
-class CRoxieContextBase : implements IRoxieSlaveContext, implements ICodeContext, implements roxiemem::ITimeLimiter, implements IRowAllocatorMetaActIdCacheCallback, public CInterface
+class CRoxieContextBase : implements IRoxieAgentContext, implements ICodeContext, implements roxiemem::ITimeLimiter, implements IRowAllocatorMetaActIdCacheCallback, public CInterface
 {
 protected:
     Owned<IWUGraphStats> graphStats;   // This needs to be destroyed very late (particularly, after the childgraphs)
@@ -1172,7 +1172,7 @@ protected:
     Owned<IPropertyTree> probeQuery;
     unsigned lastWuAbortCheck;
     unsigned startTime;
-    unsigned totSlavesReplyLen;
+    unsigned totAgentsReplyLen;
     CCycleTimer elapsedTimer;
 
     QueryOptions options;
@@ -1251,7 +1251,7 @@ public:
         xmlStoredDatasetReadFlags = ptr_none;
         aborted = false;
         exceptionLogged = false;
-        totSlavesReplyLen = 0;
+        totAgentsReplyLen = 0;
 
         allocatorMetaCache.setown(createRowAllocatorCache(this));
         rowManager.setown(roxiemem::createRowManager(options.memoryLimit, this, logctx, allocatorMetaCache, false));
@@ -1374,7 +1374,7 @@ public:
 
     virtual void checkAbort()
     {
-        // MORE - really should try to apply limits at slave end too
+        // MORE - really should try to apply limits at agent end too
 #ifdef __linux__
         if (linuxYield)
             sched_yield();
@@ -1471,7 +1471,7 @@ public:
     virtual void noteChildGraph(unsigned id, IActivityGraph *childGraph)
     {
         if (queryTraceLevel() > 10)
-            CTXLOG("CSlaveContext %p noteChildGraph %d=%p", this, id, childGraph);
+            CTXLOG("CAgentContext %p noteChildGraph %d=%p", this, id, childGraph);
         childGraphs.setValue(id, childGraph);
     }
 
@@ -1644,7 +1644,7 @@ public:
     virtual IActivityGraph * queryChildGraph(unsigned  id)
     {
         if (queryTraceLevel() > 10)
-            CTXLOG("CSlaveContext %p resolveChildGraph %d", this, id);
+            CTXLOG("CAgentContext %p resolveChildGraph %d", this, id);
         if (id == 0)
             return graph;
         IActivityGraph *childGraph = childGraphs.getValue(id);
@@ -1668,10 +1668,10 @@ public:
         return *rowManager;
     }
 
-    virtual void addSlavesReplyLen(unsigned len)
+    virtual void addAgentsReplyLen(unsigned len)
     {
         CriticalBlock b(statsCrit); // MORE: change to atomic_add, or may not need it at all?
-        totSlavesReplyLen += len;
+        totAgentsReplyLen += len;
     }
 
     virtual const char *loadResource(unsigned id)
@@ -1716,7 +1716,7 @@ public:
     virtual char *getDaliServers() { throwUnexpected(); }
     virtual unsigned getWorkflowId() { return 0; } // this is a virtual which is implemented in IGlobalContext
 
-    // The following from ICodeContext should never be executed in slave activity. If we are on Roxie server, they will be implemented by more derived CRoxieServerContext class
+    // The following from ICodeContext should never be executed in agent activity. If we are on Roxie server, they will be implemented by more derived CRoxieServerContext class
     virtual void setResultBool(const char *name, unsigned sequence, bool value) { throwUnexpected(); }
     virtual void setResultData(const char *name, unsigned sequence, int len, const void * data) { throwUnexpected(); }
     virtual void setResultDecimal(const char * stepname, unsigned sequence, int len, int precision, bool isSigned, const void *val) { throwUnexpected(); }
@@ -2102,7 +2102,7 @@ protected:
             if (context)
                 return *context;
             else
-                throw MakeStringException(ROXIE_CODEGEN_ERROR, "Code generation error - attempting to access stored variable on slave");
+                throw MakeStringException(ROXIE_CODEGEN_ERROR, "Code generation error - attempting to access stored variable on agent");
         case ResultSequencePersist:
             {
                 CriticalBlock b(contextCrit);
@@ -2278,27 +2278,27 @@ protected:
 
 //-----------------------------------------------------------------------------------------------
 
-class CSlaveContext : public CRoxieContextBase
+class CAgentContext : public CRoxieContextBase
 {
 protected:
     RoxiePacketHeader *header;
 
 public:
-    CSlaveContext(const IQueryFactory *_factory, const SlaveContextLogger &_logctx, IRoxieQueryPacket *_packet, bool _hasChildren)
+    CAgentContext(const IQueryFactory *_factory, const AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, bool _hasChildren)
     : CRoxieContextBase(_factory, _logctx)
     {
         if (_packet)
         {
             header = &_packet->queryHeader();
             const byte *traceInfo = _packet->queryTraceInfo();
-            options.setFromSlaveLoggingFlags(*traceInfo);
+            options.setFromAgentLoggingFlags(*traceInfo);
             bool debuggerActive = (*traceInfo & LOGGING_DEBUGGERACTIVE) != 0 && _hasChildren;  // No option to debug simple remote activity
             if (debuggerActive)
             {
-                CSlaveDebugContext *slaveDebugContext = new CSlaveDebugContext(this, logctx, *header);
-                slaveDebugContext->init(_packet);
-                debugContext.setown(slaveDebugContext);
-                probeManager.setown(createDebugManager(debugContext, "slaveDebugger"));
+                CAgentDebugContext *agentDebugContext = new CAgentDebugContext(this, logctx, *header);
+                agentDebugContext->init(_packet);
+                debugContext.setown(agentDebugContext);
+                probeManager.setown(createDebugManager(debugContext, "agentDebugger"));
             }
         }
         else
@@ -2323,7 +2323,7 @@ public:
     virtual const IResolvedFile *resolveLFN(const char *filename, bool isOpt, bool isPrivilegedUser)
     {
         CDateTime cacheDate; // Note - this is empty meaning we don't know...
-        return querySlaveDynamicFileCache()->lookupDynamicFile(*this, filename, cacheDate, 0, header, isOpt, false);
+        return queryAgentDynamicFileCache()->lookupDynamicFile(*this, filename, cacheDate, 0, header, isOpt, false);
     }
 
     virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters, bool isPrivilegedUser)
@@ -2333,7 +2333,7 @@ public:
 
     virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal, bool isPrivilegedUser)
     {
-        // On a slave, we need to request info using our own header (not the one passed in) and need to get global rather than just local info
+        // On a agent, we need to request info using our own header (not the one passed in) and need to get global rather than just local info
         // (possibly we could get just local if the channel matches but not sure there is any point)
         Owned<const IResolvedFile> dFile = resolveLFN(lfn, isOpt, isPrivilegedUser);
         if (dFile)
@@ -2354,20 +2354,20 @@ public:
 
     virtual void noteProcessed(unsigned subgraphId, unsigned activityId, unsigned _idx, unsigned _processed, unsigned _strands) const
     {
-        const SlaveContextLogger &slaveLogCtx = static_cast<const SlaveContextLogger &>(logctx);
-        slaveLogCtx.putStatProcessed(subgraphId, activityId, _idx, _processed, _strands);
+        const AgentContextLogger &agentLogCtx = static_cast<const AgentContextLogger &>(logctx);
+        agentLogCtx.putStatProcessed(subgraphId, activityId, _idx, _processed, _strands);
     }
 
     virtual void mergeActivityStats(const CRuntimeStatisticCollection &fromStats, unsigned subgraphId, unsigned activityId) const
     {
-        const SlaveContextLogger &slaveLogCtx = static_cast<const SlaveContextLogger &>(logctx);
-        slaveLogCtx.putStats(subgraphId, activityId, fromStats);
+        const AgentContextLogger &agentLogCtx = static_cast<const AgentContextLogger &>(logctx);
+        agentLogCtx.putStats(subgraphId, activityId, fromStats);
     }
 };
 
-IRoxieSlaveContext *createSlaveContext(const IQueryFactory *_factory, const SlaveContextLogger &_logctx, IRoxieQueryPacket *packet, bool hasChildren)
+IRoxieAgentContext *createAgentContext(const IQueryFactory *_factory, const AgentContextLogger &_logctx, IRoxieQueryPacket *packet, bool hasChildren)
 {
-    return new CSlaveContext(_factory, _logctx, packet, hasChildren);
+    return new CAgentContext(_factory, _logctx, packet, hasChildren);
 }
 
 //-----------------------------------------------------------------------------------------------
@@ -2381,9 +2381,9 @@ class CRoxieServerDebugContext : extends CBaseServerDebugContext
     //    semaphore and it all becomes easier to code... Anything calling checkBreakPoint while program state is "in debugger" will block on that critSec.
     // 3. I think we need to recheck breakpoints on Roxie server but just check not deleted
 public:
-    IRoxieSlaveContext *ctx;
+    IRoxieAgentContext *ctx;
 
-    CRoxieServerDebugContext(IRoxieSlaveContext *_ctx, const IContextLogger &_logctx, IPropertyTree *_queryXGMML)
+    CRoxieServerDebugContext(IRoxieAgentContext *_ctx, const IContextLogger &_logctx, IPropertyTree *_queryXGMML)
         : CBaseServerDebugContext(_logctx, _queryXGMML), ctx(_ctx)
     {
     }
@@ -2433,45 +2433,45 @@ public:
 
     virtual IRoxieQueryPacket *onDebugCallback(const RoxiePacketHeader &header, size32_t len, char *data)
     {
-        MemoryBuffer slaveInfo;
-        slaveInfo.setBuffer(len, data, false);
+        MemoryBuffer agentInfo;
+        agentInfo.setBuffer(len, data, false);
         unsigned debugSequence;
-        slaveInfo.read(debugSequence);
+        agentInfo.read(debugSequence);
         {
             CriticalBlock b(breakCrit); // we want to wait until it's our turn before updating the graph info or the counts get ahead of the current row and life is confusing
-            char slaveStateChar;
-            slaveInfo.read(slaveStateChar);
-            DebugState slaveState = (DebugState) slaveStateChar;
-            if (slaveState==DebugStateGraphFinished)
+            char agentStateChar;
+            agentInfo.read(agentStateChar);
+            DebugState agentState = (DebugState) agentStateChar;
+            if (agentState==DebugStateGraphFinished)
             {
                 unsigned numCounts;
-                slaveInfo.read(numCounts);
+                agentInfo.read(numCounts);
                 while (numCounts)
                 {
                     StringAttr edgeId;
                     unsigned edgeCount;
-                    slaveInfo.read(edgeId);
-                    slaveInfo.read(edgeCount);
+                    agentInfo.read(edgeId);
+                    agentInfo.read(edgeCount);
                     Owned<IGlobalEdgeRecord> thisEdge = getEdgeRecord(edgeId);
                     thisEdge->incrementCount(edgeCount, sequence);
                     numCounts--;
                 }
             }
-            slaveInfo.read(currentBreakpointUID);
-            memsize_t slaveActivity;
+            agentInfo.read(currentBreakpointUID);
+            memsize_t agentActivity;
             unsigned channel;
             __uint64 tmp;
-            slaveInfo.read(tmp);
-            slaveActivity = (memsize_t)tmp;
-            slaveInfo.read(channel);
+            agentInfo.read(tmp);
+            agentActivity = (memsize_t)tmp;
+            agentInfo.read(channel);
             assertex(currentGraph);
-            currentGraph->deserializeProxyGraphs(slaveState, slaveInfo, (IActivityBase *) slaveActivity, channel);
-            if (slaveState != DebugStateGraphFinished) // MORE - this is debatable - may (at least sometimes) want a child graph finished to be a notified event...
+            currentGraph->deserializeProxyGraphs(agentState, agentInfo, (IActivityBase *) agentActivity, channel);
+            if (agentState != DebugStateGraphFinished) // MORE - this is debatable - may (at least sometimes) want a child graph finished to be a notified event...
             {
-                StringBuffer slaveActivityId;
-                slaveInfo.read(slaveActivityId);
-                IActivityDebugContext *slaveActivityCtx = slaveActivityId.length() ? currentGraph->lookupActivityByEdgeId(slaveActivityId.str()) : NULL;
-                checkBreakpoint(slaveState, slaveActivityCtx , NULL);
+                StringBuffer agentActivityId;
+                agentInfo.read(agentActivityId);
+                IActivityDebugContext *agentActivityCtx = agentActivityId.length() ? currentGraph->lookupActivityByEdgeId(agentActivityId.str()) : NULL;
+                checkBreakpoint(agentState, agentActivityCtx , NULL);
             }
         }
         MemoryBuffer mb;
@@ -2573,7 +2573,7 @@ protected:
 
     void init()
     {
-        totSlavesReplyLen = 0;
+        totAgentsReplyLen = 0;
         isRaw = false;
         isBlocked = false;
         isNative = true;
@@ -2784,9 +2784,9 @@ public:
         return rowManager->getMemoryUsage();
     }
 
-    virtual unsigned getSlavesReplyLen()
+    virtual unsigned getAgentsReplyLen()
     {
-        return totSlavesReplyLen;
+        return totAgentsReplyLen;
     }
 
     virtual void process()

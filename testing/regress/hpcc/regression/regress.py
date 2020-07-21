@@ -31,7 +31,7 @@ from ..regression.suite import Suite
 from ..util.ecl.cc import ECLCC
 from ..util.ecl.command import ECLcmd
 from ..util.expandcheck import ExpandCheck
-from ..util.util import getConfig, queryWuid,  abortWorkunit, getVersionNumbers, createZAP
+from ..util.util import getConfig, queryWuid,  abortWorkunit, getVersionNumbers, createZAP, getEclRunArgs
 
 
 class Regression:
@@ -503,6 +503,8 @@ class Regression:
 
         logging.debug("runQuery(engine: '%s', cluster: '%s', query: '%s', cnt: %d, publish: %s, thread id: %d" % ( engine, cluster, query.ecl, cnt, publish,  th))
         logging.warn("%3d. Test: %s" % (cnt, query.getBaseEclRealName()),  extra={'taskId':cnt})
+        if 'createEclRunArg' in self.args and self.args.createEclRunArg:
+            logging.warn("%3d. Cmd: %s %s/%s" % (cnt, getEclRunArgs(query, engine, cluster), query.dir_ec, query.getBaseEcl())),
 
         self.loggermutex.release()
         res = 0

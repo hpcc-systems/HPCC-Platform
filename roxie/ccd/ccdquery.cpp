@@ -73,7 +73,7 @@ unsigned ActivityArray::recursiveFindActivityIndex(unsigned id)
 //----------------------------------------------------------------------------------------------
 // Class CQueryDll maps dlls into loadable workunits, complete with caching to ensure that a refresh of the QuerySet 
 // can avoid reloading dlls, and that the same CQueryDll (and the objects it owns) can be shared between server and 
-// multiple slave channels
+// multiple agent channels
 //----------------------------------------------------------------------------------------------
 
 class CQueryDll : implements IQueryDll, public CInterface
@@ -228,7 +228,7 @@ extern void addXrefLibraryInfo(IPropertyTree &reply, const char *libraryName)
 
 //----------------------------------------------------------------------------------------------
 // Class CSharedOnceContext manages the context for a query's ONCE code, which is shared between
-// all slave and server contexts on a node
+// all agent and server contexts on a node
 //----------------------------------------------------------------------------------------------
 
 class CSharedOnceContext : public CInterfaceOf<ISharedOnceContext>
@@ -519,7 +519,7 @@ void QueryOptions::updateFromContext(bool &value, const IPropertyTree *ctx, cons
         value = ctx->getPropBool(name);
 }
 
-void QueryOptions::setFromSlaveLoggingFlags(unsigned loggingFlags)
+void QueryOptions::setFromAgentLoggingFlags(unsigned loggingFlags)
 {
     // MORE - priority/timelimit ?
     checkingHeap = (loggingFlags & LOGGING_CHECKINGHEAP) != 0;
@@ -531,7 +531,7 @@ void QueryOptions::setFromSlaveLoggingFlags(unsigned loggingFlags)
 // package context into an object that can quickly create a the query context that executes a specific
 // instance of a Roxie query. 
 // Caching is used to ensure that only queries that are affected by a package change need to be reloaded.
-// Derived classes handle the differences between slave and server side factories
+// Derived classes handle the differences between agent and server side factories
 //----------------------------------------------------------------------------------------------
 
 class CQueryFactory : implements IQueryFactory, implements IResourceContext, public CInterface
@@ -940,11 +940,11 @@ protected:
         return LINK(QUERYINTERFACE(findActivity(id), IRoxieServerActivityFactory));
     }
 
-    virtual ISlaveActivityFactory *getSlaveActivityFactory(unsigned id) const override
+    virtual IAgentActivityFactory *getAgentActivityFactory(unsigned id) const override
     {
         checkSuspended();
         IActivityFactory *f = findActivity(id);
-        return LINK(QUERYINTERFACE(f, ISlaveActivityFactory)); // MORE - don't dynamic cast yuk
+        return LINK(QUERYINTERFACE(f, IAgentActivityFactory)); // MORE - don't dynamic cast yuk
     }
 
     ActivityArray *loadChildGraph(IPropertyTree &graph)
@@ -1058,7 +1058,7 @@ protected:
         }
     }
 
-    // loadGraph loads outer level graph. This is virtual as slave is very different from Roxie server
+    // loadGraph loads outer level graph. This is virtual as agent is very different from Roxie server
     virtual ActivityArray *loadGraph(IPropertyTree &graph, const char *graphName) = 0;
 
     bool doAddDependency(unsigned sourceIdx, unsigned sourceId, unsigned targetId, int controlId, const char *edgeId, ActivityArray * activities)
@@ -1155,7 +1155,7 @@ public:
                     Owned<StringContextLogger> logctx = new StringContextLogger(id); // NB may get linked by the onceContext
                     sharedOnceContext->checkOnceDone(this, *logctx);
                 }
-                addToMap();  // Publishes for slaves to see
+                addToMap();  // Publishes for agents to see
             }
             catch (IException *E)
             {
@@ -1192,7 +1192,7 @@ public:
     }
 
     // There are two very similar-looking maps of queries - they have slightly different lifetimes and characteristics
-    // One has fully-constructed queries suitable for use responding to a slave request.
+    // One has fully-constructed queries suitable for use responding to a agent request.
     // The other has potentially partially-constructed queries, and is used for ensuring we only build them once
     // while allowing for parallelizing package loads.
 
@@ -1405,7 +1405,7 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
         return *graphMap.getValue(name);
     }
 
-    virtual IActivityGraph *lookupGraph(IRoxieSlaveContext *ctx, const char *name, IProbeManager *probeManager, const IRoxieContextLogger &logctx, IRoxieServerActivity *parentActivity) const override
+    virtual IActivityGraph *lookupGraph(IRoxieAgentContext *ctx, const char *name, IProbeManager *probeManager, const IRoxieContextLogger &logctx, IRoxieServerActivity *parentActivity) const override
     {
         assertex(name && *name);
         ActivityArrayPtr *graph = graphMap.getValue(name);
@@ -1497,7 +1497,7 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
             }
         }
     }
-    virtual void getQueryInfo(StringBuffer &reply, bool full, IArrayOf<IQueryFactory> *slaveQueries, const IRoxieContextLogger &logctx) const override
+    virtual void getQueryInfo(StringBuffer &reply, bool full, IArrayOf<IQueryFactory> *agentQueries, const IRoxieContextLogger &logctx) const override
     {
         Owned<IPropertyTree> xref = createPTree("Query", ipt_fast);
         xref->setProp("@id", id);
@@ -1515,14 +1515,15 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
                 f->getXrefInfo(*xref, logctx);
             }
         }
-        if (slaveQueries)
+        if (agentQueries)
         {
-            ForEachItemIn(idx, *slaveQueries)
+            ForEachItemIn(idx, *agentQueries)
             {
-                if (slaveQueries->item(idx).suspended())
+                if (agentQueries->item(idx).suspended())
                 {
                     xref->setPropBool("@suspended", true);
-                    xref->setPropBool("@slaveSuspended", true);
+                    xref->setPropBool("@agentSuspended", true);
+                    xref->setPropBool("@slaveSuspended", true);  // legacy name
                 }
             }
         }
@@ -1609,9 +1610,9 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
         return strdup(result ? result : defaultValue);
     }
 
-    virtual IRoxieSlaveContext *createSlaveContext(const SlaveContextLogger &logctx, IRoxieQueryPacket *packet, bool hasChildren) const override
+    virtual IRoxieAgentContext *createAgentContext(const AgentContextLogger &logctx, IRoxieQueryPacket *packet, bool hasChildren) const override
     {
-        throwUnexpected();   // only implemented in derived slave class
+        throwUnexpected();   // only implemented in derived agent class
     }
 
     virtual IRoxieServerContext *createContext(IPropertyTree *xml, IHpccProtocolResponse *protocol, unsigned flags, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags, const char *querySetName) const override
@@ -1622,7 +1623,7 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
     {
         throwUnexpected();   // only implemented in derived server class
     }
-    virtual void noteQuery(time_t startTime, bool failed, unsigned elapsed, unsigned memused, unsigned slavesReplyLen, unsigned bytesOut) override
+    virtual void noteQuery(time_t startTime, bool failed, unsigned elapsed, unsigned memused, unsigned agentsReplyLen, unsigned bytesOut) override
     {
         throwUnexpected();   // only implemented in derived server class
     }
@@ -1703,15 +1704,15 @@ public:
     {
         queryStats.setown(createQueryStatsAggregator(id.get(), statsExpiryTime));
     }
-    virtual void noteQuery(time_t startTime, bool failed, unsigned elapsed, unsigned memused, unsigned slavesReplyLen, unsigned bytesOut)
+    virtual void noteQuery(time_t startTime, bool failed, unsigned elapsed, unsigned memused, unsigned agentsReplyLen, unsigned bytesOut)
     {
-        queryStats->noteQuery(startTime, failed, elapsed, memused, slavesReplyLen, bytesOut);
-        queryGlobalQueryStatsAggregator()->noteQuery(startTime, failed, elapsed, memused, slavesReplyLen, bytesOut);
+        queryStats->noteQuery(startTime, failed, elapsed, memused, agentsReplyLen, bytesOut);
+        queryGlobalQueryStatsAggregator()->noteQuery(startTime, failed, elapsed, memused, agentsReplyLen, bytesOut);
     }
 
     virtual void addDependency(unsigned sourceIdx, unsigned sourceId, unsigned targetId, int controlId, const char *edgeId, ActivityArray * activities) override
     {
-        // addDependency is expected to fail occasionally on slave, but never on Roxie server
+        // addDependency is expected to fail occasionally on agent, but never on Roxie server
         if (!doAddDependency(sourceIdx, sourceId, targetId, controlId, edgeId, activities))
             throw MakeStringException(ROXIE_ADDDEPENDENCY_ERROR, "Failed to create dependency from %u on %u", sourceId, targetId);
     }
@@ -1845,16 +1846,16 @@ extern IQueryFactory *createServerQueryFactoryFromWu(IConstWorkUnit *wu, const I
 
 //==============================================================================================================================================
 
-class CSlaveQueryFactory : public CQueryFactory
+class CAgentQueryFactory : public CQueryFactory
 {
-    void addActivity(ISlaveActivityFactory *activity, ActivityArray *activities)
+    void addActivity(IAgentActivityFactory *activity, ActivityArray *activities)
     {
         activities->append(*activity);
         unsigned activityId = activity->queryId();
         allActivities.setValue(activityId, activity);
     }
 
-    void loadSlaveNode(IPropertyTree &node, unsigned subgraphId, ActivityArray *activities)
+    void loadAgentNode(IPropertyTree &node, unsigned subgraphId, ActivityArray *activities)
     {
         ThorActivityKind kind = getActivityKind(node);
         switch (kind)
@@ -1891,7 +1892,7 @@ class CSlaveQueryFactory : public CQueryFactory
         default:
             return;
         }
-        ISlaveActivityFactory *newAct = NULL;
+        IAgentActivityFactory *newAct = NULL;
         if (kind != TAKsubgraph)
         {
             if (isSuspended)
@@ -1962,7 +1963,7 @@ class CSlaveQueryFactory : public CQueryFactory
                     newAct = createRoxieKeyedJoinIndexActivityFactory(node, subgraphId, *this, helperFactory);
                     if (node.getPropBool("att[@name=\"_diskAccessRequired\"]/@value"))
                     {
-                        ISlaveActivityFactory *newAct2 = createRoxieKeyedJoinFetchActivityFactory(node, subgraphId, *this, helperFactory);
+                        IAgentActivityFactory *newAct2 = createRoxieKeyedJoinFetchActivityFactory(node, subgraphId, *this, helperFactory);
                         unsigned activityId2 = newAct2->queryId() | ROXIE_ACTIVITY_FETCH;
                         activities->append(*newAct2);
                         allActivities.setValue(activityId2, newAct2);
@@ -1985,7 +1986,7 @@ class CSlaveQueryFactory : public CQueryFactory
         }
         else if (kind == TAKsubgraph)
         {
-            // If the subgraph belongs to a remote activity, we need to be able to execute it on the slave...
+            // If the subgraph belongs to a remote activity, we need to be able to execute it on the agent...
             IPropertyTree * childGraphNode = node.queryPropTree("att/graph");
             if (!childGraphNode->getPropBool("@child"))
             {
@@ -2004,7 +2005,7 @@ class CSlaveQueryFactory : public CQueryFactory
             ForEach(*nodes)
             {
                 IPropertyTree &node = nodes->query();
-                loadSlaveNode(node, subgraphId, activities);
+                loadAgentNode(node, subgraphId, activities);
             }
         }
     }
@@ -2016,20 +2017,20 @@ class CSlaveQueryFactory : public CQueryFactory
         ForEach(*nodes)
         {
             IPropertyTree &node = nodes->query();
-            loadSlaveNode(node, subgraphId, activities);
+            loadAgentNode(node, subgraphId, activities);
         }
-        loadSlaveNode(graph, subgraphId, activities); // MORE - not really sure why this line is here!
+        loadAgentNode(graph, subgraphId, activities); // MORE - not really sure why this line is here!
     }
 
 public:
-    CSlaveQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, unsigned _channelNo, ISharedOnceContext *_sharedOnceContext, bool _dynamic)
+    CAgentQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, unsigned _channelNo, ISharedOnceContext *_sharedOnceContext, bool _dynamic)
         : CQueryFactory(_id, _dll, _package, _hashValue, _channelNo, _sharedOnceContext, _dynamic)
     {
     }
 
-    virtual IRoxieSlaveContext *createSlaveContext(const SlaveContextLogger &logctx, IRoxieQueryPacket *packet, bool hasChildren) const
+    virtual IRoxieAgentContext *createAgentContext(const AgentContextLogger &logctx, IRoxieQueryPacket *packet, bool hasChildren) const
     {
-        return ::createSlaveContext(this, logctx, packet, hasChildren);
+        return ::createAgentContext(this, logctx, packet, hasChildren);
     }
 
     virtual ActivityArray *loadGraph(IPropertyTree &graph, const char *graphName)
@@ -2075,7 +2076,7 @@ public:
     }
 };
 
-IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, unsigned channel, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry)
+IQueryFactory *createAgentQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, unsigned channel, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry)
 {
     IArrayOf<IResolvedFile> queryFiles; // Note - these should stay in scope long enough to ensure still cached when (if) query is loaded for real
     Owned<CQueryFactory> ret;
@@ -2092,19 +2093,19 @@ IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, con
             checkWorkunitVersionConsistency(dll);
             Owned<IQueryFactory> serverFactory = CQueryFactory::getCachedQuery(hashValue, 0);
             assertex(serverFactory);
-            ret.setown(new CSlaveQueryFactory(id, dll, package, hashValue, channel, serverFactory->querySharedOnceContext(), isDynamic));
+            ret.setown(new CAgentQueryFactory(id, dll, package, hashValue, channel, serverFactory->querySharedOnceContext(), isDynamic));
         }
         else
-            ret.setown(new CSlaveQueryFactory(id, NULL, package, hashValue, channel, NULL, isDynamic));
+            ret.setown(new CAgentQueryFactory(id, NULL, package, hashValue, channel, NULL, isDynamic));
     }
     ret->init(stateInfo);
     return ret.getClear();
 }
 
-extern IQueryFactory *createSlaveQueryFactoryFromWu(IConstWorkUnit *wu, unsigned channelNo)
+extern IQueryFactory *createAgentQueryFactoryFromWu(IConstWorkUnit *wu, unsigned channelNo)
 {
     Owned<const IQueryDll> dll = createWuQueryDll(wu);
     if (!dll)
         return NULL;
-    return createSlaveQueryFactory(wu->queryWuid(), dll.getClear(), queryRootRoxiePackage(), channelNo, NULL, true, false);  // MORE - if use a constant for id might cache better?
+    return createAgentQueryFactory(wu->queryWuid(), dll.getClear(), queryRootRoxiePackage(), channelNo, NULL, true, false);  // MORE - if use a constant for id might cache better?
 }

@@ -192,9 +192,10 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
 
     virtual void reportError(const char *errStr, unsigned retcode)
     {
-        RegExpr errCount, errParse, timings;
+        RegExpr errParse, timings, summaryParse;
         timings.init("^<stat");
         errParse.init("^<exception");
+        summaryParse.init("^<summary");
         try
         {
             if (timings.find(errStr))
@@ -223,7 +224,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                     associateLocalFile(query, FileTypeCpp, filename, pathTail(filename), 0, 0, 0);
                 }
             }
-            else
+            else if (!summaryParse.find(errStr))
                 IERRLOG("Unrecognised error: %s", errStr);
         }
         catch (IException *E)

@@ -898,6 +898,27 @@ void WsWuInfo::getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData)
         it->playProperties(visitor);
 }
 
+void WsWuInfo::getServiceNames(IEspECLWorkunit &info, unsigned long flags)
+{
+    if (!(flags & WUINFO_IncludeServiceNames))
+        return;
+
+    StringArray serviceNames;
+    WuScopeFilter filter;
+    filter.addScopeType("activity");
+    filter.addOutputAttribute(WaServiceName);
+    filter.addRequiredAttr(WaServiceName);
+    filter.finishedFilter();
+    Owned<IConstWUScopeIterator> it = &cw->getScopeIterator(filter);
+    ForEach(*it)
+    {
+        StringBuffer serviceName;
+        const char *value = it->queryAttribute(WaServiceName, serviceName);
+        if (!isEmptyString(value))
+            serviceNames.append(value);
+    }
+    info.setServiceNames(serviceNames);
+}
 
 void WsWuInfo::getEventScheduleFlag(IEspECLWorkunit &info)
 {
@@ -1056,6 +1077,7 @@ void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned long flags)
     getDebugValues(info, flags);
     getApplicationValues(info, flags);
     getWorkflow(info, flags);
+    getServiceNames(info, flags);
 }
 
 unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IEspECLWorkunit &info, unsigned long flags, unsigned& helpersCount)
