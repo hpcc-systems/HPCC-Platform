@@ -38,12 +38,34 @@
   </informaltable>
 
   <para>The <emphasis role="bold">FinishSuperFileTransaction
-  </emphasis>function terminates a superfile maintenance transaction frame. If
-  the <emphasis>rollback</emphasis> flag is FALSE, the transaction is
+  </emphasis>function terminates a superfile maintenance transaction
+  frame.</para>
+
+  <para>If the <emphasis>rollback</emphasis> flag is FALSE, the transaction is
   committed atomically and the transaction frame closes. Otherwise, the
   transaction is rolled back and the transaction frame closes.</para>
 
+  <para>At commit, the superfile is “write” locked for the transaction to
+  actually execute, and all locks are released when the transaction frame
+  closes. During the timeframe of the “write” lock at commit (usually small
+  time window), no concurrent “read” locks are allowed.</para>
+
   <para>Example:</para>
 
-  <programlisting format="linespecific">STD.File.FinishSuperFileTransaction();</programlisting>
+  <programlisting format="linespecific">IMPORT STD;
+ 
+WeeklyRollup:='~Training::Examples::WeeklyRollup';
+WeeklySF    :='~Training::Examples::Weekly';
+DailySF     :='~Training::Examples::Daily';
+ 
+DailyDS := DATASET(DailySF,{string Myfield},THOR);
+ 
+SEQUENTIAL(STD.File.StartSuperFileTransaction(),
+           STD.File.ClearSuperFile(DailySF),
+           OUTPUT(DailyDS,,WeeklyRollup),
+           STD.File.AddSuperFile(WeeklySF,WeeklyRollup),
+           STD.File.FinishSuperFileTransaction());
+//executes the OUTPUT after a "read" lock on the superfile DailySF
+//has been initiated by the ClearSuperFile Maintenance function, 
+//which in turn executes only at the FinishTransaction</programlisting>
 </sect1>
