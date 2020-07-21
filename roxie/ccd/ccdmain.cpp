@@ -470,7 +470,9 @@ void readStaticTopology()
     if (!numDataCopies)
         throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numDataCopies should be > 0");
     unsigned channelsPerNode = topology->getPropInt("@channelsPerNode", 1);
-    const char *slaveConfig = topology->queryProp("@slaveConfig");
+    const char *slaveConfig = topology->queryProp("@agentConfig");
+    if (!slaveConfig)
+        slaveConfig = topology->queryProp("@slaveConfig");  // legacy name
     if (!slaveConfig)
         slaveConfig = "simple";
 
@@ -640,7 +642,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         useOldTopology = checkFileExists(topologyFile.str());
         topology = loadConfiguration(useOldTopology ? nullptr : defaultYaml, argv, "roxie", "ROXIE", topologyFile, nullptr, "@netAddress");
         saveTopology();
-        localSlave = topology->getPropBool("@localSlave", false);
+        localSlave = topology->getPropBool("@localAgent", topology->getPropBool("@localSlave", false));  // legacy name
         const char *channels = topology->queryProp("@channels");
         if (channels)
         {
@@ -957,14 +959,14 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             multicastTTL = ttlTmp;
 
         indexReadChunkSize = topology->getPropInt("@indexReadChunkSize", 60000);
-        numSlaveThreads = topology->getPropInt("@slaveThreads", 30);
+        numSlaveThreads = topology->getPropInt("@agentThreads", topology->getPropInt("@slaveThreads", 30));  // legacy name
         numServerThreads = topology->getPropInt("@serverThreads", 30);
         numRequestArrayThreads = topology->getPropInt("@requestArrayThreads", 5);
         maxBlockSize = topology->getPropInt("@maxBlockSize", 10000000);
         maxLockAttempts = topology->getPropInt("@maxLockAttempts", 5);
         enableHeartBeat = topology->getPropBool("@enableHeartBeat", true);
         checkCompleted = topology->getPropBool("@checkCompleted", true);
-        prestartSlaveThreads = topology->getPropBool("@prestartSlaveThreads", false);
+        prestartSlaveThreads = topology->getPropBool("@prestartAgentThreads", topology->getPropBool("@prestartSlaveThreads", false));  // legacy name
         preabortKeyedJoinsThreshold = topology->getPropInt("@preabortKeyedJoinsThreshold", 100);
         preabortIndexReadsThreshold = topology->getPropInt("@preabortIndexReadsThreshold", 100);
         defaultMemoryLimit = (memsize_t) topology->getPropInt64("@defaultMemoryLimit", 0);
@@ -988,7 +990,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         defaultCheckingHeap = topology->getPropBool("@checkingHeap", false);  // NOTE - not in configmgr - too dangerous!
         defaultDisableLocalOptimizations = topology->getPropBool("@disableLocalOptimizations", false);  // NOTE - not in configmgr - too dangerous!
 
-        slaveQueryReleaseDelaySeconds = topology->getPropInt("@slaveQueryReleaseDelaySeconds", 60);
+        slaveQueryReleaseDelaySeconds = topology->getPropInt("@agentQueryReleaseDelaySeconds", topology->getPropInt("@slaveQueryReleaseDelaySeconds", 60));  // legacy name
         coresPerQuery = topology->getPropInt("@coresPerQuery", 0);
 
         diskReadBufferSize = topology->getPropInt("@diskReadBufferSize", 0x10000);
@@ -1032,7 +1034,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         trapTooManyActiveQueries = topology->getPropBool("@trapTooManyActiveQueries", true);
         maxEmptyLoopIterations = topology->getPropInt("@maxEmptyLoopIterations", 1000);
         maxGraphLoopIterations = topology->getPropInt("@maxGraphLoopIterations", 1000);
-        mergeSlaveStatistics = topology->getPropBool("@mergeSlaveStatistics", true);
+        mergeSlaveStatistics = topology->getPropBool("@mergeAgentStatistics", topology->getPropBool("@mergeSlaveStatistics", true));  // legacy name
         defaultCollectFactoryStatistics = topology->getPropBool("@collectFactoryStatistics", true);
         defaultNoSeekBuildIndex = topology->getPropBool("@noSeekBuildIndex", isContainerized());
 
