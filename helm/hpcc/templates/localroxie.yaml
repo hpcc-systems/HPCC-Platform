@@ -63,6 +63,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ $name | quote }}
+  labels:
+    type: roxie-service
 spec:
   ports:
   - port: {{ $service.port }}
