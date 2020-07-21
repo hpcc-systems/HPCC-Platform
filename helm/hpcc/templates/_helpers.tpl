@@ -317,3 +317,20 @@ Generate instance queue names
  {{- end }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Generate list of available roxie services
+*/}}
+{{- define "hpcc.generateConfigMapServices" -}}
+ {{- range $roxie := $.Values.roxie -}}
+  {{- if not $roxie.disabled -}}
+   {{- range $service := $roxie.services -}}
+    {{- if ne (int $service.port) 0 -}}
+     {{- $name := printf "%s-%s" $roxie.name $service.name -}}
+- name: {{ $name }}
+  port: {{ $service.port }}
+    {{- end }}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
+{{- end -}}
