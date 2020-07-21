@@ -228,6 +228,8 @@ class RegressMain:
                                 nargs=1,  default = ['none'],   metavar="filespec[,filespec,...]")
         executionParser.add_argument('--generateStackTrace', help="Generate stack trace of Thor components before kill a timeouted test case. Trace files are stored into Regression Engine Log directory (see 'LogDir' in ecl-test.json file)",
                                 action = 'store_true')
+        executionParser.add_argument('--createEclRunArg', help="Generate ECL tool command line.",
+                                action='store_true')
 
 
         parser = argparse.ArgumentParser(prog=prog, description=description,  parents=[helperParser, commonParser,  executionParser])
@@ -244,8 +246,6 @@ class RegressMain:
                                  action='store_true')
         parser_list.add_argument('--target', '-t', help="Provide target cluster(s) to list test cases. If target = 'all' then list test cases on all clusters. If not defined then default value(s) come from config (ecl-test.json by default).",
                                 nargs='?', type=str,  default='', metavar="target_cluster_list | all")
-        parser_list.add_argument('--createEclRunArg', help="Generate ECL tool command line.",
-                                action='store_true')
 
 
         parser_setup = subparsers.add_parser('setup', help='Setup help',  parents=[helperParser, commonParser, executionParser])
