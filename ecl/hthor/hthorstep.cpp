@@ -72,7 +72,7 @@ void CHThorSteppedInput::resetEOF()
 
 //---------------------------------------------------------------------------
 
-CHThorNaryActivity::CHThorNaryActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _arg, ThorActivityKind _kind) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind)
+CHThorNaryActivity::CHThorNaryActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph)
 {
 }
 
@@ -116,7 +116,7 @@ void CHThorNaryActivity::updateProgress(IStatisticGatherer &progress) const
 
 //---------------------------------------------------------------------------
 
-CHThorNWayMergeActivity::CHThorNWayMergeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeArg &_arg, ThorActivityKind _kind) : CHThorNaryActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+CHThorNWayMergeActivity::CHThorNWayMergeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorNaryActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
 {
     merger.init(helper.queryCompare(), helper.dedup(), helper.querySteppingMeta()->queryCompare());
 }
@@ -175,7 +175,7 @@ const void * CHThorNWayMergeActivity::nextRowGE(const void * seek, unsigned numF
 
 //---------------------------------------------------------------------------
 
-CHThorMergeJoinBaseActivity::CHThorMergeJoinBaseActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind, CMergeJoinProcessor & _processor) : CHThorNaryActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), processor(_processor)
+CHThorMergeJoinBaseActivity::CHThorMergeJoinBaseActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind, EclGraph & _graph, CMergeJoinProcessor & _processor) : CHThorNaryActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg), processor(_processor)
 {
 }
 
@@ -239,57 +239,57 @@ const void * CHThorMergeJoinBaseActivity::nextRowGE(const void * seek, unsigned 
 
 //---------------------------------------------------------------------------
 
-CHThorAndMergeJoinActivity::CHThorAndMergeJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind) : CHThorMergeJoinBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, andProcessor), andProcessor(_arg)
+CHThorAndMergeJoinActivity::CHThorAndMergeJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorMergeJoinBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph, andProcessor), andProcessor(_arg)
 {
 }
 
 
 //---------------------------------------------------------------------------
 
-CHThorAndLeftMergeJoinActivity::CHThorAndLeftMergeJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind) : CHThorMergeJoinBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, andLeftProcessor), andLeftProcessor(_arg)
+CHThorAndLeftMergeJoinActivity::CHThorAndLeftMergeJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorMergeJoinBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph, andLeftProcessor), andLeftProcessor(_arg)
 {
 }
 
 
 //---------------------------------------------------------------------------
 
-CHThorMofNMergeJoinActivity::CHThorMofNMergeJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind) : CHThorMergeJoinBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, mofNProcessor), mofNProcessor(_arg)
+CHThorMofNMergeJoinActivity::CHThorMofNMergeJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorMergeJoinBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph, mofNProcessor), mofNProcessor(_arg)
 {
 }
 
 
 //---------------------------------------------------------------------------
 
-CHThorProximityJoinActivity::CHThorProximityJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind) : CHThorMergeJoinBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, proximityProcessor), proximityProcessor(_arg)
+CHThorProximityJoinActivity::CHThorProximityJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorMergeJoinBaseActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph, proximityProcessor), proximityProcessor(_arg)
 {
 }
 
 
 //---------------------------------------------------------------------------
 
-extern HTHOR_API IHThorActivity *createNWayMergeJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind)
+extern HTHOR_API IHThorActivity *createNWayMergeJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind, EclGraph & _graph)
 {
     unsigned flags = _arg.getJoinFlags();
     if (flags & IHThorNWayMergeJoinArg::MJFhasrange)
-        return new CHThorProximityJoinActivity(_agent, _activityId, _subgraphId, _arg, _kind);
+        return new CHThorProximityJoinActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph);
 
     switch (flags & IHThorNWayMergeJoinArg::MJFkindmask)
     {
     case IHThorNWayMergeJoinArg::MJFinner:
-        return new CHThorAndMergeJoinActivity(_agent, _activityId, _subgraphId, _arg, _kind);
+        return new CHThorAndMergeJoinActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph);
     case IHThorNWayMergeJoinArg::MJFleftonly:
     case IHThorNWayMergeJoinArg::MJFleftouter:
-        return new CHThorAndLeftMergeJoinActivity(_agent, _activityId, _subgraphId, _arg, _kind);
+        return new CHThorAndLeftMergeJoinActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph);
     case IHThorNWayMergeJoinArg::MJFmofn:
-        return new CHThorMofNMergeJoinActivity(_agent, _activityId, _subgraphId, _arg, _kind);
+        return new CHThorMofNMergeJoinActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph);
     }
     UNIMPLEMENTED;
 }
 
 
-extern HTHOR_API IHThorActivity *createNWayJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind)
+extern HTHOR_API IHThorActivity *createNWayJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorNWayMergeJoinArg & _arg, ThorActivityKind _kind, EclGraph & _graph)
 {
-    return createNWayMergeJoinActivity(_agent, _activityId, _subgraphId, _arg, _kind);
+    return createNWayMergeJoinActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph);
 }
 
 

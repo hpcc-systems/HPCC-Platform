@@ -706,8 +706,12 @@ void EclAgent::reloadWorkUnit()
 
 void EclAgent::abort()
 {
-    if (activeGraph)
-        activeGraph->abort();
+    //for each active graph, abort()
+    CriticalBlock thisBlock(activeGraphCritSec);
+    ForEachItemIn(i,activeGraphs)
+    {
+        activeGraphs.item(i)->abort();
+    }
 }
 
 RecordTranslationMode EclAgent::getLayoutTranslationMode() const
@@ -1357,7 +1361,7 @@ char * EclAgent::resolveName(const char *in, char *out, unsigned outlen)
     return NULL;
 }
 
-void EclAgent::logFileAccess(IDistributedFile * file, char const * component, char const * type)
+void EclAgent::logFileAccess(IDistributedFile * file, char const * component, char const * type, EclGraph & activeGraph)
 {
     const char * cluster = clusterNames.item(clusterNames.length()-1);
     LOG(MCauditInfo,
@@ -1368,7 +1372,7 @@ void EclAgent::logFileAccess(IDistributedFile * file, char const * component, ch
         ensureText(userid.get()),
         file->queryLogicalName(),
         wuid.get(),
-        activeGraph ? activeGraph->queryGraphName() : "");
+        activeGraph.queryGraphName());
 }
 
 bool EclAgent::expandLogicalName(StringBuffer & fullname, const char * logicalName)
