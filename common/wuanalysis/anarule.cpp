@@ -145,15 +145,8 @@ public:
                 cost = timeMaxLocalExecute;
             else
                 cost = (timeMaxLocalExecute - timeAvgLocalExecute);
-            IWuEdge * edge = activity.queryInput(0);
-            if (!edge)
-                edge = activity.queryOutput(0);
-            auto edgeMaxSkew = edge ? edge->getStatRaw(StNumRowsProcessed, StSkewMax) : 0;
-            // If difference between ioSkew and edgeMaxSkew > 0.05%, then child record likely to have caused skew
-            if (ioMaxSkew > edgeMaxSkew && (ioMaxSkew-edgeMaxSkew) > ioMaxSkew/200)
-                result.set(ANA_IOSKEW_RECORDS_ID, cost, "Significant skew in child records causes uneven %s time", category);
-            else
-                result.set(ANA_IOSKEW_CHILDRECORDS_ID, cost, "Significant skew in records causes uneven %s time", category);
+
+            result.set(ANA_IOSKEW_CHILDRECORDS_ID, cost, "Significant skew in records causes uneven %s time", category);
             updateInformation(result, activity);
             return true;
         }
