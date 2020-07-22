@@ -1030,7 +1030,7 @@ void EclSubGraph::execute(const byte * parentExtract)
         updateProgress();
         cleanupActivities();
     }
-    agent->updateWULogfile();//Update workunit logfile name in case of rollover
+    agent->updateWULogfile(nullptr);//Update workunit logfile name in case of rollover
 }
 
 
@@ -1547,7 +1547,7 @@ extern IProbeManager *createDebugManager(IDebuggableContext *debugContext, const
 
 //In case of logfile rollover, update logfile name(s) stored in workunit
 
-void EclAgent::updateWULogfile()
+void EclAgent::updateWULogfile(IWorkUnit *outputWU)
 {
     if (logMsgHandler && agentTopology->hasProp("@name"))
     {
@@ -1559,8 +1559,15 @@ void EclAgent::updateWULogfile()
             rlf.setLocalPath(logname);
             rlf.getRemotePath(logname.clear());
 
-            Owned <IWorkUnit> w = updateWorkUnit();
-            w->addProcess("EclAgent", agentTopology->queryProp("@name"), GetCurrentProcessId(), 0, nullptr, false, logname.str());
+            if (outputWU)
+            {
+                outputWU->addProcess("EclAgent", agentTopology->queryProp("@name"), GetCurrentProcessId(), 0, nullptr, false, logname.str());
+            }
+            else
+            {
+                Owned<IWorkUnit> w = updateWorkUnit();
+                w->addProcess("EclAgent", agentTopology->queryProp("@name"), GetCurrentProcessId(), 0, nullptr, false, logname.str());
+            }
         }
         else
         {
@@ -1612,7 +1619,7 @@ void EclAgent::executeGraph(const char * graphName, bool realThor, size32_t pare
             if (!recursiveCreateDirectory(jobTempDir))
                 throw MakeStringException(0, "Failed to create temporary directory: %s", jobTempDir.str());
             activeGraph->execute(NULL);
-            updateWULogfile();//Update workunit logfile name in case of rollover
+            updateWULogfile(nullptr);//Update workunit logfile name in case of rollover
             if (guillotineTimeout)
                 abortmonitor->setGuillotineTimeout(0);
             if (debugContext)
