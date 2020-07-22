@@ -646,22 +646,22 @@ extern jlib_decl bool isIPV4(const char *ip);
 extern jlib_decl bool isIPV6(const char *ip);
 extern jlib_decl bool isIPAddress(const char *ip);
 
-interface IWhiteListHandler : extends IInterface
+interface IAllowListHandler : extends IInterface
 {
-    virtual bool isWhiteListed(const char *ip, unsigned __int64 role, StringBuffer *responseText=nullptr) const = 0;
-    virtual StringBuffer &getWhiteList(StringBuffer &out) const = 0;
+    virtual bool isAllowListed(const char *ip, unsigned __int64 role, StringBuffer *responseText=nullptr) const = 0;
+    virtual StringBuffer &getAllowList(StringBuffer &out) const = 0;
     virtual void refresh() = 0;
 };
 
-interface IWhiteListWriter : extends IInterface
+interface IAllowListWriter : extends IInterface
 {
     virtual void add(const char *ip, unsigned __int64 role) = 0;
     virtual void setAllowAnonRoles(bool tf) = 0;
 };
 
-typedef std::function<bool(IWhiteListWriter &)> WhiteListPopulateFunction;
-typedef std::function<StringBuffer &(StringBuffer &, unsigned __int64)> WhiteListFormatFunction;
-extern jlib_decl IWhiteListHandler *createWhiteListHandler(WhiteListPopulateFunction populateFunc, WhiteListFormatFunction roleFormatFunc = {}); // format function optional
+typedef std::function<bool(IAllowListWriter &)> AllowListPopulateFunction;
+typedef std::function<StringBuffer &(StringBuffer &, unsigned __int64)> AllowListFormatFunction;
+extern jlib_decl IAllowListHandler *createAllowListHandler(AllowListPopulateFunction populateFunc, AllowListFormatFunction roleFormatFunc = {}); // format function optional
 
 #endif
 

@@ -256,11 +256,12 @@ public:
                     bool success = querySDSServer().setSDSDebug(arr, reply);
                     mb.append(success).append(reply);
                 }
-                else if (0 == stricmp(id, "whitelist")) {
+                else if (strieq(id, "whitelist") || strieq(id, "allowlist")) // NB: "whitelist" is deprecated
+                {
                     Owned<IMPServer> mpServer = getMPServer();
-                    IWhiteListHandler *whiteListHandler = mpServer->queryWhiteListCallback();
-                    if (whiteListHandler)
-                        mb.append(whiteListHandler->getWhiteList(buf).str());
+                    IAllowListHandler *allowListHandler = mpServer->queryAllowListCallback();
+                    if (allowListHandler)
+                        mb.append(allowListHandler->getAllowList(buf).str());
                 }
                 else
                     mb.append(StringBuffer("UNKNOWN OPTION: ").append(id).str());
