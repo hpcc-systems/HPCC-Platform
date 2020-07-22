@@ -147,12 +147,34 @@ export class Timings {
         return retVal;
     }
 
+    activityID(id: string): string {
+        let retVal: string;
+        this.walkScopeName(id, partialID => {
+            retVal = this._activityLookup[partialID];
+            if (retVal) return true;
+        });
+        return retVal;
+    }
+
+    activityScopeID(id: string): string {
+        let retVal: string;
+        this.walkScopeName(id, partialID => {
+            retVal = this._activityLookup[partialID];
+            if (retVal) {
+                retVal = partialID;
+                return true;
+            }
+        });
+        return retVal;
+    }
+
     _rawColumns = {};
     _scopeFilter: string = "";
     _metricSelectLabel: string = "";
     _metricSelectValues: string[] = ["TimeElapsed"];
     _graphLookup: { [id: string]: string } = {};
     _subgraphLookup: { [id: string]: string } = {};
+    _activityLookup: { [id: string]: string } = {};
     fetchDetailsNormalizedPromise;
     refresh(force: boolean = false) {
         if (force) {
@@ -268,9 +290,11 @@ export class Timings {
             this._rawColumns = response.columns;
             this._graphLookup = {};
             this._subgraphLookup = {};
+            this._activityLookup = {};
             const rawData = response.data.filter(row => {
                 if (row.type === "graph") this._graphLookup[row.name] = row.id;
                 if (row.type === "subgraph") this._subgraphLookup[row.name] = row.id;
+                if (row.type === "activity") this._activityLookup[row.name] = row.id;
                 if (!row.id) return false;
                 if (this._scopeFilter && row.name !== this._scopeFilter && row.name.indexOf(`${this._scopeFilter}:`) !== 0) return false;
                 if (this._metricSelectValues.every(m => row[m] === undefined)) return false;

@@ -163,6 +163,9 @@ define([
                                 case "activity":
                                 case "edge":
                                     return "<a href='#" + cell + "' class='dgrid-row-url'>" + cell + "</a>";
+                                case "function":
+                                    const activityScopeID = context._timings.activityScopeID(cell);
+                                    return "<a href='#" + cell + "' class='dgrid-row-url'>" + activityScopeID + "</a>" + cell.substring(activityScopeID.length);
                             }
                             return cell;
                         }
@@ -197,6 +200,11 @@ define([
                             GraphName = context._timings.graphID(row.name);
                             SubGraphId = context._timings.subgraphID(row.name);
                             ActivityId = row.id;
+                            break;
+                        case "function":
+                            GraphName = context._timings.graphID(row.name);
+                            SubGraphId = context._timings.subgraphID(row.name);
+                            ActivityId = context._timings.activityID(row.name);
                             break;
                         case "edge":
                             GraphName = context._timings.graphID(row.name);
