@@ -61,7 +61,8 @@
             "disableLocalOptimizations"
         ],
         "setupExtraParams":{
-            "OriginalTextFilesOsPath" : "/opt/HPCCSystems/testing/regress"
+            "OriginalTextFilesOsPath" : "/opt/HPCCSystems/testing/regress",
+            "OriginalTextFilesIp" : "127.0.0.1"
         }
     }
 }
