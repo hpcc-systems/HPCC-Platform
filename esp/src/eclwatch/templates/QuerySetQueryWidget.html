@@ -1,33 +1,63 @@
 <div class="${baseClass}">
-    <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.BorderContainer">
-        <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
-            <div id="${id}_PublishedQueries" style="width: 100%; height: 100%" data-dojo-props="title:'${i18n.title_QuerySetQuery}', iconClass:'iconCluster'" data-dojo-type="dijit.layout.BorderContainer">
-                <div id="${id}QueryToolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
-                    <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-type="dijit.form.Button" data-dojo-props='iconClass:"iconRefresh"'>${i18n.Refresh}</div>
+    <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%"
+        data-dojo-type="dijit.layout.BorderContainer">
+        <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'"
+            style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
+            <div id="${id}_PublishedQueries" style="width: 100%; height: 100%"
+                data-dojo-props="title:'${i18n.title_QuerySetQuery}', iconClass:'iconCluster'"
+                data-dojo-type="dijit.layout.BorderContainer">
+                <div id="${id}QueryToolbar" class="topPanel" data-dojo-props="region: 'top'"
+                    data-dojo-type="dijit.Toolbar">
+                    <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh"
+                        data-dojo-type="dijit.form.Button" data-dojo-props='iconClass:"iconRefresh"'>${i18n.Refresh}
+                    </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <div id="${id}Open" data-dojo-attach-event="onClick:_onOpen" data-dojo-type="dijit.form.Button">${i18n.Open}</div>
-                    <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">${i18n.Delete}</div>
+                    <div id="${id}Open" data-dojo-attach-event="onClick:_onOpen" data-dojo-type="dijit.form.Button">
+                        ${i18n.Open}</div>
+                    <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">
+                        ${i18n.Delete}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <div id="${id}OnSuspend" data-dojo-attach-event="onClick:_onSuspend" data-dojo-type="dijit.form.Button">${i18n.Suspend}</div>
-                    <div id="${id}UnSuspend" data-dojo-attach-event="onClick:_onUnsuspend" data-dojo-type="dijit.form.Button">${i18n.Unsuspend}</div>
+                    <div id="${id}OnSuspend" data-dojo-attach-event="onClick:_onSuspend"
+                        data-dojo-type="dijit.form.Button">${i18n.Suspend}</div>
+                    <div id="${id}UnSuspend" data-dojo-attach-event="onClick:_onUnsuspend"
+                        data-dojo-type="dijit.form.Button">${i18n.Unsuspend}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <div id="${id}Activate" data-dojo-attach-event="onClick:_onActivate" data-dojo-type="dijit.form.Button">${i18n.Activate}</div>
-                    <div id="${id}Deactivate" data-dojo-attach-event="onClick:_onDeactivate" data-dojo-type="dijit.form.Button">${i18n.Deactivate}</div>
+                    <div id="${id}Activate" data-dojo-attach-event="onClick:_onActivate"
+                        data-dojo-type="dijit.form.Button">${i18n.Activate}</div>
+                    <div id="${id}Deactivate" data-dojo-attach-event="onClick:_onDeactivate"
+                        data-dojo-type="dijit.form.Button">${i18n.Deactivate}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}Filter" data-dojo-type="FilterDropDownWidget">
-                        <input id="${id}QueryID" title="${i18n.ID}:" name="QueryID" colspan="2" data-dojo-props="trim: true, placeHolder: '${i18n.QueryIDPlaceholder}'" data-dojo-type="dijit.form.TextBox" />
-                        <input id="${id}QueryName" title="${i18n.Name}:" name="QueryName" colspan="2" data-dojo-props="trim: true, placeHolder: '${i18n.QueryNamePlaceholder}'" data-dojo-type="dijit.form.TextBox" />
-                        <input id="${id}PublishedBy" title="${i18n.PublishedBy}:" name="PublishedBy" colspan="2" data-dojo-props="trim: true, placeHolder: '${i18n.PublishedBy}'" data-dojo-type="dijit.form.TextBox" />
-                        <input id="${id}Wuid" title="${i18n.WUID}:" name="WUID" colspan="2" data-dojo-props="trim: true, placeHolder:'W20130222-171723'" data-dojo-type="dijit.form.TextBox" />
-                        <input id="${id}ClusterTargetSelect" title="${i18n.Cluster}:" name="QuerySetName" colspan="2" data-dojo-type="TargetSelectWidget" />
-                        <input id="${id}FileName" title="${i18n.LogicalFile}:" name="FileName" colspan="2" data-dojo-props="trim: true, placeHolder: '${i18n.TargetNamePlaceholder}'" data-dojo-type="dijit.form.TextBox" />
-                        <input id="${id}LibraryName" title="${i18n.LibrariesUsed}:" name="LibraryName" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
-                        <select id="${id}SuspendedStates" title="${i18n.Suspended}:" name="SuspendedByUser" colspan="2" data-dojo-type="dijit.form.Select">
-                            <option value="" selected="selected">${i18n.All}</option>
-                            <option value="1">${i18n.SuspendedByUser}</option>
-                            <option value="0">${i18n.NotSuspendedbyUser}</option>
+                        <input id="${id}QueryID" title="${i18n.ID}:" name="QueryID" colspan="2"
+                            data-dojo-props="trim: true, placeHolder: '${i18n.QueryIDPlaceholder}'"
+                            data-dojo-type="dijit.form.TextBox" />
+                        <input id="${id}QueryName" title="${i18n.Name}:" name="QueryName" colspan="2"
+                            data-dojo-props="trim: true, placeHolder: '${i18n.QueryNamePlaceholder}'"
+                            data-dojo-type="dijit.form.TextBox" />
+                        <input id="${id}PublishedBy" title="${i18n.PublishedBy}:" name="PublishedBy" colspan="2"
+                            data-dojo-props="trim: true, placeHolder: '${i18n.PublishedBy}'"
+                            data-dojo-type="dijit.form.TextBox" />
+                        <input id="${id}Wuid" title="${i18n.WUID}:" name="WUID" colspan="2"
+                            data-dojo-props="trim: true, placeHolder:'W20130222-171723'"
+                            data-dojo-type="dijit.form.TextBox" />
+                        <input id="${id}ClusterTargetSelect" title="${i18n.Cluster}:" name="QuerySetName" colspan="2"
+                            data-dojo-type="TargetSelectWidget" />
+                        <input id="${id}FileName" title="${i18n.LogicalFile}:" name="FileName" colspan="2"
+                            data-dojo-props="trim: true, placeHolder: '${i18n.TargetNamePlaceholder}'"
+                            data-dojo-type="dijit.form.TextBox" />
+                        <input id="${id}LibraryName" title="${i18n.LibrariesUsed}:" name="LibraryName" colspan="2"
+                            data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                        <select id="${id}SuspendedStates" title="${i18n.Suspended}:" name="SuspendedFilter" colspan="2"
+                            data-dojo-type="dijit.form.Select">
+                            <option value="All queries" selected="selected">${i18n.AllQueries}</option>
+                            <option value="Not suspended">${i18n.NotSuspended}</option>
+                            <option value="Suspended">${i18n.Suspended}</option>
+                            <option value="Suspended by user">${i18n.SuspendedByUser}</option>
+                            <option value="Suspended by first node">${i18n.SuspendedByFirstNode}</option>
+                            <option value="Suspended by any node">${i18n.SuspendedByAnyNode}</option>
                         </select>
-                        <select id="${id}ActiveStates" title="${i18n.Active}:" name="Activated" colspan="2" data-dojo-type="dijit.form.Select">
+                        <select id="${id}ActiveStates" title="${i18n.Active}:" name="Activated" colspan="2"
+                            data-dojo-type="dijit.form.Select">
                             <option value="" selected="selected">${i18n.All}</option>
                             <option value="1">${i18n.Active}</option>
                             <option value="0">${i18n.NotActive}</option>
@@ -37,15 +67,18 @@
                     <div id="${id}Options" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.Options}</span>
                         <div data-dojo-type="dijit.TooltipDialog">
-                            <div id="${id}OptionsForm" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                            <div id="${id}OptionsForm" style="width: 530px;" onsubmit="return false;"
+                                data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="hpcc.TableContainer">
-                                    <select id="${id}CheckAllNodes" title="${i18n.Status}:" name="CheckAllNodes" colspan="2" data-dojo-type="dijit.form.Select">
+                                    <select id="${id}CheckAllNodes" title="${i18n.Status}:" name="CheckAllNodes"
+                                        colspan="2" data-dojo-type="dijit.form.Select">
                                         <option value="0" selected="selected">${i18n.CheckSingleNode}</option>
                                         <option value="1">${i18n.CheckAllNodes}</option>
                                     </select>
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
-                                    <button type="submit" data-dojo-attach-event="onClick:_onSetOptions" data-dojo-type="dijit.form.Button">${i18n.Apply}</button>
+                                    <button type="submit" data-dojo-attach-event="onClick:_onSetOptions"
+                                        data-dojo-type="dijit.form.Button">${i18n.Apply}</button>
                                 </div>
                             </div>
                         </div>
@@ -54,48 +87,71 @@
                     <div id="${id}RecreateQueryDropDown" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.RecreateQuery}</span>
                         <div data-dojo-type="dijit.TooltipDialog">
-                            <div id="${id}RecreateForm" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                            <div id="${id}RecreateForm" style="width: 530px;" onsubmit="return false;"
+                                data-dojo-type="dijit.form.Form">
                                 <div data-dojo-type="dijit.Fieldset">
                                     <legend>${i18n.Queries}</legend>
                                     <div id="${id}RecreateQueriesGrid" data-dojo-type="SelectionGridWidget"></div>
                                 </div>
                                 <div data-dojo-type="dijit.Fieldset">
                                     <legend>${i18n.Options}</legend>
-                                    <div class="dijitDialogPaneContentArea" data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
-                                        <input id="${id}RemoteDali" title="${i18n.RemoteDali}:" name="RemoteDali" colspan="2" style="width:100%" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
-                                        <input id="${id}SourceProcess" title="${i18n.SourceProcess}:" name="SourceProcess" colspan="2" style="width:100%" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
-                                        <input id="${id}AllowForeignFiles" title="${i18n.AllowForeignFiles}:" name="AllowForeignFiles" colspan="2" data-dojo-type="dijit.form.CheckBox" />
-                                        <input id="${id}UpdateDFs" title="${i18n.UpdateDFs}:" name="UpdateDfs" colspan="2" data-dojo-type="dijit.form.CheckBox" />
-                                        <input id="${id}UpdateSuperFiles" title="${i18n.UpdateSuperFiles}:" name="UpdateSuperFiles" colspan="2" data-dojo-type="dijit.form.CheckBox" />
-                                        <input id="${id}SetRepublish" title="${i18n.DoNotRepublish}:" name="Republish" colspan="2" data-dojo-type="dijit.form.CheckBox" />
+                                    <div class="dijitDialogPaneContentArea" data-dojo-props="cols:2"
+                                        data-dojo-type="hpcc.TableContainer">
+                                        <input id="${id}RemoteDali" title="${i18n.RemoteDali}:" name="RemoteDali"
+                                            colspan="2" style="width:100%" data-dojo-props="trim: true"
+                                            data-dojo-type="dijit.form.TextBox" />
+                                        <input id="${id}SourceProcess" title="${i18n.SourceProcess}:"
+                                            name="SourceProcess" colspan="2" style="width:100%"
+                                            data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                        <input id="${id}AllowForeignFiles" title="${i18n.AllowForeignFiles}:"
+                                            name="AllowForeignFiles" colspan="2" data-dojo-type="dijit.form.CheckBox" />
+                                        <input id="${id}UpdateDFs" title="${i18n.UpdateDFs}:" name="UpdateDfs"
+                                            colspan="2" data-dojo-type="dijit.form.CheckBox" />
+                                        <input id="${id}UpdateSuperFiles" title="${i18n.UpdateSuperFiles}:"
+                                            name="UpdateSuperFiles" colspan="2" data-dojo-type="dijit.form.CheckBox" />
+                                        <input id="${id}SetRepublish" title="${i18n.DoNotRepublish}:" name="Republish"
+                                            colspan="2" data-dojo-type="dijit.form.CheckBox" />
                                     </div>
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
-                                    <button type="submit" data-dojo-attach-event="onClick:_onRecreateQueries" data-dojo-type="dijit.form.Button">${i18n.Apply}</button>
+                                    <button type="submit" data-dojo-attach-event="onClick:_onRecreateQueries"
+                                        data-dojo-type="dijit.form.Button">${i18n.Apply}</button>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <img src="${dojoConfig.urlInfo.resourcePath}/img/person.png" style="vertical-align: middle" alt="${i18n.Mine}">
+                    <img src="${dojoConfig.urlInfo.resourcePath}/img/person.png" style="vertical-align: middle"
+                        alt="${i18n.Mine}">
                     <label for="Mine" class="bold" style="vertical-align: middle;">${i18n.PublishedByMe}</label>
-                    <input id="${id}Mine" name="PublishedBy" title="${i18n.Mine}" data-dojo-attach-event="onChange:_onMine" data-dojo-type="dijit.form.CheckBox" />
-                    <div class="right" data-dojo-attach-event="onChange:_onMaximize" data-dojo-props="iconClass:'iconMaximize', showLabel:false" checked=false data-dojo-type="dijit.form.ToggleButton">${i18n.MaximizeRestore}</div>
-                    <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
-                    <div id="${id}DownloadToList" class="right" data-dojo-attach-event="onClick:_onDownloadToList" data-dojo-type="dijit.form.Button">
+                    <input id="${id}Mine" name="PublishedBy" title="${i18n.Mine}"
+                        data-dojo-attach-event="onChange:_onMine" data-dojo-type="dijit.form.CheckBox" />
+                    <div class="right" data-dojo-attach-event="onChange:_onMaximize"
+                        data-dojo-props="iconClass:'iconMaximize', showLabel:false" checked=false
+                        data-dojo-type="dijit.form.ToggleButton">${i18n.MaximizeRestore}</div>
+                    <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage"
+                        data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">
+                        ${i18n.OpenInNewPage}</div>
+                    <div id="${id}DownloadToList" class="right" data-dojo-attach-event="onClick:_onDownloadToList"
+                        data-dojo-type="dijit.form.Button">
                         <span>${i18n.DownloadToCSV}</span>
                     </div>
                 </div>
-                <div id="${id}GridCP" style="padding: 0px; border:0px; border-color:none; overflow: hidden" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
+                <div id="${id}GridCP" style="padding: 0px; border:0px; border-color:none; overflow: hidden"
+                    data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
                     <div id="${id}QuerySetGrid"></div>
                 </div>
-                <div id="${id}DownloadToListDialog" data-dojo-type="dijit.Dialog" title="${i18n.ExportSelectionsToList}">
+                <div id="${id}DownloadToListDialog" data-dojo-type="dijit.Dialog"
+                    title="${i18n.ExportSelectionsToList}">
                     <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
-                        <input id="${id}CSVFileName" title="${i18n.FileName}:" name="FileName" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                        <input id="${id}CSVFileName" title="${i18n.FileName}:" name="FileName" colspan="2"
+                            data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
                     </div>
                     <div class="dijitDialogPaneActionBar">
-                        <button id="${id}onDownloadSubmit" data-dojo-attach-event="onClick:_buildCSV" class="bottomFormButtons" data-dojo-type="dijit.form.Button">${i18n.Submit}</button>
-                        <button class="bottomFormButtons" data-dojo-attach-event="onClick:_onDownloadToListCancelDialog" data-dojo-type="dijit.form.Button">${i18n.Cancel}</button>
+                        <button id="${id}onDownloadSubmit" data-dojo-attach-event="onClick:_buildCSV"
+                            class="bottomFormButtons" data-dojo-type="dijit.form.Button">${i18n.Submit}</button>
+                        <button class="bottomFormButtons" data-dojo-attach-event="onClick:_onDownloadToListCancelDialog"
+                            data-dojo-type="dijit.form.Button">${i18n.Cancel}</button>
                     </div>
                 </div>
             </div>
