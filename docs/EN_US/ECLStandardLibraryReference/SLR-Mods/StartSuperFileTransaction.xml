@@ -19,8 +19,34 @@
   </emphasis>function begins a transaction frame for superfile maintenance.
   The transaction frame is terminated by calling the
   FinishSuperFileTransaction function. Within the transaction frame, multiple
-  superfiles may be maintained by adding, removing, clearing, swapping, and
-  replacing sub-files.</para>
+  superfiles may be maintained by using SuperFile Maintenance functions to
+  add, remove, clear, swap, and replace sub-files.</para>
+
+  <para>You must use the SEQUENTIAL action to ensure ordered execution of the
+  function calls within the transaction frame. This way, the SuperFile
+  Maintenance functions are called in the order that they are listed between
+  the transaction frame´s start and finish functions, but they are only
+  committed once (i.e., actually executed) at the finish of the transaction
+  function. </para>
+
+  <para>The first SuperFile Maintenance function called within the transaction
+  frame initiates a “read” lock on the superfile until the commit. At commit,
+  the superfile is “write” locked for the transaction to actually execute, and
+  all locks are released at the end of the commit. It is important to note
+  that any calls to functions other than SuperFile Maintenance functions
+  within the transaction frame are not part of the transaction frame (even
+  though they are executed in the order written). The “read” lock is only
+  generated when the first SuperFile Maintenance function is called. While the
+  superfile is “read” locked, no concurrent “write” locks can modify the
+  superfile. </para>
+
+  <para>During the timeframe of the “write” lock at commit (usually a small
+  time window), no concurrent “read” locks are allowed. Therefore, the
+  SuperFile Maintenance functions must be called within a transaction frame to
+  avoid the possibility of another process may try to modify the superfile
+  during sub-file maintenance. As a result, maintenance work can be
+  accomplished without causing problems with any query that might use the
+  SuperFile.</para>
 
   <para>The FinishSuperFileTransaction function does an automatic rollback of
   the transaction if any error or failure occurs during the transaction frame.
@@ -30,5 +56,20 @@
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">STD.File.StartSuperFileTransaction();</programlisting>
+  <programlisting format="linespecific">IMPORT STD;
+ 
+WeeklyRollup:='~Training::Examples::WeeklyRollup';
+WeeklySF    :='~Training::Examples::Weekly';
+DailySF     :='~Training::Examples::Daily';
+ 
+DailyDS := DATASET(DailySF,{string Myfield},THOR);
+ 
+SEQUENTIAL(STD.File.StartSuperFileTransaction(),
+           STD.File.ClearSuperFile(DailySF),
+           OUTPUT(DailyDS,,WeeklyRollup),
+           STD.File.AddSuperFile(WeeklySF,WeeklyRollup),
+           STD.File.FinishSuperFileTransaction());
+//executes the OUTPUT after a "read" lock on the superfile DailySF
+//has been initiated by the ClearSuperFile Maintenance function, 
+//which in turn executes only at the FinishTransaction</programlisting>
 </sect1>

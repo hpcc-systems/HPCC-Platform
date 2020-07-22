@@ -1305,13 +1305,68 @@ static hash64_t hashXML(const IPropertyTree *tree)
     return rtlHash64Data(xml.length(), xml.str(), 877029);
 }
 
-class CRoxieQueryPackageManager : public CInterface
+class CRoxieQueryPackageManagerBase : public CInterface
+{
+public:
+    virtual hash64_t getHash()
+    {
+        CriticalBlock b2(updateCrit);
+        return queryHash;
+    }
+
+    IRoxieQuerySetManager* getRoxieServerManager() const
+    {
+        CriticalBlock b2(updateCrit);
+        return serverManager.getLink();
+    }
+
+    IRoxieQuerySetManagerSet* getRoxieAgentManagers() const
+    {
+        CriticalBlock b2(updateCrit);
+        return agentManagers.getLink();
+    }
+
+protected:
+
+    // Derived classes wanting to read serverManager or agentManagers must call this function to safely obtain their current values
+
+    void getQueryManagers(Owned<IRoxieQuerySetManager> &_serverManager, Owned<CRoxieAgentQuerySetManagerSet> &_agentManagers) const
+    {
+        CriticalBlock b2(updateCrit);
+        _serverManager.set(serverManager);
+        _agentManagers.set(agentManagers);
+    }
+
+    void reloadQueryManagers(CRoxieAgentQuerySetManagerSet *newAgentManagers, IRoxieQuerySetManager *newServerManager, hash64_t newHash)
+    {
+        Owned<CRoxieAgentQuerySetManagerSet> oldAgentManagers;
+        Owned<IRoxieQuerySetManager> oldServerManager;
+        {
+            // Atomically, replace the existing query managers with the new ones
+            CriticalBlock b2(updateCrit);
+            oldAgentManagers.setown(agentManagers.getClear()); // so that the release happens outside the critblock
+            oldServerManager.setown(serverManager.getClear()); // so that the release happens outside the critblock
+            agentManagers.setown(newAgentManagers);
+            serverManager.setown(newServerManager);
+            queryHash = newHash;
+        }
+        if (agentQueryReleaseDelaySeconds)
+            delayedReleaser->delayedRelease(oldAgentManagers.getClear(), agentQueryReleaseDelaySeconds);
+    }
+
+private:
+    mutable CriticalSection updateCrit;  // protects updates of agentManagers and serverManager, and queryHash. Must be held ONLY to link, release, or overwrite these values.
+    Owned<CRoxieAgentQuerySetManagerSet> agentManagers;
+    Owned<IRoxieQuerySetManager> serverManager;
+    hash64_t queryHash = 0;
+};
+
+class CRoxieQueryPackageManager : public CRoxieQueryPackageManagerBase
 {
 public:
     CRoxieQueryPackageManager(unsigned _numChannels, const char *_querySet, const IRoxiePackageMap *_packages, hash64_t _xmlHash)
         : packages(_packages), numChannels(_numChannels), xmlHash(_xmlHash), querySet(_querySet)
     {
-        queryHash = 0;
     }
 
     ~CRoxieQueryPackageManager()
@@ -1335,24 +1390,6 @@ public:
         return _xmlHash == xmlHash && _active==packages->isActive();
     }
 
-    virtual hash64_t getHash()
-    {
-        CriticalBlock b2(updateCrit);
-        return queryHash;
-    }
-
-    IRoxieQuerySetManager* getRoxieServerManager()
-    {
-        CriticalBlock b2(updateCrit);
-        return serverManager.getLink();
-    }
-
-    IRoxieQuerySetManagerSet* getRoxieAgentManagers()
-    {
-        CriticalBlock b2(updateCrit);
-        return agentManagers.getLink();
-    }
-
     void getInfo(StringBuffer &reply, const IRoxieContextLogger &logctx) const
     {
         reply.appendf(" <PackageSet id=\"%s\" querySet=\"%s\"", queryPackageId(), querySet.get());
@@ -1370,7 +1407,9 @@ public:
 
     bool resetStats(const char *queryId, const IRoxieContextLogger &logctx)
     {
-        CriticalBlock b(updateCrit);
+        Owned<IRoxieQuerySetManager> serverManager;
+        Owned<CRoxieAgentQuerySetManagerSet> agentManagers;
+        getQueryManagers(serverManager, agentManagers);
         if (queryId)
         {
             Owned<IQueryFactory> query = serverManager->getQuery(queryId, NULL, logctx);
@@ -1396,7 +1435,9 @@ public:
 
     bool getStats(const char *queryId, const char *action, const char *graphName, StringBuffer &reply, const IRoxieContextLogger &logctx) const
     {
-        CriticalBlock b2(updateCrit);
+        Owned<IRoxieQuerySetManager> serverManager;
+        Owned<CRoxieAgentQuerySetManagerSet> agentManagers;
+        getQueryManagers(serverManager, agentManagers);
         if (serverManager->isActive())
         {
             Owned<IQueryFactory> query = serverManager->getQuery(queryId, NULL, logctx);
@@ -1421,7 +1462,9 @@ public:
     }
     void getActivityMetrics(StringBuffer &reply) const
     {
-        CriticalBlock b2(updateCrit);
+        Owned<IRoxieQuerySetManager> serverManager;
+        Owned<CRoxieAgentQuerySetManagerSet> agentManagers;
+        getQueryManagers(serverManager, agentManagers);
         serverManager->getActivityMetrics(reply);
         for (unsigned channel = 0; channel < numChannels; channel++)
         {
@@ -1433,41 +1476,21 @@ public:
     }
     void getAllQueryInfo(StringBuffer &reply, bool full, const IRoxieContextLogger &logctx) const
     {
-        CriticalBlock b2(updateCrit);
+        Owned<IRoxieQuerySetManager> serverManager;
+        Owned<CRoxieAgentQuerySetManagerSet> agentManagers;
+        getQueryManagers(serverManager, agentManagers);
         serverManager->getAllQueryInfo(reply, full, agentManagers, logctx);
     }
     const char *queryQuerySetName()
     {
         return querySet;
     }
-protected:
 
-    void reloadQueryManagers(CRoxieAgentQuerySetManagerSet *newAgentManagers, IRoxieQuerySetManager *newServerManager, hash64_t newHash)
-    {
-        Owned<CRoxieAgentQuerySetManagerSet> oldAgentManagers;
-        Owned<IRoxieQuerySetManager> oldServerManager;
-        {
-            // Atomically, replace the existing query managers with the new ones
-            CriticalBlock b2(updateCrit);
-            oldAgentManagers.setown(agentManagers.getClear()); // so that the release happens outside the critblock
-            oldServerManager.setown(serverManager.getClear()); // so that the release happens outside the critblock
-            agentManagers.setown(newAgentManagers);
-            serverManager.setown(newServerManager);
-            queryHash = newHash;
-        }
-        if (agentQueryReleaseDelaySeconds)
-            delayedReleaser->delayedRelease(oldAgentManagers.getClear(), agentQueryReleaseDelaySeconds);
-    }
-
-    mutable CriticalSection updateCrit;  // protects updates of agentManagers and serverManager
-    Owned<CRoxieAgentQuerySetManagerSet> agentManagers;
-    Owned<IRoxieQuerySetManager> serverManager;
-
-    Owned<const IRoxiePackageMap> packages;
-    unsigned numChannels;
-    hash64_t queryHash;
-    hash64_t xmlHash;
-    StringAttr querySet;
+    // These are set at construction and not changed for the lifetime of the object
+    const Owned<const IRoxiePackageMap> packages;
+    const unsigned numChannels;
+    const hash64_t xmlHash;
+    const StringAttr querySet;
 };
 
 /**

@@ -11621,10 +11621,14 @@ void HqlCppTranslator::assignCastUnknownLength(BuildCtx & ctx, const CHqlBoundTa
                     break;
                 case type_string:
                 case type_data:
+                {
                     funcName = codepageToUtf8XId;
                     codepageParam = createConstant(from->queryCharset()->queryCodepageName());
-                    pure.expr.setown(createValue(no_typetransfer, makeStringType(from->getStringLen(), NULL, NULL), LINK(pure.expr)));
+                    ITypeInfo * type = makeStringType(to->getStringLen(), NULL, NULL);
+                    OwnedHqlExpr translated = createValue(no_typetransfer, type, pure.getTranslatedExpr());
+                    buildExpr(ctx, translated, pure);
                     break;
+                }
                 default:
                     CHqlBoundExpr recast;
                     ITypeInfo * type = makeStringType(to->getStringLen(), NULL, NULL);
