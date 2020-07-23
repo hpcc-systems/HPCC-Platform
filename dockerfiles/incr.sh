@@ -77,9 +77,9 @@ if [[ -z "$FORCE" ]] ; then
 
   # If not found above, look for latest tagged
   if [[ -z ${PREV} ]] ; then
-    PREV=$(git describe --abbrev=0 --tags)
+    PREV=$(git log --oneline --no-merges | grep "^[0-9a-f]* Split off " | head -1 | sed "s/.*Split off //" | head -1)-rc1
     if [[ ! "${BUILD_TYPE}" =~ "Release" ]] ; then
-      PREVE=${PREV}-${BUILD_TYPE}
+      PREV=${PREV}-${BUILD_TYPE}
     fi
     echo Finding image based on most recent git tag: ${PREV}
     INCR_DOCKER_REPO=hpccsystems
