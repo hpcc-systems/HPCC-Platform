@@ -863,6 +863,49 @@ const Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
             onGetTimers: onFetchTimers
         });
     },
+    fetchActivities() {
+        return (this._hpccWU as HPCCWorkunit).fetchDetails({
+            ScopeFilter: {
+                MaxDepth: 999999,
+                ScopeTypes: ["graph"]
+            },
+            ScopeOptions: {
+                IncludeMatchedScopesInResults: true,
+                IncludeScope: true,
+                IncludeId: true,
+                IncludeScopeType: true
+            },
+            PropertyOptions: {
+                IncludeName: false,
+                IncludeRawValue: false,
+                IncludeFormatted: false,
+                IncludeMeasure: false,
+                IncludeCreator: false,
+                IncludeCreatorType: false
+            },
+            NestedFilter: {
+                Depth: 999999,
+                ScopeTypes: ["activity"]
+            },
+            PropertiesToReturn: {
+                AllStatistics: false,
+                AllAttributes: false,
+                AllHints: false,
+                AllProperties: false,
+                AllScopes: true
+            }
+        }).then(response => {
+            const retVal = {};
+            response.forEach(scope => {
+                const graphID = scope.ScopeName.split(":")[1];
+                if (!retVal[graphID]) {
+                    retVal[graphID] = [];
+                }
+                retVal[graphID].push(scope.Id);
+            });
+            return retVal;
+        });
+    },
     fetchGraphs(onFetchGraphs) {
         if (this.graphs && this.graphs.length) {
             onFetchGraphs(this.graphs);

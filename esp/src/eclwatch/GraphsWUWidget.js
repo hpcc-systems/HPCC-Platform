@@ -49,6 +49,10 @@ define([
             if (params.Wuid) {
                 var context = this;
                 this.wu = ESPWorkunit.Get(params.Wuid);
+                this.wu.fetchActivities().then(function (_) {
+                    context._activitiesData = _;
+                    context.updateGrid();
+                });
 
                 this.timeline = new srcTimings.WUTimelineEx()
                     .target(this.id + "TimelinePane")
@@ -138,7 +142,7 @@ define([
                         return (hours < 10 ? "0" : "") + hours + ":" + (minutes < 10 ? "0" : "") + minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
                     }
                 },
-                Type: { label: this.i18n.Type, width: 72, sortable: true }
+                activityCount: { label: this.i18n.Activities, width: 72, sortable: true }
             };
         },
 
@@ -154,10 +158,16 @@ define([
         refreshGrid: function (args) {
             this._timelineData = null;
             this._graphsData = null;
+            this._activitiesData = null;
 
             this.timeline.refresh();
 
             var context = this;
+            this.wu.fetchActivities().then(function (_) {
+                context._activitiesData = _;
+                context.updateGrid();
+            });
+
             this.wu.getInfo({
                 onGetTimers: function (timers) {
                     //  Required to calculate Graphs Total Time  ---
@@ -170,13 +180,17 @@ define([
         },
 
         updateGrid: function () {
-            if (this._timelineData && this._graphsData) {
+            if (this._timelineData && this._graphsData && this._activitiesData) {
                 var context = this;
                 this.store.setData(this._graphsData.map(function (row) {
                     var timelineData = context._timelineData[row.Name];
                     if (timelineData) {
                         row.WhenStarted = timelineData.started;
                         row.WhenFinished = timelineData.finished;
+                    }
+                    const activities = context._activitiesData[row.Name];
+                    if (activities) {
+                        row.activityCount = activities.length;
                     }
                     return row;
                 }));
