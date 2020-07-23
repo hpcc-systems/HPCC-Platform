@@ -95,15 +95,101 @@ protected:
 };
 
 //-----------------------------------------------------------------------------------------------------------
+typedef enum {wutOptValueTypeFirst=0, wutOptValueTypeMSec=0, wutOptValueTypeSeconds, wutOptValueTypePercent, wutOptValueTypeCount, wutOptValueTypeMax} WutOptValueType;
+
+struct WuOption
+{
+    WutOptionType option;
+    const char * name;
+    stat_type defaultValue;
+    WutOptValueType type;
+};
+
+constexpr struct WuOption wuOptionsDefaults[watOptMax]
+= { {watOptMinInterestingTime, "minInterestingTime", 1000, wutOptValueTypeMSec},
+    {watOptMinInterestingCost, "minInterestingCost", 30000, wutOptValueTypeMSec},
+    {watOptSkewThreshold, "skewThreshold", 20, wutOptValueTypePercent},
+    {watOptMinRowsPerNode, "minRowsPerNode", 1000, wutOptValueTypeCount} };
+
+constexpr bool checkWuOptionsDefaults(int i = watOptMax)
+{
+    return ((wuOptionsDefaults[i-1].name != nullptr && (wuOptionsDefaults[i-1].option == i-1) && wuOptionsDefaults[i-1].type < wutOptValueTypeMax ) && 
+           (i==1 || checkWuOptionsDefaults(i-1)));
+}
+static_assert(checkWuOptionsDefaults(), "wuOptionsDefaults[] not populated correctly");
+
+class WuAnalyserOptions : public IAnalyserOptions
+{
+public:
+   WuAnalyserOptions()
+    {
+        for (int opt = watOptFirst; opt < watOptMax; opt++)
+            setOptionValue(static_cast<WutOptionType>(opt), wuOptionsDefaults[opt].defaultValue);
+    }
+
+    void setOptionValue(WutOptionType opt, __int64 val)
+    {
+        assertex(opt<watOptMax);
+        switch(wuOptionsDefaults[opt].type)
+        {
+            case wutOptValueTypeMSec:
+                wuOptions[opt] = msecs2StatUnits(val);
+                break;
+            case wutOptValueTypeSeconds:
+                wuOptions[opt] = seconds2StatUnits(val);
+                break;
+            case wutOptValueTypePercent:
+                wuOptions[opt] = statSkewPercent((stat_type)val);
+                break;
+            case wutOptValueTypeCount:
+                wuOptions[opt] = (stat_type) val;
+                break;
+            default:
+                throw MakeStringException(-1, "WuAnalyserOptions::setOptionValue - unknown wuOptionsDefaults[%d].type=%d", (int) opt, (int) wuOptionsDefaults[opt].type);
+        }
+    }
+
+    void applyConfig(IPropertyTree *options)
+    {
+        if (!options) return;
+        for (int opt = watOptFirst; opt < watOptMax; opt++)
+        {
+            StringBuffer wuOptionName("@");
+            wuOptionName.append(wuOptionsDefaults[opt].name);
+            __int64 val =  options->getPropInt64(wuOptionName, -1);
+            if (val!=-1)
+                setOptionValue(static_cast<WutOptionType>(opt), val);
+        }
+    }
+
+    void applyConfig(IConstWorkUnit * wu)
+    {
+        for (int opt = watOptFirst; opt < watOptMax; opt++)
+        {
+            StringBuffer wuOptionName("analyzer_");
+            wuOptionName.append(wuOptionsDefaults[opt].name);
+            __int64 val = wu->getDebugValueInt64(wuOptionName, -1);
+            if (val!=-1)
+                setOptionValue(static_cast<WutOptionType>(opt), val);
+        }
+    }
+    stat_type queryOption(WutOptionType opt) const override { return wuOptions[opt]; }
+private:
+    stat_type wuOptions[watOptMax];
+};
+//-----------------------------------------------------------------------------------------------------------
+
+
 class WorkunitAnalyser
 {
 public:
-    WorkunitAnalyser(WuAnalyseOptions & _options);
+    WorkunitAnalyser();
 
     void check(const char * scope, IWuActivity & activity);
     void analyse(IConstWorkUnit * wu);
     void print();
     void update(IWorkUnit *wu);
+    void applyConfig(IPropertyTree *cfg);
 
 protected:
     void collateWorkunitStats(IConstWorkUnit * workunit, const WuScopeFilter & filter);
@@ -112,7 +198,7 @@ protected:
     CIArrayOf<AActivityRule> rules;
     CIArrayOf<PerformanceIssue> issues;
     WuScope root;
-    WuAnalyseOptions options;
+    WuAnalyserOptions options;
 };
 
 //-----------------------------------------------------------------------------------------------------------
@@ -306,17 +392,23 @@ public:
 };
 
 
+
 //-----------------------------------------------------------------------------------------------------------
-WorkunitAnalyser::WorkunitAnalyser(WuAnalyseOptions & _options) : root("", nullptr), options(_options)
+
+WorkunitAnalyser::WorkunitAnalyser() : root("", nullptr)
 {
     gatherRules(rules);
 }
 
+void WorkunitAnalyser::applyConfig(IPropertyTree *cfg)
+{
+    options.applyConfig(cfg);
+}
+
 void WorkunitAnalyser::check(const char * scope, IWuActivity & activity)
 {
-    if (activity.getStatRaw(StTimeLocalExecute, StMaxX) < options.minInterestingTime)
+    if (activity.getStatRaw(StTimeLocalExecute, StMaxX) < options.queryOption(watOptMinInterestingTime))
         return;
-
     Owned<PerformanceIssue> highestCostIssue;
     ForEachItemIn(i, rules)
     {
@@ -325,7 +417,7 @@ void WorkunitAnalyser::check(const char * scope, IWuActivity & activity)
             Owned<PerformanceIssue> issue (new PerformanceIssue);
             if (rules.item(i).check(*issue, activity, options))
             {
-                if (issue->getCost() >= options.minCost)
+                if (issue->getCost() >= options.queryOption(watOptMinInterestingCost))
                 {
                     if (!highestCostIssue || highestCostIssue->getCost() < issue->getCost())
                         highestCostIssue.setown(issue.getClear());
@@ -344,6 +436,7 @@ void WorkunitAnalyser::check(const char * scope, IWuActivity & activity)
 
 void WorkunitAnalyser::analyse(IConstWorkUnit * wu)
 {
+    options.applyConfig(wu);
     WuScopeFilter filter;
     filter.addOutputProperties(PTstatistics).addOutputProperties(PTattributes);
     filter.finishedFilter();
@@ -407,16 +500,17 @@ WuScope * WorkunitAnalyser::selectFullScope(const char * scope)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, WuAnalyseOptions & options)
+void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, IPropertyTree *options)
 {
-    WorkunitAnalyser analyser(options);
+    WorkunitAnalyser analyser;
+    analyser.applyConfig(options);
     analyser.analyse(wu);
     analyser.update(wu);
 }
 
-void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, WuAnalyseOptions & options, bool updatewu)
+void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, bool updatewu)
 {
-    WorkunitAnalyser analyser(options);
+    WorkunitAnalyser analyser;
     analyser.analyse(wu);
     analyser.print();
     if (updatewu)

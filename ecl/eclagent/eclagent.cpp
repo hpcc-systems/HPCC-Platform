@@ -2001,8 +2001,8 @@ void EclAgent::doProcess()
         {
             if (w->getDebugValueBool("analyzeWorkunit", agentTopology->getPropBool("@analyzeWorkunit", true)))
             {
-                WuAnalyseOptions options;  // TODO: read options from configuration file
-                analyseWorkunit(w.get(), options);
+                IPropertyTree *analyzerOptions = agentTopology->queryPropTree("analyzerOptions");
+                analyseWorkunit(w.get(), analyzerOptions);
             }
         }
         if(w->queryEventScheduledCount() > 0)
