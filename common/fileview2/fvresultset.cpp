@@ -2318,7 +2318,8 @@ extern FILEVIEW_API unsigned getResultJSON(IStringVal & ret, INewResultSet * res
     return rc;
 }
 
-extern FILEVIEW_API unsigned writeResultCursorXml(IXmlWriter & writer, IResultSetCursor * cursor, const char * name, unsigned start, unsigned count, const char * schemaName, const IProperties *xmlns)
+extern FILEVIEW_API unsigned writeResultCursorXml(IXmlWriter & writer, IResultSetCursor * cursor, const char * name,
+    unsigned start, unsigned count, const char * schemaName, const IProperties *xmlns, bool flushContent)
 {
     if (schemaName)
     {
@@ -2329,6 +2330,8 @@ extern FILEVIEW_API unsigned writeResultCursorXml(IXmlWriter & writer, IResultSe
         meta.getXmlXPathSchema(xsd, false);
         writer.outputInlineXml(xsd.str());
         writer.outputEndNested("XmlSchema");
+        if (flushContent)
+            writer.flushContent(false);
     }
 
     writer.outputBeginDataset(name, true);
@@ -2348,6 +2351,8 @@ extern FILEVIEW_API unsigned writeResultCursorXml(IXmlWriter & writer, IResultSe
     for(bool ok=cursor->absolute(start);ok;ok=cursor->next())
     {
         cursor->writeXmlRow(writer);
+        if (flushContent)
+            writer.flushContent(false);
 
         c++;
         if(count && c>=count)
@@ -2355,6 +2360,8 @@ extern FILEVIEW_API unsigned writeResultCursorXml(IXmlWriter & writer, IResultSe
     }
     cursor->endWriteXmlRows(writer);
     writer.outputEndDataset(name);
+    if (flushContent)
+        writer.flushContent(false);
     return c;
 }
 

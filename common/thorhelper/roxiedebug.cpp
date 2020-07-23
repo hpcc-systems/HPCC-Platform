@@ -529,6 +529,10 @@ public:
     {
         // nothing for now
     }
+    virtual void flushContent(bool close) override
+    {
+        // nothing for now
+    }
 };
 
 class ContainsFieldSearcher : public SimpleFieldSearcher
