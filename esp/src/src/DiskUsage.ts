@@ -20,6 +20,8 @@ interface CompontentT {
 
 type DetailsT = GetTargetClusterUsageEx.TargetClusterUsage | CompontentT;
 
+const calcPct = (val, tot) => Math.round((val / tot) * 100);
+
 export class Summary extends FlexGrid {
 
     private _loadingMsg;
@@ -118,7 +120,8 @@ export class Summary extends FlexGrid {
                                 details.rowCount++;
                                 details.inUse += du.InUse;
                                 details.total += du.Total;
-                                details.max = details.max < du.InUse ? du.InUse : details.max;
+                                const usage = calcPct(du.InUse, du.Total);
+                                details.max = details.max < usage ? usage : details.max;
                             });
                         });
                     });
@@ -136,9 +139,9 @@ export class Summary extends FlexGrid {
                         const totalMean = details.total / details.rowCount;
                         const inUseMean = details.inUse / details.rowCount;
                         this._usage[key].gauge
-                            .value((details.max / totalMean))
+                            .value(details.max / 100)
                             .valueDescription(nlsHPCC.Max)
-                            .tickValue((inUseMean / totalMean))
+                            .tickValue(inUseMean / totalMean)
                             .tickValueDescription(nlsHPCC.Mean)
                             .tooltip(key)
                             ;
@@ -182,7 +185,7 @@ export class Details extends Table {
         this._details.ComponentUsages.forEach(cu => {
             cu.MachineUsages.forEach(mu => {
                 mu.DiskUsages.forEach(du => {
-                    data.push([du.PercentUsed, cu.Name, du.Name, mu.NetAddress !== "." ? mu.NetAddress : mu.Name, du.Path, du.InUse, du.Total]);
+                    data.push([calcPct(du.InUse, du.Total), cu.Name, du.Name, mu.NetAddress !== "." ? mu.NetAddress : mu.Name, du.Path, du.InUse, du.Total]);
                 });
             });
         });
