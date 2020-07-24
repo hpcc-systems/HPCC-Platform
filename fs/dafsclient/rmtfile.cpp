@@ -2031,6 +2031,8 @@ void installDefaultFileHooks(IPropertyTree * config)
     {
         getPackageFolder(hookdir);
         addPathSepChar(hookdir).append("filehooks");
+        if (!checkFileExists(hookdir))
+            return;
     }
     installFileHooks(hookdir);
 }
