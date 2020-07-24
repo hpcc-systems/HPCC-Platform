@@ -66,7 +66,7 @@ void PerformanceIssue::createException(IWorkUnit * wu)
     StringBuffer s(comment);        // Append scope to comment as scope column is not visible in ECLWatch
     s.appendf(" (%s)", scope.str());
     we->setExceptionMessage(s.str());
-    we->setExceptionSource("Workunit Analyser");
+    we->setExceptionSource("Workunit Analyzer");
 }
 
 void PerformanceIssue::set(AnalyzerErrorCode _errorCode, stat_type _cost, const char * msg, ...)
