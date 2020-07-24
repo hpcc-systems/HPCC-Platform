@@ -109,7 +109,8 @@ constexpr struct WuOption wuOptionsDefaults[watOptMax]
 = { {watOptMinInterestingTime, "minInterestingTime", 1000, wutOptValueTypeMSec},
     {watOptMinInterestingCost, "minInterestingCost", 30000, wutOptValueTypeMSec},
     {watOptSkewThreshold, "skewThreshold", 20, wutOptValueTypePercent},
-    {watOptMinRowsPerNode, "minRowsPerNode", 1000, wutOptValueTypeCount} };
+    {watOptMinRowsPerNode, "minRowsPerNode", 1000, wutOptValueTypeCount},
+    {watPreFilteredKJThreshold, "preFilteredKJThreshold", 50, wutOptValueTypePercent} };
 
 constexpr bool checkWuOptionsDefaults(int i = watOptMax)
 {
@@ -139,7 +140,7 @@ public:
                 wuOptions[opt] = seconds2StatUnits(val);
                 break;
             case wutOptValueTypePercent:
-                wuOptions[opt] = statSkewPercent((stat_type)val);
+                wuOptions[opt] = statPercent((stat_type)val);
                 break;
             case wutOptValueTypeCount:
                 wuOptions[opt] = (stat_type) val;

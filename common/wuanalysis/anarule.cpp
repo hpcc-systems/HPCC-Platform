@@ -154,6 +154,36 @@ protected:
     const char * category;
 };
 
+class KeyedJoinExcessRejectedRowsRule : public ActivityKindRule
+{
+public:
+    KeyedJoinExcessRejectedRowsRule() : ActivityKindRule(TAKkeyedjoin) {}
+
+    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const IAnalyserOptions & options) override
+    {
+        stat_type preFiltered = activity.getStatRaw(StNumPreFiltered);
+        if (preFiltered)
+        {
+            IWuEdge * inputEdge = activity.queryInput(0);
+            stat_type rowscnt = inputEdge->getStatRaw(StNumRowsProcessed);
+            if (rowscnt)
+            {
+                stat_type preFilteredPer = statPercent( (double) preFiltered * 100.0 / rowscnt );
+                if (preFilteredPer > options.queryOption(watPreFilteredKJThreshold))
+                {
+                    IWuActivity * inputActivity = inputEdge->querySource();
+                    // Use input activity as the basis of cost because the rows generated from input activity is being filtered out
+                    stat_type timeAvgLocalExecute = inputActivity->getStatRaw(StTimeLocalExecute, StAvgX);
+                    stat_type cost = statPercentageOf(timeAvgLocalExecute, preFilteredPer);
+                    result.set(ANA_KJ_EXCESS_PREFILTER_ID, cost, "Large number of rows from left dataset rejected in keyed join");
+                    updateInformation(result, activity);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+};
 
 void gatherRules(CIArrayOf<AActivityRule> & rules)
 {
@@ -161,4 +191,5 @@ void gatherRules(CIArrayOf<AActivityRule> & rules)
     rules.append(*new IoSkewRule(StTimeDiskReadIO, "disk read"));
     rules.append(*new IoSkewRule(StTimeDiskWriteIO, "disk write"));
     rules.append(*new IoSkewRule(StTimeSpillElapsed, "spill"));
+    rules.append(*new KeyedJoinExcessRejectedRowsRule);
 }
