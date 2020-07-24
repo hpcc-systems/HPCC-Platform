@@ -196,6 +196,15 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+
+            <xs:attribute name="sashaUser" type="xs:string" use="optional" default="">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Specifies the Sasha Username used for authorization.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+
         </xs:complexType>
     </xs:element>
     <xs:attributeGroup name="Archiver">

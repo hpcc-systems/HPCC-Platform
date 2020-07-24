@@ -672,7 +672,7 @@ public:
     CLargeMemoryAllocator mem;
     bool verbose;
     unsigned numuniqnodes = 0;
-
+    Owned<IUserDescriptor> udesc;
 
     CNewXRefManager(unsigned maxMb=DEFAULT_MAXMEMORY)
         : mem(0x100000*((memsize_t)maxMb),0x10000,true)
@@ -687,6 +687,11 @@ public:
         orphansbranch.setown(createPTree("Orphans"));
         dirbranch.setown(createPTree("Directories"));
         log("Max memory = %d MB", maxMb);
+
+        StringBuffer userName;
+        serverConfig->getProp("@sashaUser", userName);
+        udesc.setown(createUserDescriptor());
+        udesc->set(userName.str(), nullptr);
     }
 
     ~CNewXRefManager()
@@ -1208,7 +1213,7 @@ public:
         CDfsLogicalFileName lfn;
         if (lfn.setFromMask(mask.str(),rootdir)) { // orphans are only orphans if there doesn't exist a valid file
             try {
-                if (queryDistributedFileDirectory().exists(lfn.get(),UNKNOWN_USER,true,false)) {
+                if (queryDistributedFileDirectory().exists(lfn.get(),udesc,true,false)) {
                     warn(mask.str(),"Orphans ignored as %s exists",lfn.get());
                     return;
                 }
@@ -1498,7 +1503,7 @@ public:
             }
             Owned<IDistributedFile> file;
             try {
-                file.setown(queryDistributedFileDirectory().lookup(lfn,UNKNOWN_USER,false,false,false,nullptr,defaultPrivilegedUser));
+                file.setown(queryDistributedFileDirectory().lookup(lfn,udesc,false,false,false,nullptr,defaultPrivilegedUser));
             }
             catch (IException *e) {
                 EXCLOG(e,"CNewXRefManager::listLost");
@@ -2257,6 +2262,7 @@ class CSashaExpiryServer: public ISashaServer, public Thread
     bool stopped;
     Semaphore stopsem;
     Mutex runmutex;
+    Owned<IUserDescriptor> udesc;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -2265,6 +2271,11 @@ public:
         : Thread("CSashaExpiryServer")
     {
         stopped = false;
+
+        StringBuffer userName;
+        serverConfig->getProp("@sashaUser", userName);
+        udesc.setown(createUserDescriptor());
+        udesc->set(userName.str(), nullptr);
     }
 
     ~CSashaExpiryServer()
@@ -2300,7 +2311,7 @@ public:
         unsigned defaultExpireDays = serverConfig->getPropInt("DfuExpiry/@expiryDefault", DEFAULT_EXPIRYDAYS);
         unsigned defaultPersistExpireDays = serverConfig->getPropInt("DfuExpiry/@persistExpiryDefault", DEFAULT_PERSISTEXPIRYDAYS);
         StringArray expirylist;
-        Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator("*",UNKNOWN_USER,true,false);//MORE:Pass IUserDescriptor
+        Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator("*",udesc,true,false);
         ForEach(*iter)
         {
             IPropertyTree &attr=iter->query();
@@ -2352,7 +2363,7 @@ public:
                 /* NB: 0 timeout, meaning fail and skip, if there is any locking contention.
                  * If the file is locked, it implies it is being accessed.
                  */
-                queryDistributedFileDirectory().removeEntry(lfn, UNKNOWN_USER, NULL, 0, true); //MORE:Pass IUserDescriptor
+                queryDistributedFileDirectory().removeEntry(lfn, udesc, NULL, 0, true);
                 PROGLOG(LOGPFX2 "Deleted %s",lfn);
             }
             catch (IException *e) // may want to just detach if fails
