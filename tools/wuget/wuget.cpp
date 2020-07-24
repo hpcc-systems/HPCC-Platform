@@ -76,6 +76,11 @@ int main(int argc, char **argv)
                     if (xml.length())
                     {
                         Owned<ILocalWorkUnit> wu = createLocalWorkUnit(xml);
+                        if (getArchiveXMLFromFile(filename, xml.clear()))
+                        {
+                            Owned<IWUQuery> q = wu->updateQuery();
+                            q->setQueryText(xml);
+                        }
                         if (doWorkunit)
                         {
                             exportWorkUnitToXML(wu, xml.clear(), true, false, true);
@@ -84,9 +89,14 @@ int main(int argc, char **argv)
                         if (doArchive)
                         {
                             Owned<IConstWUQuery> query = wu->getQuery();
-                            SCMStringBuffer text;
-                            query->getQueryText(text);
-                            printf("%s\n", text.s.str());
+                            if (query)
+                            {
+                                SCMStringBuffer text;
+                                query->getQueryText(text);
+                                printf("%s\n", text.s.str());
+                            }
+                            else
+                                printf("No archive found\n");
                         }
                     }
                     else

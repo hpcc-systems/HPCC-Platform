@@ -731,6 +731,11 @@ extern DLLSERVER_API bool getWorkunitXMLFromFile(const char *filename, StringBuf
     return getResourceXMLFromFile(filename, "WORKUNIT", 1000, xml);
 }
 
+extern DLLSERVER_API bool getArchiveXMLFromFile(const char *filename, StringBuffer &xml)
+{
+    return getResourceXMLFromFile(filename, "ARCHIVE", 1000, xml);
+}
+
 extern DLLSERVER_API bool getManifestXMLFromFile(const char *filename, StringBuffer &xml)
 {
     return getResourceXMLFromFile(filename, "MANIFEST", 1000, xml);
