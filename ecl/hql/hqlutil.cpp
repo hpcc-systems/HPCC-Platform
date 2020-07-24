@@ -9118,7 +9118,7 @@ extern HQL_API bool allParametersHaveDefaults(IHqlExpression * function)
     return true;
 }
 
-extern HQL_API bool expandMissingDefaultsAsStoreds(HqlExprArray & args, IHqlExpression * function)
+extern HQL_API bool expandParametersAsStoreds(HqlExprArray & args, IHqlExpression * function)
 {
     assertex(function->isFunction());
     IHqlExpression * formals = queryFunctionParameters(function);
@@ -9128,21 +9128,16 @@ extern HQL_API bool expandMissingDefaultsAsStoreds(HqlExprArray & args, IHqlExpr
         ForEachChild(idx, formals)
         {
             IHqlExpression *formal = formals->queryChild(idx);
-            IHqlExpression * defvalue = queryDefaultValue(defaults, idx);
-            if (defvalue)
-            {
-                args.append(*LINK(defvalue));
-            }
-            else
-            {
-                OwnedHqlExpr nullValue = createNullExpr(formal->queryType());
-                OwnedHqlExpr storedName = createConstant(str(formal->queryName()));
-                OwnedHqlExpr stored = createValue(no_stored, makeVoidType(), storedName.getClear());
-                HqlExprArray colonArgs;
-                colonArgs.append(*LINK(nullValue));
-                colonArgs.append(*LINK(stored));
-                args.append(*createWrapper(no_colon, formal->queryType(), colonArgs));
-            }
+            Linked<IHqlExpression> defvalue = queryDefaultValue(defaults, idx);
+            if (!defvalue)
+                defvalue.setown(createNullExpr(formal->queryType()));
+
+            OwnedHqlExpr storedName = createConstant(str(formal->queryId()));
+            OwnedHqlExpr stored = createValue(no_stored, makeVoidType(), storedName.getClear());
+            HqlExprArray colonArgs;
+            colonArgs.append(*LINK(defvalue));
+            colonArgs.append(*LINK(stored));
+            args.append(*createWrapper(no_colon, formal->queryType(), colonArgs));
         }
     }
     catch (IException * e)
@@ -9759,7 +9754,7 @@ static IHqlExpression * transformAttributeToQuery(IHqlExpression * expr, HqlLook
         HqlExprArray actuals;
         if (!allParametersHaveDefaults(expr))
         {
-            if (!expandMissingDefaultsAsStoreds(actuals, expr))
+            if (!expandParametersAsStoreds(actuals, expr))
             {
                 //For each parameter that doesn't have a default, create a stored variable of the appropriate type
                 //with a null value as the default value, and use that.
