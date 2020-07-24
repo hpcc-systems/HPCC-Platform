@@ -1608,18 +1608,26 @@ void EclAgent::selectCluster(const char *newCluster)
         if (!streq(oldCluster, newCluster))
             throw MakeStringException(-1, "Error - cannot switch cluster in hthor jobs");
     }
+    if (!streq(oldCluster, newCluster))
+    {
+        WorkunitUpdate wu = updateWorkUnit();
+        wu->setClusterName(newCluster);
+        clusterWidth = -1;
+    }
     clusterNames.append(oldCluster);
-    WorkunitUpdate wu = updateWorkUnit();
-    wu->setClusterName(newCluster);
-    clusterWidth = -1;
 }
 
 void EclAgent::restoreCluster()
 {
-    WorkunitUpdate wu = updateWorkUnit();
-    wu->setClusterName(clusterNames.item(clusterNames.length()-1));
+    const char *previousCluster = clusterNames.item(clusterNames.length()-1);
+    const char *currentCluster = queryWorkUnit()->queryClusterName();
+    if (!streq(previousCluster, currentCluster))
+    {
+        WorkunitUpdate wu = updateWorkUnit();
+        wu->setClusterName(previousCluster);
+        clusterWidth = -1;
+    }
     clusterNames.pop();
-    clusterWidth = -1;
 }
 
 unsigned EclAgent::getNodes()//retrieve node count for current cluster
