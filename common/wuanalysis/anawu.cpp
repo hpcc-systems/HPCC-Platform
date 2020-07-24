@@ -516,7 +516,7 @@ void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, bool updatewu)
     if (updatewu)
     {
         Owned<IWorkUnit> lockedwu = &(wu->lock());
-        lockedwu->clearExceptions("Workunit Analyser");
+        lockedwu->clearExceptions("Workunit Analyzer");
         analyser.update(lockedwu);
     }
 }
