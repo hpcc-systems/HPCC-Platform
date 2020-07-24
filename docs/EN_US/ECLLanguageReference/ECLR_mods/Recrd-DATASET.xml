@@ -638,8 +638,12 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
             role="bold">)</emphasis></entry>
 
             <entry><para>Optional. Maximum record length in the
-            <emphasis>file</emphasis>. If omitted, the default is
-            4096.</para></entry>
+            <emphasis>file</emphasis> in bytes. If omitted, the default is
+            4096. There is a hard limit of 10MB but that can be overridden
+            using <emphasis>#OPTION(maxCSVRowSizeMb,nn) </emphasis>where
+            <emphasis>nn</emphasis> is the maximum size in MB. The maximum
+            record size should be set as conservatively as possible.
+            </para></entry>
           </row>
 
           <row>
