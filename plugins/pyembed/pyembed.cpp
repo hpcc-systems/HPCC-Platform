@@ -292,6 +292,13 @@ public:
             initialized = false;
             return;
         }
+        StringBuffer py3modname;
+        if  (findLoadedModule(py3modname, "libpy3embed."))
+        {
+            initialized = false;
+            multiPython = true;
+            return;
+        }
 #endif
 #ifndef _WIN32
         // We need to ensure all symbols in the python2.x so are loaded - due to bugs in some distro's python installations
@@ -299,8 +306,8 @@ public:
         // Therefore on systems where both are present, do NOT do this - people using centos systems that suffer from issue
         // https://bugs.centos.org/view.php?id=6063 will need to choose which version of python plugin to install but not both
 
-        StringBuffer modname, py3modname;
-        if  (findLoadedModule(modname, "libpython2.") && !findLoadedModule(py3modname, "libpython3."))
+        StringBuffer modname;
+        if  (findLoadedModule(modname, "libpython2."))
             pythonLibrary = dlopen(modname.str(), RTLD_NOW|RTLD_GLOBAL);
 #endif
         // Initialize the Python Interpreter
@@ -339,6 +346,13 @@ public:
             preservedScopes.getClear();
 
         }
+    }
+    void checkInitialized()
+    {
+        if (multiPython)
+            rtlFail(0, "Python2 not initialized as Python3 already loaded");
+        else if (!initialized)
+            rtlFail(0, "Python2 not initialized");
     }
     bool isInitialized()
     {
@@ -562,6 +576,7 @@ protected:
     }
     PyThreadState *tstate = nullptr;
     bool initialized = false;
+    bool multiPython = false;
     bool skipPythonCleanup = true; // Tensorflow seems to often lockup in the python cleanup process.
     HINSTANCE pythonLibrary = 0;
     OwnedPyObject namedtuple;      // collections.namedtuple
@@ -602,8 +617,7 @@ static void checkThreadContext()
 {
     if (!threadContext)
     {
-        if (!globalState.isInitialized())
-            rtlFail(0, "Python not initialized");
+        globalState.checkInitialized();
         threadContext = new PythonThreadContext;
         addThreadTermFunc(releaseContext);
     }
@@ -1961,20 +1975,23 @@ extern DECL_EXPORT IEmbedContext* getEmbedContext()
 extern DECL_EXPORT void syntaxCheck(size32_t & __lenResult, char * & __result, const char *funcname, size32_t charsBody, const char * body, const char *argNames, const char *compilerOptions, const char *persistOptions)
 {
     StringBuffer result;
-    // NOTE - compilation of a script does not actually resolve imports - so the fact that the manifest is not on the path does not matter
-    // This does mean that many errors cannot be caught until runtime, but that's Python for you...
-    try
+    if (globalState.isInitialized())
     {
-        checkThreadContext();
-        Owned<Python27EmbedScriptContext> ctx = new Python27EmbedScriptContext(threadContext, nullptr);
-        ctx->setargs(argNames);
-        ctx->compileEmbeddedScript(charsBody, body);
-    }
-    catch (IException *E)
-    {
-        StringBuffer msg;
-        result.append(E->errorMessage(msg));
-        E->Release();
+        // NOTE - compilation of a script does not actually resolve imports - so the fact that the manifest is not on the path does not matter
+        // This does mean that many errors cannot be caught until runtime, but that's Python for you...
+        try
+        {
+            checkThreadContext();
+            Owned<Python27EmbedScriptContext> ctx = new Python27EmbedScriptContext(threadContext, nullptr);
+            ctx->setargs(argNames);
+            ctx->compileEmbeddedScript(charsBody, body);
+        }
+        catch (IException *E)
+        {
+            StringBuffer msg;
+            result.append(E->errorMessage(msg));
+            E->Release();
+        }
     }
     __lenResult = result.length();
     __result = result.detach();
