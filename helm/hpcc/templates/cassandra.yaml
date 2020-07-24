@@ -1,0 +1,104 @@
+{{ range $.Values.cassandra -}}
+{{- if not .disabled -}}
+{{ $app := printf "cassandra-%s" .name -}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .name | quote }}
+  labels:
+    app: {{ $app }}
+spec:
+  serviceName: {{ .name | quote }}
+  replicas: {{ .replicas | default 1 }}
+  selector:
+    matchLabels:
+      app: {{ $app }}
+  template:
+    metadata:
+      labels:
+        app: {{ $app }}
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+      - name: cassandra
+        image: cassandra:3.11
+        ports:
+        - containerPort: 7000
+          name: intra-node
+        - containerPort: 7001
+          name: tls-intra-node
+        - containerPort: 7199
+          name: jmx
+        - containerPort: 9042
+          name: cql
+        resources:
+          limits:
+            cpu: "500m"
+            memory: 1Gi
+          requests:
+            cpu: "500m"
+            memory: 1Gi
+        securityContext:
+          capabilities:
+            add:
+              - IPC_LOCK
+        lifecycle:
+          preStop:
+            exec:
+              command: 
+              - /bin/sh
+              - -c
+              - nodetool drain
+        env:
+          - name: MAX_HEAP_SIZE
+            value: 512M
+          - name: HEAP_NEWSIZE
+            value: 100M
+          - name: CASSANDRA_SEEDS
+            value: {{ printf "%s-0.%s.default.svc.cluster.local " .name .name | quote }}
+          - name: CASSANDRA_CLUSTER_NAME
+            value: {{ .name | quote }}
+          - name: CASSANDRA_DC
+            value: {{ printf "DC1-%s" .name | quote }}
+          - name: CASSANDRA_RACK
+            value: {{ printf "Rack1-%s" .name | quote }}
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+        # These volume mounts are persistent. They are like inline claims,
+        # but not exactly because the names need to match exactly one of
+        # the stateful pod volumes.
+        volumeMounts:
+        - name: cassandra-data
+          mountPath: /cassandra_data
+  volumeClaimTemplates:
+  - metadata:
+      name: cassandra-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: fast
+      resources:
+        requests:
+          storage: 1Gi
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: fast
+provisioner: docker.io/hostpath
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: {{ $app }}
+  name: {{ .name }}
+spec:
+  clusterIP: None
+  ports:
+  - port: 9042
+  selector:
+    app: {{ $app }}
+{{- end }}
+{{- end }}

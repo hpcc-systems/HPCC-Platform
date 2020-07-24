@@ -132,6 +132,12 @@ bundles: []
 dali:
 - name: mydali
 
+## To set up a local Cassandra database within the cluster (typically, this would just be for testing)
+## you can specify a component of type "cassandra"
+#cassandra:
+#- name: cass
+#  disabled: false
+
 eclagent:
 - name: hthor
   ## replicas indicates how many eclagent pods should be started

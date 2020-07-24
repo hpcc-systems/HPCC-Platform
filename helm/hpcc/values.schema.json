@@ -87,6 +87,11 @@
       "type": "array",
       "items": { "$ref": "#/definitions/dali" }
     },
+    "cassandra": {
+      "description": "cassandra database",
+      "type": "array",
+      "items": { "$ref": "#/definitions/cassandra" }
+    },
     "eclccserver": {
       "description": "eclccserver process",
       "type": "array",
@@ -419,6 +424,20 @@
         },
         "logging": {
           "$ref": "#/definitions/logging"
+        }
+      }
+    },
+    "cassandra": {
+      "type": "object",
+      "required": [ "name" ],
+      "additionalProperties": { "type": ["integer", "string", "boolean"] },
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the cassandra process"
+        },
+        "image": {
+          "$ref": "#/definitions/image"
         }
       }
     },

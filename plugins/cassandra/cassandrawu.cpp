@@ -3225,38 +3225,51 @@ public:
     {
         StringArray options;
         options.append("write_bytes_high_water_mark=1000000");  // Set the default HWM - workunits get big. This can be overridden by supplied options
-        Owned<IPTreeIterator> it = props->getElements("Option");
-        ForEach(*it)
+#ifdef _CONTAINERIZED
+        IPropertyTree* optTree = props->queryPropTree("options");
+        if (optTree)
         {
-            IPTree &item = it->query();
-            const char *opt = item.queryProp("@name");
-            const char *val = item.queryProp("@value");
-            if (opt && val)
+            Owned<IAttributeIterator> it = optTree->getAttributes(false);
+            ForEach(*it)
             {
-                if (strieq(opt, "randomWuidSuffix"))
-                    randomizeSuffix = atoi(val);
-                else if (strieq(opt, "traceLevel"))
-                    traceLevel = atoi(val);
-                else if (strieq(opt, "partitions"))
+                const char *opt = it->queryName()+1;
+                const char *val = it->queryValue();
+#else
+        {
+            Owned<IPTreeIterator> it = props->getElements("Option");
+            ForEach(*it)
+            {
+                IPTree &item = it->query();
+                const char *opt = item.queryProp("@name");
+                const char *val = item.queryProp("@value");
+#endif
+                if (opt && val)
                 {
-                    partitions = atoi(val);   // Note this value is only used when creating a new repo
-                    if (partitions < MIN_PARTITIONS)
-                        partitions = MIN_PARTITIONS;
-                    else if (partitions > MAX_PARTITIONS)
-                        partitions = MAX_PARTITIONS;
-                }
-                else if (strieq(opt, "prefixSize"))
-                {
-                    prefixSize = atoi(val);   // Note this value is only used when creating a new repo
-                    if (prefixSize < MIN_PREFIX_SIZE)
-                        prefixSize = MIN_PREFIX_SIZE;
-                    else if (prefixSize > MAX_PREFIX_SIZE)
-                        prefixSize = MAX_PREFIX_SIZE;
-                }
-                else
-                {
-                    VStringBuffer optstr("%s=%s", opt, val);
-                    options.append(optstr);
+                    if (strieq(opt, "randomWuidSuffix"))
+                        randomizeSuffix = atoi(val);
+                    else if (strieq(opt, "traceLevel"))
+                        traceLevel = atoi(val);
+                    else if (strieq(opt, "partitions"))
+                    {
+                        partitions = atoi(val);   // Note this value is only used when creating a new repo
+                        if (partitions < MIN_PARTITIONS)
+                            partitions = MIN_PARTITIONS;
+                        else if (partitions > MAX_PARTITIONS)
+                            partitions = MAX_PARTITIONS;
+                    }
+                    else if (strieq(opt, "prefixSize"))
+                    {
+                        prefixSize = atoi(val);   // Note this value is only used when creating a new repo
+                        if (prefixSize < MIN_PREFIX_SIZE)
+                            prefixSize = MIN_PREFIX_SIZE;
+                        else if (prefixSize > MAX_PREFIX_SIZE)
+                            prefixSize = MAX_PREFIX_SIZE;
+                    }
+                    else
+                    {
+                        VStringBuffer optstr("%s=%s", opt, val);
+                        options.append(optstr);
+                    }
                 }
             }
         }

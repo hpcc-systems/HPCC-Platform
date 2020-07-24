@@ -6308,8 +6308,11 @@ extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory()
         {
             const char *forceEnv = getenv("FORCE_DALI_WORKUNITS");
             bool forceDali = forceEnv && !strieq(forceEnv, "off") && !strieq(forceEnv, "0");
-            Owned<IRemoteConnection> env = querySDS().connect("/Environment", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
             IPropertyTree *pluginInfo = NULL;
+#ifdef _CONTAINERIZED
+            pluginInfo = queryComponentConfig().queryPropTree("WorkunitServer");  // MORE - case??
+#else
+            Owned<IRemoteConnection> env = querySDS().connect("/Environment", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
             if (env)
             {
                 SocketEndpoint targetDali = queryCoven().queryGroup().queryNode(0).endpoint();
@@ -6326,6 +6329,7 @@ extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory()
                         pluginInfo = daliInfo->queryPropTree("Plugin[@type='WorkunitServer']");  // Compatibility with early betas of 6.0 ...
                 }
             }
+#endif
             if (pluginInfo && !forceDali)
                 globalFactory.setown( (IWorkUnitFactory *) loadPlugin(pluginInfo));
             else

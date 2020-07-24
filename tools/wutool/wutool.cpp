@@ -298,6 +298,26 @@ bool looksLikeWuid(const char * arg)
     return false;
 }
 
+static void setProp(IPTree *props, const char *name, const char *value)
+{
+    if (!value)
+        return;
+#ifdef _CONTAINERIZED
+    VStringBuffer xpath("options/@%s", name);
+    props->setProp(xpath, value);
+#else
+    VStringBuffer xpath("Option[@name='%s']", name);
+    IPropertyTree *opt = props->queryPropTree(xpath);
+    if (!opt)
+    {
+        opt = props->addPropTree("Option");
+        opt->setProp("@name", name);
+    }
+    opt->setProp("@value", value);
+
+#endif
+}
+
 int main(int argc, const char *argv[])
 {
     int ret = 0;
@@ -347,40 +367,32 @@ int main(int argc, const char *argv[])
             // Conversely, if they explicitly specify "none" then don't use cassandra even if there is one specified in the dali environment...
             if (!strieq(cassandraServer, "none"))
             {
+#ifdef _CONTAINERIZED
+                Owned<IPTree> pluginInfo = createPTreeFromYAMLString(R"!!(
+                  pluginName: cassandraembed
+                  entrypoint: createWorkUnitFactory
+                  options:
+                    server: .
+                    randomWuidSuffix: 4
+                    traceLevel: 0
+                    keyspace: hpcc
+)!!");
+#else
                 Owned<IPTree> pluginInfo = createPTreeFromXMLString(
                       "<WorkUnitsServer pluginName='cassandraembed' entrypoint='createWorkUnitFactory'>"
                         "<Option name='server' value='.'/>"
                         "<Option name='randomWuidSuffix' value='4'/>"
                         "<Option name='traceLevel' value='0'/>"
-                        "<Option name='partitions' value='0'/>"
-                        "<Option name='prefixSize' value='0'/>"
                         "<Option name='keyspace' value='hpcc'/>"
-                        "<Option name='user' value=''/>"
-                        "<Option name='password' value=''/>"
                       "</WorkUnitsServer>");
-                pluginInfo->setProp("Option[@name='server']/@value", cassandraServer.str());
-                pluginInfo->setPropInt("Option[@name='traceLevel']/@value", globals->getPropInt("tracelevel", 0));
-                StringBuffer keySpace,user,password;
-                if (globals->getProp("CASSANDRA_KEYSPACE", keySpace))
-                    pluginInfo->setProp("Option[@name='keyspace']/@value", keySpace.str());
-                if (globals->getProp("CASSANDRA_USER", user))
-                    pluginInfo->setProp("Option[@name='user']/@value", user.str());
-                else
-                    pluginInfo->removeProp("Option[@name='user']");
-                if (globals->getProp("CASSANDRA_PASSWORD", password))
-                    pluginInfo->setProp("Option[@name='password']/@value", password.str());
-                else
-                    pluginInfo->removeProp("Option[@name='password']");
-                int partitions = globals->getPropInt("CASSANDRA_PARTITIONS", -1);
-                if (partitions != -1)
-                    pluginInfo->setPropInt("Option[@name='partitions']/@value", partitions);
-                else
-                    pluginInfo->removeProp("Option[@name='partitions']");
-                int prefixSize = globals->getPropInt("CASSANDRA_PREFIXSIZE", -1);
-                if (prefixSize != -1)
-                    pluginInfo->setPropInt("Option[@name='prefixSize']/@value", prefixSize);
-                else
-                    pluginInfo->removeProp("Option[@name='prefixSize']");
+#endif
+                setProp(pluginInfo, "server", cassandraServer.str());
+                setProp(pluginInfo, "traceLevel", globals->queryProp("tracelevel"));
+                setProp(pluginInfo, "keyspace",  globals->queryProp("CASSANDRA_KEYSPACE"));
+                setProp(pluginInfo, "user",  globals->queryProp("CASSANDRA_USER"));
+                setProp(pluginInfo, "password",  globals->queryProp("CASSANDRA_PASSWORD"));
+                setProp(pluginInfo, "partitions",  globals->queryProp("CASSANDRA_PARTITIONS"));
+                setProp(pluginInfo, "prefixSize",  globals->queryProp("CASSANDRA_PREFIXSIZE"));
                 setWorkUnitFactory((IWorkUnitFactory *) loadPlugin(pluginInfo));
                 serverSpecified = true;
             }
