@@ -1940,6 +1940,7 @@ IHpccProtocolListener *createRoxieWorkUnitListener(unsigned poolSize, bool suspe
 {
     if (traceLevel)
         DBGLOG("Creating Roxie workunit listener, pool size %d%s", poolSize, suspended?" SUSPENDED":"");
+    adhocRoxie = true;
     return new RoxieWorkUnitListener(poolSize, suspended);
 }
 

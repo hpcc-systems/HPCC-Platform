@@ -2371,6 +2371,8 @@ private:
             }
             else if (stricmp(queryName, "control:lockDali")==0)
             {
+                if (adhocRoxie)
+                    throw MakeStringException(ROXIE_CONTROL_MSG_ERROR, "Cannot lock dali when listening for workunits");
                 topology->setPropBool("@lockDali", true);
                 if (daliHelper)
                     daliHelper->disconnect();

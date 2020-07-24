@@ -172,6 +172,7 @@ unsigned maxGraphLoopIterations;
 bool probeAllRows;
 bool steppingEnabled = true;
 bool simpleLocalKeyedJoins = true;
+bool adhocRoxie = false;
 
 unsigned __int64 minFreeDiskSpace = 1024 * 0x100000;  // default to 1 GB
 unsigned socketCheckInterval = 5000;
