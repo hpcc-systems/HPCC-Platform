@@ -9193,6 +9193,18 @@ bool CHqlMergedScope::isPlugin() const
     return false;
 }
 
+bool CHqlMergedScope::isEquivalentScope(const IHqlScope & other) const
+{
+    if (this == &other)
+        return true;
+
+    ForEachItemIn(i, mergedScopes)
+    {
+        if (other.isEquivalentScope(mergedScopes.item(i)))
+            return true;
+    }
+    return false;
+}
 
 
 

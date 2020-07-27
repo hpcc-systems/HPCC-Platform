@@ -1092,6 +1092,7 @@ interface IHqlScope : public IInterface
     virtual ISourcePath * querySourcePath() const = 0;
     virtual bool hasBaseClass(IHqlExpression * searchBase) = 0;
     virtual bool allBasesFullyBound() const = 0;
+    virtual bool isEquivalentScope(const IHqlScope & other) const = 0;
 
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols) = 0;
     virtual IHqlScope * queryConcreteScope() = 0;
