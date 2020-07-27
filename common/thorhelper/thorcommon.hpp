@@ -96,13 +96,14 @@ enum RowReaderWriterFlags
     rw_buffered       = 0x80,
     rw_lzw            = 0x100, // if rw_compress
     rw_lz4            = 0x200, // if rw_compress
-    rw_sparse         = 0x400  // NB: mutually exclusive with rw_grouped
+    rw_sparse         = 0x400, // NB: mutually exclusive with rw_grouped
+    rw_lz4hc          = 0x800  // if rw_compress
 };
 #define DEFAULT_RWFLAGS (rw_buffered|rw_autoflush|rw_compressblkcrc)
 inline bool TestRwFlag(unsigned flags, RowReaderWriterFlags flag) { return 0 != (flags & flag); }
 
-#define COMP_MASK (rw_compress|rw_compressblkcrc|rw_fastlz|rw_lzw|rw_lz4)
-#define COMP_TYPE_MASK (rw_fastlz|rw_lzw|rw_lz4)
+#define COMP_MASK (rw_compress|rw_compressblkcrc|rw_fastlz|rw_lzw|rw_lz4|rw_lz4hc)
+#define COMP_TYPE_MASK (rw_fastlz|rw_lzw|rw_lz4|rw_lz4hc)
 inline void setCompFlag(const char *compStr, unsigned &flags)
 {
     flags &= ~COMP_TYPE_MASK;
@@ -112,7 +113,9 @@ inline void setCompFlag(const char *compStr, unsigned &flags)
             flags |= rw_fastlz;
         else if (0 == stricmp("LZW", compStr))
             flags |= rw_lzw;
-        else // not specifically FLZ or LZW so set to default LZ4
+        else if (0 == stricmp("LZ4HC", compStr))
+            flags |= rw_lz4hc;
+        else // not specifically FLZ, LZW, or FL4HC so set to default LZ4
             flags |= rw_lz4;
     }
     else // default is LZ4
@@ -126,6 +129,9 @@ inline unsigned getCompMethod(unsigned flags)
         compMethod = COMPRESS_METHOD_LZW;
     else if (TestRwFlag(flags, rw_fastlz))
         compMethod = COMPRESS_METHOD_FASTLZ;
+    else if (TestRwFlag(flags, rw_lz4hc))
+        compMethod = COMPRESS_METHOD_LZ4HC;
+
     return compMethod;
 }
 
@@ -138,6 +144,8 @@ inline unsigned getCompMethod(const char *compStr)
             compMethod = COMPRESS_METHOD_FASTLZ;
         else if (0 == stricmp("LZW", compStr))
             compMethod = COMPRESS_METHOD_LZW;
+        else if (0 == stricmp("LZ4HC", compStr))
+            compMethod = COMPRESS_METHOD_LZ4HC;
     }
     return compMethod;
 }

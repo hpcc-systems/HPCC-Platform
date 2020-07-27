@@ -19,6 +19,7 @@
 #include "jfcmp.hpp"
 #include "jlz4.hpp"
 #include "lz4.h"
+#include "lz4hc.h"
 
 /* Format:
     size32_t totalexpsize;
@@ -28,7 +29,9 @@
 
 class jlib_decl CLZ4Compressor : public CFcmpCompressor
 {
-    virtual void setinmax()
+    bool hc;
+protected:
+    virtual void setinmax() override
     {
         inmax = blksz-outlen-sizeof(size32_t);
         if (inmax<256)
@@ -45,7 +48,7 @@ class jlib_decl CLZ4Compressor : public CFcmpCompressor
         }
     }
 
-    virtual void flushcommitted()
+    virtual void flushcommitted() override
     {
         // only does non trailing
         if (trailing)
@@ -75,7 +78,10 @@ class jlib_decl CLZ4Compressor : public CFcmpCompressor
         size32_t *cmpsize = (size32_t *)(outbuf+outlen);
         byte *out = (byte *)(cmpsize+1);
 
-        *cmpsize = LZ4_compress_default((const char *)inbuf, (char *)out, toflush, LZ4_COMPRESSBOUND(toflush));
+        if (hc)
+            *cmpsize = LZ4_compress_HC((const char *)inbuf, (char *)out, toflush, LZ4_COMPRESSBOUND(toflush), LZ4HC_CLEVEL_DEFAULT);
+        else
+            *cmpsize = LZ4_compress_default((const char *)inbuf, (char *)out, toflush, LZ4_COMPRESSBOUND(toflush));
         if (*cmpsize && *cmpsize<toflush)
         {
             *(size32_t *)outbuf += toflush;
@@ -92,7 +98,10 @@ class jlib_decl CLZ4Compressor : public CFcmpCompressor
         }
         trailing = true;
     }
-
+public:
+    CLZ4Compressor(bool _hc) : hc(_hc)
+    {        
+    }
 };
 
 
@@ -229,9 +238,9 @@ void LZ4DecompressToBuffer(MemoryAttr & out, MemoryBuffer & in)
 }
 
 
-ICompressor *createLZ4Compressor()
+ICompressor *createLZ4Compressor(bool hc)
 {
-    return new CLZ4Compressor;
+    return new CLZ4Compressor(hc);
 }
 
 IExpander *createLZ4Expander()

@@ -27,6 +27,7 @@ project( lz4 )
 
 set ( SRCS
         lz4/lib/lz4.c
+        lz4/lib/lz4hc.c
 )
 
 include_directories (

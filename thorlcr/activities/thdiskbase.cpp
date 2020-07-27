@@ -242,6 +242,8 @@ void CWriteMasterBase::publish()
                 compMethod = COMPRESS_METHOD_FASTLZ;
             else if (getOptBool(THOROPT_COMP_FORCELZ4, false))
                 compMethod = COMPRESS_METHOD_LZ4;
+            else if (getOptBool(THOROPT_COMP_FORCELZ4HC, false))
+                compMethod = COMPRESS_METHOD_LZ4HC;
             bool blockCompressed;
             bool compressed = fileDesc->isCompressed(&blockCompressed);
             for (unsigned clusterIdx=0; clusterIdx<fileDesc->numClusters(); clusterIdx++)
