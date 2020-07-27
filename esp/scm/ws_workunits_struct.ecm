@@ -856,3 +856,9 @@ ESPStruct [nil_remove] WUEclDefinitionActionResult
     string QueryID;
     string Result;
 };
+
+ESPStruct WUEclPluginsInFolder
+{
+    string Path;
+    ESParray<string, Plugin> Plugins;
+};
