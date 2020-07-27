@@ -26,6 +26,14 @@
 
 namespace cassandraembed {
 
+enum class OptionalCassBatchType
+{
+    logged = CASS_BATCH_TYPE_LOGGED,
+    unlogged = CASS_BATCH_TYPE_UNLOGGED,
+    counter = CASS_BATCH_TYPE_COUNTER,
+    nobatch = 255
+};
+
 __declspec(noreturn) extern void UNSUPPORTED(const char *feature) __attribute__((noreturn));
 __declspec(noreturn) extern void failx(const char *msg, ...) __attribute__((format(printf, 1, 2), noreturn));
 __declspec(noreturn) extern void fail(const char *msg) __attribute__((noreturn));
@@ -120,7 +128,7 @@ public:
     void connect();
     void disconnect();
     CassandraPrepared *prepareStatement(const char *query, bool trace) const;
-    CassandraStatementInfo *createStatementInfo(const char *script, unsigned numParams, CassBatchType batchMode, unsigned pageSize) const;
+    CassandraStatementInfo *createStatementInfo(const char *script, unsigned numParams, OptionalCassBatchType batchMode, unsigned pageSize) const;
     void executeAsync(CIArrayOf<CassandraStatement> &batch, const char *what) const;
 
 private:
@@ -432,7 +440,7 @@ private:
 class CASSANDRAEMBED_API CassandraStatementInfo : public CInterface
 {
 public:
-    CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize, Semaphore *_semaphore, unsigned _maxRetries);
+    CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, OptionalCassBatchType _batchMode, unsigned pageSize, Semaphore *_semaphore, unsigned _maxRetries);
     ~CassandraStatementInfo();
     void stop();
     bool next();
@@ -469,7 +477,7 @@ protected:
     Semaphore *semaphore;
     unsigned maxRetries;
     bool inBatch;
-    CassBatchType batchMode;
+    OptionalCassBatchType batchMode;
 };
 
 extern CASSANDRAEMBED_API bool getBooleanResult(const RtlFieldInfo *field, const CassValue *value);
