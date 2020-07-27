@@ -208,6 +208,8 @@ define([
                     }
                     context.validateButton.set("disabled", false);
                     return response;
+                } else {
+                    context.validateButton.set("disabled", false);
                 }
             }, function (err) {
                 context.showErrors(err);
