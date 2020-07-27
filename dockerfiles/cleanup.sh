@@ -22,8 +22,13 @@
 [[ "$1" == "-all" ]] && docker rm $(docker ps -q -f 'status=exited')
 docker rmi $(docker images -q -f "dangling=true")
 
-HEAD=$(git rev-parse --short HEAD)
-PREV=$(git describe --abbrev=0 --tags)
+if [[ "$1" == "-all" ]] ; then
+  HEAD=NOSUCHTHING
+  PREV=NOSUCHTHING
+else
+  HEAD=$(git rev-parse --short HEAD)
+  PREV=$(git describe --abbrev=0 --tags)
+fi
 for f in `docker images  --format "{{.Repository}}:{{.Tag}}" | grep hpccsystems/ | grep -v $HEAD | grep -v $PREV` ; do
   docker rmi $f
 done

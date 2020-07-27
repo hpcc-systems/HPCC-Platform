@@ -62,6 +62,7 @@ pushd $DIR 2>&1 > /dev/null
 
 . ../cmake_modules/parse_cmake.sh
 parse_cmake
+set_tag
 
 if [[ "$HPCC_MATURITY" = "release" ]] && [[ "$INPUT_LATEST" = "1" ]] ; then
   LATEST=1
@@ -70,7 +71,7 @@ fi
 build_image() {
   local name=$1
   local label=$2
-  [[ -z ${label} ]] && label=$BUILD_LABEL
+  [[ -z ${label} ]] && label=$HPCC_SHORT_TAG
 
   if ! docker pull hpccsystems/${name}:${label} ; then
     docker image build -t hpccsystems/${name}:${label} \
