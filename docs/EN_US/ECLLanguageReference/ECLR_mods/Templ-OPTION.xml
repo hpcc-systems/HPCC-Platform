@@ -1478,6 +1478,66 @@
         </tgroup>
       </informaltable></para>
 
+    <para><emphasis role="bold">The following </emphasis><emphasis
+    role="bold">options</emphasis><emphasis role="bold"> are for the workunit
+    analyzer:</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="3">
+        <colspec colwidth="178.45pt" />
+
+        <colspec colwidth="78.60pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>analyzeWorkunit</emphasis></entry>
+
+            <entry>Default: true</entry>
+
+            <entry>If set to FALSE, disables analysis of the workunit</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>analyzer_minInterestingTime</emphasis></entry>
+
+            <entry>Default: 1000</entry>
+
+            <entry>Analyze activities that exceed this minimum time to execute
+            (milliseconds)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>analyzer_minInterestingCost </emphasis></entry>
+
+            <entry>Default: 30000</entry>
+
+            <entry>Report issues where the time penalty exceeds this value
+            (milliseconds)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>analyzer_skewThreshold </emphasis></entry>
+
+            <entry>Default: 20</entry>
+
+            <entry>Report skew related issues that exceed this
+            threshold</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>analyzer_minRowsPerNode </emphasis></entry>
+
+            <entry>Default: 1000</entry>
+
+            <entry>Ignore activities that have this average number of rows per
+            node</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
     <para>Example:</para>
 
     <programlisting>  #OPTION('traceRowXml', TRUE);
