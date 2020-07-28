@@ -2036,17 +2036,30 @@ void CEspHttpServer::logoutSession(EspAuthRequest& authReq, unsigned sessionID, 
 EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& authReq, bool unlock, const char* msg)
 {
     ISecUser *user = authReq.ctx->queryUser();
-    if (user && user->getAuthenticateStatus() == AS_PASSWORD_VALID_BUT_EXPIRED)
+    if (user)
     {
-        ESPLOG(LogMin, "ESP password expired for %s. Asking update ...", authReq.ctx->queryUserId());
-        if (sessionAuth) //For session auth, store the userid to cookie for the updatepasswordinput form.
-            addCookie(SESSION_ID_TEMP_COOKIE, authReq.ctx->queryUserId(), 0, true);
-        m_response->redirect(*m_request.get(), "/esp/updatepasswordinput");
-        return authSucceeded;
+        switch (user->getAuthenticateStatus())
+        {
+        case AS_PASSWORD_VALID_BUT_EXPIRED :
+            ESPLOG(LogMin, "ESP password expired for %s. Asking update ...", authReq.ctx->queryUserId());
+            if (sessionAuth) //For session auth, store the userid to cookie for the updatepasswordinput form.
+                addCookie(SESSION_ID_TEMP_COOKIE, authReq.ctx->queryUserId(), 0, true);
+            m_response->redirect(*m_request.get(), "/esp/updatepasswordinput");
+            return authSucceeded;
+        case AS_PASSWORD_EXPIRED :
+            ESPLOG(LogMin, "ESP password expired for %s", authReq.ctx->queryUserId());
+            break;
+        case AS_ACCOUNT_DISABLED :
+            ESPLOG(LogMin, "Account disabled for %s", authReq.ctx->queryUserId());
+            break;
+        case AS_ACCOUNT_EXPIRED :
+            ESPLOG(LogMin, "Account expired for %s", authReq.ctx->queryUserId());
+            break;
+        case AS_ACCOUNT_LOCKED :
+            ESPLOG(LogMin, "Account locked for %s", authReq.ctx->queryUserId());
+            break;
+        }
     }
-
-    if (user && (user->getAuthenticateStatus() == AS_PASSWORD_EXPIRED))
-        ESPLOG(LogMin, "ESP password expired for %s", authReq.ctx->queryUserId());
 
     if (unlock)
     {

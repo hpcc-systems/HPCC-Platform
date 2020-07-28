@@ -753,14 +753,28 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
     bool authenticated = m_secmgr->authorize(*user, rlist, ctx->querySecureContext());
     if(!authenticated)
     {
-        const char *desc = nullptr;
-        if (user->getAuthenticateStatus() == AS_PASSWORD_EXPIRED || user->getAuthenticateStatus() == AS_PASSWORD_VALID_BUT_EXPIRED)
-            desc = "ESP password is expired";
-        else
-            desc = "Access Denied: User or password invalid";
-        ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", desc);
+        VStringBuffer err("User %s : ", user->getName());
+        switch (user->getAuthenticateStatus())
+        {
+        case AS_PASSWORD_EXPIRED :
+        case AS_PASSWORD_VALID_BUT_EXPIRED :
+            err.append("Password expired");
+            break;
+        case AS_ACCOUNT_DISABLED :
+            err.append("Account disabled");
+            break;
+        case AS_ACCOUNT_EXPIRED :
+            err.append("Account expired");
+            break;
+        case AS_ACCOUNT_LOCKED :
+            err.append("Account locked");
+            break;
+        default:
+            err.append("Access Denied: User or password invalid");
+        }
+        ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", err.str());
         ctx->setAuthError(EspAuthErrorNotAuthenticated);
-        ctx->setRespMsg(desc);
+        ctx->setRespMsg(err.str());
         return false;
     }
     bool authorized = true;
