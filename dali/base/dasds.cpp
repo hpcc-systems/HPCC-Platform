@@ -1756,7 +1756,11 @@ void buildNotifyData(MemoryBuffer &notifyData, PDState state, CPTStack *stack, M
                 if (0 == pos) // common case
                     notifyData.append(3, "[1]");
                 else
-                    notifyData.append('[').append(pos+1).append(']');
+                {
+                    char temp[12];
+                    unsigned written = numtostr(temp, pos+1);
+                    notifyData.append('[').append(written, temp).append(']');
+                }
                 parent = &child;
                 s++;
                 if (s<n)
