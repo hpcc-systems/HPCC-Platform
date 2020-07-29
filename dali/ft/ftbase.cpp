@@ -488,6 +488,8 @@ bool sameEncoding(const FileFormat & src, const FileFormat & tgt)
         return true;
     switch (src.type)
     {
+    case FFTutf8:
+        return (tgt.type == FFTutf8n);
     case FFTutf8n:
         return (tgt.type == FFTutf8);
     case FFTutf16be:

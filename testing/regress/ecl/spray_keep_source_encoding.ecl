@@ -15,6 +15,7 @@ prefix := setup.Files(false, false).QueryFilePrefix;
 dropzonePath := FileServices.GetDefaultDropZone() : STORED('dropzonePath');
 
 unsigned VERBOSE := 0;
+unsigned CLEANUP := 1;
 
 rec := RECORD
  DATA2 utf16;
@@ -58,11 +59,20 @@ END;
 DestFile1 := prefix + 'Data-utf-8.csv';
 ds1 := DATASET(DestFile1, rec2, csv);
 
+DestFile1R := prefix + 'Data-utf-8-R.csv';
+ds1R := DATASET(DestFile1R, rec2, csv);
+
 DestFile2 := prefix + 'Data-utf-16le.csv';
 ds2 := DATASET(DestFile2, rec3, csv(TERMINATOR(x'0d0a'),SEPARATOR(x'00')));
 
 DestFile3 := prefix + 'Data-utf-16le3.csv';
 ds3 := DATASET(DestFile3, rec3, csv(TERMINATOR(x'0d0a'),SEPARATOR(x'00')));
+
+DestFile4 := prefix + 'Data-utf-8-4.csv';
+ds4 := DATASET(DestFile4, rec2, csv);
+
+DestFile4R := prefix + 'Data-utf-8-4-R.csv';
+ds4R := DATASET(DestFile4R, rec2, csv);
 
 SEQUENTIAL (
     #if (VERBOSE = 1)
@@ -85,12 +95,28 @@ SEQUENTIAL (
                         espServerIpPort := ESPportIP,
                         ALLOWOVERWRITE := true,
                         ENCODING := 'utf16le',
-                        KEEPSOURCEENCODING:=false);
+                        KEEPSOURCEENCODING:=false
+                        );
 
     output(FileServices.GetLogicalFileAttribute(DestFile1, 'format'), named('format1'));
     output(FileServices.GetLogicalFileAttribute(DestFile1, 'kind'), named('kind1'));
 	output(ds1, NAMED('Ds1'));
 
+	// Spray with force to convert target file to UTF-8 encoding with replication
+    FileServices.SprayVariable(OriginalTextFilesIp,
+                        SourceFile,
+                        destinationGroup := ClusterName,
+                        destinationLogicalName := DestFile1R,
+                        espServerIpPort := ESPportIP,
+                        ALLOWOVERWRITE := true,
+                        ENCODING := 'utf16le',
+                        KEEPSOURCEENCODING:=false,
+                        REPLICATE := true
+                        );
+                        
+    output(FileServices.GetLogicalFileAttribute(DestFile1R, 'format'), named('format1R'));
+    output(FileServices.GetLogicalFileAttribute(DestFile1R, 'kind'), named('kind1R'));
+	output(ds1R, NAMED('Ds1R'));
 
     // Spray with explicit keep original (UTF-16LE) encoding
     FileServices.SprayVariable(OriginalTextFilesIp,
@@ -106,7 +132,6 @@ SEQUENTIAL (
     output(FileServices.GetLogicalFileAttribute(DestFile2, 'kind'), named('kind2'));
 	output(ds2, NAMED('Ds2'));
 	
-	
     // Spray default keep original (UTF-16LE) encoding
     FileServices.SprayVariable(OriginalTextFilesIp,
                         SourceFile,
@@ -115,16 +140,32 @@ SEQUENTIAL (
                         espServerIpPort := ESPportIP,
                         ALLOWOVERWRITE := true,
                         ENCODING := 'utf16le'
-			);
+                       );
 
     output(FileServices.GetLogicalFileAttribute(DestFile3, 'format'), named('format3'));
     output(FileServices.GetLogicalFileAttribute(DestFile3, 'kind'), named('kind3'));
 	output(ds3, NAMED('Ds3'));
 
+	FileServices.DfuPlusExec('action=spray srcip=. srcfile='+SourceFile+' dstname='+DestFile4+' jobname=spray_keep_source server=. dstcluster=mythor format=csv encoding=utf16le overwrite=1 replicate=0 keepSourceEncoding=0'),
+    output(FileServices.GetLogicalFileAttribute(DestFile4, 'format'), named('format4'));
+    output(FileServices.GetLogicalFileAttribute(DestFile4, 'kind'), named('kind4'));
+	output(ds4, NAMED('Ds4'));
+
+	FileServices.DfuPlusExec('action=spray srcip=. srcfile='+SourceFile+' dstname='+DestFile4R+' jobname=spray_keep_source server=. dstcluster=mythor format=csv encoding=utf16le overwrite=1 replicate=1 keepSourceEncoding=0'),
+    output(FileServices.GetLogicalFileAttribute(DestFile4R, 'format'), named('format4R'));
+    output(FileServices.GetLogicalFileAttribute(DestFile4R, 'kind'), named('kind4R'));
+	output(ds4R, NAMED('Ds4R'));
+
+
+#if (CLEANUP = 1)
     // Clean-up
     FileServices.DeleteExternalFile('.', SourceFile),
 
     FileServices.DeleteLogicalFile(DestFile1),
+    FileServices.DeleteLogicalFile(DestFile1R),
     FileServices.DeleteLogicalFile(DestFile2),
     FileServices.DeleteLogicalFile(DestFile3),
+    FileServices.DeleteLogicalFile(DestFile4),
+    FileServices.DeleteLogicalFile(DestFile4R),
+#end
 );

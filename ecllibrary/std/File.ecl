@@ -474,7 +474,7 @@ EXPORT SprayVariable(varstring sourceIP, varstring sourcePath, integer4 sourceMa
  * @param expireDays    Number of days to auto-remove file. Default is -1, not expire.
  * @param dfuServerQueue Name of target DFU Server queue. Default is '' (empty) for the first DFU queue in the environment.
  * @param noSplit      Don't split a file part to multiple target parts. Default is FALSE.
- * @param keepSourceEncoding Prevent target file UTF8 encoding. Defaults to TRUE.
+ * @param keepSourceEncoding If disabled, variable imports will default to UTF8. Defaults to TRUE.
  * @return              The DFU workunit id for the job.
  */
 EXPORT varstring fSprayDelimited(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceCsvSeparate='\\,', varstring sourceCsvTerminate='\\n,\\r\\n', varstring sourceCsvQuote='\"', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, varstring sourceCsvEscape='', boolean failIfNoSourceFile=FALSE, boolean recordStructurePresent=FALSE, boolean quotedTerminator=TRUE, varstring encoding='ascii', integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=FALSE, boolean keepSourceEncoding=TRUE) :=

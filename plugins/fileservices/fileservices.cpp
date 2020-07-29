@@ -1057,6 +1057,8 @@ FILESERVICES_API char * FILESERVICES_CALL implementSprayXml(ICodeContext *ctx, c
 
     if (keepSourceEncoding)
         req->setKeepSourceEncoding(true);
+    else
+        req->setKeepSourceEncoding(false);
 
     Owned<IClientSprayResponse> result = server.SprayVariable(req);
 
@@ -1181,6 +1183,8 @@ FILESERVICES_API char * FILESERVICES_CALL implementSprayJson(ICodeContext *ctx, 
 
     if (keepSourceEncoding)
         req->setKeepSourceEncoding(true);
+    else
+        req->setKeepSourceEncoding(false);
 
     // Store username/psw
     if (!isEmptyString(username))

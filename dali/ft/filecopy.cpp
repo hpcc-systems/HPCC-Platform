@@ -104,6 +104,12 @@ bool TargetLocation::canPull()
     return queryOS(filename.queryIP()) != MachineOsSolaris;
 }
 
+bool isValidFileFormatType(FileFormatType type)
+{
+    return (type >= FFTunknown && type < FFTlast);
+}
+
+
 //----------------------------------------------------------------------------
 
 FilePartInfo::FilePartInfo(const RemoteFilename & _filename)
@@ -721,6 +727,7 @@ void FileSprayer::afterTransfer()
             if (idx+1 == partition.ordinality() || partition.item(idx+1).whichInput != curPartition.whichInput)
             {
                 FilePartInfo & curSource = sources.item(curPartition.whichInput);
+                LOG(MCdebugProgressDetail, job, "part index: %d, curSource.crc: 0x%x, partCRC.get(): 0x%x", idx, curSource.crc, partCRC.get());
                 if (curSource.crc != partCRC.get())
                 {
                     StringBuffer name;
@@ -971,6 +978,8 @@ bool FileSprayer::calcInputCRC()
                 cachedInputCRC = false;
             if (querySplitPrefix())
                 cachedInputCRC = false;
+            if (srcFormat.equals(FFTutf8) || srcFormat.equals(FFTutf8n) )
+                cachedInputCRC = false;
         }
     }
     return cachedInputCRC;
@@ -981,7 +990,7 @@ void FileSprayer::calculateOne2OnePartition()
     LOG(MCdebugProgressDetail, job, "Setting up one2One partition");
     if (sources.ordinality() != targets.ordinality())
         throwError(DFTERR_ReplicateNumPartsDiffer);
-    if (!srcFormat.equals(tgtFormat))
+    if (!srcFormat.equals(tgtFormat) && !sameEncoding(srcFormat, tgtFormat))
        throwError(DFTERR_ReplicateSameFormat);
 
     if (compressedInput && compressOutput && (strcmp(encryptKey.str(),decryptKey.str())==0))
@@ -1324,7 +1333,13 @@ void FileSprayer::checkFormats()
     }
 
     FileFormatType srcType = srcFormat.type;
+    if ( !isValidFileFormatType(srcType))
+        throwError3(DFTERR_UnknownFileFormatTypeX, srcType, srcType, "source");
+
     FileFormatType tgtType = tgtFormat.type;
+    if ( !isValidFileFormatType(tgtType))
+        throwError3(DFTERR_UnknownFileFormatTypeX, tgtType, tgtType, "target");
+
     StringBuffer enc;
     options->getProp("@encoding", enc);
 
@@ -1349,7 +1364,7 @@ void FileSprayer::checkFormats()
                 throwError2(DFTERR_BadSrcTgtCombination, FileFormatTypeStr[srcType], FileFormatTypeStr[tgtType]);
             break;
         case FFTcsv:
-                throwError2(DFTERR_BadSrcTgtCombination, FileFormatTypeStr[srcType], FileFormatTypeStr[tgtType]);
+            throwError2(DFTERR_BadSrcTgtCombination, FileFormatTypeStr[srcType], FileFormatTypeStr[tgtType]);
             break;
         case FFTutf: case FFTutf8: case FFTutf8n: case FFTutf16: case FFTutf16be: case FFTutf16le: case FFTutf32: case FFTutf32be: case FFTutf32le:
             switch (tgtFormat.type)
@@ -1490,6 +1505,7 @@ void FileSprayer::analyseFileHeaders(bool setcurheadersize)
     {
     case FFTutf:
     case FFTutf8:
+    case FFTutf8n:
         defaultFormat = FFTutf8n;
         break;
     case FFTutf16:
@@ -1539,7 +1555,7 @@ void FileSprayer::analyseFileHeaders(bool setcurheadersize)
             memset(header, 255, sizeof(header));            // fill so don't get clashes if file is very small!
             unsigned numRead = io->read(0, 4, header);
             unsigned headerSize = 0;
-            if ((memcmp(header, "\xEF\xBB\xBF", 3) == 0) && (srcFormat.type == FFTutf || srcFormat.type == FFTutf8))
+            if ((memcmp(header, "\xEF\xBB\xBF", 3) == 0) && (srcFormat.type == FFTutf || srcFormat.type == FFTutf8 || srcFormat.type == FFTutf8n))
             {
                 thisType = FFTutf8n;
                 headerSize = 3;
@@ -1649,6 +1665,7 @@ void FileSprayer::analyseFileHeaders(bool setcurheadersize)
 
     if (defaultFormat != FFTunknown)
         srcFormat.type = actualType;
+
     if (unknownTargetFormat)
     {
         tgtFormat.set(srcFormat);
@@ -2694,7 +2711,7 @@ void FileSprayer::setTarget(IDistributedFile * target)
             srcFormat.separate.set("\\,");
 
         tgtFormat.set(srcFormat);
-        if ((operation == dfu_import) && ( !options->getPropBool("@keepSourceEncoding")))
+        if ((operation == dfu_import) && (!options->getPropBool("@keepSourceEncoding", true)))
             tgtFormat.set(FFTutf8);
 
         if (!unknownSourceFormat)
@@ -2956,7 +2973,7 @@ void FileSprayer::spray()
 
 
     gatherFileSizes(true);
-    if (!replicate||copySource) // NB: When copySource=true, analyseFileHeaders mainly just sets srcFormat.type
+    if (!replicate||copySource||srcFormat.equals(FFTutf8)) // NB: When copySource=true, analyseFileHeaders mainly just sets srcFormat.type
         analyseFileHeaders(!copySource); // if pretending replicate don't want to remove headers
     afterGatherFileSizes();
 

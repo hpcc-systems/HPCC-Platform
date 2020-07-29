@@ -536,7 +536,7 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
     if (formatCode != DFUff_unknown)
         req->setSourceFormat(formatCode);
     else
-        throw MakeStringException(0, "Unknown source file format: '%s'", encoding);
+        throw makeStringExceptionV(0, "Unknown source file format: '%s'", encoding);
 
     req->setKeepSourceEncoding(globals->getPropBool("keepSourceEncoding", true));
 

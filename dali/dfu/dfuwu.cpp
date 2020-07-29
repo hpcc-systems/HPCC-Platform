@@ -2097,14 +2097,14 @@ public:
     }
 
     bool getKeepSourceEncoding() const
-	{
-		return queryRoot()->getPropBool("@keepSourceEncoding", true);
-	}
+    {
+        return queryRoot()->getPropBool("@keepSourceEncoding", true);
+    }
 
-	void setKeepSourceEncoding(bool val)
-	{
-		queryRoot()->setPropBool("@keepSourceEncoding",val);
-	}
+    void setKeepSourceEncoding(bool val)
+    {
+        queryRoot()->setPropBool("@keepSourceEncoding",val);
+    }
 };
 
 class CExceptionIterator: implements IExceptionIterator, public CInterface
