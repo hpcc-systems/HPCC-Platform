@@ -430,11 +430,54 @@ Once all of the required workflow items are executed, the workunit is marked as 
 workflow items that are waiting to be triggered by an event, the workunit will be passed to the scheduler,
 which will keep monitoring for events.
 
+Note that most items in the xml workflow begin in the state WFStateNull. This means that it is valid to execute them,
+but they haven't been executed yet. Typically, only a few items begin with the state WFStateReqd.
+
 There are various specialised types of workflow items - e.g. sequential, wait, independent, but they all follow the same basic approach of
 executing dependencies and then executing that particular item.
 
 Most of the interesting work in an ECL query is done within a graph.  The call ctx->executeGraph will either execute the graph locally
 (in the case of hthor and roxie), or add the workunit onto a queue (for Thor).  Whichever happens, control will pass to that engine.
+
+Specialised Workflow Items
+=================
+Each item mode/type can affect the dependency structure of the workflow:
+
+- Sequential/Ordered
+
+  The workflow structure for sequential and ordered is the same. An item is made to contain all of the actions in the statement. This is
+  achieved by making each action a dependency of this item. The dependencies, and consequently the actions, must be executed in order.
+  An extra item is always inserted before each dependency. This means that if other statements reference the same dependency, it will only
+  be performed once.
+
+- Persist
+
+  When the persist workflow service is used, two items are created. One item contains the graphs that perform the expression
+  defined in ECL. It also stores the wfid for the second item. The second item is used to determine whether the persist is up to date.
+
+- Condition (IF)
+
+  The IF function has either 2 or 3 arguments: the expression, the trueresult, and sometimes the falseresult. For each argument,
+  a workflow item is created. These items are stored as dependencies to the condition, in the order stated above.
+
+- Contingency (SUCCESS/FAILURE)
+
+  When a contingency clause is defined for an attribute, the attribute item stores the wfid of the contingency. If both success
+  and failure are used, then the item will store the wfid of each contingency. The contingency is composed of items, just like
+  the larger query.
+
+- Recovery
+
+  When a workflow item fails, if it has a recovery clause, the item will be re-executed. The clause contains actions defined by the
+  programmer to remedy the problem. This clause is stored differently to SUCCESS/FAILURE, in that the recovery clause is a
+  dependency of the failed item. In order to stop the recovery clause from being executed like the other dependencies, it is marked
+  with WFStateSkip.
+
+- Independent
+
+  This specifier is used when a programmer wants to common up code for the query. It prevents the same piece of code from
+  being executed twice in different contexts. To achieve this, an extra item is inserted between the expression and whichever
+  items depend on it. This means that although the attribute can be referenced several times, it will only be executed once.
 
 Graph Execution
 ===============
