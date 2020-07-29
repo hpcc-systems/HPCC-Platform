@@ -6954,9 +6954,9 @@ bool isIPAddress(const char *ip)
 }
 
 
-class CWhiteListHandler : public CSimpleInterfaceOf<IWhiteListHandler>, implements IWhiteListWriter
+class CAllowListHandler : public CSimpleInterfaceOf<IAllowListHandler>, implements IAllowListWriter
 {
-    typedef CSimpleInterfaceOf<IWhiteListHandler> PARENT;
+    typedef CSimpleInterfaceOf<IAllowListHandler> PARENT;
 
     struct PairHasher
     {
@@ -6969,11 +6969,11 @@ class CWhiteListHandler : public CSimpleInterfaceOf<IWhiteListHandler>, implemen
         }
     };
 
-    using WhiteListHT = std::unordered_set<std::pair<std::string, unsigned __int64>, PairHasher>;
-    WhiteListPopulateFunction populateFunc;
-    WhiteListFormatFunction roleFormatFunc;
-    std::unordered_set<std::pair<std::string, unsigned __int64>, PairHasher> whiteList;
-    std::unordered_set<std::string> IPOnlyWhiteList;
+    using AllowListHT = std::unordered_set<std::pair<std::string, unsigned __int64>, PairHasher>;
+    AllowListPopulateFunction populateFunc;
+    AllowListFormatFunction roleFormatFunc;
+    std::unordered_set<std::pair<std::string, unsigned __int64>, PairHasher> allowList;
+    std::unordered_set<std::string> IPOnlyAllowList;
     bool allowAnonRoles = false;
     mutable CriticalSection populatedCrit;
     mutable bool populated = false;
@@ -6985,17 +6985,17 @@ class CWhiteListHandler : public CSimpleInterfaceOf<IWhiteListHandler>, implemen
         if (populated)
             return;
         // NB: want to keep this method const, as used by isXX functions that are const, but if need to refresh it's effectively mutable
-        enabled = populateFunc(* const_cast<IWhiteListWriter *>((const IWhiteListWriter *)this));
+        enabled = populateFunc(* const_cast<IAllowListWriter *>((const IAllowListWriter *)this));
         populated = true;
     }
 public:
     IMPLEMENT_IINTERFACE_O_USING(PARENT);
 
-    CWhiteListHandler(WhiteListPopulateFunction _populateFunc, WhiteListFormatFunction _roleFormatFunc) : populateFunc(_populateFunc), roleFormatFunc(_roleFormatFunc)
+    CAllowListHandler(AllowListPopulateFunction _populateFunc, AllowListFormatFunction _roleFormatFunc) : populateFunc(_populateFunc), roleFormatFunc(_roleFormatFunc)
     {
     }
-// IWhiteListHandler impl.
-    virtual bool isWhiteListed(const char *ip, unsigned __int64 role, StringBuffer *responseText) const override
+// IAllowListHandler impl.
+    virtual bool isAllowListed(const char *ip, unsigned __int64 role, StringBuffer *responseText) const override
     {
         CriticalBlock block(populatedCrit);
         ensurePopulated();
@@ -7003,15 +7003,15 @@ public:
         {
             if (allowAnonRoles)
             {
-                const auto &it = IPOnlyWhiteList.find(ip);
-                if (it != IPOnlyWhiteList.end())
+                const auto &it = IPOnlyAllowList.find(ip);
+                if (it != IPOnlyAllowList.end())
                     return true;
             }
         }
         else
         {
-            const auto &it = whiteList.find({ip, role});
-            if (it != whiteList.end())
+            const auto &it = allowList.find({ip, role});
+            if (it != allowList.end())
                 return true;
         }
 
@@ -7034,22 +7034,22 @@ public:
                 else
                     responseText->append(role);
             }
-            responseText->append("] not whitelisted");
+            responseText->append("] not in allowlist");
         }
 
         if (enabled)
             return false;
         else
         {
-            OWARNLOG("WhiteListing is disabled, ignoring: %s", responseText->str());
+            OWARNLOG("Allowlist is disabled, ignoring: %s", responseText->str());
             return true;
         }
     }
-    virtual StringBuffer &getWhiteList(StringBuffer &out) const override
+    virtual StringBuffer &getAllowList(StringBuffer &out) const override
     {
         CriticalBlock block(populatedCrit);
         ensurePopulated();
-        for (const auto &it: whiteList)
+        for (const auto &it: allowList)
         {
             out.append(it.first.c_str()).append(", ");
             if (roleFormatFunc)
@@ -7058,7 +7058,7 @@ public:
                 out.append(it.second);
             out.newline();
         }
-        out.newline().appendf("Whitelisting is currently: %s", enabled ? "enabled" : "disabled").newline();
+        out.newline().appendf("Allowlist is currently: %s", enabled ? "enabled" : "disabled").newline();
         return out;
     }
     virtual void refresh() override
@@ -7068,17 +7068,17 @@ public:
          */
         CriticalBlock block(populatedCrit);
         enabled = true;
-        whiteList.clear();
-        IPOnlyWhiteList.clear();
+        allowList.clear();
+        IPOnlyAllowList.clear();
         populated = false;
     }
-// IWhiteListWriter impl.
+// IAllowListWriter impl.
     virtual void add(const char *ip, unsigned __int64 role) override
     {
         // NB: called via populateFunc, which is called whilst populatedCrit is locked.
-        whiteList.insert({ ip, role });
+        allowList.insert({ ip, role });
         if (allowAnonRoles)
-            IPOnlyWhiteList.insert(ip);
+            IPOnlyAllowList.insert(ip);
     }
     virtual void setAllowAnonRoles(bool tf) override
     {
@@ -7087,9 +7087,9 @@ public:
     }
 };
 
-IWhiteListHandler *createWhiteListHandler(WhiteListPopulateFunction populateFunc, WhiteListFormatFunction roleFormatFunc)
+IAllowListHandler *createAllowListHandler(AllowListPopulateFunction populateFunc, AllowListFormatFunction roleFormatFunc)
 {
-    return new CWhiteListHandler(populateFunc, roleFormatFunc);
+    return new CAllowListHandler(populateFunc, roleFormatFunc);
 }
 
 static_assert(sizeof(IpAddress) == 16, "check size of IpAddress");
