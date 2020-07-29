@@ -18,6 +18,7 @@
 #include "jliball.hpp"
 #include "jqueue.tpp"
 #include "jisem.hpp"
+#include "jsecrets.hpp"
 
 #include "rtlformat.hpp"
 
@@ -279,7 +280,7 @@ public:
         free(fullText);
     }
 
-    unsigned getUrls(UrlArray &array)
+    unsigned getUrls(UrlArray &array, const char *basic_credentials=nullptr)
     {
         if (fullText)
         {
@@ -289,7 +290,10 @@ public:
             char *url = strtok_r(copyFullText, "|", &saveptr);
             while (url != NULL)
             {
-                array.append(*new Url(url));
+                Owned<Url> item = new Url(url);
+                if (basic_credentials)
+                    item->userPasswordPair.set(basic_credentials);
+                array.append(*item.getClear());
                 url = strtok_r(NULL, "|", &saveptr);
             }
 
@@ -805,8 +809,11 @@ private:
     static CriticalSection secureContextCrit;
     static Owned<ISecureSocketContext> secureContext;
 
+    Owned<ISecureSocketContext> customSecureContext;
+
     CTimeMon timeLimitMon;
     bool complete, timeLimitExceeded;
+    bool customClientCert = false;
     IRoxieAbortMonitor * roxieAbortMonitor;
 
 protected:
@@ -863,15 +870,6 @@ public:
         {
             s.setown(helper->getXpathHintsXml());
             xpathHints.setown(createPTreeFromXMLString(s.get()));
-        }
-
-        StringAttr proxyAddress;
-        proxyAddress.set(s.setown(helper->getProxyAddress()));
-        if (!proxyAddress.isEmpty())
-        {
-            UrlListParser proxyUrlListParser(proxyAddress);
-            if (0 == proxyUrlListParser.getUrls(proxyUrlArray))
-                throw MakeStringException(0, "SOAPCALL PROXYADDRESS specified no URLs");
         }
 
         if (wscType == STsoap)
@@ -941,45 +939,99 @@ public:
         else
             rowTransformer = NULL;
 
+        StringBuffer proxyAddress;
+        proxyAddress.set(s.setown(helper->getProxyAddress()));
+
         OwnedRoxieString hosts(helper->getHosts());
-        UrlListParser urlListParser(hosts);
-        if ((numUrls = urlListParser.getUrls(urlArray)) > 0)
+        if (isEmptyString(hosts))
+            throw MakeStringException(0, "%sCALL specified no URLs",wscType == STsoap ? "SOAP" : "HTTP");
+        if (0==strncmp(hosts, "secret:", 7))
         {
-            if (wscMode == SCrow)
+            const char *finger = hosts.get()+7;
+            if (isEmptyString(finger))
+                throw MakeStringException(0, "%sCALL HTTP-CONNECT SECRET specified with no name", wscType == STsoap ? "SOAP" : "HTTP");
+            if (!proxyAddress.isEmpty())
+                throw MakeStringException(0, "%sCALL PROXYADDRESS can't be used with HTTP-CONNECT secrets", wscType == STsoap ? "SOAP" : "HTTP");
+            StringAttr vaultId;
+            const char *thumb = strchr(finger, ':');
+            if (thumb)
             {
-                numRowThreads = 1;
-
-                numUrlThreads = helper->numParallelThreads();
-                if (numUrlThreads == 0)
-                    numUrlThreads = 1;
-                else if (numUrlThreads > MAXWSCTHREADS)
-                    numUrlThreads = MAXWSCTHREADS;
-
-                numRecordsPerBatch = 1;
+                vaultId.set(finger, thumb-finger);
+                finger = thumb + 1;
             }
-            else
+            StringBuffer secretName("http-connect-");
+            secretName.append(finger);
+            Owned<IPropertyTree> secret = (vaultId.isEmpty()) ? getSecret("ecl", secretName) : getVaultSecret("ecl", vaultId, secretName, nullptr);
+            if (!secret)
+                throw MakeStringException(0, "%sCALL %s SECRET not found", wscType == STsoap ? "SOAP" : "HTTP", secretName.str());
+
+            StringBuffer url;
+            getSecretKeyValue(url, secret, "url");
+            if (url.isEmpty())
+                throw MakeStringException(0, "%sCALL %s HTTP SECRET must contain url", wscType == STsoap ? "SOAP" : "HTTP", secretName.str());
+            UrlListParser urlListParser(url);
+            StringBuffer auth;
+            getSecretKeyValue(auth, secret, "username");
+            if (auth.length())
             {
-                unsigned totThreads = helper->numParallelThreads();
-                if (totThreads < 1)
-                    totThreads = 2; // default to 2 threads
-                else if (totThreads > MAXWSCTHREADS)
-                    totThreads = MAXWSCTHREADS;
-
-                numUrlThreads = (numUrls < totThreads)? numUrls: totThreads;
-
-                numRowThreads = totThreads / numUrlThreads;
-                if (numRowThreads < 1)
-                    numRowThreads = 1;
-                else if (numRowThreads > MAXWSCTHREADS)
-                    numRowThreads = MAXWSCTHREADS;
-
-                numRecordsPerBatch = helper->numRecordsPerBatch();
-                if (numRecordsPerBatch < 1)
-                    numRecordsPerBatch = 1;
+                if (strchr(auth, ':'))
+                    throw MakeStringException(0, "%sCALL HTTP-CONNECT SECRET username contains illegal colon", wscType == STsoap ? "SOAP" : "HTTP");
+                auth.append(':');
+                getSecretKeyValue(auth, secret, "password");
             }
+            urlListParser.getUrls(urlArray, auth);
+            proxyAddress.set(secret->queryProp("proxy"));
+            getSecretKeyValue(proxyAddress.clear(), secret, "proxy");
         }
         else
+        {
+            UrlListParser urlListParser(hosts);
+            urlListParser.getUrls(urlArray);
+        }
+
+        numUrls = urlArray.ordinality();
+        if (numUrls == 0)
             throw MakeStringException(0, "%sCALL specified no URLs",wscType == STsoap ? "SOAP" : "HTTP");
+
+        if (!proxyAddress.isEmpty())
+        {
+            UrlListParser proxyUrlListParser(proxyAddress);
+            if (0 == proxyUrlListParser.getUrls(proxyUrlArray))
+                throw MakeStringException(0, "%sCALL proxy address specified no URLs",wscType == STsoap ? "SOAP" : "HTTP");
+        }
+
+        if (wscMode == SCrow)
+        {
+            numRowThreads = 1;
+
+            numUrlThreads = helper->numParallelThreads();
+            if (numUrlThreads == 0)
+                numUrlThreads = 1;
+            else if (numUrlThreads > MAXWSCTHREADS)
+                numUrlThreads = MAXWSCTHREADS;
+
+            numRecordsPerBatch = 1;
+        }
+        else
+        {
+            unsigned totThreads = helper->numParallelThreads();
+            if (totThreads < 1)
+                totThreads = 2; // default to 2 threads
+            else if (totThreads > MAXWSCTHREADS)
+                totThreads = MAXWSCTHREADS;
+
+            numUrlThreads = (numUrls < totThreads)? numUrls: totThreads;
+
+            numRowThreads = totThreads / numUrlThreads;
+            if (numRowThreads < 1)
+                numRowThreads = 1;
+            else if (numRowThreads > MAXWSCTHREADS)
+                numRowThreads = MAXWSCTHREADS;
+
+            numRecordsPerBatch = helper->numRecordsPerBatch();
+            if (numRecordsPerBatch < 1)
+                numRecordsPerBatch = 1;
+        }
 
         for (unsigned i=0; i<numRowThreads; i++)
             threads.append(*new CWSCHelperThread(this));
@@ -1047,19 +1099,26 @@ public:
     }
     inline IEngineRowAllocator * queryOutputAllocator() const { return outputAllocator; }
 #ifdef _USE_OPENSSL
+    ISecureSocketContext *ensureSecureContext(Owned<ISecureSocketContext> &ownedSC)
+    {
+        if (!ownedSC)
+        {
+            if (clientCert != NULL)
+                ownedSC.setown(createSecureSocketContextEx(clientCert->certificate, clientCert->privateKey, clientCert->passphrase, ClientSocket));
+            else
+                ownedSC.setown(createSecureSocketContext(ClientSocket));
+        }
+        return ownedSC.get();
+    }
+    ISecureSocketContext *ensureStaticSecureContext()
+    {
+        CriticalBlock b(secureContextCrit);
+        return ensureSecureContext(secureContext);
+    }
     ISecureSocket *createSecureSocket(ISocket *sock)
     {
-        {
-            CriticalBlock b(secureContextCrit);
-            if (!secureContext)
-            {
-                if (clientCert != NULL)
-                    secureContext.setown(createSecureSocketContextEx(clientCert->certificate, clientCert->privateKey, clientCert->passphrase, ClientSocket));
-                else
-                    secureContext.setown(createSecureSocketContext(ClientSocket));
-            }
-        }
-        return secureContext->createSecureSocket(sock);
+        ISecureSocketContext *sc = (customClientCert) ? ensureSecureContext(customSecureContext) : ensureStaticSecureContext();
+        return sc->createSecureSocket(sock);
     }
 #endif
     bool isTimeLimitExceeded(unsigned *_remainingMS)

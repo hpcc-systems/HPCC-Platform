@@ -957,6 +957,46 @@ StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char 
     return result;
 }
 
+StringBuffer &replaceEnvVariables(StringBuffer & result, const char *source, bool exceptions, const char* delim, const char* term)
+{
+    if (isEmptyString(source) || isEmptyString(delim) || isEmptyString(term))
+        return result;
+    size_t lenDelim = strlen(delim);
+    size_t lenTerm = strlen(term);
+    size_t left = strlen(source);
+    size_t minLen = lenDelim + lenTerm + 1;
+    while (left >= minLen)
+    {
+        if (memcmp(source, delim, lenDelim)==0)
+        {
+            const char *finger = source + lenDelim;
+            const char *thumb = strstr(finger, term);
+            if (thumb)
+            {
+                StringAttr name(finger, (size_t)(thumb - finger));
+                const char *value = getenv(name);
+                if (value)
+                {
+                    result.append(value);
+                    size_t replaced = (thumb - source) + lenTerm;
+                    source = thumb + lenTerm;
+                    left -= replaced;
+                    continue;
+                }
+                if (exceptions)
+                    throw MakeStringException(-1, "Environment variable %s not set", name.str());
+            }
+        }
+        result.append(*source);
+        source++;
+        left--;
+    }
+
+    // there are no more possible replacements, make sure we keep the end of the original buffer
+    result.append(left, source);
+    return result;
+}
+
 StringBuffer &replaceStringNoCase(StringBuffer & result, size_t lenSource, const char *source, size_t lenOldStr, const char* oldStr, size_t lenNewStr, const char* newStr)
 {
     if (lenSource)

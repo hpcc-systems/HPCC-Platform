@@ -79,7 +79,8 @@ RUN apt-get install -y \
   vim \
   gdb \
   software-properties-common \  
-  lsb-release
+  lsb-release \
+  jq
 
 RUN curl https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -
 RUN apt-add-repository "deb https://deb.nodesource.com/node_12.x $(lsb_release -sc) main"

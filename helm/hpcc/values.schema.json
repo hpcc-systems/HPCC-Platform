@@ -49,8 +49,30 @@
         "ecl": {
           "$ref": "#/definitions/secrets"
         },
-        "all": {
+        "system": {
           "$ref": "#/definitions/secrets"
+        }
+      },
+      "additionalProperties": false
+    },
+    "vaults": {
+      "description": "configuration for vaults accessed by the components",
+      "type": "object",
+      "properties": {
+        "timeout": {
+          "type": "integer"
+        },
+        "storage": {
+          "$ref": "#/definitions/vaultCategory"
+        },
+        "esp": {
+          "$ref": "#/definitions/vaultCategory"
+        },
+        "ecl": {
+          "$ref": "#/definitions/vaultCategory"
+        },
+        "ecl-user": {
+          "$ref": "#/definitions/vaultCategory"
         }
       },
       "additionalProperties": false
@@ -256,6 +278,42 @@
           "type": "null"
         }
       ]
+    },
+    "vaultCategory": {
+      "description": "set of vaults under a given category",
+      "oneOf": [
+        {
+            "type": "array",
+            "items": { "$ref": "#/definitions/vault" }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "vault": {
+      "description": "information about an individual vault",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "the name of the vault",
+          "type": "string"
+        },
+        "url": {
+          "description": "the url used to access the vault",
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["kv-v2", "kv-v1"]
+        },
+        "client-secret": {
+          "description": "optional name of kubernetes secret that will provide the vault client token",
+          "type": "string"
+        }
+      },
+      "required": [ "name", "url" ],
+      "additionalProperties": false
     },
     "hostgroups": {
       "oneOf": [

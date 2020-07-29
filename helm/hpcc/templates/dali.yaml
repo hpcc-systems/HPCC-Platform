@@ -33,13 +33,13 @@ spec:
         - name: {{ .name }}-configmap-volume
           mountPath: /etc/config
 {{ include "hpcc.addDaliVolumeMount" $ | indent 8 }}
-{{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "all" ) ) | indent 8 }}
+{{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "system" ) ) | indent 8 }}
       volumes:
       - name: {{ .name }}-configmap-volume
         configMap:
           name: {{ .name }}-configmap
 {{ include "hpcc.addDaliVolume" $ | indent 6 }}
-{{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "all" ) ) | indent 6 }}
+{{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "system" ) ) | indent 6 }}
 ---
 kind: ConfigMap 
 apiVersion: v1 

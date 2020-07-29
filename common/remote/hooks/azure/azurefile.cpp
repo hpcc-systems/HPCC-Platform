@@ -22,6 +22,7 @@
 #include "jfile.hpp"
 #include "jregexp.hpp"
 #include "jstring.hpp"
+#include "jsecrets.hpp"
 #include "jlog.hpp"
 #include "azurefile.hpp"
 
@@ -518,7 +519,7 @@ static std::shared_ptr<azure::storage_lite::blob_client> getClient(const char * 
         {
             StringBuffer secretName;
             secretName.append("azure-").append(accountName);
-            getSecret(keyTemp, secretName, "key");
+            getSecretValue(keyTemp, "storage", secretName, "key", true);
             //Trim trailing whitespace/newlines in case the secret has been entered by hand e.g. on bare metal
             size32_t len = keyTemp.length();
             for (;;)

@@ -290,7 +290,7 @@ Add the secret volume mounts for a component
  {{- if (has $category $categories) -}}
 {{- range $secretid, $secretname := $key -}}
 - name: secret-{{ $secretid }}
-  mountPath: /opt/HPCCSystems/secrets/{{ $secretid }}
+  mountPath: /opt/HPCCSystems/secrets/{{ $category }}/{{ $secretid }}
 {{ end -}}
  {{- end -}}
 {{- end -}}
@@ -334,6 +334,28 @@ readinessProbe:
     - "{{ .name }}.sentinel"
   periodSeconds: 10
 {{ end -}}
+
+
+{{/*
+Generate vault info
+*/}}
+{{- define "hpcc.generateVaultConfig" -}}
+{{- $categories := .categories -}}
+vaults:
+{{- range  $categoryname, $category := .root.Values.vaults -}}
+ {{- if (has $categoryname $categories) }}
+  {{ $categoryname }}:
+  {{- range $vault := . }}
+    - name: {{ $vault.name }}
+      kind: {{ $vault.kind }}
+      url: {{ $vault.url }}
+    {{- if index $vault "client-secret" }}
+      client-secret: {{ index $vault "client-secret" }}
+    {{- end -}}
+  {{- end -}}
+ {{- end -}}
+{{- end -}}
+{{- end -}}
 
 {{/*
 Return a value indicating whether a storage plane is defined or not.
