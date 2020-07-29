@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "platform.h"
+#include "limits.h"
 #include "jliball.hpp"
 #include "eclrtl.hpp"
 #include "rtlds_imp.hpp"
@@ -594,6 +595,18 @@ void DataSourceMetaData::serialize(MemoryBuffer & buffer) const
 
 size32_t DataSourceMetaData::getRecordSize(const void *rec)
 {
+    return calcRecordSize(UINT_MAX, rec);
+}
+
+static void checkReadPastEnd(size32_t offset, size32_t delta, size32_t maxLength)
+{
+    //Check for reading past the end of the buffer, or for the size wrapping 32bits.
+    if ((offset > maxLength) || (offset + delta < offset))
+        throw makeStringException(FVERR_MaxLengthExceeded, "Read past the end of a variable size block (MAXLENGTH exceeded)");
+}
+
+size32_t DataSourceMetaData::calcRecordSize(size32_t maxLength, const void *rec)
+{
     if (isStoredFixedWidth)
         return minRecordSize;
     if (!rec)
@@ -616,21 +629,27 @@ size32_t DataSourceMetaData::getRecordSize(const void *rec)
             case type_string:
             case type_table:
             case type_groupedtable:
+                checkReadPastEnd(curOffset, sizeof(unsigned), maxLength);
                 size = *((unsigned *)cur) + sizeof(unsigned);
                 break;
             case type_set:
+                checkReadPastEnd(curOffset, sizeof(bool) + sizeof(unsigned), maxLength);
                 size = *((unsigned *)(cur + sizeof(bool))) + sizeof(unsigned) + sizeof(bool);
                 break;
             case type_qstring:
+                checkReadPastEnd(curOffset, sizeof(unsigned), maxLength);
                 size = rtlQStrSize(*((unsigned *)cur)) + sizeof(unsigned);
                 break;
             case type_unicode:
+                checkReadPastEnd(curOffset, sizeof(unsigned), maxLength);
                 size = *((unsigned *)cur)*2 + sizeof(unsigned);
                 break;
             case type_utf8:
+                checkReadPastEnd(curOffset, sizeof(unsigned), maxLength);
                 size = sizeof(unsigned) + rtlUtf8Size(*(unsigned *)cur, cur+sizeof(unsigned));
                 break;
             case type_varstring:
+                //buffer overflow checking for the following will wait until code is reimplemented
                 size = strlen((char *)cur)+1;
                 break;
             case type_varunicode:
@@ -660,6 +679,7 @@ size32_t DataSourceMetaData::getRecordSize(const void *rec)
         else
             bitsRemaining = 0;
 
+        checkReadPastEnd(curOffset, size, maxLength);
         curOffset += size;
     }
     return curOffset;
