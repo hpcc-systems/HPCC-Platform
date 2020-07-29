@@ -35,6 +35,7 @@
 #include "xslprocessor.hpp"
 #include "mplog.hpp"
 #include "rmtfile.hpp"
+#include "dafdesc.hpp"
 
 //#include <dalienv.hpp>
 
@@ -357,6 +358,8 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
         StringBuffer daliservers;
         if (m_cfg->getProp("@daliServers", daliservers))
             initDali(daliservers.str()); //won't init if detached
+
+        initializeStorageGroups(daliClientActive());
 
         const unsigned dafilesrvConnectTimeout = m_cfg->getPropInt("@dafilesrvConnectTimeout", 10)*1000;
         const unsigned dafilesrvReadTimeout = m_cfg->getPropInt("@dafilesrvReadTimeout", 10)*1000;

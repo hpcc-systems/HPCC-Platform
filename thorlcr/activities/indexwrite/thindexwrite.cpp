@@ -92,6 +92,13 @@ public:
             clusters.append(cluster);
             idx++;
         }
+        if (idx == 0)
+        {
+            const char * defaultCluster = queryDefaultStoragePlane();
+            if (defaultCluster)
+                clusters.append(defaultCluster);
+        }
+
         IArrayOf<IGroup> groups;
         if (singlePartKey)
         {

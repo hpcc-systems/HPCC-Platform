@@ -21,6 +21,7 @@
 # Usage startup.sh [<image.version>] [<helm-install-options>]
 
 DOCKER_REPO=hpccsystems
+scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 restArgs=()
 
 CMD="install"
@@ -62,10 +63,10 @@ if [[ -n ${PERSIST} ]] ; then
   mkdir -p ${PERSIST}/dlls
   mkdir -p ${PERSIST}/dali
   mkdir -p ${PERSIST}/data
-  helm ${CMD} localfile ../helm/examples/local/hpcc-localfile --set common.hostpath=${PERSIST} | grep -A100 storage > localstorage.yaml && \
-  helm ${CMD} mycluster ../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL --set global.privileged=true -f localstorage.yaml ${restArgs[@]}
+  helm ${CMD} localfile $scriptdir/../helm/examples/local/hpcc-localfile --set common.hostpath=${PERSIST} | grep -A100 storage > localstorage.yaml && \
+  helm ${CMD} mycluster $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL --set global.privileged=true -f localstorage.yaml ${restArgs[@]}
 else
-  helm ${CMD} mycluster ../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL --set global.privileged=true ${restArgs[@]}
+  helm ${CMD} mycluster $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL --set global.privileged=true ${restArgs[@]}
 fi
 
 sleep 1

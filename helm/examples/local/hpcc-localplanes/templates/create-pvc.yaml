@@ -1,0 +1,18 @@
+{{- range $plane := .Values.planes -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ printf "%s-%s-pvc" $plane.name $.Release.Name }}
+spec:
+  storageClassName: "manual"
+  volumeName: {{ printf "%s-%s-pv" $plane.name $.Release.Name }}
+  accessModes:
+    - {{ $plane.rwmany | default false | ternary "ReadWriteMany" "ReadWriteOnce" }}
+  resources:
+    requests:
+      storage: {{ $plane.size }}
+  selector:
+    matchLabels:
+      store: {{ printf "%s-%s-pv" $plane.name $.Release.Name }}
+---
+{{ end }}

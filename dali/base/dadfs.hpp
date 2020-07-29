@@ -38,9 +38,14 @@
 #include "mpbase.hpp"
 #include "dafdesc.hpp"
 #include "seclib.hpp"
+#include "errorlist.h"
 
 #include <vector>
 #include <string>
+
+enum : unsigned {
+    DALI_DUPLICATE_STORAGE_PLANE = DALI_ERROR_START
+};
 
 typedef __int64 DistributedLockID;
 #define FOREIGN_DALI_TIMEOUT (1000*60*5)

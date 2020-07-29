@@ -381,19 +381,6 @@ public:
 
     IFileDescriptor *create(CJobBase &job, const char *logicalName, StringArray &groupNames, IArrayOf<IGroup> &groups, bool overwriteok, unsigned helperFlags=0, bool nonLocalIndex=false, unsigned restrictedWidth=0)
     {
-        if (isContainerized())
-        {
-            StringBuffer nasGroupName;
-            // NB: normally size = queryClusterWidth(), but can be 1 (e.g. if BUILDINDEX,FEW)
-            queryNamedGroupStore().getNasGroupName(nasGroupName, groups.item(0).ordinality());
-            IGroup *nasGroup = queryNamedGroupStore().lookup(nasGroupName);
-            assertex(nasGroup);
-            groups.clear();
-            groupNames.kill();
-            groupNames.append(nasGroupName);
-            groups.append(*LINK(nasGroup));
-        }
-
         bool temporary = 0 != (helperFlags&TDXtemporary);
         bool jobReplicate = 0 != job.getWorkUnitValueInt("replicateOutputs", replicateOutputs);
         bool replicate = 0 != jobReplicate && !temporary && 0==(helperFlags&TDWnoreplicate);
@@ -530,8 +517,14 @@ public:
                 StringBuffer curDir;
                 ForEachItemIn(gn, groupNames)
                 {
+#ifdef _CONTAINERIZE
+                    Owned<IStoragePlane> plane = getStoragePlane(groupNames.item(gn));
+                    assertex(plane);
+                    curDir.append(plane->queryPrefix());
+#else
                     if (!getConfigurationDirectory(globals->queryPropTree("Directories"), "data", "thor", groupNames.item(gn), curDir))
-                        makePhysicalPartName(logicalName, 0, 0, curDir, false, os); // legacy
+                        makePhysicalPartName(logicalName, 0, 0, curDir, 0, os); // legacy
+#endif
                     if (!dir.length())
                         dir.swapWith(curDir);
                     else
@@ -742,13 +735,13 @@ void fillClusterArray(CJobBase &job, const char *filename, StringArray &clusters
     }
     else
     {
-        if (isContainerized())
-            throw makeStringException(0, "Output clusters not supported in cloud environment");
         const char *cluster = clusters.item(0);
         Owned<IGroup> group = queryNamedGroupStore().lookup(cluster);
         if (!group)
             throw MakeStringException(0, "Could not find cluster group %s for file: %s", cluster, filename);
+#ifndef _CONTAINERIZED
         EnvMachineOS os = queryOS(group->queryNode(0).endpoint());
+#endif
         unsigned clusterIdx = 1;
         for (;;)
         {
@@ -759,6 +752,7 @@ void fillClusterArray(CJobBase &job, const char *filename, StringArray &clusters
             group.setown(queryNamedGroupStore().lookup(cluster));
             if (!group)
                 throw MakeStringException(0, "Could not find cluster group %s for file: %s", cluster, filename);
+#ifndef _CONTAINERIZED
             if (MachineOsUnknown != os)
             {
                 EnvMachineOS thisOs = queryOS(group->queryNode(0).endpoint());
@@ -772,6 +766,7 @@ void fillClusterArray(CJobBase &job, const char *filename, StringArray &clusters
                 if (GRdisjoint != agrp.compare(group))
                     throw MakeStringException(0, "Target cluster '%s', overlaps with target cluster '%s'", clusters.item(clusterIdx-1), clusters.item(g));
             }
+#endif
         }
     }
 }

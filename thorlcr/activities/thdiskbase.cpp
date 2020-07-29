@@ -153,6 +153,14 @@ void CWriteMasterBase::init()
             clusters.append(cluster);
             idx++;
         }
+
+        if (idx == 0)
+        {
+            const char * defaultCluster = queryDefaultStoragePlane();
+            if (defaultCluster)
+                clusters.append(defaultCluster);
+        }
+
         IArrayOf<IGroup> groups;
         fillClusterArray(container.queryJob(), fileName, clusters, groups);
         fileDesc.setown(queryThorFileManager().create(container.queryJob(), fileName, clusters, groups, overwriteok, diskHelperBase->getFlags()));

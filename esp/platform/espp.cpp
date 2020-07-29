@@ -301,7 +301,6 @@ void openEspLogFile(IPropertyTree* envpt, IPropertyTree* procpt)
 #else
     setupContainerizedLogMsgHandler();
 #endif
-    setupContainerizedStorageLocations();
 
     if (procpt->getPropBool("@enableSysLog", false))
         UseSysLogForOperatorMessages();

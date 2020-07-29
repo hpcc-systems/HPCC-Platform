@@ -347,15 +347,17 @@ private:
 
 ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndexWriteArg *iwHelper, IHThorDiskWriteArg *dwHelper, const char * lfn, StringAttr &fn, bool extend)
 {
+    //In the containerized system, the default data plane for this component is in the configuration
+    const char * defaultCluster = queryDefaultStoragePlane();
     Owned<CHThorClusterWriteHandler> clusterHandler;
     unsigned clusterIdx = 0;
     while(true)
     {
         OwnedRoxieString cluster(iwHelper ? iwHelper->getCluster(clusterIdx++) : dwHelper->getCluster(clusterIdx++));
+        if (!cluster && (clusterIdx == 1))
+            cluster.setown(defaultCluster); // safe even though it is not a roxie string.
         if(!cluster)
             break;
-        if (isContainerized())
-            throw makeStringException(0, "Output clusters not supported in cloud environment");
         if(!clusterHandler)
         {
             if(extend)

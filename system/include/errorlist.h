@@ -73,6 +73,9 @@
 #define THOR_ERROR_START        5700
 #define THOR_ERROR_END          5799
 
+#define DALI_ERROR_START        5800
+#define DALI_ERROR_END          5899
+
 //Jlib
 #define JLIB_ERROR_START        6000
 #define JLIB_ERROR_END          6499
