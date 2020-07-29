@@ -1,0 +1,27 @@
+esp:
+   instance: sql2ecl
+   description: SQL2ECL Service
+   daliServers: dali
+   auth: ldap
+   tls: true
+   port: 8880
+   enableSEHMapping: true
+   httpConfigAccess: true
+   logLevel: 1
+   maxBacklogQueueSize: 200
+   portalurl: http://hpccsystems.com/download
+   logDir: "-"
+
+   tls_config:
+     certificate: /etc/HPCCSystems/certificates/{$instance}/server.crt
+     privatekey: /etc/HPCCSystems/certificates/{$instance}/private.key
+     passphrase: JHjdi6DDptMwYmJNTZsqjg==
+     cipherList:
+       verify:
+          enable: false
+          address_match: false
+          accept_selfsigned: true
+          ca_certificates:
+            - path: "ca.pem"
+          trusted_peers:
+            - anyone

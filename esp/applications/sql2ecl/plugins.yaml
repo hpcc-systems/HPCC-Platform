@@ -1,0 +1,9 @@
+protocol_plugins:
+  http_protocol: esphttp
+  secure_http_protocol: esphttp
+
+service_plugins:
+  ws_sql: ws_sql
+
+binding_plugins:
+  ws_sql: ws_sql
