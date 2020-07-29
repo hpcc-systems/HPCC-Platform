@@ -2253,6 +2253,7 @@ bool CWsWorkunitsEx::getQueryFiles(IEspContext &context, const char* wuid, const
         if (!cw)
             return false;
 
+        double version = context.getClientVersion();
         StringArray superFileNames;
         Owned<IHpccPackageSet> ps = createPackageSet(process.str());
         Owned<IReferencedFileList> wufiles = createReferencedFileList(context.queryUserId(),
@@ -2266,8 +2267,10 @@ bool CWsWorkunitsEx::getQueryFiles(IEspContext &context, const char* wuid, const
             const char *lfn = rf.getLogicalName();
             if (lfn && *lfn)
             {
-                logicalFiles.append(lfn);
-                if (respSuperFiles && (rf.getFlags() & RefFileSuper))
+                bool isSuper = rf.getFlags() & RefFileSuper;
+                if (!isSuper || (version < 1.78))
+                    logicalFiles.append(lfn);
+                if (respSuperFiles && isSuper)
                     readSuperFiles(context, &rf, lfn, wufiles, respSuperFiles);
             }
         }
