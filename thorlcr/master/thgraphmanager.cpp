@@ -331,10 +331,16 @@ void CJobManager::fatal(IException *e)
 
 void CJobManager::updateWorkUnitLog(IWorkUnit &workunit)
 {
-    StringBuffer log, logUrl;
+    StringBuffer log, logUrl, slaveLogPattern;
     logHandler->getLogName(log);
     createUNCFilename(log, logUrl, false);
-    workunit.addProcess("Thor", globals->queryProp("@name"), 0, logUrl.str());
+    slaveLogPattern.set(THORSLAVELOGSEARCHSTR).append(SLAVEIDSTR);
+    const char *ptr = strstr(log, THORMASTERLOGSEARCHSTR);
+    dbgassertex(ptr);
+    slaveLogPattern.append(ptr + strlen(THORMASTERLOGSEARCHSTR) - 1); //Keep the '.' at the end of the THORMASTERLOGSEARCHSTR.
+    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(workunit.queryClusterName());
+    unsigned numberOfSlaves = clusterInfo->getNumberOfSlaveLogs();
+    workunit.addProcess("Thor", globals->queryProp("@name"), 0, numberOfSlaves, slaveLogPattern, false, logUrl.str());
 }
 
 
