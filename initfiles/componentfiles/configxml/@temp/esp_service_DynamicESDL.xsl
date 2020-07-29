@@ -72,6 +72,9 @@
                 </xsl:if>
 
                 <LoggingManager name="{$managerNode/@name}">
+                    <xsl:if test="string($managerNode/@DecoupledLogging) != ''">
+                        <DecoupledLogging><xsl:value-of select="$managerNode/@DecoupledLogging"/></DecoupledLogging>
+                    </xsl:if>
                     <xsl:if test="string($managerNode/@FailSafe) != ''">
                         <FailSafe><xsl:value-of select="$managerNode/@FailSafe"/></FailSafe>
                     </xsl:if>
@@ -91,6 +94,7 @@
                         <xsl:variable name="agentName" select="@ESPLoggingAgent"/>
                         <xsl:variable name="espLoggingAgentNode" select="/Environment/Software/ESPLoggingAgent[@name=$agentName]"/>
                         <xsl:variable name="wsLogServiceESPAgentNode" select="/Environment/Software/WsLogServiceESPAgent[@name=$agentName]"/>
+                        <xsl:variable name="disableFailSafe" select="$managerNode/@DecoupledLogging"/>
                         <xsl:choose>
                             <xsl:when test="($espLoggingAgentNode)">
                                 <xsl:call-template name="ESPLoggingAgent">
@@ -101,6 +105,7 @@
                             <xsl:when test="($wsLogServiceESPAgentNode)">
                                 <xsl:call-template name="WsLogServiceESPAgent">
                                     <xsl:with-param name="agentName" select="$agentName"/>
+                                    <xsl:with-param name="disableFailSafe" select="$disableFailSafe"/>
                                     <xsl:with-param name="agentNode" select="$wsLogServiceESPAgentNode"/>
                                 </xsl:call-template>
                             </xsl:when>
