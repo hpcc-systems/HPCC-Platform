@@ -441,7 +441,9 @@ extern jlib_decl const char *queryCurrentProcessPath();
 
 extern jlib_decl StringBuffer &getFileAccessUrl(StringBuffer &out);
 extern jlib_decl void setSecretMount(const char * path);
-extern jlib_decl StringBuffer & getSecret(StringBuffer & result, const char * name, const char * key);
+extern jlib_decl StringBuffer & getSecretPath(StringBuffer & path, const char * name, const char * key);
+extern jlib_decl StringBuffer & getSecret(StringBuffer & result, const char * name, const char * key, bool required=true);
+extern jlib_decl bool secretExists(const char * name, const char * key);
 
 
 /**

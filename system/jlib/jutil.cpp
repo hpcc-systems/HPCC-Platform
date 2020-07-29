@@ -3055,20 +3055,37 @@ extern jlib_decl void setSecretMount(const char * path)
     else
         secretDirectory.set(path);
 }
-
-extern jlib_decl StringBuffer & getSecret(StringBuffer & result, const char * name, const char * key)
+inline void ensureSecretDirectory()
 {
-    {
-        CriticalBlock block(secretCS);
-        if (secretDirectory.isEmpty())
-            setSecretMount(nullptr);
-    }
+    CriticalBlock block(secretCS);
+    if (secretDirectory.isEmpty())
+        setSecretMount(nullptr);
+}
+
+extern jlib_decl StringBuffer & getSecretPath(StringBuffer & path, const char * name, const char * key)
+{
+    ensureSecretDirectory();
+    addPathSepChar(path.append(secretDirectory)).append(name).append(PATHSEPCHAR).append(key);
+    return path;
+}
+
+extern jlib_decl StringBuffer & getSecret(StringBuffer & result, const char * name, const char * key, bool required)
+{
     //MORE: cache the secret for up to secretTimeoutMs
     StringBuffer path;
-    addPathSepChar(path.append(secretDirectory)).append(name).append(PATHSEPCHAR).append(key);
+    getSecretPath(path, name, key);
     Owned<IFile> file = createIFile(path);
-    result.loadFile(file);
+    if (required || file->exists())
+        result.loadFile(file);
     return result;
+}
+
+extern jlib_decl bool secretExists(const char * name, const char * key)
+{
+    StringBuffer path;
+    getSecretPath(path, name, key);
+    Owned<IFile> file = createIFile(path);
+    return (file && file->exists());
 }
 
 //---------------------------------------------------------------------------------------------------------------------
