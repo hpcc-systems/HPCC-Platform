@@ -798,12 +798,7 @@ public:
                     if (numeric)
                     {
                         unsigned qnum = atoi(qualifier);
-                        if (!item.queryParent())
-                        {
-                            if (qnum != 1)
-                                return false;
-                        }
-                        else if (((PTree *)item.queryParent())->findChild(&item) != qnum-1)
+                        if (qnum != (item.querySiblingPosition()+1))
                             return false;
                     }
                     else if (!item.checkPattern(qualifier))
@@ -1757,14 +1752,11 @@ void buildNotifyData(MemoryBuffer &notifyData, PDState state, CPTStack *stack, M
                 PTree &child = stack->item(s);
                 const char *str = child.queryName();
                 notifyData.append(strlen(str), str);
-                if (child.queryParent())
-                {
-                    char temp[12];
-                    unsigned written = numtostr(temp, parent->findChild(&child)+1);
-                    notifyData.append('[').append(written, temp).append(']');
-                }
-                else
+                unsigned pos = child.querySiblingPosition();
+                if (0 == pos) // common case
                     notifyData.append(3, "[1]");
+                else
+                    notifyData.append('[').append(pos+1).append(']');
                 parent = &child;
                 s++;
                 if (s<n)

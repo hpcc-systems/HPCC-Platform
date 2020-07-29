@@ -15,6 +15,10 @@
     limitations under the License.
 ############################################################################## */
 
+#include <unordered_map>
+#include <unordered_set>
+#include <string>
+
 #include "platform.h"
 #include "jarray.hpp"
 #include "jdebug.hpp"
@@ -51,10 +55,12 @@
 #define PTREE_COMPRESS_BOTHER_PECENTAGE (80) // i.e. if it doesn't compress to <80 % of original size don't bother
 
 
-class NullPTreeIterator : implements IPropertyTreeIterator, public CInterface
+class NullPTreeIterator final : implements IPropertyTreeIterator
 {
 public:
-    IMPLEMENT_IINTERFACE;
+    virtual ~NullPTreeIterator() {}
+    virtual void Link() const override {}
+    virtual bool Release() const override { return true; }
 // IPropertyTreeIterator
     virtual bool first() override { return false; }
     virtual bool next() override { return false; }
@@ -62,7 +68,7 @@ public:
     virtual IPropertyTree & query() override { throwUnexpected(); }
 } *nullPTreeIterator;
 
-IPropertyTreeIterator *createNullPTreeIterator() { return LINK(nullPTreeIterator); } // initialize in init mod below.
+IPropertyTreeIterator *createNullPTreeIterator() { return LINK(nullPTreeIterator); } // initialized in init mod below.
 
 
 //===================================================================
@@ -182,7 +188,7 @@ MODULE_INIT(INIT_PRIORITY_JPTREE)
 
 MODULE_EXIT()
 {
-    nullPTreeIterator->Release();
+    delete nullPTreeIterator;
     delete attrHT;
     keyTable->Release();
     keyTableNC->Release();
@@ -385,21 +391,27 @@ inline const char * readIndex(const char *xpath, StringAttr &index)
 
 
 
-inline static void readWildIdIndex(const char *&xpath, bool &wild)
+inline static void readWildIdIndex(const char *&xpath, bool &wild, bool &numeric)
 {
     const char *_xpath = xpath;
     readWildId(xpath, wild);
     if ('[' == *xpath) // check for local index not iterative qualifier.
     {
         const char *end = xpath+1;
-        if (isdigit(*end)) {
+        if (isdigit(*end))
+        {
             StringAttr index;
             end = readIndex(end, index);
             if (']' != *end)
                 throw MakeXPathException(_xpath, PTreeExcpt_XPath_ParseError, xpath-_xpath, "Qualifier brace unclosed");
             xpath = end+1;
+            numeric = true;
         }
+        else
+            numeric = false;
     }
+    else
+        numeric = false;
 }
 
 inline static unsigned getTailIdLength(const char *xxpath, unsigned xxpathlength)
@@ -527,6 +539,375 @@ const char *queryHead(const char *xpath, StringBuffer &head)
     }
     head.append(xpath-start, start);
     return xpath+1;
+}
+
+///////////////////
+
+static constexpr unsigned defaultSiblingMapThreshold = 100;
+static unsigned siblingMapThreshold = (unsigned)-1; // off until configuration default it on.
+
+void setPTreeMappingThreshold(unsigned threshold)
+{
+    /*
+    * NB: setPTreeMappingThreshold() will automatically be called via loadConfiguration
+    * Redefining this limit, will not effect existing maps, and should generally only be called once during startup.
+    */
+    if (0 == threshold)
+        threshold = (unsigned)-1;
+    siblingMapThreshold = threshold;
+}
+
+class CValueMap : public std::unordered_multimap<std::string, const IPropertyTree *>
+{
+public:
+    CValueMap(const char *_lhs, IPTArrayValue &array)
+    {
+        IPropertyTree **elements = array.getRawArray();
+        IPropertyTree **last = elements+array.elements();
+        dbgassertex(elements != last);
+        while (true)
+        {
+            const char *v = (*elements)->queryProp(_lhs);
+            if (v)
+                emplace(std::make_pair(std::string(v), *elements));
+            elements++;
+            if (last == elements)
+                break;
+        }
+    }
+    std::pair<CValueMap::iterator, CValueMap::iterator> find(const char *rhs)
+    {
+        return equal_range(std::string(rhs));
+    }
+    void insertEntry(const char *v, const IPropertyTree *tree)
+    {
+        emplace(std::make_pair(std::string(v), tree));
+    }
+    bool removeEntry(const char *v, const IPropertyTree *tree)
+    {
+        auto range = equal_range(std::string(v));
+        if (range.first == range.second)
+            return false;
+
+        auto it = range.first;
+        while (true)
+        {
+            if (it->second == tree)
+            {
+                it = erase(it);
+                return true;
+            }
+            ++it;
+            if (it == range.second)
+                break;
+        }
+        throwUnexpected();
+    }
+    void replaceEntry(const char *oldV, const char *newV, const IPropertyTree *tree)
+    {
+        verifyex(removeEntry(oldV, tree));
+        if (newV)
+            insertEntry(newV, tree);
+    }
+};
+
+class CQualifierMap
+{
+    std::unordered_map<std::string, CValueMap *> attrValueMaps;
+    CriticalSection crit;
+
+public:
+    CQualifierMap()
+    {
+    }
+    ~CQualifierMap()
+    {
+        for (auto &e: attrValueMaps)
+            delete e.second;
+    }
+    CValueMap *addMapping(const char *lhs, IPTArrayValue &array)
+    {
+        CValueMap *valueMap = new CValueMap(lhs, array);
+        attrValueMaps.emplace(std::make_pair(std::string(lhs), valueMap));
+        return valueMap;
+    }
+    CValueMap *addMappingIfNew(const char *lhs, IPTArrayValue &array)
+    {
+        CriticalBlock b(crit);
+        auto it = attrValueMaps.find(lhs);
+        if (it == attrValueMaps.end())
+            return addMapping(lhs, array);
+        else
+            return it->second;
+    }
+    void addMatchingValues(const IPropertyTree *tree)
+    {
+        for (auto &e: attrValueMaps)
+        {
+            const char *v = tree->queryProp(e.first.c_str());
+            if (v)
+                e.second->insertEntry(v, tree);
+        }
+    }
+    void removeMatchingValues(const IPropertyTree *tree)
+    {
+        for (auto &e: attrValueMaps)
+        {
+            const char *lhsp = e.first.c_str();
+            const char *oldV = tree->queryProp(lhsp);
+            if (oldV)
+                verifyex(e.second->removeEntry(oldV, tree));
+        }
+    }
+    void replaceMatchingValues(const IPropertyTree *oldTree, const IPropertyTree *newTree)
+    {
+        for (auto &e: attrValueMaps)
+        {
+            const char *lhsp = e.first.c_str();
+            const char *oldV = oldTree->queryProp(lhsp);
+            if (oldV)
+            {
+                verifyex(e.second->removeEntry(oldV, oldTree));
+                const char *newV = newTree->queryProp(lhsp);
+                if (newV)
+                    e.second->insertEntry(newV, newTree);
+            }
+        }
+    }
+    CValueMap *find(const char *lhs)
+    {
+        auto it = attrValueMaps.find(lhs);
+        if (it == attrValueMaps.end())
+            return nullptr;
+        return it->second;
+    }
+    void removeEntryIfMapped(const char *lhs, const char *v, const IPropertyTree *tree)
+    {
+        auto it = attrValueMaps.find(lhs);
+        if (it != attrValueMaps.end())
+            it->second->removeEntry(v, tree);
+    }
+    void insertEntryIfMapped(const char *lhs, const char *v, const IPropertyTree *tree)
+    {
+        auto it = attrValueMaps.find(lhs);
+        if (it != attrValueMaps.end())
+            it->second->insertEntry(v, tree);
+    }
+    void replaceEntryIfMapped(const char *lhs, const char *oldv, const char *newv, const IPropertyTree *tree)
+    {
+        auto it = attrValueMaps.find(lhs);
+        if (it != attrValueMaps.end())
+            it->second->replaceEntry(oldv, newv, tree);
+    }
+};
+
+// parse qualifier, returns true if simple equality expression found
+static bool parseEqualityQualifier(const char *&xxpath, unsigned &lhsLen, const char *&rhsBegin, unsigned &rhsLen)
+{
+    const char *xpath = xxpath;
+    while (*xpath == ' ' || *xpath == '\t') xpath++;
+    if ('@' != *xpath) // only attributes supported
+        return false;
+    const char *start = xpath;
+    char quote = 0;
+    const char *lhsEnd, *quoteBegin, *quoteEnd, *rhsEnd;
+    lhsEnd = quoteBegin = quoteEnd = rhsBegin = rhsEnd = NULL;
+    bool equalSignFound = false;
+    for (;;)
+    {
+        switch (*xpath)
+        {
+        case '"':
+        case '\'':
+            if (quote)
+            {
+                if (*xpath == quote)
+                {
+                    quote = 0;
+                    quoteEnd = xpath;
+                }
+            }
+            else
+            {
+                if (quoteBegin)
+                    throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Quoted left hand side already seen");
+                quote = *xpath;
+                quoteBegin = xpath+1;
+            }
+            break;
+        case '[':
+            if (!quote)
+                throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unclosed qualifier detected");
+            break;
+        case ']':
+            if (!quote)
+            {
+                if (!lhsEnd)
+                    lhsEnd = xpath;
+                rhsEnd = xpath;
+            }
+            break;
+        case ' ':
+        case '\t':
+            if (!lhsEnd)
+                lhsEnd = xpath;
+            break;
+        case '!':
+        case '>':
+        case '<':
+        case '~':
+        case '/':
+            if (!quote)
+                return false;
+            break;
+        case '=':
+            if (!quote)
+            {
+                if (equalSignFound)
+                    throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Unexpected expression operator xpath");
+                equalSignFound = true;
+                if (!lhsEnd)
+                    lhsEnd = xpath;
+            }
+            break;
+        case '?':
+        case '*':
+            return false;
+        case '\0':
+            rhsEnd = xpath;
+            break;
+        }
+        if (rhsEnd)
+            break;
+        xpath++;
+        if (!rhsBegin && equalSignFound && !isspace(*xpath))
+            rhsBegin = xpath;
+    }
+    if (quote)
+        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Parse error, unclosed quoted content");
+    if (!equalSignFound)
+        return false;
+
+    lhsLen = lhsEnd-start;
+    if (quoteBegin && !quoteEnd)
+        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Parse error, RHS missing closing quote");
+    if (rhsBegin && !rhsEnd)
+        throw MakeXPathException(start, PTreeExcpt_XPath_ParseError, xpath-start, "Parse error, RHS missing closing quote");
+    if (!quoteBegin && rhsEnd) // only if numeric
+        return false;
+    else // quoted
+    {
+        rhsBegin = quoteBegin;
+        rhsLen = quoteEnd - rhsBegin;
+    }
+    if (rhsEnd && *xpath == ']')
+        xpath++;
+    xxpath = xpath;
+    return true;
+}
+
+class CMapQualifierIterator : public CInterfaceOf<IPropertyTreeIterator>
+{
+    CValueMap::iterator startRange, endRange;
+    CValueMap::iterator currentIter;
+public:
+    CMapQualifierIterator(CQualifierMap &_map, CValueMap::iterator _startRange, CValueMap::iterator _endRange)
+        : startRange(_startRange), endRange(_endRange)
+    {        
+    }
+
+// IPropertyTreeIterator
+    virtual bool first() override
+    {
+        currentIter = startRange;
+        return currentIter != endRange;
+    }
+    virtual bool next() override
+    {
+        currentIter++;
+        return currentIter != endRange;
+    }
+    virtual bool isValid() override
+    {
+        return currentIter != endRange;
+    }
+    virtual IPropertyTree & query() override { return const_cast<IPropertyTree &>(*currentIter->second); }
+};
+
+IPropertyTreeIterator *checkMapIterator(const char *&xxpath, IPropertyTree &child)
+{
+    /*
+    * NB: IPT's are not thread safe. It is up to the caller to ensure multiple writers do not contend.
+    * ( Dali for example ensures writer threads are exclusive )
+    * 
+    * That means multiple reader threads could be here concurrently.
+    * >1 could be constructing the qualifier map for the 1st time.
+    * For new attr updates (where map already exists), it will block on map::crit,
+    * so that there is at most 1 thread updating the map. The underlying unordered_multiset
+    * is thread safe if 1 writer, and multiple readers.
+    * 
+    * On initial map creation, allow concurrency, but only 1 will succeed to swap in the new active map.
+    * That could mean a new attr/prop. mapping is lost, until next used.
+    * NB: once the map is live, updates are write ops. and so, just as with the IPT 
+    * itself, it is expected that something will keep it thread safe (as Dali does)
+    * 
+    */
+
+    // NB: only support simple @<attrname>=<value> qualifiers
+
+    if (((unsigned)-1) == siblingMapThreshold) // disabled
+        return nullptr;
+
+    PTree &_child = (PTree &)child;
+    if (child.isCaseInsensitive()) // NB: could support but not worth it.
+        return nullptr;
+
+    IPTArrayValue *value = _child.queryValue();
+    if (!value)
+        return nullptr;
+    CQualifierMap *map = value->queryMap();
+    if (!map)
+    {
+        if (!value->isArray() || (value->elements() < siblingMapThreshold))
+            return nullptr;
+    }
+
+    unsigned lhsLen, rhsLen;
+    const char *rhsStart;
+    const char *xpath = xxpath;
+    if (!parseEqualityQualifier(xpath, lhsLen, rhsStart, rhsLen))
+        return nullptr;
+    MAKE_LSTRING(lhs, xxpath, lhsLen);
+    MAKE_LSTRING(rhs, rhsStart, rhsLen);
+
+    // NB: there can be a race here where >1 reader is constructing new map
+    CValueMap *valueMap = nullptr;
+    if (map)
+        valueMap = map->addMappingIfNew(lhs, *value);
+    else
+    {
+        OwnedPtr<CQualifierMap> newMap = new CQualifierMap();
+        valueMap = newMap->addMapping(lhs, *value);
+
+        /*
+        * NB: it's possible another read thread got here 1st, and swapped in a map.
+        * setMap returns the existing map, and the code below checks to see if it already
+        * handles the 'lhs' we're adding, if it doesn't it re-adds the qualifier mappings.
+        */
+        map = value->setMap(newMap);
+        if (!map) // successfully swapped newMap in.
+            map = newMap.getClear(); // NB: setMap owns
+        else // another thread has swapped in a map whilst I was creating new one
+            valueMap = map->addMappingIfNew(lhs, *value);
+    }
+
+    xxpath = xpath; // update parsed position
+
+    auto range = valueMap->find(rhs);
+    if (range.first != range.second)
+        return new CMapQualifierIterator(*map, range.first, range.second);
+    else
+        return LINK(nullPTreeIterator);
 }
 
 ///////////////////
@@ -766,6 +1147,80 @@ size32_t CPTValue::queryValueSize() const
 
 ///////////////////
 
+
+CPTArray::~CPTArray()
+{
+    if (map.load())
+        delete map.load();
+}
+
+CQualifierMap *CPTArray::setMap(CQualifierMap *_map)
+{
+    CQualifierMap *expected = nullptr;
+    if (map.compare_exchange_strong(expected, _map))
+        return nullptr;
+    else
+        return expected;
+}
+
+void CPTArray::addElement(IPropertyTree *tree)
+{
+    append(*tree);
+    CQualifierMap *map = queryMap();
+    if (map)
+    {
+        if (tree->getAttributeCount())
+            map->addMatchingValues(tree);
+    }
+}
+
+void CPTArray::setElement(unsigned idx, IPropertyTree *tree)
+{
+    CQualifierMap *map = queryMap();
+    if (map)
+    {
+        // remove any mappings for existing element.
+        if (isItem(idx))
+        {
+            IPropertyTree *existing = &((IPropertyTree &)item(idx));
+            map->replaceMatchingValues(existing, tree);
+        }
+        else
+            map->addMatchingValues(tree);
+    }
+    add(*tree, idx);
+}
+
+void CPTArray::removeElement(unsigned idx)
+{
+    CQualifierMap *map = queryMap();
+    if (map)
+    {
+        IPropertyTree *existing = &((IPropertyTree &)item(idx));
+        map->removeMatchingValues(existing);
+    }
+    remove(idx);
+}
+
+unsigned CPTArray::find(const IPropertyTree *search) const
+{
+    IInterface **start = getArray();
+    IInterface **last = start + ordinality();
+    IInterface **members = start;
+    while (true)
+    {
+        if (*members == search)
+            return members-start;
+        members++;
+        if (members == last)
+            break;
+    }
+    return NotFound;
+}
+
+//////////////////
+
+
 PTree::PTree(byte _flags, IPTArrayValue *_value, ChildMap *_children)
 {
     flags = _flags;
@@ -792,22 +1247,12 @@ aindex_t PTree::findChild(IPropertyTree *child, bool remove)
 {
     if (value && value->isArray())
     {
-        unsigned i;
-        for (i=0; i<value->elements(); i++)
-        {
-            IPropertyTree *_child = value->queryElement(i);
-            if (_child == child)
-            {
-                if (remove)
-                {
-                    assertex(value);
-                    value->removeElement(i);
-                }
-                return i;
-            }
-        }
+        unsigned pos = value->find(child);
+        if (remove && NotFound != pos)
+            value->removeElement(pos);
+        return pos;
     }
-    else if (children)
+    else if (checkChildren())
     {
         IPropertyTree *_child = children->query(child->queryName());
         if (_child == child)
@@ -1580,7 +2025,7 @@ IPropertyTree *PTree::setPropTree(const char *xpath, IPropertyTree *val)
 bool PTree::isArray(const char *xpath) const
 {
     if (!xpath || !*xpath) //item in an array child of parent? I don't think callers ever access array container directly
-        return (parent && parent->isArray(queryName()));
+        return arrayOwner && arrayOwner->isArray();
     else if (isAttribute(xpath))
         return false;
     else
@@ -1618,13 +2063,13 @@ void PTree::addPTreeArrayItem(IPropertyTree *existing, const char *xpath, PTree 
 {
     IPropertyTree *iptval = static_cast<IPropertyTree *>(val);
     PTree *tree = nullptr;
-    val->setParent(this);
     if (existing)
     {
         dbgassertex(QUERYINTERFACE(existing, PTree));
         tree = static_cast<PTree *>(existing);
         if (tree->value && tree->value->isArray())
         {
+            val->setOwner(tree->value);
             if ((aindex_t) -1 == pos)
                 tree->value->addElement(iptval);
             else
@@ -1635,6 +2080,7 @@ void PTree::addPTreeArrayItem(IPropertyTree *existing, const char *xpath, PTree 
 
     IPTArrayValue *array = new CPTArray();
     IPropertyTree *container = create(xpath, array);
+    val->setOwner(array);
     if (existing)
     {
         array->addElement(LINK(existing));
@@ -1643,7 +2089,7 @@ void PTree::addPTreeArrayItem(IPropertyTree *existing, const char *xpath, PTree 
             array->addElement(iptval);
         else
             array->setElement(0, iptval);
-        tree->setParent(this);
+        tree->setOwner(array);
         children->replace(xpath, container);
     }
     else
@@ -1747,31 +2193,30 @@ bool PTree::removeTree(IPropertyTree *child)
 {
     if (child == this)
         throw MakeIPTException(-1, "Cannot remove self");
-    if (children)
-    {
-        Owned<IPropertyTreeIterator> iter = children->getIterator(false);
-        if (iter->first())
-        {
-            do
-            {
-                PTree *element = (PTree *) &iter->query();
-                if (element == child)
-                    return children->removeExact(element);
 
-                if (element->value && element->value->isArray())
+    if (checkChildren())
+    {
+        IPropertyTree *_child = children->query(child->queryName());
+        if (_child)
+        {
+            if (child == _child)
+                return children->removeExact(child);
+            else
+            {
+                IPTArrayValue *value = ((PTree *)_child)->queryValue();
+                if (value && value->isArray())
                 {
-                    Linked<PTree> tmp = (PTree*) child;
-                    aindex_t i = element->findChild(child, true);
-                    if (NotFound != i)
+                    unsigned pos = value->find(child);
+                    if (NotFound != pos)
                     {
-                        removingElement(child, i);
-                        if (0 == element->value->elements())
-                            children->removeExact(element);
+                        removingElement(child, pos);
+                        value->removeElement(pos);
+                        if (0 == value->elements())
+                            children->removeExact(_child);
                         return true;
                     }
                 }
             }
-            while (iter->next());
         }
     }
     return false;
@@ -2162,10 +2607,6 @@ restart:
                         }
                         else
                         {
-                            if (wild)
-                                iter.setown(new PTIdMatchIterator(this, id, isnocase(), flags & iptiter_sort));
-                            else
-                                iter.setown(child->getElements(NULL));
                             const char *start = xxpath-1;
                             for (;;)
                             {
@@ -2195,8 +2636,17 @@ restart:
                                     ++xxpath;
                                     if (isdigit(*xxpath))
                                     {
-                                        StringAttr qualifier(start, (xxpath-1)-start);
-                                        Owned<PTStackIterator> siter = new PTStackIterator(iter.getClear(), qualifier.get());
+                                        const char *lhsStart = start+1;
+                                        Owned<IPropertyTreeIterator> siter = checkMapIterator(lhsStart, *child);
+                                        if (!siter)
+                                        {
+                                            if (wild)
+                                                iter.setown(new PTIdMatchIterator(this, id, isnocase(), flags & iptiter_sort));
+                                            else
+                                                iter.setown(child->getElements(NULL));
+                                            StringAttr qualifier(start, (xxpath-1)-start);
+                                            siter.setown(new PTStackIterator(iter.getClear(), qualifier.get()));
+                                        }
                                         StringAttr index;
                                         xxpath = readIndex(xxpath, index);
                                         unsigned i = atoi(index.get());
@@ -2207,6 +2657,21 @@ restart:
                                 }
                                 else
                                 {
+                                    if (!wild)
+                                    {
+                                        const char *lhsStart = start+1;
+                                        Owned<IPropertyTreeIterator> mapIter = checkMapIterator(lhsStart, *child);
+                                        if (mapIter)
+                                        {
+                                            xxpath = lhsStart;
+                                            iter.swap(mapIter);
+                                            break;
+                                        }
+                                    }
+                                    if (wild)
+                                        iter.setown(new PTIdMatchIterator(this, id, isnocase(), flags & iptiter_sort));
+                                    else
+                                        iter.setown(child->getElements(NULL));
                                     StringAttr qualifier(start, xxpath-start);
                                     iter.setown(new PTStackIterator(iter.getClear(), qualifier.get()));
                                     break;
@@ -2642,7 +3107,7 @@ void PTree::addLocal(size32_t l, const void *data, bool _binary, int pos)
     if (!l) return; // right thing to do on addProp("x", NULL) ?
     IPTArrayValue *newValue = new CPTValue(l, data, _binary);
     Owned<IPropertyTree> tree = create(queryName(), newValue);
-    PTree *_tree = QUERYINTERFACE(tree.get(), PTree); assertex(_tree); _tree->setParent(this);
+    PTree *_tree = QUERYINTERFACE(tree.get(), PTree); assertex(_tree);
 
     if (_binary)
         IptFlagSet(_tree->flags, ipt_binary);
@@ -2670,6 +3135,7 @@ void PTree::addLocal(size32_t l, const void *data, bool _binary, int pos)
         array->addElement(element1);
         value = array;
     }
+    _tree->setOwner(array);
     tree->Link();
     if (-1 == pos)
         array->addElement(tree);
@@ -3092,6 +3558,12 @@ bool LocalPTree::removeAttribute(const char *key)
     AttrValue *del = findAttribute(key);
     if (!del)
         return false;
+    if (arrayOwner)
+    {
+        CQualifierMap *map = arrayOwner->queryMap();
+        if (map)
+            map->removeEntryIfMapped(key, del->value.get(), this);
+    }
     numAttrs--;
     unsigned pos = del-attrs;
     del->key.destroy();
@@ -3123,6 +3595,18 @@ void LocalPTree::setAttribute(const char *key, const char *val)
         if (!v->key.set(key))
             v->key.setPtr(isnocase() ? AttrStr::createNC(key) : AttrStr::create(key));
     }
+    if (arrayOwner)
+    {
+        CQualifierMap *map = arrayOwner->queryMap();
+        if (map)
+        {
+            if (goer)
+                map->replaceEntryIfMapped(key, v->value.get(), val, this);
+            else
+                map->insertEntryIfMapped(key, val, this);
+        }
+    }
+
     if (!v->value.set(val))
         v->value.setPtr(AttrStr::create(val));
     if (goer)
@@ -3294,6 +3778,13 @@ void CAtomPTree::setAttribute(const char *key, const char *val)
     {
         if (streq(v->value.get(), val))
             return;
+        if (arrayOwner)
+        {
+            CQualifierMap *map = arrayOwner->queryMap();
+            if (map)
+                map->replaceEntryIfMapped(key, v->value.get(), val, this);
+        }
+
         AttrStr * goer = v->value.getPtr();
         if (!v->value.set(val))
         {
@@ -3317,6 +3808,12 @@ void CAtomPTree::setAttribute(const char *key, const char *val)
             memcpy(newattrs, attrs, numAttrs*sizeof(AttrValue));
             freeAttrArray(attrs, numAttrs);
         }
+        if (arrayOwner)
+        {
+            CQualifierMap *map = arrayOwner->queryMap();
+            if (map)
+                map->insertEntryIfMapped(key, val, this);
+        }
         v = &newattrs[numAttrs];
         if (!v->key.set(key))
             v->key.setPtr(attrHT->addkey(key, isnocase()));
@@ -3333,6 +3830,12 @@ bool CAtomPTree::removeAttribute(const char *key)
     if (!del)
         return false;
     numAttrs--;
+    if (arrayOwner)
+    {
+        CQualifierMap *map = arrayOwner->queryMap();
+        if (map)
+            map->removeEntryIfMapped(key, del->value.get(), this);
+    }
     CriticalBlock block(hashcrit);
     if (del->key.isPtr())
         attrHT->removekey(del->key.getPtr(), isnocase());
@@ -3649,14 +4152,41 @@ bool PTStackIterator::next()
                     if (iter->isValid()) 
                         pushToStack(iter, xxpath);
 
-                    bool wild;
+                    bool wild, numeric;
                     const char *start = xxpath;
-                    readWildIdIndex(xxpath, wild);
+                    readWildIdIndex(xxpath, wild, numeric);
                     size32_t s = xxpath-start;
+
                     if (s)
                     {
+                         // NB: actually an id not qualifier, just sharing var.
                         qualifierText.clear().append(s, start);
-                        setIterator(element->getElements(qualifierText));
+
+                        bool mapped = false;
+                        if (!wild && !numeric)
+                        {
+                            ChildMap *children = ((PTree *)element)->checkChildren();
+                            if (children)
+                            {
+                                IPropertyTree *child = children->query(qualifierText);
+                                if (child)
+                                {
+                                    if ('[' == *xxpath)
+                                    {
+                                        const char *newXXPath = xxpath+1;
+                                        Owned<IPropertyTreeIterator> mapIter = checkMapIterator(newXXPath, *child);
+                                        if (mapIter)
+                                        {
+                                            setIterator(mapIter.getClear());
+                                            mapped = true;
+                                            xxpath = newXXPath;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (!mapped)
+                            setIterator(element->getElements(qualifierText));
                     }
                     else // must be qualifier.
                     {
@@ -8077,8 +8607,8 @@ jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, con
         holdLoop();
 #endif
 
-    if (!globalConfiguration)
-        globalConfiguration.setown(createPTree("global"));
+    unsigned ptreeMappingThreshold = globalConfiguration->getPropInt("@ptreeMappingThreshold", defaultSiblingMapThreshold);
+    setPTreeMappingThreshold(ptreeMappingThreshold);
 
     componentConfiguration.set(config);
     return config.getClear();
