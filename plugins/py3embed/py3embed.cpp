@@ -748,7 +748,6 @@ static void getStringResult(const RtlFieldInfo *field, PyObject *obj, size32_t &
             size_t lenBytes = PyBytes_Size(obj);
             rtlStrToStrX(chars, result, lenBytes, text);
         }
-        return;
     }
     typeError("string", field);
 }
