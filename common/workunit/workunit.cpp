@@ -7046,7 +7046,8 @@ bool CLocalWorkUnit::setDistributedAccessToken(const char * user)
     }
     else
     {
-        WARNLOG("Cannot sign Distributed Access Token, digisign signing not configured");
+        if (workUnitTraceLevel > 1)
+            WARNLOG("Cannot sign Distributed Access Token, digisign signing not configured");
         datoken.append(";");
     }
     p->setProp("@distributedAccessToken", datoken);
