@@ -56,6 +56,7 @@
 #define FVERR_PluginMismatch                    6728
 #define FVERR_RowTooLarge                       6729
 #define FVERR_CouldNotProcessSchema             6730
+#define FVERR_MaxLengthExceeded                 6731
 
 #define FVERR_CouldNotResolveX_Text             "Could not resolve file '%s' in DFS"
 #define FVERR_NoRecordDescription_Text          "DFS did not contain a record description for '%s'"

@@ -41,16 +41,16 @@ class DistributeSkewRule : public ActivityKindRule
 public:
     DistributeSkewRule() : ActivityKindRule(TAKhashdistribute) {}
 
-    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const WuAnalyseOptions & options) override
+    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const IAnalyserOptions & options) override
     {
         IWuEdge * outputEdge = activity.queryOutput(0);
         if (!outputEdge)
             return false;
         stat_type rowsAvg = outputEdge->getStatRaw(StNumRowsProcessed, StAvgX);
-        if (rowsAvg < rowsThreshold)
+        if (rowsAvg < options.queryOption(watOptMinRowsPerNode))
             return false;
         stat_type rowsMaxSkew = outputEdge->getStatRaw(StNumRowsProcessed, StSkewMax);
-        if (rowsMaxSkew > options.skewThreshold)
+        if (rowsMaxSkew > options.queryOption(watOptSkewThreshold))
         {
             // Use downstream activity time to calculate approximate cost
             IWuActivity * targetActivity = outputEdge->queryTarget();
@@ -70,9 +70,6 @@ public:
         }
         return false;
     }
-
-protected:
-    static const stat_type rowsThreshold = 100;                // avg rows per node.
 };
 
 class IoSkewRule : public AActivityRule
@@ -128,12 +125,11 @@ public:
         return false;
     }
 
-    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const WuAnalyseOptions & options) override
+    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const IAnalyserOptions & options) override
     {
         stat_type ioAvg = activity.getStatRaw(stat, StAvgX);
         stat_type ioMaxSkew = activity.getStatRaw(stat, StSkewMax);
-
-        if (ioMaxSkew > options.skewThreshold)
+        if (ioMaxSkew > options.queryOption(watOptSkewThreshold))
         {
             stat_type timeMaxLocalExecute = activity.getStatRaw(StTimeLocalExecute, StMaxX);
             stat_type timeAvgLocalExecute = activity.getStatRaw(StTimeLocalExecute, StAvgX);
@@ -158,6 +154,36 @@ protected:
     const char * category;
 };
 
+class KeyedJoinExcessRejectedRowsRule : public ActivityKindRule
+{
+public:
+    KeyedJoinExcessRejectedRowsRule() : ActivityKindRule(TAKkeyedjoin) {}
+
+    virtual bool check(PerformanceIssue & result, IWuActivity & activity, const IAnalyserOptions & options) override
+    {
+        stat_type preFiltered = activity.getStatRaw(StNumPreFiltered);
+        if (preFiltered)
+        {
+            IWuEdge * inputEdge = activity.queryInput(0);
+            stat_type rowscnt = inputEdge->getStatRaw(StNumRowsProcessed);
+            if (rowscnt)
+            {
+                stat_type preFilteredPer = statPercent( (double) preFiltered * 100.0 / rowscnt );
+                if (preFilteredPer > options.queryOption(watPreFilteredKJThreshold))
+                {
+                    IWuActivity * inputActivity = inputEdge->querySource();
+                    // Use input activity as the basis of cost because the rows generated from input activity is being filtered out
+                    stat_type timeAvgLocalExecute = inputActivity->getStatRaw(StTimeLocalExecute, StAvgX);
+                    stat_type cost = statPercentageOf(timeAvgLocalExecute, preFilteredPer);
+                    result.set(ANA_KJ_EXCESS_PREFILTER_ID, cost, "Large number of rows from left dataset rejected in keyed join");
+                    updateInformation(result, activity);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+};
 
 void gatherRules(CIArrayOf<AActivityRule> & rules)
 {
@@ -165,4 +191,5 @@ void gatherRules(CIArrayOf<AActivityRule> & rules)
     rules.append(*new IoSkewRule(StTimeDiskReadIO, "disk read"));
     rules.append(*new IoSkewRule(StTimeDiskWriteIO, "disk write"));
     rules.append(*new IoSkewRule(StTimeSpillElapsed, "spill"));
+    rules.append(*new KeyedJoinExcessRejectedRowsRule);
 }

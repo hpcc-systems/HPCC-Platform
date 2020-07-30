@@ -42,7 +42,7 @@ void usage(const char *exe)
     printf("-sdsstats           -- SDS statistics\n");
     printf("-sdssubscribers     -- list active SDS subscribers\n");
     printf("-connections        -- list SDS connections\n");
-    printf("-whitelist          -- list white list\n");
+    printf("-allowlist          -- list entries in allowlist\n");
     printf("-threads            -- running threads\n");
     printf("-mpqueue            -- list waiting MP queue items\n");
     printf("-clients            -- list connected Dali clients\n");

@@ -54,7 +54,11 @@
             <xsl:attribute name="logDir">
                <xsl:value-of select="translate(@logDir, $oldPathChars, $newPathChars)"/>
             </xsl:attribute>
-            
+
+            <xsl:attribute name="sashaUser">
+                <xsl:value-of select="@sashaUser"/>
+            </xsl:attribute>
+
             <xsl:attribute name="enableSNMP">
                <xsl:call-template name="outputBool">
                   <xsl:with-param name="val" select="@enableSNMP"/>
@@ -83,7 +87,7 @@
                    <xsl:value-of select="@LDSroot"/>
                 </xsl:attribute>
             </xsl:element>
-            
+
             <xsl:element name="Archiver">
                 <xsl:element name="WorkUnits"> 
                     <xsl:attribute name="limit">

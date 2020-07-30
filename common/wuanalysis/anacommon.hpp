@@ -23,11 +23,6 @@
 #include "eclhelper.hpp"
 #include "anaerrorcodes.hpp"
 
-#ifdef WUANALYSIS_EXPORTS
-    #define WUANALYSIS_API DECL_EXPORT
-#else
-    #define WUANALYSIS_API DECL_IMPORT
-#endif
 
 interface IWuScope
 {
@@ -80,6 +75,13 @@ private:
     StringAttr scope;
     stat_type cost = 0;      // number of nanoseconds lost as a result.
     StringBuffer comment;
+};
+
+typedef enum { watOptFirst=0, watOptMinInterestingTime=0, watOptMinInterestingCost, watOptSkewThreshold, watOptMinRowsPerNode, watPreFilteredKJThreshold, watOptMax } WutOptionType ;
+
+interface IAnalyserOptions
+{
+    virtual stat_type queryOption(WutOptionType opt) const = 0;
 };
 
 extern int compareIssuesCostOrder(CInterface * const * _l, CInterface * const * _r);

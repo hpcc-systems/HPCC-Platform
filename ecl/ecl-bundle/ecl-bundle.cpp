@@ -1024,6 +1024,8 @@ protected:
         unsigned retCode = doPipeCommand(output, queryEclccPath(optVerbose), "--nologfile -showpaths", NULL);
         if (retCode == START_FAILURE)
             throw makeStringExceptionV(0, "FATAL: Could not locate eclcc command");
+        if (optVerbose)
+            printf("eclcc output:\n%s\n", output.str());
         extractValueFromEnvOutput(bundlePath, output, ECLCC_ECLBUNDLE_PATH);
         extractValueFromEnvOutput(hooksPath, output, HPCC_FILEHOOKS_PATH);
     }

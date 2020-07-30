@@ -48,6 +48,10 @@
   #define Py_TPFLAGS_HAVE_ITER 0
 #endif
 
+#if PY_MINOR_VERSION < 7
+  #define USE_CUSTOM_NAMEDTUPLES
+#endif
+
 static const char * compatibleVersions[] = {
     "Python3.x Embed Helper 1.0.0",
     NULL };
@@ -145,6 +149,105 @@ static void checkPythonError()
         failx("%s", text);
     }
 }
+
+#ifdef USE_CUSTOM_NAMEDTUPLES
+// In Python3.6 we can't use the standard namedtuple if we have > 255 params. So we need to use our own based on similar techniques.
+// The code below is copied from the Python 3.6 collections module source, with minor modifications:
+// - pass in the initial tuple values as a tuple rather than as separate parameters, to avoid the 256 param limit
+// - remove some options we were not using
+
+static constexpr const char * _py36code = R"!!(
+import sys as _sys
+from keyword import iskeyword as _iskeyword
+_class_template = """\
+from builtins import property as _property, tuple as _tuple
+from operator import itemgetter as _itemgetter
+from collections import OrderedDict
+class {typename}(tuple):
+    '{typename}({arg_list})'
+    __slots__ = ()
+    _fields = {field_names!r}
+    def __new__(_cls, t):
+        'Create new instance of {typename}({arg_list})'
+        return _tuple.__new__(_cls, t)
+    @classmethod
+    def _make(cls, iterable, new=tuple.__new__, len=len):
+        'Make a new {typename} object from a sequence or iterable'
+        result = new(cls, iterable)
+        if len(result) != {num_fields:d}:
+            raise TypeError('Expected {num_fields:d} arguments, got %d' % len(result))
+        return result
+    def _replace(_self, **kwds):
+        'Return a new {typename} object replacing specified fields with new values'
+        result = _self._make(map(kwds.pop, {field_names!r}, _self))
+        if kwds:
+            raise ValueError('Got unexpected field names: %r' % list(kwds))
+        return result
+    def __repr__(self):
+        'Return a nicely formatted representation string'
+        return self.__class__.__name__ + '({repr_fmt})' % self
+    def _asdict(self):
+        'Return a new OrderedDict which maps field names to their values.'
+        return OrderedDict(zip(self._fields, self))
+    def __getnewargs__(self):
+        'Return self as a plain tuple.  Used by copy and pickle.'
+        return tuple(self)
+{field_defs}
+"""
+
+_repr_template = '"{name}=%r";'
+
+_field_template = '''\
+    {name} = _property(_itemgetter({index:d}), doc='Alias for field number {index:d}')
+'''
+
+def namedtuple(typename, field_names):
+
+    # Validate the field names, and replace any invalid ones with a valid name.
+    field_names = field_names.replace(',', ' ').split()
+    field_names = list(map(str, field_names))
+    typename = str(typename)
+    for index, name in enumerate(field_names):
+        if (not name.isidentifier()
+            or _iskeyword(name)
+            or name.startswith('_')):
+            field_names[index] = '_%d' % index
+
+    # Fill-in the class template
+    class_definition = _class_template.format(
+        typename = typename,
+        field_names = tuple(field_names),
+        num_fields = len(field_names),
+        arg_list = repr(tuple(field_names)).replace("'", "")[1:-1],
+        repr_fmt = ', '.join(_repr_template.format(name=name)
+                             for name in field_names),
+        field_defs = '\n'.join(_field_template.format(index=index, name=name)
+                               for index, name in enumerate(field_names))
+    )
+
+    # Execute the template string in a temporary namespace and support
+    # tracing utilities by setting a value for frame.f_globals['__name__']
+    namespace = dict(__name__='namedtuple_%s' % typename)
+    exec(class_definition, namespace)
+    result = namespace[typename]
+
+    # For pickling to work, the __module__ variable needs to be set to the frame
+    # where the named tuple is created.  Bypass this step in environments where
+    # sys._getframe is not defined (Jython for example) or sys._getframe is not
+    # defined for arguments greater than 0 (IronPython), or where the user has
+    # specified a particular module.
+    module = None
+    try:
+        module = _sys._getframe(1).f_globals.get('__name__', '__main__')
+    except (AttributeError, ValueError):
+        pass
+    if module is not None:
+        result.__module__ = module
+
+    return result
+)!!";
+
+#endif
 
 // The Python Global Interpreter Lock (GIL) won't know about C++-created threads, so we need to
 // call PyGILState_Ensure() and PyGILState_Release at the start and end of every function.
@@ -298,6 +401,13 @@ public:
             initialized = false;
             return;
         }
+        StringBuffer py2modname;
+        if  (findLoadedModule(py2modname, "libpy2embed."))
+        {
+            initialized = false;
+            multiPython = true;
+            return;
+        }
 #endif
 #ifndef _WIN32
         // We need to ensure all symbols in the python3.x so are loaded - due to bugs in some distro's python installations
@@ -305,8 +415,8 @@ public:
         // Therefore on systems where both are present, do NOT do this - people using centos systems that suffer from issue
         // https://bugs.centos.org/view.php?id=6063 will need to choose which version of python plugin to install but not both
 
-        StringBuffer modname, py2modname;
-        if  (findLoadedModule(modname, "libpython3.") && !findLoadedModule(py2modname, "libpython2."))
+        StringBuffer modname;
+        if  (findLoadedModule(modname, "libpython3."))
             pythonLibrary = dlopen(modname.str(), RTLD_NOW|RTLD_GLOBAL);
 #endif
         // Initialize the Python Interpreter
@@ -345,6 +455,13 @@ public:
             preservedScopes.getClear();
 
         }
+    }
+    void checkInitialized()
+    {
+        if (multiPython)
+            rtlFail(0, "Python3 not initialized as Python2 already loaded");
+        else if (!initialized)
+            rtlFail(0, "Python3 not initialized");
     }
     bool isInitialized()
     {
@@ -394,10 +511,19 @@ public:
         if (!namedtuple)
         {
             namedtupleTypes.setown(PyDict_New());
+#ifdef USE_CUSTOM_NAMEDTUPLES
+            OwnedPyObject temp_namespace(PyDict_New());
+            PyDict_SetItemString(temp_namespace, "__builtins__",  PyEval_GetBuiltins());  // required for import to work
+            checkPythonError();
+            OwnedPyObject ran = PyRun_String(_py36code, Py_file_input, temp_namespace, temp_namespace);
+            checkPythonError();
+            namedtuple.set(PyDict_GetItemString(temp_namespace, "namedtuple"));   // NOTE - returns borrowed reference
+#else
             OwnedPyObject pName = PyUnicode_FromString("collections");
             OwnedPyObject collections = PyImport_Import(pName);
             checkPythonError();
             namedtuple.setown(PyObject_GetAttrString(collections, "namedtuple"));
+#endif
             checkPythonError();
             assertex(PyCallable_Check(namedtuple));
         }
@@ -566,6 +692,7 @@ protected:
     }
     PyThreadState *tstate = nullptr;
     bool initialized = false;
+    bool multiPython = false;
     bool skipPythonCleanup = true; // Tensorflow seems to often lockup in the python cleanup process.
     HINSTANCE pythonLibrary = 0;
     OwnedPyObject namedtuple;      // collections.namedtuple
@@ -605,8 +732,7 @@ static void checkThreadContext()
 {
     if (!threadContext)
     {
-        if (!globalState.isInitialized())
-            rtlFail(0, "Python not initialized");
+        globalState.checkInitialized();
         threadContext = new PythonThreadContext;
         addThreadTermFunc(releaseContext);
     }
@@ -748,7 +874,6 @@ static void getStringResult(const RtlFieldInfo *field, PyObject *obj, size32_t &
             size_t lenBytes = PyBytes_Size(obj);
             rtlStrToStrX(chars, result, lenBytes, text);
         }
-        return;
     }
     typeError("string", field);
 }
@@ -1197,7 +1322,13 @@ public:
     PyObject *getTuple(const RtlTypeInfo *type)
     {
         OwnedPyObject mynamedtupletype = sharedCtx ? sharedCtx->getNamedTupleType(type) : globalState.getNamedTupleType(type);
+#ifdef USE_CUSTOM_NAMEDTUPLES
+        OwnedPyObject argsTuple = PyTuple_New(1);
+        Py_INCREF(args);
+        PyTuple_SET_ITEM((PyTupleObject *) argsTuple.get(), 0, args);
+#else
         OwnedPyObject argsTuple = PyList_AsTuple(args);
+#endif
         OwnedPyObject mynamedtuple = PyObject_CallObject(mynamedtupletype, argsTuple);  // Creates a namedtuple from the supplied tuple
         checkPythonError();
         return mynamedtuple.getClear();
@@ -1968,20 +2099,23 @@ extern DECL_EXPORT IEmbedContext* getEmbedContext()
 extern DECL_EXPORT void syntaxCheck(size32_t & __lenResult, char * & __result, const char *funcname, size32_t charsBody, const char * body, const char *argNames, const char *compilerOptions, const char *persistOptions)
 {
     StringBuffer result;
-    // NOTE - compilation of a script does not actually resolve imports - so the fact that the manifest is not on the path does not matter
-    // This does mean that many errors cannot be caught until runtime, but that's Python for you...
-    try
+    if (globalState.isInitialized())
     {
-        checkThreadContext();
-        Owned<Python3xEmbedScriptContext> ctx = new Python3xEmbedScriptContext(threadContext, nullptr);
-        ctx->setargs(argNames);
-        ctx->compileEmbeddedScript(charsBody, body);
-    }
-    catch (IException *E)
-    {
-        StringBuffer msg;
-        result.append(E->errorMessage(msg));
-        E->Release();
+        // NOTE - compilation of a script does not actually resolve imports - so the fact that the manifest is not on the path does not matter
+        // This does mean that many errors cannot be caught until runtime, but that's Python for you...
+        try
+        {
+            checkThreadContext();
+            Owned<Python3xEmbedScriptContext> ctx = new Python3xEmbedScriptContext(threadContext, nullptr);
+            ctx->setargs(argNames);
+            ctx->compileEmbeddedScript(charsBody, body);
+        }
+        catch (IException *E)
+        {
+            StringBuffer msg;
+            result.append(E->errorMessage(msg));
+            E->Release();
+        }
     }
     __lenResult = result.length();
     __result = result.detach();

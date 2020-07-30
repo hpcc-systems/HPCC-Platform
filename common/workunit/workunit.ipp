@@ -354,7 +354,7 @@ public:
     void clearExceptions(const char *source=nullptr);
     void commit();
     IWUException *createException();
-    void addProcess(const char *type, const char *instance, unsigned pid, const char *log);
+    void addProcess(const char *type, const char *instance, unsigned pid, unsigned max, const char *pattern, bool singleLog, const char *log);
     void setAction(WUAction action);
     void setApplicationValue(const char * application, const char * propname, const char * value, bool overwrite);
     void setApplicationValueInt(const char * application, const char * propname, int value, bool overwrite);

@@ -220,8 +220,7 @@ static void process(IConstWorkUnit &w, IProperties *globals, const StringArray &
     }
     else if (stricmp(action, "analyze")==0)
     {
-        WuAnalyseOptions options; // TODO: allow options to be set from from command line parameters
-        analyseAndPrintIssues(&w, options, globals->getPropBool("UPDATEWU"));
+        analyseAndPrintIssues(&w, globals->getPropBool("UPDATEWU"));
     }
     else if (stricmp(action, "dump")==0)
     {
@@ -1344,7 +1343,7 @@ protected:
                 ex->setTimeStamp("2001");
             }
 
-            wu->addProcess("ptype", "pInstance", 54321, "mylog");
+            wu->addProcess("ptype", "pInstance", 54321, 50, "pPattern", false, "mylog");
             wu->setAction(WUActionCompile);
             wu->setApplicationValue("app1", "av1", "value", true);
             wu->setApplicationValueInt("app2", "av2", 42, true);

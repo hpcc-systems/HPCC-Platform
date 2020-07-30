@@ -27,6 +27,7 @@
 #include "jdebug.hpp"
 #include "jset.hpp"
 #include "rmtfile.hpp"
+#include "jlzw.hpp"
 #include "jqueue.hpp"
 #include "jregexp.hpp"
 
@@ -2282,6 +2283,99 @@ CPPUNIT_TEST_SUITE_REGISTRATION(JlibIOTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibIOTest, "JlibIOTest");
 
 
+class JlibCompressionTestsStress : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(JlibCompressionTestsStress);
+        CPPUNIT_TEST(test);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void test()
+    {
+        try
+        {
+            size32_t sz = 100*0x100000; // 100MB
+            MemoryBuffer src;
+            src.ensureCapacity(sz);
+            MemoryBuffer compressed;
+            const char *aesKey = "012345678901234567890123";
+            Owned<ICompressHandlerIterator> iter = getCompressHandlerIterator();
+
+            StringBuffer tmp;
+            unsigned card = 0;
+            size32_t rowSz = 0;
+            while (true)
+            {
+                size32_t cLen = src.length();
+                if (cLen > sz)
+                    break;
+                src.append(cLen);
+                tmp.clear().appendf("%10u", cLen);
+                src.append(tmp.length(), tmp.str());
+                src.append(++card % 52);
+                src.append(crc32((const char *)&cLen, sizeof(cLen), 0));
+                unsigned ccrc = crc32((const char *)&card, sizeof(card), 0);
+                tmp.clear().appendf("%10u", ccrc);
+                src.append(tmp.length(), tmp.str());
+                tmp.clear().appendf("%20u", (++card % 10));
+                src.append(tmp.length(), tmp.str());
+                if (0 == rowSz)
+                    rowSz = src.length();
+                else
+                {
+                    dbgassertex(0 == (src.length() % rowSz));
+                }
+            }
+
+            printf("\nAlgorithm || Compression Time (ms) || Decompression Time (ms) || Compression Ratio\n");
+
+            ForEach(*iter)
+            {
+                compressed.clear();
+                ICompressHandler &handler = iter->query();
+                Owned<ICompressor> compressor = handler.getCompressor(streq("AES", handler.queryType()) ? aesKey: nullptr);
+
+                CCycleTimer timer;
+                compressor->open(compressed, sz);
+                compressor->startblock();
+                const byte *ptr = src.bytes();
+                const byte *ptrEnd = ptr + src.length();
+                while (ptr != ptrEnd)
+                {
+                    compressor->write(ptr, rowSz);
+                    ptr += rowSz;
+                }
+                compressor->commitblock();
+                compressor->close();
+                cycle_t compressCycles = timer.elapsedCycles();
+
+                Owned<IExpander> expander = handler.getExpander(streq("AES", handler.queryType()) ? aesKey: nullptr);
+
+                timer.reset();
+                size32_t required = expander->init(compressed.bytes());
+                MemoryBuffer tgt(required);
+                expander->expand(tgt.bufferBase());
+                tgt.setWritePos(required);
+                cycle_t decompressCycles = timer.elapsedCycles();
+
+                float ratio = (float)(src.length()) / compressed.length();
+
+                printf("%9s || %21u || %23u || %17.2f [ %u, %u ]\n", handler.queryType(), (unsigned)cycle_to_millisec(compressCycles), (unsigned)cycle_to_millisec(decompressCycles), ratio, src.length(), compressed.length());
+
+                CPPUNIT_ASSERT(tgt.length() >= sz);
+                CPPUNIT_ASSERT(0 == memcmp(src.bufferBase(), tgt.bufferBase(), sz));
+           }
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, nullptr);
+            throw;
+        }
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibCompressionTestsStress );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibCompressionTestsStress, "JlibCompressionTestsStress" );
 
 
 #endif // _USE_CPPUNIT

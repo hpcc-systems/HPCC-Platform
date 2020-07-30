@@ -18,15 +18,12 @@
 #ifndef ANAWU_HPP
 #define ANAWU_HPP
 
-#include "anacommon.hpp"
+#ifdef WUANALYSIS_EXPORTS
+    #define WUANALYSIS_API DECL_EXPORT
+#else
+    #define WUANALYSIS_API DECL_IMPORT
+#endif
 
-struct WuAnalyseOptions
-{
-    stat_type minInterestingTime = msecs2StatUnits(10);// ignore anything under 10 millisecond
-    stat_type minCost = seconds2StatUnits(30);          // only interested in costs of > 30s
-    stat_type skewThreshold = statSkewPercent(20);     // minimum interesting skew measurment
-};
-
-void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, WuAnalyseOptions & options);
-void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, WuAnalyseOptions & options, bool updatewu);
+void WUANALYSIS_API analyseWorkunit(IWorkUnit * wu, IPropertyTree *options);
+void WUANALYSIS_API analyseAndPrintIssues(IConstWorkUnit * wu, bool updatewu);
 #endif

@@ -4226,8 +4226,8 @@ public:
             { c->commit(); }
     virtual IWUException * createException()
             { return c->createException(); }
-    virtual void addProcess(const char *type, const char *instance, unsigned pid, const char *log)
-            { c->addProcess(type, instance, pid, log); }
+    virtual void addProcess(const char *type, const char *instance, unsigned pid, unsigned max, const char *pattern, bool singleLog, const char *log)
+            { c->addProcess(type, instance, pid, max, pattern, singleLog, log); }
     virtual void protect(bool protectMode)
             { c->protect(protectMode); }
     virtual void setAction(WUAction action)
@@ -7046,7 +7046,8 @@ bool CLocalWorkUnit::setDistributedAccessToken(const char * user)
     }
     else
     {
-        WARNLOG("Cannot sign Distributed Access Token, digisign signing not configured");
+        if (workUnitTraceLevel > 1)
+            WARNLOG("Cannot sign Distributed Access Token, digisign signing not configured");
         datoken.append(";");
     }
     p->setProp("@distributedAccessToken", datoken);
@@ -8181,7 +8182,8 @@ IStringIterator *CLocalWorkUnit::getProcesses(const char *type) const
     return new CStringPTreeTagIterator(p->getElements(xpath.str()));
 }
 
-void CLocalWorkUnit::addProcess(const char *type, const char *instance, unsigned pid, const char *log)
+void CLocalWorkUnit::addProcess(const char *type, const char *instance, unsigned pid,
+    unsigned max, const char *pattern, bool singleLog, const char *log)
 {
     VStringBuffer processType("Process/%s", type);
     VStringBuffer xpath("%s/%s", processType.str(), instance);
@@ -8194,6 +8196,12 @@ void CLocalWorkUnit::addProcess(const char *type, const char *instance, unsigned
         node = node->addPropTree(instance);
         node->setProp("@log", log);
         node->setPropInt("@pid", pid);
+        if (max > 0)
+            node->setPropInt("@max", max);
+        if (!isEmptyString(pattern))
+            node->setProp("@pattern", pattern);
+        if (singleLog)
+            node->setPropBool("@singleLog", true);
     }
 }
 

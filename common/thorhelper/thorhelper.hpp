@@ -28,6 +28,10 @@
  #define THORHELPER_API DECL_IMPORT
 #endif
 
+#define SLAVEIDSTR "#SLAVEID#"
+#define THORMASTERLOGSEARCHSTR "thormaster."
+#define THORSLAVELOGSEARCHSTR "thorslave."
+
 interface IXmlToRawTransformer : extends IInterface
 {
     virtual IDataVal & transform(IDataVal & result, size32_t len, const void * text, bool isDataset) = 0;

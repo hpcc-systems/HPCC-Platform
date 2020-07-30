@@ -349,7 +349,7 @@ CassandraPrepared *CassandraClusterSession::prepareStatement(const char *query, 
     preparedCache.setValue(query, cached); // NOTE - this links parameter
     return cached.getClear();
 }
-CassandraStatementInfo *CassandraClusterSession::createStatementInfo(const char *script, unsigned numParams, CassBatchType batchMode, unsigned pageSize) const
+CassandraStatementInfo *CassandraClusterSession::createStatementInfo(const char *script, unsigned numParams, OptionalCassBatchType batchMode, unsigned pageSize) const
 {
     Owned<CassandraPrepared> prepared = prepareStatement(script, false); // We could make tracing selectable
     return new CassandraStatementInfo(session, prepared, numParams, batchMode, pageSize, semaphore, maxRetries);
@@ -499,7 +499,7 @@ void CassandraRetryingFuture::signaller(CassFuture *future, void *data)
 
 //----------------------
 
-CassandraStatementInfo::CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, CassBatchType _batchMode, unsigned pageSize, Semaphore *_semaphore, unsigned _maxRetries)
+CassandraStatementInfo::CassandraStatementInfo(CassandraSession *_session, CassandraPrepared *_prepared, unsigned _numBindings, OptionalCassBatchType _batchMode, unsigned pageSize, Semaphore *_semaphore, unsigned _maxRetries)
     : session(_session), prepared(_prepared), numBindings(_numBindings), batchMode(_batchMode), semaphore(_semaphore), maxRetries(_maxRetries)
 {
     assertex(prepared && *prepared);
@@ -545,8 +545,8 @@ bool CassandraStatementInfo::next()
 }
 void CassandraStatementInfo::startStream()
 {
-    if (batchMode != (CassBatchType) -1)
-        batch.setown(new CassandraBatch(batchMode));
+    if (batchMode != OptionalCassBatchType::nobatch)
+        batch.setown(new CassandraBatch((CassBatchType) batchMode));
     statement.setown(new CassandraStatement(cass_prepared_bind(*prepared)));
     inBatch = true;
 }
@@ -1320,7 +1320,7 @@ class CassandraEmbedFunctionContext : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
     CassandraEmbedFunctionContext(const IContextLogger &_logctx, const IThorActivityContext *_activityCtx, unsigned _flags, const char *options)
-      : logctx(_logctx), activityCtx(_activityCtx), flags(_flags), nextParam(0), numParams(0), batchMode((CassBatchType) -1), pageSize(0)
+      : logctx(_logctx), activityCtx(_activityCtx), flags(_flags), nextParam(0), numParams(0), batchMode(OptionalCassBatchType::nobatch), pageSize(0)
     {
         StringArray opts;
         opts.appendList(options, ",");
@@ -1332,11 +1332,11 @@ public:
             {
                 const char *val=opt+6;
                 if (stricmp(val, "LOGGED")==0)
-                    batchMode = CASS_BATCH_TYPE_LOGGED;
+                    batchMode = OptionalCassBatchType::logged;
                 else if (stricmp(val, "UNLOGGED")==0)
-                    batchMode = CASS_BATCH_TYPE_UNLOGGED;
+                    batchMode = OptionalCassBatchType::unlogged;
                 else if (stricmp(val, "COUNTER")==0)
-                    batchMode = CASS_BATCH_TYPE_COUNTER;
+                    batchMode = OptionalCassBatchType::counter;
                 opts.remove(idx);
             }
             else if (strnicmp(opt, "pagesize=", 9)==0)
@@ -1939,7 +1939,7 @@ protected:
     unsigned nextParam;
     unsigned numParams;
     StringBuffer queryString;
-    CassBatchType batchMode;
+    OptionalCassBatchType batchMode;
     unsigned pageSize;
 };
 

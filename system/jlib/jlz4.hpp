@@ -22,7 +22,7 @@
 
 #define LZ4COMPRESSEDFILEBLOCKSIZE (0x100000)
 
-extern jlib_decl ICompressor *createLZ4Compressor();
+extern jlib_decl ICompressor *createLZ4Compressor(bool hc=false);
 extern jlib_decl IExpander   *createLZ4Expander();
 
 extern jlib_decl void LZ4CompressToBuffer(MemoryBuffer & out, size32_t len, const void * src);

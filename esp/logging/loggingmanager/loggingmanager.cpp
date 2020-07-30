@@ -40,8 +40,9 @@ bool CLoggingManager::init(IPropertyTree* cfg, const char* service)
         return false;
     }
 
+    decoupledLogging = cfg->getPropBool("DecoupledLogging", false);
     oneTankFile = cfg->getPropBool("FailSafe", true);
-    if (oneTankFile)
+    if (oneTankFile || decoupledLogging)
     {
         logFailSafe.setown(createFailSafeLogger(cfg, service, cfg->queryProp("@name")));
         logContentFilter.readAllLogFilters(cfg);
@@ -227,7 +228,7 @@ bool CLoggingManager::updateLog(IEspContext* espContext, IEspUpdateLogRequestWra
         if (espContext)
             espContext->addTraceSummaryTimeStamp(LogMin, "LMgr:startQLog");
 
-        if (oneTankFile)
+        if (oneTankFile || decoupledLogging)
         {
             Owned<CLogRequestInFile> reqInFile = new CLogRequestInFile();
             if (!saveToTankFile(req, reqInFile))
@@ -245,12 +246,15 @@ bool CLoggingManager::updateLog(IEspContext* espContext, IEspUpdateLogRequestWra
             Owned<IEspUpdateLogRequest> logRequest = new CUpdateLogRequest("", "");
             logRequest->setOption(reqInFile->getOption());
             logRequest->setLogContent(logContent);
-            for (unsigned int x = 0; x < loggingAgentThreads.size(); x++)
+            if (!decoupledLogging)
             {
-                IUpdateLogThread* loggingThread = loggingAgentThreads[x];
-                if (loggingThread->hasService(LGSTUpdateLOG))
+                for (unsigned int x = 0; x < loggingAgentThreads.size(); x++)
                 {
-                    loggingThread->queueLog(logRequest);
+                    IUpdateLogThread* loggingThread = loggingAgentThreads[x];
+                    if (loggingThread->hasService(LGSTUpdateLOG))
+                    {
+                        loggingThread->queueLog(logRequest);
+                    }
                 }
             }
         }

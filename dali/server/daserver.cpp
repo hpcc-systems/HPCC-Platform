@@ -142,7 +142,7 @@ void usage(void)
 /* NB: Ideally this belongs within common/environment,
  * however, that would introduce a circular dependency.
  */
-static bool populateWhiteListFromEnvironment(IWhiteListWriter &writer)
+static bool populateAllowListFromEnvironment(IAllowListWriter &writer)
 {
     if (isContainerized())
         return false;
@@ -151,14 +151,20 @@ static bool populateWhiteListFromEnvironment(IWhiteListWriter &writer)
     if (!conn->queryRoot()->hasProp("Software/DaliServerProcess"))
         return false;
 
-    // only ever expecting 1 DaliServerProcess and 1 WhiteList
-    const IPropertyTree *whiteListTree = conn->queryRoot()->queryPropTree("Software/DaliServerProcess[1]/WhiteList[1]");
-    bool enabled = true;
-    if (whiteListTree)
+    // only ever expecting 1 DaliServerProcess and 1 AllowList
+    const IPropertyTree *allowListTree = conn->queryRoot()->queryPropTree("Software/DaliServerProcess[1]/AllowList[1]");
+    if (!allowListTree)
     {
-        enabled = whiteListTree->getPropBool("@enabled", true); // on by default
-        // Default for now is to allow clients that send no role (legacy) to connect if their IP is whitelisted.
-        writer.setAllowAnonRoles(whiteListTree->getPropBool("@allowAnonRoles", true));
+        // deprecated, but for backward compatibility..
+        allowListTree = conn->queryRoot()->queryPropTree("Software/DaliServerProcess[1]/WhiteList[1]");
+    }
+
+    bool enabled = true;
+    if (allowListTree)
+    {
+        enabled = allowListTree->getPropBool("@enabled", true); // on by default
+        // Default for now is to allow clients that send no role (legacy) to connect if their IP is in allowlist.
+        writer.setAllowAnonRoles(allowListTree->getPropBool("@allowAnonRoles", true));
     }
 
     std::unordered_map<std::string, std::string> machineMap;
@@ -311,12 +317,12 @@ static bool populateWhiteListFromEnvironment(IWhiteListWriter &writer)
         }
     }
 
-    if (whiteListTree)
+    if (allowListTree)
     {
-        Owned<IPropertyTreeIterator> whiteListIter = whiteListTree->getElements("Entry");
-        ForEach(*whiteListIter)
+        Owned<IPropertyTreeIterator> allowListIter = allowListTree->getElements("Entry");
+        ForEach(*allowListIter)
         {
-            const IPropertyTree &entry = whiteListIter->query();
+            const IPropertyTree &entry = allowListIter->query();
             StringArray hosts, roles;
             hosts.appendListUniq(entry.queryProp("@hosts"), ",");
             roles.appendListUniq(entry.queryProp("@roles"), ",");
@@ -607,8 +613,8 @@ int main(int argc, const char* argv[])
         unsigned short myport = epa.item(myrank).port;
         startMPServer(DCR_DaliServer, myport, true, true);
         Owned<IMPServer> mpServer = getMPServer();
-        Owned<IWhiteListHandler> whiteListHandler = createWhiteListHandler(populateWhiteListFromEnvironment, formatDaliRole);
-        mpServer->installWhiteListCallback(whiteListHandler);
+        Owned<IAllowListHandler> allowListHandler = createAllowListHandler(populateAllowListFromEnvironment, formatDaliRole);
+        mpServer->installAllowListCallback(allowListHandler);
 #ifndef _CONTAINERIZED
         setMsgLevel(fileMsgHandler, serverConfig->getPropInt("SDS/@msgLevel", 100));
 #endif

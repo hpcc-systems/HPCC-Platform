@@ -99,26 +99,26 @@
   </sect2>
 
   <sect2 id="WhitelistInDali" role="brk">
-    <title>Whitelist in Dali</title>
+    <title>The AllowList in Dali</title>
 
     <para>The Dali server has the ability to restrict access to only those
     nodes that are associated with a role in the environment definition
-    (environment.xml) or explicitly added to the
-    <emphasis>Whitelist</emphasis> in Dali's configuration. The Whitelist is
-    implicitly populated with the server components and their roles as defined
-    in the environment. You can explicitly add additional nodes and their
-    approved role(s) to a supplementary Whitelist in the environment.xml file
-    as shown in the following example:</para>
+    (environment.xml) or explicitly added to the <emphasis>AllowList
+    </emphasis> in Dali's configuration. The AllowList is implicitly populated
+    with the server components and their roles as defined in the environment.
+    You can explicitly add additional nodes and their approved role(s) to a
+    supplementary AllowList in the environment.xml file as shown in the
+    following example:</para>
 
     <para><programlisting>&lt;Environment&gt;
 ...
  &lt;Software&gt;
  ...
    &lt;DaliServerProcess&gt;
-     &lt;WhiteList&gt;
+     &lt;AllowList&gt;
       &lt;Entry hosts="adminnode1,192.168.0.101" roles="DaliDiag,DaliAdmin"/&gt;
       &lt;Entry hosts="adminnode3" roles="DaliDiag"/&gt;
-     &lt;/WhiteList&gt;
+     &lt;/AllowList&gt;
    ...
    &lt;/DaliServerProcess&gt;
  ...
@@ -196,12 +196,12 @@
 SashaServer, RoxieMaster, and ThorMaster </programlisting></para>
 
     <para>These roles correspond to components in the environment, which
-    should always be implicitly whitelisted by inclusion in the environment.
+    should always be implicitly allowlisted by inclusion in the environment.
     If nodes in a foreign environment need to communicate with Dali, then
     those nodes should be explicitly added.</para>
 
     <para>In addition, the following administrative tool roles are
-    automatically whitelisted to run on the Dali server node:</para>
+    automatically allowlisted to run on the Dali server node:</para>
 
     <para><programlisting>Config, DaFsControl, DaliAdmin, DaliDiag, ScheduleAdmin, SwapNode, Testing, 
 TreeView, UpdateEnv, XRef, Monitoring</programlisting></para>
@@ -214,44 +214,44 @@ TreeView, UpdateEnv, XRef, Monitoring</programlisting></para>
     <para><programlisting>Config, DaFsControl, DaliAdmin, DaliDiag, SchedulerAdmin, SwapNode, Testing, 
 TreeView, UpdateEnv, XRef</programlisting></para>
 
-    <para>To disable the Whitelist feature entirely, you can add:</para>
+    <para>To disable the AllowList feature entirely, you can add:</para>
 
-    <para><programlisting>&lt;WhiteList enabled="false"/&gt;</programlisting><emphasis
+    <para><programlisting>&lt;AllowList enabled="false"/&gt;</programlisting><emphasis
     role="bold">This is not recommended for production
     environments.</emphasis></para>
 
-    <para>When enabling Dali whitelisting on a cluster where there are other
+    <para>When enabling the Dali AllowList on a cluster where there are other
     external environments interacting, it can be useful to initially disable
-    whitelisting and audit the external components that are trying to connect
+    the AllowList and audit the external components that are trying to connect
     with it by viewing the DaServer log files. Each client that would be
-    refused access if whitelisting were enabled, creates log entries similar
+    refused access if the AllowList was enabled, creates log entries similar
     to this:</para>
 
     <para><programlisting>00000017 Operator 2019-11-20 16:58:39.617 17056 17074 
-         "WhiteListing is disabled, ignoring: Access denied! 
-         [client ip=192.168.9.12, role=DaliDiag] not whitelisted"</programlisting></para>
+         "AllowList is disabled, ignoring: Access denied! 
+         [client ip=192.168.9.12, role=DaliDiag] not AllowListed"</programlisting></para>
 
     <para>To allow legacy components that do not provide a role to connect,
-    you can specify the allowAnonRoles option. The component MUST be on a
-    whitelisted IP.</para>
+    you can specify the allowAnonRoles option. The component MUST be on an
+    allowlisted IP.</para>
 
-    <para><programlisting>&lt;WhiteList allowAnonRoles="false"/&gt;</programlisting></para>
+    <para><programlisting>&lt;AllowList allowAnonRoles="false"/&gt;</programlisting></para>
 
     <sect3>
-      <title>Retrieve the Whitelist</title>
+      <title>Retrieve the AllowList</title>
 
-      <para>To retrieve the entire whitelist (implicit and explicit), use the
+      <para>To retrieve the entire AllowList (implicit and explicit), use the
       <emphasis role="bold">dalidiag</emphasis> command line tool</para>
 
       <para>(found in /opt/HPCCSystems/bin/)</para>
 
-      <para><programlisting>dalidiag &lt;dali-ip&gt; -whitelist</programlisting></para>
+      <para><programlisting>dalidiag &lt;dali-ip&gt; -AllowList</programlisting></para>
     </sect3>
 
     <sect3>
       <title>Update Dali without restarting</title>
 
-      <para>To update whitelist information in Dali without restarting, use
+      <para>To update AllowList information in Dali without restarting, use
       the <emphasis role="bold">updtdalienv</emphasis> command line
       tool</para>
 
@@ -262,32 +262,32 @@ TreeView, UpdateEnv, XRef</programlisting></para>
 
     <sect3 role="brk">
       <title>Use envmod to add or remove entries in the supplementary
-      Whitelist</title>
+      AllowList</title>
 
       <para>We recommend using the <emphasis role="bold">envmod</emphasis>
-      command line tool to add Whitelist entries to your environment.xml file.
+      command line tool to add AllowList entries to your environment.xml file.
       The envmod utility can be found in /opt/HPCCSystems/bin/.</para>
 
       <para>Use a template file such as the following example:</para>
 
       <para><programlisting>{
-    "name" : "AddWhiteList",
-    "description" : "Add whilelist to environment",
+    "name" : "AddAllowList",
+    "description" : "Add AllowList to environment",
     "type" : "modification",
     "operations" : [
         {
             "action" : "find",
-            "target_path" : "/Environment/Software/DaliServerProcess/WhiteList",
+            "target_path" : "/Environment/Software/DaliServerProcess/AllowList",
             "data" : {
                 "create_if_not_found" : true,
                 "save" : {
-                    "name" : "whiteListNodeId"
+                    "name" : "AllowListNodeId"
                 }
             }
         },
         {
             "action" : "create",
-            "target_nodeid" : "{{whiteListNodeId}}",
+            "target_nodeid" : "{{AllowListNodeId}}",
             "data" : {
                 "node_type" : "Entry",
                 "attributes" : [
@@ -304,7 +304,7 @@ TreeView, UpdateEnv, XRef</programlisting></para>
         },
 {
             "action" : "create",
-            "target_nodeid" : "{{whiteListNodeId}}",
+            "target_nodeid" : "{{AllowListNodeId}}",
             "data" : {
                 "node_type" : "Entry",
                 "attributes" : [
@@ -330,10 +330,10 @@ TreeView, UpdateEnv, XRef</programlisting></para>
       <para>Sample command line:</para>
 
       <programlisting>sudo /opt/HPCCSystems/bin/envmod \
-     -t myWhitelistTemplate.json \
+     -t myAllowListTemplate.json \
      -e /etc/HPCCSystems/source/environment.xml \
      -d /opt/HPCCSystems/componentfiles/configschema/xsd \
-     -o /etc/HPCCSystems/source/environmentWithWhitelist.xml</programlisting>
+     -o /etc/HPCCSystems/source/environmentWithAllowList.xml</programlisting>
 
       <para>The -t (or --template) parameter is the location of the
       template.</para>
@@ -357,7 +357,7 @@ TreeView, UpdateEnv, XRef</programlisting></para>
 
       <para><programlisting>{
     “action” : “delete”,
-    “target_path” : “/Environment/Software/DaliServerProcess/WhiteList/Entry[@hosts=’node3’]”
+    “target_path” : “/Environment/Software/DaliServerProcess/AllowList/Entry[@hosts=’node3’]”
 }
 </programlisting></para>
     </sect3>

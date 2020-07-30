@@ -43,6 +43,13 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="DecoupledLogging" type="xs:boolean" use="optional" default="false">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Enable Decoupled Logging functionality.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
       <xs:attribute name="FailSafe" type="xs:boolean" use="optional" default="true">
         <xs:annotation>
           <xs:appinfo>

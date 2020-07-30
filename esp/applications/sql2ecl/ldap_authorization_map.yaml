@@ -1,0 +1,11 @@
+ldap:
+   root_access:
+      resource: WsSQLAccess
+      required: Read
+      description: Base access to EclWatch
+   resource_map:
+      ws_ecl:
+         Feature:
+         -  path: WsSQLAccess
+            resource: WsSQLAccess
+            description: Base access to sql2ecl services

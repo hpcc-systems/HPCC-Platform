@@ -58,7 +58,8 @@
             "failOnLeaks"
         ],
         "setupExtraParams":{
-            "OriginalTextFilesOsPath" : "/opt/HPCCSystems/testing/regress"
+            "OriginalTextFilesOsPath" : "/opt/HPCCSystems/testing/regress",
+            "OriginalTextFilesIp" : "127.0.0.1"
         },
         "FileExclusion":[
             "*_blahblah.ecl"

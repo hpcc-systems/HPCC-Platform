@@ -99,6 +99,7 @@ extern jlib_decl void appendToBuffer(MemoryBuffer & out, size32_t len, const voi
 #define COMPRESS_METHOD_FASTLZ 3
 #define COMPRESS_METHOD_LZMA   4
 #define COMPRESS_METHOD_LZ4    5
+#define COMPRESS_METHOD_LZ4HC  6
 
 interface ICompressedFileIO: extends IFileIO
 {
@@ -135,6 +136,8 @@ interface ICompressHandler : extends IInterface
     virtual ICompressor *getCompressor(const char *options=NULL) = 0;
     virtual IExpander *getExpander(const char *options=NULL) = 0;
 };
+typedef IIteratorOf<ICompressHandler> ICompressHandlerIterator;
+extern jlib_decl ICompressHandlerIterator *getCompressHandlerIterator();
 extern jlib_decl void setDefaultCompressor(const char *type);
 extern jlib_decl ICompressHandler *queryCompressHandler(const char *type);
 extern jlib_decl ICompressHandler *queryDefaultCompressHandler();
@@ -157,6 +160,8 @@ inline unsigned translateToCompMethod(const char *compStr)
             compMethod = COMPRESS_METHOD_ROWDIF;
         else if (strieq("LZMA", compStr))
             compMethod = COMPRESS_METHOD_LZMA;
+        else if (strieq("LZ4HC", compStr))
+            compMethod = COMPRESS_METHOD_LZ4HC;
         //else // default is LZ4
     }
     return compMethod;
@@ -174,6 +179,8 @@ inline const char *translateFromCompMethod(unsigned compMethod)
             return "FLZ";
         case COMPRESS_METHOD_LZ4:
             return "LZ4";
+        case COMPRESS_METHOD_LZ4HC:
+            return "LZ4HC";
         case COMPRESS_METHOD_LZMA:
             return "LZMA";
         default:

@@ -27,6 +27,7 @@ xmlns:set="http://exslt.org/sets">
     <xsl:template name="WsLogServiceESPAgent" type="DefaultLoggingAgent">
         <xsl:param name="agentName"/>
         <xsl:param name="agentNode"/>
+        <xsl:param name="disableFailSafe"/>
         <xsl:if test="not($agentNode)">
             <xsl:message terminate="yes">An WsLogService ESP Logging Agent <xsl:value-of select="$agentName"/> is undefined!</xsl:message>
         </xsl:if>
@@ -56,6 +57,9 @@ xmlns:set="http://exslt.org/sets">
             <xsl:call-template name="EspLoggingAgentBasic">
                 <xsl:with-param name="agentNode" select="$agentNode"/>
             </xsl:call-template>
+            <xsl:if test="string($disableFailSafe) != ''">
+                <DisableFailSafe><xsl:value-of select="$disableFailSafe"/></DisableFailSafe>
+            </xsl:if>
             <xsl:if test="string($agentNode/@TransactionSeedType) != ''">
                 <TransactionSeedType><xsl:value-of select="$agentNode/@TransactionSeedType"/></TransactionSeedType>
             </xsl:if>

@@ -193,6 +193,7 @@ protected:
     void addCppName(const char * filename, unsigned minActivity, unsigned maxActivity);
     void addLibrariesToCompiler();
     void addWorkUnitAsResource();
+    void addArchiveAsResource(StringBuffer &buf);
     void calculateHash(IHqlExpression * expr);
     bool doCompile(ICppCompiler * compiler);
     void doExpand(HqlCppTranslator & translator);
@@ -608,6 +609,10 @@ void HqlDllGenerator::addWorkUnitAsResource()
     code->addCompressResource("WORKUNIT", wuXML.length(), wuXML.str(), NULL, 1000);
 }
 
+void HqlDllGenerator::addArchiveAsResource(StringBuffer &buf)
+{
+    code->addCompressResource("ARCHIVE", buf.length(), buf.str(), nullptr, 1000);
+}
 
 void HqlDllGenerator::insertStandAloneCode()
 {

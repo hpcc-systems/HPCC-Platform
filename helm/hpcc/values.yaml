@@ -144,6 +144,14 @@ esp:
   public: true
   servicePort: 8002
 
+- name: sql2ecl
+  application: sql2ecl
+  auth: none
+  tls: off
+  replicas: 1
+  public: true
+  servicePort: 8510
+
 roxie:
 - name: roxie-cluster
   disabled: false

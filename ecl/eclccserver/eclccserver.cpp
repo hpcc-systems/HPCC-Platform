@@ -430,7 +430,10 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 if (!workunit->getDebugValueBool("obfuscateOutput", false))
                 {
                     Owned<IWUQuery> query = workunit->updateQuery();
-                    query->setQueryText(eclQuery.s.str());
+                    if (getArchiveXMLFromFile(realdllfilename, wuXML.clear()))  // MORE - if what was submitted was an archive, this is probably pointless?
+                        query->setQueryText(wuXML.str());
+                    else
+                        query->setQueryText(eclQuery.s.str());
                 }
 
                 createUNCFilename(realdllfilename.str(), dllurl);

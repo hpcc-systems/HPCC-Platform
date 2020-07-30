@@ -59,7 +59,7 @@
 #include "reservedwords.hpp"
 #include "eclcc.hpp"
 
-#ifndef CONTAINERIZED
+#ifndef _CONTAINERIZED
 #include "environment.hpp"
 #endif
 
@@ -852,6 +852,20 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                 }
                 generator->setSaveGeneratedFiles(optSaveCpp);
 
+                if (optSaveQueryArchive && instance.wu && instance.archive)
+                {
+                    StringBuffer buf;
+                    toXML(instance.archive, buf);
+                    if (optWorkUnit)
+                    {
+                        Owned<IWUQuery> q = instance.wu->updateQuery();
+                        q->setQueryText(buf);
+                    }
+                    else
+                    {
+                        generator->addArchiveAsResource(buf);
+                    }
+                }
                 bool generateOk = generator->processQuery(instance.query, target);  // NB: May clear instance.query
                 instance.stats.cppSize = generator->getGeneratedSize();
                 if (generateOk && !optNoCompile)
@@ -1432,14 +1446,6 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
     if (syntaxChecking || optGenerateMeta || optEvaluateResult)
         return;
-
-    if (optSaveQueryArchive && instance.wu && instance.archive)
-    {
-        Owned<IWUQuery> q = instance.wu->updateQuery();
-        StringBuffer buf;
-        toXML(instance.archive, buf);
-        q->setQueryText(buf);
-    }
 
     StringBuffer targetFilename;
     const char * outputFilename = instance.outputFilename;
@@ -2323,7 +2329,7 @@ bool EclCC::checkDaliConnected() const
 unsigned EclCC::lookupClusterSize() const
 {
     CriticalBlock b(dfsCrit);  // Overkill at present but maybe one day codegen will start threading? If it does the stack is also iffy!
-#ifndef CONTAINERIZED
+#ifndef _CONTAINERIZED
     if (!optDFS || disconnectReported || !checkDaliConnected())
         return 0;
 #endif
@@ -2334,7 +2340,7 @@ unsigned EclCC::lookupClusterSize() const
         prevClusterSize = 0;
     else
     {
-#ifdef CONTAINERIZED
+#ifdef _CONTAINERIZED
         VStringBuffer xpath("queues[@name=\"%s\"]", cluster);
         IPropertyTree * queue = configuration->queryPropTree(xpath);
         if (queue)

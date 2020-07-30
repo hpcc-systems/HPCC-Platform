@@ -27,6 +27,7 @@ const char* const PropMaxLogQueueLength = "MaxLogQueueLength";
 const char* const PropQueueSizeSignal = "QueueSizeSignal";
 const char* const PropMaxTriesRS = "MaxTriesRS";
 const char* const PropFailSafe = "FailSafe";
+const char* const PropDisableFailSafe = "DisableFailSafe";
 const char* const PropAckedFiles = "AckedFiles";
 const char* const PropDefaultAckedFiles = "AckedFiles";
 const char* const PropAckedLogRequests = "AckedLogRequests";
@@ -73,9 +74,14 @@ CLogThread::CLogThread(IPropertyTree* _cfg , const char* _service, const char* _
     maxLogQueueLength = _cfg->getPropInt(PropMaxLogQueueLength, MaxLogQueueLength);
     signalGrowingQueueAt = _cfg->getPropInt(PropQueueSizeSignal, QueueSizeSignal);
     maxLogRetries = _cfg->getPropInt(PropMaxTriesRS, DefaultMaxTriesRS);
-    ensureFailSafe = _cfg->getPropBool(PropFailSafe);
+    //For decoupled logging, the fail safe is not needed because the logging agent always
+    //picks up the logging requests from tank file.
+    ensureFailSafe = _cfg->getPropBool(PropFailSafe) && !_cfg->getPropBool(PropDisableFailSafe, false);
     if(ensureFailSafe)
+    {
         logFailSafe.setown(createFailSafeLogger(_cfg, _service, _agentName));
+        PROGLOG("FailSafe ensured for %s", agentName.get());
+    }
 
     time_t tNow;
     time(&tNow);

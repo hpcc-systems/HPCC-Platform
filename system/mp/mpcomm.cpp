@@ -441,7 +441,7 @@ class CMPConnectThread: public Thread
     CMPServer *parent;
     int mpSoMaxConn;
     unsigned mpTraceLevel;
-    Owned<IWhiteListHandler> whiteListCallback;
+    Owned<IAllowListHandler> allowListCallback;
     void checkSelfDestruct(void *p,size32_t sz);
 
 public:
@@ -461,13 +461,13 @@ public:
                 printf("CMPConnectThread::stop timed out\n");
         }
     }
-    void installWhiteListCallback(IWhiteListHandler *_whiteListCallback)
+    void installAllowListCallback(IAllowListHandler *_allowListCallback)
     {
-        whiteListCallback.set(_whiteListCallback);
+        allowListCallback.set(_allowListCallback);
     }
-    IWhiteListHandler *queryWhiteListCallback() const
+    IAllowListHandler *queryAllowListCallback() const
     {
-        return whiteListCallback;
+        return allowListCallback;
     }
 };
 
@@ -584,13 +584,13 @@ public:
                 break;
         }
     }
-    virtual void installWhiteListCallback(IWhiteListHandler *whiteListCallback) override
+    virtual void installAllowListCallback(IAllowListHandler *allowListCallback) override
     {
-        connectthread->installWhiteListCallback(whiteListCallback);
+        connectthread->installAllowListCallback(allowListCallback);
     }
-    virtual IWhiteListHandler *queryWhiteListCallback() const override
+    virtual IAllowListHandler *queryAllowListCallback() const override
     {
-        return connectthread->queryWhiteListCallback();
+        return connectthread->queryAllowListCallback();
     }
 };
 
@@ -2129,12 +2129,12 @@ int CMPConnectThread::run()
                     }
                 }
 
-                if (whiteListCallback)
+                if (allowListCallback)
                 {
                     StringBuffer ipStr;
                     peerEp.getIpText(ipStr);
                     StringBuffer responseText; // filled if denied
-                    if (!whiteListCallback->isWhiteListed(ipStr, connectHdr.getRole(), &responseText))
+                    if (!allowListCallback->isAllowListed(ipStr, connectHdr.getRole(), &responseText))
                     {
                         Owned<IException> e = makeStringException(-1, responseText);
                         OWARNLOG(e, nullptr);

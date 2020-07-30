@@ -76,7 +76,7 @@ class CLoggingManager : implements ILoggingManager, public CInterface
 {
     typedef std::vector<IUpdateLogThread*> LOGGING_AGENTTHREADS;
     LOGGING_AGENTTHREADS  loggingAgentThreads;
-    bool oneTankFile = false, initialized;
+    bool oneTankFile = false, decoupledLogging = false, initialized = false;
     Owned<ILogFailSafe> logFailSafe;
     CLogContentFilter logContentFilter;
 

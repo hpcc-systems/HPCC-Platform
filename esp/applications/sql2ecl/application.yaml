@@ -1,0 +1,4 @@
+application:
+  name: sql2ecl
+  services:
+   - ws_sql

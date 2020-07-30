@@ -762,6 +762,7 @@ inline type_t getRequiredTypeCode(node_operator op)
     case no_type:
     case no_libraryscopeinstance:
     case no_forwardscope:
+    case no_mergedscope:
         return type_alias; // type is an alias of itself.
     }
     return type_none;
@@ -2037,6 +2038,7 @@ id_t ExpressionIRPlayer::doProcessExpr(IHqlExpression * expr)
         break;
     case no_virtualscope:
     case no_concretescope:
+    case no_mergedscope:
         {
             HqlExprArray scopeSymbols;
             expr->queryScope()->getSymbols(scopeSymbols);
