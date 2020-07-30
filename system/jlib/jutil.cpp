@@ -2740,6 +2740,13 @@ const char * queryCurrentProcessPath()
         default:
             break;
         }
+        const char *canon = realpath(processPath.str(), nullptr);
+        if (canon)
+        {
+            processPath.clear();
+            processPath.set(canon);
+            free((void *) canon);
+        }
 #else
         char path[PATH_MAX + 1];
         ssize_t len = readlink("/proc/self/exe", path, PATH_MAX);
