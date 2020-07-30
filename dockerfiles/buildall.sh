@@ -25,6 +25,7 @@ BUILD_TAG=$(git describe --exact-match --tags)  # The git tag for the images we 
 BUILD_LABEL=${BUILD_TAG}                        # The docker hub label for all other components
 BUILD_USER=hpcc-systems                         # The github repo owner
 BUILD_TYPE=                                     # Set to Debug for a debug build, leave blank for default (RelWithDebInfo)
+USE_CPPUNIT=1
 
 # These values are set in a GitHub workflow build
 
@@ -38,6 +39,7 @@ if [[ -n ${INPUT_BUILDTYPE} ]] ; then
 else
   BUILD_LABEL=${BUILD_TAG}
   BUILD_TYPE=RelWithDebInfo
+  USE_CPPUNIT=0
 fi
 
 if [[ -n ${INPUT_USERNAME} ]] ; then
@@ -81,6 +83,7 @@ build_image() {
        --build-arg BUILD_LABEL=${BUILD_LABEL} \
        --build-arg BUILD_USER=${BUILD_USER} \
        --build-arg BUILD_TYPE=${BUILD_TYPE} \
+       --build-arg USE_CPPUNIT=${USE_CPPUNIT} \
        --build-arg BUILD_THREADS=${BUILD_THREADS} \
        ${name}/ 
     if [ "$LATEST" = "1" ] ; then
