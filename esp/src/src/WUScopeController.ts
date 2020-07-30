@@ -358,7 +358,7 @@ export abstract class WUScopeControllerBase<ISubgraph, IVertex, IEdge, IGraphDat
         });
     }
 
-    calcTooltip(scope: BaseScope, parentScope?: BaseScope, term = "") {
+    calcTooltipTable(scope: BaseScope, parentScope?: BaseScope, term = "") {
         const [findScope, findTerm] = this.splitTerm(term);
 
         function highlightText(key: string, _text: any) {
@@ -389,11 +389,21 @@ export abstract class WUScopeControllerBase<ISubgraph, IVertex, IEdge, IGraphDat
             }
         }
 
-        return `<div class="eclwatch_WUGraph_Tooltip" style="max-width:480px">
-            <h4 align="center">${highlightText("Label", label)}</h4>
+        const funcTooltips: string[] = [];
+        scope.children().forEach(row => {
+            funcTooltips.push(this.calcTooltipTable(row));
+        })
+
+        return `<h4 align="center">${highlightText("Label", label)}</h4>
             <table>
                 ${rows.join("")}
-            </table>
+            </table>${funcTooltips.length ? `<br>${funcTooltips.join("<br>")}` : ""}`;
+    }
+
+    calcTooltip(scope: BaseScope, parentScope?: BaseScope, term = "") {
+
+        return `<div class="eclwatch_WUGraph_Tooltip" style="max-width:480px">
+            ${this.calcTooltipTable(scope, parentScope, term)}
         </div>`;
     }
 
