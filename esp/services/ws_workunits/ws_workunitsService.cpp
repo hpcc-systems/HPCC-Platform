@@ -396,7 +396,7 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/WUResultMaxSizeMB", process, service);
     unsigned wuResultMaxSizeMB = cfg->getPropInt(xpath);
     if (wuResultMaxSizeMB > 0)
-        wuResultMaxSize = wuResultMaxSizeMB * 1000000;
+        wuResultMaxSize = wuResultMaxSizeMB * 0x100000;
 
     xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ZAPEmail", process, service);
     IPropertyTree *zapEmail = cfg->queryPropTree(xpath.str());
@@ -2844,6 +2844,21 @@ INewResultSet* createFilteredResultSet(INewResultSet* result, IArrayOf<IConstNam
     return filter->create();
 }
 
+
+static bool isResultRequestSzTooBig(unsigned __int64 start, unsigned requestCount, unsigned __int64 resultSz, unsigned resultRows, unsigned __int64 limitSz)
+{
+    if (0 == requestCount)
+        return resultSz > limitSz;
+    else
+    {
+        if (start+requestCount > resultRows)
+            requestCount = resultRows-start;
+        unsigned __int64 avgRecSize = resultSz / resultRows;
+        unsigned __int64 estSize = requestCount * avgRecSize;
+        return estSize > limitSz;
+    }
+}
+
 void CWsWorkunitsEx::getWsWuResult(IEspContext &context, const char *wuid, const char *name, const char *logical, unsigned index, __int64 start,
     unsigned &count, __int64 &total, IStringVal &resname, bool bin, IArrayOf<IConstNamedValue> *filterBy, MemoryBuffer &mb,
     WUState &wuState, bool xsd)
@@ -2876,10 +2891,6 @@ void CWsWorkunitsEx::getWsWuResult(IEspContext &context, const char *wuid, const
     if (!result)
         throw MakeStringException(ECLWATCH_CANNOT_GET_WU_RESULT,"Cannot open the workunit result.");
 
-    if (result->getResultRawSize(nullptr, nullptr) > wuResultMaxSize)
-        throw makeStringExceptionV(ECLWATCH_INVALID_ACTION, "Failed to get the result for %s. The size is bigger than %lld.",
-            wuid, wuResultMaxSize);
-
     if (!resname.length())
         result->getResultName(resname);
 
@@ -2894,7 +2905,29 @@ void CWsWorkunitsEx::getWsWuResult(IEspContext &context, const char *wuid, const
     else
         rs.setown(resultSetFactory->createNewResultSet(result, wuid));
     if (!filterBy || !filterBy->length())
+    {
+        unsigned __int64 resultSz;
+
+        if (0 == logicalName.length()) // could be a workunit owned file (OUTPUT, THOR)
+            result->getResultFilename(logicalName);
+        if (logicalName.length())
+        {
+            Owned<IDistributedFile> df = lookupLogicalName(context, logicalName.str());
+            if (!df)
+                throw makeStringExceptionV(ECLWATCH_FILE_NOT_EXIST, "Cannot find file %s.", logicalName.str());
+            resultSz = df->getDiskSize(true, false);
+        }
+        else
+            resultSz = result->getResultRawSize(nullptr, nullptr);
+
+        if (isResultRequestSzTooBig(start, count, resultSz, rs->getNumRows(), wuResultMaxSize))
+        {
+            throw makeStringExceptionV(ECLWATCH_INVALID_ACTION, "Failed to get the result for %s. The size is bigger than %lld MB.",
+                                       wuid, wuResultMaxSize/0x100000);
+        }
+
         appendResultSet(mb, rs, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns());
+    }
     else
     {
         Owned<INewResultSet> filteredResult = createFilteredResultSet(rs, filterBy);
@@ -3233,16 +3266,22 @@ void CWsWorkunitsEx::getFileResults(IEspContext &context, const char *logicalNam
     Owned<IDistributedFile> df = lookupLogicalName(context, logicalName);
     if (!df)
         throw makeStringExceptionV(ECLWATCH_FILE_NOT_EXIST, "Cannot find file %s.", logicalName);
-    if (df->getDiskSize(true, false) > wuResultMaxSize)
-        throw makeStringExceptionV(ECLWATCH_INVALID_ACTION, "Failed to get the result from file %s. The size is bigger than %lld.",
-            logicalName, wuResultMaxSize);
 
     Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
     Owned<INewResultSet> result(resultSetFactory->createNewFileResultSet(df, cluster));
     if (!filterBy || !filterBy->length())
+    {
+        if (isResultRequestSzTooBig(start, count, df->getDiskSize(true, false), result->getNumRows(), wuResultMaxSize))
+        {
+            throw makeStringExceptionV(ECLWATCH_INVALID_ACTION, "Failed to get the result from file %s. The size is bigger than %lld MB.",
+                                       logicalName, wuResultMaxSize/0x100000);
+        }
+    
         appendResultSet(buf, result, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), NULL);
+    }
     else
     {
+        // NB: this could be still be very big, appendResultSet should be changed to ensure filtered result doesn't grow bigger than wuResultMaxSize
         Owned<INewResultSet> filteredResult = createFilteredResultSet(result, filterBy);
         appendResultSet(buf, filteredResult, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), NULL);
     }
