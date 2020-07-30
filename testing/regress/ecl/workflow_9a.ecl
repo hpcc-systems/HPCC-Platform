@@ -23,13 +23,36 @@ optParallel := #IFDEFINED(root.parallel, false);
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
 
+import Std.File AS FileServices;
+import $.setup;
+prefix := setup.Files(false, false).QueryFilePrefix;
+filename := prefix + 'workflow_9aFile';
+
 display(String8 thisString) := FUNCTION
   ds := dataset([thisString], {String8 text});
   RETURN Output(ds, NAMED('logging'), EXTEND);
 END;
+Import sleep from std.System.Debug;
 
-//Workflow item x is referenced twice, but should only be executed once
-x := display('one') : independent;
-y := SEQUENTIAL(x, display('two')) : independent;
+//This test makes sure that item B is executed only once, because it is independent
+names := RECORD
+  STRING8 firstname;
+  STRING8 surname;
+END;
 
-Parallel(y, x);
+ds := DATASET([{'nathan', 'halliday'}, {'margaret', 'thatcher'}], names);
+
+A := OUTPUT(ds,,filename, OVERwrite) : independent;
+A2 := OUTPUT(ds+ds,,filename, OVERwrite) : independent;
+
+MyFile := DATASET(filename, names, thor);
+B := COUNT(myFile) : independent;
+
+conditionalDelete(string lfn) := FUNCTION
+  RETURN IF(FileServices.FileExists(lfn), FileServices.DeleteLogicalFile(lfn));
+END;
+SEQUENTIAL(
+  conditionalDelete(filename),
+  SEQUENTIAL(A,B,A2,B),
+  FileServices.DeleteLogicalFile(filename)
+);

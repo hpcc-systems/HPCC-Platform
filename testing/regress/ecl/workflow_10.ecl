@@ -23,13 +23,23 @@ optParallel := #IFDEFINED(root.parallel, false);
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
 
-display(String8 thisString) := FUNCTION
-  ds := dataset([thisString], {String8 text});
+display(Integer8 thisInteger) := FUNCTION
+  ds := dataset([thisInteger], {Integer8 value});
   RETURN Output(ds, NAMED('logging'), EXTEND);
 END;
 
-//Workflow item x is referenced twice, but should only be executed once
-x := display('one') : independent;
-y := SEQUENTIAL(x, display('two')) : independent;
+//this test checks that a simple IF function works correctly
+names := RECORD
+  String8 firstname;
+  String8 surname;
+END;
 
-Parallel(y, x);
+
+dset := DATASET([{'nathan', 'halliday'}, {'margaret', 'thatcher'}], names);
+
+X := display(5) : independent;
+Y := display(10) : independent;
+C := COUNT(NOFOLD(dset)) < 4 : independent;
+
+Z := IF(C, X, Y);
+Z;

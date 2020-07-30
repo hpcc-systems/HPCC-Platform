@@ -23,13 +23,26 @@ optParallel := #IFDEFINED(root.parallel, false);
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
 
-display(String8 thisString) := FUNCTION
-  ds := dataset([thisString], {String8 text});
+//This tests dependencies within contingency clauses
+Import sleep from std.System.Debug;
+
+display(Integer8 thisInteger) := FUNCTION
+  ds := dataset([thisInteger], {Integer8 value});
   RETURN Output(ds, NAMED('logging'), EXTEND);
 END;
 
-//Workflow item x is referenced twice, but should only be executed once
-x := display('one') : independent;
-y := SEQUENTIAL(x, display('two')) : independent;
+a0 := sleep(999) : independent;
+a1 := Sequential(a0, sleep(1000)) : independent;
+a2 := Sequential(a0, sleep(1001)) : independent;
+a3 := Sequential(a0, sleep(1002)) : independent;
+a4 := Sequential(a0, sleep(1003)) : independent;
+a5 := Sequential(a0, sleep(1004)) : independent;
 
-Parallel(y, x);
+b := PARALLEL(a1,a2,a3,a4,a5) : independent;
+z := SEQUENTIAL(b, display(2)) : independent;
+c := display(1) : independent;
+
+c : SUCCESS(z);
+
+
+//should display 1, then 2 after 2 seconds

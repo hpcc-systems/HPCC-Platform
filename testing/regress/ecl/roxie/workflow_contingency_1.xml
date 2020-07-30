@@ -1,0 +1,6 @@
+<Exception><Code>5103</Code><Source>Roxie</Source><Message></Message></Exception>
+<Dataset name='logging'>
+ <Row><value>1</value></Row>
+ <Row><value>2</value></Row>
+ <Row><value>3</value></Row>
+</Dataset>

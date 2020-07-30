@@ -14,14 +14,21 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
+//version parallel=false
+//version parallel=true
 
-//There are 3 'levels' to the tree. The middle two items each depend on the first. The last item depends on the middle two.
+import ^ as root;
+optParallel := #IFDEFINED(root.parallel, false);
+
+#option ('parallelWorkflow', optParallel);
+#option('numWorkflowThreads', 5);
 
 display(Integer8 thisInteger) := FUNCTION
   ds := dataset([thisInteger], {Integer8 value});
   RETURN Output(ds, NAMED('logging'), EXTEND);
 END;
 
+//There are 3 'levels' to the tree. The middle two items each depend on the first. The last item depends on the middle two.
 x := 1 : Independent;
 y := x + 4 : Independent;
 z := y + x : Independent;

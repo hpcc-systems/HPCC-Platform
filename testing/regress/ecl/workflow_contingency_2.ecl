@@ -22,14 +22,20 @@ optParallel := #IFDEFINED(root.parallel, false);
 
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
+#onwarning(5102, ignore);
 
-display(String8 thisString) := FUNCTION
-  ds := dataset([thisString], {String8 text});
+display(Integer8 thisInteger) := FUNCTION
+  ds := dataset([thisInteger], {Integer8 value});
   RETURN Output(ds, NAMED('logging'), EXTEND);
 END;
 
-//Workflow item x is referenced twice, but should only be executed once
-x := display('one') : independent;
-y := SEQUENTIAL(x, display('two')) : independent;
 
-Parallel(y, x);
+a0 := display(2);
+b0 := display(1);
+
+b := FAIL(5103) : Failure(b0);
+a := b : Failure(a0);
+
+a;
+
+//expect 1,2

@@ -699,9 +699,9 @@ bool WorkflowMachine::executeItem(unsigned wfid, unsigned scheduledWfid)
 #endif
         return true;
     case WFStateWait:
-        throw new WorkflowException(0, "INTERNAL ERROR: attempting to execute workflow item in wait state", wfid, WorkflowException::SYSTEM, MSGAUD_user);
+        throw new WorkflowException(WFERR_ExecutingInWaitState, "INTERNAL ERROR: attempting to execute workflow item in wait state", wfid, WorkflowException::SYSTEM, MSGAUD_user);
     case WFStateBlocked:
-        throw new WorkflowException(0, "INTERNAL ERROR: attempting to execute workflow item in blocked state", wfid, WorkflowException::SYSTEM, MSGAUD_user);
+        throw new WorkflowException(WFERR_ExecutingInBlockedState, "INTERNAL ERROR: attempting to execute workflow item in blocked state", wfid, WorkflowException::SYSTEM, MSGAUD_user);
     case WFStateFail:
         item.reset();
         break;

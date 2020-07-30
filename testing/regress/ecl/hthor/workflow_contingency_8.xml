@@ -1,0 +1,7 @@
+<Exception><Code>5102</Code><Source>eclagent</Source><Message>Error: 5102: </Message></Exception>
+<Dataset name='Result 1'>
+ <Row><Result_1>1</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>2</Result_2></Row>
+</Dataset>

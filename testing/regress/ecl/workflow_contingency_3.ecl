@@ -22,14 +22,24 @@ optParallel := #IFDEFINED(root.parallel, false);
 
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
-
-display(String8 thisString) := FUNCTION
-  ds := dataset([thisString], {String8 text});
+#onwarning(5102, ignore);
+//#option('reportFailureToFirstDependant', false);
+//This tests the Failure flag i.e. reportFailureToFirstDependant in the workflow engine
+display(String thisString) := FUNCTION
+  ds := dataset([thisString], {String text});
   RETURN Output(ds, NAMED('logging'), EXTEND);
 END;
 
-//Workflow item x is referenced twice, but should only be executed once
-x := display('one') : independent;
-y := SEQUENTIAL(x, display('two')) : independent;
+a := SEQUENTIAL(display('a'), FAIL(5103)) : independent;
 
-Parallel(y, x);
+b0 := display('failure contingency for b');
+c0 := display('failure contingency for c');
+
+b := a : Failure(b0);
+c := a : Failure(c0);
+
+e := SEQUENTIAL(b,c);
+
+e;
+//expect a, failure ... for b
+//Once the flag is actually read, expect a, failure ... for b, failure ... for c.

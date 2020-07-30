@@ -22,14 +22,23 @@ optParallel := #IFDEFINED(root.parallel, false);
 
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
+//When executed in parallel, this query should be significantly faster
 
-display(String8 thisString) := FUNCTION
-  ds := dataset([thisString], {String8 text});
+Import sleep from std.System.Debug;
+
+display(Integer8 thisInteger) := FUNCTION
+  ds := dataset([thisInteger], {Integer8 value});
   RETURN Output(ds, NAMED('logging'), EXTEND);
 END;
 
-//Workflow item x is referenced twice, but should only be executed once
-x := display('one') : independent;
-y := SEQUENTIAL(x, display('two')) : independent;
+a1 := sleep(1000) : independent;
+a2 := sleep(1001) : independent;
+a3 := sleep(1002) : independent;
+a4 := sleep(1003) : independent;
+a5 := sleep(1004) : independent;
 
-Parallel(y, x);
+b := PARALLEL(a1,a2,a3,a4,a5): independent;
+
+Sequential(b, Output('finished'));
+
+//should take 1 second and then output 'finished'

@@ -23,13 +23,16 @@ optParallel := #IFDEFINED(root.parallel, false);
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
 
-display(String8 thisString) := FUNCTION
-  ds := dataset([thisString], {String8 text});
+//this test makes sure that the secondary dependencies of Ordered items are active from the start
+display(String thisString) := FUNCTION
+  ds := dataset([thisString], {String text});
   RETURN Output(ds, NAMED('logging'), EXTEND);
 END;
 
-//Workflow item x is referenced twice, but should only be executed once
-x := display('one') : independent;
-y := SEQUENTIAL(x, display('two')) : independent;
+a0 := 'a' : independent;
+a1 := display(a0) : independent;
 
-Parallel(y, x);
+b0 := 'b' : independent;
+b1 := display(b0) : independent;
+
+ORDERED(a1,b1);
