@@ -3786,7 +3786,7 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
                 else
                     reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object does not have a member named '%s'", str(searchName));
             }
-            else if ((modScope != containerScope) && !isExported(resolved))
+            else if (!isExported(resolved) && !modScope->isEquivalentScope(*containerScope))
                 reportError(HQLERR_CannotAccessShared, errpos, "Cannot access SHARED symbol '%s' in another module", str(searchName));
             return resolved.getClear();
         }

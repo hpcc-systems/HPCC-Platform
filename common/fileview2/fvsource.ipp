@@ -137,12 +137,13 @@ public:
     virtual size32_t getFixedSize() const;
     virtual size32_t getRecordSize(unsigned maxLength, const void *rec)
     {
-        return getRecordSize(rec);
+        return calcRecordSize(maxLength, rec);
     }
     virtual size32_t getMinRecordSize() const;
 
 protected:
     void addSimpleField(const char * name, const char * xpath, ITypeInfo * type, unsigned flag=FVFFnone);
+    size32_t calcRecordSize(unsigned maxLength, const void *rec);
     void gatherFields(IHqlExpression * expr, bool isConditional, bool *pMixedContent);
     void gatherChildFields(IHqlExpression * expr, bool isConditional, bool *pMixedContent);
     void gatherAttributes();

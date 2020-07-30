@@ -1155,6 +1155,7 @@ public:
     virtual ISourcePath * querySourcePath() const override { throwUnexpected(); }
     virtual bool hasBaseClass(IHqlExpression * searchBase) override;
     virtual bool allBasesFullyBound() const override { return false; } // Assume the worst
+    virtual bool isEquivalentScope(const IHqlScope & other) const override { return this == &other; }
 
     virtual void ensureSymbolsDefined(HqlLookupContext & ctx) override { }
 
@@ -1217,6 +1218,7 @@ public:
     virtual const char * queryFullName() const override  { return fullName; }
     virtual IIdAtom * queryFullContainerId() const override { return containerId; }
     virtual ISourcePath * querySourcePath() const override { return text ? text->querySourcePath() : NULL; }
+    virtual bool isEquivalentScope(const IHqlScope & other) const override { return this == &other; }
 
     virtual void ensureSymbolsDefined(HqlLookupContext & ctx) override { }
     virtual bool isImplicit() const override { return false; }
@@ -1390,6 +1392,7 @@ public:
     virtual bool allBasesFullyBound() const override;
     virtual bool isImplicit() const override;
     virtual bool isPlugin() const override;
+    virtual bool isEquivalentScope(const IHqlScope & other) const override;
     virtual IHqlScope * queryConcreteScope() override { return this; }
 
 protected:
@@ -1614,6 +1617,7 @@ public:
     virtual ISourcePath * querySourcePath() const override { return NULL; }
     virtual bool hasBaseClass(IHqlExpression * searchBase) override;
     virtual bool allBasesFullyBound() const override { return false; }
+    virtual bool isEquivalentScope(const IHqlScope & other) const override { return this == &other; }
 
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols) override;
     virtual IHqlScope * queryConcreteScope() override;

@@ -59,7 +59,7 @@
 #include "reservedwords.hpp"
 #include "eclcc.hpp"
 
-#ifndef CONTAINERIZED
+#ifndef _CONTAINERIZED
 #include "environment.hpp"
 #endif
 
@@ -2329,7 +2329,7 @@ bool EclCC::checkDaliConnected() const
 unsigned EclCC::lookupClusterSize() const
 {
     CriticalBlock b(dfsCrit);  // Overkill at present but maybe one day codegen will start threading? If it does the stack is also iffy!
-#ifndef CONTAINERIZED
+#ifndef _CONTAINERIZED
     if (!optDFS || disconnectReported || !checkDaliConnected())
         return 0;
 #endif
@@ -2340,7 +2340,7 @@ unsigned EclCC::lookupClusterSize() const
         prevClusterSize = 0;
     else
     {
-#ifdef CONTAINERIZED
+#ifdef _CONTAINERIZED
         VStringBuffer xpath("queues[@name=\"%s\"]", cluster);
         IPropertyTree * queue = configuration->queryPropTree(xpath);
         if (queue)
