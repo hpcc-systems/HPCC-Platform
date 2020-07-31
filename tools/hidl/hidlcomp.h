@@ -443,7 +443,7 @@ public:
     void write_esp_declaration();
     void write_esp_ng_declaration(int pos);
     void write_esp_init(bool &isFirst, bool removeNil);
-    void write_esp_marshall(bool isRpc, bool encodeXml, bool checkVer=false, int indent=1);
+    void write_esp_marshall(bool isRpc, bool encodeXml, bool checkVer=false, int indent=1, bool encodeJson=true);
     void write_esp_unmarshall(const char *rpcvar, bool useBasePath=false, int indents=1);
     void write_esp_unmarshall_properties(const char *propvar, const char *attachvar, int indents=1);
     void write_esp_unmarshall_soapval(const char *var, int indents=1);

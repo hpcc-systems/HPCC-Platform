@@ -178,6 +178,11 @@
   <emphasis>attribute</emphasis> is used in the computation. This gives a kind
   of "compute in anticipation" capability.</para>
 
+  <para>Persisted attributes can still be subject to the ordering requirements
+  of SEQUENTIAL. However, since PERSISTs are shared between workunits, there
+  is no guarantee that the attribute will be evaluated within any given
+  evaluation order. </para>
+
   <para>You can use #OPTION to override the default settings, as shown in the
   example.</para>
 
