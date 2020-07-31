@@ -33,15 +33,6 @@ USE_CPPUNIT=1
 [[ -n ${INPUT_BUILD_VER} ]] && BUILD_TAG=${INPUT_BUILD_VER}
 [[ -n ${GITHUB_REPOSITORY} ]] && BUILD_USER=${GITHUB_REPOSITORY%/*}
 
-if [[ -n ${INPUT_BUILDTYPE} ]] ; then
-  BUILD_TYPE=$INPUT_BUILDTYPE
-  BUILD_LABEL=${BUILD_TAG}-$INPUT_BUILDTYPE
-else
-  BUILD_LABEL=${BUILD_TAG}
-  BUILD_TYPE=RelWithDebInfo
-  USE_CPPUNIT=0
-fi
-
 if [[ -n ${INPUT_USERNAME} ]] ; then
   echo ${INPUT_PASSWORD} | docker login -u ${INPUT_USERNAME} --password-stdin ${INPUT_REGISTRY}
   PUSH=1
@@ -66,6 +57,15 @@ pushd $DIR 2>&1 > /dev/null
 parse_cmake
 set_tag
 
+if [[ -n ${INPUT_BUILDTYPE} ]] ; then
+  BUILD_TYPE=$INPUT_BUILDTYPE
+  BUILD_LABEL=${HPCC_SHORT_TAG}-$INPUT_BUILDTYPE
+else
+  BUILD_LABEL=${HPCC_SHORT_TAG}
+  BUILD_TYPE=RelWithDebInfo
+  USE_CPPUNIT=0
+fi
+
 if [[ "$HPCC_MATURITY" = "release" ]] && [[ "$INPUT_LATEST" = "1" ]] ; then
   LATEST=1
 fi
@@ -73,14 +73,14 @@ fi
 build_image() {
   local name=$1
   local label=$2
-  [[ -z ${label} ]] && label=$HPCC_SHORT_TAG
+  [[ -z ${label} ]] && label=$BUILD_LABEL
 
   if ! docker pull hpccsystems/${name}:${label} ; then
     docker image build -t hpccsystems/${name}:${label} \
        --build-arg BASE_VER=${BASE_VER} \
        --build-arg DOCKER_REPO=hpccsystems \
        --build-arg BUILD_TAG=${BUILD_TAG} \
-       --build-arg BUILD_LABEL=${label} \
+       --build-arg BUILD_LABEL=${BUILD_LABEL} \
        --build-arg BUILD_USER=${BUILD_USER} \
        --build-arg BUILD_TYPE=${BUILD_TYPE} \
        --build-arg USE_CPPUNIT=${USE_CPPUNIT} \
