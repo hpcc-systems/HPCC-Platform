@@ -1190,6 +1190,18 @@ interface IConstWorkUnitInfo : extends IInterface
     virtual IConstWUAppValueIterator & getApplicationValues() const = 0;
 };
 
+interface IConstWUProcessLogInfo : extends IInterface
+{
+    virtual const char *getLogSpec() const = 0;
+    virtual const char *getProcessName() const = 0;
+    virtual unsigned getProcessID() const = 0;
+    virtual const char *getGroupName() const = 0;
+    virtual const char *getLogDate() const = 0;
+    virtual const char *getPattern() const = 0;
+    virtual bool getSingleLog() const = 0;
+    virtual unsigned getNumberOfThorSlaves() const = 0;
+};
+
 interface IConstWorkUnit : extends IConstWorkUnitInfo
 {
     virtual bool aborting() const = 0;
@@ -1281,6 +1293,7 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual IStringIterator *getLogs(const char *type, const char *instance=NULL) const = 0;
     virtual IStringIterator *getProcesses(const char *type) const = 0;
     virtual IPropertyTreeIterator* getProcesses(const char *type, const char *instance) const = 0;
+    virtual void getWUProcessLogInfo(const char *processType, const char *processName, IArrayOf<IConstWUProcessLogInfo> & processLogs) const = 0;
 
     // Note that these don't read/modify the workunit itself, but rather the associated progress info.
     // As such they can be called without locking the workunit, and are 'const' as far as the WU is concerned.

@@ -279,6 +279,7 @@ public:
     virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const override;
     void clearGraphProgress() const;
     virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree) {}; //No GraphProgressTree in CLocalWorkUnit.
+    virtual void getWUProcessLogInfo(const char *processType, const char *processName, IArrayOf<IConstWUProcessLogInfo> &processLogs) const;
 
     virtual const char *queryJobName() const;
     virtual IConstWUPlugin * getPluginByName(const char * name) const;

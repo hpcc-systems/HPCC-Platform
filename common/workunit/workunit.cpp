@@ -62,6 +62,8 @@
 #include <string>
 #include <algorithm>
 
+#define ECLAGENTLOGSEARCHSTR        "eclagent."
+
 using namespace cryptohelper;
 
 static int workUnitTraceLevel = 1;
@@ -4216,6 +4218,8 @@ public:
             { return c->getAbortBy(str); }
     virtual unsigned __int64 getAbortTimeStamp() const
             { return c->getAbortTimeStamp(); }
+    virtual void getWUProcessLogInfo(const char *processType, const char *processName, IArrayOf<IConstWUProcessLogInfo> &processLogs) const
+            { c->getWUProcessLogInfo(processType, processName, processLogs); }
     virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree)
             { return c->import(wuTree, graphProgressTree); }
 
@@ -6565,6 +6569,55 @@ public:
     virtual bool isValid() { return it->isValid(); }
     virtual IStringVal & str(IStringVal &s) { s.set(it->query().queryProp(name)); return s; }
 };
+
+//==========================================================================================
+
+class CWUProcessLogInfo: public CSimpleInterfaceOf<IConstWUProcessLogInfo>
+{
+    StringAttr processName, groupName, logSpec, logDate, pattern;
+    unsigned numberOfThorSlaves = 0, processID = 0;
+    bool singleLog = false;
+
+public:
+    CWUProcessLogInfo(const char *_logSpec, const char *_processName, unsigned _processID, const char *_groupName,
+        const char *_logDate, const char *_pattern, unsigned _numberOfThorSlaves, bool _singleLog)
+        : logSpec(_logSpec), processName(_processName), processID(_processID), groupName(_groupName), logDate(_logDate),
+          pattern(_pattern), numberOfThorSlaves(_numberOfThorSlaves), singleLog(_singleLog) {};
+
+    virtual const char *getLogSpec() const override
+    {
+        return logSpec.get();
+    }
+    virtual const char *getProcessName() const override
+    {
+        return processName.get();
+    }
+    virtual unsigned getProcessID() const override
+    {
+        return processID;
+    }
+    virtual const char *getGroupName() const override
+    {
+        return groupName.get();
+    }
+    virtual const char *getLogDate() const override
+    {
+        return logDate.get();
+    }
+    virtual const char *getPattern() const override
+    {
+        return pattern.get();
+    }
+    virtual unsigned getNumberOfThorSlaves() const override
+    {
+        return numberOfThorSlaves;
+    }
+    virtual bool getSingleLog() const override
+    {
+        return singleLog;
+    }
+};
+
 //==========================================================================================
 
 CLocalWorkUnit::CLocalWorkUnit(ISecManager *secmgr, ISecUser *secuser)
@@ -8140,6 +8193,106 @@ bool CLocalWorkUnit::getDebugValueBool(const char * propname, bool defVal) const
     StringBuffer prop("Debug/");
     prop.append(lower);
     return p->getPropBool(prop.str(), defVal);
+}
+
+StringBuffer & getProcessLogDateFromLogFileName(const char * processType, const char * logFileNameWithPath, StringBuffer & logDate)
+{
+    //WU xml has a 'log' attribute for each log file used by a process. The code here
+    //tries to parse log date from the 'log' attribute if the attribute contains the
+    //log date information. Take a thor master log as an example (ECLAgent log is
+    //similar). The 'log' attribute looks like '...thormaster.yyyy_mm_dd.log' if the
+    //'log' attribute does contain the log date information. If thor master stores all
+    //of its log lines for a WU into one log file, there is no need for the log file
+    //name to have the 'yyyy_mm_dd' part (10 byte long). The log attribute may look
+    //like '...thormaster.log'.
+    //In the following code, the datePtr is pointed at the end of the 'thormaster.'.
+    //If the strlen(datePtr) < 10, it means that the log file name does not have the
+    //'yyyy_mm_dd' part. If the strlen(datePtr) >= 10, we read the 10 bytes from the
+    //datePtr as the logDate.
+    const char * searchStr = nullptr;
+    if (strieq(processType, "Thor"))
+        searchStr = THORMASTERLOGSEARCHSTR;
+    else
+        searchStr = ECLAGENTLOGSEARCHSTR;
+
+    const char * logFileName = pathTail(logFileNameWithPath);
+    const char * datePtr = strstr(logFileName, searchStr);
+    if (!datePtr)
+    {
+        IWARNLOG("The %s not found in %s.", searchStr, logFileNameWithPath);
+        return logDate;
+    }
+
+    datePtr += strlen(searchStr);
+    if (strlen(datePtr) < 10) //10 bytes for yyyy_mm_dd
+        return logDate;
+
+    logDate.append(10, datePtr);
+    return logDate;
+}
+
+void CLocalWorkUnit::getWUProcessLogInfo(const char *processType, const char *processName, IArrayOf<IConstWUProcessLogInfo> & processLogs) const
+{
+    if (isEmptyString(processType))
+    {
+        IWARNLOG("CLocalWorkUnit::getWUProcessLogInfo(): empty process type.");
+        return;
+    }
+
+    Owned<IPropertyTreeIterator> processInstances = getProcesses(processType, isEmptyString(processName) ? nullptr : processName);
+    ForEach (*processInstances)
+    {
+        StringBuffer logSpec;
+        IPropertyTree &proc = processInstances->query();
+        proc.getProp("@log", logSpec);
+
+        const char *processName = proc.queryName();
+        if (isEmptyString(processName) || logSpec.isEmpty())
+        {
+            IWARNLOG("CLocalWorkUnit::getWUProcessLogInfo(): empty process name or log attribute.");
+            continue;
+        }
+
+        unsigned numberOfThorSlaves = 0, processID = 0;
+        StringBuffer groupName;
+        if (strieq(processType, "Thor"))
+        {
+            //The groupName here may not be used if the WU is imported from a ZAP report because
+            //the getClusterThorGroupName() may not work for the WU imported from a ZAP report.
+            getClusterThorGroupName(groupName, processName);
+
+            numberOfThorSlaves = proc.getPropInt("@max", 0);
+            if (numberOfThorSlaves == 0)
+            { //Legacy WU
+                StringAttr clusterName(queryClusterName());
+                if (clusterName.isEmpty())
+                { //Cluster name may not be set yet
+                    IWARNLOG("Cluster name may not be set for workunit %s", queryWuid());
+                }
+                else
+                {
+                    //This may not work for the WU imported from a ZAP report.
+                    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName);
+                    if (clusterInfo)
+                        numberOfThorSlaves = clusterInfo->getNumberOfSlaveLogs();
+                    else
+                        IWARNLOG("Cluster not found for %s", clusterName.get());
+                }
+            }
+        }
+        else
+        {
+            processID = proc.getPropInt("@pid");
+        }
+
+        StringBuffer logDate;
+        getProcessLogDateFromLogFileName(processType, logSpec, logDate);
+
+        Owned<CWUProcessLogInfo> processLog = new CWUProcessLogInfo(logSpec.str(), processName,
+            processID, groupName, logDate, proc.queryProp("@pattern"), numberOfThorSlaves,
+            proc.getPropBool("@singleLog"));
+        processLogs.append(*processLog.getClear());
+    }
 }
 
 IStringIterator *CLocalWorkUnit::getLogs(const char *type, const char *instance) const
