@@ -114,10 +114,10 @@ if [ "$purge" = "purge" ]; then
         if [ -n "${pckname}" ] ; then
             apt-get remove -y ${pckname}
             if [ $? -ne 0 ]; then
-            echo "An error has occured during removal.  Try \`apt-get -f remove ${pckname}\` to fix this issue."
-            exit 1
+                echo "An error has occured during removal.  Try \`apt-get -f remove ${pckname}\` to fix this issue."
+                exit 1
             fi
-            if [ $1 -eq 0 ]; then
+            if [ $leaveenv -eq 0 ]; then
                 dpkg -P ${pckname}
             fi
         fi
@@ -127,8 +127,8 @@ if [ "$purge" = "purge" ]; then
             echo "Removing ${pckname}"
             yum remove -y ${pckname}
             if [ $? -ne 0 ]; then
-            echo "An error has occured during removal.  Try to fix any issues and then run \`yum-complete-transaction\`."
-            exit 1
+                echo "An error has occured during removal.  Try to fix any issues and then run \`yum-complete-transaction\`."
+                exit 1
             fi
         fi
     fi
