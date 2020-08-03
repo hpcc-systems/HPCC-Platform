@@ -298,7 +298,7 @@ bool CRemoteParentInfo::sendReply(unsigned version)
     {
         try
         {
-            LOG(MCdebugInfo(1000), unknownJob, "Ready to listen. reply=%d port=%d", replyTag, port);
+            LOG(MCdetailDebugInfo, unknownJob, "Ready to listen. reply=%d port=%d", replyTag, port);
             Owned<ISocket> listen = ISocket::create(port, 1);
             if (listen)
             {
@@ -311,11 +311,11 @@ bool CRemoteParentInfo::sendReply(unsigned version)
                 {
                     try
                     {
-                        LOG(MCdebugInfo(1000), unknownJob, "Ready to accept connection. reply=%d", replyTag);
+                        LOG(MCdetailDebugInfo, unknownJob, "Ready to accept connection. reply=%d", replyTag);
 
                         if (!listen->wait_read(SLAVE_LISTEN_FOR_MASTER_TIMEOUT))
                         {
-                            LOG(MCdebugInfo(1000), unknownJob, "Gave up waiting for a connection. reply=%d", replyTag);
+                            LOG(MCdetailDebugInfo, unknownJob, "Gave up waiting for a connection. reply=%d", replyTag);
                             return false;
                         }
 
@@ -331,7 +331,7 @@ bool CRemoteParentInfo::sendReply(unsigned version)
                             buffer.read(connectTag);
                             masterIP.getIpText(masterIPtext.clear());
 
-                            LOG(MCdebugInfo(1000), unknownJob, "Process incoming connection. reply=%d got(%d,%s)", replyTag,connectTag,masterIPtext.str());
+                            LOG(MCdetailDebugInfo, unknownJob, "Process incoming connection. reply=%d got(%d,%s)", replyTag,connectTag,masterIPtext.str());
 
                             same = (kind == connectKind) && masterIP.ipequals(parent) && (connectTag == replyTag);
                         }
@@ -342,7 +342,7 @@ bool CRemoteParentInfo::sendReply(unsigned version)
                             //can remove when all .exes have new code.
                             if (connectKind != kind)
                             {
-                                LOG(MCdebugInfo(1000), unknownJob, "Connection for wrong slave kind (%u vs %u)- ignore", connectKind, kind);
+                                LOG(MCdetailDebugInfo, unknownJob, "Connection for wrong slave kind (%u vs %u)- ignore", connectKind, kind);
                             }
                         }
 
@@ -356,7 +356,7 @@ bool CRemoteParentInfo::sendReply(unsigned version)
                         if (same)
                         {
                             socket.setown(connect.getClear());
-                            LOG(MCdebugInfo(1000), unknownJob, "Connection matched - continue....");
+                            LOG(MCdetailDebugInfo, unknownJob, "Connection matched - continue....");
                             return true;
                         }
                         if ((connectKind == kind) && (version != connectVersion))

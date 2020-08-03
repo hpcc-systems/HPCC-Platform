@@ -2262,7 +2262,7 @@ CServerConnection::~CServerConnection()
 
 void CServerConnection::aborted(SessionId id)
 {
-    LOG(MCdebugInfo(100), unknownJob, "CServerConnection: connection aborted (%" I64F "x) sessId=%" I64F "x",connectionId, id);
+    LOG(MCdebugInfo, unknownJob, "CServerConnection: connection aborted (%" I64F "x) sessId=%" I64F "x",connectionId, id);
 #if 0 // JCSMORE - think this is ok, but concerned about deadlock, change later.
     Owned<CLCLockBlock> lockBlock = new CLCLockBlock(((CCovenSDSManager &)manager).dataRWLock, false, readWriteTimeout, __FILE__, __LINE__);
     SDSManager->disconnect(connectionId, false);
@@ -4626,7 +4626,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
         try
         {
             coven.reply(mb);
-            LOG(MCdebugInfo(100), unknownJob, "Failed to reply, but succeeded sending initial reply error to client");
+            LOG(MCdebugInfo, unknownJob, "Failed to reply, but succeeded sending initial reply error to client");
         }
         catch (IException *e)
         {
@@ -5495,7 +5495,7 @@ public:
     }
     virtual void saveStore(IPropertyTree *root, unsigned *_newEdition, bool currentEdition=false)
     {
-        LOG(MCdebugInfo(100), unknownJob, "Saving store");
+        LOG(MCdebugProgress, unknownJob, "Saving store");
 
         refreshStoreInfo();
 
@@ -5613,7 +5613,7 @@ public:
                 *_newEdition = newEdition;
             done = true;
 
-            LOG(MCdebugInfo(100), unknownJob, "Store saved");
+            LOG(MCdebugProgress, unknownJob, "Store saved");
         }
         catch (IException *e)
         {
@@ -6019,12 +6019,12 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
         StringBuffer storeFilename(dataPath);
         iStoreHelper->getCurrentStoreFilename(storeFilename, &crc);
 
-        LOG(MCdebugInfo(100), unknownJob, "loading store %d, storedCrc=%x", iStoreHelper->queryCurrentEdition(), crc);
+        LOG(MCdebugInfo, unknownJob, "loading store %d, storedCrc=%x", iStoreHelper->queryCurrentEdition(), crc);
         root = (CServerRemoteTree *)::loadStore(storeFilename.str(), &treeMaker, crc, false, abort);
         if (!root)
         {
             StringBuffer s(storeName);
-            LOG(MCdebugInfo(100), unknownJob, "Store %d does not exist, creating new store", iStoreHelper->queryCurrentEdition());
+            LOG(MCdebugInfo, unknownJob, "Store %d does not exist, creating new store", iStoreHelper->queryCurrentEdition());
             root = new CServerRemoteTree("SDS");
         }
         bool errors;
@@ -6037,12 +6037,12 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
             if (deltaE.get())
                 throw LINK(deltaE);
         }
-        LOG(MCdebugInfo(100), unknownJob, "store loaded");
+        LOG(MCdebugInfo, unknownJob, "store loaded");
         const char *environment = config.queryProp("@environment");
 
         if (environment && *environment)
         {
-            LOG(MCdebugInfo(100), unknownJob, "loading external Environment from: %s", environment);
+            LOG(MCdebugInfo, unknownJob, "loading external Environment from: %s", environment);
             Owned<IFile> envFile = createIFile(environment);
             if (!envFile->exists())
                 throw MakeStringException(0, "'%s' does not exist", environment);
@@ -6336,14 +6336,14 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
         unsigned items = treeMaker.convertQueue.ordinality();
         if (items)
         {
-            LOG(MCdebugInfo(100), unknownJob, "Converting %d items larger than threshold size %d, to external definitions", items, externalSizeThreshold);
+            LOG(MCdebugInfo, unknownJob, "Converting %d items larger than threshold size %d, to external definitions", items, externalSizeThreshold);
             ForEachItemIn(i, treeMaker.convertQueue)
                 SDSManager->writeExternal(treeMaker.convertQueue.item(i), true);
             saveNeeded = true;
         }
         if (saveNeeded)
         {
-            LOG(MCdebugInfo(100), unknownJob, "Saving converted store");
+            LOG(MCdebugInfo, unknownJob, "Saving converted store");
             SDSManager->saveStore();
         }
     }
@@ -8800,7 +8800,7 @@ public:
         try { manager->loadStore(NULL, &cancelLoad); }
         catch (IException *)
         {
-            LOG(MCdebugInfo(100), unknownJob, "Failed to load main store");
+            LOG(MCdebugInfo, unknownJob, "Failed to load main store");
             throw;
         }
         // In nas/non-local storage mode, create a published named group for 1-way files to use
