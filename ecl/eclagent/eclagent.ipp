@@ -165,10 +165,6 @@ public:
     {
         return ctx->updateWorkUnit();
     }
-    virtual void unlockWorkUnit()
-    {
-        ctx->unlockWorkUnit();
-    }
     virtual ILocalOrDistributedFile *resolveLFN(const char *logicalName, const char *errorTxt, bool optional, bool noteRead, bool write, StringBuffer * expandedlfn, bool isPrivilegedUser)
     {
         return ctx->resolveLFN(logicalName, errorTxt, optional, noteRead, write, expandedlfn, isPrivilegedUser);
@@ -233,7 +229,10 @@ public:
         return ctx->queryWuid();
     }
 
-    virtual void updateWULogfile()                  { return ctx->updateWULogfile(); }
+    virtual void updateWULogfile(IWorkUnit *outputWU)
+    {
+        return ctx->updateWULogfile(outputWU);
+    }
 
     virtual RecordTranslationMode getLayoutTranslationMode() const override
     {
@@ -353,7 +352,6 @@ private:
     friend class EclAgentWorkflowMachine;
 
     Owned<EclAgentWorkflowMachine> workflow;
-    mutable Owned<IWorkUnit> wuWrite;
     Owned<IConstWorkUnit> wuRead;
     Owned<roxiemem::IRowManager> rowManager;
     StringAttr wuid;
@@ -403,6 +401,7 @@ private:
     StringBuffer & getTempfileBase(StringBuffer & buff);
     const char *queryTempfilePath();
     void deleteTempFiles();
+    void restoreCluster(IWorkUnit *wu);
 
     bool checkPersistUptoDate(IRuntimeWorkflowItem & item, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile, StringBuffer & errText);
     bool isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntimeWorkflowItem & item, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile);
@@ -625,9 +624,8 @@ public:
     virtual unsigned getWorkflowId();
     virtual IConstWorkUnit *queryWorkUnit() const override;  // no link
     virtual IWorkUnit *updateWorkUnit() const; // links
-    virtual void unlockWorkUnit();
     virtual void reloadWorkUnit();
-    void addTimings();
+    void addTimings(IWorkUnit *w);
 
 // ICodeContext
     virtual unsigned getGraphLoopCounter() const override { return 0; }
@@ -695,7 +693,7 @@ public:
 
     IGroup *getHThorGroup(StringBuffer &out);
 
-    virtual void updateWULogfile();
+    virtual void updateWULogfile(IWorkUnit *w);
 
 // roxiemem::IRowAllocatorMetaActIdCacheCallback
     virtual IEngineRowAllocator *createAllocator(IRowAllocatorMetaActIdCache * cache, IOutputMetaData *meta, unsigned activityId, unsigned id, roxiemem::RoxieHeapFlags flags) const

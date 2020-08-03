@@ -679,28 +679,11 @@ const char *EclAgent::loadResource(unsigned id)
 
 IWorkUnit *EclAgent::updateWorkUnit() const
 {
-    CriticalBlock block(wusect);
-    if (!wuWrite)
-    {
-        wuWrite.setown(&wuRead->lock());
-    }
-    return wuWrite.getLink();
-}
-
-void EclAgent::unlockWorkUnit()
-{
-    CriticalBlock block(wusect);
-    if (wuWrite)
-    {
-        IWorkUnit *w = wuWrite.getClear();
-        if (!w->Release())
-            IERRLOG("EclAgent::unlockWorkUnit workunit not released");
-    }
+    return &wuRead->lock();
 }
 
 void EclAgent::reloadWorkUnit()
 {
-    unlockWorkUnit();
     wuRead->forceReload();
 }
 
@@ -1619,11 +1602,15 @@ void EclAgent::selectCluster(const char *newCluster)
 
 void EclAgent::restoreCluster()
 {
+    WorkunitUpdate wu = updateWorkUnit();
+    restoreCluster(wu);
+}
+void EclAgent::restoreCluster(IWorkUnit *wu)
+{
     const char *previousCluster = clusterNames.item(clusterNames.length()-1);
     const char *currentCluster = queryWorkUnit()->queryClusterName();
     if (!streq(previousCluster, currentCluster))
     {
-        WorkunitUpdate wu = updateWorkUnit();
         wu->setClusterName(previousCluster);
         clusterWidth = -1;
     }
@@ -1961,11 +1948,11 @@ void EclAgent::doProcess()
     DBGLOG("Process complete");
     // Add some timing stats
     bool deleteJobTemps = true;
+    WorkunitUpdate w(nullptr);
     try
     {
-        updateWULogfile();//Update workunit logfile name in case of date rollover
-
-        WorkunitUpdate w = updateWorkUnit();
+        w.setown(updateWorkUnit());
+        updateWULogfile(w);//Update workunit logfile name in case of date rollover
 
         addTimeStamp(w, SSTglobal, NULL, StWhenFinished);
         const __int64 elapsedNs = elapsedTimer.elapsedNs();
@@ -1975,7 +1962,7 @@ void EclAgent::doProcess()
         if (cost)
             w->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTglobal, "", StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
 
-        addTimings();
+        addTimings(w);
 
         switch (w->getState())
         {
@@ -2038,7 +2025,7 @@ void EclAgent::doProcess()
             }
 
         while (clusterNames.ordinality())
-            restoreCluster();
+            restoreCluster(w);
         if (!queryResolveFilesLocally())
         {
             w->deleteTempFiles(NULL, false, deleteJobTemps);
@@ -2065,9 +2052,6 @@ void EclAgent::doProcess()
                 UWARNLOG(errCode, "%s", rmMsg.str());
         }
 
-        wuRead.clear(); // have a write lock still, but don't want to leave dangling unlocked wuRead after releasing write lock
-                        // or else something can delete whilst still referenced (e.g. on complete signal)
-        w.clear();
     }
     catch (IException *e)
     {
@@ -2083,14 +2067,14 @@ void EclAgent::doProcess()
         logException((IException *) NULL);
     }
     try {
-        unlockWorkUnit();
+        w.clear();
     }
     catch (IException *e)
     {
         try
         {
             // a final attempt to commit the original error (only) to the workunit
-            // since unlockWorkUnit( which commits ) can error due to the nature of the transaction.
+            // since commit () can error due to the nature of the transaction.
             Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
             Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid.get());
             Owned<IWorkUnit> w = &wu->lock();
@@ -2795,7 +2779,6 @@ bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntime
 
         //Get a write lock
         setBlockedOnPersist(logicalName);
-        unlockWorkUnit();
         if (changePersistLockMode(persistLock, RTM_LOCK_WRITE, logicalName, false))
             break;
 
@@ -2848,7 +2831,6 @@ void EclAgent::updatePersist(IRemoteConnection *persistLock, const char * logica
 IRemoteConnection *EclAgent::startPersist(const char * logicalName)
 {
     setBlockedOnPersist(logicalName);
-    unlockWorkUnit();
     IRemoteConnection *persistLock = getPersistReadLock(logicalName);
     setRunning();
     return persistLock;
@@ -3207,9 +3189,8 @@ char * EclAgent::getDaliServers()
     return dali.detach();
 }
 
-void EclAgent::addTimings()
+void EclAgent::addTimings(IWorkUnit *w)
 {
-    WorkunitUpdate w = updateWorkUnit();
     updateWorkunitTimings(w, queryActiveTimer());
 }
 
@@ -3298,7 +3279,7 @@ void EclAgent::fatalAbort(bool userabort,const char *excepttext)
             addExceptionEx(SeverityError, MSGAUD_programmer, "eclagent", 1000, excepttext, NULL, 0, 0, true, false);
         w->deleteTempFiles(NULL, false, true);
         wuRead.clear();
-        w->commit();        // needed because we can't unlock the workunit in this thread
+        w->commit();
         w.clear();
         deleteTempFiles();
     }

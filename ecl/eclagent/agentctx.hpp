@@ -91,7 +91,6 @@ struct IAgentContext : extends IGlobalCodeContext
 
     virtual IConstWorkUnit *queryWorkUnit() const = 0;
     virtual IWorkUnit *updateWorkUnit() const = 0;
-    virtual void unlockWorkUnit() = 0;
     
     virtual ILocalOrDistributedFile *resolveLFN(const char *logicalName, const char *errorTxt, bool optional, bool noteRead, bool write, StringBuffer * expandedlfn, bool isPrivilegedUser) = 0;
     virtual StringBuffer & getTempfileBase(StringBuffer & buff) = 0;
@@ -120,7 +119,7 @@ struct IAgentContext : extends IGlobalCodeContext
     
     virtual const char *queryWuid() = 0;
 
-    virtual void updateWULogfile() = 0;
+    virtual void updateWULogfile(IWorkUnit *outputWU) = 0;
     virtual bool forceNewDiskReadActivity() const = 0;
     virtual void addWuExceptionEx(const char * text, unsigned code, unsigned severity, unsigned audience, char const * source) = 0;
     virtual cost_type queryAgentMachineCost() const = 0;
