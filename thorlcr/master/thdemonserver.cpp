@@ -75,7 +75,7 @@ private:
         catch (IException *e)
         {
             StringBuffer s;
-            LOG(MCwarning, unknownJob, "Failed to update progress information: %s", e->errorMessage(s).str());
+            LOG(MCwarning, thorJob, "Failed to update progress information: %s", e->errorMessage(s).str());
             e->Release();
         }
     }
@@ -155,7 +155,7 @@ private:
             catch (IException *E)
             {
                 StringBuffer s;
-                LOG(MCwarning, unknownJob, "Failed to update progress information: %s", E->errorMessage(s).str());
+                LOG(MCwarning, thorJob, "Failed to update progress information: %s", E->errorMessage(s).str());
                 E->Release();
             }
         }
@@ -187,7 +187,7 @@ private:
         catch (IException *e)
         {
             StringBuffer s;
-            LOG(MCwarning, unknownJob, "Failed to update progress information: %s", e->errorMessage(s).str());
+            LOG(MCwarning, thorJob, "Failed to update progress information: %s", e->errorMessage(s).str());
             e->Release();
         }
     }
@@ -212,7 +212,7 @@ public:
         if (0 == activeGraphs.ordinality())
         {
             StringBuffer urlStr;
-            LOG(MCdebugProgress, unknownJob, "heartbeat packet received with no active graphs");
+            LOG(MCdebugProgress, thorJob, "heartbeat packet received with no active graphs");
             return;
         }
         size32_t compressedProgressSz = progressMb.remaining();
@@ -230,12 +230,12 @@ public:
                 ForEachItemIn(g, activeGraphs) if (activeGraphs.item(g).queryGraphId() == graphId) graph = (CMasterGraph *)&activeGraphs.item(g);
                 if (!graph)
                 {
-                    LOG(MCdebugProgress, unknownJob, "heartbeat received from unknown graph %" GIDPF "d", graphId);
+                    LOG(MCdebugProgress, thorJob, "heartbeat received from unknown graph %" GIDPF "d", graphId);
                     break;
                 }
                 if (!graph->deserializeStats(slave, uncompressedMb))
                 {
-                    LOG(MCdebugProgress, unknownJob, "heartbeat error in graph %" GIDPF "d", graphId);
+                    LOG(MCdebugProgress, thorJob, "heartbeat error in graph %" GIDPF "d", graphId);
                     break;
                 }
             }

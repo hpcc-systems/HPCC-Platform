@@ -58,9 +58,7 @@ private:
 
     IRowStream * doLocalSelfJoin()
     {
-#if THOR_TRACE_LEVEL > 5
-        ActPrintLog("SELFJOIN: Performing local self-join");
-#endif
+        ::ActPrintLog(this, thorDetailedLogLevel, "SELFJOIN: Performing local self-join");
         Owned<IThorRowLoader> iLoader = createThorRowLoader(*this, ::queryRowInterfaces(input), compare, isUnstable() ? stableSort_none : stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_SELFJOIN);
         Owned<IRowStream> rs = iLoader->load(inputStream, abortSoon);
         mergeStats(stats, iLoader, spillStatistics);  // Not sure of the best policy if rs spills later on.
@@ -70,9 +68,7 @@ private:
 
     IRowStream * doGlobalSelfJoin()
     {
-#if THOR_TRACE_LEVEL > 5
-        ActPrintLog("SELFJOIN: Performing global self-join");
-#endif
+        ::ActPrintLog(this, thorDetailedLogLevel, "SELFJOIN: Performing global self-join");
         sorter->Gather(::queryRowInterfaces(input), inputStream, compare, NULL, NULL, keyserializer, NULL, NULL, false, isUnstable(), abortSoon, NULL);
         PARENT::stopInput(0);
         if (abortSoon)
@@ -126,12 +122,12 @@ public:
         }
         compare = helper->queryCompareLeft();                   // NB not CompareLeftRight
         keyserializer = helper->querySerializeLeft();           // hopefully never need right
-        if(isLightweight) 
-            ActPrintLog("SELFJOIN: LIGHTWEIGHT");
+        if (isLightweight) 
+            ::ActPrintLog(this, thorDetailedLogLevel, "SELFJOIN: LIGHTWEIGHT");
         else if(isLocal) 
-            ActPrintLog("SELFJOIN: LOCAL");
+            ::ActPrintLog(this, thorDetailedLogLevel, "SELFJOIN: LOCAL");
         else
-            ActPrintLog("SELFJOIN: GLOBAL");
+            ::ActPrintLog(this, thorDetailedLogLevel, "SELFJOIN: GLOBAL");
     }
     virtual void reset() override
     {

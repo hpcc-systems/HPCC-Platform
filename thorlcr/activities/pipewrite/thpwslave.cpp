@@ -124,7 +124,6 @@ public:
         start();
         Owned<IPipeProcessException> pipeException;
 
-        ActPrintLog("process");
         try
         {
             if (!writeTransformer)
@@ -145,7 +144,7 @@ public:
         verifyPipe();
         if (pipeException) // NB: verifyPipe may throw error based on pipe prog. output 1st.
             throw pipeException.getClear();
-        ActPrintLog("Wrote %" RCPF "d records", processed & THORDATALINK_COUNT_MASK);
+        ::ActPrintLog(this, thorDetailedLogLevel, "Wrote %" RCPF "d records", processed & THORDATALINK_COUNT_MASK);
     }
     void endProcess()
     {
@@ -163,7 +162,6 @@ public:
     }
     void write()
     {
-        ActPrintLog("write");
         while (!abortSoon)
         {
             OwnedConstThorRow row = inputStream->ungroupedNextRow();

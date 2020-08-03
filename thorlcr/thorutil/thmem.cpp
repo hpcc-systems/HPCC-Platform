@@ -1646,11 +1646,10 @@ protected:
         StringBuffer tempPrefix, tempName;
         if (iCompare)
         {
-            ActPrintLog(&activity, "%sSorting %" RIPF "d rows", tracingPrefix.str(), spillableRows.numCommitted());
             CCycleTimer timer;
             spillableRows.sort(*iCompare, maxCores); // sorts committed rows
             sortCycles += timer.elapsedCycles();
-            ActPrintLog(&activity, "%sSort took: %f", tracingPrefix.str(), ((float)timer.elapsedMs())/1000);
+            ActPrintLog(&activity, "%sSorting %" RIPF "u rows took: %f", tracingPrefix.str(), spillableRows.numCommitted(), ((float)timer.elapsedMs())/1000);
             tempPrefix.append("srt");
         }
         tempPrefix.appendf("spill_%d", activity.queryId());
@@ -1864,7 +1863,7 @@ public:
              * memory usage.
              */
             size32_t compBlkSz = activity.getOptUInt(THOROPT_SORT_COMPBLKSZ, DEFAULT_SORT_COMPBLKSZ);
-            activity.ActPrintLog("%sSpilling will use compressed block size = %u", tracingPrefix.str(), compBlkSz);
+            ActPrintLog(&activity, thorDetailedLogLevel, "%sSpilling will use compressed block size = %u", tracingPrefix.str(), compBlkSz);
             spillableRows.setCompBlockSize(compBlkSz);
         }
     }

@@ -653,6 +653,10 @@ int main( int argc, const char *argv[]  )
             lf->setCreateAliasFile(false);
             logHandler = lf->beginLogging();
             createUNCFilename(lf->queryLogFileSpec(), logUrl, false);
+#ifndef _DEBUG
+            // keep duplicate logging output to stderr to aide debugging
+            queryLogMsgManager()->removeMonitor(queryStderrLogMsgHandler());
+#endif
 
             LOG(MCdebugProgress, thorJob, "Opened log file %s", logUrl.str());
         }

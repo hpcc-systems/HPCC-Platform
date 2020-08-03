@@ -50,7 +50,7 @@ class CSelectNthSlaveActivity : public CSlaveActivity, implements ILookAheadStop
                 createDefaultIfFail = true;
         }
         startN = N;
-        ActPrintLog("SELECTNTH: Selecting row %" I64F "d", N);
+        ::ActPrintLog(this, thorDetailedLogLevel, "SELECTNTH: Selecting row %" I64F "d", N);
     }
     void sendN()
     {
@@ -105,19 +105,17 @@ public:
         }
 
         seenNth = false;
-        if (0 == rowN)
+        if (!REJECTLOG(MCthorDetailedDebugInfo))
         {
-            ThorDataLinkMetaInfo info;
-            queryInput(0)->getMetaInfo(info);
-            StringBuffer meta;
-            meta.appendf("META(totalRowsMin=%" I64F "d,totalRowsMax=%" I64F "d, spilled=%" I64F "d,byteTotal=%" I64F "d)",
-                info.totalRowsMin,info.totalRowsMax,info.spilled,info.byteTotal);
-#if 0                 
-            Owned<IThorException> e = MakeActivityWarning(this, -1, "%s", meta.str());
-            fireException(e);
-#else
-            ActPrintLog("%s",meta.str());
-#endif
+            if (0 == rowN)
+            {
+                ThorDataLinkMetaInfo info;
+                queryInput(0)->getMetaInfo(info);
+                StringBuffer meta;
+                meta.appendf("META(totalRowsMin=%" I64F "d,totalRowsMax=%" I64F "d, spilled=%" I64F "d,byteTotal=%" I64F "d)",
+                    info.totalRowsMin,info.totalRowsMax,info.spilled,info.byteTotal);
+                ::ActPrintLog(this, thorDetailedLogLevel, "%s", meta.str());
+            }
         }
         first = true;
     }

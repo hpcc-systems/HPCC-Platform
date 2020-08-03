@@ -57,7 +57,7 @@ public:
                 helper->process(aggy, row);     
                 processed++;
             }
-            ActPrintLog("DISTRIBUTION: processed %" RCPF "d records", processed & THORDATALINK_COUNT_MASK);
+            ::ActPrintLog(this, thorDetailedLogLevel, "DISTRIBUTION: processed %" RCPF "d records", processed & THORDATALINK_COUNT_MASK);
         }
         catch(CATCHALL)
         {

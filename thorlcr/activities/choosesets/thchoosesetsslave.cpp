@@ -71,7 +71,6 @@ public:
     {
         ActivityTimer s(slaveTimerStats, timeActivities);
         PARENT::start();
-        ActPrintLog("CHOOSESETS: Is Local");
     }
     CATCH_NEXTROW()
     {
@@ -117,23 +116,25 @@ class ChooseSetsActivity : public BaseChooseSetsActivity
         if (!receiveMsg(msg, queryJobChannel().queryMyRank()-1, mpTag))
             return;
         memcpy(tallies, msg.readDirect(numSets*sizeof(unsigned)), numSets*sizeof(unsigned));
-#if THOR_TRACE_LEVEL >= 5
-        StringBuffer s;
-        unsigned idx=0;
-        for (; idx<numSets; idx++)
-            s.append("[").append(tallies[idx]).append("]");
-        ActPrintLog("CHOOSESETS: Incoming count = %s", s.str());
-#endif
+        if (!REJECTLOG(MCthorDetailedDebugInfo))
+        {
+            StringBuffer s;
+            unsigned idx=0;
+            for (; idx<numSets; idx++)
+                s.append("[").append(tallies[idx]).append("]");
+            ::ActPrintLog(this, thorDetailedLogLevel, "CHOOSESETS: Incoming count = %s", s.str());
+        }
     }
     void sendTallies() // NB: not called on last node.
     {
-#if THOR_TRACE_LEVEL >= 5
-        StringBuffer s;
-        unsigned idx=0;
-        for (; idx<numSets; idx++)
-            s.append("[").append(tallies[idx]).append("]");
-        ActPrintLog("CHOOSESETS: Outgoing count = %s", s.str());
-#endif
+        if (!REJECTLOG(MCthorDetailedDebugInfo))
+        {
+            StringBuffer s;
+            unsigned idx=0;
+            for (; idx<numSets; idx++)
+                s.append("[").append(tallies[idx]).append("]");
+            ::ActPrintLog(this, thorDetailedLogLevel, "CHOOSESETS: Outgoing count = %s", s.str());
+        }
         CMessageBuffer msg;
         msg.append(numSets * sizeof(unsigned), tallies); 
         queryJobChannel().queryJobComm().send(msg, queryJobChannel().queryMyRank()+1, mpTag);
@@ -152,7 +153,6 @@ public:
     virtual void start() override
     {
         ActivityTimer s(slaveTimerStats, timeActivities);
-        ActPrintLog("CHOOSESETS: Is Global");
         PARENT::start();
 
         if (ensureStartFTLookAhead(0))
@@ -163,9 +163,6 @@ public:
     }
     virtual void abort() override
     {
-#if THOR_TRACE_LEVEL >= 5
-        ActPrintLog("CHOOSESETS: abort()");
-#endif
         CSlaveActivity::abort();
         if (!container.queryLocalOrGrouped() && !firstNode())
             cancelReceiveMsg(RANK_ALL, mpTag);
@@ -284,7 +281,6 @@ public:
     virtual void start() override
     {
         ActivityTimer s(slaveTimerStats, timeActivities);
-        ActPrintLog("CHOOSESETS: Is Global");
         if (counts)
         {
             free(counts);
@@ -371,7 +367,7 @@ class ChooseSetsLastActivity : public ChooseSetsPlusActivity
         for (unsigned idx=0; idx < numSets; idx++)
         {
             rowcount_t firstToCopy = 0;
-            ActPrintLog("CHOOSESETSLAST: %d P(%" RCPF "d) C(%" RCPF "d) L(%" I64F "d) T(%" RCPF "d)", idx, priorCounts[idx], counts[idx], limits[idx], totalCounts[idx]);
+            ::ActPrintLog(this, thorDetailedLogLevel, "CHOOSESETSLAST: %d P(%" RCPF "d) C(%" RCPF "d) L(%" I64F "d) T(%" RCPF "d)", idx, priorCounts[idx], counts[idx], limits[idx], totalCounts[idx]);
             if (((rowcount_t)limits[idx]) < totalCounts[idx])
                 firstToCopy = totalCounts[idx] - (rowcount_t)limits[idx];
             if (priorCounts[idx] + counts[idx] > firstToCopy)
@@ -382,9 +378,7 @@ class ChooseSetsLastActivity : public ChooseSetsPlusActivity
                     numToSkip[idx] = (unsigned)(firstToCopy - priorCounts[idx]);
                 numToReturn[idx] = (unsigned)(priorCounts[idx] + counts[idx] - firstToCopy);
                 skipAll = false;
-#if THOR_TRACE_LEVEL >= 5
-                ActPrintLog("CHOOSESETSLAST: Selection %d.  Range(%d,%" RCPF "d)", idx, numToSkip[idx], counts[idx]);
-#endif
+                ::ActPrintLog(this, thorDetailedLogLevel, "CHOOSESETSLAST: Selection %d.  Range(%d,%" RCPF "d)", idx, numToSkip[idx], counts[idx]);
             }
         }
         if (skipAll)

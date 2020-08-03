@@ -116,7 +116,6 @@ protected:
     virtual void preStart(size32_t parentExtractSz, const byte *parentExtract)
     {
         CSortBaseActivityMaster::preStart(parentExtractSz, parentExtract);
-        ActPrintLog("preStart");
         imaster = CreateThorSorterMaster(this);
         unsigned s=0;
         for (; s<container.queryJob().querySlaves(); s++)
@@ -128,8 +127,6 @@ protected:
     }
     virtual void process()
     {
-        ActPrintLog("process");
-
         CSortBaseActivityMaster::process();
 
         IHThorSortArg *helper = (IHThorSortArg *)queryHelper();
@@ -195,7 +192,6 @@ protected:
             throw;
         }
         ::Release(imaster);
-        ActPrintLog("process exit");
     }
 };
 

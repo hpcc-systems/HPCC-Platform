@@ -104,9 +104,7 @@ public:
     }
     bool calcNextDedupAll(bool groupOp)
     {
-#if THOR_TRACE_LEVEL >=5
-        ActPrintLog(activity, "DedupAllHelper::calcNextDedupAll");
-#endif
+        ActPrintLog(activity, thorDetailedLogLevel, "DedupAllHelper::calcNextDedupAll");
         dedupIdx = 0;
         rows.kill();
 
@@ -123,7 +121,7 @@ public:
             throw checkAndCreateOOMContextException(activity, e, "loading group for dedup all", rowLoader->numRows(), inputOutputMeta, rowLoader->probeRow(0));
         }
         dedupCount = rows.ordinality();
-        ActPrintLog(activity, "DEDUP: rows loaded = %d",dedupCount);
+        ActPrintLog(activity, thorDetailedLogLevel, "DEDUP: rows loaded = %d",dedupCount);
 
         if (iStopInput)
             iStopInput->stopInput();

@@ -250,7 +250,7 @@ void CWriteMasterBase::publish()
             {
                 StringBuffer clusterName;
                 fileDesc->getClusterGroupName(clusterIdx, clusterName, &queryNamedGroupStore());
-                PROGLOG("Creating blank parts for file '%s', cluster '%s'", fileName.get(), clusterName.str());
+                LOG(MCthorDetailedDebugInfo, thorJob, "Creating blank parts for file '%s', cluster '%s'", fileName.get(), clusterName.str());
                 unsigned p=0;
                 while (p<fileDesc->numParts())
                 {

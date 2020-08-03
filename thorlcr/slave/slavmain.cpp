@@ -1554,11 +1554,11 @@ public:
     }
     virtual void reset() override
     {
-        DBGLOG("KJService reset()");
+        LOG(MCthorDetailedDebugInfo, thorJob, "KJService reset()");
         processorPool->stopAll(true);
         processorPool->joinAll(false);
         clearAll();
-        DBGLOG("KJService reset() done");
+        LOG(MCthorDetailedDebugInfo, thorJob, "KJService reset() done");
     }
     virtual void start() override
     {
@@ -1569,7 +1569,7 @@ public:
     {
         if (aborted)
             return;
-        PROGLOG("KJService stop()");
+        LOG(MCthorDetailedDebugInfo, thorJob, "KJService stop()");
         queryNodeComm().cancel(RANK_ALL, keyLookupMpTag);
         processorPool->stopAll(true);
         processorPool->joinAll(true);
@@ -1693,7 +1693,7 @@ public:
     {
         queryNodeComm().cancel(0, masterSlaveMpTag);
     }
-    virtual void slaveMain()
+    void slaveMain(ILogMsgHandler *logHandler)
     {
         rank_t slaveProc = queryNodeGroup().rank()-1;
         unsigned totSlaveProcs = queryNodeClusterWidth();
@@ -1858,6 +1858,11 @@ public:
                         Owned<IPropertyTree> workUnitInfo = createPTree(msg);
                         StringBuffer user;
                         workUnitInfo->getProp("user", user);
+
+                        unsigned maxLogDetail = workUnitInfo->getPropInt("Debug/maxLogDetail", DefaultDetail);
+                        ILogMsgFilter *existingLogHandler = queryLogMsgManager()->queryMonitorFilter(logHandler);
+                        dbgassertex(existingLogHandler);
+                        verifyex(queryLogMsgManager()->changeMonitorFilterOwn(logHandler, getCategoryLogMsgFilter(existingLogHandler->queryAudienceMask(), existingLogHandler->queryClassMask(), maxLogDetail)));
 
                         PROGLOG("Started wuid=%s, user=%s, graph=%s\n", wuid.get(), user.str(), graphName.get());
                         PROGLOG("Using query: %s", soPath.str());
@@ -2324,7 +2329,7 @@ public:
     virtual IKJService &queryKeyedJoinService() override { return *kjService.get(); }
 };
 
-void slaveMain(bool &jobListenerStopped)
+void slaveMain(bool &jobListenerStopped, ILogMsgHandler *logHandler)
 {
     unsigned masterMemMB = globals->getPropInt("@masterTotalMem");
     HardwareInfo hdwInfo;
@@ -2363,7 +2368,7 @@ void slaveMain(bool &jobListenerStopped)
 
 #endif
 
-    jobListener.slaveMain();
+    jobListener.slaveMain(logHandler);
 }
 
 void abortSlave()

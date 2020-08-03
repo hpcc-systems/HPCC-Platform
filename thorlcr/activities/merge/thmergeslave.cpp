@@ -232,7 +232,7 @@ public:
             }
 #endif
 
-            ActPrintLog("Merge: partitionpos[%d] = %" I64F "d",i,partitionpos[i]);
+            ::ActPrintLog(this, thorDetailedLogLevel, "Merge: partitionpos[%d] = %" I64F "d",i,partitionpos[i]);
         }
         delete [] intertags;
         provider.init(this,queryRowSerializer(),intertag);
@@ -274,7 +274,6 @@ public:
 
     void abort()
     {
-        ActPrintLog("abort");
         CSlaveActivity::abort();
         provider.stop();
     }
@@ -423,11 +422,6 @@ public:
         helper = (IHThorMergeArg *)queryHelper();
         setRequireInitData(false);
         appendOutputLinked(this);
-    }
-    void abort()
-    {
-        ActPrintLog("abort");
-        CSlaveActivity::abort();
     }
 
 // IThorDataLink

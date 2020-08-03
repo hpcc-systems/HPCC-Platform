@@ -107,7 +107,9 @@
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning
 
 #define THOR_SEM_RETRY_TIMEOUT 2
-#define THOR_TRACE_LEVEL 5
+
+// Logging
+extern graph_decl const LogMsgJobInfo thorJob;
 
 enum ThorExceptionAction { tea_null, tea_warning, tea_abort, tea_shutdown };
 
@@ -261,7 +263,7 @@ public:
     void stop() { running = false; todo.signal(); }
     void inform(IException *e)
     {
-        LOG(MCdebugProgress, unknownJob, "INFORM [%s]", description.get());
+        LOG(MCdebugProgress, thorJob, "INFORM [%s]", description.get());
         CriticalBlock block(crit);
         if (exception.get())
             e->Release();
@@ -276,7 +278,7 @@ public:
         CriticalBlock block(crit);
         IException *e = exception.getClear();
         if (e)
-            LOG(MCdebugProgress, unknownJob, "CLEARING TIMEOUT [%s]", description.get());
+            LOG(MCdebugProgress, thorJob, "CLEARING TIMEOUT [%s]", description.get());
         todo.signal();
         return e;
     }
@@ -398,6 +400,7 @@ extern graph_decl void ActPrintLogEx(const CGraphElementBase *container, const A
 extern graph_decl void ActPrintLogArgs(const CGraphElementBase *container, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args) __attribute__((format(printf,4,0)));
 extern graph_decl void ActPrintLogArgs(const CGraphElementBase *container, IException *e, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args) __attribute__((format(printf,5,0)));
 extern graph_decl void ActPrintLog(const CActivityBase *activity, const char *format, ...) __attribute__((format(printf, 2, 3)));
+extern graph_decl void ActPrintLog(const CActivityBase *activity, unsigned traceLevel, const char *format, ...) __attribute__((format(printf, 3, 4)));
 extern graph_decl void ActPrintLog(const CActivityBase *activity, IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
 extern graph_decl void ActPrintLog(const CActivityBase *activity, IException *e);
 
@@ -407,6 +410,14 @@ inline void ActPrintLog(const CGraphElementBase *container, const char *format, 
     va_list args;
     va_start(args, format);
     ActPrintLogArgs(container, thorlog_ecl, MCdebugProgress, format, args);
+    va_end(args);
+}
+inline void ActPrintLog(const CGraphElementBase *container, unsigned traceLevel, const char *format, ...) __attribute__((format(printf, 3, 4)));
+inline void ActPrintLog(const CGraphElementBase *container, unsigned traceLevel, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    ActPrintLogArgs(container, thorlog_ecl, MCdebugProgress(traceLevel), format, args);
     va_end(args);
 }
 inline void ActPrintLogEx(const CGraphElementBase *container, IException *e, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, ...) __attribute__((format(printf, 5, 6)));
@@ -458,6 +469,16 @@ inline void GraphPrintLog(CGraphBase *graph, const char *format, ...)
     GraphPrintLogArgs(graph, thorlog_null, MCdebugProgress, format, args);
     va_end(args);
 }
+
+inline void GraphPrintLog(CGraphBase *graph, unsigned traceLevel, const char *format, ...) __attribute__((format(printf, 3, 4)));
+inline void GraphPrintLog(CGraphBase *graph, unsigned traceLevel, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    GraphPrintLogArgs(graph, thorlog_null, MCdebugInfo(traceLevel), format, args);
+    va_end(args);
+}
+
 extern graph_decl IThorException *MakeActivityException(CActivityBase *activity, int code, const char *_format, ...) __attribute__((format(printf, 3, 4)));
 extern graph_decl IThorException *MakeActivityException(CActivityBase *activity, IException *e, const char *xtra, ...) __attribute__((format(printf, 3, 4)));
 extern graph_decl IThorException *MakeActivityException(CActivityBase *activity, IException *e);
@@ -494,8 +515,6 @@ extern graph_decl Owned<IPropertyTree> globals;
 extern graph_decl mptag_t masterSlaveMpTag;
 extern graph_decl mptag_t kjServiceMpTag;
 enum SlaveMsgTypes:unsigned { smt_errorMsg=1, smt_initGraphReq, smt_initActDataReq, smt_dataReq, smt_getPhysicalName, smt_getFileOffset, smt_actMsg, smt_getresult };
-// Logging
-extern graph_decl const LogMsgJobInfo thorJob;
 
 extern graph_decl StringBuffer &getCompoundQueryName(StringBuffer &compoundName, const char *queryName, unsigned version);
 
@@ -562,6 +581,10 @@ inline void readUnderlyingType(MemoryBuffer &mb, T &v)
 {
     mb.read(reinterpret_cast<typename std::underlying_type<T>::type &> (v));
 }
+
+constexpr unsigned thorDetailedLogLevel = 200;
+constexpr LogMsgCategory MCthorDetailedDebugInfo(MCdebugInfo(thorDetailedLogLevel));
+
 
 #endif
 

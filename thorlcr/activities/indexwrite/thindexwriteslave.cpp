@@ -266,7 +266,7 @@ public:
     }
     virtual void process() override
     {
-        ActPrintLog("INDEXWRITE: Start");
+        ::ActPrintLog(this, thorDetailedLogLevel, "INDEXWRITE: Start");
         init();
 
         IRowStream *stream = inputStream;
@@ -404,9 +404,8 @@ public:
                 {
                     StringBuffer partFname;
                     getPartFilename(*partDesc, 0, partFname);
-                    ActPrintLog("INDEXWRITE: process: handling fname : %s", partFname.str());
+                    ::ActPrintLog(this, thorDetailedLogLevel, "INDEXWRITE: process: handling fname : %s", partFname.str());
                     open(*partDesc, false, helper->queryDiskRecordSize()->isVariableSize(), false);
-                    ActPrintLog("INDEXWRITE: write");
 
                     BooleanOnOff tf(receiving);
                     if (!refactor || !active)
@@ -418,7 +417,6 @@ public:
                             break;
                         processRow(row);
                     } while (!abortSoon);
-                    ActPrintLog("INDEXWRITE: write level 0 complete");
                 }
                 catch (CATCHALL)
                 {
@@ -433,7 +431,7 @@ public:
 
                 if (buildTlk)
                 {
-                    ActPrintLog("INDEXWRITE: sending rows");
+                    ::ActPrintLog(this, thorDetailedLogLevel, "INDEXWRITE: sending rows");
                     NodeInfoArray tlkRows;
 
                     CMessageBuffer msg;
@@ -476,7 +474,7 @@ public:
 
                     if (firstNode())
                     {
-                        ActPrintLog("INDEXWRITE: Waiting on tlk to complete");
+                        ::ActPrintLog(this, thorDetailedLogLevel, "INDEXWRITE: Waiting on tlk to complete");
 
                         // JCSMORE if refactor==true, is rowsToReceive here right??
                         unsigned rowsToReceive = (refactor ? (tlkDesc->queryOwner().numParts()-1) : container.queryJob().querySlaves()) -1; // -1 'cos got my own in array already
@@ -506,7 +504,7 @@ public:
 
                         StringBuffer path;
                         getPartFilename(*tlkDesc, 0, path);
-                        ActPrintLog("INDEXWRITE: creating toplevel key file : %s", path.str());
+                        ::ActPrintLog(this, thorDetailedLogLevel, "INDEXWRITE: creating toplevel key file : %s", path.str());
                         try
                         {
                             open(*tlkDesc, true, helper->queryDiskRecordSize()->isVariableSize(), true);
@@ -549,7 +547,7 @@ public:
                     }
                 }
             }
-            ActPrintLog("INDEXWRITE: All done");
+            ::ActPrintLog(this, thorDetailedLogLevel, "INDEXWRITE: All done");
         }
     }
     virtual void endProcess() override

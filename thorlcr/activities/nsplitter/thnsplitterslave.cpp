@@ -175,7 +175,7 @@ public:
                  break;
              cur = next+1;
         }
-        ActPrintLog("Number of connected outputs: %u", connectedOutputCount);
+        ::ActPrintLog(this, thorDetailedLogLevel, "Number of connected outputs: %u", connectedOutputCount);
     }
     virtual void reset() override
     {

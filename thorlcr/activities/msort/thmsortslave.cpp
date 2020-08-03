@@ -173,8 +173,6 @@ public:
     }
     virtual void kill() override
     {
-        ActPrintLog("MSortSlaveActivity::kill");
-
         {
             CriticalBlock block(statsCs);
             mergeStats(stats, sorter, spillStatistics);
@@ -222,7 +220,6 @@ public:
 
 CActivityBase *createMSortSlave(CGraphElementBase *container)
 {
-    ActPrintLog(container, "MSortSlaveActivity::createMSortSlave");
     return new MSortSlaveActivity(container);
 }
 

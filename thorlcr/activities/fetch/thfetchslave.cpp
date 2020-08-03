@@ -139,11 +139,13 @@ public:
         assertex(offsetMapSz == sizeof(FPosTableEntry) * offsetCount);
         offsetTable = new FPosTableEntry[offsetCount];
         memcpy_iflen(offsetTable, offsetMap, offsetMapSz);
-        unsigned c;
-        for (c=0; c<offsetCount; c++)
+        if (!REJECTLOG(MCthorDetailedDebugInfo))
         {
-            FPosTableEntry &e = offsetTable[c];
-            ActPrintLog(&owner, "Table[%d] : base=%" I64F "d, top=%" I64F "d, slave=%d", c, e.base, e.top, e.index);
+            for (unsigned c=0; c<offsetCount; c++)
+            {
+                FPosTableEntry &e = offsetTable[c];
+                ActPrintLog(&owner, thorDetailedLogLevel, "Table[%d] : base=%" I64F "d, top=%" I64F "d, slave=%d", c, e.base, e.top, e.index);
+            }
         }
         files = parts.ordinality();
         if (files)
