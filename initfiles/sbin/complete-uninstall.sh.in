@@ -27,6 +27,7 @@ usage() {
     $(basename $0) [OPTIONS]
        -f, --force: force to remove hpccsystems-platform.
        -e, --env: leave environment configuration files behind.
+       -p, --purge: purge hpccsystems-platform
 EOF
    exit 0
 }
@@ -72,9 +73,10 @@ removedir() {
 
 force=0
 leaveenv=0
+purge=""
 pckname=""
 
-TEMP=$(/usr/bin/getopt -o efh --long env,help,force -- "$@")
+TEMP=$(/usr/bin/getopt -o ephf --long env,purge,help,force -- "$@")
 if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; exit 1 ; fi
 eval set -- "$TEMP"
 while true ; do
@@ -83,6 +85,8 @@ while true ; do
             shift ;;
         -e|--env) leaveenv=1
             shift ;;
+        -p|--purge) purge='purge'
+            shift ;;
         -h|--help) usage
                    shift ;;
         --) shift ; break ;;
@@ -90,80 +94,89 @@ while true ; do
     esac
 done
 
-set_environmentvars
+pckname=$(apt-cache pkgnames hpccsystems-platform 2> /dev/null)
 
-mklink=""
-lpath=$(canonicalize_path ${path})
-if [ -n "${lpath}" -a -h "${lpath}" ] ; then
-    mklink=$(readlink "${lpath}")
-    # echo "\"${lpath}\" is a soft-link to \"${mklink}\""
+if [ "$purge" != "purge" ];then
+    read -p "This action will purge ${pckname} and all related data. Are you sure you want to proceed? (purge/quit): " purge
 fi
 
-if [ -e /etc/debian_version ]; then
-    pckname=$(apt-cache pkgnames hpccsystems-platform 2> /dev/null)
-    if [ -n "${pckname}" ] ; then
-        echo "Removing ${pckname}"
-        apt-get remove -y ${pckname}
-        if [ $? -ne 0 ]; then
-           echo "An error has occured during removal.  Try \`apt-get -f remove ${pckname}\` to fix this issue."
-           exit 1
+if [ "$purge" = "purge" ]; then
+    set_environmentvars
+
+    mklink=""
+    lpath=$(canonicalize_path ${path})
+    if [ -n "${lpath}" -a -h "${lpath}" ] ; then
+        mklink=$(readlink "${lpath}")
+        # echo "\"${lpath}\" is a soft-link to \"${mklink}\""
+    fi
+
+    if [ -e /etc/debian_version ]; then
+        if [ -n "${pckname}" ] ; then
+            apt-get remove -y ${pckname}
+            if [ $? -ne 0 ]; then
+                echo "An error has occured during removal.  Try \`apt-get -f remove ${pckname}\` to fix this issue."
+                exit 1
+            fi
+            if [ $leaveenv -eq 0 ]; then
+                dpkg -P ${pckname}
+            fi
         fi
-        if [ $leaveenv -eq 0 ]; then
-            dpkg -P ${pckname}
+    elif [ -e /etc/redhat-release -o -e /etc/SuSE-release ]; then
+        pckname=$(rpm -qa | grep hpccsystems-platform 2> /dev/null)
+        if [ -n "${pckname}" ] ; then
+            echo "Removing ${pckname}"
+            yum remove -y ${pckname}
+            if [ $? -ne 0 ]; then
+                echo "An error has occured during removal.  Try to fix any issues and then run \`yum-complete-transaction\`."
+                exit 1
+            fi
         fi
     fi
-elif [ -e /etc/redhat-release -o -e /etc/SuSE-release ]; then
-    pckname=$(rpm -qa | grep hpccsystems-platform 2> /dev/null)
-    if [ -n "${pckname}" ] ; then
-        echo "Removing ${pckname}"
-        yum remove -y ${pckname}
-        if [ $? -ne 0 ]; then
-           echo "An error has occured during removal.  Try to fix any issues and then run \`yum-complete-transaction\`."
-           exit 1
-        fi
+
+    if [ -z "${pckname}" -a $force -eq 0 ] ; then
+        echo "Error, unable to find any hpcc package for removal."
+        exit 1
     fi
-fi
-
-if [ -z "${pckname}" -a $force -eq 0 ] ; then
-    echo "Error, unable to find any hpcc package for removal."
-    exit 1
-fi
 
 
-# Removing directories
+    # Removing directories
 
-echo "Removing Directory - ${path}"
-removedir ${path}
+    echo "Removing Directory - ${path}"
+    removedir ${path}
 
-if [ -n "${mklink}" -a -n "${lpath}" ] ; then
-    # echo "recreating soft-link"
-    ln -s "${mklink}" "${lpath}"
-    removedir ${lpath}
-fi
+    if [ -n "${mklink}" -a -n "${lpath}" ] ; then
+        # echo "recreating soft-link"
+        ln -s "${mklink}" "${lpath}"
+        removedir ${lpath}
+    fi
 
-if [ $leaveenv -eq 0 ]; then
-    echo "Removing Directory - ${configs}"
-    removedir ${configs}
-fi
+    if [ $leaveenv -eq 0 ]; then
+        echo "Removing Directory - ${configs}"
+        removedir ${configs}
+    fi
 
-echo "Removing Directory - ${lock}"
-removedir ${lock}
 
-echo "Removing Directory - ${log}"
-removedir ${log}
+    echo "Removing Directory - ${lock}"
+    removedir ${lock}
 
-echo "Removing Directory - ${pid}"
-removedir ${pid}
+    echo "Removing Directory - ${log}"
+    removedir ${log}
 
-echo "Removing Directory - ${runtime}"
-removedir ${runtime}
+    echo "Removing Directory - ${pid}"
+    removedir ${pid}
 
-echo "Removing user - ${user}"
-if [ -e /usr/sbin/userdel ]; then
-    /usr/sbin/userdel -r ${user}
-elif [ -e /usr/bin/userdel ]; then
-    /usr/bin/userdel -r ${user}
-elif [ -e /bin/userdel ]; then
-    /bin/userdel -r ${user}
+    echo "Removing Directory - ${runtime}"
+    removedir ${runtime}
+
+    echo "Removing user - ${user}"
+    if [ -e /usr/sbin/userdel ]; then
+        /usr/sbin/userdel -r ${user}
+    elif [ -e /usr/bin/userdel ]; then
+        /usr/bin/userdel -r ${user}
+    elif [ -e /bin/userdel ]; then
+        /bin/userdel -r ${user}
+    fi
+else
+    echo "Action aborted"
 fi
 exit 0
