@@ -883,7 +883,9 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     {
         Owned<IWorkUnit> wu = &workunit.lock();
         wu->setTracingValue("ThorBuild", BUILD_TAG);
+#ifndef _CONTAINERIZED
         updateWorkUnitLog(*wu);
+#endif
     }
     workunit.forceReload();
     StringAttr wuid(workunit.queryWuid());
