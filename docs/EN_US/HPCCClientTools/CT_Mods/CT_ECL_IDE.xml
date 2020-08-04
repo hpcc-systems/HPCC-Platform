@@ -1330,7 +1330,7 @@
                   <entry><emphasis role="bold">Open</emphasis></entry>
 
                   <entry>Provides access to the following Open submenus:
-                  <programlisting role="tab"><emphasis role="bold">Open Builder:</emphasis> Opens a saved query(.ECL file) in a new ECL Builder window. CTRL+O
+                  <programlisting role="tab"><emphasis role="bold">Open Builder:</emphasis> Opens a saved query (.ECL file) in a new ECL Builder window. CTRL+O
 <emphasis role="bold">Open Workunit:</emphasis> opens a dialog to name the Workunit to open. 
                       Enter the Workunit ID (WUID), then press the <emphasis
                         role="bold">OK</emphasis> button.</programlisting></entry>
@@ -1895,6 +1895,69 @@
 
                   <entry>opens an item in the Builder window when its name is
                   highlighted in a text control.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para><emphasis role="bold"> </emphasis></para>
+        </sect3>
+
+        <sect3 id="CT_Bookmarks_Tab">
+          <title>Bookmarks Tab</title>
+
+          <para>The <emphasis role="bold">Bookmarks Tab</emphasis> contains
+          the following selections:</para>
+
+          <para><graphic fileref="../../images/CT060.jpg" /></para>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="122.40pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><graphic
+                  fileref="../../images/CT060-0.jpg" /></entry>
+
+                  <entry>Press the <emphasis role="bold">Bookmarks</emphasis>
+                  icon to access the Bookmarks panel.</entry>
+                </row>
+
+                <row>
+                  <entry><graphic
+                  fileref="../../images/CT061-1.jpg" /></entry>
+
+                  <entry>Press the lower half of the Bookmarks icon to access
+                  the submenu:<programlisting role="tab"> <emphasis
+                        role="bold"> Open </emphasis>- Opens the selected bookmark.
+<emphasis role="bold">  Save</emphasis> - Saves the current bookmarks.
+  <emphasis role="bold">Load</emphasis> - Loads the last saved bookmarks.
+  <emphasis role="bold">Load Merge</emphasis> - Merges the last saved bookmarks with the current bookmarks.
+  <emphasis role="bold">Delete</emphasis> - Deletes the selected bookmark.
+</programlisting></entry>
+                </row>
+
+                <row>
+                  <entry><graphic
+                  fileref="../../images/CT060-2.jpg" /></entry>
+
+                  <entry>Next bookmark</entry>
+                </row>
+
+                <row>
+                  <entry><graphic
+                  fileref="../../images/CT060-3.jpg" /></entry>
+
+                  <entry>Previous bookmark</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Clear</emphasis></entry>
+
+                  <entry>Clears bookmarks</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2940,8 +3003,7 @@ ENDMACRO;
 
                   <entry>Go to Line</entry>
                 </row>
-
-                <row>
+<row>
                   <entry>Alt+0</entry>
 
                   <entry>Fold All - collapses all elements that can be
