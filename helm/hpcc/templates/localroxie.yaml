@@ -1,6 +1,6 @@
 {{ range $roxie := $.Values.roxie -}}
 {{- if not $roxie.disabled  -}}
-{{- if $roxie.localSlave -}}
+{{- if $roxie.localAgent -}}
 {{- $name := $roxie.name -}}
 {{- $servername := printf "%s-server" $roxie.name -}}
 
@@ -29,7 +29,7 @@ spec:
                 {{ include "hpcc.configArg" $roxie }},
                 {{ include "hpcc.daliArg" $ }},
                 "--server=true", 
-                "--localSlave=true",
+                "--localAgent=true",
                 "--resolveLocally=false"
               ]
 {{- $local := dict "first" true }}
