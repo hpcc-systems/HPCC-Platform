@@ -43,6 +43,7 @@ define(
         AllowFull: "<center>Autoriser<br>plein</center>",
         AllowRead: "<center>Autoriser<br>à lire</center>",
         AllowWrite: "<center>Autoriser<br>à écrire</center>",
+        AllQueries: "Toutes les requêtes",
         AllQueuedItemsCleared: "Tous les éléments en file d'attente ont été lus.",
         Analyze: "Analyser",
         ANY: "Tout",
@@ -477,6 +478,7 @@ define(
         NotActive: "Pas actif",
         NothingSelected: "Rien a été sélectionné",
         NotInSuperfiles: "Pas dans les Superfichiers",
+        NotSuspended: "Pas suspendu",
         NotSuspendedbyUser: "Non suspendu par l'utilisateur",
         NoWarningFound: "Aucun avertissement trouvé \n",
         NumberofParts: "Nombre de parties",
@@ -739,7 +741,9 @@ define(
         Suspend: "Suspendre",
         Suspended: "Suspendu",
         SuspendedBy: "Suspendu par",
+        SuspendedByAnyNode: "Suspendu par n'importe quel nœud",
         SuspendedByCluster: "Suspendu par cluster",
+        SuspendedByFirstNode: "Suspendu par le premier nœud",
         SuspendedByUser: "Suspendu par utilisateur",
         SuspendedReason: "Raison d'être suspendu",
         SVGSource: "Source SVG",
@@ -943,6 +947,6 @@ define(
         ZoomAll: "Zoom tout",
         ZoomMinus: "Zoom -",
         ZoomPlus: "Zoom +",
-        ZoomWidth: "Largeur du zoom",
+        ZoomWidth: "Largeur du zoom"
     })
 );
