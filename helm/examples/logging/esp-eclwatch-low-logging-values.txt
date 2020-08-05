@@ -1,0 +1,14 @@
+esp:
+- name: eclwatch
+  application: eclwatch
+  auth: none
+  tls: off
+  replicas: 1
+  port: 8888
+  servicePort: 8010
+  public: true
+  logging:
+    detail: 30                 # Low logging level, include critical, err, and warn messages
+    fields: "MID+DAT+TIM+QUO"  # Only output selected logging fields
+
+## Note: this sample file only defines one esp application 'eclwatch'
