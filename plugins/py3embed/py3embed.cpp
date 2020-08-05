@@ -852,6 +852,7 @@ static void getStringResult(const RtlFieldInfo *field, PyObject *obj, size32_t &
             checkPythonError();
             size_t lenBytes = PyBytes_Size(temp_bytes);
             rtlStrToStrX(chars, result, lenBytes, text);
+            return;
         }
         else if (PyBytes_Check(obj))
         {
@@ -859,6 +860,7 @@ static void getStringResult(const RtlFieldInfo *field, PyObject *obj, size32_t &
             checkPythonError();
             size_t lenBytes = PyBytes_Size(obj);
             rtlStrToStrX(chars, result, lenBytes, text);
+            return;
         }
     }
     typeError("string", field);
