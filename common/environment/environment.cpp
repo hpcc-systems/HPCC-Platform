@@ -3050,9 +3050,10 @@ static void getTargetClusterProcesses(const IPropertyTree *environment, const IP
             throw MakeStringException(-1, "Empty %s/@process for %s", processType, clustName);
 
         xpath.setf("Software/%s[@name=\"%s\"]", processType, processName);
-        if (!environment->hasProp(xpath))
-            throw MakeStringException(-1, "%s %s not found", processType, processName);
-        processes.append(*environment->getPropTree(xpath.str()));
+        if (environment->hasProp(xpath))
+            processes.append(*environment->getPropTree(xpath.str()));
+        else
+            WARNLOG("%s %s not found", processType, processName);
     }
 }
 
