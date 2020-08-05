@@ -142,13 +142,15 @@ def queryWuid(jobname,  taskId):
                     state = val
     return {'wuid':wuid, 'state':state,  'result':result}
 
-def queryEngineProcess(engine):
+def queryEngineProcess(engine,  taskId):
     retVal = []
     myProc = subprocess.Popen(["ps aux | egrep '"+engine+"' | egrep -v 'grep'"],  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
     result = myProc.stdout.read() + myProc.stderr.read()
     results = result.split('\n')
+    logging.debug("%3d. queryEngineProcess(engine: %s): process(es) :'%s'",  taskId,  engine,  results)
     for line in results:
         line = line.replace('\n','')
+        logging.debug("%3d. queryEngineProcess(engine: %s): line:'%s'",  taskId,  engine,  line)
         if len(line):
             items = line.split()
             if len(items) >= 12:
@@ -156,18 +158,28 @@ def queryEngineProcess(engine):
                     myProc2 = subprocess.Popen(["sudo readlink -f /proc/" + items[1] + "/exe"],  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
                     result2 = myProc2.stdout.read().replace ('\n', '')
                     binPath = os.path.dirname(result2)
+                    logging.debug("%3d. queryEngineProcess(engine: %s): binary: '%s', binPath:'%s'",  taskId,  engine, result2,  binPath)
                     if 'slavenum' in line:
-                        ind = [items.index(i) for i in items if i.startswith('slavenum')]
-                        slaveNum = items[ind[0]].split('=')[1]
-                        retVal.append({ 'process' : result2, 'name' : os.path.basename(items[10]), 'slaveNum' : slaveNum, 'pid' : items[1], 'binPath': binPath})
+                        ind = [items.index(i) for i in items if i.startswith('--slavenum')]
+                        try:
+                            slaveNum = items[ind[0]].split('=')[1]
+                            retVal.append({ 'process' : result2, 'name' : os.path.basename(items[10]), 'slaveNum' : slaveNum, 'pid' : items[1], 'binPath': binPath})
+                        except Exception as e:
+                            logging.error("%3d. queryEngineProcess(engine: %s): slave number query failed:'%s'",  taskId,  engine, repr(e))
                     else:
                         retVal.append({ 'process' : result2, 'name' : os.path.basename(items[10]), 'slaveNum' : '', 'pid' : items[1], 'binPath': binPath})
     return retVal
 
-def createStackTrace(wuid, proc, taskId):
+def createStackTrace(wuid, proc, taskId, logDir = ""):
+    # Execute this function from CLI:
+    # ~/MyPython/RegressionSuite$ python -c 'import hpcc.util.util as util; p = util.queryEngineProcess("thormaster"); p+= util.queryEngineProcess("thorslave"); print p; [ util.createStackTrace("na", pp, -1, "~/HPCCSystems-regression/log") for pp in p]; '
+
     binPath = proc['process']
     pid = proc['pid']
-    outFile = os.path.expanduser(gConfig.logDir) + '/' + wuid +'-' + proc['name'] + proc['slaveNum'] + '.trace'
+    if logDir == "":
+        outFile = os.path.expanduser(gConfig.logDir) + '/' + wuid +'-' + proc['name'] + proc['slaveNum'] + '.trace'
+    else:
+        outFile = os.path.expanduser(logDir) + '/' + wuid +'-' + proc['name'] + proc['slaveNum'] + '-' + pid + '.trace'
     logging.error("%3d. Create Stack Trace for %s%s (pid:%s) into '%s'" % (taskId, proc['name'], proc['slaveNum'], pid, outFile), extra={'taskId':taskId})
     
     cmd  = 'sudo gdb --batch --quiet -ex "set interactive-mode off" '
@@ -187,15 +199,19 @@ def abortWorkunit(wuid, taskId = -1, engine = None):
     if (gConfig.generateStackTrace and (engine !=  None)):
         if isSudoer():
             if engine.startswith('thor'):
-                hpccProcesses = queryEngineProcess("thormaster")
-                hpccProcesses += queryEngineProcess("thorslave")
+                hpccProcesses = queryEngineProcess("thormaster", taskId)
+                hpccProcesses += queryEngineProcess("thorslave", taskId)
             elif engine.startswith('hthor'):
-                hpccProcesses = queryEngineProcess("eclagent")
+                hpccProcesses = queryEngineProcess("eclagent", taskId)
+                hpccProcesses += queryEngineProcess("hthor", taskId)
             elif engine.startswith('roxie'):
-                hpccProcesses = queryEngineProcess("roxie")
+                hpccProcesses = queryEngineProcess("roxie", taskId)
                 
-            for p in hpccProcesses:
-                createStackTrace(wuid, p, taskId)
+            if len(hpccProcesses) > 0:
+                for p in hpccProcesses:
+                    createStackTrace(wuid, p, taskId)
+            else:
+                logging.debug("%3d. abortWorkunit(wuid:'%s', engine:'%s') related process to generate stack trace not found.", taskId, wuid, str(engine))
             pass
         else:
             err = Error("7100")
