@@ -72,7 +72,7 @@ BUILD_LABEL="${HEAD}-${BUILD_TYPE}"
 if [[ -z "$FORCE" ]] ; then
   # Look for an image that matches a commit, exclude images based on dirty working tree.
   if [[ -z ${PREV} ]] ; then
-    docker images ${DOCKER_REPO}/platform-build --format {{.Tag}} | egrep -ve '-dirty.*$' > .candidate-tags
+    docker images ${DOCKER_REPO}/platform-build --format {{.Tag}} | egrep -ve '-dirty.*$' > .candidate-tags || true
     PREV=$(git log --format=format:%h-${BUILD_TYPE} $(git describe --abbrev=0 --tags)..HEAD | fgrep -f .candidate-tags | head -n 1)
     rm -f .candidate-tags
     PREV_COMMIT=$(echo "${PREV}" | sed -e "s/-${BUILD_TYPE}.*$//")
