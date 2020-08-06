@@ -34,16 +34,15 @@
     </informaltable></para>
 
   <para>The <emphasis role="bold">ONCE </emphasis>service allows you to
-  specify that the code is to be executed only once at query load time.
-  </para>
+  specify that the code is to be executed only once at query load time.</para>
 
   <para>This means a Roxie query will execute it only once even if the query
   is executed multiple times. For a Thor or hThor query, ONCE behaves the same
-  as GLOBAL.</para>
+  as INDEPENDENT.</para>
 
   <para>Example:</para>
 
-  <programlisting>InlineDCT := DICTIONARY([{0 =&gt; 'Black' , 'Greys'},
+  <programlisting role="run">InlineDCT := DICTIONARY([{0 =&gt; 'Black' , 'Greys'},
                          {1 =&gt; 'Brown' , 'Earth'},
                          {2 =&gt; 'Red'   , 'Reds'},
                          {3 =&gt; 'White' , 'Greys'} ], 
@@ -53,5 +52,5 @@ UNSIGNED v := 0 : STORED('v');
 
 OUTPUT(InlineDCT[v].color);</programlisting>
 
-  <para>See Also: <link linkend="GLOBAL">GLOBAL</link></para>
+  <para>See Also: <link linkend="INDEPENDENT">INDEPENDENT</link></para>
 </sect1>
