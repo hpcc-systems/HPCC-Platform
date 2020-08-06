@@ -962,6 +962,7 @@ define({
         }),
     "bs": true,
     "es": true,
+    "fr": true,
     "hu": true,
     "hr": true,
     "pt-br": true,
