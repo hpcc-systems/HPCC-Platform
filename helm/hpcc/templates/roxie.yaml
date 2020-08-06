@@ -1,6 +1,6 @@
 {{ range $roxie := $.Values.roxie -}}
 {{- if not $roxie.disabled -}}
-{{- if not $roxie.localSlave -}}
+{{- if not $roxie.localAgent -}}
 {{- $toponame := printf "%s-toposerver" $roxie.name -}}
 {{- $numChannels := $roxie.numChannels | int | default 1 -}}
 {{- $topoport := $roxie.topoport | int | default 9004 -}}
@@ -141,7 +141,7 @@ spec:
 {{ end -}}
 {{ range $c, $e := until ($roxie.numChannels|int) -}}
 {{- $channel := add $c 1 -}}
-{{- $name := printf "%s-slave-%d" $roxie.name $channel -}}
+{{- $name := printf "%s-agent-%d" $roxie.name $channel -}}
 
 apiVersion: apps/v1
 kind: Deployment

@@ -46,6 +46,9 @@ RUN apt-get install -y \
   zip \
   curl
 
+ARG USE_CPPUNIT=1
+RUN if [ ${USE_CPPUNIT} -eq 1 ] ; then apt-get install -y libcppunit-1.15-0 ; fi 
+
 # these are developer tools - we may want to move them elsewhere so that they are only in the incremental builds?
 
 RUN apt-get install -y \
