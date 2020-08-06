@@ -50,6 +50,8 @@ while getopts “d:fhlpt:u:b:” opt; do
 done
 shift $(( $OPTIND-1 ))
 
+set -e
+
 # NB: Not used if FORCE build
 PREV=$1
 
@@ -73,6 +75,7 @@ if [[ -z "$FORCE" ]] ; then
     docker images ${DOCKER_REPO}/platform-build --format {{.Tag}} | egrep -ve '-dirty.*$' > .candidate-tags
     PREV=$(git log --format=format:%h-${BUILD_TYPE} $(git describe --abbrev=0 --tags)..HEAD | fgrep -f .candidate-tags | head -n 1)
     rm -f .candidate-tags
+    PREV_COMMIT=$(echo "${PREV}" | sed -e "s/-${BUILD_TYPE}.*$//")
   fi
 
   # If not found above, look for latest tagged
@@ -88,13 +91,14 @@ if [[ -z "$FORCE" ]] ; then
       echo "Could not locate docker image based on PREV tag: ${PREV} for docker user: ${DOCKER_REPO}"
       exit
     fi
+    PREV_COMMIT=community_$(echo "${PREV}" | sed -e "s/-${BUILD_TYPE}.*$//")
   fi
 
-  PREV_COMMIT=$(echo "${PREV}" | sed -e "s/-${BUILD_TYPE}.*$//")
   # create empty patch file
   echo -n > platform-build-incremental/hpcc.gitpatch
   porcelain=$(git status -uno --porcelain)
   if [[ -n "${porcelain}" || "${HEAD}" != "${PREV_COMMIT}" ]] ; then
+    echo "git diff --binary ${PREV_COMMIT} ':!./' > platform-build-incremental/hpcc.gitpatch"
     git diff --binary ${PREV_COMMIT} ':!./' > platform-build-incremental/hpcc.gitpatch
     # PATCH_MD5 is an ARG of the docker file, which ensures that if different from cached version, image will rebuild from that stage
     PATCH_MD5=$(md5sum platform-build-incremental/hpcc.gitpatch  | awk '{print $1}')
