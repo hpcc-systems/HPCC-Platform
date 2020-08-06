@@ -401,7 +401,8 @@ int main(int argc, const char* argv[])
                 port = atoi(argv[++i]);
             else if (streq(argv[i],"--rank") || streq(argv[i],"-r"))
                 myrank = atoi(argv[++i]);
-            else {
+            else if (!startsWith(argv[i],"--config"))
+            {
                 usage();
                 return EXIT_FAILURE;
             }

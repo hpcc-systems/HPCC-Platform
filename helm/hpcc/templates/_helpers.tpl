@@ -48,6 +48,15 @@ Pass in root as .
 */}}
 {{- define "hpcc.generateGlobalConfigMap" -}}
 {{- $local := dict "defaultEsp" "" -}}
+{{- /*Create local variables which always exist to avoid having to check if intermediate key values exist*/ -}}
+{{- $storage := (.Values.storage | default dict) -}}
+{{- $planes := ($storage.planes | default list) -}}
+{{- $dataStorage := ($storage.dataStorage | default dict) -}}
+{{- $spillStorage := ($storage.spillStorage | default dict) -}}
+{{- $daliStorage := ($storage.daliStorage | default dict) -}}
+{{- $dllStorage := ($storage.dllStorage | default dict) -}}
+{{- $daliStoragePlane := ($daliStorage.plane | default "") -}}
+{{- $dllStoragePlane := ($dllStorage.plane | default "") -}}
 imageVersion: {{ required "Please specify .global.image.version" .Values.global.image.version | quote }}
 singleNode: {{ .Values.global.singleNode | default false }}
 defaultEsp: {{ .Values.global.defaultEsp | default ""}}
@@ -57,15 +66,22 @@ esp:
 {{ end -}}
 secretTimeout: {{ .Values.secrets.timeout | default 300 }}
 storage:
-  ##The following is a temporary solution to allow blob storage to be tested
-  ##This will be completely rewritten and restructured to encompass the idea of multiple storage planes.
-  ##The source of the information is likely to be move to .Values.storage rather than .Values.global
-  default:
-{{- if .Values.global.defaultDataPath }}
-    data: {{ .Values.global.defaultDataPath }}
+  planes:
+{{- /*Generate entries for each data plane (removing the pvc).  Exclude the planes used for dlls and dali.*/ -}}
+{{- range $plane := $planes -}}
+ {{- if and (ne $plane.name $daliStoragePlane) (ne $plane.name $dllStoragePlane) -}}
+  - name: {{ $plane.name | quote }}
+{{ toYaml (unset (unset (deepCopy $plane) "name") "pvc")| indent 4 }}
+ {{- end }}
 {{- end }}
-{{- if .Values.global.defaultMirrorPath }}
-    mirror: {{ .Values.global.defaultMirrorPath }}
+{{- /* Add implicit planes if data or spill storage plane not specified*/ -}}
+{{- if not $dataStorage.plane }}
+  - name: hpcc-data-plane
+    mount: {{ .Values.global.defaultDataPath | default "/var/lib/HPCCSystems/hpcc-data" | quote }}
+{{- end }}
+{{- if not $spillStorage.plane }}
+  - name: hpcc-spill-plane
+    mount: {{ .Values.global.defaultSpillPath | default "/var/lib/HPCCSystems/hpcc-spill" | quote }}
 {{- end }}
 {{- end -}}
 
@@ -101,36 +117,161 @@ Add ConfigMap volume for a component
 
 {{/*
 Add data volume mount
+If any storage planes are defined that name pvcs they will be mounted
 */}}
 {{- define "hpcc.addDataVolumeMount" -}}
+{{- /*Create local variables which always exist to avoid having to check if intermediate key values exist*/ -}}
+{{- $storage := (.root.Values.storage | default dict) -}}
+{{- $planes := ($storage.planes | default list) -}}
+{{- $dataStorage := ($storage.dataStorage | default dict) -}}
+{{- $daliStorage := ($storage.daliStorage | default dict) -}}
+{{- $dllStorage := ($storage.dllStorage | default dict) -}}
+{{- $daliStoragePlane := ($daliStorage.plane | default "") -}}
+{{- $dllStoragePlane := ($dllStorage.plane | default "") -}}
+{{- range $plane := $planes -}}
+ {{- if $plane.pvc -}}
+  {{- if and (ne $plane.name $daliStoragePlane) (ne $plane.name $dllStoragePlane) -}}
+   {{- $num := int ( $plane.numDevices | default 1 ) -}}
+   {{- if le $num 1 }}
+- name: {{ $plane.name }}-pv
+  mountPath: {{ $plane.prefix | quote }}
+   {{- else }}
+    {{- range $elem := untilStep 1 (int (add $num 1)) 1 }}
+- name: {{ $plane.name }}-pv-many-{{- $elem }}
+  mountPath: {{ printf "%s/d%d" $plane.prefix $elem | quote }}
+    {{- end }}
+   {{- end }}
+  {{- end }}
+ {{- end }}
+{{- end }}
+{{- if (not $dataStorage.plane) }}
 - name: datastorage-pv
   mountPath: "/var/lib/HPCCSystems/hpcc-data"
+{{- end }}
 {{- end -}}
 
 {{/*
 Add data volume
 */}}
 {{- define "hpcc.addDataVolume" -}}
+{{- /*Create local variables which always exist to avoid having to check if intermediate key values exist*/ -}}
+{{- $storage := (.root.Values.storage | default dict) -}}
+{{- $planes := ($storage.planes | default list) -}}
+{{- $dataStorage := ($storage.dataStorage | default dict) -}}
+{{- $daliStorage := ($storage.daliStorage | default dict) -}}
+{{- $dllStorage := ($storage.dllStorage | default dict) -}}
+{{- $daliStoragePlane := ($daliStorage.plane | default "") -}}
+{{- $dllStoragePlane := ($dllStorage.plane | default "") -}}
+{{- range $plane := $planes -}}
+ {{- if $plane.pvc -}}
+  {{- if and (ne $plane.name $daliStoragePlane) (ne $plane.name $dllStoragePlane) -}}
+   {{- $num := int ( $plane.numDevices | default 1 ) -}}
+   {{- $pvc := $plane.pvc | required (printf "pvc for %s not supplied" $plane.name) }}
+   {{- if le $num 1 }}
+- name: {{ $plane.name }}-pv
+  persistentVolumeClaim:
+    claimName: {{ $pvc }}
+   {{- else }}
+    {{- range $elem := until $num }}
+- name: {{ $plane.name }}-pv-many-{{- add $elem 1 }}
+  persistentVolumeClaim:
+    claimName: {{ $pvc }}-{{- add $elem 1 }}
+    {{- end }}
+   {{- end -}}
+  {{- end }}
+ {{- end }}
+{{- end -}}
+{{- if (not $dataStorage.plane) }}
 - name: datastorage-pv
   persistentVolumeClaim:
-    claimName: {{ .Values.storage.dataStorage.existingClaim | default (printf "%s-datastorage-pvc" (include "hpcc.fullname" .)) }}
+    claimName: {{ $dataStorage.existingClaim | default (printf "%s-datastorage-pvc" (include "hpcc.fullname" .root )) }}
+{{- end }}
 {{- end -}}
 
 {{/*
-Add dll volume mount
+Add dll volume mount - if default plane is used, or the dll storage plane specifies a pvc
 */}}
 {{- define "hpcc.addDllVolumeMount" -}}
+{{- $storage := (.Values.storage | default dict) -}}
+{{- $planes := ($storage.planes | default list) -}}
+{{- $dllStorage := ($storage.dllStorage | default dict) -}}
+{{- if $dllStorage.plane -}}
+ {{- range $plane := $planes -}}
+  {{- if and ($plane.pvc) (eq $plane.name $dllStorage.plane) -}}
+- name: dllstorage-pv
+  mountPath: {{ $plane.prefix | quote }}
+  {{- end -}}
+ {{- end -}}
+{{- else -}}
 - name: dllstorage-pv
   mountPath: "/var/lib/HPCCSystems/queries"
 {{- end -}}
+{{- end -}}
 
 {{/*
-Add dll volume
+Add dll volume - if default plane is used, or the dll storage plane specifies a pvc
 */}}
 {{- define "hpcc.addDllVolume" -}}
+{{- /*Create local variables which always exist to avoid having to check if intermediate key values exist*/ -}}
+{{- $storage := (.Values.storage | default dict) -}}
+{{- $planes := ($storage.planes | default list) -}}
+{{- $dllStorage := ($storage.dllStorage | default dict) -}}
+{{- if $dllStorage.plane -}}
+ {{- range $plane := $planes -}}
+  {{- if and ($plane.pvc) (eq $plane.name $dllStorage.plane) -}}
 - name: dllstorage-pv
   persistentVolumeClaim:
-    claimName: {{ .Values.storage.dllStorage.existingClaim | default (printf "%s-dllstorage-pvc" (include "hpcc.fullname" .)) }}
+    claimName: {{ $plane.pvc }}
+  {{- end }}
+ {{- end }}
+{{- else -}}
+- name: dllstorage-pv
+  persistentVolumeClaim:
+    claimName: {{ $dllStorage.existingClaim | default (printf "%s-dllstorage-pvc" (include "hpcc.fullname" .)) }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Add dali volume mount - if default plane is used, or the dali storage plane specifies a pvc
+*/}}
+{{- define "hpcc.addDaliVolumeMount" -}}
+{{- $storage := (.Values.storage | default dict) -}}
+{{- $planes := ($storage.planes | default list) -}}
+{{- $daliStorage := ($storage.daliStorage | default dict) -}}
+{{- if $daliStorage.plane -}}
+ {{- range $plane := $planes -}}
+  {{- if and ($plane.pvc) (eq $plane.name $daliStorage.plane) -}}
+- name: dalistorage-pv
+  mountPath: {{ $plane.prefix | quote }}
+  {{- end -}}
+ {{- end -}}
+{{- else -}}
+- name: dalistorage-pv
+  mountPath: "/var/lib/HPCCSystems/dalistorage"
+{{- end -}}
+{{- end -}}
+
+{{/*
+Add dali volume - if default plane is used, or the dali storage plane specifies a pvc
+*/}}
+{{- define "hpcc.addDaliVolume" -}}
+{{- /*Create local variables which always exist to avoid having to check if intermediate key values exist*/ -}}
+{{- $storage := (.Values.storage | default dict) -}}
+{{- $planes := ($storage.planes | default list) -}}
+{{- $daliStorage := ($storage.daliStorage | default dict) -}}
+{{- if $daliStorage.plane -}}
+ {{- range $plane := $planes -}}
+  {{- if and ($plane.pvc) (eq $plane.name $daliStorage.plane) -}}
+- name: dalistorage-pv
+  persistentVolumeClaim:
+    claimName: {{ $plane.pvc }}
+  {{- end }}
+ {{- end }}
+{{- else -}}
+- name: dalistorage-pv
+  persistentVolumeClaim:
+    claimName: {{ $daliStorage.existingClaim | default (printf "%s-dalistorage-pvc" (include "hpcc.fullname" .)) }}
+{{- end -}}
 {{- end -}}
 
 {{/*
@@ -165,6 +306,43 @@ Add Secret volume for a component
  {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Return a value indicating whether a storage plane is defined or not.
+*/}}
+{{- define "hpcc.isValidStoragePlane" -}}
+{{- $search := .search -}}
+{{- $storage := (.root.Values.storage | default dict) -}}
+{{- $planes := ($storage.planes | default list) -}}
+{{- $dataStorage := ($storage.dataStorage | default dict) -}}
+{{- /* If storage.dataStorage.plane is defined, the implicit plane hpcc-dataplane is not defined */ -}}
+{{- $done := dict "matched" (and (not $dataStorage.plane) (eq $search "hpcc-dataplane")) -}}
+{{- range $plane := $planes -}}
+ {{- if eq $search $plane.name -}}
+ {{- $_ := set $done "matched" true -}}
+ {{- end -}}
+{{- end -}}
+{{- $done.matched | ternary "true" "false" -}}
+{{- end -}}
+
+{{/*
+Check that the storage and spill planes for a component exist
+*/}}
+{{- define "hpcc.checkDefaultStoragePlane" -}}
+{{- if (hasKey .me "storagePlane") }}
+ {{- $search := .me.storagePlane -}}
+ {{- if ne (include "hpcc.isValidStoragePlane" (dict "search" $search "root" .root)) "true" -}}
+  {{- $_ := fail (printf "storage data plane %s for %s is not defined" $search .me.name ) }}
+ {{- end -}}
+{{- end }}
+{{- if (hasKey .me "spillPlane") }}
+ {{- $search := .me.spillPlane -}}
+ {{- if ne (include "hpcc.isValidStoragePlane" (dict "search" $search "root" .root)) "true" -}}
+  {{- $_ := fail (printf "storage spill plane %s for %s is not defined" $search .me.name ) }}
+ {{- end -}}
+{{- end }}
+{{- end -}}
+
 
 {{/*
 Add config arg for a component

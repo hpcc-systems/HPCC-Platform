@@ -28,16 +28,13 @@ spec:
         volumeMounts:
         - name: {{ .name }}-configmap-volume
           mountPath: /etc/config
-        - name: dalistorage-pv
-          mountPath: "/var/lib/HPCCSystems/dalistorage"
+{{ include "hpcc.addDaliVolumeMount" $ | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "all" ) ) | indent 8 }}
       volumes:
       - name: {{ .name }}-configmap-volume
         configMap:
           name: {{ .name }}-configmap
-      - name: dalistorage-pv
-        persistentVolumeClaim:
-          claimName: {{ $.Values.storage.daliStorage.existingClaim | default (printf "%s-%s-dalistorage-pvc" (include "hpcc.fullname" $) .name) }}
+{{ include "hpcc.addDaliVolume" $ | indent 6 }}
 {{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "all" ) ) | indent 6 }}
 ---
 kind: ConfigMap 
@@ -70,7 +67,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ printf "%s-%s-dalistorage-pvc" (include "hpcc.fullname" $) .name }}
+  name: {{ printf "%s-dalistorage-pvc" (include "hpcc.fullname" $) }}
   labels:
     app.kubernetes.io/name: {{ printf "%s-%s-dalistorage-pvc" (include "hpcc.fullname" $) .name }}
     app.kubernetes.io/instance: {{ $.Release.Name }}
