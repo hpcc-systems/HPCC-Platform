@@ -180,6 +180,8 @@ CActivityBase *createLocalIterateSlave(CGraphElementBase *container)
 
 class CProcessSlaveActivity : public IterateSlaveActivityBase
 {
+    typedef IterateSlaveActivityBase PARENT;
+
     IHThorProcessArg * helper;
     OwnedConstThorRow left;
     OwnedConstThorRow right;
@@ -240,7 +242,13 @@ public:
         }
         return NULL;
     }
-
+    virtual void reset() override
+    {
+        PARENT::reset();
+        left.clear();
+        right.clear();
+        nextright.clear();
+    }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) const override
     {
         initMetaInfo(info);
