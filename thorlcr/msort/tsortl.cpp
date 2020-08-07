@@ -122,11 +122,11 @@ public:
         if (dsz.eos()) {
             inbuf.clear();
 #ifdef _FULL_TRACE
-            PROGLOG("CSocketRowStream.nextRow recv (%d,%x)",id,(unsigned)(memsize_t)socket.get());
+            LOG(MCthorDetailedDebugInfo, thorJob, "CSocketRowStream.nextRow recv (%d,%x)",id,(unsigned)(memsize_t)socket.get());
 #endif
             size32_t sz = socket->receive_block_size();
 #ifdef _FULL_TRACE
-            PROGLOG("CSocketRowStream.nextRow(%d,%x,%d)",id,(unsigned)(memsize_t)socket.get(),sz);
+            LOG(MCthorDetailedDebugInfo, thorJob, "CSocketRowStream.nextRow(%d,%x,%d)",id,(unsigned)(memsize_t)socket.get(),sz);
 #endif
             if (sz==0) {
                 // eof so terminate (no need to confirm)
@@ -138,7 +138,7 @@ public:
             socket->receive_block(buf,sz);
             assertex(!dsz.eos());
 #ifdef _FULL_TRACE
-            PROGLOG("CSocketRowStream.nextRow got (%d,%x,%d)",id,(unsigned)(memsize_t)socket.get(),sz);
+            LOG(MCthorDetailedDebugInfo, thorJob, "CSocketRowStream.nextRow got (%d,%x,%d)",id,(unsigned)(memsize_t)socket.get(),sz);
 #endif
         }
         RtlDynamicRowBuilder rowBuilder(allocator);
@@ -154,12 +154,12 @@ public:
             stopped = true;
             try {
 #ifdef _FULL_TRACE
-                PROGLOG("CSocketRowStream.stop(%x)",(unsigned)(memsize_t)socket.get());
+                LOG(MCthorDetailedDebugInfo, thorJob, "CSocketRowStream.stop(%x)",(unsigned)(memsize_t)socket.get());
 #endif
                 bool eof = true;
                 socket->write(&eof,sizeof(eof)); // confirm stop
 #ifdef _FULL_TRACE
-                PROGLOG("CSocketRowStream.stopped(%x)",(unsigned)(memsize_t)socket.get());
+                LOG(MCthorDetailedDebugInfo, thorJob, "CSocketRowStream.stopped(%x)",(unsigned)(memsize_t)socket.get());
 #endif
             }
             catch (IException *e) {
@@ -206,7 +206,7 @@ public:
             preallocated = bufsize+initSize;
 
 #ifdef _FULL_TRACE
-        PROGLOG("CSocketRowWriter(%d,%x) preallocated = %d",id,(unsigned)(memsize_t)socket.get(),preallocated);
+        LOG(MCthorDetailedDebugInfo, thorJob, "CSocketRowWriter(%d,%x) preallocated = %d",id,(unsigned)(memsize_t)socket.get(),preallocated);
 #endif
     }
 
@@ -227,11 +227,11 @@ public:
             flush();
         try {
 #ifdef _FULL_TRACE
-            PROGLOG("CSocketRowWriter.stop(%x)",(unsigned)(memsize_t)socket.get());
+            LOG(MCthorDetailedDebugInfo, thorJob, "CSocketRowWriter.stop(%x)",(unsigned)(memsize_t)socket.get());
 #endif
             socket->send_block(NULL,0);
 #ifdef _FULL_TRACE
-            PROGLOG("CSocketRowWriter.stopped(%x)",(unsigned)(memsize_t)socket.get());
+            LOG(MCthorDetailedDebugInfo, thorJob, "CSocketRowWriter.stopped(%x)",(unsigned)(memsize_t)socket.get());
 #endif
         }
         catch (IJSOCK_Exception *e) { // already gone!
@@ -260,11 +260,11 @@ public:
     {
         size32_t l = outbuf.length();
 #ifdef _FULL_TRACE
-        PROGLOG("CSocketRowWriter.flush(%d,%x,%d)",id,(unsigned)(memsize_t)socket.get(),l);
+        LOG(MCthorDetailedDebugInfo, thorJob, "CSocketRowWriter.flush(%d,%x,%d)",id,(unsigned)(memsize_t)socket.get(),l);
 #endif
         if (l) {
             if (!socket->send_block(outbuf.bufferBase(),l)) {
-                PROGLOG("CSocketRowWriter remote stop");
+                LOG(MCthorDetailedDebugInfo, thorJob, "CSocketRowWriter remote stop");
                 stopped = true;
             }
             pos += l;
@@ -293,7 +293,7 @@ IRowStream *ConnectMergeRead(unsigned id, IThorRowInterfaces *rowif,SocketEndpoi
 #ifdef _FULL_TRACE
     StringBuffer s;
     nodeaddr.getUrlStr(s);
-    PROGLOG("ConnectMergeRead(%d,%s,%x,%" RCPF "d,%" RCPF "u)",id,s.str(),(unsigned)(memsize_t)socket.get(),startrec,numrecs);
+    LOG(MCthorDetailedDebugInfo, thorJob, "ConnectMergeRead(%d,%s,%x,%" RCPF "d,%" RCPF "u)",id,s.str(),(unsigned)(memsize_t)socket.get(),startrec,numrecs);
 #endif
     hdr.winrev();
     socket->write(&hdr,sizeof(hdr));
@@ -333,7 +333,7 @@ ISocketRowWriter *ConnectMergeWrite(IThorRowInterfaces *rowif,ISocket *socket,si
 #ifdef _FULL_TRACE
     char name[100];
     int port = socket->peer_name(name,sizeof(name));
-    PROGLOG("ConnectMergeWrite(%d,%s:%d,%x,%" RCPF "d,%" RCPF "u)",hdr.id,name,port,(unsigned)(memsize_t)socket,startrec,numrecs);
+    LOG(MCthorDetailedDebugInfo, thorJob, "ConnectMergeWrite(%d,%s:%d,%x,%" RCPF "d,%" RCPF "u)",hdr.id,name,port,(unsigned)(memsize_t)socket,startrec,numrecs);
 #endif
     return new CSocketRowWriter(hdr.id,rowif,socket,bufsize);
 }

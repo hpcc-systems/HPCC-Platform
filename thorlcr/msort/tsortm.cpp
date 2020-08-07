@@ -47,10 +47,6 @@
 #include "tsortm.hpp"
 
 
-#ifdef _TESTING
-#define _TRACE
-#endif
-
 #ifdef _DEBUG
 //#define _MEMTRACE
 #endif
@@ -124,7 +120,7 @@ public:
         try {
 
             StringBuffer epstr;
-            ActPrintLog(activity, "Connect to %s:%d",endpoint.getIpText(epstr).str(),(unsigned)mpport);
+            ActPrintLog(activity, thorDetailedLogLevel, "Connect to %s:%d",endpoint.getIpText(epstr).str(),(unsigned)mpport);
             SocketEndpoint ep = endpoint;
             ep.port = mpport;
             Owned<INode> node = createINode(ep);
@@ -262,7 +258,7 @@ public:
 
     void ConnectSlaves()
     {
-        ActPrintLog(activity, "CSortMaster::ConnectSlaves");
+        ActPrintLog(activity, thorDetailedLogLevel, "CSortMaster::ConnectSlaves");
         class casyncfor: public CAsyncFor
         {
         public:
@@ -316,30 +312,6 @@ public:
         maxdeviance = 0;
         partitioninfo = NULL;
     }
-
-
-    void TraceLeft(NODESTATE state)
-    {
-        unsigned left=slaves.ordinality();
-        ForEachItemIn(i,slaves) {
-            CSortNode &slave = slaves.item(i);          
-            if (slave.state !=state)
-                left--;
-        }
-        ActPrintLog(activity, " Left=%d",left);
-        if (left<5) {
-            StringBuffer s;
-            ForEachItemIn(j,slaves) {
-                CSortNode &slave = slaves.item(j);          
-                if (slave.state==state) {
-                    s.append(' ');
-                    slave.endpoint.getIpText(s);
-                }
-            }
-            ActPrintLog(activity, "%s",s.str());
-        }
-    }
-
 
     void SortSetup(IThorRowInterfaces *_rowif,ICompare *_icompare,ISortKeySerializer *_keyserializer,bool cosort,bool needconnect,const char *_cosortfilenames,IThorRowInterfaces *_auxrowif)
     {
@@ -456,25 +428,6 @@ public:
         ActPrintLog(activity, "Sort Done");
     }
 
-
-    bool GetNode(unsigned num,SocketEndpoint &endpoint)
-    {
-        ActPrintLog(activity, "GetNode %u",num);
-        if (num<slaves.ordinality()) {
-            CSortNode &slave = slaves.item(num);            
-            endpoint = slave.endpoint;
-            endpoint.port++;    // for socket server
-            return true;
-        }
-        return false;
-    }
-
-    unsigned NumActiveNodes()
-    {
-        return slaves.ordinality();
-    }
-
-
     unsigned __int64 CalcMinMax(OwnedConstThorRow &min, OwnedConstThorRow &max)
     {
         // initialize min/max keys
@@ -517,21 +470,22 @@ public:
             estrecsize = ers/ersn;
         else
             estrecsize = 100;
-#ifdef _TRACE
-        if (min)
-            traceKey(keyIf->queryRowSerializer(),"Min",min);
-        if (max)
-            traceKey(keyIf->queryRowSerializer(),"Max",max);
-        if (min&&max)
+        if (!REJECTLOG(MCthorDetailedDebugInfo))
         {
-            int cmp=icompare->docompare(min,max);
-            if (cmp==0) 
-                ActPrintLog(activity, "Min == Max : All keys equal!");
-            else if (cmp>0)
-                ActPrintLog(activity, "ERROR: Min > Max!");
+            if (min)
+                traceKey(keyIf->queryRowSerializer(),"Min",min);
+            if (max)
+                traceKey(keyIf->queryRowSerializer(),"Max",max);
+            if (min&&max)
+            {
+                int cmp=icompare->docompare(min,max);
+                if (cmp==0) 
+                    ActPrintLog(activity, "Min == Max : All keys equal!");
+                else if (cmp>0)
+                    ActPrintLog(activity, "ERROR: Min > Max!");
+            }
         }
         ActPrintLog(activity, "Tot = %" I64F "d", tot);
-#endif
         return tot;
     }
 
@@ -688,7 +642,6 @@ public:
             }
         } afor3(slaves, splitMap, numnodes, numsplits);
         afor3.For(numnodes, 20, true);
-#ifdef _TRACE
 #ifdef TRACE_PARTITION
         for (i=0;i<numnodes;i++) {
             StringBuffer str;
@@ -698,7 +651,6 @@ public:
             }
             DBGLOG("%s",str.str());
         }
-#endif
 #endif
         return splitMap.getClear();
     }
@@ -742,10 +694,8 @@ public:
             MemoryBuffer mbmd;
             for (;;)
             {
-#ifdef _TRACE
                 iter++;
-                ActPrintLog(activity, "Split: %d",iter);
-#endif
+                ActPrintLog(activity, thorDetailedLogLevel, "Split: %d",iter);
                 emin.serializeCompress(mbmn.clear());
                 emax.serializeCompress(mbmx.clear());
                 class casyncfor: public CAsyncFor
@@ -976,7 +926,6 @@ public:
     rowcount_t *UsePartitionInfo(PartitionInfo &pi, bool uppercmp)
     {
         unsigned i;
-#ifdef _TRACE
 #ifdef TRACE_PARTITION
         ActPrintLog(activity, "UsePartitionInfo %s",uppercmp?"upper":"");
         for (i=0;i<pi.splitkeys.ordinality();i++)
@@ -985,7 +934,6 @@ public:
             s.appendf("%d: ",i);
             traceKey(pi.prowif->queryRowSerializer(), s.str(), pi.splitkeys.query(i));
         }
-#endif
 #endif
         // first find split points
         unsigned numnodes = pi.numnodes;
@@ -1025,7 +973,6 @@ public:
             *mapp = slave.numrecs; // final entry is number in node
             mapp++;
         }
-#ifdef _TRACE
 #ifdef TRACE_PARTITION
         ActPrintLog(activity, "UsePartitionInfo result");
         rowcount_t *p = splitMap;
@@ -1040,7 +987,6 @@ public:
             }
             ActPrintLog(activity, "%s",s.str());
         }
-#endif
 #endif
         return splitMap.getClear();
     }
@@ -1119,7 +1065,7 @@ public:
         if (skewError<0.000000001)
             skewError = 1.0/(double) n;
         double cSkew = ((double)n*(double)max/(double)total - 1.0) / ((double)n-1.0);
-        ActPrintLog(activity, "Skew check: Threshold %" I64F "d/%" I64F "d  Skew: %f/[warning=%f, error=%f]",
+        ActPrintLog(activity, thorDetailedLogLevel, "Skew check: Threshold %" I64F "d/%" I64F "d  Skew: %f/[warning=%f, error=%f]",
                   (unsigned __int64)max*(unsigned __int64)estrecsize,threshold,cSkew,skewWarning,skewError);
         if ((unsigned __int64)max*(unsigned __int64)estrecsize>threshold)
         {
@@ -1351,12 +1297,15 @@ public:
                         i--;
                     }
                 }
-                for (i=0;i<numnodes;i++)
+                if (!REJECTLOG(MCthorDetailedDebugInfo))
                 {
-                    CSortNode &slave = slaves.item(i);
-                    char url[100];
-                    slave.endpoint.getUrlStr(url,sizeof(url));
-                    ActPrintLog(activity, "Split point %d: %" RCPF "d rows on %s", i, tot[i], url);
+                    for (i=0;i<numnodes;i++)
+                    {
+                        CSortNode &slave = slaves.item(i);
+                        char url[100];
+                        slave.endpoint.getUrlStr(url,sizeof(url));
+                        ActPrintLog(activity, thorDetailedLogLevel, "Split point %d: %" RCPF "d rows on %s", i, tot[i], url);
+                    }
                 }
                 Owned<IThorException> e = CheckSkewed(threshold,skewWarning,skewError,numnodes,total,max);
                 if (e)

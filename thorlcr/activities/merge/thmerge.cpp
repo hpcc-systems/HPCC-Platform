@@ -18,10 +18,6 @@
 #include "thmerge.ipp"
 #include "tsorta.hpp"
 
-#ifdef _DEBUG
-#define _TRACE
-#endif
-
 //
 // LocalMergeActivityMaster
 
@@ -55,7 +51,6 @@ public:
     }
     virtual void process()
     {
-        ActPrintLog("GlobalMergeActivityMaster::process");
         CMasterActivity::process();     
         IHThorMergeArg *helper = (IHThorMergeArg *)queryHelper();   
         Owned<IThorRowInterfaces> rowif = createRowInterfaces(helper->queryOutputMeta());
@@ -74,15 +69,11 @@ public:
                 if (abortSoon)
                     return;
                 CMessageBuffer mb;
-#ifdef _TRACE
-                ActPrintLog("Merge process, Receiving on tag %d",replyTag);
-#endif
+                ::ActPrintLog(this, thorDetailedLogLevel, "Merge process, Receiving on tag %d",replyTag);
                 rank_t sender;
                 if (!receiveMsg(mb, RANK_ALL, replyTag, &sender)||abortSoon) 
                     return;
-#ifdef _TRACE
-                ActPrintLog("Merge process, Received sample from %d",sender);
-#endif
+                ::ActPrintLog(this, thorDetailedLogLevel, "Merge process, Received sample from %d",sender);
                 sender--;
                 assertex((unsigned)sender<n);
                 assertex(replytags[(unsigned)sender]==TAG_NULL);
@@ -101,9 +92,7 @@ public:
                 for (unsigned j = 0;j<n;j++)
                     serializeMPtag(mb,intertags[j]);
                 sample.serialize(mb);
-#ifdef _TRACE
-                ActPrintLog("Merge process, Replying to node %d tag %d",i+1,replytags[i]);
-#endif
+                ::ActPrintLog(this, thorDetailedLogLevel, "Merge process, Replying to node %d tag %d",i+1,replytags[i]);
                 if (!queryJobChannel().queryJobComm().send(mb, (rank_t)i+1, replytags[i]))
                     break;
             }

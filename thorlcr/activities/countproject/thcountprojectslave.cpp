@@ -54,7 +54,6 @@ public:
     virtual void start()
     {
         ActivityTimer s(slaveTimerStats, timeActivities);
-        ActPrintLog("COUNTPROJECT: Is Local");
         anyThisGroup = false;
         PARENT::start();
     }
@@ -162,7 +161,6 @@ public:
         localRecCount = RCUNSET;
         onInputFinishSends = true;
         PARENT::start();
-        ActPrintLog( "COUNTPROJECT: Is Global");
         first = true;
         prevRecCount = 0;
         ThorDataLinkMetaInfo info;

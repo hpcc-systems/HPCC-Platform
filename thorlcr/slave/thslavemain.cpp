@@ -274,7 +274,7 @@ public:
 #endif
 
 
-void startSlaveLog()
+ILogMsgHandler *startSlaveLog()
 {
 #ifndef _CONTAINERIZED
     StringBuffer fileName("thorslave");
@@ -283,7 +283,11 @@ void startSlaveLog()
     lf->setPostfix(slaveNumStr.append(mySlaveNum).str());
     lf->setCreateAliasFile(false);
     lf->setName(fileName.str());//override default filename
-    lf->beginLogging();
+    ILogMsgHandler *logHandler = lf->beginLogging();
+#ifndef _DEBUG 
+    // keep duplicate logging output to stderr to aide debugging
+    queryLogMsgManager()->removeMonitor(queryStderrLogMsgHandler());
+#endif
 
     LOG(MCdebugProgress, thorJob, "Opened log file %s", lf->queryLogFileSpec());
 #else
@@ -291,6 +295,7 @@ void startSlaveLog()
 #endif
     setupContainerizedStorageLocations();
     LOG(MCdebugProgress, thorJob, "Build %s", BUILD_TAG);
+    return logHandler;
 }
 
 void setSlaveAffinity(unsigned processOnNode)
@@ -313,7 +318,6 @@ void setSlaveAffinity(unsigned processOnNode)
     if (globals->getPropBool("@numaBindLocal", false))
         bindMemoryToLocalNodes();
 }
-
 
 int main( int argc, const char *argv[]  )
 {
@@ -374,12 +378,9 @@ int main( int argc, const char *argv[]  )
         /* NB: in cloud/non-local storage mode, slave number is not known until after registration with the master
         * For the time being log file names are based on their slave number, so can only start when known.
         */
-        bool loggingStarted = false;
+        ILogMsgHandler *slaveLogHandler = nullptr;
         if (NotFound != mySlaveNum)
-        {
-            startSlaveLog();
-            loggingStarted = true;
-        }
+            slaveLogHandler = startSlaveLog();
 
         // In container world, SLAVE= will not be used
         const char *slave = globals->queryProp("@slave");
@@ -416,8 +417,8 @@ int main( int argc, const char *argv[]  )
 
         if (RegisterSelf(masterEp))
         {
-            if (!loggingStarted)
-                startSlaveLog();
+            if (!slaveLogHandler)
+                slaveLogHandler = startSlaveLog();
 
             if (globals->getPropBool("Debug/@slaveDaliClient"))
                 enableThorSlaveAsDaliClient();
@@ -526,7 +527,7 @@ int main( int argc, const char *argv[]  )
                 startPerformanceMonitor(pinterval, PerfMonStandard, nullptr);
 
             installDefaultFileHooks(globals);
-            slaveMain(jobListenerStopped);
+            slaveMain(jobListenerStopped, slaveLogHandler);
         }
 
         LOG(MCdebugProgress, thorJob, "ThorSlave terminated OK");

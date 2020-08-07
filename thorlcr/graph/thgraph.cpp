@@ -544,7 +544,7 @@ void CGraphElementBase::addInput(unsigned input, CGraphElementBase *inputAct, un
 
 void CGraphElementBase::connectInput(unsigned input, CGraphElementBase *inputAct, unsigned inputOutIdx)
 {
-    ActPrintLog("CONNECTING (id=%" ACTPF "d, idx=%d) to (id=%" ACTPF "d, idx=%d)", inputAct->queryId(), inputOutIdx, queryId(), input);
+    ::ActPrintLog(this, thorDetailedLogLevel, "CONNECTING (id=%" ACTPF "d, idx=%d) to (id=%" ACTPF "d, idx=%d)", inputAct->queryId(), inputOutIdx, queryId(), input);
     while (connectedInputs.ordinality()<=input) connectedInputs.append(NULL);
     connectedInputs.replace(new COwningSimpleIOConnection(LINK(inputAct), inputOutIdx), input);
     while (inputAct->connectedOutputs.ordinality()<=inputOutIdx) inputAct->connectedOutputs.append(NULL);
@@ -1183,12 +1183,12 @@ void traceMemUsage()
 {
     StringBuffer memStatsStr;
     roxiemem::memstats(memStatsStr);
-    PROGLOG("Roxiemem stats: %s", memStatsStr.str());
+    LOG(MCthorDetailedDebugInfo, thorJob, "Roxiemem stats: %s", memStatsStr.str());
     memsize_t heapUsage = getMapInfo("heap");
     if (heapUsage) // if 0, assumed to be unavailable
     {
         memsize_t rmtotal = roxiemem::getTotalMemoryLimit();
-        PROGLOG("Heap usage (excluding Roxiemem) : %" I64F "d bytes", (unsigned __int64)(heapUsage-rmtotal));
+        LOG(MCthorDetailedDebugInfo, thorJob, "Heap usage (excluding Roxiemem) : %" I64F "d bytes", (unsigned __int64)(heapUsage-rmtotal));
     }
 }
 
@@ -1372,9 +1372,12 @@ void CGraphBase::executeSubGraph(size32_t parentExtractSz, const byte *parentExt
     {
         if (!queryOwner())
         {
-            StringBuffer s;
-            toXML(&queryXGMML(), s, 2);
-            GraphPrintLog("Running graph [%s] : %s", isGlobal()?"global":"local", s.str());
+            if (!REJECTLOG(MCthorDetailedDebugInfo))
+            {
+                StringBuffer s;
+                toXML(&queryXGMML(), s, 2);
+                LOG(MCthorDetailedDebugInfo, thorJob, "Running graph [%s] : %s", isGlobal()?"global":"local", s.str());
+            }
         }
         if (localResults)
             localResults->clear();
@@ -1388,9 +1391,12 @@ void CGraphBase::executeSubGraph(size32_t parentExtractSz, const byte *parentExt
     if (!queryOwner())
     {
         GraphPrintLog("Graph Done");
-        StringBuffer memStr;
-        getSystemTraceInfo(memStr, PerfMonStandard | PerfMonExtended);
-        GraphPrintLog("%s", memStr.str());
+        if (!REJECTLOG(MCthorDetailedDebugInfo))
+        {
+            StringBuffer memStr;
+            getSystemTraceInfo(memStr, PerfMonStandard | PerfMonExtended);
+            ::GraphPrintLog(this, thorDetailedLogLevel, "%s", memStr.str());
+        }
     }
     if (exception)
         throw exception.getClear();
@@ -1775,6 +1781,8 @@ void CGraphBase::abort(IException *e)
 {
     if (aborted)
         return;
+
+    GraphPrintLog("Aborted");
 
     {
         CriticalBlock cb(crit);
@@ -2297,7 +2305,7 @@ void CGraphTempHandler::deregisterFile(const char *name, bool kept)
         try
         {
             if (!removeTemp(name))
-                LOG(MCwarning, unknownJob, "Failed to delete tmp file : %s (not found)", name);
+                LOG(MCwarning, thorJob, "Failed to delete tmp file : %s (not found)", name);
         }
         catch (IException *e) { StringBuffer s("Failed to delete tmp file : "); FLLOG(MCwarning, thorJob, e, s.append(name).str()); }
     }
@@ -2847,7 +2855,8 @@ void CJobBase::endJob()
         callThreadTerminationHooks(true); // must call any installed thread termination functions, before unloading plugins
         ::Release(pluginMap);
 
-        traceMemUsage();
+        if (!REJECTLOG(MCthorDetailedDebugInfo))
+            traceMemUsage();
 
         if (numChannels > 1) // if only 1 - then channel allocator is same as sharedAllocator, leaks will be reported by the single channel
             checkAndReportLeaks(sharedAllocator->queryRowManager());
@@ -3016,7 +3025,7 @@ mptag_t CJobChannel::deserializeMPTag(MemoryBuffer &mb)
     deserializeMPtag(mb, tag);
     if (TAG_NULL != tag)
     {
-        PROGLOG("deserializeMPTag: tag = %d", (int)tag);
+        LOG(MCthorDetailedDebugInfo, thorJob, "deserializeMPTag: tag = %d", (int)tag);
         jobComm->flush(tag);
     }
     return tag;
@@ -3052,8 +3061,11 @@ void CJobChannel::clean()
     cleaned = true;
     wait();
 
-    queryRowManager()->reportMemoryUsage(false);
-    PROGLOG("CJobBase resetting memory manager");
+    if (!REJECTLOG(MCthorDetailedDebugInfo))
+    {
+        queryRowManager()->reportMemoryUsage(false);
+        LOG(MCthorDetailedDebugInfo, thorJob, "CJobBase resetting memory manager");
+    }
 
     if (graphExecutor)
     {
@@ -3199,8 +3211,11 @@ CActivityBase::~CActivityBase()
 
 void CActivityBase::abort()
 {
-    if (!abortSoon) ActPrintLog("Abort condition set");
-    abortSoon = true;
+    if (!abortSoon)
+    {
+        ::ActPrintLog(this, thorDetailedLogLevel, "Abort condition set");
+        abortSoon = true;
+    }
 }
 
 void CActivityBase::kill()

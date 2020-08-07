@@ -55,7 +55,7 @@ public:
             markdead = false;
             StringBuffer epstr;
             ep.getUrlStr(epstr);
-            LOG(MCdebugProgress, unknownJob, "Watchdog : Marking Machine as Up! [%s]", epstr.str());
+            LOG(MCdebugProgress, thorJob, "Watchdog : Marking Machine as Up! [%s]", epstr.str());
         }
     }   
 };
@@ -129,12 +129,12 @@ void CMasterWatchdogBase::stop()
         synchronized block(mutex);
         if (stopped)
             return;
-        LOG(MCdebugProgress, unknownJob, "Stopping watchdog");
+        LOG(MCdebugProgress, thorJob, "Stopping watchdog");
         stopped = true;
     }
     stopReading();
     threaded.join();
-    LOG(MCdebugProgress, unknownJob, "Stopped watchdog");
+    LOG(MCdebugProgress, thorJob, "Stopped watchdog");
 }
 
 void CMasterWatchdogBase::checkMachineStatus()
@@ -152,7 +152,7 @@ void CMasterWatchdogBase::checkMachineStatus()
             else
             {
                 mstate->markdead = true;
-                LOG(MCdebugProgress, unknownJob, "Watchdog : Marking Machine as Down! [%s]", epstr.str());
+                LOG(MCdebugProgress, thorJob, "Watchdog : Marking Machine as Down! [%s]", epstr.str());
                 //removeSlave(mstate->ep); // more TBD
             }
         }
@@ -190,7 +190,7 @@ unsigned CMasterWatchdogBase::readPacket(HeartBeatPacketHeader &hb, MemoryBuffer
 
 void CMasterWatchdogBase::threadmain()
 {
-    LOG(MCdebugProgress, unknownJob, "Started watchdog");
+    LOG(MCdebugProgress, thorJob, "Started watchdog");
     unsigned lastbeat=msTick();
     unsigned lastcheck=lastbeat;
 
@@ -235,7 +235,7 @@ void CMasterWatchdogBase::threadmain()
                 {
                     StringBuffer epstr;
                     hb.sender.getUrlStr(epstr);
-                    LOG(MCdebugProgress, unknownJob, "Watchdog : Unknown Machine! [%s]", epstr.str()); //TBD
+                    LOG(MCdebugProgress, thorJob, "Watchdog : Unknown Machine! [%s]", epstr.str()); //TBD
                 }
             }
             unsigned now=msTick();

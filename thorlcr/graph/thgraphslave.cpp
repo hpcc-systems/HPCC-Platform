@@ -137,7 +137,7 @@ CSlaveActivity::~CSlaveActivity()
     inputs.kill();
     outputs.kill();
     if (data) delete [] data;
-    ActPrintLog("DESTROYED");
+    ::ActPrintLog(this, thorDetailedLogLevel, "DESTROYED");
 }
 
 bool CSlaveActivity::hasLookAhead(unsigned index) const
@@ -1308,7 +1308,7 @@ void CSlaveGraph::serializeDone(MemoryBuffer &mb)
 void CSlaveGraph::getDone(MemoryBuffer &doneInfoMb)
 {
     if (!started) return;
-    GraphPrintLog("Entering getDone");
+    ::GraphPrintLog(this, thorDetailedLogLevel, "Entering getDone");
     if (!queryOwner() || isGlobal())
     {
         try
@@ -1323,12 +1323,12 @@ void CSlaveGraph::getDone(MemoryBuffer &doneInfoMb)
         }
         catch (IException *)
         {
-            GraphPrintLog("Leaving getDone");
+            ::GraphPrintLog(this, thorDetailedLogLevel, "Leaving getDone");
             getDoneSem.signal();
             throw;
         }
     }
-    GraphPrintLog("Leaving getDone");
+    ::GraphPrintLog(this, thorDetailedLogLevel, "Leaving getDone");
     getDoneSem.signal();
 }
 
@@ -1744,11 +1744,14 @@ void CJobSlave::reportGraphEnd(graph_id gid)
 {
     if (nodesLoaded) // wouldn't mean much if parallel jobs running
         PROGLOG("Graph[%" GIDPF "u] - JHTree node stats:\ncacheAdds=%d\ncacheHits=%d\nnodesLoaded=%d\nblobCacheHits=%d\nblobCacheAdds=%d\nleafCacheHits=%d\nleafCacheAdds=%d\nnodeCacheHits=%d\nnodeCacheAdds=%d\n", gid, cacheAdds.load(), cacheHits.load(), nodesLoaded.load(), blobCacheHits.load(), blobCacheAdds.load(), leafCacheHits.load(), leafCacheAdds.load(), nodeCacheHits.load(), nodeCacheAdds.load());
-    JSocketStatistics stats;
-    getSocketStatistics(stats);
-    StringBuffer s;
-    getSocketStatisticsString(stats,s);
-    PROGLOG("Graph[%" GIDPF "u] - Socket statistics : %s\n", gid, s.str());
+    if (!REJECTLOG(MCthorDetailedDebugInfo))
+    {        
+        JSocketStatistics stats;
+        getSocketStatistics(stats);
+        StringBuffer s;
+        getSocketStatisticsString(stats,s);
+        LOG(MCthorDetailedDebugInfo, thorJob, "Graph[%" GIDPF "u] - Socket statistics : %s\n", gid, s.str());
+    }
     resetSocketStatistics();
 }
 
@@ -1787,7 +1790,7 @@ mptag_t CJobSlave::deserializeMPTag(MemoryBuffer &mb)
     deserializeMPtag(mb, tag);
     if (TAG_NULL != tag)
     {
-        PROGLOG("CJobSlave::deserializeMPTag: tag = %d", (int)tag);
+        LOG(MCthorDetailedDebugInfo, thorJob, "CJobSlave::deserializeMPTag: tag = %d", (int)tag);
         for (unsigned c=0; c<queryJobChannels(); c++)
             queryJobChannel(c).queryJobComm().flush(tag);
     }

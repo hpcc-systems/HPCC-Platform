@@ -801,7 +801,7 @@ class CSharedWriteAheadBase : public CSimpleInterface, implements ISharedSmartBu
         {
             unsigned whichChunk = queryCOutput(output).currentChunkNum - lowestChunk;
 #ifdef TRACE_WRITEAHEAD
-            PROGLOG("output=%d, chunk=%d (whichChunk=%d)", output, currentChunkNum, whichChunk);
+            LOG(MCthorDetailedDebugInfo, thorJob, "output=%d, chunk=%d (whichChunk=%d)", output, currentChunkNum, whichChunk);
 #endif
             rowSet.setown(readRows(output, whichChunk));
             assertex(rowSet);
@@ -1519,7 +1519,7 @@ public:
             Owned<Chunk> chunk = savedChunks.dequeue();
             if (!chunk) break;
         }
-        PROGLOG("CSharedWriteAheadDisk: highOffset=%" I64F "d", highOffset);
+        LOG(MCthorDetailedDebugInfo, thorJob, "CSharedWriteAheadDisk: highOffset=%" I64F "d", highOffset);
     }
     virtual void reset()
     {

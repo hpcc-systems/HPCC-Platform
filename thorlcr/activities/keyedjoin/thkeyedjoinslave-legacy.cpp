@@ -2027,11 +2027,13 @@ public:
                 fetchHandler = new CKeyedFetchHandler(*this);
 
                 FPosTableEntry *fPosToNodeMap = globalFPosToNodeMap ? globalFPosToNodeMap : localFPosToNodeMap;
-                unsigned c;
-                for (c=0; c<filePartTotal; c++)
+                if (!REJECTLOG(MCthorDetailedDebugInfo))
                 {
-                    FPosTableEntry &e = fPosToNodeMap[c];
-                    ActPrintLog("Table[%d] : base=%" I64F "d, top=%" I64F "d, slave=%d", c, e.base, e.top, e.index);
+                    for (unsigned c=0; c<filePartTotal; c++)
+                    {
+                        FPosTableEntry &e = fPosToNodeMap[c];
+                        ::ActPrintLog(this, thorDetailedLogLevel, "Table[%d] : base=%" I64F "d, top=%" I64F "d, slave=%d", c, e.base, e.top, e.index);
+                    }
                 }
                 unsigned i=0;
                 for(; i<dataParts.ordinality(); i++)

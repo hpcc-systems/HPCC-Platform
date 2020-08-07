@@ -80,12 +80,7 @@ public:
         PARENT::start();
         eogNext = prevEog = eof = false;
         if (rolloverEnabled)
-        {
             useRollover = !lastNode();
-#ifdef _TESTING
-            ActPrintLog("Node number = %d, Total Nodes = %d", queryJobChannel().queryMyRank(), container.queryJob().querySlaves());
-#endif
-        }
 
         stream.set(inputStream);
         startLastGroup = getDataLinkGlobalCount();

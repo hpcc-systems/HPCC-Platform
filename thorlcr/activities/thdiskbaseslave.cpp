@@ -139,7 +139,7 @@ void CDiskPartHandlerBase::open()
         }
     }
 
-    ActPrintLog(&activity, "%s[part=%d]: Base offset to %" I64F "d", kindStr, which, fileBaseOffset);
+    ActPrintLog(&activity, thorDetailedLogLevel, "%s[part=%d]: Base offset to %" I64F "d", kindStr, which, fileBaseOffset);
 
     if (compressed)
     {
@@ -149,10 +149,10 @@ void CDiskPartHandlerBase::open()
             checkFileCrc = false;
             if (activity.crcCheckCompressed) // applies to encrypted too, (optional, default off)
             {
-                ActPrintLog(&activity, "Calculating crc for file: %s", filename.get());
+                ActPrintLog(&activity, thorDetailedLogLevel, "Calculating crc for file: %s", filename.get());
                 unsigned calcCrc = iFile->getCRC();
                 // NB: for compressed files should always be ~0
-                ActPrintLog(&activity, "Calculated crc = %x, storedCrc = %x", calcCrc, storedCrc);
+                ActPrintLog(&activity, thorDetailedLogLevel, "Calculated crc = %x, storedCrc = %x", calcCrc, storedCrc);
                 if (calcCrc != storedCrc)
                 {
                     IThorException *e = MakeActivityException(&activity, TE_FileCrc, "CRC Failure validating compressed file: %s", iFile->queryFilename());

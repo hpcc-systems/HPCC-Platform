@@ -172,6 +172,14 @@ void ActPrintLog(const CActivityBase *activity, const char *format, ...)
     va_end(args);
 }
 
+void ActPrintLog(const CActivityBase *activity, unsigned traceLevel, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    ActPrintLogArgs(&activity->queryContainer(), thorlog_null, MCdebugInfo(traceLevel), format, args);
+    va_end(args);
+}
+
 void ActPrintLog(const CActivityBase *activity, IException *e, const char *format, ...)
 {
     va_list args;
@@ -222,6 +230,7 @@ void GraphPrintLog(CGraphBase *graph, IException *e, const char *format, ...)
     GraphPrintLogArgs(graph, e, thorlog_null, MCexception(e, MSGCLS_error), format, args);
     va_end(args);
 }
+
 
 class DECL_EXCEPTION CThorException : public CSimpleInterface, implements IThorException
 {
@@ -731,7 +740,7 @@ void ClearDir(const char *dir)
 void ClearTempDirs()
 {
     TempNameHandler.clearDirs(true);
-    PROGLOG("temp directory cleared");
+    LOG(MCthorDetailedDebugInfo, thorJob, "temp directory cleared");
 }
 
 

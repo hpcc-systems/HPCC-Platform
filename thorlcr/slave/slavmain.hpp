@@ -18,8 +18,9 @@
 #ifndef SLAVMAIN_HPP
 #define SLAVMAIN_HPP
 
+interface ILogMsgHandler;
 void abortSlave();
-void slaveMain(bool &jobListenerStopped);
+void slaveMain(bool &jobListenerStopped, ILogMsgHandler *logHandler);
 void enableThorSlaveAsDaliClient();
 void disableThorSlaveAsDaliClient();
 
