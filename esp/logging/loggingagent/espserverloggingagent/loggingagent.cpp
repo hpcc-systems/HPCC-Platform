@@ -65,6 +65,7 @@ bool CESPServerLoggingAgent::init(const char * name, const char * type, IPropert
         decrypt(serverPassword, password);
     }
     maxServerWaitingSeconds = cfg->getPropInt(PropServerWaitingSeconds);
+    maxGTSRetries = cfg->getPropInt(MaxTriesGTS, DefaultMaxTriesGTS);
 
     if (hasService(LGSTUpdateLOG))
     {
@@ -119,7 +120,6 @@ bool CESPServerLoggingAgent::init(const char * name, const char * type, IPropert
     if (!hasService(LGSTGetTransactionSeed) && !hasService(LGSTGetTransactionID))
         return true;
 
-    maxGTSRetries = cfg->getPropInt(MaxTriesGTS, DefaultMaxTriesGTS);
     transactionSeedType.set(cfg->hasProp(PropTransactionSeedType) ? cfg->queryProp(PropTransactionSeedType) :
         DefaultTransactionSeedType);
     alternativeTransactionSeedType.set(cfg->hasProp(PropAlternativeTransactionSeedType) ?
