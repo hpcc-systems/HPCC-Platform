@@ -73,7 +73,7 @@ private:
 
     static Owned<IProperties> sm_emptyParameters;
     static const SecFeatureSet s_safeFeatures = SUF_ALL_FEATURES;
-    static const SecFeatureSet s_implementedFeatures = s_safeFeatures & ~(SUF_GetDataElement | SUF_GetDataElements);
+    static const SecFeatureSet s_implementedFeatures = s_safeFeatures & ~(SUF_GetDataElement | SUF_GetDataElements | SUF_SetData);
 
 public:
     IMPLEMENT_IINTERFACE
@@ -160,6 +160,7 @@ public:
     IPropertyIterator * getPropertyIterator() const override { return sm_emptyParameters->getIterator();}
     IPropertyTree* getDataElement(const char* xpath = ".") const override { return nullptr; }
     IPropertyTreeIterator* getDataElements(const char* xpath = ".") const override { return nullptr; }
+    bool setData(IPropertyTree* data) override { return false; }
 
 //interface ISecCredentials
     bool setPassword(const char * pw);
