@@ -311,7 +311,10 @@ void Esdl2Base::output_content(Esdl2TransformerContext &ctx, const char * conten
                 switch (type_id)
                 {
                     case ESDLT_BOOL:
-                        ctx.writer->outputBool(strToBool(content), tagname);
+                        if (ctx.flags & ESDL_TRANS_NUMERIC_BOOLEAN)
+                            ctx.writer->outputNumericString(strToBool(content) ? "1" : "0", tagname);
+                        else
+                            ctx.writer->outputBool(strToBool(content), tagname);
                         break;
                     case ESDLT_INT8:
                     case ESDLT_INT16:
@@ -1558,12 +1561,38 @@ Esdl2Transformer::~Esdl2Transformer()
 
 }
 
+static const char *queryMethodMetaData(IEsdlDefMethod *mthdef, IEsdlMethodInfo *mi, const char *tag)
+{
+    if (mthdef)
+        return mthdef->queryMetaData(tag);
+    if (mi)
+        return mi->queryMetaData(tag);
+    return nullptr;
+}
+
+static void updateTransformFlags(EsdlProcessMode mode, IEsdlDefMethod *mthdef, IEsdlMethodInfo *mi, unsigned int &flags)
+{
+    if (mode==EsdlProcessMode::EsdlResponseMode)
+    {
+        const char *numeric_bool = queryMethodMetaData(mthdef, mi, "numeric_bool");
+        if (!isEmptyString(numeric_bool)) //method level wins
+        {
+            if (strToBool(numeric_bool))
+                flags |= ESDL_TRANS_NUMERIC_BOOLEAN;
+            else
+                flags &= ~ESDL_TRANS_NUMERIC_BOOLEAN;
+        }
+    }
+}
+
 int Esdl2Transformer::process(IEspContext &ctx, EsdlProcessMode mode, const char* service, const char *method, StringBuffer &out, const char *in, unsigned int flags, const char *ns, const char *schema_location)
 {
     int rc = 0;
     IEsdlMethodInfo *mi = queryMethodInfo(service,method);
     if (!mi)
         throw MakeStringException(-1, "Error processing ESDL - method '%s'not found", method);
+
+    updateTransformFlags(mode, nullptr, mi, flags);
 
     const char *root_type=NULL;
     const char *root_name=NULL;
@@ -1644,6 +1673,8 @@ int Esdl2Transformer::process(IEspContext &ctx, EsdlProcessMode mode, const char
     IEsdlMethodInfo *mi = queryMethodInfo(service,method);
     if (!mi)
         throw MakeStringException(-1, "ESDL - method '%s::%s'not found", service, method);
+
+    updateTransformFlags(mode, nullptr, mi, flags);
 
     const char *root_type=NULL;
     if (mode==EsdlRequestMode)
@@ -1790,6 +1821,8 @@ void Esdl2Transformer::processHPCCResult(IEspContext &ctx, IEsdlDefMethod &mthde
 
     StartTag stag;
     int depth=1;
+
+    updateTransformFlags(EsdlResponseMode, &mthdef, nullptr, flags);
 
     IEsdlDefinition *esdl = m_def.get();
 
