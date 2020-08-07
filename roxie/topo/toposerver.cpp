@@ -49,11 +49,15 @@ static void topo_server_usage()
     printf("\ttoposerver [options below]\n");
 
     printf("\nOptions:\n");
+#ifndef _CONTAINERIZED
     printf("  --daemon|-d <instanceName>: Run daemon as instance\n");
+#endif
     printf("  --port=[integer]          : Network port (default %d)\n", TOPO_SERVER_PORT);
-    printf("  --tracelevel=[integer]    : Amount of information to dump on logs (default 1)\n");
+    printf("  --traceLevel=[integer]    : Amount of information to dump on logs (default 1)\n");
+#ifndef _CONTAINERIZED
     printf("  --stdlog=[boolean]        : Standard log format (based on tracelevel)\n");
     printf("  --logdir=[filename]       : Outputs to logfile, rather than stdout\n");
+#endif
     printf("  --help|-h                 : This message\n");
     printf("\n");
 }
@@ -306,12 +310,14 @@ int main(int argc, const char *argv[])
                 topo_server_usage();
                 return EXIT_SUCCESS;
             }
+#ifndef _CONTAINERIZED
             else if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
                 if (daemon(1,0) || write_pidfile(argv[++i])) {
                     perror("Failed to daemonize");
                     return EXIT_FAILURE;
                 }
             }
+#endif
         }
 
         // locate settings xml file in runtime dir

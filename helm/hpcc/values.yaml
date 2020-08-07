@@ -178,7 +178,6 @@ roxie:
   ## Set serverReplicas to indicate a separate replicaSet of roxie servers, with agent nodes not acting as servers
   serverReplicas: 0
   topoReplicas: 1
-  topoport: 9004
   ## Set localAgent to true for a scalable cluster of "single-node" roxie servers
   localAgent: false
   useAeron: false
