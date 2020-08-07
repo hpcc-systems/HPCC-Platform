@@ -79,6 +79,9 @@ data:
     version: 1.0
     roxie:
 {{ toYaml ( omit $roxie "logging") | indent 6 }}
+      numChannels: {{ $numChannels }}
+      topologyServers: "{{ $toponame }}:{{ $topoport }}"
+      resolveLocally: false
 {{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" $roxie) | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
@@ -109,10 +112,7 @@ spec:
         args: [
                 {{ include "hpcc.configArg" . }},
                 {{ include "hpcc.daliArg" $ }},
-                "--numChannels={{ $numChannels }}",
-                "--server=true", 
-                "--topologyServers={{ $toponame }}:{{ $roxie.topoport }}",
-                "--resolveLocally=false"
+                "--server=true" 
               ]
 {{- $local := dict "first" true }}
 {{- range $service := $roxie.services }}
@@ -172,9 +172,6 @@ spec:
                 {{ include "hpcc.daliArg" $ }},
                 "--channels={{ $channel }}", 
                 "--server={{ not $roxie.serverReplicas }}",
-                "--numChannels={{ $numChannels }}",
-                "--topologyServers={{ $toponame }}:{{ $roxie.topoport }}",
-                "--resolveLocally=false"
               ]
 {{- if not $roxie.serverReplicas }}
 {{- $local := dict "first" true }}
