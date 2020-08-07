@@ -388,16 +388,16 @@ void flushDaFsSocket(ISocket *socket)
     try
     {
         sendDaFsBuffer(socket, sendbuf);
-        char buf[1024];
+        char buf[16*1024];
         for (;;)
         {
-            Sleep(1000);    // breathe
             size32_t szread;
-            SOCKREADTMS(socket)(buf, 1, sizeof(buf), szread, 1000*60);
+            SOCKREADTMS(socket)(buf, 1, sizeof(buf), szread, 1000*30);
             totread += szread;
         }
     }
-    catch (IJSOCK_Exception *e) {
+    catch (IJSOCK_Exception *e)
+    {
         if (totread)
             PROGLOG("%d bytes discarded",totread);
         if (e->errorCode()!=JSOCKERR_timeout_expired)
@@ -411,17 +411,21 @@ void receiveDaFsBuffer(ISocket * socket, MemoryBuffer & tgt, unsigned numtries, 
 {
     sRFTM tm(dafsMaxReceiveTimeMs);
     size32_t gotLength = receiveDaFsBufferSize(socket, numtries,tm.timemon);
-    if (gotLength) {
+    Owned<IException> exc;
+    if (gotLength)
+    {
         size32_t origlen = tgt.length();
-        try {
-            if (gotLength>maxsz) {
+        try
+        {
+            if (gotLength>maxsz)
+            {
                 StringBuffer msg;
                 msg.appendf("receiveBuffer maximum block size exceeded %d/%d",gotLength,maxsz);
-                PrintStackReport();
                 throw createDafsException(DAFSERR_protocol_failure,msg.str());
             }
             unsigned timeout = SERVER_TIMEOUT*(numtries?numtries:1);
-            if (tm.timemon) {
+            if (tm.timemon)
+            {
                 unsigned remaining;
                 if (tm.timemon->timedout(&remaining)||(remaining<10))
                     remaining = 10;
@@ -431,29 +435,27 @@ void receiveDaFsBuffer(ISocket * socket, MemoryBuffer & tgt, unsigned numtries, 
             size32_t szread;
             SOCKREADTMS(socket)((gotLength<4000)?tgt.reserve(gotLength):tgt.reserveTruncate(gotLength), gotLength, gotLength, szread, timeout);
         }
-        catch (IJSOCK_Exception *e) {
-            if (e->errorCode()!=JSOCKERR_timeout_expired) {
-                EXCLOG(e,"receiveDaFsBuffer(1)");
-                PrintStackReport();
+        catch (IException *e)
+        {
+            exc.setown(e);
+        }
+
+        if (exc.get())
+        {
+            tgt.setLength(origlen);
+            EXCLOG(exc, "receiveDaFsBuffer");
+            PrintStackReport();
+            if (JSOCKERR_timeout_expired != exc->errorCode())
+            {
                 if (!tm.timemon||!tm.timemon->timedout())
                     flushDaFsSocket(socket);
             }
-            else {
-                EXCLOG(e,"receiveDaFsBuffer");
-                PrintStackReport();
-            }
-            tgt.setLength(origlen);
-            throw;
+            IJSOCK_Exception *JSexc = dynamic_cast<IJSOCK_Exception *>(exc.get());
+            if (JSexc != nullptr)
+                throw LINK(JSexc);
+            else
+                throw exc.getClear();
         }
-        catch (IException *e) {
-            EXCLOG(e,"receiveDaFsBuffer(2)");
-            PrintStackReport();
-            if (!tm.timemon||!tm.timemon->timedout())
-                flushDaFsSocket(socket);
-            tgt.setLength(origlen);
-            throw;
-        }
-
     }
     tgt.setEndian(__BIG_ENDIAN);
 }
