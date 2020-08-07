@@ -1,4 +1,4 @@
-<Exception><Code>5103</Code><Source>eclagent</Source><Message>Error: 5103: </Message></Exception>
+<Exception><Code>101</Code><Source>eclagent</Source><Message>Error: 101: </Message></Exception>
 <Dataset name='logging'>
  <Row><text>b</text></Row>
 </Dataset>

@@ -21,7 +21,6 @@ optParallel := #IFDEFINED(root.parallel, false);
 
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
-#onwarning(5102, ignore);
 //#option('reportFailureToFirstDependant', false);
 
 //This verifies that the parallel engine doesn't execute Failure clauses when the corresponding item is inactive
@@ -30,7 +29,7 @@ display(String thisString) := FUNCTION
   RETURN Output(ds, NAMED('logging'), EXTEND);
 END;
 
-a := SEQUENTIAL(display('a'), FAIL(5103)) : independent;
+a := SEQUENTIAL(display('a'), FAIL(101)) : independent;
 
 b0 := display('failure contingency for b');
 c0 := display('failure contingency for c');

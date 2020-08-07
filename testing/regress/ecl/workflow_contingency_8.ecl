@@ -22,11 +22,11 @@ optParallel := #IFDEFINED(root.parallel, false);
 
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
+#onwarning(100, ignore);
 
-#onwarning(5102, ignore);
 //This is to check that the workflow terminates and doesn't run forever.
-//Two items depend on item x, which is the item that will fail.
-x := SEQUENTIAL(OUTPUT(2), FAIL(5102)) : INDEPENDENT;
+//the same exception will cause a contingency failure and a workflow failure
+x := SEQUENTIAL(OUTPUT(2), FAIL(100)) : INDEPENDENT;
 A0 := x;
 A := OUTPUT(1) : INDEPENDENT, SUCCESS(A0);
 

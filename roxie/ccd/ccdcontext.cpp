@@ -255,7 +255,7 @@ protected:
     }
     virtual bool getParallelFlag() const override
     {
-        return parallelWorkflow;
+        return parallelWorkflow && !doOnce;
     }
     virtual unsigned getThreadNumFlag() const override
     {

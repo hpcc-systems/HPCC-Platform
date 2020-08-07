@@ -22,7 +22,6 @@ optParallel := #IFDEFINED(root.parallel, false);
 
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
-#onwarning(5102, ignore);
 
 display(Integer8 thisInteger) := FUNCTION
   ds := dataset([thisInteger], {Integer8 value});
@@ -33,7 +32,7 @@ END;
 a0 := display(2);
 b0 := display(1);
 
-b := FAIL(5103) : Failure(b0);
+b := FAIL(101) : Failure(b0);
 a := b : Failure(a0);
 
 a;

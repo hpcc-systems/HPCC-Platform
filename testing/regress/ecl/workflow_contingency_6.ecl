@@ -22,12 +22,12 @@ optParallel := #IFDEFINED(root.parallel, false);
 
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
-#onwarning(5102, ignore);
+#onwarning(100, ignore);
 
 //Contingency failure should not cause workflow to abort
 //The nested contingency should be processed
 x := 1 : independent;
 z := OUTPUT(7) : independent;
-y := SEQUENTIAl(Output(6), FAIL(5102)) : FAILURE(Z),independent;
+y := SEQUENTIAl(Output(6), FAIL(100)) : FAILURE(Z),independent;
 
 x : SUCCESS(y);

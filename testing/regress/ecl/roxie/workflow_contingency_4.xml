@@ -1,4 +1,4 @@
-<Exception><Code>5103</Code><Source>Roxie</Source><Message></Message></Exception>
+<Exception><Code>101</Code><Source>Roxie</Source><Message></Message></Exception>
 <Dataset name='logging'>
  <Row><text>b</text></Row>
 </Dataset>

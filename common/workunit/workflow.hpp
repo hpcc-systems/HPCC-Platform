@@ -32,7 +32,9 @@
 
 #define WFERR_ExecutingInWaitState      5100
 #define WFERR_ExecutingInBlockedState   5101
-#define WFERR_ExecutingItemMoreThanOnce 5103
+#define WFERR_ExecutingItemMoreThanOnce 5102
+#define WFERR_NoParentItemFound         5103
+#define WFERR_NoReqdItemFound           5104
 
 class WORKUNIT_API WorkflowException : public IException, public CInterface
 {
@@ -130,7 +132,8 @@ protected:
     bool attemptRetry(IRuntimeWorkflowItem & item, unsigned dep, unsigned scheduledWfid);
     void handleFailure(IRuntimeWorkflowItem & item, WorkflowException const * e, bool isDep);
 
-    void addSuccessors();
+    //returns false if the workflow is valid, but there is nothing to be done
+    bool addSuccessors();
     //This function defines the implicit dependencies of the workflow, by creating logical successorships.
     //It traverses through all the items, by recursing through their dependencies.
     //It also reverses dependencies, so that items point to their successors.
@@ -140,7 +143,7 @@ protected:
     //This new runtime item is a logical predecessor - one that may activate the successor.
     //The logical predecessor can also activate any of the successor's children.
     //The pointer to the runtime item is returned.
-    CCloneWorkflowItem * insertLogicalPredecessor(unsigned successorWfid);
+    unsigned insertLogicalPredecessor(unsigned successorWfid);
 
     void performParallel(IGlobalCodeContext *_ctx, IEclProcess *_process);
     void processWfItems();
@@ -184,7 +187,7 @@ protected:
     unsigned parentWfid = 0U;
     //If startItem has an item as its logical successor, then that item will be active before the start.
     //Any items that are active from the start don't need to perform the defineLogicalRelationships algorithm more than once.
-    CCloneWorkflowItem * startItem = nullptr;
+    CCloneWorkflowItem *startItem = nullptr;
      //flag is set when the "parent" item is reached. There may still be pending contingencies
     std::atomic<bool> parentReached{false};
     //flag is set once the workflow is completed

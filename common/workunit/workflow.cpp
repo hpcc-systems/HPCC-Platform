@@ -497,12 +497,12 @@ public:
         dependentSuccessors.append(next->queryWfid());
         next->incNumDependencies();
     }
-    void addLogicalSuccessor(CCloneWorkflowItem * next)
+    void addLogicalSuccessor(unsigned nextWfid)
     {
 #ifdef TRACE_WORKFLOW
-        LOG(MCworkflow, "Workflow item %u has marked workflow item %u as its logical successor", wfid, next->queryWfid());
+        LOG(MCworkflow, "Workflow item %u has marked workflow item %u as its logical successor", wfid, nextWfid);
 #endif
-        logicalSuccessors.append(next->queryWfid());
+        logicalSuccessors.append(nextWfid);
         //note that dependency count is not incremented, since logical successors don't follow as dependents
         //Instead, logical relationships are used to activate the successors
     }
@@ -822,36 +822,69 @@ WorkflowMachine::WorkflowMachine(const IContextLogger &_logctx)
 }
 
 
-void WorkflowMachine::addSuccessors()
+bool WorkflowMachine::addSuccessors()
 {
+    CCloneWorkflowItem tempItem;
+    startItem = &tempItem;
+    bool workflowIsEmpty = true;
+
     Owned<IRuntimeWorkflowItemIterator> iter = workflow->getSequenceIterator();
-    if (iter->first())
+    for(iter->first(); iter->isValid(); iter->next())
     {
-        while (iter->isValid())
+        IConstWorkflowItem * item = iter->query();
+        if(item->queryState() == WFStateReqd)
         {
-            IConstWorkflowItem * item = iter->query();
-            if(item->queryState() == WFStateReqd)
+            workflowIsEmpty = false;
+            unsigned thisWfid = item->queryWfid();
+            if(item->queryMode() !=WFModeOnce)
             {
-                //initial call
-                parentWfid = item->queryWfid();
-#ifdef TRACE_WORKFLOW
-                LOG(MCworkflow, "Item %u has been identified as the 'parent' item, with Reqd state", parentWfid);
-#endif
-                CCloneWorkflowItem thisItem;
-                startItem = &thisItem;
-                defineLogicalRelationships(parentWfid, startItem, false);
-#ifdef TRACE_WORKFLOW
-                LOG(MCworkflow, "Adding initial workflow items");
-#endif
-                //Logical successors to the startItem are ready be executed if they have no dependencies
-                processLogicalSuccessors(*startItem);
-                startItem = nullptr;
-                break;
+                //this code should only be performed once
+                assertex(parentWfid == 0);
+
+                //true parent has been identified
+                parentWfid = thisWfid;
+                continue;
             }
-            if(!iter->next()) break;
+            //makes sure that all ONCE items become active
+            //this ensures consistent behaviour with the sequential engine
+            startItem->addLogicalSuccessor(thisWfid);
         }
     }
-    assertex(parentWfid != 0);
+    if(workflow->count() == 1)
+    {
+        CCloneWorkflowItem * onlyItem = &queryWorkflowItem(1);
+        if(onlyItem->queryMode() == WFModeOnce)
+        {
+            //Special case where a single item with WFModeOnce is executed by roxie (and doOnce = false)
+            //This item comprises the entirety of the workflow, but is marked with WFStateDone
+            //workflow is valid, but there is nothing to be done
+            if(onlyItem->queryState() == WFStateDone)
+                return false;
+            parentWfid = onlyItem->queryWfid();
+        }
+    }
+    if(workflowIsEmpty)
+        throw new WorkflowException(WFERR_NoReqdItemFound, "INTERNAL ERROR: attempting to execute empty workflow", 0U, WorkflowException::SYSTEM, MSGAUD_user);
+    if(parentWfid != 0)
+    {
+#ifdef TRACE_WORKFLOW
+        LOG(MCworkflow, "Item %u has been identified as the 'parent' item, with Reqd state", parentWfid);
+#endif
+        defineLogicalRelationships(parentWfid, startItem, false);
+#ifdef TRACE_WORKFLOW
+        LOG(MCworkflow, "Adding initial workflow items");
+#endif
+    }
+    else
+    {
+        //More: this is where ONCE/wait/beginWait items could be executed in parallel
+        throw new WorkflowException(WFERR_NoParentItemFound, "INTERNAL ERROR: attempting to just execute WFModeOnce items on parallel workflow", 0U, WorkflowException::SYSTEM, MSGAUD_user);
+    }
+
+    //This activates the first set of workflow items, adding them to the item queue
+    processLogicalSuccessors(*startItem);
+    startItem = nullptr;
+
 #ifdef TRACE_WORKFLOW
     //Outputting debug info about each workflow item.
     unsigned totalDependencies = 0;
@@ -910,9 +943,9 @@ void WorkflowMachine::addSuccessors()
     else
         LOG(MCworkflow, "dependency and dependent successor count is inconsistent");
 #endif
+    return true;
 }
-
-CCloneWorkflowItem * WorkflowMachine::insertLogicalPredecessor(unsigned successorWfid)
+unsigned WorkflowMachine::insertLogicalPredecessor(unsigned successorWfid)
 {
     unsigned wfid = workflow->count() + logicalWorkflow.size()+1;
 #ifdef TRACE_WORKFLOW
@@ -924,7 +957,7 @@ CCloneWorkflowItem * WorkflowMachine::insertLogicalPredecessor(unsigned successo
     logicalWorkflow.push_back(tmp); //adding it to the workflow array
 
     defineLogicalRelationships(successorWfid, predecessor, false);
-    return predecessor;
+    return wfid;
 }
 
 void WorkflowMachine::defineLogicalRelationships(unsigned int wfid, CCloneWorkflowItem *logicalPredecessor, bool prevOrdered)
@@ -946,7 +979,7 @@ void WorkflowMachine::defineLogicalRelationships(unsigned int wfid, CCloneWorkfl
     //Ordered causes the effect of logicalPredecessor to skip a generation (to this item's dependencies)
     if(!prevOrdered)
     {
-        logicalPredecessor->addLogicalSuccessor(&item);
+        logicalPredecessor->addLogicalSuccessor(wfid);
     }
 
     Owned<IWorkflowDependencyIterator> iter = item.getDependencies();
@@ -963,6 +996,9 @@ void WorkflowMachine::defineLogicalRelationships(unsigned int wfid, CCloneWorkfl
         for(iter->first(); iter->isValid(); iter->next())
         {
             CCloneWorkflowItem & cur = queryWorkflowItem(iter->query());
+            //For ONCE items, through ROXIE
+            if(cur.queryState() == WFStateDone)
+                continue;
             //prev is the logical predecessor to cur.
             switch(item.queryMode())
             {
@@ -972,7 +1008,7 @@ void WorkflowMachine::defineLogicalRelationships(unsigned int wfid, CCloneWorkfl
                     //Note: thisOrdered is false for the first ORDERED action
                     thisOrdered = true;
                     if(!alreadyProcessed)
-                        cur.addLogicalSuccessor(prev);
+                        cur.addLogicalSuccessor(prev->queryWfid());
                 }
                 //Note: Ordered doesn't change logicalPredecessor
                 break;
@@ -1030,12 +1066,12 @@ void WorkflowMachine::defineLogicalRelationships(unsigned int wfid, CCloneWorkfl
     unsigned successWfid = item.querySuccess();
     if(successWfid)
     {
-        item.setSuccessWfid(insertLogicalPredecessor(successWfid)->queryWfid());
+        item.setSuccessWfid(insertLogicalPredecessor(successWfid));
     }
     unsigned failureWfid = item.queryFailure();
     if(failureWfid)
     {
-        item.setFailureWfid(insertLogicalPredecessor(failureWfid)->queryWfid());
+        item.setFailureWfid(insertLogicalPredecessor(failureWfid));
     }
 }
 
@@ -1221,10 +1257,8 @@ void WorkflowMachine::executeItemParallel(unsigned wfid)
     case WFStateFail:
         throw new WorkflowException(WFERR_ExecutingItemMoreThanOnce, "INTERNAL ERROR: attempting to execute workflow item more than once", wfid, WorkflowException::SYSTEM, MSGAUD_user);
     case WFStateSkip:
-#ifdef TRACE_WORKFLOW
-        LOG(MCworkflow, "Nothing to be done for workflow item %u", wfid);
-#endif
-        return;
+        //MORE: when recovery clauses are implemented, this needs to change
+        throwUnexpected();
     case WFStateWait:
         throw new WorkflowException(WFERR_ExecutingInWaitState, "INTERNAL ERROR: attempting to execute workflow item in wait state", wfid, WorkflowException::SYSTEM, MSGAUD_user);
     case WFStateBlocked:
@@ -1551,11 +1585,12 @@ void WorkflowMachine::performParallel(IGlobalCodeContext *_ctx, IEclProcess *_pr
 #ifdef TRACE_WORKFLOW
     LOG(MCworkflow, "Starting to mark Items with their successors");
 #endif
-    addSuccessors();
+    if(!addSuccessors())
+        return;
 #ifdef TRACE_WORKFLOW
     LOG(MCworkflow, "Finished marking Items with their successors");
 #endif
-
+    assertex(wfItemQueue.size() != 0);
 #ifdef TRACE_WORKFLOW
     LOG(MCworkflow, "Initialising threads");
 #endif
@@ -1597,6 +1632,7 @@ void WorkflowMachine::performParallel(IGlobalCodeContext *_ctx, IEclProcess *_pr
 bool WorkflowMachine::isParallelViable()
 {
     //initialise parallel flag from workunit
+    //roxie will return false when ONCE items need to run on the sequential engine
     parallel = getParallelFlag();
     if(!parallel)
     {
@@ -1615,7 +1651,6 @@ bool WorkflowMachine::isParallelViable()
         case WFModeBeginWait:
         case WFModeCritical:
         case WFModePersist:
-        case WFModeOnce:
             return false;
         }
         switch(cur.queryType())

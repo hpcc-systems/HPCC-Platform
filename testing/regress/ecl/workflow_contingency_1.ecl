@@ -22,7 +22,7 @@ optParallel := #IFDEFINED(root.parallel, false);
 
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
-#onwarning(5102, ignore);
+#onwarning(100, ignore);
 
 //This test checks that every failure clause is executed
 display(Integer8 thisInteger) := FUNCTION
@@ -31,8 +31,8 @@ display(Integer8 thisInteger) := FUNCTION
 END;
 
 c := display(3);
-b := SEQUENTIAL(display(2), FAIL(5102)) : Failure(c);
-a := SEQUENTIAL(display(1), FAIL(5103)) : Failure(b);
+b := SEQUENTIAL(display(2), FAIL(100)) : Failure(c);
+a := SEQUENTIAL(display(1), FAIL(101)) : Failure(b);
 
 a;
 
