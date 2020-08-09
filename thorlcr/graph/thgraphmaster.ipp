@@ -41,12 +41,13 @@ class graphmaster_decl CThorStatsCollection : public CInterface
     std::vector<OwnedMalloc<CRuntimeStatisticCollection>> nodeStats;
     const StatisticsMapping & mapping;
 public:
-    CThorStatsCollection(const StatisticsMapping & _mapping) : mapping(_mapping)
+    CThorStatsCollection(const StatisticsMapping & _mapping) : mapping(_mapping), nodeStats(queryClusterWidth())
     {
         unsigned c = queryClusterWidth();
         while (c--)
-            nodeStats.push_back(new CRuntimeStatisticCollection(mapping));
+            nodeStats[c].setown(new CRuntimeStatisticCollection(mapping));
     }
+    CThorStatsCollection(const CThorStatsCollection & other) = delete;
     void deserialize(unsigned node, MemoryBuffer & mb)
     {
         nodeStats[node]->deserialize(mb);

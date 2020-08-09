@@ -1230,7 +1230,6 @@ void MPNxN(ICommunicator *comm, unsigned numStreams, size32_t perStreamMBSize, s
                     }
                     if (!async)
                     {
-                        rank_t sender;
                         for (int t: tgtRanks)
                         {
                             rank_t sender;

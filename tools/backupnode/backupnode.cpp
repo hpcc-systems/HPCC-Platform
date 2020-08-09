@@ -334,7 +334,7 @@ static void CompressDirectory(const char *target, unsigned numSlaves, bool compr
     ForEach (*dir)
     {
         IFile &targetFile = dir->query();
-        if (targetFile.isFile())
+        if (targetFile.isFile() == fileBool::foundYes)
         {
             if (includeFile(targetFile, numSlaves))
             {
@@ -373,7 +373,7 @@ static void CompressDirectory(const char *target, unsigned numSlaves, bool compr
                 }
             }
         }
-        else if (targetFile.isDirectory())
+        else if (targetFile.isDirectory() == fileBool::foundYes)
         {
             StringBuffer newTarget(target);
             newTarget.append(PATHSEPCHAR);
