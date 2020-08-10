@@ -3632,7 +3632,20 @@ void getScheduledWUs(IEspContext &context, WUShowScheduledFilters *filters, cons
     if (notEmpty(serverName))
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IScheduleReader> reader = getScheduleReader(serverName, filters->eventName);
+        Owned<IScheduleReader> reader;
+        try
+        {
+            reader.setown(getScheduleReader(serverName, filters->eventName));
+        }
+        catch (IException *e)
+        {
+            StringBuffer eMsg;
+            e->errorMessage(eMsg);
+            e->Release();
+            IWARNLOG("Failed to getScheduleReader for %s: %s", serverName, eMsg.str());
+            return;
+        }
+
         Owned<IScheduleReaderIterator> it(reader->getIterator());
         while(it->isValidEventName())
         {
