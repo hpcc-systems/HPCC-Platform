@@ -20,7 +20,7 @@ Cluster-level logging for the containerized HPCC Systems cluster can be accompli
 
 _Specific logging tool examples can be found in the child folders_
 
-## HPCC Systems application level logging details
+## HPCC Systems application-level logging details
 
 As mentioned earlier, the HPCC Systems logs provide a wealth of information which can be used for benchmarking, auditing, debugging, monitoring, etc. The type of information provided in the logs and its format is trivially controlled via standard Helm configuration.
 
@@ -28,30 +28,38 @@ By default, the component logs are not filtered, and contain the following colum
     
     MessageID TargetAudience DateStamp TimeStamp ProcessId ThreadID QuotedLogMessage
 
-The logs can be filtered by TargetAudience or by Category, and the output columns can be configured. Logging configuration settings can be applied at the global, or component level.
+The logs can be filtered by TargetAudience, Category or Detail Level, and the output columns can be configured. Logging configuration settings can be applied at the global, or component level.
 
 ### Target Audience Filtering
 
 The availble target audiences include operator(OPR), user(USR), programmer(PRO), audit(ADT), or all. The filter is controlled by the
 `<section>`.logging.audiences value. The string value is comprised of 3 letter codes delimited by the aggregation operator (+) or the removal operator (-).
     
-    For example, all component log output to include Programmer and User messages only
+    For example, all component log output to include Programmer and User messages only:
     helm install myhpcc ./hpcc --set global.logging.audiences="PRO+USR"
     
 ### Target Category Filtering
 
 The available target categories include disaster(DIS), error(ERR), warning(WRN),information(INF),progress(PRO). The category (or class) filter is controlled by the `<section>`.logging.classes value, comprised of 3 letter codes delimited by the aggregation operator (+) or the removal operator (-).
     
-    For example, dali component log output to include all classes except for progress
-    helm install myhpcc ./hpcc --set global.logging.classes="ALL-PRO"
+    For example, the mydali instance's log output to include all classes except for progress:
+    helm install myhpcc ./hpcc --set dali[0].logging.classes="ALL-PRO" --set dali[0].name="mydali"
+
+### Log Detail Level Configuration
+Log output verbosity can be adjusted from "critical messages only" (1) up to "report all messages" (100). By default, the log level is set highest (100). 
+
+    For example, verbosity should be medium for all components:
+    helm install myhpcc ./hpcc --set global.logging.detail="50"
     
 ### Log Data Column Configuration
 
 The available log data columns include messageid(MID), audience(AUD), class(CLS), date(DAT), time(TIM), millitime(MLT), microtime(MCT), nanotime(NNT), processid(PID), threadid(TID), node(NOD), job(JOB), use(USE), session(SES), code(COD), component(COM), quotedmessage(QUO), prefix(PFX), all(ALL), and standard(STD). The log data columns (or fields) configuration is controlled by the `<section>`.logging.fields value, comprised of 3 letter codes delimited by the aggregation operator (+) or the removal operator (-).
     
-    For example, ESP component log output should include messageid, date, time, and message columns
-    helm install myhpcc ./hpcc --set esp.logging.fields="MID+DAT+TIM+QUO"
+    For example, all component log output should include the standard columns and the log message class name:
+    helm install myhpcc ./hpcc --set global.logging.fields="STD+CLS"
     
-    or all component log output should include the standard columns and the component name
-    helm install myhpcc ./hpcc --set global.logging.fields="STD+COM"
+Adjustment of per-component logging values can require assertion of multiple component specific values, which can be inconvinient to do via the --set command line parameter. In these cases, a custom values file could be used to set all required fields.
 
+    For example, the ESP component instance 'eclwatch' should output minimal log:
+    helm install myhpcc ./hpcc --set -f ./examples/logging/esp-eclwatch-low-logging-values.yaml
+ 
