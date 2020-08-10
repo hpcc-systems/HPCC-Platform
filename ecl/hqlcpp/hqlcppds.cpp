@@ -2455,6 +2455,30 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
     }
     else
     {
+        IHqlExpression * record = expr->queryRecord();
+        IAtom * serializeForm = internalAtom; // The format of serialized expressions in memory must match the internal serialization format
+        OwnedHqlExpr serializedRecord = getSerializedForm(record, serializeForm);
+        if (format == FormatNatural)
+        {
+            EvalContext * instance = queryEvalContext(ctx);
+            if (instance)
+                instance->ensureContextAvailable();
+            if (record != serializedRecord)
+                ensureContextAvailable(ctx);
+            if (!ctx.queryMatchExpr(codeContextMarkerExpr))
+            {
+                if (record != serializedRecord)
+                    throwError(HQLERR_LinkedDatasetNoContext);
+                format = FormatBlockedDataset;
+            }
+            else
+            {
+                format = FormatLinkedDataset;
+            }
+        }
+        else if (record != serializedRecord)
+            format = FormatLinkedDataset;   // Have to serialize it later - otherwise it won't be compatible
+
         if (!canAssignInline(&ctx, expr))
         {
             CHqlBoundTarget tempTarget;
@@ -2466,27 +2490,6 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
         else
         {
             Owned<IHqlCppDatasetBuilder> builder;
-
-            IHqlExpression * record = expr->queryRecord();
-            IAtom * serializeForm = internalAtom; // The format of serialized expressions in memory must match the internal serialization format
-            OwnedHqlExpr serializedRecord = getSerializedForm(record, serializeForm);
-            if (format == FormatNatural)
-            {
-                if (record != serializedRecord)
-                    ensureContextAvailable(ctx);
-                if (!ctx.queryMatchExpr(codeContextMarkerExpr))
-                {
-                    if (record != serializedRecord)
-                        throwError(HQLERR_LinkedDatasetNoContext);
-                    format = FormatBlockedDataset;
-                }
-                else
-                {
-                    format = FormatLinkedDataset;
-                }
-            }
-            else if (record != serializedRecord)
-                format = FormatLinkedDataset;   // Have to serialize it later - otherwise it won't be compatible
 
             if (format == FormatLinkedDataset || format == FormatArrayDataset)
             {
