@@ -154,7 +154,7 @@ interface IQueryFactory : extends IInterface
     virtual void getActivityMetrics(StringBuffer &reply) const = 0;
 
     virtual IPropertyTree *cloneQueryXGMML() const = 0;
-    virtual CRoxieWorkflowMachine *createWorkflowMachine(IConstWorkUnit *wu, bool isOnce, const IRoxieContextLogger &logctx) const = 0;
+    virtual CRoxieWorkflowMachine *createWorkflowMachine(IConstWorkUnit *wu, bool isOnce, const IRoxieContextLogger &logctx, const QueryOptions & options) const = 0;
     virtual char *getEnv(const char *name, const char *defaultValue) const = 0;
 
     virtual IRoxieServerContext *createContext(IPropertyTree *xml, IHpccProtocolResponse *protocol, unsigned flags, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags, const char *querySetName) const = 0;

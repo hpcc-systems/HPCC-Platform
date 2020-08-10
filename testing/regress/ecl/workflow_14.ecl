@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 //version parallel=false
-//version parallel=true
+//version parallel=true,nothor
 
 import ^ as root;
 optParallel := #IFDEFINED(root.parallel, false);
