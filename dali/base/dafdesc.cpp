@@ -3112,8 +3112,7 @@ void extractFilePartInfo(IPropertyTree &info, IFileDescriptor &file)
     }
 }
 
-
-void setupContainerizedStorageLocations()
+static void setupContainerizedStorageLocations()
 {
     try
     {
@@ -3131,6 +3130,12 @@ void setupContainerizedStorageLocations()
                     setBaseDirectory(mirrorPath, 1);
             }
         }
+        else
+        {
+#ifdef _CONTAINERIZED
+            throwUnexpectedX("config does not specify storage");
+#endif
+        }
     }
     catch (IException * e)
     {
@@ -3138,4 +3143,136 @@ void setupContainerizedStorageLocations()
         EXCLOG(e);
         e->Release();
     }
+}
+
+static CriticalSection storageCS;
+void initializeStorageGroups(bool createPlanesFromGroups)
+{
+    CriticalBlock block(storageCS);
+    IPropertyTree * storage = queryGlobalConfig().queryPropTree("storage");
+    if (!storage)
+        storage = queryGlobalConfig().addPropTree("storage");
+
+#ifndef _CONTAINERIZED
+    if (createPlanesFromGroups && !storage->hasProp("planes[0]"))
+    {
+        //Create information about the storage planes from the groups published in dali
+        INamedGroupStore & groupStore = queryNamedGroupStore();
+        Owned<INamedGroupIterator> iter= groupStore.getIterator();
+        ForEach(*iter)
+        {
+            StringBuffer name, dir;
+            iter->get(name);
+            if (name.length())
+            {
+                IPropertyTree * plane = storage->addPropTree("planes");
+                plane->setProp("@name", name);
+                GroupType groupType;
+                Owned<IGroup> group = groupStore.lookup(name, dir, groupType);
+
+                if (dir.length())
+                    plane->setProp("@prefix", dir);
+                else
+                    plane->setProp("@prefix", queryBaseDirectory(groupType, 0));
+
+                if (!group)
+                    plane->setPropInt("@numDevices", 0);
+                else if (group->ordinality() != 1)
+                    plane->setPropInt("@numDevices", group->ordinality());
+
+                if (groupType == grp_thor)
+                {
+                    assertex(group);
+                    StringBuffer mirrorname;
+                    mirrorname.append(name).append("replica");
+
+                    IPropertyTree * mirror = storage->addPropTree("planes");
+                    mirror->setProp("@name", mirrorname);
+                    mirror->setProp("@prefix", queryBaseDirectory(groupType, 1));
+
+                    if (group->ordinality() != 1)
+                        mirror->setPropInt("@numDevices", group->ordinality());
+
+                    IPropertyTree * elem = plane->addPropTreeArrayItem("replication", createPTree());
+                    elem->setProp("", mirrorname);
+                }
+            }
+        }
+    }
+#endif
+
+    //Groups are case insensitve, so add an extra key to the storage items to allow them to be
+    //searched by group name, and also check for duplicates.
+    Owned<IPropertyTreeIterator> iter = storage->getElements("planes");
+    StringBuffer group;
+    ForEach(*iter)
+    {
+        IPropertyTree & cur = iter->query();
+        //Check if this has already been done - so the function is safe to call more than once
+        const char * oldgroup = cur.queryProp("@group");
+        if (oldgroup)
+            continue;
+
+        const char * name = cur.queryProp("@name");
+        group.clear().append(name).toLowerCase();
+
+        //Check the storage plane does not match another one case-insensitiviely. (It is unlikely the Helm chart will have installed.)
+        VStringBuffer xpath("plane[@group='%s']", group.str());
+        IPropertyTree * match = storage->queryPropTree(xpath);
+        if (match)
+            throwStringExceptionV(DALI_DUPLICATE_STORAGE_PLANE, "Duplicate storage planes %s,%s (case insensitive)", name, match->queryProp("@name"));
+
+        cur.setProp("@group", group);
+    }
+
+    //The following can be removed once the storage planes have better integration
+    setupContainerizedStorageLocations();
+}
+
+const char * queryDefaultStoragePlane()
+{
+    // If the plane is specified for the component, then use that
+    IPropertyTree & config = queryComponentConfig();
+    const char * plane = config.queryProp("storagePlane");
+    if (plane)
+        return plane;
+
+    //Otherwise check what the default plane for data storage is configured to be
+    plane = queryGlobalConfig().queryProp("storage/@dataPlane");
+    if (plane)
+        return plane;
+
+#ifdef _CONTAINERIZED
+    throwUnexpectedX("Default data plane not specified"); // The default should always have been configured by the helm charts
+#else
+    return nullptr;
+#endif
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class CStoragePlane : public CInterfaceOf<IStoragePlane>
+{
+public:
+    CStoragePlane(IPropertyTree * _xml) : xml(_xml) {}
+
+    virtual const char * queryPrefix() const { return xml->queryProp("@prefix"); }
+
+private:
+    Linked<IPropertyTree> xml;
+};
+
+
+//MORE: This could be cached
+IStoragePlane * getStoragePlane(const char * name)
+{
+    StringBuffer group;
+    group.append(name).toLowerCase();
+
+    VStringBuffer xpath("storage/planes[@group='%s']", group.str());
+    IPropertyTree * match = queryGlobalConfig().queryPropTree(xpath);
+    if (!match)
+        return nullptr;
+
+    return new CStoragePlane(match);
 }

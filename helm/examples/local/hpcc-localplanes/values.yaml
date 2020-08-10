@@ -1,0 +1,7 @@
+# Default values for hpcc-multilocal
+
+planes:
+# - name: dll
+#   path: /host-path
+#   size: 3Gi
+#   rwmany: true  # optional

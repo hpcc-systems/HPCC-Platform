@@ -803,7 +803,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #else
         setupContainerizedLogMsgHandler();
 #endif
-        setupContainerizedStorageLocations();
 
         roxieMetrics.setown(createRoxieMetricsManager());
 
@@ -1199,6 +1198,10 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         tmpFlag |= _CRTDBG_CHECK_ALWAYS_DF;
         _CrtSetDbgFlag( tmpFlag );
 #endif
+
+        //MORE: I'm not sure where this should go, or how it fits in.  Possibly the function needs to be split in two.
+        initializeStorageGroups(false);
+
         EnableSEHtoExceptionMapping();
         setSEHtoExceptionHandler(&abortHandler);
         Owned<IHpccProtocolPluginContext> protocolCtx = new CHpccProtocolPluginCtx();

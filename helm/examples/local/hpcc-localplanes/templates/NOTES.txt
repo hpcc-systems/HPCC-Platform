@@ -1,0 +1,5 @@
+#The following pvcs have been created, and can be referenced in other helm charts:
+{{- range $plane := .Values.planes -}}
+planes:
+- pvc: {{ printf "%s-%s-pvc" $plane.name $.Release.Name }}
+{{ end }}

@@ -2393,8 +2393,13 @@ void FlushingJsonBuffer::setScalarUInt(const char *resultName, unsigned sequence
 ClusterWriteHandler::ClusterWriteHandler(char const * _logicalName, char const * _activityType)
     : logicalName(_logicalName), activityType(_activityType)
 {
-    makePhysicalPartName(logicalName.get(), 1, 1, physicalName, false);
-    splitFilename(physicalName, &physicalDir, &physicalDir, &physicalBase, &physicalBase);
+}
+
+void ClusterWriteHandler::getPhysicalName(StringBuffer & name, const char * cluster) const
+{
+    Owned<IStoragePlane> plane = getStoragePlane(cluster);
+    const char * prefix = plane ? plane->queryPrefix() : nullptr;
+    makePhysicalPartName(logicalName.get(), 1, 1, name, 0, DFD_OSdefault, prefix);
 }
 
 void ClusterWriteHandler::addCluster(char const * cluster)
@@ -2402,6 +2407,17 @@ void ClusterWriteHandler::addCluster(char const * cluster)
     Owned<IGroup> group = queryNamedGroupStore().lookup(cluster);
     if (!group)
         throw MakeStringException(0, "Unknown cluster %s while writing file %s", cluster, logicalName.get());
+
+#ifdef _CONTAINERIZED
+    //MORE: Allow multiple clutsers once the DFU information removes the full path from the file entry
+    //When that is done, the local cluster test will ideally look at the pane information to see if it is a local mount.
+    //Will require including some of the bare-metal code once bare-metal storage planes are supported
+    if (localCluster)
+        throw MakeStringException(0, "Container mode does not yet support output to multiple clusters while writing file %s)",
+                logicalName.get());
+    localClusterName.set(cluster);
+    localCluster.set(group);
+#else
     if (group->isMember())
     {
         if (localCluster)
@@ -2422,12 +2438,17 @@ void ClusterWriteHandler::addCluster(char const * cluster)
         remoteNodes.append(*group.getClear());
         remoteClusters.append(cluster);
     }
+#endif
 }
 
 void ClusterWriteHandler::getLocalPhysicalFilename(StringAttr & out) const
 {
     if(localCluster.get())
+    {
+        StringBuffer physicalName;
+        getPhysicalName(physicalName, localClusterName);
         out.set(physicalName.str());
+    }
     else
         getTempFilename(out);
     PROGLOG("%s(CLUSTER) for logical filename %s writing to local file %s", activityType.get(), logicalName.get(), out.get());
@@ -2435,6 +2456,12 @@ void ClusterWriteHandler::getLocalPhysicalFilename(StringAttr & out) const
 
 void ClusterWriteHandler::splitPhysicalFilename(StringBuffer & dir, StringBuffer & base) const
 {
+#ifdef _CONTAINERIZED
+    assertex(localClusterName.length());
+#endif
+    StringBuffer physicalName, physicalDir, physicalBase;
+    getPhysicalName(physicalName, localClusterName);
+    splitFilename(physicalName, &physicalDir, &physicalDir, &physicalBase, &physicalBase);
     dir.append(physicalDir);
     base.append(physicalBase);
 }
@@ -2447,6 +2474,13 @@ void ClusterWriteHandler::getTempFilename(StringAttr & out) const
 
 void ClusterWriteHandler::copyPhysical(IFile * source, bool noCopy) const
 {
+#ifdef _CONTAINERIZED
+    assertex(localClusterName.length());
+#endif
+    StringBuffer physicalName, physicalDir, physicalBase;
+    getPhysicalName(physicalName, localClusterName);
+    splitFilename(physicalName, &physicalDir, &physicalDir, &physicalBase, &physicalBase);
+
     RemoteFilename rdn, rfn;
     rdn.setLocalPath(physicalDir.str());
     rfn.setLocalPath(physicalName.str());

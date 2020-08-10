@@ -1,0 +1,20 @@
+{{- range $plane := .Values.planes -}}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ printf "%s-%s-pv" $plane.name $.Release.Name }}
+  labels:
+    store: {{ printf "%s-%s-pv" $plane.name $.Release.Name   }}
+spec:
+  storageClassName: "manual"
+  capacity:
+    storage: {{ $plane.size }}
+  volumeMode: Filesystem
+  accessModes:
+    - {{ $plane.rwmany | default false | ternary "ReadWriteMany" "ReadWriteOnce" }}
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    type: Directory
+    path: {{ $plane.path | quote }}
+---
+{{ end }}

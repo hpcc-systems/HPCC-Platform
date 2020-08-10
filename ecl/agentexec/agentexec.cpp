@@ -60,7 +60,6 @@ CEclAgentExecutionServer::CEclAgentExecutionServer(IPropertyTree *_config) : con
 #else
     setupContainerizedLogMsgHandler();
 #endif
-    setupContainerizedStorageLocations();
 
     agentName = config->queryProp("@name");
     assertex(agentName);

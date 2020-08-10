@@ -3439,7 +3439,6 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
 #else
         setupContainerizedLogMsgHandler();
 #endif
-        setupContainerizedStorageLocations();
     }
     else
     {
@@ -3631,6 +3630,8 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
                 standAloneWorkUnit.clear();
             }
         }
+
+        initializeStorageGroups(daliClientActive());
 
         if (!standAloneWorkUnit)
         {

@@ -549,13 +549,11 @@ public:
     void getClusters(StringArray &clusters) const;
 
 private:
-    virtual void getTempFilename(StringAttr & out) const ;
+    void getPhysicalName(StringBuffer & name, const char * cluster) const;
+    virtual void getTempFilename(StringAttr & out) const;
 
 private:
     StringAttr logicalName;
-    StringBuffer physicalName;
-    StringBuffer physicalDir;
-    StringBuffer physicalBase;
     StringAttr activityType;
     StringAttr localClusterName;
     Owned<IGroup> localCluster; 

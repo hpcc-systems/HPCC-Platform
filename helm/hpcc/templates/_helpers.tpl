@@ -55,8 +55,10 @@ Pass in root as .
 {{- $spillStorage := ($storage.spillStorage | default dict) -}}
 {{- $daliStorage := ($storage.daliStorage | default dict) -}}
 {{- $dllStorage := ($storage.dllStorage | default dict) -}}
-{{- $daliStoragePlane := ($daliStorage.plane | default "") -}}
-{{- $dllStoragePlane := ($dllStorage.plane | default "") -}}
+{{- $dataStoragePlane := ($dataStorage.plane | default "hpcc-data-plane") -}}
+{{- $spillStoragePlane := ($spillStorage.plane | default "hpcc-spill-plane") -}}
+{{- $daliStoragePlane := ($daliStorage.plane | default "hpcc-dali-plane") -}}
+{{- $dllStoragePlane := ($dllStorage.plane | default "hpcc-dlls-plane") -}}
 imageVersion: {{ required "Please specify .global.image.version" .Values.global.image.version | quote }}
 singleNode: {{ .Values.global.singleNode | default false }}
 defaultEsp: {{ .Values.global.defaultEsp | default ""}}
@@ -66,10 +68,14 @@ esp:
 {{ end -}}
 secretTimeout: {{ .Values.secrets.timeout | default 300 }}
 storage:
+  daliPlane: {{ $daliStoragePlane }}
+  dllsPlane: {{ $daliStoragePlane }}
+  dataPlane: {{ $dataStoragePlane }}
+  spillPlane: {{ $spillStoragePlane }}
   planes:
 {{- /*Generate entries for each data plane (removing the pvc).  Exclude the planes used for dlls and dali.*/ -}}
 {{- range $plane := $planes -}}
- {{- if and (ne $plane.name $daliStoragePlane) (ne $plane.name $dllStoragePlane) -}}
+ {{- if and (ne $plane.name $daliStoragePlane) (ne $plane.name $dllStoragePlane) }}
   - name: {{ $plane.name | quote }}
 {{ toYaml (unset (unset (deepCopy $plane) "name") "pvc")| indent 4 }}
  {{- end }}
@@ -133,11 +139,11 @@ If any storage planes are defined that name pvcs they will be mounted
   {{- if and (ne $plane.name $daliStoragePlane) (ne $plane.name $dllStoragePlane) -}}
    {{- $num := int ( $plane.numDevices | default 1 ) -}}
    {{- if le $num 1 }}
-- name: {{ $plane.name }}-pv
+- name: {{ lower $plane.name }}-pv
   mountPath: {{ $plane.prefix | quote }}
    {{- else }}
     {{- range $elem := untilStep 1 (int (add $num 1)) 1 }}
-- name: {{ $plane.name }}-pv-many-{{- $elem }}
+- name: {{ lower $plane.name }}-pv-many-{{- $elem }}
   mountPath: {{ printf "%s/d%d" $plane.prefix $elem | quote }}
     {{- end }}
    {{- end }}
@@ -168,12 +174,12 @@ Add data volume
    {{- $num := int ( $plane.numDevices | default 1 ) -}}
    {{- $pvc := $plane.pvc | required (printf "pvc for %s not supplied" $plane.name) }}
    {{- if le $num 1 }}
-- name: {{ $plane.name }}-pv
+- name: {{ lower $plane.name }}-pv
   persistentVolumeClaim:
     claimName: {{ $pvc }}
    {{- else }}
     {{- range $elem := until $num }}
-- name: {{ $plane.name }}-pv-many-{{- add $elem 1 }}
+- name: {{ lower $plane.name }}-pv-many-{{- add $elem 1 }}
   persistentVolumeClaim:
     claimName: {{ $pvc }}-{{- add $elem 1 }}
     {{- end }}
