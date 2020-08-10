@@ -758,6 +758,11 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
 
         implType = getEsdlMethodImplType(tgtcfg->queryProp("@querytype"));
 
+        bool use_numeric_bool = srvdef.getPropBool("numeric_bool");
+        unsigned txResultFlags = ESDL_TRANS_OUTPUT_ROOT;
+        if (use_numeric_bool)
+            txResultFlags |= ESDL_TRANS_NUMERIC_BOOLEAN;
+
         if (implType==EsdlMethodImplJava)
         {
             const char *javaPackage = srvdef.queryName();
@@ -812,7 +817,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
              origResp.set(javaRespWriter->str());
 
              Owned<IXmlWriterExt> finalRespWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSONRootless : WTStandard);
-             m_pEsdlTransformer->processHPCCResult(context, mthdef, origResp.str(), finalRespWriter, logdata, ESDL_TRANS_OUTPUT_ROOT, ns, schema_location);
+             m_pEsdlTransformer->processHPCCResult(context, mthdef, origResp.str(), finalRespWriter, logdata, txResultFlags, ns, schema_location);
 
              out.append(finalRespWriter->str());
         }
@@ -849,7 +854,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
 
             context.addTraceSummaryTimeStamp(LogNormal, "srt-procres");
             Owned<IXmlWriterExt> finalRespWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSONRootless : WTStandard);
-            m_pEsdlTransformer->processHPCCResult(context, mthdef, origResp.str(), finalRespWriter, logdata, ESDL_TRANS_OUTPUT_ROOT, ns, schema_location);
+            m_pEsdlTransformer->processHPCCResult(context, mthdef, origResp.str(), finalRespWriter, logdata, txResultFlags, ns, schema_location);
             context.addTraceSummaryTimeStamp(LogNormal, "end-procres");
 
             out.append(finalRespWriter->str());
@@ -878,7 +883,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
             {
                 context.addTraceSummaryTimeStamp(LogNormal, "srt-procres");
                 Owned<IXmlWriterExt> respWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSONRootless : WTStandard);
-                m_pEsdlTransformer->processHPCCResult(context, mthdef, origResp.str(), respWriter.get(), logdata, ESDL_TRANS_OUTPUT_ROOT, ns, schema_location);
+                m_pEsdlTransformer->processHPCCResult(context, mthdef, origResp.str(), respWriter.get(), logdata, txResultFlags, ns, schema_location);
                 context.addTraceSummaryTimeStamp(LogNormal, "end-procres");
 
                 out.append(respWriter->str());
@@ -886,7 +891,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
             else if(implType==EsdlMethodImplProxy)
                 getSoapBody(out, origResp);
             else
-                m_pEsdlTransformer->process(context, EsdlResponseMode, srvdef.queryName(), mthdef.queryName(), out, origResp.str(), ESDL_TRANS_OUTPUT_ROOT, ns, schema_location);
+                m_pEsdlTransformer->process(context, EsdlResponseMode, srvdef.queryName(), mthdef.queryName(), out, origResp.str(), txResultFlags, ns, schema_location);
         }
     }
 

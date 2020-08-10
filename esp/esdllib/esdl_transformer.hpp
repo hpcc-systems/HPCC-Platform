@@ -46,6 +46,7 @@ typedef void REQUEST_HOOK (IEspContext& ctx, IEspStruct& req, StringBuffer& quer
 
 #define ESDL_TRANS_TRIM                0x0010
 #define ESDL_TRANS_NO_DEFAULTS        0x0020
+#define ESDL_TRANS_NUMERIC_BOOLEAN    0x0040
 
 #define ESDL_TRANS_INPUT_XMLTAG        0x0100
 #define ESDL_TRANS_OUTPUT_XMLTAG    0x0200
