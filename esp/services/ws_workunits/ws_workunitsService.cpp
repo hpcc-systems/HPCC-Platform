@@ -2847,7 +2847,7 @@ INewResultSet* createFilteredResultSet(INewResultSet* result, IArrayOf<IConstNam
 
 static bool isResultRequestSzTooBig(unsigned __int64 start, unsigned requestCount, unsigned __int64 resultSz, unsigned resultRows, unsigned __int64 limitSz)
 {
-    if (0 == requestCount)
+    if ((0 == requestCount) || (0 == resultRows))
         return resultSz > limitSz;
     else
     {
