@@ -3438,8 +3438,11 @@ void CUsageCacheReader::addDropZoneUsageReq(IConstEnvironment* constEnv, const c
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Empty DropZone name");
 
     Owned<IConstDropZoneInfo> envDropZone = constEnv->getDropZone(name);
-    if (!envDropZone || !envDropZone->isECLWatchVisible())
+    if (!envDropZone)
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Dropzone %s not found", name);
+
+    if (!envDropZone->isECLWatchVisible())
+        return;
 
     SCMStringBuffer directory;
     envDropZone->getDirectory(directory);
