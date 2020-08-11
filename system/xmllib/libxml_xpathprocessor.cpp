@@ -908,8 +908,9 @@ void copyXmlNode(IPropertyTree *tree, xmlNodePtr node)
 {
     for(xmlAttrPtr att=node->properties;att!=nullptr; att=att->next)
     {
+        VStringBuffer name("@%s", (const char *)att->name);
         xmlChar *value = xmlGetProp(node, att->name);
-        tree->setProp((const char *)att->name, (const char *)value);
+        tree->setProp(name, (const char *)value);
         xmlFree(value);
     }
 
@@ -1171,6 +1172,16 @@ private:
         xmlOutputBufferClose(xmlOut);
 
     }
+    virtual IPropertyTree *createPTreeFromSection(const char *section) override
+    {
+        if (isEmptyString(section))
+            return nullptr;
+        xmlNodePtr sect = getSectionNode(section, nullptr);
+        if (!sect)
+            return nullptr;
+        return createPtreeFromXmlNode(sect);
+    }
+
     virtual void toXML(StringBuffer &xml) override
     {
         toXML(xml, nullptr, true);

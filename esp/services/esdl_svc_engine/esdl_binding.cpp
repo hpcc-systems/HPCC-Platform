@@ -650,6 +650,26 @@ static inline bool isPublishedQuery(EsdlMethodImplType implType)
     return (implType==EsdlMethodImplRoxie || implType==EsdlMethodImplWsEcl);
 }
 
+IEsdlScriptContext* EsdlServiceImpl::checkCreateEsdlServiceScriptContext(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *tgtcfg)
+{
+    IEsdlCustomTransform *methodCrt = m_customRequestTransformMap.getValue(mthdef.queryMethodName());
+    if (!m_serviceLevelRequestTransform && !methodCrt)
+        return nullptr;
+
+    Owned<IEsdlScriptContext> scriptContext = createEsdlScriptContext(&context);
+
+    scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "service", srvdef.queryName());
+    scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "method", mthdef.queryMethodName());
+    scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request_type", mthdef.queryRequestType());
+    scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request", mthdef.queryRequestType());  //this could diverge from request_type in the future
+
+    if (tgtcfg)
+        scriptContext->setContent(ESDLScriptCtxSection_TargetConfig, tgtcfg);
+    if (m_oEspBindingCfg)
+        scriptContext->setContent(ESDLScriptCtxSection_BindingConfig, m_oEspBindingCfg.get());
+    return scriptContext.getClear();
+}
+
 void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
                                            IEsdlDefService &srvdef,
                                            IEsdlDefMethod &mthdef,
@@ -662,14 +682,14 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
                                            StringBuffer &logdata,
                                            unsigned int flags)
 {
+    Owned<IEsdlScriptContext> scriptContext;
+
     const char *mthName = mthdef.queryName();
     context.addTraceSummaryValue(LogMin, "method", mthName);
     const char* srvName = srvdef.queryName();
 
-    if (m_serviceLevelCrtFail)
+    if (m_serviceLevelCrtFail) //checked further along in shared code, but might as well avoid extra overhead
         throw MakeStringException(-1, "%s::%s disabled due to Custom Transform errors. Review transform template in configuration.", srvdef.queryName(), mthName);
-
-    IEsdlCustomTransform *crt = m_customRequestTransformMap.getValue(mthdef.queryMethodName());
 
     Owned<MethodAccessMap>* authMap = m_methodAccessMaps.getValue(mthdef.queryMethodName());
     if (authMap != nullptr && authMap->get() != nullptr)
@@ -861,6 +881,9 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
         }
         else
         {
+            //Future: support transforms for all transaction types by moving scripts and script processing up
+            scriptContext.setown(checkCreateEsdlServiceScriptContext(context, srvdef, mthdef, tgtcfg));
+
             Owned<IXmlWriterExt> reqWriter = createIXmlWriterExt(0, 0, NULL, WTStandard);
 
             //Preprocess Request
@@ -876,7 +899,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
             reqcontent.set(reqWriter->str());
             context.addTraceSummaryTimeStamp(LogNormal, "serialized-xmlreq");
 
-            handleFinalRequest(context, m_serviceLevelRequestTransform, crt, tgtcfg, tgtctx, srvdef, mthdef, ns, reqcontent, origResp, isPublishedQuery(implType), implType==EsdlMethodImplProxy, soapmsg);
+            handleFinalRequest(context, scriptContext, tgtcfg, tgtctx, srvdef, mthdef, ns, reqcontent, origResp, isPublishedQuery(implType), implType==EsdlMethodImplProxy, soapmsg);
             context.addTraceSummaryTimeStamp(LogNormal, "end-HFReq");
 
             if (isPublishedQuery(implType))
@@ -896,12 +919,12 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
     }
 
     context.addTraceSummaryTimeStamp(LogNormal, "srt-resLogging");
-    handleResultLogging(context, tgtctx.get(), req, soapmsg.str(), origResp.str(), out.str(), logdata.str());
+    handleResultLogging(context, scriptContext, tgtctx.get(), req, soapmsg.str(), origResp.str(), out.str(), logdata.str());
     context.addTraceSummaryTimeStamp(LogNormal, "end-resLogging");
     ESPLOG(LogMax,"Customer Response: %s", out.str());
 }
 
-bool EsdlServiceImpl::handleResultLogging(IEspContext &espcontext, IPropertyTree * reqcontext, IPropertyTree * request,const char *rawreq, const char * rawresp, const char * finalresp, const char * logdata)
+bool EsdlServiceImpl::handleResultLogging(IEspContext &espcontext, IEsdlScriptContext *scriptContext, IPropertyTree * reqcontext, IPropertyTree * request,const char *rawreq, const char * rawresp, const char * finalresp, const char * logdata)
 {
     bool success = true;
     if (m_oLoggingManager)
@@ -915,7 +938,8 @@ bool EsdlServiceImpl::handleResultLogging(IEspContext &espcontext, IPropertyTree
         entry->setBackEndReq(rawreq);
         entry->setBackEndResp(rawresp);
         entry->setLogDatasets(logdata);
-
+        if (scriptContext)
+            entry->setOwnScriptValuesTree(scriptContext->createPTreeFromSection(ESDLScriptCtxSection_Logging));
         StringBuffer logresp;
         success = m_oLoggingManager->updateLog(entry, logresp);
         ESPLOG(LogMin,"ESDLService: Attempted to log ESP transaction: %s", logresp.str());
@@ -1041,8 +1065,7 @@ void EsdlServiceImpl::getSoapError( StringBuffer& out,
 }
 
 void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
-                                         IEsdlCustomTransform *serviceCrt,
-                                         IEsdlCustomTransform *methodCrt,
+                                         IEsdlScriptContext *scriptContext,
                                          Owned<IPropertyTree> &tgtcfg,
                                          Owned<IPropertyTree> &tgtctx,
                                          IEsdlDefService &srvdef,
@@ -1057,7 +1080,7 @@ void EsdlServiceImpl::handleFinalRequest(IEspContext &context,
     const char *tgtUrl = tgtcfg->queryProp("@url");
     if (!isEmptyString(tgtUrl))
     {
-        prepareFinalRequest(context, serviceCrt, methodCrt, tgtcfg, tgtctx, srvdef, mthdef, isroxie, ns, req, soapmsg);
+        prepareFinalRequest(context, scriptContext, tgtcfg, tgtctx, srvdef, mthdef, isroxie, ns, req, soapmsg);
         sendTargetSOAP(context, tgtcfg.get(), soapmsg.str(), out, isproxy, NULL);
     }
     else
@@ -1345,8 +1368,7 @@ void EsdlServiceImpl::getTargetResponseFile(IEspContext & context,
  */
 
 void EsdlServiceImpl::prepareFinalRequest(IEspContext &context,
-                                        IEsdlCustomTransform *serviceCrt,
-                                        IEsdlCustomTransform *methodCrt,
+                                        IEsdlScriptContext *scriptContext,
                                         Owned<IPropertyTree> &tgtcfg,
                                         Owned<IPropertyTree> &tgtctx,
                                         IEsdlDefService &srvdef,
@@ -1428,43 +1450,21 @@ void EsdlServiceImpl::prepareFinalRequest(IEspContext &context,
 
     // Process Custom Request Transforms
 
-    // If the CRTs are nullptr, we could have been called from a context without 
-    // access to them, so pull them from ourself. When they are passed in the
-    // error checking has already been completed.
+    if (m_serviceLevelCrtFail)
+        throw MakeStringException(-1, "%s::%s disabled due to service-level Custom Transform errors. Review transform template in configuration.", srvdef.queryName(), mthName);
 
-    if (!serviceCrt)
+    StringAttr *crtErrorMessage = m_methodCRTransformErrors.getValue(mthName);
+    if (crtErrorMessage && !crtErrorMessage->isEmpty())
+        throw MakeStringException(-1, "%s::%s disabled due to method-level Custom Transform errors: %s. Review transform template in configuration.", srvdef.queryName(), mthName, crtErrorMessage->str());
+
+    if (scriptContext)
     {
-        if (m_serviceLevelCrtFail)
-            throw MakeStringException(-1, "%s::%s disabled due to service-level Custom Transform errors. Review transform template in configuration.", srvdef.queryName(), mthName);
+        IEsdlCustomTransform *methodCrt = m_customRequestTransformMap.getValue(mthName);
 
-        serviceCrt = m_serviceLevelRequestTransform;
-    }
-
-    if (!methodCrt)
-    {
-        StringAttr *crtErrorMessage = m_methodCRTransformErrors.getValue(mthName);
-        if (crtErrorMessage && !crtErrorMessage->isEmpty())
-            throw MakeStringException(-1, "%s::%s disabled due to method-level Custom Transform errors: %s. Review transform template in configuration.", srvdef.queryName(), mthName, crtErrorMessage->str());
-
-        methodCrt = m_customRequestTransformMap.getValue(mthName);
-    }
-
-    if (serviceCrt || methodCrt)
-    {
         context.addTraceSummaryTimeStamp(LogNormal, "srt-custreqtrans");
-
-        //as we add more entry points the script context will move to wider scope
-        Owned<IEsdlScriptContext> scriptContext = createEsdlScriptContext(&context);
         scriptContext->setContent(ESDLScriptCtxSection_ESDLRequest, reqProcessed.str());
-        scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "service", srvdef.queryName());
-        scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "method", mthdef.queryMethodName());
-        scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request_type", mthdef.queryRequestType());
-        scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request", mthdef.queryRequestType());  //this could diverge from request_type in the future
-
-        scriptContext->setContent(ESDLScriptCtxSection_TargetConfig, tgtcfg);
-        scriptContext->setContent(ESDLScriptCtxSection_BindingConfig, m_oEspBindingCfg.get());
-
-        processServiceAndMethodTransforms(scriptContext, {serviceCrt, methodCrt}, ESDLScriptCtxSection_ESDLRequest, ESDLScriptCtxSection_FinalRequest);
+        if (m_serviceLevelRequestTransform || methodCrt) //slightly redundant, but less fragile to future changes to check again here
+            processServiceAndMethodTransforms(scriptContext, {m_serviceLevelRequestTransform, methodCrt}, ESDLScriptCtxSection_ESDLRequest, ESDLScriptCtxSection_FinalRequest);
         scriptContext->toXML(reqProcessed.clear(), ESDLScriptCtxSection_FinalRequest);
 
         context.addTraceSummaryTimeStamp(LogNormal, "end-custreqtrans");
@@ -3361,8 +3361,9 @@ int EsdlBindingImpl::onGetRoxieBuilder(CHttpRequest* request, CHttpResponse* res
                     getRequestContent(*context, reqcontent, request, srvname, mthname, ns, ROXIEREQ_FLAGS);
 
                     tgtctx.setown( m_pESDLService->createTargetContext(*context, tgtcfg, *defsrv, *defmth, req_pt));
-                    
-                    m_pESDLService->prepareFinalRequest(*context, nullptr, nullptr, tgtcfg, tgtctx, *defsrv, *defmth, true, ns.str(), reqcontent, roxiemsg);
+
+                    Owned<IEsdlScriptContext> scriptContext = m_pESDLService->checkCreateEsdlServiceScriptContext(*context, *defsrv, *defmth, tgtcfg.get());
+                    m_pESDLService->prepareFinalRequest(*context, scriptContext, tgtcfg, tgtctx, *defsrv, *defmth, true, ns.str(), reqcontent, roxiemsg);
                 }
                 else
                 {

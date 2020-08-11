@@ -115,6 +115,7 @@ interface IEsdlScriptContext : extends IInterface
     virtual bool getXPathBool(const char *xpath, bool dft=false) const = 0;
     virtual void toXML(StringBuffer &xml, const char *section, bool includeParentNode=false) = 0;
     virtual void toXML(StringBuffer &xml) = 0;
+    virtual IPropertyTree *createPTreeFromSection(const char *section) = 0;
 };
 
 extern "C" XMLLIB_API IEsdlScriptContext *createEsdlScriptContext(void * espContext);

@@ -39,6 +39,7 @@ class CEspLogEntry : implements IEspLogEntry, public CInterface
     Owned<IPropertyTree> userContextTree;
     Owned<IPropertyTree> userRequestTree;
     Owned<IPropertyTree> logInfoTree;
+    Owned<IPropertyTree> scriptValuesTree;
     Owned<IInterface> extraLog;
 
 public:
@@ -50,6 +51,7 @@ public:
     void setOwnUserContextTree(IPropertyTree* tree) { userContextTree.setown(tree); };
     void setOwnUserRequestTree(IPropertyTree* tree) { userRequestTree.setown(tree); };
     void setOwnLogInfoTree(IPropertyTree* tree) { logInfoTree.setown(tree); };
+    void setOwnScriptValuesTree(IPropertyTree* tree) override { scriptValuesTree.setown(tree); };
     void setOwnExtraLog(IInterface* extra) { extraLog.setown(extra); };
     void setOption(const char* ptr) { option.set(ptr); };
     void setLogContent(const char* ptr) { logContent.set(ptr); };
@@ -62,6 +64,7 @@ public:
     IPropertyTree* getUserContextTree() { return userContextTree; };
     IPropertyTree* getUserRequestTree() { return userRequestTree; };
     IPropertyTree* getLogInfoTree() { return logInfoTree; };
+    IPropertyTree* getScriptValuesTree() override { return scriptValuesTree; };
     IInterface* getExtraLog() { return extraLog; };
     const char* getOption() { return option.get(); };
     const char* getLogContent() { return logContent.get(); };
@@ -86,7 +89,7 @@ class CLoggingManager : implements ILoggingManager, public CInterface
     unsigned serializeLogRequestContent(IEspUpdateLogRequestWrap* request, const char* GUID, StringBuffer& logData);
 
     bool updateLog(IEspContext* espContext, IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp, StringBuffer& status);
-    bool updateLog(IEspContext* espContext, const char* option, IPropertyTree* userContext, IPropertyTree* userRequest,
+    bool updateLog(IEspContext* espContext, const char* option, IPropertyTree* userContext, IPropertyTree* userRequest, IPropertyTree *scriptValues,
         const char* backEndReq, const char* backEndResp, const char* userResp, const char* logDatasets, StringBuffer& status);
     bool updateLog(IEspContext* espContext, const char* option, const char* logContent, StringBuffer& status);
     bool updateLog(IEspContext* espContext, const char* option, IPropertyTree* logInfo, IInterface* extraLog, StringBuffer& status);
