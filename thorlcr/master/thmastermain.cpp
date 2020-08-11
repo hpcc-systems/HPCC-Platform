@@ -926,7 +926,7 @@ int main( int argc, const char *argv[]  )
         StringBuffer myEp;
         queryMyNode()->endpoint().getUrlStr(myEp);
 
-        launchK8sJob("thorslave", workunit, cloudJobName, { { "graphName", graphName}, { "master", myEp.str() }, { "%numSlaves", std::to_string(numSlaves)} });
+        applyK8sYaml("thorslave", workunit, cloudJobName, "jobspec", { { "graphName", graphName}, { "master", myEp.str() }, { "%numSlaves", std::to_string(numSlaves)} }, false);
 #else
         unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
         unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
@@ -985,7 +985,7 @@ int main( int argc, const char *argv[]  )
 #ifdef _CONTAINERIZED
         registry.clear();
         if (globals->getPropBool("@deleteJobs", true))
-            deleteK8sJob("thorslave", cloudJobName);
+            deleteK8sResource("thorslave", cloudJobName, "job");
         setExitCode(0);
 #endif
         LOG(MCdebugProgress, thorJob, "ThorMaster terminated OK");

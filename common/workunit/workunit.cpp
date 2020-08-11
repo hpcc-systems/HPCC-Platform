@@ -14044,13 +14044,13 @@ static void setResources(StringBuffer &jobYaml, const IConstWorkUnit *workunit, 
 }
 
 
-void deleteK8sJob(const char *componentName, const char *job)
+void deleteK8sResource(const char *componentName, const char *job, const char *resource)
 {
     VStringBuffer jobname("%s-%s", componentName, job);
     jobname.toLowerCase();
-    VStringBuffer deleteJob("kubectl delete job/%s", jobname.str());
+    VStringBuffer deleteResource("kubectl delete %s/%s", resource, jobname.str());
     StringBuffer output, error;
-    bool ret = runExternalCommand(componentName, output, error, deleteJob.str(), nullptr);
+    bool ret = runExternalCommand(componentName, output, error, deleteResource.str(), nullptr);
     DBGLOG("kubectl delete output: %s", output.str());
     if (error.length())
         DBGLOG("kubectl delete error: %s", error.str());
@@ -14107,13 +14107,23 @@ void waitK8sJob(const char *componentName, const char *job)
     }
 }
 
-void launchK8sJob(const char *componentName, const char *wuid, const char *job, const std::list<std::pair<std::string, std::string>> &extraParams)
+bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, const char *suffix, const std::list<std::pair<std::string, std::string>> &extraParams, bool optional)
 {
-    VStringBuffer jobname("%s-%s", componentName, job);
+    StringBuffer jobname(job);
     jobname.toLowerCase();
-    VStringBuffer jobSpecFilename("/etc/config/%s-jobspec.yaml", componentName);
+    VStringBuffer jobSpecFilename("/etc/config/%s-%s.yaml", componentName, suffix);
     StringBuffer jobYaml;
-    jobYaml.loadFile(jobSpecFilename, false);
+    try
+    {
+        jobYaml.loadFile(jobSpecFilename, false);
+    }
+    catch (IException *E)
+    {
+        if (!optional)
+            throw;
+        E->Release();
+        return false;
+    }
     jobYaml.replaceString("%jobname", jobname.str());
 
     VStringBuffer args("\"--workunit=%s\"", wuid);
@@ -14141,17 +14151,24 @@ void launchK8sJob(const char *componentName, const char *wuid, const char *job, 
         DBGLOG("kubectl error: %s", error.str());
     if (ret)
     {
-        DBGLOG("Using job yaml %s", jobYaml.str());
-        throw makeStringException(0, "Failed to start kubectl job");
+        DBGLOG("Using yaml %s", jobYaml.str());
+        throw makeStringException(0, "Failed to replace k8s resource");
     }
+    return true;
 }
 
 void runK8sJob(const char *componentName, const char *wuid, const char *job, bool del, const std::list<std::pair<std::string, std::string>> &extraParams)
 {
-    launchK8sJob(componentName, wuid, job, extraParams);
+    bool removeNetwork = applyK8sYaml(componentName, wuid, job, "networkspec", extraParams, true);
+    applyK8sYaml(componentName, wuid, job, "jobspec", extraParams, false);
     waitK8sJob(componentName, job);
     if (del)
-        deleteK8sJob(componentName, job);
+    {
+        deleteK8sResource(componentName, job, "job");
+        if (removeNetwork)
+            deleteK8sResource(componentName, job, "networkpolicy");
+    }
+    // MORE - this will not remove the network if the job fails.
 }
 
 #endif

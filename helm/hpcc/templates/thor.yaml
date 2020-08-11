@@ -28,6 +28,8 @@ spec:
     metadata:
       labels:
         run: {{ $eclAgentName | quote }}
+        accessDali: "true"
+        accessEsp: {{ .useChildProcesses | default false | quote }}
     spec:
       serviceAccountName: {{ $eclAgentScope.useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
       containers:
@@ -65,8 +67,10 @@ spec:
     metadata:
       labels:
         run: {{ $thorAgentName | quote }}
+        accessDali: "true"
+        accessEsp: {{ .useChildProcesses | default false | quote }}
     spec:
-      serviceAccountName: {{ $thorAgentScope.useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
+      serviceAccountName: {{ $thorAgentScope.useChildProcesses | default false | ternary "hpcc-default" "hpcc-thoragent" }}
       containers:
       - name: {{ $thorAgentName | quote }}
         workingDir: /var/lib/HPCCSystems
@@ -133,16 +137,20 @@ data:
     apiVersion: batch/v1
     kind: Job
     metadata:
-      name: %jobname
+      name: {{ $agentAppType }}-%jobname
     spec:
       ttlSecondsAfterFinished: 100
       template:
+        metadata:
+          labels:
+            accessDali: "true"
+            accessEsp: "true"
         spec:
           serviceAccountName: {{ $thorAgentScope.useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
           initContainers: 
             {{- include "hpcc.checkDataMount" (dict "root" $) | indent 10 }}
           containers:
-          - name: %jobname
+          - name: {{ $agentAppType }}-%jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
             resources:
@@ -178,16 +186,22 @@ data:
     apiVersion: batch/v1
     kind: Job
     metadata:
-      name: %jobname
+      name: thormaster-%jobname
     spec:
       ttlSecondsAfterFinished: 100
       template:
+        metadata:
+          labels:
+            app: thor
+            accessDali: "true"
+            accessEsp: "true"
+            job: %jobname
         spec:
           serviceAccountName: hpcc-agent
           initContainers:
             {{- include "hpcc.checkDataMount" (dict "root" $) | indent 10 }}
           containers:
-          - name: %jobname
+          - name: thormaster-%jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
             resources:
@@ -216,21 +230,25 @@ data:
 {{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "all" "ecl" "storage" ) ) | indent 10 }}
           restartPolicy: Never
       backoffLimit: 0
-{{- end }}
 
   thorslave-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
     metadata:
-      name: %jobname
+      name: thorslave-%jobname
     spec:
       parallelism: %numSlaves
       ttlSecondsAfterFinished: 100
       template:
+        metadata:
+          labels:
+            app: thor
+            accessEsp: "true"
+            job: %jobname
         spec:
           serviceAccountName: hpcc-default
           containers:
-          - name: %jobname
+          - name: thorslave-%jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
             resources:
@@ -259,6 +277,30 @@ data:
 {{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "all" "ecl" "storage" ) ) | indent 10 }}
           restartPolicy: Never
       backoffLimit: 0
----
+
+  thormaster-networkspec.yaml: |
+    apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: thormaster-%jobname
+    spec:
+      podSelector:
+        matchLabels:
+          app: thor
+          job: %jobname
+      ingress:
+      - from:
+        - podSelector:
+            matchLabels:
+              app: thor
+              job: %jobname
+      egress:
+      - to:
+        - podSelector:
+            matchLabels:
+              app: thor
+              job: %jobname
+               
+{{- end }}
 {{- end }}
 {{- end }}

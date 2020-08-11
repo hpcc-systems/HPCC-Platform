@@ -13,6 +13,8 @@ spec:
     metadata:
       labels:
         run: {{ .name | quote }}
+        accessDali: "true"
+        accessEsp: {{ .useChildProcesses | default false | quote }}
     spec:
       serviceAccountName: {{ .useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
       terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
@@ -63,14 +65,18 @@ data:
     apiVersion: batch/v1
     kind: Job
     metadata:
-      name: %jobname
+      name: compile-%jobname
     spec:
       ttlSecondsAfterFinished: 100
       template:
+        metadata:
+          labels:
+            accessDali: "true"
+            accessEsp: "true"
         spec:
           serviceAccountName: "hpcc-default"
           containers:
-          - name: %jobname
+          - name: compile-%jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
             resources:
