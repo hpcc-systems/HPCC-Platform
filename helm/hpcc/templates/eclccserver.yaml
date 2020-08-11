@@ -14,7 +14,7 @@ spec:
       labels:
         run: {{ .name | quote }}
     spec:
-      serviceAccountName: hpcc
+      serviceAccountName: {{ .useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
       terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
       initContainers:
         {{- include "hpcc.checkDllMount" (dict "root" $) | indent 6 }}
@@ -58,6 +58,7 @@ data:
 {{ include "hpcc.generateConfigMapQueues" $ | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
+{{- if not .useChildProcesses }} 
   compile-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
@@ -67,6 +68,7 @@ data:
       ttlSecondsAfterFinished: 100
       template:
         spec:
+          serviceAccountName: "hpcc-default"
           containers:
           - name: %jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
@@ -97,7 +99,8 @@ data:
 {{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "all" ) ) | indent 10 }}
           restartPolicy: Never
       backoffLimit: 0
-      
+{{- end }}      
+
 ---
 {{- end }}
 {{- end }}

@@ -29,7 +29,7 @@ spec:
       labels:
         run: {{ $eclAgentName | quote }}
     spec:
-      serviceAccountName: hpcc
+      serviceAccountName: {{ $eclAgentScope.useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
       containers:
       - name: {{ $eclAgentName | quote }}
         workingDir: /var/lib/HPCCSystems
@@ -66,7 +66,7 @@ spec:
       labels:
         run: {{ $thorAgentName | quote }}
     spec:
-      serviceAccountName: hpcc
+      serviceAccountName: {{ $thorAgentScope.useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
       containers:
       - name: {{ $thorAgentName | quote }}
         workingDir: /var/lib/HPCCSystems
@@ -138,7 +138,7 @@ data:
       ttlSecondsAfterFinished: 100
       template:
         spec:
-          serviceAccountName: hpcc
+          serviceAccountName: {{ $thorAgentScope.useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
           initContainers: 
             {{- include "hpcc.checkDataMount" (dict "root" $) | indent 10 }}
           containers:
@@ -183,7 +183,7 @@ data:
       ttlSecondsAfterFinished: 100
       template:
         spec:
-          serviceAccountName: hpcc
+          serviceAccountName: hpcc-agent
           initContainers:
             {{- include "hpcc.checkDataMount" (dict "root" $) | indent 10 }}
           containers:
@@ -221,7 +221,7 @@ data:
       ttlSecondsAfterFinished: 100
       template:
         spec:
-          serviceAccountName: hpcc
+          serviceAccountName: hpcc-default
           containers:
           - name: %jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}

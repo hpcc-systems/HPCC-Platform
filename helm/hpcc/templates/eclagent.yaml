@@ -16,7 +16,7 @@ spec:
       labels:
         run: {{ .name | quote }}
     spec:
-      serviceAccountName: hpcc
+      serviceAccountName: {{ .useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
       initContainers:
         {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
       containers:
@@ -55,6 +55,7 @@ data:
 {{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" .) | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
+{{- if not .useChildProcesses }} 
   {{ $apptype }}-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
@@ -64,6 +65,7 @@ data:
       ttlSecondsAfterFinished: 100
       template:
         spec:
+          serviceAccountName: "hpcc-default"
           containers:
           - name: %jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
@@ -94,7 +96,7 @@ data:
 {{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "all" "ecl" "storage" ) ) | indent 10 }}
           restartPolicy: Never
       backoffLimit: 0
-      
+{{- end }}      
 ---
 {{- end }}
 {{- end }}
