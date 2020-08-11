@@ -40,6 +40,9 @@ jobs:
         with:
           version: 'latest'
         id: install
+      - name: Install additional tools
+        working-directory: .
+        run: wget https://github.com/zegl/kube-score/releases/download/v1.8.1/kube-score_1.8.1_linux_amd64 && sudo mv kube-score_1.8.1_linux_amd64 /usr/bin/kube-score && sudo chmod +x /usr/bin/kube-score
       - name: Test
         working-directory: ./testing/helm
         run: ./run.sh
