@@ -769,6 +769,7 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
         case AS_ACCOUNT_LOCKED :
             err.append("Account locked");
             break;
+        case AS_INVALID_CREDENTIALS :
         default:
             err.append("Access Denied: User or password invalid");
         }
