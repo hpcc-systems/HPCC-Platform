@@ -9923,7 +9923,6 @@ public:
         {
             SocketEndpointArray existingGroupBoundEps;
             StringAttr groupDir;
-            GroupType type;
             if (!loadGroup(existing, existingGroupBoundEps, nullptr, nullptr))
             {
                 IWARNLOG("removeSpares: failed to load group: '%s'", groupName.str());

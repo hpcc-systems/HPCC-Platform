@@ -96,9 +96,11 @@ template <typename CLASS> void inline ownedMallocDoFree(CLASS *o) { free(o); }
 template <class CLASS> class OwnedMalloc : public OwnedPtrCustomFree<CLASS, ownedMallocDoFree<CLASS>>
 {
     typedef OwnedPtrCustomFree<CLASS, ownedMallocDoFree<CLASS>> PARENT;
+    typedef OwnedMalloc<CLASS> SELF;
 public:
     inline OwnedMalloc() : PARENT() { }
     inline OwnedMalloc(CLASS * _ptr) : PARENT(_ptr) { }
+    inline OwnedMalloc(SELF && _other) = default;
     explicit inline OwnedMalloc(unsigned n, bool clearMemory = false) { doAllocate(n, clearMemory); }
     inline void allocate(bool clearMemory = false)   { allocateN(1, clearMemory); }
     inline void allocateN(unsigned n, bool clearMemory = false)
