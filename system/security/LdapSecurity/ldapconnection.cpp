@@ -1779,6 +1779,21 @@ public:
                         DBGLOG("LDAP: User %s Must Reset Password", username);
                         user.setAuthenticateStatus(AS_PASSWORD_VALID_BUT_EXPIRED);
                     }
+                    else if (strstr(ldap_errstring, "data 533"))
+                    {
+                        DBGLOG("LDAP: User %s Account Disabled", username);
+                        user.setAuthenticateStatus(AS_ACCOUNT_DISABLED);
+                    }
+                    else if (strstr(ldap_errstring, "data 701"))
+                    {
+                        DBGLOG("LDAP: User %s Account Expired", username);
+                        user.setAuthenticateStatus(AS_ACCOUNT_EXPIRED);
+                    }
+                    else if (strstr(ldap_errstring, "data 775"))
+                    {
+                        DBGLOG("LDAP: User %s Account Locked Out", username);
+                        user.setAuthenticateStatus(AS_ACCOUNT_LOCKED);
+                    }
                     else
                     {
                         DBGLOG("LDAP: Authentication(1) (%c) for user %s failed - %s", isWorkunitDAToken(password) ? 't' :'f', username, ldap_err2string(rc));

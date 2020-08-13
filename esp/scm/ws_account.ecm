@@ -45,6 +45,7 @@ ESPresponse [exceptions_inline] MyAccountResponse
     [min_ver("1.04")] string accountType; //"User" or "Administrator"
     [min_ver("1.04")] bool passwordNeverExpires;
     [min_ver("1.04")] bool passwordIsExpired;
+    [min_ver("1.05")] int accountStatus;//disabled, expired, locked, etc. See 'enum authStatus' in seclib.hpp
 };
 
 
@@ -74,7 +75,7 @@ ESPresponse [exceptions_inline] VerifyUserResponse
 };
 
 //Kevin/russ does this method need feature level check?
-ESPservice [auth_feature("NONE"), version("1.04"), default_client_version("1.04"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_account
+ESPservice [auth_feature("NONE"), version("1.05"), default_client_version("1.05"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_account
 {
     ESPmethod [client_xslt("/esp/xslt/account_myaccount.xslt")] MyAccount(MyAccountRequest, MyAccountResponse);
     ESPmethod [client_xslt("/esp/xslt/account_input.xslt")] UpdateUserInput(UpdateUserInputRequest, UpdateUserInputResponse);
