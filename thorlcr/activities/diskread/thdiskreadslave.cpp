@@ -1164,10 +1164,19 @@ public:
     }
     virtual bool isGrouped() const override { return false; }
 // IRowStream
-    virtual void stop()
+    virtual void stop() override
     {
         if (partHandler)
             partHandler->stop();
+        if (aggregateStream)
+        {
+            aggregateStream->stop();
+            if (distributor)
+            {
+                distributor->disconnect(true);
+                distributor->join();
+            }            
+        }
         PARENT::stop();
     }
     CATCH_NEXTROW()

@@ -1069,6 +1069,7 @@ EspAuthState CEspHttpServer::preCheckAuth(EspAuthRequest& authReq)
                 clearCookie(authReq.authBinding->querySessionIDCookieName());
                 clearCookie(SESSION_ID_TEMP_COOKIE);
                 clearCookie(SESSION_TIMEOUT_COOKIE);
+                clearCookie(USER_ACCT_ERROR_COOKIE);
             }
             else
                 clearSessionCookies(authReq);
@@ -1205,10 +1206,11 @@ void CEspHttpServer::verifyCookie(EspAuthRequest& authReq, CESPCookieVerificatio
         verifyESPAuthenticatedCookie(authReq, cookie);
     else if (strieq(name, USER_NAME_COOKIE))
         verifyESPUserNameCookie(authReq, cookie);
-    else if (strieq(name, SESSION_TIMEOUT_COOKIE) || strieq(name, SESSION_AUTH_MSG_COOKIE))
+    else if (strieq(name, SESSION_TIMEOUT_COOKIE) || strieq(name, SESSION_AUTH_MSG_COOKIE) || strieq(name, USER_ACCT_ERROR_COOKIE))
     {
         //SESSION_TIMEOUT_COOKIE: used to pass timeout settings to a client.
         //SESSION_AUTH_MSG_COOKIE: used to pass authentication message to a client.
+        //USER_ACCT_ERROR_COOKIE: used to pass user account status to a client.
         //A client should clean it as soon as received. ESP always returns invalid if it is asked.
         cookie.verificationDetails.set("ESP cannot verify this cookie. It is one-time use only.");
     }
@@ -2050,17 +2052,33 @@ void CEspHttpServer::logoutSession(EspAuthRequest& authReq, unsigned sessionID, 
 EspAuthState CEspHttpServer::handleAuthFailed(bool sessionAuth, EspAuthRequest& authReq, bool unlock, const char* msg)
 {
     ISecUser *user = authReq.ctx->queryUser();
-    if (user && user->getAuthenticateStatus() == AS_PASSWORD_VALID_BUT_EXPIRED)
+    if (user)
     {
-        ESPLOG(LogMin, "ESP password expired for %s. Asking update ...", authReq.ctx->queryUserId());
-        if (sessionAuth) //For session auth, store the userid to cookie for the updatepasswordinput form.
-            addCookie(SESSION_ID_TEMP_COOKIE, authReq.ctx->queryUserId(), 0, true);
-        m_response->redirect(*m_request.get(), "/esp/updatepasswordinput");
-        return authSucceeded;
+        switch (user->getAuthenticateStatus())
+        {
+        case AS_PASSWORD_VALID_BUT_EXPIRED :
+            ESPLOG(LogMin, "ESP password expired for %s. Asking update ...", authReq.ctx->queryUserId());
+            if (sessionAuth) //For session auth, store the userid to cookie for the updatepasswordinput form.
+                addCookie(SESSION_ID_TEMP_COOKIE, authReq.ctx->queryUserId(), 0, true);
+            m_response->redirect(*m_request.get(), "/esp/updatepasswordinput");
+            return authSucceeded;
+        case AS_PASSWORD_EXPIRED :
+            ESPLOG(LogMin, "ESP password expired for %s", authReq.ctx->queryUserId());
+            break;
+        case AS_ACCOUNT_DISABLED :
+            ESPLOG(LogMin, "Account disabled for %s", authReq.ctx->queryUserId());
+            addCookie(USER_ACCT_ERROR_COOKIE, "Account Disabled", 0, false);
+            break;
+        case AS_ACCOUNT_EXPIRED :
+            ESPLOG(LogMin, "Account expired for %s", authReq.ctx->queryUserId());
+            addCookie(USER_ACCT_ERROR_COOKIE, "Account Expired", 0, false);
+            break;
+        case AS_ACCOUNT_LOCKED :
+            ESPLOG(LogMin, "Account locked for %s", authReq.ctx->queryUserId());
+            addCookie(USER_ACCT_ERROR_COOKIE, "Account Locked", 0, false);
+            break;
+        }
     }
-
-    if (user && (user->getAuthenticateStatus() == AS_PASSWORD_EXPIRED))
-        ESPLOG(LogMin, "ESP password expired for %s", authReq.ctx->queryUserId());
 
     if (unlock)
     {
@@ -2228,6 +2246,7 @@ void CEspHttpServer::clearSessionCookies(EspAuthRequest& authReq)
     clearCookie(SESSION_AUTH_OK_COOKIE);
     clearCookie(SESSION_AUTH_MSG_COOKIE);
     clearCookie(SESSION_TIMEOUT_COOKIE);
+    clearCookie(USER_ACCT_ERROR_COOKIE);
 }
 
 void CEspHttpServer::clearCookie(const char* cookieName)

@@ -1639,7 +1639,13 @@ public:
         PyTuple_SET_ITEM((PyTupleObject *) args.get(), 2, PyLong_FromLong(ctx->numStrands()));
         PyTuple_SET_ITEM((PyTupleObject *) args.get(), 3, PyLong_FromLong(ctx->querySlave()));
         PyTuple_SET_ITEM((PyTupleObject *) args.get(), 4, PyLong_FromLong(ctx->queryStrand()));
+#ifdef USE_CUSTOM_NAMEDTUPLES
+        OwnedPyObject argsTuple = PyTuple_New(1);
+        PyTuple_SET_ITEM((PyTupleObject *) argsTuple.get(), 0, args.getClear());
+        OwnedPyObject activityTuple = PyObject_CallObject(mynamedtupletype, argsTuple);  // Creates a namedtuple from the supplied tuple
+#else
         OwnedPyObject activityTuple = PyObject_CallObject(mynamedtupletype, args);  // Creates a namedtuple from the supplied tuple
+#endif
         checkPythonError();
         PyDict_SetItemString(locals, "__activity__", activityTuple.getClear());
         checkPythonError();

@@ -206,6 +206,11 @@ bool Cws_accountEx::onMyAccount(IEspContext &context, IEspMyAccountRequest &req,
                 resp.setAccountType(secmgr->isSuperUser(user) ? "Administrator" : "User");
                 resp.setPasswordIsExpired(userInContext->getAuthenticateStatus() == AS_PASSWORD_EXPIRED || userInContext->getAuthenticateStatus() == AS_PASSWORD_VALID_BUT_EXPIRED);
             }
+
+            if (version >= 1.05)
+            {
+                resp.setAccountStatus(userInContext->getAuthenticateStatus());
+            }
         }
     }
     catch(IException* e)

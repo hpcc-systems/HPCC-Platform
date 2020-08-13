@@ -519,7 +519,8 @@ ecl publish roxie ArchiveQuery.xml --name=FindPersonService --no-activate
                 <row>
                   <entry>wuid</entry>
 
-                  <entry>The workunit id to publish</entry>
+                  <entry>The workunit id to publish (WUID is
+                  case-sensitive)</entry>
                 </row>
 
                 <row>
@@ -972,7 +973,8 @@ ecl run thor findperson.ecl -I C:\MyECL\
                 <row>
                   <entry>wuid</entry>
 
-                  <entry>The workunit id to run</entry>
+                  <entry>The workunit id to run (WUID is
+                  case-sensitive)</entry>
                 </row>
 
                 <row>
@@ -1224,7 +1226,8 @@ ecl results W20170519-142920 --noroot --exception-level=error
                 <row>
                   <entry>wuid</entry>
 
-                  <entry>The workunit from which to return results.</entry>
+                  <entry>The workunit from which to return results. (WUID is
+                  case-sensitive)</entry>
                 </row>
 
                 <row>
@@ -5068,7 +5071,8 @@ ecl abort -n MyJob</programlisting>
                 <row>
                   <entry>-wu</entry>
 
-                  <entry>The WUID (Workunit ID)</entry>
+                  <entry>The WUID (Workunit ID) (WUID is
+                  case-sensitive)</entry>
                 </row>
 
                 <row>
@@ -5167,7 +5171,8 @@ ecl status -n MyJob</programlisting>
                 <row>
                   <entry>-wu</entry>
 
-                  <entry>The WUID (Workunit ID)</entry>
+                  <entry>The WUID (Workunit ID) (WUID is
+                  case-sensitive)</entry>
                 </row>
 
                 <row>
@@ -5361,7 +5366,8 @@ ecl getname -wu W201407*
                 <row>
                   <entry>--wuid</entry>
 
-                  <entry>The WUID (Workunit ID)</entry>
+                  <entry>The WUID (Workunit ID) (WUID is
+                  case-sensitive)</entry>
                 </row>
 
                 <row>
@@ -5466,7 +5472,8 @@ ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpe
                 <row>
                   <entry>WUID</entry>
 
-                  <entry>The WUID (Workunit ID)</entry>
+                  <entry>The WUID (Workunit ID) (WUID is
+                  case-sensitive)</entry>
                 </row>
 
                 <row>
