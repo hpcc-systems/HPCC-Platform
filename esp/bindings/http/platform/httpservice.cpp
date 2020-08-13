@@ -2180,9 +2180,9 @@ void CEspHttpServer::timeoutESPSessions(EspHttpBinding* authBinding, IPropertyTr
 void CEspHttpServer::authOptionalGroups(EspAuthRequest& authReq)
 {
     if (strieq(authReq.httpMethod.str(), GET_METHOD) && (authReq.stype==sub_serv_root) && authenticateOptionalFailed(*authReq.ctx, nullptr))
-        throw MakeStringException(-1, "Unauthorized Access to service root");
+        throw createEspHttpException(HTTP_STATUS_FORBIDDEN_CODE, "Unauthorized Access to service root", HTTP_STATUS_FORBIDDEN);
     if ((!strieq(authReq.httpMethod.str(), GET_METHOD) || !strieq(authReq.serviceName.str(), "esp")) && authenticateOptionalFailed(*authReq.ctx, authReq.authBinding))
-        throw MakeStringException(-1, "Unauthorized Access: %s %s", authReq.httpMethod.str(), authReq.serviceName.str());
+        throw createEspHttpException(HTTP_STATUS_FORBIDDEN_CODE, VStringBuffer("Unauthorized Access: %s %s", authReq.httpMethod.str(), authReq.serviceName.str()), HTTP_STATUS_FORBIDDEN);
 }
 
 IRemoteConnection* CEspHttpServer::getSDSConnection(const char* xpath, unsigned mode, unsigned timeout)
