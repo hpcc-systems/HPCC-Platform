@@ -1134,7 +1134,20 @@ public:
         done = true;
         return NULL;
     }
-    virtual void abort()
+    virtual void stop() override
+    {
+        if (aggregateStream)
+        {
+            aggregateStream->stop();
+            if (distributor)
+            {
+                distributor->disconnect(true);
+                distributor->join();
+            }            
+        }
+        PARENT::stop();
+    }
+    virtual void abort() override
     {
         CIndexReadSlaveBase::abort();
         if (merging)

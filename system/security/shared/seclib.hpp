@@ -195,7 +195,10 @@ enum authStatus : int
     AS_UNEXPECTED_ERROR = 2,
     AS_INVALID_CREDENTIALS = 3,
     AS_PASSWORD_EXPIRED = 4,
-    AS_PASSWORD_VALID_BUT_EXPIRED = 5//user entered valid password, but authentication failed because it is expired
+    AS_PASSWORD_VALID_BUT_EXPIRED = 5,//user entered valid password, but authentication failed because it is expired
+    AS_ACCOUNT_DISABLED = 6,//valid username and password/credential are supplied but the account has been disabled
+    AS_ACCOUNT_EXPIRED = 7,//valid username and password/credential supplied but the account has expired
+    AS_ACCOUNT_LOCKED = 8,//valid username is supplied, but the account is locked out
 };
 
 class CDateTime;
