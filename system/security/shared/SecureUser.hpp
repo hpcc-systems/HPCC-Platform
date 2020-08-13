@@ -44,7 +44,7 @@ private:
     unsigned        m_sessionToken;
     StringBuffer    m_signature;
     static const SecFeatureSet s_safeFeatures = SUF_ALL_FEATURES;
-    static const SecFeatureSet s_implementedFeatures = (s_safeFeatures & ~(SUF_GetDataElement | SUF_GetDataElements));
+    static const SecFeatureSet s_implementedFeatures = (s_safeFeatures & ~(SUF_GetDataElement | SUF_GetDataElements | SUF_SetData));
 
     CriticalSection crit;
 public:
@@ -322,6 +322,11 @@ public:
     IPropertyTreeIterator* getDataElements(const char* xpath = ".") const override
     {
         return nullptr;
+    }
+
+    bool setData(IPropertyTree* data) override
+    {
+        return false;
     }
 };
 

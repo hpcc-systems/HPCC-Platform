@@ -267,7 +267,8 @@ static const SecFeatureBit SUF_GetPropertyIterator         = 0x0400000000;
 static const SecFeatureBit SUF_Clone                       = 0x0800000000;
 static const SecFeatureBit SUF_GetDataElement              = 0x1000000000;
 static const SecFeatureBit SUF_GetDataElements             = 0x2000000000;
-static const SecFeatureSet SUF_ALL_FEATURES                = 0x3FFFFFFFFF; // update to include all added feature bits
+static const SecFeatureBit SUF_SetData                     = 0x4000000000;
+static const SecFeatureSet SUF_ALL_FEATURES                = 0x7FFFFFFFFF; // update to include all added feature bits
 
 class CDateTime;
 interface IPropertyIterator;
@@ -312,6 +313,7 @@ interface ISecUser : implements ISecObject
     virtual ISecUser * clone() = 0;
     virtual IPropertyTree* getDataElement(const char* xpath = ".") const = 0;
     virtual IPropertyTreeIterator* getDataElements(const char* xpath = ".") const = 0;
+    virtual bool setData(IPropertyTree* data) = 0;
 };
 
 
@@ -469,8 +471,8 @@ interface ISecManager : extends ISecObject
 {
     virtual ISecUser * createUser(const char * user_name, IEspSecureContext* secureContext = nullptr) = 0;
     virtual ISecResourceList * createResourceList(const char * rlname, IEspSecureContext* secureContext = nullptr) = 0;
-    virtual bool subscribe(ISecAuthenticEvents & events, IEspSecureContext* secureContext) = 0;
-    virtual bool unsubscribe(ISecAuthenticEvents & events, IEspSecureContext* secureContext) = 0;
+    virtual bool subscribe(ISecAuthenticEvents & events, IEspSecureContext* secureContext = nullptr) = 0;
+    virtual bool unsubscribe(ISecAuthenticEvents & events, IEspSecureContext* secureContext = nullptr) = 0;
     virtual bool authorize(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) = 0;
     virtual bool authorizeEx(SecResourceType rtype, ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) = 0;
     virtual SecAccessFlags authorizeEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext = nullptr) = 0;
