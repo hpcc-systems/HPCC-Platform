@@ -1881,9 +1881,23 @@ byte * MemoryBufferBuilder::ensureCapacity(size32_t required, const char * field
     dbgassertex(buffer);
     if (required > reserved)
     {
-        void * next = buffer->reserve(required-reserved);
-        self = (byte *)next - reserved;
-        reserved = required;
+        try
+        {
+            void * next = buffer->reserve(required-reserved);
+            self = (byte *)next - reserved;
+            reserved = required;
+        }
+        catch (IException *E)
+        {
+            VStringBuffer s("While allocating %u bytes for field %s", (unsigned) required, fieldName);
+            EXCLOG(E, s.str());
+            throw;
+        }
+        catch (...)
+        {
+            DBGLOG("Unknown exception while allocating %u bytes for field %s", (unsigned) required, fieldName);
+            throw;
+        }
     }
     return self;
 }
