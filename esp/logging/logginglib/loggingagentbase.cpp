@@ -154,6 +154,7 @@ void CLogContentFilter::filterLogContentTree(StringArray& filters, IPropertyTree
 
 IEspUpdateLogRequestWrap* CLogContentFilter::filterLogContent(IEspUpdateLogRequestWrap* req)
 {
+    Owned<IPropertyTree> scriptValues = req->getScriptValuesTree();
     const char* logContent = req->getUpdateLogRequest();
     Owned<IPropertyTree> logRequestTree = req->getLogRequestTree();
     Owned<IPropertyTree> updateLogRequestTree = createPTree("UpdateLogRequest");
@@ -186,6 +187,10 @@ IEspUpdateLogRequestWrap* CLogContentFilter::filterLogContent(IEspUpdateLogReque
 
             StringBuffer espContextXML, userContextXML, userRequestXML;
             IPropertyTree* logContentTree = ensurePTree(updateLogRequestTree, "LogContent");
+            if (scriptValues)
+            {
+                logContentTree->addPropTree(scriptValues->queryName(), LINK(scriptValues));
+            }
             if (espContext)
             {
                 logContentTree->addPropTree(espContext->queryName(), LINK(espContext));
@@ -328,7 +333,10 @@ IEspUpdateLogRequestWrap* CLogContentFilter::filterLogContent(IEspUpdateLogReque
     toXML(updateLogRequestTree, updateLogRequestXML);
     ESPLOG(LogMax, "filtered content and option: <%s>", updateLogRequestXML.str());
 
-    return new CUpdateLogRequestWrap(req->getGUID(), req->getOption(), updateLogRequestXML.str());
+    Owned<IEspUpdateLogRequestWrap> newReq = new CUpdateLogRequestWrap(req->getGUID(), req->getOption(), updateLogRequestXML.str());
+    if (scriptValues)
+        newReq->setScriptValuesTree(scriptValues);
+    return newReq.getClear();
 }
 
 CLogAgentBase::CVariantIterator::CVariantIterator(const CLogAgentBase& agent)

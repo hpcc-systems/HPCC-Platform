@@ -40,10 +40,17 @@ bool CLoggingManager::init(IPropertyTree* cfg, const char* service)
         return false;
     }
 
-    decoupledLogging = cfg->getPropBool("DecoupledLogging", false);
+    StringAttr failSafeLogsDir;
+    decoupledLogging = cfg->getPropBool(PropDecoupledLogging, false);
     oneTankFile = cfg->getPropBool("FailSafe", true);
     if (oneTankFile || decoupledLogging)
     {
+        const char* logsDir = cfg->queryProp(PropFailSafeLogsDir);
+        if (!isEmptyString(logsDir))
+            failSafeLogsDir.set(logsDir);
+        else
+            failSafeLogsDir.set(DefaultFailSafeLogsDir);
+
         logFailSafe.setown(createFailSafeLogger(cfg, service, cfg->queryProp("@name")));
         logContentFilter.readAllLogFilters(cfg);
     }
@@ -66,7 +73,7 @@ bool CLoggingManager::init(IPropertyTree* cfg, const char* service)
         }
         loggingAgent->init(agentName, agentType, &loggingAgentTree, service);
         loggingAgent->initVariants(&loggingAgentTree);
-        IUpdateLogThread* logThread = createUpdateLogThread(&loggingAgentTree, service, agentName, nullptr, loggingAgent);
+        IUpdateLogThread* logThread = createUpdateLogThread(&loggingAgentTree, service, agentName, failSafeLogsDir.get(), loggingAgent);
         if(!logThread)
             throw MakeStringException(-1, "Failed to create update log thread for %s", agentName);
         loggingAgentThreads.push_back(logThread);
@@ -220,50 +227,6 @@ bool CLoggingManager::updateLog(IEspContext* espContext, IEspUpdateLogRequestWra
     return bRet;
 }
 
-static bool checkEnabledLogVariant(IPropertyTree *scriptValues, const char *profile, const char *tracename, const char *group, const char *logtype)
-{
-    bool checkProfile = !isEmptyString(profile);
-    bool checkType = !isEmptyString(logtype);
-
-    if (checkProfile && (isEmptyString(group) || !strieq(profile, group)))
-    {
-        ESPLOG(LogNormal, "'%s' log entry disabled - log profile '%s' disabled", tracename, profile);
-        return false;
-    }
-    else if (checkType)
-    {
-        VStringBuffer xpath("@disable-log-type-%s", logtype);
-        if (scriptValues->getPropBool(xpath, false))
-        {
-            ESPLOG(LogNormal, "'%s' log entry disabled - log type '%s' disabled", tracename, logtype);
-            return false;
-        }
-     }
-    return true;
-}
-
-bool checkSkipThreadQueue(IPropertyTree *scriptValues, IUpdateLogThread &logthread)
-{
-    if (!scriptValues)
-        return false;
-    Linked<IEspLogAgent> agent = logthread.getLogAgent(); //badly named function get functions should link
-    if (!agent)
-        return false;
-
-    const char *profile = scriptValues->queryProp("@profile");
-    Owned<IEspLogAgentVariantIterator> variants = agent->getVariants();
-    if (isEmptyString(profile) && !variants->first())
-        return false;
-
-    ForEach(*variants)
-    {
-        const IEspLogAgentVariant& variant = variants->query();
-        if (checkEnabledLogVariant(scriptValues, profile, variant.getName(), variant.getGroup(), variant.getType()))
-            return false;
-    }
-    return true;
-}
-
 bool CLoggingManager::updateLog(IEspContext* espContext, IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp)
 {
     if (!initialized)
@@ -361,8 +324,16 @@ bool CLoggingManager::saveToTankFile(IEspUpdateLogRequestWrap& logRequest, CLogR
         return false;
     }
 
-    logFailSafe->AddACK(GUID);//Ack this logging request since the task will be done as soon as the next line is called.
-    logFailSafe->Add(GUID, reqBuf, reqInFile);
+    if (decoupledLogging)
+    {
+        Linked<IPropertyTree> scriptValues = logRequestFiltered->getScriptValuesTree();
+        logFailSafe->Add(GUID, scriptValues, reqBuf, reqInFile);
+    }
+    else
+    {
+        logFailSafe->AddACK(GUID);//Ack this logging request since the task will be done as soon as the next line is called.
+        logFailSafe->Add(GUID, nullptr, reqBuf, reqInFile);
+    }
 
     ESPLOG(LogNormal, "LThread:saveToTankFile: %dms\n", msTick() - startTime);
     return true;

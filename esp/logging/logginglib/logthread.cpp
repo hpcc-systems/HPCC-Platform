@@ -113,6 +113,7 @@ CLogThread::CLogThread(IPropertyTree* _cfg , const char* _service, const char* _
         checkAndCreateFile(settings->ackedFileList);
         checkAndCreateFile(settings->ackedLogRequestFile);
         logRequestReader.setown(new CLogRequestReader(settings.getClear(), this));
+        logRequestReader->setTankFilePattern(_service);
     }
     PROGLOG("%s CLogThread started.", agentName.get());
 }
@@ -194,8 +195,12 @@ bool CLogThread::enqueue(IEspUpdateLogRequestWrap* logRequest, const char* guid)
         else
             GUID.set(guid);
         logRequest->setGUID(GUID.str());
+        //This part of code can only be reached for non decoupled logging.
+        //For non decoupled logging, the manager has filtered out skipped agents.
+        //This part of code is called only if the agent is not skipped.
+        //So, the scriptValues section is not needed to be in the logFailSafe->Add().
         if (serializeLogRequestContent(logRequest, reqBuf))
-            logFailSafe->Add(GUID, reqBuf.str(), nullptr);
+            logFailSafe->Add(GUID, nullptr, reqBuf.str(), nullptr);
         ESPLOG(LogNormal, "LThread:addToFailSafe: %dms\n", msTick() -  startTime);
     }
 
@@ -421,8 +426,12 @@ void CLogThread::checkRollOver()
 
             StringBuffer reqBuf;
             const char* GUID = pEspRequest->getGUID();
+            //This part of code can only be reached for non decoupled logging.
+            //For non decoupled logging, the manager has filtered out skipped agents.
+            //This part of code is called only if the agent is not skipped.
+            //So, the scriptValues section is not needed to be in the logFailSafe->Add().
             if(GUID && *GUID && serializeLogRequestContent(pEspRequest, reqBuf))
-                logFailSafe->Add(GUID, reqBuf.str(), nullptr);
+                logFailSafe->Add(GUID, nullptr, reqBuf.str(), nullptr);
         }
         ESPLOG(LogNormal, "LThread:AddFailSafe: %dms\n", msTick() -  startTime);
     }
@@ -753,7 +762,7 @@ void CLogRequestReader::readLogRequest()
     findTankFileNotFinished(tankFileNotFinished);
 
     offset_t tankFileNotFinishedPos = 0;
-    Owned<IDirectoryIterator> it = createDirectoryIterator(settings->tankFileDir.get(), "*.log");
+    Owned<IDirectoryIterator> it = createDirectoryIterator(settings->tankFileDir.get(), tankFilePattern);
     ForEach (*it)
     {
         const char *fileNameWithPath = it->query().queryFilename();
@@ -790,7 +799,7 @@ void CLogRequestReader::findTankFileNotFinished(StringAttr& tankFileNotFinished)
     todayString.appendf("%04d_%02d_%02d_00_00_00", year, month, day);
 
     StringBuffer lastTimeString;
-    Owned<IDirectoryIterator> it = createDirectoryIterator(settings->tankFileDir.get(), "*");
+    Owned<IDirectoryIterator> it = createDirectoryIterator(settings->tankFileDir.get(), tankFilePattern);
     ForEach (*it)
     {
         StringBuffer timeString;
@@ -853,9 +862,15 @@ bool CLogRequestReader::readLogRequestsFromTankFile(const char* fileName, String
         if (!logSerializer.readALogLine(fileIO, finger, data))
             break;
 
+        bool skipLogRequest = false;
         StringBuffer GUID, logRequest;
-        if (!parseLogRequest(data, GUID, logRequest))
-            IERRLOG("Invalid logging request in %s", fileName);
+        if (!parseLogRequest(data, GUID, logRequest, skipLogRequest))
+        {
+            if (skipLogRequest)
+                ESPLOG(LogMax, "#### Agent %s skips %s.", logThread->getLogAgent()->getName(), GUID.str());
+            else
+                IERRLOG("Invalid logging request in %s", fileName);
+        }
         else if (ackedLogRequests.find(GUID.str()) == ackedLogRequests.end())
         {//This QUID is not acked.
             totalMissed++;
@@ -887,10 +902,12 @@ offset_t CLogRequestReader::getReadFilePos(const char* fileName)
     return 0;
 }
 
-bool CLogRequestReader::parseLogRequest(MemoryBuffer& rawdata, StringBuffer& GUID, StringBuffer& logLine)
+bool CLogRequestReader::parseLogRequest(MemoryBuffer& rawdata, StringBuffer& GUID, StringBuffer& logLine, bool& skipLogRequest)
 {
-    //The rawdata should be in the form of 2635473460.05_01_12_16_13_57\t<cache>...</cache>
+    //The rawdata should be in the form of 2635473460.05_01_12_16_13_57\t<ScriptValues>...</ScriptValues>\t<cache>...</cache>
     //parse it into GUID and logLine (as <cache>...</cache>)
+    //The <ScriptValues> section is optional. If available, it should be used to check whether this agent should skip this
+    //log request or not.
     const char* begin = rawdata.toByteArray(); //no string termination character \0
     unsigned len = rawdata.length();
     if (!begin || (len == 0))
@@ -909,8 +926,42 @@ bool CLogRequestReader::parseLogRequest(MemoryBuffer& rawdata, StringBuffer& GUI
     if (++ptr == end)
         return false;
 
+    if (!checkScriptValues(ptr, end, skipLogRequest))
+        return false;
+
     logLine.append(end - ptr, ptr);
     return true;
+}
+
+bool CLogRequestReader::checkScriptValues(const char* ptr, const char* end, bool& skipLogRequest)
+{
+    VStringBuffer scriptValuesTag("<%s>", logRequestScriptValues);
+    if (strnicmp(ptr, scriptValuesTag, scriptValuesTag.length()))
+        return true;
+
+    ptr += scriptValuesTag.length();
+    const char* scriptValuesBegin = ptr;
+    while ((ptr < end) && (*ptr != '\t'))
+        ptr++;
+
+    if (ptr == end)
+        return false; //Invalid logging request
+
+    const char* scriptValuesEnd = ptr - scriptValuesTag.length() - 1; //No include XML CloseTag
+    if (scriptValuesEnd < scriptValuesBegin)
+        return false;
+
+    StringBuffer scriptValuesStr;
+    scriptValuesStr.append(scriptValuesEnd - scriptValuesBegin, scriptValuesBegin);
+
+    Owned<IPropertyTree> scriptValues = createPTreeFromXMLString(scriptValuesStr);
+    if (checkSkipThreadQueue(scriptValues, *logThread))
+    {
+        skipLogRequest = true;
+        return false;
+    }
+
+    return ++ptr != end;
 }
 
 void CLogRequestReader::addPendingLogsToQueue()
@@ -1032,4 +1083,53 @@ void CLogRequestReader::updateAckedLogRequestList()
     }
 
     ESPLOG(LogMax, "#### Leave updateAckedLogRequestList()");
+}
+
+void CLogRequestReader::setTankFilePattern(const char* service)
+{
+    tankFilePattern.set(service).append("*").append(logFileExt);
+}
+
+static bool checkEnabledLogVariant(IPropertyTree *scriptValues, const char *profile, const char *tracename, const char *group, const char *logtype)
+{
+    bool checkProfile = !isEmptyString(profile);
+    bool checkType = !isEmptyString(logtype);
+
+    if (checkProfile && (isEmptyString(group) || !strieq(profile, group)))
+    {
+        ESPLOG(LogNormal, "'%s' log entry disabled - log profile '%s' disabled", tracename, profile);
+        return false;
+    }
+    else if (checkType)
+    {
+        VStringBuffer xpath("@disable-log-type-%s", logtype);
+        if (scriptValues->getPropBool(xpath, false))
+        {
+            ESPLOG(LogNormal, "'%s' log entry disabled - log type '%s' disabled", tracename, logtype);
+            return false;
+        }
+     }
+    return true;
+}
+
+bool checkSkipThreadQueue(IPropertyTree *scriptValues, IUpdateLogThread &logthread)
+{
+    if (!scriptValues)
+        return false;
+    Linked<IEspLogAgent> agent = logthread.getLogAgent(); //badly named function get functions should link
+    if (!agent)
+        return false;
+
+    const char *profile = scriptValues->queryProp("@profile");
+    Owned<IEspLogAgentVariantIterator> variants = agent->getVariants();
+    if (isEmptyString(profile) && !variants->first())
+        return false;
+
+    ForEach(*variants)
+    {
+        const IEspLogAgentVariant& variant = variants->query();
+        if (checkEnabledLogVariant(scriptValues, profile, variant.getName(), variant.getGroup(), variant.getType()))
+            return false;
+    }
+    return true;
 }
