@@ -24,6 +24,7 @@
 
 
 #define GET_LOCK_FAILURE            1100
+#define EMPTY_RESULT_FAILURE        1200
 
 //////////////////////////////////////////
 class CRoxieCommunicationClient: implements IRoxieCommunicationClient, public CInterface
@@ -80,7 +81,11 @@ protected:
             _WINREV(sendlen);
             sock->read(response.reserveTruncate(sendlen), sendlen);
         }
+        if (response.isEmpty())
+            throw MakeStringException(EMPTY_RESULT_FAILURE, "CRoxieCommunicationClient empty response for control request(%s)", xml);
         Owned<IPropertyTree> ret = createPTreeFromXMLString(response.str());
+        if (!ret)
+            throw MakeStringException(EMPTY_RESULT_FAILURE, "CRoxieCommunicationClient empty result tree for control request(%s)", xml);
         Owned<IMultiException> me = MakeMultiException();
         Owned<IPropertyTreeIterator> endpoints = ret->getElements("Endpoint");
         ForEach(*endpoints)
