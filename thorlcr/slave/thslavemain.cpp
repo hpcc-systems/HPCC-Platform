@@ -276,6 +276,7 @@ public:
 
 ILogMsgHandler *startSlaveLog()
 {
+    ILogMsgHandler *logHandler = nullptr;
 #ifndef _CONTAINERIZED
     StringBuffer fileName("thorslave");
     Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals->queryProp("@logDir"), "thor");
@@ -283,7 +284,7 @@ ILogMsgHandler *startSlaveLog()
     lf->setPostfix(slaveNumStr.append(mySlaveNum).str());
     lf->setCreateAliasFile(false);
     lf->setName(fileName.str());//override default filename
-    ILogMsgHandler *logHandler = lf->beginLogging();
+    logHandler = lf->beginLogging();
 #ifndef _DEBUG 
     // keep duplicate logging output to stderr to aide debugging
     queryLogMsgManager()->removeMonitor(queryStderrLogMsgHandler());
@@ -292,6 +293,7 @@ ILogMsgHandler *startSlaveLog()
     LOG(MCdebugProgress, thorJob, "Opened log file %s", lf->queryLogFileSpec());
 #else
     setupContainerizedLogMsgHandler();
+    logHandler = queryStderrLogMsgHandler();
 #endif
     //setupContainerizedStorageLocations();
     LOG(MCdebugProgress, thorJob, "Build %s", BUILD_TAG);
