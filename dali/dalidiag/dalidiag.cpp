@@ -71,6 +71,7 @@ void usage(const char *exe)
     printf("-cleartracetransactions  -- stop tracing dali transactions\n");
     printf("-setldapflags <val>      -- set LDAP flags\n");
     printf("-getldapflags            -- get LDAP flags\n");
+    printf("-save                    -- force Dali to save (will block all clients whilst saving)\n");
 
 }
 
