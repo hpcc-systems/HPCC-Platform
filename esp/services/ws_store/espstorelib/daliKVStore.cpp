@@ -410,7 +410,7 @@ bool CDALIKVStore::fetch(const char * storename, const char * ns, const char * k
     {
         xpath.appendf("/%s", key);
         if(!storetree->hasProp(xpath.str()))
-            throw MakeStringException(-1, "DALI Keystore fetch: invalid key '%s' detected!", key);
+            throw makeStringExceptionV(MSGAUD_user, -1, "DALI Keystore fetch: invalid key '%s' detected!", key);
 
         value.set(storetree->queryProp(xpath.str()));
 
