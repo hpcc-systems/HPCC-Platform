@@ -28,6 +28,7 @@
 #include "referencedfilelist.hpp"
 #include "package.h"
 #include "eclwatch_errorlist.hpp"
+#include "exception_util.hpp"
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
@@ -287,7 +288,9 @@ public:
             target.set(_target);
             if (target.isEmpty())
                 throw MakeStringExceptionDirect(PKG_MISSING_PARAM, "Target cluster parameter required");
-            ensureClusterInfo();
+
+            if (!streq(target.get(), "*"))
+                ensureClusterInfo();
             pmid.append(target).append("::");
         }
         pmid.append(name);
@@ -362,7 +365,19 @@ public:
     }
     void cloneDfsInfo(unsigned updateFlags, StringArray &filesNotFound, IPropertyTree *pt)
     {
-        cloneFileInfoToDali(updateFlags, filesNotFound, pt, daliIP, ensureClusterInfo(), srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN));
+        if (!streq(target.get(), "*"))
+            cloneFileInfoToDali(updateFlags, filesNotFound, pt, daliIP, ensureClusterInfo(), srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN));
+        else
+        {
+            CConstWUClusterInfoArray clusters;
+            getEnvironmentClusterInfo(clusters);
+            ForEachItemIn(i, clusters)
+            {
+                IConstWUClusterInfo &cluster = clusters.item(i);
+                if (cluster.getPlatform() == RoxieCluster)
+                    cloneFileInfoToDali(updateFlags, filesNotFound, pt, daliIP, &cluster, srcCluster, prefix, userdesc, checkFlag(PKGADD_ALLOW_FOREIGN));
+            }
+        }
     }
     void cloneDfsInfo(unsigned updateFlags, StringArray &filesNotFound)
     {
@@ -1084,102 +1099,150 @@ bool CWsPackageProcessEx::onGetPackageMapById(IEspContext &context, IEspGetPacka
 
 bool CWsPackageProcessEx::onValidatePackage(IEspContext &context, IEspValidatePackageRequest &req, IEspValidatePackageResponse &resp)
 {
-    StringArray warnings;
-    StringArray errors;
-    StringArray unmatchedQueries;
-    StringArray unusedPackages;
-    StringArray unmatchedFiles;
+    try
+    {
+        const char *target = req.getTarget();
+        if (isEmptyString(target))
+            throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Target cluster required");
 
-    Owned<IHpccPackageSet> set;
-    Owned<IPropertyTree> mapTree;
+        Owned<IPropertyTree> packageMapTree;
+        const char *pmID = req.getPMID();
+        const char *packageMapString = req.getInfo();
+        if (!req.getActive() && isEmptyString(pmID))
+        {
+            if (isEmptyString(packageMapString))
+                throw makeStringException(ECLWATCH_INVALID_INPUT, "Please specify PMID or Package Map content");
 
-    const char *target = req.getTarget();
-    if (!target || !*target)
-        throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Target cluster required");
-    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
-    if (!clusterInfo)
-        throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Target cluster not found");
+            packageMapTree.setown(createPTreeFromXMLString(packageMapString));
+            if (!packageMapTree)
+                throw makeStringException(PKG_LOAD_PACKAGEMAP_FAILED, "Error processing package file content");
+            fixPackageMapFileIds(packageMapTree, false);
+        }
+
+        StringArray &queriesToIgnore = req.getQueriesToIgnore();
+        StringArray &queriesToVerify = req.getQueriesToVerify();
+        const char *queryid = req.getQueryIdToVerify();
+        if (!isEmptyString(queryid))
+            queriesToVerify.appendUniq(queryid);
+
+        double version = context.getClientVersion();
+        IArrayOf<IEspValidateResult> results;
+        if (!streq(target, "*"))
+        {
+            Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
+            if (!clusterInfo)
+                throw makeStringException(PKG_TARGET_NOT_DEFINED, "Target cluster not found");
+            validatePackage(context, req, packageMapTree, clusterInfo, queriesToVerify, queriesToIgnore,
+                (version < 1.04) ? &resp : nullptr, results);
+        }
+        else
+        {
+            CConstWUClusterInfoArray clusters;
+            getEnvironmentClusterInfo(clusters);
+            ForEachItemIn(i, clusters)
+            {
+                IConstWUClusterInfo &cluster = clusters.item(i);
+                if (cluster.getPlatform() == RoxieCluster)
+                {
+                    validatePackage(context, req, packageMapTree, &cluster, queriesToVerify, queriesToIgnore,
+                        (version < 1.04) ? &resp : nullptr, results);
+                    if (version < 1.04)
+                        break;
+                }
+            }
+        }
+        if (version >= 1.04)
+            resp.setResults(results);
+    }
+    catch(IException *e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+void CWsPackageProcessEx::validatePackage(IEspContext &context, IEspValidatePackageRequest &req, IPropertyTree *packageMapTree,
+    IConstWUClusterInfo *clusterInfo, StringArray &queriesToVerify, StringArray &queriesToIgnore,
+    IEspValidatePackageResponse *resp, IArrayOf<IEspValidateResult>& results)
+{
     SCMStringBuffer process;
     clusterInfo->getRoxieProcess(process);
     if (!process.length())
-        throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Roxie process not found");
+        throw makeStringException(PKG_TARGET_NOT_DEFINED, "Roxie process not found");
 
+    SCMStringBuffer clusterName;
+    clusterInfo->getName(clusterName);
+    const char *target = clusterName.str();
     const char* pmID = req.getPMID();
-    const char* info = req.getInfo();
 
+    Owned<IPropertyTree> mapTree;
     if (req.getActive()) //validate active map
     {
         mapTree.setown(resolveActivePackageMap(process.str(), target, true));
         if (!mapTree)
-            throw MakeStringException(PKG_PACKAGEMAP_NOT_FOUND, "Active package map not found");
+            throw makeStringException(PKG_PACKAGEMAP_NOT_FOUND, "Active package map not found");
     }
-    else if (pmID && *pmID)
+    else if (!isEmptyString(pmID))
     {
-        mapTree.setown(getPackageMapById(req.getGlobalScope() ? NULL : target, pmID, true));
+        mapTree.setown(getPackageMapById(req.getGlobalScope() ? nullptr : target, pmID, true));
         if (!mapTree)
-            throw MakeStringException(PKG_PACKAGEMAP_NOT_FOUND, "Package map %s not found", pmID);
+            throw makeStringExceptionV(PKG_PACKAGEMAP_NOT_FOUND, "Package map %s not found", pmID);
     }
-    else if (info && *info)
+    else if (packageMapTree)
     {
-        mapTree.setown(createPTreeFromXMLString(info));
-        if (!mapTree)
-            throw MakeStringException(PKG_LOAD_PACKAGEMAP_FAILED, "Error processing package file content");
-        fixPackageMapFileIds(mapTree, false);
-    }
-    else
-    {
-        throw MakeStringException(PKG_PACKAGEMAP_NOT_FOUND, "package map not specified");
+        mapTree.setown(LINK(packageMapTree));
     }
 
+    StringArray notInDFS;
     if (req.getCheckDFS())
     {
         Owned<IReferencedFileList> pmfiles = createReferencedFileList(context.queryUserId(), context.queryPassword(), true, false);
         pmfiles->addFilesFromPackageMap(mapTree);
-        pmfiles->resolveFiles(process.str(), NULL, NULL, NULL, true, false, false);
+        pmfiles->resolveFiles(process.str(), nullptr, nullptr, nullptr, true, false, false);
         Owned<IReferencedFileIterator> files = pmfiles->getFiles();
-        StringArray notInDFS;
         ForEach(*files)
         {
             IReferencedFile &file = files->query();
             if (file.getFlags() & RefFileNotFound)
                 notInDFS.append(file.getLogicalName());
         }
-        resp.updateFiles().setNotInDFS(notInDFS);
     }
 
     const char *id = mapTree->queryProp("@id");
     Owned<IHpccPackageMap> map = createPackageMapFromPtree(mapTree, target, id);
     if (!map)
-        throw MakeStringException(PKG_LOAD_PACKAGEMAP_FAILED, "Error loading package map %s", id);
+        throw makeStringExceptionV(PKG_LOAD_PACKAGEMAP_FAILED, "Error loading package map %s", id);
 
-    StringArray queriesToVerify;
-    const char *queryid = req.getQueryIdToVerify();
-    if (queryid && *queryid)
-        queriesToVerify.append(queryid);
-    ForEachItemIn(i, req.getQueriesToVerify())
-    {
-        queryid = req.getQueriesToVerify().item(i);
-        if (queryid && *queryid)
-            queriesToVerify.appendUniq(queryid);
-    }
-    StringArray queriesToIgnore;
-    ForEachItemIn(i2, req.getQueriesToIgnore())
-    {
-        queryid = req.getQueriesToIgnore().item(i2);
-        if (queryid && *queryid)
-            queriesToIgnore.appendUniq(queryid);
-    }
+    StringArray warnings, errors, unmatchedQueries, unusedPackages, unmatchedFiles;
     map->validate(queriesToVerify, queriesToIgnore, warnings, errors, unmatchedQueries, unusedPackages, unmatchedFiles, req.getIgnoreOptionalFiles());
 
-    resp.setPMID(map->queryPackageId());
+    if (resp)
+    {
+        resp->setPMID(map->queryPackageId());
+        if (!req.getIgnoreWarnings())
+            resp->setWarnings(warnings);
+        resp->setErrors(errors);
+        resp->updateQueries().setUnmatched(unmatchedQueries);
+        resp->updatePackages().setUnmatched(unusedPackages);
+        resp->updateFiles().setUnmatched(unmatchedFiles);
+        resp->updateStatus().setCode(0);
+        if (notInDFS.length())
+            resp->updateFiles().setNotInDFS(notInDFS);
+        return;
+    }
+
+    Owned<IEspValidateResult> result = createValidateResult();
+    result->setTarget(target);
+    result->setPMID(map->queryPackageId());
     if (!req.getIgnoreWarnings())
-        resp.setWarnings(warnings);
-    resp.setErrors(errors);
-    resp.updateQueries().setUnmatched(unmatchedQueries);
-    resp.updatePackages().setUnmatched(unusedPackages);
-    resp.updateFiles().setUnmatched(unmatchedFiles);
-    resp.updateStatus().setCode(0);
-    return true;
+        result->setWarnings(warnings);
+    result->setErrors(errors);
+    result->updateQueries().setUnmatched(unmatchedQueries);
+    result->updatePackages().setUnmatched(unusedPackages);
+    result->updateFiles().setUnmatched(unmatchedFiles);
+    if (notInDFS.length())
+        result->updateFiles().setNotInDFS(notInDFS);
+    results.append(*result.getClear());
 }
 
 bool CWsPackageProcessEx::onGetPackageMapSelectOptions(IEspContext &context, IEspGetPackageMapSelectOptionsRequest &req, IEspGetPackageMapSelectOptionsResponse &resp)

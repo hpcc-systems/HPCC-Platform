@@ -918,7 +918,6 @@ public:
             outputLfnCategoryTree(querynode, "Optional");
         }
     }
-
     virtual int processCMD()
     {
         Owned<IClientWsPackageProcess> packageProcessClient = getWsPackageSoapService(optServer, optPort, optUsername, optPassword);
@@ -948,7 +947,36 @@ public:
         int ret = outputMultiExceptionsEx(resp->getExceptions());
         if (ret != 0)
             validateMessages = true;
-        StringArray &errors = resp->getErrors();
+        const char *pmid = resp->getPMID();
+        if (!isEmptyString(pmid))
+        { //server version < 1.04
+            processValidatePackageResponse(nullptr, nullptr, resp->getErrors(), resp->getWarnings(),
+                resp->getQueries().getUnmatched(), resp->getPackages().getUnmatched(), resp->getFiles(), validateMessages);
+        }
+        else
+        {
+            IArrayOf<IConstValidateResult> &results = resp->getResults();
+            ForEachItemIn(i, results)
+            {
+                IConstValidateResult &result = results.item(i);
+                processValidatePackageResponse(result.getTarget(), result.getPMID(), result.getErrors(), result.getWarnings(),
+                    result.getQueries().getUnmatched(), result.getPackages().getUnmatched(), result.getFiles(), validateMessages);
+            }
+        }
+
+        if (!validateMessages)
+            fputs("   Validation was successful\n", stdout);
+
+        return ret;
+    }
+
+    bool processValidatePackageResponse(const char *target, const char *pmid, StringArray &errors, StringArray &warnings,
+        StringArray &unmatchedQueries, StringArray &unusedPackages, IConstValidatePackageFiles &files,
+        bool &validateMessages)
+    {
+        if (!isEmptyString(target) && !isEmptyString(pmid))
+            fprintf(stderr, "   Target: %s, PMID: %s :\n", target, pmid);
+
         if (errors.ordinality()>0)
         {
             validateMessages = true;
@@ -957,7 +985,6 @@ public:
             ForEachItemIn(i, errors)
                 fprintf(stderr, "      %s\n", errors.item(i));
         }
-        StringArray &warnings = resp->getWarnings();
         if (warnings.ordinality()>0)
         {
             validateMessages = true;
@@ -965,7 +992,6 @@ public:
             ForEachItemIn(i, warnings)
                 fprintf(stderr, "      %s\n", warnings.item(i));
         }
-        StringArray &unmatchedQueries = resp->getQueries().getUnmatched();
         if (unmatchedQueries.ordinality()>0)
         {
             validateMessages = true;
@@ -973,7 +999,6 @@ public:
             ForEachItemIn(i, unmatchedQueries)
                 fprintf(stderr, "      %s\n", unmatchedQueries.item(i));
         }
-        StringArray &unusedPackages = resp->getPackages().getUnmatched();
         if (unusedPackages.ordinality()>0)
         {
             validateMessages = true;
@@ -981,7 +1006,7 @@ public:
             ForEachItemIn(i, unusedPackages)
                 fprintf(stderr, "      %s\n", unusedPackages.item(i));
         }
-        StringArray &unusedFiles = resp->getFiles().getUnmatched();
+        StringArray &unusedFiles = files.getUnmatched();
         if (unusedFiles.ordinality()>0)
         {
             validateMessages = true;
@@ -1006,7 +1031,7 @@ public:
             outputLfnTree(filetree);
         }
 
-        StringArray &notInDFS = resp->getFiles().getNotInDFS();
+        StringArray &notInDFS = files.getNotInDFS();
         if (notInDFS.ordinality()>0)
         {
             validateMessages = true;
@@ -1015,10 +1040,9 @@ public:
                 fprintf(stderr, "      %s\n", notInDFS.item(i));
         }
 
-        if (!validateMessages)
-            fputs("   Validation was successful\n", stdout);
-
-        return ret;
+        if (!isEmptyString(target) && !isEmptyString(pmid))
+            fprintf(stderr, "\n   Target: %s, PMID: %s done\n\n", target, pmid);
+        return validateMessages;
     }
 
     virtual void usage()

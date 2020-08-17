@@ -20,6 +20,7 @@
 
 #include "ws_packageprocess_esp.ipp"
 #include "dasds.hpp"
+#include "environment.hpp"
 
 #define THORCLUSTER "thor"
 #define HTHORCLUSTER "hthor"
@@ -151,6 +152,8 @@ class CWsPackageProcessEx : public CWsPackageProcess
     void getPkgInfoById(const char *target, const char *packageMapId, IPropertyTree* tree);
     void getPkgInfoById(const char *packageMapId, IPropertyTree* tree);
     void deletePackage(const char *packageMap, const char *target, const char *process, bool globalScope, StringBuffer &returnMsg, int &returnCode);
+    void validatePackage(IEspContext &context, IEspValidatePackageRequest &req, IPropertyTree *packageMapTree, IConstWUClusterInfo *clusterInfo,
+        StringArray &queriesToVerify, StringArray &queriesToIgnore, IEspValidatePackageResponse *resp, IArrayOf<IEspValidateResult>& results);
 public:
     IMPLEMENT_IINTERFACE;
     virtual ~CWsPackageProcessEx()
