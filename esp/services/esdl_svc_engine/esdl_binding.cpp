@@ -707,7 +707,8 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
                 features.appendf("%s%s:%s", (index++ == 0 ? "" : ", "), key, getSecAccessFlagName(*methaccessmap.getValue(key)));
             }
             const char * user = context.queryUserId();
-            throw MakeStringException(-1, "%s::%s access denied for user '%s' - Method requires: '%s'.", srvdef.queryName(), mthName, (user && *user) ? user : "Anonymous", features.str());
+            throw MakeStringException(401, "Insufficient priviledge to run function (%s) access denied for user (%s) - %s", mthName, (user && *user) ? user : "Anonymous", features.str());
+
         }
     }
 
