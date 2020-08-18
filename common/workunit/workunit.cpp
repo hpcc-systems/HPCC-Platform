@@ -6992,7 +6992,13 @@ unsigned CLocalWorkUnit::getDebugAgentListenerPort() const
 unsigned CLocalWorkUnit::getTotalThorTime() const
 {
     CriticalBlock block(crit);
-    return (unsigned)nanoToMilli(extractTimeCollatable(p->queryProp("@totalThorTime"), false));
+    if (p->hasProp("@totalThorTime"))
+        return (unsigned)nanoToMilli(extractTimeCollatable(p->queryProp("@totalThorTime"), false));
+
+    const WuScopeFilter filter("stype[graph],nested[0],stat[TimeElapsed]");
+    StatsAggregation summary;
+    aggregateStatistic(summary, (IConstWorkUnit *)this, filter, StTimeElapsed);
+    return (unsigned)nanoToMilli(summary.getSum());
 }
 
 void CLocalWorkUnit::setDebugAgentListenerPort(unsigned port)
