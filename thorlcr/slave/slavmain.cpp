@@ -1859,12 +1859,12 @@ public:
                         StringBuffer user;
                         workUnitInfo->getProp("user", user);
 
-                        unsigned maxLogDetail = workUnitInfo->getPropInt("Debug/maxLogDetail", DefaultDetail);
+                        unsigned maxLogDetail = workUnitInfo->getPropInt("Debug/maxlogdetail", DefaultDetail);
                         ILogMsgFilter *existingLogHandler = queryLogMsgManager()->queryMonitorFilter(logHandler);
                         dbgassertex(existingLogHandler);
                         verifyex(queryLogMsgManager()->changeMonitorFilterOwn(logHandler, getCategoryLogMsgFilter(existingLogHandler->queryAudienceMask(), existingLogHandler->queryClassMask(), maxLogDetail)));
 
-                        PROGLOG("Started wuid=%s, user=%s, graph=%s\n", wuid.get(), user.str(), graphName.get());
+                        PROGLOG("Started wuid=%s, user=%s, graph=%s [log detail level=%u]\n", wuid.get(), user.str(), graphName.get(), maxLogDetail);
                         PROGLOG("Using query: %s", soPath.str());
 
                         if (!globals->getPropBool("Debug/@slaveDaliClient") && workUnitInfo->getPropBool("Debug/slavedaliclient", false))
