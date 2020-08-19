@@ -47,8 +47,6 @@ import "hpcc/TableContainer";
 
 declare const dojoConfig;
 
-window["__hpcc_wasmFolder"] = dojoConfig.urlInfo.fullPath + "/dist";
-
 class DataGraph {
     private _controller: WUScopeController = new WUScopeController();
     private _widget: GraphWidget = new GraphWidget();
@@ -67,7 +65,9 @@ class DataGraph {
 
 class DataGraph2 {
     private _controller: WUScopeController8 = new WUScopeController8();
-    private _widget: Graph2Widget = new Graph2Widget();
+    private _widget: Graph2Widget = new Graph2Widget()
+        .wasmFolder(dojoConfig.urlInfo.fullPath + "/dist")
+        ;
 
     constructor() {
     }
