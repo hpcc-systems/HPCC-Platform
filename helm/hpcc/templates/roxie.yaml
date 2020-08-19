@@ -23,6 +23,7 @@ spec:
     spec:
       containers:
       - name: {{ $toponame | quote }}
+{{ include "hpcc.addSentinelProbes" $roxie | indent 8 }}
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie) | indent 8 }}
         workingDir: /var/lib/HPCCSystems
@@ -125,6 +126,7 @@ spec:
           containerPort: {{ $service.port }}
 {{- end }}
 {{- end }}
+{{ include "hpcc.addSentinelProbes" $roxie | indent 8 }}
 {{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie) | indent 8 }}
         volumeMounts:
@@ -185,6 +187,7 @@ spec:
           containerPort: {{ $service.port }}
 {{- end }}
 {{- end }}
+{{ include "hpcc.addSentinelProbes" $roxie | indent 8 }}
 {{- end }}
 {{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie) | indent 8 }}

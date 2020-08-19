@@ -314,6 +314,28 @@ Add Secret volume for a component
 {{- end -}}
 
 {{/*
+Add sentinel-based probes for a component
+*/}}
+{{- define "hpcc.addSentinelProbes" -}}
+env:
+- name: "SENTINEL"
+  value: "{{ .name }}.sentinel"
+startupProbe:
+  exec:
+    command:
+    - cat
+    - "{{ .name }}.sentinel"
+  failureThreshold: 30
+  periodSeconds: 10
+readinessProbe:
+  exec:
+    command:
+    - cat
+    - "{{ .name }}.sentinel"
+  periodSeconds: 10
+{{ end -}}
+
+{{/*
 Return a value indicating whether a storage plane is defined or not.
 */}}
 {{- define "hpcc.isValidStoragePlane" -}}

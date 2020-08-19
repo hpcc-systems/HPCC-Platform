@@ -384,9 +384,9 @@ int main(int argc, const char* argv[])
         setAllocHook(true);
 
         serverConfig.setown(loadConfiguration(defaultYaml, argv, "dali", "DALI", DALICONF, nullptr));
-#ifndef _CONTAINERIZED
         Owned<IFile> sentinelFile = createSentinelTarget();
         removeSentinelFile(sentinelFile);
+#ifndef _CONTAINERIZED
 	
         for (unsigned i=1;i<(unsigned)argc;i++) {
             if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
@@ -700,9 +700,7 @@ int main(int argc, const char* argv[])
 
         }
         if (ok) {
-#ifndef _CONTAINERIZED
             writeSentinelFile(sentinelFile);
-#endif
             covenMain();
             removeAbortHandler(actionOnAbort);
         }
