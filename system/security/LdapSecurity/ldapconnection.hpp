@@ -191,7 +191,7 @@ interface ILdapConfig : extends IInterface
     virtual const char * getCfgServerType() const = 0;
     virtual StringBuffer& getLdapHost(StringBuffer& hostbuf) = 0;
     virtual int getHostCount() = 0;
-    virtual void blacklistHost(const char * host) = 0;
+    virtual void rejectHost(const char * host) = 0;
     virtual void markDown(const char* ldaphost) = 0;
     virtual int getLdapPort() = 0;
     virtual int getLdapSecurePort() = 0;
