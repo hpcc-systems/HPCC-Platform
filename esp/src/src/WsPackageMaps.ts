@@ -1,9 +1,7 @@
 import * as lang from "dojo/_base/lang";
-import "dojo/i18n";
-// @ts-ignore
-import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 
 import * as ESPRequest from "./ESPRequest";
+import nlsHPCC from "./nlsHPCC";
 
 const i18n = nlsHPCC;
 
@@ -128,7 +126,7 @@ export function deletePackageMap(params) {
     return ESPRequest.send("WsPackageProcess", "DeletePackage", params);
 }
 
-export function GetPackageMapSelectOptions (params) {
+export function GetPackageMapSelectOptions(params) {
     return ESPRequest.send("WsPackageProcess", "GetPackageMapSelectOptions", {
         request: {
             IncludeTargets: params.IncludeTargets,

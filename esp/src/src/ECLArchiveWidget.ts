@@ -9,9 +9,7 @@ import "dijit/layout/ContentPane";
 import * as registry from "dijit/registry";
 import "dijit/Toolbar";
 import "dijit/ToolbarSeparator";
-import "dojo/i18n";
-// @ts-ignore
-import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
+import nlsHPCC from "./nlsHPCC";
 // @ts-ignore
 import * as template from "dojo/text!../templates/ECLArchiveWidget.html";
 // @ts-ignore

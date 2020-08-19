@@ -2,9 +2,6 @@
 import * as declare from "dojo/_base/declare";
 import * as Deferred from "dojo/_base/Deferred";
 import * as lang from "dojo/_base/lang";
-import "dojo/i18n";
-// @ts-ignore
-import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 import * as Observable from "dojo/store/Observable";
 import * as topic from "dojo/topic";
 
@@ -13,6 +10,7 @@ import * as parser from "dojox/xml/parser";
 import * as ESPRequest from "./ESPRequest";
 import * as ESPUtil from "./ESPUtil";
 import * as ESPWorkunit from "./ESPWorkunit";
+import nlsHPCC from "./nlsHPCC";
 import * as WsEcl from "./WsEcl";
 import * as WsWorkunits from "./WsWorkunits";
 

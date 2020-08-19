@@ -1,11 +1,9 @@
 import * as Clipboard from "clipboard";
 import * as Tooltip from "dijit/Tooltip";
 import * as dom from "dojo/dom";
-import "dojo/i18n";
-// @ts-ignore
-import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 import * as mouse from "dojo/mouse";
 import * as on from "dojo/on";
+import nlsHPCC from "./nlsHPCC";
 
 export function attach(domID: string): void {
     const clipboard: Clipboard = new Clipboard(`#${domID}`);

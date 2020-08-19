@@ -9,13 +9,10 @@ import ToggleButton from "@material-ui/lab/ToggleButton";
 import Typography from "@material-ui/core/Typography";
 import Box from "@material-ui/core/Box";
 import { Bar } from "@hpcc-js/chart";
+import { fetchStats } from "../KeyValStore";
+import nlsHPCC from "../nlsHPCC";
 import { theme } from "./theme";
 import { VisualizationComponent } from "./vizComponent";
-import { fetchStats } from "../KeyValStore";
-
-import "dojo/i18n";
-// @ts-ignore
-import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 
 interface BarChart {
     columns: string[];

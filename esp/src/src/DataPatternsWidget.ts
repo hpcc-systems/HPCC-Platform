@@ -1,9 +1,7 @@
 import * as dom from "dojo/dom";
 import * as domClass from "dojo/dom-class";
 import * as domForm from "dojo/dom-form";
-import "dojo/i18n";
-// @ts-ignore
-import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
+import nlsHPCC from "./nlsHPCC";
 
 import * as registry from "dijit/registry";
 
