@@ -1595,11 +1595,13 @@ private:
                 {
                     size32_t defaultSize = (initializer && !isVirtualInitializer(initializer)) ? type->size(initializer, nullptr) : type->getMinSize();
                     fixedDelta -= defaultSize;
+#ifdef TRACE_TRANSLATION
+                    DBGLOG("Decreasing fixedDelta size by %d to %d for defaulted field %d (%s)", defaultSize, fixedDelta, idx, destRecInfo.queryName(idx));
+#endif
                 }
                 if ((field->flags & RFTMispayloadfield) == 0)
                     matchFlags |= match_keychange;
                 defaulted++;
-                //DBGLOG("Decreasing fixedDelta size by %d to %d for defaulted field %d (%s)", defaultSize, fixedDelta, idx, destRecInfo.queryName(idx));
             }
             else
             {
@@ -1720,7 +1722,9 @@ private:
                                 info.matchType = match_truncate;
                                 if (((sourceFlags|destFlags) & RFTMinifblock) == 0)
                                     fixedDelta += sourceType->getMinSize()-type->getMinSize();
-                                //DBGLOG("Increasing fixedDelta size by %d to %d for truncated field %d (%s)", sourceType->getMinSize()-type->getMinSize(), fixedDelta, idx, destRecInfo.queryName(idx));
+#ifdef TRACE_TRANSLATION
+                                DBGLOG("Increasing fixedDelta size by %d to %d for truncated field %d (%s)", sourceType->getMinSize()-type->getMinSize(), fixedDelta, idx, destRecInfo.queryName(idx));
+#endif
                             }
                         }
                         else
@@ -1730,7 +1734,9 @@ private:
                                 info.matchType = match_extend;
                                 if (((sourceFlags|destFlags) & RFTMinifblock) == 0)
                                     fixedDelta += sourceType->getMinSize()-type->getMinSize();
-                                //DBGLOG("Decreasing fixedDelta size by %d to %d for truncated field %d (%s)", type->getMinSize()-sourceType->getMinSize(), fixedDelta, idx, destRecInfo.queryName(idx));
+#ifdef TRACE_TRANSLATION
+                                DBGLOG("Decreasing fixedDelta size by %d to %d for truncated field %d (%s)", type->getMinSize()-sourceType->getMinSize(), fixedDelta, idx, destRecInfo.queryName(idx));
+#endif
                             }
                         }
                     }
@@ -1739,7 +1745,7 @@ private:
                     info.matchType = match_typecast;
                 if (deblob)
                     info.matchType |= match_deblob;
-                if (sourceFlags & RFTMinifblock)
+                if (sourceFlags & RFTMinifblock || field->flags & RFTMinifblock)
                     info.matchType |= match_inifblock;  // Avoids incorrect commoning up of adjacent matches
                 // MORE - could note the highest interesting fieldnumber in the source and not bother filling in offsets after that
                 // Not sure it would help much though - usually need to know the total record size anyway in real life
@@ -1772,7 +1778,9 @@ private:
                         const RtlTypeInfo *type = field->type;
                         if (type->isFixedSize() && (field->flags & RFTMinifblock)==0)
                         {
-                            //DBGLOG("Reducing estimated size by %d for (fixed size) omitted field %s", (int) type->getMinSize(), field->name);
+#ifdef TRACE_TRANSLATION
+                            DBGLOG("Reducing estimated size by %d for (fixed size) omitted field %s", (int) type->getMinSize(), field->name);
+#endif
                             fixedDelta += type->getMinSize();
                         }
                         else
@@ -1781,21 +1789,29 @@ private:
                     allUnmatched.append(idx);
                 }
             }
-            //DBGLOG("Delta from fixed-size fields is %d bytes", fixedDelta);
+#ifdef TRACE_TRANSLATION
+            DBGLOG("Delta from fixed-size fields is %d bytes", fixedDelta);
+#endif
         }
     }
     size32_t estimateNewSize(const RtlRow &sourceRow) const
     {
-        //DBGLOG("Source record size is %d", (int) sourceRow.getRecordSize());
+#ifdef TRACE_TRANSLATION
+        DBGLOG("Source record size is %d", (int) sourceRow.getRecordSize());
+#endif
         size32_t expectedSize = sourceRow.getRecordSize();
         assertex((int) expectedSize >= fixedDelta);
         expectedSize -= fixedDelta;
-        //DBGLOG("Source record size without fixed delta is %d", expectedSize);
+#ifdef TRACE_TRANSLATION
+        DBGLOG("Source record size without fixed delta is %d", expectedSize);
+#endif
         ForEachItemIn(i, variableUnmatched)
         {
             unsigned fieldNo = variableUnmatched.item(i);
             expectedSize -= sourceRow.getSize(fieldNo);
-            //DBGLOG("Reducing estimated size by %d to %d for omitted field %d (%s)", (int) sourceRow.getSize(fieldNo), expectedSize, fieldNo, sourceRecInfo.queryName(fieldNo));
+#ifdef TRACE_TRANSLATION
+            DBGLOG("Reducing estimated size by %d to %d for omitted field %d (%s)", (int) sourceRow.getSize(fieldNo), expectedSize, fieldNo, sourceRecInfo.queryName(fieldNo));
+#endif
         }
         if (matchFlags & ~(match_perfect|match_link|match_none|match_virtual|match_extend|match_truncate))
         {
@@ -1804,29 +1820,34 @@ private:
                 const MatchInfo &match = matchInfo[idx];
                 const RtlTypeInfo *type = destRecInfo.queryType(idx);
                 unsigned matchField = match.matchIdx;
-                switch (match.matchType)
+                if ((match.matchType & match_inifblock) == 0)
                 {
-                case match_perfect:
-                case match_link:
-                case match_none:
-                case match_virtual:
-                case match_extend:
-                case match_truncate:
-                    // These ones were already included in fixedDelta
-                    break;
-                default:
-                    // This errs on the side of small - i.e. it assumes that all typecasts end up at minimum size
-                    // We could do better in some cases e.g. variable string <-> variable unicode we can assume factor of 2,
-                    // uft8 <-> string we could calculate here - but unlikely to be worth the effort.
-                    // But it's fine for fixed size output fields, including truncate/extend
-                    // We could also precalculate the expected delta if all omitted fields are fixed size - but not sure how likely/worthwhile that is.
-                    auto minSize = type->getMinSize();
-                    auto sourceSize = sourceRow.getSize(matchField);
-                    expectedSize += minSize;
-                    assertex(expectedSize >= sourceSize);
-                    expectedSize -= sourceSize;
-                    //DBGLOG("Adjusting estimated size by (%d - %d) to %d for translated field %d (%s)", (int) sourceSize, minSize, expectedSize, matchField, sourceRecInfo.queryName(matchField));
-                    break;
+                    switch (match.matchType)
+                    {
+                    case match_perfect:
+                    case match_link:
+                    case match_none:
+                    case match_virtual:
+                    case match_extend:
+                    case match_truncate:
+                        // These ones were already included in fixedDelta
+                        break;
+                    default:
+                        // This errs on the side of small - i.e. it assumes that all typecasts end up at minimum size
+                        // We could do better in some cases e.g. variable string <-> variable unicode we can assume factor of 2,
+                        // uft8 <-> string we could calculate here - but unlikely to be worth the effort.
+                        // But it's fine for fixed size output fields, including truncate/extend
+                        // We could also precalculate the expected delta if all omitted fields are fixed size - but not sure how likely/worthwhile that is.
+                        auto minSize = type->getMinSize();
+                        auto sourceSize = sourceRow.getSize(matchField);
+                        expectedSize += minSize;
+                        assertex(expectedSize >= sourceSize);
+                        expectedSize -= sourceSize;
+    #ifdef TRACE_TRANSLATION
+                        DBGLOG("Adjusting estimated size by (%d - %d) to %d for translated field %d (%s)", (int) sourceSize, minSize, expectedSize, matchField, sourceRecInfo.queryName(matchField));
+    #endif
+                        break;
+                    }
                 }
             }
         }
