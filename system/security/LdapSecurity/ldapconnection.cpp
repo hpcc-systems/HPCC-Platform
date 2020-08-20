@@ -217,19 +217,19 @@ public:
         return m_hostArray.item(m_curHostIdx);
     }
 
-    void blacklistHost(const char * blockedHost)
+    void rejectHost(const char * rejectedHost)
     {
         if (m_hostArray.ordinality() == 1)
         {
-            DBGLOG("Cannot blacklist the only configured ldap server %s", m_hostArray.item(m_curHostIdx));
+            DBGLOG("Cannot reject the only configured LDAP AD server %s", m_hostArray.item(m_curHostIdx));
             return;
         }
 
-        //If blockedHost is not already blacklisted, do so
+        //If rejectedHost is not already rejected, do so
         synchronized block(m_HMMutex);
-        if (0 == strcmp(blockedHost, m_hostArray.item(m_curHostIdx)))
+        if (0 == strcmp(rejectedHost, m_hostArray.item(m_curHostIdx)))
         {
-            DBGLOG("Blacklisting ldap server %s", m_hostArray.item(m_curHostIdx));
+            DBGLOG("Temporarily rejecting LDAP AD server %s", m_hostArray.item(m_curHostIdx));
             if (++m_curHostIdx == m_hostArray.ordinality())
                 m_curHostIdx = 0;//start over at begin of host array
         }
@@ -393,7 +393,7 @@ public:
             }
             if (rc != LDAP_SUCCESS)
             {
-                blacklistHost(hostbuf);
+                rejectHost(hostbuf);
             }
             else
                 break;
@@ -606,9 +606,9 @@ public:
         return hostbuf;
     }
 
-    virtual void blacklistHost(const char * host)
+    virtual void rejectHost(const char * host)
     {
-        s_hostManager.blacklistHost(host);
+        s_hostManager.rejectHost(host);
     }
 
     virtual void markDown(const char* ldaphost)
@@ -887,7 +887,7 @@ public:
 
             if (rc != LDAP_SUCCESS)
             {
-                m_ldapconfig->blacklistHost(hostbuf);
+                m_ldapconfig->rejectHost(hostbuf);
             }
             else
                 break;
