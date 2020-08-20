@@ -404,6 +404,30 @@ public:
                 if (totalIndexParts)
                 {
                     indexMap.map(*this, indexFile, keyHasTlk, getOptBool("allLocalIndexParts"));
+                    if (remoteKeyedLookup && !getOptBool(THOROPT_FORCE_REMOTE_KEYED_LOOKUP))
+                    {
+                        /* heuristic to determine how many nodes in this cluster, have had parts
+                         * mapped for remote lookup.
+                         * If <50%, then turn off remoteKeyedLookup, and process directly
+                         * This scenario can happen, when the index has been written to an overlapping but smaller cluster,
+                         * or if a narrow index has been copied to this cluster (e.g a 1-way hthor index).
+                         */ 
+                        unsigned nodesWithMappedParts = 0;
+                        unsigned groupSize = queryDfsGroup().ordinality();
+                        for (unsigned s=0; s<groupSize; s++)
+                        {
+                            std::vector<unsigned> &parts = indexMap.querySlaveParts(s);
+                            if (parts.size())
+                                nodesWithMappedParts++;
+                        }
+                        if ((nodesWithMappedParts * 2) < groupSize) // i.e. if less than 50% nodes have any parts mapped
+                        {
+                            remoteKeyedLookup = false;
+                            remoteKeyedFetch = false;
+                            ActPrintLog("Remote keyed lookups disabled, because too few nodes mapped to service requests of narrow key [cluster nodes=%u, key width=%u, nodes mapped=%u]", groupSize, indexFile->numParts(), nodesWithMappedParts);
+                        }
+                    }
+
                     initMb.append(numTags);
                     for (auto &tag: tags)
                         initMb.append(tag);
