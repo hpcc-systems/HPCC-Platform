@@ -12,7 +12,7 @@
     "copy-res-dojox": "cpx \"./node_modules/dojox/widget/ColorPicker/images/**/*.{png,jpg,gif}\" ./build/eclwatch/img/",
     "copy-res-TopoJSON": "cpx \"./node_modules/@hpcc-js/map/TopoJSON/**/*\" ./build/dist/TopoJSON/",
     "copy-res-font-awesome": "cpx \"./node_modules/font-awesome/**/*\" ./build/dist/font-awesome/",
-    "copy-res-wasm": "cpx \"node_modules/@hpcc-js/wasm/dist/graphvizlib.wasm\" ./build/dist/",
+    "copy-res-wasm": "cpx \"./node_modules/@hpcc-js/graph/dist/graphvizlib.wasm\" ./build/dist/",
     "copy-res-stub_htm": "cpx \"./stub.htm\" ./build/",
     "copy-res": "run-s copy-res-es6-promise copy-res-eclwatch-img copy-res-eclwatch-ecl copy-res-dojo copy-res-dojox copy-res-TopoJSON copy-res-font-awesome copy-res-stub_htm copy-res-wasm",
     "compile": "tsc",

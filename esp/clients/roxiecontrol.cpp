@@ -20,10 +20,12 @@
 
 const unsigned roxieQueryRoxieTimeOut = 60000;
 
-void checkRoxieControlExceptions(IPropertyTree *msg)
+#define EMPTY_RESULT_FAILURE 1200
+
+static void checkRoxieControlExceptions(IPropertyTree *response)
 {
     Owned<IMultiException> me = MakeMultiException();
-    Owned<IPropertyTreeIterator> endpoints = msg->getElements("Endpoint");
+    Owned<IPropertyTreeIterator> endpoints = response->getElements("Endpoint");
     ForEach(*endpoints)
     {
         IPropertyTree &endp = endpoints->query();
@@ -65,8 +67,12 @@ IPropertyTree *sendRoxieControlQuery(ISocket *sock, const char *msg, unsigned wa
         if (size_read<len)
             throw MakeStringException(-1, "Error reading roxie control message response");
     }
-
+    if (resp.isEmpty())
+        throw MakeStringException(EMPTY_RESULT_FAILURE, "Empty response string for roxie control request(%s) wait(%d)", msg, wait);
     Owned<IPropertyTree> ret = createPTreeFromXMLString(resp.str());
+    if (!ret)
+        throw MakeStringException(EMPTY_RESULT_FAILURE, "Empty result tree for roxie control request(%s) wait(%d)", msg, wait);
+
     checkRoxieControlExceptions(ret);
     return ret.getClear();
 }
