@@ -967,6 +967,34 @@ int main( int argc, const char *argv[]  )
                 throwStringExceptionV(0, "Failed to connect to all nodes");
             PROGLOG("verified mp connection to rest of cluster");
 
+#ifdef _CONTAINERIZED
+            if (globals->getPropBool("@_dafsStorage"))
+            {
+/* NB: This option is a developer option only.
+
+ * It is intended to be used to bring up a temporary Thor instance that uses local node storage,
+ * as the data plane.
+ * 
+ * It is likely to be deprecated or need reworking, when DFS is refactored to use SP's properly.
+ * 
+ * The mechanism works by:
+ * a) Creating a pseudo StoragePlane (publishes group to Dali).
+ * b) Spins up a dafilesrv thread in each slave container.
+ * c) Changes the default StoragePlane used to publish files, to point to the SP/group created in step (a).
+ * 
+ * In this way, a Thor instance, whilst up, will act similarly to a bare-metal system, using local disks as storage.
+ * This allows quick cloud based allocation/simulation of bare-metal type clusters for testing purposes.
+ * 
+ * NB: This isn't a real StoragePlane, and it will not be accessible by any other component.
+ *
+ */
+                StringBuffer uniqueGrpName;
+                queryNamedGroupStore().addUnique(&queryProcessGroup(), uniqueGrpName);
+                // change default plane
+                queryComponentConfig().setProp("storagePlane", uniqueGrpName);
+                PROGLOG("Persistent Thor group created with group name: %s", uniqueGrpName.str());
+            }
+#endif
             LOG(MCauditInfo, ",Progress,Thor,Startup,%s,%s,%s,%s",nodeGroup.str(),thorname,queueName.str(),logUrl.str());
             auditStartLogged = true;
 

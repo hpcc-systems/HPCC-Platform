@@ -52,6 +52,10 @@
 
 #include "slavmain.hpp"
 
+#ifdef _CONTAINERIZED
+#include "dafsserver.hpp"
+#endif
+
 // #define USE_MP_LOG
 
 static INode *masterNode = NULL;
@@ -528,6 +532,43 @@ int main( int argc, const char *argv[]  )
             if (pinterval)
                 startPerformanceMonitor(pinterval, PerfMonStandard, nullptr);
 
+#ifdef _CONTAINERIZED
+            class CServerThread : public CSimpleInterfaceOf<IThreaded>
+            {
+                CThreaded threaded;
+                Owned<IRemoteFileServer> dafsInstance;
+            public:
+                CServerThread() : threaded("CServerThread")
+                {
+                    dafsInstance.setown(createRemoteFileServer());
+                    threaded.init(this);
+                }
+                ~CServerThread()
+                {
+                    PROGLOG("Stopping dafilesrv");
+                    dafsInstance->stop();
+                    threaded.join();
+                }
+            // IThreaded
+                virtual void threadmain() override
+                {
+                    SocketEndpoint listenEp(DAFILESRV_PORT);
+                    try
+                    {
+                        PROGLOG("Starting dafilesrv");
+                        dafsInstance->run(SSLNone, listenEp);
+                    }
+                    catch (IException *e)
+                    {
+                        EXCLOG(e, "dafilesrv error");
+                        throw;
+                    }
+                }
+            };
+            OwnedPtr<CServerThread> dafsThread;
+            if (globals->getPropBool("@_dafsStorage"))
+                dafsThread.setown(new CServerThread);
+#endif
             installDefaultFileHooks(globals);
             slaveMain(jobListenerStopped, slaveLogHandler);
         }

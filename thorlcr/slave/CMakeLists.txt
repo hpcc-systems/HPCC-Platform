@@ -31,29 +31,30 @@ set (    SRCS
     )
 
 include_directories ( 
-         ./../thorutil 
-         ./../../fs/dafsclient 
-         ./../../system/jhtree 
-         ./../../system/mp 
-         ./../../common/workunit 
-         ./../shared 
-         .
-         ./../../common/environment 
-         ./../../common/deftype 
-         ./../../system/include 
-         ./../../dali/base 
-         ./../../rtl/include 
-         ./../../common/dllserver 
-         ./../msort 
-         ./../../system/jlib 
-         ./../../rtl/eclrtl 
-         ./../master 
-         ./../graph 
-         ./../../common/thorhelper 
-         ./../../roxie/roxiemem
+         ${HPCC_SOURCE_DIR}/common/deftype 
+         ${HPCC_SOURCE_DIR}/common/dllserver 
+         ${HPCC_SOURCE_DIR}/common/environment 
+         ${HPCC_SOURCE_DIR}/common/thorhelper 
+         ${HPCC_SOURCE_DIR}/common/workunit 
+         ${HPCC_SOURCE_DIR}/dali/base 
+         ${HPCC_SOURCE_DIR}/fs/dafsclient 
+         ${HPCC_SOURCE_DIR}/fs/dafsserver
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl 
+         ${HPCC_SOURCE_DIR}/rtl/include 
+         ${HPCC_SOURCE_DIR}/roxie/roxiemem
+         ${HPCC_SOURCE_DIR}/system/include 
+         ${HPCC_SOURCE_DIR}/system/jhtree 
+         ${HPCC_SOURCE_DIR}/system/jlib 
+         ${HPCC_SOURCE_DIR}/system/mp 
+         ${HPCC_SOURCE_DIR}/system/security/shared
+         ${HPCC_SOURCE_DIR}/thorlcr/graph 
+         ${HPCC_SOURCE_DIR}/thorlcr/master 
+         ${HPCC_SOURCE_DIR}/thorlcr/msort 
+         ${HPCC_SOURCE_DIR}/thorlcr/shared 
+         ${HPCC_SOURCE_DIR}/thorlcr/slave 
+         ${HPCC_SOURCE_DIR}/thorlcr/thorutil 
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
-         ./../../system/security/shared
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )
@@ -84,4 +85,8 @@ target_link_libraries (  thorslave_lcr
          activityslaves_lcr 
     )
 
-
+if (CONTAINERIZED) # only used when dev. option _dafsStorage is enabled
+target_link_libraries (  thorslave_lcr 
+         dafsserver
+    )
+endif()
