@@ -238,6 +238,9 @@ public:
     unsigned getFieldNum(const char *fieldName) const;
     const RtlRecord *queryNested(unsigned field) const;
     bool excluded(const RtlFieldInfo *field, const byte *row, byte *conditions) const;
+    bool hasNested() const;
+    const RtlFieldInfo * queryOriginalField(const char *fieldName) const;
+
 protected:
     size_t * fixedOffsets;         // fixed portion of the field offsets + 1 extra
     unsigned * whichVariableOffset;// which variable offset should be added to the fixed

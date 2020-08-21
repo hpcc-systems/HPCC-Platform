@@ -587,6 +587,23 @@ const RtlRecord *RtlRecord::queryNested(unsigned fieldId) const
     return nullptr;
 }
 
+bool RtlRecord::hasNested() const
+{
+    return fields != originalFields;
+}
+
+const RtlFieldInfo * RtlRecord::queryOriginalField(const char *fieldName) const
+{
+    // Used when setting up then checking unusual translation scenarios - doesn't need to be lightning-fast
+    for (const RtlFieldInfo * const * finger = originalFields; *finger; finger++)
+    {
+        const char *srcName = (*finger)->name;
+        if (srcName && strieq(fieldName, srcName))
+            return *finger;
+    }
+    return nullptr;
+}
+
 const RtlFieldInfo *RtlRecord::queryOriginalField(unsigned idx) const
 {
     const RtlFieldInfo *field = queryField(idx);
