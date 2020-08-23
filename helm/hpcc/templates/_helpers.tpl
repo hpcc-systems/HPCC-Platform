@@ -579,3 +579,17 @@ Generate list of available services
   public: {{ $esp.public }}
 {{ end -}}
 {{- end -}}
+
+{{/*
+Add resource object
+Pass in a dictionary with me defined
+*/}}
+{{- define "hpcc.addResources" }}
+{{- if .me  }}
+resources:
+  requests:
+{{ toYaml .me | indent 4 }}
+  limits:
+{{ toYaml .me | indent 4 }}
+{{- end }}
+{{- end -}}

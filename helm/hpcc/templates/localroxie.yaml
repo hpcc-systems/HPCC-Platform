@@ -36,6 +36,7 @@ spec:
                 "--localAgent=true",
                 "--resolveLocally=false"
               ]
+{{- include "hpcc.addResources" (dict "root" $ "me" .) | indent 8 }}
 {{- $local := dict "first" true }}
 {{- range $service := $roxie.services }}
 {{- if ne (int $service.port)  0 }}

@@ -14038,25 +14038,26 @@ bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, const char *graphName
     return false;
 }
 
-static void setResources(StringBuffer &jobYaml, const IConstWorkUnit *workunit, const char *process)
+static void setResources(IPropertyTree *workerConfig, const IConstWorkUnit *workunit, const char *process)
 {
+    auto setResourcesItem = [&workerConfig](const char *category, const char *resourceName,  unsigned value, const char *units)
+    {
+        if (!value) return;
+        VStringBuffer xpath("spec/template/spec/containers/resources/%s@%s", category, resourceName);
+        ensurePTree(workerConfig, xpath.str());
+
+        VStringBuffer v("%u%s", value, units);
+        workerConfig->setProp(xpath.str(), v.str());
+    };
+
     StringBuffer s;
-    unsigned memRequest = workunit->getDebugValueInt(s.clear().appendf("%s-memRequest", process), 0);
-    unsigned memLimit = workunit->getDebugValueInt(s.clear().appendf("%s-memLimit", process), 0);
-    if (memLimit && memLimit < memRequest)
-        memLimit = memRequest;
-    if (memRequest)
-        jobYaml.replaceString("#request-memory", s.clear().appendf("memory: \"%uMi\"", memRequest));
-    if (memLimit)
-        jobYaml.replaceString("#limit-memory", s.clear().appendf("memory: \"%uMi\"", memLimit));
-    unsigned cpuRequest = workunit->getDebugValueInt(s.clear().appendf("%s-cpuRequest", process), 0);
-    unsigned cpuLimit = workunit->getDebugValueInt(s.clear().appendf("%s-cpuLimit", process), 0);
-    if (cpuLimit && cpuLimit < cpuRequest)
-        cpuLimit = cpuRequest;
-    if (cpuRequest)
-        jobYaml.replaceString("#request-cpu", s.clear().appendf("cpu: \"%um\"", cpuRequest));
-    if (cpuLimit)
-        jobYaml.replaceString("#limit-cpu", s.clear().appendf("cpu: \"%um\"", cpuLimit));
+    unsigned memRequest = workunit->getDebugValueInt(s.clear().appendf("resource-%s-memory", process), 0);
+    setResourcesItem("requests", "memory", memRequest, "Mi");
+    setResourcesItem("limits", "memory", memRequest, "Mi");
+
+    unsigned cpuRequest = workunit->getDebugValueInt(s.clear().appendf("resource-%s-cpu", process), 0);
+    setResourcesItem("requests", "cpu", cpuRequest, "m");
+    setResourcesItem("limits", "cpu", cpuRequest, "m");
 }
 
 
@@ -14152,13 +14153,23 @@ bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, 
     }
     jobYaml.replaceString("%args", args.str());
 
+// Disable ability change resources from within workunit
+// - all values are unquoted by toYAML.  This caused problems when prevously string values are
+// outputted unquoted and then treated as a non string type -e.g. labels in metadata.
+// - Also, ability to control if and how much users may change resources should be provided.
+#if 0
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     if (factory)
     {
         Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
         if (workunit)
-            setResources(jobYaml, workunit, componentName);
+        {
+            Owned<IPropertyTree> workerConfig = createPTreeFromYAMLString(jobYaml.length(), jobYaml.str(), 0, ptr_none, nullptr);
+            setResources(workerConfig, workunit, componentName);
+            toYAML(workerConfig, jobYaml.clear(), 2, 0);
+        }
     }
+#endif
 
     StringBuffer output, error;
     unsigned ret = runExternalCommand(componentName, output, error, "kubectl replace --force -f -", jobYaml.str());

@@ -272,6 +272,9 @@
       "required": [ "name", "prefix" ],
       "additionalProperties": false
     },
+    "resources": {
+      "type": "object"
+    },
     "secrets": {
       "oneOf": [
         {
@@ -419,6 +422,9 @@
         },
         "logging": {
           "$ref": "#/definitions/logging"
+        },
+        "resources": {
+          "$ref": "#/definitions/resources"
         }
       }
     },
@@ -447,6 +453,9 @@
         },
         "logging": {
           "$ref": "#/definitions/logging"
+        },
+        "resources": {
+          "$ref": "#/definitions/resources"
         }
       }
     },
@@ -467,6 +476,9 @@
         },
         "logging": {
           "$ref": "#/definitions/logging"
+        },
+        "resources": {
+          "$ref": "#/definitions/resources"
         }
       }
     },
@@ -501,6 +513,9 @@
         "storagePlane": {
           "description": "The default storage plane to write data files to",
           "type": "string"
+        },
+        "resources": {
+          "$ref": "#/definitions/resources"
         }
       }
     },
@@ -535,6 +550,9 @@
         "spillPlane": {
           "description": "The storage plane to write spill files to",
           "type": "string"
+        },
+        "resources": {
+          "$ref": "#/definitions/resources"
         }
       }
     },
@@ -617,6 +635,15 @@
         "spillPlane": {
           "description": "The storage plane to write spill files to",
           "type": "string"
+        },
+        "managerResources": {
+          "$ref": "#/definitions/resources"
+        },
+        "workerResources": {
+          "$ref": "#/definitions/resources"
+        },
+        "agentResources": {
+          "$ref": "#/definitions/resources"
         }
       }
     }
