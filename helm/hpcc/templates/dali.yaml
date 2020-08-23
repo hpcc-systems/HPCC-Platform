@@ -28,6 +28,7 @@ spec:
               ]
 {{ include "hpcc.addSentinelProbes" . | indent 8 }}
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
+{{- include "hpcc.addResources" (dict "me" .resources) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
         volumeMounts:
         - name: {{ .name }}-configmap-volume

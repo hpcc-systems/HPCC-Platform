@@ -30,6 +30,11 @@ spec:
                 {{ include "hpcc.daliArg" $ }}
               ]
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
+{{- if .useChildProcesses }}
+{{- include "hpcc.addResources" (dict "me" .resources) | indent 8 }}
+{{- else }}
+{{- include "hpcc.addStubResources" . | indent 8 }}
+{{- end }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
@@ -77,13 +82,7 @@ data:
           - name: {{ $apptype }}-%jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
-            resources:
-              requests:
-                #request-memory
-                #request-cpu
-              limits:
-                #limit-memory
-                #limit-cpu
+{{- include "hpcc.addResources" (dict "me" .resources) | indent 12 }}
             workingDir: /var/lib/HPCCSystems
             command: [ {{ $apptype | quote }} ]
             args: [
