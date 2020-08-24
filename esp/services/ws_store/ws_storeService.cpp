@@ -280,7 +280,7 @@ bool CwsstoreEx::onSet(IEspContext &context, IEspSetRequest &req, IEspSetRespons
 
     const char *user = context.queryUserId();
     Owned<ISecUser> secuser = new CSecureUser(user, nullptr);
-	resp.setSuccess(m_storeProvider->set(storename, ns, key, value, secuser.get(), !req.getUserSpecific()));
+    resp.setSuccess(m_storeProvider->set(storename, ns, key, value, secuser.get(), !req.getUserSpecific()));
 
     return true;
 }
