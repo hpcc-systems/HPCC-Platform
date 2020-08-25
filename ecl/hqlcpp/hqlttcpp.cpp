@@ -5937,6 +5937,13 @@ static IHqlExpression * createResultsAttribute(const HqlExprArray & results)
 
 //------------------------------------------------------------------------
 
+int compareWorkflowItems(CInterface * const * _left, CInterface * const * _right)
+{
+    WorkflowItem * left = static_cast<WorkflowItem *>(*_left);
+    WorkflowItem * right = static_cast<WorkflowItem *>(*_right);
+    return (int)(left->queryWfid() - right->queryWfid());
+}
+
 static HqlTransformerInfo workflowTransformerInfo("WorkflowTransformer");
 WorkflowTransformer::WorkflowTransformer(IWorkUnit * _wu, HqlCppTranslator & _translator)
 : NewHqlTransformer(workflowTransformerInfo), wu(_wu), translator(_translator), wfidCount(0)
@@ -7319,6 +7326,9 @@ void WorkflowTransformer::transformRoot(const HqlExprArray & in, WorkflowArray &
 
     percolateScheduledIds();
 
+    //Sort by workflow id, so that the graphs are generated in workflow id order - and therefore sorted correctly
+    //to avoid the need for extra processing when iterating over the graph information
+    workflow.sort(compareWorkflowItems);
     appendArray(out, workflow);
     appendArray(out, functions);
     translator.setMaxWfid(wfidCount);
