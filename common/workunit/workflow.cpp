@@ -467,7 +467,7 @@ private:
     //wfid of the persist activator/successor (Each will point to the other)
     unsigned persistWfid;
     //pointer to persist activator in order to manage new logical successorships
-    CCloneWorkflowItem * persistCounterpart;
+    CCloneWorkflowItem * persistCounterpart = nullptr;
     int persistCopies;
     bool persistRefresh = true;
     Owned<IRemoteConnection> persistLock;
@@ -1506,7 +1506,7 @@ void WorkflowMachine::doExecuteConditionExpression(CCloneWorkflowItem & item)
 
 void WorkflowMachine::doExecutePersistActivator(CCloneWorkflowItem & item)
 {
-    isPersistSupported();
+    checkPersistSupported();
     CCloneWorkflowItem * persistItem = item.queryPersistCounterpart();
     SCMStringBuffer name;
     const char *logicalName = persistItem->getPersistName(name).str();
@@ -1547,7 +1547,7 @@ void WorkflowMachine::doExecutePersistActivator(CCloneWorkflowItem & item)
                 return;
             }
         }
-        persistItem->setPersistLock(persistLock.getClear());
+        finishPersist(logicalName, persistLock.getClear());
     }
 #ifdef TRACE_WORKFLOW
     LOG(MCworkflow, "Persist is up to date. (item %u)", wfid);
@@ -1564,14 +1564,12 @@ void WorkflowMachine::doExecutePersistItemParallel(CCloneWorkflowItem & item)
     if (maxPersistCopies < 0)
         maxPersistCopies = DEFAULT_PERSIST_COPIES;
 
-    PersistVersion * thisPersist=  item.queryPersistVersion();
-
+    PersistVersion * thisPersist = item.queryPersistVersion();
     if (maxPersistCopies > 0)
         deleteLRUPersists(logicalName, (unsigned) maxPersistCopies-1);
     doExecuteItemParallel(item);
     updatePersist(item.queryPersistLock(), logicalName, thisPersist->eclCRC, thisPersist->allCRC);
 
-    CriticalBlock thisBlock(finishPersistCritSec);
     finishPersist(logicalName, item.getClearPersistLock());
 }
 
@@ -1752,7 +1750,6 @@ bool WorkflowMachine::isParallelViable()
         case WFModeWait:
         case WFModeBeginWait:
         case WFModeCritical:
-        //case WFModePersist:
         case WFModeOnce:
             return false;
         }

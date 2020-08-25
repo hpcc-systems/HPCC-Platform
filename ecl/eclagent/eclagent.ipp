@@ -269,28 +269,28 @@ public:
     }
 
 protected:
-    virtual void begin();
-    virtual IRemoteConnection *startPersist(const char * logicalName);
-    virtual void finishPersist(const char * persistName, IRemoteConnection *persistLock);
-    virtual void deleteLRUPersists(const char * logicalName, unsigned keep);
-    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC);
-    virtual bool checkFreezePersists(const char *logicalName, unsigned eclCRC);
-    virtual bool isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntimeWorkflowItem & item, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile);
-    virtual void isPersistSupported();
-    virtual bool isPersistAlreadyLocked(const char * logicalName);
-    virtual bool getParallelFlag() const;
-    virtual unsigned getThreadNumFlag() const;
+    virtual void begin() override;
+    virtual IRemoteConnection *startPersist(const char * logicalName) override;
+    virtual void finishPersist(const char * persistName, IRemoteConnection *persistLock) override;
+    virtual void deleteLRUPersists(const char * logicalName, unsigned keep) override;
+    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC) override;
+    virtual bool checkFreezePersists(const char *logicalName, unsigned eclCRC) override;
+    virtual bool isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntimeWorkflowItem & item, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile) override;
+    virtual void checkPersistSupported() override;
+    virtual bool isPersistAlreadyLocked(const char * logicalName) override;
+    virtual bool getParallelFlag() const override;
+    virtual unsigned getThreadNumFlag() const override;
 
-    virtual void end();
-    virtual void schedulingStart();
-    virtual bool schedulingPull();
-    virtual bool schedulingPullStop();
-    virtual void reportContingencyFailure(char const * type, IException * e);
-    virtual void checkForAbort(unsigned wfid, IException * handling);
-    virtual void doExecutePersistItem(IRuntimeWorkflowItem & item);
-    virtual void doExecuteCriticalItem(IRuntimeWorkflowItem & item);
-    virtual bool getPersistTime(time_t & when, IRuntimeWorkflowItem & item);
-    virtual void noteTiming(unsigned wfid, timestamp_type startTime, stat_type elapsedNs);
+    virtual void end() override;
+    virtual void schedulingStart() override;
+    virtual bool schedulingPull() override;
+    virtual bool schedulingPullStop() override;
+    virtual void reportContingencyFailure(char const * type, IException * e) override;
+    virtual void checkForAbort(unsigned wfid, IException * handling) override;
+    virtual void doExecutePersistItem(IRuntimeWorkflowItem & item) override;
+    virtual void doExecuteCriticalItem(IRuntimeWorkflowItem & item) override;
+    virtual bool getPersistTime(time_t & when, IRuntimeWorkflowItem & item) override;
+    virtual void noteTiming(unsigned wfid, timestamp_type startTime, stat_type elapsedNs) override;
 
 private:
     void prelockPersists();

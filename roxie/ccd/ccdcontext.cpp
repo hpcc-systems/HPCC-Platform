@@ -662,6 +662,8 @@ private:
     }
     virtual void finishPersist(const char * persistName, IRemoteConnection *persistLock)
     {
+        //this protects lock array from race conditions
+        CriticalSection finishPersistCritSec;
         logctx.CTXLOG("Finished persists - add to read lock list");
         persistReadLocks.append(*persistLock);
     }
@@ -672,7 +674,7 @@ private:
             checkPersistMatches(logicalName, eclCRC);
         return freeze;
     }
-    virtual void isPersistSupported()
+    virtual void checkPersistSupported()
     {
         if (!workunit)
         {
@@ -681,6 +683,7 @@ private:
     }
     virtual bool isPersistAlreadyLocked(const char * logicalName)
     {
+        //Note: if workunits are restarted, then the engine should check to verify that the persist has not already been calculated
         return false;
     }
     void checkPersistMatches(const char * logicalName, unsigned eclCRC)

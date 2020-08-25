@@ -84,6 +84,7 @@ public:
     unsigned __int64 allCRC;
     bool isFile;
 };
+
 class CCloneWorkflowItem;
 class WORKUNIT_API WorkflowMachine : public CInterface
 {
@@ -172,7 +173,7 @@ protected:
     virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC) = 0;
     virtual bool checkFreezePersists(const char *logicalName, unsigned eclCRC) = 0;
     virtual bool isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntimeWorkflowItem & item, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile) = 0;
-    virtual void isPersistSupported() = 0;
+    virtual void checkPersistSupported() = 0;
     virtual bool isPersistAlreadyLocked(const char * logicalName) = 0;
     void doExecutePersistItemParallel(CCloneWorkflowItem & item);
     void doExecutePersistActivator(CCloneWorkflowItem & item);
@@ -196,7 +197,7 @@ protected:
     Owned<PersistVersion> persist;
     //this protects the global persist variable
     CriticalSection persistCritSec;
-    //this protects finishPersist() internals from race conditions
+    //this protects the persist lock array from race conditions
     CriticalSection finishPersistCritSec;
     //contains extra workflow items that are created at runtime. These support logical successorships
     std::vector<Shared<IRuntimeWorkflowItem>> logicalWorkflow;

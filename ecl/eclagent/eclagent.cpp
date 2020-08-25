@@ -2212,6 +2212,7 @@ void EclAgentWorkflowMachine::begin()
     if(agent.queryWorkUnit()->getDebugValueBool("prelockpersists", false))
         prelockPersists();
 }
+
 IRemoteConnection *EclAgentWorkflowMachine::startPersist(const char * logicalName)
 {
     IRemoteConnection * persistLock;
@@ -2225,18 +2226,24 @@ IRemoteConnection *EclAgentWorkflowMachine::startPersist(const char * logicalNam
         persistLock = agent.startPersist(logicalName);
     return persistLock;
 }
+
 void EclAgentWorkflowMachine::finishPersist(const char * persistName, IRemoteConnection *persistLock)
 {
+    //this protects lock list from race conditions
+    CriticalSection finishPersistCritSec;
     agent.finishPersist(persistName, persistLock);
 }
+
 void EclAgentWorkflowMachine::deleteLRUPersists(const char *logicalName, unsigned keep)
 {
     agent.deleteLRUPersists(logicalName, keep);
 }
+
 void EclAgentWorkflowMachine::updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC)
 {
     agent.updatePersist(persistLock, logicalName, eclCRC, allCRC);
 }
+
 bool EclAgentWorkflowMachine::checkFreezePersists(const char *logicalName, unsigned eclCRC)
 {
     bool freeze = agent.arePersistsFrozen();
@@ -2244,25 +2251,32 @@ bool EclAgentWorkflowMachine::checkFreezePersists(const char *logicalName, unsig
         agent.checkPersistMatches(logicalName, eclCRC);
     return freeze;
 }
+
 bool EclAgentWorkflowMachine::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntimeWorkflowItem & item, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile)
 {
     return agent.isPersistUptoDate(persistLock, item, logicalName, eclCRC, allCRC, isFile);
 }
-void EclAgentWorkflowMachine::isPersistSupported()
+
+void EclAgentWorkflowMachine::checkPersistSupported()
 {
     if (agent.isStandAloneExe)
     {
         throw MakeStringException(0, "PERSIST not supported when running standalone");
     }
 }
+
 bool EclAgentWorkflowMachine::isPersistAlreadyLocked(const char * logicalName)
 {
+    //this makes sure that the lock array is up to date
+    CriticalBlock thisBlock(finishPersistCritSec);
     return agent.alreadyLockedPersist(logicalName);
 }
+
 bool EclAgentWorkflowMachine::getParallelFlag() const
 {
     return agent.queryWorkUnit()->getDebugValueBool("parallelWorkflow", false);
 }
+
 unsigned EclAgentWorkflowMachine::getThreadNumFlag() const
 {
     return agent.queryWorkUnit()->getDebugValueInt("numWorkflowThreads", 4);

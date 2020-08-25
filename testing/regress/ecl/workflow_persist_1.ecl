@@ -19,6 +19,8 @@
 
 import ^ as root;
 optParallel := #IFDEFINED(root.parallel, false);
+import $.setup;
+prefix := setup.Files(false, false).FilePrefix;
 
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
@@ -35,8 +37,8 @@ END;
 
 dSet := DATASET(1000000, thisTransform(COUNTER)) : independent(many);
 
-a1 := SORT(dSet, -id) : persist('sort1');
+a1 := SORT(dSet, -id) : persist(prefix + 'sort1');
 
-a2 := SORT(dSet, id) : persist('sort2');
+a2 := SORT(dSet, id) : persist(prefix + 'sort2');
 
 PARALLEL(COUNT(NOFOLD(a1)), COUNT(NOFOLD(a2)));
