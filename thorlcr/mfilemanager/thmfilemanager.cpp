@@ -517,7 +517,7 @@ public:
                 StringBuffer curDir;
                 ForEachItemIn(gn, groupNames)
                 {
-#ifdef _CONTAINERIZE
+#ifdef _CONTAINERIZED
                     Owned<IStoragePlane> plane = getStoragePlane(groupNames.item(gn));
                     assertex(plane);
                     curDir.append(plane->queryPrefix());
