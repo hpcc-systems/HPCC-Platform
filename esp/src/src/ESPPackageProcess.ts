@@ -1,8 +1,6 @@
 ﻿import * as declare from "dojo/_base/declare";
-import "dojo/i18n";
-// @ts-ignore
-import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 import * as Observable from "dojo/store/Observable";
+import nlsHPCC from "./nlsHPCC";
 import * as ESPRequest from "./ESPRequest";
 
 const Store = declare([ESPRequest.Store], {

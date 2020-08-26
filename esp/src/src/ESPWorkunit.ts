@@ -2,9 +2,6 @@
 import * as declare from "dojo/_base/declare";
 import * as Deferred from "dojo/_base/Deferred";
 import * as lang from "dojo/_base/lang";
-import "dojo/i18n";
-// @ts-ignore
-import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 import * as all from "dojo/promise/all";
 import * as Observable from "dojo/store/Observable";
 import * as topic from "dojo/topic";
@@ -15,6 +12,7 @@ import { IEvent } from "@hpcc-js/util";
 import * as ESPRequest from "./ESPRequest";
 import * as ESPResult from "./ESPResult";
 import * as ESPUtil from "./ESPUtil";
+import nlsHPCC from "./nlsHPCC";
 import * as Utility from "./Utility";
 import * as WsTopology from "./WsTopology";
 import * as WsWorkunits from "./WsWorkunits";

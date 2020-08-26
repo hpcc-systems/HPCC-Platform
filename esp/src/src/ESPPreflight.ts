@@ -4,10 +4,7 @@ import * as lang from "dojo/_base/lang";
 import * as Observable from "dojo/store/Observable";
 import * as QueryResults from "dojo/store/util/QueryResults";
 import * as ESPRequest from "./ESPRequest";
-
-import "dojo/i18n";
-// @ts-ignore
-import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
+import nlsHPCC from "./nlsHPCC";
 
 const i18n = nlsHPCC;
 

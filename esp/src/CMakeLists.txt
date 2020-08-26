@@ -31,6 +31,7 @@ file(COPY
     ${CMAKE_CURRENT_SOURCE_DIR}/tsconfig.json
     ${CMAKE_CURRENT_SOURCE_DIR}/webpack.config.js
     ${CMAKE_CURRENT_SOURCE_DIR}/xstyle
+    ${CMAKE_CURRENT_SOURCE_DIR}/util
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 set ( SRCS

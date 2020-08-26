@@ -4,9 +4,6 @@ import * as lang from "dojo/_base/lang";
 import * as aspect from "dojo/aspect";
 import * as dom from "dojo/dom";
 import * as has from "dojo/has";
-import "dojo/i18n";
-// @ts-ignore
-import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 import * as topic from "dojo/topic";
 
 import * as registry from "dijit/registry";
@@ -20,6 +17,7 @@ import * as _Widget from "hpcc/_Widget";
 import { declareDecorator } from "./DeclareDecorator";
 import { Grid, maximizeWidget } from "./ESPUtil";
 import { GraphStore, GraphTreeStore } from "./GraphStore";
+import nlsHPCC from "./nlsHPCC";
 import { debounce, getImageURL, Persist } from "./Utility";
 import * as WsWorkunits from "./WsWorkunits";
 import { WUGraphLegend } from "./WUGraphLegend";

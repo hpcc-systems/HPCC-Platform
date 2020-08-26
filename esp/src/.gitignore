@@ -2,4 +2,5 @@ build/
 hpcc-js/
 lib/
 node_modules/
+src/nlsHPCCType.ts
 lws.target.txt

@@ -1,10 +1,7 @@
 import { Workunit, WUStateID } from "@hpcc-js/comms";
 import { Edge, Graph, Vertex } from "@hpcc-js/graph";
 import { hashSum, IObserverHandle } from "@hpcc-js/util";
-
-import "dojo/i18n";
-// @ts-ignore
-import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
+import nlsHPCC from "./nlsHPCC";
 
 export class WUStatus extends Graph {
 

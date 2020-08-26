@@ -1,14 +1,11 @@
 ﻿import * as declare from "dojo/_base/declare";
 import * as lang from "dojo/_base/lang";
-import "dojo/i18n";
-// @ts-ignore
-import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 import * as Observable from "dojo/store/Observable";
 import * as topic from "dojo/topic";
-
 import * as ESPRequest from "./ESPRequest";
 import * as ESPUtil from "./ESPUtil";
 import * as FileSpray from "./FileSpray";
+import nlsHPCC from "./nlsHPCC";
 import * as Utility from "./Utility";
 
 const i18n = nlsHPCC;
