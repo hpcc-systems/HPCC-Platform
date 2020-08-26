@@ -2131,7 +2131,23 @@ private:
             break;
 
         case 'C':
-            if (stricmp(queryName, "control:checkCompleted")==0)
+            if (stricmp(queryName, "control:cacheInfo")==0)
+            {
+                bool clear = control->getPropBool("@clear", false);
+                unsigned channel = control->getPropInt("@channel", -1);
+                if (clear)
+                    queryFileCache().clearOsCache();
+                else
+                {
+                    reply.append(" <CacheInfo");
+                    if (channel != (unsigned) -1)
+                        reply.appendf(" channel='%u'", channel);
+                    reply.append(">\n");
+                    queryFileCache().reportOsCache(reply, channel);
+                    reply.appendf(" </CacheInfo>\n");
+                }
+            }
+            else if (stricmp(queryName, "control:checkCompleted")==0)
             {
                 checkCompleted = control->getPropBool("@val", true);
                 topology->setPropBool("@checkCompleted", checkCompleted );
@@ -2670,6 +2686,15 @@ private:
                 __uint64 affinity = control->getPropInt64("@val", 0); // by default just refresh cached settings
                 topology->setPropInt64("@affinity", affinity);
                 updateAffinity(affinity);
+            }
+            else if (stricmp(queryName, "control:setCacheInfo")==0)
+            {
+                Owned<IPTreeIterator> infos = control->getElements(".//CacheInfo");
+                ForEach(*infos)
+                {
+                    IPropertyTree &info = infos->query();
+                    queryFileCache().warmOsCache(info.queryProp(""));
+                }
             }
             else if (stricmp(queryName, "control:setCopyResources")==0)
             {

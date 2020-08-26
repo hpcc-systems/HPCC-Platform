@@ -66,6 +66,12 @@ int jlib_decl numtostr(char *dst, unsigned int value);
 int jlib_decl numtostr(char *dst, unsigned long value);
 int jlib_decl numtostr(char *dst, unsigned __int64 _value);
 
+// Translate "human readable" size strings like 4G to numbers
+extern jlib_decl offset_t friendlyStringToSize(const char *in);
+
+// Write a string as file contents, atomically
+extern void jlib_decl atomicWriteFile(const char *fileName, const char *output);
+
 #ifndef _WIN32
 /**
  * Return full path name of a currently loaded dll that matches the supplied tail

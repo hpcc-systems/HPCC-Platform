@@ -50,14 +50,16 @@ interface ILazyFileIO : extends IFileIO
     virtual bool isCopying() const = 0;
     virtual IMemoryMappedFile *getMappedFile() = 0;
 
-    virtual void setCache(const IRoxieFileCache *) = 0;
+    virtual void setCache(IRoxieFileCache *, unsigned fileIdx) = 0;
     virtual void removeCache(const IRoxieFileCache *) = 0;
+    virtual unsigned getFileIdx() const = 0;
+    virtual unsigned getCrc() const = 0;
 };
 
 interface IRoxieFileCache : extends IInterface
 {
     virtual ILazyFileIO *lookupFile(const char *lfn, RoxieFileType fileType, IPartDescriptor *pdesc, unsigned numParts,
-                                      unsigned replicationLevel, const StringArray &deployedLocationInfo, bool startFileCopy) = 0;
+                                      unsigned channel, const StringArray &deployedLocationInfo, bool startFileCopy) = 0;
     virtual RoxieFileStatus fileUpToDate(IFile *f, offset_t size, const CDateTime &modified, bool isCompressed, bool autoDisconnect=true) = 0;
     virtual int numFilesToCopy() = 0;
     virtual void closeExpired(bool remote) = 0;
@@ -65,6 +67,11 @@ interface IRoxieFileCache : extends IInterface
     virtual void flushUnusedDirectories(const char *origBaseDir, const char *directory, StringBuffer &info) = 0;
     virtual void start() = 0;
     virtual void removeCache(ILazyFileIO *file) const = 0;
+    virtual void reportOsCache(StringBuffer &ret, unsigned channel) const = 0;
+    virtual void clearOsCache() = 0;
+    virtual void warmOsCache(const char *cacheInfo) = 0;
+    virtual void loadSavedOsCacheInfo() = 0;
+    virtual void noteRead(unsigned fileIdx, offset_t pos, unsigned len) = 0;
 };
 
 interface IDiffFileInfoCache : extends IInterface

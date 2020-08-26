@@ -36,18 +36,21 @@ class CKeyStore
 {
 private:
     Mutex mutex;
-    Mutex idmutex;
     CKeyIndexMRUCache keyIndexCache;
-    int nextId;
-    int getUniqId() { synchronized procedure(idmutex); return ++nextId; }
-    IKeyIndex *doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, IMemoryMappedFile *iMappedFile, bool isTLK, bool allowPreload);
+    std::atomic<unsigned> nextId { 0x80000000 };
+    unsigned getUniqId(unsigned useId)
+    {
+        if (useId != (unsigned) -1)
+            return useId;
+        return ++nextId;
+    }
+    IKeyIndex *doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK, bool allowPreload);
 public:
     CKeyStore();
     ~CKeyStore();
     IKeyIndex *load(const char *fileName, unsigned crc, bool isTLK, bool allowPreload);
-    IKeyIndex *load(const char *fileName, unsigned crc, IFileIO *iFileIO, bool isTLK, bool allowPreload);
+    IKeyIndex *load(const char *fileName, unsigned crc, IFileIO *iFileIO, unsigned fileIdx, bool isTLK, bool allowPreload);
     IKeyIndex *load(const char *fileName, unsigned crc, IMemoryMappedFile *iMappedFile, bool isTLK, bool allowPreload);
-    IKeyIndex *load(const char *fileName, unsigned crc, IReplicatedFile &part, bool isTLK, bool allowPreload);
     void clearCache(bool killAll);
     void clearCacheEntry(const char *name);
     void clearCacheEntry(const IFileIO *io);
@@ -76,7 +79,7 @@ private:
     CKeyIndex(CKeyIndex &);
 
 protected:
-    int iD;
+    unsigned iD;
     StringAttr name;
     CriticalSection blobCacheCrit;
     Owned<CJHTreeBlobNode> cachedBlobNode;
@@ -95,7 +98,7 @@ protected:
     CJHTreeBlobNode *getBlobNode(offset_t nodepos);
 
 
-    CKeyIndex(int _iD, const char *_name);
+    CKeyIndex(unsigned _iD, const char *_name);
     ~CKeyIndex();
     void init(KeyHdr &hdr, bool isTLK, bool allowPreload);
     void cacheNodes(CNodeCache *cache, offset_t nodePos, bool isTLK);
@@ -135,6 +138,7 @@ public:
     virtual unsigned getNodeSize() { return keyHdr->getNodeSize(); }
     virtual bool hasSpecialFileposition() const;
     virtual bool needsRowBuffer() const;
+    virtual bool prewarmPage(offset_t page);
  
  // INodeLoader impl.
     virtual CJHTreeNode *loadNode(offset_t offset) = 0;
@@ -147,7 +151,7 @@ class jhtree_decl CMemKeyIndex : public CKeyIndex
 private:
     Linked<IMemoryMappedFile> io;
 public:
-    CMemKeyIndex(int _iD, IMemoryMappedFile *_io, const char *_name, bool _isTLK);
+    CMemKeyIndex(unsigned _iD, IMemoryMappedFile *_io, const char *_name, bool _isTLK);
 
     virtual const char *queryFileName() { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return nullptr; }
@@ -162,7 +166,7 @@ private:
     void cacheNodes(CNodeCache *cache, offset_t firstnode, bool isTLK);
     
 public:
-    CDiskKeyIndex(int _iD, IFileIO *_io, const char *_name, bool _isTLK, bool _allowPreload);
+    CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool _isTLK, bool _allowPreload);
 
     virtual const char *queryFileName() { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return io; }

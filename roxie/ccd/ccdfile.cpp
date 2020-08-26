@@ -27,6 +27,7 @@
 
 #include "keydiff.hpp"
 
+#include "udptopo.hpp"
 #include "ccd.hpp"
 #include "ccdfile.hpp"
 #include "ccdquery.hpp"
@@ -34,7 +35,7 @@
 #include "ccdsnmp.hpp"
 #include "rmtfile.hpp"
 #include "ccdqueue.ipp"
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 #include <sys/mman.h>
 #endif
 #if defined (__linux__)
@@ -86,17 +87,19 @@ class CRoxieLazyFileIO : implements ILazyFileIO, implements IDelayedFile, public
 protected:
     IArrayOf<IFile> sources;
     Owned<IFile> logical;
-    unsigned currentIdx;
     Owned<IFileIO> current;
     Owned<IMemoryMappedFile> mmapped;
     mutable CriticalSection crit;
-    bool remote;
     offset_t fileSize;
-    CDateTime fileDate;
+    unsigned currentIdx;
     unsigned lastAccess;
-    bool copying;
-    bool isCompressed;
-    const IRoxieFileCache *cached;
+    CDateTime fileDate;
+    bool copying = false;
+    bool isCompressed = false;
+    bool remote = false;
+    IRoxieFileCache *cached = nullptr;
+    unsigned fileIdx = 0;
+    unsigned crc = 0;
     CRuntimeStatisticCollection fileStats;
 
 #ifdef FAIL_20_READ
@@ -106,19 +109,16 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieLazyFileIO(IFile *_logical, offset_t size, const CDateTime &_date, bool _isCompressed)
-        : logical(_logical), fileSize(size), isCompressed(_isCompressed), fileStats(diskLocalStatistics)
+    CRoxieLazyFileIO(IFile *_logical, offset_t size, const CDateTime &_date, bool _isCompressed, unsigned _crc)
+        : logical(_logical), fileSize(size), isCompressed(_isCompressed), crc(_crc), fileStats(diskLocalStatistics)
     {
         fileDate.set(_date);
         currentIdx = 0;
         current.set(&failure);
-        remote = false;
 #ifdef FAIL_20_READ
         readCount = 0;
 #endif
         lastAccess = msTick();
-        copying = false;
-        cached = NULL;
     }
     
     ~CRoxieLazyFileIO()
@@ -132,10 +132,21 @@ public:
             cached->removeCache(this);
     }
 
-    void setCache(const IRoxieFileCache *cache)
+    virtual unsigned getFileIdx() const override
+    {
+        return fileIdx;
+    }
+
+    virtual unsigned getCrc() const override
+    {
+        return crc;
+    }
+
+    void setCache(IRoxieFileCache *cache, unsigned _fileIdx)
     {
         assertex(!cached);
         cached = cache;
+        fileIdx = _fileIdx;
     }
 
     void removeCache(const IRoxieFileCache *cache)
@@ -331,6 +342,8 @@ public:
             {
                 size32_t ret = active->read(pos, len, data);
                 lastAccess = msTick();
+                if (cached && !remote)
+                    cached->noteRead(fileIdx, pos, ret);
                 return ret;
 
             }
@@ -587,23 +600,199 @@ static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations
 
 typedef StringArray *StringArrayPtr;
 
+// A circular buffer recording recent disk read operations that can be used to "prewarm" the cache
+
+struct CacheInfoEntry
+{
+    union
+    {
+        struct
+        {
+            bool diskCache : 1;   // false means it's in the jhtree cache, true means it's only in OS disk cache
+            __uint64 page: 39;
+            unsigned file: 24;
+        } b;
+        __uint64 u;
+    };
+
+    inline CacheInfoEntry() { u = 0; }
+    inline CacheInfoEntry(unsigned _file, offset_t _pos, bool _diskCache)
+    {
+        b.file = _file;
+        b.page = _pos >> pageBits;
+        b.diskCache = _diskCache;
+    }
+    inline bool operator < ( const CacheInfoEntry &l) const { return u < l.u; }
+    inline bool operator <= ( const CacheInfoEntry &l) const { return u <= l.u; }
+    inline void operator++ () { b.page++; }
+
+    static constexpr unsigned pageBits = 13;  // 8k 'pages'
+};
+
+class CacheReportingBuffer : public CInterfaceOf<ICacheInfoRecorder>
+{
+    // A circular buffer recording recent file activity. Note that noteRead() and clear() may be called from multiple threads
+    // (other functions are assumed single-threaded) and that locking is kept to a minimum, even if it means information may be slightly inaccurate.
+    CacheInfoEntry *recentReads = nullptr;
+    std::atomic<unsigned> recentReadHead = {0};
+    unsigned recentReadSize;
+
+public:
+
+    CacheReportingBuffer(offset_t trackSize)
+    {
+        recentReadSize = trackSize >> CacheInfoEntry::pageBits;
+        if (traceLevel)
+            DBGLOG("Creating CacheReportingBuffer with %d elements", recentReadSize);
+        assertex(recentReadSize);
+        recentReads = new CacheInfoEntry[recentReadSize];
+        recentReadHead = 0;
+    }
+    CacheReportingBuffer(const CacheReportingBuffer &from)
+    {
+        // NOTE - from may be updated concurrently - we do not want to lock it
+        // There are therefore races in here, but they do not matter (may result in very recent data being regarded as very old or vice versa).
+        recentReadSize = from.recentReadSize;
+        recentReadHead = from.recentReadHead.load(std::memory_order_relaxed);
+        recentReads = new CacheInfoEntry[recentReadSize];
+        memcpy(recentReads, from.recentReads, recentReadSize * sizeof(CacheInfoEntry));
+    }
+
+    ~CacheReportingBuffer()
+    {
+        delete [] recentReads;
+    }
+
+    void clear()
+    {
+        recentReadHead = 0;
+    }
+
+    void noteRead(unsigned fileIdx, offset_t pos, unsigned len, bool diskCache)
+    {
+        if (recentReads && len)
+        {
+            CacheInfoEntry start(fileIdx, pos, diskCache);
+            CacheInfoEntry end(fileIdx, pos+len-1, diskCache);
+            for(;start <= end; ++start)
+            {
+                recentReads[recentReadHead++ % recentReadSize] = start;
+            }
+        }
+    }
+
+    void sortAndDedup()
+    {
+        // NOTE: single-threaded
+        unsigned sortSize;
+        if (recentReadHead > recentReadSize)
+            sortSize = recentReadSize;
+        else
+            sortSize = recentReadHead;
+        std::sort(recentReads, recentReads + sortSize);
+        CacheInfoEntry lastPos(-1,-1,false);
+        unsigned dest = 0;
+        for (unsigned idx = 0; idx < sortSize; idx++)
+        {
+            CacheInfoEntry pos = recentReads[idx];
+            if (pos.b.file != lastPos.b.file || pos.b.page != lastPos.b.page)   // Ignore inNodeCache bit when deduping
+            {
+                recentReads[dest++] = pos;
+                lastPos = pos;
+            }
+        }
+        recentReadHead = dest;
+    }
+
+    void report(StringBuffer &ret, unsigned channel, const StringArray &cacheIndexes, const UnsignedShortArray &cacheIndexChannels)
+    {
+        // NOTE: single-threaded
+        assertex(recentReadHead <= recentReadSize);  // Should have sorted and deduped before calling this
+        unsigned lastFileIdx = (unsigned) -1;
+        offset_t lastPage = (offset_t) -1;
+        offset_t startRange = 0;
+        bool lastDiskCache = false;
+        bool includeFile = false;
+        for (unsigned idx = 0; idx < recentReadHead; idx++)
+        {
+            CacheInfoEntry pos = recentReads[idx];
+            if (pos.b.file != lastFileIdx)
+            {
+                if (includeFile)
+                    appendRange(ret, startRange, lastPage, lastDiskCache).newline();
+                lastFileIdx = pos.b.file;
+                if (channel==(unsigned) -1 || cacheIndexChannels.item(lastFileIdx)==channel)
+                {
+                    ret.appendf("%u|%s|", cacheIndexChannels.item(lastFileIdx), cacheIndexes.item(lastFileIdx));
+                    includeFile = true;
+                }
+                else
+                    includeFile = false;
+                startRange = pos.b.page;
+            }
+            else if ((pos.b.page == lastPage || pos.b.page == lastPage+1) && pos.b.diskCache == lastDiskCache)
+            {
+                // Still in current range
+            }
+            else
+            {
+                if (includeFile)
+                    appendRange(ret, startRange, lastPage, lastDiskCache);
+                startRange = pos.b.page;
+            }
+            lastPage = pos.b.page;
+            lastDiskCache = pos.b.diskCache;
+        }
+        if (includeFile)
+            appendRange(ret, startRange, lastPage, lastDiskCache).newline();
+    }
+
+    virtual void noteWarm(unsigned fileIdx, offset_t pos, unsigned len) override
+    {
+        noteRead(fileIdx, pos, len, false);
+    }
+
+private:
+    static StringBuffer &appendRange(StringBuffer &ret, offset_t start, offset_t end, bool diskCache)
+    {
+        if (!diskCache)
+            ret.append('*');
+        if (start==end)
+            ret.appendf("%" I64F "x", start);
+        else
+            ret.appendf("%" I64F "x-%" I64F "x", start, end);
+        return ret;
+    }
+};
+
 class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress, public CInterface
 {
     friend class CcdFileTest;
     mutable ICopyArrayOf<ILazyFileIO> todo; // Might prefer a queue but probably doesn't really matter.
     InterruptableSemaphore toCopy;
     InterruptableSemaphore toClose;
+#ifdef _CONTAINERIZED
+    InterruptableSemaphore cidtSleep;
+#endif
     mutable CopyMapStringToMyClass<ILazyFileIO> files;
     mutable CriticalSection crit;
     CriticalSection cpcrit;
     bool started;
     bool aborting;
-    bool closing;
-    bool testMode;
+    std::atomic<bool> closing;
     bool closePending[2];
     StringAttrMapping fileErrorList;
+#ifdef _CONTAINERIZED
+    Semaphore cidtStarted;
+#endif
     Semaphore bctStarted;
     Semaphore hctStarted;
+
+    // Read-tracking code for pre-warming OS caches
+
+    StringArray cacheIndexes;
+    UnsignedShortArray cacheIndexChannels;
+    CacheReportingBuffer *activeCacheReportingBuffer = nullptr;
 
     RoxieFileStatus fileUpToDate(IFile *f, offset_t size, const CDateTime &modified, bool isCompressed, bool autoDisconnect=true)
     {
@@ -633,14 +822,98 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
             return FileNotFound;
     }
 
-    ILazyFileIO *openFile(const char *lfn, unsigned partNo, const char *localLocation,
+#ifdef _CONTAINERIZED
+    int runCacheInfoDump()
+    {
+        cidtStarted.signal();
+        if (traceLevel)
+            DBGLOG("Cache info dump thread %p starting", this);
+        try
+        {
+            for (;;)
+            {
+                cidtSleep.wait(cacheReportPeriodSeconds * 1000);
+                if (closing)
+                    break;
+                if (traceLevel)
+                    DBGLOG("Cache info dump");
+                // Note - cache info is stored in the DLLSERVER persistent area - which we should perhaps consider renaming
+                const char* dllserver_root = getenv("HPCC_DLLSERVER_PATH");
+                assertex(dllserver_root != nullptr);
+
+                Owned<const ITopologyServer> topology = getTopology();
+                Owned<CacheReportingBuffer> tempCacheReportingBuffer = new CacheReportingBuffer(*activeCacheReportingBuffer);
+                getNodeCacheInfo(*tempCacheReportingBuffer);
+
+                tempCacheReportingBuffer->sortAndDedup();
+                StringBuffer ret;
+                tempCacheReportingBuffer->report(ret, 0, cacheIndexes, cacheIndexChannels);
+                if (ret.length())
+                {
+                    // NOTE - this location is shared with other nodes - who may also be writing
+                    VStringBuffer cacheFileName("%s/%s/cacheInfo.%d", dllserver_root, roxieName.str(), 0);
+                    atomicWriteFile(cacheFileName, ret);
+                    if (traceLevel > 8)
+                        DBGLOG("Channel 0 cache info:\n%s", ret.str());
+                }
+                for (unsigned channel : topology->queryChannels())
+                {
+                    tempCacheReportingBuffer->report(ret.clear(), channel, cacheIndexes, cacheIndexChannels);
+                    if (ret.length())
+                    {
+                        VStringBuffer cacheFileName("%s/%s/cacheInfo.%d", dllserver_root, roxieName.str(), channel);
+                        atomicWriteFile(cacheFileName, ret);
+                        if (traceLevel > 8)
+                            DBGLOG("Channel %u cache info:\n%s", channel, ret.str());
+                    }
+                }
+                // We could at this point put deduped back into active
+            }
+        }
+        catch (IException *E)
+        {
+            // Any exceptions terminate the thread - probably a better option than flooding the log
+            if (!aborting)
+                EXCLOG(MCoperatorError, E, "Cache info dumper: ");
+            E->Release();
+        }
+        catch (...)
+        {
+            IERRLOG("Unknown exception in cache info dump thread");
+        }
+        if (traceLevel)
+            DBGLOG("Cache info dump thread %p exiting", this);
+        return 0;
+    }
+#endif
+
+    unsigned trackCache(const char *filename, unsigned channel)
+    {
+        // NOTE - called from openFile, with crit already held
+        if (!activeCacheReportingBuffer)
+            return (unsigned) -1;
+        cacheIndexes.append(filename);
+        cacheIndexChannels.append(channel);
+        return cacheIndexes.length()-1;
+    }
+
+    virtual void noteRead(unsigned fileIdx, offset_t pos, unsigned len) override
+    {
+        if (activeCacheReportingBuffer)
+            activeCacheReportingBuffer->noteRead(fileIdx, pos, len, true);
+    }
+
+    ILazyFileIO *openFile(const char *lfn, unsigned partNo, unsigned channel, const char *localLocation,
                            IPartDescriptor *pdesc,
                            const StringArray &remoteLocationInfo,
                            offset_t size, const CDateTime &modified)
     {
         Owned<IFile> local = createIFile(localLocation);
-        bool isCompressed = testMode ? false : pdesc->queryOwner().isCompressed();
-        Owned<CRoxieLazyFileIO> ret = new CRoxieLazyFileIO(local.getLink(), size, modified, isCompressed);
+        bool isCompressed = selfTestMode ? false : pdesc->queryOwner().isCompressed();
+        unsigned crc = 0;
+        if (!selfTestMode)
+            pdesc->getCrc(crc);
+        Owned<CRoxieLazyFileIO> ret = new CRoxieLazyFileIO(local.getLink(), size, modified, isCompressed, crc);
         RoxieFileStatus fileStatus = fileUpToDate(local, size, modified, isCompressed);
         if (fileStatus == FileIsValid)
         {
@@ -655,7 +928,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
 
             // put the peerRoxieLocations next in the list
             StringArray localLocations;
-            if (testMode)
+            if (selfTestMode)
                 localLocations.append("test.buddy");
             else
                 appendRemoteLocations(pdesc, localLocations, localLocation, roxieName, true);  // Adds all locations on the same cluster
@@ -690,9 +963,10 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                     EXCLOG(MCoperatorError, E, "While creating remote file reference");
                     E->Release();
                 }
+                ret->setRemote(true);
             }
 
-            if (!addedOne && (copyResources || useRemoteResources || testMode))  // If no peer locations available, go to remote
+            if (!addedOne && (copyResources || useRemoteResources || selfTestMode))  // If no peer locations available, go to remote
             {
                 ForEachItemIn(idx, remoteLocationInfo)
                 {
@@ -707,6 +981,10 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                         {
                             if (miscDebugTraceLevel > 5)
                                 DBGLOG("adding remote location %s", remoteName);
+                            RemoteFilename rfn;
+                            rfn.setRemotePath(remoteName);
+                            if (!rfn.isLocal())    // MORE - may still want to copy files even if they are on a posix-accessible path, for local caching? Probably really want to know if hooked or not...
+                                ret->setRemote(true);
                             ret->addSource(remote.getClear());
                             addedOne = true;
                         }
@@ -743,9 +1021,8 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                     throw MakeStringException(ROXIE_FILE_OPEN_FAIL, "Could not open file %s", localLocation);
                 }
             }
-            ret->setRemote(true);
         }
-        ret->setCache(this);
+        ret->setCache(this, trackCache(local->queryFilename(), channel));
         files.setValue(local->queryFilename(), (ILazyFileIO *)ret);
         return ret.getClear();
     }
@@ -908,13 +1185,44 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieFileCache(bool _testMode = false) : testMode(_testMode), bct(*this), hct(*this)
+    CRoxieFileCache() :
+#ifdef _CONTAINERIZED
+                        cidt(*this),
+#endif
+                        bct(*this), hct(*this)
     {
         aborting = false;
         closing = false;
         closePending[false] = false;
         closePending[true] = false;
         started = false;
+        if (!selfTestMode && !allFilesDynamic)
+        {
+            offset_t cacheTrackSize = queryComponentConfig().getPropInt64("@cacheTrackSize", (offset_t) -1);
+            if (cacheTrackSize == (offset_t) -1)
+            {
+                const char *memLimit = queryComponentConfig().queryProp("resources/limits/@memory");
+                if (!memLimit)
+                    memLimit = queryComponentConfig().queryProp("resources/requests/@memory");
+                if (memLimit)
+                {
+                    try
+                    {
+                        cacheTrackSize = friendlyStringToSize(memLimit);
+                    }
+                    catch (IException *E)
+                    {
+                        EXCLOG(E);
+                        E->Release();
+                        cacheTrackSize = 0;
+                    }
+                }
+                else
+                    cacheTrackSize = 0x10000 * (1<<CacheInfoEntry::pageBits);
+            }
+            if (cacheTrackSize)
+                activeCacheReportingBuffer = new CacheReportingBuffer(cacheTrackSize);
+        }
     }
 
     ~CRoxieFileCache()
@@ -927,6 +1235,7 @@ public:
             ILazyFileIO *f = files.mapToValue(&h.query());
             f->removeCache(this);
         }
+        delete activeCacheReportingBuffer;
     }
 
     virtual void start()
@@ -937,15 +1246,36 @@ public:
             hct.start();
             bctStarted.wait();
             hctStarted.wait();
+#ifdef _CONTAINERIZED
+            if (activeCacheReportingBuffer && cacheReportPeriodSeconds)
+            {
+                cidt.start();
+                cidtStarted.wait();
+            }
+#endif
             started = true;
         }
     }
+
+#ifdef _CONTAINERIZED
+    class CacheInfoDumpThread : public Thread
+    {
+        CRoxieFileCache &owner;
+    public:
+        CacheInfoDumpThread(CRoxieFileCache &_owner) : Thread("CRoxieFileCache-CacheInfoDumpThread"), owner(_owner) {}
+
+        virtual int run()
+        {
+            return owner.runCacheInfoDump();
+        }
+    } cidt;
+#endif
 
     class BackgroundCopyThread : public Thread
     {
         CRoxieFileCache &owner;
     public:
-        BackgroundCopyThread(CRoxieFileCache &_owner) : Thread("CRoxieFileCacheBackgroundCopyThread"), owner(_owner) {}
+        BackgroundCopyThread(CRoxieFileCache &_owner) : Thread("CRoxieFileCache-BackgroundCopyThread"), owner(_owner) {}
 
         virtual int run()
         {
@@ -957,7 +1287,7 @@ public:
     {
         CRoxieFileCache &owner;
     public:
-        HandleCloserThread(CRoxieFileCache &_owner) : Thread("CRoxieFileCacheHandleCloserThread"), owner(_owner) {}
+        HandleCloserThread(CRoxieFileCache &_owner) : Thread("CRoxieFileCache-HandleCloserThread"), owner(_owner) {}
         virtual int run()
         {
             return owner.runHandleCloser();
@@ -1091,6 +1421,13 @@ public:
             toClose.interrupt();
             bct.join(timeout);
             hct.join(timeout);
+#ifdef _CONTAINERIZED
+            if (activeCacheReportingBuffer && cacheReportPeriodSeconds)
+            {
+                cidtSleep.interrupt();
+                cidt.join(timeout);
+            }
+#endif
         }
     }
 
@@ -1103,6 +1440,13 @@ public:
             toClose.signal();
             bct.join();
             hct.join();
+#ifdef _CONTAINERIZED
+            if (activeCacheReportingBuffer && cacheReportPeriodSeconds)
+            {
+                cidtSleep.signal();
+                cidt.join();
+            }
+#endif
         }
     }
 
@@ -1131,9 +1475,10 @@ public:
     }
 
     virtual ILazyFileIO *lookupFile(const char *lfn, RoxieFileType fileType,
-                                     IPartDescriptor *pdesc, unsigned numParts, unsigned replicationLevel,
+                                     IPartDescriptor *pdesc, unsigned numParts, unsigned channel,
                                      const StringArray &deployedLocationInfo, bool startFileCopy)
     {
+        unsigned replicationLevel = getReplicationLevel(channel);
         IPropertyTree &partProps = pdesc->queryProperties();
         offset_t dfsSize = partProps.getPropInt64("@size", -1);
         bool local = partProps.getPropBool("@local");
@@ -1204,7 +1549,7 @@ public:
                     return f.getClear();
             }
 
-            ret.setown(openFile(lfn, partNo, localLocation, pdesc, deployedLocationInfo, dfsSize, dfsDate));
+            ret.setown(openFile(lfn, partNo, channel, localLocation, pdesc, deployedLocationInfo, dfsSize, dfsDate));
 
             if (startFileCopy)
             {
@@ -1258,6 +1603,22 @@ public:
         return ret.getLink();
     }
 
+    ILazyFileIO *lookupLocalFile(const char *filename)
+    {
+        try
+        {
+            CriticalBlock b(crit);
+            ILazyFileIO * match = files.getValue(filename);
+            if (match && match->isAliveAndLink())
+                return match;
+        }
+        catch(IException *e)
+        {
+            e->Release();
+        }
+        return nullptr;
+    }
+
     virtual void closeExpired(bool remote)
     {
         // This schedules a close at the next available opportunity
@@ -1267,6 +1628,225 @@ public:
             closePending[remote] = true;
             DBGLOG("closeExpired %s scheduled - %d files open", remote ? "remote" : "local", (int) atomic_read(&numFilesOpen[remote]));
             toClose.signal();
+        }
+    }
+
+    static unsigned __int64 readPage(const char * &_t)
+    {
+        const char *t = _t;
+        unsigned __int64 v = 0;
+        for (;;)
+        {
+            char c = *t;
+            if ((c >= '0') && (c <= '9'))
+                v = v * 16 + (c-'0');
+            else if ((c >= 'a') && (c <= 'f'))
+                v = v * 16 + (c-'a'+10);
+            else if ((c >= 'A') && (c <= 'F'))
+                v = v * 16 + (c-'A'+10);
+            else
+                break;
+            t++;
+        }
+        _t = t;
+        return v;
+    }
+
+    virtual void loadSavedOsCacheInfo() override
+    {
+        Owned<const ITopologyServer> topology = getTopology();
+        for (unsigned channel : topology->queryChannels())
+            doLoadSavedOsCacheInfo(channel);
+        doLoadSavedOsCacheInfo(0);  // MORE - maybe only if I am also a server?
+    }
+
+    void doLoadSavedOsCacheInfo(unsigned channel)
+    {
+        const char* dllserver_root = getenv("HPCC_DLLSERVER_PATH");
+        assertex(dllserver_root != nullptr);
+        VStringBuffer cacheFileName("%s/%s/cacheInfo.%d", dllserver_root, roxieName.str(), channel);
+        StringBuffer cacheInfo;
+        try
+        {
+            if (checkFileExists(cacheFileName))
+            {
+                cacheInfo.loadFile(cacheFileName, false);
+                warmOsCache(cacheInfo);
+                if (traceLevel)
+                    DBGLOG("Loaded cache information from %s for channel %d", cacheFileName.str(), channel);
+            }
+        }
+        catch(IException *E)
+        {
+            EXCLOG(E);
+            E->Release();
+        }
+    }
+
+
+    virtual void warmOsCache(const char *cacheInfo) override
+    {
+        if (!cacheInfo)
+            return;
+#ifndef _WIN32
+        size_t os_page_size = getpagesize();
+#endif
+        char t = 0;
+        unsigned touched = 0;
+        unsigned preloaded = 0;
+        Owned<const ITopologyServer> topology = getTopology();
+        while (*cacheInfo)
+        {
+            // We are parsing lines that look like:
+            // <channel>|<filename>|<pagelist>
+            //
+            // Where pagelist is a space-separated list of page numers or (inclusive) ranges.
+            // A page number or range prefixed by a * means that the page(s) was found in the jhtree cache.
+            //
+            // For example,
+            // 1|/var/lib/HPCCSystems/hpcc-data/unknown/regress/multi/dg_index_evens._1_of_3|*0 3-4
+            // Pages are always recorded and specified as 8192 bytes (unless pagebits ever changes).
+
+            unsigned fileChannel = strtoul(cacheInfo, (char **) &cacheInfo, 10);
+            if (*cacheInfo != '|')
+                break;
+            if (!topology->implementsChannel(fileChannel))
+            {
+                const char *eol = strchr(cacheInfo, '\n');
+                if (!eol)
+                    break;
+                cacheInfo = eol+1;
+                continue;
+            }
+            cacheInfo++;
+            const char *endName = strchr(cacheInfo, '|');
+            assert(endName);
+            if (!endName)
+                break;
+            StringBuffer fileName(endName-cacheInfo, cacheInfo);
+            Owned<IKeyIndex> keyIndex;
+            bool keyFailed = false;
+            unsigned fileIdx = (unsigned) -1;
+#ifndef _WIN32
+            char *file_mmap = nullptr;
+            int fd = open(fileName, 0);
+            struct stat file_stat;
+            if (fd != -1)
+            {
+                fstat(fd, &file_stat);
+                file_mmap = (char *) mmap((void *)0, file_stat.st_size, PROT_READ, MAP_SHARED, fd, 0);
+                if (file_mmap == MAP_FAILED)
+                {
+                    DBGLOG("Failed to map file %s to pre-warm cache (error %d)", fileName.str(), errno);
+                    file_mmap = nullptr;
+                }
+            }
+            else if (traceLevel)
+            {
+                DBGLOG("Failed to open file %s to pre-warm cache (error %d)", fileName.str(), errno);
+            }
+#endif
+            Owned<ILazyFileIO> localFile = lookupLocalFile(fileName);
+            if (localFile)
+            {
+                fileIdx = localFile->getFileIdx();
+            }
+            cacheInfo = endName+1;  // Skip the |
+            while (*cacheInfo==' ')
+                cacheInfo++;
+            for (;;)
+            {
+                bool inNodeCache = (*cacheInfo=='*');
+                if (inNodeCache)
+                    cacheInfo++;
+                __uint64 startPage = readPage(cacheInfo);
+                __uint64 endPage;
+                if (*cacheInfo=='-')
+                {
+                    cacheInfo++;
+                    endPage = readPage(cacheInfo);
+                }
+                else
+                    endPage = startPage;
+                if (traceLevel > 8)
+                    DBGLOG("Touching %s %" I64F "x-%" I64F "x", fileName.str(), startPage, endPage);
+                offset_t startOffset = startPage << CacheInfoEntry::pageBits;
+                offset_t endOffset = (endPage+1) << CacheInfoEntry::pageBits;
+                if (inNodeCache && !keyFailed && localFile && !keyIndex)
+                {
+                    keyIndex.setown(createKeyIndex(fileName, localFile->getCrc(), *localFile.get(), fileIdx, false, false));  // MORE - we don't know if it's a TLK, but hopefully it doesn't matter
+                    if (!keyIndex)
+                        keyFailed = true;
+                }
+                if (inNodeCache && keyIndex)
+                {
+                    // Round startOffset up to nearest multiple of index node size
+                    unsigned nodeSize = keyIndex->getNodeSize();
+                    startOffset = ((startOffset+nodeSize-1)/nodeSize)*nodeSize;
+                    do
+                    {
+                        bool loaded = keyIndex->prewarmPage(startOffset);
+                        if (!loaded)
+                            break;
+                        preloaded++;
+                        startOffset += nodeSize;
+                    }
+                    while (startOffset < endOffset);
+                }
+#ifndef _WIN32
+                else if (file_mmap)
+                {
+                    if (fileIdx != (unsigned) -1)
+                        noteRead(fileIdx, startOffset, (endOffset-1) - startOffset);  // Ensure pages we prewarm are recorded in our cache tracker
+                    do
+                    {
+                        if (startOffset >= (offset_t) file_stat.st_size)
+                            break;    // Let's not core if the file has changed size since we recorded the info...
+                        t += file_mmap[startOffset];  // NOTE - t reported below so it cannot be optimized out
+                        touched++;
+                        startOffset += os_page_size;
+                    }
+                    while (startOffset < endOffset);
+                }
+#endif
+                if (*cacheInfo != ' ')
+                    break;
+                cacheInfo++;
+            }
+#ifndef _WIN32
+            if (file_mmap)
+                munmap(file_mmap, file_stat.st_size);
+            if (fd != -1)
+                close(fd);
+#endif
+            if (*cacheInfo != '\n')
+                break;
+            cacheInfo++;
+        }
+        assert(!*cacheInfo);
+        if (*cacheInfo)
+        {
+            DBGLOG("WARNING: Unrecognized cacheInfo format at %.20s", cacheInfo);
+        }
+        if (traceLevel)
+            DBGLOG("Touched %d pages, preloaded %d index nodes, result %d", touched, preloaded, t);  // We report t to make sure that compiler doesn't decide to optimize it away entirely
+    }
+
+    virtual void clearOsCache() override
+    {
+        if (activeCacheReportingBuffer)
+            activeCacheReportingBuffer->clear();
+    }
+
+    virtual void reportOsCache(StringBuffer &ret, unsigned channel) const override
+    {
+        if (activeCacheReportingBuffer)
+        {
+            Owned<CacheReportingBuffer> temp = new CacheReportingBuffer(*activeCacheReportingBuffer);
+            getNodeCacheInfo(*temp);
+            temp->sortAndDedup();
+            temp->report(ret, channel, cacheIndexes, cacheIndexChannels);
+            // We could at this point put deduped back into active
         }
     }
 
@@ -1403,7 +1983,7 @@ ILazyFileIO *createPhysicalFile(const char *id, IPartDescriptor *pdesc, IPartDes
     if (remotePDesc)
         appendRemoteLocations(remotePDesc, remoteLocations, NULL, NULL, false);    // Then any remote on remote dali
 
-    return queryFileCache().lookupFile(id, fileType, pdesc, numParts, getReplicationLevel(channel), remoteLocations, startCopy);
+    return queryFileCache().lookupFile(id, fileType, pdesc, numParts, channel, remoteLocations, startCopy);
 }
 
 //====================================================================================================
@@ -1808,8 +2388,6 @@ template <class X> class PerFormatCacheOf : public PerChannelCacheOf<X>
     // Identical for now, but characteristics are different so implementations may diverge.
     // For example, this one may want to be a hash table, and there may be many more entries
 };
-
-CRoxieFileCache * fileCache;
 
 class CResolvedFile : implements IResolvedFileCreator, implements ISafeSDSSubscription, public CInterface
 {
@@ -2326,10 +2904,10 @@ public:
                             if (lazyOpen)
                             {
                                 // We pass the IDelayedFile interface to createKeyIndex, so that it does not open the file immediately
-                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *QUERYINTERFACE(part.get(), IDelayedFile), false, false));
+                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *QUERYINTERFACE(part.get(), IDelayedFile), part->getFileIdx(), false, false));
                             }
                             else
-                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *part.get(), false, false));
+                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *part.get(), part->getFileIdx(), false, false));
                         }
                         else
                             keyset->addIndex(NULL);
@@ -2343,7 +2921,6 @@ public:
         else
         {
             // Channel 0 means return the TLK
-            IArrayOf<IKeyIndexBase> subkeys;
             Owned<IKeyIndexSet> keyset = createKeyIndexSet();
             ForEachItemIn(idx, subFiles)
             {
@@ -2364,10 +2941,10 @@ public:
                     if (lazyOpen)
                     {
                         // We pass the IDelayedFile interface to createKeyIndex, so that it does not open the file immediately
-                        key.setown(createKeyIndex(pname.str(), crc, *QUERYINTERFACE(keyFile.get(), IDelayedFile), numParts>1, false));
+                        key.setown(createKeyIndex(pname.str(), crc, *QUERYINTERFACE(keyFile.get(), IDelayedFile), keyFile->getFileIdx(), numParts>1, false));
                     }
                     else
-                        key.setown(createKeyIndex(pname.str(), crc, *keyFile.get(), numParts>1, false));
+                        key.setown(createKeyIndex(pname.str(), crc, *keyFile.get(), keyFile->getFileIdx(), numParts>1, false));
                     keyset->addIndex(LINK(key->queryPart(0)));
                 }
                 else
@@ -2766,23 +3343,27 @@ extern void releaseAgentDynamicFileCache()
         agentDynamicFileCache->releaseAll();
 }
 
+static Singleton<CRoxieFileCache> fileCache;
 
 // Initialization/termination
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    fileCache = new CRoxieFileCache;
     return true;
 }
 
 MODULE_EXIT()
 { 
-    fileCache->join();
-    fileCache->Release();
+    auto cache = fileCache.queryExisting();
+    if (cache)
+    {
+        cache->join();
+        cache->Release();
+    }
 }
 
 extern IRoxieFileCache &queryFileCache()
 {
-    return *fileCache;
+    return *fileCache.query([] { return new CRoxieFileCache; });
 }
 
 class CRoxieWriteHandler : implements IRoxieWriteHandler, public CInterface
@@ -3020,10 +3601,10 @@ protected:
 
     void testCopy()
     {
+        selfTestMode = true;
         remove("test.local");
         remove("test.remote");
         remove("test.buddy");
-        CRoxieFileCache cache(true);
         StringArray remotes;
         DummyPartDescriptor pdesc;
         CDateTime dummy;
@@ -3035,8 +3616,9 @@ protected:
         int wrote = write(f, &val, sizeof(int));
         CPPUNIT_ASSERT(wrote==sizeof(int));
         close(f);
+        CRoxieFileCache &cache = static_cast<CRoxieFileCache &>(queryFileCache());
 
-        Owned<ILazyFileIO> io = cache.openFile("test.local", 0, "test.local", NULL, remotes, sizeof(int), dummy);
+        Owned<ILazyFileIO> io = cache.openFile("test.local", 0, 0, "test.local", NULL, remotes, sizeof(int), dummy);
         CPPUNIT_ASSERT(io != NULL);
 
         // Reading it should read 1

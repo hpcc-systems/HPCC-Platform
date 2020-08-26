@@ -177,6 +177,8 @@ bool adhocRoxie = false;
 unsigned __int64 minFreeDiskSpace = 1024 * 0x100000;  // default to 1 GB
 unsigned socketCheckInterval = 5000;
 
+unsigned cacheReportPeriodSeconds = 5*60;
+
 StringBuffer logDirectory;
 StringBuffer pluginDirectory;
 StringBuffer queryDirectory;
@@ -713,6 +715,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         if (standAloneDll || wuid)
         {
             oneShotRoxie = true;
+            allFilesDynamic = true;
             if (topology->getPropBool("@server", false))
             {
 #ifdef _CONTAINERIZED
@@ -1047,6 +1050,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             parallelLoadQueries = 1;
 
         enableKeyDiff = topology->getPropBool("@enableKeyDiff", true);
+        cacheReportPeriodSeconds = topology->getPropInt("@cacheReportPeriodSeconds", 5*60);
 
         // NB: these directories will have been setup by topology earlier
         const char *primaryDirectory = queryBaseDirectory(grp_unknown, 0);
@@ -1350,6 +1354,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     time(&startupTime);
                     roxieServer->start();
                 }
+#ifdef _CONTAINERIZED
+                queryFileCache().loadSavedOsCacheInfo();
+#endif
                 writeSentinelFile(sentinelFile);
                 DBGLOG("Startup completed - LPT=%u APT=%u", queryNumLocalTrees(), queryNumAtomTrees());
                 DBGLOG("Waiting for queries");

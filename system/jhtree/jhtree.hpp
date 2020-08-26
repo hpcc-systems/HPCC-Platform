@@ -113,6 +113,7 @@ interface jhtree_decl IKeyIndex : public IKeyIndexBase
     virtual const IFileIO *queryFileIO() const = 0;
     virtual bool hasSpecialFileposition() const = 0;
     virtual bool needsRowBuffer() const = 0;
+    virtual bool prewarmPage(offset_t offset) = 0;
 };
 
 interface IKeyArray : extends IInterface
@@ -132,7 +133,11 @@ interface jhtree_decl IKeyIndexSet : public IKeyIndexBase
     virtual offset_t getTotalSize() = 0;
 };
 
-interface IReplicatedFile;
+interface ICacheInfoRecorder
+{
+    virtual void noteWarm(unsigned fileIdx, offset_t page, size32_t len) = 0;
+};
+
 
 extern jhtree_decl void clearKeyStoreCache(bool killAll);
 extern jhtree_decl void clearKeyStoreCacheEntry(const char *name);
@@ -145,11 +150,11 @@ extern jhtree_decl size32_t setNodeCacheMem(size32_t cacheSize);
 extern jhtree_decl size32_t setLeafCacheMem(size32_t cacheSize);
 extern jhtree_decl size32_t setBlobCacheMem(size32_t cacheSize);
 
+extern jhtree_decl void getNodeCacheInfo(ICacheInfoRecorder &cacheInfo);
 
 extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, bool isTLK, bool preloadAllowed);
-extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, IFileIO &ifile, bool isTLK, bool preloadAllowed);
-extern jhtree_decl IKeyIndex *createKeyIndex(IReplicatedFile &part, unsigned crc, bool isTLK, bool preloadAllowed);
-extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, IDelayedFile &ifile, bool isTLK, bool preloadAllowed);
+extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, IFileIO &ifile, unsigned fileIdx, bool isTLK, bool preloadAllowed);
+extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, IDelayedFile &ifile, unsigned fileIdx, bool isTLK, bool preloadAllowed);
 
 extern jhtree_decl bool isIndexFile(const char *fileName);
 extern jhtree_decl bool isIndexFile(IFile *file);
