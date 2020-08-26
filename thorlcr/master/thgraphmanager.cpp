@@ -678,7 +678,14 @@ void CJobManager::run()
             PROGLOG("acceptConversation aborted - terminating");
             break;
         }
-        StringAttr graphName;
+        StringAttr graphName, wuid;
+        const char *wuidGraph = item->queryWUID(); // actually <wuid>/<graphName>
+        StringArray sArray;
+        sArray.appendList(wuidGraph, "/");
+        assertex(2 == sArray.ordinality());
+        wuid.set(sArray.item(0));
+        graphName.set(sArray.item(1));
+
         handlingConversation = true;
         SocketEndpoint agentep;
         try
@@ -695,7 +702,6 @@ void CJobManager::run()
                 IWARNLOG("recv conversation failed");
                 continue;
             }
-            msg.read(graphName);
             agentep.deserialize(msg);
         }
         catch (IException *e)
@@ -705,7 +711,6 @@ void CJobManager::run()
         }
         Owned<IWorkUnitFactory> factory;
         Owned<IConstWorkUnit> workunit;
-        const char *wuid = item->queryWUID();
         bool allDone = false;
         try
         {
