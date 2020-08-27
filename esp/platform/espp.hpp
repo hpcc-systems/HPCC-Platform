@@ -38,6 +38,17 @@ public:
         _exit(0);
     }
 };
+/*
+ * Normalizes legacy ESP log levels [0,1,5,10] to jlog log detail levels 0-100
+ */
+inline LogMsgDetail NormalizeLegacyESPLogLevel(LogLevel level)
+{
+#ifndef _CONTAINERIZED
+    return level > 10 ? 100 : level * 10;
+#else
+    return level;
+#endif
+}
 
 class CEspServer : public CInterface,
    implements ISocketSelectHandler,
@@ -67,6 +78,7 @@ private:
     unsigned countCacheClients = 0;
     MapStringToMyClass<IEspCache> cacheClientMap;
     Owned<IPropertyTree> applicationConfig;
+    ILogMsgHandler * m_fileHandler;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -87,7 +99,10 @@ public:
         m_slowProcessingTime = config->m_options.slowProcessingTime;
         m_frameTitle.set(config->m_options.frameTitle);
         m_SEHMappingEnabled = false;
+        m_fileHandler = nullptr;
     }
+
+    void setFileHandler(ILogMsgHandler * fileHandler) { m_fileHandler = fileHandler;}
 
     ~CEspServer()
     {
@@ -151,13 +166,40 @@ public:
             m_waitForExit.signal();
     }
 
-    void setLogLevel(LogLevel level) { m_logLevel = level; }
+    void setLogLevel(LogLevel level)
+    {
+        m_logLevel = level;
+
+        ILogMsgFilter * espfilter = queryLogMsgManager()->queryMonitorFilter(queryStderrLogMsgHandler());
+        //in bare-metal, map legacy esp log levels (0,1,5,10) to standard jlog range (1-100)
+        if (NormalizeLegacyESPLogLevel(level) > espfilter->queryMaxDetail()) //only bump up, perhaps we need a resetLogLevel as well??
+        {
+            ILogMsgFilter * newfilter = getCategoryLogMsgFilter(espfilter->queryAudienceMask(), espfilter->queryClassMask(), NormalizeLegacyESPLogLevel(level), espfilter->queryLocalFlag());
+            queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), newfilter);
+
+            //in bare metal case, we'd need to change the file monitor's filter as well, not straighforward to fetch the
+            //appropriate file monitor
+            //options, keep pointer to loghandler when created (in openEspLogFile())
+            //utilize crude "component id" exposed in jlog, then queryLogMsgComponentReporter(unsigned compo)
+            //recreate file handler (not expensive, but several params to keep track of - logdir, maxLogFileSize, esp_main, alias: esp) just to look up attached handler via
+            //CLogMsgManager::queryMonitorFilter(const ILogMsgHandler * handler) const
+
+            if (m_fileHandler)
+                queryLogMsgManager()->changeMonitorFilter(m_fileHandler, newfilter);
+
+            //Also, if @enableSysLog, that handler might need to be updated as well
+        }
+    }
+
     void setLogRequests(LogRequest logReq) { m_logReq = logReq; }
     void setLogResponses(bool logResp) { m_logResp = logResp; }
     void setTxSummaryLevel(LogLevel level) { txSummaryLevel = level; }
     void setTxSummaryResourceReq(bool logReq) { txSummaryResourceReq = logReq; }
 
-    LogLevel getLogLevel() { return m_logLevel; }
+    LogLevel getLogLevel()
+    {
+        return m_logLevel;
+    }
     LogRequest getLogRequests() { return m_logReq; }
     bool getLogResponses() { return m_logResp; }
     LogLevel getTxSummaryLevel() { return txSummaryLevel; }
@@ -174,7 +216,7 @@ public:
         return applicationConfig.get();
     }
 
-    void log(LogLevel level, const char* fmt, ...) __attribute__((format(printf, 3, 4)))
+    /*void log(LogLevel level, const char* fmt, ...) __attribute__((format(printf, 3, 4)))
     {
         if (getLogLevel()>=level)
         {
@@ -183,7 +225,7 @@ public:
             VALOG(MCdebugInfo, unknownJob, fmt, args);
             va_end(args);
         }
-    }
+    }*/
 
 //IEspServer
     void addProtocol(IEspProtocol &protocol)

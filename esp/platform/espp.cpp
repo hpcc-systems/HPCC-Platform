@@ -269,8 +269,10 @@ int work_main(CEspConfig& config, CEspServer& server)
 }
 
 
-void openEspLogFile(IPropertyTree* envpt, IPropertyTree* procpt)
+ILogMsgHandler * openEspLogFile(IPropertyTree* envpt, IPropertyTree* procpt)
 {
+    ILogMsgHandler * fileHandler = nullptr;
+#ifndef _CONTAINERIZED
     StringBuffer logdir;
     if(procpt->hasProp("@name"))
     {
@@ -287,7 +289,6 @@ void openEspLogFile(IPropertyTree* envpt, IPropertyTree* procpt)
             procpt->getProp("@logDir", logdir);
     }
 
-#ifndef _CONTAINERIZED
     //logDir="-" is the default in application mode and logs to stderr, not to a file
     if (logdir.length() && !streq(logdir, "-"))
     {
@@ -296,14 +297,30 @@ void openEspLogFile(IPropertyTree* envpt, IPropertyTree* procpt)
         lf->setName("esp_main");//override default filename
         lf->setAliasName("esp");
         lf->setMaxLogFileSize(maxLogFileSize);
-        lf->beginLogging();
+
+        int loglev = -1;
+        if(procpt->hasProp("@logLevel"))
+            loglev = procpt->getPropInt("@logLevel", LogMin);
+
+        if (loglev > -1)
+            lf->setMaxDetail(NormalizeLegacyESPLogLevel((unsigned)loglev)); //jlog range set to 1-100
+        //else
+            //handlers are set to jlog.cpp #define DefaultDetail
+
+        fileHandler = lf->beginLogging();
     }
+
+    //only here to manipulate default log level on stderr stream for smoketest purposes
+    Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, NormalizeLegacyESPLogLevel(LogMin), true);
+    queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
 #else
     setupContainerizedLogMsgHandler();
 #endif
 
     if (procpt->getPropBool("@enableSysLog", false))
         UseSysLogForOperatorMessages();
+
+    return fileHandler;
 }   
 
 
@@ -410,7 +427,7 @@ int init_main(int argc, const char* argv[])
 
     //save off generated config to register with container.  Legacy can always reference the config file, application based ESP needs generated config saved off
     Owned<IPropertyTree> appConfig;
-
+    ILogMsgHandler * fileHandler = nullptr;
     try
     {
         const char* cfgfile = NULL;
@@ -471,7 +488,7 @@ int init_main(int argc, const char* argv[])
         const char * processName = procpt->queryProp("@name");
         setStatisticsComponentName(SCTesp, processName, true);
 
-        openEspLogFile(envpt.get(), procpt.get());
+        fileHandler = openEspLogFile(envpt.get(), procpt.get());
 
         DBGLOG("Esp starting %s", BUILD_TAG);
 
@@ -525,6 +542,9 @@ int init_main(int argc, const char* argv[])
             srv->setApplicationConfig(appConfig);
             server.setown(srv);
             abortHandler.setServer(srv);
+            if (fileHandler)
+                server->setFileHandler(fileHandler);
+
             setEspContainer(server.get());
 
             config->loadAll();

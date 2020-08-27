@@ -241,6 +241,7 @@ typedef unsigned LogMsgDetail;
  * It represents the lowest logging level (detail) required to output
  * messages of the given category.
  */
+constexpr LogMsgDetail MuteMsgThreshold        = 0;
 constexpr LogMsgDetail CriticalMsgThreshold    = 1;  //Use to declare categories reporting critical events (log level => 1)
 constexpr LogMsgDetail FatalMsgThreshold       = 1;  //Use to declare categories reporting Fatal events (log level => 1)
 constexpr LogMsgDetail ErrMsgThreshold         = 10; //Use to declare categories reporting Err messages (log level => 10)
@@ -250,6 +251,7 @@ constexpr LogMsgDetail ProgressMsgThreshold    = 50; //Use to declare categories
 constexpr LogMsgDetail InfoMsgThreshold        = 60; //Use to declare categories reporting Info messages (log level => 60)
 constexpr LogMsgDetail DebugMsgThreshold       = 80; //Use to declare categories reporting Debug messages (log level => 80)
 constexpr LogMsgDetail ExtraneousMsgThreshold  = 90; //Use to declare categories reporting Extraneous messages (log level => 90)
+constexpr LogMsgDetail MaxMsgThreshold         = 100;
 
 // Typedef for LogMsgSysInfo
 
