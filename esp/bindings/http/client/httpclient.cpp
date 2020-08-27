@@ -419,11 +419,16 @@ HttpClientErrCode CHttpClient::sendRequest(const char* method, const char* conte
         httprequest->addHeader("WWW-Authenticate", authheader.str());
     }
 
-    if (getEspLogLevel()>LogNormal)
+    /*if (getEspLogLevel()>LogNormal)
     {
         DBGLOG("Content type: %s", contenttype);
         DBGLOG("Request content: %s", request.str());
-    }
+    }*/
+    //Audience = user, Class = progress, Level = ProgressMsgThreshold (50)
+    //PROGLOG("Content type: %s\nRequest content: %s", contenttype, request.str());
+    //or
+    //Audience = operator, Class = progress, Level = ProgressMsgThreshold (50)
+	LOG(MCoperatorProgress, unknownJob, "Content type: %s\nRequest content: %s", contenttype, request.str());
 
     httprequest->setContent(request.str());
 
@@ -466,8 +471,10 @@ HttpClientErrCode CHttpClient::sendRequest(const char* method, const char* conte
     m_persistable = httpresponse->getPersistentEligible();
     m_numRequests++;
 
-    if (getEspLogLevel()>LogNormal)
-        DBGLOG("Response content: %s", response.str());
+    //if (getEspLogLevel()>LogNormal)
+    //    DBGLOG("Response content: %s", response.str());
+    //DBGLOG("Response content: %s", response.str()); //aud = programmer, MSGCLS =  progress, DebugMsgThreshold 80 - perhaps too high
+    LOG(MCuserProgress, unknownJob,"Response content: %s", response.str());//aud = user, MSGCLS = progress, InfoMsgThreshold 50
 
     return HttpClientErrCode::OK;
 }
@@ -599,12 +606,14 @@ HttpClientErrCode CHttpClient::proxyRequest(IHttpMessage *request, IHttpMessage 
     httprequest->setContentType(contentType);
     httprequest->setContent(forwardRequest->queryContent());
 
-    if (getEspLogLevel()>LogNormal)
+    StringBuffer s;
+    /*if (getEspLogLevel()>LogNormal)
     {
         StringBuffer s;
         DBGLOG("Content type: %s", forwardRequest->getContentType(s).str());
         DBGLOG("Request content: %s", forwardRequest->queryContent());
-    }
+    }*/
+    LOG(MCuserProgress, unknownJob,"Content type: %s\nRequest content: %s", forwardRequest->getContentType(s).str(), forwardRequest->queryContent());//aud = user, MSGCLS = progress, InfoMsgThreshold 50
 
     copyCookies(*httprequest, *forwardRequest, m_host);
 
@@ -632,8 +641,9 @@ HttpClientErrCode CHttpClient::proxyRequest(IHttpMessage *request, IHttpMessage 
     m_persistable = httpresponse->getPersistentEligible();
     m_numRequests++;
 
-    if (getEspLogLevel()>LogNormal)
-        DBGLOG("Response content: %s", httpresponse->queryContent());
+    //if (getEspLogLevel()>LogNormal)
+    //    DBGLOG("Response content: %s", httpresponse->queryContent());
+    LOG(MCuserProgress, unknownJob,"Response content: %s", httpresponse->queryContent());//aud = user, MSGCLS = progress, InfoMsgThreshold 50
 
     return HttpClientErrCode::OK;
 }
@@ -720,11 +730,12 @@ HttpClientErrCode CHttpClient::sendRequest(IProperties *headers, const char* met
         httprequest->addHeader("WWW-Authenticate", authheader.str());
     }
 
-    if (getEspLogLevel()>LogNormal)
+    /*if (getEspLogLevel()>LogNormal)
     {
         DBGLOG("Content type: %s", contenttype);
         DBGLOG("Request content: %s", content.str());
-    }
+    }*/
+    LOG(MCuserProgress, unknownJob,"Content type: %s\nRequest content: %s", contenttype, content.str());//aud = user, MSGCLS = progress, InfoMsgThreshold 50
 
     httprequest->setContent(content.str());
 
@@ -771,8 +782,9 @@ HttpClientErrCode CHttpClient::sendRequest(IProperties *headers, const char* met
     m_persistable = httpresponse->getPersistentEligible();
     m_numRequests++;
 
-    if (getEspLogLevel()>LogNormal)
-        DBGLOG("Response content: %s", responseContent.str());
+    //if (getEspLogLevel()>LogNormal)
+    //    DBGLOG("Response content: %s", responseContent.str());
+    LOG(MCuserProgress, unknownJob,"Response content: %s", responseContent.str());//aud = user, MSGCLS = progress, InfoMsgThreshold 50
 
     return HttpClientErrCode::OK;
 }
@@ -980,7 +992,11 @@ HttpClientErrCode CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp
             response.set_status(SOAP_CLIENT_ERROR);
 
         response.set_err(errmsg.str());
-        DBGLOG("SOAP_CLIENT_ERROR: %s", errmsg.str());
+        //DBGLOG("SOAP_CLIENT_ERROR: %s", errmsg.str()); //audience = programmer, class = progress, detailthreshold = 80
+        //above message would report, only if loglevel = 80 or above
+
+        //operator error log, perhaps not the perfect message class
+        OERRLOG("SOAP_CLIENT_ERROR: %s", errmsg.str()); //audience = operator, class = error, detailthreshold = 10
         return HttpClientErrCode::Error;
     }
     else if(statusClass == '5')
@@ -1030,11 +1046,14 @@ HttpClientErrCode CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp
     StringBuffer content;
     httpresponse->getContent(content);
 
-    if (getEspLogLevel()>LogNormal)
+    if(httpresponse->isTextMessage())
+    	LOG(MCuserProgress, unknownJob,"http response content = %s", content.str());//aud = user, MSGCLS = progress, InfoMsgThreshold 50
+
+    /*if (getEspLogLevel()>LogNormal)
     {
         if(httpresponse->isTextMessage())
             DBGLOG("http response content = %s", content.str());
-    }
+    }*/
 
     response.set_text(content.str());
             

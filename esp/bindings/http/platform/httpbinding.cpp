@@ -671,11 +671,12 @@ void EspHttpBinding::populateRequest(CHttpRequest *request)
         ISecResourceList* settinglist = m_setting_authmap->getResourceList("*");
         if(settinglist == NULL)
             return ;
-        if (getEspLogLevel()>=LogMax)
-        {
+
+        //if (getEspLogLevel()>=LogMax)
+        //{
             StringBuffer s;
             DBGLOG("Set security settings: %s", settinglist->toString(s).str());
-        }
+        //}
         ctx->setSecuritySettings(settinglist);
     }
     return ;
@@ -937,9 +938,11 @@ int EspHttpBinding::onGet(CHttpRequest* request, CHttpResponse* response)
 
     // At this time, the request is already received and fully passed, and
     // the user authenticated
-    LogLevel level = getEspLogLevel(&context);
-    if (level >= LogNormal)
-        DBGLOG("EspHttpBinding::onGet");
+
+    //LogLevel level = getEspLogLevel(&context);
+    //if (level >= LogNormal)
+    //    DBGLOG("EspHttpBinding::onGet");
+    NEWESPLOG(&context, "EspHttpBinding::onGet"); //use esp log to interrogate context for debug mode
     
     response->setVersion(HTTP_VERSION);
     response->addHeader("Expires", "0");
@@ -2796,8 +2799,8 @@ void EspHttpBinding::validateResponse(IEspContext& context, CHttpRequest* reques
     getSchema(xsd,context,request,serviceQName,methodQName,true);
             
     // validation
-    if (getEspLogLevel()>LogMax)
-        DBGLOG("[VALIDATE] xml: %s\nxsd: %s\nns: %s",xml.str(), xsd.str(), ns.str());
+    //if (getEspLogLevel()>LogMax)
+    DBGLOG("[VALIDATE] xml: %s\nxsd: %s\nns: %s",xml.str(), xsd.str(), ns.str());
 
     IXmlValidator* v = getXmlLibXmlValidator();
 
@@ -2846,8 +2849,9 @@ void EspHttpBinding::sortResponse(IEspContext& context, CHttpRequest* request, M
 
         xform->setXmlSource(respXML,respXML.length());
         xform->transform(result);
-        if (getEspLogLevel()>LogNormal)
-            DBGLOG("XML sorted: %s", result.str());
+        //if (getEspLogLevel()>LogNormal)
+        DBGLOG("XML sorted: %s", result.str());
+
         unsigned len = result.length();
         content.setBuffer(len, result.detach(), true);      
     } catch (IException* e) {
