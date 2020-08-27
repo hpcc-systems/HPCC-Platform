@@ -268,6 +268,8 @@ private:
 
     static IPropertyTree *readCache(const char *xpath)
     {
+        if (oneShotRoxie)
+            return nullptr;
         CriticalBlock b(cacheCrit);
         loadCache();
         return cache->getPropTree(xpath);

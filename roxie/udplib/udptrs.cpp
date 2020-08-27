@@ -919,7 +919,8 @@ private:
                 maxMetaLength = DATA_PAYLOAD - sizeof(UdpPacketHeader);
                 part_buffer = bufferManager->allocate();
             }
-            memcpy(&part_buffer->data[sizeof(UdpPacketHeader)+data_used], metaData, metaLength);
+            if (metaLength)
+                memcpy(&part_buffer->data[sizeof(UdpPacketHeader)+data_used], metaData, metaLength);
             package_header.pktSeq |= UDP_PACKET_COMPLETE;
             put_package(part_buffer, data_used, metaLength);
         }
