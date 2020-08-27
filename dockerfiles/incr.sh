@@ -136,16 +136,16 @@ build_image() {
        --build-arg BUILD_LABEL=${BUILD_LABEL} \
        --build-arg BUILD_TYPE=${BUILD_TYPE} ${@:3} \
        ${dockerfolder}/ 
-    if [ "$TAGLATEST" = "1" ] ; then
-      docker tag ${DOCKER_REPO}/${name}:${label} ${DOCKER_REPO}/${name}:latest
-      if [ "$PUSH" = "1" ] ; then
-        docker push ${DOCKER_REPO}/${name}:${label}
-        docker push ${DOCKER_REPO}/${name}:latest
-      fi
-    else
-      if [ "$PUSH" = "1" ] ; then
-        docker push ${DOCKER_REPO}/${name}:${label}
-      fi
+  fi
+  if [ "$TAGLATEST" = "1" ] ; then
+    docker tag ${DOCKER_REPO}/${name}:${label} ${DOCKER_REPO}/${name}:latest
+    if [ "$PUSH" = "1" ] ; then
+      docker push ${DOCKER_REPO}/${name}:${label}
+      docker push ${DOCKER_REPO}/${name}:latest
+    fi
+  else
+    if [ "$PUSH" = "1" ] ; then
+      docker push ${DOCKER_REPO}/${name}:${label}
     fi
   fi
 }
