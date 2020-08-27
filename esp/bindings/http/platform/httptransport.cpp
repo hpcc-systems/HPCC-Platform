@@ -2606,13 +2606,31 @@ StringBuffer &toText(StringBuffer &content, IMultiException *me)
     return content;
 }
 
+/*
+ * Function to determine ESP exception logging class based on exception audience
+ */
+inline LogMsgClass mapErrAudToLogClass(IMultiException *me)
+{
+    switch (me->errorAudience())
+    {
+    case MSGAUD_user:
+        return MSGCLS_information;
+    case MSGAUD_programmer:
+        return MSGCLS_error;
+    case MSGAUD_audit:
+    case MSGAUD_operator:
+    default:
+        return MSGCLS_warning;
+    }
+}
+
 bool CHttpResponse::handleExceptions(IXslProcessor *xslp, IMultiException *me, const char *serv, const char *meth, const char *errorXslt)
 {
     IEspContext *context=queryContext();
     if (me->ordinality()>0)
     {
         StringBuffer msg;
-        IWARNLOG("Exception(s) in %s::%s - %s", serv, meth, me->errorMessage(msg).append('\n').str());
+        LOG(MCexception(me, mapErrAudToLogClass(me)), "Exception(s) in %s::%s - %s", serv, meth, me->errorMessage(msg).append('\n').str());
 
         StringBuffer content;
         switch (context->getResponseFormat())

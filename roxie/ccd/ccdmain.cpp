@@ -1182,13 +1182,13 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 
         if (!oneShotRoxie)
             loadPlugins();
-        createDelayedReleaser();
-        globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
-        globalPackageSetManager->load();
         unsigned snifferChannel = numChannels+2; // MORE - why +2 not +1??
 #ifdef _CONTAINERIZED
         initializeTopology(topoValues, myRoles, traceLevel);
 #endif
+        createDelayedReleaser();
+        globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
+        globalPackageSetManager->load();
         ROQ = createOutputQueueManager(snifferChannel, numAgentThreads);
         ROQ->setHeadRegionSize(headRegionSize);
         ROQ->start();

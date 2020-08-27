@@ -1,9 +1,6 @@
 import * as lang from "dojo/_base/lang";
 import * as aspect from "dojo/aspect";
 import * as dom from "dojo/dom";
-import "dojo/i18n";
-// @ts-ignore
-import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 
 import * as registry from "dijit/registry";
 
@@ -23,6 +20,7 @@ import "dijit/Toolbar";
 import "dijit/ToolbarSeparator";
 
 import { declareDecorator } from "./DeclareDecorator";
+import nlsHPCC from "./nlsHPCC";
 import { WUScopeController } from "./WUScopeController";
 
 type _Widget = {

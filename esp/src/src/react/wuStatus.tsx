@@ -3,12 +3,10 @@ import Step from "@material-ui/core/Step";
 import StepLabel from "@material-ui/core/StepLabel";
 import Stepper from "@material-ui/core/Stepper";
 import { MuiThemeProvider } from "@material-ui/core/styles";
+import nlsHPCC from "../nlsHPCC";
 import { theme } from "./theme";
 import * as React from "react";
 
-import "dojo/i18n";
-// @ts-ignore
-import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 
 const Steps = [
     {
@@ -25,7 +23,7 @@ const Steps = [
     },
     {
         text: nlsHPCC.Completed,
-        activeText: nlsHPCC.Completing
+        activeText: nlsHPCC.Completed
     }
 ];
 

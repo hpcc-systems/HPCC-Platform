@@ -4,9 +4,6 @@ import * as Deferred from "dojo/_base/Deferred";
 import * as lang from "dojo/_base/lang";
 import * as dom from "dojo/dom";
 import * as html from "dojo/html";
-import "dojo/i18n";
-// @ts-ignore
-import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 import * as on from "dojo/on";
 import * as topic from "dojo/topic";
 
@@ -25,6 +22,7 @@ import * as tree from "../dgrid/tree";
 import * as _Widget from "hpcc/_Widget";
 import * as ESPUtil from "./ESPUtil";
 import * as ESPWorkunit from "./ESPWorkunit";
+import nlsHPCC from "./nlsHPCC";
 import * as Utility from "./Utility";
 import * as WsWorkunits from "./WsWorkunits";
 

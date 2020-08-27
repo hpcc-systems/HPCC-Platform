@@ -8,9 +8,6 @@ import * as aspect from "dojo/aspect";
 import * as domClass from "dojo/dom-class";
 import * as domStyle from "dojo/dom-style";
 import * as Evented from "dojo/Evented";
-import "dojo/i18n";
-// @ts-ignore
-import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 import * as json from "dojo/json";
 import * as on from "dojo/on";
 import * as query from "dojo/query";
@@ -33,6 +30,7 @@ import * as OnDemandGrid from "dgrid/OnDemandGrid";
 import * as Selection from "dgrid/Selection";
 
 import { declareDecorator } from "./DeclareDecorator";
+import nlsHPCC from "./nlsHPCC";
 import { userKeyValStore } from "./KeyValStore";
 import { Pagination } from "./Pagination";
 

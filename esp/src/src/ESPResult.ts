@@ -3,15 +3,13 @@ import * as declare from "dojo/_base/declare";
 import * as Deferred from "dojo/_base/Deferred";
 import * as lang from "dojo/_base/lang";
 import * as domConstruct from "dojo/dom-construct";
-import "dojo/i18n";
-// @ts-ignore
-import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
 
 import * as entities from "dojox/html/entities";
 import * as parser from "dojox/xml/parser";
 
 import { ESPBase } from "./ESPBase";
 import * as ESPRequest from "./ESPRequest";
+import nlsHPCC from "./nlsHPCC";
 import * as Utility from "./Utility";
 import * as WsWorkunits from "./WsWorkunits";
 
