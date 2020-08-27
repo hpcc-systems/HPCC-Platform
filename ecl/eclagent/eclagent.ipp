@@ -513,7 +513,7 @@ public:
     virtual void selectCluster(const char * cluster);
     virtual void restoreCluster();
 
-    virtual IRemoteConnection *startPersist(const char * name);
+    IRemoteConnection *startPersist(const char * name);
     bool alreadyLockedPersist(const char * persistName);
     void finishPersist(const char * persistName, IRemoteConnection *persistLock);
     void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC);

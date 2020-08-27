@@ -663,7 +663,7 @@ private:
     virtual void finishPersist(const char * persistName, IRemoteConnection *persistLock)
     {
         //this protects lock array from race conditions
-        CriticalSection finishPersistCritSec;
+        CriticalBlock block(finishPersistCritSec);
         logctx.CTXLOG("Finished persists - add to read lock list");
         persistReadLocks.append(*persistLock);
     }

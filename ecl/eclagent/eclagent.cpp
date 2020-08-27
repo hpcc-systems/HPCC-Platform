@@ -2215,6 +2215,7 @@ void EclAgentWorkflowMachine::begin()
 
 IRemoteConnection *EclAgentWorkflowMachine::startPersist(const char * logicalName)
 {
+    CriticalBlock block(finishPersistCritSec);
     IRemoteConnection * persistLock;
     if(persistsPrelocked)
     {
@@ -2230,7 +2231,7 @@ IRemoteConnection *EclAgentWorkflowMachine::startPersist(const char * logicalNam
 void EclAgentWorkflowMachine::finishPersist(const char * persistName, IRemoteConnection *persistLock)
 {
     //this protects lock list from race conditions
-    CriticalSection finishPersistCritSec;
+    CriticalBlock block(finishPersistCritSec);
     agent.finishPersist(persistName, persistLock);
 }
 
