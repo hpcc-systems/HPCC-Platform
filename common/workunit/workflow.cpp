@@ -574,11 +574,11 @@ public:
     void setPersistWfid(unsigned _persistWfid)
     {
         persistWfid = _persistWfid;
+        if(mode == WFModePersistActivator)
+            logicalSuccessors.append(_persistWfid);
     }
     void setPersistCounterpart(CCloneWorkflowItem * _persistCounterpart)
     {
-        if(mode == WFModePersistActivator)
-            logicalSuccessors.append(_persistCounterpart->queryWfid());
         persistCounterpart = _persistCounterpart;
     }
     CCloneWorkflowItem * queryPersistCounterpart() const { return persistCounterpart; }
@@ -1507,9 +1507,9 @@ void WorkflowMachine::doExecuteConditionExpression(CCloneWorkflowItem & item)
 void WorkflowMachine::doExecutePersistActivator(CCloneWorkflowItem & item)
 {
     checkPersistSupported();
-    CCloneWorkflowItem * persistItem = item.queryPersistCounterpart();
+    CCloneWorkflowItem & persistItem = queryWorkflowItem(item.queryPersistWfid());
     SCMStringBuffer name;
-    const char *logicalName = persistItem->getPersistName(name).str();
+    const char *logicalName = persistItem.getPersistName(name).str();
     unsigned wfid = item.queryPersistWfid();
     if (!isPersistAlreadyLocked(logicalName))
     {
@@ -1541,8 +1541,8 @@ void WorkflowMachine::doExecutePersistActivator(CCloneWorkflowItem & item)
                 LOG(MCworkflow, "Persist is not up to date. (item %u)", wfid);
     #endif
                 //save persist version and lock in WFModePersist item
-                persistItem->setPersistVersion(thisPersist.getClear());
-                persistItem->setPersistLock(persistLock.getClear());
+                persistItem.setPersistVersion(thisPersist.getClear());
+                persistItem.setPersistLock(persistLock.getClear());
                 processLogicalSuccessors(item);
                 return;
             }
@@ -1552,8 +1552,8 @@ void WorkflowMachine::doExecutePersistActivator(CCloneWorkflowItem & item)
 #ifdef TRACE_WORKFLOW
     LOG(MCworkflow, "Persist is up to date. (item %u)", wfid);
 #endif
-    processDependentSuccessors(*persistItem);
-    processLogicalSuccessors(*persistItem);
+    processDependentSuccessors(persistItem);
+    processLogicalSuccessors(persistItem);
 }
 
 void WorkflowMachine::doExecutePersistItemParallel(CCloneWorkflowItem & item)
