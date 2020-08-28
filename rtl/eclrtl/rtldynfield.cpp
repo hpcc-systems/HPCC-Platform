@@ -995,6 +995,7 @@ enum FieldMatchType {
     match_inifblock   = 0x400,   // matching to a field in an ifblock - may not be present
     match_deblob      = 0x1000,  // source needs fetching from a blob prior to translation
     match_dynamic     = 0x2000,  // source needs fetching from dynamic source (callback)
+    match_filepos     = 0x4000,  // type moving in or out of filepos field - cast required
 };
 
 StringBuffer &describeFlags(StringBuffer &out, FieldMatchType flags)
@@ -1016,6 +1017,7 @@ StringBuffer &describeFlags(StringBuffer &out, FieldMatchType flags)
     if (flags & match_virtual) out.append("|virtual");
     if (flags & match_deblob) out.append("|blob");
     if (flags & match_dynamic) out.append("|dynamic");
+    if (flags & match_filepos) out.append("|filepos");
     assertex(out.length() > origlen);
     return out.remove(origlen, 1);
 }
@@ -1261,6 +1263,7 @@ private:
                         offset += fillSize;
                         break;
                     }
+                    case match_filepos:
                     case match_typecast:
                         offset = translateScalar(builder, offset, field, *type, *sourceType, source);
                         break;
@@ -1741,6 +1744,9 @@ private:
                         }
                     }
                 }
+                else if ((type->getType()==type_filepos || sourceType->getType()==type_filepos) &&
+                         type->isUnsigned()==sourceType->isUnsigned())
+                    info.matchType = match_filepos;
                 else
                     info.matchType = match_typecast;
                 if (deblob)
