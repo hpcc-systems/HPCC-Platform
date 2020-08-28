@@ -3,7 +3,7 @@
 
 const fs = require('fs');
 
-globalThis.define = nlsHPCC => {
+global.define = nlsHPCC => {
     fs.writeFileSync('./src/nlsHPCCType.ts', `\
 export default interface nlsHPCC {
 ${Object.keys(nlsHPCC.root).map(id => `    ${id}: string;`).join("\n")}
