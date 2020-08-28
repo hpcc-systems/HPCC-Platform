@@ -14,7 +14,20 @@
 #    limitations under the License.
 ################################################################################
 
-HPCC_ADD_SUBDIRECTORY (metrictest)
-HPCC_ADD_SUBDIRECTORY (sinks)
-HPCC_ADD_SUBDIRECTORY (triggers)
-HPCC_ADD_SUBDIRECTORY (collectionsystems)
+project(hpccmetricstrigger_periodic)
+
+set ( srcs
+        PeriodicTrigger.cpp
+        )
+
+include_directories(
+        ../
+        ../../../metrics
+        ${HPCC_SOURCE_DIR}/system/include
+        ${HPCC_SOURCE_DIR}/oss
+)
+
+add_definitions( -DSINKDLL)
+HPCC_ADD_LIBRARY( hpccmetricstrigger_periodic SHARED ${srcs} )
+
+INSTALL ( TARGETS hpccmetricstrigger_periodic RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )

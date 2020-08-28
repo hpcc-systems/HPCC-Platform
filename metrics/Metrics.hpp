@@ -59,7 +59,7 @@ class Metric : public IMetric
     protected:
         std::string name;
         std::string reportingName;
-        MetricType type;         // optional
+        MetricType type;
         bool inMetricSet = false;
 };
 

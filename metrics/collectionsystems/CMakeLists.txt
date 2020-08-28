@@ -13,8 +13,4 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-
-HPCC_ADD_SUBDIRECTORY (metrictest)
-HPCC_ADD_SUBDIRECTORY (sinks)
-HPCC_ADD_SUBDIRECTORY (triggers)
-HPCC_ADD_SUBDIRECTORY (collectionsystems)
+HPCC_ADD_SUBDIRECTORY (prometheus)

@@ -29,14 +29,12 @@
 namespace hpccMetrics
 {
 
-    typedef hpccMetrics::IMetricSink* (*getMetricSinkInstance)(std::string name, const std::map<std::string, std::string> &parms);
+    typedef hpccMetrics::IMetricSink* (*getSinkInstance)(const std::string &sinkName, const std::map<std::string, std::string> &parms);
 
     class MetricSink : public IMetricSink
     {
         public:
-            explicit MetricSink(std::string _name, const std::map<std::string, std::string> &parms) :
-                name{std::move(_name)}
-            {  }
+
             virtual ~MetricSink() = default;
 
             void addMetricSet(const std::shared_ptr<IMetricSet> &pSet) override
@@ -44,12 +42,23 @@ namespace hpccMetrics
                 metricSets[pSet->getName()] = pSet;
             }
 
-            std::string getName() override { return name; }
+            std::string getName() const override { return name; }
+
+            //
+            // Gets a sink instance by sink type. Sink types have a specific lib name format. When loaded they are also
+            static IMetricSink *getSinkByType(const char *sinkType, const std::string &sinkName, const std::map<std::string, std::string> &parms)
+            {
+                //
+                // When loading by type, the lib has a specific formatted name of libhpccmetricssink_<type>.
+                std::string sinkLibName = "libhpccmetricssink_";
+                sinkLibName.append(sinkType);
+                return MetricSink::getSinkFromLib(sinkLibName.c_str(), nullptr, sinkName, parms);
+            }
 
 
             // not sure if this is the best place for this or not, but wanted a static kind of factory that would load
             // a sink from a .so  (see the metrics/sinks folder for available sink libs)
-            static IMetricSink *getMetricSinkFromLib(const char *sinkLibName, const char *sinkGetInstanceProcName, std::string name, const std::map<std::string, std::string> &parms)
+            static IMetricSink *getSinkFromLib(const char *sinkLibName, const char *getInstanceProcName, const std::string &sinkName, const std::map<std::string, std::string> &parms)
             {
                 //
                 // Add .so if recognized extension is not present
@@ -72,12 +81,12 @@ namespace hpccMetrics
 
                 if (libHandle != nullptr)
                 {
-                    const char *epName = (sinkGetInstanceProcName != nullptr && strlen(sinkGetInstanceProcName) != 0) ?
-                        sinkGetInstanceProcName : "getMetricSinkInstance";
-                    auto getInstanceProc = (getMetricSinkInstance) GetSharedProcedure(libHandle, epName);
+                    const char *epName = (getInstanceProcName != nullptr && strlen(getInstanceProcName) != 0) ?
+                                         getInstanceProcName : "getSinkInstance";
+                    auto getInstanceProc = (getSinkInstance) GetSharedProcedure(libHandle, epName);
                     if (getInstanceProc != nullptr)
                     {
-                        IMetricSink *pSink = getInstanceProc(name, parms);
+                        IMetricSink *pSink = getInstanceProc(sinkName, parms);
                         return pSink;
                     }
                 }
@@ -85,8 +94,17 @@ namespace hpccMetrics
                 return nullptr;
             }
 
+            std::string getType() const override { return type; }
+
+        protected:
+            explicit MetricSink(std::string _name, std::string _type) :
+                name{std::move(_name)},
+                type{std::move(_type)}
+            {  }
+
         protected:
             std::string name;
+            std::string type;
             std::map<std::string, std::shared_ptr<IMetricSet>> metricSets;
     };
 }

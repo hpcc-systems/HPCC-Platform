@@ -17,31 +17,33 @@
 
 #pragma once
 
-#include <memory>
-#include <unordered_set>
-#include "IMetricSet.hpp"
-#include "IMetricSink.hpp"
+#include <chrono>
+#include <thread>
+#include "../../MetricsReportTrigger.hpp"
+#include "../../MetricsReportContext.hpp"
+#include "../../MetricsReportConfig.hpp"
 
 namespace hpccMetrics
 {
 
-struct MetricsReportConfig
-{
-    //
-    // Adds a metric set for reporting to a sink. (note that pSink will probably become OWNED)
-    void addReportConfig(IMetricSink *pSink, const std::shared_ptr<IMetricSet> &set)
+    class PeriodicTrigger : public MetricsReportTrigger
     {
-        auto reportCfgIt = metricReportConfig.find(pSink);
-        if (reportCfgIt == metricReportConfig.end())
-        {
-            reportCfgIt = metricReportConfig.insert({pSink, std::vector<std::shared_ptr<IMetricSet>>()}).first;
-        }
-        reportCfgIt->second.emplace_back(set);
-        metricSets.insert(set);
-    }
+        public:
+            PeriodicTrigger(const std::map<std::string, std::string> &parms, MetricsReportConfig &reportConfig);
+            ~PeriodicTrigger() override;
+            void start() override;
+            void stop() override;
+            bool isStopCollection() const;
 
-    std::unordered_set<std::shared_ptr<IMetricSet>> metricSets;
-    std::map<IMetricSink *, std::vector<std::shared_ptr<IMetricSet>>> metricReportConfig;
-};
+        protected:
+            void stopCollection();
+            static void collectionThread(PeriodicTrigger *pReportTrigger);
+
+        private:
+            bool collectionStarted = false;
+            bool stopCollectionFlag = false;
+            std::thread collectThread;
+            std::chrono::seconds periodSeconds;
+    };
 
 }

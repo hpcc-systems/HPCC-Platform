@@ -130,7 +130,14 @@ public:
     void                      addToPTree(IPropertyTree * tree) const;
     void                      orWithFilter(const ILogMsgFilter * filter);
     void                      reset();
-    bool                      includeCategory(const LogMsgCategory & category) const { return (category.queryAudience() & audienceMask) && (category.queryClass() & classMask) && (category.queryDetail() <= maxDetail); }
+    bool                      includeCategory(const LogMsgCategory & category) const
+    {
+    	bool one = category.queryAudience() & audienceMask;
+    	bool two = one && (category.queryClass() & classMask);
+    	bool three = two && (category.queryDetail() <= maxDetail);
+one = one && two && three;
+    	return (category.queryAudience() & audienceMask) && (category.queryClass() & classMask) && (category.queryDetail() <= maxDetail);
+    }
     bool                      queryLocalFlag() const { return localFlag; }
 protected:
     unsigned                  audienceMask;

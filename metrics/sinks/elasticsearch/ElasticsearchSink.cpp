@@ -21,21 +21,22 @@
 #include "IMetricSet.hpp"
 #include <map>
 #include <algorithm>
+#include <utility>
 #include "jstring.hpp"
 
 
 using namespace hpccMetrics;
 
-extern "C" MetricSink* getMetricSinkInstance(std::string name, const std::map<std::string, std::string> &parms)
+extern "C" IMetricSink* getSinkInstance(const std::string& name, const std::map<std::string, std::string> &parms)
 {
-    MetricSink *pSink = new ElasticsearchSink(name, parms);
+    IMetricSink *pSink = new ElasticsearchSink(name, parms);
     return pSink;
 }
 
 
 
 ElasticsearchSink::ElasticsearchSink(std::string name, const std::map<std::string, std::string> &parms) :
-    MetricSink(name, parms)
+    MetricSink(std::move(name), "elasticsearch")
 {
     protocol.append("http");
     port.append("9200");

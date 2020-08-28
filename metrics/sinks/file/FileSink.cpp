@@ -19,18 +19,19 @@
 #include "Measurement.hpp"
 #include <cstdio>
 #include <map>
+#include <utility>
 
 using namespace hpccMetrics;
 
-extern "C" MetricSink* getMetricSinkInstance(std::string name, const std::map<std::string, std::string> &parms)
+extern "C" IMetricSink* getSinkInstance(const std::string& name, const std::map<std::string, std::string> &parms)
 {
-    MetricSink *pSink = new FileMetricSink(name, parms);
+    IMetricSink *pSink = new FileMetricSink(name, parms);
     return pSink;
 }
 
 
 FileMetricSink::FileMetricSink(std::string name, const std::map<std::string, std::string> &parms) :
-    MetricSink(name, parms)
+    MetricSink(std::move(name), "file")
 {
     auto it = parms.find("filename");
     if (it != parms.end())

@@ -29,7 +29,6 @@ class FileMetricSink : public MetricSink
         explicit FileMetricSink(std::string _name, const std::map<std::string, std::string> &parms);
         void send(const MeasurementVector &values, const std::shared_ptr<IMetricSet> &pMetricSet, MetricsReportContext *pContext) override;
 
-
     protected:
 
         std::string m_filename;

@@ -25,10 +25,45 @@
 namespace hpccMetrics
 {
 
+    typedef hpccMetrics::IMetricsReportTrigger* (*getTriggerInstance)(const std::map<std::string, std::string> &parms, MetricsReportConfig &reportConfig);
+
     class MetricsReportTrigger : public IMetricsReportTrigger
     {
         public:
             virtual ~MetricsReportTrigger() = default;
+
+            //
+            // Load the trigger from the lib
+            static IMetricsReportTrigger *getTriggerFromLib(const char *triggerType, const char *getInstanceProcName, const std::map<std::string, std::string> &parms, MetricsReportConfig &reportConfig)
+            {
+                //
+                // First treat the trigger name as part of libhpccmetricstriger_<triggerName>.SharedObjectExtension
+                std::string triggerLibName = "libhpccmetricstrigger_";
+                triggerLibName.append(triggerType).append(SharedObjectExtension);
+                HINSTANCE libHandle = dlopen(triggerLibName.c_str(), RTLD_NOW|RTLD_GLOBAL);
+                if (libHandle == nullptr)
+                {
+                    //
+                    // Now try treating the triggerName as a lib naem
+                    triggerLibName.clear();
+                    triggerLibName.append(triggerType).append(SharedObjectExtension);
+                    libHandle = dlopen(triggerLibName.c_str(), RTLD_NOW|RTLD_GLOBAL);
+                }
+
+                if (libHandle != nullptr)
+                {
+                    const char *epName = (getInstanceProcName != nullptr && strlen(getInstanceProcName) != 0) ?
+                                         getInstanceProcName : "getTriggerInstance";
+                    auto getInstanceProc = (getTriggerInstance) GetSharedProcedure(libHandle, epName);
+                    if (getInstanceProc != nullptr)
+                    {
+                        IMetricsReportTrigger *pTrigger = getInstanceProc(parms, reportConfig);
+                        return pTrigger;
+                    }
+                }
+                // todo throw an exception here, or return false? Will work this out once component configuration is added
+                return nullptr;
+            }
 
         protected:
             //
@@ -47,6 +82,7 @@ namespace hpccMetrics
             {
                 pReporter->init();
             }
+
 
         private:
             MetricsReporter *pReporter;

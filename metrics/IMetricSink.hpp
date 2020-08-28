@@ -42,7 +42,11 @@ interface IMetricSink
     // information about the set and its metrics in order to properly report values.
     virtual void addMetricSet(const std::shared_ptr<IMetricSet> &pSet) = 0;
 
-    virtual std::string getName() = 0;
+    virtual std::string getName() const = 0;
+
+    //
+    // All sinks have a unique type
+    virtual std::string getType() const = 0;
 };
 
 }

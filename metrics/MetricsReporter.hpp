@@ -18,11 +18,7 @@
 #pragma once
 
 #include <memory>
-#include <vector>
-#include <unordered_set>
 #include <map>
-#include <platform.h>
-#include <dlfcn.h>
 #include "IMetricSet.hpp"
 #include "IMetricSink.hpp"
 #include "MetricsReportContext.hpp"
