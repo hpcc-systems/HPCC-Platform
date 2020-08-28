@@ -31,6 +31,7 @@ typedef std::map<std::string, std::string> GuidMap;
 
 const char* const logFileExt = ".log";
 const char* const rolloverFileExt = ".old";
+const char* const logRequestScriptValues = "ScriptValues";
 
 class CLogRequestInFile : public CSimpleInterface
 {
@@ -81,7 +82,7 @@ public:
     void Close();
     void Remove();
     void Rollover(const char* ClosedPrefix);
-    void Append(const char* GUID, const char* Data, CLogRequestInFile* reqInFile);
+    void Append(const char* GUID, IPropertyTree* scriptValues, const char* Data, CLogRequestInFile* reqInFile);
     void Remove(const char* GUID);
     virtual void SplitRecord(StringBuffer& FullStr, StringBuffer& GUID, StringBuffer& Cache){}
     static void splitLogRecord(MemoryBuffer& rawdata,StringBuffer& GUID, StringBuffer& data);//

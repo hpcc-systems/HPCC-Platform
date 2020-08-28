@@ -48,6 +48,7 @@ interface ILogRequestReader : extends IThreaded
     virtual void reportAckedLogFiles(StringArray& ackedLogFiles) = 0;
     virtual void removeUnknownAckedLogFiles(StringArray& ackedLogFiles) = 0;
     virtual void cleanAckedLogFiles(StringArray& fileNames) = 0;
+    virtual void setTankFilePattern(const char* service) = 0;
 };
 
 class CLogRequestReader : public CInterface, implements ILogRequestReader
@@ -55,6 +56,7 @@ class CLogRequestReader : public CInterface, implements ILogRequestReader
     Owned<CLogRequestReaderSettings> settings;
     StringArray newAckedLogFiles;
     StringAttr lastTankFile;
+    StringBuffer tankFilePattern;
     offset_t lastTankFilePos = 0;
     std::set<std::string> ackedLogFileCheckList, ackedLogRequests;
     GuidSet pendingLogGUIDs;
@@ -73,7 +75,8 @@ class CLogRequestReader : public CInterface, implements ILogRequestReader
     StringBuffer& getTankFileTimeString(const char* fileName, StringBuffer& timeString);
     bool readLogRequestsFromTankFile(const char* fileName, StringAttr& tankFileNotFinished, offset_t& tankFileNotFinishedPos);
     offset_t getReadFilePos(const char* fileName);
-    bool parseLogRequest(MemoryBuffer& rawdata, StringBuffer& GUID, StringBuffer& data);
+    bool parseLogRequest(MemoryBuffer& rawdata, StringBuffer& GUID, StringBuffer& data, bool& skipLogRequest);
+    bool checkScriptValues(const char* ptr, const char* end, bool& skipLogRequest);
     void addToAckedLogFileList(const char* fileName, const char* fileNameWithPath);
     void addPendingLogsToQueue();
     void updateAckedFileList();
@@ -97,6 +100,7 @@ public:
     virtual void reportAckedLogFiles(StringArray& ackedLogFiles) override;
     virtual void removeUnknownAckedLogFiles(StringArray& ackedLogFiles) override;
     virtual void cleanAckedLogFiles(StringArray& fileNames) override;
+    virtual void setTankFilePattern(const char* service) override;
 };
 
 interface IUpdateLogThread : extends IInterface
@@ -170,5 +174,5 @@ public:
 };
 
 extern LOGGINGCOMMON_API IUpdateLogThread* createUpdateLogThread(IPropertyTree* _cfg, const char* _service, const char* _agentName, const char* _tankFile, IEspLogAgent* _logAgent);
-
+extern LOGGINGCOMMON_API bool checkSkipThreadQueue(IPropertyTree *scriptValues, IUpdateLogThread &logthread);
 #endif // _LOGTHREAD_HPP__

@@ -73,11 +73,21 @@ CLogSerializer::~CLogSerializer()
     Close();
 }
 
-void CLogSerializer::Append(const char* GUID, const char* Data, CLogRequestInFile* reqInFile)
+void CLogSerializer::Append(const char* GUID, IPropertyTree* scriptValues, const char* Data, CLogRequestInFile* reqInFile)
 {
     StringBuffer toWrite,size;
 
-    toWrite.appendf("%s\t%s\r\n",GUID,Data);
+    toWrite.appendf("%s\t", GUID);
+    if (scriptValues)
+    {
+        appendXMLOpenTag(toWrite, logRequestScriptValues);
+        toXML(scriptValues, toWrite);
+        appendXMLCloseTag(toWrite, logRequestScriptValues);
+        toWrite.append("\t");
+    }
+    toWrite.append(Data);
+    toWrite.append("\r\n");
+
     size.appendf("%d",toWrite.length());
     while (size.length() < 8)
         size.insert(0,'0');

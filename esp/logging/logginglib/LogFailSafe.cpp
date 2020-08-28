@@ -62,20 +62,23 @@ CLogFailSafe::CLogFailSafe(IPropertyTree* cfg, const char* pszService, const cha
     : m_LogService(pszService), m_LogType(logType)
 {
     readCfg(cfg);
-    loadPendingLogReqsFromExistingLogFiles();
+    if (!decoupledLogging)
+        loadPendingLogReqsFromExistingLogFiles();
 
     StringBuffer send, receive;
     generateNewFileNames(send, receive);
 
     m_Added.Open(m_logsdir.str(), send.str(), NULL);
-    m_Cleared.Open(m_logsdir.str(), receive.str(), NULL);
+    if (!decoupledLogging)
+        m_Cleared.Open(m_logsdir.str(), receive.str(), NULL);
 }
 
 CLogFailSafe::~CLogFailSafe()
 {
     ESPLOG(LogMax, "CLogFailSafe::~CLogFailSafe()");
     m_Added.Close();
-    m_Cleared.Close();
+    if (!decoupledLogging)
+        m_Cleared.Close();
 }
 
 void CLogFailSafe::readCfg(IPropertyTree* cfg)
@@ -89,6 +92,7 @@ void CLogFailSafe::readCfg(IPropertyTree* cfg)
         m_logsdir.set(logsDir);
     else
         m_logsdir.set(DefaultFailSafeLogsDir);
+    decoupledLogging = cfg->getPropBool(PropDecoupledLogging, false);
 }
 
 void CLogFailSafe::readSafeRolloverThresholdCfg(StringBuffer& safeRolloverThreshold)
@@ -188,9 +192,9 @@ void CLogFailSafe::generateNewFileNames(StringBuffer& sendingFile, StringBuffer&
 
     StringBuffer tmp;
     tmp.append(m_LogService).append(m_LogType);
-
     sendingFile.append(tmp).append(SENDING).append(GUID).append(logFileExt);
-    receivingFile.append(tmp).append(RECEIVING).append(GUID).append(logFileExt);
+    if (!decoupledLogging)
+        receivingFile.append(tmp).append(RECEIVING).append(GUID).append(logFileExt);
 }
 
 bool CLogFailSafe::PopPendingLogRecord(StringBuffer& GUID, StringBuffer& cache)
@@ -276,7 +280,7 @@ void CLogFailSafe::SplitLogRecord(const char* requestStr,StringBuffer& GUID, Str
     SplitRecord(requestStr,GUID,Cache);
 }
 
-void CLogFailSafe::Add(const char* GUID,IInterface& pIn, CLogRequestInFile* reqInFile)
+void CLogFailSafe::Add(const char* GUID, IPropertyTree* scriptValues, IInterface& pIn, CLogRequestInFile* reqInFile)
 {
     CSoapRequestBinding* reqObj = dynamic_cast<CSoapRequestBinding*>(&pIn);
     if (reqObj == 0)
@@ -284,10 +288,10 @@ void CLogFailSafe::Add(const char* GUID,IInterface& pIn, CLogRequestInFile* reqI
 
     StringBuffer dataStr;
     reqObj->serializeContent(NULL,dataStr,NULL);
-    Add(GUID, dataStr, reqInFile);
+    Add(GUID, scriptValues, dataStr, reqInFile);
 }
 
-void CLogFailSafe::Add(const char* GUID, const char *strContents, CLogRequestInFile* reqInFile)
+void CLogFailSafe::Add(const char* GUID, IPropertyTree* scriptValues, const char *strContents, CLogRequestInFile* reqInFile)
 {
     VStringBuffer dataStr("<cache>%s</cache>", strContents);
 
@@ -303,12 +307,12 @@ void CLogFailSafe::Add(const char* GUID, const char *strContents, CLogRequestInF
         if (fileSize > safeRolloverSizeThreshold)
             SafeRollover();
     }
-    m_Added.Append(GUID, dataStr.str(), reqInFile);
+    m_Added.Append(GUID, scriptValues, dataStr, reqInFile);
 }
 
 void CLogFailSafe::AddACK(const char* GUID)
 {
-    m_Cleared.Append(GUID, "", nullptr);
+    m_Cleared.Append(GUID, nullptr, "", nullptr);
 
     CriticalBlock b(m_critSec);
     GuidMap::iterator it = m_PendingLogs.find(GUID);

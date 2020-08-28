@@ -29,11 +29,12 @@ const unsigned long DEFAULT_SAFE_ROLLOVER_REQ_THRESHOLD = 500000L;
 const char* const PropSafeRolloverThreshold = "SafeRolloverThreshold";
 const char* const PropFailSafeLogsDir = "FailSafeLogsDir";
 const char* const DefaultFailSafeLogsDir = "./FailSafeLogs";
+const char* const PropDecoupledLogging = "DecoupledLogging";
 
 interface ILogFailSafe : IInterface
 {
-    virtual void Add(const char*, const char *strContents, CLogRequestInFile* reqInFile)=0;//
-    virtual void Add(const char*,IInterface& pIn, CLogRequestInFile* reqInFile)=0;
+    virtual void Add(const char*, IPropertyTree* scriptValues, const char *strContents, CLogRequestInFile* reqInFile)=0;//
+    virtual void Add(const char*, IPropertyTree* scriptValues, IInterface& pIn, CLogRequestInFile* reqInFile)=0;
     virtual StringBuffer& GenerateGUID(StringBuffer& GUID,const char* seed="") = 0;
     virtual void AddACK(const char* GUID)=0;
     virtual void RollCurrentLog()=0;
@@ -66,6 +67,7 @@ class CLogFailSafe : implements ILogFailSafe, public CInterface
     GuidMap m_PendingLogs;//
     unsigned long safeRolloverReqThreshold = DEFAULT_SAFE_ROLLOVER_REQ_THRESHOLD;
     unsigned long safeRolloverSizeThreshold = 0;
+    bool decoupledLogging = false;
 
     void readCfg(IPropertyTree* cfg);
     void readSafeRolloverThresholdCfg(StringBuffer& safeRolloverThreshold);
@@ -84,8 +86,8 @@ public:
 
     virtual ~CLogFailSafe();
     StringBuffer& GenerateGUID(StringBuffer& GUID,const char* seed="");
-    virtual void Add(const char*, const char *strContents, CLogRequestInFile* reqInFile);//
-    virtual void Add(const char*,IInterface& pIn, CLogRequestInFile* reqInFile);
+    virtual void Add(const char*, IPropertyTree* scriptValues, const char *strContents, CLogRequestInFile* reqInFile);//
+    virtual void Add(const char*, IPropertyTree* scriptValues, IInterface& pIn, CLogRequestInFile* reqInFile);
     virtual void AddACK(const char* GUID);
     virtual void RollCurrentLog();
     virtual void RollOldLogs();
