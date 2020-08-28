@@ -64,7 +64,7 @@ class AttributeSummary extends StyledTable {
         this
             .data([
                 ["Cardinality", row.cardinality, "(~" + (row.cardinality / row.fill_count * 100).toFixed(0) + "%)"],
-                ["Filled", row.fill_count, fillRate <= config.fillRateRedThreshold ? `(<b style="color:${config.redColor}">` + fillRate + "%</b>)" : "(" + fillRate + "%)"]
+                ["Filled", row.fill_count, "(" + fillRate + "%)"]
             ])
             .tbodyColumnStyles([
                 { "font-weight": "bold", "font-size": config.secondaryFontSize + "px", "width": "1%" },

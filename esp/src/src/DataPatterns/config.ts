@@ -13,6 +13,5 @@ export const config = {
     secondaryColor: "#DDD",
     offwhiteColor: "#FBFBFB",
     blueColor: "#1A99D5",
-    redColor: "#ED1C24",
-    fillRateRedThreshold: 33
+    redColor: "#ED1C24"
 };
