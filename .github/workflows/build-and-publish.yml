@@ -16,6 +16,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    if: github.repository == ‘hpcc-systems/HPCC-Platform’
     steps:
       - name: Checkout
         uses: actions/checkout@v2
