@@ -38,7 +38,7 @@ namespace hpccMetrics
             {
                 //
                 // First treat the trigger name as part of libhpccmetricstriger_<triggerName>.SharedObjectExtension
-                std::string triggerLibName = "libhpccmetricstrigger_";
+                std::string triggerLibName = "libhpccmetrics_";
                 triggerLibName.append(triggerType).append(SharedObjectExtension);
                 HINSTANCE libHandle = dlopen(triggerLibName.c_str(), RTLD_NOW|RTLD_GLOBAL);
                 if (libHandle == nullptr)

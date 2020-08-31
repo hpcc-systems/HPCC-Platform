@@ -23,7 +23,16 @@
 
 using namespace hpccMetrics;
 
-
+//why is this required?
+PrometheusReporterService::PrometheusReporterService()
+{
+	m_processing = false;
+	m_port = DEFAULT_PROMETHEUS_METRICS_SERVICE_PORT;
+	m_use_ssl = DEFAULT_PROMETHEUS_METRICS_SERVICE_SSL;
+	m_metricsServiceName.set(DEFAULT_PROMETHEUS_METRICS_SERVICE_NAME);
+	m_sslconfig = nullptr;
+    LOG(MCuserInfo, "PrometheusReporterService created - port: '%i' uri: '/%s' ssl: '%s'\n", m_port, m_metricsServiceName.str(), m_use_ssl ? "true" : "false" );
+}
 
 PrometheusReporterService::PrometheusReporterService(const std::map<std::string, std::string> & parms)
 {
@@ -32,12 +41,15 @@ PrometheusReporterService::PrometheusReporterService(const std::map<std::string,
 	m_metricsServiceName.set(DEFAULT_PROMETHEUS_METRICS_SERVICE_NAME);
 	m_sslconfig = nullptr;
 
-	m_port = std::atoi((parms.find("port")->second).c_str());
+	if (parms.find("port") != parms.end())
+		m_port = std::atoi((parms.find("port")->second).c_str());
+		//m_port = cfg->getPropInt("port", DEFAULT_PROMETHEUS_METRICS_SERVICE_PORT);
+	//if (parms.find("useSSL") != parms.end())
+		//m_use_ssl = std::atob((parms.find("port")->second).c_str());
+	    //cfg->getPropBool("useSSL", DEFAULT_PROMETHEUS_METRICS_SERVICE_SSL);
+	if (parms.find("servicName") != parms.end())
+		m_metricsServiceName = parms.find("servicName")->second.c_str();
 	/*
-	m_use_ssl = cfg->getPropBool("useSSL", DEFAULT_PROMETHEUS_METRICS_SERVICE_SSL);
-	cfg->getProp("serviceName", m_metricsServiceName);
-	if (m_metricsServiceName.isEmpty())
-		m_metricsServiceName = DEFAULT_PROMETHEUS_METRICS_SERVICE_NAME;
 	if(m_use_ssl)
 	{
 	    m_sslconfig = cfg->getBranch("sslConfig");
@@ -89,12 +101,19 @@ PrometheusReporterService::PrometheusReporterService(MockPrometheusCollector * c
     LOG(MCuserInfo, "PrometheusReporterService created - port: '%i' uri: '/%s' ssl: '%s'\n", m_port, m_metricsServiceName.str(), m_use_ssl ? "true" : "false" );
 }
 
+int PrometheusReporterService::stop()
+{
+	m_processing = false;
+	return 0;
+}
+
 int PrometheusReporterService::start()
 {
+	m_processing = true;
     Owned<ISocket> serverSocket = ISocket::create(m_port);
     LOG(MCuserInfo, "PrometheusReporterService started - Listening on port: '%i'\n", m_port);
 
-    for (;;)
+    while (m_processing)
     {
         Owned<ISocket> clientSocket = serverSocket->accept();
 
@@ -134,6 +153,8 @@ int PrometheusReporterService::start()
             IERRLOG("Unknown exception occurred");
         }
     }
+
+    LOG(MCuserInfo, "PrometheusReporterService stopping - port: '%i'\n", m_port);
 
     return 0;
 }
@@ -219,12 +240,14 @@ bool PrometheusReporterService::onMetrics(CHttpRequest * request, CHttpResponse 
     StringBuffer metrics;
     if (!m_collector.get() || !m_collector->available())
         onMetricsUnavailable(request, response);
+    else
+    {
+    	m_collector->collect(metrics);
+    	response->setContent(metrics.length(), metrics.str());
+    	response->setContentType(DEFAULT_PROMETHEUS_METRICS_SERVICE_RESP_TYPE);
 
-    m_collector->collect(metrics);
-    response->setContent(metrics.length(), metrics.str());
-    response->setContentType(DEFAULT_PROMETHEUS_METRICS_SERVICE_RESP_TYPE);
-
-    response->send();
+    	response->send();
+    }
 
     return true;
 }

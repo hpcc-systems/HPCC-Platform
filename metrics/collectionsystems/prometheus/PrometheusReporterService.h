@@ -208,18 +208,20 @@ private:
 class PrometheusReporterService
 {
 private:
+
     static constexpr const char * HTTP_PAGE_TITLE = "HPCC Systems - Prometheus Metrics Service";
     static constexpr const char * DEFAULT_PROMETHEUS_METRICS_SERVICE_RESP_TYPE = "text/html; charset=UTF-8";
-    static constexpr int DEFAULT_PROMETHEUS_METRICS_SERVICE_PORT = 8767;
-    static constexpr bool DEFAULT_PROMETHEUS_METRICS_SERVICE_SSL = false;
+    static constexpr int          DEFAULT_PROMETHEUS_METRICS_SERVICE_PORT = 8767;
+    static constexpr bool         DEFAULT_PROMETHEUS_METRICS_SERVICE_SSL = false;
     static constexpr const char * DEFAULT_PROMETHEUS_METRICS_SERVICE_NAME = "metrics";
 
-    int                         m_port;
-    bool                         m_use_ssl;
-    Owned<ISecureSocketContext> m_ssctx;
+    bool                            m_processing;
+    int                             m_port;
+    bool                            m_use_ssl;
+    Owned<ISecureSocketContext>     m_ssctx;
     Owned<MockPrometheusCollector>  m_collector;
-    StringBuffer                m_metricsServiceName;
-    IPropertyTree *             m_sslconfig;
+    StringBuffer                    m_metricsServiceName;
+    IPropertyTree *                 m_sslconfig;
 
     static bool onMetricsUnavailable(CHttpRequest * request, CHttpResponse * response);
     static bool onException(CHttpResponse * response, IException * e);
@@ -243,10 +245,12 @@ public:
     static bool onPostNotFound(CHttpResponse * response, const char * path);
     static bool onMethodNotFound(CHttpResponse * response, const char * httpMethod, const char * path);
 
+    PrometheusReporterService();
     PrometheusReporterService(const std::map<std::string, std::string> & parms);
     PrometheusReporterService(MockPrometheusCollector * collector, IPropertyTree * cfg = nullptr);
     virtual ~PrometheusReporterService() {};
     int start();
+    int stop();
 
     bool registerMetrics(MockPrometheusCollector * collector)
     {
@@ -265,12 +269,10 @@ class PremetheusMetricSink : public hpccMetrics::MetricSink
         explicit PremetheusMetricSink(const std::string & name, const std::map<std::string, std::string> & parms) :
 		MetricSink(std::move(name), "prometheus")
         {
-
         }
 
         void send(const MeasurementVector &values, const std::shared_ptr<IMetricSet> &pMetricSet, MetricsReportContext *pContext) override
         {
-
         }
 
     protected:
@@ -281,65 +283,72 @@ class PremetheusMetricSink : public hpccMetrics::MetricSink
 
 class PrometheusMetricsReportTrigger : public MetricsReportTrigger
 {
-	public:
-		//this should be an iproptree
-		explicit PrometheusMetricsReportTrigger( const std::map<std::string, std::string> &parms, MetricsReportConfig &reportConfig ) :	MetricsReportTrigger(reportConfig)
-		{
-			InitModuleObjects();
+private:
+	PrometheusReporterService * m_server;
+	MetricsReportConfig & m_reportConfig;
 
+public:
+		//this should be an iproptree
+		PrometheusMetricsReportTrigger(const std::map<std::string, std::string> &parms, MetricsReportConfig & reportConfig ) :   MetricsReportTrigger(reportConfig)
+		{
+			InitModuleObjects(); //logging this might be a requirement on the framework
+
+			m_reportConfig = reportConfig;
 			try
 			{
+				//Owned<MockPrometheusCollector> mockPrometheusCollector = new MockPrometheusCollector();
+				//mockPrometheusCollector->addMetric("myesp160", "processing_request_gauge", PrometheusMetricType_Gauge, "Count of current reqs in process");
+				//mockPrometheusCollector->addMetric("myesp160", "processing_request_total", PrometheusMetricType_Counter, "Aggregate count of reqs processed");
 
-				//Owned<IPropertyTree> sslconfig;
-				//if(scfname.length() > 0)
-				//    sslconfig.setown(createPTreeFromXMLFile(scfname.str(), ipt_caseInsensitive));
-
-				Owned<MockPrometheusCollector> mockPrometheusCollector = new MockPrometheusCollector();
-				mockPrometheusCollector->addMetric("myesp160", "processing_request_gauge", PrometheusMetricType_Gauge, "Count of current reqs in process");
-				mockPrometheusCollector->addMetric("myesp160", "processing_request_total", PrometheusMetricType_Counter, "Aggregate count of reqs processed");
-
-				PrometheusReporterService server(mockPrometheusCollector); //defaults, otherwise cfg tree with port/uri/ssl.
-				server.start();
+				//m_server(mockPrometheusCollector); //defaults, otherwise cfg tree with port/uri/ssl.
+				m_server = new PrometheusReporterService(parms);
 			}
 			catch(IException *e)
 			{
 				StringBuffer emsg;
-				LOG(MCuserInfo, "Err setting up PrometheusReporterService with mockPrometheusCollector");
+				LOG(MCuserInfo, "Error setting up PrometheusReporterService with mockPrometheusCollector");
 				e->Release();
 			}
 		}
 
 		void start() override
 		{
-			init();
-			collectThread = std::thread(collectionThread, this);
+			m_server->start();
+			//collectThread = std::thread(collectionThread, this);
 		}
 
 		void stop() override
 		{
-			stopCollection = true;
-			collectThread.join();
+			m_server->stop();
+			//stopCollection = true;
+			//collectThread.join();
 		}
 
 		bool isStopCollection() const
 		{
-			return stopCollection;
+			return false;
+		//	return stopCollection;
 		}
 
-	protected:
-		static void collectionThread(PrometheusMetricsReportTrigger * pReportTrigger)
-		{
-			while (!pReportTrigger->isStopCollection())
-			{
+	//protected:
+		//static void collectionThread(PrometheusMetricsReportTrigger * pReportTrigger)
+		//static void collectionThread(PrometheusReporterService * prometheusServer)
+		//{
+		//	prometheusServer->start();
+			//while (!pReportTrigger->isStopCollection())
+			//{
+
 			//	std::this_thread::sleep_for(pReportTrigger->periodSeconds);
 			//	std::map<std::string, MetricsReportContext *> contexts;  // note, this may move to be a class member
 			//	pReportTrigger->doReport(contexts);
-			}
-		}
+			//}
 
-	private:
-		bool stopCollection = false;
-		std::thread collectThread;
+			//pReportTrigger->stop();
+		//}
+
+	//private:
+		//bool stopCollection = false;
+		//std::thread collectThread;
 };
 
 #endif /* SUBPROJECTS__HPCCSYSTEMS_PLATFORM_METRICS_PROMETHEUS_REPORTER_PROMETHEUSREPORTERSERVICE_H_ */

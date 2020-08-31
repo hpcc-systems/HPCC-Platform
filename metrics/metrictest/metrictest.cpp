@@ -143,14 +143,17 @@ int main(int argc, char *argv[])
 //    MetricsReporter *pReporter = collector.getReporter();
     //collector.addMetricSet(pRequestMetricSet);
     //collector.addMetricSet(pQueueMetricSet);
-    std::map<std::string, std::string> parms = { {"filename", "/home/ken/metricsreport.txt"}};
-    auto pSink = MetricSink::getSinkFromLib("filesink", nullptr, "es", parms);
+    //std::map<std::string, std::string> parms = { {"filename", "/home/ubuntu/GIT/metricsreport.txt"}};
+    std::map<std::string, std::string> parms = { {"", ""}};
+    //auto pSink = MetricSink::getSinkFromLib("filesink", nullptr, "es", parms);
+    auto pSink = MetricSink::getSinkFromLib("prometheus", nullptr, "es", parms);
     reportConfig.addReportConfig(pSink, pRequestMetricSet);
     reportConfig.addReportConfig(pSink, pQueueMetricSet);
 
     std::map<std::string, std::string> triggerParms;
     triggerParms["period"] = "10";
-    IMetricsReportTrigger *pTrigger = MetricsReportTrigger::getTriggerFromLib("periodic", nullptr, triggerParms, reportConfig);
+    //IMetricsReportTrigger *pTrigger = MetricsReportTrigger::getTriggerFromLib("periodic", nullptr, triggerParms, reportConfig);
+    IMetricsReportTrigger *pTrigger = MetricsReportTrigger::getTriggerFromLib("prometheus", nullptr, triggerParms, reportConfig);
 
 
     //
