@@ -21,11 +21,14 @@
 
 namespace hpccMetrics
 {
-
     class MetricsReporter;
 
     interface IMetricsReportTrigger
     {
+        //
+        // Give the reporter to the trigger so it can do reports
+        virtual void setReporter(MetricsReporter *metricsReporter) = 0;
+
         //
         // Start collecting metrics
         virtual void start() = 0;

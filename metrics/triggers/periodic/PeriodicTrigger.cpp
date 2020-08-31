@@ -22,13 +22,13 @@ using namespace hpccMetrics;
 
 extern "C" IMetricsReportTrigger* getTriggerInstance(const std::map<std::string, std::string> &parms, MetricsReportConfig &reportConfig)
 {
-    IMetricsReportTrigger *pTrigger = new PeriodicTrigger(parms, reportConfig);
+    IMetricsReportTrigger *pTrigger = new PeriodicTrigger(parms);
     return pTrigger;
 }
 
 
-PeriodicTrigger::PeriodicTrigger(const std::map<std::string, std::string> &parms, MetricsReportConfig &reportConfig) :
-    MetricsReportTrigger(reportConfig),
+PeriodicTrigger::PeriodicTrigger(const std::map<std::string, std::string> &parms) :
+    //MetricsReportTrigger(reportConfig),
     periodSeconds{std::chrono::seconds(60)}
 {
     auto periodIt = parms.find("period");
@@ -51,7 +51,6 @@ PeriodicTrigger::~PeriodicTrigger()
 
 void PeriodicTrigger::start()
 {
-    init();
     collectThread = std::thread(collectionThread, this);
 }
 
@@ -77,7 +76,7 @@ void PeriodicTrigger::collectionThread(PeriodicTrigger *pReportTrigger)
     while (!pReportTrigger->isStopCollection())
     {
         std::this_thread::sleep_for(pReportTrigger->periodSeconds);
-        std::map<std::string, MetricsReportContext *> contexts;  // note, this may move to be a class member
+        std::map<std::string, MetricsReportContext *> contexts;  // may make this a pointer so that null is allowed when there is no context to pass
         pReportTrigger->doReport(contexts);
     }
 }

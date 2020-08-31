@@ -25,16 +25,22 @@
 namespace hpccMetrics
 {
 
-    typedef hpccMetrics::IMetricsReportTrigger* (*getTriggerInstance)(const std::map<std::string, std::string> &parms, MetricsReportConfig &reportConfig);
+    typedef hpccMetrics::IMetricsReportTrigger* (*getTriggerInstance)(const std::map<std::string, std::string> &parms);
 
     class MetricsReportTrigger : public IMetricsReportTrigger
     {
         public:
             virtual ~MetricsReportTrigger() = default;
 
+            void setReporter(MetricsReporter *pMetricsReporter) override
+            {
+                pReporter = pMetricsReporter;
+            }
+
+
             //
             // Load the trigger from the lib
-            static IMetricsReportTrigger *getTriggerFromLib(const char *triggerType, const char *getInstanceProcName, const std::map<std::string, std::string> &parms, MetricsReportConfig &reportConfig)
+            static IMetricsReportTrigger *getTriggerFromLib(const char *triggerType, const char *getInstanceProcName, const std::map<std::string, std::string> &parms)
             {
                 //
                 // First treat the trigger name as part of libhpccmetricstriger_<triggerName>.SharedObjectExtension
@@ -57,7 +63,7 @@ namespace hpccMetrics
                     auto getInstanceProc = (getTriggerInstance) GetSharedProcedure(libHandle, epName);
                     if (getInstanceProc != nullptr)
                     {
-                        IMetricsReportTrigger *pTrigger = getInstanceProc(parms, reportConfig);
+                        IMetricsReportTrigger *pTrigger = getInstanceProc(parms);
                         return pTrigger;
                     }
                 }
@@ -68,21 +74,12 @@ namespace hpccMetrics
         protected:
             //
             // Do not allow constructing this base class
-            explicit MetricsReportTrigger(MetricsReportConfig &reportConfig)
-            {
-                pReporter = new MetricsReporter(reportConfig);
-            }
+            explicit MetricsReportTrigger() = default;
 
             void doReport(std::map<std::string, MetricsReportContext *> &reportContexts)
             {
                 pReporter->report(reportContexts);
             }
-
-            void init()
-            {
-                pReporter->init();
-            }
-
 
         private:
             MetricsReporter *pReporter;
