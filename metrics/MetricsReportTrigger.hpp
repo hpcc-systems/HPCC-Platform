@@ -76,8 +76,15 @@ namespace hpccMetrics
             // Do not allow constructing this base class
             explicit MetricsReportTrigger() = default;
 
-            void doReport(std::map<std::string, MetricsReportContext *> &reportContexts)
+            //
+            // sink name and report context are optional if no coupling between sink and trigger
+            void doReport(std::string sinkName = std::string(), MetricsReportContext *pReportContext = nullptr)
             {
+                std::map<std::string, MetricsReportContext *> reportContexts;
+                if (pReportContext != nullptr)
+                {
+                    reportContexts[sinkName] = pReportContext;
+                }
                 pReporter->report(reportContexts);
             }
 

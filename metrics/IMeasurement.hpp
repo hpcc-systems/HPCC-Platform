@@ -25,7 +25,7 @@ namespace hpccMetrics
 
 //
 // Defined metric value types. Mainly used by the sink when reporting
-enum MetricType {
+enum ValueType {
     NONE,
     STRING,
     LONG,
@@ -37,6 +37,12 @@ enum MetricType {
     BOOLEAN
 } ;
 
+
+enum MetricType {
+    COUNTER,
+    RATE,
+    GAUGE
+};
 
 //
 // Interface for object used to hold and report a metric value obtained during collection
@@ -52,8 +58,16 @@ interface IMeasurement
     virtual const std::string &getName() const = 0;
 
     //
-    // Get the metric type
-    virtual MetricType getType() const = 0;
+    // Return the metric type
+    virtual MetricType getMetricType() const = 0;
+
+    //
+    // Return the metric description
+    virtual const std::string &getDescription() const = 0;
+
+    //
+    // Get the metric value type
+    virtual ValueType getValueType() const = 0;
 };
 
 }

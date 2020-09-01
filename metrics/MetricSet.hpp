@@ -79,7 +79,7 @@ class MetricSet : public IMetricSet
             {
                 //
                 // Make sure the metric has a type
-                if (pMetric->getType() == MetricType::NONE)
+                if (pMetric->getValueType() == ValueType::NONE)
                 {
                     throw std::exception();
                 }

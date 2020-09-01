@@ -162,7 +162,7 @@ bool ElasticsearchSink::createNewIndex(MetricSetInfo *pSetInfo, const std::share
         metricIt++;
         done = (metricIt == metrics.end());
 
-        if ((*metricIt)->getType() != MetricType::NONE)
+        if ((*metricIt)->getValueType() != ValueType::NONE)
         {
             if (!firstTypeAdded)
             {
@@ -176,7 +176,7 @@ bool ElasticsearchSink::createNewIndex(MetricSetInfo *pSetInfo, const std::share
             }
 
             content.append("\"").append((*metricIt)->getReportingName().c_str()).append("\" : ");
-            content.append(R"({ "type" : ")").append(getTypeString((*metricIt)->getType()).c_str()).append("\"}");
+            content.append(R"({ "type" : ")").append(getTypeString((*metricIt)->getValueType()).c_str()).append("\"}");
             listEmpty = false;
         }
     }
@@ -257,33 +257,33 @@ void ElasticsearchSink::addMetricSet(const std::shared_ptr<IMetricSet> &pSet)
     metricSetInfo.insert({pSet->getName(), MetricSetInfo()});
 }
 
-std::string ElasticsearchSink::getTypeString(MetricType type)
+std::string ElasticsearchSink::getTypeString(ValueType type)
 {
     std::string typeString;
     switch(type)
     {
-        case MetricType::STRING:
+        case ValueType::STRING:
             typeString = "string";
             break;
-        case MetricType::LONG:
+        case ValueType::LONG:
             typeString = "long";
             break;
-        case MetricType::INTEGER:
+        case ValueType::INTEGER:
             typeString = "integer";
             break;
-        case MetricType::DOUBLE:
+        case ValueType::DOUBLE:
             typeString = "double";
             break;
-        case MetricType::FLOAT:
+        case ValueType::FLOAT:
             typeString = "float";
             break;
-        case MetricType::DATE:
+        case ValueType::DATE:
             typeString = "date";
             break;
-        case MetricType::DATE_NANOS:
+        case ValueType::DATE_NANOS:
             typeString = "date_nano";
             break;
-        case MetricType::BOOLEAN:
+        case ValueType::BOOLEAN:
             typeString = "boolean";
             break;
         default:

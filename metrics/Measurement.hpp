@@ -29,30 +29,25 @@ template<typename T>
 class Measurement : public IMeasurement
 {
     public:
-        Measurement(std::string _name, MetricType _type, T _value) :
-            name{std::move(_name)},
-            type{_type},
-            value{_value}
+        Measurement(std::string &_name, ValueType _valueType, MetricType _metricType, T _value, std::string &desc) :
+            name{_name},
+            valueType{_valueType},
+            metricType{_metricType},
+            value{_value},
+            metricDescription{desc}
             { }
 
-        const std::string &getName() const override
-        {
-            return name;
-        }
-
-        std::string valueToString() const override
-        {
-            return std::to_string(value);
-        }
-
-        MetricType getType() const override
-        {
-            return type;
-        }
+        const std::string &getName() const override { return name; }
+        std::string valueToString() const override { return std::to_string(value); }
+        ValueType getValueType() const override { return valueType; }
+        MetricType getMetricType() const override { return metricType; };
+        const std::string &getDescription() const override { return metricDescription; }
 
     protected:
-        std::string name;
-        MetricType type;
+        const std::string &name;
+        const std::string &metricDescription;
+        ValueType valueType;
+        MetricType metricType;
         T value;
 };
 

@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
     //
     // Create a metric set for request type metrics
     std::vector<std::shared_ptr<IMetric>> metrics;
-    pCountableMetric     = std::make_shared<CountMetric>("requests");
+    pCountableMetric     = std::make_shared<CountMetric>("requests", "The number of requests that have come in");
     metrics.emplace_back(pCountableMetric);
 
     pRateMetric = std::make_shared<RateMetric>("rate");
@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
     // create a metric set for queues
     metrics.clear();
     pQueueSizeMetric = std::make_shared<GaugeMetric<uint32_t>>("queuesize");
-    pQueueSizeMetric->setType(MetricType::INTEGER);
+    pQueueSizeMetric->setValueType(ValueType::INTEGER);
     metrics.emplace_back(pQueueSizeMetric);
     auto pQueueMetricSet = std::make_shared<MetricSet>("set2", "myprefix2", metrics);
 
