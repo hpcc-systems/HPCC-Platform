@@ -724,17 +724,3 @@ IEspHttpException* createEspHttpException(int code, const char *_msg, const char
 {
     return new CEspHttpException(code, _msg, _httpstatus);
 }
-
-int executeCommand(const char* command, StringBuffer& response)
-{
-    char buffer[128];
-    FILE* fp = popen(command, "r");
-    if (fp == nullptr)
-       return -1;
-
-    while (!feof(fp))
-        if (fgets(buffer, 128, fp))
-            response.append(buffer);
-    pclose(fp);
-    return 0;
-}

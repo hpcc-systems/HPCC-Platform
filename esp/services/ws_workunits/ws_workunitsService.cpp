@@ -5564,9 +5564,10 @@ bool CWsWorkunitsEx::onWUGetPlugins(IEspContext &context, IEspWUGetPluginsReques
 {
     try
     {
-        StringBuffer eclccPaths;
-        if (executeCommand("eclcc -showpaths", eclccPaths) == -1)
-            throw makeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to run 'eclcc -showpaths'");
+        StringBuffer eclccPaths, error;
+        unsigned ret = runExternalCommand(eclccPaths, error, "eclcc -showpaths", nullptr);
+        if (ret != 0)
+           throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to run 'eclcc -showpaths': %s", error.str());
 
         if (eclccPaths.isEmpty())
         {
