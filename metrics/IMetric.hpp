@@ -39,6 +39,14 @@ interface IMetric
     virtual std::string getName() const = 0;
 
     //
+    // Get the metric description
+    virtual std::string getDescription() const = 0;
+
+    //
+    // Return the metric type enum
+    virtual MetricType getMetricType() const = 0;
+
+    //
     // Set the name of the value when reported. By default, the report name
     // is the metric name.
     virtual void setReportingName(const std::string &name) = 0;
@@ -51,11 +59,11 @@ interface IMetric
     // Optional method to set the type of the reported value (intended
     // for use by a sink that may want to type values in its report).
     // Types follow those defined by Elasticsearch
-    virtual void setType(MetricType type) = 0;
+    virtual void setValueType(ValueType type) = 0;
 
     //
     // Returns the type (empty string if no type set).
-    virtual MetricType getType() const = 0;
+    virtual ValueType getValueType() const = 0;
 
     //
     // Indicates if the metric has been added to a metric set or not.

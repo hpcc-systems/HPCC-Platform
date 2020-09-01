@@ -25,12 +25,47 @@ namespace hpccMetrics
 class MetricsReportContext
 {
 public:
-    MetricsReportContext()
+    explicit MetricsReportContext(unsigned bufferSize = 0)
     {
         timestamp = std::chrono::seconds(std::time(nullptr)).count();
+        allocateBuffer(bufferSize);
     }
 
-    virtual ~MetricsReportContext() = default;
+    virtual ~MetricsReportContext()
+    {
+        freeBuffer();
+    }
+
+    uint8_t *allocateBuffer(unsigned size)
+    {
+        freeBuffer();
+        if (size != 0)
+        {
+            bufferSize = size;
+            buffer = new uint8_t[bufferSize];
+        }
+        return buffer;
+    }
+
+    void freeBuffer()
+    {
+        if (buffer != nullptr)
+        {
+            delete [] buffer;
+            buffer = nullptr;
+            bufferSize = 0;
+        }
+    }
+
+    uint8_t *getBuffer()
+    {
+        return buffer;
+    }
+
+    unsigned getBufferSize() const
+    {
+        return bufferSize;
+    }
 
     long getTimestamp() const
     {
@@ -39,6 +74,8 @@ public:
 
 private:
     long timestamp;
+    uint8_t *buffer = nullptr;
+    unsigned bufferSize = 0;
 };
 
 }

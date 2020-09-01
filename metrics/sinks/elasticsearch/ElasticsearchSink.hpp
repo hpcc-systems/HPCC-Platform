@@ -67,7 +67,7 @@ class ElasticsearchSink : public MetricSink
         bool initializeIndex(const std::shared_ptr<IMetricSet>  &pMetricSet);
         static std::string buildIndexName(const std::string &nameTemplate, const std::string &setName);
         bool createNewIndex(MetricSetInfo *pSetInfo, const std::shared_ptr<IMetricSet>& pMetricSet, const std::string &indexName);
-        static std::string getTypeString(MetricType type);
+        static std::string getTypeString(ValueType type);
 
 
     protected:

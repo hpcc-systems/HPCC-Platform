@@ -18,6 +18,7 @@
 #pragma once
 
 #include <string>
+#include <utility>
 #include <vector>
 #include <map>
 #include <atomic>
@@ -37,10 +38,11 @@ class Metric : public IMetric
     public:
         virtual ~Metric() = default;
         std::string getName() const override { return name; }
+        std::string getDescription() const override { return description; }
         void setReportingName(const std::string &_name) override { reportingName = _name; }
         std::string getReportingName() const override { return reportingName; }
-        void setType(MetricType _type) override { type = _type; }
-        MetricType getType() const override { return type; }
+        void setValueType(ValueType _type) override { valueType = _type; }
+        ValueType getValueType() const override { return valueType; }
         bool isInMetricSet() const override { return inMetricSet; }
         void setInMetricSet(bool val) override { inMetricSet = val; }
         void init() override { }
@@ -48,9 +50,10 @@ class Metric : public IMetric
 
     protected:
         // No one should be able to create one of these
-        explicit Metric(std::string _name, MetricType _type = MetricType::NONE) :
+        explicit Metric(std::string _name, std::string _desc, ValueType _type = ValueType::NONE) :
             name(std::move(_name)),
-            type{_type}
+            description{std::move(_desc)},
+            valueType{_type}
         {
             reportingName = name;  // default to the given name
         }
@@ -58,8 +61,9 @@ class Metric : public IMetric
 
     protected:
         std::string name;
+        std::string description;
         std::string reportingName;
-        MetricType type;
+        ValueType valueType;
         bool inMetricSet = false;
 };
 
@@ -67,18 +71,25 @@ class Metric : public IMetric
 class CountMetric : public Metric
 {
     public:
-        explicit CountMetric(const std::string& name) : Metric{name, MetricType::INTEGER}  { }
+        explicit CountMetric(const std::string& name, const std::string &description = std::string()) :
+            Metric{name, description, ValueType::INTEGER}  { }
         ~CountMetric() override = default;
         void inc(uint32_t val)
         {
             count.fetch_add(val);
         }
 
+        MetricType getMetricType() const override
+        {
+            return COUNTER;
+        }
+
         //
         // Clears the count on collection
         bool collect(MeasurementVector &values) override
         {
-            values.emplace_back(std::make_shared<Measurement<uint32_t>>(reportingName, type, count.exchange(0)));
+            auto pMeasurement = std::make_shared<Measurement<uint32_t>>(reportingName, valueType, COUNTER, count.exchange(0), description);
+            values.emplace_back(pMeasurement);
             return true;
         }
 
@@ -90,8 +101,14 @@ class CountMetric : public Metric
 class RateMetric : public Metric
 {
     public:
-        explicit RateMetric(std::string name) : Metric{std::move(name), MetricType::FLOAT} { }
+        explicit RateMetric(std::string name, const std::string &description = std::string()) :
+            Metric{std::move(name), description, ValueType::FLOAT} { }
         ~RateMetric() override = default;
+
+        MetricType getMetricType() const override
+        {
+            return RATE;
+        }
 
         void init() override
         {
@@ -122,7 +139,8 @@ class RateMetric : public Metric
 
             auto seconds = (std::chrono::duration_cast<std::chrono::seconds>(now - start)).count();
             float rate = static_cast<float>(numEvents) / static_cast<float>(seconds);
-            values.emplace_back(std::make_shared<Measurement<float>>(reportingName, type, rate));
+            auto pMeasurement = std::make_shared<Measurement<float>>(reportingName, valueType, RATE, rate, description);
+            values.emplace_back(pMeasurement);
             return true;
         }
 
@@ -135,8 +153,14 @@ class RateMetric : public Metric
 template<typename T>
 class GaugeMetric : public Metric {
     public:
-        explicit GaugeMetric(std::string name) : Metric{std::move(name)} { }
+        explicit GaugeMetric(std::string name, const std::string &description = std::string()) :
+            Metric{std::move(name), description} { }
         ~GaugeMetric() override = default;
+
+        MetricType getMetricType() const override
+        {
+            return GAUGE;
+        }
 
         void inc(T inc)
         {
@@ -152,7 +176,8 @@ class GaugeMetric : public Metric {
         // Value is not cleared on collection
         bool collect(MeasurementVector &values) override
         {
-            values.emplace_back(std::make_shared<Measurement<T>>(reportingName, type, value.load()));
+            auto pMeasurement = std::make_shared<Measurement<T>>(reportingName, valueType, GAUGE, value.load(), description);
+            values.emplace_back(pMeasurement);
             return true;
         }
 
@@ -162,42 +187,42 @@ class GaugeMetric : public Metric {
 
 
 // This distribution metric is still being worked out
-template <typename T>
-class DistributionMetric : public Metric {
-    public:
-        DistributionMetric(std::string &name, const std::vector<T> &bucketLevels) :
-                Metric{std::move(name)}
-        {
-            if (bucketLevels[0] != std::numeric_limits<T>::min())
-                buckets[0] = new std::atomic<uint32_t>();
-
-            for (auto const &distValue : bucketLevels)
-            {
-                buckets.insert(std::pair<T, std::atomic<unsigned> *>(distValue, new std::atomic<unsigned>()));
-            }
-
-            if (bucketLevels[bucketLevels.size() - 1] != std::numeric_limits<T>::max())
-                buckets.insert(std::pair<T, std::atomic<uint32_t> *>(std::numeric_limits<T>::max(),
-                                                                     new std::atomic<uint32_t>()));
-        }
-
-        void inc(T level, uint32_t val)
-        {
-            auto it = buckets.lower_bound(level);
-            if (it != buckets.end())
-            {
-                it.second += val;
-            }
-        }
-
-        // TBD
-        bool collect(MeasurementVector &values) override
-        {
-            return false;
-        }
-
-    protected:
-        std::map<T, std::atomic<uint32_t> *> buckets;
-};
+//template <typename T>
+//class DistributionMetric : public Metric {
+//    public:
+//        DistributionMetric(std::string &name, const std::vector<T> &bucketLevels) :
+//                Metric{std::move(name)}
+//        {
+//            if (bucketLevels[0] != std::numeric_limits<T>::min())
+//                buckets[0] = new std::atomic<uint32_t>();
+//
+//            for (auto const &distValue : bucketLevels)
+//            {
+//                buckets.insert(std::pair<T, std::atomic<unsigned> *>(distValue, new std::atomic<unsigned>()));
+//            }
+//
+//            if (bucketLevels[bucketLevels.size() - 1] != std::numeric_limits<T>::max())
+//                buckets.insert(std::pair<T, std::atomic<uint32_t> *>(std::numeric_limits<T>::max(),
+//                                                                     new std::atomic<uint32_t>()));
+//        }
+//
+//        void inc(T level, uint32_t val)
+//        {
+//            auto it = buckets.lower_bound(level);
+//            if (it != buckets.end())
+//            {
+//                it.second += val;
+//            }
+//        }
+//
+//        // TBD
+//        bool collect(MeasurementVector &values) override
+//        {
+//            return false;
+//        }
+//
+//    protected:
+//        std::map<T, std::atomic<uint32_t> *> buckets;
+//};
 
 }

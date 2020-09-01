@@ -26,9 +26,7 @@ extern "C" IMetricsReportTrigger* getTriggerInstance(const std::map<std::string,
     return pTrigger;
 }
 
-
 PeriodicTrigger::PeriodicTrigger(const std::map<std::string, std::string> &parms) :
-    //MetricsReportTrigger(reportConfig),
     periodSeconds{std::chrono::seconds(60)}
 {
     auto periodIt = parms.find("period");
@@ -39,7 +37,6 @@ PeriodicTrigger::PeriodicTrigger(const std::map<std::string, std::string> &parms
     }
 }
 
-
 PeriodicTrigger::~PeriodicTrigger()
 {
     if (collectionStarted)
@@ -47,7 +44,6 @@ PeriodicTrigger::~PeriodicTrigger()
         stopCollection();
     }
 }
-
 
 void PeriodicTrigger::start()
 {
@@ -58,7 +54,6 @@ void PeriodicTrigger::stop()
 {
     stopCollection();
 }
-
 
 void PeriodicTrigger::stopCollection()
 {
@@ -76,7 +71,6 @@ void PeriodicTrigger::collectionThread(PeriodicTrigger *pReportTrigger)
     while (!pReportTrigger->isStopCollection())
     {
         std::this_thread::sleep_for(pReportTrigger->periodSeconds);
-        std::map<std::string, MetricsReportContext *> contexts;  // may make this a pointer so that null is allowed when there is no context to pass
-        pReportTrigger->doReport(contexts);
+        pReportTrigger->doReport();
     }
 }
