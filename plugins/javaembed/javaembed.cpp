@@ -2750,6 +2750,9 @@ public:
     virtual void outputInline(const char* text)
     {
     }
+    virtual void flushContent(bool close)
+    {
+    };
 
 public:
     CheckedJNIEnv *JNIenv;

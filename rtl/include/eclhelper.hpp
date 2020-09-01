@@ -169,6 +169,7 @@ interface IRecordSize : public IInterface
 interface IXmlWriter : public IInterface
 {
 public:
+    virtual void flushContent(bool close) = 0;
     virtual void outputQuoted(const char *text) = 0;
     virtual void outputString(unsigned len, const char *field, const char *fieldname) = 0;
     virtual void outputBool(bool field, const char *fieldname) = 0;
