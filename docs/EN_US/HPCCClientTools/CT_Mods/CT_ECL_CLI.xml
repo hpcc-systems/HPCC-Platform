@@ -4765,6 +4765,43 @@ ecl bundle install mybundle --keepprior</programlisting>
         <para>To use the "ecl bundle install &lt;git url&gt;" command, you
         must have git installed and configured on your system. Git must be
         accessible to the user (in the path).</para>
+
+        <para><emphasis role="bold">Server-side Installation</emphasis></para>
+
+        <para>A system using ECL Server and a remote MySQL repository or ECLCC
+        Server with git hooks can only access bundles if they are installed on
+        the server. Using a bundle in the ECL Playground also requires
+        installation on the ECLCC Server node.</para>
+
+        <para></para>
+
+        <orderedlist>
+          <listitem>
+            <para>In a terminal window on your ECLCC Server (or ECL Server),
+            use this command:</para>
+
+            <para><programlisting>sudo su hpcc</programlisting>This switches
+            the user to <emphasis role="bold">hpcc</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Next install the bundle using this command:</para>
+
+            <programlisting>ecl bundle install &lt;bundle URL&gt;.git </programlisting>
+
+            <para>For example: </para>
+
+            <para><programlisting>ecl bundle install https://github.com/hpcc-systems/Visualizer.git</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Close the terminal window or use the <emphasis
+            role="bold">exit</emphasis> command to return to acting as the
+            original user.</para>
+          </listitem>
+        </orderedlist>
+
+        <para></para>
       </sect2>
 
       <sect2 id="CT_CLI_SyntaxECLBundleUninstall" role="brk">
