@@ -28,6 +28,7 @@
 #include "zcrypt.hpp"
 #endif
 #include "referencedfilelist.hpp"
+#include "ws_wuresult.hpp"
 
 #define UFO_DIRTY                                0x01
 #define UFO_RELOAD_TARGETS_CHANGED_PMID          0x02
@@ -444,6 +445,9 @@ public:
 
         xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ThorSlaveLogThreadPoolSize", process, service);
         thorSlaveLogThreadPoolSize = cfg->getPropInt(xpath, THOR_SLAVE_LOG_THREAD_POOL_SIZE);
+
+        xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/WUResultDownloadFlushThreshold", process, service);
+        wuResultDownloadFlushThreshold = cfg->getPropInt(xpath, defaultWUResultDownloadFlushThreshold);
     }
 
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
@@ -482,6 +486,7 @@ private:
     CWsWorkunitsEx *wswService;
     Owned<IPropertyTree> directories;
     unsigned thorSlaveLogThreadPoolSize = THOR_SLAVE_LOG_THREAD_POOL_SIZE;
+    size32_t wuResultDownloadFlushThreshold = defaultWUResultDownloadFlushThreshold;
 };
 
 void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml=NULL);

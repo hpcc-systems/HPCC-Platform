@@ -48,6 +48,7 @@ set (    SRCS
          ws_workunitsAuditLogs.cpp
          ws_workunitsQuerySets.cpp
          ws_wudetails.cpp
+         ws_wuresult.cpp
     )
 
 include_directories (
