@@ -20,8 +20,6 @@
 #include <chrono>
 #include <thread>
 #include "../../MetricsReportTrigger.hpp"
-#include "../../MetricsReportContext.hpp"
-#include "../../MetricsReportConfig.hpp"
 
 namespace hpccMetrics
 {
@@ -29,7 +27,7 @@ namespace hpccMetrics
     class PeriodicTrigger : public MetricsReportTrigger
     {
         public:
-            PeriodicTrigger(const std::map<std::string, std::string> &parms, MetricsReportConfig &reportConfig);
+            explicit PeriodicTrigger(const std::map<std::string, std::string> &parms);
             ~PeriodicTrigger() override;
             void start() override;
             void stop() override;

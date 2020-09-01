@@ -26,6 +26,7 @@ std::shared_ptr<GaugeMetric<uint32_t>> pQueueSizeMetric;
 //std::shared_ptr<QueueLatencyMetric> pQueueLatencyMetric;
 std::shared_ptr<RateMetric> pRateMetric;
 
+MetricsReporter *pReporter;
 
 /*
 
@@ -99,14 +100,6 @@ Component level
  - When done, pConfig->stopCollection() to clean up and close down
 
 
-
-
-
-
-
-
-
-
 */
 
 
@@ -136,29 +129,35 @@ int main(int argc, char *argv[])
     auto pQueueMetricSet = std::make_shared<MetricSet>("set2", "myprefix2", metrics);
 
     //
-    // Create a file sink for saving metric values
+    // Get the name of thee report file
+    /*std::string sinkReportFilename;
+    if (argc > 1)
+    {
+        sinkReportFilename = std::string(argv[1]);
+    }
+    else
+    {
+        printf("You must provide the full path to the report file\n\n");
+        exit(0);
+    }
+*/
+    std::map<std::string, std::string> parms = { {"filename", "blahblah"}};
+    auto pSink = MetricSink::getSinkFromLib("libhpccmetrics_prometheus", nullptr, "es", parms);
 
-    //
-    // Create a collector
-//    MetricsReporter *pReporter = collector.getReporter();
-    //collector.addMetricSet(pRequestMetricSet);
-    //collector.addMetricSet(pQueueMetricSet);
-    //std::map<std::string, std::string> parms = { {"filename", "/home/ubuntu/GIT/metricsreport.txt"}};
-    std::map<std::string, std::string> parms = { {"", ""}};
-    //auto pSink = MetricSink::getSinkFromLib("filesink", nullptr, "es", parms);
-    auto pSink = MetricSink::getSinkFromLib("prometheus", nullptr, "es", parms);
     reportConfig.addReportConfig(pSink, pRequestMetricSet);
     reportConfig.addReportConfig(pSink, pQueueMetricSet);
 
     std::map<std::string, std::string> triggerParms;
     triggerParms["period"] = "10";
-    //IMetricsReportTrigger *pTrigger = MetricsReportTrigger::getTriggerFromLib("periodic", nullptr, triggerParms, reportConfig);
-    IMetricsReportTrigger *pTrigger = MetricsReportTrigger::getTriggerFromLib("prometheus", nullptr, triggerParms, reportConfig);
 
+    //IMetricsReportTrigger *pTrigger = MetricsReportTrigger::getTriggerFromLib("periodic", nullptr, triggerParms);
+    IMetricsReportTrigger *pTrigger = MetricsReportTrigger::getTriggerFromLib("prometheus", nullptr, triggerParms);
+
+    pReporter = new MetricsReporter(reportConfig, pTrigger);
 
     //
     // start collection
-    pTrigger->start();
+    pReporter->start();
 
     std::thread first (processThread, 20, 1);
     std::thread second (processThread, 15, 3);

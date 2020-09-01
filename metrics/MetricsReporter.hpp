@@ -31,11 +31,30 @@ namespace hpccMetrics
 class MetricsReporter
 {
     public:
-        explicit MetricsReporter(MetricsReportConfig &_reportConfig) : reportConfig{_reportConfig} { }
+        explicit MetricsReporter(MetricsReportConfig &_reportConfig, IMetricsReportTrigger *_pTrigger) :
+            reportConfig{_reportConfig},
+            pTrigger{_pTrigger}
+            { }
+
         virtual ~MetricsReporter() = default;
+
+        void start()
+        {
+            init();
+            pTrigger->start();
+        }
+
+        void stop()
+        {
+            pTrigger->stop();
+        }
 
         void init()
         {
+            //
+            // Tell the trigger who we are
+            pTrigger->setReporter(this);
+
             //
             // Initialization consists of initializing each sink, informing
             // each sink about the metric sets for which it shall report
@@ -102,6 +121,7 @@ class MetricsReporter
 
     protected:
         MetricsReportConfig reportConfig;
+        IMetricsReportTrigger *pTrigger;
 };
 
 }

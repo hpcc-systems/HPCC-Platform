@@ -24,18 +24,21 @@
 using namespace hpccMetrics;
 
 //why is this required?
-PrometheusReporterService::PrometheusReporterService()
+/*PrometheusReporterService::PrometheusReporterService()
 {
+	m_metricsTrigger = nullptr;
 	m_processing = false;
 	m_port = DEFAULT_PROMETHEUS_METRICS_SERVICE_PORT;
 	m_use_ssl = DEFAULT_PROMETHEUS_METRICS_SERVICE_SSL;
 	m_metricsServiceName.set(DEFAULT_PROMETHEUS_METRICS_SERVICE_NAME);
 	m_sslconfig = nullptr;
     LOG(MCuserInfo, "PrometheusReporterService created - port: '%i' uri: '/%s' ssl: '%s'\n", m_port, m_metricsServiceName.str(), m_use_ssl ? "true" : "false" );
-}
+}*/
 
-PrometheusReporterService::PrometheusReporterService(const std::map<std::string, std::string> & parms)
+PrometheusReporterService::PrometheusReporterService(PrometheusMetricsReportTrigger * parent, const std::map<std::string, std::string> & parms)
 {
+	m_metricsTrigger = parent;
+	m_processing = false;
 	m_port = DEFAULT_PROMETHEUS_METRICS_SERVICE_PORT;
 	m_use_ssl = DEFAULT_PROMETHEUS_METRICS_SERVICE_SSL;
 	m_metricsServiceName.set(DEFAULT_PROMETHEUS_METRICS_SERVICE_NAME);
@@ -68,6 +71,7 @@ PrometheusReporterService::PrometheusReporterService(const std::map<std::string,
 	LOG(MCuserInfo, "PrometheusReporterService created - port: '%i' uri: '/%s' ssl: '%s'\n", m_port, m_metricsServiceName.str(), m_use_ssl ? "true" : "false" );
 }
 
+/*
 PrometheusReporterService::PrometheusReporterService(MockPrometheusCollector * collector, IPropertyTree * cfg)
 {
     m_port = DEFAULT_PROMETHEUS_METRICS_SERVICE_PORT;
@@ -99,7 +103,7 @@ PrometheusReporterService::PrometheusReporterService(MockPrometheusCollector * c
     registerMetrics(collector);
 
     LOG(MCuserInfo, "PrometheusReporterService created - port: '%i' uri: '/%s' ssl: '%s'\n", m_port, m_metricsServiceName.str(), m_use_ssl ? "true" : "false" );
-}
+}*/
 
 int PrometheusReporterService::stop()
 {
@@ -221,7 +225,7 @@ bool PrometheusReporterService::onMethodNotFound(CHttpResponse * response, const
 
 bool PrometheusReporterService::onMetricsUnavailable(CHttpRequest * request, CHttpResponse * response)
 {
-    HtmlPage page(PrometheusReporterService::HTTP_PAGE_TITLE);
+    HtmlPage page(HTTP_PAGE_TITLE);
     VStringBuffer message("Metrics are not available: '%s'", request->queryPath());
     page.appendContent(new CHtmlHeader(H1, message.str()));
 
@@ -238,11 +242,11 @@ bool PrometheusReporterService::onMetricsUnavailable(CHttpRequest * request, CHt
 bool PrometheusReporterService::onMetrics(CHttpRequest * request, CHttpResponse * response)
 {
     StringBuffer metrics;
-    if (!m_collector.get() || !m_collector->available())
+    if (!m_metricsTrigger)
         onMetricsUnavailable(request, response);
     else
     {
-    	m_collector->collect(metrics);
+    	m_metricsTrigger->getContextContent(metrics);
     	response->setContent(metrics.length(), metrics.str());
     	response->setContentType(DEFAULT_PROMETHEUS_METRICS_SERVICE_RESP_TYPE);
 
@@ -379,7 +383,7 @@ int main(int argc, char* argv[])
 
 extern "C" IMetricsReportTrigger* getTriggerInstance(const std::map<std::string, std::string> & parms, MetricsReportConfig &reportConfig)
 {
-    return new PrometheusMetricsReportTrigger(parms, reportConfig);
+    return new PrometheusMetricsReportTrigger(parms);
 }
 
 //typedef hpccMetrics::IMetricSink* (*getSinkInstance)(const std::string &sinkName, const std::map<std::string, std::string> &parms);

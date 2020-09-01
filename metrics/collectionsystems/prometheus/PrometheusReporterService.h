@@ -12,7 +12,6 @@
 #include "jliball.hpp"
 #include "securesocket.hpp"
 #include "http/platform/httptransport.ipp"
-//#include "../../system/jlib/jiface.hpp"
 
 #include "jiface.hpp"
 #include "IMetricsReportTrigger.hpp"
@@ -39,6 +38,8 @@ using hpccMetrics::MetricsReportConfig;
 using hpccMetrics::MetricsReportTrigger;
 using hpccMetrics::MetricSink;
 using hpccMetrics::MetricsReportContext;
+
+class PrometheusMetricsReportTrigger;
 
 enum MockMetricType
 {
@@ -208,18 +209,19 @@ private:
 class PrometheusReporterService
 {
 private:
-
     static constexpr const char * HTTP_PAGE_TITLE = "HPCC Systems - Prometheus Metrics Service";
     static constexpr const char * DEFAULT_PROMETHEUS_METRICS_SERVICE_RESP_TYPE = "text/html; charset=UTF-8";
     static constexpr int          DEFAULT_PROMETHEUS_METRICS_SERVICE_PORT = 8767;
     static constexpr bool         DEFAULT_PROMETHEUS_METRICS_SERVICE_SSL = false;
     static constexpr const char * DEFAULT_PROMETHEUS_METRICS_SERVICE_NAME = "metrics";
 
+	PrometheusMetricsReportTrigger * m_metricsTrigger;
+
     bool                            m_processing;
     int                             m_port;
     bool                            m_use_ssl;
     Owned<ISecureSocketContext>     m_ssctx;
-    Owned<MockPrometheusCollector>  m_collector;
+    //Owned<MockPrometheusCollector>  m_collector;
     StringBuffer                    m_metricsServiceName;
     IPropertyTree *                 m_sslconfig;
 
@@ -245,21 +247,11 @@ public:
     static bool onPostNotFound(CHttpResponse * response, const char * path);
     static bool onMethodNotFound(CHttpResponse * response, const char * httpMethod, const char * path);
 
-    PrometheusReporterService();
-    PrometheusReporterService(const std::map<std::string, std::string> & parms);
-    PrometheusReporterService(MockPrometheusCollector * collector, IPropertyTree * cfg = nullptr);
+    //PrometheusReporterService();
+    PrometheusReporterService(PrometheusMetricsReportTrigger * parent, const std::map<std::string, std::string> & parms);
     virtual ~PrometheusReporterService() {};
     int start();
     int stop();
-
-    bool registerMetrics(MockPrometheusCollector * collector)
-    {
-        if (!collector)
-            return false;
-
-        m_collector.set(collector);
-        return true;
-    }
 };
 
 class PremetheusMetricSink : public hpccMetrics::MetricSink
@@ -281,74 +273,104 @@ class PremetheusMetricSink : public hpccMetrics::MetricSink
         std::string m_filename;
 };
 
+class PrometheusMetricsReportContext : MetricsReportContext
+{
+public:
+	PrometheusMetricsReportContext()  {}
+    virtual ~PrometheusMetricsReportContext() = default;
+
+    const char * getMetrics() const
+    {
+        return metricsText.str();
+    }
+
+    void setMetrics(const char * metrics)
+	{
+		metricsText.set(metrics);
+	}
+
+private:
+    StringBuffer metricsText;
+};
+
 class PrometheusMetricsReportTrigger : public MetricsReportTrigger
 {
 private:
+
 	PrometheusReporterService * m_server;
-	MetricsReportConfig & m_reportConfig;
+	//MetricsReportConfig & m_reportConfig;
+	Owned<MockPrometheusCollector> mockPrometheusCollector;
 
 public:
-		//this should be an iproptree
-		PrometheusMetricsReportTrigger(const std::map<std::string, std::string> &parms, MetricsReportConfig & reportConfig ) :   MetricsReportTrigger(reportConfig)
+	void getContextContent(StringBuffer & content)
+	{
+		//std::map<std::string, MetricsReportContext *> m_contexts;
+		//doReport(m_contexts);
+		//how do I get the content from the contexts?????
+		mockPrometheusCollector->collect(content);
+	}
+
+	//this should be an iproptree
+	PrometheusMetricsReportTrigger(const std::map<std::string, std::string> & parms)
+	{
+		InitModuleObjects(); //logging this might be a requirement on the framework
+
+		//m_reportConfig = reportConfig;
+		try
 		{
-			InitModuleObjects(); //logging this might be a requirement on the framework
+			mockPrometheusCollector.set(new MockPrometheusCollector());
+			mockPrometheusCollector->addMetric("myesp160", "processing_request_gauge", PrometheusMetricType_Gauge, "Count of current reqs in process");
+			mockPrometheusCollector->addMetric("myesp160", "processing_request_total", PrometheusMetricType_Counter, "Aggregate count of reqs processed");
 
-			m_reportConfig = reportConfig;
-			try
-			{
-				//Owned<MockPrometheusCollector> mockPrometheusCollector = new MockPrometheusCollector();
-				//mockPrometheusCollector->addMetric("myesp160", "processing_request_gauge", PrometheusMetricType_Gauge, "Count of current reqs in process");
-				//mockPrometheusCollector->addMetric("myesp160", "processing_request_total", PrometheusMetricType_Counter, "Aggregate count of reqs processed");
-
-				//m_server(mockPrometheusCollector); //defaults, otherwise cfg tree with port/uri/ssl.
-				m_server = new PrometheusReporterService(parms);
-			}
-			catch(IException *e)
-			{
-				StringBuffer emsg;
-				LOG(MCuserInfo, "Error setting up PrometheusReporterService with mockPrometheusCollector");
-				e->Release();
-			}
+			//m_server(mockPrometheusCollector); //defaults, otherwise cfg tree with port/uri/ssl.
+			m_server = new PrometheusReporterService(this, parms);
 		}
-
-		void start() override
+		catch(IException *e)
 		{
-			m_server->start();
-			//collectThread = std::thread(collectionThread, this);
+			StringBuffer emsg;
+			LOG(MCuserInfo, "Error setting up PrometheusReporterService with mockPrometheusCollector");
+			e->Release();
 		}
+	}
 
-		void stop() override
-		{
-			m_server->stop();
-			//stopCollection = true;
-			//collectThread.join();
-		}
+	void start() override
+	{
+		//stopCollection = false;
+		//collectThread = std::thread(collectionThread, this);
+		m_server->start();
+	}
 
-		bool isStopCollection() const
-		{
-			return false;
-		//	return stopCollection;
-		}
+	void stop() override
+	{
+		//stopCollection = true;
+		//collectThread.join();
+	}
 
-	//protected:
-		//static void collectionThread(PrometheusMetricsReportTrigger * pReportTrigger)
-		//static void collectionThread(PrometheusReporterService * prometheusServer)
+	bool isStopCollection() const
+	{
+		return false;
+	//	return stopCollection;
+	}
+
+protected:
+	//static void collectionThread(PrometheusMetricsReportTrigger * pReportTrigger)
+	//static void collectionThread(PrometheusReporterService * prometheusServer)
+	//{
+		//prometheusServer->start();
+		//while (!pReportTrigger->isStopCollection())
 		//{
-		//	prometheusServer->start();
-			//while (!pReportTrigger->isStopCollection())
-			//{
-
-			//	std::this_thread::sleep_for(pReportTrigger->periodSeconds);
-			//	std::map<std::string, MetricsReportContext *> contexts;  // note, this may move to be a class member
-			//	pReportTrigger->doReport(contexts);
-			//}
-
-			//pReportTrigger->stop();
+			//std::this_thread::sleep_for(pReportTrigger->periodSeconds);
+			//std::map<std::string, MetricsReportContext *> contexts;  // note, this may move to be a class member
+			//pReportTrigger->doReport(contexts);
 		//}
 
-	//private:
-		//bool stopCollection = false;
-		//std::thread collectThread;
+		//pReportTrigger->stop();
+	//}
+
+private:
+	bool stopCollection = false;
+	std::thread collectThread;
 };
+
 
 #endif /* SUBPROJECTS__HPCCSYSTEMS_PLATFORM_METRICS_PROMETHEUS_REPORTER_PROMETHEUSREPORTERSERVICE_H_ */
