@@ -105,11 +105,11 @@ class MetricsReporter
                     {
                         pReportContext = new MetricsReportContext();
                     }
-                    else
-                    {
-                        pReportContext = it->second;
-                    }
                 }
+                else
+				{
+					pReportContext = it->second;
+				}
 
                 for (auto const &pMetricSet : reportConfigIt.second)
                 {

@@ -41,7 +41,8 @@ enum ValueType {
 enum MetricType {
     COUNTER,
     RATE,
-    GAUGE
+    GAUGE,
+	UNKNOWN
 };
 
 //

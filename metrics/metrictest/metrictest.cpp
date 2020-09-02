@@ -105,9 +105,7 @@ Component level
 
 int main(int argc, char *argv[])
 {
-
     MetricsReportConfig reportConfig;
-
     //
     // Create a metric set for request type metrics
     std::vector<std::shared_ptr<IMetric>> metrics;
@@ -142,7 +140,7 @@ int main(int argc, char *argv[])
     }
 */
     std::map<std::string, std::string> parms = { {"filename", "blahblah"}};
-    auto pSink = MetricSink::getSinkFromLib("libhpccmetrics_prometheus", nullptr, "es", parms);
+    auto pSink = MetricSink::getSinkFromLib("libhpccmetrics_prometheus", nullptr, "prometheus", parms);
 
     reportConfig.addReportConfig(pSink, pRequestMetricSet);
     reportConfig.addReportConfig(pSink, pQueueMetricSet);
