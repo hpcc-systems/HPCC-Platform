@@ -5548,3 +5548,110 @@ bool CWsWorkunitsEx::onWUEclDefinitionAction(IEspContext &context, IEspWUEclDefi
     }
    return true;
 }
+
+static const char *eclccPluginPath = "ECLCC_PLUGIN_PATH=";
+static unsigned eclccPluginPathLength = strlen(eclccPluginPath);
+
+//Run 'eclcc -showpaths' command which returns something like:
+//
+//...
+//ECLCC_PLUGIN_PATH=/opt/HPCCSystems/plugins:/opt/HPCCSystems/versioned/python2
+//...
+//
+//Find out the file paths after the ECLCC_PLUGIN_PATH=
+//In each file path, find out all of the .ecllib files and qualified .so files.
+bool CWsWorkunitsEx::onWUGetPlugins(IEspContext &context, IEspWUGetPluginsRequest &req, IEspWUGetPluginsResponse &resp)
+{
+    try
+    {
+        StringBuffer eclccPaths, error;
+        unsigned ret = runExternalCommand(eclccPaths, error, "eclcc -showpaths", nullptr);
+        if (ret != 0)
+           throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to run 'eclcc -showpaths': %s", error.str());
+
+        if (eclccPaths.isEmpty())
+        {
+            IWARNLOG("The 'eclcc -showpaths' returns empty response.");
+            return true;
+        }
+
+        StringArray pluginFolders;
+        readPluginFolders(eclccPaths, pluginFolders);
+
+        IArrayOf<IConstWUEclPluginsInFolder> plugins;
+        ForEachItemIn(i, pluginFolders)
+        {
+            const char *pluginFolder = pluginFolders.item(i);
+            Owned<IEspWUEclPluginsInFolder> folder = createWUEclPluginsInFolder();
+            folder->setPath(pluginFolder);
+            findPlugins(pluginFolder, false, folder->getPlugins());
+            findPlugins(pluginFolder, true, folder->getPlugins());
+            plugins.append(*folder.getClear());
+        }
+        resp.setPlugins(plugins);
+    }
+    catch(IException *e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+   return true;
+}
+
+void CWsWorkunitsEx::readPluginFolders(StringBuffer &eclccPaths, StringArray &pluginFolders)
+{
+    int lineLength = 0;
+    int curPos = 0;
+    int eclccPathsLength = eclccPaths.length();
+    const char *eclccPathsPtr = eclccPaths.str();
+    while (true)
+    {
+        __int64 nextPos = Utils::getLine(eclccPathsLength, curPos, eclccPathsPtr, lineLength);
+        if (strnicmp(eclccPathsPtr + curPos,  eclccPluginPath, eclccPluginPathLength) != 0)
+        {
+            curPos = nextPos;
+            continue;
+        }
+
+        //ex: ECLCC_PLUGIN_PATH=/opt/HPCCSystems/plugins:/opt/HPCCSystems/versioned/python2
+        if (lineLength > eclccPluginPathLength)
+        {
+            StringBuffer eclccPluginPathBuf;
+            eclccPluginPathBuf.append(lineLength - eclccPluginPathLength, eclccPathsPtr + curPos + eclccPluginPathLength);
+            pluginFolders.appendList(eclccPluginPathBuf, ":");
+        }
+        break;
+    }
+}
+
+void CWsWorkunitsEx::findPlugins(const char *pluginFolder, bool dotSoFile, StringArray &plugins)
+{
+    Owned<IFile> pluginDir = createIFile(pluginFolder);
+    Owned<IDirectoryIterator> pluginFiles = pluginDir->directoryFiles(dotSoFile ? "*.so" : "*.ecllib", false, false);
+    ForEach(*pluginFiles)
+    {
+        const char *pluginFile = pluginFiles->query().queryFilename();
+        StringBuffer fileName;
+        splitFilename(pluginFile, nullptr, nullptr, &fileName, &fileName);
+        //The ecllib files should be reported as plugins.
+        //.so files are reported as plugins if getSharedProcedure("getECLPluginDefinition")->ECL is non null
+        if (!dotSoFile || checkPluginECLAttr(pluginFile))
+            plugins.append(fileName);
+    }
+}
+
+bool CWsWorkunitsEx::checkPluginECLAttr(const char *fileNameWithPath)
+{
+    HINSTANCE h = LoadSharedObject(fileNameWithPath, true, false);
+    if (!h)
+        throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "can't load library %s", fileNameWithPath);
+
+    EclPluginDefinition p = (EclPluginDefinition) GetSharedProcedure(h, "getECLPluginDefinition");
+    if (p)
+    {
+        ECLPluginDefinitionBlock pb;
+        pb.size = sizeof(pb);
+        if (p(&pb) && pb.ECL)
+            return true;
+    }
+    return false;
+}

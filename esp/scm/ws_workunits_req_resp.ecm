@@ -1067,4 +1067,12 @@ ESPresponse [exceptions_inline] WUEclDefinitionActionResponse
     ESParray<ESPstruct WUEclDefinitionActionResult> ActionResults;
 };
 
+ESPrequest [nil_remove] WUGetPluginsRequest
+{
+};
+
+ESPresponse [exceptions_inline] WUGetPluginsResponse
+{
+    ESParray<ESPstruct WUEclPluginsInFolder> Plugins;
+};
 // ----------------------------------------------------------------------------------

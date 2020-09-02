@@ -323,6 +323,7 @@ public:
     bool onWUListArchiveFiles(IEspContext &context, IEspWUListArchiveFilesRequest &req, IEspWUListArchiveFilesResponse &resp);
     bool onWUGetArchiveFile(IEspContext &context, IEspWUGetArchiveFileRequest &req, IEspWUGetArchiveFileResponse &resp);
     bool onWUEclDefinitionAction(IEspContext &context, IEspWUEclDefinitionActionRequest &req, IEspWUEclDefinitionActionResponse &resp);
+    bool onWUGetPlugins(IEspContext &context, IEspWUGetPluginsRequest &req, IEspWUGetPluginsResponse &resp);
 
     bool unsubscribeServiceFromDali() override
     {
@@ -394,6 +395,9 @@ private:
     void getSuspendedQueriesByCluster(MapStringTo<bool> &suspendedByCluster, const char *querySet, const char *queryID, bool checkAllNodes);
     void addSuspendedQueryIDs(MapStringTo<bool> &suspendedQueryIDs, IPropertyTree *queriesOnCluster, const char *target);
     void getWUQueryDetails(IEspContext &context, CWUQueryDetailsReq &req, IEspWUQueryDetailsResponse &resp);
+    void readPluginFolders(StringBuffer &eclccPaths, StringArray &pluginFolders);
+    void findPlugins(const char *pluginFolder, bool dotSoFile, StringArray &plugins);
+    bool checkPluginECLAttr(const char *fileNameWithPath);
 
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;

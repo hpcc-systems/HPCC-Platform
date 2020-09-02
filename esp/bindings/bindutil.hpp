@@ -106,5 +106,4 @@ interface BINDUTIL_EXPORT IEspHttpException : extends IException
 
 BINDUTIL_EXPORT IEspHttpException* createEspHttpException(int code, const char *_msg, const char* _httpstatus);
 
-
 #endif
