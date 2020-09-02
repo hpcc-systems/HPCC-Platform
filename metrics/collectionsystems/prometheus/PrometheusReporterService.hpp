@@ -1,9 +1,19 @@
-/*
- * PrometheusReporterService.h
- *
- *  Created on: Aug 17, 2020
- *      Author: ubuntu
- */
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2020 HPCC Systems®.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
 
 #ifndef SUBPROJECTS__HPCCSYSTEMS_PLATFORM_METRICS_PROMETHEUS_REPORTER_PROMETHEUSREPORTERSERVICE_H_
 #define SUBPROJECTS__HPCCSYSTEMS_PLATFORM_METRICS_PROMETHEUS_REPORTER_PROMETHEUSREPORTERSERVICE_H_
@@ -118,14 +128,15 @@ class PremetheusMetricSink : public hpccMetrics::MetricSink
         switch (type)
         {
             case hpccMetrics::COUNTER:
+            case hpccMetrics::RATE:
                 return "counter";
             case hpccMetrics::GAUGE:
-//            case hpccMetrics::RATE: //I'm not sure about this one
                 return "gauge";
             default:
                 return nullptr;
         }
     }
+
 public:
     explicit PremetheusMetricSink(const std::string & name, const std::map<std::string, std::string> & parms) :
 
@@ -146,8 +157,9 @@ public:
 
             if (!pMeas->getDescription().empty())
                 payload.append("# HELP ").append(name.c_str()).append(" ").append(pMeas->getDescription().c_str()).append("\n");
+
             MetricType type = pMeas->getMetricType();
-            if (type != MetricType::UNKNOWN && mapMockMetricTypeToPrometheusStr(type))
+            if (mapMockMetricTypeToPrometheusStr(type))
                 payload.append("# TYPE ").append(name.c_str()).append(" ").append(mapMockMetricTypeToPrometheusStr(type)).append("\n");
 
             payload.append(name.c_str()).append(" ").append(pMeas->valueToString().c_str()).append("\n");

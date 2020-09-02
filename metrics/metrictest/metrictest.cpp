@@ -113,10 +113,10 @@ int main(int argc, char *argv[])
     pCountableMetric     = std::make_shared<CountMetric>("requests", "The number of requests that have come in");
     metrics.emplace_back(pCountableMetric);
 
-    pRateMetric = std::make_shared<RateMetric>("rate");
+    pRateMetric = std::make_shared<RateMetric>("rate", "The rate of something or other");
     metrics.emplace_back(pRateMetric);
 
-    auto pRequestMetricSet = std::make_shared<MetricSet>("set", "myprefix.", metrics);
+    auto pRequestMetricSet = std::make_shared<MetricSet>("set", "my160.esp.", metrics);
 
     mr.add(pCountableMetric);  // demo use of the registry (optional)
 
