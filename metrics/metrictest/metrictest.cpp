@@ -22,7 +22,7 @@ MetricsRegistry mr;
 
 void processThread(int, unsigned);
 std::shared_ptr<CountMetric> pCountableMetric;
-std::shared_ptr<GaugeMetric<uint32_t>> pQueueSizeMetric;
+//std::shared_ptr<GaugeMetric<uint32_t>> pQueueSizeMetric;
 //std::shared_ptr<QueueLatencyMetric> pQueueLatencyMetric;
 std::shared_ptr<RateMetric> pRateMetric;
 
@@ -109,6 +109,7 @@ int main(int argc, char *argv[])
     //
     // Create a metric set for request type metrics
     std::vector<std::shared_ptr<IMetric>> metrics;
+
     pCountableMetric     = std::make_shared<CountMetric>("requests", "The number of requests that have come in");
     metrics.emplace_back(pCountableMetric);
 
@@ -116,15 +117,16 @@ int main(int argc, char *argv[])
     metrics.emplace_back(pRateMetric);
 
     auto pRequestMetricSet = std::make_shared<MetricSet>("set", "myprefix.", metrics);
+
     mr.add(pCountableMetric);  // demo use of the registry (optional)
 
     //
     // create a metric set for queues
-    metrics.clear();
-    pQueueSizeMetric = std::make_shared<GaugeMetric<uint32_t>>("queuesize");
-    pQueueSizeMetric->setValueType(ValueType::INTEGER);
-    metrics.emplace_back(pQueueSizeMetric);
-    auto pQueueMetricSet = std::make_shared<MetricSet>("set2", "myprefix2", metrics);
+    //metrics.clear();
+    //pQueueSizeMetric = std::make_shared<GaugeMetric<uint32_t>>("queuesize");
+    //pQueueSizeMetric->setValueType(ValueType::INTEGER);
+    //metrics.emplace_back(pQueueSizeMetric);
+    //auto pQueueMetricSet = std::make_shared<MetricSet>("set2", "myprefix2", metrics);
 
     //
     // Get the name of thee report file
@@ -139,21 +141,19 @@ int main(int argc, char *argv[])
         exit(0);
     }
 */
-    std::map<std::string, std::string> parms = { {"filename", "blahblah"}};
+    std::map<std::string, std::string> parms = {};
     auto pSink = MetricSink::getSinkFromLib("libhpccmetrics_prometheus", nullptr, "prometheus", parms);
 
     reportConfig.addReportConfig(pSink, pRequestMetricSet);
-    reportConfig.addReportConfig(pSink, pQueueMetricSet);
+    //reportConfig.addReportConfig(pSink, pQueueMetricSet);
 
-    std::map<std::string, std::string> triggerParms;
-    triggerParms["period"] = "10";
+    std::map<std::string, std::string> prometheusParms;
+    prometheusParms["port"] = "8888";
 
-    //IMetricsReportTrigger *pTrigger = MetricsReportTrigger::getTriggerFromLib("periodic", nullptr, triggerParms);
-    IMetricsReportTrigger *pTrigger = MetricsReportTrigger::getTriggerFromLib("prometheus", nullptr, triggerParms);
+    IMetricsReportTrigger *pTrigger = MetricsReportTrigger::getTriggerFromLib("prometheus", nullptr, prometheusParms);
 
     pReporter = new MetricsReporter(reportConfig, pTrigger);
 
-    //
     // start collection
     pReporter->start();
 
@@ -175,9 +175,9 @@ void processThread(int numLoops, unsigned delay)
     {
         pCountableMetric->inc(1u);
         //mr.get<CountMetric>("requests")->inc(1u);  would need to get the metric name since placing in a metric set may adjust it's name
-        pQueueSizeMetric->inc(1);
+        //pQueueSizeMetric->inc(1);
         pRateMetric->inc(1);
         std::this_thread::sleep_for(std::chrono::seconds(delay));
-        pQueueSizeMetric->dec(1);
+        //pQueueSizeMetric->dec(1);
     }
 }

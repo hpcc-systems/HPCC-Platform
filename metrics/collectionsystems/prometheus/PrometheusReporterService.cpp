@@ -23,52 +23,38 @@
 
 using namespace hpccMetrics;
 
-//why is this required?
-/*PrometheusReporterService::PrometheusReporterService()
-{
-	m_metricsTrigger = nullptr;
-	m_processing = false;
-	m_port = DEFAULT_PROMETHEUS_METRICS_SERVICE_PORT;
-	m_use_ssl = DEFAULT_PROMETHEUS_METRICS_SERVICE_SSL;
-	m_metricsServiceName.set(DEFAULT_PROMETHEUS_METRICS_SERVICE_NAME);
-	m_sslconfig = nullptr;
-    LOG(MCuserInfo, "PrometheusReporterService created - port: '%i' uri: '/%s' ssl: '%s'\n", m_port, m_metricsServiceName.str(), m_use_ssl ? "true" : "false" );
-}*/
-
 PrometheusReporterService::PrometheusReporterService(PrometheusMetricsReportTrigger * parent, const std::map<std::string, std::string> & parms)
 {
-	m_metricsTrigger = parent;
-	m_processing = false;
-	m_port = DEFAULT_PROMETHEUS_METRICS_SERVICE_PORT;
-	m_use_ssl = DEFAULT_PROMETHEUS_METRICS_SERVICE_SSL;
-	m_metricsServiceName.set(DEFAULT_PROMETHEUS_METRICS_SERVICE_NAME);
-	m_sslconfig = nullptr;
+    m_metricsTrigger = parent;
+    m_processing = false;
+    m_port = DEFAULT_PROMETHEUS_METRICS_SERVICE_PORT;
+    m_use_ssl = DEFAULT_PROMETHEUS_METRICS_SERVICE_SSL;
+    m_metricsServiceName.set(DEFAULT_PROMETHEUS_METRICS_SERVICE_NAME);
+    m_sslconfig = nullptr;
 
-	if (parms.find("port") != parms.end())
-		m_port = std::atoi((parms.find("port")->second).c_str());
-		//m_port = cfg->getPropInt("port", DEFAULT_PROMETHEUS_METRICS_SERVICE_PORT);
-	//if (parms.find("useSSL") != parms.end())
-		//m_use_ssl = std::atob((parms.find("port")->second).c_str());
-	    //cfg->getPropBool("useSSL", DEFAULT_PROMETHEUS_METRICS_SERVICE_SSL);
-	if (parms.find("servicName") != parms.end())
-		m_metricsServiceName = parms.find("servicName")->second.c_str();
-	/*
-	if(m_use_ssl)
-	{
-	    m_sslconfig = cfg->getBranch("sslConfig");
+    if (parms.find("port") != parms.end())
+        m_port = std::atoi((parms.find("port")->second).c_str());
+        //m_port = cfg->getPropInt("port", DEFAULT_PROMETHEUS_METRICS_SERVICE_PORT);
+    //if (parms.find("useSSL") != parms.end())
+        //m_use_ssl = std::atob((parms.find("port")->second).c_str());
+        //cfg->getPropBool("useSSL", DEFAULT_PROMETHEUS_METRICS_SERVICE_SSL);
+    if (parms.find("servicName") != parms.end())
+        m_metricsServiceName = parms.find("servicName")->second.c_str();
+    /*
+    if(m_use_ssl)
+    {
+        m_sslconfig = cfg->getBranch("sslConfig");
 #ifdef _USE_OPENSSL
-		if(m_sslconfig != nullptr)
-			m_ssctx.setown(createSecureSocketContextEx2(m_sslconfig, ServerSocket));
-		else
-			m_ssctx.setown(createSecureSocketContext(ServerSocket));
+        if(m_sslconfig != nullptr)
+            m_ssctx.setown(createSecureSocketContextEx2(m_sslconfig, ServerSocket));
+        else
+            m_ssctx.setown(createSecureSocketContext(ServerSocket));
 #else
-		throw MakeStringException(-1, "PrometheusReporterService: failure to create SSL socket - OpenSSL not enabled in build");
+        throw MakeStringException(-1, "PrometheusReporterService: failure to create SSL socket - OpenSSL not enabled in build");
 #endif
-	}
+    }
 */
-//	registerMetrics(collector);
-
-	LOG(MCuserInfo, "PrometheusReporterService created - port: '%i' uri: '/%s' ssl: '%s'\n", m_port, m_metricsServiceName.str(), m_use_ssl ? "true" : "false" );
+    LOG(MCuserInfo, "PrometheusReporterService created - port: '%i' uri: '/%s' ssl: '%s'\n", m_port, m_metricsServiceName.str(), m_use_ssl ? "true" : "false" );
 }
 
 /*
@@ -100,20 +86,23 @@ PrometheusReporterService::PrometheusReporterService(MockPrometheusCollector * c
         }
     }
 
-    registerMetrics(collector);
-
     LOG(MCuserInfo, "PrometheusReporterService created - port: '%i' uri: '/%s' ssl: '%s'\n", m_port, m_metricsServiceName.str(), m_use_ssl ? "true" : "false" );
 }*/
 
 int PrometheusReporterService::stop()
 {
-	m_processing = false;
-	return 0;
+    m_processing = false; //this needs to be protected
+    return 0;
+}
+
+bool PrometheusReporterService::isProcessing()
+{
+    return m_processing;
 }
 
 int PrometheusReporterService::start()
 {
-	m_processing = true;
+    m_processing = true;
     Owned<ISocket> serverSocket = ISocket::create(m_port);
     LOG(MCuserInfo, "PrometheusReporterService started - Listening on port: '%i'\n", m_port);
 
@@ -246,11 +235,11 @@ bool PrometheusReporterService::onMetrics(CHttpRequest * request, CHttpResponse 
         onMetricsUnavailable(request, response);
     else
     {
-    	m_metricsTrigger->getContextContent(metrics);
-    	response->setContent(metrics.length(), metrics.str());
-    	response->setContentType(DEFAULT_PROMETHEUS_METRICS_SERVICE_RESP_TYPE);
+        m_metricsTrigger->getContextContent(metrics);
+        response->setContent(metrics.length(), metrics.str());
+        response->setContentType(DEFAULT_PROMETHEUS_METRICS_SERVICE_RESP_TYPE);
 
-    	response->send();
+        response->send();
     }
 
     return true;
@@ -350,9 +339,14 @@ void PrometheusReporterService::handleRequest(ISocket* clientSocket)
         else
             onMethodNotFound(response, httpMethod.str(), serviceName.str());
     }
+    catch(IException *e)
+    {
+        onException(response, e);
+        e->Release();
+    }
     catch(...)
     {
-        onException(response, "Unknown Exception - processing request [PrometheusReporterService::handleOneRequest()]");
+        onException(response, "Unknown Exception - Processing request [PrometheusReporterService::handleOneRequest()]");
     }
 }
 /*
@@ -386,7 +380,6 @@ extern "C" IMetricsReportTrigger* getTriggerInstance(const std::map<std::string,
     return new PrometheusMetricsReportTrigger(parms);
 }
 
-//typedef hpccMetrics::IMetricSink* (*getSinkInstance)(const std::string &sinkName, const std::map<std::string, std::string> &parms);
 extern "C" IMetricSink* getSinkInstance(const std::string & name, const std::map<std::string, std::string> & parms)
 {
     return new PremetheusMetricSink(name, parms);
