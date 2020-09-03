@@ -955,14 +955,6 @@ void WsWuInfo::getEventScheduleFlag(IEspECLWorkunit &info)
     }
 }
 
-unsigned WsWuInfo::getTotalThorTime()
-{
-    const WuScopeFilter filter("stype[graph],nested[0],stat[TimeElapsed]");
-    StatsAggregation summary;
-    aggregateStatistic(summary, cw, filter, StTimeElapsed);
-    return nanoToMilli(summary.getSum());
-}
-
 void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned long flags)
 {
     info.setWuid(cw->queryWuid());
@@ -994,7 +986,7 @@ void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned long flags)
     //After version 1.73, it should be returned only if IncludeTotalClusterTime is true.
     if ((version > 1.27) && ((version < 1.73) || (flags & WUINFO_IncludeTotalClusterTime)))
     {
-        unsigned totalThorTimeMS = getTotalThorTime();
+        unsigned totalThorTimeMS = cw->getTotalThorTime();
         if (totalThorTimeMS)
         {
             StringBuffer totalThorTimeStr;
