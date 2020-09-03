@@ -779,6 +779,8 @@ private:
     {
         if (lenLeft != lenRight)
             return false;
+        if (lenLeft == 0)
+            return true;
         return memcmp(left, right, lenLeft) == 0;
     }
 
