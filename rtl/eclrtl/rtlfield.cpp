@@ -3192,6 +3192,45 @@ extern bool ECLRTL_API hasTrailingFileposition(const RtlTypeInfo * type)
     return false;
 }
 
+//Does the field list contain a keyed int?  We are not interested in fields inside child datasets.
+//And keyed fields cannot exist within ifblocks.
+static bool containsKeyedSignedInt(const RtlFieldInfo * const * fields)
+{
+    if (!*fields)
+        return false;
+    while (*fields)
+    {
+        const RtlTypeInfo * type = (*fields)->type;
+        if (type->getType() == type_keyedint)
+        {
+            const RtlTypeInfo * baseType = type->queryChildType();
+            if (baseType->isSigned() && (baseType->getType() == type_int))
+                return true;
+        }
+        else if (type->getType() == type_record)
+        {
+            const RtlRecordTypeInfo * record = static_cast<const RtlRecordTypeInfo *>(type);
+            if (containsKeyedSignedInt(record->fields))
+                return true;
+        }
+        fields++;
+    }
+    return false;
+}
+
+extern bool ECLRTL_API containsKeyedSignedInt(const RtlTypeInfo * type)
+{
+    switch (type->getType())
+    {
+    case type_record:
+    {
+        const RtlRecordTypeInfo * record = static_cast<const RtlRecordTypeInfo *>(type);
+        return containsKeyedSignedInt(record->fields);
+    }
+    }
+    return false;
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 size32_t RtlRecordTypeInfo::getMinSize() const
