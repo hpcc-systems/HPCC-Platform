@@ -995,6 +995,7 @@ enum FieldMatchType {
     match_inifblock   = 0x400,   // matching to a field in an ifblock - may not be present
     match_deblob      = 0x1000,  // source needs fetching from a blob prior to translation
     match_dynamic     = 0x2000,  // source needs fetching from dynamic source (callback)
+    match_filepos     = 0x4000,  // type moving in or out of filepos field - cast required
 };
 
 StringBuffer &describeFlags(StringBuffer &out, FieldMatchType flags)
@@ -1016,6 +1017,7 @@ StringBuffer &describeFlags(StringBuffer &out, FieldMatchType flags)
     if (flags & match_virtual) out.append("|virtual");
     if (flags & match_deblob) out.append("|blob");
     if (flags & match_dynamic) out.append("|dynamic");
+    if (flags & match_filepos) out.append("|filepos");
     assertex(out.length() > origlen);
     return out.remove(origlen, 1);
 }
@@ -1261,6 +1263,7 @@ private:
                         offset += fillSize;
                         break;
                     }
+                    case match_filepos:
                     case match_typecast:
                         offset = translateScalar(builder, offset, field, *type, *sourceType, source);
                         break;
@@ -1581,12 +1584,15 @@ private:
     void createMatchInfo()
     {
         unsigned defaulted = 0;
+        bool destHasNested = destRecInfo.hasNested();
+        bool sourceHasNested = sourceRecInfo.hasNested();
         for (unsigned idx = 0; idx < destRecInfo.getNumFields(); idx++)
         {
             const RtlFieldInfo *field = destRecInfo.queryField(idx);
             const RtlTypeInfo *type = field->type;
             MatchInfo &info = matchInfo[idx];
-            info.matchIdx = sourceRecInfo.getFieldNum(destRecInfo.queryName(idx));
+            const char *name = destRecInfo.queryName(idx);
+            info.matchIdx = sourceRecInfo.getFieldNum(name);
             if (info.matchIdx == (unsigned) -1)
             {
                 const byte * initializer = (const byte *) field->initializer;
@@ -1602,6 +1608,27 @@ private:
                 if ((field->flags & RFTMispayloadfield) == 0)
                     matchFlags |= match_keychange;
                 defaulted++;
+                // If dest field is in a nested record, we need to check that there's no "non-record" field in source matching current nested record name
+                if (name)
+                {
+                    if (destHasNested)
+                    {
+                        const char *ldot = strrchr(name, '.');
+                        if (ldot)
+                        {
+                            StringBuffer recname(ldot-name, name);
+                            if (sourceRecInfo.getFieldNum(recname) != (unsigned) -1)
+                                info.matchType = match_fail;  // No translation from non-record to record
+                        }
+                    }
+                    if (sourceHasNested && sourceRecInfo.queryOriginalField(name))
+                    {
+                        // Similarly if dest field IS not a nested record, but there is a field in source which is.
+                        // Note that we already know there is no matching field called name in the exapanded version of source,
+                        // so any match we find must be a record
+                        info.matchType = match_fail;  // No translation from record to non-record
+                    }
+                }
             }
             else
             {
@@ -1741,6 +1768,9 @@ private:
                         }
                     }
                 }
+                else if ((type->getType()==type_filepos || sourceType->getType()==type_filepos) &&
+                         type->isUnsigned()==sourceType->isUnsigned())
+                    info.matchType = match_filepos;
                 else
                     info.matchType = match_typecast;
                 if (deblob)

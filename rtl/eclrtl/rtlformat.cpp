@@ -1435,6 +1435,7 @@ bool CommonCSVWriter::checkHeaderName(const char* name)
     if (!name || !*name)
         return false;
 
+    addingSimpleNestedContent = false; //Initialize to false.
     if (currentParentXPath.isEmpty())
     {
         bool* found = topHeaderNameMap.getValue(name);

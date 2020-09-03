@@ -189,7 +189,8 @@ public:
                     Owned<ITranslator> translator = getTranslators(part);
                     IOutputMetaData *actualFormat = translator ? &translator->queryActualFormat() : expectedFormat;
                     bool tryRemoteStream = actualFormat->queryTypeInfo()->canInterpret() && actualFormat->queryTypeInfo()->canSerialize() &&
-                                           projectedFormat->queryTypeInfo()->canInterpret() && projectedFormat->queryTypeInfo()->canSerialize();
+                                           projectedFormat->queryTypeInfo()->canInterpret() && projectedFormat->queryTypeInfo()->canSerialize() &&
+                                           !containsKeyedSignedInt(actualFormat->queryTypeInfo());
 
                     /* If part can potentially be remotely streamed, 1st check if any part is local,
                      * then try to remote stream, and otherwise failover to legacy remote access

@@ -2120,7 +2120,7 @@ public:
         }
     }
 
-    virtual ITranslatorSet *getTranslators(int projectedFormatCrc, IOutputMetaData *projected, int expectedFormatCrc, IOutputMetaData *expected, RecordTranslationMode mode, FileFormatMode fileMode) const override
+    virtual ITranslatorSet *getTranslators(int projectedFormatCrc, IOutputMetaData *projected, int expectedFormatCrc, IOutputMetaData *expected, RecordTranslationMode mode, FileFormatMode fileMode, const char *queryName) const override
     {
         // NOTE - projected and expected and anything fetched from them such as type info may reside in dynamically loaded (and unloaded)
         // query DLLs - this means it is not safe to include them in any sort of cache that might outlive the current query.
@@ -2140,7 +2140,7 @@ public:
                 if (fileMode!=actualMode)
                 {
                     if (traceLevel>0)
-                        DBGLOG("Not translating %s as file type does not match", subname);
+                        DBGLOG("In query %s: Not translating %s as file type does not match", queryName, subname);
                 }
                 else if (projectedFormatCrc != 0) // projectedFormatCrc is currently 0 for csv/xml which should not create translators.
                 {
@@ -2174,21 +2174,21 @@ public:
                         if (thisFormatCrc == expectedFormatCrc && projectedFormatCrc == expectedFormatCrc && (actualUnknown || alwaysTrustFormatCrcs))
                         {
                             if (traceLevel > 5)
-                                DBGLOG("Assume no translation required, crc's match");
+                                DBGLOG("In query %s: Assume no translation required for file %s, crc's match", queryName, subname);
                         }
                         else if (actualUnknown && mode != RecordTranslationMode::AlwaysECL)
                         {
                             if (thisFormatCrc)
                                 throw MakeStringException(ROXIE_MISMATCH, "Untranslatable record layout mismatch detected for file %s (disk format not serialized)", subname);
                             else if (traceLevel > 5)
-                                DBGLOG("Assume no translation required, disk format unknown");
+                                DBGLOG("In query %s: Assume no translation required for %s, disk format unknown", queryName, subname);
                         }
                         else
                         {
                             translator.setown(createRecordTranslator(projected->queryRecordAccessor(true), actual->queryRecordAccessor(true)));
                             if (traceLevel>0 && traceTranslations)
                             {
-                                DBGLOG("Record layout translator created for %s", subname);
+                                DBGLOG("In query %s: Record layout translator created for %s", queryName, subname);
                                 translator->describe();
                             }
                             if (!translator || !translator->canTranslate())
@@ -2207,7 +2207,7 @@ public:
                 }
             }
             else if (traceLevel > 5)
-                DBGLOG("Assume no translation required, subfile is null");
+                DBGLOG("In query %s: Assume no translation required, subfile is null", queryName);
             result->addTranslator(LINK(translator), LINK(keyedTranslator), LINK(actual));
         }
         return result.getClear();

@@ -231,7 +231,6 @@ public:
 
     void addTimerToList(SCMStringBuffer& name, const char * scope, IConstWUStatistic & stat, IArrayOf<IEspECLTimer>& timers);
 protected:
-    unsigned getTotalThorTime();
     bool hasSubGraphTimings();
 
 public:
