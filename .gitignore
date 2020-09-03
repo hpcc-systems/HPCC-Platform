@@ -6,3 +6,4 @@ ln/
 .vscode/
 .eclcc/
 eclcc.log
+*.pyc
