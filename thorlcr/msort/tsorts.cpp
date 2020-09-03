@@ -260,7 +260,7 @@ public:
         size32_t idxSz = (size32_t)(ofs[1]-ofs[0]);
         if (!dataFileIO)
         {
-            dataFileIO.setown(dataFile->open(IFOread));
+            dataFileIO.setown(dataFile->open(IFOread, IFEsequential));
             dataFileStream.setown(createFileSerialStream(dataFileIO));
             dataFileDeserializerSource.setStream(dataFileStream);
         }

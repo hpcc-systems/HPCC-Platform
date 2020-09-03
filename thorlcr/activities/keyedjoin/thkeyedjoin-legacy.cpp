@@ -190,7 +190,7 @@ public:
                         Owned<IPartDescriptor> tlkDesc = fileDesc->getPart(fileDesc->numParts()-1);
                         if (!getBestFilePart(this, *tlkDesc, iFile, location, filePath, this))
                             throw MakeThorException(TE_FileNotFound, "Top level key part does not exist, for key: %s", f->queryLogicalName());
-                        OwnedIFileIO iFileIO = iFile->open(IFOread);
+                        OwnedIFileIO iFileIO = iFile->open(IFOread, IFEsequential);
                         assertex(iFileIO);
 
                         size32_t tlkSz = (size32_t)iFileIO->size();

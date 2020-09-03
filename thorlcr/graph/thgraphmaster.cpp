@@ -1579,7 +1579,7 @@ void CJobMaster::sendQuery()
     {
         CTimeMon atimer;
         OwnedIFile iFile = createIFile(soName);
-        OwnedIFileIO iFileIO = iFile->open(IFOread);
+        OwnedIFileIO iFileIO = iFile->open(IFOread, IFEsequential);
         size32_t sz = (size32_t)iFileIO->size();
         tmp.append(sz);
         read(iFileIO, 0, sz, tmp);

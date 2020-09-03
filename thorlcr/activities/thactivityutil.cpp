@@ -436,7 +436,7 @@ bool checkSavedFileCRC(IFile * ifile, bool & timesDiffer, unsigned & storedCrc)
     s.append(".crc");
     Owned<IFile> crcFile = createIFile(s.str());
     size32_t crcSz = (size32_t)crcFile->size();
-    Owned<IFileIO> crcIO = crcFile->open(IFOread);
+    Owned<IFileIO> crcIO = crcFile->open(IFOread, IFEsequential);
     bool performCrc = false;
     timesDiffer = false;
 

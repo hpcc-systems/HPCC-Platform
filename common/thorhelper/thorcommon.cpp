@@ -1377,10 +1377,10 @@ IExtRowStream *createRowStreamEx(IFile *file, IRowInterfaces *rowIf, offset_t of
         {
             // JCSMORE should pass in a flag for rw_compressblkcrc I think, doesn't look like it (or anywhere else)
             // checks the block crc's at the moment.
-            fileio.setown(createCompressedFileReader(file, eexp, UseMemoryMappedRead));
+            fileio.setown(createCompressedFileReader(file, eexp, UseMemoryMappedRead, UseMemoryMappedRead ? IFEnone : IFEsequential));
         }
         else
-            fileio.setown(file->open(IFOread));
+            fileio.setown(file->open(IFOread, IFEsequential));
         if (!fileio)
             return NULL;
         if (maxrows == (unsigned __int64)-1)

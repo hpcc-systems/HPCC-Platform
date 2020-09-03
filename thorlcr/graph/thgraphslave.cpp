@@ -1700,6 +1700,16 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
      */
     if (queryMaxLfnBlockTimeMins() >= actInitWaitTimeMins)
         actInitWaitTimeMins = queryMaxLfnBlockTimeMins()+1;
+
+    int seqAdv = getOptInt("useFileSeqAdvice", -1);
+    PROGLOG("CHK: setUseSeqAdvice(%d)", seqAdv);
+    if (-1 != seqAdv) // i.e. has prop
+    {
+        bool tf = 1 == seqAdv;
+        PROGLOG("setUseSeqAdvice(%s)", boolToStr(tf));
+        setUseSeqAdvice(tf);
+    }
+
 }
 
 CJobChannel *CJobSlave::addChannel(IMPServer *mpServer)

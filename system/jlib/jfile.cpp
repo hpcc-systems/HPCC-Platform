@@ -1720,6 +1720,12 @@ public:
 
 };
 
+static bool useSeqAdvice = false; // for now
+void setUseSeqAdvice(bool tf)
+{
+    useSeqAdvice = tf;
+}
+
 IFileIO * CFile::openShared(IFOmode mode,IFSHmode share,IFEflags extraFlags)
 {
     int stdh = stdIoHandle(filename);
@@ -1731,6 +1737,12 @@ IFileIO * CFile::openShared(IFOmode mode,IFSHmode share,IFEflags extraFlags)
 #endif
     if (stdh>=0)
         return new CSequentialFileIO(handle,mode,share,extraFlags);
+
+#ifdef POSIX_FADV_SEQUENTIAL
+    if (useSeqAdvice && (extraFlags & IFEsequential))
+        posix_fadvise(handle, 0, 0, POSIX_FADV_SEQUENTIAL);
+#endif
+
     return new CFileIO(handle,mode,share,extraFlags);
 }
 
