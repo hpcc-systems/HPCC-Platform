@@ -41,4 +41,30 @@ do
       cat results.txt
    fi
 done
+
+if type kubeval >/dev/null 2> /dev/null; then
+   echo Running kubeval...
+   helm template $hpccchart ${options} | kubeval --strict - >results.txt 2>errors.txt
+   if [ $? -ne 0 ]
+   then
+      echo $file failed
+      cat errors.txt
+      cat results.txt
+      failed=1
+   fi
+fi
+
+if type kube-score >/dev/null 2> /dev/null; then
+   echo Running kube-score...
+   # Note we force all replicas to be > 1 as some checks are not done on replicas=1 cases e.g. antiaffinity
+   helm template $hpccchart ${options} | sed "s/replicas: 1/replicas: 2/" | kube-score score --output-format ci - >results.txt 2>errors.txt
+   if [ $? -ne 0 ]
+   then
+      echo $file failed
+      cat errors.txt
+      cat results.txt
+      failed=1
+   fi
+fi
+
 exit $failed
