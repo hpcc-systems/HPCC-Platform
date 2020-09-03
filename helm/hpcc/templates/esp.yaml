@@ -15,6 +15,7 @@ spec:
       labels:
         run: {{ .name | quote }}
     spec:
+      serviceAccountName: "hpcc-default"
       containers:
       - name: {{ .name | quote }}
         workingDir: /var/lib/HPCCSystems

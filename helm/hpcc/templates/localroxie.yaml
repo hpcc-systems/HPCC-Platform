@@ -20,6 +20,7 @@ spec:
         run: {{ $roxie.name | quote }}
         roxie-server: {{ $servername | quote }}
     spec:
+      serviceAccountName: "hpcc-default"
       initContainers:
         {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
       containers:

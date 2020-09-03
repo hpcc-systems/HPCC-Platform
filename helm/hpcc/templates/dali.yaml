@@ -14,6 +14,7 @@ spec:
       labels:
         run: {{ .name | quote }}
     spec:
+      serviceAccountName: "hpcc-default"
       initContainers: 
         {{- include "hpcc.checkDaliMount" (dict "root" $) | indent 6 }}
       containers:

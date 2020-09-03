@@ -463,16 +463,24 @@ Add any bundles
 Add security context
 Pass in a dictionary with root and me defined
 */}}
-{{- define "hpcc.addSecurityContext" -}}
-{{- if .root.Values.global.privileged }}
+{{- define "hpcc.addSecurityContext" }}
 securityContext:
+{{- if .root.Values.global.privileged }}
   privileged: true
   capabilities:
     add:
     - SYS_PTRACE
+{{- else }}
+  capabilities:
+    drop:
+    - ALL
+  allowPrivilegeEscalation: false
 {{- end }}
-{{- end -}}
-
+  runAsNonRoot: true
+  runAsUser: 999
+  runAsGroup: 1000
+  readOnlyRootFilesystem: false
+{{ end -}}
 
 {{/*
 Generate instance queue names
