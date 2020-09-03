@@ -16452,7 +16452,8 @@ public:
         outputUsed = new bool[numOutputs];
         for (unsigned i2 = 0; i2 < numOutputs; i2++)
         {
-            outputAdaptors[i2].setParent(this, helper.queryOutputMeta(i2), i2);
+            unsigned actualOutput = extra.outputs.item(i2);
+            outputAdaptors[i2].setParent(this, helper.queryOutputMeta(actualOutput), i2);
             outputUsed[i2] = false;
         }
         started = false;

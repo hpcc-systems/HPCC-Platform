@@ -311,6 +311,10 @@ protected:
     {
         RtlStringTypeInfo str1(type_string, 1);
         RtlIntTypeInfo int2(type_int, 2);
+        RtlIntTypeInfo int8(type_int, 8);
+        RtlSwapIntTypeInfo swapint2(type_int, 2);
+        RtlSwapIntTypeInfo swapint8(type_int, 8);
+        RtlKeyedIntTypeInfo keyedint8(type_keyedint, 8, &swapint8);
         RtlStringTypeInfo strx(type_string|RFTMunknownsize, 0);
         RtlUtf8TypeInfo utf8(type_utf8|RFTMunknownsize, 0, nullptr);
         testSerialize(int2, "[123]");
@@ -322,6 +326,23 @@ protected:
         testSerialize(int2, "(,)");
         testSerialize(int2, "(123,234),(456,567)");
         testSerialize(int2, "(456,567),(123,234)", "(123,234),(456,567)");
+
+        testSerialize(swapint2, "[123]");
+        testSerialize(swapint2, "(123,234]");
+        testSerialize(swapint2, "[123,234)");
+        testSerialize(swapint2, "(123,234)");
+        testSerialize(swapint2, "(,234)");
+        testSerialize(swapint2, "(128,)");
+        testSerialize(swapint2, "(,)");
+        testSerialize(swapint2, "(123,234),(456,567)");
+        testSerialize(swapint2, "(456,567),(123,234)", "(123,234),(456,567)");
+
+        testSerialize(int8, "[9223372036854775807]");
+        testSerialize(int8, "[-9223372036854775808]");
+        testSerialize(swapint8, "[9223372036854775807]");
+        testSerialize(swapint8, "[-9223372036854775808]");
+        testSerialize(keyedint8, "[10]");
+        testSerialize(keyedint8, "[-10]");
 
         testSerialize(str1, "['A']");
         testSerialize(str1, "[',']");
