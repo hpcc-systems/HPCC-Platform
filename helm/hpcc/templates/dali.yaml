@@ -24,6 +24,7 @@ spec:
         args: [
                 {{ include "hpcc.configArg" . }}
               ]
+{{ include "hpcc.addSentinelProbes" . | indent 8 }}
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
         volumeMounts:

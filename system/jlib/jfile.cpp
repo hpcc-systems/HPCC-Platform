@@ -6816,7 +6816,6 @@ extern jlib_decl IFile * createSentinelTarget()
 
 extern jlib_decl void removeSentinelFile(IFile * sentinelFile)
 {
-#ifndef _CONTAINERIZED
     if (sentinelFile)
     {
         if(sentinelFile->exists() && sentinelFile->isDirectory()!=fileBool::foundYes)
@@ -6835,12 +6834,10 @@ extern jlib_decl void removeSentinelFile(IFile * sentinelFile)
             }
         }
     }
-#endif
 }
 
 extern jlib_decl void writeSentinelFile(IFile * sentinelFile)
 {
-#ifndef _CONTAINERIZED
     if ( sentinelFile )
     {
         DBGLOG("Creating sentinel file %s for rerun from script", sentinelFile->queryFilename());
@@ -6857,7 +6854,6 @@ extern jlib_decl void writeSentinelFile(IFile * sentinelFile)
             throw makeOsException(errno, "writeSentinelFile - file not created.");
         }
     }
-#endif
 }
 
 jlib_decl StringBuffer & appendCurrentDirectory(StringBuffer & target, bool blankIfFails)
