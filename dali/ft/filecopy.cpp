@@ -43,7 +43,7 @@
 #include "dalienv.hpp"
 #include "ftbase.ipp"
 
-#define DEFAULT_MAX_CONNECTIONS 25
+#define DEFAULT_MAX_CONNECTIONS 800
 #define PARTITION_RECOVERY_LIMIT 1000
 #define EXPECTED_RESPONSE_TIME          (60 * 1000)
 #define RESPONSE_TIME_TIMEOUT           (60 * 60 * 1000)
