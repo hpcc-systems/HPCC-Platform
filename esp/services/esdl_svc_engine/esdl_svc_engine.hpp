@@ -47,14 +47,14 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CEsdlSvcEngineSoapBindingEx();
-    CEsdlSvcEngineSoapBindingEx(IPropertyTree* cfg, const char *bindname=NULL, const char *procname=NULL);
+    CEsdlSvcEngineSoapBindingEx(IPropertyTree* cfg, IPropertyTree *esdlArchive, const char *bindname=NULL, const char *procname=NULL);
 
     virtual ~CEsdlSvcEngineSoapBindingEx() {}
 
     virtual void addService(const char * name, const char * host, unsigned short port, IEspService & service)
     {
         m_pESDLService = dynamic_cast<CEsdlSvcEngine*>(&service);
-        EsdlBindingImpl::addService(name, host, port, service);
+        EsdlBindingImpl::addService(nullptr, name, host, port, service);
     }
 
     virtual const char *queryServiceType(){return  m_pESDLService->getServiceType();}

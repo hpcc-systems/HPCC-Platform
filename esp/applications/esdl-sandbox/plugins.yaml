@@ -1,0 +1,9 @@
+protocol_plugins:
+  http_protocol: esphttp
+  secure_http_protocol: esphttp
+
+service_plugins:
+  esdl_svc_engine: esdl_svc_engine
+
+binding_plugins:
+  esdl_svc_engine: esdl_svc_engine

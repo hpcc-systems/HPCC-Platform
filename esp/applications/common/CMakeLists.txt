@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2020 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -15,13 +15,11 @@
 ################################################################################
 
 set ( ESP_APPLICATION_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/esp.yaml
-    ${CMAKE_CURRENT_SOURCE_DIR}/application.yaml
-    ${CMAKE_CURRENT_SOURCE_DIR}/eclqueries.yaml
-    ${CMAKE_CURRENT_SOURCE_DIR}/ldap_authorization_map.yaml
-    ${CMAKE_CURRENT_SOURCE_DIR}/plugins.yaml
+    ${CMAKE_CURRENT_SOURCE_DIR}/ldap.yaml
+    ${CMAKE_CURRENT_SOURCE_DIR}/configsec.yaml
+    ${CMAKE_CURRENT_SOURCE_DIR}/directories.yaml
 )
 
 FOREACH( iFile ${ESP_APPLICATION_FILES} )
-    Install( FILES ${iFile} DESTINATION componentfiles/applications/eclqueries COMPONENT Runtime )
+    Install( FILES ${iFile} DESTINATION componentfiles/applications/common COMPONENT Runtime )
 ENDFOREACH ( iFile )

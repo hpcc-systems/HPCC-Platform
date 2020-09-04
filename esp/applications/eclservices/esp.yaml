@@ -2,6 +2,7 @@ esp:
    instance: eclservices
    description: ECL Services
    api_only: true
+   loadDaliBindings: false
    auth: ldap
    tls: true
    port: 8880

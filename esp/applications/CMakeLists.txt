@@ -13,7 +13,10 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+HPCC_ADD_SUBDIRECTORY (common)
 HPCC_ADD_SUBDIRECTORY (eclwatch)
 HPCC_ADD_SUBDIRECTORY (eclservices)
 HPCC_ADD_SUBDIRECTORY (eclqueries)
+HPCC_ADD_SUBDIRECTORY (esdl)
+HPCC_ADD_SUBDIRECTORY (esdl-sandbox)
 HPCC_ADD_SUBDIRECTORY (sql2ecl)

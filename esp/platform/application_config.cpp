@@ -40,17 +40,27 @@ static void appendPTreeFromYamlFile(IPropertyTree *tree, const char *file)
 
 IPropertyTree *loadApplicationConfig(const char *application, const char* argv[])
 {
+    Owned<IPropertyTree> applicationConfig = createPTree(application);
+    IPropertyTree *defaultConfig = applicationConfig->addPropTree("esp");
+
     char sepchar = getPathSepChar(COMPONENTFILES_DIR);
+
     StringBuffer path(COMPONENTFILES_DIR);
+    addPathSepChar(path, sepchar).append("applications").append(sepchar).append("common").append(sepchar);
+    if (checkDirExists(path))
+    {
+        Owned<IDirectoryIterator> common_dir = createDirectoryIterator(path, "*.yaml", false, false);
+        ForEach(*common_dir)
+            appendPTreeFromYamlFile(defaultConfig, common_dir->query().queryFilename());
+    }
+
+    path.set(COMPONENTFILES_DIR);
     addPathSepChar(path, sepchar).append("applications").append(sepchar).append(application).append(sepchar);
     if (!checkDirExists(path))
         throw MakeStringException(-1, "Can't find esp application %s (dir %s)", application, path.str());
-
-    Owned<IPropertyTree> applicationConfig = createPTree(application);
-    IPropertyTree *defaultConfig = applicationConfig->addPropTree("esp");
-    Owned<IDirectoryIterator> dir = createDirectoryIterator(path, "*.yaml", false, false);
-    ForEach(*dir)
-        appendPTreeFromYamlFile(defaultConfig, dir->query().queryFilename());
+    Owned<IDirectoryIterator> application_dir = createDirectoryIterator(path, "*.yaml", false, false);
+    ForEach(*application_dir)
+        appendPTreeFromYamlFile(defaultConfig, application_dir->query().queryFilename());
 
     //apply provided config to the application
     Owned<IPropertyTree> config = loadConfiguration(defaultConfig, argv, "esp", "ESP", nullptr, nullptr);
@@ -78,14 +88,8 @@ static void copyDirectories(IPropertyTree *target, IPropertyTree *src)
     }
 }
 
-//returns true if ldap is enabled.
-//  only support ldap or "none" for now.
-//  "none" must be explicit, don't want to accidentally turn off security
-bool addSecurity(IPropertyTree *legacyEsp, IPropertyTree *appEsp, StringBuffer &bindAuth)
+bool addLdapSecurity(IPropertyTree *legacyEsp, IPropertyTree *appEsp, StringBuffer &bindAuth)
 {
-    const char *auth = appEsp->queryProp("@auth");
-    if (auth && streq(auth, "none"))
-        return false;
     const char *ldapAddress = appEsp->queryProp("@ldapAddress");
     if (isEmptyString(ldapAddress))
         throw MakeStringException(-1, "LDAP not configured.  To run without security set auth=none");
@@ -107,16 +111,68 @@ bool addSecurity(IPropertyTree *legacyEsp, IPropertyTree *appEsp, StringBuffer &
 
     VStringBuffer authenticationXml("<Authentication htpasswdFile='/etc/HPCCSystems/.htpasswd' ldapAuthMethod='kerberos' ldapConnections='10' ldapServer='%s' method='ldaps' passwordExpirationWarningDays='10'/>", configname.str());
     legacyEsp->addPropTree("Authentication", createPTreeFromXMLString(authenticationXml));
-
     return true;
 }
 
-void bindAuthResources(IPropertyTree *legacyAuthenticate, IPropertyTree *app, const char *service)
+bool addAuthNZSecurity(const char *name, IPropertyTree *legacyEsp, IPropertyTree *appEsp, StringBuffer &bindAuth)
 {
-    IPropertyTree *appLdap = app->queryPropTree("ldap");
-    if (!appLdap)
-        throw MakeStringException(-1, "can't find application LDAP settings.  To run without security set auth=none");
-    IPropertyTree *root_access = appLdap->queryPropTree("root_access");
+    IPropertyTree *authNZ = appEsp->queryPropTree("authNZ");
+    if (!authNZ)
+        throw MakeStringException(-1, "can't find application AuthNZ section.  To run without security set auth=none");
+    authNZ = authNZ->queryPropTree(name);
+    if (!authNZ)
+        throw MakeStringException(-1, "can't find application %s AuthNZ settings.  To run without security set auth=none", name);
+    IPropertyTree *appSecMgr = authNZ->queryPropTree("SecurityManager");
+    if (!appSecMgr)
+        throw MakeStringException(-1, "can't find SecurityManager settings.  To run without security set auth=none");
+    const char *method = appSecMgr->queryProp("@name");
+    const char *tag = appSecMgr->queryProp("@type");
+    if (isEmptyString(tag))
+        throw MakeStringException(-1, "SecurityManager type attribute required.  To run without security set auth=none");
+
+    legacyEsp->addPropTree("AuthDomains", createPTreeFromXMLString("<AuthDomains><AuthDomain authType='AuthPerRequestOnly' clientSessionTimeoutMinutes='120' domainName='default' invalidURLsAfterAuth='/esp/login' loginLogoURL='/esp/files/eclwatch/img/Loginlogo.png' logonURL='/esp/files/Login.html' logoutURL='' serverSessionTimeoutMinutes='240' unrestrictedResources='/favicon.ico,/esp/files/*,/esp/xslt/*'/></AuthDomains>"));
+
+    IPropertyTree *legacy = legacyEsp->addPropTree("SecurityManagers");
+    legacy = legacy->addPropTree("SecurityManager");
+    copyAttributes(legacy, appSecMgr);
+    legacy = legacy->addPropTree(tag);
+    mergePTree(legacy, authNZ); //extra info clean up later
+    legacy->removeProp("SecurityManager"); //already copied these attributes above, don't need this as a child
+
+    bindAuth.setf("<Authenticate method='%s'/>", method ? method : "unknown");
+    return true;
+}
+
+//  auth "none" must be explicit, default to secure mode, don't want to accidentally turn off security
+bool addSecurity(IPropertyTree *legacyEsp, IPropertyTree *appEsp, StringBuffer &bindAuth)
+{
+    const char *auth = appEsp->queryProp("@auth");
+    if (isEmptyString(auth) || streq(auth, "none"))
+        return false;
+    if (streq(auth, "ldap"))
+        return addLdapSecurity(legacyEsp, appEsp, bindAuth);
+    return addAuthNZSecurity(auth, legacyEsp, appEsp, bindAuth);
+}
+
+void bindAuthResources(IPropertyTree *legacyAuthenticate, IPropertyTree *app, const char *service, const char *auth)
+{
+    IPropertyTree *appAuth = nullptr;
+    if (isEmptyString(auth) || streq(auth, "ldap"))
+        appAuth = app->queryPropTree("ldap");
+    else if (streq(auth, "none"))
+        return;
+    else
+    {
+        appAuth = app->queryPropTree("authNZ");
+        if (!appAuth)
+            return;
+        appAuth = appAuth->queryPropTree(auth);
+        if (!appAuth)
+            return;
+    }
+    if (!appAuth)
+        throw MakeStringException(-1, "can't find application Auth settings.  To run without security set auth=none");
+    IPropertyTree *root_access = appAuth->queryPropTree("root_access");
     StringAttr required(root_access->queryProp("@required"));
     StringAttr description(root_access->queryProp("@description"));
     StringAttr resource(root_access->queryProp("@resource"));
@@ -124,12 +180,12 @@ void bindAuthResources(IPropertyTree *legacyAuthenticate, IPropertyTree *app, co
     legacyAuthenticate->addPropTree("Location", createPTreeFromXMLString(locationXml));
 
     VStringBuffer featuresPath("resource_map/%s/Feature", service);
-    Owned<IPropertyTreeIterator> features = appLdap->getElements(featuresPath);
+    Owned<IPropertyTreeIterator> features = appAuth->getElements(featuresPath);
     ForEach(*features)
         legacyAuthenticate->addPropTree("Feature", LINK(&features->query()));
 }
 
-void bindService(IPropertyTree *legacyEsp, IPropertyTree *app, const char *service, const char *protocol, const char *netAddress, unsigned port, const char *auth, int seq)
+void bindService(IPropertyTree *legacyEsp, IPropertyTree *app, const char *service, const char *protocol, const char *netAddress, unsigned port, const char *bindAuth, int seq)
 {
     VStringBuffer xpath("binding_plugins/@%s", service);
     const char *binding_plugin = app->queryProp(xpath);
@@ -139,11 +195,12 @@ void bindService(IPropertyTree *legacyEsp, IPropertyTree *app, const char *servi
     if (seq==0)
         bindingEntry->setProp("@defaultBinding", "true");
 
-    if (!isEmptyString(auth))
+    if (!isEmptyString(bindAuth))
     {
-        IPropertyTree *authenticate = bindingEntry->addPropTree("Authenticate", createPTreeFromXMLString(auth));
+        const char *auth = app->queryProp("@auth");
+        IPropertyTree *authenticate = bindingEntry->addPropTree("Authenticate", createPTreeFromXMLString(bindAuth));
         if (authenticate)
-            bindAuthResources(authenticate, app, service);
+            bindAuthResources(authenticate, app, service, auth);
     }
 }
 
@@ -166,7 +223,7 @@ static void mergeServicePTree(IPropertyTree *target, IPropertyTree *toMerge)
     }
 }
 
-void addService(IPropertyTree *legacyEsp, IPropertyTree *app, const char *application, const char *service, const char *protocol, const char *netAddress, unsigned port, const char *auth, int seq)
+void addService(IPropertyTree *legacyEsp, IPropertyTree *app, const char *application, const char *service, const char *protocol, const char *netAddress, unsigned port, const char *bindAuth, int seq)
 {
     VStringBuffer plugin_xpath("service_plugins/@%s", service);
     const char *service_plugin = app->queryProp(plugin_xpath);
@@ -179,7 +236,7 @@ void addService(IPropertyTree *legacyEsp, IPropertyTree *app, const char *applic
     if (serviceConfig && serviceEntry)
         mergeServicePTree(serviceEntry, serviceConfig);
 
-    bindService(legacyEsp, app, service, protocol, netAddress, port, auth, seq);
+    bindService(legacyEsp, app, service, protocol, netAddress, port, bindAuth, seq);
 }
 
 bool addProtocol(IPropertyTree *legacyEsp, IPropertyTree *app)
@@ -249,9 +306,9 @@ IPropertyTree *buildApplicationLegacyConfig(const char *application, const char*
 
     bool tls = addProtocol(legacyEsp, appEspConfig);
 
-    StringBuffer auth;
-    addSecurity(legacyEsp, appEspConfig, auth);
-    addServices(legacyEsp, appEspConfig, application, auth, tls);
+    StringBuffer bindAuth;
+    addSecurity(legacyEsp, appEspConfig, bindAuth);
+    addServices(legacyEsp, appEspConfig, application, bindAuth, tls);
 
     IPropertyTree *legacyDirectories = legacy->queryPropTree("Software/Directories");
     IPropertyTree *appDirectories = appEspConfig->queryPropTree("directories");

@@ -244,7 +244,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     EsdlBindingImpl();
-    EsdlBindingImpl(IPropertyTree* cfg, const char *bindname=NULL, const char *procname=NULL);
+    EsdlBindingImpl(IPropertyTree* cfg, IPropertyTree *esdlArchive, const char *bindname=NULL, const char *procname=NULL);
 
     virtual ~EsdlBindingImpl()
     {
@@ -257,7 +257,7 @@ public:
 
     virtual void initEsdlServiceInfo(IEsdlDefService &srvdef);
 
-    virtual void addService(const char * name, const char * host, unsigned short port, IEspService & service);
+    void addService(IPropertyTree *esdlArchive, const char * name, const char * host, unsigned short port, IEspService & service);
 
     int onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    const char *serviceName, const char *methodName);
     int HandleSoapRequest(CHttpRequest* request, CHttpResponse* response);
@@ -373,6 +373,8 @@ private:
     void saveDESDLState();
     IPropertyTree * fetchESDLBinding(const char *process, const char *bindingName, const char * stateFileName);
     bool loadDefinitions(const char * espServiceName, Owned<IEsdlDefinition>& esdl, IPropertyTree * config, StringBuffer & loadedServiceName, const char * stateFileName);
+    bool loadLocalDefinitions(IPropertyTree *esdlArchive, const char * espServiceName, Owned<IEsdlDefinition>& esdl, IPropertyTree * config, StringBuffer & loadedServiceName);
+
 };
 
 #endif //_EsdlBinding_HPP__

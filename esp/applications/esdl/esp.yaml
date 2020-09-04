@@ -1,11 +1,12 @@
 esp:
-   instance: sql2ecl
-   description: SQL2ECL Service
-   daliServers: dali
-   loadDaliBindings: false
+   instance: esdl-integration
+   description: ESDL integration
+   daliServers: mydali
    auth: ldap
    tls: true
    port: 8880
+   bindings: "/opt/HPCCSystems/bindings"
+   loadDaliBindings: false
    enableSEHMapping: true
    httpConfigAccess: true
    logLevel: 1

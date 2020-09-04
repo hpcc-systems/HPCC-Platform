@@ -1488,7 +1488,7 @@ EsdlBindingImpl::EsdlBindingImpl()
         m_isAttached = true;
 }
 
-EsdlBindingImpl::EsdlBindingImpl(IPropertyTree* cfg, const char *binding,  const char *process) : CHttpSoapBinding(cfg, binding, process)
+EsdlBindingImpl::EsdlBindingImpl(IPropertyTree* cfg, IPropertyTree* esdlArchive, const char *binding,  const char *process) : CHttpSoapBinding(cfg, binding, process)
 {
     m_pCentralStore.setown(createEsdlCentralStore());
     m_bindingName.set(binding);
@@ -1515,7 +1515,10 @@ EsdlBindingImpl::EsdlBindingImpl(IPropertyTree* cfg, const char *binding,  const
 
     try
     {
-        m_esdlBndCfg.setown(fetchESDLBinding(process, binding, m_esdlStateFilesLocation));
+        if (esdlArchive)
+            m_esdlBndCfg.set(esdlArchive->queryPropTree("Binding"));
+        else
+            m_esdlBndCfg.setown(fetchESDLBinding(process, binding, m_esdlStateFilesLocation));
 
         if (!m_esdlBndCfg.get())
             DBGLOG("ESDL Binding: Could not fetch ESDL binding %s for ESP Process %s", binding, process);
@@ -1569,6 +1572,67 @@ IPropertyTree* EsdlBindingImpl::fetchESDLBinding(const char *process, const char
     {
         return fetchESDLBindingFromStateFile(process, bindingName, stateFileName);
     }
+}
+
+bool EsdlBindingImpl::loadLocalDefinitions(IPropertyTree *esdlArchive, const char * espServiceName, Owned<IEsdlDefinition>& esdl, IPropertyTree * esdl_binding, StringBuffer & loadedServiceName)
+{
+    if (!esdl || !esdl_binding || !esdlArchive)
+        return false;
+
+    //Loading first ESDL definition encountered, informed that espServiceName is to be treated as arbitrary
+    IPropertyTree * esdl_binding_definition = esdl_binding->queryPropTree("Definition[1]");
+
+    if (esdl_binding_definition)
+    {
+        try
+        {
+            const char * id = esdl_binding_definition->queryProp("@id");
+            PROGLOG("Loading esdl definition for ID %s", id);
+            loadedServiceName.set(esdl_binding_definition->queryProp("@esdlservice"));
+            IEsdlShare* esdlshare = queryEsdlShare();
+            Linked<IEsdlDefinition> shareddef = esdlshare->lookup(id);
+            if (shareddef)
+            {
+                PROGLOG("Found esdl definition %s in shared cache, use it directly.", id);
+                esdl.set(shareddef);
+                return true;
+            }
+            else
+                PROGLOG("Esdl definition %s not found in shared cache, loading it from archive", id);
+
+            StringBuffer esdlXML;
+            if (esdlArchive)
+            {
+                esdlXML.set(esdlArchive->queryProp("Definitions"));
+                if (esdlXML.isEmpty())
+                    throw MakeStringException(-1, "Could not load ESDL definition: '%s' assigned to esp service name '%s'", id, espServiceName);
+            }
+
+#ifdef _DEBUG
+            DBGLOG("\nESDL Definition to be loaded:\n%s", esdlXML.str());
+#endif
+            esdl->addDefinitionFromXML(esdlXML, id);
+
+            if (strcmp(loadedServiceName.str(), espServiceName)!=0)
+                DBGLOG("ESDL Binding: ESP service %s now based off of ESDL Service def: %s", espServiceName, loadedServiceName.str());
+
+            esdlshare->add(id, esdl.get());
+        }
+        catch (IException * e)
+        {
+            StringBuffer msg;
+            e->errorMessage(msg);
+            DBGLOG("Error while loading ESDL definitions: %s", msg.str());
+            e->Release();
+        }
+    }
+    else
+    {
+        DBGLOG("ESDL Binding: Could not find any ESDL definition while loading ESDL Binding: %s", esdl_binding->queryProp("@id"));
+        return false;
+    }
+
+    return true;
 }
 
 /* if the target ESDL binding contains an ESDL service definition matching this espServiceName, load it.
@@ -1807,7 +1871,7 @@ void EsdlBindingImpl::clearBindingState()
     clearState(m_esdlStateFilesLocation.str());
 }
 
-void EsdlBindingImpl::addService(const char * name,
+void EsdlBindingImpl::addService(IPropertyTree *esdlArchive, const char * name,
                                  const char * host,
                                  unsigned short port,
                                  IEspService & service)
@@ -1828,7 +1892,13 @@ void EsdlBindingImpl::addService(const char * name,
             if (m_esdl)
             {
                 StringBuffer loadedservicename;
-                if (!loadDefinitions(name, m_esdl, m_esdlBndCfg, loadedservicename, m_esdlStateFilesLocation.str()))
+                bool loaded = false;
+                if (esdlArchive)
+                    loaded = loadLocalDefinitions(esdlArchive, name, m_esdl, m_esdlBndCfg, loadedservicename);
+                else
+                    loaded = loadDefinitions(name, m_esdl, m_esdlBndCfg, loadedservicename, m_esdlStateFilesLocation.str());
+
+                if (!loaded)
                 {
                     DBGLOG("ESDL Binding: Error adding ESP service '%s': Could not fetch ESDL definition", name);
                     return;

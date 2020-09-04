@@ -2,6 +2,7 @@ esp:
    instance: eclqueries
    description: ECL Queries
    daliServers: dali
+   loadDaliBindings: false
    auth: ldap
    tls: true
    port: 8880

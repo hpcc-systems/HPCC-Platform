@@ -1,0 +1,10 @@
+authNZ:
+  configsec:
+    SecurityManager:
+      type: AccurintSecurity
+      name: accurintsecmgr
+    buildSet: accurintsecmgr
+    InstanceFactoryName: newLNSecurityManager
+    libName: accurintsecmgr
+    name: accurintsecmgr
+    typeSelector: cfg

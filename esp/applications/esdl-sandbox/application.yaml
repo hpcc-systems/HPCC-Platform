@@ -1,0 +1,4 @@
+application:
+  name: esdl-sandbox
+  services:
+   - esdl_svc_engine
