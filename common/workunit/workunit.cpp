@@ -4770,13 +4770,7 @@ EnumMapping workunitSortFields[] =
    { WUSFwuid, "@" },
    { WUSFecl, "Query/ShortText" },
    { WUSFfileread, "FilesRead/File/@name" },
-   { WUSFtotalthortime, "@totalThorTime|"
-                        "Statistics/Statistic[@c='summary'][@creator='thor'][@kind='TimeElapsed']/@value|"
-                        "Statistics/Statistic[@c='summary'][@creator='hthor'][@kind='TimeElapsed']/@value|"
-                        "Statistics/Statistic[@c='summary'][@creator='roxie'][@kind='TimeElapsed']/@value|"
-                        "Statistics/Statistic[@desc='Total thor time']/@value|"
-                        "Timings/Timing[@name='Total thor time']/@duration"                                 //Use Statistics first. If not found, use Timings
-   },
+   { WUSFtotalthortime, "@totalThorTime" },
    { WUSFwuidhigh, "@" },
    { WUSFwildwuid, "@" },
    { WUSFappvalue, "Application" },
