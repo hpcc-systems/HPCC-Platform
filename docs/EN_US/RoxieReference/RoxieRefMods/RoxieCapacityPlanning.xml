@@ -9,7 +9,7 @@
   manipulating as much data as its combined hard drive space; however, this
   does not produce optimal performance.</para>
 
-  <para>For maximum performance, you should configure your cluster so slave
+  <para>For maximum performance, you should configure your cluster so agent
   nodes perform most jobs in memory.</para>
 
   <para>For example, if a query uses three data files with a combined file
@@ -23,7 +23,7 @@
   100-way Thor to a 20-way Roxie would be acceptable.</para>
 
   <para>This is due to the manner in which data is loaded and processed by
-  Roxie slaves. If data is copied to slave nodes, the file parts are directly
+  Roxie agents. If data is copied to agent nodes, the file parts are directly
   copied from source location to target locations. They are NOT split or
   resized to fit a different sized cluster. Therefore, if you load 50 file
   parts onto a 40-channel cluster, part one goes to channel one, part two to
@@ -33,11 +33,11 @@
   only perform as fast as its slowest node.</para>
 
   <para>The final consideration is the number of Server processes in a
-  cluster. Each slave must also be a Server, but you can dedicate additional
+  cluster. Each agent must also be a Server, but you can dedicate additional
   nodes to be only Server processes. This is useful for queries that require
-  processing on the Server after results are returned from slaves. Those
+  processing on the Server after results are returned from agents. Those
   Server-intensive queries could be sent only to dedicated Server IP addresses
-  so the load is removed from nodes acting as both Server and slave.</para>
+  so the load is removed from nodes acting as both Server and agent.</para>
 
   <sect2 id="Configuring_the_Channels">
     <title>Configuring the Channels</title>
@@ -48,7 +48,7 @@
 
     <para><graphic fileref="../../images/RM-15.jpg" /></para>
 
-    <para>In this depiction, each enclosure holds five Roxie slave blades (a
+    <para>In this depiction, each enclosure holds five Roxie agent blades (a
     row of servers in the picture). We will use this example for the rest of
     this manual.</para>
   </sect2>

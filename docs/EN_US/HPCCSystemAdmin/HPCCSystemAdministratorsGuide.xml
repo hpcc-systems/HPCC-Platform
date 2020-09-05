@@ -873,7 +873,7 @@
 
             <listitem>
               <para><emphasis role="bold">Peer-Node Redundancy:</emphasis>
-              Each Slave node typically has one or more peer nodes within its
+              Each Agent node typically has one or more peer nodes within its
               cluster. Each peer stores a copy of data files it will
               read.</para>
             </listitem>
