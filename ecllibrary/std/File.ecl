@@ -412,7 +412,7 @@ EXPORT DfuPlusExec(varstring cmdline) :=
  * @param timeOut       The time in ms to wait for the operation to complete.  A value of 0 causes the call to return immediately.
  *                      Defaults to no timeout (-1).
  * @param espServerIpPort The url of the ESP file copying service. Defaults to the value of ws_fs_server in the environment.
- * @param maxConnections The maximum number of target nodes to write to concurrently.  Defaults to 1.
+ * @param maxConnections The maximum number of target nodes to write to concurrently.  Defaults to -1 (let system decide).
  * @param allowOverwrite Is it valid to overwrite an existing file of the same name?  Defaults to FALSE
  * @param replicate     Whether to replicate the new file. Defaults to FALSE.
  * @param compress      Whether to compress the new file. Defaults to FALSE.
