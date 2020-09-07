@@ -156,9 +156,9 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
     set_source_files_properties (hqlfilter.cpp PROPERTIES COMPILE_FLAGS " -Wimplicit-fallthrough=0")
   endif()
 
-  #Compiler complains about a memcpy of a structure that contains a union
+  #Compiler complains about a memcpy of a structure that contains a union, and copy if uninitialised enum
   if (CMAKE_COMPILER_IS_GNUCC AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "8.0.0")
-    set_source_files_properties (hqlgram.cpp PROPERTIES COMPILE_FLAGS " -Wno-class-memaccess")
+    set_source_files_properties (hqlgram.cpp PROPERTIES COMPILE_FLAGS " -Wno-class-memaccess -fno-sanitize=undefined")
     set_source_files_properties (hqllex.cpp PROPERTIES COMPILE_FLAGS " -Wno-class-memaccess -Wno-sign-compare")
   endif()
 
