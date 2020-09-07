@@ -712,6 +712,45 @@ IHqlExpression * queryStripCasts(IHqlExpression * expr)
     return expr;
 }
 
+unsigned queryNumAnnotations(IHqlExpression * expr)
+{
+    unsigned num = 0;
+    for (;;)
+    {
+        IHqlExpression * body = expr->queryBody(true);
+        if (expr == body)
+            return num;
+        expr = body;
+        num++;
+    }
+}
+
+void dumpSymbols(IHqlExpression * expr)
+{
+    for (;;)
+    {
+        IHqlExpression * body = expr->queryBody(true);
+        if (expr == body)
+            return;
+        if (body->getAnnotationKind() == annotate_symbol)
+            printf("%s\n", str(body->queryName()));
+        expr = body;
+    }
+}
+
+bool hasSymbol(IHqlExpression * expr, IAtom * search)
+{
+    for (;;)
+    {
+        IHqlExpression * body = expr->queryBody(true);
+        if (expr == body)
+            return false;
+        if (body->queryName() == search)
+            return true;
+        expr = body;
+    }
+}
+
 
 //---------------------------------------------------------------------------------------------
 
