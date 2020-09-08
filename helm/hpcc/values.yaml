@@ -17,6 +17,22 @@ global:
   # If not specified, the first esp component that exposes eclservices application is assumed.
   # Can also be overridden locally in individual components
   ## defaultEsp: eclservices
+  
+  egress:
+    ## If restricted is set, NetworkPolicies will include egress restrictions to allow connections from pods only to the minimum required by the system
+    ## Set to false to disable all egress policy restrictions (not recommended)
+    restricted: true
+    
+    ## The kube-system namespace is not generally labelled by default - to enable more restrictive egress control for dns lookups we need to be told the label
+    ## If not provided, DNS lookups on port 53 will be allowed to connect anywhere
+    ## The namespace may be labelled using a command such as "kubectl label namespace kube-system name=kube-system"
+    # kubeSystemLabel: "kube-system"
+
+    ## To properly allow access to the kubectl API from pods that need it, the cidr of the kubectl endpoint needs to be supplied
+    ## This may be obtained via "kubectl get endpoints --namespace default kubernetes"
+    ## If these are not supplied, egress controls will allow access to any IPs/ports from any pod where API access is needed
+    # kubeApiCidr: 172.17.0.3/32  
+    # kubeApiPort: 7443
 
 ## storage:
 ##

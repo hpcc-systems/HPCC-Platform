@@ -132,6 +132,9 @@
         "logging": {
           "$ref": "#/definitions/logging"
         },
+        "egress": {
+          "$ref": "#/definitions/egress"
+        },
         "defaultEsp": {
           "type": "string"
         },
@@ -317,6 +320,28 @@
         }
       },
       "additionalProperties": { "type": ["integer", "string", "boolean"] }
+    },
+    "egress": {
+      "type": "object",
+      "properties": {
+        "restricted": {
+          "description": "Are any egress controls applied",
+          "type": "boolean"
+        },
+        "kubeApiCidr": {
+          "description": "IP range for kubectl API service",
+          "type": "string"
+        },
+        "kubeApiPort": {
+          "description": "Port used for connections to kubectl API",
+          "type": "integer"
+        },
+        "kubeSystemLabel": {
+          "type": "string",
+          "description": "Label that has been applied to the kube-system namespace, used to restrict DNS service calls on port 53 to pods in the kube-system namespace"
+        }
+      },
+      "additionalProperties": false
     },
     "dali": {
       "type": "object",

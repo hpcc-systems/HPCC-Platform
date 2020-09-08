@@ -20,6 +20,7 @@ spec:
     metadata:
       labels:
         run: {{ $toponame | quote }}
+        roxie-cluster: {{ $roxie.name | quote }}
     spec:
       serviceAccountName: "hpcc-default"
       containers:
@@ -73,6 +74,30 @@ spec:
   clusterIP: None # Headless service
 
 ---
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $roxie.name | quote }}
+spec:
+  podSelector:
+    matchLabels:
+      roxie-cluster: {{ $roxie.name | quote }}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          roxie-cluster: {{ $roxie.name | quote }}
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          roxie-cluster: {{ $roxie.name | quote }}
+
+---
 kind: ConfigMap 
 apiVersion: v1 
 metadata:
@@ -105,6 +130,9 @@ spec:
       labels:
         run: {{ $servername | quote }}
         roxie-server: {{ $servername | quote }}
+        roxie-cluster: {{ $roxie.name | quote }}
+        accessDali: "true"
+        accessEsp: "true" 
     spec:
       serviceAccountName: "hpcc-default"
       initContainers:
@@ -165,6 +193,9 @@ spec:
 {{- if not $roxie.serverReplicas }}        
         roxie-server: {{ $servername | quote }}
 {{- end }}
+        roxie-cluster: {{ $roxie.name | quote }}
+        accessDali: "true"
+        accessEsp: "true" 
     spec:
       serviceAccountName: "hpcc-default"
       initContainers:

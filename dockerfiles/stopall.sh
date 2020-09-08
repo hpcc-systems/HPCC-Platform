@@ -22,3 +22,4 @@
 helm uninstall mycluster
 helm uninstall localfile
 kubectl delete jobs --all 
+kubectl delete networkpolicy --all 

@@ -9,10 +9,12 @@ spec:
   selector:
     matchLabels:
       run: {{ .name | quote }}
+      app: dali
   template:
     metadata:
       labels:
         run: {{ .name | quote }}
+        app: dali
     spec:
       serviceAccountName: "hpcc-default"
       initContainers: 

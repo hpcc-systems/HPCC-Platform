@@ -1,0 +1,135 @@
+{{- $egress := (.Values.global.egress | default dict) -}}
+{{- $egressRestricted := $egress.restricted | default false -}}
+---
+##
+## Default to no ingress, and egress only to dns servers
+## 
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all-but-dns
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+{{- if $egressRestricted }}
+  - Egress
+  egress:
+  - to:
+ {{- if hasKey $egress "kubeSystemLabel" }}
+    - namespaceSelector:
+        matchLabels:
+          name: {{ $egress.kubeSystemLabel }}
+ {{- end }}
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+---
+##
+## Pods that launch k8s jobs need access to k8s API server
+## 
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1 
+metadata:
+  name: allow-apiserver
+spec:
+  policyTypes:
+  - Egress
+  podSelector: {}
+  egress:
+  - to:
+ {{- if hasKey $egress "kubeApiCidr" }}
+    - ipBlock:
+        cidr: {{ $egress.kubeApiCidr | quote }}
+ {{- end }}
+    ports:
+    - protocol: TCP
+ {{- if hasKey $egress "kubeApiPort" }}
+      port: {{ $egress.kubeApiPort }}
+ {{- end }}
+{{- end }}
+---
+##
+## Many pods need access to dali
+## 
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: dali-server
+spec:
+  podSelector:
+    matchLabels:
+      app: dali
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          accessDali: "true"
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          accessDali: "true"
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: dali-client
+spec:
+  podSelector:
+    matchLabels:
+      accessDali: "true"
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: dali
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: dali
+---
+##
+## Pods that run workunits, or which need to do DFU lookups, are allowed to access espservices
+## 
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: esp-server
+spec:
+  podSelector:
+    matchLabels:
+      app: eclservices
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          accessEsp: "true"
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          accessEsp: "true"
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: esp-client
+spec:
+  podSelector:
+    matchLabels:
+      accessEsp: "true"
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: eclservices
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: eclservices
+          
