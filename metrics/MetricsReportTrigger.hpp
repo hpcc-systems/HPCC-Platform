@@ -26,7 +26,7 @@
 namespace hpccMetrics
 {
 
-    typedef hpccMetrics::IMetricsReportTrigger* (*getTriggerInstance)(const IPropertyTree *pSettingsTree);
+    extern "C" { typedef hpccMetrics::IMetricsReportTrigger* (*getTriggerInstance)(const IPropertyTree *pSettingsTree); }
 
     class MetricsReportTrigger : public IMetricsReportTrigger
     {

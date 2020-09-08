@@ -17,11 +17,9 @@
 
 #include "httpclient.hpp"
 #include "ElasticsearchSink.hpp"
-#include "Measurement.hpp"
+#include "IMeasurement.hpp"
 #include "IMetricSet.hpp"
-#include <map>
 #include <algorithm>
-#include <utility>
 #include "jstring.hpp"
 
 
@@ -35,8 +33,8 @@ extern "C" IMetricSink* getSinkInstance(const std::string& name, const IProperty
 
 
 
-ElasticsearchSink::ElasticsearchSink(std::string name, const IPropertyTree *pSettingsTree) :
-    MetricSink(std::move(name), "elasticsearch")
+ElasticsearchSink::ElasticsearchSink(const std::string &name, const IPropertyTree *pSettingsTree) :
+    MetricSink(name, "elasticsearch")
 {
     protocol.append("http");
     port.append("9200");

@@ -57,7 +57,7 @@ class ElasticsearchSink : public MetricSink
 {
     public:
 
-        explicit ElasticsearchSink(std::string name, const IPropertyTree *pSettingsTree);
+        explicit ElasticsearchSink(const std::string &name, const IPropertyTree *pSettingsTree);
         void handle(const MeasurementVector &values, const std::shared_ptr<IMetricSet> &pMetricSet, MetricsReportContext *pContext) override;
         void addMetricSet(const std::shared_ptr<IMetricSet> &pSet) override;
 

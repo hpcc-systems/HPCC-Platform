@@ -30,7 +30,7 @@
 namespace hpccMetrics
 {
 
-    typedef hpccMetrics::IMetricSink* (*getSinkInstance)(const std::string &sinkName, const IPropertyTree *pSettingsTree);
+    extern "C" { typedef hpccMetrics::IMetricSink* (*getSinkInstance)(const std::string &sinkName, const IPropertyTree *pSettingsTree); }
 
     class MetricSink : public IMetricSink
     {
