@@ -280,6 +280,9 @@ interface IClusterInfo: extends IInterface  // used by IFileDescriptor and IDist
 interface IStoragePlane: extends IInterface
 {
     virtual const char * queryPrefix() const = 0;
+    virtual unsigned numDevices() const = 0;
+    virtual const char * queryHosts() const = 0;
+    virtual const char * querySingleHost() const = 0;
 };
 
 IClusterInfo *createClusterInfo(const char *grpname,                  // NULL if roxie label set
@@ -330,7 +333,7 @@ extern da_decl bool setReplicateDir(const char *name,StringBuffer &out, bool isr
 
 extern da_decl void initializeStorageGroups(bool createPlanesFromGroups);
 extern da_decl const char * queryDefaultStoragePlane();
-extern da_decl IStoragePlane * getStoragePlane(const char * name);
+extern da_decl IStoragePlane * getStoragePlane(const char * name, bool required);
 
 extern da_decl IFileDescriptor *createFileDescriptor();
 extern da_decl IFileDescriptor *createFileDescriptor(IPropertyTree *attr);      // ownership of attr tree is taken

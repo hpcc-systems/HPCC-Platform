@@ -3154,7 +3154,7 @@ void initializeStorageGroups(bool createPlanesFromGroups)
         storage = queryGlobalConfig().addPropTree("storage");
 
 #ifndef _CONTAINERIZED
-    if (createPlanesFromGroups && !storage->hasProp("planes[0]"))
+    if (createPlanesFromGroups && !storage->hasProp("planes"))
     {
         //Create information about the storage planes from the groups published in dali
         INamedGroupStore & groupStore = queryNamedGroupStore();
@@ -3195,6 +3195,30 @@ void initializeStorageGroups(bool createPlanesFromGroups)
 
                     IPropertyTree * elem = plane->addPropTreeArrayItem("replication", createPTree());
                     elem->setProp("", mirrorname);
+                }
+            }
+        }
+
+        //Walk the drop zones, and add them as storage groups if they have no servers configured, or "."
+        Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), 0, 2000);
+        if (conn)
+        {
+            Owned<IPropertyTreeIterator> dropzones = conn->queryRoot()->getElements("DropZone");
+            ForEach(*dropzones)
+            {
+                IPropertyTree & cur = dropzones->query();
+                unsigned numServers = cur.getCount("ServerList");
+                if (numServers <= 1)
+                {
+                    //If no instances then assume it is always local (e.g. azure)
+                    const char * ip = numServers ? cur.queryProp("ServerList[1]/@server") : nullptr;
+                    IPropertyTree * plane = storage->addPropTree("planes");
+                    plane->setProp("@name", cur.queryProp("@name"));
+                    plane->setProp("@prefix", cur.queryProp("@directory"));
+
+                    //Temporary.  This is likely to change to eventually create a hostgroup and set the @hosts property.
+                    if (ip && !streq(ip, "."))
+                        plane->setProp("@host", ip);
                 }
             }
         }
@@ -3256,7 +3280,10 @@ class CStoragePlane : public CInterfaceOf<IStoragePlane>
 public:
     CStoragePlane(IPropertyTree * _xml) : xml(_xml) {}
 
-    virtual const char * queryPrefix() const { return xml->queryProp("@prefix"); }
+    virtual const char * queryPrefix() const override { return xml->queryProp("@prefix"); }
+    virtual unsigned numDevices() const override { return xml->getPropInt("@numDevices", 1); }
+    virtual const char * queryHosts() const override { return xml->queryProp("@hosts"); }
+    virtual const char * querySingleHost() const override { return xml->queryProp("@host"); }   // MORE: Likely to be changed to resolve hosts
 
 private:
     Linked<IPropertyTree> xml;
@@ -3264,7 +3291,7 @@ private:
 
 
 //MORE: This could be cached
-IStoragePlane * getStoragePlane(const char * name)
+IStoragePlane * getStoragePlane(const char * name, bool required)
 {
     StringBuffer group;
     group.append(name).toLowerCase();
@@ -3272,7 +3299,11 @@ IStoragePlane * getStoragePlane(const char * name)
     VStringBuffer xpath("storage/planes[@group='%s']", group.str());
     IPropertyTree * match = queryGlobalConfig().queryPropTree(xpath);
     if (!match)
+    {
+        if (required)
+            throw makeStringExceptionV(-1, "Scope contains unknown storage plane '%s'", name);
         return nullptr;
+    }
 
     return new CStoragePlane(match);
 }
