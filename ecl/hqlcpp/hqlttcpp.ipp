@@ -36,6 +36,9 @@ public:
     bool needToTransform();
 
 protected:
+    IHqlExpression * transformColon(IHqlExpression * expr);
+
+protected:
     HqlCppTranslator & translator;
     IWorkUnit * wu;
     ICodegenContextCallback * ctxCallback;
