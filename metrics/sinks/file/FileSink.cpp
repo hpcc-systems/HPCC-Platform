@@ -16,11 +16,8 @@
 ############################################################################## */
 
 #include "FileSink.hpp"
-#include "Measurement.hpp"
+#include "IMeasurement.hpp"
 #include <cstdio>
-#include <map>
-#include <utility>
-#include "jstring.hpp"
 
 using namespace hpccMetrics;
 
@@ -31,11 +28,11 @@ extern "C" IMetricSink* getSinkInstance(const std::string& name, const IProperty
 }
 
 
-FileMetricSink::FileMetricSink(std::string name, const IPropertyTree *pSettingsTree) :
-    MetricSink(std::move(name), "file")
+FileMetricSink::FileMetricSink(const std::string &name, const IPropertyTree *pSettingsTree) :
+    MetricSink(name, "file")
 {
-    ;
-    pSettingsTree->getProp("@filename", fileName);
+    pSettingsTree->getProp("filename", fileName);
+
     //
     // Clear the file
     auto handle = fopen(fileName.str(), "w");

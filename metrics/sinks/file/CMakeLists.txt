@@ -14,7 +14,7 @@
 #    limitations under the License.
 ################################################################################
 
-project(hpccmetrics_files)
+project(hpccmetrics_filesink)
 
 set ( srcs
         FileSink.cpp
@@ -28,6 +28,6 @@ include_directories(
 )
 
 add_definitions( -DSINKDLL)
-HPCC_ADD_LIBRARY( hpccmetrics_file SHARED ${srcs} )
-TARGET_LINK_LIBRARIES( hpccmetrics_file jlib )
-INSTALL ( TARGETS hpccmetrics_file RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+HPCC_ADD_LIBRARY( hpccmetrics_filesink SHARED ${srcs} )
+TARGET_LINK_LIBRARIES( hpccmetrics_filesink jlib )
+INSTALL ( TARGETS hpccmetrics_filesink RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )

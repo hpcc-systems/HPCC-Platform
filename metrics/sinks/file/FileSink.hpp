@@ -28,7 +28,7 @@ class FileMetricSink : public MetricSink
 {
     public:
 
-        explicit FileMetricSink(std::string _name, const IPropertyTree *pSettingsTree);
+        explicit FileMetricSink(const std::string &name, const IPropertyTree *pSettingsTree);
         void handle(const MeasurementVector &values, const std::shared_ptr<IMetricSet> &pMetricSet, MetricsReportContext *pContext) override;
 
     protected:

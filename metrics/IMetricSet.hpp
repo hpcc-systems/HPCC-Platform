@@ -29,8 +29,6 @@
 namespace hpccMetrics
 {
 
-//typedef std::vector<std::shared_ptr<IMeasurement>> MeasurementVector;
-
 //
 // Interface representing as set of metrics for collection and reporting. All metrics must be a member
 // of one and only one metric set

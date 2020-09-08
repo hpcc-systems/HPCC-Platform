@@ -24,7 +24,7 @@ namespace hpccMetrics
 {
 
 //
-// Defined metric value types. Mainly used by the sink when reporting
+// Defines the type of the measurement value string returned by valueToString
 enum ValueType {
     NONE,
     STRING,
@@ -39,6 +39,7 @@ enum ValueType {
 
 
 enum MetricType {
+    CUSTOM,
     COUNTER,
     RATE,
     GAUGE
