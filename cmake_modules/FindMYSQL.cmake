@@ -26,8 +26,8 @@ IF (NOT MYSQL_FOUND)
   IF (WIN32)
     SET (mysql_lib "libmysql")
   ELSE()
-    SET (mysql_lib "mysqlclient_r")    # Use the re-entrant version if it exists
-    SET (mysql_lib_alt "mysqlclient")  # (but newer versions do not make the distinction and supply just the one)
+    SET (mysql_lib "libmysqlclient_r.a" "mysqlclient_r")  # Use the re-entrant version if it exists
+    SET (mysql_lib_alt "libmysqlclient.a" "mysqlclient")  # (but newer versions do not make the distinction and supply just the one)
   ENDIF()
   IF (NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
     IF (UNIX)
