@@ -518,9 +518,12 @@ public:
                 ForEachItemIn(gn, groupNames)
                 {
 #ifdef _CONTAINERIZED
-                    Owned<IStoragePlane> plane = getStoragePlane(groupNames.item(gn));
-                    assertex(plane);
-                    curDir.append(plane->queryPrefix());
+                    if (!globals->getPropBool("@_dafsStorage"))
+                    {
+                        Owned<IStoragePlane> plane = getStoragePlane(groupNames.item(gn));
+                        assertex(plane);
+                        curDir.append(plane->queryPrefix());
+                    }
 #else
                     if (!getConfigurationDirectory(globals->queryPropTree("Directories"), "data", "thor", groupNames.item(gn), curDir))
                         makePhysicalPartName(logicalName, 0, 0, curDir, 0, os); // legacy
