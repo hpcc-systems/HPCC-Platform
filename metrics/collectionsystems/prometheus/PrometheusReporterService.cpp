@@ -25,16 +25,9 @@
 #include "httpsecurecontext.hpp"
 #include "htmlpage.hpp"
 
-#ifdef _WIN32
-#include "winsock.h"
-#define ERRNO() WSAGetLastError()
-#else
-#define ERRNO() (errno)
-#endif
-
 using namespace hpccMetrics;
 
-PrometheusReporterService::PrometheusReporterService(PrometheusMetricsReportTrigger * parent, const std::map<std::string, std::string> & parms)
+PrometheusReporterService::PrometheusReporterService(PrometheusMetricsReportTrigger * parent, const IPropertyTree * settings)
 {
     m_metricsTrigger = parent;
     m_processing = false;
@@ -43,62 +36,31 @@ PrometheusReporterService::PrometheusReporterService(PrometheusMetricsReportTrig
     m_metricsServiceName.set(DEFAULT_PROMETHEUS_METRICS_SERVICE_NAME);
     m_sslconfig = nullptr;
 
-    if (parms.find("port") != parms.end())
-        m_port = std::atoi((parms.find("port")->second).c_str());
-        //m_port = cfg->getPropInt("port", DEFAULT_PROMETHEUS_METRICS_SERVICE_PORT);
-    //if (parms.find("useSSL") != parms.end())
-        //m_use_ssl = std::atob((parms.find("port")->second).c_str());
-        //cfg->getPropBool("useSSL", DEFAULT_PROMETHEUS_METRICS_SERVICE_SSL);
-    if (parms.find("servicName") != parms.end())
-        m_metricsServiceName = parms.find("servicName")->second.c_str();
-    /*
-    if(m_use_ssl)
-    {
-        m_sslconfig = cfg->getBranch("sslConfig");
+    if (settings)
+	{
+		m_port = settings->getPropInt("port", DEFAULT_PROMETHEUS_METRICS_SERVICE_PORT);
+		m_use_ssl = settings->getPropBool("useSSL", DEFAULT_PROMETHEUS_METRICS_SERVICE_SSL);
+
+		settings->getProp("serviceName", m_metricsServiceName);
+		if (m_metricsServiceName.isEmpty())
+			m_metricsServiceName = DEFAULT_PROMETHEUS_METRICS_SERVICE_NAME;
+
+		if(m_use_ssl)
+		{
+			   m_sslconfig = settings->getBranch("sslConfig");
 #ifdef _USE_OPENSSL
-        if(m_sslconfig != nullptr)
-            m_ssctx.setown(createSecureSocketContextEx2(m_sslconfig, ServerSocket));
-        else
-            m_ssctx.setown(createSecureSocketContext(ServerSocket));
+			if(m_sslconfig != nullptr)
+				m_ssctx.setown(createSecureSocketContextEx2(m_sslconfig, ServerSocket));
+			else
+				m_ssctx.setown(createSecureSocketContext(ServerSocket));
 #else
-        throw MakeStringException(-1, "PrometheusReporterService: failure to create SSL socket - OpenSSL not enabled in build");
+		   throw MakeStringException(-1, "PrometheusReporterService: failure to create SSL socket - OpenSSL not enabled in build");
 #endif
-    }
-*/
+		}
+	}
+
     LOG(MCuserInfo, "PrometheusReporterService created - port: '%i' uri: '/%s' ssl: '%s'\n", m_port, m_metricsServiceName.str(), m_use_ssl ? "true" : "false" );
 }
-
-/*
-PrometheusReporterService::PrometheusReporterService(MockPrometheusCollector * collector, IPropertyTree * cfg)
-{
-    m_port = DEFAULT_PROMETHEUS_METRICS_SERVICE_PORT;
-    m_use_ssl = DEFAULT_PROMETHEUS_METRICS_SERVICE_SSL;
-    m_metricsServiceName.set(DEFAULT_PROMETHEUS_METRICS_SERVICE_NAME);
-    m_sslconfig = nullptr;
-
-    if (cfg)
-    {
-        m_port = cfg->getPropInt("port", DEFAULT_PROMETHEUS_METRICS_SERVICE_PORT);
-        m_use_ssl = cfg->getPropBool("useSSL", DEFAULT_PROMETHEUS_METRICS_SERVICE_SSL);
-        cfg->getProp("serviceName", m_metricsServiceName);
-        if (m_metricsServiceName.isEmpty())
-            m_metricsServiceName = DEFAULT_PROMETHEUS_METRICS_SERVICE_NAME;
-        if(m_use_ssl)
-        {
-               m_sslconfig = cfg->getBranch("sslConfig");
-#ifdef _USE_OPENSSL
-            if(m_sslconfig != nullptr)
-                m_ssctx.setown(createSecureSocketContextEx2(m_sslconfig, ServerSocket));
-            else
-                m_ssctx.setown(createSecureSocketContext(ServerSocket));
-#else
-           throw MakeStringException(-1, "PrometheusReporterService: failure to create SSL socket - OpenSSL not enabled in build");
-#endif
-        }
-    }
-
-    LOG(MCuserInfo, "PrometheusReporterService created - port: '%i' uri: '/%s' ssl: '%s'\n", m_port, m_metricsServiceName.str(), m_use_ssl ? "true" : "false" );
-}*/
 
 int PrometheusReporterService::stop()
 {
@@ -360,38 +322,13 @@ void PrometheusReporterService::handleRequest(ISocket* clientSocket)
         onException(response, "Unknown Exception - Processing request [PrometheusReporterService::handleOneRequest()]");
     }
 }
-/*
-int main(int argc, char* argv[])
+
+extern "C" IMetricsReportTrigger* getTriggerInstance(const IPropertyTree *pSettingsTree)
 {
-    InitModuleObjects();
-
-    try
-    {
-        //Owned<IPropertyTree> sslconfig;
-        //if(scfname.length() > 0)
-        //    sslconfig.setown(createPTreeFromXMLFile(scfname.str(), ipt_caseInsensitive));
-
-        Owned<MockPrometheusCollector> mockPrometheusCollector = new MockPrometheusCollector();
-        mockPrometheusCollector->addMetric("myesp160", "processing_request_gauge", PrometheusMetricType_Gauge, "Count of current reqs in process");
-        mockPrometheusCollector->addMetric("myesp160", "processing_request_total", PrometheusMetricType_Counter, "Aggregate count of reqs processed");
-
-        PrometheusReporterService server(mockPrometheusCollector); //defaults, otherwise cfg tree with port/uri/ssl.
-        server.start();
-    }
-    catch(IException *e)
-    {
-        StringBuffer emsg;
-        LOG(MCuserInfo, "Err setting up PrometheusReporterService with mockPrometheusCollector");
-        e->Release();
-    }
-}*/
-
-extern "C" IMetricsReportTrigger* getTriggerInstance(const std::map<std::string, std::string> & parms, MetricsReportConfig &reportConfig)
-{
-    return new PrometheusMetricsReportTrigger(parms);
+    return new PrometheusMetricsReportTrigger(pSettingsTree);
 }
 
-extern "C" IMetricSink* getSinkInstance(const std::string & name, const std::map<std::string, std::string> & parms)
+extern "C" IMetricSink* getSinkInstance(const std::string & name, const IPropertyTree *pSettingsTree)
 {
-    return new PremetheusMetricSink(name, parms);
+    return new PrometheusMetricSink(name, pSettingsTree);
 }

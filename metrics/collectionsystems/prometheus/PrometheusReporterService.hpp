@@ -114,14 +114,14 @@ public:
     static bool onPostNotFound(CHttpResponse * response, const char * path);
     static bool onMethodNotFound(CHttpResponse * response, const char * httpMethod, const char * path);
 
-    PrometheusReporterService(PrometheusMetricsReportTrigger * parent, const std::map<std::string, std::string> & parms);
+    PrometheusReporterService(PrometheusMetricsReportTrigger * parent, const IPropertyTree * settings);
     virtual ~PrometheusReporterService() {};
     int start();
     int stop();
     bool isProcessing();
 };
 
-class PremetheusMetricSink : public hpccMetrics::MetricSink
+class PrometheusMetricSink : public hpccMetrics::MetricSink
 {
     static const char * mapMockMetricTypeToPrometheusStr(MetricType type)
     {
@@ -138,14 +138,12 @@ class PremetheusMetricSink : public hpccMetrics::MetricSink
     }
 
 public:
-    explicit PremetheusMetricSink(const std::string & name, const std::map<std::string, std::string> & parms) :
+    explicit PrometheusMetricSink(const std::string & name, const IPropertyTree * settings) : MetricSink(std::move(name), COLLECTOR_NAME)
+    {}
 
-    MetricSink(std::move(name), COLLECTOR_NAME) {}
-
-    void send(const MeasurementVector &values, const std::shared_ptr<IMetricSet> &pMetricSet, MetricsReportContext *pContext) override
+    void handle(const MeasurementVector &values, const std::shared_ptr<IMetricSet> &pMetricSet, MetricsReportContext *pContext) override
     {
         StringBuffer payload;
-        //std::string metricSetName = pMetricSet->getName(); -- should this be part of the fully qualified metric name???
 
         PrometheusMetricsReportContext * promContext = static_cast<PrometheusMetricsReportContext *>(pContext);
         assertex(promContext != nullptr);
@@ -153,7 +151,6 @@ public:
         for (auto const &pMeas : values)
         {
             std::string name = pMeas->getName();
-            //const char * fullName = metric.getFullName();
 
             if (!pMeas->getDescription().empty())
                 payload.append("# HELP ").append(name.c_str()).append(" ").append(pMeas->getDescription().c_str()).append("\n");
@@ -183,14 +180,13 @@ public:
         content.set(reportContext->getMetrics());
     }
 
-                                   //this should be an iproptree!!!!!!
-    PrometheusMetricsReportTrigger(const std::map<std::string, std::string> & parms)
+    PrometheusMetricsReportTrigger(const IPropertyTree * settings)
     {
-        InitModuleObjects(); //logging this might be a requirement on the framework
+        InitModuleObjects(); //logging - this might be a requirement on the framework
 
         try
         {
-            m_server.set(new PrometheusReporterService(this, parms));
+            m_server.set(new PrometheusReporterService(this, settings));
         }
         catch(IException *e)
         {
