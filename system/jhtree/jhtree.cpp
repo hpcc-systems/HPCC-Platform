@@ -992,6 +992,18 @@ void CKeyIndex::init(KeyHdr &hdr, bool isTLK, bool allowPreload)
             }
         }
         rootNode = nodeCache->getNode(this, iD, rootPos, NULL, isTLK);
+        // It's not uncommon for a TLK to have a "root node" that has a single entry in it pointing to a leaf node
+        // with all the info in. In such cases we can avoid a lot of cache lookups by pointing the "root" in the
+        // CKeyIndex directly to the (single) leaf.
+        // It might also be ok to do this for non TLK indexes though it will be much less common, and has not been tested
+        // We should also consider making a change so that this extra layer is not generated - but skipping it here means older 
+        // indexes benefit too.
+        if (rootNode && isTopLevelKey() && !rootNode->isLeaf() && rootNode->getNumKeys()==1)
+        {
+            Owned<CJHTreeNode> oldRoot = rootNode;
+            rootPos = rootNode->getFPosAt(0);
+            rootNode = nodeCache->getNode(this, iD, rootPos, NULL, isTLK);
+        }
         loadBloomFilters();
     }
     catch (IKeyException *ke)
