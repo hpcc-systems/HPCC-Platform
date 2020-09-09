@@ -183,7 +183,7 @@ elseif ( NOT MAKE_DOCS_ONLY )
       HPCC_ADD_SUBDIRECTORY (deployment)
       HPCC_ADD_SUBDIRECTORY (configuration)
     endif()
-
+    
     if ( WIN32 )
         HPCC_ADD_SUBDIRECTORY (clienttools/IDEPlugins "CLIENTTOOLS_ONLY")
         HPCC_ADD_SUBDIRECTORY (clienttools/win "CLIENTTOOLS_ONLY")
@@ -212,7 +212,7 @@ if ( WIN32 )
         if (EXISTS "${MSVC14_REDIST}")
             install ( PROGRAMS ${MSVC14_REDIST} DESTINATION tmp )
             get_filename_component(MSVC14_REDIST_NAME ${MSVC14_REDIST} NAME)
-            list ( APPEND CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
+            list ( APPEND CPACK_NSIS_EXTRA_INSTALL_COMMANDS " 
                 ExecWait '$INSTDIR\\\\tmp\\\\${MSVC14_REDIST_NAME} /S'
             ")
         else ()
