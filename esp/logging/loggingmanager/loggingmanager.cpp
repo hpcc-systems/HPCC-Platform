@@ -197,7 +197,7 @@ bool CLoggingManager::updateLog(IEspContext* espContext, const char* option, IPr
         Owned<IEspUpdateLogRequestWrap> req =  new CUpdateLogRequestWrap(nullptr, option, espContextTree.getClear(), LINK(userContext), LINK(userRequest),
             backEndReq, backEndResp, userResp, logDatasets);
         if (scriptValues)
-            req->setScriptValuesTree(scriptValues);
+            req->setScriptValuesTree(LINK(scriptValues));
         Owned<IEspUpdateLogResponse> resp =  createUpdateLogResponse();
         bRet = updateLog(espContext, *req, *resp, status);
     }
