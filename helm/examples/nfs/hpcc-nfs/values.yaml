@@ -1,4 +1,5 @@
 # Default values for hpcc-nfs.
+namespace: default
 
 sharedStorage:
   size: 2Gi 

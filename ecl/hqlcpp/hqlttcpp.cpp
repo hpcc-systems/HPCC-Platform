@@ -449,93 +449,126 @@ bool NewThorStoredReplacer::needToTransform()
 }
 
 
-// This works on unnormalized trees, so based on QuickHqlTransformer
-IHqlExpression * NewThorStoredReplacer::createTransformed(IHqlExpression * expr)
+IHqlExpression * NewThorStoredReplacer::transformColon(IHqlExpression * expr)
 {
-    switch (expr->getOperator())
+    HqlExprArray actions;
+    expr->queryChild(1)->unwindList(actions, no_comma);
+
+    OwnedHqlExpr replacement;
+    OwnedHqlExpr matchedName;
+    bool onlyStored = true;
+    bool forceConstant = foldStored;
+    ForEachItemIn(idx, actions)
     {
-    case no_colon:
+        IHqlExpression & cur = actions.item(idx);
+        switch (cur.getOperator())
         {
-            HqlExprArray actions;
-            expr->queryChild(1)->unwindList(actions, no_comma);
-
-            OwnedHqlExpr replacement;
-            OwnedHqlExpr matchedName;
-            bool onlyStored = true;
-            bool forceConstant = foldStored;
-            ForEachItemIn(idx, actions)
+        case no_stored:
             {
-                IHqlExpression & cur = actions.item(idx);
-                switch (cur.getOperator())
+                OwnedHqlExpr storedName = getLowerCaseConstantExpr(cur.queryChild(0));
+                IHqlExpression * searchName = storedName->queryBody();
+                unsigned match = storedNames.find(*searchName);
+                if (match != NotFound)
                 {
-                case no_stored:
-                    {
-                        OwnedHqlExpr storedName = getLowerCaseConstantExpr(cur.queryChild(0));
-                        IHqlExpression * searchName = storedName->queryBody();
-                        unsigned match = storedNames.find(*searchName);
-                        if (match != NotFound)
-                        {
-                            if (storedIsConstant.item(match))
-                                forceConstant = true;
-
-                            matchedName.set(searchName);
-                            replacement.set(&storedValues.item(match));
-                        }
-                        break;
-                    }
-                case no_attr:
-                case no_attr_expr:
-                    if (cur.queryName() == labeledAtom)
-                    {
-                        OwnedHqlExpr storedName = getLowerCaseConstantExpr(cur.queryChild(0));
-                        IHqlExpression * searchName = storedName->queryBody();
-                        unsigned match = storedNames.find(*searchName);
-                        if (match != NotFound)
-                        {
-                            matchedName.set(searchName);
-                            replacement.set(&storedValues.item(match));
-                        }
-                        else
-                            replacement.set(expr->queryChild(0));
-
+                    if (storedIsConstant.item(match))
                         forceConstant = true;
-                        break;
-                    }
-                    // fallthrough
-                default:
-                    onlyStored = false;
-                    break;
+
+                    matchedName.set(searchName);
+                    replacement.set(&storedValues.item(match));
+                }
+                break;
+            }
+        case no_attr:
+        case no_attr_expr:
+            if (cur.queryName() == labeledAtom)
+            {
+                OwnedHqlExpr storedName = getLowerCaseConstantExpr(cur.queryChild(0));
+                IHqlExpression * searchName = storedName->queryBody();
+                unsigned match = storedNames.find(*searchName);
+                if (match != NotFound)
+                {
+                    matchedName.set(searchName);
+                    replacement.set(&storedValues.item(match));
+                }
+                else
+                    replacement.set(expr->queryChild(0));
+
+                forceConstant = true;
+                break;
+            }
+            // fallthrough
+        default:
+            onlyStored = false;
+            break;
+        }
+    }
+
+    if (matchedName)
+    {
+        unsigned activeMatch = activeReplacements.find(*matchedName);
+        if (activeMatch != NotFound)
+        {
+            StringBuffer nameText;
+            getExprECL(matchedName, nameText);
+            if (activeMatch+1 != activeReplacements.ordinality())
+            {
+                StringBuffer othersText;
+                for (unsigned i=activeMatch+1; i < activeReplacements.ordinality(); i++)
+                {
+                    othersText.append(",");
+                    getExprECL(&activeReplacements.item(i), othersText);
+                }
+                translator.reportError(expr, ECODETEXT(HQLERR_RecursiveStoredOther),  forceConstant ? "CONSTANT" : "STORED", nameText.str(), othersText.str()+1);
+            }
+            else
+                translator.reportError(expr, ECODETEXT(HQLERR_RecursiveStored),  forceConstant ? "CONSTANT" : "STORED", nameText.str());
+        }
+
+        ITypeInfo * exprType = expr->queryType();
+        ITypeInfo * replacementType = replacement->queryType();
+        type_t etc = exprType->getTypeCode();
+        type_t rtc = replacementType->getTypeCode();
+
+        StringBuffer nameText, exprTypeText, replacementTypeText;
+        switch (etc)
+        {
+        case type_groupedtable:
+        case type_table:
+        case type_row:
+        case type_record:
+        case type_transform:
+        case type_void:
+            {
+                if (etc != rtc)
+                {
+                    getExprECL(matchedName, nameText);
+                    getFriendlyTypeStr(exprType, exprTypeText);
+                    getFriendlyTypeStr(replacementType, replacementTypeText);
+                    translator.reportError(expr, ECODETEXT(HQLERR_HashStoredTypeMismatch), nameText.str(), exprTypeText.str(), replacementTypeText.str());
+                }
+                else if (expr->queryRecord() != replacement->queryRecord())
+                {
+                    StringBuffer s;
+                    translator.reportError(expr, ECODETEXT(HQLERR_HashStoredRecordMismatch), getExprECL(matchedName, s).str());
                 }
             }
-
-            if (matchedName)
+            break;
+        case type_set:
+        case type_array:
             {
-                unsigned activeMatch = activeReplacements.find(*matchedName);
-                if (activeMatch != NotFound)
+                if ((rtc != type_set) && (rtc != type_array))
                 {
-                    StringBuffer nameText;
                     getExprECL(matchedName, nameText);
-                    if (activeMatch+1 != activeReplacements.ordinality())
-                    {
-                        StringBuffer othersText;
-                        for (unsigned i=activeMatch+1; i < activeReplacements.ordinality(); i++)
-                        {
-                            othersText.append(",");
-                            getExprECL(&activeReplacements.item(i), othersText);
-                        }
-                        translator.reportError(expr, ECODETEXT(HQLERR_RecursiveStoredOther),  forceConstant ? "CONSTANT" : "STORED", nameText.str(), othersText.str()+1);
-                    }
-                    else
-                        translator.reportError(expr, ECODETEXT(HQLERR_RecursiveStored),  forceConstant ? "CONSTANT" : "STORED", nameText.str());
+                    getFriendlyTypeStr(exprType, exprTypeText);
+                    getFriendlyTypeStr(replacementType, replacementTypeText);
+                    translator.reportError(expr, ECODETEXT(HQLERR_HashStoredTypeMismatch), nameText.str(), exprTypeText.str(), replacementTypeText.str());
                 }
-
-                ITypeInfo * exprType = expr->queryType();
-                ITypeInfo * replacementType = replacement->queryType();
-                type_t etc = exprType->getTypeCode();
-                type_t rtc = replacementType->getTypeCode();
-
-                StringBuffer nameText, exprTypeText, replacementTypeText;
-                switch (etc)
+                replacement.setown(ensureExprType(replacement, exprType));
+                break;
+            }
+        default:
+            {
+                switch (rtc)
                 {
                 case type_groupedtable:
                 case type_table:
@@ -544,83 +577,53 @@ IHqlExpression * NewThorStoredReplacer::createTransformed(IHqlExpression * expr)
                 case type_transform:
                 case type_void:
                     {
-                        if (etc != rtc)
-                        {
-                            getExprECL(matchedName, nameText);
-                            getFriendlyTypeStr(exprType, exprTypeText);
-                            getFriendlyTypeStr(replacementType, replacementTypeText);
-                            translator.reportError(expr, ECODETEXT(HQLERR_HashStoredTypeMismatch), nameText.str(), exprTypeText.str(), replacementTypeText.str());
-                        }
-                        else if (expr->queryRecord() != replacement->queryRecord())
-                        {
-                            StringBuffer s;
-                            translator.reportError(expr, ECODETEXT(HQLERR_HashStoredRecordMismatch), getExprECL(matchedName, s).str());
-                        }
+                        getExprECL(matchedName, nameText);
+                        getFriendlyTypeStr(exprType, exprTypeText);
+                        getFriendlyTypeStr(replacementType, replacementTypeText);
+                        translator.reportError(expr, ECODETEXT(HQLERR_HashStoredTypeMismatch), nameText.str(), exprTypeText.str(), replacementTypeText.str());
                     }
-                    break;
-                case type_set:
-                case type_array:
-                    {
-                        if ((rtc != type_set) && (rtc != type_array))
-                        {
-                            getExprECL(matchedName, nameText);
-                            getFriendlyTypeStr(exprType, exprTypeText);
-                            getFriendlyTypeStr(replacementType, replacementTypeText);
-                            translator.reportError(expr, ECODETEXT(HQLERR_HashStoredTypeMismatch), nameText.str(), exprTypeText.str(), replacementTypeText.str());
-                        }
-                        replacement.setown(ensureExprType(replacement, exprType));
-                        break;
-                    }
+                    // fallthrough
                 default:
-                    {
-                        switch (rtc)
-                        {
-                        case type_groupedtable:
-                        case type_table:
-                        case type_row:
-                        case type_record:
-                        case type_transform:
-                        case type_void:
-                            {
-                                getExprECL(matchedName, nameText);
-                                getFriendlyTypeStr(exprType, exprTypeText);
-                                getFriendlyTypeStr(replacementType, replacementTypeText);
-                                translator.reportError(expr, ECODETEXT(HQLERR_HashStoredTypeMismatch), nameText.str(), exprTypeText.str(), replacementTypeText.str());
-                            }
-                            // fallthrough
-                        default:
-                            replacement.setown(ensureExprType(replacement, exprType));
-                        }
-                    }
-                    break;
+                    replacement.setown(ensureExprType(replacement, exprType));
                 }
             }
-
-            LinkedHqlExpr result;
-            if (matchedName)
-                activeReplacements.append(*matchedName);
-
-            if (onlyStored)
-            {
-                if (forceConstant && replacement)
-                    result.setown(transform(replacement));
-                else if (foldStored)
-                    result.setown(transform(expr->queryChild(0)));
-            }
-            if (replacement && !result)
-            {
-                HqlExprArray args;
-                args.append(*transform(replacement));
-                result.setown(completeTransform(expr, args));
-            }
-
-            if (matchedName)
-                activeReplacements.pop();
-
-            if (result)
-                return result.getClear();
             break;
         }
+    }
+
+    LinkedHqlExpr result;
+    if (matchedName)
+        activeReplacements.append(*matchedName);
+
+    if (onlyStored)
+    {
+        if (forceConstant && replacement)
+            result.setown(transform(replacement));
+        else if (foldStored)
+            result.setown(transform(expr->queryChild(0)));
+    }
+    if (replacement && !result)
+    {
+        HqlExprArray args;
+        args.append(*transform(replacement));
+        result.setown(completeTransform(expr, args));
+    }
+
+    if (matchedName)
+        activeReplacements.pop();
+
+    if (result)
+        return result.getClear();
+    return QuickHqlTransformer::createTransformed(expr);
+}
+
+// This works on unnormalized trees, so based on QuickHqlTransformer
+IHqlExpression * NewThorStoredReplacer::createTransformed(IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    case no_colon:
+        return transformColon(expr);
     case no_comma:
     case no_compound:
         if (expr->queryChild(0)->getOperator() == no_setmeta)
