@@ -9,7 +9,7 @@ spec:
   accessModes:
     - ReadWriteMany
   nfs:
-    server: {{ printf "%s.default.svc.cluster.local" $serverName }}
+    server: {{ printf "%s.%s.svc.cluster.local" $serverName .Values.namespace }}
     path: "/"
 ---
 apiVersion: v1
@@ -34,7 +34,7 @@ spec:
   accessModes:
     - ReadWriteMany
   nfs:
-    server: {{ printf "%s.default.svc.cluster.local" $serverName }}
+    server: {{ printf "%s.%s.svc.cluster.local" $serverName .Values.namespace }}
     path: "/"
 ---
 apiVersion: v1
@@ -59,7 +59,7 @@ spec:
   accessModes:
     - ReadWriteMany
   nfs:
-    server: {{ printf "%s.default.svc.cluster.local" $serverName }}
+    server: {{ printf "%s.%s.svc.cluster.local" $serverName .Values.namespace }}
     path: "/"
 ---
 apiVersion: v1

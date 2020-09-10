@@ -22,6 +22,9 @@
     },
     "daliStorage": {
       "$ref": "#/definitions/storage"
+    },
+    "namespace": {
+      "type": "string"
     }
   },
   "title": "Values",
