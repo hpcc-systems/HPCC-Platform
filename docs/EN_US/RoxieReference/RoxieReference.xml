@@ -219,26 +219,26 @@
       incoming queries from a client, evaluates the ECL code of the query
       given the input that is provided in the client query, and returns the
       result to the client. When the Server evaluates an ECL function that
-      requires data from disk, it determines the slave node or nodes that may
-      have the appropriate data, and sends a request to those slave nodes to
-      retrieve any matching data. Results from multiple slave nodes are
+      requires data from disk, it determines the agent node or nodes that may
+      have the appropriate data, and sends a request to those agent nodes to
+      retrieve any matching data. Results from multiple agent nodes are
       collated and become the input for further ECL functions evaluated on the
       Server node. Typically, requesting applications use some form of load
       balancing to distribute requests evenly to the available Servers.</para>
 
-      <para>The <emphasis role="bold">Slave</emphasis> process accepts
+      <para>The <emphasis role="bold">Agent</emphasis> process accepts
       requests only from other Server nodes in the cluster. These requests
       correspond to a single ECL function such as a filtered index read or a
       disk fetch. Results are sent back to the Server that originally
       requested them. In order to balance performance and manage hardware
-      failures, slaves receive the requests over multicast, and there will
-      typically be at least two slave nodes that will receive each request
-      from a server. The slave nodes communicate with each other to avoid
-      duplicating effort, so that whichever slave is first able to handle the
+      failures, agents receive the requests over multicast, and there will
+      typically be at least two agent nodes that will receive each request
+      from a server. The agent nodes communicate with each other to avoid
+      duplicating effort, so that whichever agent is first able to handle the
       request tells the others not to bother. Each node in a cluster typically
-      handles Slave requests on two or more multicast channels, usually one
-      channel per disk drive. If any Slave node is not responding, the
-      requests on that channel are handled by the other peer Slave nodes
+      handles Agent requests on two or more multicast channels, usually one
+      channel per disk drive. If any Agent node is not responding, the
+      requests on that channel are handled by the other peer Agent nodes
       responsible for that channel.</para>
 
       <para></para>
@@ -247,7 +247,7 @@
 
       <para>This example shows a 5-node Roxie Cluster with each node
       configured to be both a <emphasis role="bold">Server</emphasis> and a
-      <emphasis role="bold">Slave</emphasis>.</para>
+      <emphasis role="bold">Agent</emphasis>.</para>
 
       <para>Queries that have been compiled with the target platform specified
       as a Roxie cluster may be published to a QuerySet using EclWatch.</para>
@@ -298,7 +298,7 @@
         </listitem>
 
         <listitem>
-          <para>Peer-Node Redundancy: Each Slave node typically has one or
+          <para>Peer-Node Redundancy: Each agent node typically has one or
           more peer nodes within its cluster. Each peer stores a copy of data
           files it will read.</para>
         </listitem>
@@ -413,7 +413,8 @@
       <para></para>
 
       <para><emphasis role="bold">Note</emphasis>: These steps are explained
-      in detail in the HPCC Systems Data Tutorial and the Programmer's Guide.</para>
+      in detail in the HPCC Systems Data Tutorial and the Programmer's
+      Guide.</para>
     </sect1>
 
     <sect1 id="Methods-to-Submit-Jobs-to-a-Roxie-Cluster">
@@ -585,7 +586,8 @@ ecl queries recreate roxie MyQuery --timeLimit=2000
       <orderedlist>
         <listitem>
           <para>Use ECL IDE to write your query and then compile it setting
-          the target as the roxie cluster in your HPCC Systems environment.</para>
+          the target as the roxie cluster in your HPCC Systems
+          environment.</para>
         </listitem>
 
         <listitem>
@@ -600,11 +602,11 @@ ecl queries recreate roxie MyQuery --timeLimit=2000
       <title>Viewing Query Sets using ECL Watch</title>
 
       <para>Using ECL Watch, you can view the query for all clusters on your
-      HPCC Systems platform. Click on the <emphasis role="bold">Query Sets/Browse</emphasis>
-      menu item to see the clusters which are currently using Query Sets.
-      Click on the <emphasis role="bold">myroxie</emphasis> link to view the
-      list of queries currently available for roxie. Using this feature you
-      can:</para>
+      HPCC Systems platform. Click on the <emphasis role="bold">Query
+      Sets/Browse</emphasis> menu item to see the clusters which are currently
+      using Query Sets. Click on the <emphasis role="bold">myroxie</emphasis>
+      link to view the list of queries currently available for roxie. Using
+      this feature you can:</para>
 
       <itemizedlist>
         <listitem>
@@ -649,9 +651,10 @@ ecl queries recreate roxie MyQuery --timeLimit=2000
     <sect1>
       <title>Using WsECL to run a roxie query</title>
 
-      <para>WsECL is the ECL Web Service interface that is provided with HPCC Systems
-      and is available using the following URL: http://nnn.nnn.nnn.nnn:8002,
-      where nnn.nnn.nnn.nnn is the IP address of your ESP.</para>
+      <para>WsECL is the ECL Web Service interface that is provided with HPCC
+      Systems and is available using the following URL:
+      http://nnn.nnn.nnn.nnn:8002, where nnn.nnn.nnn.nnn is the IP address of
+      your ESP.</para>
 
       <para>WsECL uses the Query Sets information to display the list of
       available runnable queries and you can use it, for example, to test that
@@ -962,7 +965,7 @@ ecl queries recreate roxie MyQuery --timeLimit=2000
   </chapter>
 
   <chapter id="PreFlight_and_Roxie_Metrics">
-    <title>PreFlight and Roxie Metrics</title>
+    <title>PreFlight</title>
 
     <para>ECL Watch's Operations section provides the ability to perform
     Preflight activities. These preflight utilities are used for daily health
@@ -978,115 +981,6 @@ ecl queries recreate roxie MyQuery --timeLimit=2000
     <xi:include href="HPCCCertify/Cert-Mods/CertPreflight.xml"
                 xpointer="xpointer(//*[@id='Preflight_Roxie'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-    <sect1 id="Roxie_Metrics">
-      <title>Roxie Metrics<?dbfo-need height="5in"?></title>
-
-      <para><graphic fileref="images/RM-30.jpg" vendor="eclwatchSS" /></para>
-
-      <para></para>
-
-      <para><informaltable colsep="0" frame="none" rowsep="0">
-          <tgroup cols="2">
-            <colspec colwidth="102.05pt" />
-
-            <colspec colwidth="293.95pt" />
-
-            <tbody>
-              <row>
-                <entry>IP Address</entry>
-
-                <entry>The IP address of the Server node</entry>
-              </row>
-
-              <row>
-                <entry>slavesActive</entry>
-
-                <entry>Number of slaves active for that Server</entry>
-              </row>
-
-              <row>
-                <entry>lastQueryTime</entry>
-
-                <entry>Time stamp of most recent query executed</entry>
-              </row>
-
-              <row>
-                <entry>loQueryActive</entry>
-
-                <entry>Number of low priority queries active</entry>
-              </row>
-
-              <row>
-                <entry>loMin</entry>
-
-                <entry>Minimum time (ms) it took to run a low priority
-                query</entry>
-              </row>
-
-              <row>
-                <entry>retriesNeeded</entry>
-
-                <entry>Count of all reply packets that arrived to a Server as
-                a response to more than one try.</entry>
-              </row>
-
-              <row>
-                <entry>loMax</entry>
-
-                <entry>Maximum time (ms) it took to run a low priority
-                query</entry>
-              </row>
-
-              <row>
-                <entry>hiQueryActive</entry>
-
-                <entry>Number of high priority queries active</entry>
-              </row>
-
-              <row>
-                <entry>loQueryCount</entry>
-
-                <entry>Total number of low priority queries run</entry>
-              </row>
-
-              <row>
-                <entry>loQueryAverage</entry>
-
-                <entry>Average time it took to run a high priority
-                query</entry>
-              </row>
-
-              <row>
-                <entry>hiQueryCount</entry>
-
-                <entry>Total number of high priority queries run</entry>
-              </row>
-
-              <row>
-                <entry>hiMax</entry>
-
-                <entry>Maximum time (ms) it took to run a high priority
-                query</entry>
-              </row>
-
-              <row>
-                <entry>hiMin</entry>
-
-                <entry>Minimum time (ms) it took to run a high priority
-                query</entry>
-              </row>
-
-              <row>
-                <entry>heapBlocksAllocated</entry>
-
-                <entry>Number of times Roxie had to allocate memory from its
-                memory allocator</entry>
-              </row>
-            </tbody>
-          </tgroup>
-        </informaltable></para>
-    </sect1>
 
     <xi:include href="ECLWatch/ECLWa_mods/ECLWatchQueries.xml"
                 xpointer="xpointer(//*[@id='Queries_Page'])"
