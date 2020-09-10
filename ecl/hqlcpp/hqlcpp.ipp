@@ -821,6 +821,7 @@ struct HqlCppOptions
     bool                addDefaultBloom;
     bool                newDiskReadMapping;
     bool                transformNestedSequential;
+    bool                preserveWhenSequential;
     bool                forceAllProjectedDiskSerialized;
     bool                newIndexReadMapping;
     bool                diskReadsAreSimple;
