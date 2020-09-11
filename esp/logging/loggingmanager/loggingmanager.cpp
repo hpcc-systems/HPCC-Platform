@@ -43,14 +43,19 @@ bool CLoggingManager::init(IPropertyTree* cfg, const char* service)
     StringAttr failSafeLogsDir;
     decoupledLogging = cfg->getPropBool(PropDecoupledLogging, false);
     oneTankFile = cfg->getPropBool("FailSafe", true);
-    if (oneTankFile || decoupledLogging)
-    {
+    if (decoupledLogging)
+    {   //Only set the failSafeLogsDir for decoupledLogging.
+        //The failSafeLogsDir tells a logging agent to work as a decoupledLogging agent,
+        //as well as where to read the tank file.
         const char* logsDir = cfg->queryProp(PropFailSafeLogsDir);
         if (!isEmptyString(logsDir))
             failSafeLogsDir.set(logsDir);
         else
             failSafeLogsDir.set(DefaultFailSafeLogsDir);
+    }
 
+    if (oneTankFile || decoupledLogging)
+    {// the logFailSafe is used to create a tank file.
         logFailSafe.setown(createFailSafeLogger(cfg, service, cfg->queryProp("@name")));
         logContentFilter.readAllLogFilters(cfg);
     }
