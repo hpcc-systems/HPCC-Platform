@@ -39,17 +39,18 @@ ERROR = {
     "6007": "Regression Test Engine internal error",
     "7000": "You have not enough privilege to use '--flushDiskCache' parameter. Check sudoer settings or try it with sudo.",
     "7100": "You have not enough privilege to use '--generateStackTrace' parameter. Check sudoer settings or try it with sudo.",
-    "8000": "Did you specified '--username' parameter, but it seems the stdin is not a TTY like device. Check your environment or add your password into ecl-test.json config file."
+    "8000": "Did you specified '--username' parameter, but it seems the stdin is not a TTY like device. Check your environment or add your password into ecl-test.json config file.", 
+    "9000": "No space left on device."
 }
 
 
 class Error(Exception):
     def __init__(self, code, **kwargs):
         self.code = code
-        self.err = kwargs.pop('err', False)
+        self.err = kwargs.pop('err', 'False')
 
     def __str__(self):
-        if self.err:
+        if self.err != 'False' and self.code in ERROR:
             return "Error (%s): %s \n %s\n" % (self.code,
                                                ERROR[self.code], self.err)
         return "Error (%s): %s " % (self.code, ERROR[self.code])

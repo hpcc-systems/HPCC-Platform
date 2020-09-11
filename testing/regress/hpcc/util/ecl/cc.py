@@ -22,10 +22,13 @@ import logging
 
 from ...common.error import Error
 from ...common.shell import Shell
+from ...util.util import PrintException
 
+logger = logging.getLogger('RegressionTestEngine')
 
 class ECLCC(Shell):
     def __init__(self):
+        super().__init__()
         self.defaults = []
         self.cmd = 'eclcc'
         self.makeArchiveError=''
@@ -38,54 +41,59 @@ class ECLCC(Shell):
                 file = ecl.getEcl()
                 return self.__ECLCC()('-E', file)
         except Error as err:
-            logging.debug("getArchive exception:'%s'",  repr(err))
+            logger.debug("getArchive exception:'%s'",  repr(err))
             self.makeArchiveError = str(err)
             return (repr(err), repr( err))
 
     def makeArchive(self, ecl):
-        self.defaults.append('--nostdinc')
-        self.addIncludePath(ecl.dir_inc)
-        dirname = ecl.dir_a
-        filename = ecl.getArchive()
+        retVal = False
+        try:
+            self.defaults.append('--nostdinc')
+            self.addIncludePath(ecl.dir_inc)
+            dirname = ecl.dir_a
+            filename = ecl.getArchiveName()
 
-        if not os.path.isdir(dirname):
-            os.mkdir(dirname)
-        if os.path.isfile(filename):
-            os.unlink(filename)
-        result, stderr = self.getArchive(ecl)
+            if not os.path.isdir(dirname):
+                os.mkdir(dirname)
+            if os.path.isfile(filename):
+                os.unlink(filename)
+            result, stderr = self.getArchive(ecl)
 
-        if result.startswith( 'Error()'):
-            if ecl.testFail():
-                logging.debug("%3d. Fail is the expected result (ecl:'%s')", ecl.getTaskId(),  ecl.getBaseEclRealName())
-                retVal = True
+            if result.startswith( 'Error()'):
+                if ecl.testFail():
+                    logger.debug("%3d. Fail is the expected result (ecl:'%s')", ecl.getTaskId(),  ecl.getBaseEclRealName())
+                    retVal = True
+                else:
+                    retVal = False
+                    ecl.diff += ("%3d. Test: %s\n") % (ecl.getTaskId(), ecl.getBaseEclRealName())
+                    ecl.diff += '  eclcc returns with:\n\t'
+                    try:
+                        lines = repr(self.makeArchiveError).replace('\\n',  '\n\t').splitlines(True)
+                        for line in lines:
+                            lowerLine = line.lower()
+                            if  (": error " in lowerLine) or (": warning " in lowerLine):
+                                ecl.diff += line.replace("'",  "")
+                            elif ("): error " in  line) or ("): warning " in lowerLine):
+                                ecl.diff += line.replace("\\'", "'")
+                            else:
+                                ecl.diff += line
+                    except Exception as ex:
+                        logger.debug("Exception:'%s'",  str(ex))
+                        ecl.diff += repr(self.makeArchiveError)
+                    self.makeArchiveError=''
             else:
-                retVal = False
-                ecl.diff += ("%3d. Test: %s\n") % (ecl.getTaskId(), ecl.getBaseEclRealName())
-                ecl.diff += '  eclcc returns with:\n\t'
-                try:
-                    lines = repr(self.makeArchiveError).replace('\\n',  '\n\t').splitlines(True)
-                    for line in lines:
-                        lowerLine = line.lower()
-                        if  (": error " in lowerLine) or (": warning " in lowerLine):
-                            ecl.diff += line.replace("'",  "")
-                        elif ("): error " in  line) or ("): warning " in lowerLine):
-                            ecl.diff += line.replace("\\'", "'")
-                        else:
-                            ecl.diff += line
-                    #ecl.diff += repr(self.makeArchiveError).replace('\\n',  '\n\t')
-                except Exception as ex:
-                    logging.debug("Exception:'%s'",  str(ex))
-                    ecl.diff += repr(self.makeArchiveError)
-                self.makeArchiveError=''
-        else:
-            logging.debug("%3d. makeArchive (stderr:'%s')", ecl.getTaskId(), stderr )
-            if 'arning' in stderr:
-                ecl.setEclccWarning(stderr)
-            logging.debug("%3d. makeArchive (filename:'%s')", ecl.getTaskId(), filename )
-            FILE = open(filename, "w")
-            FILE.write(result)
-            FILE.close()
-            retVal = True
+                logger.debug("%3d. makeArchive (result:'%s')", ecl.getTaskId(), result )
+                logger.debug("%3d. makeArchive (stderr:'%s')", ecl.getTaskId(), stderr )
+                if 'arning' in stderr:
+                    ecl.setEclccWarning(stderr)
+                logger.debug("%3d. makeArchive (filename:'%s')", ecl.getTaskId(), filename )
+                FILE = open(filename, "w")
+                FILE.write(str(result).replace("b'","").lstrip("'").rstrip("'"))
+                FILE.close()
+                retVal = True
+        except Exception as e:
+            PrintException(repr(e) + "ECLCC.makeArchive()")
+            
         return retVal
 
     def setVerbose(self):
@@ -115,6 +123,6 @@ class ECLCC(Shell):
             try:
                 self.__ECLCC()(*args)
             except Error as err:
-                print(repr(err))
+                print((repr(err)))
         else:
-            print self.defaults, args
+            print(self.defaults, args)

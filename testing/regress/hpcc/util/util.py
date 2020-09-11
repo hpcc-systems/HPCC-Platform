@@ -17,20 +17,24 @@
 ############################################################################ */
 '''
 
-import argparse
+from . import argparse
 import platform
 import logging
 import os
 import subprocess
 import sys
 import traceback
+import linecache
+
+logger = logging.getLogger('RegressionTestEngine')
 
 from ..common.error import Error
 from ..common.shell import Shell
 
-def isPositiveIntNum(string):
-    for i in range(0,  len(string)):
-        if (string[i] < '0') or (string[i] > '9'):
+def isPositiveIntNum(numString):
+    logger.debug("%3d. isPositiveIntNum() result is: '%s'",  -1, numString)
+    for i in range(0,  len(numString)):
+        if (numString[i] < '0') or (numString[i] > '9'):
             return False
     return True
 
@@ -125,7 +129,7 @@ def queryWuid(jobname,  taskId):
     addCommonEclArgs(args)
 
     res, stderr = shell.command(cmd, *defaults)(*args)
-    logging.debug("%3d. queryWuid(%s, cmd :'%s') result is: '%s'",  taskId,  jobname, cmd,  res)
+    logger.debug("%3d. queryWuid(%s, cmd :'%s') result is: '%s'",  taskId,  jobname, cmd,  res)
     wuid = "Not found"
     state = 'N/A'
     result = 'Fail'
@@ -147,10 +151,10 @@ def queryEngineProcess(engine,  taskId):
     myProc = subprocess.Popen(["ps aux | egrep '"+engine+"' | egrep -v 'grep'"],  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
     result = myProc.stdout.read() + myProc.stderr.read()
     results = result.split('\n')
-    logging.debug("%3d. queryEngineProcess(engine: %s): process(es) :'%s'",  taskId,  engine,  results)
+    logger.debug("%3d. queryEngineProcess(engine: %s): process(es) :'%s'",  taskId,  engine,  results)
     for line in results:
         line = line.replace('\n','')
-        logging.debug("%3d. queryEngineProcess(engine: %s): line:'%s'",  taskId,  engine,  line)
+        logger.debug("%3d. queryEngineProcess(engine: %s): line:'%s'",  taskId,  engine,  line)
         if len(line):
             items = line.split()
             if len(items) >= 12:
@@ -158,14 +162,14 @@ def queryEngineProcess(engine,  taskId):
                     myProc2 = subprocess.Popen(["sudo readlink -f /proc/" + items[1] + "/exe"],  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
                     result2 = myProc2.stdout.read().replace ('\n', '')
                     binPath = os.path.dirname(result2)
-                    logging.debug("%3d. queryEngineProcess(engine: %s): binary: '%s', binPath:'%s'",  taskId,  engine, result2,  binPath)
+                    logger.debug("%3d. queryEngineProcess(engine: %s): binary: '%s', binPath:'%s'",  taskId,  engine, result2,  binPath)
                     if 'slavenum' in line:
                         ind = [items.index(i) for i in items if i.startswith('--slavenum')]
                         try:
                             slaveNum = items[ind[0]].split('=')[1]
                             retVal.append({ 'process' : result2, 'name' : os.path.basename(items[10]), 'slaveNum' : slaveNum, 'pid' : items[1], 'binPath': binPath})
                         except Exception as e:
-                            logging.error("%3d. queryEngineProcess(engine: %s): slave number query failed:'%s'",  taskId,  engine, repr(e))
+                            logger.error("%3d. queryEngineProcess(engine: %s): slave number query failed:'%s'",  taskId,  engine, repr(e))
                     else:
                         retVal.append({ 'process' : result2, 'name' : os.path.basename(items[10]), 'slaveNum' : '', 'pid' : items[1], 'binPath': binPath})
     return retVal
@@ -180,7 +184,7 @@ def createStackTrace(wuid, proc, taskId, logDir = ""):
         outFile = os.path.expanduser(gConfig.logDir) + '/' + wuid +'-' + proc['name'] + proc['slaveNum'] + '.trace'
     else:
         outFile = os.path.expanduser(logDir) + '/' + wuid +'-' + proc['name'] + proc['slaveNum'] + '-' + pid + '.trace'
-    logging.error("%3d. Create Stack Trace for %s%s (pid:%s) into '%s'" % (taskId, proc['name'], proc['slaveNum'], pid, outFile), extra={'taskId':taskId})
+    logger.error("%3d. Create Stack Trace for %s%s (pid:%s) into '%s'" % (taskId, proc['name'], proc['slaveNum'], pid, outFile), extra={'taskId':taskId})
     
     cmd  = 'sudo gdb --batch --quiet -ex "set interactive-mode off" '
     cmd += '-ex "echo \nBacktrace for all threads\n==========================" -ex "thread apply all bt" '
@@ -190,12 +194,12 @@ def createStackTrace(wuid, proc, taskId, logDir = ""):
 
     myProc = subprocess.Popen([ cmd ],  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
     result = myProc.stdout.read() + myProc.stderr.read()
-    logging.debug("%3d. Create Stack Trace result:'%s'", taskId, result)
+    logger.debug("%3d. Create Stack Trace result:'%s'", taskId, result)
 
 def abortWorkunit(wuid, taskId = -1, engine = None):
     wuid = wuid.strip()
-    logging.debug("%3d. abortWorkunit(wuid:'%s', engine: '%s')", taskId, wuid, str(engine))
-    logging.debug("%3d. config: generateStackTrace: '%s'", taskId, str(gConfig.generateStackTrace))
+    logger.debug("%3d. abortWorkunit(wuid:'%s', engine: '%s')", taskId, wuid, str(engine))
+    logger.debug("%3d. config: generateStackTrace: '%s'", taskId, str(gConfig.generateStackTrace))
     if (gConfig.generateStackTrace and (engine !=  None)):
         if isSudoer():
             if engine.startswith('thor'):
@@ -211,12 +215,12 @@ def abortWorkunit(wuid, taskId = -1, engine = None):
                 for p in hpccProcesses:
                     createStackTrace(wuid, p, taskId)
             else:
-                logging.debug("%3d. abortWorkunit(wuid:'%s', engine:'%s') related process to generate stack trace not found.", taskId, wuid, str(engine))
+                logger.debug("%3d. abortWorkunit(wuid:'%s', engine:'%s') related process to generate stack trace not found.", taskId, wuid, str(engine))
             pass
         else:
             err = Error("7100")
-            logging.error("%s. clearOSCache error:%s" % (taskId,  err))
-            logging.error(traceback.format_exc())
+            logger.error("%s. clearOSCache error:%s" % (taskId,  err))
+            logger.error(traceback.format_exc())
             raise Error(err)
             pass
 
@@ -251,14 +255,14 @@ def createZAP(wuid, taskId,  reason=''):
 
     try:
         state=shell.command(cmd, *defaults)(*args)
-        logging.debug("%3d. createZAP(state:%s)",  taskId, str(state))
+        logger.debug("%3d. createZAP(state:%s)",  taskId, str(state))
         if state[1] != '':
             retVal = state[1]
         else:
             retVal = state[0]
     except Exception as ex:
         state = "Unable to query "+ str(ex)
-        logging.debug("%3d. %s in createZAP(%s)",  taskId,  state,  wuid)
+        logger.debug("%3d. %s in createZAP(%s)",  taskId,  state,  wuid)
         retVal += " (" + str(ex). replace('\n',' ') + ")"
 
     return retVal
@@ -269,7 +273,7 @@ def getRealIPAddress():
     try:
         proc = subprocess.Popen(['ip', '-o', '-4', 'addr', 'show'], shell=False,  bufsize=8192, stdout=subprocess.PIPE, stderr=None)
         result = proc.communicate()[0]
-        results = result.split('\n')
+        results = result.decode("utf-8").split('\n')
         for line in results:
             if 'scope global' in line:
                 items = line.split()
@@ -299,7 +303,7 @@ def checkClusters(clusters,  targetSet):
             if engine in gConfig.Engines:
                 targetEngines.append(engine)
             else:
-                logging.error("%s. Unknown engine:'%s' in %s:'%s'!" % (1,  engine,  targetSet,  clusters))
+                logger.error("%s. Unknown engine:'%s' in %s:'%s'!" % (1,  engine,  targetSet,  clusters))
                 raise Error("4000")
 
     return  targetEngines
@@ -327,11 +331,11 @@ def checkHpccStatus():
             # There is no remote version (yet)
             myProc = subprocess.Popen(["ecl --version"],  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
             result = myProc.stdout.read() + myProc.stderr.read()
-            results = result.split('\n')
+            results = result.decode("utf-8").split('\n')
             for line in results:
                 if 'not found' in line:
                     err = Error("6000")
-                    logging.error("%s. %s:'%s'" % (1,  err,  line))
+                    logger.error("%s. %s:'%s'" % (1,  err,  line))
                     raise  err
                     break
         else:
@@ -343,22 +347,22 @@ def checkHpccStatus():
 
         myProc = subprocess.Popen("ecl getname --wuid 'W*' --limit=5 " + " ".join(args),  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
         result  = myProc.stdout.read() + myProc.stderr.read()
-        results = result.split('\n')
+        results = result.decode("utf-8").split('\n')
         for line in results:
             if "Error connecting" in line:
                 if isLocal:
                     err = Error("6001")
-                    logging.error("%s. %s:'%s local target!'" % (1,  err,  line))
+                    logger.error("%s. %s:'%s local target!'" % (1,  err,  line))
                     raise (err)
                 else:
                     err = Error("6004")
-                    logging.error("%s. %s:'%s remote target!'" % (1,  err,  line))
+                    logger.error("%s. %s:'%s remote target!'" % (1,  err,  line))
                     raise (err)
                 break
 
             if "command not found" in line:
                 err = Error("6002")
-                logging.error("%s. %s:'%s'" % (1,  err,  line))
+                logger.error("%s. %s:'%s'" % (1,  err,  line))
                 raise (err)
                 break
 
@@ -366,12 +370,12 @@ def checkHpccStatus():
 
     except  OSError:
         err = Error("6002")
-        logging.error("%s. checkHpccStatus error:%s!" % (1,  err))
+        logger.error("%s. checkHpccStatus error:%s!" % (1,  err))
         raise Error(err)
 
     except ValueError:
         err = Error("6003")
-        logging.error("%s. checkHpccStatus error:%s!" % (1,  err))
+        logger.error("%s. checkHpccStatus error:%s!" % (1,  err))
         raise Error(err)
 
     finally:
@@ -387,13 +391,15 @@ def isSudoer(testId = -1):
             
             myProc = subprocess.Popen([cmd], shell=True, bufsize=8192, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             (myStdout,  myStderr) = myProc.communicate()
+            myStdout = myStdout.decode("utf-8") 
+            myStderr = myStderr.decode("utf-8")
             result = "returncode:" + str(myProc.returncode) + ", stdout:\n'" + myStdout + "', stderr:\n'" + myStderr + "'."
-            logging.debug("%3d. isSudoer() result is: '%s' (try count is:%d)", testId, result, tryCount)
+            logger.debug("%3d. isSudoer() result is: '%s' (try count is:%d)", testId, result, tryCount)
             
             if 'timeout: invalid option' in myStderr:
-                logging.debug("%3d. isSudoer() result is: '%s'", testId, result)
+                logger.debug("%3d. isSudoer() result is: '%s'", testId, result)
                 cmd = "timeout 2 sudo id && echo Access granted || echo Access denied"
-                logging.debug("%3d. try is without '-k 2' parameter: '%s'", testId, cmd)
+                logger.debug("%3d. try is without '-k 2' parameter: '%s'", testId, cmd)
                 continue
                 
             if 'Access denied' not in myStdout:
@@ -403,7 +409,7 @@ def isSudoer(testId = -1):
 
 
         if retVal == False:
-            logging.debug("%3d. isSudoer() result is: '%s'", testId, result)
+            logger.debug("%3d. isSudoer() result is: '%s'", testId, result)
     return retVal
 
 def clearOSCache(testId = -1):
@@ -412,12 +418,23 @@ def clearOSCache(testId = -1):
             myProc = subprocess.Popen(["free; sudo -S sync; echo 3 | sudo tee /proc/sys/vm/drop_caches; free"], shell=True, bufsize=8192, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             (myStdout,  myStderr) = myProc.communicate()
             result = "returncode:" + str(myProc.returncode) + ", stdout:\n'" + myStdout + "', stderr:\n'" + myStderr + "'."
-            logging.debug("%3d. clearOSCache() result is: '%s'",  testId, result)
+            logger.debug("%3d. clearOSCache() result is: '%s'",  testId, result)
         else:
             err = Error("7000")
-            logging.error("%s. clearOSCache error:%s" % (testId,  err))
-            logging.error(traceback.format_exc())
+            logger.error("%s. clearOSCache error:%s" % (testId,  err))
+            logger.error(traceback.format_exc())
             raise Error(err)
     else:
-        logging.debug("%3d. clearOSCache() not supported on %s.", testId, sys.platform)
+        logger.debug("%3d. clearOSCache() not supported on %s.", testId, sys.platform)
     pass
+
+
+def PrintException(msg = ''):
+    exc_type, exc_obj, tb = sys.exc_info()
+    f = tb.tb_frame
+    lineno = tb.tb_lineno
+    filename = f.f_code.co_filename
+    linecache.checkcache(filename)
+    line = linecache.getline(filename, lineno, f.f_globals)
+    print ('EXCEPTION IN (%s, LINE %s CODE:"%s"): %s' % ( filename, lineno, line.strip(), msg))
+    print(traceback.format_exc())

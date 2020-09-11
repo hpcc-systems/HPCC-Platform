@@ -61,11 +61,11 @@ class Suite:
             self.log.close();
 
     def __del__(self):
-        print "Suite destructor."
+        print("Suite destructor.")
         pass
 
     def buildSuite(self, args, isSetup,  fileList):
-        if fileList == None:
+        if fileList == None or len(fileList) == 0:
             if not os.path.isdir(self.dir_ec):
                 raise Error("2001", err="Not Found: %s" % self.dir_ec)
             allfiles = os.listdir(self.dir_ec)

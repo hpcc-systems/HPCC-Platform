@@ -26,10 +26,16 @@ from subprocess import (
 )
 from ..common.error import Error
 
+logger = logging.getLogger('RegressionTestEngine')
+
 class Shell:
+    def __init__(self):
+        pass
+        
     def command(self, *command_args):
         def __command(*args):
             all_args = command_args + args
+            logger.debug("Shell.command(all_args: '%s'", all_args)
             return self.__run(*all_args)
         return __command
 
@@ -42,21 +48,26 @@ class Shell:
     def __run(self, *args, **kwargs):
         _args = [i for i in args if i is not None]
         argsLog = [self.__hidePassw(i) for i in args if i is not None ]
-        logging.debug("Shell _run CMD: " + " ". join(argsLog))
+        logger.debug("Shell _run CMD: " + " ". join(argsLog))
         process = Popen(
             _args, stdout = PIPE, stderr = PIPE, close_fds = True, **kwargs)
-        stdout, stderr = process.communicate()
+        _stdout, _stderr = process.communicate()
         retCode = process.returncode
-        logging.debug("Shell _run retCode: %d",  retCode)
-        logging.debug("            stdout:'%s'",  stdout)
-        logging.debug("            stderr:'%s'",  stderr)
+        logger.debug("Shell _run retCode: %d",  retCode)
+        stdout = str(_stdout).replace("\\n",  "\n").strip('\n\' ')
+        stdout = _stdout.decode("utf-8")
+        if stdout.startswith("b'\n") or stdout.startswith('b"\n'):
+            stdout = stdout[4:-1]
+        logger.debug("            stdout:'%s'",  stdout)
+        stderr = _stderr.decode("utf-8").replace("\\n",  "\n").lstrip('\n').lstrip("'")
+        logger.debug("            stderr:'%s'",  stderr)
 
         if retCode or ((len(stderr) > 0) and ('Error' in stderr)) or ((retCode == 4) and ('<Exception>' in stdout)):
             exception = CalledProcessError(process.returncode, repr(args))
-            err_msg = "retCode: "+str(retCode)+"\n'"+str(''.join(filter(None, [stderr])))
+            err_msg = "retCode: "+str(retCode)+"\n'"+str(''.join([str(_f) for _f in [stderr] if _f]))
             if (retCode == 4) and ('<Exception>' in stdout):
-                err_msg += str(''.join(filter(None, [stdout])))
+                err_msg += str(''.join([_f for _f in [stdout] if _f]))
             exception.output = err_msg +"'"
-            logging.debug("exception.output:'%s'",  err_msg)
+            logger.debug("exception.output:'%s'",  err_msg)
             raise Error('1001', err=str(err_msg))
         return stdout, stderr

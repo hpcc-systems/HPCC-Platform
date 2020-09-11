@@ -18,10 +18,15 @@
 '''
 
 import logging
+logger = logging.getLogger('RegressionTestEngine')
+
 import os
 import sys
 import time
-import thread
+try:
+    import _thread
+except Exception as e:
+    logger.debug("%s" % (repr(e)))
 import threading
 import inspect
 
@@ -31,11 +36,9 @@ from ..regression.suite import Suite
 from ..util.ecl.cc import ECLCC
 from ..util.ecl.command import ECLcmd
 from ..util.expandcheck import ExpandCheck
-from ..util.util import getConfig, queryWuid,  abortWorkunit, getVersionNumbers, createZAP, getEclRunArgs
-
+from ..util.util import getConfig, queryWuid,  abortWorkunit, getVersionNumbers, createZAP, getEclRunArgs, PrintException
 
 class Regression:
-
     def timeoutHandler(self):
         for th in range(self.maxthreads):
             if self.timeouts[th] > 0:
@@ -52,13 +55,16 @@ class Regression:
 
         # Use the existing logger instance
         self.log = self.config.log
-        self.log.setLevel(args.loglevel)
+        if args.loglevel == 'info':
+            logger.setLevel(logging.INFO)
+        elif args.loglevel == 'debug':
+            logger.setLevel(logging.DEBUG)
 
         if args.timeout == '0':
             self.timeout = int(self.config.timeout);
         else:
             self.timeout = int(args.timeout)
-        logging.debug("Suite timeout: %d sec / testcase", self.timeout)
+        logger.debug("Suite timeout: %d sec / testcase", self.timeout)
         if not args.suiteDir:
             self.suiteDir = self.config.suiteDir
             if not self.suiteDir:
@@ -72,7 +78,7 @@ class Regression:
                 raise Error("2003")
         else:
             self.keyDir = args.keyDir
-            logging.debug("Try to use alternative key directory: %s", self.keyDir)
+            logger.debug("Try to use alternative key directory: %s", self.keyDir)
 
         self.suiteDir = ExpandCheck.dirExists(self.suiteDir, True)
         self.regressionDir = ExpandCheck.dirExists(self.config.regressionDir, True)
@@ -83,15 +89,17 @@ class Regression:
         self.dir_r = os.path.join(self.regressionDir, self.config.resultDir)
         self.dir_zap =  os.path.join(self.regressionDir,self.config.zapDir)
         self.dir_inc =  self.dir_ec
-        logging.debug("Suite Dir      : %s", self.suiteDir)
-        logging.debug("Regression Dir : %s", self.regressionDir)
-        logging.debug("Result Dir     : %s", self.dir_r)
-        logging.debug("Log Dir        : %s", self.logDir)
-        logging.debug("ECL Dir        : %s", self.dir_ec)
-        logging.debug("Key Dir        : %s", self.dir_ex)
-        logging.debug("Archive Dir    : %s", self.dir_a)
-        logging.debug("ZAP Dir        : %s", self.dir_zap )
-        logging.debug("INC Dir        : %s", self.dir_inc )
+        self.setupDir = ExpandCheck.dirExists(os.path.join(self.suiteDir, self.config.setupDir), True)
+        logger.debug("Suite Dir      : %s", self.suiteDir)
+        logger.debug("Setup Dir      : %s", self.setupDir)
+        logger.debug("Regression Dir : %s", self.regressionDir)
+        logger.debug("Result Dir     : %s", self.dir_r)
+        logger.debug("Log Dir        : %s", self.logDir)
+        logger.debug("ECL Dir        : %s", self.dir_ec)
+        logger.debug("Key Dir        : %s", self.dir_ex)
+        logger.debug("Archive Dir    : %s", self.dir_a)
+        logger.debug("ZAP Dir        : %s", self.dir_zap )
+        logger.debug("INC Dir        : %s", self.dir_inc )
 
         numOfThreads=1
         if 'pq' in args:
@@ -99,7 +107,7 @@ class Regression:
                 numOfThreads = 1;
             else:
                 numOfThreads = args.pq
-        self.loggermutex = thread.allocate_lock()
+        self.loggermutex = _thread.allocate_lock()
         self.numOfCpus = 2
         self.threadPerCpu = 2
         ver = getVersionNumbers()
@@ -115,11 +123,11 @@ class Regression:
                 numOfThreads = self.numOfCpus  * self.threadPerCpu
             elif (ver['main'] <= 2) and (ver['minor'] < 7):
                     numOfThreads = self.numOfCpus  * self.threadPerCpu
-        logging.debug("Number of CPUs:%d, NUmber of threads:%d", self.numOfCpus, numOfThreads  )
+        logger.debug("Number of CPUs:%d, NUmber of threads:%d", self.numOfCpus, numOfThreads  )
 
         self.maxthreads = numOfThreads
         self.maxtasks = 0
-        self.exitmutexes = [thread.allocate_lock() for i in range(self.maxthreads)]
+        self.exitmutexes = [_thread.allocate_lock() for i in range(self.maxthreads)]
         self.timeouts = [(-1) for i in range(self.maxthreads)]
         self.timeoutHandlerEnabled = False;
         self.timeoutThread = threading.Timer(1.0,  self.timeoutHandler)
@@ -147,9 +155,7 @@ class Regression:
         self.createDirectory(self.dir_r)
         self.createDirectory(self.logDir)
         self.createDirectory(self.dir_zap)
-        self.setupDir = ExpandCheck.dirExists(os.path.join(self.suiteDir, self.config.setupDir), True)
-        logging.debug("Setup Dir      : %s", self.setupDir)
-        self.setupSuite = Suite(args.engine,  args.cluster, self.setupDir, self.dir_a, self.dir_ex, self.dir_r, self.logDir, self.dir_inc, args, True)
+        self.setupSuite = Suite(args.engine,  args.cluster, self.setupDir, self.dir_a, self.dir_ex, self.dir_r, self.logDir, self.dir_inc, args, True, args.setup)
         self.maxtasks = len(self.setupSuite.getSuite())
         return self.setupSuite
 
@@ -161,7 +167,7 @@ class Regression:
         logHandler = os.path.join(self.logDir, logName)
         self.args.testFile=logHandler
         self.saveConfig()
-        self.log.addHandler(logHandler, 'DEBUG')
+        self.log.addHandler(logHandler)
         return (report, logHandler)
 
     def closeLogging(self):
@@ -189,7 +195,7 @@ class Regression:
                         log.write(confStr+"\n")
             log.close()
         except IOError:
-            logging.error("Can't open %s file to write!" %(logFileName))
+            logger.error("Can't open %s file to write!" %(logFileName))
 
     @staticmethod
     def displayReport(report,  elapsTime=0):
@@ -209,10 +215,10 @@ class Regression:
         self.taskParam = [{'taskId':0,  'jobName':'',  'timeoutValue':0,  'retryCount': 0} for i in range(self.maxthreads)]
         self.goodStates = ('compiling', 'blocked')
 
-        logging.debug("runSuiteP(name:'%s', suite:'%s')" %  (name,  suite.getSuiteName()))
-        logging.warn("Suite: %s ",  name)
-        logging.warn("Queries: %s" % repr(len(suite.getSuite())))
-        logging.warn('%s','' , extra={'filebuffer':True,  'filesort':True})
+        logger.debug("runSuiteP(name:'%s', suite:'%s')" %  (name,  suite.getSuiteName()))
+        logger.warn("Suite: %s ",  name)
+        logger.warn("Queries: %s" % repr(len(suite.getSuite())))
+        logger.warn('%s','' , extra={'filebuffer':True,  'filesort':True})
         cnt = 0
         oldCnt = -1
         suite.setStarTime(time.time())
@@ -245,11 +251,11 @@ class Regression:
                             self.taskParam[startThreadId]['timeoutValue'] = self.timeout
                             query = suiteItems[self.taskParam[startThreadId]['taskId']]
                             query.setTimeout(self.timeout)
-                            #logging.debug("self.timeout[%d]:%d", startThreadId, self.timeouts[startThreadId])
+                            #logger.debug("self.timeout[%d]:%d", startThreadId, self.timeouts[startThreadId])
                             self.taskParam[startThreadId]['jobName'] = query.getJobname()
                             self.taskParam[startThreadId]['retryCount'] = int(self.config.maxAttemptCount)
                             self.exitmutexes[startThreadId].acquire()
-                            thread.start_new_thread(self.runQuery, (engine, cluster, query, report, cnt, suite.testPublish(query.ecl),  startThreadId))
+                            _thread.start_new_thread(self.runQuery, (engine, cluster, query, report, cnt, suite.testPublish(query.ecl),  startThreadId))
                             started = True
                             break
 
@@ -259,7 +265,7 @@ class Regression:
                     if self.exitmutexes[threadId].locked():
                         if self.timeouts[threadId] % 10 == 0:
                             self.loggermutex.acquire()
-                            logging.debug("%3d. timeout counter:%d" % (self.taskParam[threadId]['taskId']+1, self.timeouts[threadId]),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
+                            logger.debug("%3d. timeout counter:%d" % (self.taskParam[threadId]['taskId']+1, self.timeouts[threadId]),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                             self.loggermutex.release()
                         if self.timeouts[threadId] == 0:
                             # time out occured
@@ -270,8 +276,8 @@ class Regression:
                                 if self.taskParam[threadId]['retryCount'] > 0:
                                     self.timeouts[threadId] =  self.taskParam[threadId]['timeoutValue']
                                     self.loggermutex.acquire()
-                                    logging.warn("%3d. Has not started yet. Reset due to timeout after %d sec." % (self.taskParam[threadId]['taskId']+1, self.taskParam[threadId]['timeoutValue']),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
-                                    logging.debug("%3d. Task parameters: thread id: %d, ecl:'%s',state:'%s', retry count:%d." % (self.taskParam[threadId]['taskId']+1, threadId,  suiteItems[self.taskParam[threadId]['taskId']].ecl,   wuid['state'],  self.taskParam[threadId]['retryCount'] ),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
+                                    logger.warn("%3d. Has not started yet. Reset due to timeout after %d sec." % (self.taskParam[threadId]['taskId']+1, self.taskParam[threadId]['timeoutValue']),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
+                                    logger.debug("%3d. Task parameters: thread id: %d, ecl:'%s',state:'%s', retry count:%d." % (self.taskParam[threadId]['taskId']+1, threadId,  suiteItems[self.taskParam[threadId]['taskId']].ecl,   wuid['state'],  self.taskParam[threadId]['retryCount'] ),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                     self.loggermutex.release()
                                 else:
                                     # retry counter exhausted, give up and abort this test case if exists
@@ -280,16 +286,16 @@ class Regression:
                                         self.loggermutex.acquire()
                                         query = suiteItems[self.taskParam[threadId]['taskId']]
                                         query.setAborReason('Timeout and retry count exhausted!')
-                                        logging.info("%3d. Timeout occured and no more attempt left. Force to abort... " % (self.taskParam[threadId]['taskId']),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
-                                        logging.debug("%3d. Task parameters: thread id:%d, wuid:'%s', state:'%s', ecl:'%s'." % (self.taskParam[threadId]['taskId']+1, threadId, wuid['wuid'], wuid['state'],  query.ecl),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
+                                        logger.info("%3d. Timeout occured and no more attempt left. Force to abort... " % (self.taskParam[threadId]['taskId']),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
+                                        logger.debug("%3d. Task parameters: thread id:%d, wuid:'%s', state:'%s', ecl:'%s'." % (self.taskParam[threadId]['taskId']+1, threadId, wuid['wuid'], wuid['state'],  query.ecl),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                         self.loggermutex.release()
                                     else:
                                         self.exitmutexes[threadId].release()
                                         self.loggermutex.acquire()
                                         query = suiteItems[self.taskParam[threadId]['taskId']]
                                         query.setAborReason('Timeout (has not started yet and retry count exhausted)')
-                                        logging.info("%3d. Timeout occured and no more attempt left. Force to abort... " % (self.taskParam[threadId]['taskId']),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
-                                        logging.debug("%3d. Task parameters: thread id:%d, wuid:'%s', state:'%s', ecl:'%s'." % (self.taskParam[threadId]['taskId']+1, threadId, wuid['wuid'], wuid['state'],  query.ecl),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
+                                        logger.info("%3d. Timeout occured and no more attempt left. Force to abort... " % (self.taskParam[threadId]['taskId']),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
+                                        logger.debug("%3d. Task parameters: thread id:%d, wuid:'%s', state:'%s', ecl:'%s'." % (self.taskParam[threadId]['taskId']+1, threadId, wuid['wuid'], wuid['state'],  query.ecl),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                         self.loggermutex.release()
 
                                     self.timeouts[threadId] = -1
@@ -299,8 +305,8 @@ class Regression:
                                 # It is done in HPCC System but need some more time to complete
                                 self.timeouts[threadId] =  5 # sec extra time to finish
                                 self.loggermutex.acquire()
-                                logging.info("%3d. It is completed in HPCC Sytem, but not finised yet. Give it %d sec." % (self.taskParam[threadId]['taskId']+1, self.taskParam[threadId]['timeoutValue']),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
-                                logging.debug("%3d. Task parameters: thread id: %d, ecl:'%s',state:'%s'." % (self.taskParam[threadId]['taskId']+1, threadId,  suiteItems[self.taskParam[threadId]['taskId']].ecl, wuid['state']),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
+                                logger.info("%3d. It is completed in HPCC Sytem, but not finised yet. Give it %d sec." % (self.taskParam[threadId]['taskId']+1, self.taskParam[threadId]['timeoutValue']),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
+                                logger.debug("%3d. Task parameters: thread id: %d, ecl:'%s',state:'%s'." % (self.taskParam[threadId]['taskId']+1, threadId,  suiteItems[self.taskParam[threadId]['taskId']].ecl, wuid['state']),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                 self.loggermutex.release()
                             else:
                                 # Something wrong with this test case, abort it.
@@ -308,8 +314,8 @@ class Regression:
                                 self.loggermutex.acquire()
                                 query = suiteItems[self.taskParam[threadId]['taskId']]
                                 query.setAborReason('Timeout')
-                                logging.info("%3d. Timeout occured. Force to abort... " % (self.taskParam[threadId]['taskId']+1),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
-                                logging.debug("%3d. Task parameters: thread id:%d, wuid:'%s', state:'%s', ecl:'%s'." % (self.taskParam[threadId]['taskId']+1, threadId, wuid['wuid'], wuid['state'],  query.ecl),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
+                                logger.info("%3d. Timeout occured. Force to abort... " % (self.taskParam[threadId]['taskId']+1),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
+                                logger.debug("%3d. Task parameters: thread id:%d, wuid:'%s', state:'%s', ecl:'%s'." % (self.taskParam[threadId]['taskId']+1, threadId, wuid['wuid'], wuid['state'],  query.ecl),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                 self.loggermutex.release()
                                 self.timeouts[threadId] = -1
 
@@ -332,20 +338,20 @@ class Regression:
             for threadId in range(self.maxthreads):
                 if self.exitmutexes[threadId].locked():
                     if exc != None:
-                        print("Thread :%d, is locked" % (threadId))
+                        print(("Thread :%d, is locked" % (threadId)))
                     query = suiteItems[self.taskParam[threadId]['taskId']]
                     self.retryCount = int(self.config.maxAttemptCount)
                     self.CheckTimeout(self.taskParam[threadId]['taskId']+1, threadId,  query)
 
             self.StopTimeoutThread()
-            logging.warn('%s','' , extra={'filebuffer':True,  'filesort':True})
+            logger.warn('%s','' , extra={'filebuffer':True,  'filesort':True})
             suite.setEndTime(time.time())
             Regression.displayReport(report, suite.getElapsTime())
             suite.close()
             self.closeLogging()
 
             if exc != None:
-                print str(exc)+"(line: "+str(inspect.stack()[0][2])+")"
+                print(str(exc)+"(line: "+str(inspect.stack()[0][2])+")")
                 raise(exc)
 
 
@@ -361,7 +367,7 @@ class Regression:
             sleepTime = defSleepTime
             if self.timeouts[threadId] >= 0:
                 self.loggermutex.acquire()
-                logging.debug("%3d. timeout counter:%d (%d)" % (cnt, self.timeouts[threadId],  self.retryCount),  extra={'taskId':cnt})
+                logger.debug("%3d. timeout counter:%d (%d)" % (cnt, self.timeouts[threadId],  self.retryCount),  extra={'taskId':cnt})
                 self.loggermutex.release()
                 sleepTime = defSleepTime
             if self.timeouts[threadId] == 0:
@@ -370,18 +376,18 @@ class Regression:
                 if self.retryCount> 0:
                     self.timeouts[threadId] =  self.timeout
                     self.loggermutex.acquire()
-                    logging.warn("%3d. %s has not started yet. Reset due to timeout after %d sec (%d retry attempt(s) remain)." % (cnt, query.ecl, self.timeouts[threadId],  self.retryCount),  extra={'taskId':cnt})
-                    logging.debug("%3d. Task parameters: thread id: %d, ecl:'%s',state:'%s', retry count:%d." % (cnt, threadId,  query.ecl,   wuid['state'],  self.retryCount),  extra={'taskId':cnt})
+                    logger.warn("%3d. %s has not started yet. Reset due to timeout after %d sec (%d retry attempt(s) remain)." % (cnt, query.ecl, self.timeouts[threadId],  self.retryCount),  extra={'taskId':cnt})
+                    logger.debug("%3d. Task parameters: thread id: %d, ecl:'%s',state:'%s', retry count:%d." % (cnt, threadId,  query.ecl,   wuid['state'],  self.retryCount),  extra={'taskId':cnt})
                     self.loggermutex.release()
                 else:
                     # retry counter exhausted, give up and abort this test case if exists
-                    logging.debug("%3d. Abort %s WUID:'%s'" % (cnt, query.ecl, str(wuid)),  extra={'taskId':cnt})
+                    logger.debug("%3d. Abort %s WUID:'%s'" % (cnt, query.ecl, str(wuid)),  extra={'taskId':cnt})
                     abortWorkunit(wuid['wuid'],  cnt, self.args.engine)
                     query.setAborReason('Timeout and retry count exhausted!')
                     self.loggermutex.acquire()
-                    logging.error("%3d. Timeout occured for %s and no more attempt left. Force to abort... " % (cnt, query.ecl),  extra={'taskId':cnt})
-                    logging.debug("%3d. Task parameters: wuid:'%s', state:'%s', ecl:'%s'." % (cnt, wuid['wuid'], wuid['state'],  query.ecl),  extra={'taskId':cnt})
-                    logging.debug("%3d. Waiting for abort..." % (cnt),  extra={'taskId':cnt})
+                    logger.error("%3d. Timeout occured for %s and no more attempt left. Force to abort... " % (cnt, query.ecl),  extra={'taskId':cnt})
+                    logger.debug("%3d. Task parameters: wuid:'%s', state:'%s', ecl:'%s'." % (cnt, wuid['wuid'], wuid['state'],  query.ecl),  extra={'taskId':cnt})
+                    logger.debug("%3d. Waiting for abort..." % (cnt),  extra={'taskId':cnt})
                     self.loggermutex.release()
                     self.timeouts[threadId] = -1
                     sleepTime = 1.0
@@ -405,9 +411,9 @@ class Regression:
 
         report = self.buildLogging(logName)
 
-        logging.debug("runSuite(name:'%s', suite:'%s')" %  (name,  suite.getSuiteName()))
-        logging.warn("Suite: %s" % name)
-        logging.warn("Queries: %s" % repr(len(suite.getSuite())))
+        logger.debug("runSuite(name:'%s', suite:'%s')" %  (name,  suite.getSuiteName()))
+        logger.warning("Suite: %s" % name)
+        logger.warning("Queries: %s" % repr(len(suite.getSuite())))
         suite.setStarTime(time.time())
         cnt = 1
         th = 0
@@ -426,7 +432,7 @@ class Regression:
                 self.retryCount = int(self.config.maxAttemptCount)
                 query.setTimeout(self.timeouts[th])
                 self.exitmutexes[th].acquire()
-                thread.start_new_thread(self.runQuery, (engine, cluster, query, report, cnt, suite.testPublish(query.ecl),  th))
+                _thread.start_new_thread(self.runQuery, (engine, cluster, query, report, cnt, suite.testPublish(query.ecl), th))
                 time.sleep(0.1)
                 self.CheckTimeout(cnt, th,  query)
                 cnt += 1
@@ -454,7 +460,7 @@ class Regression:
 
     def runSuiteQ(self, engine, clusterName, eclfile):
         report = self.buildLogging(clusterName)
-        logging.debug("runSuiteQ( clusterName:'%s', eclfile:'%s')",  clusterName,  eclfile.ecl,  extra={'taskId':0})
+        logger.debug("runSuiteQ( clusterName:'%s', eclfile:'%s')",  clusterName,  eclfile.ecl,  extra={'taskId':0})
 
         if clusterName == "setup":
             cluster = 'hthor'
@@ -465,8 +471,8 @@ class Regression:
         eclfile.setTaskId(cnt)
         eclfile.setIgnoreResult(self.args.ignoreResult)
         threadId = 0
-        logging.warn("Target: %s" % clusterName)
-        logging.warn("Queries: %s" % 1)
+        logger.warning("Target: %s" % clusterName)
+        logger.warning("Queries: %s" % 1)
         start = time.time()
         try:
             self.StartTimeoutThread()
@@ -479,7 +485,7 @@ class Regression:
                 self.timeouts[threadId] = self.timeout
             self.retryCount = int(self.config.maxAttemptCount)
             self.exitmutexes[threadId].acquire()
-            thread.start_new_thread(self.runQuery, (engine, cluster, eclfile, report, cnt, eclfile.testPublish(),  threadId))
+            _thread.start_new_thread(self.runQuery, (engine, cluster, eclfile, report, cnt, eclfile.testPublish(),  threadId))
             time.sleep(0.1)
             self.CheckTimeout(cnt, threadId,  eclfile)
 
@@ -499,97 +505,113 @@ class Regression:
 
     def runQuery(self, engine, cluster, query, report, cnt=1, publish=False,  th = 0):
         startTime = time.time()
-        self.loggermutex.acquire()
+        try:
+            self.loggermutex.acquire()
+            logger.debug("runQuery(engine: '%s', cluster: '%s', query: '%s', cnt: %d, publish: %s, thread id: %d" % ( engine, cluster, query.ecl, cnt, publish,  th))
+            logger.warning("%3d. Test: %s" % (cnt, query.getBaseEclRealName()),  extra={'taskId':cnt})
+            if 'createEclRunArg' in self.args and self.args.createEclRunArg:
+                logger.warning("%3d. Cmd: %s %s/%s" % (cnt, getEclRunArgs(query, engine, cluster), query.dir_ec, query.getBaseEcl())),
 
-        logging.debug("runQuery(engine: '%s', cluster: '%s', query: '%s', cnt: %d, publish: %s, thread id: %d" % ( engine, cluster, query.ecl, cnt, publish,  th))
-        logging.warn("%3d. Test: %s" % (cnt, query.getBaseEclRealName()),  extra={'taskId':cnt})
-        if 'createEclRunArg' in self.args and self.args.createEclRunArg:
-            logging.warn("%3d. Cmd: %s %s/%s" % (cnt, getEclRunArgs(query, engine, cluster), query.dir_ec, query.getBaseEcl())),
+            self.loggermutex.release()
+        except Exception as e:
+            PrintException(repr(e) + " runQuery()")
 
-        self.loggermutex.release()
         res = 0
         wuid = None
-        if ECLCC().makeArchive(query):
-            if query.isEclccWarningChanged():
-                logging.debug("Should check Eclcc Warning:'%s'"  % (query.getEclccWarning()),  extra={'taskId':cnt})
-                res = False
-                wuid = 'Not found'
-                query.setWuid(wuid)
-                query.diff = query.getEclccWarningChanges()
-                report[0].addResult(query)
-            elif query.testFail():
-                logging.debug("Intentionally fails",  extra={'taskId':cnt})
-                res = True
-                wuid="No WUID"
-                url = "N/A (Intentionally fails)"
-                query.setWuid(wuid)
-                query.diff = ''
-                report[0].addResult(query)
-            else:
-                eclCmd = ECLcmd()
-                try:
-                    if publish:
-                        res = eclCmd.runCmd("publish", engine, cluster, query, report[0],
-                                          server=self.config.espIp,
-                                          username=self.config.username,
-                                          password=self.config.password,
-                                          retryCount=self.config.maxAttemptCount)
-                    else:
-                        res = eclCmd.runCmd("run", engine, cluster, query, report[0],
-                                          server=self.config.espIp,
-                                          username=self.config.username,
-                                          password=self.config.password,
-                                          retryCount=self.config.maxAttemptCount)
-                except Error as e:
-                    logging.debug("Exception raised:'%s' (line: %s )"  % ( str(e), str(inspect.stack()[0][2]) ),  extra={'taskId':cnt})
+        try:
+            if ECLCC().makeArchive(query):
+                if query.isEclccWarningChanged():
+                    logger.debug("Should check Eclcc Warning:'%s'"  % (query.getEclccWarning()),  extra={'taskId':cnt})
                     res = False
                     wuid = 'Not found'
                     query.setWuid(wuid)
-                    query.diff = query.getBaseEcl()+"\n\t"+str(e)
+                    query.diff = query.getEclccWarningChanges()
                     report[0].addResult(query)
-                    pass
-                except:
-                    logging.error("Unexpected error:'%s' (line: %s )" %( sys.exc_info()[0], str(inspect.stack()[0][2]) ) ,  extra={'taskId':cnt})
+                elif query.testFail():
+                    logger.debug("Intentionally fails",  extra={'taskId':cnt})
+                    res = True
+                    wuid="No WUID"
+                    url = "N/A (Intentionally fails)"
+                    query.setWuid(wuid)
+                    query.diff = ''
+                    report[0].addResult(query)
+                else:
+                    eclCmd = ECLcmd()
+                    try:
+                        if publish:
+                            res = eclCmd.runCmd("publish", engine, cluster, query, report[0],
+                                              server=self.config.espIp,
+                                              username=self.config.username,
+                                              password=self.config.password,
+                                              retryCount=self.config.maxAttemptCount)
+                        else:
+                            res = eclCmd.runCmd("run", engine, cluster, query, report[0],
+                                              server=self.config.espIp,
+                                              username=self.config.username,
+                                              password=self.config.password,
+                                              retryCount=self.config.maxAttemptCount)
+                    except Error as e:
+                        logger.debug("Exception raised:'%s' (line: %s )"  % ( str(e), str(inspect.stack()[0][2]) ),  extra={'taskId':cnt})
+                        res = False
+                        wuid = 'Not found'
+                        query.setWuid(wuid)
+                        query.diff = query.getBaseEcl()+"\n\t"+str(e)
+                        report[0].addResult(query)
+                        pass
+                        if e.getErrorCode() == 9000:
+                            # No space left on device
+                            raise e
+                    except Exception as e:
+                        PrintException(repr(e) + " runQuery() end")
+                        try:
+                            PrintException(repr(e) + " Unexpected error() ")
+                        except Exception as e:
+                            PrintException(repr(e) + " runQuery() ")
 
-                wuid = query.getWuid()
-                logging.debug("CMD result: '%s', wuid:'%s'"  % ( res,  wuid),  extra={'taskId':cnt})
-                if wuid == 'Not found':
-                    res = False
-        else:
-            res = False
-            report[0].addResult(query)
-            wuid="N/A"
-
-        if wuid and wuid.startswith("W"):
-            if self.config.useSsl.lower() == 'true':
-                url = "https://"
+                    wuid = query.getWuid()
+                    logger.debug("CMD result: '%s', wuid:'%s'"  % ( res,  wuid),  extra={'taskId':cnt})
+                    if wuid == 'Not found':
+                        res = False
             else:
-                url = "http://"
-            url += self.config.espIp + ":" + self.config.espSocket
-            url += "/?Widget=WUDetailsWidget&Wuid="
-            url += wuid
-        elif query.testFail():
-            res = True
-        else:
-            url = "N/A"
-            res = False
+                res = False
+                report[0].addResult(query)
+                wuid="N/A"
 
-        self.loggermutex.acquire()
-        elapsTime = time.time()-startTime
-        if res:
-            logging.info("%3d. Pass %s - %s (%d sec)" % (cnt, query.getBaseEclRealName(), wuid,  elapsTime),  extra={'taskId':cnt})
-            logging.info("%3d. URL %s" % (cnt,url))
-        else:
-            if not wuid or not wuid.startswith("W"):
-                logging.error("%3d. Fail No WUID for %s (%d sec)" % (cnt, query.getBaseEclRealName(), elapsTime),  extra={'taskId':cnt})
+            if wuid and wuid.startswith("W"):
+                if self.config.useSsl.lower() == 'true':
+                    url = "https://"
+                else:
+                    url = "http://"
+                url += self.config.espIp + ":" + self.config.espSocket
+                url += "/?Widget=WUDetailsWidget&Wuid="
+                url += wuid
+            elif query.testFail():
+                res = True
             else:
-                logging.error("%3d. Fail %s - %s (%d sec)" % (cnt, query.getBaseEclRealName(), wuid, elapsTime),  extra={'taskId':cnt})
-                logging.error("%3d. URL %s" %  (cnt,url),  extra={'taskId':cnt})
-                zapRes = createZAP(wuid,  cnt)
-                logging.error("%3d. Zipped Analysis Package: %s" %  (cnt, zapRes),  extra={'taskId':cnt})
-        self.loggermutex.release()
-        query.setElapsTime(elapsTime)
-        self.exitmutexes[th].release()
+                url = "N/A"
+                res = False
+
+            self.loggermutex.acquire()
+            elapsTime = time.time()-startTime
+            if res:
+                logger.info("%3d. Pass %s - %s (%d sec)" % (cnt, query.getBaseEclRealName(), wuid,  elapsTime),  extra={'taskId':cnt})
+                logger.info("%3d. URL %s" % (cnt,url))
+            else:
+                if not wuid or not wuid.startswith("W"):
+                    logger.error("%3d. Fail No WUID for %s (%d sec)" % (cnt, query.getBaseEclRealName(), elapsTime),  extra={'taskId':cnt})
+                else:
+                    logger.error("%3d. Fail %s - %s (%d sec)" % (cnt, query.getBaseEclRealName(), wuid, elapsTime),  extra={'taskId':cnt})
+                    logger.error("%3d. URL %s" %  (cnt,url),  extra={'taskId':cnt})
+                    zapRes = createZAP(wuid,  cnt)
+                    logger.error("%3d. Zipped Analysis Package: %s" %  (cnt, zapRes),  extra={'taskId':cnt})
+            self.loggermutex.release()
+            query.setElapsTime(elapsTime)
+            self.exitmutexes[th].release()
+        except Exception as e:
+            logger.error("Unexpected error:'%s' (line: %s ) :%s " %( sys.exc_info()[0], str(inspect.stack()[0][2]),  repr(e) ) ,  extra={'taskId':cnt})
+            elapsTime = time.time()-startTime
+            query.setElapsTime(elapsTime)
+            self.exitmutexes[th].release()
 
     def getConfig(self):
         return self.config
