@@ -1019,6 +1019,10 @@ void HqlCppWriter::generateFunctionReturnType(StringBuffer & params, ITypeInfo *
             }
             break;
         }
+    case type_decimal:
+        out.append("void");
+        params.append("byte __result[").append(retType->getSize()).append(']');
+        break;
     case type_transform:
         out.append("size32_t");
         params.append("ARowBuilder & __self");

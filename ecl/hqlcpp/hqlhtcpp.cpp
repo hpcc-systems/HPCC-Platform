@@ -3216,6 +3216,10 @@ void HqlCppTranslator::doBuildFunctionReturn(BuildCtx & ctx, ITypeInfo * type, I
         target.expr.setown(createVariable("__result", makeReferenceModifier(LINK(type))));
         returnByReference = true;
         break;
+    case type_decimal:
+        target.expr.setown(createVariable("__result", makeReferenceModifier(LINK(type))));
+        returnByReference = true;
+        break;
     }
 
     if (returnByReference)

@@ -6050,6 +6050,23 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
         }
         returnByReference = true;
         break;
+    case type_decimal:
+        {
+            OwnedHqlExpr result;
+            if (tgt)
+            {
+                doneAssign = true;
+                result.set(tgt->expr);
+            }
+            else
+            {
+                result.setown(ctx.getTempDeclare(retType, NULL));
+            }
+            args.append(*createValue(no_reference, result->getType(), LINK(result)));
+            localBound.expr.set(result);
+            returnByReference = true;
+            break;
+        }
     case type_set:
         {
             translateSetReturn = !newFormatSet;
