@@ -1427,7 +1427,7 @@ void FileSprayer::commonUpSlaves()
             cur.whichSlave = 0;
     }
 
-    if (options->getPropBool(ANnocommon, false))
+    if (options->getPropBool(ANnocommon, true))
         return;
 
     //First work out which are the same slaves, and then map the partition.

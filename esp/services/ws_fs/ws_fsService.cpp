@@ -1991,8 +1991,8 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
             options->setPull(true);
         if (req.getPush())
             options->setPush(true);
-        if (req.getNoCommon())
-            options->setNoCommon(true);
+        if (!req.getNoCommon_isNull())
+            options->setNoCommon(req.getNoCommon());
 
         if (req.getFailIfNoSourceFile())
             options->setFailIfNoSourceFile(true);
@@ -2578,8 +2578,8 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
 
         if(req.getNosplit())
             wuOptions->setNoSplit(true);
-        if (req.getNoCommon())
-            wuOptions->setNoCommon(true);
+        if (!req.getNoCommon_isNull())
+            wuOptions->setNoCommon(req.getNoCommon());
 
         if (bRoxie)
         {

@@ -2089,7 +2089,7 @@ public:
     }
     bool getNoCommon() const
     {
-        return queryRoot()->getPropBool("@noCommon", false);
+        return queryRoot()->getPropBool("@noCommon", true);
     }
     void setNoCommon(bool val)
     {
