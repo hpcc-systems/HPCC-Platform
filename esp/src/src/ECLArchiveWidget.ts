@@ -1,8 +1,11 @@
 import { ECLEditor } from "@hpcc-js/codemirror";
+import { Palette } from "@hpcc-js/common";
 import { Workunit } from "@hpcc-js/comms";
+import { HTMLTooltip } from "@hpcc-js/html";
 import { SplitPanel } from "@hpcc-js/phosphor";
 import { DirectoryTree } from "@hpcc-js/tree";
 import { xml2json } from "@hpcc-js/util";
+import { extent } from "d3-array";
 import "dijit/form/Button";
 import "dijit/layout/BorderContainer";
 import "dijit/layout/ContentPane";
@@ -41,9 +44,9 @@ export class ECLArchiveWidget {
 
     private borderContainer = null;
     private editor: ECLEditor = null;
-
     private archiveViewer: SplitPanel;
     private directoryTree: DirectoryTreeEx;
+    private tooltip: HTMLTooltip;
 
     buildRendering(args) {
         this.inherited(arguments);
@@ -77,21 +80,34 @@ export class ECLArchiveWidget {
     init(params) {
         if (this.inherited(arguments))
             return;
-
         const context = this;
-
         this.directoryTree = new DirectoryTreeEx()
             .textFileIcon("fa fa-file-code-o")
             .omitRoot(true)
             ;
         this.editor = new ECLEditor().readOnly(true);
         this.archiveViewer = new SplitPanel("horizontal");
+        this.tooltip = new HTMLTooltip()
+            .target(document.body)
+            .direction("e")
+            .visible(false)
+            .render()
+            ;
+        
+        const tableDataTransformer = d => {
+            const ret = d.map((n: any) => {
+                return [
+                    n.Name,
+                    n.Formatted
+                ];
+            });
+            ret.sort((a,b)=>a[0].localeCompare(b[0]));
+            return ret;
+        };
 
         const wu = Workunit.attach({ baseUrl: "" }, params.Wuid);
         wu.refresh(true).then(function (wuInfo) {
-
             context.editor.text(wuInfo.Query.Text);
-
             if (!wuInfo.HasArchiveQuery) {
                 context.archiveViewer
                     .target(context.id + "EclContent")
@@ -119,15 +135,45 @@ export class ECLArchiveWidget {
                     .relativeSizes([0.1, 0.9])
                     .render()
                     ;
-
-                wu.fetchArchive().then(function (archiveXML) {
-                    renderArchive(archiveXML);
-                });
+                const scopesOptions = {
+                    ScopeFilter: {
+                        MaxDepth: 999999,
+                        ScopeTypes: ["graph"]
+                    },
+                    ScopeOptions: {
+                        IncludeMatchedScopesInResults: true,
+                        IncludeScope: true,
+                        IncludeId: true,
+                        IncludeScopeType: true
+                    },
+                    PropertyOptions: {
+                        IncludeName: true,
+                        IncludeRawValue: true,
+                        IncludeFormatted: true,
+                        IncludeMeasure: true,
+                        IncludeCreator: true,
+                        IncludeCreatorType: true
+                    },
+                    NestedFilter: {
+                        Depth: 999999,
+                        ScopeTypes: ["activity"]
+                    },
+                    PropertiesToReturn: {
+                        AllStatistics: true,
+                        AllAttributes: true,
+                        AllHints: true,
+                        AllProperties: true,
+                        AllScopes: true
+                    }
+                };
+                Promise.all([wu.fetchArchive(), wu.fetchDetailsRaw(scopesOptions)])
+                    .then(([archiveXML, scopes])=>{
+                        const markerData = buildMarkerData(scopes);
+                        renderArchive(archiveXML, markerData);
+                    });
             }
-
         });
-
-        function renderArchive(archiveXmlStr) {
+        function renderArchive(archiveXmlStr, markerData) {
             const archive = xml2json(archiveXmlStr);
 
             const data = {
@@ -214,11 +260,16 @@ export class ECLArchiveWidget {
                             let content = node.content.trim();
                             content = hasABase64Indicator ? atob(content) : content;
                             const path = pathArr.join(".");
+                            const fullPath = path.length === 0 ? label : path + "." + label;
+                            
+                            const markers = fileMarkers(fullPath, markerData);
+
                             _data.children.push({
                                 label,
                                 path,
                                 content,
-                                fullPath: path.length === 0 ? label : path + "." + label,
+                                markers,
+                                fullPath,
                                 selected: false
                             });
                         } else if (node._children) {
@@ -280,9 +331,7 @@ export class ECLArchiveWidget {
                         .textFileIcon("fa fa-file-code-o")
                         .render()
                         ;
-                    context.directoryTree.rowClick = function (contentStr) {
-                        context.editor.text(contentStr);
-                    };
+                    context.directoryTree.rowClick = directoryTreeClick;
                     if (!context.archiveViewer.isDOMHidden()) {
                         const rw = context.directoryTree.calcWidth() + 20;
                         const pw = context.archiveViewer.width();
@@ -291,17 +340,36 @@ export class ECLArchiveWidget {
                     }
                 });
 
-            context.directoryTree.rowClick = function (contentStr) {
+            context.directoryTree.rowClick = directoryTreeClick;
+
+            function directoryTreeClick(contentStr, markers = []) {
                 context.editor.text(contentStr);
-            };
+            
+                const fontFamily = "Verdana";
+                const fontSize = 12;
+            
+                const maxLabelWidth = Math.max(
+                    ...markers.map(marker=>{
+                        return context.editor.textSize(marker.label, fontFamily, fontSize).width;
+                    })
+                );
+            
+                context.editor.gutterMarkerWidth(maxLabelWidth + 22);
+                try {
+                    addMarkers(markers);
+                    context.editor.render();
+                } catch(e) {
+                    context.archiveViewer.render(()=>{
+                        addMarkers(markers);
+                    });
+                }
+            }
 
             function recursiveSort(n) {
                 if (n.fullPath === queryPath) {
                     n.selected = true;
                     n.iconClass = "fa fa-code";
-                    if (n.content.length > context.editor.text().length) {
-                        context.editor.text(n.content);
-                    }
+                    directoryTreeClick(n.content, n.markers);
                 }
                 if (n && n.children) {
                     n.children.sort(function (a, b) {
@@ -332,6 +400,226 @@ export class ECLArchiveWidget {
                 return label;
             }
         }
+        function buildMarkerData(scopesArr) {
+            const markers = {};
+        
+            const timeName = "TimeMaxLocalExecute";
+        
+            scopesArr.forEach(scope => {
+                const definitionList = scope.Properties.Property.find(n=>n.Name === "DefinitionList");
+                
+                const tableData = tableDataTransformer(scope.Properties.Property);
+                
+                const timeEntry = tableData.find(n=>n[0]===timeName);
+                
+                if(definitionList !== undefined && timeEntry !== undefined) {
+                    const label = timeEntry[1];
+                    const color = "orange";
+                    const arr = definitionList.Formatted ? JSON.parse(definitionList.Formatted.split("\\").join("\\\\")) : [];
+                    arr.forEach(path=>{
+                        const sp = path.split("(");
+                        const filePath = sp.slice(0, -1).join("(");
+                        const [
+                            lineNum,
+                            charNum
+                        ] = sp.slice(-1)[0].split(",").map(n=>parseInt(n));
+                        if(!markers[filePath]){
+                            markers[filePath] = [];
+                        }
+                        const rawTime = {};
+                        scope.Properties.Property.forEach(n=>{
+                            if(n.Name === timeName){
+                                Object.assign(rawTime, n);
+                            }
+                        });
+                        markers[filePath].push({
+                            lineNum,
+                            charNum,
+                            label,
+                            color,
+                            definitionList,
+                            tableData,
+                            rawTime,
+                            properties: scope.Properties.Property
+                        });
+                    });
+                }
+            });
+            
+            return markers;
+        }
+        function markerTooltipTable(marker) {
+            const table = document.createElement("table");
+            const thead = document.createElement("thead");
+            const tbody = document.createElement("tbody");
+            const labels = [];
+            const tableDataArr = marker.tableData.map((_table, tableIdx)=>{
+                const tableData = JSON.parse(_table);
+                tableData.forEach(row=>{
+                    if(labels.indexOf(row[0]) === -1){
+                        labels.push(row[0]);
+                    }
+                });
+                return tableData;
+            });
+            labels.sort();
+            const _data = labels.map(label => {
+                return [
+                    label,
+                    ...tableDataArr.map(tableData => {
+                        let ret = "";
+                        tableData.forEach(tableRow => {
+                            if(tableRow[0] === label) {
+                                ret = tableRow[1];
+                            }
+                        });
+                        return ret;
+                    })
+                ];
+            });
+            
+            _data
+                .filter(row=>row[0] === "Label")
+                .forEach(row=>{
+                    appendRow(row, thead, () => true);
+                });
+            _data
+                .filter(row=>row[0] !== "Label")
+                .forEach(row=>{
+                    appendRow(row, tbody, idx => idx === 0);
+                });
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            table.style.maxWidth = "500px";
+            return table;
 
+            function appendRow(cellArr, parentNode, thCondition) {
+                const tr = document.createElement("tr");
+                tr.style.maxHeight = "200px";
+                cellArr.forEach((cellText, i) => {
+                    const td = document.createElement(thCondition(i) ? "th" : "td");
+                    td.style.maxWidth = "180px";
+                    td.style.textAlign = i === 0 ? "right" : "left";
+                    td.style.overflow = "hidden";
+                    td.style.textOverflow = "ellipsis";
+                    td.textContent = cellText;
+                    tr.appendChild(td);
+                });
+                parentNode.appendChild(tr);
+            }
+        }
+        function addMarkers(markers) {
+            const palette = Palette.rainbow("YlOrRd");
+            const _markers = mergeCommonLines(markers);
+        
+            const [min, max] = extent(_markers, (n: any) => !n.timeSum ? 0 : parseInt(n.timeSum));
+            if(min !== undefined && max !== undefined) {
+                _markers.forEach(marker=>{
+                    marker.color = palette(marker.timeSum, min, max);
+                });
+            }
+            _markers.forEach(marker=>{
+                context.editor.addGutterMarker(
+                    marker.lineNum-1,
+                    marker.label,
+                    marker.color,
+                    "Verdana",
+                    "12px",
+                    () => {
+                        //onmouseenter
+                        const _content = markerTooltipTable(marker);
+                        context.tooltip._cursorLoc = [
+                            (event as MouseEvent).clientX,
+                            (event as MouseEvent).clientY
+                        ];
+                        context.tooltip
+                            .followCursor(true)
+                            .visible(true)
+                            .fitContent(true)
+                            .tooltipContent(_content)
+                            .render()
+                            ;
+                    },
+                    ()=>{
+                        //onmouseleave
+                        context.tooltip.visible(false);
+                    }
+                );
+            });
+        }
+        function fileMarkers(fullPath, markerData) {
+            const markerFilenameArr = Object.keys(markerData);
+        
+            const nameMatches = [];
+
+            markerFilenameArr.forEach(name => {
+                let formattedName = name;
+                if(name.split(".").length > 1){
+                    formattedName = name.split(".")[0];
+                }
+                formattedName = formattedName.split("\\").join(".");
+                const nameSegments = formattedName.split(".");
+                if(fullPath.indexOf(nameSegments[nameSegments.length - 1]) !== -1) {
+                    let _path = fullPath;
+                    let score = fullPath.split(".").length;
+                    while(_path.length > 0) {
+                        if(formattedName.indexOf(fullPath) !== -1) {
+                            nameMatches.push({
+                                name,
+                                score,
+                                _path
+                            });
+                            break;
+                        } else {
+                            _path = _path.split(".").slice(1).join(".");
+                            score = _path.split(".").length;
+                        }
+                    }
+                }
+            });
+            nameMatches.sort((a, b) => b.score - a.score);
+            let markers = [];
+            if(nameMatches[0]) {
+                markers = [...markerData[nameMatches[0].name]]; 
+            }
+        
+            return markers;
+        }
+        function mergeCommonLines(markers) {
+            const timeMapToMs = {
+                "ns": 1000000,
+                "us": 1000,
+                "ms": 1,
+            };
+        
+            const lineMap = {};
+            markers.forEach(n=>{
+                if(!lineMap[n.lineNum]){
+                    lineMap[n.lineNum] = [];
+                }
+                lineMap[n.lineNum].push(n);
+            });
+            const ret = [];
+            Object.keys(lineMap).forEach(key=>{
+                let timeSum = 0;
+                const units = "ns";
+                const tableDataArr = [];
+                lineMap[key].forEach(n=>{
+                    if(n.rawTime){
+                        const num = Number(n.rawTime.RawValue);
+                        timeSum += num;
+                    }
+                    tableDataArr.push(JSON.stringify(n.tableData));
+                });
+                const lineMarker = {
+                    lineNum: parseInt(key + ""),
+                    label: (timeSum / timeMapToMs[units]).toFixed(3) + "ms",
+                    timeSum,
+                    tableData: tableDataArr
+                };
+                ret.push(lineMarker);
+            });
+            return ret;
+        }
     }
 }
