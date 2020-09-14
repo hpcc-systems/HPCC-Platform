@@ -3030,49 +3030,6 @@ int getEnum(const char *v, const EnumMapping *map, int defval)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-static StringBuffer secretDirectory;
-static CriticalSection secretCS;
-static unsigned secretTimeoutMs = UINT_MAX;
-
-//How long can secrets be cached for?
-extern jlib_decl unsigned getSecretTimeout()
-{
-    return secretTimeoutMs;
-}
-
-extern jlib_decl void setSecretTimeout(unsigned timeoutMs)
-{
-    secretTimeoutMs= timeoutMs;
-}
-
-extern jlib_decl void setSecretMount(const char * path)
-{
-    if (!path)
-    {
-        getPackageFolder(secretDirectory);
-        addPathSepChar(secretDirectory).append("secrets");
-    }
-    else
-        secretDirectory.set(path);
-}
-
-extern jlib_decl StringBuffer & getSecret(StringBuffer & result, const char * name, const char * key)
-{
-    {
-        CriticalBlock block(secretCS);
-        if (secretDirectory.isEmpty())
-            setSecretMount(nullptr);
-    }
-    //MORE: cache the secret for up to secretTimeoutMs
-    StringBuffer path;
-    addPathSepChar(path.append(secretDirectory)).append(name).append(PATHSEPCHAR).append(key);
-    Owned<IFile> file = createIFile(path);
-    result.loadFile(file);
-    return result;
-}
-
-//---------------------------------------------------------------------------------------------------------------------
-
 //#define TESTURL
 #ifdef TESTURL
 

@@ -98,8 +98,30 @@ secrets:
   ecl:
     ## Category for secrets published to all components that run ecl
 
-  all:
-    ## Category for secrets published to all components
+  system:
+    ## Category for secrets published to all components for system level useage
+
+## The vaults section mirrors the secret section but leverages vault for the storage of secrets.
+## There is an additional category for vaults named "ecl-user".  In the future "ecl-user" vault
+## secrets will be readable directly from ECL code.  Other secret categories are read internally
+## by system components and not exposed directly to ECL code.
+##
+## For each vault:
+##   name is the name that is is accessed by within the platform
+##   url is the url used to read a secret from the vault.
+##   kind is the type of vault being accessed, or the protocol to use to access the secrets
+##   client_secret a kubernetes level secret that contains the client_token used to retrive secrets.
+##       if a client_secret is not provided "vault kubernetes auth" will be attempted.
+
+vaults:
+  storage:
+
+  ecl:
+
+  ecl-user:
+    #ECL code will have direct access to these secrets
+
+  esp:
 
 bundles: []
 ## Specifying bundles here will cause the indicated bundles to be downloaded and installed automatically
