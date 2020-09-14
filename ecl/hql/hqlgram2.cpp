@@ -11515,6 +11515,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case PERSIST: msg.append("PERSIST"); break;
     case PHYSICALFILENAME: msg.append("PHYSICALFILENAME"); break;
     case PIPE: msg.append("PIPE"); break;
+    case PLANE: msg.append("PLANE"); break;
     case __PLATFORM__: msg.append("__PLATFORM__"); break;
     case POWER: msg.append("POWER"); break;
     case PREFETCH: msg.append("PREFETCH"); break;
@@ -11527,6 +11528,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case PULL: msg.append("PULL"); break;
     case PULLED: msg.append("PULLED"); break;
     case QUANTILE: msg.append("QUANTILE"); break;
+    case QUEUE: msg.append("QUEUE"); break;
     case QUOTE: msg.append("QUOTE"); break;
     case RANDOM: msg.append("RANDOM"); break;
     case RANGE: msg.append("RANGE"); break;

@@ -365,6 +365,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   PERSIST
   PHYSICALFILENAME
   PIPE
+  PLANE
   __PLATFORM__
   POWER
   PREFETCH
@@ -378,6 +379,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   PULL
   PULLED
   QUANTILE
+  QUEUE
   QUOTE
   RANDOM
   RANGE
@@ -1781,7 +1783,7 @@ persistOpts
 persistOpt
     : fewMany
     | expireAttr
-    | clusterAttr
+    | queueAttr
     | REFRESH '(' expression ')'
                         {
                             parser->normalizeExpression($3, type_boolean, true);
@@ -3047,7 +3049,7 @@ buildFlag
                             $$.setExpr(createAttribute(sort_AllAtom));
                             $$.setPosition($1);
                         }
-    | clusterAttr
+    | planeAttr
     | WIDTH '(' expression ')'
                         {
                             parser->normalizeExpression($3, type_numeric, false);
@@ -3556,7 +3558,7 @@ outputFlag
                             $$.setExpr(createExprAttribute(encryptAtom, $3.getExpr()));
                             $$.setPosition($1);
                         }
-    | clusterAttr
+    | planeAttr
     | WIDTH '(' expression ')'
                         {
                             parser->normalizeExpression($3, type_numeric, false);
@@ -3801,8 +3803,32 @@ onFailAction
                         }
     ;
 
-clusterAttr
+queueAttr
     : CLUSTER '(' stringExpressionList ')'
+                        {
+                            HqlExprArray args;
+                            $3.unwindCommaList(args);
+                            $$.setExpr(createExprAttribute(clusterAtom, args));
+                            $$.setPosition($1);
+                        }
+    | QUEUE '(' stringExpressionList ')'
+                        {
+                            HqlExprArray args;
+                            $3.unwindCommaList(args);
+                            $$.setExpr(createExprAttribute(clusterAtom, args));
+                            $$.setPosition($1);
+                        }
+    ;
+
+planeAttr
+    : CLUSTER '(' stringExpressionList ')'
+                        {
+                            HqlExprArray args;
+                            $3.unwindCommaList(args);
+                            $$.setExpr(createExprAttribute(clusterAtom, args));
+                            $$.setPosition($1);
+                        }
+    | PLANE '(' stringExpressionList ')'
                         {
                             HqlExprArray args;
                             $3.unwindCommaList(args);
