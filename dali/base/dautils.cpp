@@ -39,6 +39,7 @@
 #endif
 
 #define EXTERNAL_SCOPE      "file"
+#define PLANE_SCOPE         "plane"
 #define FOREIGN_SCOPE       "foreign"
 #define SELF_SCOPE          "."
 #define SDS_DFS_ROOT        "Files" // followed by scope/name
@@ -375,10 +376,8 @@ inline void normalizeScope(const char *name, const char *scope, unsigned len, St
     }
     if (!len)
         throw MakeStringException(-1, "Scope is blank in file name '%s'", name);
-    while (len--)
-    {
-        res.append(*scope++);
-    }
+
+    res.append(len, scope);
 }
 
 void normalizeNodeName(const char *node, unsigned len, SocketEndpoint &ep, bool strict)
@@ -537,9 +536,10 @@ bool CDfsLogicalFileName::normalizeExternal(const char * name, StringAttr &res, 
         if (!strict)
             skipSp(name);
     }
-    bool retVal = memicmp(name,EXTERNAL_SCOPE "::",sizeof(EXTERNAL_SCOPE "::")-1)==0;
-    if (retVal)
+
+    if (startsWithIgnoreCase(name, EXTERNAL_SCOPE "::"))
     {
+        //syntax file::<ip>::<path>
         lfn.clear();
         StringBuffer str;
         const char *s=strstr(name,"::");
@@ -548,34 +548,59 @@ bool CDfsLogicalFileName::normalizeExternal(const char * name, StringAttr &res, 
         const char *s1 = s+2;
         const char *ns1 = strstr(s1,"::");
         if (!ns1)
-            retVal = false;
+            return false;
+
+        SocketEndpoint ep;
+        normalizeNodeName(s1, ns1-s1, ep, strict);
+        if (ep.isNull())
+            return false;
+
+        ep.getUrlStr(str.append("::"));
+        s = ns1;
+        if (s[2] == '>')
+        {
+            str.append("::");
+            tailpos = str.length();
+            str.append(s+2);
+        }
         else
         {
-            SocketEndpoint ep;
-            normalizeNodeName(s1, ns1-s1, ep, strict);
-            if (ep.isNull())
-                retVal = false;
-            else
-            {
-                ep.getUrlStr(str.append("::"));
-                s = ns1;
-                if (s[2] == '>')
-                {
-                    str.append("::");
-                    tailpos = str.length();
-                    str.append(s+2);
-                }
-                else
-                {
-                    str.append(s);
-                    str.toLowerCase();
-                }
-                res.set(str);
-            }
+            str.append(s);
+            str.toLowerCase();
         }
-
+        res.set(str);
+        return true;
     }
-    return retVal;
+
+    if (startsWithIgnoreCase(name, PLANE_SCOPE "::"))
+    {
+        //Syntax plane::<plane>::<path>
+        lfn.clear();
+        StringBuffer str;
+        const char *s=strstr(name,"::");
+        normalizeScope(name, name, s-name, str, strict);    // "plane"
+
+        //find the name of the plane
+        const char *s1 = s+2;
+        const char *ns1 = strstr(s1,"::");
+        if (!ns1)
+            return false;
+
+        StringBuffer planeName;
+        normalizeScope(s1, s1, ns1-s1, planeName, strict);
+
+        Owned<IStoragePlane> plane = getStoragePlane(planeName, true);
+        if (plane->numDevices() != 1)
+            throw makeStringExceptionV(-1, "Scope contains invalid storage plane '%s'", name);
+            
+        str.append("::").append(planeName);
+        str.append(ns1);
+        str.toLowerCase();
+        res.set(str);
+        return true;
+    }
+
+    return false;
 }
 
 void CDfsLogicalFileName::set(const char *name, bool removeForeign)
@@ -1070,7 +1095,29 @@ bool CDfsLogicalFileName::getEp(SocketEndpoint &ep) const
     ep = nullep;
     const char *ns;
     if (isExternal())
-        ns = skipScope(lfn,EXTERNAL_SCOPE);
+    {
+        const char * startPlane = skipScope(lfn, PLANE_SCOPE);
+        if (startPlane)
+        {
+            const char * end = strstr(startPlane,"::");
+            if (!end)
+                return false;
+
+            //Resolve the plane, and return the ip if it is a bare metal zone (or a legacy drop zone)
+            StringBuffer planeName(end - startPlane, startPlane);
+            Owned<IStoragePlane> plane = getStoragePlane(planeName, false);
+            if (!plane)
+                return false;
+
+            const char * host = plane->querySingleHost();
+            if (host)
+                ep.set(host);
+            else
+                ep.setLocalHost(0);
+            return true;
+        }
+        ns = skipScope(lfn,EXTERNAL_SCOPE); // evaluates to null for a storage plane
+    }
     else if (isForeign())
         ns = skipScope(lfn,FOREIGN_SCOPE);
     else
@@ -1112,9 +1159,41 @@ bool CDfsLogicalFileName::getExternalPath(StringBuffer &dir, StringBuffer &tail,
     }
     if (multi)
         DBGLOG("CDfsLogicalFileName::makeFullnameQuery called on multi-lfn %s",get());
+
+    size32_t odl = dir.length();
     const char *s = skipScope(lfn,EXTERNAL_SCOPE);
     if (s)
+    {
+        //skip the ip address
         s = strstr(s,"::");
+    }
+    else
+    {
+        const char * startPlane = skipScope(lfn,PLANE_SCOPE);
+        if (startPlane)
+        {
+            s = strstr(startPlane,"::");
+
+            if (s)
+            {
+                StringBuffer planeName(s - startPlane, startPlane);
+                Owned<IStoragePlane> plane = getStoragePlane(planeName, false);
+                if (!plane)
+                {
+                    if (e)
+                        *e = makeStringExceptionV(-1, "Scope contains unknown storage plane '%s'", planeName.str());
+                    return false;
+                }
+                if (plane->numDevices() != 1)
+                {
+                    if (e)
+                        *e = makeStringExceptionV(-1, "plane:: does not support planes with more than one device '%s'", planeName.str());
+                    return false;
+                }
+                dir.append(plane->queryPrefix());
+            }
+        }
+    }
     if (!s) {
         if (e)
             *e = MakeStringException(-1,"Invalid format for external file (%s)",get());
@@ -1125,6 +1204,8 @@ bool CDfsLogicalFileName::getExternalPath(StringBuffer &dir, StringBuffer &tail,
         tail.append(s+2);
         return true;
     }
+
+    // check for ::c$/
     if (iswin&&(s[3]=='$'))
         s += 2;                 // no leading '\'
     const char *s1=s;
@@ -1142,7 +1223,6 @@ bool CDfsLogicalFileName::getExternalPath(StringBuffer &dir, StringBuffer &tail,
         return false;
     }
     bool start=true;
-    size32_t odl = dir.length();
     while (s!=t1) {
         char c=*(s++);
         if (isPathSepChar(c)) {
@@ -1153,6 +1233,13 @@ bool CDfsLogicalFileName::getExternalPath(StringBuffer &dir, StringBuffer &tail,
         if ((c==':')&&(s!=t1)&&(*s==':')) {
             dir.append(iswin?'\\':'/');
             s++;
+            //Disallow ::..:: to gain access to parent subdirectories
+            if (strncmp(s, "..::", 4) == 0)
+            {
+                if (e)
+                    *e = MakeStringException(-1,"External filename cannot contain relative path '..' (%s)", get());
+                return false;
+            }
         }
         else if (c==':') {
             if (e)
@@ -3463,4 +3550,3 @@ ILockInfoCollection *deserializeLockInfoCollection(MemoryBuffer &mb)
 {
     return new CLockInfoCollection(mb);
 }
-
