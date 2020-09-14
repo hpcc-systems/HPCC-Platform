@@ -696,7 +696,7 @@ public:
                 waitToConnect -= delay;
             }
         }
-        initializeStorageGroups(true);
+        initializeStorageGroups(daliHelper->connected());
         return daliHelper;
     }
 
