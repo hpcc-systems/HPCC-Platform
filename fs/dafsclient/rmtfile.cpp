@@ -276,7 +276,7 @@ public:
             }
             return createDaliServixFile(filename);
 #endif
-#endif
+#else
             if (!noport)            // expect all filenames that specify port to be dafilesrc or daliservix
                 return createDaliServixFile(filename);  
             if (filename.isUnixPath()
@@ -285,6 +285,7 @@ public:
 #endif
                 )
                 return createDaliServixFile(filename);  
+#endif
         }
         else if (forceRemotePattern)
         {
@@ -1189,7 +1190,7 @@ public:
     }
 };
 
-class CRemoteFileIO : implements IFileIO, public CInterface
+class CRemoteFileIO : public CInterfaceOf<IFileIO>
 {
 protected:
     Linked<CRemoteFile> parent;
@@ -1203,10 +1204,9 @@ protected:
     std::atomic<unsigned> ioRetries;
     IFOmode mode;
     compatIFSHmode compatmode;
-    IFEflags extraFlags;
+    IFEflags extraFlags = IFEnone;
     bool disconnectonexit;
 public:
-    IMPLEMENT_IINTERFACE
     CRemoteFileIO(CRemoteFile *_parent)
         : parent(_parent), ioReadCycles(0), ioWriteCycles(0), ioReadBytes(0), ioWriteBytes(0), ioReads(0), ioWrites(0), ioRetries(0)
     {
