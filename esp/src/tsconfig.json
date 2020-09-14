@@ -15,6 +15,7 @@
         "allowJs": true,
         "skipLibCheck": true,
         "noImplicitUseStrict": true,
+        "downlevelIteration": true,
         "jsx": "react",
         "lib": [
             "dom",
