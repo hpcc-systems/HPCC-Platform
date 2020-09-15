@@ -2,10 +2,10 @@
 {{ $daliPvcName := printf "dali-%s-pvc" (include "hpcc-azurefile.fullname" $) }}
 {{ $dataPvcName := printf "data-%s-pvc" (include "hpcc-azurefile.fullname" $) }}
 
-Persistent Volume Claims created: {{ $dllPvcName }}, {{ $daliPvcName }}, {{ $dataPvcName }}
-
-Pass a values yaml to hpcc helm charts to use these existing claims.
-e.g.:
+# Persistent Volume Claims created: {{ $dllPvcName }}, {{ $daliPvcName }}, {{ $dataPvcName }}
+# 
+# Pass a values yaml to hpcc helm charts to use these existing claims.
+# e.g.:
 
 storage:
   dllStorage:
