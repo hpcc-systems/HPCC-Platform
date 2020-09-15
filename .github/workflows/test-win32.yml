@@ -1,0 +1,25 @@
+name: Check win32 compiles
+
+on:
+  pull_request:
+    branches:
+      - "master"
+      - "candidate-*"
+      - "!candidate-7.8.*"
+      - "!candidate-7.6.*"
+      - "!candidate-7.4.*"
+      - "!candidate-7.2.*"
+      - "!candidate-7.0.*"
+      - "!candidate-6.*"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: hpcc-systems/msvc-dev-cmd@v1
+      - name: Test win32 compilation
+        working-directory: .
+        run: mkdir build && cd build && cmake .. && nmake

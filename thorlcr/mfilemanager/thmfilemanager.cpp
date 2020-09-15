@@ -520,8 +520,7 @@ public:
 #ifdef _CONTAINERIZED
                     if (!globals->getPropBool("@_dafsStorage"))
                     {
-                        Owned<IStoragePlane> plane = getStoragePlane(groupNames.item(gn));
-                        assertex(plane);
+                        Owned<IStoragePlane> plane = getStoragePlane(groupNames.item(gn), true);
                         curDir.append(plane->queryPrefix());
                     }
 #else
