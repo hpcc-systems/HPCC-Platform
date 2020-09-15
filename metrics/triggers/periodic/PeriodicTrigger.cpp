@@ -46,7 +46,8 @@ PeriodicTrigger::~PeriodicTrigger()
 
 void PeriodicTrigger::start()
 {
-    collectThread = std::thread(collectionThread, this);
+    collectThread = std::thread(&PeriodicTrigger::collectionThread, this, this);
+    //collectThread = std::thread(collectionThread, this);
 }
 
 void PeriodicTrigger::stop()
@@ -60,16 +61,11 @@ void PeriodicTrigger::stopCollection()
     collectThread.join();
 }
 
-bool PeriodicTrigger::isStopCollection() const
+void PeriodicTrigger::collectionThread(PeriodicTrigger *pReportTrigger) const
 {
-    return stopCollectionFlag;
-}
-
-void PeriodicTrigger::collectionThread(PeriodicTrigger *pReportTrigger)
-{
-    while (!pReportTrigger->isStopCollection())
+    while (!stopCollectionFlag)
     {
         std::this_thread::sleep_for(pReportTrigger->periodSeconds);
-        pReportTrigger->doReport();
+        pReportTrigger->doReport("", nullptr);
     }
 }

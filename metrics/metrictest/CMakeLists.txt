@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems.
+#    HPCC SYSTEMS software Copyright (C) 2020 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -26,11 +26,9 @@ INCLUDE_DIRECTORIES(
         ${HPCC_SOURCE_DIR}/system/include
         ${HPCC_SOURCE_DIR}/metrics
         ${HPCC_SOURCE_DIR}/metrics/sinks
-        ./../../system/jlib
+        ${HPCC_SOURCE_DIR}/system/jlib
 )
 
 HPCC_ADD_EXECUTABLE ( metrictest ${SRC_FILES} )
-TARGET_LINK_LIBRARIES( metrictest dl jlib )
+TARGET_LINK_LIBRARIES( metrictest dl jlib hpccmetrics)
 INSTALL ( TARGETS metrictest RUNTIME DESTINATION ${EXEC_DIR} )
-
-#TARGET_LINK_LIBRARIES(envchk configmgr)

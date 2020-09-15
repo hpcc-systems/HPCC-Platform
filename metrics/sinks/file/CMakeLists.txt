@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2020 HPCC Systems.
+#    HPCC SYSTEMS software Copyright (C) 2020 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -22,12 +22,12 @@ set ( srcs
 
 include_directories(
         ../
-        ../../../metrics
+        ${HPCC_SOURCE_DIR}/metrics
         ${HPCC_SOURCE_DIR}/system/include
-        ../../../system/jlib
+        ${HPCC_SOURCE_DIR}/system/jlib
 )
 
-add_definitions( -DSINKDLL)
+add_definitions( -DMETRICSDLL)
 HPCC_ADD_LIBRARY( hpccmetrics_filesink SHARED ${srcs} )
-TARGET_LINK_LIBRARIES( hpccmetrics_filesink jlib )
+TARGET_LINK_LIBRARIES( hpccmetrics_filesink jlib hpccmetrics)
 INSTALL ( TARGETS hpccmetrics_filesink RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )

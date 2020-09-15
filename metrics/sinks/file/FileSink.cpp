@@ -16,27 +16,31 @@
 ############################################################################## */
 
 #include "FileSink.hpp"
-#include "IMeasurement.hpp"
 #include <cstdio>
 
 using namespace hpccMetrics;
 
-extern "C" IMetricSink* getSinkInstance(const std::string& name, const IPropertyTree *pSettingsTree)
+extern "C" IMetricSink* getSinkInstance(const char *name, const IPropertyTree *pSettingsTree)
 {
+    std::string sinkName(name);
     IMetricSink *pSink = new FileMetricSink(name, pSettingsTree);
     return pSink;
 }
 
 
-FileMetricSink::FileMetricSink(const std::string &name, const IPropertyTree *pSettingsTree) :
+FileMetricSink::FileMetricSink(const char *name, const IPropertyTree *pSettingsTree) :
     MetricSink(name, "file")
 {
     pSettingsTree->getProp("filename", fileName);
+    bool clearFile = pSettingsTree->getPropBool("clear", false);
 
     //
-    // Clear the file
-    auto handle = fopen(fileName.str(), "w");
-    fclose(handle);
+    // Clear the file if indicated.
+    if (clearFile)
+    {
+        auto handle = fopen(fileName.str(), "w");
+        fclose(handle);
+    }
 }
 
 
@@ -45,7 +49,7 @@ void FileMetricSink::handle(const MeasurementVector &values, const std::shared_p
     auto handle = fopen(fileName.str(), "a");
     for (const auto& pValue : values)
     {
-        fprintf(handle, "%s -> %s\n", pValue->getName().c_str(), pValue->valueToString().c_str());
+        fprintf(handle, "%s -> %s\n", pValue->getReportName().c_str(), pValue->valueToString().c_str());
     }
     fprintf(handle, "\n");
     fclose(handle);

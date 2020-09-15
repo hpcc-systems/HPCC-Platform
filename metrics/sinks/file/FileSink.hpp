@@ -18,17 +18,17 @@
 
 #pragma once
 
-#include "MetricSink.hpp"
+#include "Metrics.hpp"
 #include "jptree.hpp"
 #include "jstring.hpp"
 
 using namespace hpccMetrics;
 
-class FileMetricSink : public MetricSink
+class METRICS_API FileMetricSink : public MetricSink
 {
     public:
 
-        explicit FileMetricSink(const std::string &name, const IPropertyTree *pSettingsTree);
+        explicit FileMetricSink(const char *name, const IPropertyTree *pSettingsTree);
         void handle(const MeasurementVector &values, const std::shared_ptr<IMetricSet> &pMetricSet, MetricsReportContext *pContext) override;
 
     protected:

@@ -19,7 +19,7 @@
 
 #include <chrono>
 #include <thread>
-#include "../../MetricsReportTrigger.hpp"
+#include "Metrics.hpp"
 #include "jptree.hpp"
 
 namespace hpccMetrics
@@ -32,11 +32,10 @@ namespace hpccMetrics
             ~PeriodicTrigger() override;
             void start() override;
             void stop() override;
-            bool isStopCollection() const;
 
         protected:
             void stopCollection();
-            static void collectionThread(PeriodicTrigger *pReportTrigger);
+            void collectionThread(PeriodicTrigger *pReportTrigger) const;
 
         private:
             bool collectionStarted = false;

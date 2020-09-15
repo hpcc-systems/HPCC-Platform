@@ -3,10 +3,10 @@
 #include <cstdio>
 
 #include "Metrics.hpp"
-#include "MetricsRegistry.hpp"
-#include "MetricSet.hpp"
-#include "triggers/periodic/PeriodicTrigger.hpp"
-#include "MetricsReporter.hpp"
+//#include "MetricSet.hpp"
+//#include "MetricSink.hpp"
+//#include "triggers/periodic/PeriodicTrigger.hpp"
+//#include "MetricsReporter.hpp"
 #include <thread>
 #include <chrono>
 #include <jptree.hpp>
@@ -14,10 +14,8 @@
 
 using namespace hpccMetrics;
 
-MetricsRegistry mr;
-
 void processThread(int, unsigned);
-std::shared_ptr<CountMetric> pCountableMetric;
+std::shared_ptr<EventCountMetric> pEventCountMetric;
 std::shared_ptr<GaugeMetric<uint32_t>> pQueueSizeMetric;
 //std::shared_ptr<QueueLatencyMetric> pQueueLatencyMetric;
 std::shared_ptr<RateMetric> pRateMetric;
@@ -50,20 +48,18 @@ int main(int argc, char *argv[])
     //
     // Create a metric set for request type metrics
     std::vector<std::shared_ptr<IMetric>> metrics;
-    pCountableMetric     = std::make_shared<CountMetric>("requests", "The number of requests that have come in");
-    metrics.emplace_back(pCountableMetric);
+    pEventCountMetric     = std::make_shared<EventCountMetric>("requests", "The number of requests that have come in");
+    metrics.emplace_back(pEventCountMetric);
 
-    pRateMetric = std::make_shared<RateMetric>("rate");
+    pRateMetric = std::make_shared<RateMetric>("rate", "");
     metrics.emplace_back(pRateMetric);
 
     auto pRequestMetricSet = std::make_shared<MetricSet>("set", "myprefix.", metrics);
-    mr.add(pCountableMetric);  // demo use of the registry (optional)
 
     //
     // create a metric set for queues
     metrics.clear();
-    pQueueSizeMetric = std::make_shared<GaugeMetric<uint32_t>>("queuesize");
-    pQueueSizeMetric->setValueType(ValueType::INTEGER);
+    pQueueSizeMetric = std::make_shared<GaugeMetric<uint32_t>>("queuesize", "", ValueType::INTEGER);
     metrics.emplace_back(pQueueSizeMetric);
     auto pQueueMetricSet = std::make_shared<MetricSet>("set2", "myprefix2", metrics);
 
@@ -104,7 +100,7 @@ int main(int argc, char *argv[])
     first.join();
     second.join();
 
-    pTrigger->stop();
+    pReporter->stop();
 
     printf("Test complete\n");
 }
@@ -114,8 +110,7 @@ void processThread(int numLoops, unsigned delay)
 {
     for (int i=0; i<numLoops; ++i)
     {
-        pCountableMetric->inc(1u);
-        //mr.get<CountMetric>("requests")->inc(1u);  would need to get the metric name since placing in a metric set may adjust it's name
+        pEventCountMetric->inc(1u);
         pQueueSizeMetric->inc(1);
         pRateMetric->inc(1);
         std::this_thread::sleep_for(std::chrono::seconds(delay));

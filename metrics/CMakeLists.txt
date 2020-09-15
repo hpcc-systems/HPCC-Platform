@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2020 HPCC Systems.
+#    HPCC SYSTEMS software Copyright (C) 2020 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -14,7 +14,24 @@
 #    limitations under the License.
 ################################################################################
 
+project(hpccmetrics)
+
 HPCC_ADD_SUBDIRECTORY (metrictest)
 HPCC_ADD_SUBDIRECTORY (sinks)
 HPCC_ADD_SUBDIRECTORY (triggers)
 HPCC_ADD_SUBDIRECTORY (collectionsystems)
+
+
+set ( srcs
+        Metrics.cpp
+        )
+
+include_directories(
+        ${HPCC_SOURCE_DIR}/system/include
+        ${HPCC_SOURCE_DIR}/system/jlib
+)
+
+add_definitions( -DMETRICSDLL)
+HPCC_ADD_LIBRARY( hpccmetrics SHARED ${srcs} )
+TARGET_LINK_LIBRARIES( hpccmetrics jlib )
+INSTALL ( TARGETS hpccmetrics RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )

@@ -25,15 +25,94 @@
 #include <chrono>
 #include <mutex>
 #include <memory>
-#include "IMetric.hpp"
-#include "IMetricSet.hpp"
-#include "Measurement.hpp"
+#include <unordered_set>
+#include "jiface.hpp"
+#include "jptree.hpp"
+
+#ifdef METRICSDLL
+#define METRICS_API DECL_EXPORT
+#else
+#define METRICS_API DECL_IMPORT
+#endif
 
 
 namespace hpccMetrics
 {
 
-class Metric : public IMetric
+enum ValueType {
+    NONE,
+    STRING,
+    LONG,
+    INTEGER,
+    DOUBLE,
+    FLOAT,
+    DATE,
+    DATE_NANOS,
+    BOOLEAN
+} ;
+
+
+enum MetricType {
+    CUSTOM,
+    EVENTCOUNT,
+    COUNTER,
+    RATE,
+    GAUGE
+};
+
+class IMetric;
+class MeasurementBase
+{
+    public:
+        MeasurementBase(const IMetric *_pMetric, const std::string &_reportName) :
+            reportName{_reportName},
+            pMetric{pMetric} {}
+        const std::string &getReportName() const { return reportName; }
+        const IMetric *getMetric() const { return pMetric; }
+        virtual std::string valueToString() const = 0;
+
+    protected:
+        const IMetric *pMetric;
+        const std::string &reportName;
+};
+
+
+template<typename T>
+class Measurement : public MeasurementBase
+{
+    public:
+        Measurement(const IMetric *pMetric, const std::string &reportName, T _value) :
+            MeasurementBase(pMetric, reportName),
+            value{_value}  { }
+        std::string valueToString() const override { return std::to_string(value); }
+        T getValue() const;
+
+    protected:
+        T value;
+};
+
+template <typename T>
+T Measurement<T>::getValue() const { return value; }
+
+
+typedef std::vector<std::shared_ptr<MeasurementBase>> MeasurementVector;
+
+interface IMetric
+{
+    virtual std::string getName() const = 0;
+    virtual std::string getDescription() const = 0;
+    virtual MetricType getMetricType() const = 0;
+    virtual void setReportingName(const std::string &name) = 0;
+    virtual std::string getReportingName() const = 0;
+    virtual ValueType getValueType() const = 0;
+    virtual bool isInMetricSet() const = 0;
+    virtual void setInMetricSet(bool val) = 0;
+    virtual void init() = 0;
+    virtual void collect(MeasurementVector &values) = 0;
+};
+
+
+class METRICS_API Metric : public IMetric
 {
     public:
         virtual ~Metric() = default;
@@ -41,57 +120,51 @@ class Metric : public IMetric
         std::string getDescription() const override { return description; }
         void setReportingName(const std::string &_name) override { reportingName = _name; }
         std::string getReportingName() const override { return reportingName; }
-        void setValueType(ValueType _type) override { valueType = _type; }
         ValueType getValueType() const override { return valueType; }
+        MetricType getMetricType() const override { return metricType; }
         bool isInMetricSet() const override { return inMetricSet; }
         void setInMetricSet(bool val) override { inMetricSet = val; }
         void init() override { }
 
-
     protected:
         // No one should be able to create one of these
-        explicit Metric(std::string _name, std::string _desc, ValueType _type = ValueType::NONE) :
-            name(std::move(_name)),
-            description{std::move(_desc)},
-            valueType{_type}
-        {
-            reportingName = name;  // default to the given name
-        }
-
+        Metric(const char *_name, const char *_desc, ValueType _type, MetricType _metricType) :
+            name{_name},
+            reportingName{name},
+            description{_desc},
+            valueType{_type},
+            metricType{_metricType} { }
 
     protected:
         std::string name;
         std::string description;
         std::string reportingName;
         ValueType valueType;
+        MetricType metricType;
         bool inMetricSet = false;
 };
 
 
-class CountMetric : public Metric
+class EventCountMetric : public Metric
 {
     public:
-        explicit CountMetric(const std::string& name, const std::string &description = std::string()) :
-            Metric{name, description, ValueType::INTEGER}  { }
-        ~CountMetric() override = default;
-        void inc(uint32_t val)
-        {
-            count.fetch_add(val);
-        }
+        EventCountMetric(const char *name, const char *description) :
+            Metric{name, description, ValueType::INTEGER, MetricType::EVENTCOUNT}  { }
+        void inc(uint32_t val) { count.fetch_add(val, std::memory_order_relaxed); }
+        void collect(MeasurementVector &values) override;
 
-        MetricType getMetricType() const override
-        {
-            return COUNTER;
-        }
+    protected:
+        std::atomic<uint32_t> count{0};
+};
 
-        //
-        // Clears the count on collection
-        bool collect(MeasurementVector &values) override
-        {
-            auto pMeasurement = std::make_shared<Measurement<uint32_t>>(reportingName, valueType, COUNTER, count.exchange(0), description);
-            values.emplace_back(pMeasurement);
-            return true;
-        }
+
+class CounterMetric : public Metric
+{
+    public:
+        CounterMetric(const char *name, const char *description) :
+            Metric{name, description, ValueType::INTEGER, MetricType::COUNTER}  { }
+        void inc(uint32_t val) { count.fetch_add(val, std::memory_order_relaxed);  }
+        void collect(MeasurementVector &values) override;
 
     protected:
         std::atomic<uint32_t> count{0};
@@ -101,128 +174,171 @@ class CountMetric : public Metric
 class RateMetric : public Metric
 {
     public:
-        explicit RateMetric(std::string name, const std::string &description = std::string()) :
-            Metric{std::move(name), description, ValueType::FLOAT} { }
-        ~RateMetric() override = default;
-
-        MetricType getMetricType() const override
-        {
-            return RATE;
-        }
-
-        void init() override
-        {
-            periodStart = std::chrono::high_resolution_clock::now();
-        }
-
-        void inc(uint32_t val)
-        {
-            count += val;
-        }
-
-        //
-        // Clears the rate on collection
-        bool collect(MeasurementVector &values) override
-        {
-            std::chrono::time_point<std::chrono::high_resolution_clock> now, start;
-            unsigned numEvents;
-
-            now = std::chrono::high_resolution_clock::now();
-            start = periodStart;
-
-            // Synchronize with update of count
-            {
-                std::unique_lock<std::mutex> lock(mutex);
-                numEvents = count.exchange(0);
-                periodStart = now;
-            }
-
-            auto seconds = (std::chrono::duration_cast<std::chrono::seconds>(now - start)).count();
-            float rate = static_cast<float>(numEvents) / static_cast<float>(seconds);
-            auto pMeasurement = std::make_shared<Measurement<float>>(reportingName, valueType, RATE, rate, description);
-            values.emplace_back(pMeasurement);
-            return true;
-        }
+        RateMetric(const char *name, const char *description) :
+            Metric{name, description, ValueType::INTEGER, MetricType::RATE}  { }
+        void init() override { periodStart = std::chrono::high_resolution_clock::now(); }
+        void inc(uint32_t val) { count += val; }
+        void collect(MeasurementVector &values) override;
 
     protected:
-        std::mutex mutex;
         std::atomic<uint32_t> count{0};
         std::chrono::time_point<std::chrono::high_resolution_clock> periodStart;
 };
 
+
 template<typename T>
 class GaugeMetric : public Metric {
     public:
-        explicit GaugeMetric(std::string name, const std::string &description = std::string()) :
-            Metric{std::move(name), description} { }
-        ~GaugeMetric() override = default;
-
-        MetricType getMetricType() const override
-        {
-            return GAUGE;
-        }
-
-        void inc(T inc)
-        {
-            value += inc;
-        }
-
-        void dec(T dec)
-        {
-            value -= dec;
-        }
-
-        //
-        // Value is not cleared on collection
-        bool collect(MeasurementVector &values) override
-        {
-            auto pMeasurement = std::make_shared<Measurement<T>>(reportingName, valueType, GAUGE, value.load(), description);
-            values.emplace_back(pMeasurement);
-            return true;
-        }
+        GaugeMetric(const char *name, const char *description, ValueType valueType) :
+            Metric{name, description, valueType, MetricType::GAUGE}  { }
+        void inc(T inc) { value += inc; }
+        void dec(T dec) { value -= dec; }
+        void collect(MeasurementVector &values) override;
 
     protected:
         std::atomic<T> value{0};
 };
 
 
-// This distribution metric is still being worked out
-//template <typename T>
-//class DistributionMetric : public Metric {
-//    public:
-//        DistributionMetric(std::string &name, const std::vector<T> &bucketLevels) :
-//                Metric{std::move(name)}
-//        {
-//            if (bucketLevels[0] != std::numeric_limits<T>::min())
-//                buckets[0] = new std::atomic<uint32_t>();
-//
-//            for (auto const &distValue : bucketLevels)
-//            {
-//                buckets.insert(std::pair<T, std::atomic<unsigned> *>(distValue, new std::atomic<unsigned>()));
-//            }
-//
-//            if (bucketLevels[bucketLevels.size() - 1] != std::numeric_limits<T>::max())
-//                buckets.insert(std::pair<T, std::atomic<uint32_t> *>(std::numeric_limits<T>::max(),
-//                                                                     new std::atomic<uint32_t>()));
-//        }
-//
-//        void inc(T level, uint32_t val)
-//        {
-//            auto it = buckets.lower_bound(level);
-//            if (it != buckets.end())
-//            {
-//                it.second += val;
-//            }
-//        }
-//
-//        // TBD
-//        bool collect(MeasurementVector &values) override
-//        {
-//            return false;
-//        }
-//
-//    protected:
-//        std::map<T, std::atomic<uint32_t> *> buckets;
-//};
+template<typename T>
+void GaugeMetric<T>::collect(MeasurementVector &values)
+{
+    auto pMeasurement = std::make_shared<Measurement<T>>(this, reportingName, value.load());
+    values.emplace_back(pMeasurement);
+}
+
+
+interface IMetricSet
+{
+    virtual std::string getName() const = 0;
+    virtual void init() = 0;
+    virtual void collect(MeasurementVector &values) = 0;
+    virtual std::vector<std::shared_ptr<const IMetric>> getMetrics() = 0;
+};
+
+
+class METRICS_API MetricSet : public IMetricSet
+{
+    public:
+        MetricSet(const char *_name, const char *_prefix, const std::vector<std::shared_ptr<IMetric>> &_metrics);
+        std::string getName() const override { return name; }
+        std::vector<std::shared_ptr<const IMetric>> getMetrics() override;
+        void init() override;
+        void collect(MeasurementVector &values) override;
+
+    protected:
+        void setMetrics(const std::vector<std::shared_ptr<IMetric>> &_metrics);
+
+    protected:
+        std::map<std::string, std::shared_ptr<IMetric>> metrics;
+        std::string name;
+        std::string reportNamePrefix;
+};
+
+
+class MetricsReportContext;
+interface IMetricSink
+{
+    virtual void handle(const MeasurementVector &values, const std::shared_ptr<IMetricSet> &pMetricSet, MetricsReportContext *pContext) = 0;
+    virtual void setMetricSets(const std::vector<std::shared_ptr<IMetricSet>> &sets) = 0;
+    virtual std::string getName() const = 0;
+    virtual std::string getType() const = 0;
+};
+
+
+extern "C" { typedef hpccMetrics::IMetricSink* (*getSinkInstance)(const std::string &sinkName, const IPropertyTree *pSettingsTree); }
+
+class METRICS_API MetricSink : public IMetricSink
+{
+    public:
+
+        virtual ~MetricSink() = default;
+        void setMetricSets(const std::vector<std::shared_ptr<IMetricSet>> &sets) override;
+        std::string getName() const override { return name; }
+        std::string getType() const override { return type; }
+        static IMetricSink *getSinkFromLib(const char *type, const char *sinkName, const IPropertyTree *pSettingsTree);
+        static IMetricSink *getSinkFromLib(const char *type, const char *getInstanceProcName, const char *sinkName, const IPropertyTree *pSettingsTree);
+
+    protected:
+        MetricSink(std::string _name, std::string _type) :
+            name{std::move(_name)},
+            type{std::move(_type)} { }
+
+    protected:
+        std::string name;
+        std::string type;
+        std::map<std::string, std::shared_ptr<IMetricSet>> metricSets;
+};
+
+
+struct MetricsReportConfig
+{
+    void addReportConfig(IMetricSink *pSink, const std::shared_ptr<IMetricSet> &set);
+    std::unordered_set<std::shared_ptr<IMetricSet>> metricSets;
+    std::map<IMetricSink *, std::vector<std::shared_ptr<IMetricSet>>> metricReportConfig;
+};
+
+
+class MetricsReporter;
+interface IMetricsReportTrigger
+{
+    virtual void setReporter(MetricsReporter *metricsReporter) = 0;
+    virtual void start() = 0;
+    virtual void stop() = 0;
+};
+
+
+extern "C" { typedef hpccMetrics::IMetricsReportTrigger* (*getTriggerInstance)(const IPropertyTree *pSettingsTree); }
+
+class METRICS_API MetricsReportTrigger : public IMetricsReportTrigger
+{
+    public:
+        virtual ~MetricsReportTrigger() = default;
+        void setReporter(MetricsReporter *pMetricsReporter) override  { pReporter = pMetricsReporter; }
+        static IMetricsReportTrigger *getTriggerFromLib(const char *type, const IPropertyTree *pSettingsTree);
+        static IMetricsReportTrigger *getTriggerFromLib(const char *type, const char *getInstanceProcName, const IPropertyTree *pSettingsTree);
+
+    protected:
+        explicit MetricsReportTrigger() = default;
+        void doReport(const std::string& sinkName, MetricsReportContext *pReportContext);
+
+    private:
+        MetricsReporter *pReporter = nullptr;
+};
+
+
+class MetricsReportContext
+{
+    public:
+
+        MetricsReportContext() = default;
+        virtual ~MetricsReportContext() = default;
+        const char * getBufferContents() const { return buffer.str();  }
+        void setBufferContents(const char *data)  { buffer.set(data); }
+
+    private:
+        StringBuffer buffer;
+};
+
+
+class METRICS_API MetricsReporter
+{
+    public:
+        explicit MetricsReporter(MetricsReportConfig &_reportConfig, IMetricsReportTrigger *_pTrigger) :
+            reportConfig{_reportConfig},
+            pTrigger{_pTrigger}  { }
+        virtual ~MetricsReporter() = default;
+        void start() { init(); pTrigger->start(); }
+        void stop()  { pTrigger->stop(); }
+        bool report(std::map<std::string, MetricsReportContext *> &reportContexts);
+
+    protected:
+        void init();
+
+    protected:
+        MetricsReportConfig reportConfig;
+        IMetricsReportTrigger *pTrigger;
+        std::mutex reportMutex;
+};
 
 }
