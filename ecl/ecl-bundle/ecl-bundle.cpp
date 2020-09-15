@@ -379,9 +379,9 @@ public:
                 if (!path.length())
                     path.append(".");
                 if (bundleFile->isDirectory()==fileBool::foundYes && !directoryContainsBundleFile(bundleFile))
-                    includeOpt.appendf(" -I%s", bundle);
+                    includeOpt.appendf(" \"-I%s\"", bundle);
                 else
-                    includeOpt.appendf(" -I%s", path.str());
+                    includeOpt.appendf(" \"-I%s\"", path.str());
             }
             else
                 throw MakeStringException(0, "File not found");
