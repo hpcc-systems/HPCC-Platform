@@ -179,7 +179,11 @@ typedef memsize_t rowsize_t;
 
 typedef unsigned __int64 off64_t;
 typedef int socklen_t;
+#ifdef _WIN64
+typedef __int64 ssize_t; // correct return to type for unix read/write/pread etc.
+#else
 typedef int ssize_t; // correct return to type for unix read/write/pread etc.
+#endif
 #define fpos_ht fpos_t
 
 typedef long double LDouble;
