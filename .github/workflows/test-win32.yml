@@ -26,4 +26,4 @@ jobs:
         working-directory: .
         env: 
           X: y
-        run: echo %X% - $X - %SELECTED_COLOR% - $SELECTED_COLOR
+        run: echo %X% - $X - $Env:X - %SELECTED_COLOR% - $SELECTED_COLOR - $Env:SELECTED_COLOR
