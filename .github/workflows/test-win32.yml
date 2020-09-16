@@ -22,4 +22,6 @@ jobs:
       - uses: hpcc-systems/msvc-dev-cmd@v1
       - name: Test win32 compilation
         working-directory: .
-        run: mkdir build && cd build && cmake .. && nmake
+        env: 
+          X: y
+        run: echo %X% $X
