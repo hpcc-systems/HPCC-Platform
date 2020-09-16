@@ -224,6 +224,7 @@ public:
     const ITopologyServer &getCurrent();
 
     bool update();
+    unsigned numServers() const { return topoServers.length(); }
 private:
     Owned<const ITopologyServer> currentTopology;
     SpinLock lock;
@@ -366,11 +367,15 @@ static std::thread topoThread;
 static Semaphore abortTopo;
 const unsigned topoUpdateInterval = 5000;
 
-extern UDPLIB_API void initializeTopology(const StringArray &topoValues, const std::vector<RoxieEndpointInfo> &myRoles, unsigned traceLevel)
+extern UDPLIB_API void initializeTopology(const StringArray &topoValues, const std::vector<RoxieEndpointInfo> &myRoles)
 {
     topologyManager.setServers(topoValues);
     topologyManager.setRoles(myRoles);
-    if (topoValues.length())
+}
+
+extern UDPLIB_API void publishTopology(unsigned traceLevel)
+{
+    if (topologyManager.numServers())
     {
         topoThread = std::thread([traceLevel]()
         {

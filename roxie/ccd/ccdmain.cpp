@@ -1188,7 +1188,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             loadPlugins();
         unsigned snifferChannel = numChannels+2; // MORE - why +2 not +1??
 #ifdef _CONTAINERIZED
-        initializeTopology(topoValues, myRoles, traceLevel);
+        initializeTopology(topoValues, myRoles);
 #endif
         createDelayedReleaser();
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
@@ -1356,6 +1356,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                 }
 #ifdef _CONTAINERIZED
                 queryFileCache().loadSavedOsCacheInfo();
+                publishTopology(traceLevel);
 #endif
                 writeSentinelFile(sentinelFile);
                 DBGLOG("Startup completed - LPT=%u APT=%u", queryNumLocalTrees(), queryNumAtomTrees());
