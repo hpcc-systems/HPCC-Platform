@@ -196,7 +196,11 @@ extern thorhelper_decl ICsvToRawTransformer * createCsvRawTransformer(ICsvToRowT
 #ifdef _USE_ICU
 #include "unicode/utf.h"
 #else
+#ifdef _WIN32
+typedef wchar_t UChar;
+#else //_WIN32
 typedef unsigned short UChar;
+#endif //_WIN32
 #endif
 #endif
 

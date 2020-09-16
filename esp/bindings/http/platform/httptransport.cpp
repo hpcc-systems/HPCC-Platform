@@ -2689,16 +2689,18 @@ inline bool zlibTypeFromHeader(const char* acceptEncodingHeader, int& compressTy
             zlibq = qval;
     }
 
+#ifdef _USE_ZLIB
     if (gzipq > 0 && gzipq >= deflateq && gzipq >= zlibq) //Use gzip as much as possible due to some reported browser issues with deflate
         compressType = static_cast<int>(ZlibCompressionType::GZIP);
     else if (deflateq > 0 && deflateq >= zlibq)
         compressType = static_cast<int>(ZlibCompressionType::DEFLATE);
     else if (zlibq > 0)
         compressType = static_cast<int>(ZlibCompressionType::ZLIB_DEFLATE);
-
+#endif
     return gzipq > 0 || deflateq > 0 || zlibq > 0;
 }
 
+#ifdef _USE_ZLIB
 inline const char* zlibType2Header(ZlibCompressionType zltype)
 {
     if (zltype==ZlibCompressionType::GZIP)
@@ -2710,6 +2712,7 @@ inline const char* zlibType2Header(ZlibCompressionType zltype)
     else
         return "";
 }
+#endif
 
 bool CHttpResponse::shouldCompress(int& compressType)
 {
@@ -2787,6 +2790,8 @@ bool CHttpResponse::compressContent(StringBuffer* originalContent, int compressT
     setContent(zippedContent.length(), zippedContent.toByteArray());
     addHeader(HTTP_HEADER_CONTENT_ENCODING, zlibType2Header(zlibtype));
     return true;
+#else
+    return false;
 #endif
 }
 
@@ -2844,6 +2849,8 @@ bool CHttpResponse::decompressContent(StringBuffer* originalContent, int compres
     m_content_length = m_content.length();
     removeHeader(HTTP_HEADER_CONTENT_ENCODING);
     return true;
+#else
+    return false;
 #endif
 }
 

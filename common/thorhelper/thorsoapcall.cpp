@@ -2210,7 +2210,7 @@ public:
                             err.append("Failure to establish secure connection to ");
                             connUrl.getUrlString(err);
                             err.append(": OpenSSL disabled in build");
-                            throw makeStringExceptionDirect(0, err.str());
+                            throw makeStringException(0, err.str());
 #endif
 
                         }

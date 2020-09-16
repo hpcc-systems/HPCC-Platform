@@ -22,7 +22,7 @@
 #    Cmake Input File for treeview
 #####################################################
 
-if (WIN32)
+if (WIN32 AND INCLUDE_TREEVIEW)
     project( treeview ) 
 
     set (    SRCS 
@@ -53,5 +53,5 @@ if (WIN32)
              remote 
              dalibase 
         )
-endif (WIN32)
+endif (WIN32 AND INCLUDE_TREEVIEW)
 

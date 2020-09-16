@@ -37,7 +37,11 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 #ifdef _USE_ICU
 #include "unicode/utf.h"
 #else
+#ifdef _WIN32
+typedef wchar_t UChar;
+#else //_WIN32
 typedef unsigned short UChar;
+#endif //_WIN32
 #endif
 #endif
 #include "rtlconst.hpp"
