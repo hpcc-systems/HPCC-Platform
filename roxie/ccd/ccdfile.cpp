@@ -1246,15 +1246,19 @@ public:
             hct.start();
             bctStarted.wait();
             hctStarted.wait();
-#ifdef _CONTAINERIZED
-            if (activeCacheReportingBuffer && cacheReportPeriodSeconds)
-            {
-                cidt.start();
-                cidtStarted.wait();
-            }
-#endif
-            started = true;
         }
+        started = true;
+    }
+
+    virtual void startCacheReporter() override
+    {
+#ifdef _CONTAINERIZED
+        if (activeCacheReportingBuffer && cacheReportPeriodSeconds)
+        {
+            cidt.start();
+            cidtStarted.wait();
+        }
+#endif
     }
 
 #ifdef _CONTAINERIZED

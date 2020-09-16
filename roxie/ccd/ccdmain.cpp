@@ -1356,6 +1356,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                 }
 #ifdef _CONTAINERIZED
                 queryFileCache().loadSavedOsCacheInfo();
+                queryFileCache().startCacheReporter();
                 publishTopology(traceLevel);
 #endif
                 writeSentinelFile(sentinelFile);

@@ -72,6 +72,7 @@ interface IRoxieFileCache : extends IInterface
     virtual void warmOsCache(const char *cacheInfo) = 0;
     virtual void loadSavedOsCacheInfo() = 0;
     virtual void noteRead(unsigned fileIdx, offset_t pos, unsigned len) = 0;
+    virtual void startCacheReporter() = 0;
 };
 
 interface IDiffFileInfoCache : extends IInterface
