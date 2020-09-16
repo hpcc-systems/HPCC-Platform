@@ -20,8 +20,10 @@ jobs:
 #        with:
 #          submodules: true
       - uses: hpcc-systems/msvc-dev-cmd@v1
+      - name: Set selected color
+        run: echo ::set-env name=SELECTED_COLOR::green
       - name: Test win32 compilation
         working-directory: .
         env: 
           X: y
-        run: echo %X% $X
+        run: echo %X% - $X - %SELECTED_COLOR% - $SELECTED_COLOR
