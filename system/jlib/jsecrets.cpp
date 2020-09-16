@@ -125,8 +125,8 @@ static void splitUrlAuthority(const char *authority, size_t authorityLen, String
 
 static inline void extractUrlProtocol(const char *&url, StringBuffer *scheme)
 {
-    if(!url)
-        throw MakeStringException(-1, "Invalid URL %s", url);
+    if (!url)
+        throw makeStringException(-1, "Invalid empty URL");
     if (0 == strnicmp(url, "HTTPS://", 8))
     {
         url+=8;
