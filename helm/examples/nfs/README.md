@@ -13,7 +13,7 @@ For example, under GKE(Google Kubernetes Engine), ReadWriteMany volumes can be p
 Example use:
 
 helm install nfsstorage hpcc-nfs/
-helm install myhpcc hpcc/ --set global.image.version=latest -f examples/local/values-nfs.yaml
+helm install myhpcc hpcc/ --set global.image.version=latest -f examples/nfs/values-nfs.yaml
 
 ### values-nfs.yaml
 
