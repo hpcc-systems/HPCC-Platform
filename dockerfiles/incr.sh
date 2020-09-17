@@ -91,6 +91,9 @@ if [[ -z "$FORCE" ]] ; then
       echo "Could not locate docker image based on PREV tag: ${PREV} for docker user: ${DOCKER_REPO}"
       exit
     fi
+  fi
+
+  if [[ -z ${PREV_COMMIT} ]] ; then
     PREV_COMMIT=community_$(echo "${PREV}" | sed -e "s/-${BUILD_TYPE}.*$//")
   fi
 
