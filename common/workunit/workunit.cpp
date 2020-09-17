@@ -14051,9 +14051,9 @@ void deleteK8sResource(const char *componentName, const char *job, const char *r
     VStringBuffer deleteResource("kubectl delete %s/%s", resource, jobname.str());
     StringBuffer output, error;
     bool ret = runExternalCommand(componentName, output, error, deleteResource.str(), nullptr);
-    DBGLOG("kubectl delete output: %s", output.str());
+    DBGLOG("kubectl delete output: %s", output.trimRight().str());
     if (error.length())
-        DBGLOG("kubectl delete error: %s", error.str());
+        DBGLOG("kubectl delete error: %s", error.trimRight().str());
     if (ret)
         throw makeStringException(0, "Failed to run kubectl delete");
 }
@@ -14082,7 +14082,7 @@ void waitK8sJob(const char *componentName, const char *job)
             unsigned ret = runExternalCommand(nullptr, output.clear(), error.clear(), checkJobExitCode.str(), nullptr);
             if (ret || error.length())
                 throw makeStringExceptionV(0, "Failed to run %s: error %u: %s", checkJobExitCode.str(), ret, error.str());
-            if (!streq(output, "0"))  // state.terminated.exitCode
+            if (output.length() && !streq(output, "0"))  // state.terminated.exitCode
                 throw makeStringExceptionV(0, "Failed to run %s: pod exited with error: %s", jobname.str(), output.str());
             break;
         }
@@ -14146,9 +14146,9 @@ bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, 
 
     StringBuffer output, error;
     unsigned ret = runExternalCommand(componentName, output, error, "kubectl replace --force -f -", jobYaml.str());
-    DBGLOG("kubectl output: %s", output.str());
+    DBGLOG("kubectl output: %s", output.trimRight().str());
     if (error.length())
-        DBGLOG("kubectl error: %s", error.str());
+        DBGLOG("kubectl error: %s", error.trimRight().str());
     if (ret)
     {
         DBGLOG("Using yaml %s", jobYaml.str());
