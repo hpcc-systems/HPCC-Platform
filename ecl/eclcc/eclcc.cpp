@@ -246,7 +246,6 @@ public:
         cclogFilename.append("cc.").append((unsigned)GetCurrentProcessId()).append(".log");
         defaultAllowed[false] = true;  // May want to change that?
         defaultAllowed[true] = true;
-        optMetaLocation.set(".eclcc/metacache");
     }
     ~EclCC()
     {
