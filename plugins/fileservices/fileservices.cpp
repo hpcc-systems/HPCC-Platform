@@ -2858,9 +2858,9 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, cons
 {
 #ifdef _CONTAINERIZED
     const char *defaultEsp = queryComponentConfig().queryProp("@defaultEsp");
-    if (!defaultEsp)
+    if (isEmptyString(defaultEsp))
         defaultEsp = queryGlobalConfig().queryProp("@defaultEsp");
-    if (!defaultEsp)
+    if (isEmptyString(defaultEsp))
     {
         Owned<IPropertyTreeIterator> esps = queryGlobalConfig().getElements("esp");
         ForEach(*esps)
@@ -2878,7 +2878,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, cons
             }
         }
     }
-    if (defaultEsp)
+    if (!isEmptyString(defaultEsp))
     {
         StringBuffer credentials;
         if (username && username[0] && userPW && userPW[0])
