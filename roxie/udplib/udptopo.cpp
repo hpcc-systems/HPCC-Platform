@@ -96,6 +96,7 @@ public:
     virtual const SocketEndpointArray &queryServers(unsigned port) const override;
     virtual const ChannelInfo &queryChannelInfo(unsigned channel) const override;
     virtual const std::vector<unsigned> &queryChannels() const override;
+    virtual bool implementsChannel(unsigned channel) const override;
 
 private:
     std::map<unsigned, SocketEndpointArray> agents;  // indexed by channel
@@ -200,6 +201,15 @@ const std::vector<unsigned> &CTopologyServer::queryChannels() const
     return channels;
 }
 
+bool CTopologyServer::implementsChannel(unsigned channel) const
+{
+    if (channel)
+    {
+        return std::find(channels.begin(), channels.end(), channel) != channels.end();
+    }
+    else
+        return true;   // Kinda-sorta - perhaps not true if separated servers from agents, but even then child queries may access channel 0
+}
 const SocketEndpointArray CTopologyServer::nullArray;
 
 // Class TopologyManager (there is a single instance) handles interaction with topology servers
@@ -214,6 +224,7 @@ public:
     const ITopologyServer &getCurrent();
 
     bool update();
+    unsigned numServers() const { return topoServers.length(); }
 private:
     Owned<const ITopologyServer> currentTopology;
     SpinLock lock;
@@ -356,11 +367,15 @@ static std::thread topoThread;
 static Semaphore abortTopo;
 const unsigned topoUpdateInterval = 5000;
 
-extern UDPLIB_API void initializeTopology(const StringArray &topoValues, const std::vector<RoxieEndpointInfo> &myRoles, unsigned traceLevel)
+extern UDPLIB_API void initializeTopology(const StringArray &topoValues, const std::vector<RoxieEndpointInfo> &myRoles)
 {
     topologyManager.setServers(topoValues);
     topologyManager.setRoles(myRoles);
-    if (topoValues.length())
+}
+
+extern UDPLIB_API void publishTopology(unsigned traceLevel)
+{
+    if (topologyManager.numServers())
     {
         topoThread = std::thread([traceLevel]()
         {

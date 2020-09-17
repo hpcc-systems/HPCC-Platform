@@ -238,6 +238,7 @@ public:
     inline offset_t getRightSib() const { return hdr.rightSib; }
     inline offset_t getLeftSib() const { return hdr.leftSib; }
     unsigned __int64 getSequence(unsigned int num) const;
+    size32_t getNodeSize() const;
 };
 
 class CJHVarTreeNode : public CJHTreeNode 

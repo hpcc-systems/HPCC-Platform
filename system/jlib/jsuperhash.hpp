@@ -433,7 +433,7 @@ public:
     HTMapping(ET &_et, const FP &_fp) : et(_et), fp(_fp) { }
     const void *queryFindParam() const { return &fp; }
     ET &queryElement() const { return et; }
-    FP &queryFindValue() const { return fp; }
+    const FP &queryFindValue() const { return fp; }
 };
 
 // template mapping object for base type to IInterface object

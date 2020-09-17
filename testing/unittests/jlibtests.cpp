@@ -30,6 +30,7 @@
 #include "jlzw.hpp"
 #include "jqueue.hpp"
 #include "jregexp.hpp"
+#include "jutil.hpp"
 
 #include "unittests.hpp"
 
@@ -2376,6 +2377,44 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION( JlibCompressionTestsStress );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibCompressionTestsStress, "JlibCompressionTestsStress" );
+
+class JlibFriendlySizeTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(JlibFriendlySizeTest);
+        CPPUNIT_TEST(test);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void test()
+    {
+        CPPUNIT_ASSERT(friendlyStringToSize("0") == 0);
+        CPPUNIT_ASSERT(friendlyStringToSize("2000") == 2000);
+        CPPUNIT_ASSERT(friendlyStringToSize("1K") == 1000);
+        CPPUNIT_ASSERT(friendlyStringToSize("2Ki") == 2048);
+        CPPUNIT_ASSERT(friendlyStringToSize("1M") == 1000000);
+        CPPUNIT_ASSERT(friendlyStringToSize("2Mi") == 2048*1024);
+        CPPUNIT_ASSERT(friendlyStringToSize("1G") == 1000000000);
+        CPPUNIT_ASSERT(friendlyStringToSize("2Gi") == 2048llu*1024*1024);
+        CPPUNIT_ASSERT(friendlyStringToSize("1T") == 1000000000000ll);
+        CPPUNIT_ASSERT(friendlyStringToSize("2Ti") == 2048llu*1024*1024*1024);
+        CPPUNIT_ASSERT(friendlyStringToSize("1P") == 1000000000000000ll);
+        CPPUNIT_ASSERT(friendlyStringToSize("2Pi") == 2048llu*1024*1024*1024*1024);
+        CPPUNIT_ASSERT(friendlyStringToSize("1E") == 1000000000000000000ll);
+        CPPUNIT_ASSERT(friendlyStringToSize("2Ei") == 2048llu*1024*1024*1024*1024*1024);
+        try
+        {
+            friendlyStringToSize("1Kb");
+            CPPUNIT_ASSERT(false);
+        }
+        catch (IException *E)
+        {
+            E->Release();
+        }
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibFriendlySizeTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibFriendlySizeTest, "JlibFriendlySizeTest" );
 
 
 #endif // _USE_CPPUNIT

@@ -544,6 +544,11 @@ char *CJHTreeNode::expandKeys(void *src,size32_t &retsize)
     return outkeys;
 }
 
+size32_t CJHTreeNode::getNodeSize() const
+{
+    return keyHdr->getNodeSize();
+}
+
 void CJHTreeNode::unpack(const void *node, bool needCopy)
 {
     memcpy(&hdr, node, sizeof(hdr));

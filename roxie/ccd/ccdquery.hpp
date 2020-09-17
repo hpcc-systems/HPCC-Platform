@@ -303,6 +303,7 @@ public:
         case TAKdiskcount:
         case TAKdiskgroupaggregate:
         case TAKdiskexists:
+        case TAKkeyedjoin:  // The fetch part...
             return FileFormatMode::flat;
         default:
 #ifdef _DEBUG

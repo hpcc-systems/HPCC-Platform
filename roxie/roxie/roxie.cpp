@@ -47,7 +47,7 @@ static void roxie_server_usage()
 static constexpr const char * defaultYaml = R"!!(
 version: "1.0"
 roxie:
-  allFilesDynamic: true
+  allFilesDynamic: false
   localSlave: true
   numChannels: 1
   queueNames: roxie.roxie

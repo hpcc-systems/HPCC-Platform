@@ -3030,6 +3030,83 @@ int getEnum(const char *v, const EnumMapping *map, int defval)
 
 //---------------------------------------------------------------------------------------------------------------------
 
+extern jlib_decl offset_t friendlyStringToSize(const char *in)
+{
+    char *tail;
+    offset_t result = strtoull(in, &tail, 10);
+    offset_t scale = 1;
+    if (*tail)
+    {
+        if (tail[1] == '\0')
+        {
+            switch (*tail)
+            {
+            case 'K': scale = 1000; break;
+            case 'M': scale = 1000000; break;
+            case 'G': scale = 1000000000; break;
+            case 'T': scale = 1000000000000; break;
+            case 'P': scale = 1000000000000000; break;
+            case 'E': scale = 1000000000000000000; break;
+            default:
+                throw makeStringExceptionV(0, "Invalid size suffix %s", tail);
+            }
+        }
+        else if (streq(tail+1, "i"))
+        {
+            switch (*tail)
+            {
+            case 'K': scale = 1llu<<10; break;
+            case 'M': scale = 1llu<<20; break;
+            case 'G': scale = 1llu<<30; break;
+            case 'T': scale = 1llu<<40; break;
+            case 'P': scale = 1llu<<50; break;
+            case 'E': scale = 1llu<<60; break;
+            default:
+                throw makeStringExceptionV(0, "Invalid size suffix %s", tail);
+            }
+        }
+        else
+            throw makeStringExceptionV(0, "Invalid size suffix %s", tail);
+    }
+    return result * scale;
+}
+
+void jlib_decl atomicWriteFile(const char *fileName, const char *output)
+{
+    recursiveCreateDirectoryForFile(fileName);
+#ifdef _WIN32
+    StringBuffer newFileName;
+    makeTempCopyName(newFileName, fileName);
+    Owned<IFile> newFile = createIFile(newFileName);
+    Owned<IFile> file = createIFile(fileName);
+    {
+        OwnedIFileIO ifileio = newFile->open(IFOcreate);
+        if (!ifileio)
+            throw MakeStringException(0, "atomicWriteFile: could not create output file %s", newFileName.str());
+        ifileio->write(0, strlen(output), output);
+    }
+#else
+    VStringBuffer newFileName("%s.XXXXXX", fileName);
+    int fh = mkstemp(const_cast<char *>(newFileName.str()));
+    if (fh==-1)
+        throw MakeStringException(0, "atomicWriteFile: could not create output file for %s", fileName);
+    Owned<IFile> newFile = createIFile(newFileName);
+    Owned<IFile> file = createIFile(fileName);
+    {
+        OwnedIFileIO ifileio = createIFileIO(fh, IFOwrite);
+        if (!ifileio)
+            throw MakeStringException(0, "atomicWriteFile: could not create output file %s", newFileName.str());
+        ifileio->write(0, strlen(output), output);
+    }
+#endif
+    if (file->exists())
+        file->remove();
+    newFile->rename(fileName);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+
 //#define TESTURL
 #ifdef TESTURL
 

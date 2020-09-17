@@ -354,6 +354,8 @@ extern bool defaultDisableLocalOptimizations;
 extern unsigned agentQueryReleaseDelaySeconds;
 extern unsigned coresPerQuery;
 
+extern unsigned cacheReportPeriodSeconds;
+
 extern StringBuffer logDirectory;
 extern StringBuffer pluginDirectory;
 extern StringBuffer pluginsList;

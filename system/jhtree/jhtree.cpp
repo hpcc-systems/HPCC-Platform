@@ -632,6 +632,16 @@ public:
         CJHTreeNode &node = mapping->queryElement();
         sizeInMem -= (FIXED_NODE_OVERHEAD+node.getMemSize());
     }
+    void reportEntries(ICacheInfoRecorder &cacheInfo)
+    {
+        Owned<CNodeMRUCache::CMRUIterator> iter = getIterator();
+        ForEach(*iter)
+        {
+            CNodeMapping &mapping = iter->query();
+            const CKeyIdAndPos &key = mapping.queryFindValue();
+            cacheInfo.noteWarm(key.keyId, key.pos, mapping.queryElement().getNodeSize());
+        }
+    }
 };
 
 class CNodeCache : public CInterface
@@ -656,10 +666,11 @@ public:
         preloadNodes = false;
         // note that each index caches the last blob it unpacked so that sequential blobfetches are still ok
     }
-    CJHTreeNode *getNode(INodeLoader *key, int keyID, offset_t pos, IContextLogger *ctx, bool isTLK);
-    void preload(CJHTreeNode *node, int keyID, offset_t pos, IContextLogger *ctx);
+    CJHTreeNode *getNode(INodeLoader *key, unsigned keyID, offset_t pos, IContextLogger *ctx, bool isTLK);
+    void getCacheInfo(ICacheInfoRecorder &cacheInfo);
+    void preload(CJHTreeNode *node, unsigned keyID, offset_t pos, IContextLogger *ctx);
 
-    bool isPreloaded(int keyID, offset_t pos);
+    bool isPreloaded(unsigned keyID, offset_t pos);
 
     inline bool getNodeCachePreload() 
     {
@@ -733,7 +744,6 @@ unsigned setKeyIndexCacheSize(unsigned limit)
 
 CKeyStore::CKeyStore() : keyIndexCache(defaultKeyIndexLimit)
 {
-    nextId = 0;
 #if 0
     mm.setown(createSharedMemoryManager("RichardsSharedMemManager", 0x100000));
     try
@@ -757,7 +767,7 @@ unsigned CKeyStore::setKeyCacheLimit(unsigned limit)
     return keyIndexCache.setCacheLimit(limit);
 }
 
-IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, IMemoryMappedFile *iMappedFile, bool isTLK, bool allowPreload)
+IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK, bool allowPreload)
 {
     // isTLK provided by caller since flags in key header unreliable. If either say it's a TLK, I believe it.
     {
@@ -774,15 +784,16 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
             if (iMappedFile)
             {
                 assert(!iFileIO && !part);
-                keyIndex = new CMemKeyIndex(getUniqId(), LINK(iMappedFile), fname, isTLK);
+                keyIndex = new CMemKeyIndex(getUniqId(fileIdx), LINK(iMappedFile), fname, isTLK);
             }
             else if (iFileIO)
             {
                 assert(!part);
-                keyIndex = new CDiskKeyIndex(getUniqId(), LINK(iFileIO), fname, isTLK, allowPreload);
+                keyIndex = new CDiskKeyIndex(getUniqId(fileIdx), LINK(iFileIO), fname, isTLK, allowPreload);
             }
             else
             {
+                assert(fileIdx==(unsigned) -1);
                 Owned<IFile> iFile;
                 if (part)
                 {
@@ -794,7 +805,7 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
                     iFile.setown(createIFile(fileName));
                 IFileIO *fio = iFile->open(IFOread);
                 if (fio)
-                    keyIndex = new CDiskKeyIndex(getUniqId(), fio, fname, isTLK, allowPreload);
+                    keyIndex = new CDiskKeyIndex(getUniqId(fileIdx), fio, fname, isTLK, allowPreload);
                 else
                     throw MakeStringException(0, "Failed to open index file %s", fileName);
             }
@@ -809,31 +820,26 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
     }
 }
 
-IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, IFileIO *iFileIO, bool isTLK, bool allowPreload)
+IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, IFileIO *iFileIO, unsigned fileIdx, bool isTLK, bool allowPreload)
 {
-    return doload(fileName, crc, NULL, iFileIO, NULL, isTLK, allowPreload);
+    return doload(fileName, crc, NULL, iFileIO, fileIdx, NULL, isTLK, allowPreload);
 }
 
 IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, IMemoryMappedFile *iMappedFile, bool isTLK, bool allowPreload)
 {
-    return doload(fileName, crc, NULL, NULL, iMappedFile, isTLK, allowPreload);
-}
-
-// fileName+crc used only as key for cache
-IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, IReplicatedFile &part, bool isTLK, bool allowPreload)
-{
-    return doload(fileName, crc, &part, NULL, NULL, isTLK, allowPreload);
+    return doload(fileName, crc, NULL, NULL, (unsigned) -1, iMappedFile, isTLK, allowPreload);
 }
 
 IKeyIndex *CKeyStore::load(const char *fileName, unsigned crc, bool isTLK, bool allowPreload)
 {
-    return doload(fileName, crc, NULL, NULL, NULL, isTLK, allowPreload);
+    return doload(fileName, crc, NULL, NULL, (unsigned) -1, NULL, isTLK, allowPreload);
 }
 
 StringBuffer &CKeyStore::getMetrics(StringBuffer &xml)
 {
     xml.append(" <IndexMetrics>\n");
 
+    synchronized block(mutex);
     Owned<CKeyIndexMRUCache::CMRUIterator> iter = keyIndexCache.getIterator();
     ForEach(*iter)
     {           
@@ -940,7 +946,7 @@ void CKeyStore::clearCacheEntry(const IFileIO *io)
 
 // CKeyIndex impl.
 
-CKeyIndex::CKeyIndex(int _iD, const char *_name) : name(_name)
+CKeyIndex::CKeyIndex(unsigned _iD, const char *_name) : name(_name)
 {
     iD = _iD;
     cache = queryNodeCache(); // use one node cache for all key indexes;
@@ -977,7 +983,7 @@ void CKeyIndex::cacheNodes(CNodeCache *cache, offset_t nodePos, bool isTLK)
 void CKeyIndex::init(KeyHdr &hdr, bool isTLK, bool allowPreload)
 {
     if (isTLK)
-        hdr.ktype |= HTREE_TOPLEVEL_KEY; // thor does not set
+        hdr.ktype |= HTREE_TOPLEVEL_KEY; // Once upon a time, thor did not set
     keyHdr = new CKeyHdr();
     try
     {
@@ -1023,7 +1029,7 @@ CKeyIndex::~CKeyIndex()
     ::Release(rootNode);
 }
 
-CMemKeyIndex::CMemKeyIndex(int _iD, IMemoryMappedFile *_io, const char *_name, bool isTLK)
+CMemKeyIndex::CMemKeyIndex(unsigned _iD, IMemoryMappedFile *_io, const char *_name, bool isTLK)
     : CKeyIndex(_iD, _name)
 {
     io.setown(_io);
@@ -1057,7 +1063,7 @@ CJHTreeNode *CMemKeyIndex::loadNode(offset_t pos)
     return CKeyIndex::loadNode(nodeData, pos, false);
 }
 
-CDiskKeyIndex::CDiskKeyIndex(int _iD, IFileIO *_io, const char *_name, bool isTLK, bool allowPreload)
+CDiskKeyIndex::CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool isTLK, bool allowPreload)
     : CKeyIndex(_iD, _name)
 {
     io.setown(_io);
@@ -1170,7 +1176,8 @@ IKeyCursor *CKeyIndex::getCursor(const IIndexFilterList *filter, bool logExcessi
 CJHTreeNode *CKeyIndex::getNode(offset_t offset, IContextLogger *ctx) 
 { 
     latestGetNodeOffset = offset;
-    return cache->getNode(this, iD, offset, ctx, isTopLevelKey()); 
+    CJHTreeNode *node = cache->getNode(this, iD, offset, ctx, isTopLevelKey());
+    return node;
 }
 
 void dumpNode(FILE *out, CJHTreeNode *node, int length, unsigned rowCount, bool raw)
@@ -1343,6 +1350,20 @@ IPropertyTree * CKeyIndex::getMetadata()
         throw wrapped;
     }
     return ret;
+}
+
+bool CKeyIndex::prewarmPage(offset_t offset)
+{
+    try
+    {
+        Owned<CJHTreeNode> page = loadNode(offset);
+        return page != nullptr;
+    }
+    catch(IException *E)
+    {
+        ::Release(E);
+    }
+    return false;
 }
 
 CJHTreeNode *CKeyIndex::locateFirstNode(KeyStatsCollector &stats)
@@ -2174,6 +2195,7 @@ class CLazyKeyIndex : implements IKeyIndex, public CInterface
 {
     StringAttr keyfile;
     unsigned crc; 
+    unsigned fileIdx;
     Linked<IDelayedFile> delayedFile;
     mutable Owned<IFileIO> iFileIO;
     mutable Owned<IKeyIndex> realKey;
@@ -2192,7 +2214,7 @@ class CLazyKeyIndex : implements IKeyIndex, public CInterface
             else
             {
                 iFileIO.setown(delayedFile->getFileIO());
-                realKey.setown(queryKeyStore()->load(keyfile, crc, iFileIO, isTLK, preloadAllowed));
+                realKey.setown(queryKeyStore()->load(keyfile, crc, iFileIO, fileIdx, isTLK, preloadAllowed));
             }
             if (!realKey)
             {
@@ -2205,8 +2227,8 @@ class CLazyKeyIndex : implements IKeyIndex, public CInterface
 
 public:
     IMPLEMENT_IINTERFACE;
-    CLazyKeyIndex(const char *_keyfile, unsigned _crc, IDelayedFile *_delayedFile, bool _isTLK, bool _preloadAllowed)
-        : keyfile(_keyfile), crc(_crc), delayedFile(_delayedFile), isTLK(_isTLK), preloadAllowed(_preloadAllowed)
+    CLazyKeyIndex(const char *_keyfile, unsigned _crc, IDelayedFile *_delayedFile, unsigned _fileIdx, bool _isTLK, bool _preloadAllowed)
+        : keyfile(_keyfile), crc(_crc), fileIdx(_fileIdx), delayedFile(_delayedFile), isTLK(_isTLK), preloadAllowed(_preloadAllowed)
     {}
 
     virtual bool IsShared() const { return CInterface::IsShared(); }
@@ -2235,11 +2257,13 @@ public:
     virtual const IFileIO *queryFileIO() const override { return iFileIO; } // NB: if not yet opened, will be null
     virtual bool hasSpecialFileposition() const { return checkOpen().hasSpecialFileposition(); }
     virtual bool needsRowBuffer() const { return checkOpen().needsRowBuffer(); }
+    virtual bool prewarmPage(offset_t offset) { return checkOpen().prewarmPage(offset); }
+
 };
 
-extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IFileIO &iFileIO, bool isTLK, bool preloadAllowed)
+extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IFileIO &iFileIO, unsigned fileIdx, bool isTLK, bool preloadAllowed)
 {
-    return queryKeyStore()->load(keyfile, crc, &iFileIO, isTLK, preloadAllowed);
+    return queryKeyStore()->load(keyfile, crc, &iFileIO, fileIdx, isTLK, preloadAllowed);
 }
 
 extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, bool isTLK, bool preloadAllowed)
@@ -2247,17 +2271,9 @@ extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, 
     return queryKeyStore()->load(keyfile, crc, isTLK, preloadAllowed);
 }
 
-extern jhtree_decl IKeyIndex *createKeyIndex(IReplicatedFile &part, unsigned crc, bool isTLK, bool preloadAllowed)
+extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IDelayedFile &iFileIO, unsigned fileIdx, bool isTLK, bool preloadAllowed)
 {
-    StringBuffer filePath;
-    const RemoteFilename &rfn = part.queryCopies().item(0);
-    rfn.getPath(filePath);
-    return queryKeyStore()->load(filePath.str(), crc, part, isTLK, preloadAllowed);
-}
-
-extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IDelayedFile &iFileIO, bool isTLK, bool preloadAllowed)
-{
-    return new CLazyKeyIndex(keyfile, crc, &iFileIO, isTLK, preloadAllowed);
+    return new CLazyKeyIndex(keyfile, crc, &iFileIO, fileIdx, isTLK, preloadAllowed);
 }
 
 extern jhtree_decl void clearKeyStoreCache(bool killAll)
@@ -2305,12 +2321,26 @@ extern jhtree_decl size32_t setBlobCacheMem(size32_t cacheSize)
     return queryNodeCache()->setBlobCacheMem(cacheSize);
 }
 
+extern jhtree_decl void getNodeCacheInfo(ICacheInfoRecorder &cacheInfo)
+{
+    // MORE - consider reporting root nodes of open IKeyIndexes too?
+    queryNodeCache()->getCacheInfo(cacheInfo);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // CNodeCache impl.
 ///////////////////////////////////////////////////////////////////////////////
 
-CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IContextLogger *ctx, bool isTLK)
+void CNodeCache::getCacheInfo(ICacheInfoRecorder &cacheInfo)
+{
+    CriticalBlock block(lock);
+    preloadCache.reportEntries(cacheInfo); // Debatable whether we should include this
+    blobCache.reportEntries(cacheInfo);
+    nodeCache.reportEntries(cacheInfo);
+    leafCache.reportEntries(cacheInfo);
+}
+
+CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t pos, IContextLogger *ctx, bool isTLK)
 {
     // MORE - could probably be improved - I think having the cache template separate is not helping us here
     // Also one cache per key would surely be faster, and could still use a global total
@@ -2428,7 +2458,7 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
     }
 }
 
-void CNodeCache::preload(CJHTreeNode *node, int iD, offset_t pos, IContextLogger *ctx)
+void CNodeCache::preload(CJHTreeNode *node, unsigned iD, offset_t pos, IContextLogger *ctx)
 {
     assertex(pos);
     assertex(preloadNodes);
@@ -2444,7 +2474,7 @@ void CNodeCache::preload(CJHTreeNode *node, int iD, offset_t pos, IContextLogger
     }
 }
 
-bool CNodeCache::isPreloaded(int iD, offset_t pos)
+bool CNodeCache::isPreloaded(unsigned iD, offset_t pos)
 {
     CriticalBlock block(lock);
     CKeyIdAndPos key(iD, pos);
