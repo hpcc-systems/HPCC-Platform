@@ -47,7 +47,6 @@ Generate global ConfigMap info
 Pass in root as .
 */}}
 {{- define "hpcc.generateGlobalConfigMap" -}}
-{{- $local := dict "defaultEsp" "" -}}
 {{- /*Create local variables which always exist to avoid having to check if intermediate key values exist*/ -}}
 {{- $storage := (.Values.storage | default dict) -}}
 {{- $planes := ($storage.planes | default list) -}}
@@ -61,7 +60,9 @@ Pass in root as .
 {{- $dllStoragePlane := ($dllStorage.plane | default "hpcc-dlls-plane") -}}
 imageVersion: {{ required "Please specify .global.image.version" .Values.global.image.version | quote }}
 singleNode: {{ .Values.global.singleNode | default false }}
-defaultEsp: {{ .Values.global.defaultEsp | default ""}}
+{{ if .Values.global.defaultEsp -}}
+defaultEsp: {{ .Values.global.defaultEsp | quote }}
+{{ end -}}
 {{ if hasPrefix "[]" (typeOf .Values.esp) -}}
 esp:
 {{ toYaml .Values.esp }}
