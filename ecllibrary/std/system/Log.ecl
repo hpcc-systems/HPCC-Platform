@@ -73,5 +73,12 @@ EXPORT getCallerId() := lib_logging.Logging.getCallerId();
 
 EXPORT getLocalId() := lib_logging.Logging.getLocalId();
 
+/*
+ * Generate a globally unique Id with base58 encoding.
+ *
+ * Returns the unique Id
+ */
+
+EXPORT generateGloballyUniqueId() := lib_logging.Logging.generateGloballyUniqueId();
 
 END;

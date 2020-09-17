@@ -40,6 +40,7 @@ static const char * EclDefinition =
 "  varstring getGlobalId() : c,context,entrypoint='logGetGlobalId'; \n"
 "  varstring getLocalId() : c,context,entrypoint='logGetLocalId'; \n"
 "  varstring getCallerId() : c,context,entrypoint='logGetCallerId'; \n"
+"  varstring generateGloballyUniqueId() : c,entrypoint='logGenerateGloballyUniqueId'; \n"
 "END;";
 
 LOGGING_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
@@ -89,5 +90,12 @@ LOGGING_API char *  LOGGING_CALL logGetLocalId(ICodeContext *ctx)
 LOGGING_API char *  LOGGING_CALL logGetCallerId(ICodeContext *ctx)
 {
     StringBuffer ret(ctx->queryContextLogger().queryCallerId());
+    return ret.detach();
+}
+
+LOGGING_API char * LOGGING_CALL logGenerateGloballyUniqueId()
+{
+    StringBuffer ret;
+    appendGloballyUniqueId(ret);
     return ret.detach();
 }
