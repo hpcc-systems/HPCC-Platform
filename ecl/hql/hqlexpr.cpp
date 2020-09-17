@@ -1118,7 +1118,7 @@ bool HqlParseContext::createCache(bool isMacro)
     }
     try
     {
-        cacheFile->rename(filename);
+        cacheFile->move(filename);
     }
     catch (IException * e)
     {
