@@ -111,9 +111,9 @@ enum class RecordTranslationMode : byte
     AlwaysDisk = 3, // Always translate - even if wouldn't normally (e.g. csv/xml source read as binary), or crcs happen to match
     AlwaysECL = 4,  // Ignore the published format - can make sense to force no translation e.g. when field names have changed
     Unspecified = 5
-};  // AlwaysDisk and AlwaysECL are for testing purposes only
+};  // AlwaysDisk and AlwaysECL are for testing purposes only, and can only be set per file (not globally)
 
-extern ECLRTL_API RecordTranslationMode getTranslationMode(const char *modeStr);
+extern ECLRTL_API RecordTranslationMode getTranslationMode(const char *modeStr, bool isLocal);
 extern ECLRTL_API const char *getTranslationModeText(RecordTranslationMode val);
 
 interface IDynamicRowIterator;

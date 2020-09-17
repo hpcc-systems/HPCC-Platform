@@ -19,8 +19,6 @@
 
 import Setup.SerialTest;
 
-#option ('layoutTranslation', 'ecl');
-
-inDs := DATASET(SerialTest.DictFilename, SerialTest.LibraryDsRec, THOR);
+inDs := DATASET(SerialTest.DictFilename, SerialTest.LibraryDsRec, THOR, HINT(layoutTranslation, ecl));
 
 output(TABLE(inDs, { owner, cnt := COUNT(books) }));

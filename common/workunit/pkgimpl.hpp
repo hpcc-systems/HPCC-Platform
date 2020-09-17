@@ -124,7 +124,7 @@ protected:
         const char *val = queryEnv("control:enableFieldTranslation");
         if (!val) val = queryEnv("enableFieldTranslation"); // Backward compatibility
         if (val)
-            return getTranslationMode(val);
+            return getTranslationMode(val, false);
         else
             return getSysFieldTranslationEnabled();
     }

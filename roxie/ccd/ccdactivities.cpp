@@ -114,7 +114,7 @@ CActivityFactory::CActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFac
     }
     const char *recordTranslationModeHintText = _graphNode.queryProp("hint[@name='layouttranslation']/@value");
     if (recordTranslationModeHintText)
-        recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText);
+        recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText, true);
 }
 
 void CActivityFactory::addChildQuery(unsigned id, ActivityArray *childQuery) 

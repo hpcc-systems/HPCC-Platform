@@ -2277,7 +2277,7 @@ private:
             {
                 const char *val = control->queryProp("@val");
                 if (val)
-                    fieldTranslationEnabled = getTranslationMode(val);
+                    fieldTranslationEnabled = getTranslationMode(val, false);
                 else
                     fieldTranslationEnabled = RecordTranslationMode::Payload;
                 val = getTranslationModeText(fieldTranslationEnabled);

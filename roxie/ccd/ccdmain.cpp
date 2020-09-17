@@ -1005,7 +1005,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         fieldTranslationEnabled = RecordTranslationMode::Payload;
         const char *val = topology->queryProp("@fieldTranslationEnabled");
         if (val)
-            fieldTranslationEnabled = getTranslationMode(val);
+            fieldTranslationEnabled = getTranslationMode(val, false);
 
         pretendAllOpt = topology->getPropBool("@ignoreMissingFiles", false);
         memoryStatsInterval = topology->getPropInt("@memoryStatsInterval", 60);

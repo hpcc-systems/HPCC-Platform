@@ -22,7 +22,7 @@ import ^ as root;
 import std.str;
 
 //define constants
-EXPORT files(boolean multiPart, boolean useLocal, boolean useTranslation = false) := module
+EXPORT files(boolean multiPart, boolean useLocal, boolean useTranslation = false, string extraPrefix = '') := module
 
 EXPORT DG_MaxField          := 3;    // maximum number of fields to use building the data records
 EXPORT DG_MaxChildren       := 3;    //maximum (1 to n) number of child recs
@@ -42,27 +42,19 @@ SHARED STRING EmptyString := '' : STORED('dummy');
 SHARED STRING EmptyString := '';
 #end
 
-SHARED forceLayoutTranslation := #IFDEFINED(root.forceLayoutTranslation, 0);
-
 SHARED STRING _filePrefix := '~regress::' + 
         MAP(multiPart => 'multi', 'single') + 
-        IF(forceLayoutTranslation > 0, '_' + (STRING) forceLayoutTranslation, '') + 
+        extraPrefix +  
         '::' + EmptyString;
 
 //Yuk cannot use MAP because that creates a string6        
 SHARED STRING _indexPrefix := '~regress::' + 
-        IF(multiPart AND useLocal, 'local', IF(multiPart, 'multi', 'single')) + 
-        IF(forceLayoutTranslation > 0, '_' + (STRING) forceLayoutTranslation, '') + 
+        IF(multiPart AND useLocal, 'local', IF(multiPart, 'multi', 'single')) +
+        extraPrefix +
         '::' + EmptyString;
 
-#IF (forceLayoutTranslation != 0)
-  SHARED setLayout := #option('layoutTranslation', CASE(forceLayoutTranslation,1=>v'alwaysECL',2=>v'alwaysDisk',v''));
-  EXPORT filePrefix := WHEN(#IFDEFINED(root.filePrefix, _filePrefix), setLayout);
-  EXPORT indexPrefix := WHEN(#IFDEFINED(root.filePrefix, _indexPrefix), setLayout);
-#else      
-  EXPORT filePrefix := #IFDEFINED(root.filePrefix, _filePrefix);
-  EXPORT indexPrefix := #IFDEFINED(root.filePrefix, _indexPrefix);
-#end
+EXPORT filePrefix := #IFDEFINED(root.filePrefix, _filePrefix);
+EXPORT indexPrefix := #IFDEFINED(root.filePrefix, _indexPrefix);
 
 EXPORT QueryFilePrefixId := __TARGET_PLATFORM__ + '::' + Str.ToLowerCase(WORKUNIT) + '::';
 EXPORT QueryFilePrefix := filePrefix + QueryFilePrefixId;

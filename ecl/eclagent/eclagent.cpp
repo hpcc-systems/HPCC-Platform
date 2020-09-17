@@ -705,7 +705,7 @@ RecordTranslationMode EclAgent::getLayoutTranslationMode() const
         wu->getDebugValue("layoutTranslation", val);
     else
         agentTopology->getProp("@fieldTranslationEnabled", val.s);
-    return getTranslationMode(val.str());
+    return getTranslationMode(val.str(), false);
 }
 
 IConstWUResult *EclAgent::getResult(const char *name, unsigned sequence)

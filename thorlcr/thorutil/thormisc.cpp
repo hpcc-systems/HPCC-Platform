@@ -1468,11 +1468,15 @@ IThorException *checkAndCreateOOMContextException(CActivityBase *activity, IExce
 
 RecordTranslationMode getTranslationMode(CActivityBase &activity)
 {
+    bool local = true;
     StringBuffer val;
     activity.getOpt("layoutTranslation", val);
     if (!val.length())
+    {
         globals->getProp("@fieldTranslationEnabled", val);
-    return getTranslationMode(val);
+        local = false;
+    }
+    return getTranslationMode(val, local);
 }
 
 void getLayoutTranslations(IConstPointerArrayOf<ITranslator> &translators, const char *fname, IArrayOf<IPartDescriptor> &partDescriptors, RecordTranslationMode translationMode, unsigned expectedFormatCrc, IOutputMetaData *expectedFormat, unsigned projectedFormatCrc, IOutputMetaData *projectedFormat)
