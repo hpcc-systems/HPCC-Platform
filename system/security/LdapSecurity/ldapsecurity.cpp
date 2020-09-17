@@ -1529,7 +1529,7 @@ bool CLdapSecManager::clearPermissionsCache(ISecUser& user, IEspSecureContext* s
 {
     if(m_permissionsCache->isCacheEnabled())
     {
-        if (!authenticate(&user))
+        if (!isEmptyString(user.getName()) && !isEmptyString(user.credentials().getPassword()) && !authenticate(&user))
         {
             PROGLOG("User %s not authorized to clear permissions cache", user.getName());
             return false;

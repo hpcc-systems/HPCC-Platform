@@ -27,6 +27,13 @@ BUILD_USER=hpcc-systems                         # The github repo owner
 BUILD_TYPE=                                     # Set to Debug for a debug build, leave blank for default (RelWithDebInfo)
 USE_CPPUNIT=1
 
+#BUILD_ML=all #ml,gnn,gnn-gpu
+ml_features=(
+  'ml'
+  'gnn'
+  'gnn-gpu'
+)
+
 # These values are set in a GitHub workflow build
 
 [[ -n ${INPUT_BUILD_USER} ]] && BUILD_USER=${INPUT_BUILD_USER}
@@ -86,23 +93,74 @@ build_image() {
        --build-arg USE_CPPUNIT=${USE_CPPUNIT} \
        --build-arg BUILD_THREADS=${BUILD_THREADS} \
        ${name}/ 
-    if [ "$LATEST" = "1" ] ; then
-      docker tag hpccsystems/${name}:${label} hpccsystems/${name}:latest
-      if [ "$PUSH" = "1" ] ; then
-        docker push hpccsystems/${name}:${label}
-        docker push hpccsystems/${name}:latest
-      fi
-    else
-      if [ "$PUSH" = "1" ] ; then
-        docker push hpccsystems/${name}:${label}
-      fi
+  fi
+  push_image $name $label
+}
+
+push_image() {
+  local name=$1
+  local label=$2
+  if [ "$LATEST" = "1" ] ; then
+    docker tag hpccsystems/${name}:${label} hpccsystems/${name}:latest
+    if [ "$PUSH" = "1" ] ; then
+      docker push hpccsystems/${name}:${label}
+      docker push hpccsystems/${name}:latest
+    fi
+  else
+    if [ "$PUSH" = "1" ] ; then
+      docker push hpccsystems/${name}:${label}
     fi
   fi
+}
+
+build_ml_image() {
+  [ -z "$BUILD_ML" ] && return
+  features=()
+  if [ "$BUILD_ML" = "all" ]
+  then
+    features=(${ml_features[@]})
+  else
+    for feature in ${BUILD_ML}
+    do
+      found=false
+      for ml_feature in ${ml_features[@]}
+      do
+        if [[ $ml_feature == $feature ]]
+	then
+	  features+=(${feature})
+	  found=true
+	  break
+        fi
+      done
+      if [ "$found" = "false" ]
+      then
+	printf "\nUnknown ML feature %s\n" "$feature"
+      fi
+    done
+  fi
+
+  for feature in ${features[@]}
+  do
+     echo "build_ml $feature"
+     build_ml $feature
+  done
+
+}
+
+build_ml() {
+  local name=$1
+  local label=$2
+  [[ -z ${label} ]] && label=$BUILD_LABEL
+  docker image build -t hpccsystems/platform-${name}:${label} \
+     --build-arg DOCKER_REPO=hpccsystems \
+     --build-arg BUILD_LABEL=${label} \
+     ml/${name}/
 }
 
 build_image platform-build-base ${BASE_VER}
 build_image platform-build
 build_image platform-core
+build_ml_image
 
 if [[ -n ${INPUT_PASSWORD} ]] ; then
   echo "::set-output name=${BUILD_LABEL}"

@@ -6156,7 +6156,10 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         }
     }
 
-    IHqlExpression * value = expr->queryChild(0);
+    LinkedHqlExpr value = expr->queryChild(0);
+    if (translator.queryOptions().preserveWhenSequential)
+        value.setown(transformSequentialEtc(value));
+
     GlobalAttributeInfo info("jobtemp::wf", "wf", value);
     info.sequence.setown(getLocalSequenceNumber());
     OwnedHqlExpr scheduleActions;
