@@ -886,6 +886,7 @@ PENALTY             { RETURNSYM(PENALTY); }
 PERSIST             { RETURNSYM(PERSIST); }
 PHYSICALFILENAME    { RETURNSYM(PHYSICALFILENAME); }
 PIPE                { RETURNSYM(PIPE); }
+PLANE               { RETURNSYM(PLANE); }
 __PLATFORM__        { RETURNSYM(__PLATFORM__); }
 POWER               { RETURNSYM(POWER); }
 PREFETCH            { RETURNSYM(PREFETCH); }
@@ -899,6 +900,7 @@ PROXYADDRESS        { RETURNSYM(PROXYADDRESS); }
 PULL                { RETURNSYM(PULL); }
 PULLED              { RETURNSYM(PULLED); }
 QUANTILE            { RETURNSYM(QUANTILE); }
+QUEUE               { RETURNSYM(QUEUE); }
 QUOTE               { RETURNSYM(QUOTE); }
 RANGE               { RETURNSYM(RANGE); }
 RANK                { RETURNSYM(RANK); }
