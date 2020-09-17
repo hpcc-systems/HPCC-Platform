@@ -9345,7 +9345,7 @@ IHqlExpression * createDelayedReference(node_operator op, IHqlExpression * modul
             ret.setown(createDelayedScope(ret.getClear()));
     }
 
-    return attr->cloneAllAnnotations(ret);
+    return attr->cloneAnnotation(ret);
 }
 
 //---------------------------------------------------------------------------------------------------------------------

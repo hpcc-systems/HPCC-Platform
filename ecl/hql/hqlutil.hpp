@@ -791,6 +791,9 @@ extern HQL_API bool userPreventsSort(IHqlExpression * noSortAttr, node_operator 
 extern HQL_API IHqlExpression * queryTransformAssign(IHqlExpression * transform, IHqlExpression * searchField);
 extern HQL_API IHqlExpression * queryTransformAssignValue(IHqlExpression * transform, IHqlExpression * searchField);
 extern HQL_API IHqlExpression * convertSetToExpression(bool isAll, size32_t len, const void * ptr, ITypeInfo * setType);
+extern HQL_API unsigned queryNumAnnotations(IHqlExpression * expr);
+extern HQL_API void dumpSymbols(IHqlExpression * expr);
+extern HQL_API bool hasSymbol(IHqlExpression * expr, IAtom * search);
 
 struct FieldTypeInfoStruct;
 interface IRtlFieldTypeDeserializer;
