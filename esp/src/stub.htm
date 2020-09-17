@@ -6,6 +6,60 @@
     <meta charset="utf-8">
     <title>ECL Watch</title>
     <script src="/esp/files/node_modules/es6-promise/dist/es6-promise.auto.min.js"></script>
+    <script>
+        //  Polyfills  ---
+        if (typeof Object.assign !== 'function') {
+            Object.defineProperty(Object, "assign", {
+                value: function assign(target, varArgs) {
+                    'use strict';
+                    if (target === null || target === undefined) {
+                        throw new TypeError('Cannot convert undefined or null to object');
+                    }
+                    var to = Object(target);
+                    for (var index = 1; index < arguments.length; index++) {
+                        var nextSource = arguments[index];
+                        if (nextSource !== null && nextSource !== undefined) {
+                            for (var nextKey in nextSource) {
+                                if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
+                                    to[nextKey] = nextSource[nextKey];
+                                }
+                            }
+                        }
+                    }
+                    return to;
+                },
+                writable: true,
+                configurable: true
+            });
+        }
+
+        if (!Array.prototype.find) {
+            Object.defineProperty(Array.prototype, 'find', {
+                value: function (predicate) {
+                    if (this == null) {
+                        throw TypeError('"this" is null or not defined');
+                    }
+                    var o = Object(this);
+                    var len = o.length >>> 0;
+                    if (typeof predicate !== 'function') {
+                        throw TypeError('predicate must be a function');
+                    }
+                    var thisArg = arguments[1];
+                    var k = 0;
+                    while (k < len) {
+                        var kValue = o[k];
+                        if (predicate.call(thisArg, kValue, k, o)) {
+                            return kValue;
+                        }
+                        k++;
+                    }
+                    return undefined;
+                },
+                configurable: true,
+                writable: true
+            });
+        }
+    </script>
     <link rel="stylesheet" href="/esp/files/dist/font-awesome/css/font-awesome.min.css">
     <link rel="icon" type="image/png" href="/esp/files/img/favlogo.png">
     <script type="text/javascript" src="/esp/files/dist/stub.eclwatch.js" charset="utf-8"></script>
