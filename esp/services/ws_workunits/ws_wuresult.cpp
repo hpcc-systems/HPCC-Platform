@@ -48,7 +48,9 @@ void FlushingWUResultBuffer::flushXML(StringBuffer& current, bool closing)
 
     s.append(current);
     current.clear();
-    if (s.length() < (closing ? 1 : wuResultDownloadFlushThreshold))
+
+    unsigned threshold = closing ? 1 : wuResultDownloadFlushThreshold;
+    if (s.length() < threshold)
         return;
 
     response->sendChunk(s);
@@ -65,7 +67,7 @@ bool CWsWuResultOutHelper::getWUResultStreaming(CHttpRequest* request, CHttpResp
     response = _response;
     downloadFlushThreshold = _flushThreshold;
 
-    if (!canStreaming())
+    if (!canStream())
         return false;
 
     readReq();
@@ -141,7 +143,7 @@ bool CWsWuResultOutHelper::getWUResultStreaming(CHttpRequest* request, CHttpResp
     return true;
 }
 
-bool CWsWuResultOutHelper::canStreaming()
+bool CWsWuResultOutHelper::canStream()
 {
     const char* format = reqParams->queryProp("Format");
     if (strieq(format, "raw")) //need to read the whole result for an encryption 

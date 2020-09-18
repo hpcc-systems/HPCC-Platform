@@ -77,7 +77,7 @@ class CWsWuResultOutHelper
     OwnedIFileIOStream resultIOS; //Streamming to a file before zip/gzip
     unsigned downloadFlushThreshold = defaultWUResultDownloadFlushThreshold;
 
-    bool canStreaming();
+    bool canStream();
     void readReq();
     void readWUIDReq();
     void readOutFormatReq();
