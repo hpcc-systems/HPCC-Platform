@@ -21,13 +21,13 @@ import logging
 import sys
 import time
 
-#from ..regression.regress import Regression
+# TO-DO fix this console colouring problem with Python3 
+#try:
+#    import curses
+#except:
+curses = None
 
-try:
-    import curses
-except:
-    curses = None
-
+logger = logging.getLogger('RegressionTestEngine')
 
 class Logger(object):
     class _LogFormatter(logging.Formatter):
@@ -49,7 +49,7 @@ class Logger(object):
         def format(self, record):
             try:
                 record.message = record.getMessage()
-            except Exception, e:
+            except Exception as e:
                 record.message = "Bad message (%r): %r" % (e, record.__dict__)
             record.asctime = time.strftime(
                 "%y-%m-%d %H:%M:%S", self.converter(record.created))
@@ -69,8 +69,7 @@ class Logger(object):
                 prefix = '[Action]' % \
                     record.__dict__
             if self._color:
-                prefix = (self._colors.get(record.levelno, self._normal) +
-                          prefix + self._normal)
+                prefix = str(self._colors.get(record.levelno, self._normal))[2:-1] + prefix + str(self._normal)[2:-1]
             formatted = prefix + " " + record.message
             if record.exc_info:
                 if not record.exc_text:
@@ -99,7 +98,7 @@ class Logger(object):
             self.flush()
 
         def addTaskId(self,  taskId,  threadId,  timestamp):
-            if not self.taskIds.has_key(threadId):
+            if threadId not in self.taskIds:
                 self.taskIds[threadId] ={'taskId':taskId, 'timestamp':'timestamp'}
             elif self.taskIds[threadId]['timestamp'] != timestamp:
                 self.taskIds[threadId] ={'taskId':taskId, 'timestamp':'timestamp'}
@@ -139,7 +138,7 @@ class Logger(object):
                         self.logBuffer.setdefault(taskId,  []).append(msg)
                 else:
                     if len(self.logBuffer):
-                        for item in self.logBuffer:
+                        for item in sorted(self.logBuffer):
                             for line in self.logBuffer[item]:
                                 line = line.replace(". Debug-", ".  ")
                                 stream.write(line)
@@ -158,19 +157,21 @@ class Logger(object):
                 self.handleError(record)
 
     def addHandler(self, fd, level='info'):
-        root_logger = logging.getLogger()
+        # To prevent double logging it should assing to root logger
+        root_logger = logging.getLogger('')
         self.channel = self.ProgressFileHandler(fd)
         self.channel.setLevel(getattr(logging, level.upper()))
         root_logger.addHandler(self.channel)
 
     def removeHandler(self):
-        root_logger = logging.getLogger()
+        root_logger = logging.getLogger('')
         root_logger.removeHandler(self.channel)
         self.channel.flush()
         self.channel.close()
 
     def enable_pretty_logging(self):
-        root_logger = logging.getLogger()
+        # To prevent double logging it should assing to root logger
+        root_logger = logging.getLogger('')
         color = False
         if curses and sys.stderr.isatty():
             try:
@@ -184,7 +185,7 @@ class Logger(object):
         root_logger.addHandler(channel)
 
     def setLevel(self, level):
-        logging.getLogger().setLevel(getattr(logging, level.upper()))
+        logger.setLevel(getattr(logging, level.upper()))
 
     def __init__(self, level='info'):
         self.setLevel(level)

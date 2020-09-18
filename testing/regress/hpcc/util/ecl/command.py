@@ -29,6 +29,8 @@ from ...util.util import queryWuid, getConfig, clearOSCache
 
 import xml.etree.ElementTree as ET
 
+logger = logging.getLogger('RegressionTestEngine')
+
 class ECLcmd(Shell):
     def __init__(self):
         self.defaults = []
@@ -67,7 +69,7 @@ class ECLcmd(Shell):
         args = args + eclfile.getFParameters()
 
         if cmd == 'publish':
-            args.append(eclfile.getArchive())
+            args.append(eclfile.getArchiveName())
 
             name = kwargs.pop('name', False)
             if not name:
@@ -90,7 +92,7 @@ class ECLcmd(Shell):
             args = args + eclfile.getStoredInputParameters()
 
 
-            args.append(eclfile.getArchive())
+            args.append(eclfile.getArchiveName())
 
         data = ""
         wuid = "N/A"
@@ -106,20 +108,20 @@ class ECLcmd(Shell):
                 finally:
                     # Go on
                     pass
-            #print "runCmd:", args
             results, stderr = self.__ECLcmd()(*args)
-            logging.debug("%3d. results:'%s'", eclfile.getTaskId(),  results)
-            logging.debug("%3d. stderr :'%s'", eclfile.getTaskId(),  stderr)
+            logger.debug("%3d. results:'%s'", eclfile.getTaskId(),  results)
+            logger.debug("%3d. stderr :'%s'", eclfile.getTaskId(),  stderr)
             data = '\n'.join(line for line in
                              results.split('\n') if line) + "\n"
             ret = data.split('\n')
             result = ""
             cnt = 0
             for i in ret:
-                logging.debug("%3d. ret:'%s'", eclfile.getTaskId(),  i )
+                i = i
+                logger.debug("%3d. i(%d):'%s'", eclfile.getTaskId(), cnt, i )
 
                 if "wuid:" in i:
-                    logging.debug("------ runCmd:" + repr(i) + "------")
+                    logger.debug("------ runCmd:" + repr(i) + "------")
                     wuid = i.split()[1]
                 if "state:" in i:
                     state = i.split()[1]
@@ -132,44 +134,55 @@ class ECLcmd(Shell):
                         xml = ET.fromstring(i)
                         try:
                             path = xml.find('.//Filename').text
-                            logging.debug("%3d. path:'%s'", eclfile.getTaskId(),  path )
+                            logger.debug("%3d. path:'%s'", eclfile.getTaskId(),  path )
                             filename = os.path.basename(path)
                             xml.find('.//Filename').text = filename
                         except:
-                            logging.debug("%3d. Unexpected error: %s (line: %s) ", eclfile.getTaskId(), str(sys.exc_info()[0]), str(inspect.stack()[0][2]))
+                            logger.debug("%3d. Unexpected error: %s (line: %s) ", eclfile.getTaskId(), str(sys.exc_info()[0]), str(inspect.stack()[0][2]))
                         finally:
-                            i = ET.tostring(xml)
-                        logging.debug("%3d. ret:'%s'", eclfile.getTaskId(),  i )
+                            i = ET.tostring(xml).decode("utf-8")
+                        logger.debug("%3d. ret:'%s'", eclfile.getTaskId(),  i )
                         pass
-                    result += i + "\n"
+                    try:    
+                        result += i + "\n"
+                    except:
+                        logger.error("%3d. type of i: '%s', i: '%s'", eclfile.getTaskId(), type(i), i )
                 cnt += 1
             data = '\n'.join(line for line in
                              result.split('\n') if line) + "\n"
 
         except Error as err:
             data = str(err)
-            logging.error("------" + err + "------")
+            logger.debug("------" + data + "------")
             raise err
         except:
             err = Error("6007")
-            logging.critical(err)
-            logging.critical(traceback.format_exc())
+            logger.critical(err)
+            logger.critical(traceback.format_exc())
             raise err
         finally:
             res = queryWuid(eclfile.getJobname(), eclfile.getTaskId())
-            logging.debug("%3d. in finally -> 'wuid':'%s', 'state':'%s', data':'%s', ", eclfile.getTaskId(), res['wuid'], res['state'], data)
+            logger.debug("%3d. in finally -> 'wuid':'%s', 'state':'%s', data':'%s', ", eclfile.getTaskId(), res['wuid'], res['state'], data)
             if wuid ==  'N/A':
-                logging.debug("%3d. in finally queryWuid() -> 'result':'%s', 'wuid':'%s', 'state':'%s'", eclfile.getTaskId(),  res['result'],  res['wuid'],  res['state'])
+                logger.debug("%3d. in finally queryWuid() -> 'result':'%s', 'wuid':'%s', 'state':'%s'", eclfile.getTaskId(),  res['result'],  res['wuid'],  res['state'])
                 wuid = res['wuid']
                 if res['result'] != "OK":
                     eclfile.diff=eclfile.getBaseEcl()+'\n\t'+res['state']+'\n'
-                    logging.error("%3d. %s in queryWuid(%s)",  eclfile.getTaskId(),  res['state'],  eclfile.getJobname())
+                    logger.error("%3d. %s in queryWuid(%s)",  eclfile.getTaskId(),  res['state'],  eclfile.getJobname())
 
             try:
                 eclfile.addResults(data, wuid)
+            except IOError as e:
+                logger.critical("Exception in eclfile.addResults() -> errNo: %d" % (e.errno))
+                logger.critical(traceback.format_exc())
+                if e.errno == 28:
+                    # No space left on device
+                    raise Error("9000")
+                else:
+                    raise Error("6007")
             except:
-                logging.critical("Exception in eclfile.addResults()")
-                logging.critical(traceback.format_exc())
+                logger.critical("Exception in eclfile.addResults()")
+                logger.critical(traceback.format_exc())
                 
             if cmd == 'publish':
                 if state == 'compiled':
@@ -183,14 +196,14 @@ class ECLcmd(Shell):
                     eclfile.diff += '\t'+'Aborted ( reason: '+eclfile.getAbortReason()+' )'
                     test = False
                 elif eclfile.getIgnoreResult():
-                    logging.debug("%3d. Ignore result (ecl:'%s')", eclfile.getTaskId(),  eclfile.getBaseEclRealName())
+                    logger.debug("%3d. Ignore result (ecl:'%s')", eclfile.getTaskId(),  eclfile.getBaseEclRealName())
                     test = True
                 elif eclfile.testFail():
                    if res['state'] == 'completed':
-                        logging.debug("%3d. Completed but Fail is the expected result (ecl:'%s')", eclfile.getTaskId(),  eclfile.getBaseEclRealName())
+                        logger.debug("%3d. Completed but Fail is the expected result (ecl:'%s')", eclfile.getTaskId(),  eclfile.getBaseEclRealName())
                         test = False
                    else:
-                        logging.debug("%3d. Fail is the expected result (ecl:'%s')", eclfile.getTaskId(),  eclfile.getBaseEclRealName())
+                        logger.debug("%3d. Fail is the expected result (ecl:'%s')", eclfile.getTaskId(),  eclfile.getBaseEclRealName())
                         test = True
                 elif eclfile.testNoKey():
                     # keyfile comparaison disabled with //nokey tag
@@ -202,14 +215,15 @@ class ECLcmd(Shell):
                         eclfile.diff += data
                     test = True
                 elif (res['state'] == 'failed'):
+                    logger.debug("%3d. in state == failed 'wuid':'%s', 'state':'%s', data':'%s', ", eclfile.getTaskId(), res['wuid'], res['state'], data)
                     resultLines = data.strip().split('\n')
                     resultLineIndex = 0;
-                    while not resultLines[resultLineIndex].startswith('<'):
+                    while resultLineIndex < len(resultLines) and not resultLines[resultLineIndex].startswith('<'):
                         resultLineIndex += 1
-                    logging.debug("%3d. State is fail (resultLineIndex:%d, resultLines:'%s' )", eclfile.getTaskId(), resultLineIndex,  resultLines)
+                    logger.debug("%3d. State is fail (resultLineIndex:%d, resultLines:'%s' )", eclfile.getTaskId(), resultLineIndex,  resultLines)
                     data = '\n'.join(resultLines[resultLineIndex:])+ "\n"
                     eclfile.addResults(data, wuid)
-                    logging.debug("%3d. State is fail (resultLineIndex:%d, data:'%s' )", eclfile.getTaskId(), resultLineIndex,  data)
+                    logger.debug("%3d. State is fail (resultLineIndex:%d, data:'%s' )", eclfile.getTaskId(), resultLineIndex,  data)
                     test = eclfile.testResults()
                 else:
                     test = eclfile.testResults()

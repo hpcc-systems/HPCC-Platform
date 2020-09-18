@@ -17,13 +17,13 @@
 ############################################################################ */
 '''
 
-import ConfigParser
+import configparser
 import json
 
 try:
-    from cStringIO import StringIO
+    from io import StringIO
 except:
-    from StringIO import StringIO
+    from io import StringIO
 
 from collections import deque, namedtuple
 from ..common.dict import _dict
@@ -35,7 +35,7 @@ class ConfigGenerator:
 
     def parseConfig(self, config, section='Default'):
         self.section = section
-        self.conf = ConfigParser.ConfigParser()
+        self.conf = configparser.ConfigParser()
         s = StringIO(config)
         self.conf.readfp(s)
 
@@ -57,7 +57,7 @@ class Config:
         try:
             fp = open(file)
             js = json.load(fp)
-            rC = namedtuple("Regress", js.keys())
+            rC = namedtuple("Regress", list(js.keys()))
             return _dict(getattr(rC(**js), "Regress"))
         except IOError as e:
             if e.errno == 21:

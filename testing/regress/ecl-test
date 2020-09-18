@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 '''
 /*#############################################################################
@@ -25,9 +25,9 @@ import atexit
 import traceback
 import glob
 
-from hpcc.util import argparse
+import argparse
 from hpcc.regression.regress import Regression
-from hpcc.util.util import getRealIPAddress, checkClusters, checkHpccStatus
+from hpcc.util.util import checkClusters, checkHpccStatus
 from hpcc.util.util import setConfig, checkPqParam, getVersionNumbers, checkXParam, convertPath
 from hpcc.util.util import getEclRunArgs, isSudoer
 from hpcc.util.expandcheck import ExpandCheck
@@ -39,51 +39,53 @@ from hpcc.common.logger import Logger
 if ('coverage' in os.environ) and (os.environ['coverage'] == '1'):
     os.umask(0)
 
+logger = logging.getLogger('RegressionTestEngine')
+
 class RegressMain:
 
     def listClusters(self):
         if self.args.setup:
-            print "Setup test cases: "
+            print("Setup test cases: ")
             for engine in self.regress.config.Engines:
                 cluster = self.regress.config.Clusters[engine]
-                print("Cluster: %s" % (cluster))
+                print(("Cluster: %s" % (cluster)))
                 self.args.engine = engine
                 self.args.cluster = cluster
                 suite = self.regress.Setup(self.args)
                 for test in suite.getSuite():
                     if self.args.createEclRunArg:
-                        print("%s " % (getEclRunArgs(test, engine, cluster))),
-                        print("%s/%s" % (test.dir_ec, test.getBaseEcl()))
+                        print("%s " % (getEclRunArgs(test, engine, cluster))), 
+                        print(("%s/%s" % (test.dir_ec, test.getBaseEcl())))
                     else:
-                        print(test.getBaseEclRealName())
+                        print((test.getBaseEclRealName()))
             pass
         elif self.args.runtests:
-            print "Run test cases: "
+            print("Run test cases: ")
             for engine in self.regress.config.Engines:
                 self.args.engine = engine
                 cluster = self.regress.config.Clusters[engine]
                 self.args.cluster = cluster
                 self.regress.bootstrap(engine, cluster, self.args)
-                print("Cluster: %s" % (cluster))
+                print(("Cluster: %s" % (cluster)))
                 suite = self.regress.suites[engine]
                 for test in suite.getSuite():
                     if self.args.createEclRunArg:
-                        print("%s " % (getEclRunArgs(test, engine, cluster))),
-                        print("%s" % (test.getBaseEcl()))
+                        print("%s " % (getEclRunArgs(test, engine, cluster))), 
+                        print(("%s" % (test.getBaseEcl())))
                     else:
-                        print(test.getBaseEclRealName())
+                        print((test.getBaseEclRealName()))
             pass
         else:
             Clusters = []
             for engine in self.regress.config.Engines:
                 Clusters.append(str(self.regress.config.Clusters[engine]))
-            print "Available Clusters: "
+            print("Available Clusters: ")
             for i in Clusters:
-                print i
+                print(i)
 
     def query(self):
         if not self.args.query:
-            print "\nMissing ECL query file!\n"
+            print("\nMissing ECL query file!\n")
             self.parser_query.print_help()
             exit()
         eclfiles=[]   # List for ECL filenames to be executed
@@ -110,6 +112,9 @@ class RegressMain:
                 exit()
 
     def setup(self):
+        if len(self.args.setup) > 0:
+            # List for setup ECL filenames to be executed
+            self.args.setup = self.processEclList(self.args.setup,  True)
         # Go through the cluster list
         for engine in self.targetEngines:
             self.args.engine = engine
@@ -122,7 +127,6 @@ class RegressMain:
 
     def run(self):
         # Go through the cluster list
-        #for cluster in self.targetEngines:
         for engine in self.targetEngines:
             self.args.engine = engine
             cluster = self.regress.config.Clusters[engine]
@@ -134,16 +138,20 @@ class RegressMain:
             else:
                 self.regress.runSuiteP(engine, cluster, self.regress.suites[engine])
 
-    def processEclList(self, eclItems):
+    def processEclList(self, eclItems,  isSetup = False):
+        eclDir = self.regress.dir_ec
+        if isSetup:
+            eclDir = self.regress.setupDir
+            
         eclFiles = []
         for ecl in eclItems:
             if  ('*' in ecl) or ('?' in ecl):
                 # If there is any wildcard in ECL file name, resolve it
-                eclwild = os.path.join(self.regress.dir_ec, ecl)
+                eclwild = os.path.join(eclDir, ecl)
                 eclFiles.extend( glob.glob(eclwild))
             else:
                 # We have simple ECL file in parameter list, put it on the eclfile list
-                eclPath = os.path.join(self.regress.dir_ec, ecl)
+                eclPath = os.path.join(eclDir, ecl)
                 if os.path.isfile(eclPath):
                     eclFiles.append(eclPath)
                 else:
@@ -162,25 +170,19 @@ class RegressMain:
 
     def main(self):
         prog = "ecl-test"
-        description = 'HPCC Platform Regression suite'
+        description = 'HPCC Regression Test Engine'
         pythonVer = getVersionNumbers()
         defaultConfigFile="ecl-test.json"
         self.log = Logger('info')
 
-        if (pythonVer['main'] <= 2) and (pythonVer['minor'] <=6) and (pythonVer['patch'] <6):
-            print "\nError!"
-            print "Your system has Python version "+platform.python_version()
-            print "To run "+description+", you need version: 2.6.6 or higher, but less than 3.x!\n"
+        if (pythonVer['main'] < 3) :
+            print("\nError!")
+            print("Your system has Python version: %s by default." %(platform.python_version()))
+            print("To run this version of %s, you need version: 3.x!\n" % (description))
+            print("If you have Python3 installed in your environment then try: \npython3 ./ecl-test ...\n")
             exit()
 
-        if pythonVer['main'] >= 3:
-            print "\nError!"
-            print "Your system has Python version "+platform.python_version()
-            print "Actually "+description+", supports version >= 2.6.6 and <= 2.7.x\n"
-            exit()
-
-        if (pythonVer['main'] >= 2) and (pythonVer['minor'] >= 7):
-            atexit.register(logging.shutdown)
+        atexit.register(logging.shutdown)
 
         helperParser=argparse.ArgumentParser(add_help=False)
         helperParser.add_argument('--config', help="Config file to use. Default: ecl-test.json",
@@ -250,6 +252,8 @@ class RegressMain:
 
         parser_setup = subparsers.add_parser('setup', help='Setup help',  parents=[helperParser, commonParser, executionParser])
         parser_setup.set_defaults(func='setup')
+        parser_setup.add_argument('setup', help="One or more setup ECL file(s). It can contain wildcards.",
+                                  nargs='*',  default=None, metavar="ECL_query")
         parser_setup.add_argument('--target', '-t', help="Run the setup on target cluster(s). If target = 'all' then run setup on all clusters. If not defined then default value(s) come from config (ecl-test.json by default).",
                                 nargs='?', type=str,  default='', metavar="target_cluster_list | all")
         parser_setup.add_argument('--handleEclccWarningFile', '-w', help="Create/overwrite/delete ECLCC warning file.",
