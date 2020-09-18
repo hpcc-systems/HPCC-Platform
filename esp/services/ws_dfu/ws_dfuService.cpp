@@ -5874,6 +5874,8 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
 
 void CWsDfuEx::getFilePartsInfo(IEspContext &context, IFileDescriptor &fileDesc, bool forFileCreate, IEspDFUFileAccessInfo &accessInfo)
 {
+    double version = context.getClientVersion();
+
     IArrayOf<IEspDFUFilePart> dfuParts;
     IArrayOf<IEspDFUPartLocation> dfuPartLocations;
 
@@ -5884,7 +5886,9 @@ void CWsDfuEx::getFilePartsInfo(IEspContext &context, IFileDescriptor &fileDesc,
     ForEach(*pi)
     {
         IPartDescriptor& part = pi->query();
-        if (isPartTLK(&part))
+
+        bool isTLKPart = isPartTLK(&part);
+        if (version <= 1.55 && isTLKPart)
             continue;
 
         IArrayOf<IEspDFUFileCopy> fileCopies;
@@ -5919,6 +5923,10 @@ void CWsDfuEx::getFilePartsInfo(IEspContext &context, IFileDescriptor &fileDesc,
         Owned<IEspDFUFilePart> filePart = createDFUFilePart();
         filePart->setPartIndex(part.queryPartIndex() + 1);
         filePart->setCopies(fileCopies);
+
+        if (version > 1.55)
+            filePart->setTopLevelKey(isTLKPart);
+
         dfuParts.append(*filePart.getClear());
     }
 
@@ -6000,6 +6008,7 @@ SecAccessFlags translateToSecAccessFlags(CSecAccessType from)
 
 void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileName &lfn, SessionId clientSessionId, const char *requestId, unsigned expirySecs, bool returnTextResponse, unsigned lockTimeoutMs, IEspDFUFileAccessResponse &resp)
 {
+    double version = context.getClientVersion();
     StringBuffer fileName;
     lfn.get(fileName, false, true);
     if (0 == fileName.length())
@@ -6059,7 +6068,16 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
         accessInfo.setFileAccessSSL(metaInfo->getPropBool("secure"));
 
         if (isFileKey(fileDesc))
+        {
             kind = CDFUFileType_Index;
+            if (version > 1.55)
+            {
+                if (isFileLocalKey(fileDesc))
+                    kind = CDFUFileType_IndexLocal;
+                else if (isFilePartitionKey(fileDesc))
+                    kind = CDFUFileType_IndexPartitioned;
+            }
+        }
         else
         {
             const char *kindStr = queryFileKind(fileDesc);
