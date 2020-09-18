@@ -15,6 +15,8 @@
     limitations under the License.
 ##############################################################################*/
 
+//class=spray
+
 import $.setup;
 prefix := setup.Files(false, false).QueryFilePrefix;
 //skip type=roxie nodfu       
