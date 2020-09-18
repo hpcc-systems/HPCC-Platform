@@ -1587,7 +1587,7 @@ bool EsdlBindingImpl::loadLocalDefinitions(IPropertyTree *esdlArchive, const cha
         try
         {
             const char * id = esdl_binding_definition->queryProp("@id");
-            PROGLOG("Loading esdl definition for ID %s", id);
+            PROGLOG("Loading esdl definition for ID '%s'", id);
             loadedServiceName.set(esdl_binding_definition->queryProp("@esdlservice"));
             IEsdlShare* esdlshare = queryEsdlShare();
             Linked<IEsdlDefinition> shareddef = esdlshare->lookup(id);

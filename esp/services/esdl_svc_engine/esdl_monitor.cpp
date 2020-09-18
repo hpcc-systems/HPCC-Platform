@@ -213,13 +213,17 @@ public:
         }
     }
 
-    void addLocalBinding(const char *process, unsigned int port, const char *filepath, IFile &ifile)
+    void addLocalBinding(const char *process, unsigned int port, IFile &ifile)
     {
+        const char *filepath = ifile.queryFilename();
         if (isEmptyString(process))
             process = "esdl";
         Owned<IPropertyTree> tree = createPTree(ifile);
         if (!tree)
+        {
+            ERRLOG("Error creating property tree from local binding file '%s'", filepath ? filepath : "");
             return;
+        }
         StringBuffer id(tree->queryProp("@id"));
         if (id.isEmpty())
             splitFilename(filepath, nullptr, nullptr, &id, nullptr);
@@ -227,7 +231,7 @@ public:
         if (isEmptyString(static_binding))
             static_binding = "esdl_binding";
 
-        DBGLOG("Creating new binding %s", id.str());
+        PROGLOG("Creating new binding %s", id.str());
         CriticalBlock cb(m_CritSect);
 
         VStringBuffer portStr("%d", port);
@@ -237,7 +241,7 @@ public:
             protocol.set("http");
         StringBuffer envptxml;
         toXML(envpt, envptxml);
-        DBGLOG("Use the following config tree to create the binding and service:\n%s\n", envptxml.str());
+        DBGLOG("Using the following config tree to create the binding and service:\n%s\n", envptxml.str());
         IEspServer* server = queryEspServer();
         IEspProtocol* espProtocol = server->queryProtocol(protocol.str());
         Owned<EsdlBindingImpl> esdlbinding = new CEsdlSvcEngineSoapBindingEx(envpt, tree, static_binding, process);
@@ -246,7 +250,7 @@ public:
         esdlbinding->addService(tree, esdlservice->getServiceType(), nullptr, port, *esdlservice.get());
         esdlbinding->addProtocol(protocol.str(), *espProtocol);
         server->addBinding(id.str(), nullptr, port, *espProtocol, *esdlbinding.get(), false, envpt);
-        DBGLOG("Successfully instantiated new DESDL binding %s and service", id.str());
+        PROGLOG("Successfully instantiated new DESDL binding %s and service", id.str());
     }
 
     void loadLocalBindings()
@@ -264,11 +268,7 @@ public:
             const char *path = entries.item(i);
             Owned<IDirectoryIterator> dir = createDirectoryIterator(path, nullptr, false, false);
             ForEach(*dir)
-            {
-                StringBuffer filename;
-                dir->getName(filename);
-                addLocalBinding(process, port, filename, dir->query());
-            }
+                addLocalBinding(process, port, dir->query());
         }
     }
 

@@ -16,7 +16,6 @@
 
 set ( ESP_APPLICATION_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/ldap.yaml
-    ${CMAKE_CURRENT_SOURCE_DIR}/configsec.yaml
     ${CMAKE_CURRENT_SOURCE_DIR}/directories.yaml
 )
 

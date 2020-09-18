@@ -16,7 +16,6 @@ esp:
    tls_config:
      certificate: /etc/HPCCSystems/certificates/{$instance}/server.crt
      privatekey: /etc/HPCCSystems/certificates/{$instance}/private.key
-     passphrase: JHjdi6DDptMwYmJNTZsqjg==
      cipherList:
        verify:
           enable: false

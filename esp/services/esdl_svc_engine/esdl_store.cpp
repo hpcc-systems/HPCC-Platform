@@ -40,6 +40,7 @@ static const char* ESDL_BINDING_PATH="/ESDL/Bindings/Binding";
 static const char* ESDL_BINDING_ENTRY="Binding";
 static const char* ESDL_CHANGE_PATH="/ESDL/Subscription/Change";
 static const char* ESDL_METHODS_ENTRY="Methods";
+static const char* ESDL_DEFAULT_STATIC_BINDING="esdl_svc_engine_binding";
 
 extern bool trimXPathToParentSDSElement(const char *element, const char * xpath, StringBuffer & parentNodeXPath);
 
@@ -849,7 +850,7 @@ public:
             else if (isContainerized())
             {
                 //currently always the same for containerized esdl-sandbox
-                const char* bn = "esdl_svc_engine_binding";
+                const char* bn = ESDL_DEFAULT_STATIC_BINDING;
                 StringBuffer msg;
                 Owned<IPropertyTree> esdlbindingtree = getBindingTree(espProcName, bn, msg);
                 if (!esdlbindingtree)
@@ -867,21 +868,22 @@ public:
                return -1;
             }
         }
-        else //espPort provided
+        else
         {
             const char *bn = nullptr;
             if (isContainerized())
-                bn = "esdl_svc_engine_binding";
+                bn = ESDL_DEFAULT_STATIC_BINDING;
             else if (staticCfg)
                 bn = staticCfg->queryProp("@name");
             if (bn)
             {
-                DBGLOG("Static esp binding %s configured for port %s", bn, espPort);
+                if (staticCfg)
+                    PROGLOG("Static esp binding %s configured for port %s", bn, espPort);
                 StringBuffer msg;
                 Owned<IPropertyTree> esdlbindingtree = getBindingTree(espProcName, bn, msg);
                 if (!esdlbindingtree)
                 {
-                    DBGLOG("There's currently no esdl binding for this esp binding, so bind to it.");
+                    DBGLOG("There's currently no esdl binding for this static binding, so bind to it.");
                     bindingName = bn;
                 }
             }

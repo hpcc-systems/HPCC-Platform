@@ -4,7 +4,7 @@ ldap:
       required: Read
       description: Base access to ESDL Services
    resource_map:
-      ws_ecl:
+      esdl_svc_engine:
          Feature:
          -  path: EsdlAccess
             resource: EsdlAccess
