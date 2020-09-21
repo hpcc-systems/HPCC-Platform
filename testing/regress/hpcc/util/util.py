@@ -417,6 +417,8 @@ def clearOSCache(testId = -1):
         if isSudoer(testId):
             myProc = subprocess.Popen(["free; sudo -S sync; echo 3 | sudo tee /proc/sys/vm/drop_caches; free"], shell=True, bufsize=8192, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             (myStdout,  myStderr) = myProc.communicate()
+            myStdout = myStdout.decode("utf-8") 
+            myStderr = myStderr.decode("utf-8")
             result = "returncode:" + str(myProc.returncode) + ", stdout:\n'" + myStdout + "', stderr:\n'" + myStderr + "'."
             logger.debug("%3d. clearOSCache() result is: '%s'",  testId, result)
         else:
