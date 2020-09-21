@@ -15,6 +15,7 @@
 ################################################################################
 
 set(SRCS
+    Benford.ecl
     BestRecordStructure.ecl
     Profile.ecl
 )
