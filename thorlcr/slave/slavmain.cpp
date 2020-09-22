@@ -350,7 +350,11 @@ class CKJService : public CSimpleInterfaceOf<IKJService>, implements IThreaded, 
                 if (RecordTranslationMode::AlwaysDisk == translationMode)
                     translator.setown(createRecordTranslator(projectedFormat->queryRecordAccessor(true), publishedFormat->queryRecordAccessor(true)));
                 else if (RecordTranslationMode::AlwaysECL == translationMode)
+                {
+                    if (publishedFormatCrc && publishedFormatCrc != expectedFormatCrc)
+                        DBGLOG("Overriding stored record layout reading file %s", tracing);
                     translator.setown(createRecordTranslator(projectedFormat->queryRecordAccessor(true), expectedFormat->queryRecordAccessor(true)));
+                }
                 else if (publishedFormatCrc && publishedFormatCrc != expectedFormatCrc)
                 {
                     if (!projectedFormat)

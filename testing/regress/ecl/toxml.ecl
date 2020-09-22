@@ -21,7 +21,20 @@
 //version forceLayoutTranslation=2
 
 import $.setup;
-prefix := setup.Files(false, false).QueryFilePrefix;
+import ^ as root;
+
+forceLayoutTranslation := #IFDEFINED(root.forceLayoutTranslation, 0);
+prefix := setup.Files(false, false, false, IF(forceLayoutTranslation > 0, '_' + (STRING) forceLayoutTranslation, '')).QueryFilePrefix;
+
+LOADXML('');
+#DECLARE(translationMode);
+#IF (forceLayoutTranslation = 1)
+#SET(translationmode, 'alwaysECL');
+#ELSIF (forceLayoutTranslation = 2)
+#SET(translationmode, 'alwaysDisk');
+#ELSE
+#SET(translationmode, 'on');
+#END
 
 phoneRecord := 
             RECORD
@@ -62,7 +75,7 @@ string2         endmarker := '$$';
 namesTable := dataset([
         {U'Hälliday','Gavin','09876',123987,true,'07967',123987, 'n/a','n/a',true,'gavin@edata.com',[{U'εν αρχη ην ο λογος', 'john'}, {U'To kill a mocking bird','Lee'},{U'Zen and the art of motorcycle maintainence','Pirsig'}], ALL},
         {U'Halliday','Abigäil','09876',123987,false,'','',false,[{U'The cat in the hat','Suess'},{U'Wolly the sheep',''}], ['Red','Yellow']}
-        ], personRecord);
+        ], personRecord, HINT(layoutTranslation, %translationmode%));
 
 output(U'<row>'+(utf8)U'εν αρχη ην ο λογος'+U'</row>');
 output(U'<row>'+U8'εν αρχη ην ο λογος'+U'</row>');
@@ -73,7 +86,7 @@ setup1 := output(namesTable,,prefix+'toxml1.xml',expire(1),overwrite,xml(heading
 setup2 := output(namesTable,,prefix+'toxml2.flat',expire(1),overwrite);
 
 //Read from xml and then write out again - should be possible to compare the results easily
-inf := dataset(prefix+'toxml1.xml', personRecord, xml('/MyDataset/Row'));
+inf := dataset(prefix+'toxml1.xml', personRecord, xml('/MyDataset/Row'), HINT(layoutTranslation, %translationmode%));
 setup3 := output(inf,,prefix+'toxml3.xml',expire(1),overwrite,xml);
 
 setup4 := output(inf,{string xml{maxlength(1024)} := (string)toxml(row(inf))},prefix+'toxml4.utf8',expire(1),overwrite,csv(unicode));
@@ -91,7 +104,7 @@ END;
 z := parse(p, p.text, createRowFromXml(), xml('/row'));
 output(z);
 
-infraw := dataset(prefix+'toxml2.flat', personRecord, thor);
+infraw := dataset(prefix+'toxml2.flat', personRecord, thor, HINT(layoutTranslation, %translationmode%));
 setup7 := output(infraw,{string xml{maxlength(1024)} := (string)toxml(row(infraw))},prefix+'toxml7.utf8',expire(1),overwrite,csv(unicode));
 
 //Now read each of the xml files and output to the work unit as csv so we can check the content!
@@ -103,10 +116,10 @@ setup4;
 setup5;
 setup6;
 setup7;
-output(dataset(prefix+'toxml1.xml', { unicode line{maxlength(4096)} }, csv(unicode))(line not in ['<MyDataset>','</MyDataset>']));
-output(dataset(prefix+'toxml3.xml', { unicode line{maxlength(4096)} }, csv(unicode))(line not in ['<Dataset>','</Dataset>']));
-output(dataset(prefix+'toxml4.utf8', { unicode line{maxlength(4096)} }, csv(unicode)));
-output(dataset(prefix+'toxml5.utf8', { unicode line{maxlength(4096)} }, csv(unicode)));
-output(dataset(prefix+'toxml6.utf8', { unicode line{maxlength(4096)} }, csv(unicode)));
-output(dataset(prefix+'toxml7.utf8', { unicode line{maxlength(4096)} }, csv(unicode)));
+output(dataset(prefix+'toxml1.xml', { unicode line{maxlength(4096)} }, csv(unicode), HINT(layoutTranslation, %translationmode%))(line not in ['<MyDataset>','</MyDataset>']));
+output(dataset(prefix+'toxml3.xml', { unicode line{maxlength(4096)} }, csv(unicode), HINT(layoutTranslation, %translationmode%))(line not in ['<Dataset>','</Dataset>']));
+output(dataset(prefix+'toxml4.utf8', { unicode line{maxlength(4096)} }, csv(unicode), HINT(layoutTranslation, %translationmode%)));
+output(dataset(prefix+'toxml5.utf8', { unicode line{maxlength(4096)} }, csv(unicode), HINT(layoutTranslation, %translationmode%)));
+output(dataset(prefix+'toxml6.utf8', { unicode line{maxlength(4096)} }, csv(unicode), HINT(layoutTranslation, %translationmode%)));
+output(dataset(prefix+'toxml7.utf8', { unicode line{maxlength(4096)} }, csv(unicode), HINT(layoutTranslation, %translationmode%)));
 );

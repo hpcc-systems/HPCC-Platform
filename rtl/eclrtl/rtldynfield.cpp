@@ -34,14 +34,22 @@
 
 //---------------------------------------------------------------------------------------------------------------------
 
-extern ECLRTL_API RecordTranslationMode getTranslationMode(const char *val)
+extern ECLRTL_API RecordTranslationMode getTranslationMode(const char *val, bool isLocal)
 {
     if (isEmptyString(val) || strToBool(val) || strieq(val, "payload"))
         return RecordTranslationMode::Payload;
     else if (strieq(val, "alwaysDisk") || strieq(val, "disk"))
+    {
+        if (!isLocal)
+            throw makeStringException(0, "alwaysDisk translation mode can only be set via HINT");
         return RecordTranslationMode::AlwaysDisk;
+    }
     else if (strieq(val, "alwaysECL") || strieq(val, "ecl"))
+    {
+        if (!isLocal)
+            throw makeStringException(0, "alwaysECL translation mode can only be set via HINT");
         return RecordTranslationMode::AlwaysECL;
+    }
     else
         return RecordTranslationMode::None;
 }

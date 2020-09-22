@@ -2086,7 +2086,12 @@ static bool getTranslators(Owned<const IDynamicTransform> &translator, Owned<con
     {
         IOutputMetaData * sourceFormat = expectedFormat;
         unsigned sourceCrc = expectedCrc;
-        if (mode != RecordTranslationMode::AlwaysECL)
+        if (mode == RecordTranslationMode::AlwaysECL)
+        {
+            if (publishedCrc && expectedCrc && (publishedCrc != expectedCrc))
+                DBGLOG("Overriding stored record layout reading file %s", tracing);
+        }
+        else
         {
             if (publishedFormat)
             {

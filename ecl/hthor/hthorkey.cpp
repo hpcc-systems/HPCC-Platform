@@ -373,7 +373,7 @@ CHThorIndexReadActivityBase::CHThorIndexReadActivityBase(IAgentContext &_agent, 
     {
         const char *recordTranslationModeHintText = _node->queryProp("hint[@name='layouttranslation']/@value");
         if (recordTranslationModeHintText)
-            recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText);
+            recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText, true);
     }
 }
 
@@ -732,6 +732,7 @@ const IDynamicTransform * CHThorIndexReadActivityBase::getLayoutTranslator(IDist
     switch (getLayoutTranslationMode())
     {
     case RecordTranslationMode::AlwaysECL:
+        verifyFormatCrc(helper.getDiskFormatCrc(), f, (superIterator ? superName.str() : NULL) , true, false);
         break;
     case RecordTranslationMode::None:
         verifyFormatCrc(helper.getDiskFormatCrc(), f, (superIterator ? superName.str() : NULL) , true, true);
@@ -2291,7 +2292,7 @@ public:
         {
             const char *recordTranslationModeHintText = _node->queryProp("hint[@name='layouttranslation']/@value");
             if (recordTranslationModeHintText)
-                recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText);
+                recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText, true);
         }
     }
 
@@ -3484,7 +3485,7 @@ public:
         {
             const char *recordTranslationModeHintText = _node->queryProp("hint[@name='layouttranslation']/@value");
             if (recordTranslationModeHintText)
-                recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText);
+                recordTranslationModeHint = getTranslationMode(recordTranslationModeHintText, true);
             isCodeSigned = isActivityCodeSigned(*_node);
         }
     }
@@ -4149,6 +4150,7 @@ protected:
     {
         if(getLayoutTranslationMode() == RecordTranslationMode::AlwaysECL)
         {
+            verifyFormatCrc(helper.getIndexFormatCrc(), f, super ? super->queryLogicalName() : NULL, true, false);  // Traces if mismatch
             return NULL;
         }
 

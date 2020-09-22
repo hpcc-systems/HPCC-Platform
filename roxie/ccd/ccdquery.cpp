@@ -442,7 +442,7 @@ void QueryOptions::updateFromWorkUnit(RecordTranslationMode &value, IConstWorkUn
     SCMStringBuffer val;
     wu.getDebugValue(name, val);
     if (val.length())
-        value = getTranslationMode(val.str());
+        value = getTranslationMode(val.str(), false);
 }
 
 void QueryOptions::setFromContext(const IPropertyTree *ctx)

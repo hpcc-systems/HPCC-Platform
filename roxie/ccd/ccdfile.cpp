@@ -2728,7 +2728,12 @@ public:
                 {
                     int thisFormatCrc = 0;
                     bool actualUnknown = true;
-                    if (mode != RecordTranslationMode::AlwaysECL)
+                    if (mode == RecordTranslationMode::AlwaysECL)
+                    {
+                        if (formatCrcs.item(idx) && expectedFormatCrc && (formatCrcs.item(idx) != expectedFormatCrc))
+                            DBGLOG("Overriding stored record layout reading file %s", subname);
+                    }
+                    else
                     {
                         thisFormatCrc = formatCrcs.item(idx);
                         if (diskTypeInfo.item(idx))

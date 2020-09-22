@@ -113,7 +113,12 @@ void DiskReadMapping::ensureTranslators() const
     const char * filename = ""; // not known at this point
     IOutputMetaData * sourceMeta = expectedMeta;
     unsigned sourceCrc = expectedCrc;
-    if (mode != RecordTranslationMode::AlwaysECL)
+    if (mode == RecordTranslationMode::AlwaysECL)
+    {
+        if (actualCrc && expectedCrc && (actualCrc != expectedCrc))
+            DBGLOG("Overriding stored record layout reading file %s", filename);
+    }
+    else
     {
         if (actualCrc && actualMeta)
         {
