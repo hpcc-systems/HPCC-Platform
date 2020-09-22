@@ -37,7 +37,7 @@ ESP_FACTORY IEspService * esp_service_factory(const char *name, const char* type
 
 ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* type, IPropertyTree *cfg, const char *process)
 {
-    return new CEsdlSvcEngineSoapBindingEx(cfg, name, process);
+    return new CEsdlSvcEngineSoapBindingEx(cfg, nullptr, name, process);
 }
 
 

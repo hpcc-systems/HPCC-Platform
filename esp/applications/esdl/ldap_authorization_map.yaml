@@ -1,0 +1,5 @@
+ldap:
+   root_access:
+      resource: EsdlAccess
+      required: Read
+      description: Base access to ESDL Services

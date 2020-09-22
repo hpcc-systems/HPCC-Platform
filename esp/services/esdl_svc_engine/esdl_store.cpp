@@ -40,6 +40,7 @@ static const char* ESDL_BINDING_PATH="/ESDL/Bindings/Binding";
 static const char* ESDL_BINDING_ENTRY="Binding";
 static const char* ESDL_CHANGE_PATH="/ESDL/Subscription/Change";
 static const char* ESDL_METHODS_ENTRY="Methods";
+static const char* ESDL_DEFAULT_STATIC_BINDING="esdl_svc_engine_binding";
 
 extern bool trimXPathToParentSDSElement(const char *element, const char * xpath, StringBuffer & parentNodeXPath);
 
@@ -729,6 +730,79 @@ public:
         return true;
     }
 
+    void validatePort(const char *espPort)
+    {
+        while(*espPort == '0')
+            espPort++;
+
+        int ind = 0;
+        for ( ; espPort[ind]; ind++)
+        {
+            if (!isdigit(espPort[ind]))
+                throw MakeStringException(-1, "Esp port can only be a positive integer.");
+        }
+        if(ind > 5)
+            throw MakeStringException(-1, "Esp port should be between 1 and 65535");
+
+        int port = atoi(espPort);
+        if(port <= 0 || port > 65535)
+            throw MakeStringException(-1, "Esp port should be between 1 and 65535");
+    }
+
+    bool validateBindServiceParameters(const char* bindingName,
+                                             IPropertyTree* methodsConfig,
+                                             const char* espProcName,
+                                             const char* espPort,
+                                             const char* definitionId,
+                                             const char* esdlServiceName,
+                                             StringBuffer& lcDefId,
+                                             StringBuffer& message)
+    {
+        if (!espProcExists(espProcName))
+        {
+            message.setf("Esp process %s not found in the environment, please double check the case-sensitive spelling", espProcName);
+            return false;
+        }
+
+        if (isEmptyString(bindingName) && isEmptyString(espPort))
+        {
+            message.setf("Could not configure '%s' - need target binding name or port", esdlServiceName);
+            return false;
+        }
+
+        if (isEmptyString(definitionId))
+        {
+            message.set("Could not configure DESDL service: Target Esdl definition id required");
+            return false;
+        }
+
+        if(espPort && *espPort)
+            validatePort(espPort);
+
+        lcDefId.set(definitionId);
+        lcDefId.trim().toLowerCase();
+        definitionId = lcDefId.str();
+
+        if (!definitionExists(definitionId))
+        {
+            message.setf("Esdl definition %s doesn't exist, please double check the spelling", definitionId);
+            return false;
+        }
+
+        if (isEmptyString(esdlServiceName))
+        {
+            message.set("Could not configure DESDL service: Target Esdl definition name reqired");
+            return false;
+        }
+
+        if (!isEsdlServiceDefined(definitionId, esdlServiceName))
+        {
+            message.setf("Esdl service %s is not defined in %s, please double check the case-sensitive service name", esdlServiceName, definitionId);
+            return false;
+        }
+        return true;
+    }
+
     virtual int bindService(const char* bindingName,
                                              IPropertyTree* methodsConfig,
                                              const char* espProcName,
@@ -739,67 +813,16 @@ public:
                                              bool overwrite,
                                              const char* user) override
     {
-        if (!espProcExists(espProcName))
-        {
-            message.setf("Esp process %s not found in the environment, please double check the case-sensitive spelling", espProcName);
+        StringBuffer lcDefId;
+        if (!validateBindServiceParameters(bindingName, methodsConfig, espProcName, espPort, definitionId, esdlServiceName, lcDefId, message))
             return -1;
-        }
-
-        if ((!bindingName || !*bindingName) && (!espPort || !*espPort))
-        {
-            message.setf("Could not configure '%s' - need target binding name or port", esdlServiceName);
-            return -1;
-        }
-
-        if(espPort && *espPort)
-        {
-            while(*espPort == '0')
-                espPort++;
-
-            int ind = 0;
-            for ( ; espPort[ind]; ind++)
-            {
-                if (!isdigit(espPort[ind]))
-                    throw MakeStringException(-1, "Esp port can only be a positive integer.");
-            }
-            if(ind > 5)
-                throw MakeStringException(-1, "Esp port should be between 1 and 65535");
-
-            int port = atoi(espPort);
-            if(port <= 0 || port > 65535)
-                throw MakeStringException(-1, "Esp port should be between 1 and 65535");
-        }
-
-        if (!definitionId || !*definitionId)
-        {
-            message.set("Could not configure DESDL service: Target Esdl definition id not available");
-            return -1;
-        }
-        StringBuffer lcDefId(definitionId);
-        lcDefId.trim().toLowerCase();
-        definitionId = lcDefId.str();
-        if (!definitionExists(definitionId))
-        {
-            message.setf("Esdl definition %s doesn't exist, please double check the spelling", definitionId);
-            return -1;
-        }
-
-        if (!esdlServiceName || !*esdlServiceName)
-        {
-            message.set("Could not configure DESDL service: Target Esdl definition service name not available");
-            return -1;
-        }
-
-        if (!isEsdlServiceDefined(definitionId, esdlServiceName))
-        {
-            message.setf("Esdl service %s is not defined in %s, please double check the case-sensitive service name", esdlServiceName, definitionId);
-            return -1;
-        }
 
         //Get static binding if exists
-        Owned<IPropertyTree> bindingcfg = getEspBindingConfig(espProcName, espPort, bindingName);
-        StringBuffer duplicateBindingId;
-        if (bindingName && *bindingName)
+        Owned<IPropertyTree> staticCfg;
+        if (!isContainerized())
+            staticCfg.setown(getStaticBindingConfig(espProcName, espPort, bindingName));
+        StringBuffer existingBindingId;
+        if (!isEmptyString(bindingName))
         {
             StringBuffer msg;
             Owned<IPropertyTree> esdlbindingtree = getBindingTree(espProcName, bindingName, msg);
@@ -822,13 +845,22 @@ public:
                 }
                 if (!espPort || !*espPort)
                     espPort = existingPort;
-                duplicateBindingId.set(esdlbindingtree->queryProp("@id"));
+                existingBindingId.set(esdlbindingtree->queryProp("@id"));
             }
-            else if (bindingcfg)
+            else if (isContainerized())
+            {
+                //currently always the same for containerized esdl-sandbox
+                const char* bn = ESDL_DEFAULT_STATIC_BINDING;
+                StringBuffer msg;
+                Owned<IPropertyTree> esdlbindingtree = getBindingTree(espProcName, bn, msg);
+                if (!esdlbindingtree)
+                    bindingName = bn;
+            }
+            else if (staticCfg)
             {
                 DBGLOG("Static esp binding configured for %s", bindingName);
                 if (!espPort || !*espPort)
-                    espPort = bindingcfg->queryProp("@port");
+                    espPort = staticCfg->queryProp("@port");
             }
             else if (!espPort || !*espPort)
             {
@@ -836,24 +868,29 @@ public:
                return -1;
             }
         }
-        else //espPort provided
+        else
         {
-            if (bindingcfg)
+            const char *bn = nullptr;
+            if (isContainerized())
+                bn = ESDL_DEFAULT_STATIC_BINDING;
+            else if (staticCfg)
+                bn = staticCfg->queryProp("@name");
+            if (bn)
             {
-                const char* bn = bindingcfg->queryProp("@name");
-                DBGLOG("Static esp binding %s configured for port %s", bn, espPort);
+                if (staticCfg)
+                    PROGLOG("Static esp binding %s configured for port %s", bn, espPort);
                 StringBuffer msg;
                 Owned<IPropertyTree> esdlbindingtree = getBindingTree(espProcName, bn, msg);
                 if (!esdlbindingtree)
                 {
-                    DBGLOG("There's currently no esdl binding for this esp binding, so bind to it.");
+                    DBGLOG("There's currently no esdl binding for this static binding, so bind to it.");
                     bindingName = bn;
                 }
             }
             else
             {
-                bindingcfg.setown(getEspBindingConfig(espProcName, "0", nullptr));
-                if (!bindingcfg)
+                staticCfg.setown(getStaticBindingConfig(espProcName, "0", nullptr));
+                if (!staticCfg)
                 {
                     message.setf("Could not configure service '%s' because there's no template esp binding configured on port %s or port 0 for esp process '%s'", esdlServiceName, espPort, espProcName);
                     OWARNLOG("%s", message.str());
@@ -866,29 +903,28 @@ public:
            throw MakeStringException(-1, "Unexpected error while attempting to access ESDL definition dali registry.");
 
         IPropertyTree * bindings = conn->queryRoot();
-
-        IPropertyTree* duplicateBinding = nullptr;
-        if (duplicateBindingId.length() == 0)
+        IPropertyTree* existingBinding = nullptr;
+        if (existingBindingId.length() == 0)
         {
             VStringBuffer xpath("%s[@espprocess='%s'][@port='%s'][Definition/@esdlservice='%s']", ESDL_BINDING_ENTRY, espProcName, espPort, esdlServiceName);
-            duplicateBinding = bindings->queryPropTree(xpath.str());
+            existingBinding = bindings->queryPropTree(xpath.str());
         }
         else
         {
-            VStringBuffer xpath("%s[@id='%s']", ESDL_BINDING_ENTRY, duplicateBindingId.str());
-            duplicateBinding = bindings->queryPropTree(xpath.str());
+            VStringBuffer xpath("%s[@id='%s']", ESDL_BINDING_ENTRY, existingBindingId.str());
+            existingBinding = bindings->queryPropTree(xpath.str());
         }
 
         StringBuffer origTimestamp;
         StringBuffer origOwner;
 
-        if (duplicateBinding)
+        if (existingBinding)
         {
             if (overwrite)
             {
-                origTimestamp.set(duplicateBinding->queryProp("@created"));
-                origOwner.set(duplicateBinding->queryProp("@publishedBy"));
-                bindings->removeTree(duplicateBinding);
+                origTimestamp.set(existingBinding->queryProp("@created"));
+                origOwner.set(existingBinding->queryProp("@publishedBy"));
+                bindings->removeTree(existingBinding);
             }
             else
             {
@@ -1123,9 +1159,9 @@ public:
             IPropertyTree &binding = iter->query();
             if (binding.getPropInt("@port", 0) == 0)
             {
-                Owned<IPropertyTree> espbindingcfg = getEspBindingConfig(binding.queryProp("@espprocess"), nullptr, binding.queryProp("@espbinding"));
-                if(espbindingcfg)
-                    binding.setPropInt("@port", espbindingcfg->getPropInt("@port", 0));
+                Owned<IPropertyTree> staticCfg = getStaticBindingConfig(binding.queryProp("@espprocess"), nullptr, binding.queryProp("@espbinding"));
+                if(staticCfg)
+                    binding.setPropInt("@port", staticCfg->getPropInt("@port", 0));
             }
         }
         return bindings.getLink();
@@ -1162,7 +1198,7 @@ private:
         return isDefinitionBound(id);
     }
 
-    IPropertyTree * getEspBindingConfig(const char * espprocname, const char * espbindingport, const char * bindingname)
+    IPropertyTree * getStaticBindingConfig(const char * espprocname, const char * espbindingport, const char * bindingname)
     {
         if (!espprocname || !*espprocname)
             return nullptr;
@@ -1209,6 +1245,17 @@ private:
 
     bool espProcExists(const char * espprocname)
     {
+#ifdef _CONTAINERIZED
+        VStringBuffer xpath("services[@name='%s']", espprocname);
+        IPropertyTree *service = queryComponentConfig().queryPropTree(xpath);
+        if (service)
+        {
+            const char *serviceType = service->queryProp("@type");
+            if (!serviceType || streq(serviceType, "esdl-sandbox"))
+                return true;
+        }
+        return false;
+#else
         if (!espprocname || !*espprocname)
             return false;
         VStringBuffer xpath("/Environment/Software/EspProcess[@name='%s']", espprocname);
@@ -1217,6 +1264,7 @@ private:
             return true;
         else
             return false;
+#endif
     }
 
     bool isEsdlServiceDefined(const char* definitionId, const char* serviceName)

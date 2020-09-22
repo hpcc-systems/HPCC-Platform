@@ -1,8 +1,8 @@
 esp:
-   instance: eclwatch
-   description: EclWatch Server
-   daliServers: dali
-   loadDaliBindings: false
+   instance: esdl-sandbox
+   description: ESDL Sandbox
+   daliServers: mydali
+   loadDaliBindings: true
    auth: ldap
    tls: true
    port: 8880
@@ -10,7 +10,6 @@ esp:
    httpConfigAccess: true
    logLevel: 1
    maxBacklogQueueSize: 200
-   portalurl: http://hpccsystems.com/download
    logDir: "-"
 
    tls_config:

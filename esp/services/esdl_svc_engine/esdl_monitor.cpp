@@ -176,6 +176,8 @@ public:
 
     void setupSubscription()
     {
+        if (false == queryComponentConfig().getPropBool("@loadDaliBindings", true))
+            return;
         m_isSubscribed = true;
         m_pSubscription.setown(createEsdlSubscription(this));
     }
@@ -211,8 +213,69 @@ public:
         }
     }
 
+    void addLocalBinding(const char *process, unsigned int port, IFile &ifile)
+    {
+        const char *filepath = ifile.queryFilename();
+        if (isEmptyString(process))
+            process = "esdl";
+        Owned<IPropertyTree> tree = createPTree(ifile);
+        if (!tree)
+        {
+            ERRLOG("Error creating property tree from local binding file '%s'", filepath ? filepath : "");
+            return;
+        }
+        StringBuffer id(tree->queryProp("@id"));
+        if (id.isEmpty())
+            splitFilename(filepath, nullptr, nullptr, &id, nullptr);
+        const char *static_binding = tree->queryProp("@static_binding");
+        if (isEmptyString(static_binding))
+            static_binding = "esdl_binding";
+
+        PROGLOG("Creating new binding %s", id.str());
+        CriticalBlock cb(m_CritSect);
+
+        VStringBuffer portStr("%d", port);
+        StringBuffer protocol, serviceName;
+        Owned<IPropertyTree> envpt = getEnvpt(static_binding, id, portStr, protocol, serviceName);
+        if (protocol.length() == 0)
+            protocol.set("http");
+        StringBuffer envptxml;
+        toXML(envpt, envptxml);
+        DBGLOG("Using the following config tree to create the binding and service:\n%s\n", envptxml.str());
+        IEspServer* server = queryEspServer();
+        IEspProtocol* espProtocol = server->queryProtocol(protocol.str());
+        Owned<EsdlBindingImpl> esdlbinding = new CEsdlSvcEngineSoapBindingEx(envpt, tree, static_binding, process);
+        Owned<EsdlServiceImpl> esdlservice = new CEsdlSvcEngine();
+        esdlservice->init(envpt, process, serviceName.str());
+        esdlbinding->addService(tree, esdlservice->getServiceType(), nullptr, port, *esdlservice.get());
+        esdlbinding->addProtocol(protocol.str(), *espProtocol);
+        server->addBinding(id.str(), nullptr, port, *espProtocol, *esdlbinding.get(), false, envpt);
+        PROGLOG("Successfully instantiated new DESDL binding %s and service", id.str());
+    }
+
+    void loadLocalBindings()
+    {
+        const char *paths = queryComponentConfig().queryProp("@bindings");
+        if (isEmptyString(paths))
+            return;
+        StringArray entries;
+        entries.appendList(paths, ";");
+
+        const char *process = queryComponentConfig().queryProp("@instance");
+        unsigned int port  = queryComponentConfig().getPropInt("@port");
+        ForEachItemIn(i, entries)
+        {
+            const char *path = entries.item(i);
+            Owned<IDirectoryIterator> dir = createDirectoryIterator(path, nullptr, false, false);
+            ForEach(*dir)
+                addLocalBinding(process, port, dir->query());
+        }
+    }
+
     void loadDynamicBindings()
     {
+        if (false == queryComponentConfig().getPropBool("@loadDaliBindings", true))
+            return;
         Owned<IPropertyTree> esdlBindings = m_pCentralStore->getBindings();
         if (!esdlBindings)
            throw MakeStringException(-1, "Unable to retrieve ESDL bindings information");
@@ -380,10 +443,10 @@ private:
         DBGLOG("Use the following config tree to create the binding and service:\n%s\n", envptxml.str());
         IEspServer* server = queryEspServer();
         IEspProtocol* espProtocol = server->queryProtocol(protocol.str());
-        Owned<EsdlBindingImpl> esdlbinding = new CEsdlSvcEngineSoapBindingEx(envpt,  data->name.str(), data->espProcess.str());
+        Owned<EsdlBindingImpl> esdlbinding = new CEsdlSvcEngineSoapBindingEx(envpt, nullptr, data->name.str(), data->espProcess.str());
         Owned<EsdlServiceImpl> esdlservice = new CEsdlSvcEngine();
         esdlservice->init(envpt, data->espProcess.str(), serviceName.str());
-        esdlbinding->addService(esdlservice->getServiceType(), nullptr, data->port, *esdlservice.get());
+        esdlbinding->addService(nullptr, esdlservice->getServiceType(), nullptr, data->port, *esdlservice.get());
         esdlbinding->addProtocol(protocol.str(), *espProtocol);
         server->addBinding(data->name.str(), nullptr, data->port, *espProtocol, *esdlbinding.get(), false, envpt);
         DBGLOG("Successfully instantiated new DESDL binding %s and service", data->id.str());
@@ -412,11 +475,10 @@ private:
     IPropertyTree* getEnvpt(EsdlNotifyData* notifyData, StringBuffer& protocol, StringBuffer& serviceName)
     {
         VStringBuffer portStr("%d", notifyData->port);
-        return getEnvpt(notifyData->espProcess.str(), notifyData->name.str(), notifyData->id.str(),
-                portStr.str(), protocol, serviceName);
+        return getEnvpt(notifyData->name.str(), notifyData->id.str(), portStr.str(), protocol, serviceName);
     }
 
-    IPropertyTree* getEnvpt(const char* espProcess, const char* bindingName, const char* bindingId, const char* port, StringBuffer& protocol, StringBuffer& serviceName)
+    IPropertyTree* getEnvpt(const char* bindingName, const char* bindingId, const char* port, StringBuffer& protocol, StringBuffer& serviceName)
     {
         if (!bindingName || !*bindingName)
             bindingName = bindingId;
@@ -477,6 +539,7 @@ extern "C" void startEsdlMonitor()
         CEsdlMonitor* monitor = new CEsdlMonitor();
         gEsdlMonitor.setown(monitor);
         isEsdlMonitorStarted = true;
+        monitor->loadLocalBindings();
         monitor->loadDynamicBindings();
         monitor->setupSubscription();
     }

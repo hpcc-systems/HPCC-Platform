@@ -192,6 +192,14 @@ esp:
   public: true
   servicePort: 8002
 
+- name: esdl-sandbox
+  application: esdl-sandbox
+  auth: none
+  tls: off
+  replicas: 1
+  public: true
+  servicePort: 8899
+
 - name: sql2ecl
   application: sql2ecl
   auth: none

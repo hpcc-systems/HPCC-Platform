@@ -179,6 +179,10 @@
           "type": "string",
           "default": "hpccsystems"
         },
+        "name": {
+          "type": "string",
+          "default": "platform-core"
+        },
         "pullPolicy": {
           "type": "string",
           "enum": ["IfNotPresent", "Always", "Never"]
