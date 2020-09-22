@@ -1,5 +1,5 @@
 esp:
-   instance: esdl-integration
+   instance: esdl
    description: ESDL integration
    daliServers: mydali
    auth: ldap
