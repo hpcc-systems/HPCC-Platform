@@ -1,11 +1,10 @@
 import { ECLEditor } from "@hpcc-js/codemirror";
-import { Palette } from "@hpcc-js/common";
+import { extent, Palette } from "@hpcc-js/common";
 import { Workunit } from "@hpcc-js/comms";
 import { HTMLTooltip } from "@hpcc-js/html";
 import { SplitPanel } from "@hpcc-js/phosphor";
 import { DirectoryTree } from "@hpcc-js/tree";
 import { xml2json } from "@hpcc-js/util";
-import { extent } from "d3-array";
 import "dijit/form/Button";
 import "dijit/layout/BorderContainer";
 import "dijit/layout/ContentPane";
