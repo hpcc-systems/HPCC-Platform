@@ -13606,6 +13606,10 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
 {
     unsigned timelimit = workunit.getDebugValueInt("thorConnectTimeout", config.getPropInt("@thorConnectTimeout", 60));
     StringAttr wuid(workunit.queryWuid());
+    IConstWUGraph *graph = workunit.getGraph(graphName);
+    if (!graph)
+        throw makeStringExceptionV(0, "getGraph() returns nullptr for %s", graphName);
+    unsigned wfid = graph->getWfid();
 
 #ifdef _CONTAINERIZED
     // NB: If a single agent were to want to launch >1 Thor, then the threading could be in the workflow above this call.
@@ -13618,6 +13622,8 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
     WUState state = WUStateUnknown;
     if (config.hasProp("@queue"))
     {
+        CCycleTimer elapsedTimer;
+
         bool multiJobLinger = config.getPropBool("@multiJobLinger");
         if (executeGraphOnLingeringThor(workunit, graphName, multiJobLinger ? config.queryProp("@queue") : nullptr))
             PROGLOG("Existing lingering Thor handled graph: %s", graphName);
@@ -13636,12 +13642,19 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
         runningTimeLimit = runningTimeLimit ? runningTimeLimit : INFINITE;
 
         std::list<WUState> expectedStates = { WUStateRunning, WUStateWait };
+        unsigned __int64 blockedTime = 0;
         for (unsigned i=0; i<2; i++)
         {
             WUState state = waitForWorkUnitToComplete(wuid, timelimit*1000, expectedStates);
             DBGLOG("Got state: %s", getWorkunitStateStr(state));
             if (WUStateWait == state) // already finished
+            {
+                // workunit may have spent time in blocked state, but then transitioned to
+                // wait state quickly such that this code did not see its running state.
+                if (!blockedTime)
+                    blockedTime = elapsedTimer.elapsedNs();
                 break;
+            }
             else if ((INFINITE != timelimit) && (WUStateUnknown == state))
                 throw makeStringExceptionV(0, "Query %s failed to start within specified timelimit (%u) seconds", wuid.str(), timelimit);
             else
@@ -13650,9 +13663,12 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
                 if (it == expectedStates.end())
                     throw makeStringExceptionV(0, "Query %s failed, state: %s", wuid.str(), getWorkunitStateStr(state));
             }
+            blockedTime = elapsedTimer.elapsedNs();
             timelimit = runningTimeLimit;
             expectedStates = { WUStateWait };
         }
+        Owned<IWorkUnit> w = &workunit.lock();
+        updateWorkunitStat(w, SSTgraph, graphName, StTimeBlocked, nullptr, blockedTime, wfid);
     }
     else
     {
@@ -13785,6 +13801,7 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
 
         pollthread.start();
 
+        CCycleTimer elapsedTimer;
         PROGLOG("Enqueuing on %s to run wuid=%s, graph=%s, timelimit=%d seconds, priority=%d", queueName.str(), wuid.str(), graphName, timelimit, priority);
         VStringBuffer wuidGraph("%s/%s", wuid.str(), graphName);
         IJobQueueItem* item = createJobQueueItem(wuidGraph.str());
@@ -13815,6 +13832,11 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
             StringBuffer s("Failed to send query to Thor on ");
             thorMaster.getUrlStr(s);
             throw MakeStringExceptionDirect(-1, s.str()); // maybe retry?
+        }
+        unsigned __int64 blockedTime = elapsedTimer.elapsedNs();
+        {
+            Owned<IWorkUnit> w = &workunit.lock();
+            updateWorkunitStat(w, SSTgraph, graphName, StTimeBlocked, nullptr, blockedTime, wfid);
         }
 
         StringBuffer eps;
