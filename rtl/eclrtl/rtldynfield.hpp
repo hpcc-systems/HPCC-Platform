@@ -106,7 +106,7 @@ interface IRtlFieldTypeDeserializer : public IInterface
 enum class RecordTranslationMode : byte
 {
     None = 0,       // Never translate - throw an error if the ecl does not match published
-    All = 1,        // Translate all fields.
+    // All = 1,     // Translate all fields. Not supported or used
     Payload = 2,    // Translate all fields in datasets, and only payload fields in indexes
     AlwaysDisk = 3, // Always translate - even if wouldn't normally (e.g. csv/xml source read as binary), or crcs happen to match
     AlwaysECL = 4,  // Ignore the published format - can make sense to force no translation e.g. when field names have changed
