@@ -16,8 +16,8 @@
 ############################################################################## */
 #pragma warning(disable : 4786)
 #include "platform.h"
-
 #include "esphttp.hpp"
+#include "persistent.hpp"
 
 #ifdef _WIN32
   #include <algorithm>
@@ -1190,6 +1190,16 @@ void CHttpMessage::enableCompression()
     m_compressionEnabled = true;
 }
 
+bool CHttpMessage::checkPersistentEligible()
+{
+    size32_t verOffset = httpVerOffset();
+    if (m_version.length() <= verOffset)
+        return false;
+    StringBuffer conHeader;
+    getHeader("Connection", conHeader);
+    return isHttpPersistable(m_version.str() + verOffset, conHeader.str());
+}
+
 /******************************************************************************
               CHttpRequest Implementation
 *******************************************************************************/
@@ -1945,25 +1955,7 @@ bool CHttpRequest::checkPersistentEligible()
     if(m_content_length == -1 && !(m_httpMethod.length() > 0 && stricmp(m_httpMethod.get(), "GET") == 0))
         return false;
 
-    StringBuffer conheader;
-    getHeader("Connection", conheader);
-    conheader.trim().toLowerCase();
-    if(conheader.length() != 0)
-    {
-        if(strcmp(conheader.str(), "keep-alive") == 0)
-            return true;
-        else if(strcmp(conheader.str(), "close") == 0)
-            return false;
-    }
-
-    //HTTP 1.0 close by default
-    const char* httpver = nullptr;
-    if(m_version.length() > 5)
-        httpver = m_version.str() + 5;
-    if(httpver && strcmp(httpver, "1.0") == 0)
-        return false;
-
-    return true;
+    return CHttpMessage::checkPersistentEligible();
 }
 
 int CHttpRequest::processHeaders(IMultiException *me)
@@ -2432,13 +2424,7 @@ int CHttpResponse::processHeaders(IMultiException *me)
         lenread = m_bufferedsocket->readline(oneline, MAX_HTTP_HEADER_LEN, me);
     }
 
-    setPersistentEligible(true);
-    StringBuffer conheader;
-    getHeader("Connection", conheader);
-    if(conheader.length() != 0 && stricmp(conheader.str(), "Close") == 0)
-        setPersistentEligible(false);
-    if(m_content_length == 0)
-        setPersistentEligible(false);
+    setPersistentEligible(checkPersistentEligible());
 
     return 0;
 }
@@ -2859,4 +2845,12 @@ bool CHttpResponse::decompressContent(StringBuffer* originalContent, int compres
     removeHeader(HTTP_HEADER_CONTENT_ENCODING);
     return true;
 #endif
+}
+
+bool CHttpResponse::checkPersistentEligible()
+{
+    if(m_content_length <= 0)
+        return false;
+
+    return CHttpMessage::checkPersistentEligible();
 }

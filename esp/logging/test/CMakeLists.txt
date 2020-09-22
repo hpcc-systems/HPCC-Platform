@@ -50,6 +50,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/clients/LoggingClient
          ${HPCC_SOURCE_DIR}/esp/logging/logginglib
          ${HPCC_SOURCE_DIR}/esp/logging/loggingmanager
+         ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

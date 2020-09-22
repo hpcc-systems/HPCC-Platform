@@ -51,6 +51,7 @@ include_directories (
          ./../../../common/wuwebview
          ./../../../common/fileview2 
          ./../../../dali/base 
+         ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
 ADD_DEFINITIONS( -D_USRDLL )

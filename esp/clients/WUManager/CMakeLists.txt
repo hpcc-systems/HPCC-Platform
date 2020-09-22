@@ -44,6 +44,7 @@ include_directories (
          ./../../../system/jlib 
          ./../../platform 
          ./../../clients 
+         ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

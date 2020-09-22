@@ -59,6 +59,7 @@ include_directories (
          ./../../esp/platform 
          ./../../system/jlib 
          ./../../system/xmllib 
+         ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
 ADD_DEFINITIONS( -DECLPLUS_EXPORTS -D_CONSOLE )

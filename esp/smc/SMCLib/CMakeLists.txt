@@ -57,6 +57,7 @@ include_directories (
          ./../../bindings 
          ./../../bindings/SOAP/xpp 
          ./.. 
+         ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DSMCLIB_EXPORTS )
