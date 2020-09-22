@@ -124,9 +124,7 @@
  * @param   inFile          The dataset to process; this could be a child
  *                          dataset (e.g. inFile.childDS); REQUIRED
  * @param   fieldListStr    A string containing a comma-delimited list of
- *                          attribute names to process; note that attributes
- *                          listed here must be scalar datatypes (not child
- *                          records or child datasets); use an empty string to
+ *                          attribute names to process; use an empty string to
  *                          process all attributes in inFile; OPTIONAL,
  *                          defaults to an empty string
  * @param   maxPatterns     The maximum number of patterns (both popular and
@@ -217,7 +215,7 @@ EXPORT Profile(inFile,
 
     // Remove all spaces from field list so we can parse it more easily
     #UNIQUENAME(trimmedFieldList);
-    LOCAL %trimmedFieldList% := TRIM(fieldListStr, ALL);
+    LOCAL %trimmedFieldList% := TRIM((STRING)fieldListStr, ALL);
 
     // Clamp lcbLimit to 0..1000
     #UNIQUENAME(lowCardinalityThreshold);
@@ -280,15 +278,33 @@ EXPORT Profile(inFile,
             %ungroupedInFile%
         );
 
-    // Slim the dataset if the caller provided an explicit set of attributes;
-    // note that the TABLE function will fail if %trimmedFieldList% cites an
-    // attribute that is a child dataset (this is an ECL limitation)
+    // Slim the dataset if the caller provided an explicit set of attributes
     #UNIQUENAME(workingInFile);
     LOCAL %workingInFile% :=
         #IF(%trimmedFieldList% = '')
             %sampledData%
         #ELSE
-            TABLE(%sampledData%, {#EXPAND(%trimmedFieldList%)})
+            TABLE
+                (
+                    %sampledData%,
+                    {
+                        #SET(needsDelim, 0)
+                        #SET(namePos, 1)
+                        #LOOP
+                            #SET(temp, REGEXFIND('^([^,]+)', %trimmedFieldList%[%namePos%..], 1))
+                            #IF(%'temp'% != '')
+                                #IF(%needsDelim% = 1) , #END
+
+                                TYPEOF(%sampledData%.%temp%) %temp% := %temp%
+
+                                #SET(needsDelim, 1)
+                                #SET(namePos, %namePos% + LENGTH(%'temp'%) + 1)
+                            #ELSE
+                                #BREAK
+                            #END
+                        #END
+                    }
+                )
         #END;
 
     // Distribute the inbound dataset across all our nodes for faster processing
