@@ -89,6 +89,7 @@ include_directories (
          ./../../smc/SMCLib
          ./../../bindings/SOAP/xpp
          ${HPCC_SOURCE_DIR}/dali/dfu
+         ${HPCC_SOURCE_DIR}/dali/ft
          ./../../../testing/unittests
     )
 

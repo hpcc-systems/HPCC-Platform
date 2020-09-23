@@ -35,6 +35,7 @@
 #include "daft.hpp"
 #include "dalienv.hpp"
 #include "jpqueue.hpp"
+#include "esp.hpp"
 
 class LFWRAPPER_API LogicFileWrapper : public CInterface  
 {
@@ -158,5 +159,9 @@ struct CompressTask: public CInterface, implements ITask
 
     Linked<IDistributedFilePart> part;
 };
+
+extern LFWRAPPER_API IDistributedFile* lookupLogicalName(IEspContext& contcontext, const char* logicalName, bool writeattr,
+    bool hold, bool lockSuperOwner, IDistributedFileTransaction* transaction, bool privilegedUser, unsigned timeout=INFINITE);
+extern LFWRAPPER_API void getNodeGroupFromLFN(IEspContext& context, const char* lfn, StringBuffer& nodeGroup);
 
 #endif //__DFUWrapper_HPP__
