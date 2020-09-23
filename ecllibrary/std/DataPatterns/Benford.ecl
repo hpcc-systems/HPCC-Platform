@@ -168,9 +168,9 @@ EXPORT Benford(inFile, fieldListStr = '\'\'', digit = 1, sampleSize = 100) := FU
             TABLE(%sampledData%, {#EXPAND(%trimmedFieldList%)})
         #END;
 
-    // Helper function that returns the pos digit in a string; if pos = 1
-    // then th digit must be non-zero; returns 10 (an invalid *digit*)
-    // if no suitable digit is found
+    // Helper function that returns the 'pos' significant digit in a string;
+    // if pos = 1 then th digit must be non-zero; returns 10
+    // (an invalid *digit*) if no suitable digit is found
     #UNIQUENAME(NthDigit);
     LOCAL UNSIGNED1 %NthDigit%(STRING s, UNSIGNED1 pos) := EMBED(C++)
         #option pure
@@ -180,18 +180,26 @@ EXPORT Benford(inFile, fieldListStr = '\'\'', digit = 1, sampleSize = 100) := FU
         for (unsigned int x = 0; x < lenS; x++)
         {
             char ch = s[x];
-            if (isdigit(ch) && (pos > 1 || ch != '0'))
+
+            if (isdigit(ch) && (digitsFound > 0 || ch != '0'))
             {
                 ++digitsFound;
+
                 if (digitsFound >= pos)
                 {
                     foundDigit = ch - '0';
                     break;
                 }
+
+                // Once we find a significant digit, the default return value
+                // is a trailing zero (assumed after an implied decimal point
+                // if we're parsing an integer)
+                foundDigit = 0;
             }
             else if (ch == '.')
             {
-                // A trailing zero is now the default value
+                // Once we find a decimal point, the default return value
+                // is a trailing zero
                 foundDigit = 0;
             }
         }
