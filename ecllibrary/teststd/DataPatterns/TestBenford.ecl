@@ -87,18 +87,18 @@ EXPORT TestBenford := MODULE
         ASSERT(BenfordResults3[1].nine = 9.8D),
         ASSERT(BenfordResults3[1].chi_squared = 21.666D),
         ASSERT(BenfordResults3[1].num_values = 100),
-        ASSERT(BenfordResults3[2].zero = 7.4D),
-        ASSERT(BenfordResults3[2].one = 14.7D),
-        ASSERT(BenfordResults3[2].two = 7.4D),
-        ASSERT(BenfordResults3[2].three = 6.3D),
-        ASSERT(BenfordResults3[2].four = 8.4D),
-        ASSERT(BenfordResults3[2].five = 13.7D),
-        ASSERT(BenfordResults3[2].six = 5.3D),
-        ASSERT(BenfordResults3[2].seven = 18.9D),
-        ASSERT(BenfordResults3[2].eight = 7.4D),
-        ASSERT(BenfordResults3[2].nine = 10.5D),
-        ASSERT(BenfordResults3[2].chi_squared = 17.641D),
-        ASSERT(BenfordResults3[2].num_values = 95)
+        ASSERT(BenfordResults3[2].zero = 12D),
+        ASSERT(BenfordResults3[2].one = 14D),
+        ASSERT(BenfordResults3[2].two = 7D),
+        ASSERT(BenfordResults3[2].three = 6D),
+        ASSERT(BenfordResults3[2].four = 8D),
+        ASSERT(BenfordResults3[2].five = 13D),
+        ASSERT(BenfordResults3[2].six = 5D),
+        ASSERT(BenfordResults3[2].seven = 18D),
+        ASSERT(BenfordResults3[2].eight = 7D),
+        ASSERT(BenfordResults3[2].nine = 10D),
+        ASSERT(BenfordResults3[2].chi_squared = 15.646D),
+        ASSERT(BenfordResults3[2].num_values = 100)
     ];
 
     SHARED BenfordResults4 := DataPatterns.Benford(TestData, digit := 4);
@@ -115,18 +115,18 @@ EXPORT TestBenford := MODULE
         ASSERT(BenfordResults4[1].nine = 10D),
         ASSERT(BenfordResults4[1].chi_squared = 21.666D),
         ASSERT(BenfordResults4[1].num_values = 100),
-        ASSERT(BenfordResults4[2].zero = 20D),
-        ASSERT(BenfordResults4[2].one = 11.6D),
-        ASSERT(BenfordResults4[2].two = 5.3D),
-        ASSERT(BenfordResults4[2].three = 11.6D),
-        ASSERT(BenfordResults4[2].four = 7.4D),
-        ASSERT(BenfordResults4[2].five = 23.2D),
-        ASSERT(BenfordResults4[2].six = 9.5D),
-        ASSERT(BenfordResults4[2].seven = 5.3D),
+        ASSERT(BenfordResults4[2].zero = 24D),
+        ASSERT(BenfordResults4[2].one = 11D),
+        ASSERT(BenfordResults4[2].two = 5D),
+        ASSERT(BenfordResults4[2].three = 11D),
+        ASSERT(BenfordResults4[2].four = 7D),
+        ASSERT(BenfordResults4[2].five = 22D),
+        ASSERT(BenfordResults4[2].six = 9D),
+        ASSERT(BenfordResults4[2].seven = 5D),
         ASSERT(BenfordResults4[2].eight = 0D),
-        ASSERT(BenfordResults4[2].nine = 6.3D),
-        ASSERT(BenfordResults4[2].chi_squared = 44.424D),
-        ASSERT(BenfordResults4[2].num_values = 95)
+        ASSERT(BenfordResults4[2].nine = 6D),
+        ASSERT(BenfordResults4[2].chi_squared = 51.8D),
+        ASSERT(BenfordResults4[2].num_values = 100)
     ];
 
     SHARED BenfordResults5 := DataPatterns.Benford(TestData, digit := 5);
@@ -154,7 +154,13 @@ EXPORT TestBenford := MODULE
         ASSERT(BenfordResults5[2].eight = 0D),
         ASSERT(BenfordResults5[2].nine = 0D),
         ASSERT(BenfordResults5[2].chi_squared = 900D),
-        ASSERT(BenfordResults5[2].num_values = 95)
+        ASSERT(BenfordResults5[2].num_values = 100)
+    ];
+
+    SHARED RegressionResults1 := DataPatterns.Benford(DATASET([0.0012], {DECIMAL5_4 n}), digit := 2);
+    SHARED TestRegression1 := [
+        ASSERT(RegressionResults1[2].two = 100D),
+        ASSERT(RegressionResults1[2].num_values = 1)
     ];
 
     EXPORT Main := [
@@ -162,7 +168,8 @@ EXPORT TestBenford := MODULE
         EVALUATE(TestBenford2),
         EVALUATE(TestBenford3),
         EVALUATE(TestBenford4),
-        EVALUATE(TestBenford5)
+        EVALUATE(TestBenford5),
+        EVALUATE(TestRegression1)
     ];
 
 END;
