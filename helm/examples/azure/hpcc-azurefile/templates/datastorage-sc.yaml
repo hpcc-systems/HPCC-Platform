@@ -5,5 +5,8 @@ metadata:
 provisioner: kubernetes.io/azure-file
 parameters:
   skuName: {{ .Values.dataStorage.sku | default "Standard_LRS" }}
+{{- if .Values.dataStorage.storageAccount }}
+  storageAccount: {{ .Values.dataStorage.storageAccount }}
+{{- end }}
 reclaimPolicy: Retain
 allowVolumeExpansion: true

@@ -24,6 +24,9 @@
         },
         "sku": {
           "type": "string"
+        },
+        "storageAccount": {
+          "type": "string"
         }
       },
       "additionalProperties": false
