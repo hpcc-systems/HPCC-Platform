@@ -14,7 +14,6 @@ fi
 
 sync_git
 parse_cmake
-
 if [ "$HPCC_MATURITY" = "closedown" ] ; then
   if (( "$HPCC_POINT" % 2 != 1 )) ; then
     if [ "$HPCC_POINT" = "0" ] ; then
@@ -43,7 +42,7 @@ if [ "$HPCC_MATURITY" = "closedown" ] ; then
   doit "git submodule update --init --recursive"
   update_version_file closedown $((NEW_POINT+1)) 0 $NEW_MINOR
   if [ -e helm/hpcc/Chart.yaml ] ; then
-    update_chart_file helm/hpcc/Chart.yaml closedown $HPCC_POINT $NEW_SEQUENCE
+    update_chart_file helm/hpcc/Chart.yaml closedown $((NEW_POINT+1)) 0 $NEW_MINOR 
   fi
   doit "git add $VERSIONFILE"
   doit "git commit -s -m \"Split off $HPCC_MAJOR.$NEW_MINOR.$NEW_POINT\""
@@ -68,7 +67,7 @@ fi
 
 update_version_file rc $NEW_POINT $NEW_SEQUENCE $NEW_MINOR
 if [ -e helm/hpcc/Chart.yaml ] ; then
-  update_chart_file helm/hpcc/Chart.yaml rc $NEW_POINT $NEW_SEQUENCE
+  update_chart_file helm/hpcc/Chart.yaml rc $NEW_POINT $NEW_SEQUENCE $NEW_MINOR 
   doit "git add helm/hpcc/Chart.yaml"
 fi
 
