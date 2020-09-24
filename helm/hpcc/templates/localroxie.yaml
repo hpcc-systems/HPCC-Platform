@@ -19,8 +19,8 @@ spec:
       labels:
         run: {{ $roxie.name | quote }}
         roxie-server: {{ $servername | quote }}
-        accessDali: "true"
-        accessEsp: "true" 
+        accessDali: "yes"
+        accessEsp: "yes"
     spec:
       serviceAccountName: "hpcc-default"
       initContainers:

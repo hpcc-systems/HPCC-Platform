@@ -28,8 +28,8 @@ spec:
     metadata:
       labels:
         run: {{ $eclAgentName | quote }}
-        accessDali: "true"
-        accessEsp: {{ .useChildProcesses | default false | quote }}
+        accessDali: "yes"
+        accessEsp: {{ .useChildProcesses | default false | ternary "yes" "no" | quote }}
     spec:
       serviceAccountName: {{ $eclAgentScope.useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
       containers:
@@ -67,8 +67,8 @@ spec:
     metadata:
       labels:
         run: {{ $thorAgentName | quote }}
-        accessDali: "true"
-        accessEsp: {{ .useChildProcesses | default false | quote }}
+        accessDali: "yes"
+        accessEsp: {{ .useChildProcesses | default false | ternary "yes" "no" | quote }}
     spec:
       serviceAccountName: {{ $thorAgentScope.useChildProcesses | default false | ternary "hpcc-default" "hpcc-thoragent" }}
       containers:
@@ -146,8 +146,8 @@ data:
       template:
         metadata:
           labels:
-            accessDali: "true"
-            accessEsp: "true"
+            accessDali: "yes"
+            accessEsp: "yes"
         spec:
           serviceAccountName: {{ $thorAgentScope.useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
           initContainers: 
@@ -196,8 +196,8 @@ data:
         metadata:
           labels:
             app: thor
-            accessDali: "true"
-            accessEsp: "true"
+            accessDali: "yes"
+            accessEsp: "yes"
             job: %jobname
         spec:
           serviceAccountName: hpcc-agent
