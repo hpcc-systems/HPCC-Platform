@@ -132,8 +132,8 @@ spec:
         run: {{ $servername | quote }}
         roxie-server: {{ $servername | quote }}
         roxie-cluster: {{ $roxie.name | quote }}
-        accessDali: "true"
-        accessEsp: "true" 
+        accessDali: "yes"
+        accessEsp: "yes"
     spec:
       serviceAccountName: "hpcc-default"
       initContainers:
@@ -195,8 +195,8 @@ spec:
         roxie-server: {{ $servername | quote }}
 {{- end }}
         roxie-cluster: {{ $roxie.name | quote }}
-        accessDali: "true"
-        accessEsp: "true" 
+        accessDali: "yes"
+        accessEsp: "yes"
     spec:
       serviceAccountName: "hpcc-default"
       initContainers:

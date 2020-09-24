@@ -14,7 +14,7 @@ spec:
     metadata:
       labels:
         run: {{ .name | quote }}
-        accessDali: "true"
+        accessDali: "yes"
         app: {{ $application }}
     spec:
       serviceAccountName: "hpcc-default"

@@ -15,8 +15,8 @@ spec:
     metadata:
       labels:
         run: {{ .name | quote }}
-        accessDali: "true"
-        accessEsp: {{ .useChildProcesses | default false | quote }}
+        accessDali: "yes"
+        accessEsp: {{ .useChildProcesses | default false | ternary "yes" "no" | quote }}
     spec:
       serviceAccountName: {{ .useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
       initContainers:
@@ -69,8 +69,8 @@ data:
       template:
         metadata:
           labels:
-            accessDali: "true"
-            accessEsp: "true"
+            accessDali: "yes"
+            accessEsp: "yes"
         spec:
           serviceAccountName: "hpcc-default"
           containers:

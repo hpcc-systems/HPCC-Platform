@@ -66,12 +66,12 @@ spec:
   - from:
     - podSelector:
         matchLabels:
-          accessDali: "true"
+          accessDali: "yes"
   egress:
   - to:
     - podSelector:
         matchLabels:
-          accessDali: "true"
+          accessDali: "yes"
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -80,7 +80,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      accessDali: "true"
+      accessDali: "yes"
   ingress:
   - from:
     - podSelector:
@@ -107,12 +107,12 @@ spec:
   - from:
     - podSelector:
         matchLabels:
-          accessEsp: "true"
+          accessEsp: "yes"
   egress:
   - to:
     - podSelector:
         matchLabels:
-          accessEsp: "true"
+          accessEsp: "yes"
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -121,7 +121,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      accessEsp: "true"
+      accessEsp: "yes"
   ingress:
   - from:
     - podSelector:
