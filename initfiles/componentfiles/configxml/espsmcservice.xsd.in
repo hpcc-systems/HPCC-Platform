@@ -208,6 +208,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="WUResultDownloadFlushThreshold" type="xs:nonNegativeInteger" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>When streamly downloading WUResult, WUResult buffer will be flushed out if its size reaches this value.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="enableLogDaliConnection" type="xs:boolean" use="optional" default="false">
                 <xs:annotation>
                     <xs:appinfo>

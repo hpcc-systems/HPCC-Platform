@@ -1615,6 +1615,13 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
             response->send();
             return 0;
         }
+        else if (!strnicmp(path.str(), "/WsWorkunits/WUResultBin", 24))
+        {
+            CWsWuResultOutHelper helper;
+            if (!helper.getWUResultStreaming(request, response, wuResultDownloadFlushThreshold))
+                return CWsWorkunitsSoapBinding::onGet(request,response);
+            return 0;
+        }
         else if (!strnicmp(path.str(), REQPATH_CREATEANDDOWNLOADZAP, sizeof(REQPATH_CREATEANDDOWNLOADZAP) - 1))
         {
             createAndDownloadWUZAPFile(*ctx, request, response);
