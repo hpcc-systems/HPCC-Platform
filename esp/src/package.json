@@ -31,7 +31,6 @@
   },
   "main": "src/stub.js",
   "dependencies": {
-    "d3-array": "2.7.1",
     "@hpcc-js/chart": "2.50.0",
     "@hpcc-js/codemirror": "2.31.0",
     "@hpcc-js/common": "2.40.0",
