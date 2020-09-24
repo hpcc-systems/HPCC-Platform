@@ -4,7 +4,7 @@
 {{- $hthorName := printf "%s-hthor" .name }}
 {{- $eclAgentName := printf "%s-agent" .name }}
 {{- $thorAgentName := printf "%s-thoragent" .name }}
-{{- $slaveName := printf "%s-slave" .name }}
+{{- $workerName := printf "%s-worker" .name }}
 {{- $serviceName := printf "%s-svc" .name }}
 {{- $eclAgentDefaults := dict "name" $eclAgentName "useChildProcesses" true "replicas" 1 }}
 {{- $eclAgentScope := .eclagent | mergeOverwrite $eclAgentDefaults | default $eclAgentDefaults }}
@@ -111,7 +111,7 @@ data:
 {{ toYaml (omit $hthorScope "logging") | indent 6 }}
       platform:
         type: "thor"
-        width: {{ $thor.numSlaves }}
+        width: {{ mul (.numWorkers | default 1) ( .channelsPerWorker | default 1) }}
 {{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" $hthorScope) | indent 6 }}
 {{ include "hpcc.generateVaultConfig" (dict "root" $ "categories" (list "storage" "ecl" "ecl-user" ) ) | indent 6 }}
     eclagent: # main agent Q handler
@@ -185,11 +185,11 @@ data:
 {{- end }}
 {{- if not $thorAgentScope.useChildProcesses }}
 
-  thormaster-jobspec.yaml: |
+  thormanager-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
     metadata:
-      name: thormaster-%jobname
+      name: thormanager-%jobname
     spec:
       ttlSecondsAfterFinished: 100
       template:
@@ -204,7 +204,7 @@ data:
           initContainers:
             {{- include "hpcc.checkDataMount" (dict "root" $) | indent 10 }}
           containers:
-          - name: thormaster-%jobname
+          - name: thormanager-%jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
             resources:
@@ -234,13 +234,13 @@ data:
           restartPolicy: Never
       backoffLimit: 0
 
-  thorslave-jobspec.yaml: |
+  thorworker-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
     metadata:
-      name: thorslave-%jobname
+      name: thorworker-%jobname
     spec:
-      parallelism: %numSlaves
+      parallelism: %numWorkers
       ttlSecondsAfterFinished: 100
       template:
         metadata:
@@ -251,7 +251,7 @@ data:
         spec:
           serviceAccountName: hpcc-default
           containers:
-          - name: thorslave-%jobname
+          - name: thorworker-%jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
             resources:
@@ -281,11 +281,11 @@ data:
           restartPolicy: Never
       backoffLimit: 0
 
-  thormaster-networkspec.yaml: |
+  thormanager-networkspec.yaml: |
     apiVersion: networking.k8s.io/v1
     kind: NetworkPolicy
     metadata:
-      name: thormaster-%jobname
+      name: thormanager-%jobname
     spec:
       podSelector:
         matchLabels:

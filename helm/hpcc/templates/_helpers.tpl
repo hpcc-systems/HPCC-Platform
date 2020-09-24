@@ -550,7 +550,7 @@ Generate instance queue names
 - name: {{ .name }}
   type: thor
   prefix: {{ .prefix | default "null" }}
-  width: {{ mul (.numSlaves | default 1) ( .channelsPerSlave | default 1) }}
+  width: {{ mul (.numWorkers | default 1) ( .channelsPerWorker | default 1) }}
  {{- end }}
 {{- end -}}
 {{- end -}}
