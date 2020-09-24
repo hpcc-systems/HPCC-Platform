@@ -234,7 +234,7 @@ public:
                 graphName.set(sArray.item(1));
 
                 // JCSMORE - idealy apptype, image and executable name would all be same.
-                jobSpecName.set("thormaster");
+                jobSpecName.set("thormanager");
                 processName.set("thormaster_lcr");
             }
             if (!queryComponentConfig().getPropBool("@useChildProcesses", false))

@@ -228,7 +228,7 @@ roxie:
 
 thor:
 - name: thor
-  numSlaves: 2
+  numWorkers: 2
   globalMemorySize: 4096
   prefix: thor
   eclagent:

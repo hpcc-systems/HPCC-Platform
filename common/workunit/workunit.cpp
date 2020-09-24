@@ -13667,7 +13667,7 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
     else
     {
         VStringBuffer job("%s-%s", wuid.str(), graphName);
-        runK8sJob("thormaster", wuid, job, queryComponentConfig().getPropBool("@deleteJobs", true), { { "graphName", graphName} });
+        runK8sJob("thormanager", wuid, job, queryComponentConfig().getPropBool("@deleteJobs", true), { { "graphName", graphName} });
     }
 
     /* In k8s, Thor feeds back the terminating exception via the workunit.

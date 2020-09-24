@@ -584,9 +584,9 @@
           "type": "string",
           "description": "The (optional) file prefix to add to relative filenames"
         },
-        "numSlaves": {
+        "numWorkers": {
           "type": "integer",
-          "description": "The number of slave pods",
+          "description": "The number of worker pods",
           "minimum": 1
         },
         "lingerPeriod": {
