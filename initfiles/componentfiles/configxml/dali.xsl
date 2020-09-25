@@ -81,7 +81,7 @@
     <DALI>
       <xsl:attribute name="name">
         <xsl:value-of select="@name"/>
-      </xsl:attribute> 
+      </xsl:attribute>
       <xsl:if test="string(@LogDir)!=''">
         <xsl:attribute name="log_dir">
           <xsl:value-of select="@LogDir"/>
@@ -99,7 +99,32 @@
           </xsl:call-template>
         </xsl:attribute>
       </xsl:if>
-      <xsl:copy-of select="/Environment/Software/Directories"/>  
+      <xsl:copy-of select="/Environment/Software/Directories"/>
+
+      <xsl:if test="@authMethod='secmgrPlugin'">
+      <SecurityManagers>
+          <SecurityManager>
+              <xsl:variable name="instanceName" select="@authPluginType"/>
+              <xsl:if test="not(/Environment/Software/*[@name=$instanceName and @type='SecurityManager'])">
+                  <xsl:message terminate="yes">Security Manager instance of name <xsl:value-of select="@authPluginType"/> is referenced in service <xsl:value-of select="@name"/> of ESP <xsl:value-of select="../@name"/> but does not exist"</xsl:message>
+              </xsl:if>
+              <xsl:attribute name="name">
+                  <xsl:value-of select="/Environment/Software/*[@name=$instanceName and @type='SecurityManager']/@name"/>
+              </xsl:attribute>
+              <xsl:attribute name="instanceFactoryName">
+                  <xsl:value-of select="/Environment/Software/*[@name=$instanceName and @type='SecurityManager']/@instanceFactoryName"/>
+              </xsl:attribute>
+              <xsl:attribute name="libName">
+                  <xsl:value-of select="/Environment/Software/*[@name=$instanceName and @type='SecurityManager']/@libName"/>
+              </xsl:attribute>
+              <xsl:attribute name="type">
+                  <xsl:value-of select="name(/Environment/Software/*[@name=$instanceName and @type='SecurityManager'])"/>
+              </xsl:attribute>
+              <xsl:copy-of select="/Environment/Software/*[@name=$instanceName and @type='SecurityManager']"/>
+          </SecurityManager>
+      </SecurityManagers>
+     </xsl:if>
+
       <xsl:element name="SDS">
         <xsl:attribute name="store">dalisds.xml</xsl:attribute>
         <xsl:attribute name="caseInsensitive">0</xsl:attribute>

@@ -34,6 +34,7 @@ interface IDaliLdapConnection: extends IInterface
     virtual bool enableScopeScans(IUserDescriptor *udesc, bool enable, int *err) = 0;
 };
 
+extern IDaliLdapConnection *createDaliSecMgrPluginConnection(IPropertyTree *proptree);
 extern IDaliLdapConnection *createDaliLdapConnection(IPropertyTree *proptree);
 
 

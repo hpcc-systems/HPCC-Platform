@@ -126,7 +126,7 @@ bool actionOnAbort()
 {
     stopServer();
     return true;
-} 
+}
 
 USE_JLIB_ALLOC_HOOK;
 
@@ -137,6 +137,46 @@ void usage(void)
     printf("--server|-s <value>\t: server ip if not local host\n");
     printf("--port|-p <value>\t: server port only effective if --server set\n");
     printf("--daemon|-d <instanceName>\t: run daemon as instance\n");
+}
+
+static IPropertyTree *getSecMgrPluginPropTree(const IPropertyTree *configTree)
+{
+    Owned<IPropertyTree> foundTree;
+
+#ifdef _CONTAINERIZED
+    // TODO
+#else
+    Owned<IRemoteConnection> conn = querySDS().connect("/Environment", 0, 0, INFINITE);
+
+    if (conn)
+    {
+        const IPropertyTree *proptree = conn->queryRoot()->queryPropTree("Software/DaliServerProcess[1]");
+
+        if (proptree)
+        {
+            const char* authMethod = proptree->queryProp("@authMethod");
+
+            if (strisame(authMethod, "secmgrPlugin"))
+            {
+                const char* authPluginType = proptree->queryProp("@authPluginType");
+
+                if (authPluginType)
+                {
+                    VStringBuffer xpath("SecurityManagers/SecurityManager[@name='%s']", authPluginType);
+
+                    foundTree.setown(configTree->getPropTree(xpath));
+
+                    if (!foundTree.get())
+                    {
+                        WARNLOG("secmgPlugin '%s' not defined in configuration", authPluginType);
+                    }
+                }
+            }
+        }
+    }
+#endif
+
+    return foundTree.getClear();
 }
 
 /* NB: Ideally this belongs within common/environment,
@@ -387,7 +427,7 @@ int main(int argc, const char* argv[])
         Owned<IFile> sentinelFile = createSentinelTarget();
         removeSentinelFile(sentinelFile);
 #ifndef _CONTAINERIZED
-	
+
         for (unsigned i=1;i<(unsigned)argc;i++) {
             if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
                 if (daemon(1,0) || write_pidfile(argv[++i])) {
@@ -449,10 +489,10 @@ int main(int argc, const char* argv[])
             }
         }
         // JCSMORE remoteBackupLocation should not be a property of SDS section really.
-        if (!getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"mirror","dali",serverConfig->queryProp("@name"),mirrorPath)) 
+        if (!getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"mirror","dali",serverConfig->queryProp("@name"),mirrorPath))
             serverConfig->getProp("SDS/@remoteBackupLocation",mirrorPath);
 
-#endif            
+#endif
         if (dataPath.length())
         {
             addPathSepChar(dataPath); // ensures trailing path separator
@@ -508,8 +548,8 @@ int main(int argc, const char* argv[])
                         if (mirrorPath.length()<=2 || !isPathSepChar(mirrorPath.charAt(0)) || !isPathSepChar(mirrorPath.charAt(1)))
                             rfn.setLocalPath(mirrorPath.str());
                         else
-                            rfn.setRemotePath(mirrorPath.str());                
-                        
+                            rfn.setRemotePath(mirrorPath.str());
+
                         if (!rfn.getPort() && !rfn.isLocal())
                         {
                             StringBuffer mountPoint;
@@ -545,7 +585,7 @@ int main(int argc, const char* argv[])
                         OwnedIFile iFileBackup = createIFile(backupCheck.str());
                         if (iFileBackup->exists())
                         {
-                            PROGLOG("remoteBackupLocation and dali data path point to same location! : %s", mirrorPath.str()); 
+                            PROGLOG("remoteBackupLocation and dali data path point to same location! : %s", mirrorPath.str());
                             iFileDataDir->remove();
                             return 0;
                         }
@@ -619,10 +659,10 @@ int main(int argc, const char* argv[])
 #ifndef _CONTAINERIZED
         setMsgLevel(fileMsgHandler, serverConfig->getPropInt("SDS/@msgLevel", 100));
 #endif
-        startLogMsgChildReceiver(); 
+        startLogMsgChildReceiver();
         startLogMsgParentReceiver();
 
-        IGroup *group = createIGroup(epa); 
+        IGroup *group = createIGroup(epa);
         initCoven(group,serverConfig);
         group->Release();
         epa.kill();
@@ -641,7 +681,7 @@ int main(int argc, const char* argv[])
             auditDir.set(lf->queryLogDir());
         }
 
-// SNMP logging     
+// SNMP logging
         bool enableSNMP = serverConfig->getPropBool("SDS/@enableSNMP");
         if (serverConfig->getPropBool("SDS/@enableSysLog",true))
             UseSysLogForOperatorMessages();
@@ -675,7 +715,16 @@ int main(int argc, const char* argv[])
         }
         try {
 #ifndef _NO_LDAP
-            setLDAPconnection(createDaliLdapConnection(serverConfig->getPropTree("Coven/ldapSecurity")));
+            Owned<IPropertyTree> secMgrPropTree = getSecMgrPluginPropTree(serverConfig);
+
+            if (secMgrPropTree.get())
+            {
+                setLDAPconnection(createDaliSecMgrPluginConnection(secMgrPropTree));
+            }
+            else
+            {
+                setLDAPconnection(createDaliLdapConnection(serverConfig->getPropTree("Coven/ldapSecurity")));
+            }
 #endif
         }
         catch (IException *e) {
