@@ -26,7 +26,7 @@
 //SCM Interfaces
 #include "esp.hpp"
 #include "xslprocessor.hpp"
-#include "persistent.hpp"
+#include "../../common/thorhelper/persistent.hpp"
 
 //STL
 #include <algorithm>
