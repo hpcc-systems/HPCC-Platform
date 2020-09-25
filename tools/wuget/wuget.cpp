@@ -76,7 +76,7 @@ int main(int argc, char **argv)
                     if (xml.length())
                     {
                         Owned<ILocalWorkUnit> wu = createLocalWorkUnit(xml);
-                        if (getArchiveXMLFromFile(filename, xml.clear()))
+                        if (doArchive && getArchiveXMLFromFile(filename, xml.clear()))
                         {
                             Owned<IWUQuery> q = wu->updateQuery();
                             q->setQueryText(xml);

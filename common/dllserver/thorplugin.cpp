@@ -125,7 +125,6 @@ static bool getResourceFromMappedFile(const char * filename, const byte * start_
         }
     }
 
-    DBGLOG("Failed to extract resource %s: Does not include a matching entry", filename);
     return false;
 #else
     // The first bytes are the ELF header
@@ -166,7 +165,6 @@ static bool getResourceFromMappedFile(const char * filename, const byte * start_
         }
     }
 
-    DBGLOG("Failed to extract resource %s: Does not include a matching entry", filename);
     return false;
 #endif
 }
