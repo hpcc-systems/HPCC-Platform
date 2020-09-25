@@ -33,13 +33,7 @@ spec:
 {{- if .useChildProcesses }}
 {{- include "hpcc.addResources" (dict "me" .resources) | indent 8 }}
 {{- else }}
-        resources:
-          requests:
-            cpu: "50m"
-            memory: "50M"
-          limits:
-            cpu: "50m"
-            memory: "50M"
+{{- include "hpcc.addStubResources" . | indent 8 }}
 {{- end }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
         volumeMounts:

@@ -642,7 +642,7 @@
         "workerResources": {
           "$ref": "#/definitions/resources"
         },
-        "agentResources": {
+        "eclAgentResources": {
           "$ref": "#/definitions/resources"
         }
       }

@@ -36,7 +36,6 @@ spec:
                 "--localAgent=true",
                 "--resolveLocally=false"
               ]
-{{- include "hpcc.addResources" (dict "root" $ "me" .) | indent 8 }}
 {{- $local := dict "first" true }}
 {{- range $service := $roxie.services }}
 {{- if ne (int $service.port)  0 }}
@@ -49,6 +48,7 @@ spec:
 {{- end }}
 {{- end }}
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
+{{- include "hpcc.addResources" (dict "me" $roxie.resources) | indent 8 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}

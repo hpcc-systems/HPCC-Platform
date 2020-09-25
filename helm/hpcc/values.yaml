@@ -160,7 +160,7 @@ eclagent:
   type: roxie
   #resources:
   #  cpu: "1"
-  #  memory: "1014M"
+  #  memory: "1G"
 
 eclccserver:
 - name: myeclccserver
@@ -201,7 +201,7 @@ esp:
   servicePort: 8010
   public: false
   #resources:
-  #  cpu: "2"
+  #  cpu: "1"
   #  memory: "1G"
 
 - name: eclqueries
@@ -273,6 +273,6 @@ thor:
   #workerResources:
   #  cpu: "4"
   #  memory: "4G"
-  #agentResources:
+  #eclAgentResources:
   #  cpu: "1"
   #  memory: "2G"

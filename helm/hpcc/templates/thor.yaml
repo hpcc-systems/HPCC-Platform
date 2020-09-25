@@ -42,13 +42,11 @@ spec:
                 {{ printf "\"--name=%s\"" .name }}
               ]
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
-        resources:
-          requests:
-            cpu: "50m"
-            memory: "50M"
-          limits:
-            cpu: "50m"
-            memory: "50M"
+{{- if .useChildProcesses }}
+{{- include "hpcc.addResources" (dict "me" $thorScope.eclAgentResources) | indent 8 }}
+{{- else }}
+{{- include "hpcc.addStubResources" . | indent 8 }}
+{{- end }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
@@ -88,7 +86,9 @@ spec:
                 {{ printf "\"--name=%s\"" .name }}
               ]
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
-{{- include "hpcc.addResources" (dict "me" $thorScope.agentResources) | indent 8 }}
+{{- if not .useChildProcesses }}
+{{- include "hpcc.addStubResources" . | indent 8 }}
+{{- end }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
@@ -164,7 +164,7 @@ data:
           - name: {{ $agentAppType }}-%jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
-{{- include "hpcc.addResources" (dict "me" $thorScope.agentResources) | indent 12 }}
+{{- include "hpcc.addResources" (dict "me" $thorScope.eclAgentResources) | indent 12 }}
             workingDir: /var/lib/HPCCSystems
             command: [ {{ $agentAppType | quote }} ] 
             args: [

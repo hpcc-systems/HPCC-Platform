@@ -593,3 +593,17 @@ resources:
 {{ toYaml .me | indent 4 }}
 {{- end }}
 {{- end -}}
+
+{{/*
+Add resources object for stub pods
+Pass in a dictionary with me defined
+*/}}
+{{- define "hpcc.addStubResources" }}
+resources:
+  requests:
+    cpu: "50m"
+    memory: "50M"
+  limits:
+    cpu: "50m"
+    memory: "50M"
+{{- end -}}
