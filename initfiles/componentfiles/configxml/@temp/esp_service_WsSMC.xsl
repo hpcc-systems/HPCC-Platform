@@ -675,6 +675,12 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
                     <xsl:attribute name="name">HPCCApps</xsl:attribute>
                     <xsl:attribute name="default">true</xsl:attribute>
                 </xsl:element>
+                <xsl:element name="Store">
+                    <xsl:attribute name="description">JWT token cache</xsl:attribute>
+                    <xsl:attribute name="name">JWTAuth</xsl:attribute>
+                    <xsl:attribute name="default">false</xsl:attribute>
+                    <xsl:attribute name="maxValSize">32768</xsl:attribute>
+                </xsl:element>
             </xsl:element>
         </EspService>
         <EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$bindingNode/@protocol}" type="{$bindType}"

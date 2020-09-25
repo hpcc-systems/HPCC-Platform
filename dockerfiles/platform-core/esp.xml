@@ -62,7 +62,7 @@
       <EspBinding name="ws_esdlconfig_myespsmc_myesp" service="ws_esdlconfig_EclWatch_myesp" protocol="http" type="ws_esdlconfigSoapBinding" plugin="ws_esdlconfig" netAddress="0.0.0.0" port="8010" wsdlServiceAddress="" defaultServiceVersion=""/>
       <EspService name="ws_elk_EclWatch_myesp" type="ws_elk" plugin="ws_elk"><ELKIntegration><Kibana/><ElasticSearch/><LogStash/></ELKIntegration></EspService>
       <EspBinding name="ws_elk_myespsmc_myesp" service="ws_elk_EclWatch_myesp" protocol="http" type="ws_elkSoapBinding" plugin="ws_elk" netAddress="0.0.0.0" port="8010" wsdlServiceAddress="" defaultServiceVersion=""/>
-      <EspService name="ws_store_EclWatch_myesp" type="ws_store" plugin="ws_store"><StoreProvider lib="dalistorelib"/><Stores><Store description="Generic KeyVal store for HPCC Applications" name="HPCCApps" default="true"/></Stores></EspService>
+      <EspService name="ws_store_EclWatch_myesp" type="ws_store" plugin="ws_store"><StoreProvider lib="dalistorelib"/><Stores><Store description="Generic KeyVal store for HPCC Applications" name="HPCCApps" default="true"/><Store description="JWT token cache" name="JWTAuth" default="false" maxValSize="32768"/></Stores></EspService>
       <EspBinding name="ws_store_myespsmc_myesp" service="ws_store_EclWatch_myesp" protocol="http" type="ws_storeSoapBinding" plugin="ws_store" netAddress="0.0.0.0" port="8010" wsdlServiceAddress="" defaultServiceVersion=""/>
       <EspService name="ws_codesign_EclWatch_myesp" type="ws_codesign" plugin="ws_codesign"/>
       <EspBinding name="ws_codesign_myespsmc_myesp" service="ws_codesign_EclWatch_myesp" protocol="http" type="ws_codesignSoapBinding" plugin="ws_codesign" netAddress="0.0.0.0" port="8010" wsdlServiceAddress="" defaultServiceVersion=""/>

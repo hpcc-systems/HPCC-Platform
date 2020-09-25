@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2016 HPCC Systems.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -13,19 +13,12 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-IF (USE_OPENLDAP)
-HPCC_ADD_SUBDIRECTORY (LdapSecurity)
-ENDIF(USE_OPENLDAP)
-IF (USE_OPENSSL)
-  HPCC_ADD_SUBDIRECTORY (securesocket)
-ENDIF()
-HPCC_ADD_SUBDIRECTORY (test "PLATFORM")
-if (USE_ZLIB)
-  HPCC_ADD_SUBDIRECTORY (zcrypt)
-endif()
 
-IF (USE_APR)
-  HPCC_ADD_SUBDIRECTORY (plugins/htpasswdSecurity)
-ENDIF(USE_APR)
-HPCC_ADD_SUBDIRECTORY (plugins/singleuserSecurity)
-HPCC_ADD_SUBDIRECTORY (plugins/jwtSecurity)
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/jwtsecmgr.xsd"
+        DESTINATION componentfiles/configxml
+        COMPONENT RUNTIME)
+
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/buildset.xml"
+              "${CMAKE_CURRENT_SOURCE_DIR}/genenvrules.conf"
+        DESTINATION componentfiles/configxml/plugins/jwtsecmgr
+        COMPONENT RUNTIME)
