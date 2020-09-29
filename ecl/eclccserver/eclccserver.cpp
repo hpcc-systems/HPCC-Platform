@@ -487,10 +487,12 @@ public:
 #ifdef _CONTAINERIZED
         if (!globals->getPropBool("@useChildProcesses", false) && !globals->hasProp("@workunit"))
         {
+            bool deleteJobs = queryComponentConfig().getPropBool("@deleteJobs", true);
+            unsigned pendingTimeoutSecs = queryComponentConfig().getPropInt("@pendingTimeoutSecs", defaultPendingTimeSecs);
             Owned<IException> error;
             try
             {
-                runK8sJob("compile", wuid, wuid, globals->getPropBool("@deleteJobs", true));
+                runK8sJob("compile", wuid, wuid, deleteJobs, pendingTimeoutSecs);
             }
             catch (IException *E)
             {

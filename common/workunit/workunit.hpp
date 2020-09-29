@@ -1750,9 +1750,11 @@ extern WORKUNIT_API void executeThorGraph(const char * graphName, IConstWorkUnit
 #ifdef _CONTAINERIZED
 extern WORKUNIT_API bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, const char *graphName, const char *multiJobLingerQueueName);
 extern WORKUNIT_API void deleteK8sResource(const char *componentName, const char *job, const char *resource);
-extern WORKUNIT_API void waitK8sJob(const char *componentName, const char *job);
+extern WORKUNIT_API void waitK8sJob(const char *componentName, const char *job, unsigned pendingTimeoutSecs);
 extern WORKUNIT_API bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, const char *suffix, const std::list<std::pair<std::string, std::string>> &extraParams, bool optional);
-extern WORKUNIT_API void runK8sJob(const char *componentName, const char *wuid, const char *job, bool del=true, const std::list<std::pair<std::string, std::string>> &extraParams={});
+
+constexpr unsigned defaultPendingTimeSecs = 600;
+extern WORKUNIT_API void runK8sJob(const char *componentName, const char *wuid, const char *job, bool del=true, unsigned pendingTimeoutSecs=defaultPendingTimeSecs, const std::list<std::pair<std::string, std::string>> &extraParams={});
 #endif
 
 #endif
