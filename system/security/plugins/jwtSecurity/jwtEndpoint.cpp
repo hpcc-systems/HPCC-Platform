@@ -26,53 +26,15 @@
 
 #include "jwtEndpoint.hpp"
 
-struct MemoryStruct
-{
-    char*   memory;
-    size_t  size;
-    size_t  capacity;
-};
-
-static void initMemoryStructCapacity(MemoryStruct& mem, size_t initCapacity)
-{
-    mem.memory = static_cast<char*>(malloc(initCapacity));
-    mem.size = 0;
-    mem.capacity = initCapacity;
-}
-
-static void freeMemoryStruct(MemoryStruct& mem)
-{
-    if (mem.memory)
-    {
-        free(mem.memory);
-        mem.memory = nullptr;
-    }
-    mem.size = 0;
-    mem.capacity = 0;
-}
-
 static size_t captureIncomingCURLReply(void* contents, size_t size, size_t nmemb, void* userp)
 {
     size_t          incomingDataSize = size * nmemb;
-    MemoryStruct*   mem = static_cast<struct MemoryStruct*>(userp);
+    MemoryBuffer*   mem = static_cast<MemoryBuffer*>(userp);
     size_t          MAX_BUFFER_SIZE = 4194304; // 2^22
 
-    if ((mem->size + incomingDataSize) < MAX_BUFFER_SIZE)
+    if ((mem->length() + incomingDataSize) < MAX_BUFFER_SIZE)
     {
-        if ((mem->size + incomingDataSize) > mem->capacity)
-        {
-            size_t  newCapacity = mem->capacity * 2;
-
-            // Keep doubling capacity until it is greater than what we need
-            while ((mem->size + incomingDataSize) > newCapacity)
-                newCapacity *= 2;
-
-            mem->memory = static_cast<char*>(realloc(mem->memory, newCapacity));
-            mem->capacity = newCapacity;
-        }
-
-        memcpy(&(mem->memory[mem->size]), contents, incomingDataSize);
-        mem->size += incomingDataSize;
+        mem->append(incomingDataSize, contents);
     }
     else
     {
@@ -122,18 +84,14 @@ static std::string tokenFromEndpoint(const std::string& jwtEndPoint, bool allowS
     {
         CURLcode                curlResponseCode;
         struct curl_slist*      headers = nullptr;
-        MemoryStruct            captureBuffer;
         size_t                  INITIAL_BUFFER_SIZE = 32768; // 2^15
+        MemoryBuffer            captureBuffer(INITIAL_BUFFER_SIZE);
         char                    curlErrBuffer[CURL_ERROR_SIZE];
 
         curlErrBuffer[0] = '\0';
 
         try
         {
-            // Initialize our capture buffer to a reasonable size to avoid
-            // memory reallocation
-            initMemoryStructCapacity(captureBuffer, INITIAL_BUFFER_SIZE);
-
             headers = curl_slist_append(headers, "Content-Type: application/json;charset=UTF-8");
             curl_easy_setopt(curlHandle, CURLOPT_HTTPHEADER, headers);
 
@@ -150,9 +108,9 @@ static std::string tokenFromEndpoint(const std::string& jwtEndPoint, bool allowS
 
             curlResponseCode = curl_easy_perform(curlHandle);
 
-            if (curlResponseCode == CURLE_OK && captureBuffer.size > 0)
+            if (curlResponseCode == CURLE_OK && captureBuffer.length() > 0)
             {
-                std::string     responseStr = std::string(captureBuffer.memory, captureBuffer.size);
+                std::string     responseStr = std::string(captureBuffer.toByteArray(), captureBuffer.length());
 
                 // Poor check to see if reply resembles JSON
                 if (responseStr[0] == '{')
@@ -182,7 +140,6 @@ static std::string tokenFromEndpoint(const std::string& jwtEndPoint, bool allowS
             headers = nullptr;
         }
         curl_easy_cleanup(curlHandle);
-        freeMemoryStruct(captureBuffer);
     }
 
     return apiResponse;

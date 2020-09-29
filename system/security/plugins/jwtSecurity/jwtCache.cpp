@@ -225,13 +225,19 @@ bool JWTUserInfo::hasFileScopePerms() const
 // Private methods
 //-----------------------------------------------------------------------------
 
+static const std::regex _globRegex1("\\[![0-9].+?\\]\\*?");
+static const std::regex _globRegex2("\\[[0-9].+?\\]\\*?");
+static const std::regex _globRegex3("\\[![A-Za-z].+?\\]\\*?");
+static const std::regex _globRegex4("\\[[A-Za-z].+?\\]\\*?");
+static const std::regex _globRegex5("[*?]");
+
 std::string JWTUserInfo::_globToExample(const std::string& pattern) const
 {
-    std::string     s1 = std::regex_replace(pattern, std::regex("\\[![0-9].+?\\]\\*?"), "a");
-    std::string     s2 = std::regex_replace(s1, std::regex("\\[[0-9].+?\\]\\*?"), "1");
-    std::string     s3 = std::regex_replace(s2, std::regex("\\[![A-Za-z].+?\\]\\*?"), "1");
-    std::string     s4 = std::regex_replace(s3, std::regex("\\[[A-Za-z].+?\\]\\*?"), "a");
-    std::string     s5 = std::regex_replace(s4, std::regex("[*?]"), "a");
+    std::string     s1 = std::regex_replace(pattern, _globRegex1, "a");
+    std::string     s2 = std::regex_replace(s1, _globRegex2, "1");
+    std::string     s3 = std::regex_replace(s2, _globRegex3, "1");
+    std::string     s4 = std::regex_replace(s3, _globRegex4, "a");
+    std::string     s5 = std::regex_replace(s4, _globRegex5, "a");
 
     return s5;
 }
@@ -337,18 +343,18 @@ bool JWTUserCache::has(const std::string& userName) const
     return userPermMap.find(userName) != userPermMap.end();
 }
 
-JWTUserCache& JWTUserCache::set(const std::string& userName, const JWTUserInfo& userInfo)
+JWTUserCache& JWTUserCache::set(const std::string& userName, std::unique_ptr<JWTUserInfo>& userInfo)
 {
     {
         CriticalBlock block(crit);
 
-        userPermMap[userName] = userInfo;
+        userPermMap[userName] = std::move(userInfo);
     }
 
     return *this;
 }
 
-bool JWTUserCache::get(const std::string& userName, JWTUserInfo& userInfo)
+JWTUserInfo* JWTUserCache::get(const std::string& userName)
 {
     {
         CriticalBlock               block(crit);
@@ -356,12 +362,11 @@ bool JWTUserCache::get(const std::string& userName, JWTUserInfo& userInfo)
 
         if (foundIter != userPermMap.end())
         {
-            userInfo = foundIter->second;
-            return true;
+            return foundIter->second.get();
         }
     }
 
-    return false;
+    return nullptr;
 }
 
 JWTUserCache& JWTUserCache::erase(const std::string& userName)

@@ -430,15 +430,15 @@ class JWTUserCache
 {
     private:
 
-        typedef std::map<std::string, JWTUserInfo> UserPermissionMap;
+        typedef std::map<std::string, std::unique_ptr<JWTUserInfo> > UserPermissionMap;
 
     public:
 
         bool has(const std::string& userName) const;
 
-        JWTUserCache& set(const std::string& userName, const JWTUserInfo& userInfo);
+        JWTUserCache& set(const std::string& userName, std::unique_ptr<JWTUserInfo>& userInfo);
 
-        bool get(const std::string& userName, JWTUserInfo& userInfo);
+        JWTUserInfo* get(const std::string& userName);
 
         JWTUserCache& erase(const std::string& userName);
 

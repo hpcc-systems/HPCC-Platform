@@ -412,11 +412,11 @@ private:
             jwtVerifier.verify(decodedToken);
 
             // Stuff claims into a new cache object for this user
-            JWTUserInfo userInfo;
+            std::unique_ptr<JWTUserInfo> userInfo(new JWTUserInfo());
 
-            userInfo.setExpirationTime(std::chrono::system_clock::to_time_t(decodedToken.get_expires_at()));
-            userInfo.setRefreshToken(refreshToken);
-            userInfo.setJWTToken(token);
+            userInfo->setExpirationTime(std::chrono::system_clock::to_time_t(decodedToken.get_expires_at()));
+            userInfo->setRefreshToken(refreshToken);
+            userInfo->setJWTToken(token);
             for (auto& e : decodedToken.get_payload_claims())
             {
                 std::string     key(e.first);
@@ -473,7 +473,7 @@ private:
                     else if (e.second.get_type() == jwt::json::type::string)
                     {
                         // Feature permission where value is a single string
-                        userInfo.mergeFeaturePerm(key, e.second.as_string());
+                        userInfo->mergeFeaturePerm(key, e.second.as_string());
                     }
                     else
                     {
@@ -482,7 +482,7 @@ private:
 
                         for (jwt::claim::set_t::const_iterator x = valueSet.begin(); x != valueSet.end(); x++)
                         {
-                            userInfo.mergeFeaturePerm(key, *x);
+                            userInfo->mergeFeaturePerm(key, *x);
                         }
                     }
                 }
@@ -493,17 +493,17 @@ private:
             for (CollectedScopePerms::const_iterator x = wuScopePerms.begin(); x != wuScopePerms.end(); x++)
             {
                 if (x->claim == "AllowWorkunitScopeView")
-                    userInfo.addWUScopePerm(x->scopePattern, SecAccess_Read, defaultWUAccess);
+                    userInfo->addWUScopePerm(x->scopePattern, SecAccess_Read, defaultWUAccess);
                 else if (x->claim == "AllowWorkunitScopeModify")
-                    userInfo.addWUScopePerm(x->scopePattern, SecAccess_Write, defaultWUAccess);
+                    userInfo->addWUScopePerm(x->scopePattern, SecAccess_Write, defaultWUAccess);
                 else if (x->claim == "AllowWorkunitScopeDelete")
-                    userInfo.addWUScopePerm(x->scopePattern, SecAccess_Full, defaultWUAccess);
+                    userInfo->addWUScopePerm(x->scopePattern, SecAccess_Full, defaultWUAccess);
                 else if (x->claim == "DenyWorkunitScopeView")
-                    userInfo.addWUScopePerm(x->scopePattern, SecAccess_Read, defaultWUAccess, true);
+                    userInfo->addWUScopePerm(x->scopePattern, SecAccess_Read, defaultWUAccess, true);
                 else if (x->claim == "DenyWorkunitScopeModify")
-                    userInfo.addWUScopePerm(x->scopePattern, SecAccess_Write, defaultWUAccess, true);
+                    userInfo->addWUScopePerm(x->scopePattern, SecAccess_Write, defaultWUAccess, true);
                 else if (x->claim == "DenyWorkunitScopeDelete")
-                    userInfo.addWUScopePerm(x->scopePattern, SecAccess_Full, defaultWUAccess, true);
+                    userInfo->addWUScopePerm(x->scopePattern, SecAccess_Full, defaultWUAccess, true);
             }
 
             // Add file scope permissions in alphabetical (and implicitly, length) order
@@ -511,21 +511,21 @@ private:
             for (CollectedScopePerms::const_iterator x = fileScopePerms.begin(); x != fileScopePerms.end(); x++)
             {
                 if (x->claim == "AllowFileScopeAccess")
-                    userInfo.addFileScopePerm(x->scopePattern, SecAccess_Access, defaultFileAccess);
+                    userInfo->addFileScopePerm(x->scopePattern, SecAccess_Access, defaultFileAccess);
                 else if (x->claim == "AllowFileScopeRead")
-                    userInfo.addFileScopePerm(x->scopePattern, SecAccess_Read, defaultFileAccess);
+                    userInfo->addFileScopePerm(x->scopePattern, SecAccess_Read, defaultFileAccess);
                 else if (x->claim == "AllowFileScopeWrite")
-                    userInfo.addFileScopePerm(x->scopePattern, SecAccess_Write, defaultFileAccess);
+                    userInfo->addFileScopePerm(x->scopePattern, SecAccess_Write, defaultFileAccess);
                 else if (x->claim == "AllowFileScopeFull")
-                    userInfo.addFileScopePerm(x->scopePattern, SecAccess_Full, defaultFileAccess);
+                    userInfo->addFileScopePerm(x->scopePattern, SecAccess_Full, defaultFileAccess);
                 else if (x->claim == "DenyFileScopeAccess")
-                    userInfo.addFileScopePerm(x->scopePattern, SecAccess_Access, defaultFileAccess, true);
+                    userInfo->addFileScopePerm(x->scopePattern, SecAccess_Access, defaultFileAccess, true);
                 else if (x->claim == "DenyFileScopeRead")
-                    userInfo.addFileScopePerm(x->scopePattern, SecAccess_Read, defaultFileAccess, true);
+                    userInfo->addFileScopePerm(x->scopePattern, SecAccess_Read, defaultFileAccess, true);
                 else if (x->claim == "DenyFileScopeWrite")
-                    userInfo.addFileScopePerm(x->scopePattern, SecAccess_Write, defaultFileAccess, true);
+                    userInfo->addFileScopePerm(x->scopePattern, SecAccess_Write, defaultFileAccess, true);
                 else if (x->claim == "DenyFileScopeFull")
-                    userInfo.addFileScopePerm(x->scopePattern, SecAccess_Full, defaultFileAccess, true);
+                    userInfo->addFileScopePerm(x->scopePattern, SecAccess_Full, defaultFileAccess, true);
             }
 
             gUserCache.set(subject, userInfo);
@@ -767,12 +767,14 @@ private:
      *          was successfully repopulated after a token refresh,
      *          false otherwise
      */
-    bool populateUserInfoFromUser(ISecUser& user, JWTUserInfo& userInfo)
+    JWTUserInfo* populateUserInfoFromUser(ISecUser& user)
     {
-        if (!gUserCache.get(user.getName(), userInfo) || !userInfo.isValid())
-            return false;
+    	JWTUserInfo*	userInfo = gUserCache.get(user.getName());
 
-        if (userInfo.isExpired())
+        if (userInfo == nullptr || !userInfo->isValid())
+            return nullptr;
+
+        if (userInfo->isExpired())
         {
             // Remove any cached entries for this user
             gUserCache.erase(user.getName());
@@ -780,29 +782,29 @@ private:
             // Make sure we have the latest key file contents
             ensureKeyLoaded();
 
-            if (refreshEndpoint.empty() || userInfo.getRefreshToken().empty())
+            if (refreshEndpoint.empty() || userInfo->getRefreshToken().empty())
             {
                 // No refresh endpoint defined or no refresh token; logout user
                 logoutUser(user);
-                return false;
+                return nullptr;
             }
             else
             {
-                std::string apiResponse = tokenFromRefresh(refreshEndpoint, allowSelfSignedCert, clientID, userInfo.getRefreshToken());
+                std::string apiResponse = tokenFromRefresh(refreshEndpoint, allowSelfSignedCert, clientID, userInfo->getRefreshToken());
 
                 if (!verifyAPIResponse(user.getName(), "", apiResponse, refreshEndpoint))
                 {
                     // Could not verify token; logout user
                     logoutUser(user);
-                    return false;
+                    return nullptr;
                 }
 
                 // Reread the newly-populated cache
-                return gUserCache.get(user.getName(), userInfo);
+                userInfo = gUserCache.get(user.getName());
             }
         }
 
-        return true;
+        return userInfo;
     }
 
 public:
@@ -888,9 +890,9 @@ public:
             if (!authenticate(user))
                 return false;
 
-            JWTUserInfo userInfo;
+            JWTUserInfo* userInfo = populateUserInfoFromUser(user);
 
-            if (!populateUserInfoFromUser(user, userInfo))
+            if (userInfo == nullptr)
                 return false;
 
             if (!resources)
@@ -903,7 +905,7 @@ public:
                 if (resource != nullptr)
                 {
                     const char*     resourceName = resource->getName();
-                    SecAccessFlags  accessFlag = _authorizeEx(rtype, user, resourceName, secureContext, userInfo);
+                    SecAccessFlags  accessFlag = _authorizeEx(rtype, user, resourceName, secureContext, *userInfo);
 
                     resource->setAccessFlags(accessFlag);
                 }
@@ -934,12 +936,12 @@ public:
             if (!authenticate(user))
                 return SecAccess_None;
 
-            JWTUserInfo         userInfo;
+            JWTUserInfo* userInfo = populateUserInfoFromUser(user);
 
-            if (!populateUserInfoFromUser(user, userInfo))
+            if (userInfo == nullptr)
                 return SecAccess_None;
 
-            resultFlag = _authorizeEx(rtype, user, resourceName, secureContext, userInfo);
+            resultFlag = _authorizeEx(rtype, user, resourceName, secureContext, *userInfo);
         }
         catch (IException* e)
         {
@@ -1012,9 +1014,9 @@ public:
         if (!userName.isEmpty())
         {
             Owned<ISecUser>     user = createUser(userName);
-            JWTUserInfo         userInfo;
+            JWTUserInfo*        userInfo = gUserCache.get(userName.str());
 
-            if (!gUserCache.get(userName.str(), userInfo) || !userInfo.isValid())
+            if (userInfo == nullptr || !userInfo->isValid())
             {
                 // This secmgr plugin running within a Dali client connection
                 // does not have accesss to user passwords so it cannot
@@ -1036,7 +1038,7 @@ public:
                     if (verifyToken(foundToken, userName.str(), foundRefreshToken, "", ""))
                     {
                         // Load parsed token out of cache
-                        gUserCache.get(userName.str(), userInfo);
+                        userInfo = gUserCache.get(userName.str());
                     }
                     else
                     {
@@ -1051,9 +1053,9 @@ public:
             }
 
             if (strisame(key,"Scope"))
-                resultFlag = _authorizeEx(RT_FILE_SCOPE, *user, obj, nullptr, userInfo);
+                resultFlag = _authorizeEx(RT_FILE_SCOPE, *user, obj, nullptr, *userInfo);
             else if (strisame(key,"workunit"))
-                resultFlag = _authorizeEx(RT_WORKUNIT_SCOPE, *user, obj, nullptr, userInfo);
+                resultFlag = _authorizeEx(RT_WORKUNIT_SCOPE, *user, obj, nullptr, *userInfo);
         }
 
         return resultFlag;
