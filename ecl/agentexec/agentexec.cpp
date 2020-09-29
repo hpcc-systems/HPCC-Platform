@@ -248,7 +248,9 @@ public:
                     params.push_back({ "graphName", graphName.get() });
                     jobName.append('-').append(graphName);
                 }
-                runK8sJob(jobSpecName, wuid, jobName, queryComponentConfig().getPropBool("@deleteJobs", true), params);
+                bool deleteJobs = queryComponentConfig().getPropBool("@deleteJobs", true);
+                unsigned pendingTimeoutSecs = queryComponentConfig().getPropInt("@pendingTimeoutSecs", defaultPendingTimeSecs);
+                runK8sJob(jobSpecName, wuid, jobName, deleteJobs, pendingTimeoutSecs, params);
             }
             else
             {

@@ -42,6 +42,11 @@ spec:
                 {{ printf "\"--name=%s\"" .name }}
               ]
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
+{{- if .useChildProcesses }}
+{{- include "hpcc.addResources" (dict "me" $thorScope.eclAgentResources) | indent 8 }}
+{{- else }}
+{{- include "hpcc.addStubResources" . | indent 8 }}
+{{- end }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
@@ -81,6 +86,9 @@ spec:
                 {{ printf "\"--name=%s\"" .name }}
               ]
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
+{{- if not .useChildProcesses }}
+{{- include "hpcc.addStubResources" . | indent 8 }}
+{{- end }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
@@ -156,13 +164,7 @@ data:
           - name: {{ $agentAppType }}-%jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
-            resources:
-              requests:
-                #request-memory
-                #request-cpu
-              limits:
-                #limit-memory
-                #limit-cpu
+{{- include "hpcc.addResources" (dict "me" $thorScope.eclAgentResources) | indent 12 }}
             workingDir: /var/lib/HPCCSystems
             command: [ {{ $agentAppType | quote }} ] 
             args: [
@@ -207,13 +209,7 @@ data:
           - name: thormanager-%jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
-            resources:
-              requests:
-                #request-memory
-                #request-cpu
-              limits:
-                #limit-memory
-                #limit-cpu
+{{- include "hpcc.addResources" (dict "me" $thorScope.managerResources) | indent 12 }}
             workingDir: /var/lib/HPCCSystems
             command: [ thormaster_lcr ] 
             args: [
@@ -254,13 +250,7 @@ data:
           - name: thorworker-%jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
-            resources:
-              requests:
-                #request-memory
-                #request-cpu
-              limits:
-                #limit-memory
-                #limit-cpu
+{{- include "hpcc.addResources" (dict "me" $thorScope.workerResources) | indent 12 }}
             workingDir: /var/lib/HPCCSystems
             command: [ thorslave_lcr ] 
             args: [

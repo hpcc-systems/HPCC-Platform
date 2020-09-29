@@ -13667,7 +13667,9 @@ void executeThorGraph(const char * graphName, IConstWorkUnit &workunit, const IP
     else
     {
         VStringBuffer job("%s-%s", wuid.str(), graphName);
-        runK8sJob("thormanager", wuid, job, queryComponentConfig().getPropBool("@deleteJobs", true), { { "graphName", graphName} });
+        bool deleteJobs = queryComponentConfig().getPropBool("@deleteJobs", true);
+        unsigned pendingTimeoutSecs = queryComponentConfig().getPropInt("@pendingTimeoutSecs", defaultPendingTimeSecs);
+        runK8sJob("thormanager", wuid, job, deleteJobs, pendingTimeoutSecs, { { "graphName", graphName} });
     }
 
     /* In k8s, Thor feeds back the terminating exception via the workunit.
@@ -14038,25 +14040,26 @@ bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, const char *graphName
     return false;
 }
 
-static void setResources(StringBuffer &jobYaml, const IConstWorkUnit *workunit, const char *process)
+static void setResources(IPropertyTree *workerConfig, const IConstWorkUnit *workunit, const char *process)
 {
+    auto setResourcesItem = [&workerConfig](const char *category, const char *resourceName,  unsigned value, const char *units)
+    {
+        if (!value) return;
+        VStringBuffer xpath("spec/template/spec/containers/resources/%s@%s", category, resourceName);
+        ensurePTree(workerConfig, xpath.str());
+
+        VStringBuffer v("%u%s", value, units);
+        workerConfig->setProp(xpath.str(), v.str());
+    };
+
     StringBuffer s;
-    unsigned memRequest = workunit->getDebugValueInt(s.clear().appendf("%s-memRequest", process), 0);
-    unsigned memLimit = workunit->getDebugValueInt(s.clear().appendf("%s-memLimit", process), 0);
-    if (memLimit && memLimit < memRequest)
-        memLimit = memRequest;
-    if (memRequest)
-        jobYaml.replaceString("#request-memory", s.clear().appendf("memory: \"%uMi\"", memRequest));
-    if (memLimit)
-        jobYaml.replaceString("#limit-memory", s.clear().appendf("memory: \"%uMi\"", memLimit));
-    unsigned cpuRequest = workunit->getDebugValueInt(s.clear().appendf("%s-cpuRequest", process), 0);
-    unsigned cpuLimit = workunit->getDebugValueInt(s.clear().appendf("%s-cpuLimit", process), 0);
-    if (cpuLimit && cpuLimit < cpuRequest)
-        cpuLimit = cpuRequest;
-    if (cpuRequest)
-        jobYaml.replaceString("#request-cpu", s.clear().appendf("cpu: \"%um\"", cpuRequest));
-    if (cpuLimit)
-        jobYaml.replaceString("#limit-cpu", s.clear().appendf("cpu: \"%um\"", cpuLimit));
+    unsigned memRequest = workunit->getDebugValueInt(s.clear().appendf("resource-%s-memory", process), 0);
+    setResourcesItem("requests", "memory", memRequest, "Mi");
+    setResourcesItem("limits", "memory", memRequest, "Mi");
+
+    unsigned cpuRequest = workunit->getDebugValueInt(s.clear().appendf("resource-%s-cpu", process), 0);
+    setResourcesItem("requests", "cpu", cpuRequest, "m");
+    setResourcesItem("limits", "cpu", cpuRequest, "m");
 }
 
 
@@ -14074,7 +14077,7 @@ void deleteK8sResource(const char *componentName, const char *job, const char *r
         throw makeStringException(0, "Failed to run kubectl delete");
 }
 
-void waitK8sJob(const char *componentName, const char *job)
+void waitK8sJob(const char *componentName, const char *job, unsigned pendingTimeoutSecs)
 {
     VStringBuffer jobname("%s-%s", componentName, job);
     jobname.toLowerCase();
@@ -14084,7 +14087,6 @@ void waitK8sJob(const char *componentName, const char *job)
 
     unsigned delay = 100;
     unsigned start = msTick();
-    unsigned pendingTimeout = 10000;
     for (;;)
     {
         StringBuffer output, error;
@@ -14111,11 +14113,11 @@ void waitK8sJob(const char *componentName, const char *job)
         // Check whether pod has been scheduled yet - if resources are not available pods may block indefinitely waiting to be scheduled, and
         // we would prefer them to fail instead.
         bool pending = streq(output, "False");
-        if (pending && msTick()-start > pendingTimeout)
+        if (pendingTimeoutSecs && pending && msTick()-start > pendingTimeoutSecs*1000)
         {
             VStringBuffer getReason("kubectl get pods --selector=job-name=%s \"--output=jsonpath={range .items[*].status.conditions[?(@.type=='PodScheduled')]}{.reason}{': '}{.message}{end}\"", jobname.str());
             runExternalCommand(componentName, output.clear(), error.clear(), getReason.str(), nullptr);
-            throw makeStringExceptionV(0, "Failed to run %s - pod not scheduled after %d ms: %s ", jobname.str(), pendingTimeout, output.str());
+            throw makeStringExceptionV(0, "Failed to run %s - pod not scheduled after %u seconds: %s ", jobname.str(), pendingTimeoutSecs, output.str());
         }
         MilliSleep(delay);
         if (delay < 10000)
@@ -14152,13 +14154,23 @@ bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, 
     }
     jobYaml.replaceString("%args", args.str());
 
+// Disable ability change resources from within workunit
+// - all values are unquoted by toYAML.  This caused problems when previous string values are
+// outputted unquoted and then treated as a non string type -e.g. labels in metadata.
+// - Also, ability to control if and how much users may change resources should be provided.
+#if 0
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     if (factory)
     {
         Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
         if (workunit)
-            setResources(jobYaml, workunit, componentName);
+        {
+            Owned<IPropertyTree> workerConfig = createPTreeFromYAMLString(jobYaml.length(), jobYaml.str(), 0, ptr_none, nullptr);
+            setResources(workerConfig, workunit, componentName);
+            toYAML(workerConfig, jobYaml.clear(), 2, 0);
+        }
     }
+#endif
 
     StringBuffer output, error;
     unsigned ret = runExternalCommand(componentName, output, error, "kubectl replace --force -f -", jobYaml.str());
@@ -14173,11 +14185,11 @@ bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, 
     return true;
 }
 
-void runK8sJob(const char *componentName, const char *wuid, const char *job, bool del, const std::list<std::pair<std::string, std::string>> &extraParams)
+void runK8sJob(const char *componentName, const char *wuid, const char *job, bool del, unsigned pendingTimeoutSecs, const std::list<std::pair<std::string, std::string>> &extraParams)
 {
     bool removeNetwork = applyK8sYaml(componentName, wuid, job, "networkspec", extraParams, true);
     applyK8sYaml(componentName, wuid, job, "jobspec", extraParams, false);
-    waitK8sJob(componentName, job);
+    waitK8sJob(componentName, job, pendingTimeoutSecs);
     if (del)
     {
         deleteK8sResource(componentName, job, "job");
