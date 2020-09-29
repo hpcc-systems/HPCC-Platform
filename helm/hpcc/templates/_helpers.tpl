@@ -579,3 +579,25 @@ Generate list of available services
   public: {{ $esp.public }}
 {{ end -}}
 {{- end -}}
+
+{{/*
+Add resource object
+Pass in a dictionary with me defined
+*/}}
+{{- define "hpcc.addResources" }}
+{{- if .me  }}
+resources:
+  limits:
+{{ toYaml .me | indent 4 }}
+{{- end }}
+{{- end -}}
+
+{{/*
+Add resources object for stub pods
+*/}}
+{{- define "hpcc.addStubResources" }}
+resources:
+  limits:
+    cpu: "50m"
+    memory: "100M"
+{{- end -}}
