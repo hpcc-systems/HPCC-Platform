@@ -47,10 +47,10 @@ interface IEsdlDefinitionHelper : extends IInterface
     virtual void setTransformParams( EsdlXslTypeId xslId, IProperties *params )=0;
 
     virtual void toXML( IEsdlDefObjectIterator& objs, StringBuffer &xml, double version=0, IProperties *opts=NULL, unsigned flags=0 )=0;
-    virtual void toXSD( IEsdlDefObjectIterator& objs, StringBuffer &xsd, EsdlXslTypeId xslId, double version=0, IProperties *opts=NULL, const char *ns=NULL, unsigned flags=0 )=0;
-    virtual void toXSD( IEsdlDefObjectIterator& objs, StringBuffer &xsd, StringBuffer& xslt, double version=0, IProperties *opts=NULL, const char *ns=NULL, unsigned flags=0 )=0;
-    virtual void toWSDL( IEsdlDefObjectIterator& objs, StringBuffer &wsdl, EsdlXslTypeId xslId, double version=0, IProperties *opts=NULL, const char *ns=NULL, unsigned flags=0 )=0;
-    virtual void toMicroService( IEsdlDefObjectIterator& objs, StringBuffer &content, EsdlXslTypeId implType, IProperties *opts=NULL, unsigned flags=0 )=0;
+    virtual void toXSD( IEsdlDefObjectIterator& objs, StringBuffer &xsd, EsdlXslTypeId xslId, double version=0, IProperties *opts=NULL, const char *ns=NULL, unsigned flags=0, IProperties* overrideParams=nullptr )=0;
+    virtual void toXSD( IEsdlDefObjectIterator& objs, StringBuffer &xsd, StringBuffer& xslt, double version=0, IProperties *opts=NULL, const char *ns=NULL, unsigned flags=0, IProperties* overrideParams=nullptr )=0;
+    virtual void toWSDL( IEsdlDefObjectIterator& objs, StringBuffer &wsdl, EsdlXslTypeId xslId, double version=0, IProperties *opts=NULL, const char *ns=NULL, unsigned flags=0, IProperties* overrideParams=nullptr )=0;
+    virtual void toMicroService( IEsdlDefObjectIterator& objs, StringBuffer &content, EsdlXslTypeId implType, IProperties *opts=NULL, unsigned flags=0, IProperties* overrideParams=nullptr )=0;
 };
 
 esdl_decl void removeEclHidden(IPropertyTree *depTree, bool cloneGetDataFrom);

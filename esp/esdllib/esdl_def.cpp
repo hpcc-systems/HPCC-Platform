@@ -1689,6 +1689,40 @@ void EsdlDefinition::walkDefinitionDepthFirst( AddedObjs& foundByName, EsdlDefOb
     const char* name = esdlObj->queryName();
     IMapping* found = foundByName.find( name );
 
+    // The found object may be an ESPstruct that is used as an array element
+    // in two ways- first with an Item Tag (ItemName) like so:
+    //
+    //    ESParray<ESPstruct ItemStruct, ItemName> BreaksIfFirst;
+    //
+    // Then second without an Item Tag, like so:
+    //
+    //    ESParray<ESPstruct ItemStruct> Works;
+    //
+    // When the Item Tag instance is added to the dependencies first, the
+    // second instance never triggers the setting of the DEPFLAG_ARRAYOF
+    // so the WSDL will be missing the ArrayOfItemStruct element defn
+    //
+    // Reduce the iteration of this array as much as possible by limiting it
+    // to just the situations we need to update the wrapper flag.
+    //
+    //    - 'state' indicates if the ecm definition requires an ArrayOf
+    //      entry based on the shouldGenerateArrayOf() return value
+    //    - 'flags' parameter indicates if the caller wants ArrayOf
+    //      entries generated
+    //    - Finally, only EsdlTypeStruct objects used as array items need
+    //      ArrayOf element definitions.
+    if (found && (state & DEPFLAG_ARRAYOF) && (flags & DEPFLAG_ARRAYOF) && EsdlTypeStruct == esdlType)
+    {
+        ForEachItemIn(i, dependencies)
+        {
+            EsdlDefObjectWrapper* wrapper=dependencies[i];
+            if (strcmp(wrapper->queryObject().queryName(), name) == 0)
+            {
+                wrapper->setFlag(DEPFLAG_ARRAYOF);
+            }
+        }
+    }
+
     // If the current esdlObject has already been added to the list of dependencies,
     // then just exit now - there is no need to traverse it's children or it's
     // ancestors- they've already been added.

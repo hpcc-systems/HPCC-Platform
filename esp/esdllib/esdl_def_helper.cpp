@@ -69,12 +69,12 @@ public:
 
     virtual void toXML( IEsdlDefObjectIterator &objs, StringBuffer &xml, double version, IProperties *opts, unsigned requestedFlags=0 );
 
-    virtual void toXSD( IEsdlDefObjectIterator &objs, StringBuffer &xsd, EsdlXslTypeId xslId, double version, IProperties *opts, const char *ns=NULL, unsigned flags=0 );
-    virtual void toXSD( IEsdlDefObjectIterator &objs, StringBuffer &xsd, StringBuffer &xslt, double version, IProperties *opts, const char *ns=NULL, unsigned flags=0 );
-    virtual void toWSDL( IEsdlDefObjectIterator &objs, StringBuffer &xsd, EsdlXslTypeId xslId, double version, IProperties *opts, const char *ns=NULL, unsigned flags=0 );
-    virtual void toMicroService( IEsdlDefObjectIterator& objs, StringBuffer &content, EsdlXslTypeId classType, IProperties *opts, unsigned flags);
+    virtual void toXSD( IEsdlDefObjectIterator &objs, StringBuffer &xsd, EsdlXslTypeId xslId, double version, IProperties *opts, const char *ns=NULL, unsigned flags=0, IProperties* overrideParams=nullptr );
+    virtual void toXSD( IEsdlDefObjectIterator &objs, StringBuffer &xsd, StringBuffer &xslt, double version, IProperties *opts, const char *ns=NULL, unsigned flags=0, IProperties* overrideParams=nullptr );
+    virtual void toWSDL( IEsdlDefObjectIterator &objs, StringBuffer &xsd, EsdlXslTypeId xslId, double version, IProperties *opts, const char *ns=NULL, unsigned flags=0, IProperties* overrideParams=nullptr );
+    virtual void toMicroService( IEsdlDefObjectIterator& objs, StringBuffer &content, EsdlXslTypeId classType, IProperties *opts, unsigned flags, IProperties* overrideParams=nullptr);
 
-    void loadTransformParams( EsdlXslTypeId xslId );
+    void loadTransformParams( EsdlXslTypeId xslId, IProperties* overrideParams=nullptr );
 
 
 };
@@ -238,13 +238,13 @@ void EsdlDefinitionHelper::toXML( IEsdlDefObjectIterator& objs, StringBuffer &xm
     return;
 }
 
-void EsdlDefinitionHelper::toXSD( IEsdlDefObjectIterator &objs, StringBuffer &xsd, EsdlXslTypeId xslId, double version, IProperties *opts, const char *ns, unsigned flags)
+void EsdlDefinitionHelper::toXSD( IEsdlDefObjectIterator &objs, StringBuffer &xsd, EsdlXslTypeId xslId, double version, IProperties *opts, const char *ns, unsigned flags, IProperties* overrideParams)
 {
     StringBuffer xml;
     int xmlLen = 0;
     IXslTransform* trans = *( transforms.getValue( xslId ) );
 
-    this->loadTransformParams( xslId );
+    this->loadTransformParams( xslId, overrideParams );
 
     if( trans )
     {
@@ -271,13 +271,13 @@ void EsdlDefinitionHelper::toXSD( IEsdlDefObjectIterator &objs, StringBuffer &xs
     return;
 }
 
-void EsdlDefinitionHelper::toWSDL( IEsdlDefObjectIterator &objs, StringBuffer &xsd, EsdlXslTypeId xslId, double version, IProperties *opts, const char *ns, unsigned flags)
+void EsdlDefinitionHelper::toWSDL( IEsdlDefObjectIterator &objs, StringBuffer &xsd, EsdlXslTypeId xslId, double version, IProperties *opts, const char *ns, unsigned flags, IProperties* overrideParams )
 {
     StringBuffer xml;
     int xmlLen = 0;
     IXslTransform* trans = *( transforms.getValue( xslId ) );
 
-    this->loadTransformParams( xslId );
+    this->loadTransformParams( xslId, overrideParams );
 
     if( trans )
     {
@@ -300,12 +300,12 @@ void EsdlDefinitionHelper::toWSDL( IEsdlDefObjectIterator &objs, StringBuffer &x
 }
 
 
-void EsdlDefinitionHelper::toXSD( IEsdlDefObjectIterator& objs, StringBuffer &xml, StringBuffer &xslt, double version, IProperties *opts, const char *ns, unsigned flags)
+void EsdlDefinitionHelper::toXSD( IEsdlDefObjectIterator& objs, StringBuffer &xml, StringBuffer &xslt, double version, IProperties *opts, const char *ns, unsigned flags, IProperties* overrideParams )
 {
     return;
 }
 
-void EsdlDefinitionHelper::loadTransformParams( EsdlXslTypeId xslId)
+void EsdlDefinitionHelper::loadTransformParams( EsdlXslTypeId xslId, IProperties* overrideParams )
 {
     IXslTransform* trans = *( transforms.getValue(xslId) );
     IProperties* params = *( parameters.getValue(xslId) );
@@ -315,6 +315,13 @@ void EsdlDefinitionHelper::loadTransformParams( EsdlXslTypeId xslId)
         throw (MakeStringException( 0, "Unable to find transform for EsdlXslTypeId=%d", xslId ));
     }
 
+    // All setParameter() calls are bare- no implicit quoting-
+    // allowing us to set values as expressions. Previously
+    // they were quoted which lead to some subtle bugs in the
+    // transforms assuming that string values were bool, when
+    // it wasn't in fact even possible to set a bool value.
+
+    // Set (default) params associated with the transform in the helper
     if( params )
     {
         Owned<IPropertyIterator> it = params->getIterator();
@@ -323,18 +330,32 @@ void EsdlDefinitionHelper::loadTransformParams( EsdlXslTypeId xslId)
             const char *key = it->getPropKey();
             //set parameter in the XSL transform skipping over the @ prefix, if any
             const char* paramName = *key == '@' ? key+1 : key;
-            trans->setParameter(paramName, StringBuffer().append('\'').append(params->queryProp(key)).append('\'').str());
+            trans->setParameter(paramName, params->queryProp(key));
+        }
+    }
+
+    // Set overrides if any. Could be new params or just new values for
+    // params set above.
+    if( overrideParams )
+    {
+        Owned<IPropertyIterator> it = overrideParams->getIterator();
+        for (it->first(); it->isValid(); it->next())
+        {
+            const char *key = it->getPropKey();
+            //set parameter in the XSL transform skipping over the @ prefix, if any
+            const char* paramName = *key == '@' ? key+1 : key;
+            trans->setParameter(paramName, overrideParams->queryProp(key));
         }
     }
 }
 
-void EsdlDefinitionHelper::toMicroService( IEsdlDefObjectIterator& objs, StringBuffer &content, EsdlXslTypeId implType, IProperties *opts, unsigned flags)
+void EsdlDefinitionHelper::toMicroService( IEsdlDefObjectIterator& objs, StringBuffer &content, EsdlXslTypeId implType, IProperties *opts, unsigned flags, IProperties* overrideParams )
 {
     StringBuffer xml;
     int xmlLen = 0;
     IXslTransform* trans = *( transforms.getValue( implType ) );
 
-    this->loadTransformParams( implType );
+    this->loadTransformParams( implType, overrideParams );
 
     if( trans )
     {

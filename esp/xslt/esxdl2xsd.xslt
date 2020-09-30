@@ -18,7 +18,7 @@
 -->
 
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
-    <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes" omit-xml-declaration="yes"/>
+    <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes"/>
     <xsl:param name="create_wsdl" select="false()"/>
     <xsl:param name="location" select="'http://localhost:8000/WsService?ver_=0'"/>
     <xsl:param name="tnsParam" select="/esxdl/@ns_uri"/>
@@ -388,6 +388,7 @@
             </xsl:for-each>
         </wsdl:portType>
         <wsdl:binding>
+            <xsl:variable name="serviceName" select="@name"/>
             <xsl:attribute name="name"><xsl:value-of select="@name"/>ServiceSoap</xsl:attribute>
             <xsl:attribute name="type">tns:<xsl:value-of select="@name"/>ServiceSoap</xsl:attribute>
             <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
@@ -395,7 +396,7 @@
                 <wsdl:operation>
                     <xsl:attribute name="name"><xsl:value-of select="@name"/></xsl:attribute>
                     <soap:operation style="document">
-                        <xsl:attribute name="soapAction"><xsl:value-of select="../@name"/>/<xsl:value-of select="@name"/>?ver_=<xsl:value-of select="$version"/></xsl:attribute>
+                        <xsl:attribute name="soapAction"><xsl:value-of select="$serviceName"/>/<xsl:value-of select="@name"/>?ver_=<xsl:value-of select="$version"/></xsl:attribute>
                     </soap:operation>
                     <wsdl:input>
                         <soap:body use="literal"/>
