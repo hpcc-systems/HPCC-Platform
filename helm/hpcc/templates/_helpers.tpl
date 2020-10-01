@@ -101,10 +101,10 @@ Generate local logging info, merged with global
 Pass in dict with root and me
 */}}
 {{- define "hpcc.generateLoggingConfig" -}}
-{{- $logging := deepCopy .me | mergeOverwrite .root.Values.global }}
-{{- if hasKey $logging "logging" }}
+{{- $logging := deepCopy (.me.logging | default dict) | mergeOverwrite (.root.Values.global.logging | default dict) -}}
+{{- if not (empty $logging) }}
 logging:
-{{ toYaml $logging.logging | indent 2 }}
+{{ toYaml $logging | indent 2 }}
 {{- end -}}
 {{- end -}}
 

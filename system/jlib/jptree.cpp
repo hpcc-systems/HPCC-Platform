@@ -8526,20 +8526,26 @@ jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, con
         {
             outputConfig = true;
         }
-#ifdef _DEBUG
         else
         {
-            const char *matchHold = extractOption("--hold", cur);
-            if (matchHold)
+            matchConfig = extractOption("--componentTag", cur);
+            if (matchConfig)
+                componentTag = matchConfig;
+#ifdef _DEBUG
+            else
             {
-                if (strToBool(matchHold))
+                const char *matchHold = extractOption("--hold", cur);
+                if (matchHold)
                 {
-                    held = true;
-                    holdLoop();
+                    if (strToBool(matchHold))
+                    {
+                        held = true;
+                        holdLoop();
+                    }
                 }
             }
-        }
 #endif
+        }
     }
 
     Owned<IPropertyTree> delta;

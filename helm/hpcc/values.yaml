@@ -266,13 +266,10 @@ roxie:
 
 thor:
 - name: thor
-  numWorkers: 2
-  globalMemorySize: 4096
   prefix: thor
-  eclagent:
-    maxActive: 4
-  thoragent:
-    maxActive: 2
+  numWorkers: 2
+  maxJobs: 4
+  maxGraphs: 2
   #managerResources:
   #  cpu: "1"
   #  memory: "2G"

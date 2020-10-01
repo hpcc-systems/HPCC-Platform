@@ -1,26 +1,25 @@
-{{ range $thor := $.Values.thor -}}
-{{- if not $thor.disabled -}}
-{{- include "hpcc.checkDefaultStoragePlane" (dict "root" $ "me" $thor) }}
-{{- $hthorName := printf "%s-hthor" .name }}
-{{- $eclAgentName := printf "%s-agent" .name }}
+{{ range $.Values.thor -}}
+{{- if not .disabled -}}
+{{- include "hpcc.checkDefaultStoragePlane" (dict "root" $ "me" .) }}
+{{- $eclAgentName := printf "%s-eclagent" .name }}
 {{- $thorAgentName := printf "%s-thoragent" .name }}
+{{- $eclAgentType := .eclAgentType | default "hthor" }}
+{{- $hthorName := printf "%s-%s" .name $eclAgentType }}
 {{- $workerName := printf "%s-worker" .name }}
 {{- $serviceName := printf "%s-svc" .name }}
-{{- $eclAgentDefaults := dict "name" $eclAgentName "useChildProcesses" true "replicas" 1 }}
-{{- $eclAgentScope := .eclagent | mergeOverwrite $eclAgentDefaults | default $eclAgentDefaults }}
-{{- $agentAppType := $eclAgentScope.type | default "hthor" }}
-{{- $thorAgentDefaults := dict "name" $thorAgentName "useChildProcesses" false "replicas" 1 }}
-{{- $thorAgentScope := .thoragent | mergeOverwrite $thorAgentDefaults | default $thorAgentDefaults }}
-{{- $hthorDefaults := dict "name" $hthorName }}
-{{- $hthorScope := .eclagent | mergeOverwrite $hthorDefaults | default $hthorDefaults }}
-{{- $thorScopeStd := omit . "eclagent" "thoragent" "hthor" }}
-{{- $thorScope := $thorAgentScope.useChildProcesses | ternary ($thorScopeStd | mergeOverwrite (dict "masterport" 0 "slaveport" 0)) ($thorScopeStd) }}
+{{- $eclAgentUseChildProcesses := hasKey . "eclAgentUseChildProcesses" | ternary .eclAgentUseChildProcesses true }}
+{{- $eclAgentReplicas := .eclAgentReplicas | default 1 }}
+{{- $thorAgentReplicas := .thorAgentReplicas | default 1 }}
+{{- $eclAgentScope := dict "name" $eclAgentName "useChildProcesses" $eclAgentUseChildProcesses "replicas" $eclAgentReplicas | merge (pick . "keepJobs") }}
+{{- $thorAgentScope := dict "name" $thorAgentName "replicas" $thorAgentReplicas  | merge (pick . "keepJobs") }}
+{{- $hthorScope := dict "name" $hthorName | merge (pick . "multiJobLinger") }}
+{{- $thorScope := omit . "eclagent" "thoragent" "hthor" "logging" "eclAgentResources" "managerResources" "workerResources" "eclAgentUseChildProcesses" "eclAgentReplicas" "thorAgentReplicas" "eclAgentType" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ $eclAgentName | quote }}
 spec:
-  replicas: {{ $eclAgentScope.replicas }}
+  replicas: {{ $eclAgentReplicas }}
   selector:
     matchLabels:
       run: {{ $eclAgentName | quote }}
@@ -29,9 +28,9 @@ spec:
       labels:
         run: {{ $eclAgentName | quote }}
         accessDali: "yes"
-        accessEsp: {{ .useChildProcesses | default false | ternary "yes" "no" | quote }}
+        accessEsp: {{ $eclAgentUseChildProcesses | ternary "yes" "no" | quote }}
     spec:
-      serviceAccountName: {{ $eclAgentScope.useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
+      serviceAccountName: {{ $eclAgentUseChildProcesses | ternary "hpcc-default" "hpcc-agent" }}
       containers:
       - name: {{ $eclAgentName | quote }}
         workingDir: /var/lib/HPCCSystems
@@ -42,8 +41,8 @@ spec:
                 {{ printf "\"--name=%s\"" .name }}
               ]
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
-{{- if .useChildProcesses }}
-{{- include "hpcc.addResources" (dict "me" $thorScope.eclAgentResources) | indent 8 }}
+{{- if $eclAgentUseChildProcesses }}
+{{- include "hpcc.addResources" (dict "me" .eclAgentResources) | indent 8 }}
 {{- else if not $.Values.global.privileged }}
 {{- include "hpcc.addStubResources" . | indent 8 }}
 {{- end }}
@@ -64,7 +63,7 @@ kind: Deployment
 metadata:
   name: {{ $thorAgentName | quote }}
 spec:
-  replicas: {{ $thorAgentScope.replicas }}
+  replicas: {{ $thorAgentReplicas }}
   selector:
     matchLabels:
       run: {{ $thorAgentName | quote }}
@@ -73,23 +72,22 @@ spec:
       labels:
         run: {{ $thorAgentName | quote }}
         accessDali: "yes"
-        accessEsp: {{ .useChildProcesses | default false | ternary "yes" "no" | quote }}
+        accessEsp: "no"
     spec:
-      serviceAccountName: {{ $thorAgentScope.useChildProcesses | default false | ternary "hpcc-default" "hpcc-thoragent" }}
+      serviceAccountName: "hpcc-thoragent"
       containers:
       - name: {{ $thorAgentName | quote }}
         workingDir: /var/lib/HPCCSystems
         command: [ agentexec ]
         args: [
-                {{ include "hpcc.configArg" $thorAgentScope }},
+                {{ include "hpcc.configArg" . }},
+                {{ "\"--componentTag=thoragent\"" }},
                 {{ include "hpcc.daliArg" $ }},
                 {{ printf "\"--name=%s\"" .name }}
               ]
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
-{{- if not .useChildProcesses }}
 {{- if not $.Values.global.privileged }}
 {{- include "hpcc.addStubResources" . | indent 8 }}
-{{- end }}
 {{- end }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
         volumeMounts:
@@ -106,51 +104,37 @@ spec:
 kind: ConfigMap 
 apiVersion: v1 
 metadata:
-  name: {{ $thorScope.name }}-configmap 
+  name: {{ .name }}-configmap 
 data:
-  {{ $thorScope.name }}.yaml: |
+  {{ .name }}.yaml: |
     version: 1.0
     thor:
-{{ toYaml (omit $thorScope "logging") | indent 6 }}
-{{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" $thorScope) | indent 6 }}
+{{ toYaml $thorScope | indent 6 }}
+{{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" .) | indent 6 }}
 {{ include "hpcc.generateVaultConfig" (dict "root" $ "categories" (list "storage" "ecl" "ecl-user" ) ) | indent 6 }}
-    {{ $agentAppType }}:
-{{- if $thorScope.multiJobLinger }}
-      multiJobLinger: true
-{{- end }}
-{{ toYaml (omit $hthorScope "logging") | indent 6 }}
+    {{ $eclAgentType }}: # hthor or roxie
+{{ toYaml $hthorScope | indent 6 }}
       platform:
         type: "thor"
         width: {{ mul (.numWorkers | default 1) ( .channelsPerWorker | default 1) }}
-{{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" $hthorScope) | indent 6 }}
+{{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" . ) | indent 6 }}
 {{ include "hpcc.generateVaultConfig" (dict "root" $ "categories" (list "storage" "ecl" "ecl-user" ) ) | indent 6 }}
     eclagent: # main agent Q handler
-{{ toYaml (omit $eclAgentScope "logging") | indent 6 }}
-{{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" $eclAgentScope) | indent 6 }}
-{{ include "hpcc.generateVaultConfig" (dict "root" $ "categories" (list "storage" "ecl" "ecl-user" ) ) | indent 6 }}
-    global:
-{{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
-
-  {{ $thorAgentScope.name }}.yaml: |
-    version: 1.0
-    eclagent:
-{{ toYaml (omit $thorAgentScope "logging") | indent 6 }}
-{{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" $thorAgentScope) | indent 6 }}
+{{ toYaml $eclAgentScope | indent 6 }}
+{{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" .) | indent 6 }}
+    thoragent: # Thor graph handler
+{{ toYaml $thorAgentScope | indent 6 }}
+{{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" .) | indent 6 }}
       type: thor
-{{- if $thorAgentScope.useChildProcesses }}
-    thor:
-{{ toYaml (omit $thorScope "logging") | indent 6 }}
-{{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" $thorScope) | indent 6 }}
-{{- end }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
-{{- if not $eclAgentScope.useChildProcesses }}
 
-  {{ $agentAppType }}-jobspec.yaml: |
+{{- if not $eclAgentUseChildProcesses }}
+  {{ $eclAgentType }}-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
     metadata:
-      name: {{ $agentAppType }}-%jobname
+      name: {{ $eclAgentType }}-%jobname
     spec:
       ttlSecondsAfterFinished: 100
       template:
@@ -159,16 +143,16 @@ data:
             accessDali: "yes"
             accessEsp: "yes"
         spec:
-          serviceAccountName: {{ $thorAgentScope.useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
+          serviceAccountName: "hpcc-agent"
           initContainers: 
             {{- include "hpcc.checkDataMount" (dict "root" $) | indent 10 }}
           containers:
-          - name: {{ $agentAppType }}-%jobname
+          - name: {{ $eclAgentType }}-%jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
-{{- include "hpcc.addResources" (dict "me" $thorScope.eclAgentResources) | indent 12 }}
+{{- include "hpcc.addResources" (dict "me" .eclAgentResources) | indent 12 }}
             workingDir: /var/lib/HPCCSystems
-            command: [ {{ $agentAppType | quote }} ] 
+            command: [ {{ $eclAgentType | quote }} ] 
             args: [
                         {{ include "hpcc.configArg" . }},
                         {{ include "hpcc.daliArg" $ }},
@@ -187,7 +171,6 @@ data:
           restartPolicy: Never
       backoffLimit: 0
 {{- end }}
-{{- if not $thorAgentScope.useChildProcesses }}
 
   thormanager-jobspec.yaml: |
     apiVersion: batch/v1
@@ -211,7 +194,7 @@ data:
           - name: thormanager-%jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
-{{- include "hpcc.addResources" (dict "me" $thorScope.managerResources) | indent 12 }}
+{{- include "hpcc.addResources" (dict "me" .managerResources) | indent 12 }}
             workingDir: /var/lib/HPCCSystems
             command: [ thormaster_lcr ] 
             args: [
@@ -252,7 +235,7 @@ data:
           - name: thorworker-%jobname
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
-{{- include "hpcc.addResources" (dict "me" $thorScope.workerResources) | indent 12 }}
+{{- include "hpcc.addResources" (dict "me" .workerResources) | indent 12 }}
             workingDir: /var/lib/HPCCSystems
             command: [ thorslave_lcr ] 
             args: [
@@ -296,6 +279,5 @@ data:
               app: thor
               job: %jobname
                
-{{- end }}
 {{- end }}
 {{- end }}
