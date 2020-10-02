@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
 
     "dijit/registry",
     "dijit/form/Button",
@@ -12,10 +11,12 @@ define([
     "src/WsDFUXref",
     "src/ESPUtil"
 
-], function (declare, i18n, nlsHPCC,
+], function (declare, nlsHPCCMod,
     registry, Button,
     selector,
     GridDetailsWidget, WsDFUXref, ESPUtil) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("XrefFoundFilesWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
         gridTitle: nlsHPCC.title_FoundFilesFor,

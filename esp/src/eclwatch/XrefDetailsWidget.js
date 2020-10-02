@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/dom",
 
     "dijit/registry",
@@ -32,10 +31,12 @@ define([
     "dijit/form/SimpleTextarea",
 
     "hpcc/TableContainer"
-], function (declare, i18n, nlsHPCC, dom,
+], function (declare, nlsHPCCMod, dom,
     registry,
     _TabContainerWidget, WsDFUXref,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("XrefDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "XrefDetailsWidget",

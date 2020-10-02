@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/dom-attr",
     "dojo/dom-class",
     "dojo/topic",
@@ -22,8 +21,10 @@ define([
     "dijit/form/Button",
     "dijit/form/ToggleButton",
     "dijit/Toolbar"
-], function (declare, i18n, nlsHPCC, domAttr, domClass, topic, registry,
+], function (declare, nlsHPCCMod, domAttr, domClass, topic, registry,
     _TabContainerWidget, Clippy, WsPackageMaps, template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("PackageMapDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "PackageMapDetailsWidget",

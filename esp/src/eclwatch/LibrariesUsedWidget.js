@@ -1,15 +1,16 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
 
     "hpcc/GridDetailsWidget",
     "src/ESPQuery",
     "src/ESPUtil"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil,
+], function (declare, lang, nlsHPCCMod, arrayUtil,
     GridDetailsWidget, ESPQuery, ESPUtil) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("LibrariesUsedWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 

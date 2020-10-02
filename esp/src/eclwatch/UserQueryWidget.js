@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/dom-form",
     "dojo/promise/all",
@@ -46,11 +45,13 @@ define([
 
     "hpcc/TableContainer"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, domForm, all,
+], function (declare, lang, nlsHPCCMod, arrayUtil, domForm, all,
     registry, Menu, MenuItem, MenuSeparator, Select,
     tree, selector,
     _TabContainerWidget, WsAccess, WsAccount, ESPBaseMod, ESPUtil, UserDetailsWidget, GroupDetailsWidget, ShowIndividualPermissionsWidget,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("UserQueryWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "UserQueryWidget",

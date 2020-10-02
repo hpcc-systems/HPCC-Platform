@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/dom",
     "dojo/dom-class",
     "dojo/on",
@@ -25,10 +24,12 @@ define([
 
     "hpcc/TableContainer"
 
-], function (declare, i18n, nlsHPCC, dom, domClass, on, xhr, cookie, topic,
+], function (declare, nlsHPCCMod, dom, domClass, on, xhr, cookie, topic,
     registry,
     _Widget, WsAccount, ESPUtil,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("LockDialogWidget", [_Widget], {
         templateString: template,
         baseClass: "LockDialogWidget",

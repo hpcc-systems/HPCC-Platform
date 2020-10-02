@@ -2,7 +2,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/topic",
     "dijit/registry",
 
@@ -19,8 +19,10 @@ define([
     "dijit/form/Button",
     "dijit/form/ToggleButton",
     "dijit/form/Select"
-], function (declare, lang, i18n, nlsHPCC, topic, registry,
+], function (declare, lang, i18n, nlsHPCCMod, topic, registry,
     _TabContainerWidget, WsPackageMaps, template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("PackageMapValidateWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "PackageMapValidateWidget",
@@ -216,8 +218,8 @@ define([
                         responseText = context.i18n.ValidateResult + responseText;
                         context.resultControl.setText(responseText);
                     }
-                        context.validateButton.set("disabled", false);
-                        return response;
+                    context.validateButton.set("disabled", false);
+                    return response;
                 } else {
                     context.validateButton.set("disabled", false);
                 }

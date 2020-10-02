@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
 
     "hpcc/_TabContainerWidget",
@@ -15,9 +14,11 @@ define([
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil,
+], function (declare, lang, nlsHPCCMod, arrayUtil,
     _TabContainerWidget, DelayLoadWidget, WsTopology,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("HPCCPlatformServicesPluginWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "HPCCPlatformServicesPluginWidget",

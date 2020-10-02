@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/dom-construct",
     "dojo/dom-class",
@@ -20,10 +19,12 @@ define([
     "src/Utility",
     "hpcc/DelayLoadWidget"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, domConstruct, domClass,
+], function (declare, lang, nlsHPCCMod, arrayUtil, domConstruct, domClass,
     registry, Button, ToolbarSeparator,
     selector,
     GridDetailsWidget, ESPUtil, ESPRequest, ESPWorkunit, Utility, DelayLoadWidget) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("LogsWidget", [GridDetailsWidget], {
         baseClass: "LogsWidget",
         i18n: nlsHPCC,

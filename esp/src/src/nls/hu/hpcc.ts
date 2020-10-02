@@ -1,4 +1,4 @@
-define({
+export = {
     Abort: "Megszakít",
     AbortedBy: "Megszakította",
     AbortedTime: "A megszakítás időpontja",
@@ -963,4 +963,4 @@ define({
     ZoomMinus: "Kicsinyítés",
     ZoomPlus: "Nagyítás",
     ZoomWidth: "Gráf nagyítása az ablak szélességére"
-});
+}

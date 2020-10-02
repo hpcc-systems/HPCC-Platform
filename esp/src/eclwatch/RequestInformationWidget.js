@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/dom-construct",
 
     "dijit/registry",
@@ -23,10 +22,12 @@ define([
     "dijit/TooltipDialog",
 
     "dojox/layout/TableContainer"
-], function (declare, i18n, nlsHPCC, domConstruct,
+], function (declare, nlsHPCCMod, domConstruct,
     registry,
     _TabContainerWidget,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("RequestInformationWidget", [_TabContainerWidget], {
         i18n: nlsHPCC,
         templateString: template,

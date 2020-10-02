@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/dom",
     "dojo/dom-attr",
     "dojo/promise/all",
@@ -30,10 +29,12 @@ define([
     "dijit/TooltipDialog",
     "dijit/TitlePane"
 
-], function (declare, lang, i18n, nlsHPCC, dom, domAttr, all, arrayUtil,
+], function (declare, lang, nlsHPCCMod, dom, domAttr, all, arrayUtil,
     registry,
     Clippy, ESPQuery, _TabContainerWidget, Utility,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("QuerySetDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "QuerySetDetailsWidget",

@@ -6,6 +6,7 @@ define([
     "dojox/layout/TableContainer"
 ], function (declare, lang, arrayUtil,
     DojoxTableContainer) {
+
     return declare("hpcc.TableContainer", [DojoxTableContainer], {
 
         layout: function (params) {

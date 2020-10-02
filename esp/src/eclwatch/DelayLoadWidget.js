@@ -10,6 +10,7 @@ define([
 ], function (declare, lang, dom, domStyle,
     ContentPane,
     Utility) {
+
     return declare("DelayLoadWidget", [ContentPane], {
         __ensurePromise: undefined,
         __initPromise: undefined,

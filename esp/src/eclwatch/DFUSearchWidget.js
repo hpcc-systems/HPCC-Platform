@@ -22,6 +22,7 @@ define([
     registry,
     _Widget, Workunit,
     template) {
+
     return declare("DFUSearchWidget", [_Widget], {
         templateString: template,
         baseClass: "DFUSearchWidget",

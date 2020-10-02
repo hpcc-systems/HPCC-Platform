@@ -11,6 +11,7 @@ function getConfig(env) {
         baseUrl: baseUrl,
         deps: ["hpcc/stub"],
         async: true,
+        // locale: "zh",   // Testing only  ---
 
         parseOnLoad: false,
         isDebug: (typeof debugConfig !== "undefined"),

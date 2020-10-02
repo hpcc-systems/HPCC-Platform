@@ -1,153 +1,120 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta http-equiv="X-UA-Compatible" content="IE=edge"> 
-        <meta charset="UTF-8">
-        <title class="loginStr"></title>
-        <style type="text/css">
-            body {
-                font-family: Lucida Sans, Lucida Grande, Arial !important;
-                font-size: 15px !important;
-                background-color: #1A9BD7;
-            }
 
-            .container {
-                width: 99%;
-                position: absolute;
-                top: 50%;
-                transform: translateY(-50%);
-            }
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="UTF-8">
+    <title class="loginStr"></title>
+    <style type="text/css">
+        body {
+            font-family: Lucida Sans, Lucida Grande, Arial !important;
+            font-size: 15px !important;
+            background-color: #1A9BD7;
+        }
 
-            .formContainer {
-                width: 500px;
-                padding: 20px 0 20px 0;
-                border-radius: 5px;
-                background-color: #fff;
-                margin: auto;
-            }
+        .container {
+            width: 99%;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+        }
 
-            .login {
-                width: 400px;
-                margin: auto;
-            }
+        .formContainer {
+            width: 500px;
+            padding: 20px 0 20px 0;
+            border-radius: 5px;
+            background-color: #fff;
+            margin: auto;
+        }
 
-            .login input {
-                margin-bottom: 20px;
-                width: 300px;
-                padding: 8px;
-                border: 1px solid #bfbfbf;
-            }
+        .login {
+            width: 400px;
+            margin: auto;
+        }
 
-            #hidden_msg{
-                display: none;
-                text-align: center;
-                margin-bottom: 20px;
-                width: 300px;
-		color:red;
-            }
+        .login input {
+            margin-bottom: 20px;
+            width: 300px;
+            padding: 8px;
+            border: 1px solid #bfbfbf;
+        }
 
-            .login form {
-                margin: auto;
-                width: 300px;
-            }
+        #hidden_msg {
+            display: none;
+            text-align: center;
+            margin-bottom: 20px;
+            width: 300px;
+            color: red;
+        }
 
-            img {
-                display: block;
-                margin: auto;
-            }
+        .login form {
+            margin: auto;
+            width: 300px;
+        }
 
-            p {
-                text-align: center
-            }
+        img {
+            display: block;
+            margin: auto;
+        }
 
-            #button {
-                background-color: #1A9BD7;
-                border: none;
-                color: white;
-                padding: 15px 32px;
-                text-align: center;
-                text-decoration: none;
-                display: inline-block;
-                font-size: 16px;
-                border-radius: 4px;
-                cursor: pointer;
-                -webkit-transition-duration: 0.4s;
-                /* Safari */
-                transition-duration: 0.4s;
-                margin: auto;
-                display: block;
-            }
+        p {
+            text-align: center
+        }
 
-            .button:hover {
-                background-color: #13b1f9;
-                color: white;
-            }
+        #button {
+            background-color: #1A9BD7;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            -webkit-transition-duration: 0.4s;
+            /* Safari */
+            transition-duration: 0.4s;
+            margin: auto;
+            display: block;
+        }
 
-            .visible {
-                display: none;
-            }
-        </style>
-        <script src="/esp/files/dist/dojoLib.eclwatch.js"></script>
-    </head>
-    <body>
-        <div id="container" class="container visible">
-            <div class="formContainer">
-                <img id="logo" src="eclwatch/img/Loginlogo.png" />
-                <p id="loginStr" class="loginStr"></p>
-                <div class="login">
-                    <form method="POST" action="/esp/login">
-                        <input id="username" type="text" name="username" placeholder="username" class="loginStr" autofocus></input>
-                        <input id="password" type="password" name="password" placeholder="password" class="loginStr"></input>
-                        <p id="hidden_msg" class="loginStr"></p>
-                        <button class="loginStr" id="button" type="submit"></button>
-                    </form>
-                </div>
+        .button:hover {
+            background-color: #13b1f9;
+            color: white;
+        }
+
+        .visible {
+            display: none;
+        }
+    </style>
+    <script src="/esp/files/dist/dojoLib.eclwatch.js"></script>
+</head>
+
+<body>
+    <div id="container" class="container visible">
+        <div class="formContainer">
+            <img id="logo" src="eclwatch/img/Loginlogo.png" />
+            <p id="loginStr" class="loginStr"></p>
+            <div class="login">
+                <form method="POST" action="/esp/login">
+                    <input id="username" type="text" name="username" placeholder="username" class="loginStr"
+                        autofocus></input>
+                    <input id="password" type="password" name="password" placeholder="password"
+                        class="loginStr"></input>
+                    <p id="hidden_msg" class="loginStr"></p>
+                    <button class="loginStr" id="button" type="submit"></button>
+                </form>
             </div>
         </div>
-        <script type="text/javascript">
-            require(["dojo/ready", "dojo/i18n", "dojo/i18n!hpcc/nls/hpcc"],
-                function(ready, i18n, nlsHPCC){
-                    ready(function(){
-                        var loginStr = document.getElementById("loginStr");
-                        var error = document.getElementById("hidden_msg");
-                        var username = document.getElementById("username");
-                        var password = document.getElementById("password");
-                        var button = document.getElementById("button");
-                        var enableCookies = "";
-                        var HPCCSystems = document.getElementById("logo");
+    </div>
+    <script type="text/javascript">
+        require([init],
+            function (init) {
+                init();
+            }
+        );
+    </script>
+</body>
 
-                        loginStr.innerHTML = nlsHPCC.PleaseLogIntoECLWatch;
-                        error.innerHTML = nlsHPCC.InvalidUsernamePassword;
-                        username.innerHTML = nlsHPCC.Username;
-                        password.innerHTML = nlsHPCC.Password;
-                        button.innerHTML = nlsHPCC.Login;
-                        enableCookies = nlsHPCC.PleaseEnableCookies;
-                        HPCCSystems.setAttribute("alt", nlsHPCC.HPCCSystems);
-
-                        var element = document.getElementById('container');
-
-                        if (navigator.cookieEnabled) {
-                            var element = document.getElementById("container");
-                            element.classList.remove("visible");
-                        } else {
-                            alert(enableCookies);
-                        }
-
-                        function deleteCookie(cname, cvalue, exMins) {
-                            var d = new Date();
-                            d.setTime(d.getTime() + (exMins*60*1000));
-                            var expires = "expires="+d.toUTCString();
-                            document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
-                        }
-
-                        if (document.cookie.indexOf("ESPAuthenticationMSG") > -1){
-                            var element = document.getElementById('hidden_msg');
-                            element.style.display = "inline-block";
-                            deleteCookie('ESPAuthenticationMSG','',0);
-                        }
-                    });
-                }
-            );
-        </script>
-    </body>
 </html>

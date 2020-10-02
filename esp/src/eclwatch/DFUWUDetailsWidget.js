@@ -1,8 +1,7 @@
 define([
     "exports",
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-class",
@@ -31,10 +30,12 @@ define([
     "dijit/form/CheckBox",
     "dijit/ToolbarSeparator"
 
-], function (exports, declare, i18n, nlsHPCC, arrayUtil, dom, domClass, query,
+], function (exports, declare, nlsHPCCMod, arrayUtil, dom, domClass, query,
     registry,
     _TabContainerWidget, Clippy, FileSpray, ESPDFUWorkunit, DelayLoadWidget,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     exports.fixCircularDependency = declare("DFUWUDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "DFUWUDetailsWidget",

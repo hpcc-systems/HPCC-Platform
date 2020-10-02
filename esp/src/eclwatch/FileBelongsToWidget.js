@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
 
     "dgrid/selector",
 
@@ -10,9 +9,11 @@ define([
     "src/ESPLogicalFile",
     "src/ESPUtil",
 
-], function (declare, i18n, nlsHPCC,
+], function (declare, nlsHPCCMod,
     selector,
     DelayLoadWidget, GridDetailsWidget, ESPLogicalFile, ESPUtil) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("FileBelongsToWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
         logicalFile: null,

@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/store/Observable",
 
     "dijit/registry",
@@ -28,11 +27,13 @@ define([
     "dijit/form/DropDownButton",
     "dijit/TooltipDialog"
 
-], function (declare, i18n, nlsHPCC, Observable,
+], function (declare, nlsHPCCMod, Observable,
     registry,
     _TabContainerWidget, ESPWorkunit, DelayLoadWidget, ESPUtil, srcTimings,
     hpccComms,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("TimingPageWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "TimingPageWidget",

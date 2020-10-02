@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/dom-construct",
 
     "dijit/registry",
@@ -15,10 +14,12 @@ define([
     "dijit/ToolbarSeparator",
     "dijit/form/Button",
     "dijit/layout/ContentPane"
-], function (declare, i18n, nlsHPCC, domConstruct,
+], function (declare, nlsHPCCMod, domConstruct,
     registry,
     _Widget,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("IFrameWidget", [_Widget], {
         templateString: template,
         baseClass: "IFrameWidget",

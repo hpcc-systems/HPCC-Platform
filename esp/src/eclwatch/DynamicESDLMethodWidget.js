@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
 
     "dijit/registry",
@@ -15,11 +14,13 @@ define([
     "dgrid/editor",
     "dgrid/tree"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil,
+], function (declare, lang, nlsHPCCMod, arrayUtil,
     registry, Button,
     GridDetailsWidget, ESPUtil, WsESDLConfig,
     editor, tree
 ) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("DynamicESDLMethodWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 

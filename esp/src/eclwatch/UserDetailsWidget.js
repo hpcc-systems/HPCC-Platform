@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/dom-form",
 
     "dijit/registry",
@@ -29,10 +28,12 @@ define([
 
     "dojox/form/PasswordValidator"
 
-], function (declare, lang, i18n, nlsHPCC, domForm,
+], function (declare, lang, nlsHPCCMod, domForm,
     registry,
     _TabContainerWidget, Clippy, WsAccess,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("UserDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "UserDetailsWidget",

@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/topic",
 
     "dijit/registry",
@@ -19,10 +18,12 @@ define([
     "src/ESPUtil",
     "hpcc/MachineInformationWidget",
     "hpcc/IFrameWidget"
-], function (declare, i18n, nlsHPCC, topic,
+], function (declare, nlsHPCCMod, topic,
     registry,
     tree, selector,
     GridDetailsWidget, PreflightDetailsWidget, ESPPreflight, ESPRequest, WsTopology, Utility, DelayLoadWidget, ESPUtil, MachineInformationWidget, IFrameWidget) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("TargetClustersQueryWidget", [GridDetailsWidget, ESPUtil.FormHelper], {
         i18n: nlsHPCC,
 

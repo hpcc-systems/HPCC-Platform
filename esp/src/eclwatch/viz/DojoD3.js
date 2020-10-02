@@ -10,6 +10,7 @@
 
 ], function (declare, lang, dom, domConstruct, domGeom, Evented,
     hpccCommon) {
+
     return declare([Evented], {
         constructor: function () {
         },

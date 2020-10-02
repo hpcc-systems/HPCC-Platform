@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/Evented",
 
@@ -15,10 +14,11 @@ define([
     "src/Utility",
 
     "css!font-awesome/css/font-awesome.css"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, Evented,
+], function (declare, lang, nlsHPCCMod, arrayUtil, Evented,
     hpccCommon, hpccGraph, hpccLayout,
     GraphWidget, ESPGraph, Utility) {
 
+    var nlsHPCC = nlsHPCCMod.default;
     var faCharFactory = function (kind) {
         switch (kind) {
             case "2": return "\uf0c7";      //  Disk Write

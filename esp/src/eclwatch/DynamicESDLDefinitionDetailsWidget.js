@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
 
     "hpcc/_TabContainerWidget",
     "src/WsESDLConfig",
@@ -12,9 +11,11 @@ define([
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane"
-], function (declare, i18n, nlsHPCC,
+], function (declare, nlsHPCCMod,
     _TabContainerWidget, WsESDLConfig,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("DynamicESDLDefinitionDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "DynamicESDLDefinitionDetailsWidget",

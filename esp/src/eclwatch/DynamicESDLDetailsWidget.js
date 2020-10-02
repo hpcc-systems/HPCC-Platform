@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/dom",
     "dojo/dom-attr",
 
@@ -36,11 +35,13 @@ define([
 
     "hpcc/TableContainer"
 ],
-    function (declare, lang, i18n, nlsHPCC, dom, domAttr,
+    function (declare, lang, nlsHPCCMod, dom, domAttr,
         registry,
         Clippy,
         _TabContainerWidget, WsESDLConfig,
         template) {
+
+        var nlsHPCC = nlsHPCCMod.default;
         return declare("DynamicESDLDetailsWidget", [_TabContainerWidget], {
             templateString: template,
             baseClass: "DynamicESDLDetailsWidget",

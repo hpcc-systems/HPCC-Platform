@@ -14,6 +14,7 @@ define([
     selector,
     GraphsWidget, ESPWorkunit,
     srcTimings) {
+
     return declare("GraphsWUWidget", [GraphsWidget], {
         wu: null,
         _graphsData: null,
