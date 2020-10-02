@@ -79,7 +79,7 @@ if [ -e helm/hpcc/Chart.yaml ] ; then
   doit "git submodule update --init --recursive"
   HPCC_PROJECTS=hpcc-helm
   HPCC_NAME=HPCC
-  if [[ "$HPCC_MAJOR" == "7" ]] && [[ "$HPCC_MINOR" == "10" ]] ; then
+  if [[ "$HPCC_MAJOR" == "7" ]] && [[ "$HPCC_MINOR" == "12" ]] ; then
     doit "rm -rf ./helm"
     doit "cp -rf $HPCC_DIR/helm ./helm" 
     doit "rm ./helm/hpcc/*.bak" 
