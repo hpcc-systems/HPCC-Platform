@@ -879,6 +879,8 @@ int main( int argc, const char *argv[]  )
     getThorQueueNames(_queueNames, thorName);
     queueName.set(_queueNames.str());
 
+    Owned<IException> exception;
+    StringBuffer cloudJobName;
     try
     {
         CSDSServerStatus &serverStatus = openThorServerStatus();
@@ -900,7 +902,6 @@ int main( int argc, const char *argv[]  )
         kjServiceMpTag = allocateClusterMPTag();
 
         unsigned numWorkers = 0;
-        StringBuffer cloudJobName;
         const char *workunit = nullptr;
         const char *graphName = nullptr;
 #ifdef _CONTAINERIZED
@@ -1017,23 +1018,27 @@ int main( int argc, const char *argv[]  )
         }
         else
             PROGLOG("Registration aborted");
-#ifdef _CONTAINERIZED
         registry.clear();
-        if (globals->getPropBool("@deleteJobs", true))
-            deleteK8sResource("thorworker", cloudJobName, "job");
-        setExitCode(0);
-#endif
         LOG(MCdebugProgress, thorJob, "ThorMaster terminated OK");
     }
     catch (IException *e) 
     {
         FLLOG(MCexception(e), thorJob, e,"ThorMaster");
-        e->Release();
-#ifdef _CONTAINERIZED
-        setExitCode(0); // do we ever want to exit with non-zero in K8s world - which prevents job completing
-#endif
-        
+        exception.setown(e);
     }
+#ifdef _CONTAINERIZED
+    if (!cloudJobName.isEmpty())
+    {
+        KeepK8sJobs keepJob = translateKeepJobs(globals->queryProp("@keepJobs"));
+        if (keepJob != KeepK8sJobs::all)
+        {
+            // Delete jobs unless the pod failed and keepJob==podfailures
+            if ((nullptr == exception) || (KeepK8sJobs::podfailures != keepJob))
+                deleteK8sResource("thorworker", cloudJobName, "job");
+        }
+    }
+    setExitCode(0);
+#endif
 
     // cleanup handler to be sure we end
     thorEndHandler->start(30);
