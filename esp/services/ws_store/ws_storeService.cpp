@@ -72,8 +72,11 @@ void CwsstoreEx::init(IPropertyTree *_cfg, const char *_process, const char *_se
 
         StringBuffer owner;
         owner.setf("%s/%s", _process, _service);
+        Owned<ISecUser> secuser = new CSecureUser(owner.str(), nullptr);
 
         m_defaultStore.clear();
+
+        Owned<IPropertyTree> stores = m_storeProvider->getStores(nullptr, nullptr, nullptr, secuser.get());
 
         ForEach(*iter)
         {
@@ -88,14 +91,24 @@ void CwsstoreEx::init(IPropertyTree *_cfg, const char *_process, const char *_se
             unsigned int maxvalsize = iter->query().getPropInt(ESP_STORE_MAXVALSIZE_ATT, DEFAULT_ESP_STORE_MAX_VAL_SIZE);
             isDefault = iter->query().getPropBool(ESP_STORE_DEFAULT_ATT, false);
 
-            ESPLOG(LogMin, "CwsstoreEx: Creating Store: '%s'%s", id.str(), isDefault ? " - as Default" : "");
-            Owned<ISecUser> secuser = new CSecureUser(owner.str(), nullptr);
-            m_storeProvider->createStore(type.str(), id.str(), description.str(), secuser.get(), maxvalsize);
+            VStringBuffer xpath("Stores/Store[%s='%s']", ESP_STORE_NAME_ATT, id.str());
+            if (stores && stores->hasProp(xpath.str()))
+            {
+                ESPLOG(LogMin, "CwsstoreEx: Creating Store: '%s'%s", id.str(), isDefault ? " - as Default" : "");
+
+                m_storeProvider->createStore(type.str(), id.str(), description.str(), secuser.get(), maxvalsize);
+            }
+            else
+            {
+                ESPLOG(LogMin, "CwsstoreEx: Detected previously created store '%s'.", id.str());
+            }
+
             if (isDefault)
             {
                 if (!m_defaultStore.isEmpty())
                    throw MakeStringException(-1, "ws_store init(): Multiple stores erroneously configured as default store!");
 
+                ESPLOG(LogMin, "CwsstoreEx: setting '%s' as default store", id.str());
                 m_defaultStore.set(id.str());
             }
         }
