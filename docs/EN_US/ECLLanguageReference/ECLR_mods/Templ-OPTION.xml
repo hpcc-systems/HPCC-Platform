@@ -531,6 +531,15 @@
             </row>
 
             <row>
+              <entry><emphasis>validateFileType</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If false, the compiler uses the definition in the ECL
+              workunit and ignores the file type in the DFU record.</entry>
+            </row>
+
+            <row>
               <entry><emphasis>compressInternalSpills</emphasis></entry>
 
               <entry>Default true</entry>
