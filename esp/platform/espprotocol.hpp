@@ -215,4 +215,6 @@ public:
     virtual int countBindings(int port);
 };
 
+esp_http_decl bool checkEspConnection(IEspContext& ctx);
+
 #endif
