@@ -248,7 +248,7 @@ public:
                     params.push_back({ "graphName", graphName.get() });
                     jobName.append('-').append(graphName);
                 }
-                runK8sJob(jobSpecName, wuid, jobName, queryComponentConfig().getPropBool("@deleteJobs", true), params);
+                runK8sJob(jobSpecName, wuid, jobName, params);
             }
             else
             {

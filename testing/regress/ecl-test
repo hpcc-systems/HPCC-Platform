@@ -448,7 +448,7 @@ class RegressMain:
             logging.critical(" RegressMain error:%s" % (err))
             logging.critical(e)
             logging.critical(traceback.format_exc())
-            exit(e.getErrorCode())
+            exit(-1)
         except KeyboardInterrupt:
             logging.critical("Keyboard Interrupt Caught.")
         finally:

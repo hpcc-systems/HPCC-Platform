@@ -490,7 +490,7 @@ public:
             Owned<IException> error;
             try
             {
-                runK8sJob("compile", wuid, wuid, globals->getPropBool("@deleteJobs", true));
+                runK8sJob("compile", wuid, wuid);
             }
             catch (IException *E)
             {

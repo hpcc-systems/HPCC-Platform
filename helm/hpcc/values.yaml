@@ -131,6 +131,9 @@ bundles: []
 
 dali:
 - name: mydali
+  #resources:
+  #  cpu: "1"
+  #  memory: "4G"
 
 eclagent:
 - name: hthor
@@ -144,6 +147,10 @@ eclagent:
   useChildProcesses: false
   ## type may be 'hthor' (the default) or 'roxie', to specify that the roxie engine rather than the hthor engine should be used for eclagent workunit processing
   type: hthor
+  ## The following resources apply to child hThor pods when useChildProcesses=false, otherwise they apply to hThor pod.
+  #resources:
+  #  cpu: "1"
+  #  memory: "1G"
 
 - name: roxie-workunit
   replicas: 1
@@ -151,7 +158,10 @@ eclagent:
   maxActive: 20
   useChildProcesses: true
   type: roxie
-    
+  #resources:
+  #  cpu: "1"
+  #  memory: "1G"
+
 eclccserver:
 - name: myeclccserver
   replicas: 1
@@ -161,6 +171,10 @@ eclccserver:
   maxActive: 4
   ## Specify a list of queues to listen on if you don't want this eclccserver listening on all queues. If empty or missing, listens on all queues
   listen: []
+  ## The following resources apply to child compile pods when useChildProcesses=false, otherwise they apply to eclccserver pod.
+  #resources:
+  #  cpu: "1"
+  #  memory: "4G"
     
 esp:
 - name: eclwatch
@@ -175,6 +189,9 @@ esp:
   servicePort: 8010
   ## Specify public: true if you want the service available from outside the cluster. Typically, eclwatch and wsecl are published externally, while eclservices is designed for internal use.
   public: true
+  #resources:
+  #  cpu: "1"
+  #  memory: "2G"
 
 - name: eclservices
   application: eclservices
@@ -183,6 +200,9 @@ esp:
   replicas: 1
   servicePort: 8010
   public: false
+  #resources:
+  #  cpu: "250m"
+  #  memory: "1G"
 
 - name: eclqueries
   application: eclqueries
@@ -191,6 +211,9 @@ esp:
   replicas: 1
   public: true
   servicePort: 8002
+  #resources:
+  #  cpu: "250m"
+  #  memory: "1G"
 
 - name: esdl-sandbox
   application: esdl-sandbox
@@ -199,6 +222,9 @@ esp:
   replicas: 1
   public: true
   servicePort: 8899
+  #resources:
+  #  cpu: "250m"
+  #  memory: "1G"
 
 - name: sql2ecl
   application: sql2ecl
@@ -207,6 +233,9 @@ esp:
   replicas: 1
   public: true
   servicePort: 8510
+  #resources:
+  #  cpu: "250m"
+  #  memory: "1G"
 
 roxie:
 - name: roxie
@@ -225,6 +254,12 @@ roxie:
   ## Set localAgent to true for a scalable cluster of "single-node" roxie servers
   localAgent: false
   useAeron: false
+  #channelResources:
+  #  cpu: "4"
+  #  memory: "4G"
+  #serverResources:
+  #  cpu: "1"
+  #  memory: "1G"
 
 thor:
 - name: thor
@@ -235,3 +270,12 @@ thor:
     maxActive: 4
   thoragent:
     maxActive: 2
+  #managerResources:
+  #  cpu: "1"
+  #  memory: "2G"
+  #workerResources:
+  #  cpu: "4"
+  #  memory: "4G"
+  #eclAgentResources:
+  #  cpu: "1"
+  #  memory: "2G"

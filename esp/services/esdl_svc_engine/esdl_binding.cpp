@@ -1958,14 +1958,17 @@ void EsdlBindingImpl::initEsdlServiceInfo(IEsdlDefService &srvdef)
     //superclass binding sets up wsdladdress
     //setWsdlAddress(bndcfg->queryProp("@wsdlServiceAddress"));
 
+    // XSL Parameters are added as expressions, so any string
+    // values must be quoted when setting the property value
+
     IProperties *xsdparams = createProperties(false);
-    xsdparams->setProp( "all_annot_Param", 1 );
+    xsdparams->setProp( "all_annot_Param", "true()" );
     m_xsdgen->setTransformParams(EsdlXslToXsd, xsdparams);
 
     IProperties *wsdlparams = createProperties(false);
-    wsdlparams->setProp( "location", getWsdlAddress());
+    wsdlparams->setProp( "location", StringBuffer().append('\'').append(getWsdlAddress()).append('\'').str() );
     wsdlparams->setProp( "create_wsdl", "true()");
-    wsdlparams->setProp( "all_annot_Param", 1 );
+    wsdlparams->setProp( "all_annot_Param", "true()" );
     m_xsdgen->setTransformParams(EsdlXslToWsdl, wsdlparams);
 
     StringBuffer xsltpath(getCFD());
@@ -2644,6 +2647,8 @@ int EsdlBindingImpl::onGetXsd(IEspContext &context,
     if (!serviceName || !*serviceName)
         serviceName = m_espServiceName.get();
 
+    context.queryXslParameters()->setProp("all_annot_Param", "false()");
+
     if (!getSchema(out, context, request, serviceName, methodName, false))
     {
         response->setStatus(HTTP_STATUS_INTERNAL_SERVER_ERROR);
@@ -2686,7 +2691,9 @@ int EsdlBindingImpl::onGetWsdl(IEspContext &context,
         try
         {
             Owned<IEsdlDefObjectIterator> it = m_esdl->getDependencies(serviceName, methodName, context.getClientVersion(), context.queryRequestParameters(), ESDLDEP_FLAGS);
-            m_xsdgen->toWSDL( *it, out, EsdlXslToWsdl, context.getClientVersion(), context.queryRequestParameters(), ns.str(), ESDLDEP_FLAGS);
+            IProperties* overrideParams = context.queryXslParameters();
+            overrideParams->setProp("all_annot_Param", "false()");
+            m_xsdgen->toWSDL( *it, out, EsdlXslToWsdl, context.getClientVersion(), context.queryRequestParameters(), ns.str(), ESDLDEP_FLAGS, overrideParams);
         }
         catch (...)
         {
@@ -2719,7 +2726,7 @@ bool EsdlBindingImpl::getSchema(StringBuffer& schema,
     generateNamespace(ctx, req, service, method, ns);
 
     Owned<IEsdlDefObjectIterator> it = m_esdl->getDependencies(service, method, ctx.getClientVersion(), ctx.queryRequestParameters(), ESDLDEP_FLAGS);
-    m_xsdgen->toXSD( *it, schema, EsdlXslToXsd, ctx.getClientVersion(), ctx.queryRequestParameters(), ns.str(), ESDLDEP_FLAGS);
+    m_xsdgen->toXSD( *it, schema, EsdlXslToXsd, ctx.getClientVersion(), ctx.queryRequestParameters(), ns.str(), ESDLDEP_FLAGS, ctx.queryXslParameters());
     ESPLOG(LogMax,"EsdlBindingImpl::getSchema schema: %s", schema.str());
     return true;
 }
