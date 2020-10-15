@@ -150,7 +150,7 @@ def queryEngineProcess(engine,  taskId):
     retVal = []
     myProc = subprocess.Popen(["ps aux | egrep '"+engine+"' | egrep -v 'grep'"],  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
     result = myProc.stdout.read() + myProc.stderr.read()
-    results = result.split('\n')
+    results = result.decode("utf-8").split('\n')
     logger.debug("%3d. queryEngineProcess(engine: %s): process(es) :'%s'",  taskId,  engine,  results)
     for line in results:
         line = line.replace('\n','')
