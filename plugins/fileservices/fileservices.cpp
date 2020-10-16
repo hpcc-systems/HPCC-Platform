@@ -2670,7 +2670,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfGetLogicalFileAttribute(ICodeContex
             IPropertyTree &attr = df->queryAttributes();
             Owned<IPropertyTreeIterator> piter = attr.getElements("Protect");
             ForEach(*piter) {
-                const char *name = piter->get().queryProp("@name");
+                const char *name = piter->query().queryProp("@name");
                 if (name&&*name) {
                     if (ret.length())
                         ret.append(',');
