@@ -1,0 +1,26 @@
+ldap:
+  objname: ldapserver
+  serverType: AzureActiveDirectory
+  description: LDAP server process
+  ldapProtocol: ldap
+  authMethod: kerberos
+  localDomain: localdomain
+  ldapPort: 389
+  ldapSecurePort: 636
+  systemCommonName: hpcc_admin2
+  systemPassword: ""
+  systemUser: hpcc_admin2
+  adminGroupName:
+  maxConnections: 10
+  passwordExpirationWarningDays: 10
+  cacheTimeout: 5
+  ldapTimeoutSecs: 131
+  sharedCache: true
+  checkViewPermissions: ''
+  filesBasedn: ou=files,ou=ecl
+  groupsBasedn: ou=AADDC Users
+  sudoersBasedn: ou=SUDOers
+  systemBasedn: ou=AADDC Users
+  usersBasedn: ou=AADDC Users
+  resourcesBasedn: ou=WsEcl,ou=EspServices,ou=ecl
+  workunitsBasedn: ou=workunits,ou=ecl

@@ -309,10 +309,7 @@ int LdapUtils::getServerInfo(const char* ldapserver, const char* userDN, const c
                     }
                 }
                 else if(*curdn != '\0' && strcmp(curdn, "o=NetscapeRoot") == 0)
-                {
-                    PROGLOG("Deduced LDAP Server Type 'iPlanet'");
                     deducedSType = IPLANET;
-                }
                 i++;
             }
 
@@ -322,26 +319,29 @@ int LdapUtils::getServerInfo(const char* ldapserver, const char* userDN, const c
             if (deducedSType == LDAPSERVER_UNKNOWN)
             {
                 if(i <= 1)
-                {
-                    PROGLOG("Deduced LDAP Server Type 'OpenLDAP'");
                     deducedSType = OPEN_LDAP;
-                }
                 else
-                {
-                    PROGLOG("Deduced LDAP Server Type 'Active Directory'");
                     deducedSType = ACTIVE_DIRECTORY;
-                }
             }
         }
     }
     ldap_msgfree(msg);
     LDAP_UNBIND(ld);
 
-    if (stype == LDAPSERVER_UNKNOWN)
-        stype = deducedSType;
-    else if (deducedSType != stype)
-        WARNLOG("Ignoring deduced LDAP Server Type, does not match config LDAPServerType");
+    if (stype == LDAPSERVER_UNKNOWN || deducedSType != stype)
+    {
+        if (deducedSType == ACTIVE_DIRECTORY)
+            PROGLOG("Deduced LDAP Server Type 'Active Directory'");
+        else if (deducedSType == OPEN_LDAP)
+            PROGLOG("Deduced LDAP Server Type 'OpenLDAP'");
+        else if (deducedSType == IPLANET)
+            PROGLOG("Deduced LDAP Server Type 'iPlanet'");
 
+        if (stype == LDAPSERVER_UNKNOWN)
+            stype = deducedSType;
+        else
+            WARNLOG("Ignoring deduced LDAP Server Type, does not match config");
+    }
     return err;
 }
 
