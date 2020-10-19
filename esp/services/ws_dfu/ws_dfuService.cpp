@@ -1823,14 +1823,7 @@ bool CWsDfuEx::onDFURecordTypeInfo(IEspContext &context, IEspDFURecordTypeInfoRe
             throw MakeStringException(ECLWATCH_MISSING_PARAMS, "File name required");
         PROGLOG("DFURecordTypeInfo file: %s", fileName);
 
-        const char* userId = context.queryUserId();
-        Owned<IUserDescriptor> userdesc;
-        if (userId && *userId)
-        {
-            userdesc.setown(createUserDescriptor());
-            userdesc->set(userId, context.queryPassword(), context.querySignature());
-        }
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, userdesc, false, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> df = lookupLogicalName(context, fileName, false, false, false, nullptr, defaultPrivilegedUser);
         if (!df)
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",fileName);
 
@@ -5035,22 +5028,13 @@ bool CWsDfuEx::onListHistory(IEspContext &context, IEspListHistoryRequest &req, 
 {
     try
     {
-        StringBuffer username;
-        context.getUserID(username);
-        Owned<IUserDescriptor> userdesc;
-        if (username.length() > 0)
-        {
-            userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), context.queryPassword(), context.querySignature());
-        }
-
         if (!req.getName() || !*req.getName())
             throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Name required");
         PROGLOG("onListHistory: %s", req.getName());
 
         MemoryBuffer xmlmap;
         IArrayOf<IEspHistory> arrHistory;
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(req.getName(),userdesc.get(), false, false, false, nullptr, defaultPrivilegedUser);
+        Owned<IDistributedFile> file = lookupLogicalName(context, req.getName(), false, false, false, nullptr, defaultPrivilegedUser);
         if (file)
         {
             IPropertyTree *history = file->queryHistory();
@@ -5083,22 +5067,13 @@ bool CWsDfuEx::onEraseHistory(IEspContext &context, IEspEraseHistoryRequest &req
     {
         context.ensureFeatureAccess(FEATURE_URL, SecAccess_Full, ECLWATCH_DFU_ACCESS_DENIED, "WsDfu::EraseHistory: Permission denied.");
 
-        StringBuffer username;
-        context.getUserID(username);
-        Owned<IUserDescriptor> userdesc;
-        if (username.length() > 0)
-        {
-            userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), context.queryPassword(), context.querySignature());
-        }
-
         if (!req.getName() || !*req.getName())
             throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Name required");
         PROGLOG("onEraseHistory: %s", req.getName());
 
         MemoryBuffer xmlmap;
         IArrayOf<IEspHistory> arrHistory;
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(req.getName(),userdesc.get(),false,false,false,nullptr,defaultPrivilegedUser);
+        Owned<IDistributedFile> file = lookupLogicalName(context, req.getName(), false, false, false, nullptr, defaultPrivilegedUser);
         if (file)
         {
             IPropertyTree *history = file->queryHistory();
@@ -5694,18 +5669,12 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
 
     double version = context.getClientVersion();
 
-    StringBuffer username;
-    context.getUserID(username);
-
     StringBuffer cluster;
-    Owned<IUserDescriptor> userdesc;
     bool disableUppercaseTranslation = false;
     Owned<IDistributedFile> df;
     try
     {
-        userdesc.setown(createUserDescriptor());
-        userdesc->set(username.str(), context.queryPassword(), context.querySignature());
-        df.setown(queryDistributedFileDirectory().lookup(indexName, userdesc, false, false, false, nullptr, defaultPrivilegedUser));
+        df.setown(lookupLogicalName(context, indexName, false, false, false, nullptr, defaultPrivilegedUser));
         if(!df)
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Could not find file %s.", indexName);
 

@@ -48,6 +48,7 @@
 #include "ws_wudetails.hpp"
 #include "wuerror.hpp"
 #include "TpWrapper.hpp"
+#include "LogicFileWrapper.hpp"
 
 #include "rtlformat.hpp"
 
@@ -2912,7 +2913,7 @@ void CWsWorkunitsEx::getWsWuResult(IEspContext &context, const char *wuid, const
             result->getResultFilename(logicalName);
         if (logicalName.length())
         {
-            Owned<IDistributedFile> df = lookupLogicalName(context, logicalName.str());
+            Owned<IDistributedFile> df = lookupLogicalName(context, logicalName.str(), false, false, false, nullptr, defaultPrivilegedUser);
             if (!df)
                 throw makeStringExceptionV(ECLWATCH_FILE_NOT_EXIST, "Cannot find file %s.", logicalName.str());
             resultSz = df->getDiskSize(true, false);
@@ -3244,26 +3245,10 @@ void getWorkunitCluster(IEspContext &context, const char *wuid, SCMStringBuffer 
     }
 }
 
-IDistributedFile *CWsWorkunitsEx::lookupLogicalName(IEspContext &context, const char *logicalName)
-{
-    StringBuffer userID;
-    context.getUserID(userID);
-    Owned<IUserDescriptor> userDesc;
-    if (!userID.isEmpty())
-    {
-        userDesc.setown(createUserDescriptor());
-        userDesc->set(userID, context.queryPassword(), context.querySignature());
-    }
-
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, userDesc, false,
-        false, false, nullptr, defaultPrivilegedUser);
-    return df.getClear();
-}
-
 void CWsWorkunitsEx::getFileResults(IEspContext &context, const char *logicalName, const char *cluster, __int64 start, unsigned &count, __int64 &total,
     IStringVal &resname, bool bin, IArrayOf<IConstNamedValue> *filterBy, MemoryBuffer &buf, bool xsd)
 {
-    Owned<IDistributedFile> df = lookupLogicalName(context, logicalName);
+    Owned<IDistributedFile> df = lookupLogicalName(context, logicalName, false, false, false, nullptr, defaultPrivilegedUser);
     if (!df)
         throw makeStringExceptionV(ECLWATCH_FILE_NOT_EXIST, "Cannot find file %s.", logicalName);
 

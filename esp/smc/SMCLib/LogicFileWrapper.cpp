@@ -21,6 +21,7 @@
 
 #include "LogicFileWrapper.hpp"
 #include "dautils.hpp"
+#include "exception_util.hpp"
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -125,4 +126,29 @@ bool LogicFileWrapper::doCompressFile(const char* name,StringBuffer& returnStr, 
     }
 
     return true; 
+}
+
+IDistributedFile* lookupLogicalName(IEspContext& context, const char* logicalName, bool writeattr, bool hold,
+    bool lockSuperOwner, IDistributedFileTransaction* transaction, bool privilegedUser, unsigned timeout)
+{
+    StringBuffer userID;
+    context.getUserID(userID);
+    Owned<IUserDescriptor> userDesc;
+    if (!userID.isEmpty())
+    {
+        userDesc.setown(createUserDescriptor());
+        userDesc->set(userID, context.queryPassword(), context.querySignature());
+    }
+
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, userDesc, writeattr,
+        hold, lockSuperOwner, transaction, privilegedUser, timeout);
+    return df.getClear();
+}
+
+void getNodeGroupFromLFN(IEspContext& context, const char* lfn, StringBuffer& nodeGroup)
+{
+    Owned<IDistributedFile> df = lookupLogicalName(context, lfn, false, false, false, nullptr, defaultPrivilegedUser);
+    if (!df)
+        throw makeStringExceptionV(ECLWATCH_FILE_NOT_EXIST, "Failed to find file: %s", lfn);
+    df->getClusterGroupName(0, nodeGroup);
 }
