@@ -368,6 +368,12 @@ public:
             if (!ignore)
                 m_notify->notifySelected(sock, selected, this, reachedQuota);
         }
+        else
+        {
+            PERSILOG(PersistentLogLevel::PLogNormal, "PERSISTENT: Unexpected data received on connection %d, so discard the connection.", sock->OShandle());
+            remove(sock);
+        }
+
         return false;
     }
 
