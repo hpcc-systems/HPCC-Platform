@@ -40,7 +40,8 @@ public:
     ///
     /// @return an ISecManager Security Manager instance
     ///
-    static ISecManager* loadPluggableSecManager(const char * bindingName, IPropertyTree* bindingCfg, IPropertyTree* secMgrCfg)
+    template <class SECMGR>
+    static SECMGR* loadPluggableSecManager(const char * bindingName, IPropertyTree* bindingCfg, IPropertyTree* secMgrCfg)
     {
         const char * lsm = "Load Security Manager :";
 
@@ -69,15 +70,15 @@ public:
         if(pluggableSecLib == NULL)
             throw MakeStringException(-1, "%s can't load library %s for %s", lsm, libName.str(), bindingName);
 
-        //Retrieve address of exported ISecManager instance factory
+        //Retrieve address of exported SECMGR instance factory
         newPluggableSecManager_t_ xproc = NULL;
         xproc = (newPluggableSecManager_t_)GetSharedProcedure(pluggableSecLib, instFactory.str());
         if (xproc == NULL)
             throw MakeStringException(-1, "%s cannot locate procedure %s of '%s'", lsm, instFactory.str(), libName.str());
 
-        //Call ISecManager instance factory and return the new instance
+        //Call SECMGR instance factory and return the new instance
         DBGLOG("Calling '%s' in pluggable security manager '%s'", instFactory.str(), libName.str());
-        ISecManager* pPSM = xproc(bindingName, *secMgrCfg, *bindingCfg);
+        SECMGR* pPSM = dynamic_cast<SECMGR*>(xproc(bindingName, *secMgrCfg, *bindingCfg));
         if (pPSM == nullptr)
             throw MakeStringException(-1, "%s Security Manager %s failed to instantiate in call to %s", lsm, libName.str(), instFactory.str());
         return pPSM;
@@ -107,7 +108,7 @@ public:
         }
         else
             throw MakeStringException(-1, "Security model %s not supported", model_name);
-    }   
+    }
 
     static IAuthMap* loadTheDefaultAuthMap(IPropertyTree* cfg)
     {
@@ -122,7 +123,7 @@ public:
             return xproc(cfg);
         else
             throw MakeStringException(-1, "procedure newDefaultAuthMap of %s can't be loaded", LDAPSECLIB);
-    }   
+    }
 };
 
 #endif

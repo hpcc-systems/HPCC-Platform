@@ -104,9 +104,15 @@
                             <xs:restriction base="xs:string">
                                 <xs:enumeration value="kerberos" hpcc:description=""/>
                                 <xs:enumeration value="simple" hpcc:description=""/>
+                                <xs:enumeration value="secmgrPlugin" hpcc:description=""/>
                             </xs:restriction>
                         </xs:simpleType>
                     </xs:attribute>
+                    <xs:attribute name="authPluginType" type="xs:string"
+                                  hpcc:displayName="Security Manager Plugin Name"
+                                  hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
+                                  hpcc:requiredIf=".[@authMethod=('secmgrPlugin')]"
+                                  hpcc:tooltip="Security Manager plugin name (when authentication method is secmgrPlugin)"/>
                     <xs:attribute name="filesDefaultUser" type="xs:string" hpcc:displayName="Files Default User"
                                   hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
                                   hpcc:tooltip="The default username for Files access (ActiveDirectory)"/>

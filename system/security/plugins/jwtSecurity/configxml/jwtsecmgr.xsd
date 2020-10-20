@@ -1,0 +1,145 @@
+<!--
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2020 HPCC Systems.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="jwtsecmgr">
+    <xs:complexType>
+
+      <xs:attribute name="loginEndpoint" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Full URL of the JWT login endpoint</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+
+      <xs:attribute name="refreshEndpoint" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Full URL of the JWT refresh endpoint</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+
+      <xs:attribute name="allowSelfSignedCert" type="xs:boolean" use="required" default="false">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Allow endpoints to use a self-signed TLS certificate</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+
+      <xs:attribute name="secretsName" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Secrets vault name or subdirectory under /opt/HPCCSystems/secrets/systems in which the JWT key used for the chosen signature algorithm (hash key, for HSxxx algorithms; public key for the others) is stored</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+
+      <xs:attribute name="clientID" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>URL or unique name of this HPCC Systems cluster</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+
+      <xs:attribute name="permDefaultAccess" use="required" default="Full">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Default access level for permissions; default value is 'Full'</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:enumeration value="None"/>
+            <xs:enumeration value="Full"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+
+      <xs:attribute name="wuDefaultAccess" use="required" default="Full">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Default access level for workunit scopes; default value is 'Full'</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:enumeration value="None"/>
+            <xs:enumeration value="Full"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+
+      <xs:attribute name="fileDefaultAccess" use="required" default="Full">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Default access level for file scopes; default value is 'Full'</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:enumeration value="None"/>
+            <xs:enumeration value="Full"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+
+      <!-- All SecurityManager Plugins must define the type="SecurityManager" attribute -->
+      <xs:attribute name="type" type="SecurityManager" use="required" default="SecurityManager">
+        <xs:annotation>
+          <xs:appinfo>
+            <viewType>hidden</viewType>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+
+      <!-- All SecurityManager Plugins must define the libName attribute -->
+      <xs:attribute name="libName" type="xs:string" use="optional" default="libjwtSecurity.so">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>The Security Manager library name (.so) and optional path</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+
+      <!-- All SecurityManager Plugins must define the instanceFactoryName attribute -->
+      <xs:attribute name="instanceFactoryName" type="xs:string" use="optional" default="createInstance">
+        <xs:annotation>
+          <xs:appinfo>
+            <viewType>hidden</viewType>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+
+      <!-- All SecurityManager Plugins must define the (instance) name attribute -->
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Name for this JWT Security Manager instance</tooltip>
+            <required>true</required>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
