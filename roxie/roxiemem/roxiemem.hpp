@@ -422,6 +422,7 @@ enum RoxieHeapFlags
     RHFdelayrelease     = 0x0100,
 
     //internal flags
+    RHFhuge             = 0x40000000,   // only used for tracing
     RHForphaned         = 0x80000000,   // heap will no longer be used, can be deleted
 };
 inline RoxieHeapFlags operator | (RoxieHeapFlags l, RoxieHeapFlags r) { return (RoxieHeapFlags)((unsigned)l | (unsigned)r); }
@@ -502,7 +503,7 @@ interface ITimeLimiter
 interface IActivityMemoryUsageMap : public IInterface
 {
     virtual void noteMemUsage(unsigned activityId, memsize_t memUsed, unsigned numAllocs) = 0;
-    virtual void noteHeapUsage(memsize_t allocatorSize, RoxieHeapFlags heapFlags, memsize_t memReserved, memsize_t memUsed) = 0;
+    virtual void noteHeapUsage(memsize_t allocatorSize, RoxieHeapFlags heapFlags, memsize_t memReserved, memsize_t memUsed, unsigned allocatorId) = 0;
     virtual void report(const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache) = 0;
     virtual void reportStatistics(IStatisticTarget & target, unsigned detailtarget, const IRowAllocatorCache *allocatorCache) = 0;
 };
