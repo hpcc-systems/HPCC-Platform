@@ -379,9 +379,12 @@ public:
                 if (!path.length())
                     path.append(".");
                 if (bundleFile->isDirectory()==fileBool::foundYes && !directoryContainsBundleFile(bundleFile))
-                    includeOpt.appendf(" \"-I%s\"", bundle);
+                    includeOpt.appendf(" \"-I%s\"", cleanedParam.str());
                 else
+                {
+                    removeTrailingPathSepChar(path);  // Trailing \ does not play nice with quotes in Windows
                     includeOpt.appendf(" \"-I%s\"", path.str());
+                }
             }
             else
                 throw MakeStringException(0, "File not found");
@@ -1105,7 +1108,8 @@ protected:
                 fetchedLocation.append(tmp).append(PATHSEPCHAR);
                 splitFilename(url, NULL, NULL, &fetchedLocation, NULL);
                 StringBuffer output;
-                VStringBuffer params("clone --depth=1 %s %s", url, fetchedLocation.str());
+                removeTrailingPathSepChar(fetchedLocation);
+                VStringBuffer params("clone --depth=1 %s \"%s\"", url, fetchedLocation.str());
                 if (optBranch)
                     params.appendf(" -b %s", optBranch.str());
                 unsigned retCode = doPipeCommand(output, "git", params, NULL);
