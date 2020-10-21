@@ -297,6 +297,7 @@ public:
         m_cfgServerType.set(cfg->queryProp(".//@serverType"));
         if (m_cfgServerType.length())
         {
+            PROGLOG("LDAP Server Type from config: %s", m_cfgServerType.str());
             if (0 == stricmp(m_cfgServerType, "ActiveDirectory"))
                 m_serverType = ACTIVE_DIRECTORY;
             else if (strieq(m_cfgServerType, "AzureActiveDirectory"))

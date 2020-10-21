@@ -29,6 +29,8 @@
 #include "espcontext.hpp"
 #include "build-config.h"
 
+enum class LdapType { LegacyAD, AzureAD };
+
 static void appendPTreeFromYamlFile(IPropertyTree *tree, const char *file)
 {
     Owned<IPropertyTree> appendTree = createPTreeFromYAMLFile(file);
@@ -88,11 +90,21 @@ static void copyDirectories(IPropertyTree *target, IPropertyTree *src)
     }
 }
 
-bool addLdapSecurity(IPropertyTree *legacyEsp, IPropertyTree *appEsp, StringBuffer &bindAuth)
+bool addLdapSecurity(IPropertyTree *legacyEsp, IPropertyTree *appEsp, StringBuffer &bindAuth, LdapType ldapType)
 {
     const char *ldapAddress = appEsp->queryProp("@ldapAddress");
     if (isEmptyString(ldapAddress))
         throw MakeStringException(-1, "LDAP not configured.  To run without security set auth=none");
+
+    StringBuffer path(COMPONENTFILES_DIR);
+    char sepchar = getPathSepChar(COMPONENTFILES_DIR);
+    addPathSepChar(path, sepchar).append("applications").append(sepchar).append("common").append(sepchar).append("ldap").append(sepchar);
+    if (ldapType == LdapType::LegacyAD)
+        path.append("ldap.yaml");
+    else
+        path.append("azure_ldap.yaml");
+    if (checkFileExists(path))
+        appendPTreeFromYamlFile(appEsp, path.str());
     IPropertyTree *appLdap = appEsp->queryPropTree("ldap");
     if (!appLdap)
         throw MakeStringException(-1, "Can't find application LDAP settings.  To run without security set auth=none");
@@ -155,14 +167,16 @@ bool addSecurity(IPropertyTree *legacyEsp, IPropertyTree *appEsp, StringBuffer &
     if (streq(auth, "none"))
         return false;
     if (streq(auth, "ldap"))
-        return addLdapSecurity(legacyEsp, appEsp, bindAuth);
+        return addLdapSecurity(legacyEsp, appEsp, bindAuth, LdapType::LegacyAD);
+    if (streq(auth, "azure_ldap"))
+        return addLdapSecurity(legacyEsp, appEsp, bindAuth, LdapType::AzureAD);
     return addAuthNZSecurity(auth, legacyEsp, appEsp, bindAuth);
 }
 
 void bindAuthResources(IPropertyTree *legacyAuthenticate, IPropertyTree *app, const char *service, const char *auth)
 {
     IPropertyTree *appAuth = nullptr;
-    if (isEmptyString(auth) || streq(auth, "ldap"))
+    if (isEmptyString(auth) || streq(auth, "ldap") || streq(auth, "azure_ldap"))
         appAuth = app->queryPropTree("ldap");
     else if (streq(auth, "none"))
         return;
