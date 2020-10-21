@@ -123,6 +123,8 @@ int CHttpSoapBinding::onSoapRequest(CHttpRequest* request, CHttpResponse* respon
         {
             errcode = mex->errorCode();
             mex->serializeJSON(msgbuf, 0, true, true, true);
+            StringBuffer errMessage;
+            ctx->addTraceSummaryValue(LogMin, "msg", mex->errorMessage(errMessage).str(), TXSUMMARY_GRP_ENTERPRISE);
             mex->Release();
         }
         catch (IException* e)
@@ -131,6 +133,8 @@ int CHttpSoapBinding::onSoapRequest(CHttpRequest* request, CHttpResponse* respon
             Owned<IMultiException> mex = MakeMultiException("Esp");
             mex->append(*e); // e is owned by mex
             mex->serializeJSON(msgbuf, 0, true, true, true);
+            StringBuffer errMessage;
+            ctx->addTraceSummaryValue(LogMin, "msg", e->errorMessage(errMessage).str(), TXSUMMARY_GRP_ENTERPRISE);
         }
         catch (...)
         {
@@ -138,6 +142,7 @@ int CHttpSoapBinding::onSoapRequest(CHttpRequest* request, CHttpResponse* respon
             Owned<IMultiException> mex = MakeMultiException("Esp");
             mex->append(*MakeStringException(500, "Internal Server Error"));
             mex->serializeJSON(msgbuf, 0, true, true, true);
+            ctx->addTraceSummaryValue(LogMin, "msg", "Internal Server Error", TXSUMMARY_GRP_ENTERPRISE);
         }
         SetHTTPErrorStatus(errcode, response);
         response->setContentType(HTTP_TYPE_JSON);
@@ -156,6 +161,10 @@ int CHttpSoapBinding::onSoapRequest(CHttpRequest* request, CHttpResponse* respon
             soapFault.setown(makeSoapFault(request,mex, generateNamespace(*request->queryContext(), request, request->queryServiceName(), request->queryServiceMethod(), ns).str()));
             //SetHTTPErrorStatus(mex->errorCode(),response);
             SetHTTPErrorStatus(500,response);
+            StringBuffer errMessage;
+            ctx->addTraceSummaryValue(LogMin, "msg", mex->errorMessage(errMessage).str(), TXSUMMARY_GRP_ENTERPRISE);
+            VStringBuffer fault("F%d", mex->errorCode());
+            ctx->addTraceSummaryValue(LogMin, "custom_fields.soapFaultCode", fault.str(), TXSUMMARY_GRP_ENTERPRISE);
             mex->Release();
         }
         catch (IException* e)
@@ -165,11 +174,16 @@ int CHttpSoapBinding::onSoapRequest(CHttpRequest* request, CHttpResponse* respon
             mex->append(*e); // e is owned by mex
             soapFault.setown(makeSoapFault(request,mex, generateNamespace(*request->queryContext(), request, request->queryServiceName(), request->queryServiceMethod(), ns).str()));
             SetHTTPErrorStatus(500,response);
+            StringBuffer errMessage;
+            ctx->addTraceSummaryValue(LogMin, "msg", e->errorMessage(errMessage).str(), TXSUMMARY_GRP_ENTERPRISE);
+            VStringBuffer fault("F%d", mex->errorCode());
+            ctx->addTraceSummaryValue(LogMin, "custom_fields.soapFaultCode", fault.str(), TXSUMMARY_GRP_ENTERPRISE);
         }
         catch (...)
         {
             soapFault.setown(new CSoapFault(500,"Internal Server Error"));
             SetHTTPErrorStatus(500,response);
+            ctx->addTraceSummaryValue(LogMin, "msg", "Internal Server Error", TXSUMMARY_GRP_ENTERPRISE);
         }
         //response->setContentType(soapFault->get_content_type());
         response->setContentType(HTTP_TYPE_TEXT_XML_UTF8);

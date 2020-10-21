@@ -85,6 +85,13 @@ typedef enum LogRequest_
     LogRequestsAlways
 } LogRequest;
 
+
+#define TXSUMMARY_GRP_CORE        0x00000001
+#define TXSUMMARY_GRP_ENTERPRISE  0x00000002
+
+#define TXSUMMARY_OUT_TEXT      0x00000001
+#define TXSUMMARY_OUT_JSON      0x00000002
+
 #define ESPCTX_NO_NAMESPACES    0x00000001
 #define ESPCTX_WSDL             0x00000010
 #define ESPCTX_WSDL_EXT         0x00000100
@@ -186,12 +193,14 @@ interface IEspContext : extends IInterface
     virtual void addCustomerHeader(const char* name, const char* val) = 0;
 
     virtual CTxSummary* queryTxSummary()=0;
-    virtual void addTraceSummaryValue(unsigned logLevel, const char *name, const char *value)=0;
-    virtual void addTraceSummaryValue(unsigned logLevel, const char *name, __int64 value)=0;
-    virtual void addTraceSummaryTimeStamp(unsigned logLevel, const char *name)=0;
-    virtual void addTraceSummaryCumulativeTime(unsigned logLevel, const char* name, unsigned __int64 time)=0;
-    virtual CumulativeTimer* queryTraceSummaryCumulativeTimer(const char* name)=0;
+    virtual void addTraceSummaryValue(unsigned logLevel, const char *name, const char *value, const unsigned int group = TXSUMMARY_GRP_CORE)=0;
+    virtual void addTraceSummaryValue(unsigned logLevel, const char *name, __int64 value, const unsigned int group = TXSUMMARY_GRP_CORE)=0;
+    virtual void addTraceSummaryDoubleValue(unsigned logLevel, const char *name, double value, const unsigned int group = TXSUMMARY_GRP_CORE)=0;
+    virtual void addTraceSummaryTimeStamp(unsigned logLevel, const char *name, const unsigned int group = TXSUMMARY_GRP_CORE)=0;
+    virtual void addTraceSummaryCumulativeTime(unsigned logLevel, const char* name, unsigned __int64 time, const unsigned int group = TXSUMMARY_GRP_CORE)=0;
+    virtual CumulativeTimer* queryTraceSummaryCumulativeTimer(unsigned logLevel, const char *name, const unsigned int group = TXSUMMARY_GRP_CORE)=0;
     virtual void cancelTxSummary()=0;
+
 
     virtual ESPSerializationFormat getResponseFormat()=0;
     virtual void setResponseFormat(ESPSerializationFormat fmt)=0;
@@ -216,10 +225,17 @@ interface IEspContext : extends IInterface
     virtual void setAuthError(AuthError error)=0;
     virtual AuthError getAuthError()=0;
     virtual void setAuthStatus(const char * status)=0;
+    virtual const char* queryAuthStatus()=0;
     virtual const char * getRespMsg()=0;
     virtual void setRespMsg(const char * msg)=0;
     virtual void setRequest(IHttpMessage* req) = 0;
     virtual IHttpMessage* queryRequest() = 0;
+
+    virtual void setGlobalId(const char* id)=0;
+    virtual const char* getGlobalId()=0;
+    virtual void setCallerId(const char* id)=0;
+    virtual const char* getCallerId()=0;
+    virtual const char* getLocalId()=0;
 };
 
 
@@ -240,6 +256,10 @@ interface IEspContainer : extends IInterface
     virtual void setLogResponses(bool logResp) = 0;
     virtual void setTxSummaryLevel(LogLevel level) = 0;
     virtual LogLevel getTxSummaryLevel() = 0;
+    virtual unsigned int getTxSummaryStyle() = 0;
+    virtual void setTxSummaryStyle(unsigned int style) = 0;
+    virtual unsigned int getTxSummaryGroup() = 0;
+    virtual void setTxSummaryGroup(unsigned int group) = 0;
     virtual bool getTxSummaryResourceReq() = 0;
     virtual void setTxSummaryResourceReq(bool req) = 0;
     virtual void log(LogLevel level, const char*,...) __attribute__((format(printf, 3, 4))) = 0;

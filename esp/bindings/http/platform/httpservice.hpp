@@ -167,6 +167,7 @@ public:
         m_request->setSocketReturner(returner);
         m_response->setSocketReturner(returner);
     }
+    IEspContext* queryContext() {return m_request->queryContext();}
 };
 
 

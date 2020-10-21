@@ -70,7 +70,7 @@ include_directories(
     ${HPCC_SOURCE_DIR}/common/thorhelper
     )
 
-add_definitions(-DESPHTTP_EXPORTS -DESP_TIMING -D_USRDLL -DESP_PLUGIN)
+add_definitions(-DESPHTTP_EXPORTS -DESP_TIMING -D_USRDLL -DESP_PLUGIN -DTXSUMMARY_EXPORTS)
 
 HPCC_ADD_LIBRARY(esphttp SHARED ${SRCS})
 add_dependencies(esphttp  espscm)

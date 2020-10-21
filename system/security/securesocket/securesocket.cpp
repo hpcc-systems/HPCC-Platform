@@ -159,6 +159,12 @@ public:
 
     void readTimeout(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeout, bool useSeconds);
 
+    virtual StringBuffer& get_ssl_version(StringBuffer& ver)
+    {
+        ver.set(SSL_get_version(m_ssl));
+        return ver;
+    }
+
     //The following are the functions from ISocket that haven't been implemented.
 
 

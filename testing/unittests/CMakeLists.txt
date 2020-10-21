@@ -38,6 +38,7 @@ set (    SRCS
          cryptotests.cpp
          hqltests.cpp
          esdltests.cpp
+         txSummarytests.cpp
     )
 
 if (NOT CONTAINERIZED)
