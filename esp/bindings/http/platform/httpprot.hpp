@@ -38,7 +38,7 @@
 #include <map>
 using namespace std;
 
-class CPooledHttpThread : public CInterface, implements IPooledThread
+class CPooledHttpThread : public CInterface, implements IPooledThread, implements ISocketReturner
 {
 private:
     Owned<ISocket> m_socket;
@@ -49,6 +49,9 @@ private:
     ISecureSocketContext* m_ssctx;
     IPersistentHandler* m_persistentHandler = nullptr;
     bool m_shouldClose = false;
+    IHttpServerService* m_httpserver = nullptr;
+    bool m_socketReturned = false;
+    bool m_processAborted = false;
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -63,6 +66,7 @@ public:
 
     virtual void setMaxRequestEntityLength(int len) {m_MaxRequestEntityLength = len;}
     virtual int getMaxRequestEntityLength() { return m_MaxRequestEntityLength; }
+    virtual void returnSocket();
 };
 
 class CHttpThreadPoolFactory : public CInterface, implements IThreadFactory
@@ -90,6 +94,10 @@ private:
     ISecureSocketContext* m_ssctx;
     IPersistentHandler* m_persistentHandler = nullptr;
     bool m_shouldClose = false;
+    IHttpServerService* m_httpserver = nullptr;
+    bool m_httpSocketReturned = false;
+    void returnSocket(bool cascade);
+
 public:
     CHttpThread(ISocket *sock, CEspApplicationPort* apport, bool viewConfig, bool isSSL = false, ISecureSocketContext* ssctx = NULL, IPersistentHandler* persistentHandler = NULL);
     
@@ -100,6 +108,7 @@ public:
     virtual int getMaxRequestEntityLength() { return m_MaxRequestEntityLength; }
 
     void setShouldClose(bool should) {m_shouldClose = should;}
+    virtual void returnSocket();
 };
 
 class esp_http_decl CHttpProtocol : public CEspProtocol

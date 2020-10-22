@@ -70,6 +70,7 @@ class CEspHttpServer : implements IHttpServerService, public CInterface
     bool isSSL = false;
     bool shouldClose = false;
     CriticalSection critDaliSession;
+    ISocketReturner* m_socketReturner = nullptr;
 protected:
     ISocket&                m_socket;
     Owned<CHttpRequest>     m_request;
@@ -160,6 +161,12 @@ public:
     bool persistentEligible();
     void setIsSSL(bool _isSSL) { isSSL = _isSSL; };
     void setShouldClose(bool should) { shouldClose = should; }
+    void setSocketReturner(ISocketReturner* returner)
+    {
+        m_socketReturner = returner;
+        m_request->setSocketReturner(returner);
+        m_response->setSocketReturner(returner);
+    }
 };
 
 

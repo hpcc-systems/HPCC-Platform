@@ -19,6 +19,7 @@
 #define _HTTPTRANSPORT_IPP__
 
 #include "esphttp.hpp"
+#include "espthread.hpp"
 
 //Jlib
 #include "jsocket.hpp"
@@ -87,6 +88,7 @@ protected:
     IArrayOf<CEspCookie> m_cookies;
 
     Owned<CMimeMultiPart> m_multipart;
+    ISocketReturner* m_socketReturner = nullptr;
 
     int parseOneHeader(char* oneline);
     virtual void parseCookieHeader(char* cookiestr);
@@ -275,6 +277,8 @@ public:
     virtual bool compressContent(StringBuffer* originalContent, int compressType) { return false; }
     virtual bool shouldDecompress(int& compressType) { return false; }
     virtual bool decompressContent(StringBuffer* originalContent, int compressType) { return false; }
+    virtual void setSocketReturner(ISocketReturner* returner) { m_socketReturner = returner; }
+    virtual ISocketReturner* querySocketReturner() { return m_socketReturner; }
 };
 
 

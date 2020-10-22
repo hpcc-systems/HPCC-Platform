@@ -190,7 +190,16 @@ int CEspProtocolThread::run()
     {
         IERRLOG("Unknown Exception in CEspProtocolThread::run while processing request.");
     }
+    returnSocket();
+    Release();
+    return 0;
+}
 
+void CEspProtocolThread::returnSocket()
+{
+    if (m_socketReturned)
+        return;
+    m_socketReturned = true;
     if(!keepAlive)
     {
         try
@@ -209,7 +218,4 @@ int CEspProtocolThread::run()
             DBGLOG("General Exception - in CEspProtocolThread::run while closing socket.");
         }
     }
-    Release();
-    return 0;
 }
-
