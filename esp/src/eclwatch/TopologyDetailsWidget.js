@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/dom-construct",
 
     "dijit/registry",
@@ -31,10 +30,12 @@ define([
     "dijit/form/SimpleTextarea",
 
     "hpcc/TableContainer"
-], function (declare, i18n, nlsHPCC, domConstruct,
+], function (declare, nlsHPCCMod, domConstruct,
     registry,
     _TabContainerWidget,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("TopologyDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "TopologyDetailsWidget",

@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
 
     "dijit/registry",
@@ -17,10 +16,12 @@ define([
     "src/WsTopology",
     "src/ESPUtil"
 
-], function (declare, i18n, nlsHPCC, arrayUtil,
+], function (declare, nlsHPCCMod, arrayUtil,
     registry, ContentPane, Button,
     selector,
     GridDetailsWidget, ESPRequest, ESPWorkunit, DelayLoadWidget, WsTopology, ESPUtil) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("ResourcesWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 

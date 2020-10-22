@@ -10,6 +10,7 @@ define([
 ], function (declare, lang, arrayUtil,
     selector,
     GraphsWidget, ESPQuery) {
+
     return declare("GraphsQueryWidget", [GraphsWidget], {
         query: null,
 

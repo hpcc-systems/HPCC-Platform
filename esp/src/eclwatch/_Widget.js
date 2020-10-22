@@ -2,8 +2,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/array",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/io-query",
     "dojo/dom",
     "dojo/dom-construct",
@@ -17,10 +16,11 @@ define([
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry"
 
-], function (declare, arrayUtil, lang, i18n, nlsHPCC, ioQuery, dom, domConstruct, domAttr, domStyle,
+], function (declare, arrayUtil, lang, nlsHPCCMod, ioQuery, dom, domConstruct, domAttr, domStyle,
     ESPUtil,
     _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry) {
 
+    var nlsHPCC = nlsHPCCMod.default;
     //  IE8 textContent polyfill  ---
     if (Object.defineProperty
         && Object.getOwnPropertyDescriptor

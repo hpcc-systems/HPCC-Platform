@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/topic",
     "dojo/_base/array",
     "dojo/dom-form",
@@ -43,11 +42,13 @@ define([
     "hpcc/TargetSelectWidget",
     "hpcc/FilterDropDownWidget",
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, topic, arrayUtil, domForm,
+], function (declare, lang, nlsHPCCMod, topic, arrayUtil, domForm,
     registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
     selector,
     _TabContainerWidget, DelayLoadWidget, WsWorkunits, ESPQuery, ESPUtil, Utility,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("QuerySetQueryWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "QuerySetQueryWidget",

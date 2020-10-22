@@ -1,8 +1,7 @@
 define([
     "exports",
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-attr",
@@ -38,12 +37,14 @@ define([
     "dijit/form/DropDownButton",
     "dijit/form/ToggleButton",
     "dijit/TitlePane"
-], function (exports, declare, i18n, nlsHPCC, arrayUtil, dom, domAttr, domClass, domForm, Memory, Observable, all,
+], function (exports, declare, nlsHPCCMod, arrayUtil, dom, domAttr, domClass, domForm, Memory, Observable, all,
     registry,
     selector,
     _TabContainerWidget,
     ESPUtil, ESPLogicalFile, DelayLoadWidget, Utility,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     exports.fixCircularDependency = declare("SFDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "SFDetailsWidget",

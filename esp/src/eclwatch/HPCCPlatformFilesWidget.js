@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
 
     "hpcc/_TabContainerWidget",
     "src/ESPRequest",
@@ -14,9 +13,11 @@ define([
 
     "hpcc/DelayLoadWidget"
 
-], function (declare, i18n, nlsHPCC,
+], function (declare, nlsHPCCMod,
     _TabContainerWidget, ESPRequest,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("HPCCPlatformFilesWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "HPCCPlatformFilesWidget",

@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/store/util/QueryResults",
 
@@ -14,9 +13,11 @@ define([
     "src/ESPUtil",
     "src/ESPQuery",
     "hpcc/SFDetailsWidget"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, QueryResults,
+], function (declare, lang, nlsHPCCMod, arrayUtil, QueryResults,
     tree, selector,
     GridDetailsWidget, DelayLoadWidget, ESPUtil, ESPQuery, SFDetailsWidget) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("QuerySetSuperFilesWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
         query: null,

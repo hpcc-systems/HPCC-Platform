@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-style",
@@ -24,10 +23,12 @@ define([
 
     "hpcc/TableContainer"
 
-], function (declare, i18n, nlsHPCC, arrayUtil, dom, domStyle,
+], function (declare, nlsHPCCMod, arrayUtil, dom, domStyle,
     registry, Select,
     _Widget, Utility, srcReact, Recent,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("FilterDropDownWidget", [_Widget], {
         templateString: template,
         baseClass: "FilterDropDownWidget",
@@ -177,7 +178,7 @@ define([
             var context = this;
             if (this.userName !== null) {
                 if (!Utility.isObjectEmpty(retVal)) {
-                    Recent.addToStack(this.params.ws_key, retVal, 5, true).then(function(val){
+                    Recent.addToStack(this.params.ws_key, retVal, 5, true).then(function (val) {
                         context.loadRecentFilters(retVal);
                     });
                 }

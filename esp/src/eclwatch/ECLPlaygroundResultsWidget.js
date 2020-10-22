@@ -17,6 +17,7 @@ define([
     registry,
     _TabContainerWidget, ESPWorkunit, ESPQuery, ResultWidget, FullResultWidget,
     template) {
+
     return declare("ECLPlaygroundResultsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "ECLPlaygroundResultsWidget",

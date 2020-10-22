@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-construct",
@@ -30,10 +29,12 @@ define([
     "dijit/Toolbar",
     "dijit/ToolbarSeparator"
 ],
-    function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domClass, Memory, Observable, topic, has,
+    function (declare, lang, nlsHPCCMod, arrayUtil, dom, domConstruct, domClass, Memory, Observable, topic, has,
         registry,
         _Widget, ESPUtil, ESPWorkunit, Utility,
         template) {
+
+        var nlsHPCC = nlsHPCCMod.default;
         return declare("InfoGridWidget", [_Widget], {
             templateString: template,
             baseClass: "InfoGridWidget",

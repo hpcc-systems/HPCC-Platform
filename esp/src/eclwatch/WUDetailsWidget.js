@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/dom",
     "dojo/dom-attr",
     "dojo/dom-class",
@@ -42,12 +41,14 @@ define([
     "dijit/form/SimpleTextarea",
 
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, dom, domAttr, domClass,
+], function (declare, lang, nlsHPCCMod, dom, domAttr, domClass,
     registry,
     Clippy,
     srcReact,
     _TabContainerWidget, ESPWorkunit, ESPActivity, ESPRequest, WsWorkunits,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("WUDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "WUDetailsWidget",

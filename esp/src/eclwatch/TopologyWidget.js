@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/lang",
 
     "dijit/form/CheckBox",
@@ -24,10 +23,12 @@ define([
     "src/ws_machine",
     "src/Utility"
 
-], function (declare, i18n, nlsHPCC, lang,
+], function (declare, nlsHPCCMod, lang,
     CheckBox, ValidationTextBox, registry, ToggleButton, Select, ToolbarSeparator,
     tree, selector,
     GridDetailsWidget, PreflightDetailsWidget, ESPTopology, TopologyDetailsWidget, DelayLoadWidget, ESPUtil, FilterDropDownWidget, WsMachine, Utility) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("TopologyWidget", [GridDetailsWidget], {
 
         i18n: nlsHPCC,

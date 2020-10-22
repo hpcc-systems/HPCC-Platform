@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/store/Memory",
     "dojo/store/Observable",
 
@@ -16,10 +15,12 @@ define([
 
     "dijit/layout/ContentPane"
 ],
-    function (declare, i18n, nlsHPCC, Memory, Observable,
+    function (declare, nlsHPCCMod, Memory, Observable,
         OnDemandGrid, Keyboard, ColumnResizer, DijitRegistry,
         _Widget,
         template) {
+
+        var nlsHPCC = nlsHPCCMod.default;
         return declare("FilePartsWidget", [_Widget], {
             templateString: template,
             baseClass: "FilePartsWidget",

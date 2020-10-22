@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/promise/all",
 
@@ -18,10 +17,12 @@ define([
     "src/ESPUtil",
     "hpcc/TargetSelectWidget"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, all,
+], function (declare, lang, nlsHPCCMod, arrayUtil, all,
     registry, Button, ToolbarSeparator, Dialog,
     selector,
     GridDetailsWidget, WsAccess, ESPUtil, TargetSelectWidget) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("MemberOfWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 

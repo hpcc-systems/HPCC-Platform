@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/dom",
     "dojo/request/xhr",
     "dojo/topic",
@@ -22,11 +21,13 @@ define([
     "dijit/ToolbarSeparator",
     "dijit/form/Button"
 
-], function (declare, lang, i18n, nlsHPCC, dom, xhr, topic,
+], function (declare, lang, nlsHPCCMod, dom, xhr, topic,
     registry,
     CodeMirror,
     _Widget, ESPWorkunit,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("ECLSourceWidget", [_Widget], {
         templateString: template,
         baseClass: "ECLSourceWidget",

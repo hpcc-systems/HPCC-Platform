@@ -2,7 +2,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/dom",
     "dojo/topic",
 
@@ -20,11 +20,13 @@ define([
     "dijit/layout/BorderContainer",
     "dijit/layout/ContentPane"
 ],
-    function (declare, lang, i18n, nlsHPCC, dom, topic,
+    function (declare, lang, i18n, nlsHPCCMod, dom, topic,
         _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin,
         registry,
         CodeMirror,
         WsPackageMaps, template) {
+
+        var nlsHPCC = nlsHPCCMod.default;
         return declare("PackageSourceWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
             templateString: template,
             baseClass: "PackageSourceWidget",

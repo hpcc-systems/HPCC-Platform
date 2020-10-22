@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/store/Memory",
     "dojo/store/Observable",
@@ -26,10 +25,12 @@ define([
     "src/ESPUtil",
     "src/Utility"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, Observable, on, all,
+], function (declare, lang, nlsHPCCMod, arrayUtil, Memory, Observable, on, all,
     Standby, validate,
     selector,
     GridDetailsWidget, WsWorkunits, ESPWorkunit, ESPDFUWorkunit, ESPLogicalFile, ESPQuery, FileSpray, WsDfu, DelayLoadWidget, ESPUtil, Utility) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("SearchResultsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 

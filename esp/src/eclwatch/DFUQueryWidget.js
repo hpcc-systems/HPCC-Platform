@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/dom-class",
     "dojo/dom-form",
@@ -59,12 +58,14 @@ define([
 
     "hpcc/TableContainer"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, domClass, domForm, topic,
+], function (declare, lang, nlsHPCCMod, arrayUtil, domClass, domForm, topic,
     registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
     editor, selector, tree,
     _TabContainerWidget, WsDfu, FileSpray, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, DelayLoadWidget, WsTopology, Utility,
     put,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("DFUQueryWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
         baseClass: "DFUQueryWidget",

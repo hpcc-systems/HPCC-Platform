@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/dom-class",
     "dojo/dom-construct",
@@ -13,9 +12,11 @@ define([
     "src/ESPUtil",
     "src/ESPPreflight",
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, domClass, domConstruct, domGeom, win,
+], function (declare, lang, nlsHPCCMod, arrayUtil, domClass, domConstruct, domGeom, win,
     GridDetailsWidget, ESPUtil, ESPPreflight
 ) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("PreflightDetailsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 

@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/topic",
     "dijit/registry",
 
@@ -19,8 +18,10 @@ define([
     "dijit/form/Button",
     "dijit/form/ToggleButton"
 
-], function (declare, lang, i18n, nlsHPCC, topic, registry,
+], function (declare, lang, nlsHPCCMod, topic, registry,
     _TabContainerWidget, EclSourceWidget, WsPackageMaps, template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("PackageMapValidateContentWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "PackageMapValidateContentWidget",

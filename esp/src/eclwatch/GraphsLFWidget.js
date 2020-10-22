@@ -10,6 +10,7 @@ define([
 ], function (declare, lang, arrayUtil,
     selector,
     GraphsWidget, ESPLogicalFile) {
+
     return declare("GraphsLFWidget", [GraphsWidget], {
 
         init: function (params) {

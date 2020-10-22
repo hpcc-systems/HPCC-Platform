@@ -1,4 +1,4 @@
-﻿define({
+﻿export = {
     Abort: "Abortar",
     AbortedBy: "Abortado pelo",
     AbortedTime: "Hora de Abortar",
@@ -965,4 +965,4 @@
     ZoomMinus: "Ampliar -",
     ZoomPlus: "Ampliar +",
     ZoomWidth: "comprimento do Zoom"
-});
+}

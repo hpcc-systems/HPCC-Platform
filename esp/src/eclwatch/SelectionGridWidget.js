@@ -22,6 +22,7 @@
     OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry,
     _Widget,
     template) {
+
     return declare("SelectionGridWidget", [_Widget], {
         templateString: template,
         store: null,

@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
 
     "dijit/registry",
 
@@ -19,10 +18,12 @@ define([
     "dijit/TitlePane",
     "dijit/Dialog"
 
-], function (declare, i18n, nlsHPCC,
+], function (declare, nlsHPCCMod,
     registry,
     _TabContainerWidget,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("GroupDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "GroupDetailsWidget",
