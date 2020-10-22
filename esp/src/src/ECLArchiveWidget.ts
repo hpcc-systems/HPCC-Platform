@@ -262,7 +262,6 @@ export class ECLArchiveWidget {
                             const fullPath = path.length === 0 ? label : path + "." + label;
                             
                             const markers = fileMarkers(fullPath, markerData);
-
                             _data.children.push({
                                 label,
                                 path,
@@ -553,10 +552,11 @@ export class ECLArchiveWidget {
 
             markerFilenameArr.forEach(name => {
                 let formattedName = name;
-                if(name.split(".").length > 1){
-                    formattedName = name.split(".")[0];
+                const dotSplit = name.split(".");
+                if(dotSplit.length > 1){
+                    formattedName = dotSplit[dotSplit.length - 2];
                 }
-                formattedName = formattedName.split("\\").join(".");
+                formattedName = formattedName.split("\\").join(".").split("/").join(".");
                 const nameSegments = formattedName.split(".");
                 if(fullPath.indexOf(nameSegments[nameSegments.length - 1]) !== -1) {
                     let _path = fullPath;
@@ -581,7 +581,6 @@ export class ECLArchiveWidget {
             if(nameMatches[0]) {
                 markers = [...markerData[nameMatches[0].name]]; 
             }
-        
             return markers;
         }
         function mergeCommonLines(markers) {
