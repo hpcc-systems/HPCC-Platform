@@ -134,23 +134,32 @@ MyUnicodeString3 := U'abcd\u00EB'; // becomes 'abcdë'«'</programlisting>
     INTEGER<indexterm>
         <primary>INTEGER</primary>
       </indexterm> (see <emphasis role="bold">Value Types</emphasis>). Integer
-    constants may be decimal, hexadecimal, or binary values.
+    constants may be decimal, unsigned, hexadecimal, or binary values.
     Hexadecimal<indexterm>
         <primary>Hexadecimal</primary>
       </indexterm> values are specified with either a leading "0x" or a
     trailing "x" character. Binary values<indexterm>
         <primary>Binary values</primary>
       </indexterm> are specified with either a leading "0b" or a trailing "b"
-    character.</para>
+    character. Decimal values <indexterm>
+        <primary>Decimal values</primary>
+      </indexterm>are specified with trailing "d" character. Unsigned values
+    <indexterm>
+        <primary>Unsigned values</primary>
+      </indexterm>are specified with a trailing "u" character.</para>
 
     <programlisting>MyInt1  := 10;     // value of MyInt1 is the INTEGER value 10
 MyInt2  := 0x0A;   // value of MyInt2 is the INTEGER value 10
 MyInt3  := 0Ax;    // value of MyInt3 is the INTEGER value 10
 MyInt4  := 0b1010; // value of MyInt4 is the INTEGER value 10
 MyInt5  := 1010b;  // value of MyInt5 is the INTEGER value 10
+MyUint  := 10u     // value of MyUint is the UNSIGNED value 10
 MyReal1 := 10.0;   // value of MyReal1 is the REAL value 10.0
 MyReal2 := 1.0e1;  // value of MyReal2 is the REAL value 10.0
-</programlisting>
+MyDec1  := 10d     // value of MyDec1 is the DECIMAL value 10
+MyDec2  := 3.14159265358979323846d // value of MyDec2 is the DECIMAL
+                                   // value 3.14159265358979323846
+                                   // a REAL type would lose precision </programlisting>
   </sect2>
 
   <sect2 id="CompileTimeConstants" role="brk">
