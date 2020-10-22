@@ -2380,7 +2380,7 @@ public:
     virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const 
     {
         map->noteMemUsage(allocatorId, chunkCapacity, 1);
-        map->noteHeapUsage(chunkCapacity, RHFpacked, _sizeInPages(), chunkCapacity);
+        map->noteHeapUsage(chunkCapacity, RHFhuge, _sizeInPages(), chunkCapacity, allocatorId);
     }
 
     virtual void checkHeap() const
@@ -2448,8 +2448,8 @@ struct ActivityEntry
 struct HeapEntry : public CInterface
 {
 public:
-    HeapEntry(memsize_t _allocatorSize, RoxieHeapFlags _heapFlags, memsize_t _numPages, memsize_t _memUsed) :
-        allocatorSize(_allocatorSize), heapFlags(_heapFlags), numPages(_numPages), memUsed(_memUsed)
+    HeapEntry(memsize_t _allocatorSize, RoxieHeapFlags _heapFlags, memsize_t _numPages, memsize_t _memUsed, unsigned _allocatorId) :
+        allocatorSize(_allocatorSize), heapFlags(_heapFlags), numPages(_numPages), memUsed(_memUsed), allocatorId(_allocatorId)
     {
     }
 
@@ -2457,6 +2457,7 @@ public:
     RoxieHeapFlags heapFlags;
     memsize_t numPages;
     memsize_t memUsed;
+    unsigned allocatorId;
 };
 
 typedef MapBetween<unsigned, unsigned, ActivityEntry, ActivityEntry> MapActivityToActivityEntry;
@@ -2478,7 +2479,7 @@ public:
         allocatorIdMax = 0;
     }
 
-    virtual void noteMemUsage(unsigned allocatorId, memsize_t memUsed, unsigned numAllocs)
+    virtual void noteMemUsage(unsigned allocatorId, memsize_t memUsed, unsigned numAllocs) override
     {
         totalUsed += memUsed;
         ActivityEntry *ret = map.getValue(allocatorId);
@@ -2500,9 +2501,9 @@ public:
         }
     }
 
-    void noteHeapUsage(memsize_t allocatorSize, RoxieHeapFlags heapFlags, memsize_t numPages, memsize_t memUsed)
+    void noteHeapUsage(memsize_t allocatorSize, RoxieHeapFlags heapFlags, memsize_t numPages, memsize_t memUsed, unsigned allocatorId) override
     {
-        heaps.append(*new HeapEntry(allocatorSize, heapFlags, numPages, memUsed));
+        heaps.append(*new HeapEntry(allocatorSize, heapFlags, numPages, memUsed, allocatorId));
     }
 
     static int sortUsage(const void *_l, const void *_r)
@@ -2512,7 +2513,7 @@ public:
         return (l->usage > r->usage) ? +1 : (l->usage < r->usage) ? -1 : 0;
     }
 
-    virtual void report(const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache)
+    virtual void report(const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache) override
     {
         if (logctx.queryTraceLevel())
         {
@@ -2541,6 +2542,8 @@ public:
             {
                 HeapEntry & cur = heaps.item(iHeap);
                 StringBuffer flags;
+                if (cur.heapFlags & RHFhasdestructor)
+                    flags.append("~");
                 if (cur.heapFlags & RHFpacked)
                     flags.append("P");
                 if (cur.heapFlags & RHFunique)
@@ -2549,6 +2552,14 @@ public:
                     flags.append("V");
                 if (cur.heapFlags & RHFscanning)
                     flags.append("S");
+                if (cur.heapFlags & RHFdelayrelease)
+                    flags.append("D");
+                if (cur.heapFlags & RHFhuge)
+                    flags.append("H");
+                if (cur.heapFlags & RHForphaned)
+                    flags.append("O");
+                if (cur.allocatorId)
+                    flags.append("@").append(getRealActivityId(cur.allocatorId, allocatorCache));
 
                 //Should never be called with numPages == 0, but protect against divide by zero in case of race condition etc.
                 unsigned __int64 memReserved = cur.numPages * HEAP_ALIGNMENT_SIZE;
@@ -2570,7 +2581,7 @@ public:
         }
     }
 
-    virtual void reportStatistics(IStatisticTarget & target, unsigned detailtarget, const IRowAllocatorCache *allocatorCache)
+    virtual void reportStatistics(IStatisticTarget & target, unsigned detailtarget, const IRowAllocatorCache *allocatorCache) override
     {
         ActivityEntry **results = new ActivityEntry *[map.count()];
         HashIterator i(map);
@@ -3359,7 +3370,7 @@ public:
 
     virtual void reportHeapUsage(IActivityMemoryUsageMap * usageMap, unsigned numPages, memsize_t numAllocs) const
     {
-        usageMap->noteHeapUsage(chunkSize, (RoxieHeapFlags)flags, numPages, chunkSize * numAllocs);
+        usageMap->noteHeapUsage(chunkSize, (RoxieHeapFlags)flags, numPages, chunkSize * numAllocs, 0);
     }
 
     const void * compactRow(const void * ptr, HeapCompactState & state);
@@ -3440,6 +3451,11 @@ public:
         return (searchSize == chunkSize) &&
                (searchFlags == flags) &&
                (allocatorId == searchActivity);
+    }
+
+    virtual void reportHeapUsage(IActivityMemoryUsageMap * usageMap, unsigned numPages, memsize_t numAllocs) const
+    {
+        usageMap->noteHeapUsage(chunkSize, (RoxieHeapFlags)flags, numPages, chunkSize * numAllocs, allocatorId);
     }
 
     virtual void reportScanProblem(unsigned allocatorId, unsigned __int64 numScans, const HeapletStats & mergedStats) override;
@@ -3968,16 +3984,19 @@ class BufferedRowCallbackManager
 
         void report(const IContextLogger &logctx) const
         {
-            StringBuffer msg;
-            msg.appendf(" ac(%u) cost(%u):", activityId, cost);
-            ForEachItemIn(i, callbacks)
+            if (callbacks.ordinality())
             {
-                if (i == nextCallback)
-                    msg.append(" {").append(callbacks.item(i).first).append("}");
-                else
-                    msg.append(" ").append(callbacks.item(i).first);
+                StringBuffer msg;
+                msg.appendf(" ac(%u) cost(%u):", activityId, cost);
+                ForEachItemIn(i, callbacks)
+                {
+                    if (i == nextCallback)
+                        msg.append(" {").append(callbacks.item(i).first).append("}");
+                    else
+                        msg.append(" ").append(callbacks.item(i).first);
+                }
+                logctx.CTXLOG("%s", msg.str());
             }
-            logctx.CTXLOG("%s", msg.str());
         }
         inline unsigned getSpillCost() const { return cost; }
         inline unsigned getActivityId() const { return activityId; }
