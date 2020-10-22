@@ -160,7 +160,7 @@ def queryEngineProcess(engine,  taskId):
             if len(items) >= 12:
                 if engine in items[10]:
                     myProc2 = subprocess.Popen(["sudo readlink -f /proc/" + items[1] + "/exe"],  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
-                    result2 = myProc2.stdout.read().replace ('\n', '')
+                    result2 = myProc2.stdout.read().decode("utf-8").replace ('\n', '')
                     binPath = os.path.dirname(result2)
                     logger.debug("%3d. queryEngineProcess(engine: %s): binary: '%s', binPath:'%s'",  taskId,  engine, result2,  binPath)
                     if 'slavenum' in line:
