@@ -30,7 +30,7 @@
 class Esdl2XSDCmd : public EsdlHelperConvertCmd
 {
 public:
-    Esdl2XSDCmd() : optInterfaceVersion(0), optAllAnnot(false), optNoAnnot(false),
+    Esdl2XSDCmd() : optUnversionedNamespace(false), optInterfaceVersion(0), optAllAnnot(false), optNoAnnot(false),
                     optEnforceOptional(true), optRawOutput(false), optXformTimes(1), optFlags(DEPFLAG_COLLAPSE|DEPFLAG_ARRAYOF),
                     outfileext(".xsd")
     {}
@@ -85,6 +85,8 @@ public:
 
     virtual bool parseCommandLineOption(ArgvIterator &iter)
     {
+        if (iter.matchFlag(optUnversionedNamespace, ESDLOPT_UNVERSIONED_NAMESPACE) || iter.matchFlag(optUnversionedNamespace, ESDLOPT_UNVERSIONED_NAMESPACE_S))
+            return true;
         if (iter.matchOption(optInterfaceVersionStr, ESDLOPT_INTERFACE_VERSION) || iter.matchOption(optInterfaceVersionStr, ESDLOPT_INTERFACE_VERSION_S))
             return true;
         if (iter.matchOption(optService, ESDLOPT_SERVICE))
@@ -267,6 +269,7 @@ public:
         puts("   -tns,--target-namespace <target ns>  The target namespace, passed to the transform via the parameter 'tnsParam'" );
         puts("                                        used for the final output of the XSD. If not supplied will default to " );
         puts("                                        http://webservices.seisint.com/<service name>" );
+        puts("   -uvns,--unversioned-ns               Do not append service interface version to namespace" );
         puts("   -n <int>                             Number of times to run transform after loading XSLT. Defaults to 1." );
         puts("   --show-inheritance                   Turns off the collapse feature. Collapsing optimizes the XML output to strip out structures" );
         puts("                                        only used for inheritance, and collapses their elements into their child. That simplifies the" );
@@ -379,8 +382,8 @@ public:
            ns.append('(').append(ns_optionals.str()).append(')');
         */
 
-       if (optInterfaceVersion > 0)
-        ns.append("@ver=").appendf("%g", optInterfaceVersion);
+       if (optInterfaceVersion > 0 && !optUnversionedNamespace)
+           ns.append("@ver=").appendf("%g", optInterfaceVersion);
        return ns.toLowerCase();
     }
 
@@ -443,6 +446,7 @@ public:
     unsigned optFlags;
     bool optNoCollapse;
     bool optNoArrayOf;
+    bool optUnversionedNamespace;
 
 protected:
     StringBuffer outputBuffer;

@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/dom-class",
     "dojo/topic",
@@ -14,9 +13,11 @@ define([
     "src/ESPUtil",
     "src/Utility"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, domClass, topic,
+], function (declare, lang, nlsHPCCMod, arrayUtil, domClass, topic,
     tree,
     GridDetailsWidget, WsMachine, ESPUtil, Utility) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("MonitoringWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 

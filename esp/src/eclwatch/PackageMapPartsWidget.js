@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/promise/all",
 
@@ -23,10 +22,12 @@ define([
     "src/WsPackageMaps",
     "src/Utility",
     "hpcc/FilterDropDownWidget"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, all,
+], function (declare, lang, nlsHPCCMod, arrayUtil, all,
     registry, ToolbarSeparator, Button, ValidationTextBox, Textarea, TextBox, CheckBox, Dialog,
     selector,
     GridDetailsWidget, DelayLoadWidget, ESPUtil, WsPackageMaps, Utility, FilterDropDownWidget) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("PackageMapPartsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
         gridTitle: nlsHPCC.Parts,

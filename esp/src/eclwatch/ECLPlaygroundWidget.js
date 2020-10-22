@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/dom",
     "dojo/query",
 
@@ -25,10 +24,12 @@ define([
     "hpcc/InfoGridWidget",
     "hpcc/VizWidget"
 
-], function (declare, lang, i18n, nlsHPCC, dom, query,
+], function (declare, lang, nlsHPCCMod, dom, query,
     registry,
     _Widget, ESPWorkunit, ESPQuery,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("ECLPlaygroundWidget", [_Widget], {
         templateString: template,
         baseClass: "ECLPlaygroundWidget",

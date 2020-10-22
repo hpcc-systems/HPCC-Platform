@@ -1,4 +1,4 @@
-﻿define({
+﻿export = {
     Abort: "终止",
     AbortedBy: "终止者",
     AbortedTime: "终止时间",
@@ -962,4 +962,4 @@
     ZoomMinus: "缩小",
     ZoomPlus: "放大",
     ZoomWidth: "宽度缩放"
-});
+}

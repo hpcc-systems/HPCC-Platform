@@ -3,4 +3,5 @@ hpcc-js/
 lib/
 node_modules/
 src/nlsHPCCType.ts
+types/
 lws.target.txt

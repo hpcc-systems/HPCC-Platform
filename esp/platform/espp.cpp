@@ -331,7 +331,7 @@ static void usage()
     puts("  -?/-h: show this help page");
     puts("  --daliServers=<address>: set DALI address (defaults to dali)");
     puts("  --tls=<on/off>: enable using TLS secure communication (defaults to on)");
-    puts("  --auth=<ldap/none>: select authorization protocol (defaults to ldap)");
+    puts("  --auth=<ldap/azure_ldap/none>: select authorization protocol (defaults to ldap)");
     puts("  --ldapAddress=<address>: set LDAP server address");
     puts("  --config=<file.yaml>: specify a YAML config file, use to override default config values");
     puts("  --logDir=<file>: specify a file to write trace file information to, default is stderr");

@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/dom-class",
     "dojo/topic",
@@ -41,11 +40,13 @@ define([
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog"
 
-], function (declare, i18n, nlsHPCC, arrayUtil, domClass, topic,
+], function (declare, nlsHPCCMod, arrayUtil, domClass, topic,
     registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
     selector,
     _TabContainerWidget, ESPUtil, ESPDFUWorkunit, FileSpray, DelayLoadWidget, Utility,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("GetDFUWorkunitsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "GetDFUWorkunitsWidget",

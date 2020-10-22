@@ -1,14 +1,15 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
 
     "hpcc/GridDetailsWidget",
     "src/ESPWorkunit",
     "src/ESPUtil"
 
-], function (declare, i18n, nlsHPCC,
+], function (declare, nlsHPCCMod,
     GridDetailsWidget, ESPWorkunit, ESPUtil) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("WorkflowsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 

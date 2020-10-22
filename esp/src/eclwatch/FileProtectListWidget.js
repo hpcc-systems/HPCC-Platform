@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
 
     "dijit/registry",
@@ -12,9 +11,11 @@ define([
     "hpcc/GridDetailsWidget",
     "src/WsDfu",
     "src/ESPUtil"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil,
+], function (declare, lang, nlsHPCCMod, arrayUtil,
     registry, selector,
     GridDetailsWidget, WsDfu, ESPUtil) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("FileProtectListWidget", [GridDetailsWidget, ESPUtil.FormHelper], {
         i18n: nlsHPCC,
 

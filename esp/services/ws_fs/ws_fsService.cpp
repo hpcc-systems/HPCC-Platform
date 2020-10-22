@@ -39,6 +39,7 @@
 #include "portlist.h"
 #include "sacmd.hpp"
 #include "exception_util.hpp"
+#include "LogicFileWrapper.hpp"
 
 #define DFU_WU_URL          "DfuWorkunitsAccess"
 #define DFU_EX_URL          "DfuExceptionsAccess"
@@ -634,21 +635,6 @@ void setRoxieClusterPartDiskMapping(const char *clusterName, const char *default
         spec.setRepeatedCopies(CPDMSRP_lastRepeated,false);
     wuFSpecDest->setClusterPartDiskMapSpec(clusterName,spec);
     wuOptions->setReplicate(replicate);
-}
-
-StringBuffer& getNodeGroupFromLFN(StringBuffer& nodeGroup, const char* lfn, const char* username, const char* passwd)
-{
-    Owned<IUserDescriptor> udesc;
-    if(username != NULL && *username != '\0')
-    {
-        udesc.setown(createUserDescriptor());
-        udesc->set(username, passwd);
-    }
-
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn, udesc, false, false, false, nullptr, defaultPrivilegedUser);
-    if (!df)
-        throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Failed to find file: %s", lfn);
-    return df->getClusterGroupName(0, nodeGroup);
 }
 
 StringBuffer& constructFileMask(const char* filename, StringBuffer& filemask)
@@ -2476,7 +2462,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         const char* destNodeGroupReq = req.getDestGroup();
         if(!destNodeGroupReq || !*destNodeGroupReq)
         {
-            getNodeGroupFromLFN(destNodeGroup, srcname, context.queryUserId(), context.queryPassword());
+            getNodeGroupFromLFN(context, srcname, destNodeGroup);
             DBGLOG("Destination node group not specified, using source node group %s", destNodeGroup.str());
         }
         else

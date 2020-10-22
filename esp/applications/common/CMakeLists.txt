@@ -15,10 +15,11 @@
 ################################################################################
 
 set ( ESP_APPLICATION_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/ldap.yaml
     ${CMAKE_CURRENT_SOURCE_DIR}/directories.yaml
 )
 
 FOREACH( iFile ${ESP_APPLICATION_FILES} )
     Install( FILES ${iFile} DESTINATION componentfiles/applications/common COMPONENT Runtime )
 ENDFOREACH ( iFile )
+
+HPCC_ADD_SUBDIRECTORY (ldap)

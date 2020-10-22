@@ -20,8 +20,12 @@
 
 #define TERMINATE_EXITCODE -99 // the working process use it to tell the monitor to exit too.
 
+interface ISocketReturner
+{
+    virtual void returnSocket() = 0;
+};
 
-class CEspProtocolThread: public Thread
+class CEspProtocolThread: public Thread, implements ISocketReturner
 {
 protected:
    bool terminating;
@@ -36,6 +40,7 @@ protected:
 
     int run();
     bool keepAlive = false;
+    bool m_socketReturned = false;
 public:
     IMPLEMENT_IINTERFACE;
     
@@ -49,6 +54,7 @@ public:
    
    virtual const char *getServiceName();
    virtual bool onRequest();
+   virtual void returnSocket();
 };
 
 

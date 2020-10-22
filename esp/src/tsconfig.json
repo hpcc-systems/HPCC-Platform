@@ -2,10 +2,13 @@
     "compilerOptions": {
         "baseUrl": ".",
         "outDir": "./lib",
+        "declarationDir": "./types",
         "target": "es5",
         "module": "amd",
         "moduleResolution": "node",
+        "allowSyntheticDefaultImports": true,
         "sourceMap": true,
+        "declaration": true,
         "noImplicitAny": false,
         "noEmitOnError": false,
         "noUnusedLocals": true,
@@ -32,6 +35,7 @@
         }
     },
     "include": [
-        "src/**/*"
+        "src/**/*",
+        "eclwatch/nls/**/*"
     ]
 }

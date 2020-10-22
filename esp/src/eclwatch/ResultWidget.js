@@ -2,8 +2,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/_base/array",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/io-query",
 
     "dijit/registry",
@@ -32,11 +31,13 @@ define([
     "dijit/form/Button",
     "dijit/form/ToggleButton",
     "dijit/ToolbarSeparator"
-], function (declare, lang, arrayUtil, i18n, nlsHPCC, ioQuery,
+], function (declare, lang, arrayUtil, nlsHPCCMod, ioQuery,
     registry, TextBox,
     Grid, Keyboard, ColumnResizer, CompoundColumns, DijitRegistry, PaginationModule,
     _Widget, ESPBaseMod, ESPWorkunit, ESPLogicalFile, TableContainer, DGridHeaderHookMod,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("ResultWidget", [_Widget], {
         templateString: template,
         baseClass: "ResultWidget",

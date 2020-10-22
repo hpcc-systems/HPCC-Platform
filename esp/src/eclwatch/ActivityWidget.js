@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/dom-attr",
 
@@ -31,12 +30,13 @@ define([
     "dijit/ToolbarSeparator",
     "dijit/layout/ContentPane"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, domAttr,
+], function (declare, lang, nlsHPCCMod, arrayUtil, domAttr,
     registry, Button, ToolbarSeparator, Tooltip,
     selector, tree,
     GridDetailsWidget, ESPActivity, DelayLoadWidget, ESPUtil, Utility, DiskUsage, Clippy,
     template
 ) {
+
     var DelayedRefresh = declare("DelayedRefresh", [], {
         _activityWidget: null,
         _promises: null,
@@ -63,6 +63,7 @@ define([
         }
     });
 
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("ActivityWidget", [GridDetailsWidget], {
         templateString: template,
         i18n: nlsHPCC,

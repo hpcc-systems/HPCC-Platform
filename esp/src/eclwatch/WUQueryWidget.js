@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/date",
     "dojo/topic",
@@ -45,11 +44,13 @@ define([
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, date, topic, aspect, domClass,
+], function (declare, lang, nlsHPCCMod, arrayUtil, date, topic, aspect, domClass,
     registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
     selector,
     _TabContainerWidget, WsWorkunits, ESPUtil, ESPWorkunit, DelayLoadWidget, Utility, Clippy,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("WUQueryWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
         baseClass: "WUQueryWidget",

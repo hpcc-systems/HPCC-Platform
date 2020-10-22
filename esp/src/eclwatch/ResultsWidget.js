@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
 
     "dijit/layout/ContentPane",
@@ -15,10 +14,12 @@ define([
     "hpcc/DelayLoadWidget",
     "src/ESPUtil"
 
-], function (declare, i18n, nlsHPCC, arrayUtil,
+], function (declare, nlsHPCCMod, arrayUtil,
     ContentPane, Button,
     selector,
     GridDetailsWidget, ESPRequest, ESPWorkunit, DelayLoadWidget, ESPUtil) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("ResultsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 

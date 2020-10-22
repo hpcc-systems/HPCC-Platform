@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/dom",
 
@@ -22,10 +21,12 @@ define([
     "hpcc/DynamicESDLDefinitionDetailsWidget",
     "src/Utility"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom,
+], function (declare, lang, nlsHPCCMod, arrayUtil, dom,
     registry, MenuSeparator, Dialog, ToolbarSeparator, Button, TextBox,
     selector,
     GridDetailsWidget, TargetSelectWidget, WsESDLConfig, ESPUtil, DynamicESDLDefinitionDetailsWidget, Utility) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("DynamicESDLWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 

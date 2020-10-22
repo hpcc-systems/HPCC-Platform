@@ -12,6 +12,7 @@ define([
 ], function (declare, lang, arrayUtil, Deferred,
     hpccChart, hpccOther,
     DojoD3, Mapping) {
+
     return declare([Mapping, DojoD3], {
         mapping: {
             _2DChart: {

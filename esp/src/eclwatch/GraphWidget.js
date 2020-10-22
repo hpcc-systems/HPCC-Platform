@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/_base/Deferred",
     "dojo/has",
@@ -39,11 +38,13 @@ define([
     "dijit/Fieldset",
 
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, has, dom, domConstruct, domClass, domStyle, Observable, Evented,
+], function (declare, lang, nlsHPCCMod, arrayUtil, Deferred, has, dom, domConstruct, domClass, domStyle, Observable, Evented,
     registry,
     parser,
     _Widget, ESPUtil, GraphStore, Utility,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     var GraphView = declare("GraphView", null, {
         sourceGraphWidget: null,
         rootGlobalIDs: null,

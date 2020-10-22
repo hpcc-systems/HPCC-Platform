@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-style",
@@ -25,10 +24,12 @@ define([
 
     "hpcc/TableContainer"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domStyle, topic,
+], function (declare, lang, nlsHPCCMod, arrayUtil, dom, domStyle, topic,
     registry,
     _Widget, WsMachine,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("MachineInformationWidget", [_Widget], {
         templateString: template,
         baseClass: "MachineInformationWidget",

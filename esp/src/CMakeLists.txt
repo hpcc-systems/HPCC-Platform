@@ -31,13 +31,11 @@ file(COPY
     ${CMAKE_CURRENT_SOURCE_DIR}/tsconfig.json
     ${CMAKE_CURRENT_SOURCE_DIR}/webpack.config.js
     ${CMAKE_CURRENT_SOURCE_DIR}/xstyle
-    ${CMAKE_CURRENT_SOURCE_DIR}/util
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/css/ecl.css
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/css/hpcc.css
-    ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/nls/hpcc.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/ActivityPageWidget.html
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/CurrentUserDetailsWidget.html
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/templates/DataPatternsWidget.html
@@ -218,6 +216,7 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/XrefLostFilesWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/XrefOrphanFilesWidget.js
     ${CMAKE_CURRENT_BINARY_DIR}/eclwatch/XrefQueryWidget.js
+    ${CMAKE_CURRENT_BINARY_DIR}/src/nls/hpcc.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/DataPatterns/AttributeDesc.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/DataPatterns/Cardinality.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/DataPatterns/config.ts

@@ -1,6 +1,6 @@
 import "dojo/i18n";
 // @ts-ignore
-import * as nlsHPCC from "dojo/i18n!hpcc/nls/hpcc";
-import type nlsHPCCType from "./nlsHPCCType";
+import * as nlsHPCC from "dojo/i18n!./nls/hpcc";
+import nlsHPCCT from "./nls/hpcc";
 
-export default nlsHPCC as nlsHPCCType;
+export default nlsHPCC as typeof nlsHPCCT.root;

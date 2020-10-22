@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/Deferred",
     "dojo/dom",
     "dojo/on",
@@ -36,11 +35,13 @@ define([
     "dijit/form/SimpleTextarea",
     "dijit/form/NumberSpinner",
     "dijit/form/DropDownButton"
-], function (declare, lang, i18n, nlsHPCC, Deferred, dom, on, html,
+], function (declare, lang, nlsHPCCMod, Deferred, dom, on, html,
     registry,
     entities,
     _Widget, ESPUtil, ESPWorkunit, WsWorkunits, Utility,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("GraphPageWidget", [_Widget], {
         templateString: template,
         baseClass: "GraphPageWidget",

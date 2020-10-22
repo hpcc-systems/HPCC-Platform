@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
 
     "dijit/registry",
 
@@ -23,10 +22,12 @@ define([
     "dijit/form/DateTextBox",
     "dijit/form/TimeTextBox"
 
-], function (declare, i18n, nlsHPCC,
+], function (declare, nlsHPCCMod,
     registry,
     _Widget, ESPUtil, DiskUsage,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("DiskUsageDetails", [_Widget, ESPUtil.FormHelper], {
         templateString: template,
         baseClass: "DiskUsageDetails",

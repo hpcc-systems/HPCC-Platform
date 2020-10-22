@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/store/Memory",
     "dojo/store/Observable",
 
@@ -25,10 +24,12 @@ define([
     "dijit/ToolbarSeparator",
     "dijit/layout/ContentPane"
 
-], function (declare, lang, i18n, nlsHPCC, Memory, Observable,
+], function (declare, lang, nlsHPCCMod, Memory, Observable,
     registry, Menu, MenuItem, MenuSeparator,
     _TabContainerWidget, Utility, ESPUtil,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("GridDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "GridDetailsWidget",

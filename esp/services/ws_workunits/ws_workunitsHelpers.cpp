@@ -30,6 +30,7 @@
 #include "wujobq.hpp"
 #include "hqlexpr.hpp"
 #include "rmtsmtp.hpp"
+#include "LogicFileWrapper.hpp"
 
 #ifndef _NO_LDAP
 #include "ldapsecurity.ipp"
@@ -135,11 +136,9 @@ void ensureWsCreateWorkunitAccess(IEspContext& ctx)
 
 StringBuffer &getWuidFromLogicalFileName(IEspContext &context, const char *logicalName, StringBuffer &wuid)
 {
-    Owned<IUserDescriptor> userdesc = createUserDescriptor();
-    userdesc->set(context.queryUserId(), context.queryPassword(), context.querySignature());
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, userdesc, false, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = lookupLogicalName(context, logicalName, false, false, false, nullptr, defaultPrivilegedUser);
     if (!df)
-        throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",logicalName);
+        throw makeStringExceptionV(ECLWATCH_FILE_NOT_EXIST, "Cannot find file %s.", logicalName);
     return wuid.append(df->queryAttributes().queryProp("@workunit"));
 }
 
@@ -1360,13 +1359,9 @@ void WsWuInfo::getWorkflow(IEspECLWorkunit &info, unsigned long flags)
 
 IDistributedFile* WsWuInfo::getLogicalFileData(IEspContext& context, const char* logicalName, bool& showFileContent)
 {
-    StringBuffer username;
-    context.getUserID(username);
-    Owned<IUserDescriptor> userdesc(createUserDescriptor());
-    userdesc->set(username.str(), context.queryPassword(), context.querySignature());
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, userdesc, false, false, false, nullptr, defaultPrivilegedUser);
+    Owned<IDistributedFile> df = lookupLogicalName(context, logicalName, false, false, false, nullptr, defaultPrivilegedUser);
     if (!df)
-        return NULL;
+        return nullptr;
 
     bool blocked;
     if (df->isCompressed(&blocked) && !blocked)

@@ -58,6 +58,11 @@ eclwatch:
          -  name: HPCCApps
             description: Generic KeyVal store for HPCC Applications
             default: true
+         Store:
+         -  name: JWTAuth
+            description: JWT token cache
+            default: false
+            maxValSize: 32768
    ws_machine:
       excludePartitions: "/dev*,/sys*,/proc*,/run*,/boot"
       monitorDaliFileServer: false

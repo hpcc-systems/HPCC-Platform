@@ -1,4 +1,4 @@
-define({
+export = {
     Abort: "Annuler",
     AbortedBy: "Annulé par",
     AbortedTime: "L'heure d'annulation",
@@ -947,4 +947,4 @@ define({
     ZoomMinus: "Zoom -",
     ZoomPlus: "Zoom +",
     ZoomWidth: "Largeur du zoom"
-});
+}

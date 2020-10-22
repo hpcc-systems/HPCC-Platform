@@ -384,8 +384,16 @@
         <xs:restriction base="xs:string">
           <xs:enumeration value="kerberos"/>
           <xs:enumeration value="simple"/>
+          <xs:enumeration value="secmgrPlugin"/>
         </xs:restriction>
       </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="authPluginType" use="optional" type="xs:string">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Security Manager plugin name (when authentication method is secmgrPlugin).</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
     </xs:attribute>
     <xs:attribute name="filesDefaultUser" use="optional" type="xs:string">
       <xs:annotation>

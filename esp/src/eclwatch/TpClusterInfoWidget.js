@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
 
     "dgrid/selector",
 
@@ -11,9 +10,11 @@ define([
     "hpcc/DelayLoadWidget",
     "src/ESPUtil"
 
-], function (declare, lang, i18n, nlsHPCC,
+], function (declare, lang, nlsHPCCMod,
     selector,
     GridDetailsWidget, WsTopology, DelayLoadWidget, ESPUtil) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("TpClusterInfoWidget", [GridDetailsWidget], {
 
         i18n: nlsHPCC,

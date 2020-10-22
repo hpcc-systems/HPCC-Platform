@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/dom",
     "dojo/dom-form",
     "dojo/_base/array",
@@ -26,10 +25,12 @@ define([
     "dojox/form/PasswordValidator"
 
 ],
-function (declare, lang, i18n, nlsHPCC, dom, domForm, arrayUtil,
+    function (declare, lang, nlsHPCCMod, dom, domForm, arrayUtil,
     registry,
     _Widget, WsAccount,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("CurrentUserDetailsWidget", [_Widget], {
         templateString: template,
         baseClass: "CurrentUserDetailsWidget",

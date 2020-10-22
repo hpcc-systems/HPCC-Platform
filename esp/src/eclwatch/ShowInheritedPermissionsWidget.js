@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
 
     "dijit/registry",
     "dijit/form/CheckBox",
@@ -16,10 +15,12 @@ define([
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane"
 
-], function (declare, i18n, nlsHPCC,
+], function (declare, nlsHPCCMod,
     registry, CheckBox,
     editor,
     GridDetailsWidget, WsAccess, ESPUtil) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("ShowInheritedPermissionsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 

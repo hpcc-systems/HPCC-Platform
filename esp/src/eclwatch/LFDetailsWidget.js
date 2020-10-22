@@ -2,8 +2,7 @@ define([
     "exports",
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/dom",
     "dojo/dom-attr",
     "dojo/dom-class",
@@ -48,10 +47,12 @@ define([
 
     "hpcc/TableContainer"
 
-], function (exports, declare, lang, i18n, nlsHPCC, dom, domAttr, domClass, domForm,
+], function (exports, declare, lang, nlsHPCCMod, dom, domAttr, domClass, domForm,
     registry,
     _TabContainerWidget, DelayLoadWidget, Clippy, ESPLogicalFile, ESPDFUWorkunit, FileSpray, DataPatternsWidget,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     exports.fixCircularDependency = declare("LFDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "LFDetailsWidget",

@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
 
     "dijit/registry",
@@ -17,11 +16,13 @@ define([
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer"
 
-], function (declare, i18n, nlsHPCC, arrayUtil,
+], function (declare, nlsHPCCMod, arrayUtil,
     registry,
     _TabContainerWidget, WsTopology, ESPQuery,
     ContentPane,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("QueryTestWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "QueryTestWidget",

@@ -475,10 +475,25 @@ bool CHttpThread::onRequest()
     time_t t = time(NULL);  
     initThreadLocal(sizeof(t), &t);
 
+    m_httpserver = httpserver;
+    httpserver->setSocketReturner(this);
     httpserver->setIsSSL(m_is_ssl);
     httpserver->setShouldClose(m_shouldClose);
     httpserver->processRequest();
 
+    returnSocket(false);
+
+    clearThreadLocal();
+
+    return false;
+}
+
+void CHttpThread::returnSocket(bool cascade)
+{
+    if (m_httpSocketReturned)
+        return;
+    m_httpSocketReturned = true;
+    CEspHttpServer* httpserver = dynamic_cast<CEspHttpServer*>(m_httpserver);
     if (m_persistentHandler == nullptr)
     {
         keepAlive = !m_shouldClose && m_apport->queryProtocol()->persistentEnabled() && httpserver->persistentEligible();
@@ -490,11 +505,15 @@ bool CHttpThread::onRequest()
         keepAlive = !m_shouldClose && httpserver->persistentEligible();
         m_persistentHandler->doneUsing(m_socket, keepAlive);
     }
-    clearThreadLocal();
 
-    return false;
+    if (cascade)
+        CEspProtocolThread::returnSocket();
 }
 
+void CHttpThread::returnSocket()
+{
+    returnSocket(true);
+}
 /**************************************************************************
  *  CPooledHttpThread Implementation                                      *
  **************************************************************************/
@@ -507,6 +526,9 @@ void CPooledHttpThread::init(void *param)
     m_ssctx = (ISecureSocketContext*)(((void**)param)[4]);
     m_persistentHandler = (IPersistentHandler*)(((void**)param)[5]);
     m_shouldClose = *(bool*)(((void**)param)[6]);
+    m_httpserver = nullptr;
+    m_processAborted = false;
+    m_socketReturned = false;
 }
 
 CPooledHttpThread::~CPooledHttpThread()
@@ -549,14 +571,44 @@ void CPooledHttpThread::threadmain()
     {
         httpserver.setown(new CEspHttpServer(*m_socket, m_apport, false, getMaxRequestEntityLength()));
     }
+    m_httpserver = httpserver;
     httpserver->setShouldClose(m_shouldClose);
+    httpserver->setSocketReturner(this);
     time_t t = time(NULL);  
     initThreadLocal(sizeof(t), &t);
-    bool keepAlive = false;
     try
     {
         ESP_TIME_SECTION("CPooledHttpThread::threadmain: httpserver->processRequest()");
         httpserver->processRequest();
+    }
+    catch (IException *e) 
+    {
+        m_processAborted = true;
+        StringBuffer estr;
+        IERRLOG("Exception(%d, %s) in CPooledHttpThread::threadmain().", e->errorCode(), e->errorMessage(estr).str());
+        e->Release();
+    }
+    catch(...)
+    {
+        m_processAborted = true;
+        IERRLOG("General Exception - in CPooledHttpThread::threadmain().");
+    }
+
+    returnSocket();
+
+    clearThreadLocal();
+
+}
+
+void CPooledHttpThread::returnSocket()
+{
+    if (m_socketReturned)
+        return;
+    m_socketReturned = true;
+    CEspHttpServer* httpserver = dynamic_cast<CEspHttpServer*>(m_httpserver);
+    bool keepAlive = false;
+    if (!m_processAborted)
+    {
         if (m_persistentHandler == nullptr)
         {
             keepAlive = !m_shouldClose && m_apport->queryProtocol()->persistentEnabled() && httpserver->persistentEligible();
@@ -569,17 +621,6 @@ void CPooledHttpThread::threadmain()
             m_persistentHandler->doneUsing(m_socket, keepAlive);
         }
     }
-    catch (IException *e) 
-    {
-        StringBuffer estr;
-        IERRLOG("Exception(%d, %s) in CPooledHttpThread::threadmain().", e->errorCode(), e->errorMessage(estr).str());
-        e->Release();
-    }
-    catch(...)
-    {
-        IERRLOG("General Exception - in CPooledHttpThread::threadmain().");
-    }
-    clearThreadLocal();
 
     try
     {
@@ -600,5 +641,4 @@ void CPooledHttpThread::threadmain()
     {
         IERRLOG("General Exception - CPooledHttpThread::threadmain(), closing socket.");
     }
-
 }

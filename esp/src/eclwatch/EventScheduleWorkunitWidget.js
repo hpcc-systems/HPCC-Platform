@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/dom-form",
     "dojo/_base/array",
 
@@ -33,11 +32,13 @@ define([
     "dijit/TooltipDialog",
 
     "dojox/layout/TableContainer"
-], function (declare, i18n, nlsHPCC, domForm, arrayUtil,
+], function (declare, nlsHPCCMod, domForm, arrayUtil,
     registry, Menu, MenuItem,
     selector,
     _TabContainerWidget, WUDetailsWidget, WsWorkunits, ESPUtil,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("EventScheduleWorkunitWidget", [_TabContainerWidget], {
         i18n: nlsHPCC,
         templateString: template,

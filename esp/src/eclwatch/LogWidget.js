@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
 
     "dijit/registry",
 
@@ -31,10 +30,12 @@ define([
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog"
 
-], function (declare, lang, i18n, nlsHPCC,
+], function (declare, lang, nlsHPCCMod,
     registry,
     _TabContainerWidget, ESPBaseMod, ESPUtil, WsTopology,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("LogWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
         baseClass: "LogWidget",

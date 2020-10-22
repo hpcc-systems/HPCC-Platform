@@ -106,6 +106,8 @@ typedef IEsdlCommand *(*EsdlCommandFactory)(const char *cmdname);
 #define ESDLOPT_NO_EXPORT               "--no-export"
 #define ESDLOPT_HIDE_GETDATAFROM        "--hide-get-data-from"
 #define ESDLOPT_WSDL_ADDRESS            "--wsdl-address"
+#define ESDLOPT_UNVERSIONED_NAMESPACE   "--unversioned-ns"
+#define ESDLOPT_UNVERSIONED_NAMESPACE_S "-uvns"
 
 #define DEFAULT_NAMESPACE_BASE          "urn:hpccsystems:ws"
 #define ESDLOPTLIST_DELIMITER           ";"

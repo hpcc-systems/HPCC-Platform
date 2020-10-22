@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/_base/Deferred",
     "dojo/dom-construct",
@@ -38,12 +37,14 @@ define([
     "dijit/form/DropDownButton",
     "dijit/Fieldset"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, domConstruct, domForm, ioQuery, all,
+], function (declare, lang, nlsHPCCMod, arrayUtil, Deferred, domConstruct, domForm, ioQuery, all,
     registry, Select,
     editor,
     hpccCommon,
     _Widget, ESPWorkunit, WsWorkunits, Utility,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("VizWidget", [_Widget], {
         templateString: template,
         i18n: nlsHPCC,

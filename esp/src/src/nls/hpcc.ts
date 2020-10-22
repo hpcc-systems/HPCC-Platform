@@ -1,4 +1,4 @@
-define({
+export = {
     root: {
         Abort: "Abort",
         AbortedBy: "Aborted by",
@@ -967,4 +967,4 @@ define({
     "pt-br": true,
     "sr": true,
     "zh": true
-});
+}

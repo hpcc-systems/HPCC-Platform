@@ -1,4 +1,4 @@
-define({
+export = {
     Abort: "Aborte",
     AbortedBy: "Abortado por",
     AbortedTime: "Abortado a las",
@@ -963,4 +963,4 @@ define({
     ZoomMinus: "Enfocar menos",
     ZoomPlus: "Enfocar más",
     ZoomWidth: "Aumentar al ancho"
-});
+}

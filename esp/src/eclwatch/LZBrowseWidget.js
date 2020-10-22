@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/dom-form",
     "dojo/dom-class",
@@ -53,11 +52,13 @@ define([
     "dojox/form/uploader/FileList",
 
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, domForm, domClass, iframe, topic,
+], function (declare, lang, nlsHPCCMod, arrayUtil, domForm, domClass, iframe, topic,
     registry, MenuItem, TextBox, ValidationTextBox,
     tree, editor, selector,
     _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, DelayLoadWidget, Utility,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("LZBrowseWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
         baseClass: "LZBrowseWidget",

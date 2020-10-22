@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
 
     "hpcc/_TabContainerWidget",
 
@@ -13,8 +12,10 @@ define([
     "dijit/form/Button",
     "dijit/ToolbarSeparator",
     "dijit/form/ToggleButton"
-], function (declare, i18n, nlsHPCC,
+], function (declare, nlsHPCCMod,
     _TabContainerWidget) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("LogVisualizationWidget", [_TabContainerWidget], {
         i18n: nlsHPCC
     });

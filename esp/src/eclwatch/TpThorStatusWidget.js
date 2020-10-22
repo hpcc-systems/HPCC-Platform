@@ -1,7 +1,6 @@
 define([
     "dojo/_base/declare",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/dom",
     "dojo/dom-construct",
     "dojo/on",
@@ -24,10 +23,12 @@ define([
     "dijit/form/ToggleButton",
     "dijit/Toolbar",
     "dijit/ToolbarSeparator"
-], function (declare, i18n, nlsHPCC, dom, domConstruct, on,
+], function (declare, nlsHPCCMod, dom, domConstruct, on,
     registry,
     _TabContainerWidget, ESPRequest, ESPTopology, DelayLoadWidget,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("TpThorStatusWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "TpThorStatusWidget",

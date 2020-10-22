@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/request/iframe",
     "dojo/store/Memory",
@@ -25,11 +24,13 @@ define([
     "dijit/form/Button",
     "dijit/form/ToggleButton",
     "dijit/ToolbarSeparator"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, iframe, Memory, Observable,
+], function (declare, lang, nlsHPCCMod, arrayUtil, iframe, Memory, Observable,
     registry,
     Grid, DijitRegistry,
     _Widget, ESPBaseMod, ESPUtil,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("FullResultWidget", [_Widget], {
         templateString: template,
         baseClass: "FullResultWidget",

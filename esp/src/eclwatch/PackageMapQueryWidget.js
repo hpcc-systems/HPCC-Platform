@@ -1,8 +1,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/topic",
@@ -36,11 +35,13 @@ define([
     "dijit/Toolbar",
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, topic,
+], function (declare, lang, nlsHPCCMod, arrayUtil, dom, topic,
     _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
     selector,
     _TabContainerWidget, DelayLoadWidget, WsPackageMaps, ESPPackageProcess, ESPUtil,
     template) {
+
+    var nlsHPCC = nlsHPCCMod.default;
     return declare("PackageMapQueryWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "PackageMapQueryWidget",

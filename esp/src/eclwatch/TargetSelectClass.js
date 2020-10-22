@@ -1,7 +1,6 @@
 define([
     "dojo/_base/lang",
-    "dojo/i18n",
-    "dojo/i18n!./nls/hpcc",
+    "src/nlsHPCC",
     "dojo/_base/array",
     "dojo/_base/xhr",
     "dojo/_base/Deferred",
@@ -17,9 +16,10 @@ define([
     "src/WsPackageMaps",
     "src/Utility"
 
-], function (lang, i18n, nlsHPCC, arrayUtil, xhr, Deferred, ItemFileReadStore, all, Memory,
+], function (lang, nlsHPCCMod, arrayUtil, xhr, Deferred, ItemFileReadStore, all, Memory,
     WsTopology, WsWorkunits, FileSpray, WsAccess, WsESDLConfig, WsPackageMaps, Utility) {
 
+    var nlsHPCC = nlsHPCCMod.default;
     return {
         i18n: nlsHPCC,
 

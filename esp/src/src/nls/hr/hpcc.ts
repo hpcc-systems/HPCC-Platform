@@ -1,4 +1,4 @@
-﻿define({
+﻿export = {
     Abort: "Prekinite",
     AbortedBy: "Prekinuto od strane",
     AbortedTime: "Vrijeme prekida",
@@ -962,4 +962,4 @@
     ZoomMinus: "Zum-",
     ZoomPlus: "Zum +",
     ZoomWidth: "Zumirajte Širinu"
-});
+}
