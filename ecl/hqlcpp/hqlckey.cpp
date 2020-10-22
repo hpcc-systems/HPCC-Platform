@@ -171,6 +171,7 @@ protected:
     IHqlExpression * createKeyFromComplexKey(IHqlExpression * expr);
     IHqlExpression * expandDatasetReferences(IHqlExpression * expr, IHqlExpression * ds);
     IHqlExpression * optimizeTransfer(HqlExprArray & fields, HqlExprArray & values, IHqlExpression * expr, IHqlExpression * leftSelector);
+    IHqlExpression * doOptimizeTransfer(HqlExprArray & fields, HqlExprArray & values, IHqlExpression * expr, IHqlExpression * leftSelector);
     void optimizeExtractJoinFields();
     void optimizeTransfer(SharedHqlExpr & targetDataset, SharedHqlExpr & targetTransform, SharedHqlExpr & keyedFilter, OwnedHqlExpr * extraFilter);
     IHqlExpression * querySimplifiedKey(IHqlExpression * expr);
@@ -677,6 +678,20 @@ static bool fieldNameAlreadyExists(const HqlExprArray & fields, IAtom * name)
 
 IHqlExpression * KeyedJoinInfo::optimizeTransfer(HqlExprArray & fields, HqlExprArray & values, IHqlExpression * filter, IHqlExpression * leftSelector)
 {
+    TransformMutexBlock block;
+    return doOptimizeTransfer(fields, values, filter, leftSelector);
+}
+
+IHqlExpression * KeyedJoinInfo::doOptimizeTransfer(HqlExprArray & fields, HqlExprArray & values, IHqlExpression * filter, IHqlExpression * leftSelector)
+{
+    IHqlExpression * prev = static_cast<IHqlExpression *>(filter->queryTransformExtra());
+    if (prev)
+        return LINK(prev);
+
+    //MORE: We could also check if already transformed..., but that imposes an additional cost on simple filters, so on balance it is better without it
+    //if (!filter->usesSelector(leftSelector))
+    //    return LINK(filter);
+
     switch (filter->getOperator())
     {
     case no_join:
@@ -723,7 +738,9 @@ IHqlExpression * KeyedJoinInfo::optimizeTransfer(HqlExprArray & fields, HqlExprA
                 IHqlExpression * matchField = &fields.item(match);
                 OwnedHqlExpr serializedField = getSerializedForm(matchField, diskAtom);
                 OwnedHqlExpr result = createSelectExpr(getActiveTableSelector(), LINK(serializedField));
-                return ensureDeserialized(result, matchField->queryType(), diskAtom);
+                OwnedHqlExpr deserialized = ensureDeserialized(result, matchField->queryType(), diskAtom);
+                filter->setTransformExtra(deserialized);
+                return deserialized.getClear();
             }
             break;
         }
@@ -736,11 +753,13 @@ IHqlExpression * KeyedJoinInfo::optimizeTransfer(HqlExprArray & fields, HqlExprA
     HqlExprArray children;
     ForEachChild(i, filter)
     {
-        IHqlExpression * next = optimizeTransfer(fields, values, filter->queryChild(i), leftSelector);
+        IHqlExpression * next = doOptimizeTransfer(fields, values, filter->queryChild(i), leftSelector);
         if (!next) return NULL;
         children.append(*next);
     }
-    return cloneOrLink(filter, children);
+    OwnedHqlExpr ret = cloneOrLink(filter, children);
+    filter->setTransformExtra(ret);
+    return ret.getClear();
 }
 
 
