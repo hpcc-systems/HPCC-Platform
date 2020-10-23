@@ -1137,7 +1137,7 @@ bool CLdapSecManager::addResourceEx(SecResourceType rtype, ISecUser& user, const
 
 bool CLdapSecManager::addResources(ISecUser& sec_user, ISecResourceList * resources, IEspSecureContext* secureContext)
 {
-    return addResourcesEx(RT_DEFAULT, sec_user, resources, PT_DEFAULT, nullptr, secureContext);
+    return addResourcesEx(RT_DEFAULT, sec_user, resources, PT_ADMINISTRATORS_ONLY, nullptr, secureContext);
 }
 
 bool CLdapSecManager::addUser(ISecUser & user, IEspSecureContext* secureContext)

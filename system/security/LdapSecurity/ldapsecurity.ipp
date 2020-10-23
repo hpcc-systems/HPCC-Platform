@@ -392,8 +392,8 @@ public:
     bool authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) override;
     bool addResources(ISecUser& sec_user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) override;
     SecAccessFlags getAccessFlagsEx(SecResourceType rtype, ISecUser & user, const char * resourcename, IEspSecureContext* secureContext = nullptr) override;
-    bool addResourcesEx(SecResourceType rtype, ISecUser &user, ISecResourceList* resources, SecPermissionType ptype = PT_DEFAULT, const char* basedn = NULL, IEspSecureContext* secureContext = nullptr) override;
-    bool addResourceEx(SecResourceType rtype, ISecUser& user, const char* resourcename, SecPermissionType ptype = PT_DEFAULT, const char* basedn = NULL, IEspSecureContext* secureContext = nullptr) override;
+    bool addResourcesEx(SecResourceType rtype, ISecUser &user, ISecResourceList* resources, SecPermissionType ptype = PT_ADMINISTRATORS_ONLY, const char* basedn = NULL, IEspSecureContext* secureContext = nullptr) override;
+    bool addResourceEx(SecResourceType rtype, ISecUser& user, const char* resourcename, SecPermissionType ptype = PT_ADMINISTRATORS_ONLY, const char* basedn = NULL, IEspSecureContext* secureContext = nullptr) override;
     bool updateResources(ISecUser& sec_user, ISecResourceList * resources, IEspSecureContext* secureContext = nullptr) override {return false;}
     bool addUser(ISecUser & user, IEspSecureContext* secureContext = nullptr) override;
     ISecUser * lookupUser(unsigned uid, IEspSecureContext* secureContext = nullptr) override;
