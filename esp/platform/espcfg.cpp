@@ -725,7 +725,7 @@ void CEspConfig::loadService(srv_cfg &xcfg)
     if (xproc)
         xcfg.srv.setown(xproc(xcfg.name.str(), xcfg.type.str(), m_envpt.get(), m_process.str()));
     else
-        throw MakeStringException(-1, "procedure esp_service_factory can't be loaded");
+        throw MakeStringException(-1, "procedure esp_service_factory can't be loaded from %s", xcfg.plugin.str());
 }
 
 void CEspConfig::loadServices()
