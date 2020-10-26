@@ -755,3 +755,24 @@ int CEspProtocol::countBindings(int port)
     else
         return apport->getBindingCount();
 }
+
+bool checkEspConnection(IEspContext& ctx)
+{
+    CHttpRequest* req = dynamic_cast<CHttpRequest*>(ctx.queryRequest());
+    if (!req)
+        return false;
+    ISocket* sock = req->getSocket();
+    if (!sock)
+        return false;
+    if (sock->OShandle() == INVALID_SOCKET)
+        return false;
+    int ret = sock->wait_read(0);
+    if (ret < 0)
+        return false;
+    else if (ret > 0)
+    {
+        if (sock->avail_read() == 0)
+            return false;
+    }
+    return true;
+}
