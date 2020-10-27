@@ -9072,7 +9072,6 @@ public:
         for (unsigned i = 0; i < numOriginalOutputs; i++)
             if (used[i])
                 adaptors[i].init();
-        state = STATEstarting;
     }
 
 public:
@@ -9189,7 +9188,10 @@ public:
         if (state != STATEstarted)
         {
             if (state != STATEstarting)
+            {
                 initOutputs();
+                state = STATEstarting;
+            }
             tailIdx = 0;
             headIdx = 0;
             startError.clear();
