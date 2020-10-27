@@ -13234,6 +13234,13 @@ int yyuntranslate(int token)
     return '?';
 }
 
+//Recent versions of bison have switched to using an enumerated type
+#ifdef YYTERROR
+#define BISON_ERROR_TOKEN YYTERROR
+#else
+#define BISON_ERROR_TOKEN YYSYMBOL_YYerror
+#endif
+
 /* Cloned and modified from the verbose yyerror implementation */
 static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int token)
 {
@@ -13255,7 +13262,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   int curExpected = 0;
   for (int yyx = yyxbegin; yyx < yyxend; ++yyx)
   {
-    if (yycheck[yyx + yyn] == yyx && yyx != YYTERROR)
+    if (yycheck[yyx + yyn] == yyx && yyx != BISON_ERROR_TOKEN)
         expected[curExpected++] = yyuntranslate(yyx);
   }
   expected[curExpected++] = 0;
