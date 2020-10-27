@@ -35,7 +35,7 @@ while getopts “d:fhlpt:u:b:” opt; do
     u) INPUT_BUILD_USER=$OPTARG ;;
     b) INPUT_BUILD_TYPE=$OPTARG ;;
     f) FORCE=1 ;;
-    h) echo "Usage: incr.sh [options]"
+    h) echo "Usage: incr.sh [options] [base image]"
        echo "    -d <docker-repo>   Specify the repo to publish images to"
        echo "    -f                 Force build from scratch"
        echo "    -b                 Build type (e.g. Debug / Release)"
