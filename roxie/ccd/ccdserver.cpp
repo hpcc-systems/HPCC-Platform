@@ -829,7 +829,7 @@ public:
 
 };
 
-typedef enum { STATEreset, STATEstarted, STATEstopped, STATEstarting } activityState;
+typedef enum { STATEreset, STATEstarted, STATEstopped } activityState;
 
 const char *queryStateText(activityState state)
 {
@@ -838,7 +838,7 @@ const char *queryStateText(activityState state)
     case STATEreset: return "reset";
     case STATEstarted: return "started";
     case STATEstopped: return "stopped";
-    case STATEstarting: return "starting";
+//    case STATEstarting: return "starting";   // Used by a splitter to indicate it has seen a stop but not yet seen a start(), nor has it seen stop() on all output adaptors
     default: return "unknown";
     }
 }
@@ -1329,7 +1329,7 @@ public:
     inline void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CriticalBlock cb(statecrit);
-        if (state != STATEreset && state != STATEstarting)
+        if (state != STATEreset)
         {
             CTXLOG("STATE: Expected state to be reset, but was %s, in activity %d", queryStateText(state), activityId);
         }
@@ -1451,7 +1451,7 @@ public:
             CriticalBlock cb(statecrit);
             if (state != STATEreset)
             {
-                if (state==STATEstarted || state==STATEstarting)
+                if (state==STATEstarted)
                 {
                     if (ctx->queryOptions().failOnLeaks)
                         throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "STATE: activity %d reset without stop", activityId);
@@ -9070,9 +9070,7 @@ public:
     {
         activeOutputs = numOutputs;
         for (unsigned i = 0; i < numOriginalOutputs; i++)
-            if (used[i])
-                adaptors[i].init();
-        state = STATEstarting;
+            adaptors[i].init();
     }
 
 public:
@@ -9188,8 +9186,6 @@ public:
             CTXLOG("SPLIT %p: start %d child %d activeOutputs %d numOutputs %d numOriginalOutputs %d state %s", this, activityId, oid, activeOutputs, numOutputs, numOriginalOutputs, queryStateText(state));
         if (state != STATEstarted)
         {
-            if (state != STATEstarting)
-                initOutputs();
             tailIdx = 0;
             headIdx = 0;
             startError.clear();
@@ -9229,8 +9225,6 @@ public:
             }
         }
 #endif
-        if (state != STATEstarting && state != STATEstarted)
-            initOutputs();
         if (activeOutputs > 1)
         {
             if (tailIdx==idx)
@@ -9273,7 +9267,10 @@ public:
         startError.clear();
         readError.clear();
         if (state != STATEreset) // make sure input is only reset once
+        {
+            initOutputs();
             CRoxieServerActivity::reset();
+        }
     };
 
     void connectInputStreams(bool consumerOrdered)
