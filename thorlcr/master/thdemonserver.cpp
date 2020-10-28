@@ -38,8 +38,8 @@ private:
     unsigned reportRate;
     CIArrayOf<CGraphBase> activeGraphs;
     UnsignedArray graphStarts;
-    cost_type thorMasterCostRate = 0;
-    cost_type thorSlaveCostRate = 0;
+    double thorManagerRate = 0;
+    double thorWorkerRate = 0;
     cost_type costLimit = 0;
     cost_type workunitCost = 0;
 
@@ -91,12 +91,12 @@ private:
         if (costLimit || finished)
         {
             const unsigned clusterWidth = queryNodeClusterWidth();
-            const cost_type sgCost = calcCost(thorMasterCostRate, duration) + calcCost(thorSlaveCostRate, duration) * clusterWidth;
+            const cost_type sgCost = money2cost_type(calcCost(thorManagerRate, duration) + calcCost(thorWorkerRate, duration) * clusterWidth);
             if (finished)
                 wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, graphScope, StCostExecute, NULL, sgCost, 1, 0, StatsMergeReplace);
 
             const cost_type totalCost = workunitCost + sgCost;
-            if (totalCost > costLimit)
+            if (costLimit>0.0 && totalCost > costLimit)
             {
                 LOG(MCwarning, thorJob, "ABORT job cost exceeds limit");
                 graph.fireException(MakeThorException(TE_CostExceeded, "Job cost exceeds limit"));
@@ -198,12 +198,8 @@ public:
     {
         lastReport = msTick();
         reportRate = globals->getPropInt("@watchdogProgressInterval", 30);
-        IPropertyTree *costs = queryCostsConfiguration();
-        if (costs)
-        {
-            thorMasterCostRate = money2cost_type(costs->getPropReal("thor/@master"));
-            thorSlaveCostRate = money2cost_type(costs->getPropReal("thor/@slave"));
-        }
+        thorManagerRate = getThorManagerRate();
+        thorWorkerRate = getThorWorkerRate();
     }
 
     virtual void takeHeartBeat(MemoryBuffer &progressMb)

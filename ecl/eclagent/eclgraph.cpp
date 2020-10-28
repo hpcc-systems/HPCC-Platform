@@ -890,7 +890,7 @@ void EclSubGraph::updateProgress()
             {
                 unsigned __int64 elapsedTime = cycle_to_nanosec(elapsedGraphCycles);
                 parent.updateWUStatistic(lockedwu, SSTsubgraph, subgraphid, StTimeElapsed, nullptr, elapsedTime);
-                const cost_type cost = calcCost(agent->queryAgentMachineCost(), nanoToMilli(elapsedTime));
+                const cost_type cost = money2cost_type(calcCost(agent->queryAgentMachineCost(), nanoToMilli(elapsedTime)));
                 if (cost)
                 {
                     StringBuffer scope;
@@ -1268,7 +1268,7 @@ void EclGraph::execute(const byte * parentExtract)
             unsigned __int64 elapsedNs = milliToNano(elapsed);
             updateWorkunitStat(wu, SSTgraph, queryGraphName(), StTimeElapsed, description.str(), elapsedNs, wfid);
 
-            const cost_type cost = calcCost(agent->queryAgentMachineCost(), nanoToMilli(elapsedNs));
+            const cost_type cost = money2cost_type(calcCost(agent->queryAgentMachineCost(), elapsed));
             if (cost)
             {
                 StringBuffer scope;

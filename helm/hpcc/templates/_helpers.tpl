@@ -90,6 +90,10 @@ storage:
   - name: hpcc-spill-plane
     mount: {{ .Values.global.defaultSpillPath | default "/var/lib/HPCCSystems/hpcc-spill" | quote }}
 {{- end }}
+{{- if .Values.global.cost }}
+cost:
+{{ toYaml .Values.global.cost | indent 2 }}
+{{- end }}
 {{- end -}}
 
 {{/*

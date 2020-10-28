@@ -122,7 +122,7 @@ struct IAgentContext : extends IGlobalCodeContext
     virtual void updateWULogfile(IWorkUnit *outputWU) = 0;
     virtual bool forceNewDiskReadActivity() const = 0;
     virtual void addWuExceptionEx(const char * text, unsigned code, unsigned severity, unsigned audience, char const * source) = 0;
-    virtual cost_type queryAgentMachineCost() const = 0;
+    virtual double queryAgentMachineCost() const = 0;
 };
 
 #endif // AGENTCTX_HPP_INCL
