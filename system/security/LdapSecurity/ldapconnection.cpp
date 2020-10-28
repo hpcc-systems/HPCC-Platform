@@ -1259,6 +1259,19 @@ private:
             rc = ldap_search_ext_s(m_pLdapConn, m_pszDN, m_scope, m_pszFilter, m_pszAttrs, 0, svrCtrls, NULL, &timeOut, 0, &m_pPageBlock);
             if (rc != LDAP_SUCCESS)
             {
+                if (rc == LDAP_NO_SUCH_OBJECT)
+                {
+                    if (m_pCookie)
+                    {
+                        ber_bvfree(m_pCookie);
+                        m_pCookie = NULL;
+                    }
+#ifdef _DEBUG
+                    DBGLOG("CPagedLDAPSearch::requestNextPage: ldap_search_ext_s() : No Such Object : DN=%s", m_pszDN);
+#endif
+                    return false;
+                }
+
                 int err = GetLastError();
                 if (err && rc != LDAP_PARTIAL_RESULTS)//389DirectoryServer sometimes returns rc, but GetLastError returns 0. In this scenario continuing the query succeeds
                 {
