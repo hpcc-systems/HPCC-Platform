@@ -109,9 +109,48 @@
         </div>
     </div>
     <script type="text/javascript">
-        require([init],
-            function (init) {
-                init();
+        require(["dojo/ready", "src/nlsHPCC"],
+            function (ready, nlsHPCCMod) {
+                var nlsHPCC = nlsHPCCMod.default;
+                ready(function () {
+                    var loginStr = document.getElementById("loginStr");
+                    var error = document.getElementById("hidden_msg");
+                    var username = document.getElementById("username");
+                    var password = document.getElementById("password");
+                    var button = document.getElementById("button");
+                    var enableCookies = "";
+                    var HPCCSystems = document.getElementById("logo");
+
+                    loginStr.innerHTML = nlsHPCC.PleaseLogIntoECLWatch;
+                    error.innerHTML = nlsHPCC.InvalidUsernamePassword;
+                    username.innerHTML = nlsHPCC.Username;
+                    password.innerHTML = nlsHPCC.Password;
+                    button.innerHTML = nlsHPCC.Login;
+                    enableCookies = nlsHPCC.PleaseEnableCookies;
+                    HPCCSystems.setAttribute("alt", nlsHPCC.HPCCSystems);
+
+                    var element = document.getElementById('container');
+
+                    if (navigator.cookieEnabled) {
+                        var element = document.getElementById("container");
+                        element.classList.remove("visible");
+                    } else {
+                        alert(enableCookies);
+                    }
+
+                    function deleteCookie(cname, cvalue, exMins) {
+                        var d = new Date();
+                        d.setTime(d.getTime() + (exMins * 60 * 1000));
+                        var expires = "expires=" + d.toUTCString();
+                        document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+                    }
+
+                    if (document.cookie.indexOf("ESPAuthenticationMSG") > -1) {
+                        var element = document.getElementById('hidden_msg');
+                        element.style.display = "inline-block";
+                        deleteCookie('ESPAuthenticationMSG', '', 0);
+                    }
+                });
             }
         );
     </script>
