@@ -85,6 +85,20 @@ export function fetchStats() {
     });
 }
 
+export function getRecentFilters(filterName) {
+    const store = userKeyValStore();
+
+    return store.get(filterName).then(response =>{
+        let results;
+        try {
+            results = JSON.parse(response);
+        } catch(e) {
+            console.warn("Failed to read recent filters", e);
+        }
+        return results;
+    });
+}
+
 /**
  *  User Store
  *      Stores info in Dali by user ID
