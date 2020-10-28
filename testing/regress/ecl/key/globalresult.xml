@@ -1,0 +1,37 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>10</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><x>1</x><y>30</y></Row>
+ <Row><x>2</x><y>30</y></Row>
+ <Row><x>3</x><y>30</y></Row>
+ <Row><x>4</x><y>30</y></Row>
+ <Row><x>5</x><y>30</y></Row>
+ <Row><x>6</x><y>30</y></Row>
+ <Row><x>7</x><y>30</y></Row>
+ <Row><x>8</x><y>30</y></Row>
+ <Row><x>9</x><y>30</y></Row>
+ <Row><x>10</x><y>30</y></Row>
+ <Row><x>11</x><y>30</y></Row>
+ <Row><x>12</x><y>30</y></Row>
+ <Row><x>13</x><y>30</y></Row>
+ <Row><x>14</x><y>30</y></Row>
+ <Row><x>15</x><y>30</y></Row>
+ <Row><x>16</x><y>30</y></Row>
+ <Row><x>17</x><y>30</y></Row>
+ <Row><x>18</x><y>30</y></Row>
+ <Row><x>19</x><y>30</y></Row>
+ <Row><x>20</x><y>30</y></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><id>1</id></Row>
+ <Row><id>2</id></Row>
+ <Row><id>3</id></Row>
+ <Row><id>4</id></Row>
+ <Row><id>5</id></Row>
+ <Row><id>6</id></Row>
+ <Row><id>7</id></Row>
+ <Row><id>8</id></Row>
+ <Row><id>9</id></Row>
+ <Row><id>10</id></Row>
+</Dataset>
