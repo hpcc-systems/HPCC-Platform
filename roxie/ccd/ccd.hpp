@@ -298,6 +298,7 @@ extern bool enableKeyDiff;
 extern PTreeReaderOptions defaultXmlReadFlags;
 extern bool mergeSlaveStatistics;
 extern bool defaultNoSeekBuildIndex;
+extern bool alwaysFailOnLeaks;
 #ifdef _CONTAINERIZED
 static constexpr bool roxieMulticastEnabled = false;
 #else

@@ -130,6 +130,7 @@ bool reloadRetriesFailed;
 bool selfTestMode = false;
 bool defaultCollectFactoryStatistics = true;
 bool defaultNoSeekBuildIndex = false;
+bool alwaysFailOnLeaks = false;
 bool useOldTopology = false;
 
 int backgroundCopyClass = 0;
@@ -1037,6 +1038,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         mergeSlaveStatistics = topology->getPropBool("@mergeAgentStatistics", topology->getPropBool("@mergeSlaveStatistics", true));  // legacy name
         defaultCollectFactoryStatistics = topology->getPropBool("@collectFactoryStatistics", true);
         defaultNoSeekBuildIndex = topology->getPropBool("@noSeekBuildIndex", isContainerized());
+        alwaysFailOnLeaks = topology->getPropBool("@alwaysFailOnLeaks", false);
 
         enableKeyDiff = topology->getPropBool("@enableKeyDiff", true);
 
