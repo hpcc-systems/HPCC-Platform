@@ -11,7 +11,7 @@
   ideal.</para>
 
   <para>Para maximizar o desempenho, é preciso configurar seu cluster de modo
-  que os nós escravos desempenhem a maioria das tarefas na memória.</para>
+  que os nós dos agentes desempenhem a maioria das jobs na memória.</para>
 
   <para>Por exemplo, se uma consulta utiliza três arquivos de dados com um
   arquivo combinado de tamanho igual a 60 GB, um cluster de 40 canais está de
@@ -25,7 +25,7 @@
   para um Roxie de 20 nós seria considerado aceitável.</para>
 
   <para>Isso se deve a forma na qual os dados são carregados e processados
-  pelos Roxie escravos. Se os dados forem copiados para os nós escravos, as
+  pelos agentes Roxie. Se os dados forem copiados para os nós dos agentes, as
   partes do arquivo são copiadas diretamente do local fonte para os locais de
   destino. Elas não são divididas ou redimensionadas para que caibam em um
   cluster com tamanho diferente. Consequentemente, ao carregar 50 partes de
@@ -37,12 +37,12 @@
   de um cluster é igual a de seu nó mais lento.</para>
 
   <para>A consideração final é o número de processos do servidor em um
-  cluster. Cada escravo também deve ser um servidor, mas você pode dedicar nós
+  cluster. Cada agente também deve ser um servidor, mas você pode dedicar nós
   adicionais para que sejam apenas processos do servidor. Isso é útil para
-  consultas que exigem o processamento no servidor após os escravos terem
+  consultas que exigem o processamento no servidor após os agentes terem
   retornado os resultados. Essas consultas intensivas de servidor poderiam ser
   enviadas apenas para endereços IP do servidor dedicado para que a carga seja
-  removida dos nós atuando como servidor e escravo.</para>
+  removida dos nós atuando como servidor e agente.</para>
 
   <sect2 id="Configuring_the_Channels">
     <title>Configurando os Canais</title>
@@ -53,8 +53,8 @@
 
     <para><graphic fileref="../../images/RM-15.jpg"/></para>
 
-    <para>Nesta representação, cada chassi contém cinco blades escravas Roxie
-    (uma fila de servidores na imagem). Usaremos este exemplo para o restante
-    deste manual.</para>
+    <para>Nesta representação, cada chassi contém cinco blades de agentes
+    Roxie (uma fila de servidores na imagem). Usaremos este exemplo para o
+    restante deste manual.</para>
   </sect2>
 </sect1>

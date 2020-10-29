@@ -179,7 +179,13 @@
   <emphasis>atributo</emphasis> é usado na computação. Isso oferece um tipo
   recurso denominado "computação antecipada".</para>
 
-  <para/>
+  <para>Atributos persistentos ainda podem estar sujeitos aos requisitos de
+  pedido de SEQUENTIAL. No entanto, como os PERSISTs são compartilhados entre
+  as workunits, não há garantia de que o atributo será avaliado em qualquer
+  ordem de avaliação fornecida.</para>
+
+  <para>Você pode usar #OPTION para sobrescrever as configurações padrão,
+  assim como mostrado no examplo.</para>
 
   <para>Exemplo:</para>
 

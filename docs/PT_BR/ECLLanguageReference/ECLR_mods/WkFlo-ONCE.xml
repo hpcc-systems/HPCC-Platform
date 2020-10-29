@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ONCE">
+  <title>ONCE</title>
+
+  <para><emphasis>attribute </emphasis>:= <emphasis>expression
+  </emphasis><emphasis role="bold">: ONCE<indexterm>
+      <primary>ONCE</primary>
+    </indexterm></emphasis><emphasis role="bold"> <indexterm>
+      <primary>ONCE workflow service</primary>
+    </indexterm></emphasis>;</para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="78.85pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>attribute</emphasis></entry>
+
+            <entry>O nome do atributo.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>A definição do atributo.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>O serviço <emphasis role="bold">ONCE </emphasis>permite que você
+  especifique que o código seja executado somente uma vez, no momento do
+  carregamento da consulta.</para>
+
+  <para>Isso significa que a consulta Roxie irá executar somente uma vez,
+  mesmo que a consulta seja executada várias vezes. Para uma consulta Thor ou
+  hThor, o comportamento do ONCE é o mesmo que o INDEPENDENT.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting role="run">InlineDCT := DICTIONARY([{0 =&gt; 'Black' , 'Greys'},
+                         {1 =&gt; 'Brown' , 'Earth'},
+                         {2 =&gt; 'Red'   , 'Reds'},
+                         {3 =&gt; 'White' , 'Greys'} ], 
+                        {UNSIGNED code =&gt; STRING10 color ,STRING10 Tone}) : ONCE;
+
+UNSIGNED v := 0 : STORED('v');
+
+OUTPUT(InlineDCT[v].color);</programlisting>
+
+  <para>Veja também: <link linkend="INDEPENDENT">INDEPENDENT</link></para>
+</sect1>

@@ -895,7 +895,7 @@
 
             <listitem>
               <para><emphasis role="bold">Redundância de nó-par:</emphasis>
-              Cada nó escravo normalmente tem um ou mais nós pares em seu
+              Cada nó do agente normalmente tem um ou mais nós pares em seu
               cluster. Cada par armazena uma cópia dos arquivos de dados que
               serão lidos.</para>
             </listitem>
@@ -1827,13 +1827,14 @@ dfsSSLPrivateKeyFile=/keyfilepath/keyfile</programlisting>Defina o <emphasis
           ter problemas com a configuração do daemon SSH.</para>
 
           <para>Há um recurso de segurança chamado
-          <emphasis>"AllowUsers"</emphasis> que cria uma lista branca no sshd
-          (o processo de servidor OpenSSH) que vai bloquear conexões de
-          qualquer um que não estiver presente na lista. Esse não é um padrão
-          para sshd, mas uma opção que precisa ser ativada. Se essa opção for
-          ativada, isso pode fazer com que os nós Thor travem na maneira
-          descrita. Se essa opção for ativada, é necessário desativá-la ou
-          adicionar o usuário hpcc à lista de AllowUsers.</para>
+          <emphasis>"AllowUsers"</emphasis> que cria uma lista de permissões
+          no sshd (o processo de servidor OpenSSH) que vai bloquear conexões
+          de qualquer um que não estiver presente na lista. Esse não é um
+          padrão para sshd, mas uma opção que precisa ser ativada. Se essa
+          opção for ativada, isso pode fazer com que os nós Thor travem na
+          maneira descrita. Se essa opção for ativada, é necessário
+          desativá-la ou adicionar o usuário hpcc à lista de
+          AllowUsers.</para>
 
           <para/>
         </sect3>
