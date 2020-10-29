@@ -875,7 +875,7 @@ int main(int argc, const char *argv[])
     if (globals->getPropBool("@enableSysLog",true))
         UseSysLogForOperatorMessages();
 #ifndef _WIN32
-    if (globals->getPropBool("@generatePrecompiledHeader", true))
+    if (globals->getPropBool("@generatePrecompiledHeader", !isContainerized()))
         generatePrecompiledHeader();
     else
         removePrecompiledHeader();
