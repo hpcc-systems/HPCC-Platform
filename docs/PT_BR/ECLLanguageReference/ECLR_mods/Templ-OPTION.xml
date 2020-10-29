@@ -1522,6 +1522,67 @@
         </tgroup>
       </informaltable></para>
 
+    <para><emphasis role="bold">As seguintes </emphasis><emphasis
+    role="bold">opções</emphasis><emphasis role="bold"> são para o analisador
+    de workunit:</emphasis></para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="3">
+        <colspec colwidth="178.45pt"/>
+
+        <colspec colwidth="78.60pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><emphasis>analyzeWorkunit</emphasis></entry>
+
+            <entry>Padrão: true</entry>
+
+            <entry>Se for indicado com FALSE, disabilita a análise da
+            workunit</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>analyzer_minInterestingTime</emphasis></entry>
+
+            <entry>Padrão: 1000</entry>
+
+            <entry>Analisa as atividades que excedem o tempo mínimo de
+            execução (milissegundos)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>analyzer_minInterestingCost </emphasis></entry>
+
+            <entry>Padrão: 30000</entry>
+
+            <entry>Reporta problemas em que a penalidade de tempo exceda este
+            valor (millissegundos)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>analyzer_skewThreshold </emphasis></entry>
+
+            <entry>Padrão: 20</entry>
+
+            <entry>Reporta problemas relacionados à distorção que excedam esse
+            limite</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>analyzer_minRowsPerNode </emphasis></entry>
+
+            <entry>Padrão: 1000</entry>
+
+            <entry>Ignore activities that have this average number of rows per
+            nós</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
     <para>Exemplo:</para>
 
     <programlisting>  #OPTION('traceRowXml', TRUE);

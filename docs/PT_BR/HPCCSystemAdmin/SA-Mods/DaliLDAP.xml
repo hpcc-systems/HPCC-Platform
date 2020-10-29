@@ -107,15 +107,15 @@
   </sect2>
 
   <sect2 id="WhitelistInDali" role="brk">
-    <title>Whitelist em Dali</title>
+    <title>Allowlist em Dali</title>
 
     <para>O servidor Dali tem a capacidade de restringir o acesso a apenas
     aqueles nós que estão associados a uma função na definição de ambiente
     (environment.xml) ou explicitamente adicionados a
-    <emphasis>Whitelist</emphasis> na configuração de Dali. A Whitelist é
+    <emphasis>Allowlist</emphasis> na configuração de Dali. A Allowlist é
     implicitamente preenchida com os componentes do servidor e suas funções
     conforme definido no ambiente. Você pode adicionar explicitamente nós
-    adicionais e suas funções aprovadas a uma Whitelist suplementar no arquivo
+    adicionais e suas funções aprovadas a uma Allowlist suplementar no arquivo
     environment.xml, conforme mostrado no exemplo a seguir:</para>
 
     <para><programlisting>&lt;Environment&gt;
@@ -123,10 +123,10 @@
  &lt;Software&gt;
  ...
    &lt;DaliServerProcess&gt;
-     &lt;WhiteList&gt;
+     &lt;AllowList&gt;
       &lt;Entry hosts="adminnode1,192.168.0.101" roles="DaliDiag,DaliAdmin"/&gt;
       &lt;Entry hosts="adminnode3" roles="DaliDiag"/&gt;
-     &lt;/WhiteList&gt;
+     &lt;/AllowList&gt;
    ...
    &lt;/DaliServerProcess&gt;
  ...
@@ -209,7 +209,7 @@
 SashaServer, RoxieMaster, and ThorMaster </programlisting></para>
 
     <para>Essas funções correspondem a componentes no ambiente, que devem
-    estar sempre implicitamente na Whitelist (lista de permissões) pela
+    estar sempre implicitamente na Allowlist (lista de permissões) pela
     inclusão no ambiente.</para>
 
     <para>Além disso, o servidor Dali coloca na Whitlist (lista de permissões)
@@ -227,41 +227,41 @@ TreeView, UpdateEnv, XRef, Monitoring</programlisting></para>
     <para><programlisting>Config, DaFsControl, DaliAdmin, DaliDiag, SchedulerAdmin, SwapNode, Testing, 
 TreeView, UpdateEnv, XRef</programlisting></para>
 
-    <para>Para desabilitar totalmente o recurso Whitelist (Lista de
+    <para>Para desabilitar totalmente o recurso Allowlist (Lista de
     permissões), você pode adicionar:</para>
 
-    <para><programlisting>&lt;WhiteList enabled="false"&gt;</programlisting><emphasis
+    <para><programlisting>&lt;AllowList enabled="false"&gt;</programlisting><emphasis
     role="bold">Isso não é recomendado para ambientes de
     produção.</emphasis></para>
 
-    <para>Ao ativar a whitelist Dali em um cluster em que existem outros     
+    <para>Ao ativar a Allowlist Dali em um cluster em que existem outros     
     ambientes externos interagindo, pode ser útil desativar inicialmente     
-    a whitelist e auditar os componentes externos que estão tentando conectar
-         exibindo os arquivos de log do DaServer. Cada cliente que teria     
-    acesso recusado se a whitelist estiver ativada, criando entradas de log
-    semelhantes      para isso:</para>
+    a Allowlist e auditar os componentes externos que estão tentando conectar
+    exibindo os arquivos de log do DaServer. Cada cliente que teria     
+    acesso recusado se a Allowlist estiver ativada, criando entradas de log
+    semelhantes para isso:</para>
 
     <para><programlisting>00000017 Operator 2019-11-20 16:58:39.617 17056 17074 
-         "WhiteListing is disabled, ignoring: Access denied! 
-         [client ip=192.168.9.12, role=DaliDiag] not whitelisted"</programlisting></para>
+         "AllowListing is disabled, ignoring: Access denied! 
+         [client ip=192.168.9.12, role=DaliDiag] not Allowlisted"</programlisting></para>
 
     <para/>
 
     <sect3>
-      <title>Recuperar a Whitelist (Lista de permissões)</title>
+      <title>Recuperar a Allowlist (Lista de permissões)</title>
 
       <para>Para recuperar toda a lista de desbloqueio (implícita e
       explícita), use a linha de comando <emphasis
       role="bold">dalidiag</emphasis> (encontrada em
       /opt/HPCCSystems/bin/.)</para>
 
-      <para><programlisting>dalidiag &lt;dali-ip&gt; -whitelist</programlisting></para>
+      <para><programlisting>dalidiag &lt;dali-ip&gt; -Allowlist</programlisting></para>
     </sect3>
 
     <sect3>
       <title>Atualizar Dali sem reiniciar</title>
 
-      <para>Para atualizar as informações da whitelist no Dali sem reiniciar,
+      <para>Para atualizar as informações da Allowlist no Dali sem reiniciar,
       use o comando <emphasis role="bold">updtdalienv</emphasis>.</para>
 
       <para>(encotrado em /opt/HPCCSystems/bin/)</para>
@@ -274,30 +274,30 @@ TreeView, UpdateEnv, XRef</programlisting></para>
       permissões suplementar</title>
 
       <para>Recomendamos usar o comando <emphasis
-      role="bold">envmod</emphasis> para adicionar entradas da Whitelist ao
+      role="bold">envmod</emphasis> para adicionar entradas da Allowlist ao
       seu arquivo environment.xml. O utilitário envmod pode ser encontrado em
       /opt/HPCCSystems/bin/.</para>
 
       <para>Use um arquivo de modelo, como o exemplo a seguir:</para>
 
       <para><programlisting>{
-    "name" : "AddWhiteList",
+    "name" : "AddAllowList",
     "description" : "Add whilelist to environment",
     "type" : "modification",
     "operations" : [
         {
             "action" : "find",
-            "target_path" : "/Environment/Software/DaliServerProcess/Whitelist",
+            "target_path" : "/Environment/Software/DaliServerProcess/Allowlist",
             "data" : {
                 "create_if_not_found" : true,
                 "save" : {
-                    "name" : "whiteListNodeId"
+                    "name" : "AllowListNodeId"
                 }
             }
         },
         {
             "action" : "create",
-            "target_nodeid" : "{{whiteListNodeId}}",
+            "target_nodeid" : "{{AllowListNodeId}}",
             "data" : {
                 "node_type" : "Entry",
                 "attributes" : [
@@ -314,7 +314,7 @@ TreeView, UpdateEnv, XRef</programlisting></para>
         },
 {
             "action" : "create",
-            "target_nodeid" : "{{whiteListNodeId}}",
+            "target_nodeid" : "{{AllowListNodeId}}",
             "data" : {
                 "node_type" : "Entry",
                 "attributes" : [
@@ -339,10 +339,10 @@ TreeView, UpdateEnv, XRef</programlisting></para>
       <para>Exemplo de linha de comando:</para>
 
       <programlisting>sudo /opt/HPCCSystems/bin/envmod \
-     -t myWhitelistTemplate.json \
+     -t myAllowlistTemplate.json \
      -e /etc/HPCCSystems/source/environment.xml \
      -d /opt/HPCCSystems/componentfiles/configschema/xsd \
-     -o /etc/HPCCSystems/source/environmentWithWhitelist.xml</programlisting>
+     -o /etc/HPCCSystems/source/environmentWithAllowlist.xml</programlisting>
 
       <para>O parâmetro -t (ou --template) é o local do modelo.</para>
 
@@ -365,7 +365,7 @@ TreeView, UpdateEnv, XRef</programlisting></para>
 
       <para><programlisting>{
     “action” : “delete”,
-    “target_path” : “/Environment/Software/DaliServerProcess/Whitelist/Entry[@hosts=’adminnode3’]”
+    “target_path” : “/Environment/Software/DaliServerProcess/Allowlist/Entry[@hosts=’adminnode3’]”
 }
 </programlisting></para>
     </sect3>

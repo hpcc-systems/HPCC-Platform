@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
@@ -7,7 +7,7 @@
 
     <mediaobject>
       <imageobject>
-        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
       </imageobject>
     </mediaobject>
 
@@ -16,107 +16,111 @@
     </author>
 
     <legalnotice>
-      <para>Sua opinião e comentários sobre este documento são muito bem-vindos e podem ser enviados por
-      e-mail para <email>docfeedback@hpccsystems.com</email></para>
+      <para>Sua opinião e comentários sobre este documento são muito
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email></para>
 
-      <para>Inclua a frase <emphasis role="bold">Feedback
-      sobre documentação</emphasis> na linha de assunto e indique o nome do documento,
-      o número das páginas e número da versão atual no corpo da 
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre
+      documentação</emphasis> na linha de assunto e indique o nome do
+      documento, o número das páginas e número da versão atual no corpo da
       mensagem.</para>
 
-      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais registradas
-      da Reed Elsevier Properties Inc., usadas sob licença.</para>
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
+      registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
 
-      <para>HPCC Systems<superscript>®</superscript>  é uma marca registrada
-      da LexisNexis Risk Data Management Inc.</para>
+      <para>HPCC Systems<superscript>®</superscript> é uma marca registrada da
+      LexisNexis Risk Data Management Inc.</para>
 
-      <para>Os demais produtos, logotipos e serviços podem ser marcas comerciais ou
-      registradas de suas respectivas empresas.</para>
+      <para>Os demais produtos, logotipos e serviços podem ser marcas
+      comerciais ou registradas de suas respectivas empresas.</para>
 
-      <para>Todos os nomes e dados de exemplo usados neste manual são fictícios.  Qualquer
-      semelhança com pessoas reais, vivas ou mortas, é mera
-      coincidência.</para>
+      <para>Todos os nomes e dados de exemplo usados neste manual são
+      fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
+      mera coincidência.</para>
 
-      <para></para>
+      <para/>
     </legalnotice>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='FooterInfo'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='DateVer'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
 
     <xi:include href="common/Version.xml"
                 xpointer="xpointer(//*[@id='Copyright'])"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <mediaobject role="logo">
       <imageobject>
-        <imagedata fileref="images/LN_Rightjustified.jpg" />
+        <imagedata fileref="images/LN_Rightjustified.jpg"/>
       </imageobject>
     </mediaobject>
   </bookinfo>
 
   <chapter id="Buildin-HPCC-from-Source">
-    <title>Utilizando o Configuration Manager (Gerenciador de Configurações).</title>
+    <title>Utilizando o Configuration Manager (Gerenciador de
+    Configurações).</title>
 
     <para>O Configuration Manager é o utilitário com o qual configuramos a
-    plataforma HPCC Systems. A configuração da plataforma HPCC Systems é armazenada em um arquivo XML
-    de nome <emphasis role="bold">environment.xml</emphasis>.
-    Ao instalar um pacote, um environment.xml single-node padrão é
-    gerado. Depois disso,    é possível usar o Configuration Manager para modificar 
-    , adicionar nós e componentes de configuração.</para>
+    plataforma HPCC Systems. A configuração da plataforma HPCC Systems é
+    armazenada em um arquivo XML de nome <emphasis
+    role="bold">environment.xml</emphasis>. Ao instalar um pacote, um
+    environment.xml single-node padrão é gerado. Depois disso, é possível usar
+    o Configuration Manager para modificar , adicionar nós e componentes de
+    configuração.</para>
 
-    <para>O assistente do Configuration Manager cria um arquivo semelhante, mas depois
-    que ele é gerado, você deve renomeá-lo e colocá-lo no lugar em
+    <para>O assistente do Configuration Manager cria um arquivo semelhante,
+    mas depois que ele é gerado, você deve renomeá-lo e colocá-lo no lugar em
     cada nó.</para>
 
-    <para>O Configuration Manager também oferece um <emphasis role="bold">Advanced
-    View</emphasis> que permite adicionar instâncias de componentes ou alterar
-    as configurações padrão dos componentes. Mesmo se você planejar usar a Advanced
-    View, recomendamos começar com um arquivo de configuração gerado pelo assistente e
-    utilizar a Advanced View para finalizá-lo.</para>
+    <para>O Configuration Manager também oferece um <emphasis
+    role="bold">Advanced View</emphasis> que permite adicionar instâncias de
+    componentes ou alterar as configurações padrão dos componentes. Mesmo se
+    você planejar usar a Advanced View, recomendamos começar com um arquivo de
+    configuração gerado pelo assistente e utilizar a Advanced View para
+    finalizá-lo.</para>
 
-    <para>Esta documento irá orientá-lo a configurar um ambiente do HPCC Systems
-      utilizando o Configuration Manager.</para>
+    <para>Esta documento irá orientá-lo a configurar um ambiente do HPCC
+    Systems utilizando o Configuration Manager.</para>
 
     <sect1 id="configuring-a-multi-node-system">
       <title>Executando o Configuration Manager</title>
 
-      <para>Esta documento irá orientá-lo a configurar um ambiente do HPCC Systems
-      utilizando o Configuration Manager.</para>
+      <para>Esta documento irá orientá-lo a configurar um ambiente do HPCC
+      Systems utilizando o Configuration Manager.</para>
 
-      <para>O pacote HPCC Systems já deve estar instalado em TODOS
-      os nós.</para>
+      <para>O pacote HPCC Systems já deve estar instalado em TODOS os
+      nós.</para>
 
-      <para>É possível usar qualquer ferramenta ou script de shell desejado.</para>
+      <para>É possível usar qualquer ferramenta ou script de shell
+      desejado.</para>
 
       <orderedlist>
         <listitem>
           <para>SSH para um nó em seu ambiente e fazer login como usuário com
           privilégio de administrador. Sugerimos que esse seja o primeiro nó,
-          que é um nó de suporte; no entanto, isso fica a seu
-          critério.</para>
+          que é um nó de suporte; no entanto, isso fica a seu critério.</para>
         </listitem>
 
         <listitem>
-          <para>Inicie o serviço do Configuration Manager no nó (novamente, sugerimos
-          que seja um nó de suporte e que
-          você use o mesmo nó para iniciar o Configuration Manager todas as vezes,
-          mas isso fica totalmente a seu critério).</para>
+          <para>Inicie o serviço do Configuration Manager no nó (novamente,
+          sugerimos que seja um nó de suporte e que você use o mesmo nó para
+          iniciar o Configuration Manager todas as vezes, mas isso fica
+          totalmente a seu critério).</para>
 
           <programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
 
-          <para><graphic fileref="images/gs_img_configmgrStart.jpg" /></para>
+          <para><graphic fileref="images/gs_img_configmgrStart.jpg"/></para>
         </listitem>
 
         <listitem>
-          <para>Usando um navegador de Internet, acesse a interface do Gerenciador de
-          Configurações:</para>
+          <para>Usando um navegador de Internet, acesse a interface do
+          Gerenciador de Configurações:</para>
 
           <programlisting>http://&lt;<emphasis>ip de instalação do sistema</emphasis>&gt;:8015</programlisting>
 
@@ -124,14 +128,14 @@
         </listitem>
       </orderedlist>
 
-      <para>Existem diferentes maneiras de configurar sua plataforma HPCC Systems.
-      Você pode usar o<emphasis role="bold"> assistente 
-Generate environment</emphasis>      e usar esse ambiente ou usuários experientes
-      podem usar o <emphasis role="bold">Advanced View</emphasis> para uma personalização
-      mais específica. Há também a opção de utilizar <emphasis
-      role="bold">Criar ambiente em branco (Create blank)</emphasis> para gerar um ambiente
-      vazio que você poderá então acessar e adicionar os componentes
-      desejados.</para>
+      <para>Existem diferentes maneiras de configurar sua plataforma HPCC
+      Systems. Você pode usar o<emphasis role="bold"> assistente Generate
+      environment</emphasis> e usar esse ambiente ou usuários experientes
+      podem usar o <emphasis role="bold">Advanced View</emphasis> para uma
+      personalização mais específica. Há também a opção de utilizar <emphasis
+      role="bold">Criar ambiente em branco (Create blank)</emphasis> para
+      gerar um ambiente vazio que você poderá então acessar e adicionar os
+      componentes desejados.</para>
 
       <sect2 id="Env_Wizard">
         <title>Assistente de Ambiente</title>
@@ -140,29 +144,29 @@ Generate environment</emphasis>      e usar esse ambiente ou usuários experient
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Para usar o assistente, selecione o botão <emphasis role="bold">Generate
-            new environment using wizard.</emphasis> .</para>
+            <para>Para usar o assistente, selecione o botão <emphasis
+            role="bold">Generate new environment using wizard.</emphasis>
+            .</para>
 
             <para><graphic fileref="images/GS_ConfigMgrWizStart.jpg"
-            vendor="configmgrSS" /></para>
+            vendor="configmgrSS"/></para>
           </listitem>
 
           <listitem>
             <para>Forneça um nome ao arquivo do ambiente.</para>
 
-            <para>Esse então será o nome do arquivo XML de configuração.
-            Por exemplo, nomearemos como
-            <emphasis>NewEnvironment</emphasis> e isso criará um
-            arquivo de configuração XML com o nome 
-            <emphasis>NewEnvironment.xml</emphasis> que iremos
-            usar.<emphasis> </emphasis></para>
+            <para>Esse então será o nome do arquivo XML de configuração. Por
+            exemplo, nomearemos como <emphasis>NewEnvironment</emphasis> e
+            isso criará um arquivo de configuração XML com o nome
+            <emphasis>NewEnvironment.xml</emphasis> que iremos usar.<emphasis>
+            </emphasis></para>
           </listitem>
 
           <listitem>
             <para>Pressione o botão Next.</para>
 
-            <para>Em seguida, você precisará definir os endereços IP que sua plataforma HPCC
-            Systems usará.</para>
+            <para>Em seguida, você precisará definir os endereços IP que sua
+            plataforma HPCC Systems usará.</para>
           </listitem>
 
           <listitem>
@@ -170,22 +174,23 @@ Generate environment</emphasis>      e usar esse ambiente ou usuários experient
 
             <para>Insira os endereços IP ou os hostname(s).</para>
 
-            <para>Os endereços IP podem ser especificados individualmente usando ponto e vírgula
-            como separadores. Também é possível especificar um intervalo de IPs usando um hífen
-            (por exemplo nnn.nnn.nnn.x-y). Na imagem abaixo, especificamos
-            os endereços  IP 10.239.219.1 até 10.239.219.100 usando a
-            sintaxe de intervalo, além de um IP único (10.239.219.111). Alternativamente,
-            você pode inserir os hostnames.</para>
+            <para>Os endereços IP podem ser especificados individualmente
+            usando ponto e vírgula como separadores. Também é possível
+            especificar um intervalo de IPs usando um hífen (por exemplo
+            nnn.nnn.nnn.x-y). Na imagem abaixo, especificamos os endereços IP
+            10.239.219.1 até 10.239.219.100 usando a sintaxe de intervalo,
+            além de um IP único (10.239.219.111). Alternativamente, você pode
+            inserir os hostnames.</para>
 
             <para><graphic fileref="images/GS_ConfigMgrWiz002.jpg"
-            vendor="configmgrSS" /></para>
+            vendor="configmgrSS"/></para>
           </listitem>
 
           <listitem>
             <para>Pressione o botão Next.</para>
 
-            <para>Agora você vai definir quantos nós usar para os clusters Roxie e
-            Thor.</para>
+            <para>Agora você vai definir quantos nós usar para os clusters
+            Roxie e Thor.</para>
           </listitem>
 
           <listitem>
@@ -194,7 +199,7 @@ Generate environment</emphasis>      e usar esse ambiente ou usuários experient
             <para>Insira os valores adequados conforme indicado.</para>
 
             <para><graphic fileref="images/GS_CMWiz003.jpg"
-            vendor="configmgrSS" /></para>
+            vendor="configmgrSS"/></para>
 
             <variablelist>
               <varlistentry>
@@ -210,8 +215,8 @@ Generate environment</emphasis>      e usar esse ambiente ou usuários experient
                 <term>Número de nós do cluster Roxie:</term>
 
                 <listitem>
-                  <para>Especifique o número de nós a serem usados para seu cluster
-                  Roxie. Insira zero(0) se você não quiser um cluster
+                  <para>Especifique o número de nós a serem usados para seu
+                  cluster Roxie. Insira zero(0) se você não quiser um cluster
                   Roxie.</para>
                 </listitem>
               </varlistentry>
@@ -220,9 +225,10 @@ Generate environment</emphasis>      e usar esse ambiente ou usuários experient
                 <term>Número de nós slaves do cluster Thor</term>
 
                 <listitem>
-                  <para>Especifique o número de nós slaves a serem usados para seu cluster
-                  Thor. Um nó master Thor será adicionado automaticamente.
-                  Insira zero(0) se você não quiser nenhum slave Thor.</para>
+                  <para>Especifique o número de nós slaves a serem usados para
+                  seu cluster Thor. Um nó master Thor será adicionado
+                  automaticamente. Insira zero(0) se você não quiser nenhum
+                  slave Thor.</para>
                 </listitem>
               </varlistentry>
 
@@ -231,8 +237,8 @@ Generate environment</emphasis>      e usar esse ambiente ou usuários experient
 
                 <listitem>
                   <para>Especifique o número de processos de slaves Thor para
-                  instanciar em cada nó slave. Insira zero(0) se você não quiser
-                  um cluster Thor.</para>
+                  instanciar em cada nó slave. Insira zero(0) se você não
+                  quiser um cluster Thor.</para>
                 </listitem>
               </varlistentry>
 
@@ -240,8 +246,9 @@ Generate environment</emphasis>      e usar esse ambiente ou usuários experient
                 <term>Ativar o Roxie sob demanda</term>
 
                 <listitem>
-                  <para>Especifique se você deseja permitir ou não que as consultas sejam executadas
-                  imediatamente no Roxie. (O padrão é true)</para>
+                  <para>Especifique se você deseja permitir ou não que as
+                  consultas sejam executadas imediatamente no Roxie. (O padrão
+                  é true)</para>
                 </listitem>
               </varlistentry>
             </variablelist>
@@ -257,43 +264,45 @@ Generate environment</emphasis>      e usar esse ambiente ou usuários experient
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Pressione o botão <emphasis role="bold">Finish</emphasis> para
-            aceitar esses valores ou o pressionar o botão <emphasis role="bold">Advanced
-            View</emphasis> para editar no modo avançado.</para>
+            <para>Pressione o botão <emphasis role="bold">Finish</emphasis>
+            para aceitar esses valores ou o pressionar o botão <emphasis
+            role="bold">Advanced View</emphasis> para editar no modo
+            avançado.</para>
 
-            <graphic fileref="images/GS_ConfigMgrWiz004.jpg" />
+            <graphic fileref="images/GS_ConfigMgrWiz004.jpg"/>
           </listitem>
         </orderedlist>
 
-        <para>Você agora será notificado de que concluiu o
-        assistente.</para>
+        <para>Você agora será notificado de que concluiu o assistente.</para>
 
-        <para><graphic fileref="images/GS_ConfigMgrWiz005.jpg" /></para>
+        <para><graphic fileref="images/GS_ConfigMgrWiz005.jpg"/></para>
 
-        <para>Neste ponto, você criou um arquivo com o nome NewEnvironment.xml no
-        diretório <emphasis role="bold">/etc/HPCCSystems/source</emphasis>
-        </para>
+        <para>Neste ponto, você criou um arquivo com o nome NewEnvironment.xml
+        no diretório <emphasis
+        role="bold">/etc/HPCCSystems/source</emphasis></para>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-            <colspec colwidth="49.50pt" />
+            <colspec colwidth="49.50pt"/>
 
-            <colspec />
+            <colspec/>
 
             <tbody>
               <row>
-                <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
+                <entry><inlinegraphic fileref="images/OSSgr3.png"/></entry>
 
-                <entry>Lembre-se de que a configuração dos seu HPCC Systems pode
-                ser diferente dependendo das suas necessidades. Por exemplo, você pode não
-                precisar de um Roxie ou pode precisar de vários clusters Roxie menores.
-                Além disso, em um sistema de produção [Thor] seria necessário assegurar
-                que os nós do Thor e Roxie sejam dedicados e que não contenham nenhum outro
-                processo em execução. Este documento visa mostrar
-                como usar as ferramentas de configuração. Planejamento de capacidade e
-                design do sistema estão disponíveis em um módulo de treinamento.</entry>
+                <entry>Lembre-se de que a configuração dos seu HPCC Systems
+                pode ser diferente dependendo das suas necessidades. Por
+                exemplo, você pode não precisar de um Roxie ou pode precisar
+                de vários clusters Roxie menores. Além disso, em um sistema de
+                produção [Thor] seria necessário assegurar que os nós do Thor
+                e Roxie sejam dedicados e que não contenham nenhum outro
+                processo em execução. Este documento visa mostrar como usar as
+                ferramentas de configuração. Planejamento de capacidade e
+                design do sistema estão disponíveis em um módulo de
+                treinamento.</entry>
               </row>
             </tbody>
           </tgroup>
@@ -308,23 +317,23 @@ Generate environment</emphasis>      e usar esse ambiente ou usuários experient
 
               <para>Pare o HPCC Systems.</para>
 
-              <para>Se estiver em execução, pare a plataforma HPCC Systems (em todos os
-              nós), usando um comando como este:</para>
+              <para>Se estiver em execução, pare a plataforma HPCC Systems (em
+              todos os nós), usando um comando como este:</para>
 
               <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
                           xpointer="element(/1)"
-                          xmlns:xi="http://www.w3.org/2001/XInclude" />
+                          xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
               <variablelist>
                 <varlistentry>
                   <term>Observação:</term>
 
                   <listitem>
-                    <para>Você pode ter um sistema de múltiplos nós e um script personalizado
-                    como aquele ilustrado no anexo <emphasis
-                    role="bluebold">Instalando e
-                Executando a plataforma HPCC Systems</emphasis> para iniciar e parar o seu
-                    sistema. Se este for o caso, use o comando adequado
+                    <para>Você pode ter um sistema de múltiplos nós e um
+                    script personalizado como aquele ilustrado no anexo
+                    <emphasis role="bluebold">Instalando e Executando a
+                    plataforma HPCC Systems</emphasis> para iniciar e parar o
+                    seu sistema. Se este for o caso, use o comando adequado
                     para parar o sistema em cada nó.</para>
                   </listitem>
                 </varlistentry>
@@ -332,17 +341,17 @@ Generate environment</emphasis>      e usar esse ambiente ou usuários experient
 
               <para><informaltable colsep="1" frame="all" rowsep="1">
                   <tgroup cols="2">
-                    <colspec colwidth="49.50pt" />
+                    <colspec colwidth="49.50pt"/>
 
-                    <colspec />
+                    <colspec/>
 
                     <tbody>
                       <row>
                         <entry><inlinegraphic
-                        fileref="images/caution.png" /></entry>
+                        fileref="images/caution.png"/></entry>
 
-                        <entry>Certifique-se de que a plataforma HPCC Systems esteja parada
-                        antes de tentar copiar o arquivo 
+                        <entry>Certifique-se de que a plataforma HPCC Systems
+                        esteja parada antes de tentar copiar o arquivo
                         environment.xml.</entry>
                       </row>
                     </tbody>
@@ -361,21 +370,24 @@ sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/source/environ
                   <term>Observação:</term>
 
                   <listitem>
-                    <para>O arquivo environment.xml está localizado no diretório
-                    <emphasis role="bold">/etc/HPCCSystems/</emphasis>
-                    . O Configuration Manager funciona em arquivos no diretório <emphasis
-                    role="bold">/etc/HPCCSystems/source</emphasis> .
-                    É necessário copiar deste local para criar um arquivo
+                    <para>O arquivo environment.xml está localizado no
+                    diretório <emphasis
+                    role="bold">/etc/HPCCSystems/</emphasis> . O Configuration
+                    Manager funciona em arquivos no diretório <emphasis
+                    role="bold">/etc/HPCCSystems/source</emphasis> . É
+                    necessário copiar deste local para criar um arquivo
                     environment.xml ativo.</para>
                   </listitem>
                 </varlistentry>
               </variablelist>
 
-              <para>Também é possível optar por dar um nome mais
-              descritivo ao arquivo do ambiente para ajudar a distinguir quaisquer diferenças.</para>
+              <para>Também é possível optar por dar um nome mais descritivo ao
+              arquivo do ambiente para ajudar a distinguir quaisquer
+              diferenças.</para>
 
-              <para>Contar com arquivos do ambiente no controle de origem é uma boa
-              maneira de arquivar suas configurações de ambiente.</para>
+              <para>Contar com arquivos do ambiente no controle de origem é
+              uma boa maneira de arquivar suas configurações de
+              ambiente.</para>
             </listitem>
 
             <listitem>
@@ -386,7 +398,7 @@ sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/source/environ
               <programlisting># por exemplo
 sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
 
-              <para></para>
+              <para/>
             </listitem>
 
             <listitem>
@@ -395,12 +407,13 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               <emphasis role="bold">/etc/HPCCSystems/</emphasis> em
               <emphasis>cada</emphasis> nó.</para>
 
-              <para>Você pode usa um script para forçar o arquivo XML
-              para todos os nós. Consulte a seção <emphasis>Scripts de exemplo</emphasis> no
-              apêndice <emphasis role="bluebold">Instalando e
-              Executando a plataforma HPCC Systems</emphasis> . É possível usar os
-              scripts como um modelo para criar seu próprio script e copiar
-              o arquivo environment.xml para todos os seus nós.</para>
+              <para>Você pode usa um script para forçar o arquivo XML para
+              todos os nós. Consulte a seção <emphasis>Scripts de
+              exemplo</emphasis> no apêndice <emphasis
+              role="bluebold">Instalando e Executando a plataforma HPCC
+              Systems</emphasis> . É possível usar os scripts como um modelo
+              para criar seu próprio script e copiar o arquivo environment.xml
+              para todos os seus nós.</para>
             </listitem>
 
             <listitem>
@@ -415,43 +428,43 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
   <chapter>
     <title>Configuration Manager Advanced View</title>
 
-    <para>Para o usuário avançado, a Visualização Avançada (Advanced View) oferece acesso para adicionar
-    instâncias adicionais de componentes ou fazer configurações para
-    componentes individuais.</para>
+    <para>Para o usuário avançado, a Visualização Avançada (Advanced View)
+    oferece acesso para adicionar instâncias adicionais de componentes ou
+    fazer configurações para componentes individuais.</para>
 
     <sect1 id="configuring-advanced-setup">
       <title>Usando o Configuration Manager em Advanced Mode</title>
 
       <para>Esta seção mostra algumas das opções de configuração no Advanced
       Mode. Há diferentes maneiras para configurar o seu HPCC Systems. Se você
-      não for um usuário experiente, poderá usar o assistente de geração de ambiente
-      discutido na seção anterior. As etapas a seguir detalharão a
+      não for um usuário experiente, poderá usar o assistente de geração de
+      ambiente discutido na seção anterior. As etapas a seguir detalharão a
       configuração avançada.</para>
 
       <orderedlist>
         <listitem>
-          <para>SSH para um nó em seu ambiente e fazer login como usuário
-          com privilégio de administrador.</para>
+          <para>SSH para um nó em seu ambiente e fazer login como usuário com
+          privilégio de administrador.</para>
         </listitem>
 
         <listitem>
-          <para>Se estiver em execução, pare a plataforma HPCC Systems usando este
-          comando em cada nó:</para>
+          <para>Se estiver em execução, pare a plataforma HPCC Systems usando
+          este comando em cada nó:</para>
 
           <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/SysDStop.xml"
                       xpointer="element(/1)"
-                      xmlns:xi="http://www.w3.org/2001/XInclude" />
+                      xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
           <variablelist>
             <varlistentry>
               <term>Observação:</term>
 
               <listitem>
-                <para>Se você tiver uma sistema amplo com múltiplos nós, você poderá
-              utilizar um script par realizar essa etapa. Consulte a seção
-                <emphasis>Scripts de exemplo</emphasis> no
-                anexo do documento <emphasis role="bluebold">Instalando e executando
-                a plataforma de sistemas HPCC</emphasis> .</para>
+                <para>Se você tiver uma sistema amplo com múltiplos nós, você
+                poderá utilizar um script par realizar essa etapa. Consulte a
+                seção <emphasis>Scripts de exemplo</emphasis> no anexo do
+                documento <emphasis role="bluebold">Instalando e executando a
+                plataforma de sistemas HPCC</emphasis> .</para>
               </listitem>
             </varlistentry>
           </variablelist>
@@ -460,17 +473,18 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               <?dbfo keep-together="always"?>
 
               <tgroup cols="2">
-                <colspec colwidth="49.50pt" />
+                <colspec colwidth="49.50pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
                     <entry><inlinegraphic
-                    fileref="images/OSSgr3.png" /></entry>
+                    fileref="images/OSSgr3.png"/></entry>
 
-                    <entry>Você pode usar este comando para confirmar que os processos do HPCC Systems
-                    estão parados: <para><programlisting>sudo systemctl status hpccsystems-platform.target</programlisting></para></entry>
+                    <entry>Você pode usar este comando para confirmar que os
+                    processos do HPCC Systems estão parados:
+                    <para><programlisting>sudo systemctl status hpccsystems-platform.target</programlisting></para></entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -484,12 +498,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
 
-          <para><graphic fileref="images/gs_img_configmgrStart.jpg" /></para>
+          <para><graphic fileref="images/gs_img_configmgrStart.jpg"/></para>
         </listitem>
 
         <listitem>
-          <para>Usando um navegador de Internet, acesse a interface do Gerenciador de
-          Configurações:</para>
+          <para>Usando um navegador de Internet, acesse a interface do
+          Gerenciador de Configurações:</para>
 
           <programlisting>http://&lt;<emphasis>ip de instalação do sistema</emphasis>&gt;:8015</programlisting>
 
@@ -497,12 +511,14 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </listitem>
 
         <listitem>
-          <para>Selecione <emphasis role="bold">Advanced View</emphasis>, em seguida
-          pressione o botão <emphasis role="bold">Next </emphasis>.</para>
+          <para>Selecione <emphasis role="bold">Advanced View</emphasis>, em
+          seguida pressione o botão <emphasis role="bold">Next
+          </emphasis>.</para>
 
-          <para>Há diferentes maneiras para configurar o seu HPCC Systems. Se você
-          não for um usuário experiente, poderá usar o assistente Generate environment (geração de ambiente)
-          discutido na seção anterior.</para>
+          <para>Há diferentes maneiras para configurar o seu HPCC Systems. Se
+          você não for um usuário experiente, poderá usar o assistente
+          Generate environment (geração de ambiente) discutido na seção
+          anterior.</para>
         </listitem>
 
         <listitem>
@@ -512,8 +528,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           no diretório /etc/HPCCSystems/source/.</para>
 
           <para>O sistema verificará o arquivo de ambiente atual e, se uma
-          correspondência for encontrada aqui, ele destacará em azul o arquivo de ambiente atual
-          em uso.</para>
+          correspondência for encontrada aqui, ele destacará em azul o arquivo
+          de ambiente atual em uso.</para>
         </listitem>
 
         <listitem>
@@ -521,7 +537,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para>Pressione o botão <emphasis role="bold">Next</emphasis> .
           <graphic fileref="images/CM-WizStart.jpg"
-          vendor="configmgrSS" /></para>
+          vendor="configmgrSS"/></para>
         </listitem>
 
         <listitem>
@@ -531,23 +547,24 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               <?dbfo keep-together="always"?>
 
               <tgroup cols="2">
-                <colspec colwidth="49.50pt" />
+                <colspec colwidth="49.50pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
                     <entry><inlinegraphic
-                    fileref="images/OSSgr3.png" /></entry>
+                    fileref="images/OSSgr3.png"/></entry>
 
-                    <entry>O acesso padrão é somente leitura. Muitas opções estão disponíveis apenas
-                    quando o acesso à gravação estiver ativado. <para>Obtenha acesso
-                    de gravação marcando a caixa de seleção <emphasis role="bold">Write
-                    Access</emphasis> . </para><para>Desmarcar esta
-                    caixa retorna o ambiente para o modo somente leitura. Todos os itens de
-                    menu estão desativados no modo somente leitura. </para><para>Fechar
-                    a página da Web remove automaticamente todos os bloqueios de acesso de
-                    gravação.</para></entry>
+                    <entry>O acesso padrão é somente leitura. Muitas opções
+                    estão disponíveis apenas quando o acesso à gravação
+                    estiver ativado. <para>Obtenha acesso de gravação marcando
+                    a caixa de seleção <emphasis role="bold">Write
+                    Access</emphasis> . </para><para>Desmarcar esta caixa
+                    retorna o ambiente para o modo somente leitura. Todos os
+                    itens de menu estão desativados no modo somente leitura.
+                    </para><para>Fechar a página da Web remove automaticamente
+                    todos os bloqueios de acesso de gravação.</para></entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -555,33 +572,34 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </listitem>
 
         <listitem>
-          <para>Verifique a caixa <emphasis role="bold">Write Access</emphasis>
-          .</para>
+          <para>Verifique a caixa <emphasis role="bold">Write
+          Access</emphasis> .</para>
 
           <para><graphic fileref="images/CM-img101.jpg"
-          vendor="configmgrSS" />O <emphasis role="bold">botão</emphasis>
+          vendor="configmgrSS"/>O <emphasis role="bold">botão</emphasis>
           Save<inlinegraphic fileref="images/GS-img01c.png"
-          vendor="configmgrSS" /> valida e salva o ambiente.</para>
+          vendor="configmgrSS"/> valida e salva o ambiente.</para>
 
-          <para>O<emphasis role="bold"> botão</emphasis>
-          Save Environment As<inlinegraphic fileref="images/CM-img181.jpg"
-          vendor="configmgrSS" /> valida e permite especificar o
-          nome do arquivo do ambiente a ser salvo.</para>
+          <para>O<emphasis role="bold"> botão</emphasis> Save Environment
+          As<inlinegraphic fileref="images/CM-img181.jpg"
+          vendor="configmgrSS"/> valida e permite especificar o nome do
+          arquivo do ambiente a ser salvo.</para>
 
-          <para>O <emphasis role="bold">botão</emphasis>
-          Validate Environment<inlinegraphic fileref="images/GS-img01d.png"
-          vendor="configmgrSS" /> apenas valida o ambiente atual
-          , incluindo todas as alterações que ainda não foram salvas.</para>
+          <para>O <emphasis role="bold">botão</emphasis> Validate
+          Environment<inlinegraphic fileref="images/GS-img01d.png"
+          vendor="configmgrSS"/> apenas valida o ambiente atual , incluindo
+          todas as alterações que ainda não foram salvas.</para>
 
           <para>O <emphasis role="bold">botão</emphasis>Open Environment
-          <inlinegraphic fileref="images/CM-img18.jpg" vendor="configmgrSS" />
-          permite que você abra um novo arquivo de ambiente para trabalhar.</para>
+          <inlinegraphic fileref="images/CM-img18.jpg" vendor="configmgrSS"/>
+          permite que você abra um novo arquivo de ambiente para
+          trabalhar.</para>
 
-          <para>O <emphasis role="bold">botão </emphasis>Wizard
-          <inlinegraphic fileref="images/CM-img19.jpg" vendor="configmgrSS" />
-          exibirá o formulário de seleção do Configuration Manager, que permitirá
-          criar ou visualizar um arquivo de ambiente no qual você também
-          pode iniciar o assistente de configuração.</para>
+          <para>O <emphasis role="bold">botão </emphasis>Wizard <inlinegraphic
+          fileref="images/CM-img19.jpg" vendor="configmgrSS"/> exibirá o
+          formulário de seleção do Configuration Manager, que permitirá criar
+          ou visualizar um arquivo de ambiente no qual você também pode
+          iniciar o assistente de configuração.</para>
 
           <para>Esses botões só estão habilitados no modo Write Access.</para>
         </listitem>
@@ -590,20 +608,20 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       <sect2 role="brk">
         <title>Visualizar XML</title>
 
-        <para>Na exibição avançada do Configuration Manager, você pode
-        optar por trabalhar com a XML View (Visualização em XML).</para>
+        <para>Na exibição avançada do Configuration Manager, você pode optar
+        por trabalhar com a XML View (Visualização em XML).</para>
 
-        <para>Para ver a configuração na Visualização XML, clique no
-        cabeçalho Environment no painel Navigator, no lado esquerdo.</para>
+        <para>Para ver a configuração na Visualização XML, clique no cabeçalho
+        Environment no painel Navigator, no lado esquerdo.</para>
 
-        <para><graphic fileref="images/CM-120.jpg" />Você pode acessar todos
-        os atributos através da XML View.</para>
+        <para><graphic fileref="images/CM-120.jpg"/>Você pode acessar todos os
+        atributos através da XML View.</para>
 
-        <para>Se você deseja adicionar um atributo que não existe, clique com o botão direito
-        do mouse em um dos componentes e, em seguida, escolha adicionar um
-        atributo.</para>
+        <para>Se você deseja adicionar um atributo que não existe, clique com
+        o botão direito do mouse em um dos componentes e, em seguida, escolha
+        adicionar um atributo.</para>
 
-        <para><graphic fileref="images/CM-121.jpg" /></para>
+        <para><graphic fileref="images/CM-121.jpg"/></para>
       </sect2>
     </sect1>
 
@@ -622,7 +640,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           Navigator no lado esquerdo.</para>
 
           <para><graphic fileref="images/CM-img01.jpg"
-          vendor="configmgrSS" /></para>
+          vendor="configmgrSS"/></para>
         </listitem>
 
         <listitem>
@@ -633,11 +651,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Clique com o botão direito do mouse em um dos computadores listados e selecione New
-          Range (Novo Intervalo).</para>
+          <para>Clique com o botão direito do mouse em um dos computadores
+          listados e selecione New Range (Novo Intervalo).</para>
 
           <para><graphic fileref="images/CM-img02.jpg"
-          vendor="configmgrSS" /></para>
+          vendor="configmgrSS"/></para>
         </listitem>
 
         <listitem>
@@ -645,8 +663,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <itemizedlist>
             <listitem>
-              <para>Name Prefix - qualquer nome que ajudará você a identificar o
-              nó ou o intervalo</para>
+              <para>Name Prefix - qualquer nome que ajudará você a identificar
+              o nó ou o intervalo</para>
             </listitem>
 
             <listitem>
@@ -656,12 +674,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <listitem>
               <para>Stop IP Address</para>
 
-              <para>Os endereços IP podem ser especificados em um intervalo, se
-              todos os endereços IP de seu host forem numerados consecutivamente. Se os endereços IP
-              não forem sequenciais, você deve repetir o processo para
-              cada endereço IP individual e apenas adicionar o endereço IP no campo de endereço IP
-              de início e parada. Você precisará
-              repetir o processo para cada nó.</para>
+              <para>Os endereços IP podem ser especificados em um intervalo,
+              se todos os endereços IP de seu host forem numerados
+              consecutivamente. Se os endereços IP não forem sequenciais, você
+              deve repetir o processo para cada endereço IP individual e
+              apenas adicionar o endereço IP no campo de endereço IP de início
+              e parada. Você precisará repetir o processo para cada nó.</para>
             </listitem>
           </itemizedlist>
         </listitem>
@@ -675,24 +693,23 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           adicionar.</para>
 
           <para><inlinegraphic fileref="images/CM-img03.jpg"
-          vendor="configmgrSS" /></para>
+          vendor="configmgrSS"/></para>
 
-          <para>Em seguida, edite cada instância do componente System Server e defina-a
-          como um nó recém-definido.</para>
+          <para>Em seguida, edite cada instância do componente System Server e
+          defina-a como um nó recém-definido.</para>
 
           <!--***The steps that follow are using one component per node. You can allocate more components per node, if needed.-->
         </listitem>
 
         <listitem>
-          <para>Clique no ícone de <inlinegraphic fileref="images/GS-img01c.png" />
-          disco para salvar.</para>
+          <para>Clique no ícone de <inlinegraphic
+          fileref="images/GS-img01c.png"/> disco para salvar.</para>
         </listitem>
 
         <listitem>
           <para>Expanda a seção <emphasis role="bold">Software</emphasis>, se
-          necessário, no painel Navigator à esquerda, clicando no 
-botão <inlinegraphic fileref="images/expandButton.png" />
-          .</para>
+          necessário, no painel Navigator à esquerda, clicando no botão
+          <inlinegraphic fileref="images/expandButton.png"/> .</para>
         </listitem>
       </orderedlist>
     </sect1>
@@ -701,36 +718,36 @@ botão <inlinegraphic fileref="images/expandButton.png" />
       <title>Seção Software</title>
 
       <para>Use a seção de componentes de software para configurar os
-      componentes de software da plataforma HPCC Systems. A maioria dos componentes de software são
-      processos em      execução reais; no entanto, algumas são apenas definições usadas pelo
-      sistema. Essas definições são usadas pela operação gerador de
-      configuração.</para>
+      componentes de software da plataforma HPCC Systems. A maioria dos
+      componentes de software são processos em execução reais; no entanto,
+      algumas são apenas definições usadas pelo sistema. Essas definições são
+      usadas pela operação gerador de configuração.</para>
 
-      <para>Itens que aparecem em <emphasis role="red">vermelho</emphasis> indicam
-      valores opcionais. Eles são gravados apenas no ambiente se você adicionar
-      ou alterar esse valor. Se não forem tocados, eles não aparecerão no arquivo
-      XML do ambiente.</para>
+      <para>Itens que aparecem em <emphasis role="red">vermelho</emphasis>
+      indicam valores opcionais. Eles são gravados apenas no ambiente se você
+      adicionar ou alterar esse valor. Se não forem tocados, eles não
+      aparecerão no arquivo XML do ambiente.</para>
 
       <sect2 role="brk">
         <title>Backupnode</title>
 
         <para>O Backupnode permite fazer backup de clusters Thor em intervalos
-        regulares. O componente Backupnode é uma maneira de permitir que os administradores
-        gerenciem o processo de backupnode sem usar um job cron.</para>
+        regulares. O componente Backupnode é uma maneira de permitir que os
+        administradores gerenciem o processo de backupnode sem usar um job
+        cron.</para>
 
-        <para>Para configurar backups de nó Thor agendados, adicione o componente
-        backupnode, escolha a instância de hardware para executá-lo e, em seguida, adicione grupos Thor
-        a ele. <graphic fileref="images/CM-img21.jpg"
-        vendor="configmgrSS" /></para>
+        <para>Para configurar backups de nó Thor agendados, adicione o
+        componente backupnode, escolha a instância de hardware para executá-lo
+        e, em seguida, adicione grupos Thor a ele. <graphic
+        fileref="images/CM-img21.jpg" vendor="configmgrSS"/></para>
 
         <para><orderedlist>
             <listitem>
-              <para>Clique com o botão direito do mouse no componente <emphasis
-              role="bold">Software</emphasis> no painel <emphasis
-              role="bold">Navigator</emphasis> (à direita),
-              escolha <emphasis role="bold">New Components</emphasis> e 
-              <emphasis role="bold">backupnode</emphasis> na lista
-              suspensa.</para>
+              <para>Clique com o botão direito do mouse no componente
+              <emphasis role="bold">Software</emphasis> no painel <emphasis
+              role="bold">Navigator</emphasis> (à direita), escolha <emphasis
+              role="bold">New Components</emphasis> e <emphasis
+              role="bold">backupnode</emphasis> na lista suspensa.</para>
             </listitem>
 
             <listitem>
@@ -742,30 +759,31 @@ botão <inlinegraphic fileref="images/expandButton.png" />
               <para>Clique com o botão direito do mouse na coluna do <emphasis
               role="bold">computador</emphasis> e escolha <emphasis
               role="bold">Add Instances</emphasis>...<graphic
-              fileref="images/CM-img22.jpg" vendor="configmgrSS" /></para>
+              fileref="images/CM-img22.jpg" vendor="configmgrSS"/></para>
             </listitem>
 
             <listitem>
-              <para>Selecione o computador para o componente backupnode ou pressione 
-              <emphasis role="bold">Add Hardware</emphasis> para adicionar uma nova
-              instância de computador. Você sempre deseja executar o backupnode no
-              Thor mestre do cluster.</para>
+              <para>Selecione o computador para o componente backupnode ou
+              pressione <emphasis role="bold">Add Hardware</emphasis> para
+              adicionar uma nova instância de computador. Você sempre deseja
+              executar o backupnode no Thor mestre do cluster.</para>
             </listitem>
 
             <listitem>
-              <para>Selecione a<emphasis role="bold">              aba 
-Thor Node Groups</emphasis>.</para>
+              <para>Selecione a<emphasis role="bold"> aba Thor Node
+              Groups</emphasis>.</para>
             </listitem>
 
             <listitem>
               <para>Clique com o botão direito do mouse na coluna <emphasis
-              role="bold">Interval</emphasis> e escolha o intervalo
-              e/ou o grupo Thor para fazer o backup.</para>
+              role="bold">Interval</emphasis> e escolha o intervalo e/ou o
+              grupo Thor para fazer o backup.</para>
             </listitem>
 
             <listitem>
-              <para>Clique no hiperlink <inlinegraphic fileref="images/GS-img01c.png" />
-              clique no ícone de disco para salvar.</para>
+              <para>Clique no hiperlink <inlinegraphic
+              fileref="images/GS-img01c.png"/> clique no ícone de disco para
+              salvar.</para>
             </listitem>
           </orderedlist>Os locais de backup padrão são:</para>
 
@@ -784,8 +802,8 @@ Thor Node Groups</emphasis>.</para>
           <para>
             <orderedlist>
               <listitem>
-                <para>Selecione <emphasis role="bold">Dali Server</emphasis> no painel
-                Navigator no lado esquerdo.</para>
+                <para>Selecione <emphasis role="bold">Dali Server</emphasis>
+                no painel Navigator no lado esquerdo.</para>
               </listitem>
 
               <listitem>
@@ -795,14 +813,15 @@ Thor Node Groups</emphasis>.</para>
               <listitem>
                 <?dbfo keep-together="always"?>
 
-                <para>Na coluna do computador, escolha um nó da lista suspensa,
-              conforme mostrado abaixo:<graphic fileref="images/CM-img04.jpg"
-                vendor="configmgrSS" /></para>
+                <para>Na coluna do computador, escolha um nó da lista
+                suspensa, conforme mostrado abaixo:<graphic
+                fileref="images/CM-img04.jpg" vendor="configmgrSS"/></para>
               </listitem>
 
               <listitem>
                 <para>Clique no <inlinegraphic
-                fileref="images/GS-img01c.png" /> ícone do disco para salvar os atributos do</para>
+                fileref="images/GS-img01c.png"/> ícone do disco para salvar os
+                atributos do</para>
               </listitem>
             </orderedlist>
           </para>
@@ -814,17 +833,17 @@ Thor Node Groups</emphasis>.</para>
           <para>Esta seção descreve os atributos do DaliServer.</para>
 
           <para>
-            <graphic fileref="images/CM-img04-1.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img04-1.jpg" vendor="configmgrSS"/>
           </para>
 
-          <para />
+          <para/>
 
           <!--configMgr-Dali-Server-Include-XXX1-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/dali.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='da.t1'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
@@ -837,17 +856,17 @@ Thor Node Groups</emphasis>.</para>
           manipula o armazenamento de dados do sistema.</para>
 
           <para>
-            <graphic fileref="images/CM-img04-2.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img04-2.jpg" vendor="configmgrSS"/>
           </para>
 
-          <para />
+          <para/>
 
           <!--configMgr-Dali-Server-Include-XXX2-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/dali.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='da.t2'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
@@ -859,7 +878,7 @@ Thor Node Groups</emphasis>.</para>
           <para>Esta seção descreve a aba DaliServer LDAP.</para>
 
           <para>
-            <graphic fileref="images/CM-img04-4.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img04-4.jpg" vendor="configmgrSS"/>
           </para>
 
           <!--configMgr-DaliServer-LDAP-Include-XXX3-->
@@ -867,7 +886,7 @@ Thor Node Groups</emphasis>.</para>
           <para>
             <xi:include href="../XMLGeneration/xml/dali.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='da.t4'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
@@ -875,16 +894,17 @@ Thor Node Groups</emphasis>.</para>
           <title>Notas sobre DaliServer</title>
 
           <para>Esta aba permite que você adicione notas pertinentes à
-          configuração do componente. Isso pode ser útil para manter um registro
-          de alterações e para comunicar essas informações aos parceiros.</para>
+          configuração do componente. Isso pode ser útil para manter um
+          registro de alterações e para comunicar essas informações aos
+          parceiros.</para>
         </sect3>
       </sect2>
 
       <sect2 id="DaliServerPlugin" role="brk">
         <title>DaliServerPlugin</title>
 
-        <para>DaliServerPlugin permite que você adicione a funcionalidade do plugin a um
-        servidor Dail.</para>
+        <para>DaliServerPlugin permite que você adicione a funcionalidade do
+        plugin a um servidor Dail.</para>
 
         <sect3>
           <title>Atributos DaliServerPlugin</title>
@@ -892,7 +912,7 @@ Thor Node Groups</emphasis>.</para>
           <para>Esta seção descreve os atributos do DaliServerPlugin.</para>
 
           <para>
-            <graphic fileref="images/Cass2.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/Cass2.jpg" vendor="configmgrSS"/>
           </para>
 
           <!--configMgr-daplugin-Include-->
@@ -900,7 +920,7 @@ Thor Node Groups</emphasis>.</para>
           <para>
             <xi:include href="../XMLGeneration/xml/daliplugin.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='daplug.t'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
@@ -910,47 +930,47 @@ Thor Node Groups</emphasis>.</para>
           <para>Esta seção descreve as opções do DaliServerPlugin.</para>
 
           <para>Essas opções estão disponíveis para o DaliServerplugin ao
-          configurar um servidor Casandra. Consulte o Guia do Administrador do Sistema
-          para obter mais detalhes sobre como configurar um servidor Cassandra como um datastore
-          do sistema.</para>
+          configurar um servidor Casandra. Consulte o Guia do Administrador do
+          Sistema para obter mais detalhes sobre como configurar um servidor
+          Cassandra como um datastore do sistema.</para>
 
           <para>
             <informaltable colsep="1" frame="all" id="daliplugoptionstable"
                            rowsep="1">
               <tgroup cols="2">
-                <colspec align="left" colwidth="125.55pt" />
+                <colspec align="left" colwidth="125.55pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
                     <entry>randomWuidSuffix</entry>
 
-                    <entry>Um valor inteiro que indica quantos dígitos aleatórios
-                    para acrescentar às workunits. Defina isso se você precisar criar
-                    workunits em uma taxa alta para reduzir o risco de
-                    colisões (o que retardaria o processo de criação
-                    de um nova workunit ID exclusiva).</entry>
+                    <entry>Um valor inteiro que indica quantos dígitos
+                    aleatórios para acrescentar às workunits. Defina isso se
+                    você precisar criar workunits em uma taxa alta para
+                    reduzir o risco de colisões (o que retardaria o processo
+                    de criação de um nova workunit ID exclusiva).</entry>
                   </row>
 
                   <row>
                     <entry>traceLevel</entry>
 
-                    <entry>Um valor inteiro que indica quanto de rastreio para a
-                    saída das operações da workunit do Cassandra. Defina para zero ou
-                    não defina em uso normal.</entry>
+                    <entry>Um valor inteiro que indica quanto de rastreio para
+                    a saída das operações da workunit do Cassandra. Defina
+                    para zero ou não defina em uso normal.</entry>
                   </row>
 
                   <row>
                     <entry>partitions</entry>
 
                     <entry>Um valor inteiro indicando quantos modos de
-                    particionar os dados em um cluster do Cassandra. O padrão é
-                    2. O valor só entra em vigor quando um novo repositório de workunit do Cassandra
-                    é criado. Valores maiores permitem
-                    escalar para um armazenamento mais distribuído, mas à custa de
-                    alguma sobrecarga em ambientes menores, onde o escalonamento não é
-                    necessário.</entry>
+                    particionar os dados em um cluster do Cassandra. O padrão
+                    é 2. O valor só entra em vigor quando um novo repositório
+                    de workunit do Cassandra é criado. Valores maiores
+                    permitem escalar para um armazenamento mais distribuído,
+                    mas à custa de alguma sobrecarga em ambientes menores,
+                    onde o escalonamento não é necessário.</entry>
                   </row>
 
                   <row>
@@ -958,34 +978,36 @@ Thor Node Groups</emphasis>.</para>
 
                     <entry>
                       <para>Um valor inteiro especificando o número mínimo de
-                      caracteres que devem ser fornecidos ao procurar
-                      curingas no repositório. Valores maiores serão mais eficientes
-                      , mas também mais restritivos para os usuários. O padrão é 2. Assim
-                      como o partitions, este valor só entra em vigor quando um novo repositório da workunit do
-                      Cassandra é criado.</para>
+                      caracteres que devem ser fornecidos ao procurar curingas
+                      no repositório. Valores maiores serão mais eficientes ,
+                      mas também mais restritivos para os usuários. O padrão é
+                      2. Assim como o partitions, este valor só entra em vigor
+                      quando um novo repositório da workunit do Cassandra é
+                      criado.</para>
                     </entry>
                   </row>
 
                   <row>
                     <entry>keyspace</entry>
 
-                    <entry>O nome do keyspace do Cassandra a ser usado no armazenamento de dados do
-                    HPCC Systems. O padrão é
+                    <entry>O nome do keyspace do Cassandra a ser usado no
+                    armazenamento de dados do HPCC Systems. O padrão é
                     <emphasis>hpcc</emphasis>.</entry>
                   </row>
 
                   <row>
                     <entry>user</entry>
 
-                    <entry>O nome de usuário e senha são necessários apenas caso seu servidor
-                    Cassandra esteja configurado para exigir credenciais.</entry>
+                    <entry>O nome de usuário e senha são necessários apenas
+                    caso seu servidor Cassandra esteja configurado para exigir
+                    credenciais.</entry>
                   </row>
 
                   <row>
                     <entry>password</entry>
 
-                    <entry>A senha a ser utilizada, caso o servidor
-                    Cassandra estiver configurado para exigir credenciais.</entry>
+                    <entry>A senha a ser utilizada, caso o servidor Cassandra
+                    estiver configurado para exigir credenciais.</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -1013,25 +1035,25 @@ Thor Node Groups</emphasis>.</para>
             </listitem>
 
             <listitem>
-              <para>Clique com o botão direito em uma máquina na coluna do computador e
-              selecione Add Instance.</para>
+              <para>Clique com o botão direito em uma máquina na coluna do
+              computador e selecione Add Instance.</para>
             </listitem>
 
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>Selecione todos os computadores na lista marcando a opção <emphasis
-              role="bold">Select All</emphasis> e depois pressione o botão <emphasis
-              role="bold">OK</emphasis> .</para>
+              <para>Selecione todos os computadores na lista marcando a opção
+              <emphasis role="bold">Select All</emphasis> e depois pressione o
+              botão <emphasis role="bold">OK</emphasis> .</para>
 
               <para>
-                <graphic fileref="images/CM-img12.jpg" vendor="configmgrSS" />
+                <graphic fileref="images/CM-img12.jpg" vendor="configmgrSS"/>
               </para>
             </listitem>
 
             <listitem>
-              <para>Clique no link <inlinegraphic fileref="images/GS-img01c.png" />
-              do disco para salvar</para>
+              <para>Clique no link <inlinegraphic
+              fileref="images/GS-img01c.png"/> do disco para salvar</para>
             </listitem>
           </orderedlist>
         </sect3>
@@ -1044,7 +1066,7 @@ Thor Node Groups</emphasis>.</para>
           <para>Esta seção descreve os atributos do Dafilesrv.</para>
 
           <para>
-            <graphic fileref="images/CM-img12-1.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img12-1.jpg" vendor="configmgrSS"/>
           </para>
 
           <!--configMgr-DaFileSrv-Include-XXX4-->
@@ -1052,7 +1074,7 @@ Thor Node Groups</emphasis>.</para>
           <para>
             <xi:include href="../XMLGeneration/xml/dafilesrv.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='daFs.t'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
       </sect2>
@@ -1065,8 +1087,8 @@ Thor Node Groups</emphasis>.</para>
 
           <orderedlist>
             <listitem>
-              <para>Selecione<emphasis role="bold">DFU Server</emphasis> no painel
-              Navigator no lado esquerdo.</para>
+              <para>Selecione<emphasis role="bold">DFU Server</emphasis> no
+              painel Navigator no lado esquerdo.</para>
             </listitem>
 
             <listitem>
@@ -1076,11 +1098,11 @@ Thor Node Groups</emphasis>.</para>
             <listitem>
               <para>Na coluna do computador, escolha um nó da lista suspensa,
               conforme mostrado abaixo:<graphic fileref="images/CM-img05.jpg"
-              vendor="configmgrSS" /></para>
+              vendor="configmgrSS"/></para>
             </listitem>
 
             <listitem>
-              <para>Clique no <inlinegraphic fileref="images/GS-img01c.png" />
+              <para>Clique no <inlinegraphic fileref="images/GS-img01c.png"/>
               ícone do disco para salvar a aba</para>
             </listitem>
           </orderedlist>
@@ -1092,7 +1114,7 @@ Thor Node Groups</emphasis>.</para>
           <para>Esta seção descreve os atributos do DfuServer.</para>
 
           <para>
-            <graphic fileref="images/CM-img05-1.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img05-1.jpg" vendor="configmgrSS"/>
           </para>
 
           <!--configMgr-DFUSrvr-Attr-Include-XXX6-->
@@ -1100,7 +1122,7 @@ Thor Node Groups</emphasis>.</para>
           <para>
             <xi:include href="../XMLGeneration/xml/dfuserver.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='DF.t1'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
@@ -1110,7 +1132,7 @@ Thor Node Groups</emphasis>.</para>
           <para>Esta seção descreve as opções DfuServer SSH.</para>
 
           <para>
-            <graphic fileref="images/CM-img05-2.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img05-2.jpg" vendor="configmgrSS"/>
           </para>
 
           <!--configMgr-DFUSrvr-SSH-Include-XXX7-->
@@ -1118,7 +1140,7 @@ Thor Node Groups</emphasis>.</para>
           <para>
             <xi:include href="../XMLGeneration/xml/dfuserver.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='DF.t2'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
@@ -1126,8 +1148,9 @@ Thor Node Groups</emphasis>.</para>
           <title>Notas sobre DfuServer</title>
 
           <para>Esta aba permite que você adicione notas pertinentes à
-          configuração do componente. Isso pode ser útil para manter um registro
-          de alterações e para comunicar essas informações aos parceiros.</para>
+          configuração do componente. Isso pode ser útil para manter um
+          registro de alterações e para comunicar essas informações aos
+          parceiros.</para>
         </sect3>
       </sect2>
 
@@ -1135,18 +1158,18 @@ Thor Node Groups</emphasis>.</para>
         <title>Directories</title>
 
         <para>O componente Directories é uma definição global usada por outros
-        componentes com objetivo de determinar os diretórios que eles usarão para várias
-        funções.</para>
+        componentes com objetivo de determinar os diretórios que eles usarão
+        para várias funções.</para>
 
         <para>
-          <graphic fileref="images/CM-161a.jpg" vendor="configmgrSS" />
+          <graphic fileref="images/CM-161a.jpg" vendor="configmgrSS"/>
         </para>
 
-        <para />
+        <para/>
 
         <informaltable colsep="1" frame="all" rowsep="1">
           <tgroup cols="3">
-            <colspec align="left" colwidth="122.40pt" />
+            <colspec align="left" colwidth="122.40pt"/>
 
             <tbody>
               <row>
@@ -1182,7 +1205,7 @@ Thor Node Groups</emphasis>.</para>
                   <emphasis role="bold">data</emphasis>
                 </entry>
 
-                <entry />
+                <entry/>
 
                 <entry>Localização base para arquivos de dados</entry>
               </row>
@@ -1192,9 +1215,10 @@ Thor Node Groups</emphasis>.</para>
                   <emphasis role="bold">data2</emphasis>
                 </entry>
 
-                <entry />
+                <entry/>
 
-                <entry>Localização base para a segunda cópia dos dados roxie</entry>
+                <entry>Localização base para a segunda cópia dos dados
+                roxie</entry>
               </row>
 
               <row>
@@ -1202,7 +1226,7 @@ Thor Node Groups</emphasis>.</para>
                   <emphasis role="bold">data3</emphasis>
                 </entry>
 
-                <entry />
+                <entry/>
 
                 <entry>Reservado para uso futuro</entry>
               </row>
@@ -1212,7 +1236,7 @@ Thor Node Groups</emphasis>.</para>
                   <emphasis role="bold">mirror</emphasis>
                 </entry>
 
-                <entry />
+                <entry/>
 
                 <entry>Localização base para arquivos de dados</entry>
               </row>
@@ -1222,7 +1246,7 @@ Thor Node Groups</emphasis>.</para>
                   <emphasis role="bold">query</emphasis>
                 </entry>
 
-                <entry />
+                <entry/>
 
                 <entry>Localização base para consultas</entry>
               </row>
@@ -1234,27 +1258,29 @@ Thor Node Groups</emphasis>.</para>
       <sect2 id="Drop-Zone" role="brk">
         <title>Drop Zone</title>
 
-        <para>A Drop Zone (ou zona de pouso) é um local onde os arquivos podem ser
-        transferidos para ou a partir do seu HPCC Systems. A drop zone
-        é uma combinação lógica de um caminho de um ou mais servidores.</para>
+        <para>A Drop Zone (ou zona de pouso) é um local onde os arquivos podem
+        ser transferidos para ou a partir do seu HPCC Systems. A drop zone é
+        uma combinação lógica de um caminho de um ou mais servidores.</para>
 
         <para>Múltiplas drop zones permitem que você configure diferentes
-        pastas de nível superior para um ou mais servidores. Vários servidores para uma única drop
-        zone fornecem um agrupamento lógico de locais distintos. Várias drop
-        zones são úteis para permitir diferentes permissões para usuários ou
-        grupos.</para>
+        pastas de nível superior para um ou mais servidores. Vários servidores
+        para uma única drop zone fornecem um agrupamento lógico de locais
+        distintos. Várias drop zones são úteis para permitir diferentes
+        permissões para usuários ou grupos.</para>
 
         <para>Adicionar uma Drop Zone:</para>
 
         <para>
           <orderedlist>
             <listitem>
-              <para>Clique com o botão direito do mouse no painel Navigator, no lado esquerdo,
-              e escolha <emphasis role="bold">New Components</emphasis></para>
+              <para>Clique com o botão direito do mouse no painel Navigator,
+              no lado esquerdo, e escolha <emphasis role="bold">New
+              Components</emphasis></para>
             </listitem>
 
             <listitem>
-              <para>Selecione <emphasis role="bold">Drop Zone</emphasis></para>
+              <para>Selecione <emphasis role="bold">Drop
+              Zone</emphasis></para>
             </listitem>
           </orderedlist>
         </para>
@@ -1262,9 +1288,10 @@ Thor Node Groups</emphasis>.</para>
         <sect3>
           <title>Atributos da Drop Zone</title>
 
-          <para>Você pode alterar a configuração da sua drop zone usando a
-          aba de atributos. Se você tiver múltiplas drop zones, selecione
-          a desejada para configurar no painel Navigator, no lado esquerdo.</para>
+          <para>Você pode alterar a configuração da sua drop zone usando a aba
+          de atributos. Se você tiver múltiplas drop zones, selecione a
+          desejada para configurar no painel Navigator, no lado
+          esquerdo.</para>
 
           <para>Para alterar os atributos da Drop Zone:</para>
 
@@ -1276,11 +1303,11 @@ Thor Node Groups</emphasis>.</para>
               </listitem>
 
               <listitem>
-                <para>Clique duas vezes no valor no lado direito da tabela
-                de atributos para o valor que você deseja modificar.</para>
+                <para>Clique duas vezes no valor no lado direito da tabela de
+                atributos para o valor que você deseja modificar.</para>
 
                 <para>Por exemplo, selecione o atributo <emphasis
-                role="bold">name</emphasis>, clique duas vezes na coluna 
+                role="bold">name</emphasis>, clique duas vezes na coluna
                 <emphasis role="bold">value</emphasis> e forneça a drop zone
                 para soltar um nome mais significativo.</para>
               </listitem>
@@ -1292,13 +1319,13 @@ Thor Node Groups</emphasis>.</para>
           </para>
 
           <para>
-            <graphic fileref="images/CM-img06.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img06.jpg" vendor="configmgrSS"/>
           </para>
 
           <para>
             <xi:include href="../XMLGeneration/xml/dropzone.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='dz.t1'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
 
           <!-- /*Attribute table***replace with dynamically generated table*/
@@ -1344,18 +1371,20 @@ Thor Node Groups</emphasis>.</para>
 
           <para>Para adicionar um servidor à drop zone atual: <orderedlist>
               <listitem>
-                <para>Selecione a <emphasis role="bold">Drop Zone</emphasis> para
-                configurar no painel Navigator no lado esquerdo.</para>
+                <para>Selecione a <emphasis role="bold">Drop Zone</emphasis>
+                para configurar no painel Navigator no lado esquerdo.</para>
               </listitem>
 
               <listitem>
-                <para>Selecione a aba<emphasis role="bold">Server List</emphasis>
-                , clique com o botão direito do mouse no campo Server Address e escolha 
-                <emphasis role="bold">Add</emphasis>.</para>
+                <para>Selecione a aba<emphasis role="bold">Server
+                List</emphasis> , clique com o botão direito do mouse no campo
+                Server Address e escolha <emphasis
+                role="bold">Add</emphasis>.</para>
               </listitem>
 
               <listitem>
-                <para>Digite o nome do host ou o endereço IP do servidor.</para>
+                <para>Digite o nome do host ou o endereço IP do
+                servidor.</para>
               </listitem>
 
               <listitem>
@@ -1368,8 +1397,9 @@ Thor Node Groups</emphasis>.</para>
           <title>Notas sobre Drop Zone</title>
 
           <para>Esta aba permite que você adicione notas pertinentes à
-          configuração do componente. Isso pode ser útil para manter um registro
-          de alterações e para comunicar essas informações aos parceiros.</para>
+          configuração do componente. Isso pode ser útil para manter um
+          registro de alterações e para comunicar essas informações aos
+          parceiros.</para>
         </sect3>
       </sect2>
 
@@ -1392,12 +1422,12 @@ Thor Node Groups</emphasis>.</para>
             <listitem>
               <para>Na coluna do computador, escolha um nó da lista suspensa,
               conforme mostrado abaixo:<graphic fileref="images/CM-img07.jpg"
-              vendor="configmgrSS" /></para>
+              vendor="configmgrSS"/></para>
             </listitem>
 
             <listitem>
-              <para>Clique <inlinegraphic fileref="images/GS-img01c.png" />
-              no ícone do </para>
+              <para>Clique <inlinegraphic fileref="images/GS-img01c.png"/> no
+              ícone do</para>
             </listitem>
           </orderedlist>
         </sect3>
@@ -1408,7 +1438,7 @@ Thor Node Groups</emphasis>.</para>
           <para>Esta seção descreve os atributos da aba EclAgent.</para>
 
           <para>
-            <graphic fileref="images/CM-img07-1.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img07-1.jpg" vendor="configmgrSS"/>
           </para>
 
           <!--configMgr-ECLAgent-Attr-Include-XXX8-->
@@ -1416,7 +1446,7 @@ Thor Node Groups</emphasis>.</para>
           <para>
             <xi:include href="../XMLGeneration/xml/eclagent_config.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='EA.t1'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
@@ -1426,7 +1456,7 @@ Thor Node Groups</emphasis>.</para>
           <para>Esta seção descreve a aba EclAgent Options.</para>
 
           <para>
-            <graphic fileref="images/CM-img07-2.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img07-2.jpg" vendor="configmgrSS"/>
           </para>
 
           <!--configMgr-ECLAgent-Options-Include-XXX9-->
@@ -1434,7 +1464,7 @@ Thor Node Groups</emphasis>.</para>
           <para>
             <xi:include href="../XMLGeneration/xml/eclagent_config.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='EA.t2'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
@@ -1442,8 +1472,9 @@ Thor Node Groups</emphasis>.</para>
           <title>Notas sobre EclAgent Process</title>
 
           <para>Esta aba permite que você adicione notas pertinentes à
-          configuração do componente. Isso pode ser útil para manter um registro
-          de alterações e para comunicar essas informações aos parceiros.</para>
+          configuração do componente. Isso pode ser útil para manter um
+          registro de alterações e para comunicar essas informações aos
+          parceiros.</para>
         </sect3>
       </sect2>
 
@@ -1456,8 +1487,8 @@ Thor Node Groups</emphasis>.</para>
           <para>
             <orderedlist>
               <listitem>
-                <para>Selecione Ecl CC Server - myeclccserver no painel Navigator
-                no lado esquerdo.</para>
+                <para>Selecione Ecl CC Server - myeclccserver no painel
+                Navigator no lado esquerdo.</para>
               </listitem>
 
               <listitem>
@@ -1465,27 +1496,26 @@ Thor Node Groups</emphasis>.</para>
               </listitem>
 
               <listitem>
-                <para>Na coluna do computador, escolha um nó da lista suspensa,
-              conforme mostrado abaixo:<graphic fileref="images/CM-ECLCC-01.jpg"
-                vendor="configmgrSS" /></para>
+                <para>Na coluna do computador, escolha um nó da lista
+                suspensa, conforme mostrado abaixo:<graphic
+                fileref="images/CM-ECLCC-01.jpg" vendor="configmgrSS"/></para>
               </listitem>
 
               <listitem>
                 <para>Clique no ícone do <inlinegraphic
-                fileref="images/GS-img01c.png" />disco para salvar</para>
+                fileref="images/GS-img01c.png"/>disco para salvar</para>
               </listitem>
             </orderedlist>
           </para>
         </sect3>
 
         <sect3 role="brk">
-          <title> a aba Atributos do Ecl CC Server</title>
+          <title>a aba Atributos do Ecl CC Server</title>
 
-          <para>Esta seção descreve a aba Ecl CC Server
-          Attributes.</para>
+          <para>Esta seção descreve a aba Ecl CC Server Attributes.</para>
 
           <para>
-            <graphic fileref="images/CM-ECLCC-02.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-ECLCC-02.jpg" vendor="configmgrSS"/>
           </para>
 
           <!--ECLCCServer-Include-cc.t2-XXX-X-->
@@ -1493,30 +1523,33 @@ Thor Node Groups</emphasis>.</para>
           <para>
             <xi:include href="../XMLGeneration/xml/eclccserver.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='cc.t2'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
         <sect3>
           <title>Opções do EclCC Server Process</title>
 
-          <para>Para adicionar uma opção personalizada, clique com o botão direito e selecione adicionar. Essas
-          opções são passadas para o compilador eclcc.</para>
+          <para>Para adicionar uma opção personalizada, clique com o botão
+          direito e selecione adicionar. Essas opções são passadas para o
+          compilador eclcc.</para>
 
           <para>Veja o capítulo Compilador ECL no manual de <emphasis
-          role="bluebold">Ferramentas do Cliente</emphasis> para detalhes.</para>
+          role="bluebold">Ferramentas do Cliente</emphasis> para
+          detalhes.</para>
 
           <!--This feature allows the user to configure any options pertinent to the Ecl CC Server Process -->
 
-          <para />
+          <para/>
         </sect3>
 
         <sect3>
           <title>Notas sobre EclCC Server Process</title>
 
           <para>Esta aba permite que você adicione notas pertinentes à
-          configuração do componente. Isso pode ser útil para manter um registro
-          de alterações e para comunicar essas informações aos parceiros.</para>
+          configuração do componente. Isso pode ser útil para manter um
+          registro de alterações e para comunicar essas informações aos
+          parceiros.</para>
         </sect3>
       </sect2>
 
@@ -1528,8 +1561,8 @@ Thor Node Groups</emphasis>.</para>
 
           <orderedlist>
             <listitem>
-              <para>Selecione <emphasis role="bold">ECL Scheduler</emphasis> no painel
-                Navigator ao lado esquerdo.</para>
+              <para>Selecione <emphasis role="bold">ECL Scheduler</emphasis>
+              no painel Navigator ao lado esquerdo.</para>
             </listitem>
 
             <listitem>
@@ -1539,12 +1572,12 @@ Thor Node Groups</emphasis>.</para>
             <listitem>
               <para>Na coluna do computador, escolha um nó da lista suspensa,
               conforme mostrado abaixo:<graphic fileref="images/CM-161.jpg"
-              vendor="configmgrSS" /></para>
+              vendor="configmgrSS"/></para>
             </listitem>
 
             <listitem>
-              <para>Clique no ícone do <inlinegraphic fileref="images/GS-img01c.png" />
-              disco para salvar a aba </para>
+              <para>Clique no ícone do <inlinegraphic
+              fileref="images/GS-img01c.png"/> disco para salvar a aba</para>
             </listitem>
           </orderedlist>
         </sect3>
@@ -1555,7 +1588,7 @@ Thor Node Groups</emphasis>.</para>
           <para>Esta seção descreve a aba EclScheduler Attributes.</para>
 
           <para>
-            <graphic fileref="images/CM-160.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-160.jpg" vendor="configmgrSS"/>
           </para>
 
           <!--configMgr-DaliServer-LDAP-Include-XXX-XI-->
@@ -1563,7 +1596,7 @@ Thor Node Groups</emphasis>.</para>
           <para>
             <xi:include href="../XMLGeneration/xml/eclscheduler.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='ecl.sched'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
@@ -1571,8 +1604,9 @@ Thor Node Groups</emphasis>.</para>
           <title>Notas sobre EclScheduler</title>
 
           <para>Esta aba permite que você adicione notas pertinentes à
-          configuração do componente. Isso pode ser útil para manter um registro
-          de alterações e para comunicar essas informações aos parceiros.</para>
+          configuração do componente. Isso pode ser útil para manter um
+          registro de alterações e para comunicar essas informações aos
+          parceiros.</para>
         </sect3>
       </sect2>
 
@@ -1584,8 +1618,8 @@ Thor Node Groups</emphasis>.</para>
 
           <orderedlist>
             <listitem>
-              <para>Selecione <emphasis role="bold">ESP - myesp</emphasis>no painel
-              Navigator do lado esquerdo.</para>
+              <para>Selecione <emphasis role="bold">ESP - myesp</emphasis>no
+              painel Navigator do lado esquerdo.</para>
             </listitem>
 
             <listitem>
@@ -1595,12 +1629,12 @@ Thor Node Groups</emphasis>.</para>
             <listitem>
               <para>Na coluna do computador, escolha um nó da lista suspensa,
               conforme mostrado abaixo:<graphic fileref="images/CM-img08.jpg"
-              vendor="configmgrSS" /></para>
+              vendor="configmgrSS"/></para>
             </listitem>
 
             <listitem>
-              <para>Clique <inlinegraphic fileref="images/GS-img01c.png" />
-              no ícone do </para>
+              <para>Clique <inlinegraphic fileref="images/GS-img01c.png"/> no
+              ícone do</para>
             </listitem>
           </orderedlist>
         </sect3>
@@ -1613,7 +1647,7 @@ Thor Node Groups</emphasis>.</para>
           <para>Esta seção descreve a aba Esp - myesp Attributes.</para>
 
           <para>
-            <graphic fileref="images/CM-img08-1.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img08-1.jpg" vendor="configmgrSS"/>
           </para>
 
           <!--MyESP-Include-ESP.t6-XXX12-->
@@ -1621,51 +1655,54 @@ Thor Node Groups</emphasis>.</para>
           <para>
             <xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='ESP.t6'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
 
           <!--***Move to XSD for 2.0***-->
 
-          <para>As conexões HTTP persistentes podem causar problemas de compatibilidade
-          com versões anteriores com clientes HTTP não padrão. Você pode desativar esse recurso
-          definindo <emphasis>maxPersistentRequests como</emphasis> 0.</para>
+          <para>As conexões HTTP persistentes podem causar problemas de
+          compatibilidade com versões anteriores com clientes HTTP não padrão.
+          Você pode desativar esse recurso definindo
+          <emphasis>maxPersistentRequests como</emphasis> 0.</para>
         </sect3>
 
         <sect3 role="brk">
           <title>Aba Esp - myesp Service Bindings</title>
 
-          <para>Esta seção descreve a aba Esp - myesp Service Bindings
-          Esta guia requer etapas adicionais para configurar as conexões do
+          <para>Esta seção descreve a aba Esp - myesp Service Bindings Esta
+          guia requer etapas adicionais para configurar as conexões do
           serviço.</para>
 
           <para>
-            <graphic fileref="images/CM-img08-2.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img08-2.jpg" vendor="configmgrSS"/>
           </para>
 
-          <para>Você deve primeiro adicionar as ligações de serviço na primeira tabela
-          (botão direito do mouse, Add). Em seguida, você configuraria os atributos nas
-          outras tabelas nessa aba. A tabela a seguir descreve a tabela <emphasis
-          role="bold">URL Authentication</emphasis></para>
+          <para>Você deve primeiro adicionar as ligações de serviço na
+          primeira tabela (botão direito do mouse, Add). Em seguida, você
+          configuraria os atributos nas outras tabelas nessa aba. A tabela a
+          seguir descreve a tabela <emphasis role="bold">URL
+          Authentication</emphasis></para>
 
           <!--MyESP-Include-ESP.t1-XXXIII-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='ESP.t1'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
 
           <?hard-pagebreak ?>
 
-          <para>As tabelas a seguir descrevem as  ESPProcess Service Bindings e 
-          <emphasis role="bold">funcionalidades de autenticação</emphasis>.</para>
+          <para>As tabelas a seguir descrevem as ESPProcess Service Bindings e
+          <emphasis role="bold">funcionalidades de
+          autenticação</emphasis>.</para>
 
           <!--MyESP-Include-ES.t2-XXX-14-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='ESP.t2'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
 
           <para>
@@ -1676,7 +1713,7 @@ Thor Node Groups</emphasis>.</para>
                         xmlns:xi="http://www.w3.org/2001/XInclude" />  -->
           </para>
 
-          <para />
+          <para/>
         </sect3>
 
         <?hard-pagebreak ?>
@@ -1688,7 +1725,7 @@ Thor Node Groups</emphasis>.</para>
           Authentication</para>
 
           <para>
-            <graphic fileref="images/CM-img08-3.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img08-3.jpg" vendor="configmgrSS"/>
           </para>
 
           <!--MyESP-Authentication-ES.t4-XXX-16-->
@@ -1696,7 +1733,7 @@ Thor Node Groups</emphasis>.</para>
           <para>
             <xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='ESP.t4'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
 
           <?hard-pagebreak ?>
@@ -1707,9 +1744,9 @@ Thor Node Groups</emphasis>.</para>
           <para>
             <informaltable colsep="1" frame="all" rowsep="1">
               <tgroup cols="2">
-                <colspec colwidth="111.50pt" />
+                <colspec colwidth="111.50pt"/>
 
-                <colspec />
+                <colspec/>
 
                 <tbody>
                   <row>
@@ -1735,7 +1772,8 @@ Thor Node Groups</emphasis>.</para>
                   <row>
                     <entry>secmgrPlugin</entry>
 
-                    <entry>utilizado para configurar o Security Manager Plugin</entry>
+                    <entry>utilizado para configurar o Security Manager
+                    Plugin</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -1751,8 +1789,8 @@ Thor Node Groups</emphasis>.</para>
             <graphic fileref="images/CM-img08-4.jpg" vendor="configmgrSS" />
           </para>  -->
 
-          <para>O atributo <emphasis role="bold">AuthDomain</emphasis> permite definir as
-          configurações usadas para o gerenciamento de
+          <para>O atributo <emphasis role="bold">AuthDomain</emphasis> permite
+          definir as configurações usadas para o gerenciamento de
           sessões.</para>
 
           <!--MyESP-HTTPS.t7-XXX-17-->
@@ -1771,10 +1809,11 @@ Thor Node Groups</emphasis>.</para>
         <sect3>
           <title>Aba Esp - myesp HTTPS</title>
 
-          <para>Esta seção descreve os atributos do Aba Esp - myesp HTTPS.</para>
+          <para>Esta seção descreve os atributos do Aba Esp - myesp
+          HTTPS.</para>
 
           <para>
-            <graphic fileref="images/CM-img08-4.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img08-4.jpg" vendor="configmgrSS"/>
           </para>
 
           <para>O atributo <emphasis role="bold">cipherList</emphasis> permite
@@ -1787,7 +1826,7 @@ Thor Node Groups</emphasis>.</para>
           <para>
             <xi:include href="../XMLGeneration/xml/esp.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='ESP.t5'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
@@ -1795,25 +1834,26 @@ Thor Node Groups</emphasis>.</para>
           <title>Notas sobre EspProcess</title>
 
           <para>Esta aba permite que você adicione notas pertinentes à
-          configuração do componente. Isso pode ser útil para manter um registro
-          de alterações e para comunicar essas informações aos parceiros.</para>
+          configuração do componente. Isso pode ser útil para manter um
+          registro de alterações e para comunicar essas informações aos
+          parceiros.</para>
         </sect3>
       </sect2>
 
       <sect2 id="ESP_Services" role="brk">
         <title>ESP Services</title>
 
-        <para>O ESP Services fornecem um meio para adicionar funcionalidade a um ESP
-        Server.</para>
+        <para>O ESP Services fornecem um meio para adicionar funcionalidade a
+        um ESP Server.</para>
 
         <sect3 id="CfgMgrEclWatch">
           <title>ECL Watch Service</title>
 
-          <para>O Ecl Watch permite que você configure opções para o utilitário
-          ECL Watch.</para>
+          <para>O Ecl Watch permite que você configure opções para o
+          utilitário ECL Watch.</para>
 
           <para>
-            <graphic fileref="images/CM-009.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-009.jpg" vendor="configmgrSS"/>
           </para>
 
           <para>
@@ -1825,7 +1865,7 @@ Thor Node Groups</emphasis>.</para>
           <para>
             <xi:include href="../XMLGeneration/xml/espsmcservice.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='SMC-T01'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
 
           <para>
@@ -1837,44 +1877,44 @@ Thor Node Groups</emphasis>.</para>
           <para>
             <xi:include href="../XMLGeneration/xml/espsmcservice.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='SMC-T03'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
 
           <para>
-            <emphasis role="bold">Configurando a integração do
-            ELK Log Visualization</emphasis>
+            <emphasis role="bold">Configurando a integração do ELK Log
+            Visualization</emphasis>
           </para>
 
-          <para>O HPCC Systems fornece um mecanismo para integrar visualizações baseadas em ELK
-          (ElasticSearch, Logstash e Kibana) no ECL
-          Watch. Esse recurso pode ser configurado e ativado pelo gerenciador do HPCC
-          Configuration Manager</para>
+          <para>O HPCC Systems fornece um mecanismo para integrar
+          visualizações baseadas em ELK (ElasticSearch, Logstash e Kibana) no
+          ECL Watch. Esse recurso pode ser configurado e ativado pelo
+          gerenciador do HPCC Configuration Manager</para>
 
           <para>Para configurar o componente ELK Log Visualization, clique e
-          expanda o link <emphasis role="bold">ESP Service</emphasis> no
-          lado esquerdo e selecione o link<emphasis role="bold">          EclWatch</emphasis>
-. Em seguida, selecione a aba <emphasis role="bold">Elk Log
-          Visualization</emphasis> no lado direito.</para>
+          expanda o link <emphasis role="bold">ESP Service</emphasis> no lado
+          esquerdo e selecione o link<emphasis role="bold">
+          EclWatch</emphasis> . Em seguida, selecione a aba <emphasis
+          role="bold">Elk Log Visualization</emphasis> no lado direito.</para>
 
           <para>A aba ELK Log Visualization no ECL Watch:</para>
 
           <para>
             <xi:include href="../XMLGeneration/xml/espsmcservice.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='SMC-T02'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
 
           <para>Para configurar a integração de visualização ELK, forneça as
           seguintes informações: <orderedlist>
               <listitem>
-                <para>No campo <emphasis>kibanaAddress</emphasis>, forneça
-                o endereço IP do seu componente Kibana. Por exemplo:
+                <para>No campo <emphasis>kibanaAddress</emphasis>, forneça o
+                endereço IP do seu componente Kibana. Por exemplo:
                 http://123.123.123.123</para>
               </listitem>
 
               <listitem>
-                <para>No campo <emphasis>kibanaPort</emphasis>, forneça o número da porta
-                Kibana. Por exemplo: 5601</para>
+                <para>No campo <emphasis>kibanaPort</emphasis>, forneça o
+                número da porta Kibana. Por exemplo: 5601</para>
               </listitem>
 
               <listitem>
@@ -1882,22 +1922,22 @@ Thor Node Groups</emphasis>.</para>
                 insira o URI do Kibana apontando para o painel do Kibana
                 compartilhado.</para>
 
-                <para>Por exemplo: /app/kibana#/dashboard/etc. (obtido
-                na aba “share" em Kibana)</para>
+                <para>Por exemplo: /app/kibana#/dashboard/etc. (obtido na aba
+                “share" em Kibana)</para>
               </listitem>
             </orderedlist></para>
 
-          <para />
+          <para/>
         </sect3>
 
         <sect3 id="cfgmgr_WsECL" role="brk">
           <title>WsECL Service</title>
 
-          <para>O serviço WsECL permite configurar opções para o
-          utilitário WsECL.</para>
+          <para>O serviço WsECL permite configurar opções para o utilitário
+          WsECL.</para>
 
           <para>
-            <graphic fileref="images/CM-010.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-010.jpg" vendor="configmgrSS"/>
           </para>
 
           <para>Os atributos de configuração do Ws ECL.</para>
@@ -1907,7 +1947,7 @@ Thor Node Groups</emphasis>.</para>
           <para>
             <xi:include href="../XMLGeneration/xml/esp_service_wsecl2.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='MyWS2-T01'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
 
           <?hard-pagebreak ?>
@@ -1919,7 +1959,7 @@ Thor Node Groups</emphasis>.</para>
           <para>
             <xi:include href="../XMLGeneration/xml/esp_service_wsecl2.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='MyWS2-T02'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
 
           <para>Tabela de Restrições do Ws ECL Target</para>
@@ -1929,7 +1969,7 @@ Thor Node Groups</emphasis>.</para>
           <para>
             <xi:include href="../XMLGeneration/xml/esp_service_wsecl2.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='MyWS2-T03'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
@@ -1938,28 +1978,29 @@ Thor Node Groups</emphasis>.</para>
 
           <para>Uma instância do ws_store está incluída no ECL Watch, mas você
           pode optar por adicionar outro serviço ESP ws_store à sua plataforma
-           HPCC Systems.</para>
+          HPCC Systems.</para>
 
           <para>Para adicionar o serviço Ws_Store. <graphic
-          fileref="images/CM-WsStore.jpg" vendor="configmgrSS" /></para>
+          fileref="images/CM-WsStore.jpg" vendor="configmgrSS"/></para>
 
           <para><orderedlist>
               <listitem>
-                <para>Clique com o botão direito do mouse no componente <emphasis
-                role="bold">Software</emphasis> no painel <emphasis
-                role="bold">Navegador</emphasis> (no lado direito),
-                escolha <emphasis role="bold">New ESP Services </emphasis> e, em seguida, 
-                <emphasis role="bold">ws_store</emphasis> na
-                lista suspensa.</para>
+                <para>Clique com o botão direito do mouse no componente
+                <emphasis role="bold">Software</emphasis> no painel <emphasis
+                role="bold">Navegador</emphasis> (no lado direito), escolha
+                <emphasis role="bold">New ESP Services </emphasis> e, em
+                seguida, <emphasis role="bold">ws_store</emphasis> na lista
+                suspensa.</para>
               </listitem>
 
               <listitem>
-                <para>Configure os atributos ws_store conforme necessário.</para>
+                <para>Configure os atributos ws_store conforme
+                necessário.</para>
               </listitem>
 
               <listitem>
                 <para>Clique no ícone de <inlinegraphic
-                fileref="images/GS-img01c.png" /> disco para salvar.</para>
+                fileref="images/GS-img01c.png"/> disco para salvar.</para>
               </listitem>
             </orderedlist>Os seguintes valores são os atributos configuráveis
           para ws_store:</para>
@@ -1969,37 +2010,37 @@ Thor Node Groups</emphasis>.</para>
           <para>
             <xi:include href="../XMLGeneration/xml/esp_service_wsstore.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='ESPWS.t1'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
         <sect3 id="CFGESP-WsSql" role="brk">
           <title>Ws_SQL</title>
 
-          <para>Você pode optar por adicionar o serviço ESP ws_sql à sua plataforma HPCC
-          Systems.</para>
+          <para>Você pode optar por adicionar o serviço ESP ws_sql à sua
+          plataforma HPCC Systems.</para>
 
           <para>Para adicionar o serviço ws_sql.</para>
 
           <para>
             <orderedlist>
               <listitem>
-                <para>Clique com o botão direito do mouse no componente <emphasis
-                role="bold">Software</emphasis> no painel <emphasis
-                role="bold">Navigator</emphasis> (no lado direito),
-                escolha <emphasis role="bold">New ESP Services </emphasis> e, em seguida, 
-                <emphasis role="bold">ws_sql</emphasis> na
-                lista suspensa.</para>
+                <para>Clique com o botão direito do mouse no componente
+                <emphasis role="bold">Software</emphasis> no painel <emphasis
+                role="bold">Navigator</emphasis> (no lado direito), escolha
+                <emphasis role="bold">New ESP Services </emphasis> e, em
+                seguida, <emphasis role="bold">ws_sql</emphasis> na lista
+                suspensa.</para>
               </listitem>
 
               <listitem>
-                <para>Configure o ws_sql fornecendo o nome do
-                serviço.</para>
+                <para>Configure o ws_sql fornecendo o nome do serviço.</para>
               </listitem>
 
               <listitem>
                 <para>Clique no <inlinegraphic
-                fileref="images/GS-img01c.png" /> ícone do disco para salvar o </para>
+                fileref="images/GS-img01c.png"/> ícone do disco para salvar
+                o</para>
               </listitem>
             </orderedlist>
           </para>
@@ -2017,7 +2058,7 @@ Thor Node Groups</emphasis>.</para>
 
           <orderedlist>
             <listitem>
-              <para>Selecione  ESP  - MyEsp no painel do navegador ao lado
+              <para>Selecione ESP - MyEsp no painel do navegador ao lado
               esquerdo.</para>
             </listitem>
 
@@ -2028,28 +2069,28 @@ Thor Node Groups</emphasis>.</para>
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>Clique com o botão direito em uma máquina na coluna do computador e
-              selecione Add Instance.</para>
+              <para>Clique com o botão direito em uma máquina na coluna do
+              computador e selecione Add Instance.</para>
 
               <para>
-                <graphic fileref="images/CM-190.jpg" vendor="configmgrSS" />
+                <graphic fileref="images/CM-190.jpg" vendor="configmgrSS"/>
               </para>
             </listitem>
 
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>Selecione todos os computadores da lista, depois pressione o botão <emphasis
-              role="bold">OK</emphasis> .</para>
+              <para>Selecione todos os computadores da lista, depois pressione
+              o botão <emphasis role="bold">OK</emphasis> .</para>
 
               <para>
-                <graphic fileref="images/CM-112-4.jpg" vendor="configmgrSS" />
+                <graphic fileref="images/CM-112-4.jpg" vendor="configmgrSS"/>
               </para>
             </listitem>
 
             <listitem>
-              <para>Clique no <inlinegraphic fileref="images/GS-img01c.png" />
-              ícone do disco para salvar o </para>
+              <para>Clique no <inlinegraphic fileref="images/GS-img01c.png"/>
+              ícone do disco para salvar o</para>
             </listitem>
           </orderedlist>
         </sect3>
@@ -2057,15 +2098,14 @@ Thor Node Groups</emphasis>.</para>
         <sect3>
           <title>FTSlave Process.</title>
 
-          <para>Esta seção descreve a aba de atributos
-          FTSlaveProcess.</para>
+          <para>Esta seção descreve a aba de atributos FTSlaveProcess.</para>
 
           <!--FTSlave-Include-XXX-18-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/ftslave_linux.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='FTS.t1'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
@@ -2073,56 +2113,57 @@ Thor Node Groups</emphasis>.</para>
           <title>Notas sobre FtSlave Process</title>
 
           <para>Esta aba permite que você adicione notas pertinentes à
-          configuração do componente. Isso pode ser útil para manter um registro
-          de alterações e para comunicar essas informações aos parceiros.</para>
+          configuração do componente. Isso pode ser útil para manter um
+          registro de alterações e para comunicar essas informações aos
+          parceiros.</para>
         </sect3>
       </sect2>
 
       <sect2 id="LDAPServer_Process" role="brk">
         <title>LDAP Server Process</title>
 
-        <para>Esta seção descreve os atributos de configuração de uma instalação do
-        LDAPServer no ConfigManager. Para obter uma descrição completa
-        de como adicionar autenticação LDAP, consulte a seção <emphasis>Usando 
-        autenticação </emphasis>LDAP no <emphasis
+        <para>Esta seção descreve os atributos de configuração de uma
+        instalação do LDAPServer no ConfigManager. Para obter uma descrição
+        completa de como adicionar autenticação LDAP, consulte a seção
+        <emphasis>Usando autenticação </emphasis>LDAP no <emphasis
         role="bluebold">documento Instalando e executando a
         plataforma</emphasis> HPCC Systems.</para>
 
         <para>
-          <graphic fileref="images/LDAP_004.jpg" />
+          <graphic fileref="images/LDAP_004.jpg"/>
         </para>
 
         <!--LdapServer-Include-fullDoc-XXX-19-->
 
         <xi:include href="../XMLGeneration/xml/ldapserver.xsd.mod.xml"
                     xpointer="xpointer(//*[@id='ldapSrv'])"
-                    xmlns:xi="http://www.w3.org/2001/XInclude" />
+                    xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
         <sect3>
           <title>LDAP Server Process Instances</title>
 
-          <para>Essa aba permite adicionar instâncias à sua configuração
-          LDAP. Para adicionar instâncias, você teria adicionado
-          anteriormente os computadores LDAP na seção Hardware. Para obter uma descrição completa
-          de como adicionar autenticação LDAP, consulte a seção <emphasis>Usando         autenticação 
-LDAP no </emphasis>documento <emphasis
-          role="bluebold">Instalando e executando a
-        plataforma</emphasis> HPCC Systems.</para>
+          <para>Essa aba permite adicionar instâncias à sua configuração LDAP.
+          Para adicionar instâncias, você teria adicionado anteriormente os
+          computadores LDAP na seção Hardware. Para obter uma descrição
+          completa de como adicionar autenticação LDAP, consulte a seção
+          <emphasis>Usando autenticação LDAP no </emphasis>documento <emphasis
+          role="bluebold">Instalando e executando a plataforma</emphasis> HPCC
+          Systems.</para>
 
           <orderedlist>
             <listitem>
-              <para>Na aba <emphasis role="bold">Instances</emphasis>, clique com o
-              botão direito na tabela à direita e selecione
-              <emphasis role="bold">Add Instances...</emphasis></para>
+              <para>Na aba <emphasis role="bold">Instances</emphasis>, clique
+              com o botão direito na tabela à direita e selecione <emphasis
+              role="bold">Add Instances...</emphasis></para>
             </listitem>
 
             <listitem>
-              <para>Selecione o computador a ser usado clicando na caixa ao lado
-              dele.</para>
+              <para>Selecione o computador a ser usado clicando na caixa ao
+              lado dele.</para>
 
-              <para>Este é o computador que foi adicionado anteriormente na área <emphasis
-              role="bold">Hardware</emphasis> / <emphasis role="bold">Add New
-              Computers</emphasis>.</para>
+              <para>Este é o computador que foi adicionado anteriormente na
+              área <emphasis role="bold">Hardware</emphasis> / <emphasis
+              role="bold">Add New Computers</emphasis>.</para>
             </listitem>
           </orderedlist>
         </sect3>
@@ -2130,32 +2171,33 @@ LDAP no </emphasis>documento <emphasis
         <sect3>
           <title>A conta do administrador do HPCC Systems</title>
 
-          <para>Você pode configurar uma conta de administrador do HPCC Systems com direitos
-          administrativos limitados. O administrador do HPCC Systems não
-          precisa ser uma conta de administrador LDAP. Isso permite que o administrador
-          do HPCC System possa configurar usuários, grupos e definir
-          permissões no HPCC Systems sem ter direitos para executar outras
-          funções administrativas do LDAP. Para usar este recurso: <orderedlist>
+          <para>Você pode configurar uma conta de administrador do HPCC
+          Systems com direitos administrativos limitados. O administrador do
+          HPCC Systems não precisa ser uma conta de administrador LDAP. Isso
+          permite que o administrador do HPCC System possa configurar
+          usuários, grupos e definir permissões no HPCC Systems sem ter
+          direitos para executar outras funções administrativas do LDAP. Para
+          usar este recurso: <orderedlist>
               <listitem>
-                <para>Crie um grupo LDAP para conter todos os usuários do administrador
-          do HPCC. Por exemplo: "HPCCAdminGroup"</para>
+                <para>Crie um grupo LDAP para conter todos os usuários do
+                administrador do HPCC. Por exemplo: "HPCCAdminGroup"</para>
               </listitem>
 
               <listitem>
                 <para>No gerenciador de configuração HPCC Systems, navegue até
-                esta página (LDAP Server Process) e insira o nome do grupo Administrador HPCC Systems
-                como o valor no campo <emphasis
+                esta página (LDAP Server Process) e insira o nome do grupo
+                Administrador HPCC Systems como o valor no campo <emphasis
                 role="bold">adminGroupName</emphasis>.</para>
               </listitem>
 
               <listitem>
-                <para>Adicione usuários (Administrador do HPCC Systems) a este novo
-                grupo.</para>
+                <para>Adicione usuários (Administrador do HPCC Systems) a este
+                novo grupo.</para>
               </listitem>
 
               <listitem>
-                <para>Salve e implemente o novo arquivo de configuração e reinicie
-                o ESP para aplicar a nova configuração.</para>
+                <para>Salve e implemente o novo arquivo de configuração e
+                reinicie o ESP para aplicar a nova configuração.</para>
               </listitem>
             </orderedlist></para>
         </sect3>
@@ -2164,8 +2206,9 @@ LDAP no </emphasis>documento <emphasis
           <title>Notas sobre LDAP Server Process</title>
 
           <para>Esta aba permite que você adicione notas pertinentes à
-          configuração do componente. Isso pode ser útil para manter um registro
-          de alterações e para comunicar essas informações aos parceiros.</para>
+          configuração do componente. Isso pode ser útil para manter um
+          registro de alterações e para comunicar essas informações aos
+          parceiros.</para>
         </sect3>
       </sect2>
 
@@ -2190,7 +2233,7 @@ LDAP no </emphasis>documento <emphasis
             </listitem>
           </orderedlist>
 
-          <graphic fileref="images/CM-img17.jpg" vendor="configmgrSS" />
+          <graphic fileref="images/CM-img17.jpg" vendor="configmgrSS"/>
         </sect3>
 
         <sect3 role="brk">
@@ -2198,17 +2241,17 @@ LDAP no </emphasis>documento <emphasis
 
           <!--***Might-Want-to-add-CM-Sasha17A.jpg-image-***-->
 
-          <para>Esta seção descreve os valores da aba SashaServerProcess<emphasis
-          role="bold">Attribute</emphasis>.</para>
+          <para>Esta seção descreve os valores da aba
+          SashaServerProcess<emphasis role="bold">Attribute</emphasis>.</para>
 
-          <graphic fileref="images/CM-Sasha17A.jpg" vendor="configmgrSS" />
+          <graphic fileref="images/CM-Sasha17A.jpg" vendor="configmgrSS"/>
 
           <!--configMgr-Sasha-t1-Include-XXX-20-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='sh.t1'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
@@ -2217,11 +2260,10 @@ LDAP no </emphasis>documento <emphasis
         <sect3>
           <title>SashaServer Process Archiver</title>
 
-          <para>Esta seção descreve a aba
-          SashaServer Process Archiver</para>
+          <para>Esta seção descreve a aba SashaServer Process Archiver</para>
 
           <para>
-            <graphic fileref="images/CM-img17-1.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img17-1.jpg" vendor="configmgrSS"/>
           </para>
 
           <!--configMgr-Sasha-Archiver-Include-XXX-21-->
@@ -2229,20 +2271,19 @@ LDAP no </emphasis>documento <emphasis
           <para>
             <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='sh.t2'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
 
-          <para />
+          <para/>
         </sect3>
 
         <sect3 role="brk">
           <title>SashaServer Process Coalescer</title>
 
-          <para>Esta seção descreve a aba
-          SashaServer Process Coalescer</para>
+          <para>Esta seção descreve a aba SashaServer Process Coalescer</para>
 
           <para>
-            <graphic fileref="images/CM-img17-2.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img17-2.jpg" vendor="configmgrSS"/>
           </para>
 
           <!--configMgr-Sasha-Coaleser-Include-XXX-22-->
@@ -2250,7 +2291,7 @@ LDAP no </emphasis>documento <emphasis
           <para>
             <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='sh.t3'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
@@ -2259,11 +2300,10 @@ LDAP no </emphasis>documento <emphasis
         <sect3>
           <title>SashaServer Process DfuXRef</title>
 
-          <para>Esta seção descreve a aba
-          SashaServer Process DfuXref</para>
+          <para>Esta seção descreve a aba SashaServer Process DfuXref</para>
 
           <para>
-            <graphic fileref="images/CM-img17-3.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img17-3.jpg" vendor="configmgrSS"/>
           </para>
 
           <!--configMgr-Sasha-DfuXref-Include-XXX-23-->
@@ -2271,7 +2311,7 @@ LDAP no </emphasis>documento <emphasis
           <para>
             <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='sh.t4'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
@@ -2280,21 +2320,20 @@ LDAP no </emphasis>documento <emphasis
         <sect3>
           <title>SashaServer Process DfuExpiry</title>
 
-          <para>Esta seção descreve a aba
-          SashaServer Process DfuExpiry</para>
+          <para>Esta seção descreve a aba SashaServer Process DfuExpiry</para>
 
           <para>
-            <graphic fileref="images/CM-img17-4.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img17-4.jpg" vendor="configmgrSS"/>
           </para>
 
-          <para />
+          <para/>
 
           <!--configMgr-Sasha-DfuExpiry-Include-XXX-24-->
 
           <para>
             <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='sh.t5'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
@@ -2303,11 +2342,10 @@ LDAP no </emphasis>documento <emphasis
         <sect3>
           <title>SashaServer Process ThorQMon</title>
 
-          <para>Esta seção descreve a aba
-          SashaServer Process ThorQMon</para>
+          <para>Esta seção descreve a aba SashaServer Process ThorQMon</para>
 
           <para>
-            <graphic fileref="images/CM-img17-5.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img17-5.jpg" vendor="configmgrSS"/>
           </para>
 
           <!--configMgr-Sasha-ThorQMon-IncludeXXX-25-->
@@ -2315,7 +2353,7 @@ LDAP no </emphasis>documento <emphasis
           <para>
             <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='sh.t6'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
@@ -2324,11 +2362,11 @@ LDAP no </emphasis>documento <emphasis
         <sect3>
           <title>SashaServer Process DaFileSrvMonitor</title>
 
-          <para>Esta seção descreve a aba
-          SashaServer Process DaFileSrvMonitor</para>
+          <para>Esta seção descreve a aba SashaServer Process
+          DaFileSrvMonitor</para>
 
           <para>
-            <graphic fileref="images/CM-img17-6.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img17-6.jpg" vendor="configmgrSS"/>
           </para>
 
           <!--configMgr-Sasha-DafiSrvMon-Include-XXX26-->
@@ -2336,7 +2374,7 @@ LDAP no </emphasis>documento <emphasis
           <para>
             <xi:include href="../XMLGeneration/xml/sasha.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='sh.t7'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
@@ -2344,17 +2382,18 @@ LDAP no </emphasis>documento <emphasis
           <title>Notas sobre SashaServer Process</title>
 
           <para>Esta aba permite que você adicione notas pertinentes à
-          configuração do componente. Isso pode ser útil para manter um registro
-          de alterações e para comunicar essas informações aos parceiros.</para>
+          configuração do componente. Isso pode ser útil para manter um
+          registro de alterações e para comunicar essas informações aos
+          parceiros.</para>
         </sect3>
       </sect2>
 
       <sect2 id="Thor" role="brk">
         <title>Thor</title>
 
-        <para>Esta seção detalha como definir um cluster de refinaria de
-        dados (Thor). Antes de começar, você deve decidir a largura do cluster
-        (ou seja, quantos nós filhos você terá).</para>
+        <para>Esta seção detalha como definir um cluster de refinaria de dados
+        (Thor). Antes de começar, você deve decidir a largura do cluster (ou
+        seja, quantos nós filhos você terá).</para>
 
         <orderedlist>
           <listitem>
@@ -2363,13 +2402,13 @@ LDAP no </emphasis>documento <emphasis
           </listitem>
 
           <listitem>
-            <para>Selecione a aba<emphasis role="bold">            Topology</emphasis>
-.</para>
+            <para>Selecione a aba<emphasis role="bold"> Topology</emphasis>
+            .</para>
           </listitem>
 
           <listitem>
-            <para>Expanda a Topology, se necessário, clique com o botão direito do mouse no Master
-            e selecione Delete.</para>
+            <para>Expanda a Topology, se necessário, clique com o botão
+            direito do mouse no Master e selecione Delete.</para>
           </listitem>
         </orderedlist>
 
@@ -2381,53 +2420,55 @@ LDAP no </emphasis>documento <emphasis
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Clique com o botão direito do mouse na Topologia e selecione Add Master.</para>
+            <para>Clique com o botão direito do mouse na Topologia e selecione
+            Add Master.</para>
 
             <para>
-              <graphic fileref="images/CM-img13.jpg" vendor="configmgrSS" />
+              <graphic fileref="images/CM-img13.jpg" vendor="configmgrSS"/>
             </para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Selecione um computador na lista e pressione o
-            botão OK.</para>
+            <para>Selecione um computador na lista e pressione o botão
+            OK.</para>
 
             <para>
-              <graphic fileref="images/CM-112-5.jpg" vendor="configmgrSS" />
+              <graphic fileref="images/CM-112-5.jpg" vendor="configmgrSS"/>
             </para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Clique com o botão direito no mestre e selecione Add Slaves.</para>
+            <para>Clique com o botão direito no mestre e selecione Add
+            Slaves.</para>
 
             <para>
-              <graphic fileref="images/CM-111.jpg" vendor="configmgrSS" />
+              <graphic fileref="images/CM-111.jpg" vendor="configmgrSS"/>
             </para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Selecione os computadores a serem usados como filhos na lista e
-            pressione o botão OK. Use CTRL+CLICK para multi-seleção ou SHIFT+CLICK
-            para selecionar um intervalo.</para>
+            <para>Selecione os computadores a serem usados como filhos na
+            lista e pressione o botão OK. Use CTRL+CLICK para multi-seleção ou
+            SHIFT+CLICK para selecionar um intervalo.</para>
 
             <para><graphic fileref="images/CM-112-3.jpg"
-            vendor="configmgrSS" />Os nós agora são exibidos abaixo do nó do
+            vendor="configmgrSS"/>Os nós agora são exibidos abaixo do nó do
             Thor Master.</para>
 
             <para>
-              <graphic fileref="images/CM-img14.jpg" vendor="configmgrSS" />
+              <graphic fileref="images/CM-img14.jpg" vendor="configmgrSS"/>
             </para>
           </listitem>
 
           <listitem>
-            <para>Selecione Thor Cluster - mythor no painel Navigator no
-            lado esquerdo.</para>
+            <para>Selecione Thor Cluster - mythor no painel Navigator no lado
+            esquerdo.</para>
           </listitem>
 
           <listitem>
@@ -2436,7 +2477,7 @@ LDAP no </emphasis>documento <emphasis
             <para>Selecione a aba Attributes.</para>
 
             <para>
-              <graphic fileref="images/CM-img15.jpg" vendor="configmgrSS" />
+              <graphic fileref="images/CM-img15.jpg" vendor="configmgrSS"/>
             </para>
           </listitem>
 
@@ -2446,8 +2487,8 @@ LDAP no </emphasis>documento <emphasis
           </listitem>
 
           <listitem>
-            <para>Clique no <inlinegraphic fileref="images/GS-img01c.png" />
-            ícone do disco para salvar </para>
+            <para>Clique no <inlinegraphic fileref="images/GS-img01c.png"/>
+            ícone do disco para salvar</para>
           </listitem>
         </orderedlist>
 
@@ -2456,8 +2497,8 @@ LDAP no </emphasis>documento <emphasis
         <sect3>
           <title>a alteração da topologia do Thor</title>
 
-          <para>Se você deseja designar um nó diferente como o mestre
-          Thor ao configurar um sistema de vários nós, siga estas etapas.</para>
+          <para>Se você deseja designar um nó diferente como o mestre Thor ao
+          configurar um sistema de vários nós, siga estas etapas.</para>
 
           <orderedlist>
             <listitem>
@@ -2467,8 +2508,8 @@ LDAP no </emphasis>documento <emphasis
             </listitem>
 
             <listitem>
-              <para>Selecione a aba<emphasis role="bold">            Topology</emphasis>
-.</para>
+              <para>Selecione a aba<emphasis role="bold"> Topology</emphasis>
+              .</para>
             </listitem>
 
             <listitem>
@@ -2478,11 +2519,11 @@ LDAP no </emphasis>documento <emphasis
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>Selecione a opção <emphasis role="bold">Replace Master</emphasis>
-              </para>
+              <para>Selecione a opção <emphasis role="bold">Replace
+              Master</emphasis></para>
 
               <para>
-                <graphic fileref="images/CM-111-2.jpg" vendor="configmgrSS" />
+                <graphic fileref="images/CM-111-2.jpg" vendor="configmgrSS"/>
               </para>
 
               <para>
@@ -2490,20 +2531,20 @@ LDAP no </emphasis>documento <emphasis
                   <?dbfo keep-together="always"?>
 
                   <tgroup cols="2">
-                    <colspec colwidth="49.50pt" />
+                    <colspec colwidth="49.50pt"/>
 
-                    <colspec />
+                    <colspec/>
 
                     <tbody>
                       <row>
                         <entry>
-                          <inlinegraphic fileref="images/caution.png" />
+                          <inlinegraphic fileref="images/caution.png"/>
                         </entry>
 
-                        <entry>Você só deve usar esse recurso quando configurar inicialmente
-                        seu sistema. Se houver dados nos nós
-                        ao tentar trocar o mestre, você corre o
-                        risco de perder ou corromper alguns dados.</entry>
+                        <entry>Você só deve usar esse recurso quando
+                        configurar inicialmente seu sistema. Se houver dados
+                        nos nós ao tentar trocar o mestre, você corre o risco
+                        de perder ou corromper alguns dados.</entry>
                       </row>
                     </tbody>
                   </tgroup>
@@ -2521,20 +2562,20 @@ LDAP no </emphasis>documento <emphasis
           <para>Esta seção descreve a aba Thor Cluster Attributes.</para>
 
           <para>
-            <graphic fileref="images/CM-img18-1.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img18-1.jpg" vendor="configmgrSS"/>
           </para>
 
           <sect4 id="ThorMemorySettings">
             <title>Configurações de Memória do Thor</title>
 
-            <para>Quando o <emphasis role="bold">globalMemorySize</emphasis>
-            é deixado indefinido, Thor [master] detecta a memória física total e
+            <para>Quando o <emphasis role="bold">globalMemorySize</emphasis> é
+            deixado indefinido, Thor [master] detecta a memória física total e
             aloca 75% dela. Se houver múltiplos escravos por nó
             (slavesPerNode&gt;1), ele divide o total entre os escravos. Se
-            globalMemorySize for definido, ele aloca a quantidade de
-            memória para cada slave. O atributo masterMemorySize aloca
-            memória para o mestre Thor. Se omitido, o Thor master usa
-            globalMemorySize ou o padrão 75% de memória.</para>
+            globalMemorySize for definido, ele aloca a quantidade de memória
+            para cada slave. O atributo masterMemorySize aloca memória para o
+            mestre Thor. Se omitido, o Thor master usa globalMemorySize ou o
+            padrão 75% de memória.</para>
 
             <para>Em sistemas com muita memória, o padrão de 75% da memória
             física é provavelmente muito conservador e reservar o total físico
@@ -2542,8 +2583,8 @@ LDAP no </emphasis>documento <emphasis
             então dividir esse número pelo número de slavesPerNode.</para>
 
             <para>Se houver vários Thors compartilhando os mesmos nós, o
-            globalMemorySize deverá ser configurado para levar
-            isso em conta.</para>
+            globalMemorySize deverá ser configurado para levar isso em
+            conta.</para>
 
             <para>Por exemplo, se houver 2 Thors, cada um com 2 escravos por
             caixa, isso significará que há 4 escravos por nó físico. Portanto,
@@ -2552,40 +2593,42 @@ LDAP no </emphasis>documento <emphasis
 
             <programlisting>globalMemorySize = (total-physical-memory)-2GB / (2*2) </programlisting>
 
-            <para>Sem nenhuma configuração especificada, o Thor assume que tem acesso exclusivo
-            à memória e, portanto, usaria muito (porque
-            cada Thor não está ciente da configuração e uso de memória
-            do outro).</para>
+            <para>Sem nenhuma configuração especificada, o Thor assume que tem
+            acesso exclusivo à memória e, portanto, usaria muito (porque cada
+            Thor não está ciente da configuração e uso de memória do
+            outro).</para>
 
-            <para>Se <emphasis role="bold">localThor</emphasis> estiver configurado como true
-            e <emphasis role="bold">masterMemorySize</emphasis> e 
-            <emphasis role="bold">globalMemorySize</emphasis> não forem especificados,
+            <para>Se <emphasis role="bold">localThor</emphasis> estiver
+            configurado como true e <emphasis
+            role="bold">masterMemorySize</emphasis> e <emphasis
+            role="bold">globalMemorySize</emphasis> não forem especificados,
             os padrões serão 50% para <emphasis
             role="bold">globalMemorySize</emphasis> (dividido por <emphasis
             role="bold">slavesPerNode</emphasis>) e 25% para <emphasis
             role="bold">masterMemorySize.</emphasis></para>
 
-            <para>Embora uma configuração possa ser definida usando limites de memória
-            superiores que excedam a memória física total, o Thor não
-            reservará a memória com antecedência. Isso somente ocorrerá em casos de problemas
-            de memória quando e se seus jobs usarem toda a memória. Portanto, por exemplo,
-            dois Thors configurados para usar toda a memória disponível podem coexistir
-            pacificamente até que uma consulta em cada um esteja usando
-            simultaneamente mais memória do que o nó disponível.</para>
+            <para>Embora uma configuração possa ser definida usando limites de
+            memória superiores que excedam a memória física total, o Thor não
+            reservará a memória com antecedência. Isso somente ocorrerá em
+            casos de problemas de memória quando e se seus jobs usarem toda a
+            memória. Portanto, por exemplo, dois Thors configurados para usar
+            toda a memória disponível podem coexistir pacificamente até que
+            uma consulta em cada um esteja usando simultaneamente mais memória
+            do que o nó disponível.</para>
 
             <!--configMgr-Thor-Attribute-Include-XXX-->
 
             <para>
               <xi:include href="../XMLGeneration/xml/thor.xsd.mod.xml"
                           xpointer="xpointer(//*[@id='Th.t1'])"
-                          xmlns:xi="http://www.w3.org/2001/XInclude" />
+                          xmlns:xi="http://www.w3.org/2001/XInclude"/>
             </para>
           </sect4>
         </sect3>
 
         <xi:include href="ECLWatch/TheECLWatchMan.xml"
                     xpointer="xpointer(//*[@id='ECLWatchXREFMultiThor'])"
-                    xmlns:xi="http://www.w3.org/2001/XInclude" />
+                    xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
         <?hard-pagebreak ?>
 
@@ -2595,7 +2638,7 @@ LDAP no </emphasis>documento <emphasis
           <para>Esta seção descreve a aba ThorCluster SSH Options.</para>
 
           <para>
-            <graphic fileref="images/CM-img18-2.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img18-2.jpg" vendor="configmgrSS"/>
           </para>
 
           <!--configMgr-Thor-SSH-Include-XXX-->
@@ -2603,7 +2646,7 @@ LDAP no </emphasis>documento <emphasis
           <para>
             <xi:include href="../XMLGeneration/xml/thor.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='Th.t3'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
@@ -2621,7 +2664,7 @@ LDAP no </emphasis>documento <emphasis
           <para>Esta seção descreve a aba ThorCluster Swap Node</para>
 
           <para>
-            <graphic fileref="images/CM-img18-4.jpg" vendor="configmgrSS" />
+            <graphic fileref="images/CM-img18-4.jpg" vendor="configmgrSS"/>
           </para>
 
           <!--configMgr-Thor-SwapNode-Include-XXX-->
@@ -2629,7 +2672,7 @@ LDAP no </emphasis>documento <emphasis
           <para>
             <xi:include href="../XMLGeneration/xml/thor.xsd.mod.xml"
                         xpointer="xpointer(//*[@id='Th.t4'])"
-                        xmlns:xi="http://www.w3.org/2001/XInclude" />
+                        xmlns:xi="http://www.w3.org/2001/XInclude"/>
           </para>
         </sect3>
 
@@ -2639,17 +2682,19 @@ LDAP no </emphasis>documento <emphasis
           <title>Notas sobre ThorCluster</title>
 
           <para>Esta aba permite que você adicione notas pertinentes à
-          configuração do componente. Isso pode ser útil para manter um registro
-          de alterações e para comunicar essas informações aos parceiros.</para>
+          configuração do componente. Isso pode ser útil para manter um
+          registro de alterações e para comunicar essas informações aos
+          parceiros.</para>
         </sect3>
       </sect2>
 
       <sect2 id="Roxie" role="brk">
         <title>Roxie</title>
 
-        <para>Esta seção detalha como definir um cluster do Mecanismo de Entrega Rápida de Dados (Rapid Data Delivery Engine
-        - Roxie). Antes de começar, você deve decidir a largura do
-        cluster (ou seja, quantos nós de agente você terá).</para>
+        <para>Esta seção detalha como definir um cluster do Mecanismo de
+        Entrega Rápida de Dados (Rapid Data Delivery Engine - Roxie). Antes de
+        começar, você deve decidir a largura do cluster (ou seja, quantos nós
+        de agente você terá).</para>
 
         <!--***This section appears to have had signifcent changes*** -->
 
@@ -2659,12 +2704,13 @@ LDAP no </emphasis>documento <emphasis
             painel do navegador ao lado esquerdo.</para>
 
             <para><emphasis role="bold">Observação:</emphasis> Se você não
-            especificou um valor no campo <emphasis>Number of nodes for Roxie cluster (Número de nós para o cluster Roxie)
-            </emphasis> ao configurar seu ambiente pela primeira vez, você não terá
-            um Roxie Cluster. Para adicionar um componente Roxie Cluster:
-            Clique com o botão direito do mouse no componente <emphasis role="bold">Software</emphasis>
-            no Painel Navigator, selecione <emphasis
-            role="bold">New Components</emphasis> e depois <emphasis
+            especificou um valor no campo <emphasis>Number of nodes for Roxie
+            cluster (Número de nós para o cluster Roxie) </emphasis> ao
+            configurar seu ambiente pela primeira vez, você não terá um Roxie
+            Cluster. Para adicionar um componente Roxie Cluster: Clique com o
+            botão direito do mouse no componente <emphasis
+            role="bold">Software</emphasis> no Painel Navigator, selecione
+            <emphasis role="bold">New Components</emphasis> e depois <emphasis
             role="bold">roxie</emphasis> nas listas suspensas.</para>
           </listitem>
 
@@ -2676,43 +2722,43 @@ LDAP no </emphasis>documento <emphasis
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Clique com o botão direito do mouse nos Servidores Roxie e selecione 
-            <guimenuitem>Reconfigure Servers</guimenuitem>.</para>
+            <para>Clique com o botão direito do mouse nos Servidores Roxie e
+            selecione <guimenuitem>Reconfigure Servers</guimenuitem>.</para>
 
             <para>
-              <graphic fileref="images/CM-112.jpg" vendor="configmgrSS" />
+              <graphic fileref="images/CM-112.jpg" vendor="configmgrSS"/>
             </para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Selecione os computadores a serem usados como servidores na lista e
-            pressione o botão OK.</para>
+            <para>Selecione os computadores a serem usados como servidores na
+            lista e pressione o botão OK.</para>
 
             <para>
-              <graphic fileref="images/CM-112-2.jpg" vendor="configmgrSS" />
+              <graphic fileref="images/CM-112-2.jpg" vendor="configmgrSS"/>
             </para>
           </listitem>
 
           <listitem>
-            <para>Selecione a aba<emphasis role="bold">Redundancy</emphasis>
+            <para>Selecione a aba<emphasis role="bold"> Redundancy</emphasis>
             .</para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Selecione o esquema de redundância a ser usado. Normalmente, isso é
-            redundância cíclica, conforme mostrado abaixo.</para>
+            <para>Selecione o esquema de redundância a ser usado. Normalmente,
+            isso é redundância cíclica, conforme mostrado abaixo.</para>
 
             <para>
-              <graphic fileref="images/CM-112-1.jpg" vendor="configmgrSS" />
+              <graphic fileref="images/CM-112-1.jpg" vendor="configmgrSS"/>
             </para>
           </listitem>
 
           <listitem>
-            <para>Clique no <inlinegraphic fileref="images/GS-img01c.png" />
+            <para>Clique no <inlinegraphic fileref="images/GS-img01c.png"/>
             ícone do disco para salvar</para>
           </listitem>
 
@@ -2725,11 +2771,12 @@ LDAP no </emphasis>documento <emphasis
         <sect3>
           <title>Atributos de Configuração do Roxie</title>
 
-          <para>O Roxie possui muitos atributos configuráveis que podem ser usados
-          para personalizar e ajustar suas necessidades específicas. A seção a seguir
-          se expande em cada uma das guias Roxie e nos atributos
-          disponíveis. Há informações adicionais sobre a configuração do Roxie na
-          seção imediatamente após essas tabelas.</para>
+          <para>O Roxie possui muitos atributos configuráveis que podem ser
+          usados para personalizar e ajustar suas necessidades específicas. A
+          seção a seguir se expande em cada uma das guias Roxie e nos
+          atributos disponíveis. Há informações adicionais sobre a
+          configuração do Roxie na seção imediatamente após essas
+          tabelas.</para>
         </sect3>
       </sect2>
 
@@ -2739,10 +2786,10 @@ LDAP no </emphasis>documento <emphasis
 
       <xi:include href="../XMLGeneration/xml/roxie.xsd.mod.xml"
                   xpointer="element(/1)"
-                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+                  xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
       <sect2>
-        <title />
+        <title/>
 
         <sect3>
           <title>Itens adicionais de Configuração Roxie</title>
@@ -2750,24 +2797,25 @@ LDAP no </emphasis>documento <emphasis
           <!--***Move to XSD for 2.0***-->
 
           <para>
-            <emphasis role="bold">Conexões Persistentes para o Roxie</emphasis>
+            <emphasis role="bold">Conexões Persistentes para o
+            Roxie</emphasis>
           </para>
 
-          <para>As conexões persistentes podem causar problemas de compatibilidade
-          com versões anteriores com clientes HTTP não padrão. Você pode desativar esse recurso
-          definindo <emphasis>maxHttpConnectionRequests</emphasis> como
-          0 ou 1.</para>
+          <para>As conexões persistentes podem causar problemas de
+          compatibilidade com versões anteriores com clientes HTTP não padrão.
+          Você pode desativar esse recurso definindo
+          <emphasis>maxHttpConnectionRequests</emphasis> como 0 ou 1.</para>
 
-          <para>Além disso, conexões persistentes podem afetar o balanceamento de
-          carga do Roxie. Se isso for uma preocupação, você poderá ajustar os valores
-          <emphasis>maxHttpConnectionRequests</emphasis> e 
+          <para>Além disso, conexões persistentes podem afetar o balanceamento
+          de carga do Roxie. Se isso for uma preocupação, você poderá ajustar
+          os valores <emphasis>maxHttpConnectionRequests</emphasis> e
           <emphasis>maxHttpKeepAliveWait</emphasis> para otimizar por quanto
           tempo todas as transações de uma conexão persistente específica vão
-          para um único nó, em vez de serem distribuídas pelo
-          cluster.</para>
+          para um único nó, em vez de serem distribuídas pelo cluster.</para>
 
           <para>
-            <emphasis role="bold">Adicionar servidores ao Roxie Farm</emphasis>
+            <emphasis role="bold">Adicionar servidores ao Roxie
+            Farm</emphasis>
           </para>
 
           <para>Para adicionar servidores ao Roxie Farm</para>
@@ -2780,13 +2828,13 @@ LDAP no </emphasis>documento <emphasis
               </listitem>
 
               <listitem>
-                <para>Selecione a aba <emphasis role="bold">Servidores</emphasis>
-                .</para>
+                <para>Selecione a aba <emphasis
+                role="bold">Servidores</emphasis> .</para>
               </listitem>
 
               <listitem>
-                <para>Clique com o botão direito do mouse em <emphasis role="bold">Roxie
-                Servers</emphasis>.</para>
+                <para>Clique com o botão direito do mouse em <emphasis
+                role="bold">Roxie Servers</emphasis>.</para>
               </listitem>
 
               <listitem>
@@ -2795,25 +2843,25 @@ LDAP no </emphasis>documento <emphasis
               </listitem>
 
               <listitem>
-                <para>Pressione o<emphasis role="bold">                botão </emphasis>
-Add Hardware.</para>
+                <para>Pressione o<emphasis role="bold"> botão </emphasis> Add
+                Hardware.</para>
               </listitem>
 
               <listitem>
-                <para>Digite os valores para os novo(s) servidore(s) na caixa de diálogo
-                e pressione OK.</para>
+                <para>Digite os valores para os novo(s) servidore(s) na caixa
+                de diálogo e pressione OK.</para>
               </listitem>
-            </orderedlist>Todos os servidores configurados são usados quando você cria
-          uma porta para escutar.</para>
+            </orderedlist>Todos os servidores configurados são usados quando
+          você cria uma porta para escutar.</para>
 
           <variablelist>
             <varlistentry>
               <term>OBSERVAÇÃO</term>
 
               <listitem>
-                <para>Se estiver trabalhando com um arquivo de ambiente antigo, esse processo
-                foi alterado. Você não precisa mais especificar para um servidor usar uma
-                porta específica.</para>
+                <para>Se estiver trabalhando com um arquivo de ambiente
+                antigo, esse processo foi alterado. Você não precisa mais
+                especificar para um servidor usar uma porta específica.</para>
               </listitem>
             </varlistentry>
           </variablelist>
@@ -2822,21 +2870,21 @@ Add Hardware.</para>
         <sect3>
           <title>Redundância</title>
 
-          <para>O Roxie pode ser configurado para utilizar alguns modelos de redundância
-          diferentes. <itemizedlist>
+          <para>O Roxie pode ser configurado para utilizar alguns modelos de
+          redundância diferentes. <itemizedlist>
               <listitem>
-                <para>Simple Redundancy - um canal por escravo. Mais comumente
-          usado para um único nó Roxie.</para>
+                <para>Simple Redundancy - um canal por agente. Mais comumente
+                usado para um único nó Roxie.</para>
               </listitem>
 
               <listitem>
-                <para>Full Redundancy - mais escravos que o número de
-                canais. Vários escravos hospedam cada canal.</para>
+                <para>Full Redundancy - mais agente que o número de canais.
+                Vários agentes hospedam cada canal.</para>
               </listitem>
 
               <listitem>
                 <para>Overloaded Redundancy - Existem vários canais por
-                escravo.</para>
+                agente.</para>
               </listitem>
 
               <listitem>
@@ -2853,13 +2901,13 @@ Add Hardware.</para>
         <para>Esta seção descreve a aba Topology.</para>
 
         <para>
-          <graphic fileref="images/CM-img20.jpg" vendor="configmgrSS" />
+          <graphic fileref="images/CM-img20.jpg" vendor="configmgrSS"/>
 
           <informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
-              <colspec align="left" colwidth="122.40pt" />
+              <colspec align="left" colwidth="122.40pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
@@ -2908,28 +2956,29 @@ Add Hardware.</para>
       <sect2 id="CFG_TopoServer" role="brk">
         <title>Topo Server</title>
 
-        <para>Esse processo TopoServer é configurado através do servidor <emphasis>Topo
-        Server - mytoposerver</emphasis> do Configuration Manager. Você
-        define as instâncias e, em seguida, define os atributos de configuração.</para>
+        <para>Esse processo TopoServer é configurado através do servidor
+        <emphasis>Topo Server - mytoposerver</emphasis> do Configuration
+        Manager. Você define as instâncias e, em seguida, define os atributos
+        de configuração.</para>
 
         <para>
-          <graphic fileref="images/CM-TopoSrvr.jpg" />
+          <graphic fileref="images/CM-TopoSrvr.jpg"/>
         </para>
 
         <!--TopoServer-Include-->
 
         <xi:include href="../XMLGeneration/xml/toposerver.xsd.mod.xml"
                     xpointer="xpointer(//*[@id='topo.svr'])"
-                    xmlns:xi="http://www.w3.org/2001/XInclude" />
+                    xmlns:xi="http://www.w3.org/2001/XInclude"/>
       </sect2>
 
       <sect2 id="Propogate-configuration-changes" role="brk">
         <title>Distribuir alterações na configuração para todos os nós</title>
 
-        <para>Após ter configurado seu ambiente da forma desejada, é preciso copiar
-          o arquivo de configuração para os demais nós.</para>
+        <para>Após ter configurado seu ambiente da forma desejada, é preciso
+        copiar o arquivo de configuração para os demais nós.</para>
 
-        <para />
+        <para/>
 
         <orderedlist>
           <listitem>
@@ -2940,18 +2989,19 @@ Add Hardware.</para>
                 <?dbfo keep-together="always"?>
 
                 <tgroup cols="2">
-                  <colspec colwidth="49.50pt" />
+                  <colspec colwidth="49.50pt"/>
 
-                  <colspec />
+                  <colspec/>
 
                   <tbody>
                     <row>
                       <entry>
-                        <inlinegraphic fileref="images/caution.png" />
+                        <inlinegraphic fileref="images/caution.png"/>
                       </entry>
 
-                      <entry>Certifique-se de que o HPCC System não esteja em execução antes de tentar
-                        copiar o arquivo Environment.xml.</entry>
+                      <entry>Certifique-se de que o HPCC System não esteja em
+                      execução antes de tentar copiar o arquivo
+                      Environment.xml.</entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -2965,40 +3015,42 @@ Add Hardware.</para>
             <programlisting># por exemplo
 sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.bak </programlisting>
 
-            <para>Observação: o arquivo environment.xml do ambiente em execução está localizado em seu diretório 
-            <emphasis role="bold">/etc/HPCCSystems/</emphasis>.
-            O Gerenciador de Configurações funciona em arquivos no diretório <emphasis
+            <para>Observação: o arquivo environment.xml do ambiente em
+            execução está localizado em seu diretório <emphasis
+            role="bold">/etc/HPCCSystems/</emphasis>. O Gerenciador de
+            Configurações funciona em arquivos no diretório <emphasis
             role="bold">/etc/HPCCSystems/source</emphasis>. É necessário
             copiar deste local para criar um arquivo environment.xml
             ativo.</para>
           </listitem>
 
           <listitem>
-            <para>Copie o novo arquivo NewEnvironment.xml do diretório de origem
-              para /etc/HPCCSystems e renomeie o arquivo para
-              environment.xml</para>
+            <para>Copie o novo arquivo NewEnvironment.xml do diretório de
+            origem para /etc/HPCCSystems e renomeie o arquivo para
+            environment.xml</para>
 
             <programlisting># por exemplo
 sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
 
-            <para />
+            <para/>
           </listitem>
 
           <listitem>
             <para>Copie o /etc/HPCCSystems/environment.xml para o
-              /etc/HPCCSystems/ em cada nó.</para>
+            /etc/HPCCSystems/ em cada nó.</para>
 
-            <para />
+            <para/>
           </listitem>
 
           <listitem>
             <para>Inicie a plataforma do HPCC System</para>
 
-            <para>Se preferir, use um script para automatizar essa etapa, especialmente se você
-              tiver muitos nós. Consulte a seção Scripts de exemplo na seção Anexos do manual
-              Como instalar e executar a plataforma do HPCC System. É possível usar os
-              scripts como um modelo para criar seu próprio script e copiar
-              o arquivo environment.xml para todos os seus nós.</para>
+            <para>Se preferir, use um script para automatizar essa etapa,
+            especialmente se você tiver muitos nós. Consulte a seção Scripts
+            de exemplo na seção Anexos do manual Como instalar e executar a
+            plataforma do HPCC System. É possível usar os scripts como um
+            modelo para criar seu próprio script e copiar o arquivo
+            environment.xml para todos os seus nós.</para>
           </listitem>
         </orderedlist>
       </sect2>

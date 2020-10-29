@@ -21,6 +21,34 @@
   Dentro do período de transação, vários superarquivos podem ser mantidos
   adicionando, removendo, limpando, alternando e substituindo subfiles.</para>
 
+  <para>Você deve usar a ação SEQUENTIAL para garantir a execução ordenada das
+  chamadas de função dentro do período da transação. Assim, as funções do
+  SuperFile Maintenance são chamadas na ordem em que são listadas entre as
+  funções de início e término do período da transação, mas são confirmadas
+  apenas uma vez (ou seja, realmente executadas) no final da função de
+  transação.</para>
+
+  <para>A primeira função de manutenção do SuperFile chamada dentro do período
+  da transação inicia um bloqueio de “leitura” no superfile até o commit. No
+  commit, o superfile é bloqueado para “gravação” para que a transação seja
+  realmente executada, e todos os bloqueios são liberados no final do commit.
+  É importante notar que quaisquer chamadas para funções diferentes das
+  funções de Manutenção do SuperFile dentro do período da transação não fazem
+  parte do período da transação (mesmo que sejam executadas na ordem em que
+  foram escritas). O bloqueio de “leitura” só é gerado quando a primeira
+  função de manutenção do SuperFile é chamada. Enquanto o superfile está
+  bloqueado para “leitura”, nenhum bloqueio simultâneo de “gravação” pode
+  modificar o superfile.</para>
+
+  <para>Durante o intervalo de tempo do bloqueio de “gravação” na confirmação
+  (geralmente uma pequena janela de tempo), nenhum bloqueio de “leitura”
+  simultâneo é permitido. Portanto, as funções de manutenção do SuperFile
+  devem ser chamadas dentro de um período da transação para evitar a
+  possibilidade de outro processo tentar modificar o superfile durante a
+  manutenção do subarquivo. Como resultado, o trabalho de manutenção pode ser
+  realizado sem causar problemas com qualquer consulta que possa usar o
+  SuperFile.</para>
+
   <para>A função FinishSuperFileTransaction reverte automaticamente a
   transação se qualquer erro ou falha ocorre durante o período de transação.
   Se nenhum erro ocorrer, a confirmação ou reversão da transação será
@@ -29,5 +57,20 @@
 
   <para>Exemplo:</para>
 
-  <programlisting format="linespecific">STD.File.StartSuperFileTransaction();</programlisting>
+  <programlisting format="linespecific">IMPORT STD;
+ 
+WeeklyRollup:='~Training::Examples::WeeklyRollup';
+WeeklySF    :='~Training::Examples::Weekly';
+DailySF     :='~Training::Examples::Daily';
+ 
+DailyDS := DATASET(DailySF,{string Myfield},THOR);
+ 
+SEQUENTIAL(STD.File.StartSuperFileTransaction(),
+           STD.File.ClearSuperFile(DailySF),
+           OUTPUT(DailyDS,,WeeklyRollup),
+           STD.File.AddSuperFile(WeeklySF,WeeklyRollup),
+           STD.File.FinishSuperFileTransaction());
+//executes the OUTPUT after a "read" lock on the superfile DailySF
+//has been initiated by the ClearSuperFile Maintenance function, 
+//which in turn executes only at the FinishTransaction</programlisting>
 </sect1>

@@ -435,6 +435,19 @@ ecl deploy roxie - --name=FindPersonService
                   status git) O uso dessa função exige que o git esteja
                   instalado e disponível no caminho.</entry>
                 </row>
+
+                <row>
+                  <entry>--nostdinc</entry>
+
+                  <entry>Não inclua o diretório atual em -I</entry>
+                </row>
+
+                <row>
+                  <entry>--fastsyntax</entry>
+
+                  <entry>Atrasar funções de expansão ao analisar. Pode
+                  acelerar processamento para algumas consultas</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -761,6 +774,19 @@ ecl publish roxie ArchiveQuery.xml --name=FindPersonService --no-activate
                   status git) O uso dessa função exige que o git esteja
                   instalado e disponível no caminho.</entry>
                 </row>
+
+                <row>
+                  <entry>--nostdinc</entry>
+
+                  <entry>Não inclua o diretório atual em -I</entry>
+                </row>
+
+                <row>
+                  <entry>--fastsyntax</entry>
+
+                  <entry>Atrasar funções de expansão ao analisar. Pode
+                  acelerar processamento para algumas consultas</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -854,6 +880,20 @@ ecl unpublish roxie "FindpersonService*"
                   <entry>-pw, --password</entry>
 
                   <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1111,6 +1151,19 @@ ecl run thor findperson.ecl -I C:\MyECL\
                 </row>
 
                 <row>
+                  <entry>--nostdinc</entry>
+
+                  <entry>Não inclua o diretório atual em -I</entry>
+                </row>
+
+                <row>
+                  <entry>--fastsyntax</entry>
+
+                  <entry>Atrasar funções de expansão ao analisar. Pode
+                  acelerar processamento para algumas consultas</entry>
+                </row>
+
+                <row>
                   <entry>-f-xxx</entry>
 
                   <entry>Passará a opção -xxx para o eclcc</entry>
@@ -1221,6 +1274,20 @@ ecl results W20170519-142920 --noroot --exception-level=error
 
                   <entry>A senha (se necessário)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -1311,6 +1378,20 @@ ecl results W20170519-142920 --noroot --exception-level=error
                   <entry>-pw, --password</entry>
 
                   <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1403,6 +1484,20 @@ ecl results W20170519-142920 --noroot --exception-level=error
                   <entry>-pw, --password</entry>
 
                   <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1547,6 +1642,20 @@ ecl queries list roxie --target=roxie --show=A </programlisting>
                   <entry>-pw, --password</entry>
 
                   <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -1724,6 +1833,20 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
 
                   <entry>A senha (se necessário)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -1878,6 +2001,20 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
 
                   <entry>A senha (se necessário)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -2011,6 +2148,612 @@ ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
                   <entry>-pw, --password</entry>
 
                   <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLQueriesRecreate" role="brk">
+        <title>ecl queries recreate</title>
+
+        <para><emphasis role="bold">ecl queries recreate &lt;target&gt;
+        &lt;query&gt; [&lt;destination-target&gt;] [options]</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl queries recreate roxie findpeople 
+ecl queries recreate roxie findpeople roxie2</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>ecl queries recreate</entry>
+
+                  <entry>Recompila uma consulta em uma nova workunit e a
+                  republica. Isto é útil quando está migrando para um novo
+                  compilador ECL e deseja-se recompilar uma consulta da mesma
+                  fonte. O arquivo ECL deve estar disponível junto da workunit
+                  da consulta.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Actions</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>recreate</entry>
+
+                  <entry>Recompila a consulta em uma nova workunit e a
+                  republica.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Argumentos</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>A consulta do destino em que deseja recriar</entry>
+                </row>
+
+                <row>
+                  <entry>query</entry>
+
+                  <entry>O ID da consulta que deseja recriar</entry>
+                </row>
+
+                <row>
+                  <entry>destination-target</entry>
+
+                  <entry>Opcional: O destino para qual deseja mover a nova
+                  consulta (se for diferente do destino de origem)</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-A, --activate</entry>
+
+                  <entry>Ativa a consulta quando publicada</entry>
+                </row>
+
+                <row>
+                  <entry>--limit=&lt;limit&gt;</entry>
+
+                  <entry>Ajusta o limite de resultados para uma consulta, o
+                  padrão é 100</entry>
+                </row>
+
+                <row>
+                  <entry>-sp, --suspend-prev</entry>
+
+                  <entry>Suspende a consulta ativa anterior</entry>
+                </row>
+
+                <row>
+                  <entry>-dp, --delete-prev</entry>
+
+                  <entry>Exclui a consulta ativa anterior</entry>
+                </row>
+
+                <row>
+                  <entry>-A-, --no-activate</entry>
+
+                  <entry>Não ativa a consulta quando publicada</entry>
+                </row>
+
+                <row>
+                  <entry>--no-publish</entry>
+
+                  <entry>Cria a workunit recompilada, mas não a
+                  publica</entry>
+                </row>
+
+                <row>
+                  <entry>--no-reload</entry>
+
+                  <entry>Especifica para não recarregar o cluster
+                  Roxie</entry>
+                </row>
+
+                <row>
+                  <entry>--no-files</entry>
+
+                  <entry>Especifica para não copiar informações do arquivo DFS
+                  para arquivos referenciaados pela consulta.</entry>
+                </row>
+
+                <row>
+                  <entry>--allow-foreign</entry>
+
+                  <entry>Especifica para permitr o uso de arquivos externos em
+                  uma consulta Roxie. Se a consulta Roxie referenciar arquivos
+                  externos e isto não estiver habilitado, a publicação irá
+                  falhar.</entry>
+                </row>
+
+                <row>
+                  <entry>--daliip=&lt;IP&gt;</entry>
+
+                  <entry>Endereço IP ou hostname do Dali remoto para pesquisa
+                  de arquivos lógicos remotos.</entry>
+                </row>
+
+                <row>
+                  <entry>--update-super-files</entry>
+
+                  <entry>Atualiza os superfiles DFS local se o DALI remoto for
+                  alterado</entry>
+                </row>
+
+                <row>
+                  <entry>--update-clone-from</entry>
+
+                  <entry>Atualiza o clone local a partir de uma localição se o
+                  DALI remoto for alterado</entry>
+                </row>
+
+                <row>
+                  <entry>--dont-append-cluster</entry>
+
+                  <entry>Uso somente para evitar incidentes de bloqueio devido
+                  adição de cluster ao arquivo</entry>
+                </row>
+
+                <row>
+                  <entry>--source-process=&lt;value&gt;</entry>
+
+                  <entry>Processo do cluster para copiar arquivos</entry>
+                </row>
+
+                <row>
+                  <entry>--timeLimit=&lt;sec&gt;</entry>
+
+                  <entry>Valor para a configuração timeLimit da
+                  consulta.</entry>
+                </row>
+
+                <row>
+                  <entry>--warnTimeLimit=&lt;sec&gt;</entry>
+
+                  <entry>Valor para a configuração warnTimeLimit da
+                  consulta.</entry>
+                </row>
+
+                <row>
+                  <entry>--memoryLimit=&lt;mem&gt;</entry>
+
+                  <entry>Valores par ajudar a configuração memoryLimit da
+                  consulta. Formato &lt;mem&gt; como 500000B, 550K, 100M,
+                  10G,ou 1T, etc.</entry>
+                </row>
+
+                <row>
+                  <entry>--priority=&lt;val&gt;</entry>
+
+                  <entry>A prioridade para essa consulta. Valor pode ser LOW,
+                  HIGH, SLA, NONE. NONE irá limpar a configuração
+                  atual.</entry>
+                </row>
+
+                <row>
+                  <entry>--comment=&lt;string&gt;</entry>
+
+                  <entry>Um comentário associado a essa consulta</entry>
+                </row>
+
+                <row>
+                  <entry>--wait=&lt;sec&gt;</entry>
+
+                  <entry>Tempo máximo de espera para o cluster finalizar a
+                  atualização</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP
+                  <para>que está executando os serviços do ECL
+                  Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLQueriesImport" role="brk">
+        <title>ecl queries import</title>
+
+        <para><emphasis role="bold">ecl queries import &lt;target&gt;
+        &lt;file&gt; [--clone-active-state] [--replace]
+        [options]</emphasis></para>
+
+        <para>Example:</para>
+
+        <programlisting>ecl queries import roxie1 myqueryset.xml
+</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>ecl queries import</entry>
+
+                  <entry>Importa o conteúdo de um queryset previamente
+                  exportado para o disco.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Actions</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>import</entry>
+
+                  <entry>Importa um queryset de um arquivo</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Argumentos</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>O cluster de destino para importar as
+                  consultas</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>--all</entry>
+
+                  <entry>Copia ambas consultas, ativas e inativas. Se omitido,
+                  somente as ativas serão importadas.</entry>
+                </row>
+
+                <row>
+                  <entry>--replace</entry>
+
+                  <entry>Substitui por completo um queryset existente</entry>
+                </row>
+
+                <row>
+                  <entry>--queries</entry>
+
+                  <entry>Filtra ids de consultas para importação</entry>
+                </row>
+
+                <row>
+                  <entry>--no-files</entry>
+
+                  <entry>Especifica para não copiar informações do arquivo DFS
+                  para arquivos referenciaados pela consulta.</entry>
+                </row>
+
+                <row>
+                  <entry>--daliip=&lt;IP&gt;</entry>
+
+                  <entry>DFS DALI remoto para cópia de informações do
+                  arquivo</entry>
+                </row>
+
+                <row>
+                  <entry>--source-process=&lt;value&gt;</entry>
+
+                  <entry>Processo do cluster para copiar arquivos</entry>
+                </row>
+
+                <row>
+                  <entry>--clone-active-state</entry>
+
+                  <entry>Faz cópia das consultas ativas se estiverem ativas na
+                  origem</entry>
+                </row>
+
+                <row>
+                  <entry>-O, --overwrite</entry>
+
+                  <entry>Substitui por completo informações do arquivo DFS
+                  (cuidado)</entry>
+                </row>
+
+                <row>
+                  <entry>--update-super-files</entry>
+
+                  <entry>Atualiza os superfiles DFS local se o DALI remoto for
+                  alterado</entry>
+                </row>
+
+                <row>
+                  <entry>--update-clone-from</entry>
+
+                  <entry>Atualiza o clone local a partir de uma localição se o
+                  DALI remoto for alterado</entry>
+                </row>
+
+                <row>
+                  <entry>--dont-append-cluster</entry>
+
+                  <entry>Uso somente para evitar incidentes de bloqueio devido
+                  adição de cluster ao arquivo</entry>
+                </row>
+
+                <row>
+                  <entry>--allow-foreign</entry>
+
+                  <entry>Especifica para permitr o uso de arquivos externos em
+                  uma consulta Roxie. Se a consulta Roxie referenciar arquivos
+                  externos e isto não estiver habilitado, a publicação irá
+                  falhar.</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP
+                  <para>que está executando os serviços do ECL
+                  Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLQueriesExport" role="brk">
+        <title>ecl queries export</title>
+
+        <para><emphasis role="bold">ecl queries export &lt;target&gt;
+        [options]</emphasis></para>
+
+        <para>Exemplo:</para>
+
+        <programlisting>ecl queries export roxie1 --output=myqueryset.xml
+</programlisting>
+
+        <para/>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>ecl queries export</entry>
+
+                  <entry>Salva informações de backup sobre um queryset em um
+                  arquivo.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Ações</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>export</entry>
+
+                  <entry>Exporta as informações de um queryset para um
+                  arquivo</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Argumentos</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>Nome do cluster de destino para exportar</entry>
+                </row>
+
+                <row>
+                  <entry>-O, --output=&lt;filename&gt;</entry>
+
+                  <entry>Nome do arquivo para salvar informações para backup
+                  (opcional)</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>--active-only</entry>
+
+                  <entry>Somente inclui consultas ativas no queryset
+                  exportado.</entry>
+                </row>
+
+                <row>
+                  <entry>--protect</entry>
+
+                  <entry>Protege as workunits para as consultas
+                  inclusas</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Saída de informações adicionais de
+                  rastreamento</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>O endereço IP ou nome do host do servidor ESP
+                  <para>que está executando os serviços do ECL
+                  Watch</para></entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use o protocolo SSL para proteger a conexão com o
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2238,6 +2981,20 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
                   <entry>A senha (se necessário)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -2330,6 +3087,20 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
                   <entry>A senha (se necessário)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -2421,6 +3192,20 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry>-pw, --password</entry>
 
                   <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2518,6 +3303,20 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
                   <entry>A senha (se necessário)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -2614,6 +3413,20 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry>-pw, --password</entry>
 
                   <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2794,6 +3607,20 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
                   <entry>A senha (se necessário)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -2908,6 +3735,20 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry>-pw, --password</entry>
 
                   <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -3024,6 +3865,20 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <entry>-pw, --password</entry>
 
                 <entry>A senha (se necessário)</entry>
+              </row>
+
+              <row>
+                <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                <entry>Tempo limite durante a conexão ao servidor (em
+                milisegundos)</entry>
+              </row>
+
+              <row>
+                <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                <entry>Tempo limite durante a leitura do socket (em
+                segundos)</entry>
               </row>
             </tbody>
           </tgroup>
@@ -3173,6 +4028,20 @@ ecl packagemap validate roxie --active</programlisting>
                   <entry>-pw, --password</entry>
 
                   <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -3338,6 +4207,20 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
 
                   <entry>A senha (se necessário)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -3424,6 +4307,20 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
 
                   <entry>A senha (se necessário)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -3498,6 +4395,20 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                   <entry>-pw, --password</entry>
 
                   <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -3574,6 +4485,20 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                   <entry>-pw, --password</entry>
 
                   <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -3655,6 +4580,20 @@ ecl packagemap copy //192.168.0.100:8010/roxie/MyPkg roxie2
                   <entry>-pw, --password</entry>
 
                   <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -4128,6 +5067,20 @@ ecl bundle list myb*
 
                   <entry>A senha (se necessário)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -4215,6 +5168,20 @@ ecl abort -n MyJob</programlisting>
                   <entry>-pw, --password</entry>
 
                   <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -4304,6 +5271,20 @@ ecl status -n MyJob</programlisting>
                   <entry>-pw, --password</entry>
 
                   <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -4395,6 +5376,20 @@ ecl getwuid -n MyCommonJobName --limit=100</programlisting>
 
                   <entry>A senha (se necessário)</entry>
                 </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
@@ -4431,7 +5426,8 @@ ecl getname -wu W201407*
                 <row>
                   <entry>--wuid</entry>
 
-                  <entry>Os WUID (ID da Workunit)</entry>
+                  <entry>Os WUID (ID da Workunit) (WUID é case
+                  sensitive)</entry>
                 </row>
 
                 <row>
@@ -4485,6 +5481,152 @@ ecl getname -wu W201407*
                   <entry>-pw, --password</entry>
 
                   <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="CT_CLI_SyntaxECLzapgen" role="brk">
+        <title>ecl zapgen</title>
+
+        <para><emphasis role="bold">ecl zapgen &lt;WUID&gt; --path
+        &lt;zap_file_path&gt; [options]</emphasis></para>
+
+        <para>Use the zapgen command to create a Zipped Analysis Package
+        (Z.A.P.) containing collecting system information about a workunit and
+        encapsulating it into a shareable package. It is a useful tool for
+        reporting errors, inconsistencies, or other unexpected
+        behavior.</para>
+
+        <para>Exemplos:</para>
+
+        <programlisting>ecl zapgen W20171017-091320 --path ~/reports
+ecl zapgen W20171018-091399 --path ~ --inc-thor-slave-logs --description "Unexpected result from JOIN"
+</programlisting>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>ecl zapgen</entry>
+
+                  <entry>Cria um arquivo ZAP para a workunit local
+                  especificado.</entry>
+                </row>
+
+                <row>
+                  <entry>WUID</entry>
+
+                  <entry>O WUID (Workunit ID) (WUID é case-sensitive)</entry>
+                </row>
+
+                <row>
+                  <entry>--path</entry>
+
+                  <entry>O caminho do arquivo ZAP</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Opções</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>--inc-thor-slave-logs</entry>
+
+                  <entry>Inclui os logs do(s) escravo(s) Thor no arquivo
+                  ZAP</entry>
+                </row>
+
+                <row>
+                  <entry>--description</entry>
+
+                  <entry>Description of the issue</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl,--ssl</entry>
+
+                  <entry>Use SSL para segurança da conexão ao
+                  servidor.</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>A porta dos serviços do ECL Watch (o padrão é
+                  8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>O nome do usuário (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>A senha (se necessário)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-connect=&lt;Ms&gt;</entry>
+
+                  <entry>Tempo limite durante a conexão ao servidor (em
+                  milisegundos)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait-read=&lt;Secs&gt;</entry>
+
+                  <entry>Tempo limite durante a leitura do socket (em
+                  segundos)</entry>
                 </row>
               </tbody>
             </tgroup>

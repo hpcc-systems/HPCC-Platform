@@ -1227,6 +1227,16 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
           Exemplo</link>) para maiores informações ao utilizar esse
           script.</para>
         </sect3>
+
+        <sect3>
+          <title>Atualizar SSH Keys</title>
+
+          <para>Você poderá atualizar o rotacionar suas SSH keys. Nós
+          recomendamos utilizar o script fornecido para instalação ou
+          atualização das SSH Keys. Veja o anexo (<link
+          linkend="Example-Scripts">Apêndice:Scripts de Exemplo</link>) para
+          maiores informações sobre utilizar esse script.</para>
+        </sect3>
       </sect2>
     </sect1>
 
@@ -1904,6 +1914,65 @@ sudo /opt/HPCCSystems/sbin/hpcc-push.sh \
 
         <para><programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a dafilesrv start
 </programlisting></para>
+      </sect2>
+
+      <sect2 id="update-keys" role="brk">
+        <title>update-keys</title>
+
+        <para><emphasis role="bold">update-keys
+        </emphasis><emphasis><emphasis>[-s &lt;secret_key&gt; -p
+        &lt;public_key&gt;] [ -g ] [-n &lt;number of concurrent
+        threads&gt;]</emphasis></emphasis></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec colwidth="100.50pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry>-s</entry>
+
+                  <entry>Key SSH Privada.</entry>
+                </row>
+
+                <row>
+                  <entry>-p</entry>
+
+                  <entry>Key SSH Pública.</entry>
+                </row>
+
+                <row>
+                  <entry>-g</entry>
+
+                  <entry>Gera novas id_rsa keys privadas/publicas e irá
+                  sobrescrever qualquer key para usar as novas
+                  geradas.</entry>
+                </row>
+
+                <row>
+                  <entry>-n</entry>
+
+                  <entry>Número atual de threads, padrão é 5.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>Este script tem a intenção de auxiliar adminstradores com o
+        deploy de keys SSH do HPCC Systems pelos clusters. As keys SSH são
+        usadas primariamente para inicialização de componentes como Thor e
+        certos plug-ins como Spark. As keys SSH são mais importantes em um
+        ambiente físico e menos em ambiente de cloud.</para>
+
+        <para><emphasis role="bold">Exemplos:</emphasis></para>
+
+        <programlisting>sudo /opt/HPCCSystems/sbin/update-keys -g</programlisting>
+
+        <para>Este exemplo gera novas keys SSH privadas/publicas e sobrescreve
+        qualquer keys existente e distribui as keys para os
+        componentes.</para>
       </sect2>
     </sect1>
 
