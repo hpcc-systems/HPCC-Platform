@@ -1715,7 +1715,17 @@ public:
         IFinalRoxieInput *saveInput = input;
         Owned<IStrandJunction> saveJunction = junction.getClear();
         input = NULL;   // Make sure parent does not start the chain yet
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        try
+        {
+            CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        }
+        catch (...)
+        {
+            // Make sure we restore these even if there is an exception thrown during start
+            input = saveInput;
+            junction.setown(saveJunction.getClear());
+            throw;
+        }
         input = saveInput;
         junction.setown(saveJunction.getClear());
     }
@@ -2088,7 +2098,16 @@ public:
     {
         IFinalRoxieInput *save = input;
         input = NULL;   // Make sure parent does not start the chain yet - but we do want to do the dependencies (because the decision about whether to start may depend on them)
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        try
+        {
+            CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        }
+        catch (...)
+        {
+            // Make sure we restore these even if there is an exception thrown during start
+            input = save;
+            throw;
+        }
         input = save;
     }
 
