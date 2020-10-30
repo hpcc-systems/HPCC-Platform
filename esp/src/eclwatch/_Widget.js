@@ -130,13 +130,13 @@ define([
             return retVal;
         },
 
-        getURL: function (filterFromComponent) {
+        getURL: function () {
             var baseUrl = document.URL.split("#")[0];
             var baseUrlParts = baseUrl.split("?");
             baseUrl = baseUrlParts[0];
             var args = baseUrlParts[1];
             delete this.params.__filter;
-            var filterParams = filterFromComponent ? filterFromComponent : this.getFilterParams();
+            var filterParams = this.getFilterParams();
             if (filterParams) {
                 this.params.__filter = ioQuery.objectToQuery(filterParams);
             }
@@ -144,8 +144,8 @@ define([
             return baseUrl + "?" + paramsString;
         },
 
-        _onNewPage: function (filterFromComponent) {
-            var win = window.open(this.getURL(filterFromComponent), "_blank");
+        _onNewPage: function (event) {
+            var win = window.open(this.getURL(), "_blank");
             if (win) {
                 win.focus();
             }
