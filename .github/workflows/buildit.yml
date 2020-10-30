@@ -1,0 +1,58 @@
+# This is a basic workflow to help you get started with Actions
+
+name: buildit-using-docker
+
+on:
+  # Trigger the workflow on push or pull request,
+  # but only for the main branch
+  push:
+    branches:
+      - notmain
+  pull_request:
+    branches:
+      - notmain
+
+jobs:
+  builditjob:
+    runs-on: ubuntu-20.04
+    name: A job to build and push docker
+
+    steps:
+    - name: vars1
+      run: echo GITHUB_ACTOR is ${GITHUB_ACTOR}
+    - name: vars2
+      run: echo github.actor is ${{ github.actor }}
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@master
+
+    - name: Cache Docker layers
+      uses: actions/cache@v2
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+
+    - name: bandp
+      id: docker_build
+      uses: docker/build-push-action@v2
+      with:
+        context: .github/workflows
+        file: .github/workflows/Dockerfile
+        builder: ${{ steps.buildx.outputs.name }}
+        push: false
+        #tags: user/app:latest
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache
+        build-args: |
+          BUILD_USER=${{ github.actor }}
+          BASE_BRANCH=master
+          BUILD_BRANCH=master-ch1
+    - name: Image digest
+      run: echo ${{ steps.docker_build.outputs.digest }}
+
