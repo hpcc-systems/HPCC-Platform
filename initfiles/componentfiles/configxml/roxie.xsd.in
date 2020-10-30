@@ -1322,6 +1322,13 @@
     </xs:attribute>
   </xs:attributeGroup>
   <xs:attributeGroup name="Debug">
+    <xs:attribute name="alwaysFailOnLeaks" type="xs:boolean" use="optional" default="true">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Fail any query that triggers internal consistency check or row leak errors</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="checkCompleted" type="xs:boolean" use="optional" default="true">
       <xs:annotation>
         <xs:appinfo>
