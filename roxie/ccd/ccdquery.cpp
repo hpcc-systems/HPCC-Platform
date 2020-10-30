@@ -331,7 +331,7 @@ QueryOptions::QueryOptions()
     traceLimit = defaultTraceLimit;
     noSeekBuildIndex = defaultNoSeekBuildIndex;
     allSortsMaySpill = false; // No global default for this
-    failOnLeaks = false;
+    failOnLeaks = alwaysFailOnLeaks;
     collectFactoryStatistics = defaultCollectFactoryStatistics;
 }
 

@@ -299,6 +299,7 @@ extern PTreeReaderOptions defaultXmlReadFlags;
 extern bool mergeAgentStatistics;
 extern bool defaultNoSeekBuildIndex;
 extern unsigned parallelLoadQueries;
+extern bool alwaysFailOnLeaks;
 
 #ifdef _CONTAINERIZED
 static constexpr bool roxieMulticastEnabled = false;
