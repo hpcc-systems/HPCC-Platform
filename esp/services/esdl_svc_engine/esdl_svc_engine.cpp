@@ -44,7 +44,7 @@ IPropertyTree *createContextMethodConfig(IPropertyTree *methodConfig)
     const char *include = "*";
     if (methodConfig->hasProp("@contextInclude"))
         include = methodConfig->queryProp("@contextInclude");
-    const char *remove = "Transforms|xsdl:CustomRequestTransform";
+    const char *remove = "Transforms|xsdl:CustomRequestTransform|Scripts";
     if (methodConfig->hasProp("@contextRemove"))
         remove = methodConfig->queryProp("@contextRemove");
     const char *removeAttrs = "@contextInclude|@contextRemove|@contextAttRemove";

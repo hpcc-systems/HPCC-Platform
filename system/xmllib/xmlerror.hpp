@@ -47,6 +47,7 @@
 #define XPATHERR_MissingInput                           5681
 #define XPATHERR_InvalidInput                           5682
 #define XPATHERR_UnexpectedInput                        5683
+#define XPATHERR_EvaluationFailed                       5684
 
 
 #endif

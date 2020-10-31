@@ -75,13 +75,6 @@ public:
     virtual IHttpClient* createHttpClient(const char* proxy, const char* url);
 };
 
-enum class HttpClientErrCode
-{
-    PeerClosed = -2,
-    Error = -1,
-    OK = 0
-};
-
 class CHttpClient : implements IHttpClient, public CInterface
 {
 
@@ -122,6 +115,7 @@ private:
 
     HttpClientErrCode sendRequest(const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response, bool forceNewConnection);
     HttpClientErrCode sendRequest(IProperties *headers, const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response, StringBuffer& responseStatus, bool alwaysReadContent, bool forceNewConnection);
+
     HttpClientErrCode proxyRequest(IHttpMessage *request, IHttpMessage *response,  bool forceNewConnection, bool resetForwardedFor);
     HttpClientErrCode postRequest(ISoapMessage &req, ISoapMessage& resp, bool forceNewConnection);
 
@@ -136,6 +130,7 @@ public:
     virtual int sendRequest(const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response);
     virtual int sendRequest(const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response, StringBuffer& responseStatus, bool alwaysReadContent = false);
     virtual int sendRequest(IProperties *headers, const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response, StringBuffer& responseStatus, bool alwaysReadContent = false);
+    virtual IHttpMessage *sendRequestEx(const char* method, const char* contenttype, StringBuffer& content, HttpClientErrCode &code, StringBuffer &errmsg, IProperties *headers = nullptr, bool alwaysReadContent = false, bool forceNewConnection = false) override ;
     virtual int proxyRequest(IHttpMessage *request, IHttpMessage *response, bool resetForwardedFor) override;
 
     virtual int postRequest(ISoapMessage &req, ISoapMessage& resp);

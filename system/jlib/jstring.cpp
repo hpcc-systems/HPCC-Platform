@@ -957,7 +957,7 @@ StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char 
     return result;
 }
 
-StringBuffer &replaceEnvVariables(StringBuffer & result, const char *source, bool exceptions, const char* delim, const char* term)
+StringBuffer &replaceVariables(StringBuffer & result, const char *source, bool exceptions, IVariableSubstitutionHelper *helper, const char* delim, const char* term)
 {
     if (isEmptyString(source) || isEmptyString(delim) || isEmptyString(term))
         return result;
@@ -974,17 +974,15 @@ StringBuffer &replaceEnvVariables(StringBuffer & result, const char *source, boo
             if (thumb)
             {
                 StringAttr name(finger, (size_t)(thumb - finger));
-                const char *value = getenv(name);
-                if (value)
+                if (helper->findVariable(name, result))
                 {
-                    result.append(value);
                     size_t replaced = (thumb - source) + lenTerm;
                     source = thumb + lenTerm;
                     left -= replaced;
                     continue;
                 }
                 if (exceptions)
-                    throw MakeStringException(-1, "Environment variable %s not set", name.str());
+                    throw MakeStringException(-1, "string substitution variable %s not set", name.str());
             }
         }
         result.append(*source);
@@ -995,6 +993,25 @@ StringBuffer &replaceEnvVariables(StringBuffer & result, const char *source, boo
     // there are no more possible replacements, make sure we keep the end of the original buffer
     result.append(left, source);
     return result;
+}
+
+class CEnvVariableSubstitutionHelper : public CInterfaceOf<IVariableSubstitutionHelper>
+{
+public:
+    CEnvVariableSubstitutionHelper(){}
+    virtual bool findVariable(const char *name, StringBuffer &value) override
+    {
+        const char *s = getenv(name);
+        if (s)
+            value.append(s);
+        return s!=nullptr;
+    }
+};
+
+StringBuffer &replaceEnvVariables(StringBuffer & result, const char *source, bool exceptions, const char* delim, const char* term)
+{
+    CEnvVariableSubstitutionHelper helper;
+    return replaceVariables(result, source, exceptions, &helper, delim, term);
 }
 
 StringBuffer &replaceStringNoCase(StringBuffer & result, size_t lenSource, const char *source, size_t lenOldStr, const char* oldStr, size_t lenNewStr, const char* newStr)

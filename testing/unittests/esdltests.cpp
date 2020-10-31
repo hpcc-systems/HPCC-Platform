@@ -211,6 +211,14 @@ static constexpr const char * esdlScriptSelectPath = R"!!(
 </es:CustomRequestTransform>
 )!!";
 
+static constexpr const char * esdlImplicitNamespaceSelectPath = R"!!(
+<es:CustomRequestTransform xmlns:es="urn:hpcc:esdl:script" target="soap:Body/n:extra/n:{$query}/n:{$request}">
+  <es:param name="selectPath" select="''"/>
+
+  <es:set-value target="_OUTPUT_" select="$selectPath"/>
+</es:CustomRequestTransform>
+)!!";
+
 static constexpr const char* selectPathResult = R"!!(<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
   <soap:Body>
     <extra>
@@ -247,6 +255,14 @@ static constexpr const char* selectPathResult = R"!!(<soap:Envelope xmlns:soap="
   </soap:Body>
 </soap:Envelope>)!!";
 
+bool areEquivalentTestXMLStrings(const char *xml1, const char *xml2)
+{
+    if (isEmptyString(xml1) || isEmptyString(xml2))
+        return false;
+    Owned<IPropertyTree> tree1 = createPTreeFromXMLString(xml1);
+    Owned<IPropertyTree> tree2 = createPTreeFromXMLString(xml2);
+    return areMatchingPTrees(tree1, tree2);
+}
 
 static const char *target_config = "<method queryname='EchoPersonInfo'/>";
 
@@ -275,6 +291,9 @@ class ESDLTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testEsdlTransformImplicitPrefix);
         CPPUNIT_TEST(testEsdlTransformRequestNamespaces);
         CPPUNIT_TEST(testScriptContext);
+        CPPUNIT_TEST(testTargetElement);
+      //CPPUNIT_TEST(testScriptMap); //requires a particular roxie query
+      //CPPUNIT_TEST(testHTTPPostXml); //requires a particular roxie query
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -297,14 +316,14 @@ public:
         scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request", "EchoPersonInfoRequest");
 
         scriptContext->setContent(ESDLScriptCtxSection_BindingConfig, config);
+        scriptContext->setContent(ESDLScriptCtxSection_TargetConfig, target_config);
         scriptContext->setContent(ESDLScriptCtxSection_ESDLRequest, xml);
         return scriptContext.getClear();
     }
 
     void runTransform(IEsdlScriptContext *scriptContext, const char *scriptXml, const char *srcSection, const char *tgtSection, const char *testname, int code)
     {
-        Owned<IPropertyTree> script = createPTreeFromXMLString(scriptXml);
-        Owned<IEsdlCustomTransform> tf = createEsdlCustomTransform(*script, nullptr);
+        Owned<IEsdlCustomTransform> tf = createEsdlCustomTransform(scriptXml, nullptr);
 
         tf->processTransform(scriptContext, srcSection, tgtSection);
         if (code)
@@ -314,17 +333,21 @@ public:
     {
         try
         {
+            //printf("starting %s:\n", testname);  //uncomment to help debug
             Owned<IEspContext> ctx = createEspContext(nullptr);
             Owned<IEsdlScriptContext> scriptContext = createTestScriptContext(ctx, xml, config);
             runTransform(scriptContext, scriptXml, ESDLScriptCtxSection_ESDLRequest, ESDLScriptCtxSection_FinalRequest, testname, code);
 
             StringBuffer output;
-            scriptContext->toXML(output.clear(), "FinalRequest");
-            if (result && !streq(result, output.str()))
+            scriptContext->toXML(output.clear(), ESDLScriptCtxSection_FinalRequest);
+
+
+            if (result && !areEquivalentTestXMLStrings(result, output.str()))
             {
                 fputs(output.str(), stdout);
                 fflush(stdout);
-                throw MakeStringException(100, "Test failed(%s)", testname);
+                fprintf(stdout, "\nTest failed(%s)\n", testname);
+                CPPUNIT_ASSERT(false);
             }
         }
         catch (IException *E)
@@ -334,7 +357,8 @@ public:
             {
                 StringBuffer m;
                 fprintf(stdout, "\nTest(%s) Expected %d Exception %d - %s\n", testname, code, E->errorCode(), E->errorMessage(m).str());
-                throw E;
+                E->Release();
+                CPPUNIT_ASSERT(false);
             }
             E->Release();
         }
@@ -360,7 +384,7 @@ public:
         <config strictParams='true'>
           <Transform>
             <Param name='testcase' value="absolute-soap-path"/>
-            <Param name='selectPath' select="/esdl_script_context/ESDLRequest/soap:Envelope/soap:Body/extra/EchoPersonInfo/EchoPersonInfoRequest/Row/Name/First"/>
+            <Param name='selectPath' select="/esdl_script_context/esdl_request/soap:Envelope/soap:Body/extra/EchoPersonInfo/EchoPersonInfoRequest/Row/Name/First"/>
           </Transform>
         </config>
       )!!";
@@ -488,11 +512,11 @@ public:
         </config>
       )!!";
 
-      runTest("implicit-prefix", esdlScriptSelectPath, soapRequestImplicitPrefix, config, implicitPrefixResult, 0);
+      runTest("implicit-prefix", esdlImplicitNamespaceSelectPath, soapRequestImplicitPrefix, config, implicitPrefixResult, 0);
 
       // The implicit 'n' prefix is required if the content has a namespace defined
       // with no prefix. This test is expected to throw an exception.
-      runTest("implicit-prefix-not-used", esdlScriptSelectPath, soapRequestImplicitPrefix, configNoPrefix, implicitPrefixResult, 99);
+      runTest("implicit-prefix-not-used", esdlImplicitNamespaceSelectPath, soapRequestImplicitPrefix, configNoPrefix, implicitPrefixResult, 99);
     }
 
     void testEsdlTransformRequestNamespaces()
@@ -685,11 +709,11 @@ public:
       )!!";
 
       // An invalid namespace URI that is expected to throw an exception
-      runTest("invalid-uri", esdlScriptSelectPath, soapRequestNsInvalid, configInvalidURI, namespaceResult, 99);
+      runTest("invalid-uri", esdlScriptSelectPath, soapRequestNsInvalid, configInvalidURI, namespaceResult, 5684);
 
       // Weird but valid URIs for namespaces
-      runTest("arbitrary-uri-1", esdlScriptSelectPath, soapRequestNsArbitrary1, configArbitraryURI1, namespaceResultArbitrary1, 0);
-      runTest("arbitrary-uri-2", esdlScriptSelectPath, soapRequestNsArbitrary2, configArbitraryURI2, namespaceResultArbitrary2, 0);
+      runTest("arbitrary-uri-1", esdlImplicitNamespaceSelectPath, soapRequestNsArbitrary1, configArbitraryURI1, namespaceResultArbitrary1, 0);
+      runTest("arbitrary-uri-2", esdlImplicitNamespaceSelectPath, soapRequestNsArbitrary2, configArbitraryURI2, namespaceResultArbitrary2, 0);
 
     }
 
@@ -1008,7 +1032,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
     <Param name='testcase' value="for each friend"/>
     <Param name='section' select="'Friends'"/>
     <Param name='garbage' select="''"/>
-    <Param name='ForBuildListPath' select='/esdl_script_context/ESDLRequest/root/extra/Friends/Name'/><!--absolute path may change, highly frowned upon-->
+    <Param name='ForBuildListPath' select='/esdl_script_context/esdl_request/root/extra/Friends/Name'/>
     <Param name='ForIdPath' select='extra/Friends/Name/First'/>
   </Transform>
 </config>)!!";
@@ -1063,7 +1087,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
     <Param name='section' select="'Relatives'"/>
     <Param name='garbage' select="''"/>
     <Param name='ForBuildListPath' select='extra/Relatives/Name'/>
-    <Param name='ForIdPath' select='/esdl_script_context/ESDLRequest/root/extra/Relatives/Name/First'/> <!--absolute path may change, highly frowned upon-->
+    <Param name='ForIdPath' select='/esdl_script_context/esdl_request/root/extra/Relatives/Name/First'/> <!--absolute path may change, highly frowned upon-->
   </Transform>
 </config>)!!";
 
@@ -1079,7 +1103,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
   </Transform>
 </config>)!!";
 
-        runTest("for each garbage path error", forEachScript, input, configGarbagePathError, nullptr, -1);
+        runTest("for each garbage path error", forEachScript, input, configGarbagePathError, nullptr, 5682);
 
         constexpr const char * resultNada = R"!!(<root xmlns:xx1="urn:x1" xmlns:xx2="urn:x2">
   <extra>
@@ -1317,7 +1341,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
 
         constexpr const char *config = R"!!(<config><Transform><Param name='testcase' value="target xpath errors"/></Transform></config>)!!";
 
-        runTest("target xpath errors", script, input, config, nullptr, -1); //createPropBranch: cannot create path : ID##
+        runTest("target xpath errors", script, input, config, nullptr, 5682); //createPropBranch: cannot create path : ID##
 
         static constexpr const char * script2 = R"!!(<es:CustomRequestTransform xmlns:es="urn:hpcc:esdl:script" target="Person">
             <es:SetValue target="ID##" select="/root/Person/Name/First"/>
@@ -1326,7 +1350,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         </es:CustomRequestTransform>
         )!!";
 
-        runTest("target xpath errors", script2, input, config, nullptr, -1); //createPropBranch: cannot create path : ID##
+        runTest("target xpath errors", script2, input, config, nullptr, 5682); //createPropBranch: cannot create path : ID##
 }
     void testEsdlTransformFailLevel1A()
     {
@@ -1445,12 +1469,12 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         )!!";
 
         static constexpr const char * script = R"!!(<es:CustomRequestTransform xmlns:es="urn:hpcc:esdl:script" target="Person">
-            <es:parameter name="testpass"/> 
+            <es:param name="testpass"/>
             <es:if test="es:storedValueExists('myvalue')">
               <es:set-value xpath_target="concat('check-value1-pass-', $testpass)" select="concat('already set as of pass-', $testpass)"/>
               <es:set-value target="myvalue" select="es:getStoredStringValue('myvalue')"/>
               <es:remove-node target="Name/ID[1]"/> //removing first one changes the index count so each is 1
-              <es:remove-node target="Name/ID[1]"/> 
+              <es:remove-node target="Name/ID[1]"/>
             </es:if>
             <es:if test="es:storedValueExists('myvalue2')">
               <es:set-value xpath_target="concat('check-value2-pass-', $testpass)" select="concat('already set in pass-', $testpass)"/>
@@ -1469,7 +1493,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
               <es:set-log-option name="option1" select="'this is a logging option value'"/>
               <es:set-log-option xpath_name="'option2'" select="'this is an xpath named logging option value'"/>
               <es:set-log-profile select="'myprofile'"/>
-              <es:rename-node target="FullName" new_name="Name"/> 
+              <es:rename-node target="FullName" new_name="Name"/>
             </es:if>
         </es:CustomRequestTransform>
         )!!";
@@ -1516,7 +1540,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
 
             StringBuffer output;
             scriptContext->toXML(output, "SecondPass");
-            if (result && !streq(result, output.str()))
+            if (result && !areEquivalentTestXMLStrings(result, output.str()))
             {
                 fputs(output.str(), stdout);
                 fflush(stdout);
@@ -1527,8 +1551,540 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
         {
             StringBuffer m;
             fprintf(stdout, "\nTest(%s) Exception %d - %s\n", "script context", E->errorCode(), E->errorMessage(m).str());
-            throw E;
+            E->Release();
+            CPPUNIT_ASSERT(false);
         }
+    }
+
+    void testTargetElement()
+    {
+        static constexpr const char * input = R"!!(<?xml version="1.0" encoding="UTF-8"?>
+         <root>
+            <Person>
+               <FullName>
+                  <First>Joe</First>
+                  <ID>GI101</ID>
+                  <ID>GI102</ID>
+               </FullName>
+               <Friends>Jane,John,Jaap,Jessica</Friends>
+            </Person>
+          </root>
+        )!!";
+
+        static constexpr const char * script = R"!!(<es:CustomRequestTransform xmlns:es="urn:hpcc:esdl:script" target="Person">
+            <es:variable name='value' select="'abc'"/>
+            <es:if-source xpath="NotThere">
+               <es:element name="NeverHere">
+                  <es:copy-of select="."/>
+               </es:element>
+            </es:if-source>
+            <es:if-source xpath="Person">
+              <es:set-value target="@found" select="true()"/>
+            </es:if-source>
+            <es:source xpath="Person">
+              <es:ensure-target xpath='How/Did/We/Get'>
+                 <es:element name='Here'>
+                    <es:variable name="tkns" select="es:tokenize('aaa,bbb;ccc+yyy', ',;+')"/>
+                    <es:variable name="friends" select="es:tokenize(Friends, ',')"/>
+                    <es:set-value target="@whoknows" select="$value"/>
+                    <es:set-value target="IDontKnow" select="$value"/>
+                    <es:element name="CopyTokens">
+                      <es:copy-of select="$tkns"/>
+                    </es:element>
+                    <es:element name="CopyFriends">
+                      <es:copy-of select="$friends"/>
+                    </es:element>
+                    <es:element name="CopyFields">
+                      <es:for-each select="FullName/*">
+                          <es:element name="CopyField">
+                            <es:copy-of select="."/>
+                          </es:element>
+                      </es:for-each>
+                    </es:element>
+                    <es:element name="CopyFullName">
+                       <es:copy-of select="FullName" new_name='FullerName'/>
+                       <es:set-value target="FullerName/@valid" select="true()"/>
+                    </es:element>
+                </es:element>
+              </es:ensure-target>
+            </es:source>
+            <es:if-target xpath='PartName'>
+               <es:set-value target="NotSet" select="$value"/>
+            </es:if-target>
+            <es:if-target xpath='FullName'>
+               <es:set-value target="IsSet" select="$value"/>
+            </es:if-target>
+            <es:target xpath='FullName'>
+               <es:set-value target="DidntFail" select="$value"/>
+            </es:target>
+        </es:CustomRequestTransform>
+        )!!";
+
+        constexpr const char *config1 = R"!!(<config>
+          <Transform>
+            <Param name='testcase' value="new features"/>
+          </Transform>
+        </config>)!!";
+
+            constexpr const char * result = R"!!(<root>
+  <Person found="true">
+    <FullName>
+      <First>Joe</First>
+      <ID>GI101</ID>
+      <ID>GI102</ID>
+      <IsSet>abc</IsSet>
+      <DidntFail>abc</DidntFail>
+    </FullName>
+    <Friends>Jane,John,Jaap,Jessica</Friends>
+    <How>
+      <Did>
+        <We>
+          <Get>
+            <Here whoknows="abc">
+              <IDontKnow>abc</IDontKnow>
+              <CopyTokens>
+                <token>aaa</token>
+                <token>bbb</token>
+                <token>ccc</token>
+                <token>yyy</token>
+              </CopyTokens>
+              <CopyFriends>
+                <token>Jane</token>
+                <token>John</token>
+                <token>Jaap</token>
+                <token>Jessica</token>
+              </CopyFriends>
+              <CopyFields>
+                <CopyField>
+                  <First>Joe</First>
+                </CopyField>
+                <CopyField>
+                  <ID>GI101</ID>
+                </CopyField>
+                <CopyField>
+                  <ID>GI102</ID>
+                </CopyField>
+              </CopyFields>
+              <CopyFullName>
+                <FullerName valid="true">
+                  <First>Joe</First>
+                  <ID>GI101</ID>
+                  <ID>GI102</ID>
+                </FullerName>
+              </CopyFullName>
+            </Here>
+          </Get>
+        </We>
+      </Did>
+    </How>
+  </Person>
+</root>)!!";
+
+
+        try {
+
+            Owned<IEspContext> ctx = createEspContext(nullptr);
+            Owned<IEsdlScriptContext> scriptContext = createTestScriptContext(ctx, input, config1);
+            runTransform(scriptContext, script, ESDLScriptCtxSection_ESDLRequest, "FirstPass", "target element 1", 0);
+
+            StringBuffer output;
+            scriptContext->toXML(output, "FirstPass");
+            if (result && !areEquivalentTestXMLStrings(result, output.str()))
+            {
+                fputs(output.str(), stdout);
+                fflush(stdout);
+                throw MakeStringException(100, "Test failed(%s)", "target element");
+            }
+        }
+        catch (IException *E)
+        {
+            StringBuffer m;
+            fprintf(stdout, "\nTest(%s) Exception %d - %s\n", "target element", E->errorCode(), E->errorMessage(m).str());
+            E->Release();
+            CPPUNIT_ASSERT(false);
+        }
+    }
+
+    void testHTTPPostXml()
+    {
+        static constexpr const char * input = R"!!(<?xml version="1.0" encoding="UTF-8"?>
+         <root>
+            <Person>
+               <FullName>
+                  <First>Joe</First>
+                  <ID>GI101</ID>
+                  <ID>GI102</ID>
+               </FullName>
+            </Person>
+          </root>
+        )!!";
+
+        static constexpr const char * script = R"!!(<es:CustomRequestTransform xmlns:es="urn:hpcc:esdl:script" target="Person">
+            <es:variable name='value' select="'abc'"/>
+            <es:http-post-xml url="'http://127.0.0.1:9876'" section="logging" name="roxiestuff">
+              <es:content>
+                <es:element name="Envelope">
+                  <es:namespace prefix="soap" uri="http://schemas.xmlsoap.org/soap/envelope/" current="true" />
+                  <es:element name="Body">
+                    <es:element name="roxieechopersoninfoRequest">
+                      <es:namespace uri="urn:hpccsystems:ecl:roxieechopersoninfo" current="true" />
+                      <es:element name="roxieechopersoninforequest">
+                        <es:element name="Row">
+                          <es:element name="Name">
+                            <es:set-value target="First" value="'aaa'"/>
+                            <es:set-value target="Last" value="'bbb'"/>
+                            <es:element name="Aliases">
+                              <es:set-value target="Alias" value="'ccc'"/>
+                              <es:set-value target="Alias" value="'ddd'"/>
+                              <es:add-value target="Alias" value="'eee'"/>
+                            </es:element>
+                          </es:element>
+                        </es:element>
+                      </es:element>
+                    </es:element>
+                  </es:element>
+                </es:element>
+              </es:content>
+            </es:http-post-xml>
+            <es:element name="HttpPostStuff">
+              <es:copy-of select="$roxiestuff"/>
+            </es:element>
+        </es:CustomRequestTransform>
+        )!!";
+
+        constexpr const char *config1 = R"!!(<config>
+          <Transform>
+            <Param name='testcase' value="new features"/>
+          </Transform>
+        </config>)!!";
+
+            constexpr const char * result = R"!!(<root>
+  <Person>
+    <FullName>
+      <First>Joe</First>
+      <ID>GI101</ID>
+      <ID>GI102</ID>
+    </FullName>
+    <HttpPostStuff>
+      <roxiestuff>
+        <request url="http://127.0.0.1:9876">
+          <content>
+            <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+              <soap:Body>
+                <roxieechopersoninfoRequest xmlns="urn:hpccsystems:ecl:roxieechopersoninfo">
+                  <roxieechopersoninforequest>
+                    <Row>
+                      <Name>
+                        <First>aaa</First>
+                        <Last>bbb</Last>
+                        <Aliases>
+                          <Alias>ccc</Alias>
+                          <Alias>ddd</Alias>
+                        </Aliases>
+                      </Name>
+                    </Row>
+                  </roxieechopersoninforequest>
+                </roxieechopersoninfoRequest>
+              </soap:Body>
+            </soap:Envelope>
+          </content>
+        </request>
+        <response status="200 OK" error-code="0" content-type="text/xml">
+          <content>
+            <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+              <soap:Body>
+                <roxieechopersoninfoResponse xmlns="urn:hpccsystems:ecl:roxieechopersoninfo" sequence="0">
+                  <Results>
+                    <Result>
+                      <Dataset xmlns="urn:hpccsystems:ecl:roxieechopersoninfo:result:roxieechopersoninforesponse" name="RoxieEchoPersonInfoResponse">
+                        <Row>
+                          <Name>
+                            <First>aaa</First>
+                            <Last>bbb</Last>
+                            <Aliases>
+                              <Alias>ddd</Alias>
+                              <Alias>eee</Alias>
+                            </Aliases>
+                          </Name>
+                          <Addresses/>
+                        </Row>
+                      </Dataset>
+                    </Result>
+                  </Results>
+                </roxieechopersoninfoResponse>
+              </soap:Body>
+            </soap:Envelope>
+          </content>
+        </response>
+      </roxiestuff>
+    </HttpPostStuff>
+  </Person>
+</root>)!!";
+
+        try {
+
+            Owned<IEspContext> ctx = createEspContext(nullptr);
+            Owned<IEsdlScriptContext> scriptContext = createTestScriptContext(ctx, input, config1);
+            runTransform(scriptContext, script, ESDLScriptCtxSection_ESDLRequest, "MyResult", "http post xml", 0);
+
+            StringBuffer output;
+            scriptContext->toXML(output, "MyResult");
+            if (result && !areEquivalentTestXMLStrings(result, output.str()))
+            {
+                fputs(output.str(), stdout);
+                fflush(stdout);
+                throw MakeStringException(100, "Test failed(%s)", "http post xml");
+            }
+        }
+        catch (IException *E)
+        {
+            StringBuffer m;
+            fprintf(stdout, "\nTest(%s) Exception %d - %s\n", "http post xml", E->errorCode(), E->errorMessage(m).str());
+            E->Release();
+            CPPUNIT_ASSERT(false);
+        }
+    }
+
+    void testScriptMap()
+    {
+        constexpr const char * serverScripts = R"!!(<Transforms xmlns:es='urn:hpcc:esdl:script'>
+      <es:BackendRequest>
+        <es:set-value target="Row/Name/First" value="'modified-request-at-service'" />
+      </es:BackendRequest>
+      <es:BackendRequest>
+        <es:set-value target="BRSRV2" value="'s2'" />
+      </es:BackendRequest>
+      <es:BackendRequest>
+        <es:set-value target="BRSRV3" value="'s3'" />
+      </es:BackendRequest>
+      <es:BackendResponse xmlns:resp="urn:hpccsystems:ecl:roxieechopersoninfo" xmlns:ds1="urn:hpccsystems:ecl:roxieechopersoninfo:result:roxieechopersoninforesponse">
+        <es:target xpath="soap:Body">
+          <es:target xpath="resp:roxieechopersoninfoResponse">
+            <es:target xpath="resp:Results/resp:Result">
+              <es:target xpath="ds1:Dataset[@name='RoxieEchoPersonInfoResponse']">
+                <es:set-value target="ds1:Row/ds1:Name/ds1:Last" value="'modified-response-at-service'" />
+              </es:target>
+            </es:target>
+          </es:target>
+        </es:target>
+      </es:BackendResponse>
+      <es:BackendResponse>
+        <es:set-value target="BRESPSRV2" value="'s22'" />
+      </es:BackendResponse>
+      <es:BackendResponse>
+        <es:set-value target="BRESPSRV3" value="'s33'" />
+      </es:BackendResponse>
+      <es:PreLogging>
+        <es:set-value target="PLSRV1" value="'s111'" />
+      </es:PreLogging>
+      <es:PreLogging>
+        <es:set-value target="PLSRV2" value="'s222'" />
+      </es:PreLogging>
+      <es:PreLogging>
+        <es:set-value target="PLSRV3" value="'s333'" />
+      </es:PreLogging>
+  </Transforms>)!!";
+
+        constexpr const char * methodScripts = R"!!(<Transforms xmlns:es='urn:hpcc:esdl:script'>
+  <es:BackendRequest>
+    <es:append-to-value target="Row/Name/First" value="'-and-method'" />
+  </es:BackendRequest>
+  <es:BackendRequest>
+    <es:set-value target="BRMTH2" value="'m2'" />
+  </es:BackendRequest>
+  <es:BackendRequest>
+    <es:set-value target="BRMTH3" value="'m3'" />
+  </es:BackendRequest>
+  <es:BackendResponse xmlns:resp="urn:hpccsystems:ecl:roxieechopersoninfo" xmlns:ds1="urn:hpccsystems:ecl:roxieechopersoninfo:result:roxieechopersoninforesponse">
+    <es:target xpath="soap:Body">
+      <es:target xpath="resp:roxieechopersoninfoResponse">
+        <es:target xpath="resp:Results/resp:Result">
+          <es:target xpath="ds1:Dataset[@name='RoxieEchoPersonInfoResponse']">
+            <es:append-to-value target="ds1:Row/ds1:Name/ds1:Last" value="'-and-method'" />
+          </es:target>
+        </es:target>
+      </es:target>
+    </es:target>
+  </es:BackendResponse>
+  <es:BackendResponse xmlns:resp="urn:hpccsystems:ecl:roxieechopersoninfo" xmlns:ds1="urn:hpccsystems:ecl:roxieechopersoninfo:result:roxieechopersoninforesponse">
+    <es:http-post-xml url="'http://127.0.0.1:9876'" section="logdata/LogDataset" name="roxie_call_success">
+      <es:content>
+        <es:element name="Envelope">
+          <es:namespace prefix="soap" uri="http://schemas.xmlsoap.org/soap/envelope/" current="true" />
+          <es:element name="Body">
+            <es:element name="roxieechopersoninfoRequest">
+              <es:namespace uri="urn:hpccsystems:ecl:roxieechopersoninfo" current="true" />
+              <es:element name="roxieechopersoninforequest">
+                <es:element name="Row">
+                  <es:element name="Name">
+                    <es:set-value target="First" value="'echoFirst'"/>
+                    <es:set-value target="Last" value="'echoLast'"/>
+                    <es:element name="Aliases">
+                      <es:set-value target="Alias" value="'echoA1'"/>
+                      <es:add-value target="Alias" value="'echoA2'"/>
+                    </es:element>
+                  </es:element>
+                </es:element>
+              </es:element>
+            </es:element>
+          </es:element>
+        </es:element>
+      </es:content>
+    </es:http-post-xml>
+    <es:target xpath="soap:Body">
+    <es:target xpath="resp:roxieechopersoninfoResponse">
+    <es:target xpath="resp:Results/resp:Result">
+    <es:target xpath="ds1:Dataset[@name='RoxieEchoPersonInfoResponse']">
+        <es:source xpath="$roxie_call_success/response/content">
+          <es:source xpath="soap:Envelope/soap:Body">
+            <es:source xpath="resp:roxieechopersoninfoResponse/resp:Results/resp:Result">
+              <es:source xpath="ds1:Dataset/ds1:Row">
+                <es:append-to-value target="ds1:Row/ds1:Name/ds1:Last" value="concat('-plus-echoed-alias-', ds1:Name/ds1:Aliases/ds1:Alias[2])" />
+              </es:source>
+            </es:source>
+          </es:source>
+        </es:source>
+    </es:target>
+    </es:target>
+    </es:target>
+    </es:target>
+  </es:BackendResponse>
+  <es:BackendResponse>
+    <es:set-value target="BRESPMTH3" value="'m33'" />
+  </es:BackendResponse>
+  <es:PreLogging>
+    <es:http-post-xml url="'http://127.0.0.1:9876'" section="logdata/LogDatasets" name="roxie_call_exception">
+      <es:content>
+        <es:element name="Envelope">
+          <es:namespace prefix="soap" uri="http://schemas.xmlsoap.org/soap/envelope/" current="true" />
+          <es:element name="Body">
+            <es:element name="nonexistent_query">
+              <es:namespace uri="urn:hpccsystems:ecl:roxieechopersoninfo" current="true" />
+              <es:element name="nonexistent_queryrequest">
+                <es:element name="Row">
+                  <es:element name="Name">
+                    <es:set-value target="First" value="'aaa'"/>
+                    <es:set-value target="Last" value="'bbb'"/>
+                    <es:element name="Aliases">
+                      <es:set-value target="Alias" value="'ccc'"/>
+                      <es:set-value target="Alias" value="'ddd'"/>
+                    </es:element>
+                  </es:element>
+                </es:element>
+              </es:element>
+            </es:element>
+          </es:element>
+        </es:element>
+      </es:content>
+    </es:http-post-xml>
+  </es:PreLogging>
+  <es:PreLogging>
+    <es:set-value target="PLMTH2" value="'m222'" />
+  </es:PreLogging>
+  <es:PreLogging>
+    <es:set-value target="PLMTH3" value="'m333'" />
+  </es:PreLogging>
+  </Transforms>)!!";
+
+        constexpr const char * input = R"!!(<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+ <soap:Body>
+  <roxieechopersoninfoResponse xmlns="urn:hpccsystems:ecl:roxieechopersoninfo" sequence="0">
+   <Results>
+    <Result>
+     <Dataset xmlns="urn:hpccsystems:ecl:roxieechopersoninfo:result:roxieechopersoninforesponse" name="RoxieEchoPersonInfoResponse">
+      <Row>
+       <Name>
+        <First>aaa</First>
+        <Last>bbbb</Last>
+        <Aliases>
+         <Alias>a</Alias>
+         <Alias>b</Alias>
+         <Alias>c</Alias>
+        </Aliases>
+       </Name>
+       <Addresses>
+        <Address>
+         <Line1>111</Line1>
+         <Line2>222</Line2>
+         <City>Boca Raton</City>
+         <State>FL</State>
+         <Zip>33487</Zip>
+         <type>ttt</type>
+        </Address>
+       </Addresses>
+      </Row>
+     </Dataset>
+    </Result>
+   </Results>
+  </roxieechopersoninfoResponse>
+ </soap:Body>
+</soap:Envelope>)!!";
+
+        constexpr const char *config1 = R"!!(<config>
+          <Transform>
+            <Param name='testcase' value="transform map"/>
+          </Transform>
+        </config>)!!";
+
+        constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <roxieechopersoninfoResponse xmlns="urn:hpccsystems:ecl:roxieechopersoninfo" sequence="0">
+      <Results>
+        <Result>
+          <Dataset xmlns="urn:hpccsystems:ecl:roxieechopersoninfo:result:roxieechopersoninforesponse" name="RoxieEchoPersonInfoResponse">
+            <Row>
+              <Name>
+                <First>aaa</First>
+                <Last>modified-response-at-service-and-method-plus-echoed-alias-echoA2</Last>
+                <Aliases>
+                  <Alias>a</Alias>
+                  <Alias>b</Alias>
+                  <Alias>c</Alias>
+                </Aliases>
+              </Name>
+              <Addresses>
+                <Address>
+                  <Line1>111</Line1>
+                  <Line2>222</Line2>
+                  <City>Boca Raton</City>
+                  <State>FL</State>
+                  <Zip>33487</Zip>
+                  <type>ttt</type>
+                </Address>
+              </Addresses>
+            </Row>
+          </Dataset>
+        </Result>
+      </Results>
+    </roxieechopersoninfoResponse>
+  </soap:Body>
+  <BRESPSRV2>s22</BRESPSRV2>
+  <BRESPSRV3>s33</BRESPSRV3>
+  <BRESPMTH3>m33</BRESPMTH3>
+</soap:Envelope>)!!";
+
+      Owned<IEspContext> ctx = createEspContext(nullptr);
+      Owned<IEsdlScriptContext> scriptContext = createTestScriptContext(ctx, input, config1);
+
+      bool legacy = false;
+      Owned<IEsdlTransformMethodMap> map = createEsdlTransformMethodMap();
+      map->addMethodTransforms("", serverScripts, legacy);
+      map->addMethodTransforms("mymethod", methodScripts, legacy);
+
+      IEsdlTransformSet *serviceSet = map->queryMethodEntryPoint("", "BackendResponse");
+      IEsdlTransformSet *methodSet = map->queryMethodEntryPoint("mymethod", "BackendResponse");
+
+      scriptContext->setContent(ESDLScriptCtxSection_InitialResponse, input);
+
+      processServiceAndMethodTransforms(scriptContext, {serviceSet, methodSet}, ESDLScriptCtxSection_InitialResponse, "MyResult");
+      StringBuffer output;
+      scriptContext->toXML(output, "MyResult");
+      if (result && !areEquivalentTestXMLStrings(result, output.str()))
+      {
+          fputs(output.str(), stdout);
+          fflush(stdout);
+          throw MakeStringException(100, "Test failed(%s)", "transform map");
+      }
     }
 };
 

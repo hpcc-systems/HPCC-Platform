@@ -47,14 +47,49 @@
 interface IEsdlCustomTransform : extends IInterface
 {
     virtual void processTransform(IEsdlScriptContext * context, const char *srcSection, const char *tgtSection) = 0;
-    virtual void appendEsdlURIPrefixes(StringArray &prefixes) = 0;
+    virtual void processTransformImpl(IEsdlScriptContext * scriptContext, const char *srcSection, const char *tgtSection, IXpathContext *xpathContext, const char *target) = 0;
+    virtual void appendPrefixes(StringArray &prefixes) = 0;
     virtual void toDBGLog() = 0;
 };
 
-esdl_decl void processServiceAndMethodTransforms(IEsdlScriptContext * scriptCtx, std::initializer_list<IEsdlCustomTransform *> const &transforms, const char *srcSection, const char *tgtSection);
+interface IEsdlTransformSet : extends IInterface
+{
+    virtual void processTransformImpl(IEsdlScriptContext * scriptContext, const char *srcSection, const char *tgtSection, IXpathContext *xpathContext, const char *target) = 0;
+    virtual void appendPrefixes(StringArray &prefixes) = 0;
+    virtual aindex_t length() = 0;
+};
 
-esdl_decl IEsdlCustomTransform *createEsdlCustomTransform(IPropertyTree &customRequestTransform, const char *ns_prefix);
+inline bool isEmptyTransformSet(IEsdlTransformSet *set)
+{
+    if (!set)
+        return true;
+    return (set->length()==0);
+}
 
+#define ESDLScriptEntryPoint_Legacy "CustomRequestTransform"
+#define ESDLScriptEntryPoint_BackendRequest "BackendRequest"
+#define ESDLScriptEntryPoint_BackendResponse "BackendResponse"
+#define ESDLScriptEntryPoint_PreLogging "PreLogging"
+
+interface IEsdlTransformEntryPointMap : extends IInterface
+{
+    virtual IEsdlTransformSet *queryEntryPoint(const char *name) = 0;
+    virtual void removeEntryPoint(const char *name) = 0;
+};
+
+interface IEsdlTransformMethodMap : extends IInterface
+{
+    virtual IEsdlTransformEntryPointMap *queryMethod(const char *method) = 0;
+    virtual IEsdlTransformSet *queryMethodEntryPoint(const char *method, const char *name) = 0;
+    virtual void removeMethod(const char *method) = 0;
+    virtual void addMethodTransforms(const char *method, const char *script, bool &foundNonLegacyTransforms) = 0;
+};
+
+esdl_decl IEsdlTransformMethodMap *createEsdlTransformMethodMap();
+
+esdl_decl IEsdlCustomTransform *createEsdlCustomTransform(const char *scriptXml, const char *ns_prefix);
+
+esdl_decl void processServiceAndMethodTransforms(IEsdlScriptContext * scriptCtx, std::initializer_list<IEsdlTransformSet *> const &transforms, const char *srcSection, const char *tgtSection);
 esdl_decl void registerEsdlXPathExtensions(IXpathContext *xpathCtx, IEsdlScriptContext *scriptCtx, const StringArray &prefixes);
 
 #endif /* ESDL_SCRIPT_HPP_ */
