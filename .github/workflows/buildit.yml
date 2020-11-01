@@ -37,7 +37,9 @@ jobs:
 #        run: sudo apt-get install r-base-dev
 
       - name: cmake
-        run: mkdir build && cd build && cmake ..
+        run: mkdir ../build && cd ../build && cmake ..
+      - name: make
+        run: make -j 3 install
       - name: list dir
         shell: bash
         run: |
