@@ -39,7 +39,7 @@ jobs:
       - name: cmake
         run: mkdir ../build && cd ../build && cmake ../HPCC-Platform
       - name: make
-        run: make -j 3 install
+        run: cd ../build && make -j 3 install
       - name: list dir
         shell: bash
         run: |
