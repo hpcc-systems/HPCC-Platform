@@ -25,7 +25,16 @@ jobs:
       # Install dependencies
       - name: Install Pre0
         #run: sudo apt-get install r-base-core r-cran-littler r-cran-pkgkitten r-base-dev r-cran-rcpp r-cran-rinside r-cran-inline
-        run: sudo apt-get install r-base-core r-base-dev r-cran-rcpp r-cran-rinside
+        #run: sudo apt-get install r-base-core r-base-dev r-cran-rcpp r-cran-rinside
+        run: sudo add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/'
+      - name: Install2
+        run: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
+      - name: Install3
+        run: sudo apt update
+      - name: Install4
+        run: sudo apt install r-base r-base-core r-recommended
+      - name: Install5
+        run: sudo apt-get install r-base-dev r-cran-rcpp r-cran-rinside
 
   
 #      - name: Install Prerequisites
