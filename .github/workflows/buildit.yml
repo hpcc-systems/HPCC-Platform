@@ -8,11 +8,13 @@ on:
   push:
     branches:
       - main
+      - master
       - master-ch1
       - master-ch2
   pull_request:
     branches:
       - main
+      - master
       - master-ch1
       - master-ch2
 
