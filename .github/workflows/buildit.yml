@@ -9,10 +9,12 @@ on:
     branches:
       - main
       - master-ch1
+      - master-ch2
   pull_request:
     branches:
       - main
       - master-ch1
+      - master-ch2
 
 jobs:
   hello_world_job:
