@@ -34,7 +34,7 @@ jobs:
       - name: Install4
         run: sudo apt install r-base r-base-core r-recommended
       - name: Install5
-        run: sudo apt-get install r-base-dev r-cran-rcpp r-cran-rinside
+        run: sudo apt-get install r-cran-littler r-cran-pkgkitten r-base-dev r-cran-rcpp r-cran-rinside
 
   
 #      - name: Install Prerequisites
