@@ -40,8 +40,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v2
         with:
-          context: .
-          file: ./Dockerfile
+          context: .github/workflows
+          file: .github/workflows/Dockerfile
           pull: true
           push: false
 #          cache-from: type=registry,ref=hustakin/hello-world-docker-action:latest
