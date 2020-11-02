@@ -29,6 +29,9 @@ jobs:
     - name: vars2
       run: echo github.actor is ${{ github.actor }}
 
+    - name: Checkout
+      uses: actions/checkout@v2
+
     - name: Set up Docker Buildx
       id: buildx
       uses: docker/setup-buildx-action@master
