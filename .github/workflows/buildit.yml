@@ -38,8 +38,8 @@ jobs:
       with:
         path: /tmp/.buildx-cache
         key: ${{ runner.os }}-buildx-${{ github.sha }}
-        restore-keys: |
-        ${{ runner.os }}-buildx-
+#        restore-keys: |
+#        ${{ runner.os }}-buildx-
 
     - name: bandp
       id: docker_build
