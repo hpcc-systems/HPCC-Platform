@@ -31,5 +31,5 @@ jobs:
         password: "${{ secrets.GITHUB_TOKEN }}"  # you don't need to manually set this secret. GitHub does it on your behalf
         registry: docker.pkg.github.com
         image_name: testhpccbuild
-        build_extra_args: "--build-arg=BUILD_USER=${GITHUB_ACTOR} --build-arg=BASE_BRANCH=master --build-arg=BUILD_BRANCH=master-ch1"
+        build_extra_args: "--build-arg=BUILD_USER=${{ GITHUB_ACTOR }} --build-arg=BASE_BRANCH=master --build-arg=BUILD_BRANCH=master-ch1"
 
