@@ -37,13 +37,14 @@ jobs:
           if [[ "$CACHE_HIT" == 'true' ]]; then
             #sudo cp --force --recursive ~/HPCC-Platform/* .
             echo Cache hit - have sources
+            sudo cp --force --recursive ~/hpccgit ./HPCC-Platform
           else
-            git clone https://github.com/jakesmith/HPCC-Platform
-            sudo apt-get update && sudo apt-get install -yq cmake
-            cd HPCC-Platform
+            git clone https://github.com/jakesmith/HPCC-Platform hpccgit
+            cd hpccgit
             git checkout master
             git submodule update --init --recursive
           fi
+
       - name: Cache cmake
         uses: actions/cache@v2
         id: cache-cmake
@@ -85,7 +86,7 @@ jobs:
       - name: list dir
         shell: bash
         run: |
-          ls -lt > output.log
+          ls -Rlt > output.log
       - name: Upload output file
         uses: actions/upload-artifact@v1
         with:
