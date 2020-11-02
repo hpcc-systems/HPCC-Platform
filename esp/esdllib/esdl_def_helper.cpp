@@ -249,9 +249,15 @@ void EsdlDefinitionHelper::toXSD( IEsdlDefObjectIterator &objs, StringBuffer &xs
     if( trans )
     {
         IProperties* params = *( parameters.getValue(xslId) );
-        const char *tns = (ns) ? ns :params->queryProp("tnsParam");
+        StringBuffer tns((ns) ? ns :params->queryProp("tnsParam"));
+        // Since the xsl string params are quoted with ' we must remove
+        // it here before including it as the value of an attribute in
+        // the esxdl element
+        tns.stripChar('\'');
+        if( tns.isEmpty() )
+            tns.set("urn:unknown");
 
-        xml.appendf("<esxdl name=\"custom\" EsdlXslTypeId=\"%d\" xmlns:tns=\"%s\" ns_uri=\"%s\">", xslId, tns ? tns : "urn:unknown", tns ? tns : "urn:unknown");
+        xml.appendf("<esxdl name=\"custom\" EsdlXslTypeId=\"%d\" xmlns:tns=\"%s\" ns_uri=\"%s\">", xslId, tns.str(), tns.str());
         this->toXML( objs, xml, version, opts, flags );
         xml.append("</esxdl>");
 
@@ -282,9 +288,15 @@ void EsdlDefinitionHelper::toWSDL( IEsdlDefObjectIterator &objs, StringBuffer &x
     if( trans )
     {
         IProperties* params = *( parameters.getValue(xslId) );
-        const char *tns = (ns) ? ns :params->queryProp("tnsParam");
+        StringBuffer tns((ns) ? ns :params->queryProp("tnsParam"));
+        // Since the xsl string params are quoted with ' we must remove
+        // it here before including it as the value of an attribute in
+        // the esxdl element
+        tns.stripChar('\'');
+        if( tns.isEmpty() )
+            tns.set("urn:unknown");
 
-        xml.appendf("<esxdl name=\"custom\" EsdlXslTypeId=\"%d\" xmlns:tns=\"%s\" ns_uri=\"%s\" version=\"%f\">", xslId, tns ? tns : "urn:unknown", tns ? tns : "urn:unknown", version);
+        xml.appendf("<esxdl name=\"custom\" EsdlXslTypeId=\"%d\" xmlns:tns=\"%s\" ns_uri=\"%s\" version=\"%f\">", xslId, tns.str(), tns.str(), version);
         this->toXML( objs, xml, version, opts, flags );
         xml.append("</esxdl>");
 

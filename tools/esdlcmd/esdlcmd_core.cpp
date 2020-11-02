@@ -328,17 +328,20 @@ public:
 
         generateNamespace(tns);
 
-        params->setProp( "tnsParam", tns );
-        params->setProp( "optional", optOptional );
+        // All params are treated as expressions, so any strings must be quoted
+        // 1/0 are not equivalent to true/false, as 0 evaluates to true
+
+        params->setProp( "tnsParam", StringBuffer('\'').append(tns).append('\'') );
+        params->setProp( "optional", StringBuffer('\'').append(optOptional).append('\'') );
 
         if( optAllAnnot )
         {
-            params->setProp( "all_annot_Param", 1 );
+            params->setProp( "all_annot_Param", "true()" );
         }
 
         if( optNoAnnot )
         {
-            params->setProp( "no_annot_Param", 1 );
+            params->setProp( "no_annot_Param", "true()" );
         }
     }
 
@@ -558,21 +561,24 @@ public:
         params.set(createProperties());
         generateNamespace(tns);
 
-        params->setProp( "tnsParam", tns );
-        params->setProp( "optional", optOptional );
+        // All params are treated as expressions, so any strings must be quoted
+        // 1/0 are not equivalent to true/false, as 0 evaluates to true
+
+        params->setProp( "tnsParam", StringBuffer('\'').append(tns).append('\'') );
+        params->setProp( "optional", StringBuffer('\'').append(optOptional).append('\'') );
 
         if( optAllAnnot )
         {
-            params->setProp( "all_annot_Param", 1 );
+            params->setProp( "all_annot_Param", "true()" );
         }
 
         if( optNoAnnot )
         {
-            params->setProp( "no_annot_Param", 1 );
+            params->setProp( "no_annot_Param", "true()" );
         }
 
         params->setProp( "create_wsdl", "true()" );
-        params->setProp( "location", optWsdlAddress.get());
+        params->setProp( "location", StringBuffer('\'').append(optWsdlAddress).append('\'') );
     }
 
 public:
@@ -1018,7 +1024,7 @@ public:
         else
         {
             Owned<IProperties> params = createProperties();
-            params->setProp("installdir", INSTALL_DIR);
+            params->setProp("installdir", StringBuffer('\'').append(INSTALL_DIR).append('\''));
             cmdHelper.defHelper->loadTransform( xsltpath, params.get(), EsdlXslToCppCMake);
             cmdHelper.defHelper->toMicroService( *structs, outputBuffer, EsdlXslToCppCMake, NULL, optFlags );
             saveAsFile(sourcedir.str(), "CMakeLists.txt", outputBuffer.str(), NULL);
