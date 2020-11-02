@@ -7,16 +7,10 @@ on:
   # but only for the main branch
   push:
     branches:
-      - main
-      - master
-      - master-ch1
-      - master-ch2
+      - notmain
   pull_request:
     branches:
-      - main
-      - master
-      - master-ch1
-      - master-ch2
+      - notmain
 
 jobs:
   builditjob:
