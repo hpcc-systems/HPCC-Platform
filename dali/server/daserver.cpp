@@ -460,7 +460,7 @@ int main(int argc, const char* argv[])
 #else
         setupContainerizedLogMsgHandler();
 #endif
-        PROGLOG("Build %s", BUILD_TAG);
+        PROGLOG("TESTING 123... Build %s", BUILD_TAG);
 
         StringBuffer dataPath;
         StringBuffer mirrorPath;
