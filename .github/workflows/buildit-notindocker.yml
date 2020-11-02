@@ -39,7 +39,7 @@ jobs:
             echo Cache hit - have sources
             sudo cp --force --recursive ~/hpccgit ./HPCC-Platform
           else
-            git clone https://github.com/jakesmith/HPCC-Platform hpccgit
+            git clone https://github.com/jakesmith/HPCC-Platform ~/hpccgit
             cd hpccgit
             git checkout master
             git submodule update --init --recursive
