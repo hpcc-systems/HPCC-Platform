@@ -24,6 +24,10 @@ jobs:
     name: A job to build and push docker
 
     steps:
+    - name: vars1
+      run: echo GITHUB_ACTOR is ${GITHUB_ACTOR}
+    - name: vars2
+      run: echo github.actor is ${{ github.actor }}
     - uses: actions/checkout@v2
     - uses: whoan/docker-build-with-cache-action@master
       with:
@@ -31,5 +35,5 @@ jobs:
         password: "${{ secrets.GITHUB_TOKEN }}"  # you don't need to manually set this secret. GitHub does it on your behalf
         registry: docker.pkg.github.com
         image_name: testhpccbuild
-        build_extra_args: "--build-arg=BUILD_USER=${{ GITHUB_ACTOR }} --build-arg=BASE_BRANCH=master --build-arg=BUILD_BRANCH=master-ch1"
+        build_extra_args: "--build-arg=BUILD_USER=${{ github.actor }} --build-arg=BASE_BRANCH=master --build-arg=BUILD_BRANCH=master-ch1"
 
