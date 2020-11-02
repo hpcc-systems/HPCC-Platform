@@ -47,4 +47,6 @@ jobs:
 #          cache-from: type=registry,ref=hustakin/hello-world-docker-action:latest
 #          cache-to: type=inline
 #          tags: hustakin/hello-world-docker-action:latest
-          build-args: BASE_BRANCH=master,BUILD_BRANCH=master-ch1
+          build-args: |
+            BASE_BRANCH=master
+            BUILD_BRANCH=master-ch1
