@@ -22,12 +22,19 @@ jobs:
   hello_world_job:
     runs-on: ubuntu-20.04
     name: A job to build and push docker
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-#        with:
-#          submodules: recursive
-        
+    - uses: actions/checkout@v2
+    - uses: whoan/docker-build-with-cache-action@master
+      with:
+        username: jakesmith
+        password: "${{ secrets.GITHUB_TOKEN }}"  # you don't need to manually set this secret. GitHub does it on your behalf
+        registry: docker.pkg.github.com
+        image_name: testhpccbuild
+        build_extra_args: "--build-arg=BASE_BRANCH=master --build-arg=BUILD_BRANCH=master-ch1"
+
+
+    steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
         
