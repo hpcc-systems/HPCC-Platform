@@ -1387,7 +1387,12 @@ int EspHttpBinding::onGetSoapBuilder(IEspContext &context, CHttpRequest* request
     xform->setStringParameter("destination", url.str());
     const char* authMethod = context.getAuthenticationMethod();
     if (authMethod && !strieq(authMethod, "none") && ((context.getDomainAuthType() == AuthPerSessionOnly) || (context.getDomainAuthType() == AuthTypeMixed)))
+    {
         xform->setParameter("showLogout", "1");
+        const char* userId = context.queryUserId();
+        if (!isEmptyString(userId))
+            xform->setStringParameter("username", userId);
+    }
 
     StringBuffer page;
     xform->transform(page);     

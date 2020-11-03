@@ -110,56 +110,6 @@ function disableInputControls(form)
     }
 }
 
-var sessionTimeout = 0;
-var sessionTimer = null;
-var prevReset = Date.now();
-const SESSION_RESET_FREQ = 30 * 1000;
-
-var readESPSessionTimeoutSeconds = function()
-{
-   var sessionTimeoutCookie = document.cookie.indexOf("ESPSessionTimeoutSeconds");
-   if (sessionTimeoutCookie == -1)
-       return;
-
-   var str = document.cookie.substring(sessionTimeoutCookie + 25); //Skip "ESPSessionTimeoutSeconds="
-   var pos = str.indexOf(";");
-   if (pos != -1)
-      str = str.substring(0, pos);
-   sessionTimeout = parseInt(str);
-}
-
-var resetSessionTimer = function()
-{
-    if (sessionTimer)
-    {
-        clearTimeout(sessionTimer);
-        sessionTimer = null;
-    }
-    if (sessionTimeout > 0)
-        sessionTimer = setTimeout("logout()", sessionTimeout * 1000);
-}
-
-var sendResetSessionTimeout = function()
-{
-   if (Date.now() - prevReset < SESSION_RESET_FREQ)
-      return;
-
-   var resetSessionRequest = new XMLHttpRequest();
-   resetSessionRequest.onreadystatechange = function()
-   {
-      if (resetSessionRequest.readyState == 4)
-      {
-         if (resetSessionRequest.status != 200)
-            console.log("Reset session: HTTP error " + resetSessionRequest.status);
-         else
-            console.log("Session reset.");
-      }
-   }
-   resetSessionRequest.open('POST', '/esp/reset_session_timeout', true);
-   resetSessionRequest.send();
-   prevReset = Date.now();
-}
-
 var handleKeyDown = function(event)
 {
    resetSessionTimer();
