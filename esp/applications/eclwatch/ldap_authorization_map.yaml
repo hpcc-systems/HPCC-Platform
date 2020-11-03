@@ -1,4 +1,5 @@
 ldap:
+   resourcesBasedn: ou=SMC,ou=EspServices,ou=ecl
    root_access:
       resource: SmcAccess
       required: Read
