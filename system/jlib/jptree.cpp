@@ -8244,11 +8244,14 @@ static IPropertyTree *ensureMergeConfigTarget(IPropertyTree &target, const char 
     return match;
 }
 
-void mergeConfiguration(IPropertyTree & target, IPropertyTree & source, const char *altNameAttribute)
+void mergeConfiguration(IPropertyTree & target, IPropertyTree & source, const char *altNameAttribute, bool overwriteAttr)
 {
     Owned<IAttributeIterator> aiter = source.getAttributes();
     ForEach(*aiter)
-        target.addProp(aiter->queryName(), aiter->queryValue());
+    {
+        if (overwriteAttr || !target.hasProp(aiter->queryName()))
+            target.addProp(aiter->queryName(), aiter->queryValue());
+    }
 
     StringAttr seqname;
     Owned<IPropertyTreeIterator> iter = source.getElements("*");
@@ -8273,7 +8276,7 @@ void mergeConfiguration(IPropertyTree & target, IPropertyTree & source, const ch
             target.removeProp(tag);
 
         IPropertyTree * match = ensureMergeConfigTarget(target, tag, altname ? altNameAttribute : "@name", name, sequence);
-        mergeConfiguration(*match, child, altNameAttribute);
+        mergeConfiguration(*match, child, altNameAttribute, overwriteAttr);
     }
 
     const char * sourceValue = source.queryProp("");
