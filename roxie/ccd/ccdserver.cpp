@@ -838,7 +838,7 @@ const char *queryStateText(activityState state)
     case STATEreset: return "reset";
     case STATEstarted: return "started";
     case STATEstopped: return "stopped";
-    case STATEstarting: return "starting";
+    case STATEstarting: return "starting";   // Used by a splitter to indicate it has seen a stop but not yet seen a start(), nor has it seen stop() on all output adaptors
     default: return "unknown";
     }
 }
@@ -9031,24 +9031,12 @@ public:
     } *adaptors;
     bool *used;
 
-    unsigned nextFreeOutput()
-    {
-        unsigned i = numOutputs;
-        while (i)
-        {
-            i--;
-            if (!used[i])
-                return i;
-        }
-        throwUnexpected();
-    }
-
     unsigned minIndex(unsigned exceptOid)
     {
         // MORE - yukky code (and slow). Could keep them heapsorted by idx or something
         // this is trying to determine whether any of the adaptors will in the future read a given record
         unsigned minIdx = (unsigned) -1;
-        for (unsigned i = 0; i < numOutputs; i++)
+        for (unsigned i = 0; i < numOriginalOutputs; i++)
         {
             if (i != exceptOid && used[i] && adaptors[i].idx < minIdx)
                 minIdx = adaptors[i].idx;
@@ -9058,7 +9046,7 @@ public:
 
     inline bool isLastTailReader(unsigned exceptOid)
     {
-        for (unsigned i = 0; i < numOutputs; i++)
+        for (unsigned i = 0; i < numOriginalOutputs; i++)
         {
             if (i != exceptOid && adaptors[i].idx == tailIdx && used[i])
                 return false;
@@ -9298,8 +9286,6 @@ public:
 
     virtual IFinalRoxieInput *queryOutput(unsigned idx)
     {
-        if (idx==(unsigned)-1)
-            idx = nextFreeOutput(); // MORE - what is this used for?
         assertex(idx < numOriginalOutputs);
         assertex(!used[idx]);
         used[idx] = true;
