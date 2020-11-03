@@ -1,0 +1,98 @@
+# This is a basic workflow to help you get started with Actions
+
+name: buildit-using-docker
+
+on:
+  # Trigger the workflow on push or pull request,
+  # but only for the main branch
+#  push:
+#    branches:
+#      - notmain
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  builditjob:
+    runs-on: ubuntu-20.04
+    name: A job to build and push docker
+
+    steps:
+    - name: vars
+      run: echo GITHUB_ACTOR is ${GITHUB_ACTOR} && \
+           echo base_ref is ${{ github.base_ref }} && \
+           echo head_ref is ${{ github.head_ref }} && \
+           echo ref is ${{ github.ref }} && \
+           echo sha is ${{ github.sha }} && \
+           echo github.actor is ${{ github.actor }} && \
+           echo github.repository_owner is ${{ github.repository_owner }} && \
+           echo base.sha ${{ github.context.pull_request.base.sha }} && \
+           echo event - base.sha ${{ github.event.pull_request.base.sha }}
+
+#    - name: Checkout
+#      uses: actions/checkout@v2
+#      with:
+#        fetch-depth: 1
+##        submodules: recursive ## guessing, check
+
+    - name: Download Dockerfile
+      uses: suisei-cn/actions-download-file@v1
+      id: downloadfile1  # Remember to give an ID if you need the output
+      with:
+        url: "https://raw.githubusercontent.com/${{ github.repository_owner }}/HPCC-Platform/${{ github.sha }}/.github/workflows/docker/all/Dockerfile"
+        target: dockerctx/
+
+    - name: Download entrypoint.sh
+      uses: suisei-cn/actions-download-file@v1
+      id: downloadfile2  # Remember to give an ID if you need the output
+      with:
+        url: "https://raw.githubusercontent.com/${{ github.repository_owner }}/HPCC-Platform/${{ github.sha }}/.github/workflows/docker/all/entrypoint.sh"
+        target: dockerctx/
+
+    - name: Download ecl-test.json
+      uses: suisei-cn/actions-download-file@v1
+      id: downloadfile3  # Remember to give an ID if you need the output
+      with:
+        url: "https://raw.githubusercontent.com/${{ github.repository_owner }}/HPCC-Platform/${{ github.sha }}/.github/workflows/docker/all/ecl-test.json"
+        target: dockerctx/
+
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@master
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v1 
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build base
+      uses: docker/build-push-action@v2
+      with:
+        context: .github/workflows/docker/all
+        file: .github/workflows/docker/all/Dockerfile
+        builder: ${{ steps.buildx.outputs.name }}
+        #platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64,linux/ppc64le,linux/s390x
+        load: true # NB: forces buildx.with.driver=docker (as opposed to default driver=docker-containerized)
+        #push: true
+        cache-from: type=registry,mode=max,ref=${{ secrets.DOCKERHUB_USERNAME }}/prtestall:${{ github.base_ref }}
+        #cache-to: type=inline
+        cache-to: type=registry,mode=max,ref=${{ secrets.DOCKERHUB_USERNAME }}/prtestall:${{ github.base_ref }}
+        build-args: |
+          GITHUB_REPO_OWNER=${{ github.repository_owner }}
+          GITHUB_ACTOR=${{ github.actor }}
+          BASE_BRANCH=${{ github.base_ref }}
+          BUILD_BRANCH=${{ github.ref }}
+          #BUILD_BRANCH=${{ github.event.pull_request.head.sha }}
+#        tags: ${{ github.repository_owner }}/prtestall:latest
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/prtestall:${{ github.head_ref }}_${{ github.event.pull_request.head.sha }}
+
+#          BUILDKIT_INLINE_CACHE=1  # not needed when using cache-to: type=inline
+
+    - name: push to registry
+      run: |
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/prtestall:${{ github.head_ref }}_${{ github.event.pull_request.head.sha }}
+
+    - name: Run regression suite
+      run: docker run --name 'prtest' ${{ secrets.DOCKERHUB_USERNAME }}/prtestall:${{ github.head_ref }}_${{ github.event.pull_request.head.sha }}
+

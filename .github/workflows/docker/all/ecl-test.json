@@ -1,0 +1,68 @@
+{
+    "Regress":{
+        "roxieTestSocket": ":9876",
+        "espIp" : "127.0.0.1",
+        "espSocket": "8010",
+        "dropzoneIp" : "127.0.0.1",
+        "dropzonePath" : "/hpcc-dev/hpccinstall/var/lib/HPCCSystems/mydropzone/",
+        "espFileSprayService" : "FileSpray",
+        "useSsl" : "False",
+        "username": "regress",
+        "password": "regress",
+        "suiteDir": "",
+        "eclDir": "ecl",
+        "setupDir": "ecl/setup",
+        "keyDir": "ecl/key",
+        "archiveDir": "archives",
+        "resultDir": "results",
+        "zapDir":"zap",
+        "regressionDir": "/hpcc-dev/HPCCSystems-regression",
+        "logDir": "/hpcc-dev/HPCCSystems-regression/log",
+        "Engines": [
+            "hthor",
+            "thor",
+            "roxie"
+        ],
+        "Clusters": {
+            "hthor" : "hthor",
+            "thor"  : "thor",
+            "roxie" : "roxie"
+        },
+        "ClusterNames": {
+            "hthor" : "myhthor",
+            "thor"  : "mythor",
+            "roxie" : "myroxie"
+        },
+        "timeout":"720",
+        "maxAttemptCount":"3",
+        "defaultSetupClusters": [
+            "mythor",
+            "myroxie"
+        ],
+        "defaultSetupEngines": [
+            "thor",
+            "roxie"
+        ],
+        "defaultTargetClusters": [
+            "all"
+        ],
+        "defaultTargetEngines": [
+            "all"
+        ],
+        "Params":[
+            "PassTest.ecl:bla='A value'",
+            "httpcall_multiheader.ecl:TargetIP=.",
+            "soapcall_multihttpheader.ecl:TargetIP=."
+        ],
+        "engineParams":[
+            "failOnLeaks"
+        ],
+        "setupExtraParams":{
+            "OriginalTextFilesOsPath" : "/hpcc-dev/hpccinstall/opt/HPCCSystems/testing/regress",
+            "OriginalTextFilesIp" : "127.0.0.1"
+        },
+        "FileExclusion":[
+            "*_blahblah.ecl"
+        ]
+    }
+}

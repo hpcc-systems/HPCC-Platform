@@ -3357,6 +3357,12 @@ int main(int argc, char* argv[])
 
     EnableSEHtoExceptionMapping();
 
+    printf("This is a test\n");
+    printf("This is another test\n");
+    printf("This is another test2\n");
+    fflush(stdout);
+    return 0;
+
     try {
         StringBuffer cmd;
         splitFilename(argv[0], NULL, NULL, &cmd, NULL);
