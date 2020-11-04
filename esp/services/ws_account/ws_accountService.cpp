@@ -240,6 +240,7 @@ bool Cws_accountEx::onVerifyUser(IEspContext &context, IEspVerifyUserRequest &re
             throw MakeStringException(ECLWATCH_OLD_CLIENT_VERSION, "Client version not found");
         }
 
+        double version = context.getClientVersion();
         int minor = 0;
         int major = 0;
         const char* dot1 = strrchr(ver, '.');
@@ -267,6 +268,9 @@ bool Cws_accountEx::onVerifyUser(IEspContext &context, IEspVerifyUserRequest &re
 
         if(major > CUTOFF_MAJOR || (major == CUTOFF_MAJOR && minor >= CUTOFF_MINOR))
         {
+            if (version >= 1.06)
+                resp.setSessionToken(context.querySessionToken());
+
             resp.setRetcode(0);
             return true;
         }

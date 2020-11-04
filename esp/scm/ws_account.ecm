@@ -71,11 +71,12 @@ ESPrequest VerifyUserRequest
 
 ESPresponse [exceptions_inline] VerifyUserResponse
 {
-	int retcode;
+    [min_ver("1.06")] unsigned SessionToken;
+    int retcode;
 };
 
 //Kevin/russ does this method need feature level check?
-ESPservice [auth_feature("NONE"), version("1.05"), default_client_version("1.05"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_account
+ESPservice [auth_feature("NONE"), version("1.06"), default_client_version("1.06"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_account
 {
     ESPmethod [client_xslt("/esp/xslt/account_myaccount.xslt")] MyAccount(MyAccountRequest, MyAccountResponse);
     ESPmethod [client_xslt("/esp/xslt/account_input.xslt")] UpdateUserInput(UpdateUserInputRequest, UpdateUserInputResponse);
