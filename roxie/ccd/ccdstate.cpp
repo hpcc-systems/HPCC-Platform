@@ -2775,6 +2775,19 @@ private:
             {
                 toXML(topology, reply);
             }
+            else if (stricmp(queryName, "control:toposerver")==0)
+            {
+                if (control->hasProp("@freeze"))
+                {
+                    freezeTopology(control->getPropBool("@freeze"));
+                }
+                else
+                {
+                    reply.append("<Toposerver>");
+                    getTopology()->report(reply);
+                    reply.append("</Toposerver>");
+                }
+            }
             else if (stricmp(queryName, "control:trace")==0)
             {
                 traceLevel = control->getPropInt("@level", 0);
