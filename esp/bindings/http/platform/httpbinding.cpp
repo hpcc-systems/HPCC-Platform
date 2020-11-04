@@ -1449,6 +1449,14 @@ int EspHttpBinding::onGetJsonBuilder(IEspContext &context, CHttpRequest* request
     StringBuffer destination;
     destination.appendf("%s?%s", methodQName.str(), params.str());
     xform->setStringParameter("destination", destination.str());
+    const char* authMethod = context.getAuthenticationMethod();
+    if (authMethod && !strieq(authMethod, "none") && ((context.getDomainAuthType() == AuthPerSessionOnly) || (context.getDomainAuthType() == AuthTypeMixed)))
+    {
+        xform->setParameter("showLogout", "1");
+        const char* userId = context.queryUserId();
+        if (!isEmptyString(userId))
+            xform->setStringParameter("username", userId);
+    }
 
     StringBuffer page;
     xform->transform(page);
