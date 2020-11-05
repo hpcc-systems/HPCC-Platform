@@ -48,6 +48,8 @@ public:
     ServerIdentifier(const IpAddress &from) { setIp(from); }
     const IpAddress getIpAddress() const;
     unsigned getIp4() const { return netAddress; };
+    inline bool isNull() const { return netAddress==0; }
+    inline void clear() { netAddress=0; }
     const ServerIdentifier & operator=(const ServerIdentifier &from)
     {
         netAddress = from.netAddress;
@@ -71,6 +73,7 @@ public:
         serverIp.setIP4(netAddress);
         return serverIp.getIpText(s);
     }
+    bool isMe() const;
 };
 
 extern UDPLIB_API ServerIdentifier myNode;
