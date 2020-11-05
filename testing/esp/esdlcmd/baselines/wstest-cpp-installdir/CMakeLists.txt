@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
-project (WsDfuServicePlugin)
+project (WsTestServicePlugin)
 set(CMAKE_INSTALL_PREFIX "/opt/HPCCSystems")
 if (("${HPCC_SOURCE_DIR}" STREQUAL "") OR ("${HPCC_BUILD_DIR}" STREQUAL "") OR ("${CMAKE_BUILD_TYPE}" STREQUAL
  ""))
@@ -12,10 +12,10 @@ include_directories ("${HPCC_SOURCE_DIR}/system/jlib"
                      )
 link_directories ("${HPCC_BUILD_DIR}/${CMAKE_BUILD_TYPE}/libs" .)
 
-add_library (WsDfuService SHARED WsDfuServiceBase.cpp
-                                       WsDfuServiceBase.hpp
-                                       WsDfuService.cpp
-                                       WsDfuService.hpp
+add_library (WsTestService SHARED WsTestServiceBase.cpp
+                                       WsTestServiceBase.hpp
+                                       WsTestService.cpp
+                                       WsTestService.hpp
                                        )
-target_link_libraries (WsDfuService jlib)
-install(TARGETS WsDfuService DESTINATION plugins)
+target_link_libraries (WsTestService jlib)
+install(TARGETS WsTestService DESTINATION plugins)

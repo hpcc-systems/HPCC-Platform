@@ -37,6 +37,7 @@ private:
     MapXslIdToProperties parameters;
 
     void insertAtRoot(StringBuffer& target, StringBuffer& value, bool insertWithinRootStartTag=false);
+    StringBuffer& setEffectiveUnquotedNamespace(StringBuffer& tns, EsdlXslTypeId xslId, const char* ns);
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -238,6 +239,21 @@ void EsdlDefinitionHelper::toXML( IEsdlDefObjectIterator& objs, StringBuffer &xm
     return;
 }
 
+StringBuffer& EsdlDefinitionHelper::setEffectiveUnquotedNamespace(StringBuffer& tns, EsdlXslTypeId xslId, const char* ns)
+{
+    IProperties* params = *( parameters.getValue(xslId) );
+    tns.set((ns) ? ns :params->queryProp("tnsParam"));
+    // Since the xsl string params are quoted with ' we must remove
+    // it here before including it as the value of an attribute in
+    // the esxdl element
+    tns.stripChar('\'');
+    if( tns.isEmpty() )
+        tns.set("urn:unknown");
+
+    return tns;
+}
+
+
 void EsdlDefinitionHelper::toXSD( IEsdlDefObjectIterator &objs, StringBuffer &xsd, EsdlXslTypeId xslId, double version, IProperties *opts, const char *ns, unsigned flags, IProperties* overrideParams)
 {
     StringBuffer xml;
@@ -248,14 +264,8 @@ void EsdlDefinitionHelper::toXSD( IEsdlDefObjectIterator &objs, StringBuffer &xs
 
     if( trans )
     {
-        IProperties* params = *( parameters.getValue(xslId) );
-        StringBuffer tns((ns) ? ns :params->queryProp("tnsParam"));
-        // Since the xsl string params are quoted with ' we must remove
-        // it here before including it as the value of an attribute in
-        // the esxdl element
-        tns.stripChar('\'');
-        if( tns.isEmpty() )
-            tns.set("urn:unknown");
+        StringBuffer tns;
+        setEffectiveUnquotedNamespace(tns, xslId, ns);
 
         xml.appendf("<esxdl name=\"custom\" EsdlXslTypeId=\"%d\" xmlns:tns=\"%s\" ns_uri=\"%s\">", xslId, tns.str(), tns.str());
         this->toXML( objs, xml, version, opts, flags );
@@ -287,14 +297,8 @@ void EsdlDefinitionHelper::toWSDL( IEsdlDefObjectIterator &objs, StringBuffer &x
 
     if( trans )
     {
-        IProperties* params = *( parameters.getValue(xslId) );
-        StringBuffer tns((ns) ? ns :params->queryProp("tnsParam"));
-        // Since the xsl string params are quoted with ' we must remove
-        // it here before including it as the value of an attribute in
-        // the esxdl element
-        tns.stripChar('\'');
-        if( tns.isEmpty() )
-            tns.set("urn:unknown");
+        StringBuffer tns;
+        setEffectiveUnquotedNamespace(tns, xslId, ns);
 
         xml.appendf("<esxdl name=\"custom\" EsdlXslTypeId=\"%d\" xmlns:tns=\"%s\" ns_uri=\"%s\" version=\"%f\">", xslId, tns.str(), tns.str(), version);
         this->toXML( objs, xml, version, opts, flags );

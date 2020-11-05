@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="urn:hpccsystems:ws:wstest@ver=1" targetNamespace="urn:hpccsystems:ws:wstest@ver=1">
+  <wsdl:types>
+    <xsd:schema elementFormDefault="qualified" targetNamespace="urn:hpccsystems:ws:wstest@ver=1">
+      <xsd:element name="string" nillable="true" type="xsd:string"/>
+      <xsd:complexType name="EspException">
+        <xsd:all>
+          <xsd:element name="Code" type="xsd:string" minOccurs="0"/>
+          <xsd:element name="Audience" type="xsd:string" minOccurs="0"/>
+          <xsd:element name="Source" type="xsd:string" minOccurs="0"/>
+          <xsd:element name="Message" type="xsd:string" minOccurs="0"/>
+        </xsd:all>
+      </xsd:complexType>
+      <xsd:complexType name="ArrayOfEspException">
+        <xsd:sequence>
+          <xsd:element name="Source" type="xsd:string" minOccurs="0"/>
+          <xsd:element name="Exception" type="tns:EspException" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="Exceptions" type="tns:ArrayOfEspException"/>
+      <xsd:simpleType name="AnnotatedEnum">
+        <xsd:restriction base="xsd:int">
+          <xsd:enumeration value="1"/>
+          <xsd:enumeration value="2"/>
+          <xsd:enumeration value="3"/>
+        </xsd:restriction>
+      </xsd:simpleType>
+      <xsd:complexType name="FooBar">
+        <xsd:all>
+          <xsd:element minOccurs="0" name="Foo" type="xsd:string"/>
+          <xsd:element minOccurs="0" name="Bar" type="xsd:string"/>
+        </xsd:all>
+      </xsd:complexType>
+      <xsd:complexType name="ArrayOfFooBar">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="unbounded" name="FooBar" type="tns:FooBar"/>
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="AllVersionArrays">
+        <xsd:all>
+          <xsd:element minOccurs="0" name="StringArray" type="tns:EspStringArray"/>
+          <xsd:element minOccurs="0" name="FooBarArray" type="tns:ArrayOfFooBar"/>
+          <xsd:element minOccurs="0" name="NamedItemFooBarArray">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element minOccurs="0" maxOccurs="unbounded" name="NamedItem" type="tns:FooBar"/>
+              </xsd:sequence>
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:all>
+      </xsd:complexType>
+      <xsd:complexType name="EspStringArray">
+        <xsd:sequence>
+          <xsd:element name="Item" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="AllVersionReportRequest">
+        <xsd:complexType>
+          <xsd:all>
+            <xsd:element minOccurs="0" name="Annotate20ColsIntVal" type="xsd:int"/>
+            <xsd:element minOccurs="0" name="UnrelentingForce" type="tns:AnnotatedEnum" default="1"/>
+            <xsd:element minOccurs="0" name="Arrays" type="tns:AllVersionArrays"/>
+          </xsd:all>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="WsTestPingRequest">
+        <xsd:complexType>
+          <xsd:all/>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="AllVersionReportResponse">
+        <xsd:complexType>
+          <xsd:all>
+            <xsd:element minOccurs="0" name="ResultVal" type="xsd:string"/>
+            <xsd:element minOccurs="0" name="ResultArrays" type="tns:AllVersionArrays"/>
+          </xsd:all>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="WsTestPingResponse">
+        <xsd:complexType>
+          <xsd:all/>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:schema>
+  </wsdl:types>
+  <wsdl:message name="EspSoapFault">
+    <wsdl:part name="parameters" element="tns:Exceptions"/>
+  </wsdl:message>
+  <wsdl:message name="AllVersionReportSoapIn">
+    <wsdl:part name="parameters" element="tns:AllVersionReportRequest"/>
+  </wsdl:message>
+  <wsdl:message name="AllVersionReportSoapOut">
+    <wsdl:part name="parameters" element="tns:AllVersionReportResponse"/>
+  </wsdl:message>
+  <wsdl:message name="PingSoapIn">
+    <wsdl:part name="parameters" element="tns:WsTestPingRequest"/>
+  </wsdl:message>
+  <wsdl:message name="PingSoapOut">
+    <wsdl:part name="parameters" element="tns:WsTestPingResponse"/>
+  </wsdl:message>
+  <wsdl:portType name="WsTestServiceSoap">
+    <wsdl:operation name="AllVersionReport">
+      <wsdl:input message="tns:AllVersionReportSoapIn"/>
+      <wsdl:output message="tns:AllVersionReportSoapOut"/>
+      <wsdl:fault name="excfault" message="tns:EspSoapFault"/>
+    </wsdl:operation>
+    <wsdl:operation name="Ping">
+      <wsdl:input message="tns:PingSoapIn"/>
+      <wsdl:output message="tns:PingSoapOut"/>
+      <wsdl:fault name="excfault" message="tns:EspSoapFault"/>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="WsTestServiceSoap" type="tns:WsTestServiceSoap">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
+    <wsdl:operation name="AllVersionReport">
+      <soap:operation style="document" soapAction="WsTest/AllVersionReport?ver_=1.000000"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal"/>
+      </wsdl:output>
+      <wsdl:fault name="excfault">
+        <soap:fault name="excfault" use="literal"/>
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="Ping">
+      <soap:operation style="document" soapAction="WsTest/Ping?ver_=1.000000"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal"/>
+      </wsdl:output>
+      <wsdl:fault name="excfault">
+        <soap:fault name="excfault" use="literal"/>
+      </wsdl:fault>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="WsTest">
+    <wsdl:port name="WsTestServiceSoap" binding="tns:WsTestServiceSoap">
+      <soap:address location="localhost"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

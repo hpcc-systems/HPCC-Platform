@@ -58,4 +58,6 @@ esdl_decl void removeEclHidden(StringBuffer &xml, bool cloneGetDataFrom);
 
 esdl_decl IEsdlDefinitionHelper* createEsdlDefinitionHelper( );
 
+#define QUOTED_STRING_PARAM(p) VStringBuffer("\'%s\'", p).str()
+
 #endif // !defined(ESDL_DEF_HELPER_HPP)

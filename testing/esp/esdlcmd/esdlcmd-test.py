@@ -72,7 +72,8 @@ class TestCaseBase:
             '--xslt',
             self.xsl_path,
             '--outdir',
-            self.output_path
+            # must contain a trailing slash
+            str(self.output_path) + '/'
         ]
 
         if options:
@@ -87,9 +88,11 @@ class TestCaseBase:
         self.result = subprocess.run(self.args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         if self.result.returncode != 0:
-            logging.error('Error running esdl on test %s: %s', self.name, self.result.stderr)
+            logging.error('Error running "esdl %s" for test "%s": %s', self.command, self.name, self.result.stderr)
+            success = False
+        else:
+            success = self.validate_results()
 
-        success = self.validate_results()
         self.run_settings.stats.add_count(success)
 
     def validate_results(self):
@@ -210,13 +213,25 @@ def parse_options():
     """
 
     parser = argparse.ArgumentParser(description=DESC)
-    parser.add_argument('testroot', help='Path of the root folder of the esdlcmd testing project')
-    parser.add_argument('-o', '--outdir', help='Directory name of output for tests', default='output')
-    parser.add_argument('-e', '--esdlpath', help='Path to the esdl executable to test')
-    parser.add_argument('-x', '--xslpath', help='Path to the folder containing xslt/*.xslt transforms', default='/opt/HPCCSystems/componentfiles/')
-    parser.add_argument('-d', '--debug', help='Enable debug logging of test cases', action='store_true', default=False)
-    args = parser.parse_args()
+    parser.add_argument('testroot',
+                        help='Path of the root folder of the esdlcmd testing project')
 
+    parser.add_argument('-o', '--outdir',
+                        help='Directory name of output for tests',
+                        default='output')
+
+    parser.add_argument('-e', '--esdlpath',
+                        help='Path to the esdl executable to test')
+
+    parser.add_argument('-x', '--xslpath',
+                        help='Path to the folder containing xslt/*.xslt transforms',
+                        default='/opt/HPCCSystems/componentfiles/')
+
+    parser.add_argument('-d', '--debug',
+                        help='Enable debug logging of test cases',
+                        action='store_true', default=False)
+
+    args = parser.parse_args()
     return args
 
 
@@ -236,7 +251,11 @@ def safe_mkdir(path):
         logging.error("'%s' \nExit." % (str(e)))
         exit(-1)
     except:
-        print("Unexpected error:" + str(sys.exc_info()[0]) + " (line: " + str(inspect.stack()[0][2]) + ")" )
+        print("Unexpected error:"
+              + str(sys.exc_info()[0])
+              + " (line: "
+              + str(inspect.stack()[0][2])
+              + ")" )
         traceback.print_stack()
         exit(-1)
 
@@ -261,17 +280,79 @@ def main():
 
     test_cases = [
         # wsdl
-        TestCaseXSD(run_settings, 'wsdl1', 'wsdl', 'ws_dfu.ecm', 'WsDfu', xsl_base_path),
-        TestCaseXSD(run_settings, 'wsdl2', 'wsdl', 'ws_dfu.ecm', 'WsDfu', xsl_base_path, ['-iv', '1.38']),
-        TestCaseXSD(run_settings, 'wsdl-uvns', 'wsdl', 'ws_dfu.ecm', 'WsDfu', xsl_base_path, ['-iv', '1.38', '-uvns']),
-        TestCaseXSD(run_settings, 'wsdfu-tns', 'wsdl', 'ws_dfu.ecm', 'WsDfu', xsl_base_path, ['-tns', 'urn:test:sample:value']),
+        TestCaseXSD(run_settings, 'wstest-wsdl-default', 'wsdl', 'ws_test.ecm', 'WsTest',
+                    xsl_base_path),
+
+        TestCaseXSD(run_settings, 'wstest-wsdl-noarrayof', 'wsdl', 'ws_test.ecm', 'WsTest',
+                    xsl_base_path, ['--no-arrayof']),
+
+        TestCaseXSD(run_settings, 'wstest-wsdl-iv1', 'wsdl', 'ws_test.ecm', 'WsTest',
+                    xsl_base_path, ['-iv', '1']),
+
+        TestCaseXSD(run_settings, 'wstest-wsdl-iv2', 'wsdl', 'ws_test.ecm', 'WsTest',
+                    xsl_base_path, ['-iv', '2']),
+
+        TestCaseXSD(run_settings, 'wstest-wsdl-iv3', 'wsdl', 'ws_test.ecm', 'WsTest',
+                    xsl_base_path, ['-iv', '3']),
+
+        TestCaseXSD(run_settings, 'wstest-wsdl-uvns', 'wsdl', 'ws_test.ecm', 'WsTest',
+                    xsl_base_path, ['-iv', '3', '-uvns']),
+
+        TestCaseXSD(run_settings, 'wstest-wsdl-allannot', 'wsdl', 'ws_test.ecm', 'WsTest',
+                    xsl_base_path, ['--annotate', 'all']),
+
+        TestCaseXSD(run_settings, 'wstest-wsdl-noannot', 'wsdl', 'ws_test.ecm', 'WsTest',
+                    xsl_base_path, ['-iv', '1', '--annotate', 'none']), # -iv for smaller output
+
+        TestCaseXSD(run_settings, 'wstest-wsdl-opt', 'wsdl', 'ws_test.ecm', 'WsTest',
+                    xsl_base_path, ['-iv', '1', '-opt', 'developer']),
+
+        # --noopt isn't fully implemented, enable test case once it is
+        #TestCaseXSD(run_settings, 'wstest-wsdl-noopt', 'wsdl', 'ws_test.ecm', 'WsTest',
+        #            xsl_base_path, ['-iv', '1', '--noopt']),
+
+        TestCaseXSD(run_settings, 'wstest-wsdl-tns', 'wsdl', 'ws_test.ecm', 'WsTest',
+                    xsl_base_path, ['-iv', '1', '-tns', 'urn:passed:name:space']),
+
         # xsd
-        TestCaseXSD(run_settings, 'wsdfu1', 'xsd', 'ws_dfu.ecm', 'WsDfu', xsl_base_path),
-        TestCaseXSD(run_settings, 'wsdfu-all_annot', 'xsd', 'ws_dfu.ecm', 'WsDfu', xsl_base_path, ['--annotate', 'all']),
-        TestCaseXSD(run_settings, 'wsdfu-no_annot', 'xsd', 'ws_dfu.ecm', 'WsDfu', xsl_base_path, ['--annotate', 'none']),
-        TestCaseXSD(run_settings, 'wsdfu-tns', 'xsd', 'ws_dfu.ecm', 'WsDfu', xsl_base_path, ['-tns', 'urn:test:sample:value']),
+        TestCaseXSD(run_settings, 'wstest-xsd-default', 'xsd', 'ws_test.ecm', 'WsTest',
+                    xsl_base_path),
+
+        TestCaseXSD(run_settings, 'wstest-xsd-noarrayof', 'xsd', 'ws_test.ecm', 'WsTest',
+                    xsl_base_path, ['--no-arrayof']),
+
+        TestCaseXSD(run_settings, 'wstest-xsd-iv1', 'xsd', 'ws_test.ecm', 'WsTest',
+                    xsl_base_path, ['-iv', '1']),
+
+        TestCaseXSD(run_settings, 'wstest-xsd-iv2', 'xsd', 'ws_test.ecm', 'WsTest',
+                    xsl_base_path, ['-iv', '2']),
+
+        TestCaseXSD(run_settings, 'wstest-xsd-iv3', 'xsd', 'ws_test.ecm', 'WsTest',
+                    xsl_base_path, ['-iv', '3']),
+
+        TestCaseXSD(run_settings, 'wstest-xsd-uvns', 'xsd', 'ws_test.ecm', 'WsTest',
+                    xsl_base_path, ['-iv', '3', '-uvns']),
+
+        TestCaseXSD(run_settings, 'wstest-xsd-allannot', 'xsd', 'ws_test.ecm', 'WsTest',
+                    xsl_base_path, ['--annotate', 'all']),
+
+        TestCaseXSD(run_settings, 'wstest-xsd-noannot', 'xsd', 'ws_test.ecm', 'WsTest',
+                    xsl_base_path, ['-iv', '1', '--annotate', 'none']), # -iv for smaller output
+
+        TestCaseXSD(run_settings, 'wstest-xsd-opt', 'xsd', 'ws_test.ecm', 'WsTest',
+                    xsl_base_path, ['-iv', '1', '-opt', 'developer']),
+
+        # --noopt isn't fully implemented, enable test case once it is
+        #TestCaseXSD(run_settings, 'wstest-xsd-noopt', 'xsd', 'ws_test.ecm', 'WsTest',
+        #            xsl_base_path, ['-iv', '1', '--noopt']),
+
+        TestCaseXSD(run_settings, 'wstest-xsd-tns', 'xsd', 'ws_test.ecm', 'WsTest',
+                    xsl_base_path, ['-iv', '1', '-tns', 'urn:passed:name:space']),
+
         # cpp
-        TestCaseCode(run_settings, 'cpp-dfu1', 'cpp', 'ws_dfu.ecm', 'WsDfu', xsl_base_path)
+        TestCaseCode(run_settings, 'wstest-cpp-installdir', 'cpp', 'ws_test.ecm', 'WsTest',
+                     xsl_base_path)
+
     ]
 
     for case in test_cases:
