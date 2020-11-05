@@ -53,7 +53,6 @@
 
 extern IException *MakeRoxieException(int code, const char *format, ...) __attribute__((format(printf, 2, 3)));
 void openMulticastSocket();
-extern size32_t channelWrite(unsigned channel, void const* buf, size32_t size);
 
 void setMulticastEndpoints(unsigned numChannels);
 
@@ -152,6 +151,9 @@ public:
 
     ruid_t uid;                     // unique id
     ServerIdentifier serverId;
+#ifdef _CONTAINERIZED
+    ServerIdentifier subChannels[MAX_SUBCHANNEL];
+#endif
 #ifdef TIME_PACKETS
     unsigned tick;
 #endif
@@ -175,6 +177,30 @@ public:
         unsigned bitpos = countTrailingUnsetBits((unsigned) retries);
         return bitpos / SUBCHANNEL_BITS;
     }
+
+#ifdef _CONTAINERIZED
+    unsigned mySubChannel() const // NOTE - 0 based
+    {
+        for (unsigned idx = 0; idx < MAX_SUBCHANNEL; idx++)
+        {
+            if (subChannels[idx].isMe())
+                return idx;
+        }
+        throwUnexpected();
+    }
+
+    bool hasBuddies() const
+    {
+        if (subChannels[1].isNull())
+        {
+            assert(subChannels[0].isMe());
+            return false;
+        }
+        return true;
+    }
+
+    void clearSubChannels();
+#endif
 
     inline unsigned getSequenceId() const
     {
@@ -271,6 +297,7 @@ extern bool prestartAgentThreads;
 extern unsigned preabortKeyedJoinsThreshold;
 extern unsigned preabortIndexReadsThreshold;
 extern bool traceStartStop;
+extern bool traceRoxiePackets;
 extern bool traceServerSideCache;
 extern bool traceTranslations;
 extern bool defaultTimeActivities;

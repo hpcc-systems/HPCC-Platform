@@ -588,6 +588,7 @@ public:
 
     virtual void commitCache()
     {
+#ifndef _CONTAINERIZED
         if (isConnected && cache && !oneShotRoxie)
         {
             CriticalBlock b(cacheCrit);
@@ -606,6 +607,7 @@ public:
                 cacheFile->rename(oldCacheFileName);
             newFile->rename(cacheFileName);
         }
+#endif
     }
 
     virtual IConstWorkUnit *attachWorkunit(const char *wuid, ILoadedDllEntry *source)

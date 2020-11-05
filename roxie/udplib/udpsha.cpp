@@ -61,6 +61,11 @@ const IpAddress ServerIdentifier::getIpAddress() const
     return ret;
 }
 
+bool ServerIdentifier::isMe() const
+{
+    return *this==myNode;
+}
+
 ServerIdentifier myNode;
 
 //---------------------------------------------------------------------------------------------

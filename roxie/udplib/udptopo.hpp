@@ -96,6 +96,12 @@ private:
     mutable std::vector<unsigned> currentDelay;  // NOTE - technically should be atomic, but in the event of a race we don't really care who wins
 };
 
+// In containerized mode with dynamic topology , we prefer a different mechanism for tracking node health
+
+extern UDPLIB_API void noteNodeSick(const IpAddress node);
+extern UDPLIB_API void noteNodeHealthy(const IpAddress node);
+extern UDPLIB_API unsigned getIbytiDelay(const IpAddress node);
+
 interface ITopologyServer : public IInterface
 {
     virtual const SocketEndpointArray &queryAgents(unsigned channel) const = 0;

@@ -604,16 +604,6 @@ bool PluginDll::checkVersion(const char *expected)
 void PluginDll::logLoaded()
 {
     HelperDll::logLoaded();
-    DBGLOG("Current reported version is %s", pb.version);
-    if (pb.compatibleVersions)
-    {
-        const char **finger = pb.compatibleVersions;
-        while (*finger)
-        {
-            DBGLOG("Compatible version %s", *finger);
-            finger++;
-        }
-    }
 }
 
 extern DLLSERVER_API ILoadedDllEntry * createDllEntry(const char *path, bool isGlobal, const IFileIO *dllFile, bool resourcesOnly)

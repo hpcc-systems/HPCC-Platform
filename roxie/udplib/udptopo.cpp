@@ -18,6 +18,7 @@
 #include "jmisc.hpp"
 #include "udplib.hpp"
 #include "udptopo.hpp"
+#include "udpipmap.hpp"
 #include "roxie.hpp"
 #include "portlist.h"
 #include <thread>
@@ -27,7 +28,6 @@
 
 unsigned initIbytiDelay; // In milliseconds
 unsigned minIbytiDelay;  // In milliseconds
-
 
 unsigned ChannelInfo::getIbytiDelay(unsigned primarySubChannel) const  // NOTE - zero-based
 {
@@ -85,6 +85,33 @@ bool ChannelInfo::otherAgentHasPriority(unsigned priorityHash, unsigned otherAge
     return false;
 }
 
+static unsigned *createNewNodeHealthScore(const IpAddress &)
+{
+    return new unsigned(initIbytiDelay);
+}
+
+IpMapOf<unsigned> buddyHealth(createNewNodeHealthScore);   // For each buddy IP ever seen, maintains a score of how long I should wait for it to respond when it is the 'first responder'
+
+void noteNodeSick(const IpAddress node)
+{
+    // NOTE - IpMapOf is thread safe (we never remove entries). Two threads hitting at the same time may result in the change from one being lost, but that's not a disaster
+    unsigned current = buddyHealth[node];
+    unsigned newDelay = current / 2;
+    if (newDelay < minIbytiDelay)
+        newDelay = minIbytiDelay;
+    buddyHealth[node] = newDelay;
+}
+
+void noteNodeHealthy(const IpAddress node)
+{
+    // NOTE - IpMapOf is thread safe (we never remove entries). Two threads hitting at the same time may result in the change from one being lost, but that's not a disaster
+    buddyHealth[node] = initIbytiDelay;
+}
+
+unsigned getIbytiDelay(const IpAddress node)
+{
+    return buddyHealth[node];
+}
 
 class CTopologyServer : public CInterfaceOf<ITopologyServer>
 {
@@ -442,3 +469,42 @@ extern UDPLIB_API void stopTopoThread()
     }
 }
 
+#ifdef _USE_CPPUNIT
+#include "unittests.hpp"
+
+class BuddyHealthTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(BuddyHealthTest);
+        CPPUNIT_TEST(testBuddyHealth);
+    CPPUNIT_TEST_SUITE_END();
+
+    void testBuddyHealth()
+    {
+        initIbytiDelay = 64;
+        minIbytiDelay = 16;
+        IpAddress a1("123.4.5.1");
+        IpAddress a2("123.4.6.2");
+        IpAddress a3("123.4.5.3");
+        CPPUNIT_ASSERT(getIbytiDelay(a1)==initIbytiDelay);
+        noteNodeSick(a1);
+        noteNodeSick(a2);
+        CPPUNIT_ASSERT(getIbytiDelay(a1)==initIbytiDelay/2);
+        CPPUNIT_ASSERT(getIbytiDelay(a2)==initIbytiDelay/2);
+        CPPUNIT_ASSERT(getIbytiDelay(a3)==initIbytiDelay);
+        noteNodeHealthy(a1);
+        CPPUNIT_ASSERT(getIbytiDelay(a1)==initIbytiDelay);
+        CPPUNIT_ASSERT(getIbytiDelay(a2)==initIbytiDelay/2);
+        CPPUNIT_ASSERT(getIbytiDelay(a3)==initIbytiDelay);
+        noteNodeSick(a2);
+        noteNodeSick(a2);
+        noteNodeSick(a2);
+        noteNodeSick(a2);
+        noteNodeSick(a2);
+        CPPUNIT_ASSERT(getIbytiDelay(a2)==minIbytiDelay);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( BuddyHealthTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( BuddyHealthTest, "BuddyHealthTest" );
+
+#endif

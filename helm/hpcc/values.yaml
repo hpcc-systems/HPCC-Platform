@@ -137,6 +137,7 @@ dali:
 
 eclagent:
 - name: hthor
+  disabled: true
   ## replicas indicates how many eclagent pods should be started
   replicas: 1
   ## maxActive controls how many workunits may be active at once (per replica)
@@ -153,6 +154,7 @@ eclagent:
   #  memory: "1G"
 
 - name: roxie-workunit
+  disabled: true
   replicas: 1
   prefix: roxie_workunit
   maxActive: 20
@@ -164,6 +166,7 @@ eclagent:
 
 eclccserver:
 - name: myeclccserver
+  disabled: true
   replicas: 1
   ## Set to false if you want to launch each workunit compile in its own container, true to run as child processes in eclccserver pod.
   useChildProcesses: false
@@ -178,6 +181,7 @@ eclccserver:
     
 esp:
 - name: eclwatch
+  disabled: true
   ## Pre-configured esp applications include eclwatch, eclservices, and eclqueries
   application: eclwatch
   auth: none
@@ -194,6 +198,7 @@ esp:
   #  memory: "2G"
 
 - name: eclservices
+  disabled: true
   application: eclservices
   auth: none
   tls: off
@@ -205,6 +210,7 @@ esp:
   #  memory: "1G"
 
 - name: eclqueries
+  disabled: true
   application: eclqueries
   auth: none
   tls: off
@@ -216,6 +222,7 @@ esp:
   #  memory: "1G"
 
 - name: esdl-sandbox
+  disabled: true
   application: esdl-sandbox
   auth: none
   tls: off
@@ -227,6 +234,7 @@ esp:
   #  memory: "1G"
 
 - name: sql2ecl
+  disabled: true
   application: sql2ecl
   auth: none
   tls: off
@@ -250,6 +258,7 @@ roxie:
   numChannels: 2
   ## Set serverReplicas to indicate a separate replicaSet of roxie servers, with agent nodes not acting as servers
   serverReplicas: 0
+  traceRoxiePackets: true
   topoReplicas: 1
   ## Set localAgent to true for a scalable cluster of "single-node" roxie servers
   localAgent: false
@@ -263,6 +272,7 @@ roxie:
 
 thor:
 - name: thor
+  disabled: true
   numWorkers: 2
   globalMemorySize: 4096
   prefix: thor
