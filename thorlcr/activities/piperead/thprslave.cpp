@@ -368,7 +368,7 @@ public:
             {
                 PARENT::verifyPipe();
             }
-            catch (IException *e)
+            catch (IException *)
             {
                 retcode = 0;
                 ::Release(pipeWriter->checkError());

@@ -877,6 +877,9 @@ void encodeUnicode(StringBuffer & out, size32_t len, const UChar * text)
 }
 
 
+//---------------------------------------------------------------------------
+
+#ifdef _USE_ICU
 void RegexUnicodePattern::serializePattern(MemoryBuffer & out)
 {
     RegexPattern::serializePattern(out);
@@ -931,9 +934,7 @@ RegexMatchAction RegexUnicodePattern::beginMatch(RegexState & state)
     return RegexMatchBacktrack;
 }
 
-//---------------------------------------------------------------------------
 
-#ifdef _USE_ICU
 RegexUnicodeIPattern::RegexUnicodeIPattern(unsigned _len, const UChar * _text)
 {
     UChar * curLower = (UChar *)lower.allocate(_len*2);

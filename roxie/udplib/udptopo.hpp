@@ -103,10 +103,12 @@ interface ITopologyServer : public IInterface
     virtual const ChannelInfo &queryChannelInfo(unsigned channel) const = 0;
     virtual const std::vector<unsigned> &queryChannels() const = 0;
     virtual bool implementsChannel(unsigned channel) const = 0;
+    virtual void report(StringBuffer &ret) const = 0;
 };
 
 extern UDPLIB_API unsigned getNumAgents(unsigned channel);
 extern UDPLIB_API const ITopologyServer *getTopology();
+extern UDPLIB_API void freezeTopology(bool frozen);
 
 struct RoxieEndpointInfo
 {

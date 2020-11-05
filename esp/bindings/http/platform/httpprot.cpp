@@ -34,23 +34,6 @@
 #include "http/platform/httpservice.hpp"
 #include "SOAP/Platform/soapservice.hpp"
 
-//openssl
-#include <openssl/rsa.h>
-#include <openssl/crypto.h>
-#ifndef _WIN32
-//x509.h includes evp.h, which in turn includes des.h which defines
-//crypt() that throws different exception than in unistd.h
-//(this causes build break on linux) so exclude it
-#define crypt DONT_DEFINE_CRYPT
-#include <openssl/x509.h>
-#undef  crypt
-#else
-#include <openssl/x509.h>
-#endif
-#include <openssl/ssl.h>
-#include <openssl/pem.h>
-#include <openssl/err.h>
-
 #include "securesocket.hpp"
 
 #define ESP_FACTORY DECL_EXPORT

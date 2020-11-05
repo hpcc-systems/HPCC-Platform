@@ -32,11 +32,6 @@
 #include "http/platform/httpservice.hpp"
 #include "SOAP/Platform/soapservice.hpp"
 
-//openssl
-#include <openssl/rsa.h>
-#include <openssl/crypto.h>
-
-
 #ifdef WIN32
 #define HTMLPAGE_EXPORT _declspec(dllexport)
 #else

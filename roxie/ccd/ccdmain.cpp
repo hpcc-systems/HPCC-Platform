@@ -131,6 +131,7 @@ bool selfTestMode = false;
 bool defaultCollectFactoryStatistics = true;
 bool defaultNoSeekBuildIndex = false;
 unsigned parallelLoadQueries = 8;
+bool alwaysFailOnLeaks = true;
 
 bool useOldTopology = false;
 
@@ -1021,6 +1022,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         roxiemem::setTotalMemoryLimit(allowHugePages, allowTransparentHugePages, retainMemory, totalMemoryLimit, 0, NULL, NULL);
 
         traceStartStop = topology->getPropBool("@traceStartStop", false);
+        watchActivityId = topology->getPropInt("@watchActivityId", 0);
         traceServerSideCache = topology->getPropBool("@traceServerSideCache", false);
         traceTranslations = topology->getPropBool("@traceTranslations", true);
         defaultTimeActivities = topology->getPropBool("@timeActivities", true);
@@ -1048,6 +1050,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         parallelLoadQueries = topology->getPropInt("@parallelLoadQueries", 8);
         if (!parallelLoadQueries)
             parallelLoadQueries = 1;
+        alwaysFailOnLeaks = topology->getPropBool("@alwaysFailOnLeaks", true);
 
         enableKeyDiff = topology->getPropBool("@enableKeyDiff", true);
         cacheReportPeriodSeconds = topology->getPropInt("@cacheReportPeriodSeconds", 5*60);

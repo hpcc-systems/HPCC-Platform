@@ -1387,7 +1387,12 @@ int EspHttpBinding::onGetSoapBuilder(IEspContext &context, CHttpRequest* request
     xform->setStringParameter("destination", url.str());
     const char* authMethod = context.getAuthenticationMethod();
     if (authMethod && !strieq(authMethod, "none") && ((context.getDomainAuthType() == AuthPerSessionOnly) || (context.getDomainAuthType() == AuthTypeMixed)))
+    {
         xform->setParameter("showLogout", "1");
+        const char* userId = context.queryUserId();
+        if (!isEmptyString(userId))
+            xform->setStringParameter("username", userId);
+    }
 
     StringBuffer page;
     xform->transform(page);     
@@ -2396,7 +2401,12 @@ int EspHttpBinding::onGetXForm(IEspContext &context, CHttpRequest* request, CHtt
         xform->setXmlSource(schema.str(), schema.length()+1);
         const char* authMethod = context.getAuthenticationMethod();
         if (authMethod && !strieq(authMethod, "none") && ((context.getDomainAuthType() == AuthPerSessionOnly) || (context.getDomainAuthType() == AuthTypeMixed)))
+        {
             xform->setParameter("showLogout", "1");
+            const char* userId = context.queryUserId();
+            if (!isEmptyString(userId))
+                xform->setStringParameter("username", userId);
+        }
 
         // params
         xform->setStringParameter("serviceName", serviceQName);

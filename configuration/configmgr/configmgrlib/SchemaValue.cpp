@@ -112,7 +112,7 @@ void SchemaValue::validate(Status &status, const std::string &id, const Environm
     if (pEnvValue == nullptr)
     {
         std::string msg = "Attempt to validate schema value w/o an environment value.";
-        throw(std::runtime_error(msg));
+        throw(ParseException(msg));
     }
 
     //

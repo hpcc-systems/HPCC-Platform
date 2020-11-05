@@ -50,28 +50,34 @@ static size_t captureIncomingCURLReply(void* contents, size_t size, size_t nmemb
 static std::string hashString(const std::string& s)
 {
     SHA256_CTX  context;
-    char        hashedValue[SHA256_DIGEST_LENGTH + 1];
+    char        hashedValue[SHA256_DIGEST_LENGTH];
 
     memset(hashedValue, 0, sizeof(hashedValue));
 
     if (!SHA256_Init(&context))
         throw makeStringException(-1, "CJwtSecurityManager: OpenSSL ERROR calling SHA256_Init while hashing user password");
 
-    if (!SHA256_Update(&context, (unsigned char*)s.c_str(), s.size()))
+    if (!SHA256_Update(&context, (unsigned char*)s.data(), s.size()))
         throw makeStringException(-1, "CJwtSecurityManager: OpenSSL ERROR calling SHA256_Update while hashing user password");
 
     if (!SHA256_Final((unsigned char*)hashedValue, &context))
         throw makeStringException(-1, "CJwtSecurityManager: OpenSSL ERROR calling SHA256_Final while hashing user password");
 
-    return hashedValue;
+    return std::string(hashedValue, SHA256_DIGEST_LENGTH);
 }
 
-static std::string hashUserPW(const std::string& pw, const std::string& nonce)
+static void hashUserPW(const std::string& pw, const std::string& nonce, StringBuffer& encodedHash)
 {
-    std::string     firstHash(hashString(pw));
+    // Add a simple salt to the user's plaintext password to protect it during
+    // storage and transmission (mitigating rainbow attacks); a simple salt
+    // based on the first two chars of the password is used as it is easy for
+    // both the auth server and this client to agree on the salt value
+
+    std::string     saltedPW(pw.substr(0, 2) + pw);
+    std::string     firstHash(hashString(saltedPW));
     std::string     secondHash(hashString(firstHash + nonce));
 
-    return secondHash;
+    JBASE64_Encode(secondHash.data(), secondHash.size(), encodedHash, false);
 }
 
 static std::string tokenFromEndpoint(const std::string& jwtEndPoint, bool allowSelfSignedCert, const std::string& credentialsStr)
@@ -149,10 +155,13 @@ std::string tokenFromLogin(const std::string& jwtEndPoint, bool allowSelfSignedC
 {
     nlohmann::json          credentialsJSON;
     std::string             credentialsStr;
+    StringBuffer            encodedUserPW;
+
+    hashUserPW(pwStr, nonce, encodedUserPW);
 
     // Construct the credentials
     credentialsJSON["username"] = userStr;
-    credentialsJSON["password"] = hashUserPW(pwStr, nonce);
+    credentialsJSON["password"] = encodedUserPW.str();
     credentialsJSON["client_id"] = clientID;
     credentialsJSON["nonce"] = nonce;
     credentialsStr = credentialsJSON.dump();

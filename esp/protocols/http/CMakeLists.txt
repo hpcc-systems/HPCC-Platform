@@ -82,7 +82,8 @@ target_link_libraries(
     jlib
     xmllib
     dalibase
-    thorhelper
+    thorhelper      # this should not be dependent on the engine helper dll
+    workunit        # neither should it be dependent on the wokunit dll
     )
 
 if(LIBMEMCACHED_FOUND)

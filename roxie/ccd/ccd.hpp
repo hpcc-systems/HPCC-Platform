@@ -300,6 +300,7 @@ extern bool mergeAgentStatistics;
 extern bool defaultNoSeekBuildIndex;
 extern unsigned parallelLoadQueries;
 extern bool adhocRoxie;
+extern bool alwaysFailOnLeaks;
 
 #ifdef _CONTAINERIZED
 static constexpr bool roxieMulticastEnabled = false;

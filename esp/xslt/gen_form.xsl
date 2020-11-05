@@ -44,8 +44,8 @@
     <xsl:param name="schemaRoot" select="xsd:schema"/>
     <xsl:param name="esdl_links" select="0"/>
     <xsl:param name="showLogout" select="showLogout"/>
-    
-    
+    <xsl:param name="username" select="''"/>
+
     <!-- ===============================================================================
   global settings 
   ================================================================================ -->
@@ -170,6 +170,8 @@
                             </font>
                         </td>
                         <xsl:if test="$showLogout">
+                            <td><b><xsl:value-of select="$username"/></b></td>
+                            <td><a href="javascript:void(0)" onclick="lockSession();">Lock</a></td>
                             <td><a href="javascript:void(0)" onclick="logout();">Log Out</a></td>
                         </xsl:if>
                     </tr>
@@ -286,6 +288,29 @@
                       </td>
                     </tr>
                  </table>
+                 <span id ="lockDialog" style="background-color:#d9d9d9; display:none; visibility:hidden; width: 100%; height:100%; z-index: 2; position: absolute; top: 0px; left: 0px; ">
+                    <form id="unlockForm" method="POST">
+                       <table id="unlockTable" class="center">
+                          <tr>
+                             <td colspan="2" align="center"><img style="display:block; margin:auto; padding-bottom:10px;" src="/esp/files_/eclwatch/img/Loginlogo.png" alt="HPCCSystems"></img></td>
+                          </tr>
+                          <tr>
+                             <td colspan="2" align="center"><b>Reauthenticate to unlock</b></td>
+                          </tr>
+                          <tr>
+                             <td><b>Username: </b></td>
+                             <td><input type="text"  id="UnlockUsername" size="50" value="{$username}" readonly="true" /></td>
+                          </tr>
+                          <tr>
+                             <td><b>Password: </b></td>
+                             <td><input type="password" id="UnlockPassword" size="50" onkeyup="enableUnlockBtn()" /></td>
+                          </tr>
+                          <tr>
+                             <td colspan="2" align="center"><input type="button" class="sbutton" id="UnlockBtn" value="Unlock" onclick="unlockSession();" disabled="true" /></td>
+                          </tr>
+                       </table>
+                    </form>
+                 </span>
               </body>
           </html>
     </xsl:template>

@@ -24,6 +24,7 @@
     <xsl:param name="inhouseUser" select="false()"/>
     <xsl:param name="showhttp" select="false()"/>
     <xsl:param name="showLogout" select="showLogout"/>
+    <xsl:param name="username" select="''"/>
 
     <!-- ===============================================================================-->
     <xsl:template match="/">
@@ -32,6 +33,9 @@
             <title>Soap Test Page</title>
       <link rel="stylesheet" type="text/css" href="files_/yui/build/fonts/fonts-min.css" />
       <link rel="stylesheet" type="text/css" href="files_/css/espdefault.css" />
+      <style>
+          table.center { margin-left:auto; margin-right:auto; margin-top:100px }
+      </style>
 
       <script type="text/javascript" src="files_/get_input.js"/>
       <script type="text/javascript" src="files_/stack.js"/>
@@ -708,11 +712,32 @@ function onImportConciseRequest()
 
 var soapBody = ']]><xsl:value-of select="$soapbody"/><![CDATA[';
 
+var handleKeyDown = function(event)
+{
+     resetSessionTimer();
+     sendResetSessionTimeout();
+}
+
+var handleMouseDown = function(event)
+{
+     resetSessionTimer();
+     sendResetSessionTimeout();
+}
+
 function setSoapBody()
 {
      var ctrl = document.getElementById("req_body");
      if (!ctrl) return;
      ctrl.value = prettifyXML(soapBody);
+
+     readESPSessionTimeoutSeconds();
+     if (sessionTimeout > 0)
+     {
+           document.onkeydown = handleKeyDown;
+           document.onmousedown = handleMouseDown;
+
+           resetSessionTimer();
+     }
      return true;
 }
 
@@ -731,6 +756,8 @@ var gMethodName = "<xsl:value-of select="$methodName"/>";;
                             <td height="23" bgcolor="000099" align="center"><font color="#ffffff"><b><xsl:value-of select="concat('  ', $pageName, '  ')"/></b></font></td>
                             <td height="23" align="center"><font color="#ffffff"><b><xsl:value-of select="concat($serviceName, ' / ', $methodName)"/></b></font></td>
                             <xsl:if test="$showLogout">
+                                <td><b><xsl:value-of select="$username"/></b></td>
+                                <td><a href="javascript:void(0)" onclick="lockSession();">Lock</a></td>
                                 <td><a href="javascript:void(0)" onclick="logout();">Log Out</a></td>
                             </xsl:if>
                         </tr>
@@ -825,7 +852,30 @@ var gMethodName = "<xsl:value-of select="$methodName"/>";;
                 
                 </table>
 
-             <!-- </form>  -->
+            <!-- </form>  -->
+            <span id ="lockDialog" style="background-color:#d9d9d9; display:none; visibility:hidden; width: 100%; height:100%; z-index: 2; position: absolute; top: 0px; left: 0px; ">
+                <form id="unlockForm" method="POST">
+                    <table id="unlockTable" class="center">
+                        <tr>
+                            <td colspan="2" align="center"><img style="display:block; margin:auto; padding-bottom:10px;" src="/esp/files_/eclwatch/img/Loginlogo.png" alt="HPCCSystems"></img></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" align="center"><b>Reauthenticate to unlock</b></td>
+                        </tr>
+                        <tr>
+                            <td><b>Username: </b></td>
+                            <td><input type="text"  id="UnlockUsername" size="50" value="{$username}" readonly="true" /></td>
+                        </tr>
+                        <tr>
+                            <td><b>Password: </b></td>
+                            <td><input type="password" id="UnlockPassword" size="50" onkeyup="enableUnlockBtn()" /></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" align="center"><input type="button" class="sbutton" id="UnlockBtn" value="Unlock" onclick="unlockSession();" disabled="true" /></td>
+                        </tr>
+                    </table>
+                </form>
+            </span>
         </body>
     </html>
    </xsl:template>

@@ -481,9 +481,14 @@ public:
 
     virtual ~CSocket();
 
-    unsigned OShandle()
+    virtual unsigned OShandle() const
     {
         return (unsigned)sock;
+    }
+
+    virtual bool isValid() const
+    {
+        return sock != INVALID_SOCKET;
     }
 
 private:

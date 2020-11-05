@@ -874,11 +874,13 @@ int main(int argc, const char *argv[])
     setStatisticsComponentName(SCTeclcc, processName, true);
     if (globals->getPropBool("@enableSysLog",true))
         UseSysLogForOperatorMessages();
+#ifndef _CONTAINERIZED
 #ifndef _WIN32
     if (globals->getPropBool("@generatePrecompiledHeader", true))
         generatePrecompiledHeader();
     else
         removePrecompiledHeader();
+#endif
 #endif
 
     const char *daliServers = globals->queryProp("@daliServers");
