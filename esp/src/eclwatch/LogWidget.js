@@ -86,7 +86,12 @@ define([
 
         _doDownload: function (zip) {
             var base = new ESPBaseMod.ESPBase();
-            var name = "//" + this.params.getNetaddress() + this.params.getLogDirectory() + "/" + this.logTargetSelect.get("value");
+            var name;
+            if (this.params.newPreflight) {
+                name = "//" + this.params.NetAddress + this.params.LogDirectory + "/" + this.logTargetSelect.get("value");
+            } else {
+                name = "//" + this.params.getNetaddress() + this.params.getLogDirectory() + "/" + this.logTargetSelect.get("value");
+            }
             var type = "tpcomp_log";
             window.open(base.getBaseURL("WsTopology") + "/SystemLog?Name=" + name + "&Type=" + type + "&Zip=" + zip, "_blank");
         },
