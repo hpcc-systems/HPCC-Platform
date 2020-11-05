@@ -450,7 +450,7 @@ void readStaticTopology()
         {
             myNodeSet = true;
             myNode.setIp(ip);
-            myAgentEP.set(ccdMulticastPort, myNode.getNodeAddress());
+            myAgentEP.set(ccdMulticastPort, myNode.getIpAddress());
         }
         ForEachItemIn(idx, nodeTable)
         {
@@ -1230,7 +1230,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             else
             {
                 Owned<IHpccProtocolPlugin> protocolPlugin = loadHpccProtocolPlugin(protocolCtx, NULL);
-                Owned<IHpccProtocolListener> roxieServer = protocolPlugin->createListener("runOnce", createRoxieProtocolMsgSink(myNode.getNodeAddress(), 0, 1, false), 0, 0, NULL);
+                Owned<IHpccProtocolListener> roxieServer = protocolPlugin->createListener("runOnce", createRoxieProtocolMsgSink(myNode.getIpAddress(), 0, 1, false), 0, 0, NULL);
                 try
                 {
                     const char *format = topology->queryProp("@format");
@@ -1276,7 +1276,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     unsigned port = roxieFarm.getPropInt("@port", ROXIE_SERVER_PORT);
                     //unsigned requestArrayThreads = roxieFarm.getPropInt("@requestArrayThreads", 5);
                     // NOTE: farmer name [@name=] is not copied into topology
-                    const IpAddress &ip = myNode.getNodeAddress();
+                    const IpAddress ip = myNode.getIpAddress();
                     if (!roxiePort)
                     {
                         roxiePort = port;

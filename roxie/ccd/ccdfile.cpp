@@ -3539,7 +3539,7 @@ private:
                 throw MakeStringException(0, "Cluster %s occupies node already specified while writing file %s",
                         cluster, dFile->queryLogicalName());
             SocketEndpointArray eps;
-            SocketEndpoint me(0, myNode.getNodeAddress());
+            SocketEndpoint me(0, myNode.getIpAddress());
             eps.append(me);
             localCluster.setown(createIGroup(eps));
             StringBuffer clusterName(cluster);
