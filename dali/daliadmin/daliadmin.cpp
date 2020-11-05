@@ -3580,7 +3580,8 @@ int main(int argc, char* argv[])
                         CHECKPARAMS(1,1);
                         dfsmap(params.item(1), userDesc);
                     }
-                    else if (strieq(cmd,"dfsexist")) {
+                    else if (strieq(cmd,"dfsexists") || strieq(cmd,"dfsexist")) {
+                        // NB: "dfsexist" typo', kept for backward compatibility only (<7.12)
                         CHECKPARAMS(1,1);
                         ret = dfsexists(params.item(1),userDesc);
                     }
