@@ -317,9 +317,14 @@ public:
         m_socket->close();  
     }
 
-    virtual unsigned OShandle()              // for internal use
+    virtual unsigned OShandle() const             // for internal use
     {
         return m_socket->OShandle();
+    }
+
+    virtual bool isValid() const
+    {
+        return m_socket->isValid();
     }
 
     virtual size32_t avail_read()            // called after wait_read to see how much data available

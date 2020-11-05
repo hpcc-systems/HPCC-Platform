@@ -22,7 +22,7 @@
 
 project(ws_sql)
 
-if(WSSQL_SERVICE)
+if(WSSQL_SERVICE AND USE_JAVA)
     find_package(Java REQUIRED)
     find_package(ANTLR REQUIRED)
 

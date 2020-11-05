@@ -21,7 +21,11 @@
 #ifdef _USE_ICU
 #include "unicode/utf.h"
 #else
+#ifdef _WIN32
+typedef wchar_t UChar;
+#else //_WIN32
 typedef unsigned short UChar;
+#endif //_WIN32
 #endif
 #include "thorparse.ipp"
 #include "thorrparse.hpp"
@@ -296,7 +300,7 @@ protected:
     inline bool doMatch(RegexState & state);
 };
 
-
+#ifdef _USE_ICU
 class THORHELPER_API RegexUnicodePattern : public RegexPattern
 {
 public:
@@ -408,6 +412,7 @@ protected:
     MemoryAttr lower;
     MemoryAttr upper;
 };
+#endif
 
 // ---- Simple patterns ------------------------------
 
@@ -460,6 +465,7 @@ public:
 
 // ---- Simple patterns ------------------------------
 
+#ifdef _USE_ICU
 //Handles utf8 and unicode.
 class THORHELPER_API RegexUnicodeSetPattern : public RegexSetBasePattern
 {
@@ -487,6 +493,7 @@ protected:
     bool inverted;
     bool caseSensitive;
 };
+#endif
 
 // ---- Simple patterns ------------------------------
 

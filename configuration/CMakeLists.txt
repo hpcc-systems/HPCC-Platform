@@ -14,5 +14,7 @@
 #    limitations under the License.
 ################################################################################
 
-HPCC_ADD_SUBDIRECTORY (configmgr)
-HPCC_ADD_SUBDIRECTORY (cli)
+if (INCLUDE_CONFIG_MANAGER)
+  HPCC_ADD_SUBDIRECTORY (configmgr)
+  HPCC_ADD_SUBDIRECTORY (cli)
+endif()

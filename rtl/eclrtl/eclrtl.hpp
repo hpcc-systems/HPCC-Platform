@@ -31,7 +31,11 @@
 #ifdef _USE_ICU
 #include "unicode/utf.h"
 #else
+#ifdef _WIN32
+typedef wchar_t UChar;
+#else //_WIN32
 typedef unsigned short UChar;
+#endif //_WIN32
 #endif
 #endif //CHEAP_UCHAR_DEF
 

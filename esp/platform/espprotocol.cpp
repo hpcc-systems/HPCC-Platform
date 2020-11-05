@@ -764,7 +764,7 @@ bool checkEspConnection(IEspContext& ctx)
     ISocket* sock = req->getSocket();
     if (!sock)
         return false;
-    if (sock->OShandle() == INVALID_SOCKET)
+    if (!sock->isValid())
         return false;
     int ret = sock->wait_read(0);
     if (ret < 0)

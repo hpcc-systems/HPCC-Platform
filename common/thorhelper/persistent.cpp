@@ -207,7 +207,7 @@ public:
 
     virtual void add(ISocket* sock, SocketEndpoint* ep = nullptr, PersistentProtocol proto = PersistentProtocol::ProtoTCP) override
     {
-        if (!sock || sock->OShandle() == INVALID_SOCKET)
+        if (!sock || !sock->isValid())
             return;
         PERSILOG(PersistentLogLevel::PLogMax, "PERSISTENT: adding socket %d to handler %d", sock->OShandle(), m_id);
         CriticalBlock block(m_critsect);
@@ -262,7 +262,7 @@ public:
         {
             info->useCount += usesOverOne;
             bool reachedQuota = m_maxReqs > 0 && m_maxReqs <= info->useCount;
-            if(sock->OShandle() == INVALID_SOCKET)
+            if(!sock->isValid())
                 keep = false;
             if (keep && !reachedQuota)
             {
