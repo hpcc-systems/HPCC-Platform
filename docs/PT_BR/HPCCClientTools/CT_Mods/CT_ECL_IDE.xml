@@ -987,7 +987,7 @@
           <para>Essa caixa de ferramentas permite que você procure pelo
           Repositório ativo Os resultados são organizados por pastas e
           exibidos em um formato de árvore. Amplie qualquer pasta para ver os
-          arquivos ECL nela.</para>
+          arquivos ECL nela. O número de resultador é exibido em azul.</para>
 
           <para><graphic fileref="../../images/CT13.jpg"/><informaltable
               colsep="1" frame="all" rowsep="1">
@@ -1907,6 +1907,66 @@ definir margens, tamanho do papel, orientação etc.
 
                   <entry>Abre um item na janela Compilador quando seu nome
                   está destacado em um controle de texto.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para><emphasis role="bold"> </emphasis></para>
+        </sect3>
+
+        <sect3 id="CT_Bookmarks_Tab">
+          <title>Aba de favoritos</title>
+
+          <para>A <emphasis role="bold">aba de Marcadores</emphasis> contém as
+          seguintes seleções:</para>
+
+          <para><graphic fileref="../../images/CT060.jpg"/></para>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="122.40pt"/>
+
+              <colspec/>
+
+              <tbody>
+                <row>
+                  <entry><graphic fileref="../../images/CT060-0.jpg"/></entry>
+
+                  <entry>Pressione o ícone<emphasis
+                  role="bold">Bookmarks</emphasis> para acessar o painel de
+                  marcadores.</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="../../images/CT061-1.jpg"/></entry>
+
+                  <entry>Press the lower half of the Bookmarks icon to access
+                  the submenu:<programlisting role="tab"> <emphasis
+                        role="bold"> Open </emphasis>- Abre o marcador selecionado.
+<emphasis role="bold">  Save</emphasis> - Salava o marcador atual.
+  <emphasis role="bold">Load</emphasis> - Carrega o último marcador salvo.
+  <emphasis role="bold">Load Merge</emphasis> - Mescla o último marcador salva com o atual.
+  <emphasis role="bold">Delete</emphasis> - Exclui o marcador selecionado.
+</programlisting></entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="../../images/CT060-2.jpg"/></entry>
+
+                  <entry>Próximo favorito</entry>
+                </row>
+
+                <row>
+                  <entry><graphic fileref="../../images/CT060-3.jpg"/></entry>
+
+                  <entry>Marcador anterior</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Clear</emphasis></entry>
+
+                  <entry>Limpa os marcadores</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2948,6 +3008,20 @@ ENDMACRO;
                   <entry>Ctrl+G</entry>
 
                   <entry>Vá para linha</entry>
+                </row>
+
+                <row>
+                  <entry>Alt+0</entry>
+
+                  <entry>Fold All - colapsa todo os elemento que podem
+                  recolhidos</entry>
+                </row>
+
+                <row>
+                  <entry>Ctrl+Alt+0</entry>
+
+                  <entry>Unfold All - expande todos os elementos
+                  colapsados</entry>
                 </row>
 
                 <row>

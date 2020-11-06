@@ -225,29 +225,30 @@
       <para>O <emphasis role="bold">servidor</emphasis> aceita receber
       consultas, avalia o código do ECL de acordo com o comando fornecido na
       consulta do cliente e retorna o resultado. Quando o servidor avalia uma
-      função ECL que exige dados do disco, ele determina os nós escravos que
-      podem conter os dados adequados e envia uma solicitação para esses nós a
-      fim de localizar quaisquer correspondências. Os resultados de múltiplos
-      nós escravos são condensados e se tornam a entrada para outras funções
-      do ECL avaliadas no nó do servidor. Normalmente, aplicações solicitantes
-      usam alguma forma de balanceamento de carga para distribuir solicitações
-      de modo uniforme para os servidores disponíveis.</para>
+      função ECL que exige dados do disco, ele determina os nós dos agentes
+      que podem conter os dados adequados e envia uma solicitação para esses
+      nós a fim de localizar quaisquer correspondências. Os resultados de
+      múltiplos nós de agentes são condensados e se tornam a entrada para
+      outras funções do ECL avaliadas no nó do servidor. Normalmente,
+      aplicações solicitantes usam alguma forma de balanceamento de carga para
+      distribuir solicitações de modo uniforme para os servidores
+      disponíveis.</para>
 
       <para>O processo <emphasis role="bold">escravo</emphasis> aceita
       solicitações apenas de outros nós do servidor no cluster. Essas
       solicitações correspondem a uma função única de ECL, como uma leitura de
       índice filtrado ou uma busca de disco. Os resultados são enviados de
       volta ao servidor que fez a solicitação original. Para equilibrar o
-      desempenho e gerenciar falhas de hardware, os escravos recebem as
-      solicitações por multicast e normalmente haverá no mínimo dois nós
-      escravos que receberão cada solicitação de um servidor. Os nós escravos
-      se comunicam entre si a fim de evitar um esforço duplicado, de modo que
-      o primeiro escravo que conseguir processar a solicitação deverá informar
-      aos demais que a tarefa já foi concluída. Cada nó em um cluster
-      normalmente processa solicitações de escravo em dois ou mais canais de
-      multicast, geralmente um canal por disco. Se um nó escravo não estiver
-      respondendo, as solicitações nesse canal são processadas por outros nós
-      escravos pares responsáveis pelo canal.</para>
+      desempenho e gerenciar falhas de hardware, os agentes recebem as
+      solicitações por multicast e normalmente haverá no mínimo dois nós de
+      agentes que receberão cada solicitação de um servidor. Os nós dos
+      agentes se comunicam entre si a fim de evitar um esforço duplicado, de
+      modo que o primeiro agente que conseguir processar a solicitação deverá
+      informar aos demais que a tarefa já foi concluída. Cada nó em um cluster
+      normalmente processa solicitações de agente em dois ou mais canais de
+      multicast, geralmente um canal por disco. Se um nó de um agente não
+      estiver respondendo, as solicitações nesse canal são processadas por
+      outros nós agentes pares responsáveis pelo canal.</para>
 
       <para/>
 
@@ -255,7 +256,7 @@
 
       <para>Esse exemplo mostra um cluster Roxie de 5 nós com cada um
       configurado para ser tanto um <emphasis role="bold">servidor </emphasis>
-      quanto <emphasis role="bold"> um escravo</emphasis>.</para>
+      quanto <emphasis role="bold"> um agente</emphasis>.</para>
 
       <para>As consultas que foram compiladas com a plataforma alvo
       especificada como cluster Roxie podem ser publicadas em um Grupo de
@@ -311,7 +312,7 @@
         </listitem>
 
         <listitem>
-          <para>Redundância de nó par: Cada nó escravo normalmente tem um ou
+          <para>Redundância de nó par: Cada nó o agente normalmente tem um ou
           mais nós pares em seu cluster. Cada par armazena uma cópia dos
           arquivos de dados que serão lidos.</para>
         </listitem>
@@ -528,8 +529,8 @@
       <orderedlist>
         <listitem>
           <para>Use o ECL IDE para gravar sua consulta e depois compilá-la,
-          definindo o destino como o cluster Roxie em seu ambiente
-          HPCC.</para>
+          definindo o destino como o cluster Roxie em seu ambiente HPCC
+          Systems.</para>
         </listitem>
 
         <listitem>
@@ -593,9 +594,9 @@
     <sect1>
       <title>Utilizando o WsECL para executar uma consulta Roxie</title>
 
-      <para>O WsECL é a interface de serviço Web ECL fornecida com o HPCC e
-      disponibilizada no seguinte URL: http://nnn.nnn.nnn.nnn:8002, onde
-      nnn.nnn.nnn.nnn é o endereço IP do seu ESP.</para>
+      <para>O WsECL é a interface de serviço Web da ECL fornecida com o HPCC
+      Systems e disponibilizada no seguinte URL: http://nnn.nnn.nnn.nnn:8002,
+      onde nnn.nnn.nnn.nnn é o endereço IP do seu ESP.</para>
 
       <para>O WsECL usa informações de Grupo de Consultas para exibir a lista
       de consultas executáveis disponíveis. Você pode usá-lo, por exemplo,
@@ -912,7 +913,7 @@
   </chapter>
 
   <chapter id="PreFlight_and_Roxie_Metrics">
-    <title>Preflight e Métricas do Roxie</title>
+    <title>Preflight</title>
 
     <para>A seção Operations do ECL Watch oferece o recurso de realizar
     atividades Preflight. Esses utilitários preflight são usados para
@@ -929,120 +930,6 @@
     <xi:include href="HPCCCertify/Cert-Mods/CertPreflight.xml"
                 xpointer="xpointer(//*[@id='Preflight_Roxie'])"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
-
-    <sect1 id="Roxie_Metrics">
-      <title>Métricas Roxie<?dbfo-need height="5in"?></title>
-
-      <para><graphic fileref="images/RM-30.jpg" vendor="eclwatchSS"/></para>
-
-      <para/>
-
-      <para><informaltable colsep="0" frame="none" rowsep="0">
-          <tgroup cols="2">
-            <colspec colwidth="102.05pt"/>
-
-            <colspec colwidth="293.95pt"/>
-
-            <tbody>
-              <row>
-                <entry>IP Address</entry>
-
-                <entry>O endereço IP do nó do servidor.</entry>
-              </row>
-
-              <row>
-                <entry>slavesActive</entry>
-
-                <entry>O número de escravos ativos daquele servidor.</entry>
-              </row>
-
-              <row>
-                <entry>lastQueryTime</entry>
-
-                <entry>Timestamp da consulta executada mais
-                recentemente.</entry>
-              </row>
-
-              <row>
-                <entry>loQueryActive</entry>
-
-                <entry>O número de consultas ativas de baixa
-                prioridade.</entry>
-              </row>
-
-              <row>
-                <entry>loMin</entry>
-
-                <entry>Tempo mínimo (ms) levado para executar uma consulta de
-                baixa prioridade.</entry>
-              </row>
-
-              <row>
-                <entry>retriesNeeded</entry>
-
-                <entry>Contagem de todos os pacotes de resposta que chegaram
-                em um servidor como resposta à mais de uma tentativa.</entry>
-              </row>
-
-              <row>
-                <entry>loMax</entry>
-
-                <entry>Tempo máximo (ms) levado para executar uma consulta de
-                baixa prioridade.</entry>
-              </row>
-
-              <row>
-                <entry>hiQueryActive</entry>
-
-                <entry>O número de consultas ativas de alta
-                prioridade.</entry>
-              </row>
-
-              <row>
-                <entry>loQueryCount</entry>
-
-                <entry>Número total de consultas de baixa prioridade
-                executadas.</entry>
-              </row>
-
-              <row>
-                <entry>loQueryAverage</entry>
-
-                <entry>Tempo médio levado para executar uma consulta de alta
-                prioridade.</entry>
-              </row>
-
-              <row>
-                <entry>hiQueryCount</entry>
-
-                <entry>Número total de consultas de alta prioridade
-                executadas.</entry>
-              </row>
-
-              <row>
-                <entry>hiMax</entry>
-
-                <entry>Tempo máximo (ms) levado para executar uma consulta de
-                alta prioridade.</entry>
-              </row>
-
-              <row>
-                <entry>hiMin</entry>
-
-                <entry>Tempo mínimo (ms) levado para executar uma consulta de
-                alta prioridade.</entry>
-              </row>
-
-              <row>
-                <entry>heapBlocksAllocated</entry>
-
-                <entry>Número de vezes que o Roxie teve que alocar memória de
-                seu alocador de memória.</entry>
-              </row>
-            </tbody>
-          </tgroup>
-        </informaltable></para>
-    </sect1>
 
     <xi:include href="ECLWatch/ECLWa_mods/ECLWatchQueries.xml"
                 xpointer="xpointer(//*[@id='Queries_Page'])"

@@ -49,9 +49,7 @@
   compartilhado que possa mudar o significado, você deve usar
   SEQUENTIAL.</para>
 
-  <para>Por definição, PERSIST em um atributo significa que o atributo é
-  avaliado fora de qualquer ordem de avaliação específica. Consequentemente,
-  ORDERED não possui nenhum efeito sobre os atributos PERSISTed.</para>
+  <para>ORDERED não possui nenhum efeito sobre os atributos PERSISTed.</para>
 
   <para>Exemplo:</para>
 
