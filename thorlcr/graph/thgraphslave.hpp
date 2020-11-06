@@ -570,5 +570,7 @@ extern graphslave_decl IThorFileCache *createFileCache(unsigned limit);
 
 extern graphslave_decl bool canStall(IThorDataLink *input);
 
+extern graphslave_decl IDelayedFile *createDelayedFile(IFileIO *iFileIO);
+
 
 #endif
