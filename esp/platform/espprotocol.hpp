@@ -217,4 +217,13 @@ public:
 
 esp_http_decl bool checkEspConnection(IEspContext& ctx);
 
+class CESPAbortRequestCallback : implements IAbortRequestCallback
+{
+    IEspContext* context = nullptr;
+public:
+    CESPAbortRequestCallback(IEspContext* _context) : context(_context){ };
+
+    virtual bool abortRequested() override { return !checkEspConnection(*context); }
+};
+
 #endif
