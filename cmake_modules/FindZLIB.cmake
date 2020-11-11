@@ -61,7 +61,7 @@ IF (NOT ZLIB_FOUND)
   endif()
 
   include(FindPackageHandleStandardArgs)
-  find_package_handle_standard_args(ZLib DEFAULT_MSG
+  find_package_handle_standard_args(ZLIB DEFAULT_MSG
     ZLIB_LIBRARIES 
     ZLIB_INCLUDE_DIR
   )

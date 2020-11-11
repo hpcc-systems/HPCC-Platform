@@ -62,12 +62,22 @@ IF (NOT ICU_FOUND)
     set(ICU_VERSION "${__ICU_VERSION}" CACHE STRING "unicode library version")
   endif()
 
+  if(EXISTS ${ICU_INCLUDE_DIR}/unicode/uvernum.h)
+    file(STRINGS ${ICU_INCLUDE_DIR}/unicode/uvernum.h __ICU_MAJOR_VERSION REGEX
+        "^#define U_ICU_VERSION_MAJOR_NUM*")
+    string(REPLACE "#define U_ICU_VERSION_MAJOR_NUM" "" __ICU_MAJOR_VERSION
+        ${__ICU_MAJOR_VERSION})
+    string(REPLACE "\"" "" __ICU_MAJOR_VERSION ${__ICU_MAJOR_VERSION})
+    string(STRIP "${__ICU_MAJOR_VERSION}" __ICU_MAJOR_VERSION)
+    set(ICU_MAJOR_VERSION "${__ICU_MAJOR_VERSION}" CACHE STRING "icu library version")
+  endif()
+
   include(FindPackageHandleStandardArgs)
   find_package_handle_standard_args(ICU DEFAULT_MSG
     ICU_LIBRARIES 
     ICU_INCLUDE_DIR
   )
-  message(STATUS "  version: ${ICU_VERSION}")
+  message(STATUS "  version: ${ICU_MAJOR_VERSION} unicode: ${ICU_VERSION}")
   IF (ICU_FOUND)
     IF (UNIX)
       STRING(REPLACE "icuuc" "icui18n" ICU_EXTRA1 "${ICU_LIBRARIES}")
@@ -80,5 +90,5 @@ IF (NOT ICU_FOUND)
     set (ICU_LIBRARIES ${ICU_EXTRA1} ${ICU_LIBRARIES} ${ICU_EXTRA2} )
   ENDIF()
 
-  MARK_AS_ADVANCED(ICU_INCLUDE_DIR ICU_LIBRARIES ICU_VERSION)
+  MARK_AS_ADVANCED(ICU_INCLUDE_DIR ICU_LIBRARIES ICU_MAJOR_VERSION ICU_VERSION)
 ENDIF()
