@@ -6,8 +6,6 @@ if (fs.existsSync("./lws.target.txt")) {
 }
 
 let rewrite = [
-    { from: "/esp/files/Login.html", to: "http://" + debugServerIP + ":8010/esp/files/Login.html" },
-    { from: "/esp/files/GetUserName.html", to: "http://" + debugServerIP + ":8010/esp/files/GetUserName.html" },
     { from: "/esp/titlebar(.*)", to: "http://" + debugServerIP + ":8010/esp/titlebar$1" },
     { from: "/esp/login", to: "http://" + debugServerIP + ":8010/esp/login" },
     { from: "/esp/logout", to: "http://" + debugServerIP + ":8010/esp/logout" },

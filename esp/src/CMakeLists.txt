@@ -28,6 +28,8 @@ file(COPY
     ${CMAKE_CURRENT_SOURCE_DIR}/put-selector
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/stub.htm
+    ${CMAKE_CURRENT_SOURCE_DIR}/Login.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/GetUserName.html
     ${CMAKE_CURRENT_SOURCE_DIR}/tsconfig.json
     ${CMAKE_CURRENT_SOURCE_DIR}/webpack.config.js
     ${CMAKE_CURRENT_SOURCE_DIR}/xstyle
@@ -278,6 +280,9 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/src/WUGraphLegend.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/WUScopeController.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/WUStatus.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/stub.htm
+    ${CMAKE_CURRENT_SOURCE_DIR}/Login.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/GetUserName.html
 )
 
 if ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
