@@ -574,7 +574,10 @@ public:
         if (ok)
         {
             workunit->setState(WUStateCompiled);
-            const char *newClusterName = workunit->queryClusterName();   // Workunit can change the cluster name via #workunit, so reload it
+            // Workunit can change the cluster name via #workunit, so reload it
+            // Note that we need a StringAttr here not a char * as the lifetime of the value returned from queryClusterName is
+            // only until the workunit object is released.
+            StringAttr newClusterName = workunit->queryClusterName();
             if (strcmp(newClusterName, clusterName.str()) != 0)
             {
 #ifdef _CONTAINERIZED
@@ -583,13 +586,13 @@ public:
                 clusterInfo.setown(getTargetClusterInfo(newClusterName));
                 if (!clusterInfo)
                 {
-                    VStringBuffer errStr("Cluster %s by #workunit not recognized", newClusterName);
+                    VStringBuffer errStr("Cluster %s by #workunit not recognized", newClusterName.str());
                     failCompilation(errStr);
                     return;
                 }
                 if (platform != clusterInfo->getPlatform())
                 {
-                    VStringBuffer errStr("Cluster %s specified by #workunit is wrong type for this queue", newClusterName);
+                    VStringBuffer errStr("Cluster %s specified by #workunit is wrong type for this queue", newClusterName.str());
                     failCompilation(errStr);
                     return;
                 }

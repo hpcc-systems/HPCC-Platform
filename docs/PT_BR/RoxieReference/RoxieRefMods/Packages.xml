@@ -322,7 +322,7 @@
 
     <para>Com um arquivo packag map de parte única como:</para>
 
-    <para><emphasis role="bold">master.pkg</emphasis></para>
+    <para><emphasis role="bold">main.pkg</emphasis></para>
 
     <para><programlisting>&lt;RoxiePackages&gt;
   &lt;Package id="my_base" preload="1"&gt;
@@ -345,7 +345,7 @@
 </programlisting><parameter>Para adicionar o packag map no destino e ativá-lo,
     use:</parameter></para>
 
-    <para><programlisting>ecl packagemap add &lt;target&gt; master.pkg --activate</programlisting></para>
+    <para><programlisting>ecl packagemap add &lt;target&gt; main.pkg --activate</programlisting></para>
 
     <para>Para atualizar os mapeamentos, é necessário editar o arquivo do mapa
     de pacotes (ou uma cópia), adicionar e ativar o novo arquivo e depois
@@ -452,7 +452,7 @@ ecl packagemap add-part &lt;target&gt; target_pmid persons.pkg
     <para>Observe agora como o conteúdo está dividido em partes &lt;Part/&gt;.
     Porém, ainda é possível usar</para>
 
-    <para><programlisting>ecl packagemap add &lt;target&gt; master.pkg</programlisting>nesse
+    <para><programlisting>ecl packagemap add &lt;target&gt; main.pkg</programlisting>nesse
     mapa de pacotes de múltiplas partes e depois continuar gerenciando suas
     partes individuais. Neste caso:</para>
 

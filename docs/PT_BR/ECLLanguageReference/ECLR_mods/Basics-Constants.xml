@@ -134,13 +134,18 @@ MyUnicodeString3 := U'abcd\u00EB'; // becomes 'abcdë'</programlisting>
         <primary>INTEGER</primary>
       </indexterm> (consulte <emphasis role="bold">Tipos de
     valores</emphasis>). As constantes inteiras podem ser valores decimais,
-    hexadecimais ou binários Valores hexadecimais <indexterm>
+    não-definidos, hexadecimais ou binários Valores hexadecimais <indexterm>
         <primary>hexadecimal</primary>
       </indexterm> são especificados começando com "0x" ou terminando com um
     caractere "x". Valores binários<indexterm>
         <primary>Binary values</primary>
       </indexterm> são especificados começando com "0b" ou terminando com um
-    caractere "b".</para>
+    caractere "b". Valores Decimais <indexterm>
+        <primary>Valores Decimais</primary>
+      </indexterm> são especificados com o caractere "d" à direita. Valores
+    não-definidos <indexterm>
+        <primary>Valores não-definidos</primary>
+      </indexterm> são especificados com o caractere "u" à direita.</para>
 
     <programlisting>MyInt1  := 10;     // value of MyInt1 is the INTEGER value 10
 MyInt2  := 0x0A;   // value of MyInt2 is the INTEGER value 10
@@ -149,7 +154,10 @@ MyInt4  := 0b1010; // value of MyInt4 is the INTEGER value 10
 MyInt5  := 1010b;  // value of MyInt5 is the INTEGER value 10
 MyReal1 := 10.0;   // value of MyReal1 is the REAL value 10.0
 MyReal2 := 1.0e1;  // value of MyReal2 is the REAL value 10.0
-</programlisting>
+MyDec1  := 10d     // value of MyDec1 is the DECIMAL value 10
+MyDec2  := 3.14159265358979323846d // value of MyDec2 is the DECIMAL
+                                   // value 3.14159265358979323846
+                                   // a REAL type would lose precision </programlisting>
   </sect2>
 
   <sect2 id="CompileTimeConstants" role="brk">

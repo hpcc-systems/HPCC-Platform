@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FinishSuperFileTransaction">
@@ -15,15 +15,17 @@
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
-      <colspec colwidth="80.50pt" />
+      <colspec colwidth="80.50pt"/>
 
-      <colspec />
+      <colspec/>
 
       <tbody>
         <row>
           <entry><emphasis>rollback</emphasis></entry>
 
-          <entry>Opcional. Um indicador booleano que indica se a transação deve ser confirmada (FALSE) ou revertida (TRUE). Se omitido, o padrão é FALSE.</entry>
+          <entry>Opcional. Um indicador booleano que indica se a transação
+          deve ser confirmada (FALSE) ou revertida (TRUE). Se omitido, o
+          padrão é FALSE.</entry>
         </row>
 
         <row>
@@ -35,10 +37,36 @@
     </tgroup>
   </informaltable>
 
-  <para>A função  <emphasis role="bold">FinishSuperFileTransaction
-  </emphasis> termina um período de transação de manutenção de um superarquivo. Se o indicador  <emphasis>rollback </emphasis> é FALSE, a transação é confirmada atomicamente e o período de transação é encerrado. Caso contrário, a transação é revertida e o período de transação é encerrado.</para>
+  <para>A função <emphasis role="bold">FinishSuperFileTransaction
+  </emphasis>encerra o período da transação de manutenção do superfile.</para>
+
+  <para>Se o indicador <emphasis>rollback </emphasis> é FALSE, a transação é
+  confirmada atomicamente e o período da transação é encerrado. Caso
+  contrário, a transação é revertida e o período da transação é
+  encerrado.</para>
+
+  <para>No commit, o superfile é "gravado" bloqueado para a transação que
+  realmente executa, e todos os bloqueios são liberados quando o período de
+  transação encerra. Durante o intervalo de tempo do bloqueio de "gravação" na
+  confirmação (geralmente uma pequena janela de tempo), nenhum bloqueio de
+  “leitura” simultâneo é permitido.</para>
 
   <para>Exemplo:</para>
 
-  <programlisting format="linespecific">STD.File.FinishSuperFileTransaction();</programlisting>
+  <programlisting format="linespecific">IMPORT STD;
+ 
+WeeklyRollup:='~Training::Examples::WeeklyRollup';
+WeeklySF    :='~Training::Examples::Weekly';
+DailySF     :='~Training::Examples::Daily';
+ 
+DailyDS := DATASET(DailySF,{string Myfield},THOR);
+ 
+SEQUENTIAL(STD.File.StartSuperFileTransaction(),
+           STD.File.ClearSuperFile(DailySF),
+           OUTPUT(DailyDS,,WeeklyRollup),
+           STD.File.AddSuperFile(WeeklySF,WeeklyRollup),
+           STD.File.FinishSuperFileTransaction());
+//executes the OUTPUT after a "read" lock on the superfile DailySF
+//has been initiated by the ClearSuperFile Maintenance function, 
+//which in turn executes only at the FinishTransaction</programlisting>
 </sect1>

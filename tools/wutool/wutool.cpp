@@ -92,6 +92,7 @@ void usage(const char * action = nullptr)
                "\n"
                "   archive <workunits> - Archive to xml files [TO=<directory>] [DEL=1] [DELETERESULTS=1] [INCLUDEFILES=1]\n"
                "   restore <filenames> - Restore from xml files [INCLUDEFILES=1]\n"
+               "   importzap <zapreport-filename> <output-helper-directory> [<zapreport-password>]\n"
                 "\n"
                "   orphans             - Delete orphaned information from store\n"
                "   cleanup [days=NN]   - Delete workunits older than NN days\n"
@@ -279,6 +280,13 @@ static void process(IConstWorkUnit &w, IProperties *globals, const StringArray &
     }
     else
         throwUnexpected();
+}
+
+
+void importZapReport(const char *zapFilename, const char *helperDir, const char *zapPassword)
+{
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    factory->importWorkUnit(zapFilename, zapPassword, helperDir, "wutool", "wutooluser", nullptr, nullptr);
 }
 
 
@@ -593,6 +601,15 @@ int main(int argc, const char *argv[])
                 else
                     printf("Ignoring file %s - extension is not '.xml'\n", args.item(idx));
             }
+        }
+        else if (strieq(action, "importzap"))
+        {
+            if (args.length() < 2)
+            {
+                printf("usage: importzap <zapreport-filename> <output-helper-directory> [<zapreport-password>]\n");
+                exit(4);
+            }
+            importZapReport(args.item(0), args.item(1), (args.length()>2) ? args.item(2) : nullptr);
         }
         else if (strieq(action, "help"))
         {

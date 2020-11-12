@@ -648,9 +648,13 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
             role="bold">MAXLENGTH(</emphasis><emphasis>size</emphasis><emphasis
             role="bold">)</emphasis></entry>
 
-            <entry><para>Opcional. Comprimento máximo do registro no
-            <emphasis>arquivo</emphasis>. Se omitido, o padrão é
-            4096.</para></entry>
+            <entry><para>Opcional. Comprimento máximo, em bytes, do registro
+            no <emphasis>arquivo</emphasis>. Se omitido, o padrão é 4096. Há
+            um limite de 10MB mas que pode ser sobrescrito utilizando o
+            comando <emphasis>#OPTION(maxCSVRowSizeMb,nn) </emphasis>onde
+            <emphasis>nn</emphasis> é o tamanho máximo em MB. O tamanho do
+            registro de ser ajustado de maineira mais conservadora possível.
+            </para></entry>
           </row>
 
           <row>
