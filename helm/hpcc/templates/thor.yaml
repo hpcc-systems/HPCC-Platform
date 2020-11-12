@@ -44,7 +44,7 @@ spec:
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{- if .useChildProcesses }}
 {{- include "hpcc.addResources" (dict "me" $thorScope.eclAgentResources) | indent 8 }}
-{{- else }}
+{{- else if not $.Values.global.privileged }}
 {{- include "hpcc.addStubResources" . | indent 8 }}
 {{- end }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
@@ -87,7 +87,9 @@ spec:
               ]
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{- if not .useChildProcesses }}
+{{- if not $.Values.global.privileged }}
 {{- include "hpcc.addStubResources" . | indent 8 }}
+{{- end }}
 {{- end }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
         volumeMounts:

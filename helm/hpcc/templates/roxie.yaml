@@ -27,7 +27,9 @@ spec:
       - name: {{ $toponame | quote }}
 {{ include "hpcc.addSentinelProbes" $roxie | indent 8 }}
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
+{{- if not $.Values.global.privileged }}
 {{- include "hpcc.addStubResources" . | indent 8 }}
+{{- end }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie) | indent 8 }}
         workingDir: /var/lib/HPCCSystems
         command: [ toposerver ] 
