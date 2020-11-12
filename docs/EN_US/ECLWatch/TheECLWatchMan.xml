@@ -710,12 +710,45 @@
       page in ECL Watch click on the <emphasis role="bold">ECL
       Watch</emphasis> image at the top of any page, as shown above.</para>
 
-      <sect2>
-        <title>Cluster Disk Usage</title>
+      <sect2 id="ClusterDiskUsageGraphs">
+        <title>Cluster Disk Usage Graphs</title>
 
         <para>The Cluster Activity page displays graphs along the top showing
-        cluster disk usage. Clicking on each of the images displays more
-        information about the individual disk usage activity.</para>
+        cluster disk usage. These graphs can give you a quick glance at the
+        capacity of your clusters. Clicking on each of the images displays
+        more information about the individual cluster's disk usage
+        activity.</para>
+
+        <para><figure>
+            <title>Cluster Activity Page Graphs</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWaGage01.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>The graphs show the amount of available storage, the
+        average amount of storage in use, and the maximum amount of storage in
+        use across all nodes. The dark indicator line displays the average in
+        use across the disks in that cluster. The colored doughnut portion
+        shows the maximum amount of storage in use by any single node. If this
+        differs greatly, it could affect performance. </para>
+
+        <para>The color of the graphs change as the storage capacity changes.
+        Green indicates low utilization, yellow indicates higher utilization,
+        and red indicates very high utilization.</para>
+
+        <para><figure>
+            <title>Cluster Graph Detail</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWaGage02.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>The graphs provide an indication of available capacity
+        across your nodes. This can help identify any potential disk space
+        issues. </para>
       </sect2>
 
       <sect2 id="ECLWatch_ClusterActivity">
