@@ -2615,49 +2615,58 @@ public:
         Owned<StringContextLogger> logctx = new StringContextLogger("PacketDiscarder");
         rowManager.setown(roxiemem::createRowManager(0, NULL, *logctx, NULL, false));
         mc.setown(ROQ->queryReceiveManager()->createMessageCollator(rowManager, RUID_DISCARD));
-        while (!aborted)
+        try
         {
-            bool anyActivity = false;
-            Owned<IMessageResult> mr = mc->getNextResult(5000, anyActivity);
-            if (mr)
+            while (!aborted)
             {
-                if (traceLevel > 4)
-                    DBGLOG("Discarding unwanted message");
-                unsigned headerLen;
-                const RoxiePacketHeader &header = *(const RoxiePacketHeader *) mr->getMessageHeader(headerLen);
-                if (headerLen)
+                bool anyActivity = false;
+                Owned<IMessageResult> mr = mc->getNextResult(5000, anyActivity);
+                if (mr)
                 {
-                    switch (header.activityId)
+                    if (traceLevel > 4)
+                        DBGLOG("Discarding unwanted message");
+                    unsigned headerLen;
+                    const RoxiePacketHeader &header = *(const RoxiePacketHeader *) mr->getMessageHeader(headerLen);
+                    if (headerLen)
                     {
-                        case ROXIE_FILECALLBACK:
+                        switch (header.activityId)
                         {
-                            Owned<IMessageUnpackCursor> callbackData = mr->getCursor(rowManager);
-                            OwnedConstRoxieRow len = callbackData->getNext(sizeof(RecordLengthType));
-                            if (len)
+                            case ROXIE_FILECALLBACK:
                             {
-                                RecordLengthType *rowlen = (RecordLengthType *) len.get();
-                                OwnedConstRoxieRow row = callbackData->getNext(*rowlen);
-                                const char *rowdata = (const char *) row.get();
-                                // bool isOpt = * (bool *) rowdata;
-                                // bool isLocal = * (bool *) (rowdata+1);
-                                ROQ->sendAbortCallback(header, rowdata+2, *logctx);
+                                Owned<IMessageUnpackCursor> callbackData = mr->getCursor(rowManager);
+                                OwnedConstRoxieRow len = callbackData->getNext(sizeof(RecordLengthType));
+                                if (len)
+                                {
+                                    RecordLengthType *rowlen = (RecordLengthType *) len.get();
+                                    OwnedConstRoxieRow row = callbackData->getNext(*rowlen);
+                                    const char *rowdata = (const char *) row.get();
+                                    // bool isOpt = * (bool *) rowdata;
+                                    // bool isLocal = * (bool *) (rowdata+1);
+                                    ROQ->sendAbortCallback(header, rowdata+2, *logctx);
+                                }
+                                else
+                                    DBGLOG("Unrecognized format in discarded file callback");
+                                break;
                             }
-                            else
-                                DBGLOG("Unrecognized format in discarded file callback");
-                            break;
+                            // MORE - ROXIE_ALIVE perhaps should go here too? debug callbacks? Actually any standard query results should too (though by the time I see them here it's too late (that may change once start streaming)
                         }
-                        // MORE - ROXIE_ALIVE perhaps should go here too? debug callbacks? Actually any standard query results should too (though by the time I see them here it's too late (that may change once start streaming)
                     }
+                    else
+                        DBGLOG("Unwanted message had no header?!");
                 }
-                else
-                    DBGLOG("Unwanted message had no header?!");
+                else if (!anyActivity)
+                {
+                    // to avoid leaking partial unwanted packets, we clear out mc periodically...
+                    ROQ->queryReceiveManager()->detachCollator(mc);
+                    mc.setown(ROQ->queryReceiveManager()->createMessageCollator(rowManager, RUID_DISCARD));
+                }
             }
-            else if (!anyActivity)
-            {
-                // to avoid leaking partial unwanted packets, we clear out mc periodically...
-                ROQ->queryReceiveManager()->detachCollator(mc);
-                mc.setown(ROQ->queryReceiveManager()->createMessageCollator(rowManager, RUID_DISCARD));
-            }
+        }
+        catch (IException * E)
+        {
+            if (!aborted || QUERYINTERFACE(E, InterruptedSemaphoreException) == NULL)
+                EXCLOG(E);
+            ::Release(E);
         }
         return 0;
     }

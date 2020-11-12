@@ -1859,7 +1859,7 @@ void OsDiskInfo::initMajorMinor()
     // and match those with entries in /proc/diskstats
     StringBuffer cmd("lsblk -o TYPE,MAJ:MIN --pairs");
     Owned<IPipeProcess> pipe = createPipeProcess();
-    if (pipe->run("list disks", cmd, nullptr, false, true, true, 8192))
+    if (pipe->run(nullptr, cmd, nullptr, false, true, true, 8192))
     {
         StringBuffer output;
         Owned<ISimpleReadStream> pipeReader = pipe->getOutputStream();
