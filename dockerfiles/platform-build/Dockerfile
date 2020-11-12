@@ -20,8 +20,8 @@
 ARG BASE_VER=7.12
 FROM hpccsystems/platform-build-base:${BASE_VER}
 
-RUN groupadd -g 1000 hpcc
-RUN useradd -s /bin/bash -r -m -N -c "hpcc runtime User" -u 999 -g hpcc hpcc
+RUN groupadd -g 10001 hpcc
+RUN useradd -s /bin/bash -r -m -N -c "hpcc runtime User" -u 10000 -g hpcc hpcc
 RUN passwd -l hpcc 
 
 RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.17.0/bin/linux/amd64/kubectl && chmod +x ./kubectl && mv ./kubectl /usr/local/bin

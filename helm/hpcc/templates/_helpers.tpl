@@ -109,6 +109,10 @@ logging:
 Add ConfigMap volume mount for a component
 */}}
 {{- define "hpcc.addConfigMapVolumeMount" -}}
+- name: {{ .name }}-temp-volume
+  mountPath: /tmp
+- name: {{ .name }}-hpcctmp-volume
+  mountPath: /var/lib/HPCCSystems
 - name: {{ .name }}-configmap-volume
   mountPath: /etc/config
 {{- end -}}
@@ -117,6 +121,10 @@ Add ConfigMap volume mount for a component
 Add ConfigMap volume for a component
 */}}
 {{- define "hpcc.addConfigMapVolume" -}}
+- name: {{ .name }}-temp-volume
+  emptyDir: {}
+- name: {{ .name }}-hpcctmp-volume
+  emptyDir: {}
 - name: {{ .name }}-configmap-volume
   configMap:
     name: {{ .name }}-configmap
@@ -320,19 +328,19 @@ Add sentinel-based probes for a component
 {{- define "hpcc.addSentinelProbes" -}}
 env:
 - name: "SENTINEL"
-  value: "{{ .name }}.sentinel"
+  value: "/tmp/{{ .name }}.sentinel"
 startupProbe:
   exec:
     command:
     - cat
-    - "{{ .name }}.sentinel"
+    - "/tmp/{{ .name }}.sentinel"
   failureThreshold: 30
   periodSeconds: 10
 readinessProbe:
   exec:
     command:
     - cat
-    - "{{ .name }}.sentinel"
+    - "/tmp/{{ .name }}.sentinel"
   periodSeconds: 10
 {{ end -}}
 
@@ -442,8 +450,8 @@ A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop
 # This is only required when mounting a remote filing systems from another container or machine.
 # NB: this includes where the filing system is on the containers host machine .
 # Examples include, minikube, docker for desktop, or NFS mounted storage.
-# NB: uid=999 and gid=1000 are the uid/gid of the hpcc user, built into platform-core
-{{- $permCmd := printf "chown -R 999:1000 %s" .volumePath }}
+# NB: uid=10000 and gid=10001 are the uid/gid of the hpcc user, built into platform-core
+{{- $permCmd := printf "chown -R 10000:10001 %s" .volumePath }}
 - name: volume-mount-hack
   image: busybox
   command: [
@@ -522,9 +530,9 @@ securityContext:
   allowPrivilegeEscalation: false
 {{- end }}
   runAsNonRoot: true
-  runAsUser: 999
-  runAsGroup: 1000
-  readOnlyRootFilesystem: false
+  runAsUser: 10000
+  runAsGroup: 10001
+  readOnlyRootFilesystem: true
 {{ end -}}
 
 {{/*
