@@ -11,6 +11,14 @@ on:
       - "!candidate-7.2.*"
       - "!candidate-7.0.*"
       - "!candidate-6.*"
+    paths-ignore:
+      - docs/**
+      - esp/src/**/*
+      - dockerfiles/**
+      - helm/**
+      - ecllibrary/**
+      - testing/**
+      - initfiles/**
 
 jobs:
   build:
