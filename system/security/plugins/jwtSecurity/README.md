@@ -108,7 +108,7 @@ plugin must be added as a component and then modified according to your environm
 * Full URL to the ```JWT Login Endpoint``` (should be HTTPS, but not required)
 * Full URL to the ```JWT Refresh Endpoint``` (should be HTTPS, but not required)
 * Boolean indicating whether to accept self-signed certificates for those endpoints; defaults to false
-* Secrets vault key/name or subdirectory under /opt/HPCCSystems/secrets/system in which the JWT key used for the chosen signature algorithm is stored; defaults to "jwt-security"
+* Secrets vault key/name or subdirectory under /opt/HPCCSystems/secrets/esp in which the JWT key used for the chosen signature algorithm is stored; defaults to "jwt-security"
 * Default permission access level (either "Full" or "None"); defaults to "Full"
 * Default workunit scope access level (either "Full" or "None"); defaults to "Full"
 * Default file scope access level (either "Full" or "None"); defaults to "Full"
