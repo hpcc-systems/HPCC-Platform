@@ -32,7 +32,7 @@ spec:
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{- if .useChildProcesses }}
 {{- include "hpcc.addResources" (dict "me" .resources) | indent 8 }}
-{{- else }}
+{{- else if not $.Values.global.privileged }}
 {{- include "hpcc.addStubResources" . | indent 8 }}
 {{- end }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
