@@ -29,6 +29,7 @@
 #include "dautils.hpp"
 #include "httpclient.hpp"
 #include "portlist.h" //ROXIE_SERVER_PORT
+#include "TpWrapper.hpp"
 
 #define DALI_FILE_LOOKUP_TIMEOUT (1000*15*1)  // 15 seconds
 
@@ -36,8 +37,6 @@ const unsigned ROXIECONNECTIONTIMEOUT = 1000;   //1 second
 const unsigned ROXIECONTROLQUERYTIMEOUT = 3000; //3 second
 const unsigned ROXIECONTROLQUERIESTIMEOUT = 30000; //30 second
 const unsigned ROXIELOCKCONNECTIONTIMEOUT = 60000; //60 second
-
-#define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
 //The CQuerySetQueryActionTypes[] has to match with the ESPenum QuerySetQueryActionTypes in the ecm file.
 static unsigned NumOfQuerySetQueryActionTypes = 7;
@@ -417,7 +416,11 @@ void QueryFilesInUse::loadTarget(IPropertyTree *t, const char *target, unsigned 
 
 void QueryFilesInUse::loadTargets(IPropertyTree *t, unsigned flags)
 {
-    Owned<IStringIterator> targets = getTargetClusters("RoxieCluster", NULL);
+#ifdef _CONTAINERIZED
+    Owned<IStringIterator> targets = getContainerTargetClusters("roxie", nullptr);
+#else
+    Owned<IStringIterator> targets = getTargetClusters("RoxieCluster", nullptr);
+#endif
     SCMStringBuffer s;
     ForEach(*targets)
     {
@@ -935,7 +938,12 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
 bool CWsWorkunitsEx::onWUQuerysets(IEspContext &context, IEspWUQuerysetsRequest & req, IEspWUQuerysetsResponse & resp)
 {
     IArrayOf<IEspQuerySet> querySets;
-    Owned<IStringIterator> targets = getTargetClusters(NULL, NULL);
+#ifdef _CONTAINERIZED
+    Owned<IStringIterator> targets = getContainerTargetClusters(nullptr, nullptr);
+#else
+    Owned<IStringIterator> targets = getTargetClusters(nullptr, nullptr);
+#endif
+
     SCMStringBuffer target;
     ForEach(*targets)
     {
@@ -1612,7 +1620,11 @@ void CWsWorkunitsEx::getSuspendedQueriesByCluster(MapStringTo<bool> &suspendedQu
     }
     else
     {
+#ifdef _CONTAINERIZED
+        Owned<IStringIterator> targets = getContainerTargetClusters("roxie", nullptr);
+#else
         Owned<IStringIterator> targets = getTargetClusters("RoxieCluster", nullptr);
+#endif
         ForEach(*targets)
         {
             SCMStringBuffer target;
@@ -1666,7 +1678,11 @@ bool CWsWorkunitsEx::onWUListQueriesUsingFile(IEspContext &context, IEspWUListQu
     else // if (process && *process)
     {
         SCMStringBuffer targetStr;
+#ifdef _CONTAINERIZED
+        Owned<IStringIterator> targetClusters = getContainerTargetClusters("roxie", process);
+#else
         Owned<IStringIterator> targetClusters = getTargetClusters("RoxieCluster", process);
+#endif
         ForEach(*targetClusters)
             targets.append(targetClusters->str(targetStr).str());
         logMsg.append(", process ").append(process);

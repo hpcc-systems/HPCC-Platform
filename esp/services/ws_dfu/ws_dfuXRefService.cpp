@@ -572,7 +572,11 @@ void addUsedFilesFromPackageMaps(MapStringTo<bool> &usedFileMap, const char *pro
     if (!packageSet)
         throw MakeStringException(ECLWATCH_PACKAGEMAP_NOTRESOLVED, "Unable to retrieve package information from dali /PackageMaps");
     StringArray pmids;
+#ifdef _CONTAINERIZED
+    Owned<IStringIterator> targets = getContainerTargetClusters("roxie", process);
+#else
     Owned<IStringIterator> targets = getTargetClusters("RoxieCluster", process);
+#endif
     ForEach(*targets)
     {
         SCMStringBuffer target;
