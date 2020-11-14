@@ -9,8 +9,7 @@ const navLinkGroups: INavLinkGroup[] = [
         links: [
             { url: "#/activities", name: nlsHPCC.Activities },
             { url: "#/clusters", name: nlsHPCC.TargetClusters },
-            { url: "#/events", name: nlsHPCC.EventScheduler },
-            { url: "#/search", name: nlsHPCC.SearchResults },
+            { url: "#/events", name: nlsHPCC.EventScheduler }
         ]
     },
     {

@@ -23,12 +23,13 @@ define([
     "src/WsDfu",
     "hpcc/DelayLoadWidget",
     "src/ESPUtil",
+    "src/ESPSearch",
     "src/Utility"
 
 ], function (declare, lang, nlsHPCCMod, arrayUtil, Memory, Observable, on, all,
     Standby, validate,
     selector,
-    GridDetailsWidget, WsWorkunits, ESPWorkunit, ESPDFUWorkunit, ESPLogicalFile, ESPQuery, FileSpray, WsDfu, DelayLoadWidget, ESPUtil, Utility) {
+    GridDetailsWidget, WsWorkunits, ESPWorkunit, ESPDFUWorkunit, ESPLogicalFile, ESPQuery, FileSpray, WsDfu, DelayLoadWidget, ESPUtil, ESPSearch, Utility) {
 
     var nlsHPCC = nlsHPCCMod.default;
     return declare("SearchResultsWidget", [GridDetailsWidget], {
@@ -398,8 +399,8 @@ define([
         },
 
         searchAll: function () {
-            var context = this;
             this.standby.show();
+
             if (validate.isNumberFormat(this.searchText, { format: ["W########-######", "W########-######-#???"] })) {
                 var tab = this.ensurePane({
                     id: this.searchText,
@@ -409,6 +410,7 @@ define([
                     _wuid: this.searchText
                 }, {});
                 this.selectChild(tab);
+
             } else if (validate.isNumberFormat(this.searchText, { format: ["D########-######", "D########-######-#???"] })) {
                 var tab = this.ensurePane({
                     id: this.searchText,
@@ -420,89 +422,31 @@ define([
                 this.selectChild(tab);
             }
 
-            var searchECL = false;
-            var searchECLText = false;
-            var searchDFU = false;
-            var searchFile = false;
-            var searchQuery = false;
-            var searchText = "";
-            if (this.searchText.indexOf("ecl:") === 0) {
-                this.selectChild(this.eclTab);
-                searchECL = true;
-                searchECLText = true;
-                searchText = this.searchText.substring(4);
-            } else if (this.searchText.indexOf("dfu:") === 0) {
-                this.selectChild(this.dfuTab);
-                searchDFU = true;
-                searchText = this.searchText.substring(4);
-            } else if (this.searchText.indexOf("file:") === 0) {
-                this.selectChild(this.fileTab);
-                searchFile = true;
-                searchText = this.searchText.substring(5);
-            } else if (this.searchText.indexOf("query:") === 0) {
-                this.selectChild(this.queryTab);
-                searchQuery = true;
-                searchText = this.searchText.substring(6);
-            } else {
-                this.selectChild(this.gridTab);
-                searchECL = true;
-                searchDFU = true;
-                searchFile = true;
-                searchQuery = true;
-                searchText = this.searchText;
-            }
-            searchText = searchText.trim();
+            const specificSearch = ESPSearch.searchAll(this.searchText,
+                (what, response) => { this.loadWUQueryResponse(what, response); },
+                (what, response) => { this.loadGetDFUWorkunitResponse(what, response); },
+                (what, response) => { this.loadGetDFUWorkunitsResponse(what, response); },
+                (what, response) => { this.loadDFUQueryResponse(what, response); },
+                (what, response) => { this.loadWUListQueriesResponse(what, response); },
+                (searchCount) => { },
+                (success) => { this.standby.hide(); });
 
-            var searchArray = [];
-            if (searchECL) {
-                searchArray.push(WsWorkunits.WUQuery({ request: { Wuid: "*" + searchText + "*" }, suppressExceptionToaster: true }).then(function (response) {
-                    context.loadWUQueryResponse(context.i18n.WUID, response);
-                }));
-                searchArray.push(WsWorkunits.WUQuery({ request: { Jobname: "*" + searchText + "*" } }).then(function (response) {
-                    context.loadWUQueryResponse(context.i18n.JobName, response);
-                }));
-                searchArray.push(WsWorkunits.WUQuery({ request: { Owner: searchText } }).then(function (response) {
-                    context.loadWUQueryResponse(context.i18n.Owner, response);
-                }));
+            switch (specificSearch) {
+                case "ecl":
+                    this.selectChild(this.eclTab);
+                    break;
+                case "dfu":
+                    this.selectChild(this.dfuTab);
+                    break;
+                case "file":
+                    this.selectChild(this.fileTab);
+                    break;
+                case "query":
+                    this.selectChild(this.queryTab);
+                    break;
+                default:
+                    this.selectChild(this.gridTab);
             }
-            if (searchECLText) {
-                searchArray.push(WsWorkunits.WUQuery({ request: { ECL: searchText } }).then(function (response) {
-                    context.loadWUQueryResponse(context.i18n.ECL, response);
-                }));
-            }
-            if (searchDFU) {
-                searchArray.push(FileSpray.GetDFUWorkunit({ request: { wuid: "*" + searchText + "*" }, suppressExceptionToaster: true }).then(function (response) {
-                    context.loadGetDFUWorkunitResponse(context.i18n.WUID, response);
-                }));
-                searchArray.push(FileSpray.GetDFUWorkunits({ request: { Jobname: "*" + searchText + "*" } }).then(function (response) {
-                    context.loadGetDFUWorkunitsResponse(context.i18n.JobName, response);
-                }));
-                searchArray.push(FileSpray.GetDFUWorkunits({ request: { Owner: searchText } }).then(function (response) {
-                    context.loadGetDFUWorkunitsResponse(context.i18n.Owner, response);
-                }));
-            }
-            if (searchFile) {
-                searchArray.push(WsDfu.DFUQuery({ request: { LogicalName: "*" + searchText + "*" } }).then(function (response) {
-                    context.loadDFUQueryResponse(context.i18n.LogicalName, response);
-                }));
-                searchArray.push(WsDfu.DFUQuery({ request: { Owner: searchText } }).then(function (response) {
-                    context.loadDFUQueryResponse(context.i18n.Owner, response);
-                }));
-            }
-            if (searchQuery) {
-                searchArray.push(WsWorkunits.WUListQueries({ request: { QueryID: "*" + searchText + "*" } }).then(function (response) {
-                    context.loadWUListQueriesResponse(context.i18n.ID, response);
-                }));
-                searchArray.push(WsWorkunits.WUListQueries({ request: { QueryName: "*" + searchText + "*" } }).then(function (response) {
-                    context.loadWUListQueriesResponse(context.i18n.Name, response);
-                }));
-            }
-
-            all(searchArray).then(function (results) {
-                context.standby.hide();
-            }, function (error) {
-                context.standby.hide();
-            });
         },
 
         refreshGrid: function (args) {
