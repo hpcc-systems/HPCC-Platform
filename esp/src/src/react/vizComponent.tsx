@@ -27,7 +27,7 @@ export const VisualizationComponent: React.FunctionComponent<VisualizationProps>
         return () => {
             w.target(null);
         };
-    }, []);
+    }, [divID, widget]);
 
     if (widgetInstance) {
         if (widgetProps.columns) {
