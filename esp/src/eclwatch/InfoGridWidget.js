@@ -110,10 +110,7 @@ define([
                 }
 
                 var context = this;
-                var store = new MemoryMod.Memory({
-                    idProperty: "id",
-                    data: []
-                });
+                var store = new MemoryMod.Memory("id");
                 this.infoStore = new Observable(store);
 
                 this.infoGrid = new declare([ESPUtil.Grid(false, true)])({

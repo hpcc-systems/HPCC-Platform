@@ -64,8 +64,7 @@ class ResourcesStore extends Memory {
     name: string;
 
     constructor() {
-        super();
-        this.idProperty = "__hpcc_id";
+        super("__hpcc_id");
     }
 
     put(row, options) {
@@ -162,8 +161,7 @@ class InheritedPermissionStore extends Memory {
     IncludeGroup: boolean;
 
     constructor() {
-        super();
-        this.idProperty = "__hpcc_id";
+        super("__hpcc_id");
     }
 
     put(row, options) {
@@ -245,8 +243,7 @@ class AccountResourcesStore extends Memory {
     IncludeGroup: boolean;
 
     constructor() {
-        super();
-        this.idProperty = "__hpcc_id";
+        super("__hpcc_id");
     }
 
     put(row, options) {
@@ -320,8 +317,7 @@ class IndividualPermissionsStore extends Memory {
     basedn: string;
 
     constructor() {
-        super();
-        this.idProperty = "__hpcc_id";
+        super("__hpcc_id");
     }
 
     put(row, options) {
@@ -391,13 +387,11 @@ class PermissionsStore extends Memory {
     service = "ws_access";
     action = "Permissions";
     responseQualifier = "BasednsResponse.Basedns.Basedn";
-    idProperty = "__hpcc_id";
     groupname: string;
     username: string;
 
     constructor() {
-        super();
-        this.idProperty = "__hpcc_id";
+        super("__hpcc_id");
     }
 
     get(id) {

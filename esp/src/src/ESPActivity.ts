@@ -13,7 +13,9 @@ import { Memory } from "./Memory";
 
 class Store extends Memory {
 
-    idProperty = "__hpcc_id";
+    constructor() {
+        super("__hpcc_id");
+    }
 
     mayHaveChildren(item) {
         return (item.getChildCount && item.getChildCount());
@@ -217,7 +219,7 @@ export function Get() {
     return globalActivity;
 }
 
-export function CreateActivityStore(options) {
-    const store = new Store(options);
+export function CreateActivityStore() {
+    const store = new Store();
     return new Observable(store);
 }

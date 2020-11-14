@@ -49,10 +49,7 @@
         //  Implementation ---
         createGrid: function (args) {
             this.idProperty = args.idProperty;
-            var store = new MemoryMod.Memory({
-                idProperty: this.idProperty,
-                data: []
-            });
+            var store = new MemoryMod.Memory(this.idProperty);
             this.store = new Observable(store);
 
             this.grid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry])({

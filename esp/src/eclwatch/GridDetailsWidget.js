@@ -98,10 +98,7 @@ define([
 
         initGrid: function () {
             var context = this;
-            var store = new MemoryMod.AlphaNumSortMemory(this.alphanumSort, {
-                idProperty: this.idProperty,
-                data: []
-            });
+            var store = new MemoryMod.AlphaNumSortMemory(this.idProperty, this.alphanumSort);
             this.store = new Observable(store);
             this.grid = this.createGrid(this.id + "Grid");
             this.setGridNoDataMessage(this.i18n.loadingMessage);

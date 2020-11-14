@@ -14,8 +14,7 @@ import { Memory } from "./Memory";
 class DiskUsageStore extends Memory {
 
     constructor() {
-        super();
-        this.idProperty = "__hpcc_id";
+        super("__hpcc_id");
     }
 
     query(query, options) {

@@ -399,8 +399,8 @@ export const FormHelper = declare(null, {
 
 export class UndefinedMemory extends Memory {
 
-    constructor() {
-        super();
+    constructor(idProperty: string = "id") {
+        super(idProperty);
     }
 
     query(query: any, options: any) {

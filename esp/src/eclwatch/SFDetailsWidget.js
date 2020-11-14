@@ -171,10 +171,7 @@ define([
 
         initSubfilesGrid: function () {
             var context = this;
-            var store = new MemoryMod.Memory({
-                idProperty: "Name",
-                data: []
-            });
+            var store = new MemoryMod.Memory("Name");
             this.subfilesStore = new Observable(store);
             this.subfilesGrid = new declare([ESPUtil.Grid(false, true)])({
                 columns: {

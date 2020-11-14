@@ -93,10 +93,10 @@ define([
         },
 
         createGrid: function (domID) {
-            this.eclStore = new Observable(new MemoryMod.Memory({ idProperty: "Wuid", data: [] }));
-            this.dfuStore = new Observable(new MemoryMod.Memory({ idProperty: "ID", data: [] }));
-            this.fileStore = new Observable(new MemoryMod.Memory({ idProperty: "__hpcc_id", data: [] }));
-            this.queryStore = new Observable(new MemoryMod.Memory({ idProperty: "__hpcc_id", data: [] }));
+            this.eclStore = new Observable(new MemoryMod.Memory("Wuid"));
+            this.dfuStore = new Observable(new MemoryMod.Memory("ID"));
+            this.fileStore = new Observable(new MemoryMod.Memory("__hpcc_id"));
+            this.queryStore = new Observable(new MemoryMod.Memory("__hpcc_id"));
             this.eclTab = this.ensurePane({ id: this.i18n.ECLWorkunit }, { type: this.i18n.ECLWorkunit });
             this.dfuTab = this.ensurePane({ id: this.i18n.DFUWorkunit }, { type: this.i18n.DFUWorkunit });
             this.fileTab = this.ensurePane({ id: this.i18n.LogicalFile }, { type: this.i18n.LogicalFile });
