@@ -10,7 +10,7 @@ const ToDo: React.FunctionComponent<ToDoProps> = () => {
 };
 
 const routes: Routes = [
-    { path: "/", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="ActivityWidget" />) },
+    { path: "", action: (context) => import("./components/Activities").then(_ => <_.Activities />) },
     {
         name: "login",
         path: "/login",
@@ -23,7 +23,8 @@ const routes: Routes = [
         name: "activities",
         path: "/activities",
         children: [
-            { path: "", action: (context) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="ActivityWidget" />) }
+            { path: "", action: (context) => import("./components/Activities").then(_ => <_.Activities />) },
+            { path: "/legacy", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="ActivityWidget" />) }
         ]
     },
     {
