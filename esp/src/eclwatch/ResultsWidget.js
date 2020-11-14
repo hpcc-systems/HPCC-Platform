@@ -93,13 +93,13 @@ define([
                     Name: {
                         label: this.i18n.Name, width: 180, sortable: true,
                         formatter: function (Name, idx) {
-                            return "<a href='#' class='dgrid-row-url'>" + Name + "</a>";
+                            return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + Name + "</a>";
                         }
                     },
                     FileName: {
                         label: this.i18n.FileName, sortable: true,
                         formatter: function (FileName, idx) {
-                            return "<a href='#' class='dgrid-row-url2'>" + FileName + "</a>";
+                            return "<a href='#' onClick='return false;' class='dgrid-row-url2'>" + FileName + "</a>";
                         }
                     },
                     Value: {
@@ -112,7 +112,7 @@ define([
                         formatter: function (ResultViews, idx) {
                             var retVal = "";
                             arrayUtil.forEach(ResultViews, function (item, idx) {
-                                retVal += "<a href='#' viewName=" + encodeURIComponent(item) + " class='dgrid-row-url3'>" + item + "</a>&nbsp;";
+                                retVal += "<a href='#' onClick='return false;' viewName=" + encodeURIComponent(item) + " class='dgrid-row-url3'>" + item + "</a>&nbsp;";
                             });
                             return retVal;
                         }

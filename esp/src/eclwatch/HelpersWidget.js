@@ -146,11 +146,11 @@ define([
                         formatter: function (Type, row) {
                             if (context.canShowContent(Type)) {
                                 if (!row.Orig) {
-                                    return "<a href='#' class='dgrid-row-url'>" + Type + "</a>";
+                                    return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + Type + "</a>";
                                 } if (row.Orig.Description === undefined && row.Orig.Type === Type) {
-                                    return "<a href='#' class='dgrid-row-url'>" + Type + "</a>";
+                                    return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + Type + "</a>";
                                 } else {
-                                    return "<a href='#' class='dgrid-row-url'>" + Type + " (" + row.Orig.Description + ")" + "</a>";
+                                    return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + Type + " (" + row.Orig.Description + ")" + "</a>";
                                 }
                             }
                             return Type;

@@ -106,4 +106,4 @@ export const AboutDialog: React.FunctionComponent<AboutDialog> = ({
             </Dialog>
         </MuiThemeProvider >
     );
-}
+};

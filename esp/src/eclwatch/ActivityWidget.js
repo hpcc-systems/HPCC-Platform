@@ -450,12 +450,12 @@ define([
                             var img = row.getStateImage();
                             if (context.activity.isInstanceOfQueue(row)) {
                                 if (row.ClusterType === 3) {
-                                    return "<img src='" + img + "'/>&nbsp;<a href='#' class='dgrid-row-url'>" + _name + "</a>";
+                                    return "<img src='" + img + "'/>&nbsp;<a href='#' onClick='return false;' class='dgrid-row-url'>" + _name + "</a>";
                                 } else {
                                     return "<img src='" + img + "'/>&nbsp;" + _name;
                                 }
                             }
-                            return "<img src='" + img + "'/>&nbsp;<a href='#' class='dgrid-row-url'>" + row.Wuid + "</a>";
+                            return "<img src='" + img + "'/>&nbsp;<a href='#' onClick='return false;' class='dgrid-row-url'>" + row.Wuid + "</a>";
                         }
                     }),
                     GID: {
@@ -463,7 +463,7 @@ define([
                         formatter: function (_gid, row) {
                             if (context.activity.isInstanceOfWorkunit(row)) {
                                 if (row.GraphName) {
-                                    return "<a href='#' class='dgrid-row-url2'>" + row.GraphName + "-" + row.GID + "</a>";
+                                    return "<a href='#' onClick='return false;' class='dgrid-row-url2'>" + row.GraphName + "-" + row.GID + "</a>";
                                 }
                             }
                             return "";

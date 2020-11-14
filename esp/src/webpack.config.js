@@ -1,8 +1,24 @@
+/* eslint-disable */
 var DojoWebpackPlugin = require("dojo-webpack-plugin");
-var CopyWebpackPlugin = require("copy-webpack-plugin");
 
+var fs = require("fs");
 var path = require("path");
 var webpack = require("webpack");
+
+//  Dev Environment ---
+let debugServerIP = "play.hpccsystems.com";
+if (fs.existsSync("./lws.target.txt")) {
+    debugServerIP = fs.readFileSync("./lws.target.txt").toString().replace("\r\n", "\n").split("\n")[0];
+}
+console.log("debugServerIP:  ", debugServerIP);
+const proxy = {};
+const proxyItems = ["/WsWorkunits", "/WsStore", "/WsSMC", "/WsTopology", "/WsDfu", "/FileSpray", "/ws_machine", "/ws_account", "/ws_elk", "/esp/getauthtype", "/esp/reset_session_timeout", "/esp/titlebar"];
+proxyItems.forEach(item => {
+    proxy[item] = {
+        target: "http://" + debugServerIP + ":8010",
+        secure: false
+    };
+});
 
 module.exports = function (env) {
     const isDev = env && env === "development";
@@ -13,7 +29,7 @@ module.exports = function (env) {
         dojoLib: "lib/src/dojoLib"
     };
     if (!isProduction) {
-        entry.index = "lib/src/index";
+        entry.index = "lib/src-react/index"
     }
 
     const plugins = [
@@ -24,24 +40,17 @@ module.exports = function (env) {
             locales: ["en", "bs", "es", "fr", "hr", "hu", "pt-br", "sr", "zh"]
         }),
 
-        // Copy non-packed resources needed by the app to the release directory
-        new CopyWebpackPlugin([{
-            context: "node_modules",
-            from: "dojo/resources/blank.gif",
-            to: "dojo/resources"
-        }]),
-
         // For plugins registered after the DojoAMDPlugin, data.request has been normalized and
         // resolved to an absMid and loader-config maps and aliases have been applied
         new webpack.NormalModuleReplacementPlugin(/^dojox\/gfx\/renderer!/, "dojox/gfx/canvas"),
         new webpack.NormalModuleReplacementPlugin(
             /^css!/, function (data) {
-                data.request = data.request.replace(/^css!/, "!style-loader!css-loader!")
+                data.request = data.request.replace(/^css!/, "!style-loader!css-loader!");
             }
         ),
         new webpack.NormalModuleReplacementPlugin(
             /^xstyle\/css!/, function (data) {
-                data.request = data.request.replace(/^xstyle\/css!/, "!style-loader!css-loader!")
+                data.request = data.request.replace(/^xstyle\/css!/, "!style-loader!css-loader!");
             }
         )
     ];
@@ -62,7 +71,7 @@ module.exports = function (env) {
                     test: /\.(png|jpg|gif)$/,
                     use: [
                         {
-                            loader: 'url-loader',
+                            loader: "url-loader",
                             options: {
                                 limit: 100000
                             }
@@ -70,13 +79,13 @@ module.exports = function (env) {
                     ]
                 }, {
                     test: /\.css$/,
-                    use: ['style-loader', 'css-loader']
+                    use: ["style-loader", "css-loader"]
                 }, {
                     test: /.(ttf|otf|eot|svg|woff(2)?)(\?[a-z0-9]+)?$/,
                     use: [{
-                        loader: 'file-loader',
+                        loader: "file-loader",
                         options: {
-                            name: '[name].[ext]'
+                            name: "[name].[ext]"
                         }
                     }]
                 }, {
@@ -87,14 +96,25 @@ module.exports = function (env) {
         },
         resolve: {
             alias: {
-                "clipboard": path.resolve(__dirname, 'node_modules/clipboard/dist/clipboard')
+                "clipboard": path.resolve(__dirname, "node_modules/clipboard/dist/clipboard")
             }
         },
         plugins: plugins,
         resolveLoader: {
             modules: ["node_modules"]
         },
+
         mode: isProduction ? "production" : "development",
-        devtool: isProduction ? undefined : 'source-map'
+        devtool: isProduction ? undefined : "cheap-module-source-map",
+
+        watchOptions: isProduction ? undefined : {
+            aggregateTimeout: 600
+        },
+
+        devServer: isProduction ? undefined : {
+            contentBase: path.join(__dirname, "build"),
+            contentBasePublicPath: "/esp/files",
+            proxy
+        }
     }
 };

@@ -126,7 +126,7 @@ define([
                         sortable: false,
                         formatter: function (clusterType) {
                             if (clusterType === true) {
-                                return "<a href='#' />" + Utility.getImageHTML("configuration.png", context.i18n.Configuration) + "</a>";
+                                return "<a href='#' onClick='return false;' />" + Utility.getImageHTML("configuration.png", context.i18n.Configuration) + "</a>";
                             }
                             return "";
                         }
@@ -140,7 +140,7 @@ define([
                                 name = row.Type + " - " + _name;
                             } if (row.type === "machine") {
                                 img = Utility.getImageHTML("machine.png");
-                                name = "<a href='#' class='dgrid-row-url'>" + row.Netaddress + " - " + _name + "</a>";
+                                name = "<a href='#' onClick='return false;' class='dgrid-row-url'>" + row.Netaddress + " - " + _name + "</a>";
                             }
                             return img + "&nbsp;" + name;
                         },

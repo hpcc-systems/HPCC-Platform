@@ -1,0 +1,67 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558 
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "npm",
+            "label": "tsc watch",
+            "script": "compile-watch",
+            "problemMatcher": [
+                "$tsc-watch"
+            ],
+            "presentation": {
+                "group": "group-build"
+            }
+        },
+        {
+            "type": "npm",
+            "label": "bundle watch",
+            "script": "bundle-watch",
+            "problemMatcher": [],
+            "presentation": {
+                "group": "group-build"
+            }
+        },
+        {
+            "type": "npm",
+            "label": "webpack-dev-server",
+            "script": "start",
+            "problemMatcher": [],
+            "presentation": {
+                "group": "group-build"
+            }
+        },
+        {
+            "type": "npm",
+            "label": "dev server",
+            "script": "dev-start-ws",
+            "problemMatcher": [],
+            "presentation": {
+                "group": "group-build"
+            }
+        },
+        {
+            "label": "build-webpack-dev-server",
+            "dependsOn": [
+                "tsc watch",
+                "webpack-dev-server"
+            ],
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "build-local-dev-server",
+            "dependsOn": [
+                "tsc watch",
+                "bundle watch",
+                "dev server"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        }
+    ]
+}

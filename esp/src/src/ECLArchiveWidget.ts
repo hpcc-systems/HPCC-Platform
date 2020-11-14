@@ -13,7 +13,7 @@ import "dijit/Toolbar";
 import "dijit/ToolbarSeparator";
 import nlsHPCC from "./nlsHPCC";
 // @ts-ignore
-import * as template from "dojo/text!../templates/ECLArchiveWidget.html";
+import * as template from "dojo/text!hpcc/templates/ECLArchiveWidget.html";
 // @ts-ignore
 import * as _Widget from "hpcc/_Widget";
 import { declareDecorator } from "./DeclareDecorator";
@@ -92,7 +92,7 @@ export class ECLArchiveWidget {
             .visible(false)
             .render()
             ;
-        
+
         const tableDataTransformer = d => {
             const ret = d.map((n: any) => {
                 return [
@@ -100,7 +100,7 @@ export class ECLArchiveWidget {
                     n.Formatted
                 ];
             });
-            ret.sort((a, b)=>a[0].localeCompare(b[0]));
+            ret.sort((a, b) => a[0].localeCompare(b[0]));
             return ret;
         };
 
@@ -166,7 +166,7 @@ export class ECLArchiveWidget {
                     }
                 };
                 Promise.all([wu.fetchArchive(), wu.fetchDetailsRaw(scopesOptions)])
-                    .then(([archiveXML, scopes])=>{
+                    .then(([archiveXML, scopes]) => {
                         const markerData = buildMarkerData(scopes);
                         renderArchive(archiveXML, markerData);
                     });
@@ -260,7 +260,7 @@ export class ECLArchiveWidget {
                             content = hasABase64Indicator ? atob(content) : content;
                             const path = pathArr.join(".");
                             const fullPath = path.length === 0 ? label : path + "." + label;
-                            
+
                             const markers = fileMarkers(fullPath, markerData);
                             _data.children.push({
                                 label,
@@ -342,22 +342,22 @@ export class ECLArchiveWidget {
 
             function directoryTreeClick(contentStr, markers = []) {
                 context.editor.text(contentStr);
-            
+
                 const fontFamily = "Verdana";
                 const fontSize = 12;
-            
+
                 const maxLabelWidth = Math.max(
-                    ...markers.map(marker=>{
+                    ...markers.map(marker => {
                         return context.editor.textSize(marker.label, fontFamily, fontSize).width;
                     })
                 );
-            
+
                 context.editor.gutterMarkerWidth(maxLabelWidth + 22);
                 try {
                     addMarkers(markers);
                     context.editor.render();
-                } catch(e) {
-                    context.archiveViewer.render(()=>{
+                } catch (e) {
+                    context.archiveViewer.render(() => {
                         addMarkers(markers);
                     });
                 }
@@ -400,33 +400,33 @@ export class ECLArchiveWidget {
         }
         function buildMarkerData(scopesArr) {
             const markers = {};
-        
+
             const timeName = "TimeMaxLocalExecute";
-        
+
             scopesArr.forEach(scope => {
-                const definitionList = scope.Properties.Property.find(n=>n.Name === "DefinitionList");
-                
+                const definitionList = scope.Properties.Property.find(n => n.Name === "DefinitionList");
+
                 const tableData = tableDataTransformer(scope.Properties.Property);
-                
-                const timeEntry = tableData.find(n=>n[0]===timeName);
-                
-                if(definitionList !== undefined && timeEntry !== undefined) {
+
+                const timeEntry = tableData.find(n => n[0] === timeName);
+
+                if (definitionList !== undefined && timeEntry !== undefined) {
                     const label = timeEntry[1];
                     const color = "orange";
                     const arr = definitionList.Formatted ? JSON.parse(definitionList.Formatted.split("\\").join("\\\\")) : [];
-                    arr.forEach(path=>{
+                    arr.forEach(path => {
                         const sp = path.split("(");
                         const filePath = sp.slice(0, -1).join("(");
                         const [
                             lineNum,
                             charNum
-                        ] = sp.slice(-1)[0].split(",").map(n=>parseInt(n));
-                        if(!markers[filePath]){
+                        ] = sp.slice(-1)[0].split(",").map(n => parseInt(n));
+                        if (!markers[filePath]) {
                             markers[filePath] = [];
                         }
                         const rawTime = {};
-                        scope.Properties.Property.forEach(n=>{
-                            if(n.Name === timeName){
+                        scope.Properties.Property.forEach(n => {
+                            if (n.Name === timeName) {
                                 Object.assign(rawTime, n);
                             }
                         });
@@ -443,7 +443,7 @@ export class ECLArchiveWidget {
                     });
                 }
             });
-            
+
             return markers;
         }
         function markerTooltipTable(marker) {
@@ -451,10 +451,10 @@ export class ECLArchiveWidget {
             const thead = document.createElement("thead");
             const tbody = document.createElement("tbody");
             const labels = [];
-            const tableDataArr = marker.tableData.map((_table, tableIdx)=>{
+            const tableDataArr = marker.tableData.map((_table, tableIdx) => {
                 const tableData = JSON.parse(_table);
-                tableData.forEach(row=>{
-                    if(labels.indexOf(row[0]) === -1){
+                tableData.forEach(row => {
+                    if (labels.indexOf(row[0]) === -1) {
                         labels.push(row[0]);
                     }
                 });
@@ -467,7 +467,7 @@ export class ECLArchiveWidget {
                     ...tableDataArr.map(tableData => {
                         let ret = "";
                         tableData.forEach(tableRow => {
-                            if(tableRow[0] === label) {
+                            if (tableRow[0] === label) {
                                 ret = tableRow[1];
                             }
                         });
@@ -475,15 +475,15 @@ export class ECLArchiveWidget {
                     })
                 ];
             });
-            
+
             _data
-                .filter(row=>row[0] === "Label")
-                .forEach(row=>{
+                .filter(row => row[0] === "Label")
+                .forEach(row => {
                     appendRow(row, thead, () => true);
                 });
             _data
-                .filter(row=>row[0] !== "Label")
-                .forEach(row=>{
+                .filter(row => row[0] !== "Label")
+                .forEach(row => {
                     appendRow(row, tbody, idx => idx === 0);
                 });
             table.appendChild(thead);
@@ -509,16 +509,16 @@ export class ECLArchiveWidget {
         function addMarkers(markers) {
             const palette = Palette.rainbow("YlOrRd");
             const _markers = mergeCommonLines(markers);
-        
+
             const [min, max] = extent(_markers, (n: any) => !n.timeSum ? 0 : parseInt(n.timeSum));
-            if(min !== undefined && max !== undefined) {
-                _markers.forEach(marker=>{
+            if (min !== undefined && max !== undefined) {
+                _markers.forEach(marker => {
                     marker.color = palette(marker.timeSum, min, max);
                 });
             }
-            _markers.forEach(marker=>{
+            _markers.forEach(marker => {
                 context.editor.addGutterMarker(
-                    marker.lineNum-1,
+                    marker.lineNum - 1,
                     marker.label,
                     marker.color,
                     "Verdana",
@@ -538,7 +538,7 @@ export class ECLArchiveWidget {
                             .render()
                             ;
                     },
-                    ()=>{
+                    () => {
                         //onmouseleave
                         context.tooltip.visible(false);
                     }
@@ -547,22 +547,22 @@ export class ECLArchiveWidget {
         }
         function fileMarkers(fullPath, markerData) {
             const markerFilenameArr = Object.keys(markerData);
-        
+
             const nameMatches = [];
 
             markerFilenameArr.forEach(name => {
                 let formattedName = name;
                 const dotSplit = name.split(".");
-                if(dotSplit.length > 1){
+                if (dotSplit.length > 1) {
                     formattedName = dotSplit[dotSplit.length - 2];
                 }
                 formattedName = formattedName.split("\\").join(".").split("/").join(".");
                 const nameSegments = formattedName.split(".");
-                if(fullPath.indexOf(nameSegments[nameSegments.length - 1]) !== -1) {
+                if (fullPath.indexOf(nameSegments[nameSegments.length - 1]) !== -1) {
                     let _path = fullPath;
                     let score = fullPath.split(".").length;
-                    while(_path.length > 0) {
-                        if(formattedName.indexOf(fullPath) !== -1) {
+                    while (_path.length > 0) {
+                        if (formattedName.indexOf(fullPath) !== -1) {
                             nameMatches.push({
                                 name,
                                 score,
@@ -578,8 +578,8 @@ export class ECLArchiveWidget {
             });
             nameMatches.sort((a, b) => b.score - a.score);
             let markers = [];
-            if(nameMatches[0]) {
-                markers = [...markerData[nameMatches[0].name]]; 
+            if (nameMatches[0]) {
+                markers = [...markerData[nameMatches[0].name]];
             }
             return markers;
         }
@@ -589,21 +589,21 @@ export class ECLArchiveWidget {
                 "us": 1000,
                 "ms": 1,
             };
-        
+
             const lineMap = {};
-            markers.forEach(n=>{
-                if(!lineMap[n.lineNum]){
+            markers.forEach(n => {
+                if (!lineMap[n.lineNum]) {
                     lineMap[n.lineNum] = [];
                 }
                 lineMap[n.lineNum].push(n);
             });
             const ret = [];
-            Object.keys(lineMap).forEach(key=>{
+            Object.keys(lineMap).forEach(key => {
                 let timeSum = 0;
                 const units = "ns";
                 const tableDataArr = [];
-                lineMap[key].forEach(n=>{
-                    if(n.rawTime){
+                lineMap[key].forEach(n => {
+                    if (n.rawTime) {
                         const num = Number(n.rawTime.RawValue);
                         timeSum += num;
                     }

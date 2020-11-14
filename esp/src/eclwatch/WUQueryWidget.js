@@ -475,7 +475,7 @@ define([
                         label: this.i18n.WUID, width: 180,
                         formatter: function (Wuid, idx) {
                             var wu = ESPWorkunit.Get(Wuid);
-                            return wu.getStateImageHTML() + "&nbsp;<a href='#' class='dgrid-row-url'>" + Wuid + "</a>";
+                            return wu.getStateImageHTML() + "&nbsp;<a href='#' class='dgrid-row-url' onClick='return false;'>" + Wuid + "</a>";
                         }
                     },
                     Owner: { label: this.i18n.Owner, width: 90 },

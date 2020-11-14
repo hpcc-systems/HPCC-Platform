@@ -7,7 +7,6 @@ import nlsHPCC from "../nlsHPCC";
 import { theme } from "./theme";
 import * as React from "react";
 
-
 const Steps = [
     {
         text: nlsHPCC.Created,
