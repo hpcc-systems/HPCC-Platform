@@ -445,9 +445,9 @@ export class UndefinedMemory extends UndefinedMemoryBase {
     }
 }
 
-export function Grid(pagination?, selection?, overrides?, compoundColumns?, gridName?) {
+export function Grid(pagination?, selection?, overrides?: object, compoundColumns?, gridName?) {
     let baseClass = [];
-    const params = {};
+    const params = overrides || {};
     const rows = Number(localStorage.getItem(gridName));
 
     if (pagination) {

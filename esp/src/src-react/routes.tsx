@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Routes } from "universal-router";
-import { initialize } from "./util/history";
+import { initialize, parseSearch } from "./util/history";
 
 export interface ToDoProps {
 }
@@ -55,7 +55,7 @@ const routes: Routes = [
     {
         path: "/workunits",
         children: [
-            { path: "", action: (context) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="WUQueryWidget" />) },
+            { path: "", action: (context) => import("./components/Workunits").then(_ => <_.Workunits filter={parseSearch(context.search) as any} />) },
             { path: "/legacy", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="WUQueryWidget" />) },
             { path: "/:Wuid", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="WUDetailsWidget" params={params} />) }
         ]
