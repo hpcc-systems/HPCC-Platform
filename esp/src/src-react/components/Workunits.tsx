@@ -201,7 +201,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     React.useEffect(() => {
         refreshTable();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filter]);
+    }, [filter, store?.data]);
 
     //  Selection  ---
     React.useEffect(() => {

@@ -123,12 +123,16 @@ export function pushParam(key: string, val?: string | string[] | number | boolea
     pushParams({ [key]: val }, state);
 }
 
-export function pushParams(search: { [key: string]: string | string[] | number | boolean }, state?: any) {
+export function pushParamExact(key: string, val?: string | string[] | number | boolean, state?: any) {
+    pushParams({ [key]: val }, state, true);
+}
+
+export function pushParams(search: { [key: string]: string | string[] | number | boolean }, state?: any, keepEmpty: boolean = false) {
     const params = parseSearch(hashHistory.location.search);
     for (const key in search) {
         const val = search[key];
         //  No empty strings OR "false" booleans...
-        if (val === "" || val === false) {
+        if (!keepEmpty && (val === "" || val === false)) {
             delete params[key];
         } else {
             params[key] = val;
