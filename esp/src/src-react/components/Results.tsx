@@ -34,6 +34,30 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
             onClick: () => refreshTable()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
+            onClick: () => {
+                if (selection.length === 1) {
+                    window.location.href = `#/workunits/${wuid}/outputs/${selection[0].Name}`;
+                } else {
+                    for (let i = selection.length - 1; i >= 0; --i) {
+                        window.open(`#/workunits/${wuid}/outputs/${selection[i].Name}`, "_blank");
+                    }
+                }
+            }
+        },
+        {
+            key: "open legacy", text: nlsHPCC.OpenLegacyMode, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
+            onClick: () => {
+                if (selection.length === 1) {
+                    window.location.href = `#/workunits/${wuid}/outputs/${selection[0].Name}/legacy`;
+                } else {
+                    for (let i = selection.length - 1; i >= 0; --i) {
+                        window.open(`#/workunits/${wuid}/outputs/${selection[i].Name}/legacy`, "_blank");
+                    }
+                }
+            }
+        },
     ];
 
     const rightButtons: ICommandBarItemProps[] = [
@@ -63,14 +87,14 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
         }),
         Name: {
             label: nlsHPCC.Name, width: 180, sortable: true,
-            formatter: function (Name, idx) {
-                return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + Name + "</a>";
+            formatter: function (Name, row) {
+                return `<a href='#/workunits/${wuid}/outputs/${Name}' class='dgrid-row-url'>${Name}</a>`;
             }
         },
         FileName: {
             label: nlsHPCC.FileName, sortable: true,
             formatter: function (FileName, idx) {
-                return "<a href='#' onClick='return false;' class='dgrid-row-url2'>" + FileName + "</a>";
+                return `<a href='#/files/${FileName}' class='dgrid-row-url2'>${FileName}</a>`;
             }
         },
         Value: {
@@ -112,7 +136,7 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
         gridStore.setData(results.map(row => {
             const tmp: any = row?.ResultViews;
             return {
-                __hpcc_id: row.Sequence,
+                __hpcc_id: row.Name,
                 Name: row.Name,
                 FileName: row.FileName,
                 Value: row.Value,

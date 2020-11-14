@@ -22,17 +22,27 @@ const FilterFields: Fields = {
     "ECL": { type: "string", label: nlsHPCC.ECL, placeholder: nlsHPCC.dataset },
     "LogicalFile": { type: "string", label: nlsHPCC.LogicalFile, placeholder: nlsHPCC.somefile },
     "LogicalFileSearchType": { type: "logicalfile-type", label: nlsHPCC.LogicalFileType, placeholder: "", disabled: (params: Fields) => !params.LogicalFile.value },
+    "LastNDays": { type: "string", label: nlsHPCC.LastNDays, placeholder: "2" },
     "StartDate": { type: "datetime", label: nlsHPCC.FromDate, placeholder: "" },
     "EndDate": { type: "datetime", label: nlsHPCC.ToDate, placeholder: "" },
-    "LastNDays": { type: "string", label: nlsHPCC.LastNDays, placeholder: "2" }
 };
 
-function formatQuery(filter) {
-    if (filter.StartDate) {
-        filter.StartDate = new Date(filter.StartDate).toISOString();
-    }
-    if (filter.EndDate) {
-        filter.EndDate = new Date(filter.StartDate).toISOString();
+function formatQuery(_filter) {
+    const filter = { ..._filter };
+    if (filter.LastNDays) {
+        const end = new Date();
+        const start = new Date();
+        start.setDate(end.getDate() - filter.LastNDays);
+        filter.StartDate = start.toISOString();
+        filter.EndDate = end.toISOString();
+        delete filter.LastNDays;
+    } else {
+        if (filter.StartDate) {
+            filter.StartDate = new Date(filter.StartDate).toISOString();
+        }
+        if (filter.EndDate) {
+            filter.EndDate = new Date(filter.StartDate).toISOString();
+        }
     }
     return filter;
 }
@@ -200,7 +210,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
 
     React.useEffect(() => {
         refreshTable();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filter, store?.data]);
 
     //  Selection  ---

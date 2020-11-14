@@ -124,6 +124,7 @@ export = {
         Copy: "Copy",
         CopyToClipboard: "Copy to clipboard",
         CopyURLToClipboard: "Copy URL to clipboard",
+        CopyWUID: "Copy WUID",
         CopyWUIDs: "Copy WUIDs to clipboard",
         CopyWUIDToClipboard: "Copy WUID to clipboard",
         CopyLogicalFiles: "Copy Logical Files to clipboard",

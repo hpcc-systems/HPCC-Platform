@@ -2,29 +2,33 @@ import * as React from "react";
 import { Workunit, Result, WUStateID, WUInfo } from "@hpcc-js/comms";
 import nlsHPCC from "src/nlsHPCC";
 
-export function useWorkunit(wuid: string, full: boolean = false): [Workunit, WUStateID] {
+export function useWorkunit(wuid: string, full: boolean = false): [Workunit, WUStateID, number] {
 
     const [workunit, setWorkunit] = React.useState<Workunit>();
     const [state, setState] = React.useState<WUStateID>();
+    const [lastUpdate, setLastUpdate] = React.useState(Date.now());
 
     React.useEffect(() => {
         const wu = Workunit.attach({ baseUrl: "" }, wuid);
         const handle = wu.watch(() => {
             if (full) {
                 wu.refresh(true).then(() => {
-                setState(wu.StateID);
+                    setWorkunit(wu);
+                    setState(wu.StateID);
                 });
             } else {
                 setState(wu.StateID);
             }
+            setLastUpdate(Date.now());
         });
         setWorkunit(wu);
+        setLastUpdate(Date.now());
         return () => {
             handle.release();
         };
     }, [wuid, full]);
 
-    return [workunit, state];
+    return [workunit, state, lastUpdate];
 }
 
 export function useWorkunitResults(wuid: string): [Result[], Workunit, WUStateID] {
