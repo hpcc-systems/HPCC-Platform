@@ -141,28 +141,30 @@ private:
     RoxiePacketHeader(const RoxiePacketHeader &source) =  delete;
 
 public:
-    unsigned packetlength;
-    unsigned short retries;         // how many retries on this query, the high bits are used as flags, see above
-    unsigned short overflowSequence;// Used if more than one packet-worth of data from server - eg keyed join. We don't mind if we wrap...
-    unsigned short continueSequence;// Used if more than one chunk-worth of data from agent. We don't mind if we wrap
-    unsigned short channel;         // multicast family to send on
-    unsigned activityId;            // identifies the helper factory to be used (activityId in graph)
-    hash64_t queryHash;             // identifies the query
+    unsigned packetlength = 0;
+    unsigned short retries = 0;         // how many retries on this query, the high bits are used as flags, see above
+    unsigned short overflowSequence = 0;// Used if more than one packet-worth of data from server - eg keyed join. We don't mind if we wrap...
+    unsigned short continueSequence = 0;// Used if more than one chunk-worth of data from agent. We don't mind if we wrap
+    unsigned short channel = 0;         // multicast family to send on
+    unsigned activityId = 0;            // identifies the helper factory to be used (activityId in graph)
+    hash64_t queryHash = 0;             // identifies the query
 
-    ruid_t uid;                     // unique id
+    ruid_t uid = 0;                     // unique id
     ServerIdentifier serverId;
 #ifdef _CONTAINERIZED
     ServerIdentifier subChannels[MAX_SUBCHANNEL];
 #endif
 #ifdef TIME_PACKETS
-    unsigned tick;
+    unsigned tick = 0;
 #endif
+    RoxiePacketHeader() = default;
 
     RoxiePacketHeader(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence);
     RoxiePacketHeader(const RoxiePacketHeader &source, unsigned _activityId, unsigned _subChannel);
 
     static unsigned getSubChannelMask(unsigned subChannel);
     unsigned priorityHash() const;
+    void copy(const RoxiePacketHeader &oh);
     bool matchPacket(const RoxiePacketHeader &oh) const;
     void init(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence);
     StringBuffer &toString(StringBuffer &ret) const;
@@ -298,10 +300,12 @@ extern unsigned preabortKeyedJoinsThreshold;
 extern unsigned preabortIndexReadsThreshold;
 extern bool traceStartStop;
 extern bool traceRoxiePackets;
+extern bool delaySubchannelPackets;
 extern bool traceServerSideCache;
 extern bool traceTranslations;
 extern bool defaultTimeActivities;
 extern bool defaultTraceEnabled;
+extern unsigned IBYTIbufferSize;
 extern unsigned defaultTraceLimit;
 extern unsigned watchActivityId;
 extern unsigned testAgentFailure;
