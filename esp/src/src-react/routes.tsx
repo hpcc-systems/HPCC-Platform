@@ -67,7 +67,7 @@ const routes: Routes = [
     {
         path: "/files",
         children: [
-            { path: "", action: (context) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="DFUQueryWidget" />) },
+            { path: "", action: (context) => import("./components/Files").then(_ => <_.Files filter={parseSearch(context.search) as any} />) },
             { path: "/legacy", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="DFUQueryWidget" />) },
             { path: "/:Name", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="LFDetailsWidget" params={params} />) }
         ]
