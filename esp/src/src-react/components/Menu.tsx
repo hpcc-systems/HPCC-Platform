@@ -35,6 +35,7 @@ const navLinkGroups: INavLinkGroup[] = [
         name: "Published Queries",
         links: [
             { url: "#/queries", name: nlsHPCC.Queries },
+            { url: "#/queries/legacy", name: `${nlsHPCC.Queries} (L)` },
             { url: "#/packagemaps", name: nlsHPCC.PackageMaps },
         ]
     },
