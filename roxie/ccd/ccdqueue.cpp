@@ -66,7 +66,7 @@ RoxiePacketHeader::RoxiePacketHeader(const RoxiePacketHeader &source, unsigned _
 #ifdef TIME_PACKETS
     tick = source.tick;
 #endif
-#ifdef _CONTAINERIZED
+#ifdef SUBCHANNELS_IN_HEADER
     memcpy(subChannels, source.subChannels, sizeof(subChannels));
 #endif
     packetlength = sizeof(RoxiePacketHeader);
@@ -126,12 +126,12 @@ void RoxiePacketHeader::init(const RemoteActivityId &_remoteId, ruid_t _uid, uns
     channel = _channel;
     overflowSequence = _overflowSequence;
     continueSequence = 0;
-#ifdef _CONTAINERIZED
+#ifdef SUBCHANNELS_IN_HEADER
     clearSubChannels();
 #endif
 }
 
-#ifdef _CONTAINERIZED
+#ifdef SUBCHANNELS_IN_HEADER
 void RoxiePacketHeader::clearSubChannels()
 {
     for (unsigned idx = 0; idx < MAX_SUBCHANNEL; idx++)
@@ -186,7 +186,7 @@ StringBuffer &RoxiePacketHeader::toString(StringBuffer &ret) const
                 ret.appendf(" BROADCAST");
         }
     }
-#ifdef _CONTAINERIZED
+#ifdef SUBCHANNELS_IN_HEADER
     ret.append(" subchannels=");
     for (unsigned idx = 0; idx < MAX_SUBCHANNEL; idx++)
     {
@@ -344,7 +344,7 @@ static bool channelWrite(RoxiePacketHeader &buf, bool includeSelf)
     }
     else
     {
-#ifdef _CONTAINERIZED
+#ifdef SUBCHANNELS_IN_HEADER
         // In the containerized system, the list of subchannel IPs is captured in the packet header to ensure everyone is using the
         // same snapshot of the topology state.
         // If the subchannel IPs are not set, fill them in now. If they are set, use them.
@@ -1268,7 +1268,7 @@ public:
             {
                 // Try to stop/abort a job after it starts only if IBYTI comes from a higher priority agent 
                 // (more primary in the rank). The agents with higher rank will hold the lower bits of the retries field in IBYTI packet).
-#ifdef _CONTAINERIZED
+#ifdef SUBCHANNELS_IN_HEADER
                 if (!checkRank || h.getRespondingSubChannel() < h.mySubChannel())
 #else
                 if (!checkRank || topology->queryChannelInfo(h.channel).otherAgentHasPriority(h.priorityHash(), h.getRespondingSubChannel()))
@@ -1305,7 +1305,7 @@ public:
             }
             
             RoxiePacketHeader &header = packet->queryHeader();
-#ifdef _CONTAINERIZED
+#ifdef SUBCHANNELS_IN_HEADER
             unsigned mySubChannel = header.mySubChannel();
 #else
             unsigned mySubChannel = topology->queryChannelInfo(header.channel).subChannel();
@@ -1362,7 +1362,7 @@ public:
         hash64_t queryHash = packet->queryHeader().queryHash;
         unsigned activityId = packet->queryHeader().activityId & ~ROXIE_PRIORITY_MASK;
         Owned<IQueryFactory> queryFactory = getQueryFactory(queryHash, channel);
-#ifdef _CONTAINERIZED
+#ifdef SUBCHANNELS_IN_HEADER
         unsigned mySubChannel = header.mySubChannel();
 #else
         unsigned numAgents = topology->queryAgents(channel).ordinality();
@@ -1387,7 +1387,7 @@ public:
         try
         {   
             bool debugging = logctx.queryDebuggerActive();
-#ifdef _CONTAINERIZED
+#ifdef SUBCHANNELS_IN_HEADER
             if (debugging)
             {
                 if (!mySubChannel)
@@ -2006,7 +2006,7 @@ public:
 
     virtual void sendIbyti(RoxiePacketHeader &header, const IRoxieContextLogger &logctx, unsigned subChannel) override
     {
-#ifdef _CONTAINERIZED
+#ifdef SUBCHANNELS_IN_HEADER
         if (!header.hasBuddies())
             return;
 #endif
@@ -2101,14 +2101,14 @@ public:
     }
 
     void doIbyti(RoxiePacketHeader &header, RoxieQueue &queue
-#ifndef _CONTAINERIZED
+#ifndef SUBCHANNELS_IN_HEADER
                  , const ITopologyServer* topology
 #endif
                  )
     {
         assert(!localAgent);
         bool preActivity = false;
-#ifdef _CONTAINERIZED
+#ifdef SUBCHANNELS_IN_HEADER
         unsigned mySubChannel = header.mySubChannel();
 #else
         const ChannelInfo &channelInfo = topology->queryChannelInfo(header.channel);
@@ -2138,7 +2138,7 @@ public:
             }
             else
             {
-#ifndef _CONTAINERIZED
+#ifndef SUBCHANNELS_IN_HEADER
                 channelInfo.noteChannelHealthy(subChannel);
 #else
                 noteNodeHealthy(header.subChannels[subChannel].getIpAddress());
@@ -2183,7 +2183,7 @@ public:
     {
         // NOTE - this thread needs to do as little as possible - just read packets and queue them up - otherwise we can get packet loss due to buffer overflow
         // DO NOT put tracing on this thread except at very high tracelevels!
-#ifdef _CONTAINERIZED
+#ifdef SUBCHANNELS_IN_HEADER
         unsigned mySubchannel = header.mySubChannel();
 #else
         Owned<const ITopologyServer> topology = getTopology();
@@ -2214,7 +2214,7 @@ public:
         }
         else if ((header.activityId & ~ROXIE_PRIORITY_MASK) == 0)
             doIbyti(header, queue
-#ifndef _CONTAINERIZED
+#ifndef SUBCHANNELS_IN_HEADER
                     , topology
 #endif
                    ); // MORE - check how fast this is!
@@ -2765,8 +2765,8 @@ public:
             }
             else
             {
-#ifdef _CONTAINERIZED
-                // In containerized mode this translation has been done on server before sending
+#ifdef SUBCHANNELS_IN_HEADER
+                // In SUBCHANNELS_IN_HEADER mode this translation has been done on server before sending
                 throwUnexpected();
 #else
                 // Turn broadcast packet (channel 0), as early as possible, into non-0 channel packets.

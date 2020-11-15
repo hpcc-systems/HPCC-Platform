@@ -51,6 +51,10 @@
 
 #define ROXIE_STATEFILE_VERSION 2
 
+#ifdef _CONTAINERIZED
+#define SUBCHANNELS_IN_HEADER
+#endif
+
 extern IException *MakeRoxieException(int code, const char *format, ...) __attribute__((format(printf, 2, 3)));
 void openMulticastSocket();
 
@@ -151,7 +155,7 @@ public:
 
     ruid_t uid = 0;                     // unique id
     ServerIdentifier serverId;
-#ifdef _CONTAINERIZED
+#ifdef SUBCHANNELS_IN_HEADER
     ServerIdentifier subChannels[MAX_SUBCHANNEL];
 #endif
 #ifdef TIME_PACKETS
@@ -180,7 +184,7 @@ public:
         return bitpos / SUBCHANNEL_BITS;
     }
 
-#ifdef _CONTAINERIZED
+#ifdef SUBCHANNELS_IN_HEADER
     unsigned mySubChannel() const // NOTE - 0 based
     {
         for (unsigned idx = 0; idx < MAX_SUBCHANNEL; idx++)
