@@ -18,8 +18,29 @@
 ##############################################################################
 
 # Utility script for stopping a local cluster started by startall.sh
+wait=0
+
+while [ "$#" -gt 0 ]; do
+  arg=$1
+  case "${arg}" in
+      -w) wait=1
+         ;;
+      *) echo "Usage: stoptall.sh [options]"
+         echo "    -w  Wait for all pods to terminate"
+         exit
+         ;;
+    esac
+  shift
+done
 
 helm uninstall mycluster
 helm uninstall localfile
 kubectl delete jobs --all 
 kubectl delete networkpolicy --all 
+if [[ $wait == 1 ]] ; then
+  sleep 2
+  while (kubectl get pods | grep -q ^NAME) ; do
+    echo Waiting...
+    sleep 2
+  done
+fi

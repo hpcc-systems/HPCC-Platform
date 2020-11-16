@@ -85,7 +85,7 @@ data:
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" .resources) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
-            workingDir: /var/lib/HPCCSystems
+            workingDir: /tmp
             command: [ eclccserver ]
             args: [
                         {{ include "hpcc.configArg" . }},
