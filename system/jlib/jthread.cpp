@@ -2346,6 +2346,7 @@ public:
                 PROGLOG("%s: Pipe Aborting",title.get());
             aborted = true;
             closeInput();
+            if (forkthread)
             {
                 CriticalUnblock unblock(sect);
                 forkthread->join(1000);
