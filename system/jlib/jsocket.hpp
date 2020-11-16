@@ -97,6 +97,8 @@ public:
     void ipserialize(MemoryBuffer & out) const;         
     void ipdeserialize(MemoryBuffer & in);          
     unsigned ipdistance(const IpAddress &ip,unsigned offset=0) const;       // network order distance (offset: 0-3 word (leat sig.), 0=Ipv4)
+    unsigned getIP4() const;
+    void setIP4(unsigned);
     bool ipincrement(unsigned count,byte minoctet=0,byte maxoctet=255,unsigned short minipv6piece=0,unsigned maxipv6piece=0xffff);
     unsigned ipsetrange( const char *text); // e.g. 10.173.72.1-65  ('-' may be omitted)
                                             // returns number in range (use ipincrement to iterate through)

@@ -269,7 +269,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     unsigned int res;
                     sniff_msg msg;
                     sniffer_socket->read(&msg, 1, sizeof(msg), res, 5);
-                    update(msg.nodeIp.getNodeAddress(), msg.cmd == sniffType::busy);
+                    update(msg.nodeIp.getIpAddress(), msg.cmd == sniffType::busy);
                 }
                 catch (IException *e) 
                 {
@@ -336,7 +336,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     pendingRequests = requester;
                 lastPending = requester;
             }
-            requester->requestToSend(0, myNode.getNodeAddress());  // Acknowledge receipt of the request
+            requester->requestToSend(0, myNode.getIpAddress());  // Acknowledge receipt of the request
         }
 
         unsigned okToSend(UdpSenderEntry *requester)
@@ -347,7 +347,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 max_transfer = maxSlotsPerSender;
             unsigned timeout = ((max_transfer * DATA_PAYLOAD) / 100) + 10; // in ms assuming mtu package size with 100x margin on 100 Mbit network // MORE - hideous!
             currentRequester = requester;
-            requester->requestToSend(max_transfer, myNode.getNodeAddress());
+            requester->requestToSend(max_transfer, myNode.getIpAddress());
             return timeout;
         }
 
@@ -491,7 +491,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                             StringBuffer ipStr;
                             DBGLOG("UdpReceiver: received %s msg from node=%s", flowType::name(msg.cmd), msg.sourceNode.getTraceText(ipStr).str());
                         }
-                        UdpSenderEntry *sender = &parent.sendersTable[msg.sourceNode.getNodeAddress()];
+                        UdpSenderEntry *sender = &parent.sendersTable[msg.sourceNode.getIpAddress()];
                         switch (msg.cmd)
                         {
                         case flowType::request_to_send:

@@ -116,7 +116,7 @@ void RoxiePacketHeader::init(const RemoteActivityId &_remoteId, ruid_t _uid, uns
 
 StringBuffer &RoxiePacketHeader::toString(StringBuffer &ret) const
 {
-    const IpAddress &serverIP = serverId.getNodeAddress();
+    const IpAddress serverIP = serverId.getIpAddress();
     ret.appendf("uid=" RUIDF " activityId=", uid);
     switch(activityId & ~ROXIE_PRIORITY_MASK)
     {
@@ -758,7 +758,7 @@ struct PingRecord
 void doPing(IRoxieQueryPacket *packet, const IRoxieContextLogger &logctx)
 {
     const RoxiePacketHeader &header = packet->queryHeader();
-    const IpAddress &serverIP = header.serverId.getNodeAddress();
+    const IpAddress serverIP = header.serverId.getIpAddress();
     unsigned contextLength = packet->getContextLength();
     if (contextLength != sizeof(PingRecord))
     {
@@ -2180,10 +2180,10 @@ public:
     RoxieAeronSocketQueueManager(unsigned _numWorkers) : RoxieSocketQueueManager(_numWorkers)
     {
         unsigned dataPort = topology->getPropInt("@dataPort", CCD_DATA_PORT);
-        SocketEndpoint ep(dataPort, myNode.getNodeAddress());
+        SocketEndpoint ep(dataPort, myNode.getIpAddress());
         receiveManager.setown(createAeronReceiveManager(ep));
-        assertex(!myNode.getNodeAddress().isNull());
-        sendManager.setown(createAeronSendManager(dataPort, fastLaneQueue ? 3 : 2, myNode.getNodeAddress()));
+        assertex(!myNode.getIpAddress().isNull());
+        sendManager.setown(createAeronSendManager(dataPort, fastLaneQueue ? 3 : 2, myNode.getIpAddress()));
     }
 
 };
@@ -2730,7 +2730,7 @@ class PingTimer : public Thread
                 DBGLOG("PING sent");
 
             PingRecord data;
-            data.senderIP.ipset(myNode.getNodeAddress());
+            data.senderIP.ipset(myNode.getIpAddress());
             data.tick = usTick();
             memcpy(finger, &data, sizeof(PingRecord));
             Owned<IRoxieQueryPacket> packet = createRoxiePacket(packetData, packetSize);

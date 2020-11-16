@@ -435,9 +435,7 @@ public:
 PUID GETPUID(DataBuffer *dataBuff)
 {
     UdpPacketHeader *pktHdr = (UdpPacketHeader*) dataBuff->data;
-    unsigned ip4;
-    if (pktHdr->node.getNodeAddress().getNetAddress(sizeof(ip4), &ip4) != sizeof(ip4))
-        throw makeStringException(ROXIE_INTERNAL_ERROR, "IPv6 not supported in roxie"); // MORE - do we ever care about ipv6?
+    unsigned ip4 = pktHdr->node.getIp4();
     return (((PUID) ip4) << 32) | (PUID) pktHdr->msgSeq;
 }
 

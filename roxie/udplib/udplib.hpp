@@ -41,31 +41,34 @@ typedef unsigned RecordLengthType;
 class UDPLIB_API ServerIdentifier
 {
 private:
-    IpAddress serverIp;  // MORE - should really be an endpoint?
+    unsigned netAddress = 0;
 public:
-    ServerIdentifier() : serverIp() { }
-    ServerIdentifier(const ServerIdentifier &from) : serverIp(from.serverIp) { }
-    ServerIdentifier(const IpAddress &from) : serverIp(from) { }
-    const IpAddress &getNodeAddress() const;
+    ServerIdentifier() { }
+    ServerIdentifier(const ServerIdentifier &from) : netAddress(from.netAddress) { }
+    ServerIdentifier(const IpAddress &from) { setIp(from); }
+    const IpAddress getIpAddress() const;
+    unsigned getIp4() const { return netAddress; };
     const ServerIdentifier & operator=(const ServerIdentifier &from)
     {
-        serverIp = from.serverIp;
+        netAddress = from.netAddress;
         return *this;
     }
     bool operator==(const ServerIdentifier &from) const
     {
-        return serverIp.ipequals(from.serverIp);
+        return netAddress == from.netAddress;
     }
     unsigned hash() const
     {
-        return serverIp.iphash(0);
+        return netAddress;
     }
     inline void setIp(const IpAddress &_ip)
     {
-        serverIp = _ip;
+        netAddress = _ip.getIP4();
     }
     StringBuffer &getTraceText(StringBuffer &s) const
     {
+        IpAddress serverIp;
+        serverIp.setIP4(netAddress);
         return serverIp.getIpText(s);
     }
 };

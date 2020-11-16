@@ -54,9 +54,11 @@ MODULE_EXIT()
 }
 
 
-const IpAddress &ServerIdentifier::getNodeAddress() const
+const IpAddress ServerIdentifier::getIpAddress() const
 {
-    return serverIp;
+    IpAddress ret;
+    ret.setIP4(netAddress);
+    return ret;
 }
 
 ServerIdentifier myNode;
