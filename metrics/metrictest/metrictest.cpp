@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
     pRateMetric = std::make_shared<RateMetric>("rate");
     metrics.emplace_back(pRateMetric);
 
-    auto pRequestMetricSet = std::make_shared<MetricSet>("set", "myprefix.", metrics);
+    auto pRequestMetricSet = std::make_shared<MetricSet>("set", "myprefix_", metrics);
     mr.add(pCountableMetric);  // demo use of the registry (optional)
 
     //
@@ -84,13 +84,13 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    auto pSink = MetricSink::getSinkFromLib("filesink", nullptr, "es", pSinkSettings);
+    auto pSink = MetricSink::getSinkFromLib("prometheus", nullptr, "prometheus", pSinkSettings);
     reportConfig.addReportConfig(pSink, pRequestMetricSet);
-    reportConfig.addReportConfig(pSink, pQueueMetricSet);
+    //reportConfig.addReportConfig(pSink, pQueueMetricSet);
 
     IPropertyTree *pTriggerSettings = createPTree("TriggerSettings");;
     pTriggerSettings->addPropInt("period", 10);
-    IMetricsReportTrigger *pTrigger = MetricsReportTrigger::getTriggerFromLib("periodic", nullptr, pTriggerSettings);
+    IMetricsReportTrigger *pTrigger = MetricsReportTrigger::getTriggerFromLib("prometheus", nullptr, pTriggerSettings);
 
     pReporter = new MetricsReporter(reportConfig, pTrigger);
 
@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
 
 void processThread(int numLoops, unsigned delay)
 {
-    for (int i=0; i<numLoops; ++i)
+    while (true)//for (int i=0; i<numLoops; ++i)
     {
         pCountableMetric->inc(1u);
         //mr.get<CountMetric>("requests")->inc(1u);  would need to get the metric name since placing in a metric set may adjust it's name
