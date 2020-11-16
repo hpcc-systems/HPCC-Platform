@@ -567,6 +567,12 @@ private:
         {
             PROGLOG("CJwtSecurityManager::bad_cast error: %s", e.what());
         }
+        catch(IException* e)
+        {
+            StringBuffer msg;
+            PROGLOG("CJwtSecurityManager::verifyToken error: %s", e->errorMessage(msg).str());
+            throw;
+        }
         catch (...)
         {
             PROGLOG("CJwtSecurityManager::verifyToken unknown error");

@@ -48,7 +48,7 @@
       <xs:attribute name="secretsName" type="xs:string" use="required">
         <xs:annotation>
           <xs:appinfo>
-            <tooltip>Secrets vault name or subdirectory under /opt/HPCCSystems/secrets/systems in which the JWT key used for the chosen signature algorithm (hash key, for HSxxx algorithms; public key for the others) is stored</tooltip>
+            <tooltip>Secrets vault name or subdirectory under /opt/HPCCSystems/secrets/esp in which the JWT key used for the chosen signature algorithm (hash key, for HSxxx algorithms; public key for the others) is stored</tooltip>
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
