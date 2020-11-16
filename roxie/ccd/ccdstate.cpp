@@ -1854,8 +1854,6 @@ private:
 
 class CRoxiePackageSetManager : implements IRoxieQueryPackageManagerSet, implements ISafeSDSSubscription, public CInterface
 {
-    Owned<IDaliPackageWatcher> pSetsNotifier;
-    Owned<IDaliPackageWatcher> pMapsNotifier;
 public:
     IMPLEMENT_IINTERFACE;
     CRoxiePackageSetManager(const IQueryDll *_standAloneDll) :
@@ -1876,6 +1874,10 @@ public:
     {
         autoReloadThread.stop();
         autoReloadThread.join();
+        if (pSetsNotifier)
+            daliHelper->releaseSubscription(pSetsNotifier);
+        if (pMapsNotifier)
+            daliHelper->releaseSubscription(pMapsNotifier);
     }
 
     virtual ISafeSDSSubscription *linkIfAlive() override { return isAliveAndLink() ? this : nullptr; }
@@ -1959,6 +1961,8 @@ private:
     Owned<const IQueryDll> standAloneDll;
     Owned<CRoxieDebugSessionManager> debugSessionManager;
     Owned<IRoxieDaliHelper> daliHelper;
+    Owned<IDaliPackageWatcher> pSetsNotifier;
+    Owned<IDaliPackageWatcher> pMapsNotifier;
     mutable ReadWriteLock packageCrit;
     InterruptableSemaphore controlSem;
     Owned<CRoxiePackageSetWatcher> allQueryPackages;

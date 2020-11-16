@@ -783,6 +783,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
     bool closePending[2];
     StringAttrMapping fileErrorList;
 #ifdef _CONTAINERIZED
+    bool cidtActive = false;
     Semaphore cidtStarted;
 #endif
     Semaphore bctStarted;
@@ -1257,6 +1258,7 @@ public:
         {
             cidt.start();
             cidtStarted.wait();
+            cidtActive = true;
         }
 #endif
     }
@@ -1425,14 +1427,14 @@ public:
             toClose.interrupt();
             bct.join(timeout);
             hct.join(timeout);
-#ifdef _CONTAINERIZED
-            if (activeCacheReportingBuffer && cacheReportPeriodSeconds)
-            {
-                cidtSleep.interrupt();
-                cidt.join(timeout);
-            }
-#endif
         }
+#ifdef _CONTAINERIZED
+        if (cidtActive && activeCacheReportingBuffer && cacheReportPeriodSeconds)
+        {
+            cidtSleep.interrupt();
+            cidt.join(timeout);
+        }
+#endif
     }
 
     virtual void wait()
@@ -1444,14 +1446,14 @@ public:
             toClose.signal();
             bct.join();
             hct.join();
-#ifdef _CONTAINERIZED
-            if (activeCacheReportingBuffer && cacheReportPeriodSeconds)
-            {
-                cidtSleep.signal();
-                cidt.join();
-            }
-#endif
         }
+#ifdef _CONTAINERIZED
+        if (cidtActive && activeCacheReportingBuffer && cacheReportPeriodSeconds)
+        {
+            cidtSleep.signal();
+            cidt.join();
+        }
+#endif
     }
 
     virtual CFPmode onProgress(unsigned __int64 sizeDone, unsigned __int64 totalSize)
