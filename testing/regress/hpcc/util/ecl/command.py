@@ -68,31 +68,19 @@ class ECLcmd(Shell):
 
         args = args + eclfile.getFParameters()
 
-        if cmd == 'publish':
-            args.append(eclfile.getArchiveName())
+        name = kwargs.pop('name', False)
+        if not name:
+            name = eclfile.getJobname()
 
-            name = kwargs.pop('name', False)
-            if not name:
-                name = eclfile.getBaseEclName()
+        args.append("--name=" + name)
 
-            args.append("--name=" + name)
-
-        else:
+        if cmd != 'publish':
             args.append('--exception-level=warning')
             args.append('--noroot')
-
-            name = kwargs.pop('name', False)
-            if not name:
-                name = eclfile.getJobname()
-
-            args.append("--name=" + name)
-
             args = args + eclfile.getDParameters()
-
             args = args + eclfile.getStoredInputParameters()
 
-
-            args.append(eclfile.getArchiveName())
+        args.append(eclfile.getArchiveName())
 
         data = ""
         wuid = "N/A"
