@@ -50,6 +50,7 @@ RelaxedAtomic<unsigned> ibytiPacketsWorked;
 RelaxedAtomic<unsigned> ibytiPacketsHalfWorked;
 RelaxedAtomic<unsigned> ibytiPacketsReceived;
 RelaxedAtomic<unsigned> ibytiPacketsTooLate;
+RelaxedAtomic<unsigned> ibytiPacketsTooEarly;
 RelaxedAtomic<unsigned> ibytiNoDelaysPrm;
 RelaxedAtomic<unsigned> ibytiNoDelaysSec;
 RelaxedAtomic<unsigned> packetsSent;
@@ -359,6 +360,7 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     addMetric(ibytiPacketsHalfWorked, 1000);
     addMetric(ibytiPacketsReceived, 1000);
     addMetric(ibytiPacketsTooLate, 1000);
+    addMetric(ibytiPacketsTooEarly, 1000);
 #ifndef NO_IBYTI_DELAYS_COUNT
     addMetric(ibytiNoDelaysPrm, 1000);
     addMetric(ibytiNoDelaysSec, 1000);

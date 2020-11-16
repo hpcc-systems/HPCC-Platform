@@ -93,6 +93,17 @@ unsigned RoxiePacketHeader::priorityHash() const
     return hash;
 }
 
+void RoxiePacketHeader::copy(const RoxiePacketHeader &oh)
+{
+    // used for saving away kill packets for later matching by match
+    uid = oh.uid;
+    overflowSequence = oh.overflowSequence;
+    continueSequence = oh.continueSequence;
+    serverId = oh.serverId;
+    channel = oh.channel;
+    // MORE - would it be safer, maybe even faster to copy the rest too?
+}
+
 bool RoxiePacketHeader::matchPacket(const RoxiePacketHeader &oh) const
 {
     // used when matching up a kill packet against a pending one...
@@ -396,6 +407,8 @@ static bool channelWrite(RoxiePacketHeader &buf, bool includeSelf)
                 size32_t wrote = multicastSocket->udp_write_to(ep, &buf, buf.packetlength);
                 if (!subChannel || wrote < minwrote)
                     minwrote = wrote;
+                if (delaySubchannelPackets)
+                    MilliSleep(100);
             }
             else if (traceRoxiePackets)
             {
@@ -882,6 +895,57 @@ void doPing(IRoxieQueryPacket *packet, const IRoxieContextLogger &logctx)
 }
 
 //=================================================================================
+
+static ThreadId roxiePacketReaderThread = 0;
+
+class IBYTIbuffer
+{
+    // This class is used to track a finite set of recently-received IBYTI messages, that may have arrived before the messages they refer to
+    // It is accessed ONLY from the main reader thread and as such does not need to be threadsafe (but does need to be fast).
+    // We use a circular buffer, and don't bother removing anything (just treat old items as expired). If the buffer overflows we will end up
+    // discarding the oldest tracked orphaned IBYTI - but that's ok, no worse than if we hadn't tracked them at all.
+public:
+    IBYTIbuffer(unsigned _numOrphans) : numOrphans(_numOrphans)
+    {
+        assertex(numOrphans);
+        orphans = new RoxiePacketHeader[numOrphans];
+        tail = 0;
+    }
+    void noteOrphan(const RoxiePacketHeader &hdr)
+    {
+        assert(GetCurrentThreadId()==roxiePacketReaderThread);
+        unsigned now = msTick();
+        // We could trace that the buffer may be too small, if (orphans[tail].activityId >= now)
+        orphans[tail].copy(hdr);
+        orphans[tail].activityId = now + IBYTIbufferLifetime;
+        tail++;
+        if (tail == numOrphans)
+            tail = 0;
+    }
+    bool lookup(const RoxiePacketHeader &hdr) const
+    {
+        assert(GetCurrentThreadId()==roxiePacketReaderThread);
+        unsigned now = msTick();
+        unsigned lookat = tail;
+        do
+        {
+            if (!lookat)
+                lookat = numOrphans;
+            lookat--;
+            if ((int) (orphans[lookat].activityId - now) < 0)   // Watch out for wrapping
+                break;    // expired;
+            if (orphans[lookat].matchPacket(hdr))
+                return true;
+        } while (lookat != tail);
+        return false;
+    }
+private:
+    RoxiePacketHeader *orphans = nullptr;
+    unsigned tail = 0;
+    unsigned numOrphans = 0;
+};
+
+//=================================================================================
 //
 // RoxieQueue - holds pending transactions on a roxie agent
 
@@ -895,6 +959,7 @@ class RoxieQueue : public CInterface, implements IThreadFactory
     unsigned numWorkers;
     RelaxedAtomic<unsigned> started;
     std::atomic<unsigned> idle;
+    IBYTIbuffer *myIBYTIbuffer = nullptr;
 
     void noteQueued()
     {
@@ -920,7 +985,15 @@ public:
         workers.setown(createThreadPool("RoxieWorkers", this, NULL, numWorkers));
         started = 0;
         idle = 0;
+        if (IBYTIbufferSize)
+            myIBYTIbuffer = new IBYTIbuffer(IBYTIbufferSize);
     }
+
+    ~RoxieQueue()
+    {
+        delete myIBYTIbuffer;
+    }
+
 
     virtual IPooledThread *createNew();
     void abortChannel(unsigned channel);
@@ -1100,6 +1173,20 @@ public:
         unsigned ret = headRegionSize;
         headRegionSize = newsize;
         return ret;
+    }
+
+    void noteOrphanIBYTI(const RoxiePacketHeader &hdr)
+    {
+        if (myIBYTIbuffer)
+            myIBYTIbuffer->noteOrphan(hdr);
+    }
+
+    bool lookupOrphanIBYTI(const RoxiePacketHeader &hdr) const
+    {
+        if (myIBYTIbuffer)
+            return myIBYTIbuffer->lookup(hdr);
+        else
+            return false;
     }
 };
 
@@ -1866,6 +1953,7 @@ protected:
 #else
             adjustPriority(1);
 #endif
+            roxiePacketReaderThread = GetCurrentThreadId();
             return parent.run();
         }
     } readThread;
@@ -2083,6 +2171,8 @@ public:
                     DBGLOG("doIBYTI packet was too late (or too early) : %s", header.toString(s).str());
                 }
                 ibytiPacketsTooLate++; // meaning either I started and reserve the right to finish, or I finished already
+                if (IBYTIbufferSize)
+                    queue.noteOrphanIBYTI(header);
             }
         }
     }
@@ -2126,6 +2216,16 @@ public:
                     , topology
 #endif
                    ); // MORE - check how fast this is!
+        else if (IBYTIbufferSize && queue.lookupOrphanIBYTI(header))
+        {
+            if (traceRoxiePackets || traceLevel > 10)
+            {
+                StringBuffer s;
+                DBGLOG("doIBYTI packet was too early : %s", header.toString(s).str());
+            }
+            ibytiPacketsTooLate--;
+            ibytiPacketsTooEarly++;
+        }
         else
         {
             Owned<IRoxieQueryPacket> packet = createRoxiePacket(mb);
