@@ -22,6 +22,7 @@
 
 #ifdef _USE_CPPUNIT
 #include <memory>
+#include <chrono>
 #include "jsem.hpp"
 #include "jfile.hpp"
 #include "jdebug.hpp"
@@ -729,6 +730,49 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibQuantileTest, "JlibQuantileTest" );
 
 /* =========================================================== */
 
+class JlibTimingTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE( JlibTimingTest );
+        CPPUNIT_TEST(testMsTick);
+        CPPUNIT_TEST(testGetCyclesNow);
+        CPPUNIT_TEST(testStdChrono);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    JlibTimingTest()
+    {
+    }
+
+    void testMsTick()
+    {
+        unsigned startTime = msTick();
+        unsigned value = 0;
+        for (unsigned i=0; i < 1000000; i++)
+            value += msTick();
+        printf("msTick() %uns = %u\n", msTick()-startTime, value);
+    }
+    void testGetCyclesNow()
+    {
+        unsigned startTime = msTick();
+        unsigned value = 0;
+        for (unsigned i=0; i < 1000000; i++)
+            value += get_cycles_now();
+        printf("get_cycles_now() %uns = %u\n", msTick()-startTime, value);
+    }
+    void testStdChrono()
+    {
+        unsigned startTime = msTick();
+        unsigned value = 0;
+        for (unsigned i=0; i < 1000000; i++)
+            value += std::chrono::high_resolution_clock::now().time_since_epoch().count();
+        printf("std::chrono::high_resolution_clock::now() %uns = %u\n", msTick()-startTime, value);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibTimingTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibTimingTest, "JlibTimingTest" );
+
+/* =========================================================== */
 class JlibReaderWriterTestTiming : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(JlibReaderWriterTestTiming);
