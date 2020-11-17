@@ -168,6 +168,7 @@ public:
 
     static unsigned getSubChannelMask(unsigned subChannel);
     unsigned priorityHash() const;
+    void copy(const RoxiePacketHeader &oh);
     bool matchPacket(const RoxiePacketHeader &oh) const;
     void init(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence);
     StringBuffer &toString(StringBuffer &ret) const;
@@ -303,10 +304,13 @@ extern unsigned preabortKeyedJoinsThreshold;
 extern unsigned preabortIndexReadsThreshold;
 extern bool traceStartStop;
 extern bool traceRoxiePackets;
+extern bool delaySubchannelPackets;
 extern bool traceServerSideCache;
 extern bool traceTranslations;
 extern bool defaultTimeActivities;
 extern bool defaultTraceEnabled;
+extern unsigned IBYTIbufferSize;
+extern unsigned IBYTIbufferLifetime;
 extern unsigned defaultTraceLimit;
 extern unsigned watchActivityId;
 extern unsigned testAgentFailure;
