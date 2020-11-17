@@ -247,7 +247,7 @@ public:
     {
         ctx->addWuExceptionEx(text, code, severity, audience, source);
     }
-    virtual cost_type queryAgentMachineCost() const override
+    virtual double queryAgentMachineCost() const override
     {
         return ctx->queryAgentMachineCost();
     };
@@ -397,7 +397,7 @@ private:
     StringAttr agentTempDir;
     Owned<IOrderedOutputSerializer> outputSerializer;
     int retcode;
-    cost_type agentMachineCost = 0;
+    double agentMachineCost = 0;
 
 private:
     void doSetResultString(type_t type, const char * stepname, unsigned sequence, int len, const char *val);
@@ -704,7 +704,7 @@ public:
     {
         return createRoxieRowAllocator(cache, *rowManager, meta, activityId, id, flags);
     }
-    virtual cost_type queryAgentMachineCost() const
+    virtual double queryAgentMachineCost() const
     {
         return agentMachineCost;
     }

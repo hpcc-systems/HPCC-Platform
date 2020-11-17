@@ -13383,17 +13383,46 @@ extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeTy
     wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), scopeType, scopestr, kind, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
 }
 
-extern WORKUNIT_API cost_type calculateThorCost(unsigned __int64 ms, unsigned clusterWidth)
+static double getCpuSize(const char *resourceName)
 {
-    IPropertyTree *costs = queryCostsConfiguration();
-    if (costs)
-    {
-        cost_type thor_master_rate = money2cost_type(costs->getPropReal("thor/@master"));
-        cost_type thor_slave_rate = money2cost_type(costs->getPropReal("thor/@slave"));
+    const char * cpuRequestedStr = queryComponentConfig().queryProp(resourceName);
+    if (!cpuRequestedStr)
+        return 0.0;
+    char * endptr;
+    double cpuRequested = strtod(cpuRequestedStr, &endptr);
+    if (cpuRequested < 0.0)
+        return 0.0;
+    if (*endptr == 'm')
+        cpuRequested /= 1000;
+    return cpuRequested;
+}
 
-        return calcCost(thor_master_rate, ms) + calcCost(thor_slave_rate, ms) * clusterWidth;
-    }
-    return 0;
+static double getCostCpuHour()
+{
+    double costCpuHour = queryGlobalConfig().getPropReal("cost/@perCpu");
+    if (costCpuHour < 0.0)
+        return 0.0;
+    return costCpuHour;
+}
+
+extern WORKUNIT_API double getMachineCostRate()
+{
+    return getCostCpuHour() * getCpuSize("resources/@cpu") ;
+};
+
+extern WORKUNIT_API double getThorManagerRate()
+{
+    return getCostCpuHour() * getCpuSize("managerResources/@cpu");
+}
+
+extern WORKUNIT_API double getThorWorkerRate()
+{
+    return getCostCpuHour() * getCpuSize("workerResources/@cpu");
+}
+
+extern WORKUNIT_API double calculateThorCost(unsigned __int64 ms, unsigned clusterWidth)
+{
+    return calcCost(getThorManagerRate(), ms) + calcCost(getThorWorkerRate(), ms) * clusterWidth;
 }
 
 void aggregateStatistic(StatsAggregation & result, IConstWorkUnit * wu, const WuScopeFilter & filter, StatisticKind search)

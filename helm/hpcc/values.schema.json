@@ -165,7 +165,18 @@
         },
         "defaultMirrorPath": {
           "type": "string"
+        },
+        "cost": {
+          "description": "resource cost",
+          "type": "object",
+          "properties": {
+            "perCpu": {
+              "description": "cost of a single cpu",
+              "type": "number"
+            }
+          }
         }
+
       },
       "additionalProperties": false
     },
