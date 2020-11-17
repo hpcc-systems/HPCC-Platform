@@ -81,6 +81,7 @@ unsigned maxBlockSize = 10000000;
 unsigned maxLockAttempts = 5;
 bool pretendAllOpt = false;
 bool traceStartStop = false;
+bool traceRoxiePackets = false;
 bool traceServerSideCache = false;
 bool defaultTimeActivities = true;
 bool defaultTraceEnabled = false;
@@ -1023,6 +1024,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         traceStartStop = topology->getPropBool("@traceStartStop", false);
         watchActivityId = topology->getPropInt("@watchActivityId", 0);
         traceServerSideCache = topology->getPropBool("@traceServerSideCache", false);
+        traceRoxiePackets = topology->getPropBool("@traceRoxiePackets", false);
         traceTranslations = topology->getPropBool("@traceTranslations", true);
         defaultTimeActivities = topology->getPropBool("@timeActivities", true);
         defaultTraceEnabled = topology->getPropBool("@traceEnabled", false);

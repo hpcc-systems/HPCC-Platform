@@ -1209,6 +1209,8 @@ public:
 
     void addToMap()
     {
+        if (traceRoxiePackets)
+            DBGLOG("addToMap %s: hashvalue = %" I64F "x channel %d", id.str(), hashValue, channelNo);
         hash64_t hv = rtlHash64Data(sizeof(channelNo), &channelNo, hashValue);
         CriticalBlock b(activeQueriesCrit);
         activeQueries.setValue(hv, this);
