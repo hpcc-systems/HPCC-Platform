@@ -3990,7 +3990,19 @@ public:
         if (workUnitTraceLevel > 1)
             DBGLOG("Releasing locked workunit %s", queryWuid());
         if (c)
-            c->unlockRemote();
+        {
+            try
+            {
+                c->unlockRemote();
+            }
+            catch (IException *E)
+            {
+                // Exceptions here should be very uncommon - but there's also not a lot we can do if we get one
+                // Allowing them to be thrown out of the destructor is going to terminate the program which is NOT what we want.
+                EXCLOG(E);
+                ::Release(E);
+            }
+        }
     }
 
     virtual IConstWorkUnit * unlock()
