@@ -29,7 +29,7 @@ const static SmartStepExtra knownOtherFrequencyTermStepExtra(SSEFreturnMismatche
 const static SmartStepExtra presumedLowestFrequencyTermStepExtra(SSEFreturnMismatches|SSEFreadAhead, NULL);
 const static SmartStepExtra presumedLowestFrequencyTermReseekStepExtra(SSEFreadAhead, NULL);
 const static SmartStepExtra presumedOtherFrequencyTermStepExtra(SSEFreturnMismatches, NULL);
-const static SmartStepExtra unknownFrequencyTermStepExtra(SSEFreturnMismatches, NULL);
+const static SmartStepExtra unknownFrequencyTermStepExtra2(SSEFreturnMismatches, NULL);
 
 //#define TRACE_JOIN_OPTIMIZATION
 
@@ -538,7 +538,7 @@ bool CSteppedConjunctionOptimizer::findCandidates(const void * seekValue, unsign
         else if (inputsHaveMedian)
             extra = (nextInput == 0) ? &presumedLowestFrequencyTermStepExtra : &presumedOtherFrequencyTermStepExtra;
         else
-            extra = &unknownFrequencyTermStepExtra;
+            extra = &unknownFrequencyTermStepExtra2;
 
         unsigned curOriginalInput = curInput.originalIndex;
         bool isReSeek = (inputProvidingSeek == curOriginalInput);
