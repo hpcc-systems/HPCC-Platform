@@ -225,7 +225,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 }
             }
             else if (!summaryParse.find(errStr))
-                IERRLOG("Unrecognised error: %s", errStr);
+                IERRLOG("%s", errStr);
         }
         catch (IException *E)
         {
