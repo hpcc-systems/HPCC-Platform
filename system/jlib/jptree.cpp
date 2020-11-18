@@ -8913,7 +8913,7 @@ static int yaml_write_iiostream(void *data, unsigned char *buffer, size_t size)
     IIOStream *out = (IIOStream *) data;
     out->write(size, (void *)buffer);
     out->flush();
-    return 0;
+    return 1;
 }
 
 class YAMLEmitter
