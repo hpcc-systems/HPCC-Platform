@@ -25,7 +25,7 @@
 #include "workunit.hpp"
 #include "exception_util.hpp"
 #include "portlist.h"
-
+#include "daqueue.hpp"
 
 const char* MSG_FAILED_GET_ENVIRONMENT_INFO = "Failed to get environment information.";
 
@@ -2050,4 +2050,145 @@ extern TPWRAPPER_API IStringIterator* getContainerTargetClusters(const char* pro
         ret->append_unique(targetName);
     }
     return ret.getClear();
+}
+
+class CContainerWUClusterInfo : public CSimpleInterfaceOf<IConstWUClusterInfo>
+{
+    StringAttr name;
+    StringAttr serverQueue;
+    StringAttr agentQueue;
+    StringAttr thorQueue;
+    ClusterType platform;
+    unsigned clusterWidth;
+
+public:
+    CContainerWUClusterInfo(const char* _name, const char* type, unsigned _clusterWidth)
+        : name(_name), clusterWidth(_clusterWidth)
+    {
+        StringBuffer queue;
+        if (strieq(type, "thor"))
+        {
+            thorQueue.set(getClusterThorQueueName(queue.clear(), name));
+            platform = ThorLCRCluster;
+        }
+        else if (strieq(type, "roxie"))
+        {
+            agentQueue.set(getClusterEclAgentQueueName(queue.clear(), name));
+            platform = RoxieCluster;
+        }
+        else
+        {
+            agentQueue.set(getClusterEclAgentQueueName(queue.clear(), name));
+            platform = HThorCluster;
+        }
+
+        serverQueue.set(getClusterEclCCServerQueueName(queue.clear(), name));
+    }
+
+    virtual IStringVal& getName(IStringVal& str) const override
+    {
+        str.set(name.get());
+        return str;
+    }
+    virtual IStringVal& getAgentQueue(IStringVal& str) const override
+    {
+        str.set(agentQueue);
+        return str;
+    }
+    virtual IStringVal& getServerQueue(IStringVal& str) const override
+    {
+        str.set(serverQueue);
+        return str;
+    }
+    virtual IStringVal& getThorQueue(IStringVal& str) const override
+    {
+        str.set(thorQueue);
+        return str;
+    }
+    virtual ClusterType getPlatform() const override
+    {
+        return platform;
+    }
+    virtual unsigned getSize() const override
+    {
+        return clusterWidth;
+    }
+    virtual bool isLegacyEclServer() const override
+    {
+        return false;
+    }
+    virtual IStringVal& getScope(IStringVal& str) const override
+    {
+        UNIMPLEMENTED;
+    }
+    virtual unsigned getNumberOfSlaveLogs() const override
+    {
+        UNIMPLEMENTED;
+    }
+    virtual IStringVal & getAgentName(IStringVal & str) const override
+    {
+        UNIMPLEMENTED;
+    }
+    virtual IStringVal & getECLSchedulerName(IStringVal & str) const override
+    {
+        UNIMPLEMENTED;
+    }
+    virtual const StringArray & getECLServerNames() const override
+    {
+        UNIMPLEMENTED;
+    }
+    virtual IStringVal & getRoxieProcess(IStringVal & str) const override
+    {
+        UNIMPLEMENTED;
+    }
+    virtual const StringArray & getThorProcesses() const override
+    {
+        UNIMPLEMENTED;
+    }
+    virtual const StringArray & getPrimaryThorProcesses() const override
+    {
+        UNIMPLEMENTED;
+    }
+    virtual const SocketEndpointArray & getRoxieServers() const override
+    {
+        UNIMPLEMENTED;
+    }
+    virtual const char *getLdapUser() const override
+    {
+        UNIMPLEMENTED;
+    }
+    virtual const char *getLdapPassword() const override
+    {
+        UNIMPLEMENTED;
+    }
+    virtual unsigned getRoxieRedundancy() const override
+    {
+        UNIMPLEMENTED;
+    }
+    virtual unsigned getChannelsPerNode() const override
+    {
+        UNIMPLEMENTED;
+    }
+    virtual int getRoxieReplicateOffset() const override
+    {
+        UNIMPLEMENTED;
+    }
+    virtual const char *getAlias() const override
+    {
+        UNIMPLEMENTED;
+    }
+};
+
+extern TPWRAPPER_API unsigned getContainerWUClusterInfo(CConstWUClusterInfoArray& clusters)
+{
+    Owned<IPropertyTreeIterator> queues = queryComponentConfig().getElements("queues");
+    ForEach(*queues)
+    {
+        IPropertyTree& queue = queues->query();
+        Owned<IConstWUClusterInfo> cluster = new CContainerWUClusterInfo(queue.queryProp("@name"),
+            queue.queryProp("@type"), (unsigned) queue.getPropInt("@width", 1));
+        clusters.append(*cluster.getClear());
+    }
+
+    return clusters.ordinality();
 }
