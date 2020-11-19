@@ -21806,12 +21806,15 @@ public:
 
     virtual IRoxieServerActivity *createActivity(IRoxieAgentContext *_ctx, IProbeManager *_probeManager) const
     {
-        return new CRoxieServerRemoteResultActivity(_ctx, this, _probeManager, usageCount);
+        if (dependentCount==0 && !CRoxieServerInternalSinkFactory::isSink())
+            return new CRoxieServerNullSinkActivity(_ctx, this, _probeManager);
+        else
+            return new CRoxieServerRemoteResultActivity(_ctx, this, _probeManager, usageCount);
     }
 
     virtual bool isSink() const override
     {
-        return CRoxieServerInternalSinkFactory::isSink() || dependentCount == 0;  // Codegen normally optimizes these away, but if it doesn't we need to treat as a sink rather than a dependency or upstream activities are not stopped properly
+        return CRoxieServerInternalSinkFactory::isSink() || dependentCount == 0;  // Codegen normally optimizes these away, but if it doesn't we need to treat as a (null) sink rather than a dependency or upstream activities are not stopped properly
     }
 
 };
