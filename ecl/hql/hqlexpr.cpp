@@ -1207,13 +1207,13 @@ void HqlParseContext::noteExternalLookup(IHqlScope * parentScope, IHqlExpression
                 if (!moduleName)
                     moduleName = "";
 
-                VStringBuffer xpath("Depend[@module=\"%s\"][@name=\"%s\"]", moduleName, str(expr->queryName()));
+                VStringBuffer xpath("Depend[@module=\"%s\"][@name=\"%s\"]", moduleName, str(expr->queryId()));
 
                 if (!meta.dependencies->queryPropTree(xpath.str()))
                 {
                     IPropertyTree * depend = meta.dependencies->addPropTree("Depend");
                     depend->setProp("@module", moduleName);
-                    depend->setProp("@name", str(expr->queryName()));
+                    depend->setProp("@name", str(expr->queryId()));
                 }
             }
         }
@@ -1246,7 +1246,7 @@ void HqlParseContext::noteExternalLookup(IHqlScope * parentScope, IHqlExpression
 void HqlParseContext::createDependencyEntry(IHqlScope * parentScope, IIdAtom * id)
 {
     const char * moduleName = parentScope ? parentScope->queryFullName() : "";
-    const char * nameText = id ? str(lower(id)) : "";
+    const char * nameText = id ? str(id) : "";
 
     StringBuffer xpath;
     xpath.append("Attr[@module=\"").append(moduleName).append("\"][@name=\"").append(nameText).append("\"]");
