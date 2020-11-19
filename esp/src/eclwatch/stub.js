@@ -74,8 +74,8 @@ define([
             var widget = new WidgetClass(webParams);
 
             var myToaster = new Toaster({
-                id: 'hpcc_toaster',
-                positionDirection: 'br-left'
+                id: "hpcc_toaster",
+                positionDirection: "br-left"
             });
             topic.subscribe("hpcc/brToaster", function (topic) {
                 if (lang.exists("Exceptions", topic)) {

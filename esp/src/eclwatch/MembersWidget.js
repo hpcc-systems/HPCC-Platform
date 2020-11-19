@@ -49,7 +49,7 @@ define([
         createGrid: function (domID) {
             var context = this;
             this.openButton = registry.byId(this.id + "Open");
-            this.newPage = registry.byId(this.id + "NewPage")
+            this.newPage = registry.byId(this.id + "NewPage");
             this.refreshButton = registry.byId(this.id + "Refresh");
             this.addButton = new Button({
                 id: this.id + "Add",

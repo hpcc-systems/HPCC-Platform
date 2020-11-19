@@ -283,7 +283,7 @@ define([
                 this.foundMatchingFields = false;
                 var foundMatchingFieldCount = 0;
                 var options = this.getFieldOptions(sequence);
-                this.mappingLabel.set("options", options)
+                this.mappingLabel.set("options", options);
                 var value = this.getFieldValue(options, "label");
                 this.mappingLabel.set("value", value);
 
@@ -412,7 +412,7 @@ define([
             }, this);
             var context = this;
             var data = hpccCommon.nest()
-                .key(function (d) { return d[request.label] })
+                .key(function (d) { return d[request.label]; })
                 .rollup(function (leaves) {
                     var retVal = {
                     };

@@ -77,13 +77,13 @@ define([
             var context = this;
             this.graphWidget.vertex_click = function (item, event) {
                 context.emit("SelectionChanged", [item]);
-            }
+            };
             this.graphWidget.edge_click = function (item, event) {
                 context.emit("SelectionChanged", [item]);
-            }
+            };
             this.graphWidget.vertex_dblclick = function (item, event) {
                 context.emit("MouseDoubleClick", item, (event.shiftKey ? context.KeyState_Shift : 0) + (event.ctrlKey ? context.KeyState_Control : 0) + (event.altKey ? context.KeyState_Menu : 0));
-            }
+            };
             this.messageWidget = new hpccCommon.TextBox()
                 .shape_colorFill("#006CCC")
                 .shape_colorStroke("#003666")

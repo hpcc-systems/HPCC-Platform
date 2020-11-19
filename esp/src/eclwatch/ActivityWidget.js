@@ -245,7 +245,7 @@ define([
                         .lazyRender()
                         ;
                 }
-            }
+            };
         },
 
         doSearch: function (searchText) {
@@ -398,7 +398,7 @@ define([
             this.wuCopyButton = new Button({
                 id: this.id + "WUCopyButton",
                 showLabel: false,
-                iconClass: 'iconCopy',
+                iconClass: "iconCopy",
                 title: this.i18n.CopyWUIDs
             }).placeAt(this.openButton.domNode, "before");
             Clippy.attachDomNode(this.wuCopyButton.domNode, function () {
@@ -417,7 +417,7 @@ define([
                 columns: {
                     col1: selector({
                         width: 27,
-                        selectorType: 'checkbox',
+                        selectorType: "checkbox",
                         sortable: false
                     }),
                     Priority: {
@@ -490,7 +490,7 @@ define([
                 getSelected: function () {
                     var retVal = [];
                     for (var id in this.selection) {
-                        var item = context.activity.resolve(id)
+                        var item = context.activity.resolve(id);
                         if (item) {
                             retVal.push(item);
                         }
@@ -658,8 +658,8 @@ define([
                 }
             });
 
-            this.wuCopyButton.set("disabled", !wuSelected)
-            this.wuCopyButton.set("iconClass", !wuSelected ? "iconCopyDisabled" : "iconCopy")
+            this.wuCopyButton.set("disabled", !wuSelected);
+            this.wuCopyButton.set("iconClass", !wuSelected ? "iconCopyDisabled" : "iconCopy");
             this.clusterPauseButton.set("disabled", !clusterNotPausedSelected);
             this.clusterResumeButton.set("disabled", !clusterPausedSelected);
             this.clusterClearButton.set("disabled", !clusterHasItems);

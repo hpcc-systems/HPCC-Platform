@@ -75,7 +75,7 @@ define([
         hide: function (event) {
             domClass.remove("SessionLock", "overlay");
             this.unlockDialog.hide();
-            this.unlockDialog.destroyRecursive()
+            this.unlockDialog.destroyRecursive();
             dojo.query(".dijitDialogUnderlayWrapper").forEach(function (node) {
                 dojo.destroy(node.id);
             });

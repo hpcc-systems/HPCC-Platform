@@ -127,7 +127,7 @@ define([
                 store: store,
                 query: this.getFilter(),
                 columns: {
-                    col1: selector({ width: 27, selectorType: 'checkbox' }),
+                    col1: selector({ width: 27, selectorType: "checkbox" }),
                     Wuid: {
                         label: this.i18n.Workunit, width: 180, sortable: false,
                         formatter: function (Wuid) {
@@ -186,7 +186,7 @@ define([
 
         _onEventClear: function (event) {
             arrayUtil.forEach(registry.byId(this.id + "FilterForm").getDescendants(), function (item, idx) {
-                item.set('value', null);
+                item.set("value", null);
             });
         },
 

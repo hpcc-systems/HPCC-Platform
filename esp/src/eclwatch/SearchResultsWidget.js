@@ -105,7 +105,7 @@ define([
             var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
                 columns: {
-                    col1: selector({ width: 27, selectorType: 'checkbox' }),
+                    col1: selector({ width: 27, selectorType: "checkbox" }),
                     Type: {
                         label: this.i18n.What, width: 108, sortable: true,
                         formatter: function (type, idx) {
@@ -271,7 +271,7 @@ define([
         },
 
         loadWUQueryResponse: function (prefix, response) {
-            var workunits = lang.getObject("WUQueryResponse.Workunits.ECLWorkunit", false, response)
+            var workunits = lang.getObject("WUQueryResponse.Workunits.ECLWorkunit", false, response);
             if (workunits) {
                 var idPrefix = prefix.split(" ").join("_");
                 var context = this;
@@ -294,7 +294,7 @@ define([
         },
 
         loadGetDFUWorkunitsResponse: function (prefix, response) {
-            var workunits = lang.getObject("GetDFUWorkunitsResponse.results.DFUWorkunit", false, response)
+            var workunits = lang.getObject("GetDFUWorkunitsResponse.results.DFUWorkunit", false, response);
             if (workunits) {
                 var idPrefix = prefix.split(" ").join("_");
                 var context = this;
@@ -318,7 +318,7 @@ define([
 
         loadGetDFUWorkunitResponse: function (prefix, response) {
             var context = this;
-            var workunit = lang.getObject("GetDFUWorkunitResponse.result", false, response)
+            var workunit = lang.getObject("GetDFUWorkunitResponse.result", false, response);
             if (workunit && workunit.State !== 999) {
                 var idPrefix = prefix.split(" ").join("_");
                 this.store.add({
@@ -338,7 +338,7 @@ define([
         },
 
         loadDFUQueryResponse: function (prefix, response) {
-            var items = lang.getObject("DFUQueryResponse.DFULogicalFiles.DFULogicalFile", false, response)
+            var items = lang.getObject("DFUQueryResponse.DFULogicalFiles.DFULogicalFile", false, response);
             if (items) {
                 var idPrefix = prefix.split(" ").join("_");
                 var context = this;
@@ -374,7 +374,7 @@ define([
         },
 
         loadWUListQueriesResponse: function (prefix, response) {
-            var items = lang.getObject("WUListQueriesResponse.QuerysetQueries.QuerySetQuery", false, response)
+            var items = lang.getObject("WUListQueriesResponse.QuerysetQueries.QuerySetQuery", false, response);
             if (items) {
                 var idPrefix = prefix.split(" ").join("_");
                 var context = this;

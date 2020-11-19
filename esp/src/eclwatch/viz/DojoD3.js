@@ -23,7 +23,7 @@
                         window.clearTimeout(timeoutID);
                     }
                     timeoutID = window.setTimeout(fn, timeout);
-                }
+                };
             };
 
             var _debounced_draw = _debounce(lang.hitch(this, function () {

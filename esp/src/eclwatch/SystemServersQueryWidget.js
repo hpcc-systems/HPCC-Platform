@@ -70,7 +70,7 @@ define([
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
                 if (currSel.id === this.id + "_Grid") {
-                    this.refreshGrid()
+                    this.refreshGrid();
                 } else if (currSel.id === this.systemServersQueryWidgetIframeWidget.id && !this.systemServersQueryWidgetIframeWidget.initalized) {
                     this.systemServersQueryWidgetIframeWidget.init({
                         src: ESPRequest.getBaseURL("WsTopology") + "/TpServiceQuery?Type=ALLSERVICES"
@@ -149,7 +149,7 @@ define([
                 columns: {
                     col1: selector({
                         width: 20,
-                        selectorType: 'checkbox',
+                        selectorType: "checkbox",
                         disabled: function (item) {
                             if (!item.Configuration || item.Type === "LDAPServerProcess") {
                                 return true;
@@ -179,7 +179,7 @@ define([
                         renderCell: function (object, value, node, options) {
                             if (object.Informational) {
                                 domClass.add(node, "centerInCell");
-                                node.innerHTML = "<a href='#' class='additionalSystemServersDialog' />" + Utility.getImageHTML("information.png", context.i18n.Informational) + "</a>"
+                                node.innerHTML = "<a href='#' class='additionalSystemServersDialog' />" + Utility.getImageHTML("information.png", context.i18n.Informational) + "</a>";
                             }
                         }
                     },
@@ -194,7 +194,7 @@ define([
                                 renderCell: function (object, value, node, options) {
                                     if (object.AuditLog) {
                                         domClass.add(node, "centerInCell");
-                                        node.innerHTML = "<a href='#' class='gridClick'/>" + Utility.getImageHTML("base.gif", context.i18n.AuditLogs) + "</a>"
+                                        node.innerHTML = "<a href='#' class='gridClick'/>" + Utility.getImageHTML("base.gif", context.i18n.AuditLogs) + "</a>";
                                     }
                                 },
                             },
@@ -205,7 +205,7 @@ define([
                                 renderCell: function (object, value, node, options) {
                                     if (object.Log) {
                                         domClass.add(node, "centerInCell");
-                                        node.innerHTML = "<a href='#' class='gridClick'/>" + Utility.getImageHTML("base.gif", context.i18n.ComponentLogs) + "</a>"
+                                        node.innerHTML = "<a href='#' class='gridClick'/>" + Utility.getImageHTML("base.gif", context.i18n.ComponentLogs) + "</a>";
                                     }
                                 }
                             }
@@ -283,7 +283,7 @@ define([
             retVal.on(".dgrid-cell .gridClick:click", function (evt) {
                 var item = retVal.row(evt).data;
                 if (evt.target.title === "Audit Log" || evt.target.title === "Component Log") {
-                    context._onOpenLog(item)
+                    context._onOpenLog(item);
                 } else {
                     context._onOpenConfiguration(item);
                 }
@@ -295,7 +295,7 @@ define([
             });
 
             retVal.on(".dgrid-cell:click", function (evt) {
-                var cell = retVal.cell(evt)
+                var cell = retVal.cell(evt);
             });
 
             retVal.onSelectionChanged(function (event) {
