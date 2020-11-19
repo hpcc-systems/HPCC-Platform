@@ -3145,6 +3145,168 @@ static void setupContainerizedStorageLocations()
     }
 }
 
+struct GroupInformation : public CInterface
+{
+public:
+    GroupInformation(const char * _name) : name(_name) {}
+
+    unsigned ordinality() const { return hosts.ordinality(); }
+
+    bool checkIsSubset(const GroupInformation & other); // save information if it is a subset of other
+    void createStoragePlane(IPropertyTree * storage, unsigned copy) const;
+
+public:
+    StringBuffer name;
+    StringBuffer dir;
+    StringArray hosts;
+    const GroupInformation * container = nullptr;
+    unsigned containerOffset = 0;
+    GroupType groupType = grp_unknown;
+    bool dropZone = false;
+};
+
+using GroupInfoArray = CIArrayOf<GroupInformation>;
+
+bool GroupInformation::checkIsSubset(const GroupInformation & other)
+{
+    //Find the first ip that matches, and then check the next ips within the other list also match
+    unsigned thisSize = hosts.ordinality();
+    unsigned otherSize = other.hosts.ordinality();
+    assertex(thisSize <= otherSize);
+    for (unsigned i=0; i <= otherSize-thisSize; i++)
+    {
+        bool match = true;
+        for (unsigned j=0; j < thisSize; j++)
+        {
+            if (!strieq(hosts.item(j), other.hosts.item(i+j)))
+            {
+                match = false;
+                break;
+            }
+        }
+
+        if (match)
+        {
+            container = &other;
+            containerOffset = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy) const
+{
+    IPropertyTree * plane = storage->addPropTree("planes");
+    if (copy == 0)
+    {
+        plane->setProp("@name", name);
+    }
+    else
+    {
+        StringBuffer mirrorname;
+        mirrorname.append(name).append("_mirror").append(copy);
+        plane->setProp("@name", mirrorname);
+    }
+
+    //URL style drop zones don't generate a host entry, and will have a single device
+    if (ordinality() != 0)
+    {
+        if (container)
+        {
+            plane->setProp("@hosts", container->name);
+            if (containerOffset)
+                plane->setPropInt("@start", containerOffset);
+            if (ordinality() != container->ordinality())
+                plane->setPropInt("@size", ordinality());
+        }
+        else
+            plane->setProp("@hosts", name);
+
+        if (ordinality() > 1)
+            plane->setPropInt("@numDevices", ordinality());
+    }
+
+    if (copy)
+        plane->setPropInt("@offset", copy);
+
+    if (dir.length())
+        plane->setProp("@prefix", dir);
+    else
+        plane->setProp("@prefix", queryBaseDirectory(groupType, copy));
+
+    if (dropZone)
+        plane->setPropBool("@dropZone", true);
+
+    //MORE: If container is identical to this except for the name we could generate an information tag @alias
+}
+
+static void appendGroup(GroupInfoArray & groups, GroupInformation * group)
+{
+    if (!group->name)
+    {
+        group->Release();
+        return;
+    }
+
+    //Check for a duplicate group name.  This should never happen, but make sure it is caught if it did.
+    ForEachItemIn(i, groups)
+    {
+        if (strieq(groups.item(i).name, group->name))
+        {
+            DBGLOG("Unexpected duplicate group name %s", group->name.str());
+            group->Release();
+            return;
+        }
+    }
+
+    groups.append(*group);
+}
+
+
+static int compareGroupSize(CInterface * const * _left, CInterface * const * _right)
+{
+    const GroupInformation * left = static_cast<const GroupInformation *>(*_left);
+    const GroupInformation * right = static_cast<const GroupInformation *>(*_right);
+    int ret = (int) (right->hosts.ordinality() - left->hosts.ordinality());
+    if (ret)
+        return ret;
+    return stricmp(left->name, right->name);
+}
+
+
+static void generateHosts(IPropertyTree * storage, GroupInfoArray & groups)
+{
+    //This function is potentially O(N^2) in the number of groups, and O(n^2) in the number of nodes within those groups.
+    //In practice, it is unlikely to take very long unless there were vast numbers of groups.
+    ForEachItemIn(i, groups)
+    {
+        GroupInformation & cur = groups.item(i);
+        GroupInformation * container = nullptr;
+        for (unsigned j=0; j < i; j++)
+        {
+            GroupInformation & prev = groups.item(j);
+            if (cur.checkIsSubset(prev))
+                break;
+        }
+
+        // No containing hostGroup found, so generate a new entry for this set of hosts
+        if (!cur.container && cur.ordinality())
+        {
+            IPropertyTree * plane = storage->addPropTree("hostGroups");
+            plane->setProp("@name", cur.name);
+            StringBuffer host;
+            ForEachItemIn(i, cur.hosts)
+            {
+                IPropertyTree * entry2 = createPTree("host");
+                IPropertyTree * entry = plane->addPropTreeArrayItem("hosts", entry2);
+                entry->setProp("", cur.hosts.item(i));
+            }
+        }
+    }
+
+}
+
 static CriticalSection storageCS;
 void initializeStorageGroups(bool createPlanesFromGroups)
 {
@@ -3156,46 +3318,25 @@ void initializeStorageGroups(bool createPlanesFromGroups)
 #ifndef _CONTAINERIZED
     if (createPlanesFromGroups && !storage->hasProp("planes"))
     {
+        GroupInfoArray allGroups;
+
         //Create information about the storage planes from the groups published in dali
-        INamedGroupStore & groupStore = queryNamedGroupStore();
-        Owned<INamedGroupIterator> iter= groupStore.getIterator();
-        ForEach(*iter)
+        //Use the Groups section directly, rather than queryNamedGroupStore(), so that hostnames are preserved
         {
-            StringBuffer name, dir;
-            iter->get(name);
-            if (name.length())
+            Owned<IRemoteConnection> conn = querySDS().connect("/Groups", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
+            Owned<IPropertyTreeIterator> groups = conn->queryRoot()->getElements("Group");
+            ForEach(*groups)
             {
-                IPropertyTree * plane = storage->addPropTree("planes");
-                plane->setProp("@name", name);
-                GroupType groupType;
-                Owned<IGroup> group = groupStore.lookup(name, dir, groupType);
-
-                if (dir.length())
-                    plane->setProp("@prefix", dir);
-                else
-                    plane->setProp("@prefix", queryBaseDirectory(groupType, 0));
-
-                if (!group)
-                    plane->setPropInt("@numDevices", 0);
-                else if (group->ordinality() != 1)
-                    plane->setPropInt("@numDevices", group->ordinality());
-
-                if (groupType == grp_thor)
+                IPropertyTree & group = groups->query();
+                Owned<GroupInformation> next = new GroupInformation(group.queryProp("@name"));
+                Owned<IPropertyTreeIterator> nodes = group.getElements("Node");
+                ForEach(*nodes)
                 {
-                    assertex(group);
-                    StringBuffer mirrorname;
-                    mirrorname.append(name).append("replica");
-
-                    IPropertyTree * mirror = storage->addPropTree("planes");
-                    mirror->setProp("@name", mirrorname);
-                    mirror->setProp("@prefix", queryBaseDirectory(groupType, 1));
-
-                    if (group->ordinality() != 1)
-                        mirror->setPropInt("@numDevices", group->ordinality());
-
-                    IPropertyTree * elem = plane->addPropTreeArrayItem("replication", createPTree());
-                    elem->setProp("", mirrorname);
+                    next->hosts.append(nodes->query().queryProp("@ip"));
                 }
+                next->groupType = translateGroupType(group.queryProp("@kind"));
+
+                appendGroup(allGroups, next.getClear());
             }
         }
 
@@ -3208,20 +3349,39 @@ void initializeStorageGroups(bool createPlanesFromGroups)
             {
                 IPropertyTree & cur = dropzones->query();
                 unsigned numServers = cur.getCount("ServerList");
+
+                //Allow url style drop zones, and drop zones with a single node.  Not sure what >1 would mean in legacy.
                 if (numServers <= 1)
                 {
-                    //If no instances then assume it is always local (e.g. azure)
-                    const char * ip = numServers ? cur.queryProp("ServerList[1]/@server") : nullptr;
-                    IPropertyTree * plane = storage->addPropTree("planes");
-                    plane->setProp("@name", cur.queryProp("@name"));
-                    plane->setProp("@prefix", cur.queryProp("@directory"));
+                    Owned<GroupInformation> next = new GroupInformation(cur.queryProp("@name"));
+                    const char * ip = cur.queryProp("ServerList[1]/@server");
 
-                    //Temporary.  This is likely to change to eventually create a hostgroup and set the @hosts property.
-                    if (ip && !streq(ip, "."))
-                        plane->setProp("@host", ip);
+                    next->dir.set(cur.queryProp("@directory"));
+                    next->dropZone= true;
+                    if (ip)
+                        next->hosts.append(ip);
+                    appendGroup(allGroups, next.getClear());
                 }
             }
         }
+
+        //Sort into size order, to help spot groups that are subsets of other groups
+        allGroups.sort(compareGroupSize);
+
+        //Now generate a list of hosts, if one group is a subset of another then do not generate the hosts
+        generateHosts(storage, allGroups);
+
+        //Finally generate the storage plane information
+        ForEachItemIn(i, allGroups)
+        {
+            const GroupInformation & cur = allGroups.item(i);
+            cur.createStoragePlane(storage, 0);
+            if (cur.groupType == grp_thor)
+                cur.createStoragePlane(storage, 1);
+        }
+
+        //Uncomment the following to trace the values that been generated
+        //printYAML(storage);
     }
 #endif
 
