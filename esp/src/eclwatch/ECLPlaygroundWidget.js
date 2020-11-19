@@ -224,9 +224,9 @@ define([
                 if (a) {
                     a.textContent = newValue;
                     if (newValue === "...") {
-                        a.style.visibility = "hidden"
+                        a.style.visibility = "hidden";
                     } else if (this.wu && this.wu.Wuid) {
-                        a.style.visibility = "visible"
+                        a.style.visibility = "visible";
                         a.href = dojoConfig.urlInfo.pathname + "?Widget=WUDetailsWidget&Wuid=" + this.wu.Wuid;
                     }
                 }

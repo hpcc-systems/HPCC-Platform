@@ -38,7 +38,7 @@ define([
             var retVal = new declare([ESPUtil.Grid(true, true)])({
                 store: this.store,
                 columns: {
-                    col1: selector({ width: 27, selectorType: 'checkbox' }),
+                    col1: selector({ width: 27, selectorType: "checkbox" }),
                     File: { label: this.i18n.LogicalFiles }
                 }
             }, domID);
@@ -68,7 +68,7 @@ define([
                     arrayUtil.forEach(context.query.LogicalFiles.Item, function (item, idx) {
                         var file = {
                             File: item
-                        }
+                        };
                         logicalFiles.push(file);
                     });
                 }

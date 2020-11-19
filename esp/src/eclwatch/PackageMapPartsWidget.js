@@ -71,7 +71,7 @@ define([
                     var packageMapSearch = context.params.packageMap.search("::");
                     var packageMapClean;
 
-                    packageMapSearch > -1 ? packageMapClean = context.params.packageMap.split('::')[1] : packageMapClean = context.params.packageMap;
+                    packageMapSearch > -1 ? packageMapClean = context.params.packageMap.split("::")[1] : packageMapClean = context.params.packageMap;
 
                     WsPackageMaps.AddPartToPackageMap({
                         request: {
@@ -136,7 +136,7 @@ define([
                 columns: {
                     col1: selector({
                         width: 27,
-                        selectorType: 'checkbox',
+                        selectorType: "checkbox",
                         label: ""
                     }),
                     Part: { label: this.i18n.Parts, sortable: false }
@@ -149,7 +149,7 @@ define([
                     WsPackageMaps.GetPartFromPackageMap({
                         request: {
                             Target: context.params.target,
-                            PackageMap: context.params.packageMap.split('::')[1],
+                            PackageMap: context.params.packageMap.split("::")[1],
                             PartName: item.Part
                         }
                     }).then(function (response) {
@@ -174,7 +174,7 @@ define([
                     promises.push(WsPackageMaps.RemovePartFromPackageMap({
                         request: {
                             Target: context.params.target,
-                            PackageMap: context.params.packageMap.split('::')[1],
+                            PackageMap: context.params.packageMap.split("::")[1],
                             PartName: row.Part
                         }
                     }));
@@ -191,7 +191,7 @@ define([
             WsPackageMaps.GetPartFromPackageMap({
                 request: {
                     Target: context.params.target,
-                    PackageMap: context.params.packageMap.split('::')[1],
+                    PackageMap: context.params.packageMap.split("::")[1],
                     PartName: selections[0].Part
                 }
             }).then(function (response) {
@@ -250,7 +250,7 @@ define([
                 this.addPartsDropDown.tableContainer.domNode.appendChild(
                     dojo.create(label ? "div" : "span", {
                         id: this.id + id,
-                        innerHTML: label ? "<label for=" + control + " style='float:left;width:40%'>" + label + ":</label>" : '',
+                        innerHTML: label ? "<label for=" + control + " style='float:left;width:40%'>" + label + ":</label>" : "",
                         style: "vertical-align:middle;padding:2px 0 2px 5px;"
                     })
                 );
@@ -279,8 +279,8 @@ define([
                 var newRows = [];
                 if (lang.exists("GetPackageMapByIdResponse.Info", response)) {
                     var xmlConversion = Utility.parseXML(response.GetPackageMapByIdResponse.Info);
-                    var items = xmlConversion.getElementsByTagName('Part');
-                    var tempObj = {}
+                    var items = xmlConversion.getElementsByTagName("Part");
+                    var tempObj = {};
                     for (var i = 0; i < items.length; i++) {
                         newRows.push(tempObj[i] = { Part: items[i].attributes[0].nodeValue });
                     }

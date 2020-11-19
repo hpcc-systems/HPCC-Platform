@@ -89,7 +89,7 @@ define([
                         }
                     }).then(function (response) {
                         if (response.GetESDLBindingResponse.ConfigXML) {
-                            context.bound = true
+                            context.bound = true;
                             context.definition = response.GetESDLBindingResponse.ESDLBinding.Definition.Interface;
                             context.configuration = response.GetESDLBindingResponse.ESDLBinding.Configuration.Methods.Method;
                             context.definitionID = response.GetESDLBindingResponse.ESDLBinding.Definition.Id;

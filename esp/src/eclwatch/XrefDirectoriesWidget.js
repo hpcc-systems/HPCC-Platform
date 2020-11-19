@@ -54,7 +54,7 @@ define([
                             if (response) {
                                 context.refreshGrid();
                             }
-                        })
+                        });
 
                     }
                 },
@@ -66,18 +66,18 @@ define([
                 store: this.store,
                 columns: {
                     Name: { label: this.i18n.Directory, width: 100, sortable: false },
-                    Num: { label: this.i18n.Files, width: 30, sortable: false, className: 'justify-right' },
-                    Size: { label: this.i18n.TotalSize, width: 30, sortable: false, className: 'justify-right' },
+                    Num: { label: this.i18n.Files, width: 30, sortable: false, className: "justify-right" },
+                    Size: { label: this.i18n.TotalSize, width: 30, sortable: false, className: "justify-right" },
                     MaxIP: { label: this.i18n.MaxNode, width: 30, sortable: false },
-                    MaxSize: { label: this.i18n.MaxSize, width: 30, sortable: false, className: 'justify-right' },
+                    MaxSize: { label: this.i18n.MaxSize, width: 30, sortable: false, className: "justify-right" },
                     MinIP: { label: this.i18n.MinNode, width: 30, sortable: false },
-                    MinSize: { label: this.i18n.MinSize, width: 30, sortable: false, className: 'justify-right' },
+                    MinSize: { label: this.i18n.MinSize, width: 30, sortable: false, className: "justify-right" },
                     PositiveSkew: {
                         label: this.i18n.SkewPositive, width: 30, sortable: true,
                         renderCell: function (object, value, node, options) {
                             domClass.add(node, "justify-right");
                             if (value === undefined) {
-                                return ""
+                                return "";
                             }
                             node.innerText = value;
                         },
@@ -87,7 +87,7 @@ define([
                         renderCell: function (object, value, node, options) {
                             domClass.add(node, "justify-right");
                             if (value === undefined) {
-                                return ""
+                                return "";
                             }
                             node.innerText = value;
                         },

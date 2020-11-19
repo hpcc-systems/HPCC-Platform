@@ -51,7 +51,7 @@ define([
         calculateColumnWidth: function (grid) {
             for (var key in grid.columns) {
                 if (grid.columns[key].label !== "Location" && grid.columns[key].label !== "Component") { //this needs improvement
-                    var node = domConstruct.toDom('<div style="position:absolute;visibility:hidden">' + grid.columns[key].label + '</div>');
+                    var node = domConstruct.toDom('<div style="position:absolute;visibility:hidden">' + grid.columns[key].label + "</div>");
                     domConstruct.place(node, win.body());
                     var p = domGeom.position(node);
                     domConstruct.destroy(node);
@@ -71,12 +71,12 @@ define([
                     renderCell: function (object, value, node, options) {
                         var conditionConversion = value;
                         switch (conditionConversion) {
-                            case 'Unknown':
-                            case 'Warning':
-                            case 'Minor':
-                            case 'Major':
-                            case 'Critical':
-                            case 'Fatal':
+                            case "Unknown":
+                            case "Warning":
+                            case "Minor":
+                            case "Major":
+                            case "Critical":
+                            case "Fatal":
                                 domClass.add(node, "ErrorCell");
                                 break;
                         }
@@ -88,13 +88,13 @@ define([
                     renderCell: function (object, value, node, options) {
                         var stateConversion = value;
                         switch (stateConversion) {
-                            case 'Unknown':
-                            case 'Starting':
-                            case 'Stopping':
-                            case 'Suspended':
-                            case 'Recycling':
-                            case 'Busy':
-                            case 'NA':
+                            case "Unknown":
+                            case "Starting":
+                            case "Stopping":
+                            case "Suspended":
+                            case "Recycling":
+                            case "Busy":
+                            case "NA":
                                 domClass.add(node, "ErrorCell");
                                 break;
                         }
@@ -112,7 +112,7 @@ define([
                     }
                 },
                 ComputerUpTime: { label: this.i18n.ComputerUpTime }
-            }
+            };
 
             function handleResponse(response, dynamicColumns) {
                 arrayUtil.forEach(response, function (row, idx) {
@@ -131,14 +131,14 @@ define([
                                             break;
                                     }
                                     if (swap && value !== 0) {
-                                        node.innerText = value + "%" || "N/A"
+                                        node.innerText = value + "%" || "N/A";
                                     } else if (!value) {
                                         node.innerText = "";
                                     } else {
                                         node.innerText = value + "%";
                                     }
                                 }
-                            }
+                            };
                             lang.mixin(dynamicColumns, tempObj);
                         });
                     }
@@ -148,9 +148,9 @@ define([
 
             if (params) {
                 if (params.TargetClusterInfoList) {
-                    handleResponse(params.TargetClusterInfoList.TargetClusterInfo[0].Processes.MachineInfoEx, dynamicColumns)
+                    handleResponse(params.TargetClusterInfoList.TargetClusterInfo[0].Processes.MachineInfoEx, dynamicColumns);
                 } else {
-                    handleResponse(params.Machines.MachineInfoEx, dynamicColumns)
+                    handleResponse(params.Machines.MachineInfoEx, dynamicColumns);
                 }
 
                 var finalColumns = params.Columns.Item;
@@ -200,7 +200,7 @@ define([
         },
 
         cleanColumn: function (str) {
-            var clean = str.replace(/([~!@#$%^&*()_+=`{}[\]|\\:;'<>,./? ])+/g, '').replace(/^(-)+|(-)+$/g, '');
+            var clean = str.replace(/([~!@#$%^&*()_+=`{}[\]|\\:;'<>,./? ])+/g, "").replace(/^(-)+|(-)+$/g, "");
             return clean;
         },
 
@@ -281,9 +281,9 @@ define([
                         }
                         if (setRows.Storage) {
                             arrayUtil.forEach(setRows.Storage.StorageInfo, function (storage, idx) {
-                                var cleanColumn = context.cleanColumn(storage.Description)
+                                var cleanColumn = context.cleanColumn(storage.Description);
                                 var tmpObj = {};
-                                tmpObj[cleanColumn] = storage.PercentAvail
+                                tmpObj[cleanColumn] = storage.PercentAvail;
                                 lang.mixin(dynamicRowsObj, tmpObj);
                             });
                         }

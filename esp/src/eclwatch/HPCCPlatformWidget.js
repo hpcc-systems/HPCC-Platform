@@ -174,7 +174,7 @@ define([
             }).then(function (response) {
                 if (lang.exists("GetComponentStatusResponse.ComponentStatus", response)) {
                     dojoConfig.monitoringEnabled = true;
-                    var status = response.GetComponentStatusResponse.ComponentStatus
+                    var status = response.GetComponentStatusResponse.ComponentStatus;
                     context.checkMonitoring(status);
                 } else {
                     dojoConfig.monitoringEnabled = false;
@@ -247,7 +247,7 @@ define([
             this.storage = new ESPUtil.LocalStorage();
 
             this.storage.on("storageUpdate", function (msg) {
-                context._onUpdateFromStorage(msg)
+                context._onUpdateFromStorage(msg);
             });
             this.storage.setItem("Status", "Unlocked");
 
@@ -498,7 +498,7 @@ define([
 
         _onShowLock: function (evt) {
             var LockDialog = new LockDialogWidget({});
-            LockDialog.show()
+            LockDialog.show();
         },
 
         _onLock: function (evt) {

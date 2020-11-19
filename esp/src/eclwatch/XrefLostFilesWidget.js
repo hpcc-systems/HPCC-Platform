@@ -53,16 +53,16 @@ define([
                 columns: {
                     col1: selector({
                         width: 27,
-                        selectorType: 'checkbox',
+                        selectorType: "checkbox",
                         label: ""
                     }),
                     Name: { label: this.i18n.Name, width: 100, sortable: false },
                     Modified: { label: this.i18n.Modified, width: 30, sortable: true },
-                    Numparts: { label: this.i18n.TotalParts, width: 30, sortable: false, className: 'justify-right' },
-                    Size: { label: this.i18n.Size, width: 30, sortable: false, className: 'justify-right' },
-                    Partslost: { label: this.i18n.PartsLost, width: 30, sortable: false, className: 'justify-right' },
-                    Primarylost: { label: this.i18n.PrimaryLost, width: 30, sortable: false, className: 'justify-right' },
-                    Replicatedlost: { label: this.i18n.ReplicatedLost, width: 30, sortable: false, className: 'justify-right' }
+                    Numparts: { label: this.i18n.TotalParts, width: 30, sortable: false, className: "justify-right" },
+                    Size: { label: this.i18n.Size, width: 30, sortable: false, className: "justify-right" },
+                    Partslost: { label: this.i18n.PartsLost, width: 30, sortable: false, className: "justify-right" },
+                    Primarylost: { label: this.i18n.PrimaryLost, width: 30, sortable: false, className: "justify-right" },
+                    Replicatedlost: { label: this.i18n.ReplicatedLost, width: 30, sortable: false, className: "justify-right" }
                 }
             }, domID);
 

@@ -35,7 +35,7 @@
         entities: null,
 
         constructor: function (id, display) {
-            this.entities = {}
+            this.entities = {};
         },
 
         add: function (entity) {
@@ -114,7 +114,7 @@
         },
 
         getMappedData: function () {
-            return this._mapArray(this.data)
+            return this._mapArray(this.data);
         },
 
         hasData: function () {
@@ -137,7 +137,7 @@
                     val = item[key];
                 }
                 if (val === null || val === undefined) {
-                } else if (Object.prototype.toString.call(val) === '[object Array]') {
+                } else if (Object.prototype.toString.call(val) === "[object Array]") {
                     retVal[key] = this.delegateArray(val);
                 } else if (!isNaN(parseFloat(val))) {
                     retVal[key] = parseFloat(val);

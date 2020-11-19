@@ -93,7 +93,7 @@ define([
             this.desprayTargetSelect = registry.byId(this.id + "DesprayTargetSelect");
             this.desprayIPSelect = registry.byId(this.id + "DesprayTargetIPAddress");
             this.desprayTooltipDialog = registry.byId(this.id + "DesprayTooltipDialog");
-            this.addToSuperfileTargetName = registry.byId(this.id + "AddToSuperfileTargetName")
+            this.addToSuperfileTargetName = registry.byId(this.id + "AddToSuperfileTargetName");
             this.createNewSuperRadio = registry.byId(this.id + "CreateNewSuperRadio");
             this.addToSuperfileTargetAppendRadio = registry.byId(this.id + "AddToSuperfileTargetAppend");
             this.downloadToList = registry.byId(this.id + "DownloadToList");
@@ -125,24 +125,24 @@ define([
                         DropZoneMachines: true,
                         callback: function (value, row) {
                             var path = targetRow.machine.Directory.indexOf("\\");
-                            targetRow.machine.Name = value
-                            targetRow.machine.Netaddress = value
+                            targetRow.machine.Name = value;
+                            targetRow.machine.Netaddress = value;
                             context.desprayTargetPath.placeholder = targetRow.machine.Directory;
                             if (context.desprayTargetPath) {
                                 context.desprayTargetPath._dropZoneTarget = targetRow;
                                 if (path > -1) {
-                                    pathSepChar = "\\"
-                                    context.pathSepCharG = "\\"
+                                    pathSepChar = "\\";
+                                    context.pathSepCharG = "\\";
                                 } else {
                                     pathSepChar = "/";
-                                    context.pathSepCharG = "/"
+                                    context.pathSepCharG = "/";
                                 }
                                 context.desprayTargetPath.loadDropZoneFolders(pathSepChar, targetRow.machine.Directory);
                             }
                         }
                     });
                 }
-            }
+            };
             this.desprayTargetPath = registry.byId(this.id + "DesprayTargetPath");
             this.desprayGrid = registry.byId(this.id + "DesprayGrid");
             this.remoteCopyReplicateCheckbox = registry.byId(this.id + "RemoteCopyReplicate");
@@ -223,7 +223,7 @@ define([
                 var tab = this.ensureDFUWUPane(wu.ID, {
                     Wuid: wu.ID
                 });
-                return tab
+                return tab;
             }
         },
 
@@ -370,7 +370,7 @@ define([
                 });
             } else if (retVal.StartDate && !retVal.FromTime) {
                 lang.mixin(retVal, {
-                    StartDate: registry.byId(this.id + "FromDate").attr("value").toISOString().replace(/T.*Z/, '') + "T00:00:00Z"
+                    StartDate: registry.byId(this.id + "FromDate").attr("value").toISOString().replace(/T.*Z/, "") + "T00:00:00Z"
                 });
             }
             if (retVal.EndDate && retVal.ToTime) {
@@ -379,7 +379,7 @@ define([
                 });
             } else if (retVal.EndDate && !retVal.ToTime) {
                 lang.mixin(retVal, {
-                    EndDate: registry.byId(this.id + "ToDate").attr("value").toISOString().replace(/T.*Z/, '') + "T23:59:59Z"
+                    EndDate: registry.byId(this.id + "ToDate").attr("value").toISOString().replace(/T.*Z/, "") + "T23:59:59Z"
                 });
             }
 
@@ -425,7 +425,7 @@ define([
                 Groups: true
             });
 
-            this.importTargetSelect.on('change', function (value) {
+            this.importTargetSelect.on("change", function (value) {
                 context.checkReplicate(value, context.remoteCopyReplicateCheckbox);
             });
 
@@ -462,13 +462,13 @@ define([
                 context.refreshGrid();
             });
 
-            this.createNewSuperRadio.on('change', function (value) {
+            this.createNewSuperRadio.on("change", function (value) {
                 if (value) {
                     context.addToSuperfileTargetAppendRadio.set("checked", false);
                 }
             });
 
-            this.addToSuperfileTargetAppendRadio.on('change', function (value) {
+            this.addToSuperfileTargetAppendRadio.on("change", function (value) {
                 if (value) {
                     context.createNewSuperRadio.set("checked", false);
                 }
@@ -529,7 +529,7 @@ define([
             }));
             pMenu.addChild(new MenuItem({
                 label: this.i18n.AddToSuperfile,
-                onClick: function (args) { dijit.byId(context.id + "AddtoDropDown").openDropDown() }
+                onClick: function (args) { dijit.byId(context.id + "AddtoDropDown").openDropDown(); }
             }));
             pMenu.addChild(new MenuSeparator());
             {
@@ -599,7 +599,7 @@ define([
                         disabled: function (item) {
                             return item ? item.__hpcc_isDir : true;
                         },
-                        selectorType: 'checkbox'
+                        selectorType: "checkbox"
                     }),
                     IsProtected: {
                         renderHeaderCell: function (node) {

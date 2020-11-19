@@ -144,7 +144,7 @@ define([
         },
 
         startTimer: function () {
-            WsMachine.MonitorComponentStatus({ request: {} })
+            WsMachine.MonitorComponentStatus({ request: {} });
         }
     });
 });

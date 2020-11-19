@@ -60,7 +60,7 @@ define([
                     if (widgetInstance.refresh) {
                         context.refresh = function (params) {
                             widgetInstance.refresh(params);
-                        }
+                        };
                     }
                     context.stopLoading();
                     resolve(widgetInstance);

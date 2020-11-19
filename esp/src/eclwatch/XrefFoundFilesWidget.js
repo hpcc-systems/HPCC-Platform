@@ -61,13 +61,13 @@ define([
                 columns: {
                     col1: selector({
                         width: 27,
-                        selectorType: 'checkbox',
+                        selectorType: "checkbox",
                         label: ""
                     }),
                     Name: { label: this.i18n.Name, width: 100, sortable: false },
                     Modified: { label: this.i18n.Modified, width: 30, sortable: true },
-                    Parts: { label: this.i18n.Parts, width: 30, sortable: true, className: 'justify-right' },
-                    Size: { label: this.i18n.Size, width: 30, sortable: true, className: 'justify-right' }
+                    Parts: { label: this.i18n.Parts, width: 30, sortable: true, className: "justify-right" },
+                    Size: { label: this.i18n.Size, width: 30, sortable: true, className: "justify-right" }
                 }
             }, domID);
 
