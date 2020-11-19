@@ -27,17 +27,16 @@ spec:
       - name: {{ $toponame | quote }}
 {{ include "hpcc.addSentinelProbes" $roxie | indent 8 }}
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
+{{- if not $.Values.global.privileged }}
 {{- include "hpcc.addStubResources" . | indent 8 }}
+{{- end }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie) | indent 8 }}
         workingDir: /var/lib/HPCCSystems
         command: [ toposerver ] 
         volumeMounts:
-        - name: {{ .name }}-configmap-volume
-          mountPath: /etc/config
+{{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
       volumes:
-      - name: {{ .name }}-configmap-volume
-        configMap:
-          name: {{ .name }}-configmap
+{{ include "hpcc.addConfigMapVolume" . | indent 6 }}
 ---
 
 {{- range $service := $roxie.services }}

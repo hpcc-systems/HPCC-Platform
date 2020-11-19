@@ -60,10 +60,6 @@ thor:
   daliServers: dali
   watchdogEnabled: true
   watchdogProgressEnabled: true
-  cost:
-    thor:
-      master: "0.000002"
-      slave: "0.00001"
 )!!";
 
 

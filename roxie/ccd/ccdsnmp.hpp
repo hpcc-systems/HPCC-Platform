@@ -97,6 +97,7 @@ extern RelaxedAtomic<unsigned> ibytiPacketsWorked;
 extern RelaxedAtomic<unsigned> ibytiPacketsHalfWorked;
 extern RelaxedAtomic<unsigned> ibytiPacketsReceived;
 extern RelaxedAtomic<unsigned> ibytiPacketsTooLate;
+extern RelaxedAtomic<unsigned> ibytiPacketsTooEarly;
 extern RelaxedAtomic<unsigned> ibytiNoDelaysPrm;
 extern RelaxedAtomic<unsigned> ibytiNoDelaysSec;
 extern RelaxedAtomic<unsigned> packetsReceived;

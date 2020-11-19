@@ -54,9 +54,16 @@ MODULE_EXIT()
 }
 
 
-const IpAddress &ServerIdentifier::getNodeAddress() const
+const IpAddress ServerIdentifier::getIpAddress() const
 {
-    return serverIp;
+    IpAddress ret;
+    ret.setIP4(netAddress);
+    return ret;
+}
+
+bool ServerIdentifier::isMe() const
+{
+    return *this==myNode;
 }
 
 ServerIdentifier myNode;

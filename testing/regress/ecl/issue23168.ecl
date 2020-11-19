@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+//nothor
+
 import dbglog from Std.System.log;
 
 namesRecord :=
@@ -27,8 +29,9 @@ names2 := DEDUP(NOCOMBINE(DATASET([{1,'Gavin'},{2,'Bill'},{3,'John'},{4,'Gerald'
 names1 := DEDUP(NOCOMBINE(DATASET([{1,'Oscar'},{2,'Charles'},{3,'Freddie'},{4,'Winifred'},{5,'Bouncer'}], namesRecord)), id);
 
 s := nofold(sort(names2, name));
+s2 := LIMIT(s, 1);
 
-j := join(names1, s, left.id = right.id, transform(namesRecord, self.id := left.id + s[2].id; self.name := right.name), left outer, keep(1));
+j := join(names1, s, left.id = right.id, transform(namesRecord, self.id := left.id + s2[2].id; self.name := right.name), left outer, keep(1));
 
 output(names2);
 dbglog('Hello ' + (string)names2[3].name + ' and ' + (string)count(j) + 'again');

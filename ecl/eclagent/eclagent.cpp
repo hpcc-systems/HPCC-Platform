@@ -565,11 +565,11 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
             w->setXmlParams(_queryXML);
         updateSuppliedXmlParams(w);
     }
-    IPropertyTree *costs = queryCostsConfiguration();
-    if (costs)
+    agentMachineCost = getMachineCostRate();
+    if (agentMachineCost > 0.0)
     {
-        agentMachineCost = money2cost_type(costs->getPropReal("@agent"));
-        if (agentMachineCost)
+        IPropertyTree *costs = queryCostsConfiguration();
+        if (costs)
         {
             double softCostLimit = costs->getPropReal("@limit");
             double guillotineCost = wu->getDebugValueReal("maxCost", softCostLimit);
@@ -2371,7 +2371,7 @@ void EclAgentWorkflowMachine::noteTiming(unsigned wfid, timestamp_type startTime
     updateWorkunitStat(wu, SSTworkflow, scope, StWhenStarted, nullptr, startTime, 0);
     updateWorkunitStat(wu, SSTworkflow, scope, StTimeElapsed, nullptr, elapsedNs, 0);
 
-    const cost_type cost = calcCost(agent.queryAgentMachineCost(), nanoToMilli(elapsedNs)) + aggregateCost(wu, scope, true);
+    const cost_type cost = money2cost_type(calcCost(agent.queryAgentMachineCost(), nanoToMilli(elapsedNs))) + aggregateCost(wu, scope, true);
     if (cost)
         wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTworkflow, scope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
 }

@@ -67,8 +67,8 @@ COPY --from=build /usr/local/bin/kubectl /usr/local/bin/kubectl
 # NB: added in platform-build, but need to re-add as this image is not
 # based on it. Only /opt/HPCCSystems is copied over.
 
-RUN groupadd -g 1000 hpcc
-RUN useradd -s /bin/bash -r -N -c "hpcc runtime User" -u 999 -g hpcc hpcc
+RUN groupadd -g 10001 hpcc
+RUN useradd -s /bin/bash -r -N -c "hpcc runtime User" -u 10000 -g hpcc hpcc
 RUN passwd -l hpcc 
 
 RUN mkdir /var/lib/HPCCSystems && chown hpcc:hpcc /var/lib/HPCCSystems

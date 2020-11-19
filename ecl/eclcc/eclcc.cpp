@@ -1495,9 +1495,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     instance.stats.generateTime = (unsigned)nanoToMilli(totalTimeNs) - instance.stats.parseTime;
     updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeElapsed, NULL, totalTimeNs);
 
-    IPropertyTree *costs = queryCostsConfiguration();
-    const cost_type machineCost = costs ? money2cost_type(costs->getPropReal("@eclcc")) : 0;
-    const cost_type cost = calcCost(machineCost, nanoToMilli(totalTimeNs));
+    const cost_type cost = money2cost_type(calcCost(getMachineCostRate(), nanoToMilli(totalTimeNs)));
     if (cost)
         instance.wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, "compile", StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
 

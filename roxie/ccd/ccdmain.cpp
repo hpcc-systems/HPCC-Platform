@@ -81,10 +81,14 @@ unsigned maxBlockSize = 10000000;
 unsigned maxLockAttempts = 5;
 bool pretendAllOpt = false;
 bool traceStartStop = false;
+bool traceRoxiePackets = false;
+bool delaySubchannelPackets = false;    // For debugging/testing purposes only
 bool traceServerSideCache = false;
 bool defaultTimeActivities = true;
 bool defaultTraceEnabled = false;
 bool traceTranslations = true;
+unsigned IBYTIbufferSize = 0;
+unsigned IBYTIbufferLifetime = 50;  // In milliseconds
 unsigned defaultTraceLimit = 10;
 unsigned watchActivityId = 0;
 unsigned testAgentFailure = 0;
@@ -450,7 +454,7 @@ void readStaticTopology()
         {
             myNodeSet = true;
             myNode.setIp(ip);
-            myAgentEP.set(ccdMulticastPort, myNode.getNodeAddress());
+            myAgentEP.set(ccdMulticastPort, myNode.getIpAddress());
         }
         ForEachItemIn(idx, nodeTable)
         {
@@ -917,7 +921,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         flushJHtreeCacheOnOOM = topology->getPropBool("@flushJHtreeCacheOnOOM", true);
         fastLaneQueue = topology->getPropBool("@fastLaneQueue", true);
         udpOutQsPriority = topology->getPropInt("@udpOutQsPriority", 0);
-        udpSnifferEnabled = topology->getPropBool("@udpSnifferEnabled", true);
         udpRetryBusySenders = topology->getPropInt("@udpRetryBusySenders", 0);
 
         // Historically, this was specified in seconds. Assume any value <= 10 is a legacy value specified in seconds!
@@ -946,13 +949,13 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         udpLocalWriteSocketSize = topology->getPropInt("@udpLocalWriteSocketSize", 1024000);
 #ifndef _CONTAINERIZED
         roxieMulticastEnabled = topology->getPropBool("@roxieMulticastEnabled", true) && !useAeron;   // enable use of multicast for sending requests to agents
-#endif
+        udpSnifferEnabled = topology->getPropBool("@udpSnifferEnabled", roxieMulticastEnabled);
         if (udpSnifferEnabled && !roxieMulticastEnabled)
         {
             DBGLOG("WARNING: ignoring udpSnifferEnabled setting as multicast not enabled");
             udpSnifferEnabled = false;
         }
-
+#endif
         int ttlTmp = topology->getPropInt("@multicastTTL", 1);
         if (ttlTmp < 0)
         {
@@ -1024,6 +1027,10 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         traceStartStop = topology->getPropBool("@traceStartStop", false);
         watchActivityId = topology->getPropInt("@watchActivityId", 0);
         traceServerSideCache = topology->getPropBool("@traceServerSideCache", false);
+        traceRoxiePackets = topology->getPropBool("@traceRoxiePackets", false);
+        delaySubchannelPackets = topology->getPropBool("@delaySubchannelPackets", false);
+        IBYTIbufferSize = topology->getPropInt("@IBYTIbufferSize", roxieMulticastEnabled ? 0 : 10);
+        IBYTIbufferLifetime = topology->getPropInt("@IBYTIbufferLifetime", initIbytiDelay);
         traceTranslations = topology->getPropBool("@traceTranslations", true);
         defaultTimeActivities = topology->getPropBool("@timeActivities", true);
         defaultTraceEnabled = topology->getPropBool("@traceEnabled", false);
@@ -1123,7 +1130,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                 queryDirectory.append(codeDirectory).append("queries");
         }
         addNonEmptyPathSepChar(queryDirectory);
-        queryFileCache().start();
         getTempFilePath(tempDirectory, "roxie", topology);
 
 #ifdef _WIN32
@@ -1188,7 +1194,10 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         enableForceRemoteReads(); // forces file reads to be remote reads if they match environment setting 'forceRemotePattern' pattern.
 
         if (!oneShotRoxie)
+        {
+            queryFileCache().start();
             loadPlugins();
+        }
         unsigned snifferChannel = numChannels+2; // MORE - why +2 not +1??
 #ifdef _CONTAINERIZED
         initializeTopology(topoValues, myRoles);
@@ -1230,7 +1239,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             else
             {
                 Owned<IHpccProtocolPlugin> protocolPlugin = loadHpccProtocolPlugin(protocolCtx, NULL);
-                Owned<IHpccProtocolListener> roxieServer = protocolPlugin->createListener("runOnce", createRoxieProtocolMsgSink(myNode.getNodeAddress(), 0, 1, false), 0, 0, NULL);
+                Owned<IHpccProtocolListener> roxieServer = protocolPlugin->createListener("runOnce", createRoxieProtocolMsgSink(myNode.getIpAddress(), 0, 1, false), 0, 0, NULL);
                 try
                 {
                     const char *format = topology->queryProp("@format");
@@ -1276,7 +1285,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     unsigned port = roxieFarm.getPropInt("@port", ROXIE_SERVER_PORT);
                     //unsigned requestArrayThreads = roxieFarm.getPropInt("@requestArrayThreads", 5);
                     // NOTE: farmer name [@name=] is not copied into topology
-                    const IpAddress &ip = myNode.getNodeAddress();
+                    const IpAddress ip = myNode.getIpAddress();
                     if (!roxiePort)
                     {
                         roxiePort = port;

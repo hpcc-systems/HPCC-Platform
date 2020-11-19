@@ -59,6 +59,10 @@ consumer.  For a publisher, the naming convention is
 `kafka_consumer_topic_<TopicName>.conf`.  In both cases, `<TopicName>` is the
 name of the topic you are publishing to or consuming from.
 
+Settings that affect the protocol used to connect to the Kafka broker (such as
+using SSL) should be placed only in the global configuration file, not in
+any per-topic configuration file.
+
 Configuration parameters loaded from a file override those set by the plugin
 with one exception:  the `metadata.broker.list` setting, if found in a
 configuration file, is ignored.  Apache Kafka brokers are always set in ECL.

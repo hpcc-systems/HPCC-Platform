@@ -40,6 +40,9 @@ namespace KafkaPlugin
     // File Constants
     //--------------------------------------------------------------------------
 
+    // Filename of global Kafka configuration file
+    const char* GLOBAL_CONFIG_FILENAME = "kafka_global.conf";
+
     // The minimum number of seconds that a cached object can live
     // without activity
     const time_t OBJECT_EXPIRE_TIMEOUT_SECONDS = 60 * 2;
@@ -374,7 +377,7 @@ namespace KafkaPlugin
 
                     // Set any global configurations from file, allowing
                     // overrides of above settings
-                    applyConfig("kafka_global.conf", globalConfig, traceLevel);
+                    applyConfig(GLOBAL_CONFIG_FILENAME, globalConfig, traceLevel);
 
                     // Set producer callbacks
                     globalConfig->set("event_cb", static_cast<RdKafka::EventCb*>(this), errStr);
@@ -559,7 +562,7 @@ namespace KafkaPlugin
 
                     // Set any global configurations from file, allowing
                     // overrides of above settings
-                    applyConfig("kafka_global.conf", globalConfig, traceLevel);
+                    applyConfig(GLOBAL_CONFIG_FILENAME, globalConfig, traceLevel);
 
                     // Set consumer callbacks
                     globalConfig->set("event_cb", static_cast<RdKafka::EventCb*>(this), errStr);
@@ -953,56 +956,77 @@ namespace KafkaPlugin
         // C API, so we are basically creating a brand-new connection from
         // scratch.
 
+        int traceLevel = ctx->queryContextLogger().queryTraceLevel();
         __int32 pCount = 0;
         char errstr[512];
-        rd_kafka_conf_t* conf = rd_kafka_conf_new();
-        rd_kafka_t* rk = rd_kafka_new(RD_KAFKA_CONSUMER, conf, errstr, sizeof(errstr));
+        RdKafka::Conf* globalConfig = RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL);
 
-        if (rk)
+        if (globalConfig)
         {
-            if (rd_kafka_brokers_add(rk, brokers) != 0)
+            // Load global config to pick up any protocol modifications
+            applyConfig(GLOBAL_CONFIG_FILENAME, globalConfig, traceLevel);
+
+            // rd_kafka_new() takes ownership of the lower-level conf object, which in this case is a
+            // pointer currently owned by globalConfig; we need to pass a duplicate
+            // the conf pointer to rd_kafka_new() so we don't mangle globalConfig's internals
+            rd_kafka_conf_t* conf = rd_kafka_conf_dup(globalConfig->c_ptr_global());
+            rd_kafka_t* rk = rd_kafka_new(RD_KAFKA_CONSUMER, conf, errstr, sizeof(errstr));
+            delete globalConfig;
+
+            if (rk)
             {
-                rd_kafka_topic_conf_t* topic_conf = rd_kafka_topic_conf_new();
-                rd_kafka_topic_t* rkt = rd_kafka_topic_new(rk, topic, topic_conf);
-
-                if (rkt)
+                if (rd_kafka_brokers_add(rk, brokers) != 0)
                 {
-                    const struct rd_kafka_metadata* metadata = NULL;
-                    rd_kafka_resp_err_t err = rd_kafka_metadata(rk, 0, rkt, &metadata, 5000);
+                    rd_kafka_topic_conf_t* topic_conf = rd_kafka_topic_conf_new();
+                    rd_kafka_topic_t* rkt = rd_kafka_topic_new(rk, topic, topic_conf);
 
-                    if (err == RD_KAFKA_RESP_ERR_NO_ERROR)
+                    if (rkt)
                     {
-                        pCount = metadata->topics[0].partition_cnt;
+                        const struct rd_kafka_metadata* metadata = NULL;
+                        rd_kafka_resp_err_t err = rd_kafka_metadata(rk, 0, rkt, &metadata, 5000);
 
-                        rd_kafka_metadata_destroy(metadata);
-                    }
-                    else
-                    {
-                        if (ctx->queryContextLogger().queryTraceLevel() > 4)
+                        if (err == RD_KAFKA_RESP_ERR_NO_ERROR)
+                        {
+                            pCount = metadata->topics[0].partition_cnt;
+
+                            rd_kafka_metadata_destroy(metadata);
+                        }
+                        else
                         {
                             DBGLOG("Kafka: Error retrieving metadata from topic: %s @ %s: '%s'", topic, brokers, rd_kafka_err2str(err));
                         }
-                    }
 
-                    rd_kafka_topic_destroy(rkt);
+                        rd_kafka_topic_destroy(rkt);
+                    }
+                    else
+                    {
+                        if (traceLevel > 4)
+                        {
+                            DBGLOG("Kafka: Could not create topic configuration object: %s @ %s", topic, brokers);
+                        }
+                    }
                 }
                 else
                 {
-                    if (ctx->queryContextLogger().queryTraceLevel() > 4)
+                    if (traceLevel > 4)
                     {
-                        DBGLOG("Kafka: Could not create topic object: %s @ %s", topic, brokers);
+                        DBGLOG("Kafka: Could not add brokers: %s @ %s", topic, brokers);
                     }
                 }
+
+                rd_kafka_destroy(rk);
             }
             else
             {
-                if (ctx->queryContextLogger().queryTraceLevel() > 4)
-                {
-                    DBGLOG("Kafka: Could not add brokers: %s @ %s", topic, brokers);
-                }
+                DBGLOG("Kafka: Could not create consumer configuration object : %s @ %s: '%s'", topic, brokers, errstr);
             }
-
-            rd_kafka_destroy(rk);
+        }
+        else
+        {
+            if (traceLevel > 4)
+            {
+                DBGLOG("Kafka: Could not create global configuration object: %s @ %s", topic, brokers);
+            }
         }
 
         if (pCount == 0)

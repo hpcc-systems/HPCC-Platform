@@ -165,7 +165,18 @@
         },
         "defaultMirrorPath": {
           "type": "string"
+        },
+        "cost": {
+          "description": "resource cost",
+          "type": "object",
+          "properties": {
+            "perCpu": {
+              "description": "cost of a single cpu",
+              "type": "number"
+            }
+          }
         }
+
       },
       "additionalProperties": false
     },
@@ -594,7 +605,7 @@
     },
     "thor": {
       "type": "object",
-      "required": [ "name" ],
+      "required": [ "name", "maxJobs", "maxGraphs" ],
       "additionalProperties": { "type": ["integer", "string", "boolean"] },
       "properties": {
         "name": {
@@ -610,6 +621,38 @@
           "description": "The number of worker pods",
           "minimum": 1
         },
+        "maxJobs": {
+          "type": "integer",
+          "description": "The maximum number of jobs that can be run concurrenly",
+          "minimum": 1
+        },
+        "maxGraphs": {
+          "type": "integer",
+          "description": "The maximum number of Thor graphs that be run concurrently",
+          "minimum": 1
+        },
+        "eclAgentUseChildProcesses": {
+          "type": "boolean",
+          "description": "Use processes instead of pods per job (eclagent)"
+        },
+        "eclAgentReplicas": {
+          "type": "integer",
+          "description": "Number of eclagent replicas",
+          "minimum": 1
+        },
+        "thorAgentReplicas": {
+          "type": "integer",
+          "description": "Number of thoragent replicas",
+          "minimum": 1
+        },
+        "eclAgentType": {
+          "enum": [ "hthor", "roxie" ],
+          "description": "eclagent engine type"
+        },
+        "keepJobs": {
+          "enum": [ "none", "podfailures", "all" ],
+          "description": "For debugging purposes. Choose whether to keep jobs after execution"
+        },
         "lingerPeriod": {
           "type": "integer",
           "description": "[Optional] Seconds to keep Thor instance running, waiting for more graphs to execute",
@@ -618,12 +661,6 @@
         "multiJobLinger": {
           "type": "boolean",
           "description": "[Optional] If lingerPeriod set, allows Thor to process more graphs from any job"
-        },
-        "eclagent": {
-          "$ref": "#/definitions/eclagent"
-        },
-        "thoragent": {
-          "$ref": "#/definitions/eclagent"
         },
         "image": {
           "$ref": "#/definitions/image"

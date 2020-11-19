@@ -34,6 +34,9 @@ global:
     # kubeApiCidr: 172.17.0.3/32  
     # kubeApiPort: 7443
 
+  #cost:
+  #  perCpu: 0.126
+
 ## storage:
 ##
 ## If storage.[type].existingClaim is defined, a Persistent Volume Claim must
@@ -263,13 +266,10 @@ roxie:
 
 thor:
 - name: thor
-  numWorkers: 2
-  globalMemorySize: 4096
   prefix: thor
-  eclagent:
-    maxActive: 4
-  thoragent:
-    maxActive: 2
+  numWorkers: 2
+  maxJobs: 4
+  maxGraphs: 2
   #managerResources:
   #  cpu: "1"
   #  memory: "2G"

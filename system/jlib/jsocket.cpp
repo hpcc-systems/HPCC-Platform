@@ -3156,6 +3156,23 @@ inline bool isIp4(const unsigned *netaddr)
     return false;
 }
 
+void IpAddress::setIP4(unsigned ip)
+{
+    netaddr[0] = 0;
+    netaddr[1] = 0;
+    if (ip)
+        netaddr[2] = 0xffff0000;
+    else
+        netaddr[2] = 0;
+    netaddr[3] = ip;
+}
+
+unsigned IpAddress::getIP4() const
+{
+    assertex(isIp4());
+    return netaddr[3];
+}
+
 bool IpAddress::isIp4() const
 {
     return ::isIp4(netaddr);
