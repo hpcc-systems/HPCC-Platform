@@ -43,7 +43,7 @@ define([
                     });
                 });
                 return QueryResults(children);
-            }
+            };
             this.store.mayHaveChildren = function (object) {
                 return object.__hpcc_type;
             };
@@ -52,7 +52,7 @@ define([
                 columns: {
                     col1: selector({
                         width: 27,
-                        selectorType: 'checkbox'
+                        selectorType: "checkbox"
                     }),
                     __hpcc_display: tree({
                         label: this.i18n.SuperFiles,

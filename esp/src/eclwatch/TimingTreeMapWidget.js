@@ -58,7 +58,7 @@ define([
                 }
                 var computedStyle = domStyle.getComputedStyle(elm);
                 elmHeight = parseFloat(computedStyle.getPropertyValue("height"));
-                elmMargin = parseFloat(computedStyle.getPropertyValue('margin-top')) + parseInt(computedStyle.getPropertyValue('margin-bottom'));
+                elmMargin = parseFloat(computedStyle.getPropertyValue("margin-top")) + parseInt(computedStyle.getPropertyValue("margin-bottom"));
                 return elmHeight + elmMargin;
             },
 

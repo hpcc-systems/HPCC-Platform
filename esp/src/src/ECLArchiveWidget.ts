@@ -100,7 +100,7 @@ export class ECLArchiveWidget {
                     n.Formatted
                 ];
             });
-            ret.sort((a,b)=>a[0].localeCompare(b[0]));
+            ret.sort((a, b)=>a[0].localeCompare(b[0]));
             return ret;
         };
 

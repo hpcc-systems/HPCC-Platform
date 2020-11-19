@@ -128,7 +128,7 @@ define([
             });
 
             this.connect(this.uploader, "onError", function (response) {
-                if (response.type === 'error') {
+                if (response.type === "error") {
                     topic.publish("hpcc/brToaster", {
                         Severity: "Error",
                         Source: "FileSpray.UploadFile",
@@ -194,8 +194,8 @@ define([
                     DropZoneMachines: true,
                     callback: function (value, row) {
                         var path = targetRow.machine.Directory.indexOf("\\");
-                        targetRow.machine.Name = value
-                        targetRow.machine.Netaddress = value
+                        targetRow.machine.Name = value;
+                        targetRow.machine.Netaddress = value;
                         if (!value) {
                             context.dropZoneFolderSelect.set("disabled", true);
                         } else {
@@ -203,11 +203,11 @@ define([
                             if (context.dropZoneFolderSelect) {
                                 context.dropZoneFolderSelect._dropZoneTarget = targetRow;
                                 if (path > -1) {
-                                    context.dropZoneFolderSelect.defaultValue = "\\"
-                                    pathSepChar = "\\"
+                                    context.dropZoneFolderSelect.defaultValue = "\\";
+                                    pathSepChar = "\\";
                                 } else {
-                                    context.dropZoneFolderSelect.defaultValue = "/"
-                                    pathSepChar = "/"
+                                    context.dropZoneFolderSelect.defaultValue = "/";
+                                    pathSepChar = "/";
                                 }
                                 context.dropZoneFolderSelect.loadDropZoneFolders(pathSepChar);
                             }
@@ -590,23 +590,23 @@ define([
                 includeBlank: true
             });
 
-            this.sprayFixedDestinationSelect.on('change', function (value) {
+            this.sprayFixedDestinationSelect.on("change", function (value) {
                 context.checkReplicate(value, context.fixedSprayReplicateCheckbox);
             });
 
-            this.sprayDelimitedDestinationSelect.on('change', function (value) {
+            this.sprayDelimitedDestinationSelect.on("change", function (value) {
                 context.checkReplicate(value, context.delimitedSprayReplicateCheckbox);
             });
 
-            this.sprayXmlDestinationSelect.on('change', function (value) {
+            this.sprayXmlDestinationSelect.on("change", function (value) {
                 context.checkReplicate(value, context.xmlSprayReplicateCheckbox);
             });
 
-            this.sprayVariableDestinationSelect.on('change', function (value) {
+            this.sprayVariableDestinationSelect.on("change", function (value) {
                 context.checkReplicate(value, context.variableSprayReplicateCheckbox);
             });
 
-            this.sprayBlobDestinationSelect.on('change', function (value) {
+            this.sprayBlobDestinationSelect.on("change", function (value) {
                 context.checkReplicate(value, context.blobSprayReplicateCheckbox);
             });
 
@@ -673,7 +673,7 @@ define([
                 columns: {
                     col1: selector({
                         width: 27,
-                        selectorType: 'checkbox',
+                        selectorType: "checkbox",
                         disabled: function (item) {
                             if (item.type) {
                                 switch (item.type) {
@@ -711,7 +711,7 @@ define([
                         renderCell: function (object, value, node, options) {
                             domClass.add(node, "justify-right");
                             if (value === -1) {
-                                return ""
+                                return "";
                             }
                             node.innerText = Utility.convertedSize(value);
                         }

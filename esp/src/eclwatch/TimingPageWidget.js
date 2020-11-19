@@ -59,7 +59,7 @@ define([
                         .resizeTimeline()
                         ;
                 }
-            }
+            };
 
             var origResize2 = this.timelinePane.resize;
             this.timingTab2.resize = function () {
@@ -69,7 +69,7 @@ define([
                         .resizeChart()
                         ;
                 }
-            }
+            };
         },
 
         startup: function (args) {
@@ -114,7 +114,7 @@ define([
             this._timings = new srcTimings.Timings(params.Wuid, this.id + "TimelinePane", this.id + "Chart", this.id + "MetricsType");
             this._timings.click = function (row, col, sel) {
                 context.refreshGrid();
-            }
+            };
 
             var store = new ESPUtil.UndefinedMemory({
                 idProperty: "__hpcc_id",
@@ -180,7 +180,7 @@ define([
                             var retVal = row[formattedID] && row[formattedID].Formatted || cell;
                             return retVal !== undefined ? retVal : "";
                         }
-                    }
+                    };
                 });
                 context.grid.set("columns", columns);
                 context.store.setData(data.map(function (row, i) {

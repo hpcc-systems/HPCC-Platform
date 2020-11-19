@@ -374,7 +374,7 @@ define([
                 columns: {
                     col1: selector({
                         width: 27,
-                        selectorType: 'checkbox'
+                        selectorType: "checkbox"
                     }),
                     isProtected: {
                         renderHeaderCell: function (node) {

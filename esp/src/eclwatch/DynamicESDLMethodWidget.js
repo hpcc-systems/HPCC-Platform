@@ -86,7 +86,7 @@ define([
                             }
                             return true;
                         },
-                        editor: 'textarea',
+                        editor: "textarea",
                         editorArgs: {
                             rows: 10
                         }

@@ -81,7 +81,7 @@ define([
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
                 if (currSel.id === this.id + "_Grid") {
-                    this.refreshGrid()
+                    this.refreshGrid();
                 } else if (currSel.id === this.legacyClustersProcessesIframeWidget.id && !this.legacyClustersProcessesIframeWidget.initalized) {
                     this.legacyClustersProcessesIframeWidget.init({
                         src: ESPRequest.getBaseURL("WsTopology") + "/TpClusterQuery?Type=ROOT"
@@ -111,7 +111,7 @@ define([
                 columns: {
                     col1: selector({
                         width: 20,
-                        selectorType: 'checkbox',
+                        selectorType: "checkbox",
                         disabled: function (item) {
                             return item.type === "clusterProcess";
                         }
@@ -198,7 +198,7 @@ define([
             });
 
             retVal.on(".dgrid-cell:click", function (evt) {
-                var cell = retVal.cell(evt)
+                var cell = retVal.cell(evt);
             });
 
             retVal.on("dgrid-select", function (event) {

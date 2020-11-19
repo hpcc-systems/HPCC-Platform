@@ -62,7 +62,7 @@ define([
             this.inherited(arguments);
             this.copyForm = registry.byId(this.id + "CopyForm");
             this.copyTargetSelect = registry.byId(this.id + "CopyTargetSelect");
-            this.CopyTargetRetainSuperfileStructure = registry.byId(this.id + "CopyTargetRetainSuperfileStructure")
+            this.CopyTargetRetainSuperfileStructure = registry.byId(this.id + "CopyTargetRetainSuperfileStructure");
             this.summaryWidget = registry.byId(this.id + "_Summary");
             this.deleteBtn = registry.byId(this.id + "Delete");
             this.removeBtn = registry.byId(this.id + "Remove");
@@ -164,7 +164,7 @@ define([
 
             if (this.logicalFile.isSuperfile === true && this.logicalFile.NumOfSubfiles > 1 && this.logicalFile.KeyType !== undefined) {
                 this.CopyTargetRetainSuperfileStructure.readOnly = true;
-                this.CopyTargetRetainSuperfileStructure.setAttribute('title', nlsHPCC.RetainSuperfileStructureReason);
+                this.CopyTargetRetainSuperfileStructure.setAttribute("title", nlsHPCC.RetainSuperfileStructureReason);
             }
         },
 
@@ -179,7 +179,7 @@ define([
                 columns: {
                     sel: selector({
                         width: 27,
-                        selectorType: 'checkbox'
+                        selectorType: "checkbox"
                     }),
                     IsCompressed: {
                         width: 25, sortable: false,
@@ -326,7 +326,7 @@ define([
                 all(dataPromise).then(function (logicalFiles) {
                     context.subfilesStore.setData(data);
                     context.subfilesGrid.refresh();
-                })
+                });
             } else if (name === "StateID") {
                 this.summaryWidget.set("iconClass", this.logicalFile.getStateIconClass());
                 domClass.remove(this.id + "StateIdImage");

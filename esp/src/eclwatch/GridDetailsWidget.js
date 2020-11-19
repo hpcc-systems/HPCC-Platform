@@ -108,7 +108,7 @@ define([
                 query: function (query, options) {
                     var retVal = this.inherited(arguments);
                     if (lang.exists("sort", options) && options.sort.length && context.alphanumSort[options.sort[0].attribute]) {
-                        Utility.alphanumSort(retVal, options.sort[0].attribute, options.sort[0].descending)
+                        Utility.alphanumSort(retVal, options.sort[0].attribute, options.sort[0].descending);
                     }
                     return retVal;
                 }

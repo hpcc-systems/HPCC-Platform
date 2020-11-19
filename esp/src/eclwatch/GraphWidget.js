@@ -420,11 +420,11 @@ define([
 
         showNextPrevious: function (show) {
             if (show) {
-                domStyle.set(this.previous.domNode, 'display', 'block');
-                domStyle.set(this.next.domNode, 'display', 'block');
+                domStyle.set(this.previous.domNode, "display", "block");
+                domStyle.set(this.next.domNode, "display", "block");
             } else {
-                domStyle.set(this.previous.domNode, 'display', 'none');
-                domStyle.set(this.next.domNode, 'display', 'none');
+                domStyle.set(this.previous.domNode, "display", "none");
+                domStyle.set(this.next.domNode, "display", "none");
             }
             this.resize();
         },
@@ -432,30 +432,30 @@ define([
         showDistance: function (show) {
             if (show) {
                 domClass.remove(this.id + "DistanceLabel", "hidden");
-                domStyle.set(this.distance.domNode, 'display', 'block');
+                domStyle.set(this.distance.domNode, "display", "block");
             } else {
                 domClass.add(this.id + "DistanceLabel", "hidden");
-                domStyle.set(this.distance.domNode, 'display', 'none');
+                domStyle.set(this.distance.domNode, "display", "none");
             }
             this.resize();
         },
 
         showSyncSelection: function (show) {
             if (show) {
-                domStyle.set(this.syncSelectionSplitter.domNode, 'display', 'block');
-                domStyle.set(this.syncSelection.domNode, 'display', 'block');
+                domStyle.set(this.syncSelectionSplitter.domNode, "display", "block");
+                domStyle.set(this.syncSelection.domNode, "display", "block");
             } else {
-                domStyle.set(this.syncSelectionSplitter.domNode, 'display', 'none');
-                domStyle.set(this.syncSelection.domNode, 'display', 'none');
+                domStyle.set(this.syncSelectionSplitter.domNode, "display", "none");
+                domStyle.set(this.syncSelection.domNode, "display", "none");
             }
             this.resize();
         },
 
         showOptions: function (show) {
             if (show) {
-                domStyle.set(this.optionsDropDown.domNode, 'display', 'block');
+                domStyle.set(this.optionsDropDown.domNode, "display", "block");
             } else {
-                domStyle.set(this.optionsDropDown.domNode, 'display', 'none');
+                domStyle.set(this.optionsDropDown.domNode, "display", "none");
             }
             this.resize();
         },
@@ -685,7 +685,7 @@ define([
                                 row[colNode.tagName] = cellNode.nodeValue;
                             });
                         });
-                        results.push(row)
+                        results.push(row);
                         break;
                     default:
                         arrayUtil.forEach(domNode.childNodes, function (childNode) {
@@ -763,7 +763,7 @@ define([
         getResourceLinks: function () {
             return "<a href=\"http://hpccsystems.com/download/free-community-edition/graph-control\" target=\"_blank\">" + this.i18n.BinaryInstalls + "</a><br/>" +
                 "<a href=\"https://github.com/hpcc-systems/GraphControl\" target=\"_blank\">" + this.i18n.SourceCode + "</a><br/><br/>" +
-                "<a href=\"http://hpccsystems.com\" target=\"_blank\">" + this.i18n.HPCCSystems + "</a>"
+                "<a href=\"http://hpccsystems.com\" target=\"_blank\">" + this.i18n.HPCCSystems + "</a>";
         },
 
         setMessage: function (message) {
@@ -825,7 +825,7 @@ define([
         },
 
         _onLayoutFinished: function () {
-            this.setMessage('');
+            this.setMessage("");
             this.centerOnItem(0, true);
             this.dot = this._plugin.getDOT();
             if (this.onLayoutFinished) {
@@ -1108,7 +1108,7 @@ define([
                 this._depthDisabled = !selectedGlobalIDs.length || !(typeSummary.Graph || typeSummary.Cluster);
                 distanceDisabled = !(typeSummary.Vertex || typeSummary.Edge);
             }
-            this._depthDisabled = this._depthDisabled || (this.hasOptions() && !this.option("subgraph"))
+            this._depthDisabled = this._depthDisabled || (this.hasOptions() && !this.option("subgraph"));
 
             this.setDisabled(this.id + "Depth", this._depthDisabled);
             this.setDisabled(this.id + "Distance", distanceDisabled);

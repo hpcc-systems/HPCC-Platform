@@ -44,7 +44,7 @@ define([
                     arrayUtil.forEach(context.query.LibrariesUsed.Item, function (item, idx) {
                         var file = {
                             Name: item
-                        }
+                        };
                         librariesUsed.push(file);
                     });
                 }

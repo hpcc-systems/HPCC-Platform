@@ -128,7 +128,7 @@ define([
 
         initTab: function () {
             if (!this.wu) {
-                return
+                return;
             }
 
             var currSel = this.getSelectedChild();
@@ -148,7 +148,7 @@ define([
         },
 
         objectToText: function (obj) {
-            var text = ""
+            var text = "";
             for (var key in obj) {
                 text += "<tr><td>" + key + ":</td>";
                 if (typeof obj[key] === "object") {
@@ -181,7 +181,7 @@ define([
         setTextContent: function (id, value) {
             var domNode = dom.byId(this.id + id);
             var pNode = this.getAncestor(domNode, "LI");
-            if (typeof value !== 'undefined') {
+            if (typeof value !== "undefined") {
                 if (pNode) {
                     domClass.remove(pNode, "hidden");
                 }
@@ -196,7 +196,7 @@ define([
         setValue: function (id, value) {
             var domNode = dom.byId(this.id + id);
             var pNode = this.getAncestor(domNode, "LI");
-            if (typeof value !== 'undefined') {
+            if (typeof value !== "undefined") {
                 if (pNode) {
                     domClass.remove(pNode, "hidden");
                 }

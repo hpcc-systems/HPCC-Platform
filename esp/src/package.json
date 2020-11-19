@@ -5,6 +5,7 @@
   "scripts": {
     "clean": "rimraf ./build ./lib ./src/nlsHPCCType.ts",
     "lint": "eslint eclwatch/**/*.js src/**/*.ts",
+    "lint-fix": "npm run lint -- --fix",
     "copy-res-es6-promise": "cpx \"./node_modules/es6-promise/dist/es6-promise.auto.min.js\" ./build/node_modules/es6-promise/dist/",
     "copy-res-eclwatch-img": "cpx \"./eclwatch/img/**/*.{png,jpg,gif}\" ./build/eclwatch/img/",
     "copy-res-eclwatch-ecl": "cpx \"./eclwatch/ecl/**/*.*\" ./build/eclwatch/ecl/",
