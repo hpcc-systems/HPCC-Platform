@@ -3223,7 +3223,7 @@ void WsWuHelpers::setXmlParameters(IWorkUnit *wu, const char *xml, IArrayOf<ICon
     setXmlParameters(wu, xml, setJobname);
 }
 
-void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, const char* cluster, const char* snapshot, int maxruntime, bool compile, bool resetWorkflow, bool resetVariables,
+void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, const char* cluster, const char* snapshot, int maxruntime, int maxcost, bool compile, bool resetWorkflow, bool resetVariables,
     const char *paramXml, IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs, IArrayOf<IConstApplicationValue> *applications)
 {
     ensureWsWorkunitAccess(context, *cw, SecAccess_Write);
@@ -3269,7 +3269,8 @@ void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, con
     wu->setState(WUStateSubmitted);
     if (maxruntime)
         wu->setDebugValueInt("maxRunTime",maxruntime,true);
-
+    if (maxcost)
+        wu->setDebugValueInt("maxCost", maxcost, true);
     if (debugs && debugs->length())
     {
         ForEachItemIn(i, *debugs)
@@ -3342,14 +3343,14 @@ void WsWuHelpers::submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, con
     AuditSystemAccess(context.queryUserId(), true, "Submitted %s", wuid.str());
 }
 
-void WsWuHelpers::submitWsWorkunit(IEspContext& context, const char *wuid, const char* cluster, const char* snapshot, int maxruntime, bool compile, bool resetWorkflow, bool resetVariables,
+void WsWuHelpers::submitWsWorkunit(IEspContext& context, const char *wuid, const char* cluster, const char* snapshot, int maxruntime, int maxcost, bool compile, bool resetWorkflow, bool resetVariables,
     const char *paramXml, IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs, IArrayOf<IConstApplicationValue> *applications)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
     if(!cw)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid);
-    submitWsWorkunit(context, cw, cluster, snapshot, maxruntime, compile, resetWorkflow, resetVariables, paramXml, variables, debugs, applications);
+    submitWsWorkunit(context, cw, cluster, snapshot, maxruntime, maxcost, compile, resetWorkflow, resetVariables, paramXml, variables, debugs, applications);
 }
 
 
@@ -3371,7 +3372,7 @@ void WsWuHelpers::runWsWorkunit(IEspContext &context, StringBuffer &wuid, const 
     copyWsWorkunit(context, *wu, srcWuid);
     wu.clear();
 
-    submitWsWorkunit(context, wuid.str(), cluster, NULL, 0, false, true, true, paramXml, variables, debugs, applications);
+    submitWsWorkunit(context, wuid.str(), cluster, NULL, 0, 0, false, true, true, paramXml, variables, debugs, applications);
 }
 
 void WsWuHelpers::runWsWorkunit(IEspContext &context, IConstWorkUnit *cw, const char *srcWuid, const char *cluster, const char *paramXml,
@@ -3381,7 +3382,7 @@ void WsWuHelpers::runWsWorkunit(IEspContext &context, IConstWorkUnit *cw, const 
     copyWsWorkunit(context, *wu, srcWuid);
     wu.clear();
 
-    submitWsWorkunit(context, cw, cluster, NULL, 0, false, true, true, paramXml, variables, debugs, applications);
+    submitWsWorkunit(context, cw, cluster, NULL, 0,  0, false, true, true, paramXml, variables, debugs, applications);
 }
 
 IException * WsWuHelpers::noteException(IWorkUnit *wu, IException *e, ErrorSeverity level)
@@ -3422,7 +3423,7 @@ void WsWuHelpers::runWsWuQuery(IEspContext &context, IConstWorkUnit *cw, const c
     copyWsWorkunit(context, *wu, srcWuid);
     wu.clear();
 
-    submitWsWorkunit(context, cw, cluster, NULL, 0, false, true, true, paramXml, NULL, NULL, applications);
+    submitWsWorkunit(context, cw, cluster, NULL, 0,  0, false, true, true, paramXml, NULL, NULL, applications);
 }
 
 void WsWuHelpers::runWsWuQuery(IEspContext &context, StringBuffer &wuid, const char *queryset, const char *query,
@@ -3436,7 +3437,7 @@ void WsWuHelpers::runWsWuQuery(IEspContext &context, StringBuffer &wuid, const c
     copyWsWorkunit(context, *wu, srcWuid);
     wu.clear();
 
-    submitWsWorkunit(context, wuid.str(), cluster, NULL, 0, false, true, true, paramXml, NULL, NULL, applications);
+    submitWsWorkunit(context, wuid.str(), cluster, NULL, 0,  0, false, true, true, paramXml, NULL, NULL, applications);
 }
 
 void WsWuHelpers::checkAndTrimWorkunit(const char* methodName, StringBuffer& input)

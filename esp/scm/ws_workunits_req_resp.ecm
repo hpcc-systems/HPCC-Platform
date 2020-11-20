@@ -298,6 +298,7 @@ ESPrequest WUSubmitRequest
     string Queue;
     string Snapshot;
     int    MaxRunTime;
+    [min_ver("1.80")] int MaxCost(0);
     [min_ver("1.02")] int BlockTillFinishTimer(0);
     [min_ver("1.19")] bool SyntaxCheck(false);
     bool NotifyCluster(false);
