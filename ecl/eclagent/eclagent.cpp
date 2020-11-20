@@ -3580,7 +3580,6 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             daliDownMonitor.setown(new CDaliDownMonitor(daliEp));
             addMPConnectionMonitor(daliDownMonitor);
 
-            LOG(MCoperatorInfo, "hthor build %s", BUILD_TAG);
             startLogMsgParentReceiver();
             connectLogMsgManagerToDali();
 
@@ -3654,6 +3653,8 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             uid.append("WLOCAL_").append((unsigned)GetCurrentProcessId());
             wuid.set(uid);
         }
+        setDefaultJobId(wuid.str());
+        LOG(MCoperatorInfo, "hthor build %s", BUILD_TAG);
 
 #ifdef MONITOR_ECLAGENT_STATUS
         if (serverstatus)

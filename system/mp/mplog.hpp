@@ -57,13 +57,5 @@ extern mp_decl void stopLogMsgReceivers();
   stopMPServer();
 */
 
-// LISTENER HELPER FUNCTIONS
-
-extern mp_decl ILogMsgListener * startLogMsgListener();
-extern mp_decl void stopLogMsgListener();
-extern mp_decl bool connectLogMsgListenerToChild(INode * childNode);
-extern mp_decl bool connectLogMsgListenerToChildOwn(INode * childNode);
-extern mp_decl bool disconnectLogMsgListenerFromChild(INode * childNode);
-extern mp_decl bool disconnectLogMsgListenerFromChildOwn(INode * childNode);
 
 #endif

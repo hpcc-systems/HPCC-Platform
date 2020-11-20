@@ -211,26 +211,6 @@ void disconnectLogMsgManagerFromDali()
     daliClientLoggingParent = 0;
 }
 
-void connectLogMsgListenerToDali()
-{
-    // MORE: may be better to make daservers share messages, in which case only need to listen to one member of coven
-    IGroup & servers = queryCoven().queryGroup();
-    unsigned idx;
-    unsigned max = servers.ordinality();
-    for(idx = 0; idx < max; idx++)
-        connectLogMsgListenerToChild(&servers.queryNode(idx));
-}
-
-void disconnectLogMsgListenerFromDali()
-{
-    // MORE: may be better to make daservers share messages, in which case only need to listen to one member of coven
-    IGroup & servers = queryCoven().queryGroup();
-    unsigned idx;
-    unsigned max = servers.ordinality();
-    for(idx = 0; idx < max; idx++)
-        disconnectLogMsgListenerFromChild(&servers.queryNode(idx));
-}
-
 IPropertyTree *findDaliProcess(IPropertyTree *env, const SocketEndpoint &dali)
 {
     Owned<IPropertyTreeIterator> dalis = env->getElements("Software/DaliServerProcess");

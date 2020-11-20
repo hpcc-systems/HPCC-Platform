@@ -187,6 +187,115 @@ unsigned getPositionOfField(unsigned logfields, unsigned positionoffield)
 
 // LogMsg
 
+LogMsgJobInfo::~LogMsgJobInfo()
+{
+    if (isDeserialized)
+        free((void *) jobIDStr);
+}
+
+const char * LogMsgJobInfo::queryJobIDStr() const
+{
+    if (isDeserialized)
+        return jobIDStr;
+    else if (jobID == UnknownJob)
+        return "Unknown";
+    else
+        return theManager->queryJobId(jobID);
+}
+
+LogMsgJobId LogMsgJobInfo::queryJobID() const
+{
+    if (isDeserialized)
+        return UnknownJob;  // Or assert?
+    else
+        return jobID;
+}
+
+void LogMsgJobInfo::setJobID(LogMsgUserId id)
+{
+    if (isDeserialized)
+        free((void *) jobIDStr);
+    jobID = id;
+    isDeserialized = false;
+}
+
+void LogMsgJobInfo::serialize(MemoryBuffer & out) const
+{
+    if (isDeserialized)
+        out.append(jobIDStr);
+    else
+        out.append(theManager->queryJobId(jobID));
+    out.append(userID);
+}
+
+void LogMsgJobInfo::deserialize(MemoryBuffer & in)
+{
+    StringBuffer idStr;
+    in.read(idStr);
+    jobIDStr = idStr.detach();
+    in.read(userID);
+    isDeserialized = true;
+}
+
+static LogMsgJobInfo globalDefaultJobInfo(UnknownJob, UnknownUser);
+static thread_local LogMsgJobInfo defaultJobInfo = globalDefaultJobInfo;
+
+const LogMsgJobInfo unknownJob(UnknownJob, UnknownUser);
+
+void resetThreadLogging()
+{
+    // Note - as implemented the thread default job info is determined by what the global one was when the thread was created.
+    // There is an alternative interpretation, that an unset thread-local one should default to whatever the global one is at the time the thread one is used.
+    // In practice I doubt there's a lot of difference as global one is likely to be set once at program startup
+    defaultJobInfo = globalDefaultJobInfo;
+}
+
+const LogMsgJobInfo & checkDefaultJobInfo(const LogMsgJobInfo & _jobInfo)
+{
+    if (&_jobInfo == &unknownJob)
+    {
+        return defaultJobInfo;
+    }
+    return _jobInfo;
+}
+
+void setDefaultJobId(const char *id, bool threaded)
+{
+    setDefaultJobId(theManager->addJobId(id), threaded);
+}
+
+void setDefaultJobId(LogMsgJobId id, bool threaded)
+{
+    if (!threaded)
+        globalDefaultJobInfo.setJobID(id);
+    defaultJobInfo.setJobID(id);
+}
+
+LogMsg::LogMsg(LogMsgJobId id, const char *job) : category(MSGAUD_programmer, job ? MSGCLS_addid : MSGCLS_removeid), sysInfo(), jobInfo(id), remoteFlag(false)
+{
+    if (job)
+        text.append(job);
+}
+
+LogMsg::LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * _text, unsigned _compo, unsigned port, LogMsgSessionId session)
+  : category(_cat), sysInfo(_id, port, session), jobInfo(checkDefaultJobInfo(_jobInfo)), msgCode(_code), component(_compo), remoteFlag(false)
+{
+    text.append(_text);
+}
+
+LogMsg::LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, size32_t sz, const char * _text, unsigned _compo, unsigned port, LogMsgSessionId session)
+  : category(_cat), sysInfo(_id, port, session), jobInfo(checkDefaultJobInfo(_jobInfo)), msgCode(_code), component(_compo), remoteFlag(false)
+{
+    text.append(sz, _text);
+}
+
+LogMsg::LogMsg(const LogMsgCategory & _cat, LogMsgId _id, const LogMsgJobInfo & _jobInfo, LogMsgCode _code, const char * format, va_list args,
+       unsigned _compo, unsigned port, LogMsgSessionId session)
+  : category(_cat), sysInfo(_id, port, session), jobInfo(checkDefaultJobInfo(_jobInfo)), msgCode(_code), component(_compo), remoteFlag(false)
+{
+    text.valist_appendf(format, args);
+}
+
 StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
 {
     out.ensureCapacity(LOG_MSG_FORMAT_BUFFER_LENGTH);
@@ -241,10 +350,7 @@ StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
     }
     if(fields & MSGFIELD_job)
     {
-        if(jobInfo.queryJobID() == UnknownJob)
-            out.append("job=unknown ");
-        else
-            out.appendf("job=%" I64F "u ", jobInfo.queryJobID());
+        out.appendf("job=%s ", jobInfo.queryJobIDStr());
     }
     if(fields & MSGFIELD_user)
     {
@@ -330,10 +436,7 @@ StringBuffer & LogMsg::toStringXML(StringBuffer & out, unsigned fields) const
 #endif
     if(fields & MSGFIELD_job)
     {
-        if(jobInfo.queryJobID() == UnknownJob)
-            out.append("JobID=\"unknown\" ");
-        else
-            out.append("JobID=\"").append(jobInfo.queryJobID()).append("\" ");
+        out.appendf("JobID=\"%s\" ", jobInfo.queryJobIDStr());
     }
     if(fields & MSGFIELD_user)
     {
@@ -407,10 +510,7 @@ StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
     }
     if(fields & MSGFIELD_job)
     {
-        if(jobInfo.queryJobID() == UnknownJob)
-            out.append("unknown ");
-        else
-            out.appendf("%7" I64F "u ", jobInfo.queryJobID());
+        out.appendf("%-7s ", jobInfo.queryJobIDStr());
     }
     if(fields & MSGFIELD_user)
     {
@@ -495,10 +595,7 @@ void LogMsg::fprintPlain(FILE * handle, unsigned fields) const
     }
     if(fields & MSGFIELD_job)
     {
-        if(jobInfo.queryJobID() == UnknownJob)
-            fprintf(handle, "job=unknown ");
-        else
-            fprintf(handle, "job=%" I64F "u ", jobInfo.queryJobID());
+        fprintf(handle, "job=%s ", jobInfo.queryJobIDStr());
     }
     if(fields & MSGFIELD_user)
     {
@@ -579,10 +676,7 @@ void LogMsg::fprintXML(FILE * handle, unsigned fields) const
 #endif
     if(fields & MSGFIELD_job)
     {
-        if(jobInfo.queryJobID() == UnknownJob)
-            fprintf(handle, "JobID=\"unknown\" ");
-        else
-            fprintf(handle, "JobID=\"%" I64F "u\" ", jobInfo.queryJobID());
+        fprintf(handle, "JobID=\"%s\" ", jobInfo.queryJobIDStr());
     }
     if(fields & MSGFIELD_user)
     {
@@ -656,10 +750,7 @@ void LogMsg::fprintTable(FILE * handle, unsigned fields) const
     }
     if(fields & MSGFIELD_job)
     {
-        if(jobInfo.queryJobID() == UnknownJob)
-            fprintf(handle, "unknown ");
-        else
-            fprintf(handle, "%7" I64F "u ", jobInfo.queryJobID());
+        fprintf(handle, "%-7s ", jobInfo.queryJobIDStr());
     }
     if(fields & MSGFIELD_user)
     {
@@ -683,6 +774,17 @@ void LogMsg::fprintTableHead(FILE * handle, unsigned fields)
     StringBuffer  header;
     loggingFieldColumns.generateHeaderRow(header, fields, true).append("\n");
     fputs(header.str(), handle);
+}
+
+void LogMsg::deserialize(MemoryBuffer & in)
+{
+    remoteFlag = true;
+    category.deserialize(in);
+    sysInfo.deserialize(in);
+    jobInfo.deserialize(in);
+    in.read(msgCode);
+    text.clear();
+    text.deserialize(in);
 }
 
 unsigned getMessageFieldsFromHeader(FILE *handle)
@@ -785,24 +887,6 @@ void IpLogMsgFilter::addToPTree(IPropertyTree * tree) const
     StringBuffer buff;
     ip.getIpText(buff);
     filterTree->setProp("@ip", buff.str());
-    if(localFlag) filterTree->setPropInt("@local", 1);
-    tree->addPropTree("filter", filterTree);
-}
-
-void JobLogMsgFilter::addToPTree(IPropertyTree * tree) const
-{
-    IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
-    filterTree->setProp("@type", "job");
-    filterTree->setPropInt("@job", (int)job);
-    if(localFlag) filterTree->setPropInt("@local", 1);
-    tree->addPropTree("filter", filterTree);
-}
-
-void UserLogMsgFilter::addToPTree(IPropertyTree * tree) const
-{
-    IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
-    filterTree->setProp("@type", "user");
-    filterTree->setPropInt("@user", (int)user);
     if(localFlag) filterTree->setPropInt("@local", 1);
     tree->addPropTree("filter", filterTree);
 }
@@ -1182,7 +1266,7 @@ void BinLogMsgHandler::handleMessage(const LogMsg & msg)
     CriticalBlock block(crit);
     mbuff.clear();
     msg.serialize(mbuff);
-    msglen = mbuff.length();
+    size32_t msglen = mbuff.length();
     fstr->write(sizeof(msglen), &msglen);
     fstr->write(msglen, mbuff.toByteArray());
 }
@@ -1548,6 +1632,43 @@ CLogMsgManager::~CLogMsgManager()
     }
 }
 
+LogMsgJobId CLogMsgManager::addJobId(const char *job)
+{
+    LogMsgJobId ret = ++nextJobId;
+    pushMsg(new LogMsg(ret, job));
+    return ret;
+}
+
+void CLogMsgManager::removeJobId(LogMsgJobId id)
+{
+    pushMsg(new LogMsg(id, nullptr));
+}
+
+const char * CLogMsgManager::queryJobId(LogMsgJobId id) const
+{
+    // NOTE - thread safety is important here. We have to consider two things:
+    // 1. Whether an id (and therefore an entry in this table) can be invalidated between the return statement and someone using the result
+    //    It is up to the calling application to ensure that it does not call removeJobId() on an ID that may still be being used for logging by another thread.
+    // 2. Whether the table lookup may coincide with a table add, and crash in getValue/setValue
+    //    This is a non-issue in queueing mode as all gets/sets happen on a single thread, but we lock to be on the safe side
+
+    CriticalBlock b(jobIdLock);
+    StringAttr *found = jobIds.getValue(id);
+    return found ? found->get() : "invalid";
+}
+
+void CLogMsgManager::doAddJobId(LogMsgJobId id, const char *text) const
+{
+    CriticalBlock b(jobIdLock);
+    jobIds.setValue(id, text);
+}
+
+void CLogMsgManager::doRemoveJobId(LogMsgJobId id) const
+{
+    CriticalBlock b(jobIdLock);
+    jobIds.remove(id);
+}
+
 void CLogMsgManager::enterQueueingMode()
 {
     CriticalBlock crit(modeLock);
@@ -1796,9 +1917,20 @@ void CLogMsgManager::doReport(const LogMsg & msg) const
 {
     try
     {
-        ReadLockBlock block(monitorLock);
-        ForEachItemIn(i, monitors)
-            monitors.item(i).processMessage(msg);
+        switch (msg.queryCategory().queryClass())
+        {
+        case MSGCLS_addid:
+            doAddJobId(msg.queryJobInfo().queryJobID(), msg.queryText());
+            break;
+        case MSGCLS_removeid:
+            doRemoveJobId(msg.queryJobInfo().queryJobID());
+            break;
+        default:
+            ReadLockBlock block(monitorLock);
+            ForEachItemIn(i, monitors)
+                monitors.item(i).processMessage(msg);
+            break;
+        }
     }
     catch(IException * e)
     {
@@ -2050,8 +2182,6 @@ ILogMsgFilter * getDeserializedLogMsgFilter(MemoryBuffer & in)
     case MSGFILTER_tid : return new TIDLogMsgFilter(in);
     case MSGFILTER_node : return new NodeLogMsgFilter(in);
     case MSGFILTER_ip : return new IpLogMsgFilter(in);
-    case MSGFILTER_job : return new JobLogMsgFilter(in);
-    case MSGFILTER_user : return new UserLogMsgFilter(in);
     case MSGFILTER_session : return new SessionLogMsgFilter(in);
     case MSGFILTER_component : return new ComponentLogMsgFilter(in);
     case MSGFILTER_regex : return new RegexLogMsgFilter(in);
@@ -2077,8 +2207,6 @@ ILogMsgFilter * getLogMsgFilterFromPTree(IPropertyTree * xml)
     else if(strcmp(type.str(), "tid")==0) return new TIDLogMsgFilter(xml);
     else if(strcmp(type.str(), "node")==0) return new NodeLogMsgFilter(xml);
     else if(strcmp(type.str(), "ip")==0) return new IpLogMsgFilter(xml);
-    else if(strcmp(type.str(), "job")==0) return new JobLogMsgFilter(xml);
-    else if(strcmp(type.str(), "user")==0) return new UserLogMsgFilter(xml);
     else if(strcmp(type.str(), "session")==0) return new SessionLogMsgFilter(xml);
     else if(strcmp(type.str(), "component")==0) return new ComponentLogMsgFilter(xml);
     else if(strcmp(type.str(), "regex")==0) return new RegexLogMsgFilter(xml);
@@ -2175,16 +2303,6 @@ ILogMsgFilter * getIpLogMsgFilter(const IpAddress & ip, bool local)
 ILogMsgFilter * getIpLogMsgFilter(bool local)
 {
     return new IpLogMsgFilter(local);
-}
-
-ILogMsgFilter * getJobLogMsgFilter(LogMsgJobId job, bool local)
-{
-    return new JobLogMsgFilter(job, local);
-}
-
-ILogMsgFilter * getUserLogMsgFilter(LogMsgUserId user, bool local)
-{
-    return new UserLogMsgFilter(user, local);
 }
 
 ILogMsgFilter * getSessionLogMsgFilter(LogMsgSessionId session, bool local)
@@ -2362,8 +2480,6 @@ void attachManyLogMsgMonitorsFromPTree(IPropertyTree * tree)
     ForEach(*iter)
         attachLogMsgMonitorFromPTree(&(iter->query()));
 }
-
-const LogMsgJobInfo unknownJob(UnknownJob, UnknownUser);
 
 // Calls to make, remove, and return the manager, standard handler, pass all/none filters, reporter array
 

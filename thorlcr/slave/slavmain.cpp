@@ -1867,6 +1867,7 @@ public:
                         ILogMsgFilter *existingLogHandler = queryLogMsgManager()->queryMonitorFilter(logHandler);
                         dbgassertex(existingLogHandler);
                         verifyex(queryLogMsgManager()->changeMonitorFilterOwn(logHandler, getCategoryLogMsgFilter(existingLogHandler->queryAudienceMask(), existingLogHandler->queryClassMask(), maxLogDetail)));
+                        setDefaultJobId(wuid.str());
 
                         PROGLOG("Started wuid=%s, user=%s, graph=%s [log detail level=%u]\n", wuid.get(), user.str(), graphName.get(), maxLogDetail);
                         PROGLOG("Using query: %s", soPath.str());

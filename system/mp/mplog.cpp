@@ -23,7 +23,6 @@
 
 LogMsgChildReceiverThread * childReceiver;
 LogMsgParentReceiverThread * parentReceiver;
-ILogMsgManager * listener;
 
 // PARENT-SIDE CLASSES
 
@@ -37,11 +36,8 @@ int LogMsgLogReceiverThread::run()
         {
             if(queryWorldCommunicator().recv(in, childNode, MPTAG_JLOG_CHILD_TO_PARENT))
             {
-                msgBuffer.deserialize(in, true);
-                if(isListener)
-                    listener->report(msgBuffer);
-                else
-                    queryLogMsgManager()->report(msgBuffer);
+                msgBuffer.deserialize(in);
+                queryLogMsgManager()->report(msgBuffer);
             }
         }
         catch(IException * e)
@@ -75,10 +71,10 @@ void LogMsgLogReceiverThread::stop()
 
 // CLogMsgLinkToChild
 
-CLogMsgLinkToChild::CLogMsgLinkToChild(MPLogId _cid, MPLogId _pid, INode * _childNode, bool isListener, bool _connected)
+CLogMsgLinkToChild::CLogMsgLinkToChild(MPLogId _cid, MPLogId _pid, INode * _childNode, bool _connected)
     : childNode(_childNode), cid(_cid), pid(_pid), connected(_connected)
 {
-    receiverThread.setown(new LogMsgLogReceiverThread(cid, childNode, isListener));
+    receiverThread.setown(new LogMsgLogReceiverThread(cid, childNode));
     receiverThread->start();
 }
 
@@ -159,7 +155,7 @@ int LogMsgChildReceiverThread::run()
                 {
                     MPLogId pid;
                     in.read(pid);
-                    MPLogId cid = addChildToManager(pid, sender, false, true);
+                    MPLogId cid = addChildToManager(pid, sender, true);
                     StringBuffer buff;
                     in.clear().append(cid);
                     queryWorldCommunicator().reply(in, MP_ASYNC_SEND);
@@ -195,32 +191,21 @@ void LogMsgChildReceiverThread::stop()
     join();
 }
 
-MPLogId LogMsgChildReceiverThread::addChildToManager(MPLogId pid, INode * childNode, bool isListener, bool connected)
+MPLogId LogMsgChildReceiverThread::addChildToManager(MPLogId pid, INode * childNode, bool connected)
 {
     CriticalBlock critBlock(tableOfChildrenCrit);
     aindex_t pos = findChild(childNode);
     if(pos != NotFound)
     {
-        if(isListener)
-            table.item(pos).queryLink()->sendFilterOwn(listener->getCompoundFilter());
-        else
-            table.item(pos).queryLink()->sendFilterOwn(queryLogMsgManager()->getCompoundFilter());
+        table.item(pos).queryLink()->sendFilterOwn(queryLogMsgManager()->getCompoundFilter());
         return false;
     }
     MPLogId cid = ++nextId;
-    ILogMsgLinkToChild * link = new CLogMsgLinkToChild(cid, pid, childNode, isListener, connected);
+    ILogMsgLinkToChild * link = new CLogMsgLinkToChild(cid, pid, childNode, connected);
     if(!connected) link->connect();
-    if(isListener)
-    {
-        link->sendFilterOwn(listener->getCompoundFilter());
-        listener->addChildOwn(link);
-    }
-    else
-    {
-        link->sendFilterOwn(queryLogMsgManager()->getCompoundFilter());
-        queryLogMsgManager()->addChildOwn(link);
-    }
-    table.append(*new IdLinkToChildPair(cid, childNode, link, isListener));
+    link->sendFilterOwn(queryLogMsgManager()->getCompoundFilter());
+    queryLogMsgManager()->addChildOwn(link);
+    table.append(*new IdLinkToChildPair(cid, childNode, link));
     return cid;
 }
 
@@ -246,13 +231,9 @@ bool LogMsgChildReceiverThread::removeChildFromManager(INode const * node, bool 
 void LogMsgChildReceiverThread::doRemoveChildFromManager(aindex_t pos, bool disconnected)
 {
     ILogMsgLinkToChild * link = table.item(pos).queryLink();
-    bool isListener = table.item(pos).isListener();
     table.remove(pos);
     if(disconnected) link->markDisconnected();
-    if(isListener)
-        listener->removeChild(link);
-    else
-        queryLogMsgManager()->removeChild(link);
+    queryLogMsgManager()->removeChild(link);
 }
 
 aindex_t LogMsgChildReceiverThread::findChild(MPLogId cid) const
@@ -274,7 +255,7 @@ aindex_t LogMsgChildReceiverThread::findChild(INode const * node) const
 bool connectLogMsgManagerToChild(INode * childNode)
 {
     assertex(childReceiver);
-    return (childReceiver->addChildToManager(0, childNode, false, false) != 0);
+    return (childReceiver->addChildToManager(0, childNode, false) != 0);
 }
 
 bool connectLogMsgManagerToChildOwn(INode * childNode)
@@ -606,47 +587,4 @@ void stopLogMsgReceivers()
     childReceiver = 0;
     queryLogMsgManager()->removeMonitorsMatching(isMPLogMsgMonitor);
     queryLogMsgManager()->removeAllChildren();
-}
-
-// LISTENER HELPER FUNCTIONS
-
-ILogMsgListener * startLogMsgListener()
-{
-    if(!listener)
-        listener = createLogMsgManager();
-    return listener;
-}
-    
-void stopLogMsgListener()
-{
-    if(listener)
-    {
-        listener->Release();
-        listener = 0;
-    }
-}
-
-bool connectLogMsgListenerToChild(INode * childNode)
-{
-    assertex(childReceiver);
-    return (childReceiver->addChildToManager(0, childNode, true, false) != 0);
-}
-
-bool connectLogMsgListenerToChildOwn(INode * childNode)
-{
-    bool ret = connectLogMsgListenerToChild(childNode);
-    childNode->Release();
-    return ret;
-}
-
-bool disconnectLogMsgListenerFromChild(INode * childNode)
-{
-    return childReceiver->removeChildFromManager(childNode, false);
-}
-
-bool disconnectLogMsgListenerFromChildOwn(INode * childNode)
-{
-    bool ret = disconnectLogMsgListenerFromChild(childNode);
-    childNode->Release();
-    return ret;
 }
