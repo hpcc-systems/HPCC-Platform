@@ -276,6 +276,7 @@ public:
     StringAttr optPort;
     StringAttr optUsername;
     StringAttr optPassword;
+    bool optPasswordProvided = false;
     unsigned optWaitConnectMs = 0;
     unsigned optWaitReadSec = 0;
     bool optVerbose;
