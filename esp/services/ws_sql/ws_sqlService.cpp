@@ -63,10 +63,12 @@ bool CwssqlEx::onGetDBMetaData(IEspContext &context, IEspGetDBMetaDataRequest &r
     if (includeStoredProcs)
     {
         const char * querysetfilter = req.getQuerySet();
-        Owned<IStringIterator> targets = getTargetClusters(NULL, NULL);
-
+#ifdef _CONTAINERIZED
+        Owned<IStringIterator> targets = getContainerTargetClusters(nullptr, nullptr);
+#else
+        Owned<IStringIterator> targets = getTargetClusters(nullptr, nullptr);
+#endif
         IArrayOf<IEspHPCCQuerySet> pquerysets;
-
         SCMStringBuffer target;
         ForEach(*targets)
         {
@@ -1968,7 +1970,11 @@ bool CwssqlEx::onGetResults(IEspContext &context, IEspGetResultsRequest &req, IE
 void CwssqlEx::refreshValidClusters()
 {
     validClusters.kill();
-    Owned<IStringIterator> it = getTargetClusters(NULL, NULL);
+#ifdef _CONTAINERIZED
+    Owned<IStringIterator> it = getContainerTargetClusters(nullptr, nullptr);
+#else
+    Owned<IStringIterator> it = getTargetClusters(nullptr, nullptr);
+#endif
     ForEach(*it)
     {
         SCMStringBuffer s;
