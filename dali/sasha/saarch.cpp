@@ -1007,11 +1007,12 @@ class CWorkUnitArchiver: public CBranchArchiver
             }
             getWorkUnitCreateTime(wuid,time);
             // get latest time stamp
-            Owned<IPropertyTreeIterator> iter = e.getElements("TimeStamps/TimeStamp/*");
+            Owned<IPropertyTreeIterator> iter = e.getElements("Statistics/Statistic");
             if (iter) {
                 ForEach(*iter) {
                     CDateTime cmp;
-                    cmp.setString(iter->query().queryProp(NULL));
+                    timestamp_type ts = iter->query().getPropInt64("@ts");
+                    cmp.setTimeStamp(ts);
                     if (time.isNull()||(!cmp.isNull()&&(cmp.compare(time)>0)))
                         time.set(cmp);
                 }

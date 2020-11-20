@@ -8149,6 +8149,9 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
 
     if (!statTree)
     {
+        /* NB: Sasha archive uses this structure directly
+         * if it changes, the code in saarch.cpp needs updating
+         */
         statTree = stats->addPropTree("Statistic");
         statTree->setProp("@creator", creator);
         statTree->setProp("@scope", scope);
