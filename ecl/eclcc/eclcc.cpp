@@ -762,12 +762,14 @@ void EclCC::reportCompileErrors(IErrorReceiver & errorProcessor, const char * pr
 {
     StringBuffer failText;
     StringBuffer absCCLogName;
+#ifndef _CONTAINERIZED
     if (optLogfile.get())
         createUNCFilename(optLogfile.get(), absCCLogName, false);
     else
+#endif
         absCCLogName = "log file";
 
-    failText.appendf("Compile/Link failed for %s (see '%s' for details)",processName,absCCLogName.str());
+    failText.appendf("Compile/Link failed for %s (see %s for details)",processName,absCCLogName.str());
     errorProcessor.reportError(ERR_INTERNALEXCEPTION, failText.str(), processName, 0, 0, 0);
     try
     {
