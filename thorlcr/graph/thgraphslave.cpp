@@ -1750,7 +1750,7 @@ void CJobSlave::reportGraphEnd(graph_id gid)
         getSocketStatistics(stats);
         StringBuffer s;
         getSocketStatisticsString(stats,s);
-        LOG(MCthorDetailedDebugInfo, thorJob, "Graph[%" GIDPF "u] - Socket statistics : %s\n", gid, s.str());
+        MLOG(MCthorDetailedDebugInfo, thorJob, "Graph[%" GIDPF "u] - Socket statistics : %s\n", gid, s.str());
     }
     resetSocketStatistics();
 }

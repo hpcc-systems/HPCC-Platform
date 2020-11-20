@@ -86,7 +86,7 @@ void coalesceDatastore(bool force)
             iStoreHelper->getCurrentStoreFilename(storeFilename);
             StringBuffer memStr;
             getSystemTraceInfo(memStr.clear());
-            PROGLOG("COALESCE: %s", memStr.str());
+            MLOG("COALESCE: %s", memStr.str());
             Owned<IPropertyTree> _root;
             OwnedIFile storeIFile = createIFile(storeFilename.str());
             if (storeIFile->exists())
@@ -108,7 +108,7 @@ void coalesceDatastore(bool force)
             }
             IPropertyTree *root = _root.get();
             getSystemTraceInfo(memStr.clear());
-            PROGLOG("COALESCE: %s", memStr.str());
+            MLOG("COALESCE: %s", memStr.str());
 
             PROGLOG("COALESCER: coalesce started");
             if (baseEdition != iStoreHelper->queryCurrentEdition())
@@ -149,12 +149,12 @@ void coalesceDatastore(bool force)
             else
             {
                 getSystemTraceInfo(memStr.clear());
-                PROGLOG("COALESCE: %s", memStr.str());
+                MLOG("COALESCE: %s", memStr.str());
                 PROGLOG("Clearing old store...");
                 _root.clear();
                 PROGLOG("old store cleared");
                 getSystemTraceInfo(memStr.clear());
-                PROGLOG("COALESCE: %s", memStr.str());
+                MLOG("COALESCE: %s", memStr.str());
             }
             break;
         }
