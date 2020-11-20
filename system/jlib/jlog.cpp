@@ -1289,6 +1289,16 @@ void LogMsgComponentReporter::report(const LogMsg & msg)
     queryLogMsgManager()->report(msg);
 }
 
+void LogMsgComponentReporter::mreport_direct(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * msg)
+{
+    queryLogMsgManager()->mreport_direct(component, cat, job, msg);
+}
+
+void LogMsgComponentReporter::mreport_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args)
+{
+    queryLogMsgManager()->mreport_va(component, cat, job, format, args);
+}
+
 // LogMsgPrepender
 
 void LogMsgPrepender::report(const LogMsgCategory & cat, const char * format, ...)
@@ -1596,6 +1606,55 @@ void CLogMsgManager::report_va(const LogMsgCategory & cat, LogMsgCode code, cons
 {
     if(rejectsCategory(cat)) return;
     pushMsg(new LogMsg(cat, getNextID(), unknownJob, code, format, args, 0, port, session));
+}
+
+void CLogMsgManager::mreport_direct(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * msg)
+{
+    if(rejectsCategory(cat)) return;
+    const char *cursor = msg;
+    const char *lineStart = cursor;
+    while (true)
+    {
+        switch (*cursor)
+        {
+            case '\0':
+                pushMsg(new LogMsg(cat, getNextID(), job, NoLogMsgCode, (int)(cursor-lineStart), lineStart, compo, port, session));
+                return;
+            case '\r':
+                // NB: \r or \r\n translated into newline
+                pushMsg(new LogMsg(cat, getNextID(), job, NoLogMsgCode, (int)(cursor-lineStart), lineStart, compo, port, session));
+                if ('\n' == *(cursor+1))
+                    cursor++;
+                lineStart = cursor+1;
+                break;
+            case '\n':
+                pushMsg(new LogMsg(cat, getNextID(), job, NoLogMsgCode, (int)(cursor-lineStart), lineStart, compo, port, session));
+                lineStart = cursor+1;
+                break;
+        }
+        ++cursor;
+    }
+}
+
+void CLogMsgManager::mreport_direct(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * msg)
+{
+    mreport_direct(0, cat, job, msg);
+}
+
+void CLogMsgManager::mreport_va(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args)
+{
+    if(rejectsCategory(cat)) return;
+    StringBuffer log;
+    log.limited_valist_appendf(1024*1024, format, args);
+    mreport_direct(compo, cat, job, log);
+}
+
+void CLogMsgManager::mreport_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args)
+{
+    if(rejectsCategory(cat)) return;
+    StringBuffer log;
+    log.limited_valist_appendf(1024*1024, format, args);
+    mreport_direct(cat, job, log);
 }
 
 void CLogMsgManager::report(const LogMsgCategory & cat, const IException * exception, const char * prefix)
@@ -2723,6 +2782,39 @@ void IContextLogger::CTXLOG(const char *format, ...) const
     va_start(args, format);
     CTXLOGva(format, args);
     va_end(args);
+}
+
+void IContextLogger::mCTXLOG(const char *format, ...) const
+{
+    va_list args;
+    va_start(args, format);
+    StringBuffer log;
+    log.limited_valist_appendf(1024*1024, format, args);
+    va_end(args);
+
+    const char *cursor = log;
+    const char *lineStart = cursor;
+    while (true)
+    {
+        switch (*cursor)
+        {
+            case '\0':
+                CTXLOG("%.*s", (int)(cursor-lineStart), lineStart);
+                return;
+            case '\r':
+                // NB: \r or \r\n translated into newline
+                CTXLOG("%.*s", (int)(cursor-lineStart), lineStart);
+                if ('\n' == *(cursor+1))
+                    cursor++;
+                lineStart = cursor+1;
+                break;
+            case '\n':
+                CTXLOG("%.*s", (int)(cursor-lineStart), lineStart);
+                lineStart = cursor+1;
+                break;
+        }
+        ++cursor;
+    }
 }
 
 void IContextLogger::logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const

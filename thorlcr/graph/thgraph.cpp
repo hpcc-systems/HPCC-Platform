@@ -1376,7 +1376,7 @@ void CGraphBase::executeSubGraph(size32_t parentExtractSz, const byte *parentExt
             {
                 StringBuffer s;
                 toXML(&queryXGMML(), s, 2);
-                LOG(MCthorDetailedDebugInfo, thorJob, "Running graph [%s] : %s", isGlobal()?"global":"local", s.str());
+                MLOG(MCthorDetailedDebugInfo, thorJob, "Running graph [%s] : %s", isGlobal()?"global":"local", s.str());
             }
         }
         if (localResults)
