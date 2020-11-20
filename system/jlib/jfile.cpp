@@ -5633,22 +5633,23 @@ IFileIO *createUniqueFile(const char *dir, const char *prefix, const char *ext, 
     CDateTime dt;
     dt.setNow();
     unsigned t = (unsigned)dt.getSimple();
-    if (dir)
-    {
-        filename.append(dir);
-        addPathSepChar(filename);
-    }
-    if (prefix && *prefix)
-        filename.append(prefix);
-    else
-        filename.append("uniq");
+    unsigned attempts = 5; // max attempts
     if (!ext || !*ext)
         ext = "tmp";
-    filename.appendf("_%" I64F "x.%x.%x.%s", (__int64)GetCurrentThreadId(), (unsigned)GetCurrentProcessId(), t, ext);
-    OwnedIFile iFile = createIFile(filename.str());
-    unsigned attempts = 5; // max attempts
     for (;;)
     {
+        filename.clear();
+        if (dir)
+        {
+            filename.append(dir);
+            addPathSepChar(filename);
+        }
+        if (prefix && *prefix)
+            filename.append(prefix);
+        else
+            filename.append("uniq");
+        filename.appendf("_%" I64F "x.%x.%x.%s", (__int64)GetCurrentThreadId(), (unsigned)GetCurrentProcessId(), t, ext);
+        OwnedIFile iFile = createIFile(filename.str());
         if (!iFile->exists())
         {
             try { return iFile->openShared(IFOcreate, IFSHnone); } // NB: could be null if path not found
@@ -5659,12 +5660,9 @@ IFileIO *createUniqueFile(const char *dir, const char *prefix, const char *ext, 
             }
         }
         if (0 == --attempts)
-            break;
+            return nullptr;
         t += getRandom();
-        filename.clear().appendf("uniq_%" I64F "x.%x.%x.%s", (__int64)GetCurrentThreadId(), (unsigned)GetCurrentProcessId(), t, ext);
-        iFile.setown(createIFile(filename.str()));
     }
-    return NULL;
 }
 
 unsigned sortDirectory( CIArrayOf<CDirectoryEntry> &sortedfiles,
