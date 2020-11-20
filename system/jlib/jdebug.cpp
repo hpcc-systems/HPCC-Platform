@@ -2894,11 +2894,13 @@ public:
                 udpStats.reportUdpInfo(0);
             }
             if(traceMode&&str.length()) {
-                LOG(MCdebugInfo, unknownJob, "SYS: %s", str.str());
+                MLOG(MCdebugInfo, unknownJob, "SYS: %s", str.str());
 #ifndef _WIN32
-                if (traceMode&PerfMonExtended) {
+                if (traceMode&PerfMonExtended)
+                {
                     if (extstats.getLine(str.clear()))
-                        LOG(MCdebugInfo, unknownJob, "%s", str.str());
+                        MLOG(MCdebugInfo, "%s", str.str());
+
                     {
                         CriticalBlock block(sect);
                         extstats.printKLog(hook);
@@ -3315,7 +3317,7 @@ void PrintMemoryReport(bool full)
 {
     StringBuffer s;
     getSystemTraceInfo(s,PerfMonProcMem);
-    PROGLOG("%s",s.str());
+    MLOG("%s",s.str());
 }
 
 #else
@@ -3356,7 +3358,7 @@ void PrintMemoryReport(bool full)
         try {
             StringBuffer s;
             getSystemTraceInfo(s,PerfMonProcMem);
-            PROGLOG("%s",s.str());
+            MLOG("%s",s.str());
             PROGLOG("===============================================================");
         }
         catch (IException *e) {

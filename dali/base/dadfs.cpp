@@ -10103,12 +10103,12 @@ void initClusterAndStoragePlaneGroups(bool force, IPropertyTree *oldEnvironment,
     StringBuffer response;
     init.constructGroups(force, response, oldEnvironment);
     if (response.length())
-        PROGLOG("DFS group initialization : %s", response.str()); // should this be a syslog?
+        MLOG("DFS group initialization : %s", response.str()); // should this be a syslog?
 
     response.clear();
     init.constructStorageGroups(false, response);
     if (response.length())
-        PROGLOG("StoragePlane group initialization : %s", response.str()); // should this be a syslog?
+        MLOG("StoragePlane group initialization : %s", response.str()); // should this be a syslog?
 }
 
 bool resetClusterGroup(const char *clusterName, const char *type, bool spares, StringBuffer &response, unsigned timems)
