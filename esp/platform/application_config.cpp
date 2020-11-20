@@ -31,13 +31,13 @@
 
 enum class LdapType { LegacyAD, AzureAD };
 
-static void appendPTreeFromYamlFile(IPropertyTree *tree, const char *file)
+static void appendPTreeFromYamlFile(IPropertyTree *tree, const char *file, bool overwriteAttr)
 {
     Owned<IPropertyTree> appendTree = createPTreeFromYAMLFile(file);
     if (appendTree->hasProp("esp"))
-        mergeConfiguration(*tree, *appendTree->queryPropTree("esp"), nullptr);
+        mergeConfiguration(*tree, *appendTree->queryPropTree("esp"), nullptr, overwriteAttr);
     else
-        mergeConfiguration(*tree, *appendTree, nullptr);
+        mergeConfiguration(*tree, *appendTree, nullptr, overwriteAttr);
 }
 
 IPropertyTree *loadApplicationConfig(const char *application, const char* argv[])
@@ -53,7 +53,7 @@ IPropertyTree *loadApplicationConfig(const char *application, const char* argv[]
     {
         Owned<IDirectoryIterator> common_dir = createDirectoryIterator(path, "*.yaml", false, false);
         ForEach(*common_dir)
-            appendPTreeFromYamlFile(defaultConfig, common_dir->query().queryFilename());
+            appendPTreeFromYamlFile(defaultConfig, common_dir->query().queryFilename(), true);
     }
 
     path.set(COMPONENTFILES_DIR);
@@ -62,7 +62,7 @@ IPropertyTree *loadApplicationConfig(const char *application, const char* argv[]
         throw MakeStringException(-1, "Can't find esp application %s (dir %s)", application, path.str());
     Owned<IDirectoryIterator> application_dir = createDirectoryIterator(path, "*.yaml", false, false);
     ForEach(*application_dir)
-        appendPTreeFromYamlFile(defaultConfig, application_dir->query().queryFilename());
+        appendPTreeFromYamlFile(defaultConfig, application_dir->query().queryFilename(), true);
 
     //apply provided config to the application
     Owned<IPropertyTree> config = loadConfiguration(defaultConfig, argv, "esp", "ESP", nullptr, nullptr);
@@ -104,7 +104,8 @@ bool addLdapSecurity(IPropertyTree *legacyEsp, IPropertyTree *appEsp, StringBuff
     else
         path.append("azure_ldap.yaml");
     if (checkFileExists(path))
-        appendPTreeFromYamlFile(appEsp, path.str());
+        appendPTreeFromYamlFile(appEsp, path.str(), false);
+
     IPropertyTree *appLdap = appEsp->queryPropTree("ldap");
     if (!appLdap)
         throw MakeStringException(-1, "Can't find application LDAP settings.  To run without security set auth=none");
@@ -304,6 +305,52 @@ void addServices(IPropertyTree *legacyEsp, IPropertyTree *appEsp, const char *ap
         addService(legacyEsp, appEsp, application, services->query().queryProp("."), tls ? "https" : "http", netAddress, port, auth, seq++);
 }
 
+void addBindingToServiceResource(IPropertyTree *service, const char *name, const char *serviceType, unsigned port,
+    const char *baseDN, const char *workunitsBaseDN)
+{
+    IPropertyTree *resourcesTree = service->queryPropTree("Resources");
+    if (!resourcesTree)
+        resourcesTree = service->addPropTree("Resources", createPTree("Resources"));
+    IPropertyTree *bindingTree = resourcesTree->addPropTree("Binding", createPTree("Binding"));
+    bindingTree->setProp("@name", name);
+    bindingTree->setProp("@service", serviceType);
+    bindingTree->setPropInt("@port", port);
+    bindingTree->setProp("@basedn", baseDN);
+    bindingTree->setProp("@workunitsBasedn", workunitsBaseDN);
+}
+
+void setLDAPSecurityInWSAccess(IPropertyTree *legacyEsp, IPropertyTree *legacyLdap)
+{
+    IPropertyTree *wsAccessService = legacyEsp->queryPropTree("EspService[@type='ws_access']");
+    if (!wsAccessService)
+        throw makeStringException(-1, "Missing configuration for EspService 'ws_access'");
+
+    IPropertyTree *wsSMCService = legacyEsp->queryPropTree("EspService[@type='WsSMC']");
+    if (!wsSMCService)
+        throw makeStringException(-1, "Missing configuration for EspService 'WsSMC'");
+
+    const char *fileBaseDN = legacyLdap->queryProp("@filesBasedn");
+    if (!isEmptyString(fileBaseDN))
+    {
+        IPropertyTree *filesTree = wsAccessService->queryPropTree("Files");
+        if (!filesTree)
+            filesTree = wsAccessService->addPropTree("Files", createPTree("Files"));
+        filesTree->setProp("@basedn", fileBaseDN);
+    }
+
+    VStringBuffer xpath("EspBinding[@service='%s']", wsSMCService->queryProp("@name"));
+    Owned<IPropertyTreeIterator> bindings = legacyEsp->getElements(xpath);
+    ForEach(*bindings)
+    {
+        IPropertyTree &binding = bindings->query();
+        IPropertyTree *authTree = binding.queryPropTree("Authenticate");
+        const char *baseDN = authTree->queryProp("@resourcesBasedn");
+        const char *workunitsBaseDN = authTree->queryProp("@workunitsBasedn");
+        addBindingToServiceResource(wsAccessService, binding.queryProp("@name"), "WsSMC",
+            binding.getPropInt("@port"), baseDN, workunitsBaseDN);
+    }
+}
+
 IPropertyTree *buildApplicationLegacyConfig(const char *application, const char* argv[])
 {
     Owned<IPropertyTree> appEspConfig = loadApplicationConfig(application, argv);
@@ -329,9 +376,12 @@ IPropertyTree *buildApplicationLegacyConfig(const char *application, const char*
     addSecurity(legacyEsp, appEspConfig, bindAuth);
     addServices(legacyEsp, appEspConfig, application, bindAuth, tls);
 
+    IPropertyTree *legacyLdap = legacyEsp->queryPropTree("ldapSecurity");
+    if (legacyLdap && strieq(application, "eclwatch"))
+        setLDAPSecurityInWSAccess(legacyEsp, legacyLdap);
+
     IPropertyTree *legacyDirectories = legacy->queryPropTree("Software/Directories");
     IPropertyTree *appDirectories = appEspConfig->queryPropTree("directories");
     copyDirectories(legacyDirectories, appDirectories);
-
     return legacy.getClear();
 }
