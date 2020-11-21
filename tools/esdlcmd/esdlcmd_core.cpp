@@ -331,8 +331,8 @@ public:
         // All params are treated as expressions, so any strings must be quoted
         // 1/0 are not equivalent to true/false, as 0 evaluates to true
 
-        params->setProp( "tnsParam", QUOTED_STRING_PARAM(tns.str()) );
-        params->setProp( "optional", QUOTED_STRING_PARAM(optOptional.str()) );
+        setXpathQuotedParam(params, "tnsParam", tns.str());
+        setXpathQuotedParam(params, "optional", optOptional.str());
 
         if( optAllAnnot )
         {
@@ -564,8 +564,8 @@ public:
         // All params are treated as expressions, so any strings must be quoted
         // 1/0 are not equivalent to true/false, as 0 evaluates to true
 
-        params->setProp( "tnsParam", QUOTED_STRING_PARAM(tns.str()) );
-        params->setProp( "optional", QUOTED_STRING_PARAM(optOptional.str()) );
+        setXpathQuotedParam(params, "tnsParam", tns.str());
+        setXpathQuotedParam(params, "optional", optOptional.str());
 
         if( optAllAnnot )
         {
@@ -578,7 +578,7 @@ public:
         }
 
         params->setProp( "create_wsdl", "true()" );
-        params->setProp( "location", QUOTED_STRING_PARAM(optWsdlAddress.str()) );
+        setXpathQuotedParam(params, "location", optWsdlAddress.str());
     }
 
 public:
@@ -1024,7 +1024,7 @@ public:
         else
         {
             Owned<IProperties> params = createProperties();
-            params->setProp("installdir", QUOTED_STRING_PARAM(INSTALL_DIR));
+            setXpathQuotedParam(params, "installdir", INSTALL_DIR);
             cmdHelper.defHelper->loadTransform( xsltpath, params.get(), EsdlXslToCppCMake);
             cmdHelper.defHelper->toMicroService( *structs, outputBuffer, EsdlXslToCppCMake, NULL, optFlags );
             saveAsFile(sourcedir.str(), "CMakeLists.txt", outputBuffer.str(), NULL);

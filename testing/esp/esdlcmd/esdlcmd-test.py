@@ -96,7 +96,7 @@ class TestCaseBase:
         self.run_settings.stats.add_count(success)
 
     def validate_results(self):
-        """Compare test case results to the known baseline.
+        """Compare test case results to the known key.
 
         Return True if the two are identical or False otherwise.
         """
@@ -108,7 +108,7 @@ class TestCaseXSD(TestCaseBase):
     """Test case for the wsdl or xsd commands.
 
     Both generate a single file output, so test validation compares
-    the contents of the output file with the baseline file.
+    the contents of the output file with the key file.
 
     The path the xsl files not include the 'xslt' directory. The command
     assumes it needs to apped that directory itself.
@@ -118,24 +118,24 @@ class TestCaseXSD(TestCaseBase):
         super().__init__(run_settings, name, command, esdl_file, service, xsl_path, options)
 
     def validate_results(self):
-        """Compare test case results to the known baseline.
+        """Compare test case results to the known key.
 
         Return True if the two are identical or False otherwise.
         """
         suffix = '.' + self.command
         outName = (self.output_path / self.service.lower()).with_suffix(suffix)
-        baseline = (self.run_settings.test_path / 'baselines' / self.name).with_suffix(suffix)
+        key = (self.run_settings.test_path / 'key' / self.name).with_suffix(suffix)
 
-        if (not baseline.exists()):
-            logging.error('Missing baseline file %s', str(baseline))
+        if (not key.exists()):
+            logging.error('Missing key file %s', str(key))
             return False
 
         if (not outName.exists()):
             logging.error('Missing output for test %s', self.name)
             return False
 
-        if (not filecmp.cmp(str(baseline), str(outName))):
-            logging.debug('Comparing baseline %s to output %s', str(baseline), str(outName))
+        if (not filecmp.cmp(str(key), str(outName))):
+            logging.debug('Comparing key %s to output %s', str(key), str(outName))
             logging.error('Test failed: %s', self.name)
             return False
         else:
@@ -146,7 +146,7 @@ class TestCaseCode(TestCaseBase):
     """Test case for the cpp or java commands.
 
     Both generate a directory full of output, so test validation compares
-    the contents of the output directory with the baseline directory.
+    the contents of the output directory with the key directory.
 
     The path the xsl files must be appended with 'xslt/' for the command
     to find the xslt files.
@@ -176,18 +176,18 @@ class TestCaseCode(TestCaseBase):
     def validate_results(self):
         # output of cpp or java is a directory named 'source'
         outName =  (self.output_path / 'source')
-        baseline = (self.run_settings.test_path / 'baselines' / self.name)
+        key = (self.run_settings.test_path / 'key' / self.name)
 
-        if (not baseline.exists()):
-            logging.error('Missing baseline file %s', str(baseline))
+        if (not key.exists()):
+            logging.error('Missing key file %s', str(key))
             return False
 
         if (not outName.exists()):
             logging.error('Missing output for test %s', self.name)
             return False
 
-        if (not self.is_same(str(baseline), str(outName))):
-            logging.debug('Comparing baseline %s to output %s', str(baseline), str(outName))
+        if (not self.is_same(str(key), str(outName))):
+            logging.debug('Comparing key %s to output %s', str(key), str(outName))
             logging.error('Test failed: %s', self.name)
             return False
         else:
@@ -218,7 +218,7 @@ def parse_options():
 
     parser.add_argument('-o', '--outdir',
                         help='Directory name of output for tests',
-                        default='output')
+                        default='esdlcmd-test-output')
 
     parser.add_argument('-e', '--esdlpath',
                         help='Path to the esdl executable to test')

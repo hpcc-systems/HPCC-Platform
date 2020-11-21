@@ -27,6 +27,9 @@
 
 #pragma warning(disable: 4786)
 
+#define XPATH_QUOTED(p) VStringBuffer("'%s'", p).str()
+
+
 typedef enum EsdlXslTypeId_
 {
     EsdlXslToXsd,
@@ -55,9 +58,9 @@ interface IEsdlDefinitionHelper : extends IInterface
 
 esdl_decl void removeEclHidden(IPropertyTree *depTree, bool cloneGetDataFrom);
 esdl_decl void removeEclHidden(StringBuffer &xml, bool cloneGetDataFrom);
+inline void setXpathQuotedParam(IProperties* properties, const char* name, const char* value) {properties->setProp(name, XPATH_QUOTED(value));}
 
 esdl_decl IEsdlDefinitionHelper* createEsdlDefinitionHelper( );
 
-#define QUOTED_STRING_PARAM(p) VStringBuffer("\'%s\'", p).str()
 
 #endif // !defined(ESDL_DEF_HELPER_HPP)
