@@ -465,6 +465,8 @@ class CMailInfo
     StringArray *warnings;
     StringArray recipients;
     StringBuffer to;
+    StringBuffer cc;
+    StringBuffer bcc;
     StringAttr subject;
     StringAttr mailServer;
     unsigned port;
@@ -475,10 +477,12 @@ class CMailInfo
     unsigned inlen;
 
     static char const * toHeader;
+    static char const * ccHeader;
+    static char const * bccHeader;
     static char const * subjectHeader;
     static char const * senderHeader;
 public:
-    CMailInfo(char const * _to, char const * _subject, char const * _mailServer, unsigned _port, char const * _sender, StringArray *_warnings) 
+    CMailInfo(char const * _to, char const * _cc, char const * _bcc, char const * _subject, char const * _mailServer, unsigned _port, char const * _sender, StringArray *_warnings)
         : subject(_subject), mailServer(_mailServer), port(_port), sender(_sender), lastAction("process initialization"), inlen(0)
     {
         warnings = _warnings;
@@ -487,9 +491,23 @@ public:
             throw MakeStringException(0, "email sender address too long: %" I64F "u characters",  static_cast<__uint64>(sender.length()));
         validator.validateAddress(sender.get(), "email sender address");
 
-        getRecipients(validator, _to);
+        getRecipients(validator, _to, to);
         if(strlen(toHeader) + to.length() > 998)
             throw MakeStringException(0, "Email recipient address list too long: %u characters", to.length());
+
+        if (_cc && _cc[0])
+        {
+            getRecipients(validator, _cc, cc);
+            if(strlen(ccHeader) + cc.length() > 998)
+                throw MakeStringException(0, "Email cc: recipient address list too long: %u characters", cc.length());
+        }
+
+        if (_bcc && _bcc[0])
+        {
+            getRecipients(validator, _bcc, bcc);
+            if(strlen(bccHeader) + bcc.length() > 998)
+                throw MakeStringException(0, "Email bcc: recipient address list too long: %u characters", cc.length());
+        }
 
         if(strlen(subjectHeader) + subject.length() > 998)
             throw MakeStringException(0, "Email subject too long: %" I64F "u characters",  static_cast<__uint64>(subject.length()));
@@ -574,6 +592,9 @@ public:
     {
         header.append(senderHeader).append(sender.get()).append("\r\n");
         header.append(toHeader).append(to.str()).append("\r\n");
+        if (!cc.isEmpty())
+            header.append(ccHeader).append(cc.str()).append("\r\n");
+        // Do not append bcc (that's what makes it "blind")
         header.append(subjectHeader).append(subject.get()).append("\r\n");
         header.append("MIME-Version: 1.0\r\n");
     }
@@ -600,15 +621,15 @@ public:
     }
 
 private:
-    void getRecipients(CSMTPValidator & validator, char const * _to)
+    void getRecipients(CSMTPValidator & validator, char const * _to, StringBuffer &destBuffer)
     {
         StringBuffer rcpt;
         validator.scanAddressListStart(_to, "recipient email address list");
         while(validator.scanAddressListNext(rcpt.clear()))
         {
-            if(recipients.ordinality())
-                to.append(",");
-            to.append(rcpt.str());
+            if(!destBuffer.isEmpty())
+                destBuffer.append(",");
+            destBuffer.append(rcpt.str());
             recipients.append(rcpt.str());
         }
     }
@@ -616,6 +637,8 @@ private:
 };
 
 char const * CMailInfo::toHeader = "To: ";
+char const * CMailInfo::ccHeader = "Cc: ";
+char const * CMailInfo::bccHeader = "Bcc: ";
 char const * CMailInfo::subjectHeader = "Subject: ";
 char const * CMailInfo::senderHeader = "From: ";
 
@@ -790,28 +813,43 @@ static void doSendEmail(CMailInfo & info, CMailPart const & part)
     info.read();
 }
 
-void sendEmail(const char * to, const char * subject, const char * body, const char * mailServer, unsigned port, const char * sender, StringArray *warnings)
+void sendEmail(const char * to, const char * cc, const char * bcc, const char * subject, const char * body, const char * mailServer, unsigned port, const char * sender, StringArray *warnings)
 {
-    CMailInfo info(to, subject, mailServer, port, sender, warnings);
+    CMailInfo info(to, cc, bcc, subject, mailServer, port, sender, warnings);
     CTextMailPart bodyPart(body, "text/plain; charset=ISO-8859-1", NULL);
     doSendEmail(info, bodyPart);
 }
 
-void sendEmailAttachText(const char * to, const char * subject, const char * body, const char * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings)
+void sendEmail(const char * to, const char * subject, const char * body, const char * mailServer, unsigned port, const char * sender, StringArray *warnings)
 {
-    CMailInfo info(to, subject, mailServer, port, sender, warnings);
+    sendEmail(to, nullptr, nullptr, subject, body, mailServer, port, sender, warnings);
+}
+
+void sendEmailAttachText(const char * to, const char * cc, const char * bcc, const char * subject, const char * body, const char * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings)
+{
+    CMailInfo info(to, cc, bcc, subject, mailServer, port, sender, warnings);
     CTextMailPart inlinedPart(body, "text/plain; charset=ISO-8859-1", NULL);
     CTextMailPart attachmentPart(attachment, mimeType, attachmentName);
     CMultiMailPart multiPart(inlinedPart, attachmentPart);
     doSendEmail(info, multiPart);
 }
 
-void sendEmailAttachData(const char * to, const char * subject, const char * body, size32_t lenAttachment, const void * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings)
+void sendEmailAttachText(const char * to, const char * subject, const char * body, const char * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings)
 {
-    CMailInfo info(to, subject, mailServer, port, sender, warnings);
+    sendEmailAttachText(to, nullptr, nullptr, subject, body, attachment, mimeType, attachmentName, mailServer, port, sender, warnings);
+}
+
+void sendEmailAttachData(const char * to, const char * cc, const char * bcc, const char * subject, const char * body, size32_t lenAttachment, const void * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings)
+{
+    CMailInfo info(to, cc, bcc, subject, mailServer, port, sender, warnings);
     CTextMailPart inlinedPart(body, "text/plain; charset=ISO-8859-1", NULL);
     CDataMailPart attachmentPart(lenAttachment, attachment, mimeType, attachmentName);
     CMultiMailPart multiPart(inlinedPart, attachmentPart);
     doSendEmail(info, multiPart);
+}
+
+void sendEmailAttachData(const char * to, const char * subject, const char * body, size32_t lenAttachment, const void * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings)
+{
+    sendEmailAttachData(to, nullptr, nullptr, subject, body, lenAttachment, attachment, mimeType, attachmentName, mailServer, port, sender, warnings);
 }
 
