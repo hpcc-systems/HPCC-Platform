@@ -140,7 +140,6 @@
                     <xsl:call-template name="doLdapSecurity">
                         <xsl:with-param name="method" select="@method"/>
                         <xsl:with-param name="ldapServer" select="@ldapServer"/>
-                        <xsl:with-param name="ldapAuthMethod" select="@ldapAuthMethod"/>
                         <xsl:with-param name="ldapConnections" select="@ldapConnections"/>
                         <xsl:with-param name="passwordExpirationWarningDays" select="@passwordExpirationWarningDays"/>
                         <xsl:with-param name="checkViewPermissions" select="@checkViewPermissions"/>
@@ -395,7 +394,6 @@
     <xsl:template name="doLdapSecurity">
         <xsl:param name="method"/>
         <xsl:param name="ldapServer"/>
-        <xsl:param name="ldapAuthMethod"/>
         <xsl:param name="ldapConnections"/>
         <xsl:param name="localDomain"/>
         <xsl:param name="passwordExpirationWarningDays"/>
@@ -410,14 +408,6 @@
                 <xsl:attribute name="ldapProtocol"><xsl:value-of select="$method"/></xsl:attribute>
                 <xsl:attribute name="localDomain"><xsl:value-of select="$localDomain"/></xsl:attribute>
                 <xsl:attribute name="checkViewPermissions"><xsl:value-of select="$checkViewPermissions"/></xsl:attribute>
-                <xsl:attribute name="authMethod">
-                   <xsl:choose>
-                      <xsl:when test="string($ldapAuthMethod) != ''">
-                         <xsl:value-of select="$ldapAuthMethod"/>
-                      </xsl:when>
-                      <xsl:otherwise><xsl:value-of select="@authMethod"/></xsl:otherwise>
-                   </xsl:choose>
-                </xsl:attribute>
                 <xsl:attribute name="maxConnections">
                    <xsl:choose>
                       <xsl:when test="string($ldapConnections) != ''"><xsl:value-of select="$ldapConnections"/></xsl:when>
@@ -447,7 +437,6 @@
                 </xsl:if>
                 <xsl:for-each select="@*">
                     <xsl:choose>
-                        <xsl:when test="name()='ldapAuthMethod'"/>
                         <xsl:when test="name()='ldapConnections'"/>
                         <xsl:when test="name()='build'"/>
                         <xsl:when test="name()='buildSet'"/>

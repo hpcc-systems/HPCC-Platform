@@ -2,7 +2,6 @@ ldap:
    objname: ldapserver
    description: LDAP server process
    ldapProtocol: ldaps
-   authMethod: kerberos
    localDomain: localdomain
    ldapPort: 389
    ldapSecurePort: 636

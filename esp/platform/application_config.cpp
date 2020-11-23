@@ -122,7 +122,7 @@ bool addLdapSecurity(IPropertyTree *legacyEsp, IPropertyTree *appEsp, StringBuff
     StringAttr workunitsBasedn(appLdap->queryProp("@workunitsBasedn"));
     bindAuth.setf("<Authenticate method='LdapSecurity' config='%s' resourcesBasedn='%s' workunitsBasedn='%s'/>", configname.str(), resourcesBasedn.str(), workunitsBasedn.str());
 
-    VStringBuffer authenticationXml("<Authentication htpasswdFile='/etc/HPCCSystems/.htpasswd' ldapAuthMethod='kerberos' ldapConnections='10' ldapServer='%s' method='ldaps' passwordExpirationWarningDays='10'/>", configname.str());
+    VStringBuffer authenticationXml("<Authentication htpasswdFile='/etc/HPCCSystems/.htpasswd' ldapConnections='10' ldapServer='%s' method='ldaps' passwordExpirationWarningDays='10'/>", configname.str());
     legacyEsp->addPropTree("Authentication", createPTreeFromXMLString(authenticationXml));
     return true;
 }

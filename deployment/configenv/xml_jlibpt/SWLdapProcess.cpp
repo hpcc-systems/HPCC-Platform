@@ -53,7 +53,6 @@ unsigned SWLdapProcess::add(IPropertyTree *params)
 
    IPropertyTree * newAuthTree = createPTree(XML_TAG_AUTHENTICATION);
    newAuthTree->addProp("@htpasswdFile", "/etc/HPCCSystems/.htpasswd");
-   newAuthTree->addProp("@ldapAuthMethod", "simple");
    newAuthTree->addProp("@ldapConnections", "10");
    newAuthTree->addProp("@ldapServer", key);
    newAuthTree->addProp("@method", "ldaps");
