@@ -878,7 +878,11 @@ bool CFileSprayEx::getOneDFUWorkunit(IEspContext& context, const char* wuid, IEs
     const char* clusterName = wu->getClusterName(cluster).str();
     if (clusterName && *clusterName)
     {
-        Owned<IStringIterator> targets = getTargetClusters(NULL, clusterName);
+#ifdef _CONTAINERIZED
+        Owned<IStringIterator> targets = getContainerTargetClusters(nullptr, clusterName);
+#else
+        Owned<IStringIterator> targets = getTargetClusters(nullptr, clusterName);
+#endif
         if (!targets->first())
             resultWU->setClusterName(clusterName);
         else
