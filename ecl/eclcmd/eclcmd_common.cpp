@@ -346,7 +346,10 @@ eclCmdOptionMatchIndicator EclCmdCommon::matchCommandLineOption(ArgvIterator &it
     if (iter.matchOption(optUsername, ECLOPT_USERNAME)||iter.matchOption(optUsername, ECLOPT_USERNAME_S))
         return EclCmdOptionMatch;
     if (iter.matchOption(optPassword, ECLOPT_PASSWORD)||iter.matchOption(optPassword, ECLOPT_PASSWORD_S))
+    {
+        optPasswordProvided = true;
         return EclCmdOptionMatch;
+    }
     if (iter.matchFlag(optVerbose, ECLOPT_VERBOSE) || iter.matchFlag(optVerbose, ECLOPT_VERBOSE_S))
         return EclCmdOptionMatch;
     if (iter.matchFlag(optSSL, ECLOPT_SSL) || iter.matchFlag(optSSL, ECLOPT_SSL_S))
@@ -376,7 +379,7 @@ bool EclCmdCommon::finalizeOptions(IProperties *globals)
     extractEclCmdOption(optUsername, globals, ECLOPT_USERNAME_ENV, ECLOPT_USERNAME_INI, NULL, NULL);
     extractEclCmdOption(optPassword, globals, ECLOPT_PASSWORD_ENV, ECLOPT_PASSWORD_INI, NULL, NULL);
 
-    if (!optUsername.isEmpty() && optPassword.isEmpty())
+    if (!optUsername.isEmpty() && !optPasswordProvided)
     {
         VStringBuffer prompt("%s's password: ", optUsername.get());
         StringBuffer pw;
