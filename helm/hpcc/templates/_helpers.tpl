@@ -555,6 +555,7 @@ Generate instance queue names
 - name: {{ .name }}
   type: roxie 
   prefix: {{ .prefix | default "null" }}
+  deployOnly: true
  {{- end }}
 {{ end -}}
 {{- range $.Values.thor -}}

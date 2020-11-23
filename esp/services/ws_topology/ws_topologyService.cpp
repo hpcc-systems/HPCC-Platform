@@ -1322,14 +1322,27 @@ bool CWsTopologyEx::onTpLogicalClusterQuery(IEspContext &context, IEspTpLogicalC
         IArrayOf<IEspTpLogicalCluster> clusters;
         CConstWUClusterInfoArray wuClusters;
 #ifdef _CONTAINERIZED
+        double version = context.getClientVersion();
+        CDeployOnlyFilter deployOnlyFilter = req.getDeployOnlyFilter();
+        if (deployOnlyFilter == DeployOnlyFilter_Undefined)
+            deployOnlyFilter = CDeployOnlyFilter_All;
+
         Owned<IPropertyTreeIterator> iter = queryComponentConfig().getElements("queues");
         ForEach(*iter)
         {
             IPropertyTree &queue = iter->query();
+            bool deployOnly = queue.getPropBool("@deployOnly");
+            if (deployOnly && (deployOnlyFilter == CDeployOnlyFilter_NotDeployOnly))
+                continue;
+            if (!deployOnly && (deployOnlyFilter == CDeployOnlyFilter_DeployOnly))
+                continue;
+
             Owned<IEspTpLogicalCluster> cluster = createTpLogicalCluster();
             cluster->setName(queue.queryProp("@name"));
             cluster->setType(queue.queryProp("@type"));
             cluster->setLanguageVersion("3.0.0");
+            if (version >= 1.31)
+                cluster->setDeployOnly(deployOnly);
             clusters.append(*cluster.getClear());
         }
 #else
