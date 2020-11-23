@@ -6990,7 +6990,7 @@ public:
 #define GROUP_CACHE_INTERVAL (1000*60)
 #define GROUP_EXCEPTION_CACHE_INTERVAL (1000*60*10)
 
-static GroupType translateGroupType(const char *groupType)
+GroupType translateGroupType(const char *groupType)
 {
     if (!groupType)
         return grp_unknown;

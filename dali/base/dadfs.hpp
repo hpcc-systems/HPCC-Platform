@@ -814,6 +814,8 @@ extern da_decl const char *normalizeLFN(const char *s, StringBuffer &normalized)
 
 extern da_decl IDFAttributesIterator *createSubFileFilter(IDFAttributesIterator *_iter,IUserDescriptor* _user, bool includesub, unsigned timems=INFINITE); // takes ownership of iter
 
+extern da_decl GroupType translateGroupType(const char *groupType);
+
 #define DFS_REPLICATE_QUEUE "dfs_replicate_queue"
 #define DRQ_STOP 0
 #define DRQ_REPLICATE 1
