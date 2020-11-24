@@ -21543,7 +21543,7 @@ public:
             }
         }
         size32_t outputLimitBytes = 0;
-        IConstWorkUnit *workunit = serverContext->queryWorkUnit();
+        IConstWorkUnit *workunit = sequence == ResultSequenceInternal ? nullptr : serverContext->queryWorkUnit();
         if (workunit)
         {
             size32_t outputLimit;
