@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-//nothor
 
 import dbglog from Std.System.log;
 

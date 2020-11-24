@@ -615,6 +615,7 @@ protected:
     unsigned counter;
     CReplyCancelHandler graphCancelHandler;
     bool loopBodySubgraph;
+    Owned<IPropertyTree> sourceActDependents;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CGraphStub);
@@ -749,7 +750,8 @@ public:
     }
     IThorGraphIterator *getChildGraphIterator() const; // retrieves original child graphs
     IThorGraphStubIterator *getChildStubIterator() const; // retrieves child graph stubs, which redirect to parallel instances
-
+    void noteDependency(CGraphElementBase *targetActivity, CGraphElementBase *sourceActivity, unsigned controlId, bool interGraph);
+    unsigned queryDependents(unsigned sourceActId);
     void executeChildGraphs(size32_t parentExtractSz, const byte *parentExtract);
     void doExecute(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies);
     void doExecuteChild(size32_t parentExtractSz, const byte *parentExtract);
