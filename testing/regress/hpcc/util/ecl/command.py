@@ -74,8 +74,10 @@ class ECLcmd(Shell):
             name = kwargs.pop('name', False)
             if not name:
                 name = eclfile.getBaseEclName()
+                jname = eclfile.getJobname()
 
             args.append("--name=" + name)
+            args.append("-Dname=" + jname)
 
         else:
             args.append('--exception-level=warning')
@@ -166,7 +168,10 @@ class ECLcmd(Shell):
             if wuid ==  'N/A':
                 logger.debug("%3d. in finally queryWuid() -> 'result':'%s', 'wuid':'%s', 'state':'%s'", eclfile.getTaskId(),  res['result'],  res['wuid'],  res['state'])
                 wuid = res['wuid']
-                if res['result'] != "OK":
+                if eclfile.testFail():
+                    #eclfile.diff=eclfile.getBaseEcl()+'\n\t'+data+'\n'
+                    pass
+                elif res['result'] != "OK":
                     eclfile.diff=eclfile.getBaseEcl()+'\n\t'+res['state']+'\n'
                     logger.error("%3d. %s in queryWuid(%s)",  eclfile.getTaskId(),  res['state'],  eclfile.getJobname())
 
