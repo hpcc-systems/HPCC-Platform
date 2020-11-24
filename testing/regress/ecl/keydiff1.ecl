@@ -18,6 +18,10 @@
 import $.setup;
 prefix := setup.Files(false, false).QueryFilePrefix;
 
+// This warning is suppressed because it depends on the size of the thor cluster
+// and consistant output is required by regression suite
+// (warning relates to skew in the child record causing uneven disk read time)
+#onwarning (30003,ignore);
 //noRoxie
 //noHthor
 import Std.File AS FileServices;
