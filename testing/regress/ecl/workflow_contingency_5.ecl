@@ -22,7 +22,7 @@ optParallel := #IFDEFINED(root.parallel, false);
 
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
-#onwarning(5102, ignore);
+#onwarning(100, ignore);
 
 display(String thisString) := FUNCTION
   ds := dataset([thisString], {String text});
@@ -30,7 +30,7 @@ display(String thisString) := FUNCTION
 END;
 
 //Contingency failure should not cause workflow to abort
-a := Fail(5102) : independent;
+a := Fail(100) : independent;
 
 x := display('x') : Success(a);
 

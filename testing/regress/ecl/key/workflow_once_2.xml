@@ -1,0 +1,6 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>hello</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>world</Result_2></Row>
+</Dataset>

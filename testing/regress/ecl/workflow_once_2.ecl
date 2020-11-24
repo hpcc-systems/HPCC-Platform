@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 //version parallel=false
-//version parallel=true,nothor
+//version parallel=true
 
 import ^ as root;
 optParallel := #IFDEFINED(root.parallel, false);
@@ -23,22 +23,5 @@ optParallel := #IFDEFINED(root.parallel, false);
 #option ('parallelWorkflow', optParallel);
 #option('numWorkflowThreads', 5);
 
-Import sleep from std.System.Debug;
-
-display(String thisString) := FUNCTION
-  ds := dataset([thisString], {String text});
-  RETURN Output(ds, NAMED('logging'), EXTEND);
-END;
-
-//this tests that items are aborted once the workflow fails
-b := SEQUENTIAL(display('b'), FAIL(101)) : independent;
-
-c0 := sleep(2000) : independent;
-c1 := sleep(2001) : independent;
-c2 := sleep(2002) : independent;
-c3 := sleep(2003) : independent;
-
-c := SEQUENTIAL(c0, c1, c2, c3, display('c'));
-
-//Note: the sequential engine behaves differently if Parallel is used, because the workflow output from the code generator is inconsistent
-IF(optParallel, PARALLEL(b, c), SEQUENTIAL(b,c));
+OUTPUT('hello') : ONCE;
+OUTPUT('world') : ONCE;
