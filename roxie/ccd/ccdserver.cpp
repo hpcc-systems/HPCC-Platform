@@ -26990,9 +26990,58 @@ public:
     virtual void checkForAbort() { checkAbort(); }
 };
 
+class CRoxieServerSoapActionBase : public CRoxieServerSoapActivityBase
+{
+public:
+    CRoxieServerSoapActionBase(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerSoapActivityBase(_ctx, _factory, _probeManager)
+    {
+    }
+
+    virtual void execute(unsigned parentExtractSize, const byte * parentExtract)
+    {
+        CriticalBlock b(ecrit);
+        if (exception)
+            throw(exception.getLink());
+        if (!executed)
+        {
+            try
+            {
+                executed = true;
+                start(parentExtractSize, parentExtract, false);
+                {
+                    ActivityTimer t(activityStats, timeActivities); // unfortunately this is not really best place for seeing in debugger.
+                    onExecute();
+                }
+                stop();
+            }
+            catch (IException *E)
+            {
+                ctx->notifyAbort(E);
+                exception.set(E);
+                abort();
+                throw E;
+            }
+        }
+    }
+
+    virtual void onExecute() = 0;
+
+    virtual void reset() override
+    {
+        executed = false;
+        exception.clear();
+        CRoxieServerSoapActivityBase::reset();
+    }
+
+protected:
+    bool executed = false;
+    Linked<IException> exception;
+    CriticalSection ecrit;
+};
 //---------------------------------------------------------------------------
 
-class CRoxieServerSoapRowCallActivity : public CRoxieServerSoapActivityBase 
+class CRoxieServerSoapRowCallActivity : public CRoxieServerSoapActivityBase
 {
     IHThorSoapCallArg & callHelper;
 
@@ -27060,16 +27109,15 @@ IRoxieServerActivityFactory *createRoxieServerSoapRowCallActivityFactory(unsigne
 
 //---------------------------------------------------------------------------
 
-class CRoxieServerSoapRowActionActivity : public CRoxieServerSoapActivityBase 
+class CRoxieServerSoapRowActionActivity : public CRoxieServerSoapActionBase
 {
 public:
     CRoxieServerSoapRowActionActivity(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerSoapActivityBase(_ctx, _factory, _probeManager)
+        : CRoxieServerSoapActionBase(_ctx, _factory, _probeManager)
     {}
 
-    virtual void execute(unsigned parentExtractSize, const byte * parentExtract)
+    virtual void onExecute() override
     {
-        //MORE: parentExtract not passed to start - although shouldn't be a problem.
         soaphelper.setown(createSoapCallHelper(this, NULL, ctx->queryAuthToken(), SCrow, pClientCert, *this, this));
         soaphelper->start();
         soaphelper->waitUntilDone();
@@ -27193,11 +27241,11 @@ IRoxieServerActivityFactory *createRoxieServerSoapDatasetCallActivityFactory(uns
 
 //---------------------------------------------------------------------------
 
-class CRoxieServerSoapDatasetActionActivity : public CRoxieServerSoapActivityBase 
+class CRoxieServerSoapDatasetActionActivity : public CRoxieServerSoapActionBase
 {
 public:
     CRoxieServerSoapDatasetActionActivity(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerSoapActivityBase(_ctx, _factory, _probeManager)
+        : CRoxieServerSoapActionBase(_ctx, _factory, _probeManager)
     {}
 
     virtual const void *getNextRow()
@@ -27209,34 +27257,15 @@ public:
         return nextrec;
     }
 
-    virtual void execute(unsigned parentExtractSize, const byte * parentExtract)
+    virtual void onExecute() override
     {
-        try
-        {
-            start(parentExtractSize, parentExtract, false);
-            soaphelper.setown(createSoapCallHelper(this, NULL, ctx->queryAuthToken(), SCdataset, pClientCert, *this, this));
-            soaphelper->start();
-            soaphelper->waitUntilDone();
-            IException *e = soaphelper->getError();
-            soaphelper.clear();
-            if (e)
-                throw e;
-            stop();
-        }
-        catch (IException *E)
-        {
-            ctx->notifyAbort(E);
-            abort();
-            throw;
-        }
-        catch(...)
-        {
-            Owned<IException> E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught at %s:%d", sanitizeSourceFile(__FILE__), __LINE__);
-            ctx->notifyAbort(E);
-            abort();
-            throw;
-
-        }
+        soaphelper.setown(createSoapCallHelper(this, NULL, ctx->queryAuthToken(), SCdataset, pClientCert, *this, this));
+        soaphelper->start();
+        soaphelper->waitUntilDone();
+        IException *e = soaphelper->getError();
+        soaphelper.clear();
+        if (e)
+            throw e;
     }
 
     virtual IFinalRoxieInput *queryOutput(unsigned idx)
