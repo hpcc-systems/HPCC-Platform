@@ -21114,8 +21114,17 @@ public:
     virtual void doExecuteAction(unsigned parentExtractSize, const byte * parentExtract) 
     {
         unsigned numBranches = helper.numBranches();
-        for (unsigned branch=1; branch <= numBranches; branch++)
-            executeDependencies(parentExtractSize, parentExtract, branch);
+        try
+        {
+            for (unsigned branch=1; branch <= numBranches; branch++)
+                executeDependencies(parentExtractSize, parentExtract, branch);
+        }
+        catch (...)
+        {
+            for (unsigned branch=1; branch <= numBranches; branch++)
+                stopDependencies(parentExtractSize, parentExtract, branch);
+            throw;
+        }
     }
 
 };
