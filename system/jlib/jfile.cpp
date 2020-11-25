@@ -5638,7 +5638,7 @@ bool unmountDrive(const char *drv)
 
 }
 
-IFileIO *createUniqueFile(const char *dir, const char *prefix, const char *ext, StringBuffer &filename)
+IFileIO *createUniqueFile(const char *dir, const char *prefix, const char *ext, StringBuffer &filename, IFOmode mode)
 {
     CDateTime dt;
     dt.setNow();
@@ -5662,7 +5662,7 @@ IFileIO *createUniqueFile(const char *dir, const char *prefix, const char *ext, 
         OwnedIFile iFile = createIFile(filename.str());
         if (!iFile->exists())
         {
-            try { return iFile->openShared(IFOcreate, IFSHnone); } // NB: could be null if path not found
+            try { return iFile->openShared(mode, IFSHnone); } // NB: could be null if path not found
             catch (IException *e)
             {
                 EXCLOG(e, "createUniqueFile");

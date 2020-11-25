@@ -3568,3 +3568,36 @@ ILockInfoCollection *deserializeLockInfoCollection(MemoryBuffer &mb)
 {
     return new CLockInfoCollection(mb);
 }
+
+static const char* remLeading(const char* s)
+{
+    if (*s == '/')
+        s++;
+    return s;
+}
+
+static unsigned daliConnectTimeoutMs = 5000;
+extern da_decl IRemoteConnection* connectXPathOrFile(const char* path, bool safe, StringBuffer& xpath)
+{
+    CDfsLogicalFileName lfn;
+    StringBuffer lfnPath;
+    if ((strstr(path, "::") != nullptr) && !strchr(path, '/'))
+    {
+        lfn.set(path);
+        lfn.makeFullnameQuery(lfnPath, DXB_File);
+        path = lfnPath.str();
+    }
+    else if (strchr(path + ((*path == '/') ? 1 : 0),'/') == nullptr)
+        safe = true;    // all root trees safe
+
+    Owned<IRemoteConnection> conn = querySDS().connect(remLeading(path), myProcessSession(), safe ? 0 : RTM_LOCK_READ, daliConnectTimeoutMs);
+    if (!conn && !lfnPath.isEmpty())
+    {
+        lfn.makeFullnameQuery(lfnPath.clear(), DXB_SuperFile);
+        path = lfnPath.str();
+        conn.setown(querySDS().connect(remLeading(path), myProcessSession(), safe? 0 : RTM_LOCK_READ, daliConnectTimeoutMs));
+    }
+    if (conn.get())
+        xpath.append(path);
+    return conn.getClear();
+}
