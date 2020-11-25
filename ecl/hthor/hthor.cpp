@@ -1703,7 +1703,7 @@ public:
 private:
     bool waitForPipe()
     {
-        Owned<IPipeProcessException> pipeException;
+        Owned<IException> pipeException;
         try
         {
             if (firstRead)
@@ -1716,8 +1716,9 @@ private:
             if (!readTransformer->eos())
                 return true;
         }
-        catch (IPipeProcessException *e)
+        catch (IException *e)
         {
+            // NB: the original exception is probably a IPipeProcessException, but because InterruptableSemaphore rethrows it, we must catch it as an IException
             pipeException.setown(e);
         }
         verifyPipe();
@@ -1806,7 +1807,7 @@ public:
 
     virtual void execute()
     {
-        Owned<IPipeProcessException> pipeException;
+        Owned<IException> pipeException;
         try
         {
             for (;;)
@@ -1831,8 +1832,9 @@ public:
             if (!recreate)
                 closePipe();
         }
-        catch (IPipeProcessException *e)
+        catch (IException *e)
         {
+            // NB: the original exception is probably a IPipeProcessException, but because InterruptableSemaphore rethrows it, we must catch it as an IException
             pipeException.setown(e);
         }
         verifyPipe();

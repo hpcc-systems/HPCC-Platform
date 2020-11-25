@@ -9728,10 +9728,7 @@ private:
         catch (IException *e)
         {
             // NB: the original exception is probably a IPipeProcessException, but because InterruptableSemaphore rethrows it, we must catch it as an IException
-            if (QUERYINTERFACE(e, IPipeProcessException))
-                pipeException.setown(e);
-            else
-                throw;
+            pipeException.setown(e);
         }
         verifyPipe();
         if (pipeException) // NB: verifyPipe may throw error based on pipe prog. output 1st.
@@ -9841,7 +9838,7 @@ public:
 
     virtual void onExecute()
     {
-        Owned<IPipeProcessException> pipeException;
+        Owned<IException> pipeException;
         try
         {
             for (;;)
@@ -9862,7 +9859,7 @@ public:
             if (!recreate)
                 closePipe();
         }
-        catch (IPipeProcessException *e)
+        catch (IException *e)
         {
             pipeException.setown(e);
         }
