@@ -36,6 +36,8 @@
  #define jlib_thrown_decl DECL_IMPORT
 #endif
 
+#include <atomic>
+
 interface IInterface
 {
     virtual void Link() const = 0;
@@ -62,8 +64,8 @@ public:
     inline ~Shared()                             { ::Release(ptr); }
     inline Shared<CLASS> & operator = (const Shared<CLASS> & other) { this->set(other.get()); return *this;  }
 
-    inline CLASS * operator -> () const         { return ptr; } 
-    inline operator CLASS *() const             { return ptr; } 
+    inline CLASS * operator -> () const         { return ptr; }
+    inline operator CLASS *() const             { return ptr; }
 
     inline void clear()                         { CLASS *temp=ptr; ptr=NULL; ::Release(temp); }
     inline CLASS * get() const                  { return ptr; }
@@ -81,8 +83,21 @@ public:
     }
     inline void set(const Shared<CLASS> &other) { this->set(other.get()); }
     inline void setown(CLASS * _ptr)            { CLASS * temp = ptr; ptr = _ptr; ::Release(temp); }
+    inline bool setownIfNull(CLASS * _ptr)
+    {
+        if (!ptr)
+        {
+            ptr = _ptr;
+            return true;
+        }
+        else
+        {
+            ::Release(_ptr);
+            return false;
+        }
+    }
     inline void swap(Shared<CLASS> & other)     { CLASS * temp = ptr; ptr = other.ptr; other.ptr = temp; }
-    
+
 protected:
     inline Shared(CLASS * _ptr)                  { ptr = _ptr; } // deliberately protected
 
@@ -92,6 +107,86 @@ private:
 
 private:
     CLASS * ptr;
+};
+
+// Similar to class Shared<X>, but thread safe versions of the functions (avoid the need for critical sections)
+template <class CLASS> class AtomicShared
+{
+public:
+    inline AtomicShared()                              { ptr.store(nullptr, std::memory_order_relaxed); }
+    inline AtomicShared(CLASS * _ptr, bool owned)      { ptr.store(_ptr, std::memory_order_relaxed); if (!owned && _ptr) _ptr->Link(); }
+    inline AtomicShared(const AtomicShared & other)    { ptr.store(other.getLinkNonAtomic(), std::memory_order_relaxed); }
+#if defined(__cplusplus) && __cplusplus >= 201100
+    inline AtomicShared(AtomicShared && other)         { ptr.store(other.getClear(), std::memory_order_relaxed); }
+#endif
+    inline ~AtomicShared()                             { ::Release(ptr.load(std::memory_order_relaxed)); }
+    inline AtomicShared<CLASS> & operator = (const AtomicShared<CLASS> & other) { this->setown(other.getLinkNonAtomic()); return *this;  }
+
+    inline void clear()                                { ::Release(getClear()); }
+    inline CLASS * getClear()
+    {
+        return ptr.exchange(nullptr);
+    }
+    inline CLASS * getClearNonAtomic()
+    {
+        CLASS * result = ptr.load();
+        ptr.store(nullptr);
+        return result;
+    }
+
+    //The getLink() function cannot be implemented in a thread safe way - e.g. if clear is called concurrently
+    //then temp will point to a freed object.  (Might be possible with support for transactional memory...)
+    inline CLASS * getLinkNonAtomic() const
+    {
+        CLASS * temp = ptr;
+        if (temp)
+            temp->Link();
+        return temp;
+    }
+    inline bool isSet() const                 { return ptr != nullptr; }
+    inline void set(CLASS * _ptr)
+    {
+        if (ptr != _ptr)
+        {
+            LINK(_ptr);
+            this->setown(_ptr);
+        }
+    }
+    inline bool setownIfNull(CLASS * _ptr)
+    {
+        CLASS * expected = nullptr;
+        if (ptr.compare_exchange_strong(expected, _ptr))
+            return true;
+        ::Release(_ptr);
+        return false;
+    }
+    inline void setown(CLASS * _ptr)
+    {
+        CLASS * temp = ptr.exchange(_ptr);
+        ::Release(temp);
+    }
+    inline CLASS * swap(CLASS * _ptr)
+    {
+        return ptr.exchange(_ptr);
+    }
+    //swap - this will only update this once, but other can temporarily have a null value
+    inline void swap(AtomicShared<CLASS> & other)
+    {
+        CLASS * temp = other.getClear();
+        temp = this->swap(temp);
+        temp = other.swap(temp);
+        ::Release(temp);
+    }
+
+protected:
+    inline AtomicShared(CLASS * _ptr)                  { ptr = _ptr; } // deliberately protected
+
+private:
+    inline void setown(const AtomicShared<CLASS> &other); // illegal - going to cause a -ve leak
+    inline AtomicShared<CLASS> & operator = (const CLASS * other);
+
+private:
+    std::atomic<CLASS *> ptr;
 };
 
 
@@ -146,7 +241,7 @@ interface IDataVal
 };
 
 
-// IIterator 
+// IIterator
 interface IIterator : extends IInterface
 {
     virtual bool first() = 0;
@@ -156,7 +251,7 @@ interface IIterator : extends IInterface
     virtual IInterface & get() = 0;
 };
 
-template <class C> 
+template <class C>
 interface IIteratorOf : public IInterface
 {
 public:
