@@ -2181,15 +2181,14 @@ public:
     {
         // NOTE - this thread needs to do as little as possible - just read packets and queue them up - otherwise we can get packet loss due to buffer overflow
         // DO NOT put tracing on this thread except at very high tracelevels!
-#ifdef SUBCHANNELS_IN_HEADER
-        unsigned mySubchannel = header.mySubChannel();
-#else
-        Owned<const ITopologyServer> topology = getTopology();
         if (!header.channel)
         {
             // Turn broadcast packet (channel 0), as early as possible, into non-0 channel packets.
             // So retries and other communication with Roxie server (which uses non-0 channel numbers) will not cause double work or confusion.
             // Unfortunately this is bad news for dropping packets
+            // In SUBCHANNELS_IN_HEADER mode this translation has been done on server before sending, except for some control messages like PING or UNLOAD
+
+            Owned<const ITopologyServer> topology = getTopology();
             const std::vector<unsigned> channels = topology->queryChannels();
             Owned<IRoxieQueryPacket> packet = createRoxiePacket(mb);
             for (unsigned i = 1; i < channels.size(); i++)
@@ -2198,6 +2197,10 @@ public:
             queue.enqueue(packet.getClear());
             return;
         }
+#ifdef SUBCHANNELS_IN_HEADER
+        unsigned mySubchannel = header.mySubChannel();
+#else
+        Owned<const ITopologyServer> topology = getTopology();
         unsigned mySubchannel = topology->queryChannelInfo(header.channel).subChannel();
 #endif
         if (header.activityId == ROXIE_FILECALLBACK || header.activityId == ROXIE_DEBUGCALLBACK )
@@ -2763,17 +2766,13 @@ public:
             }
             else
             {
-#ifdef SUBCHANNELS_IN_HEADER
-                // In SUBCHANNELS_IN_HEADER mode this translation has been done on server before sending
-                throwUnexpected();
-#else
                 // Turn broadcast packet (channel 0), as early as possible, into non-0 channel packets.
                 // So retries and other communication with Roxie server (which uses non-0 channel numbers) will not cause double work or confusion.
+                // In SUBCHANNELS_IN_HEADER mode this translation has been done on server before sending, except for some control messages like PING or UNLOAD
                 for (unsigned i = 0; i < numChannels; i++)
                 {
                     targetQueue->enqueue(packet->clonePacket(i+1));
                 }
-#endif
             }
         }
     }
