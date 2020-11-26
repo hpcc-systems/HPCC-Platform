@@ -1421,7 +1421,7 @@ public:
                 if (!abortJob)
                 {
                     for (unsigned subChannel = 0; subChannel < mySubChannel; subChannel++)
-                        noteNodeSick(header.subChannels[subChannel].getIpAddress());
+                        noteNodeSick(header.subChannels[subChannel]);
                 }
             }
 #else
@@ -2070,7 +2070,7 @@ public:
                 {
                     if (header.subChannels[subChannel].isMe() || header.subChannels[subChannel].isNull())
                         break;
-                    noteNodeSick(header.subChannels[subChannel].getIpAddress());
+                    noteNodeSick(header.subChannels[subChannel]);
                 }
 
                 DelayedPacketEntry *goer = finger;
@@ -2437,7 +2437,7 @@ public:
 #ifndef SUBCHANNELS_IN_HEADER
                 channelInfo.noteChannelHealthy(subChannel);
 #else
-                noteNodeHealthy(header.subChannels[subChannel].getIpAddress());
+                noteNodeHealthy(header.subChannels[subChannel]);
 #endif
                 bool foundInQ = false;
 #ifdef NEW_IBYTI
@@ -2606,7 +2606,7 @@ public:
                     {
                         unsigned delay = 0;
                         for (unsigned subChannel = 0; subChannel < mySubchannel; subChannel++)
-                            delay += getIbytiDelay(header.subChannels[subChannel].getIpAddress());
+                            delay += getIbytiDelay(header.subChannels[subChannel]);
                         delayed.queryQueue(header.channel, mySubchannel).append(packet.getClear(), msTick()+delay);
                     }
                     else

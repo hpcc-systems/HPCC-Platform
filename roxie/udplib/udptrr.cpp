@@ -491,7 +491,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                             StringBuffer ipStr;
                             DBGLOG("UdpReceiver: received %s msg from node=%s", flowType::name(msg.cmd), msg.sourceNode.getTraceText(ipStr).str());
                         }
-                        UdpSenderEntry *sender = &parent.sendersTable[msg.sourceNode.getIpAddress()];
+                        UdpSenderEntry *sender = &parent.sendersTable[msg.sourceNode];
                         switch (msg.cmd)
                         {
                         case flowType::request_to_send:
@@ -718,7 +718,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
     public:
     IMPLEMENT_IINTERFACE;
     CReceiveManager(int server_flow_port, int d_port, int client_flow_port, int snif_port, const IpAddress &multicast_ip, int queue_size, int m_slot_pr_client)
-        : collatorThread(*this), sendersTable([client_flow_port](const IpAddress &ip) { return new UdpSenderEntry(ip, client_flow_port);})
+        : collatorThread(*this), sendersTable([client_flow_port](const ServerIdentifier &ip) { return new UdpSenderEntry(ip.getIpAddress(), client_flow_port);})
     {
 #ifndef _WIN32
         setpriority(PRIO_PROCESS, 0, -15);

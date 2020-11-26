@@ -522,7 +522,7 @@ class CSendManager : implements ISendManager, public CInterface
                                 StringBuffer s;
                                 DBGLOG("UdpSender: received request_received msg from node=%s", f.destNode.getTraceText(s).str());
                             }
-                            parent.receiversTable[f.destNode.getIpAddress()].requestAcknowledged();
+                            parent.receiversTable[f.destNode].requestAcknowledged();
                             break;
 
                         default: 
@@ -643,7 +643,7 @@ class CSendManager : implements ISendManager, public CInterface
 
                 if (udpSnifferEnabled)
                     send_sniff(sniffType::busy);
-                UdpReceiverEntry &receiverInfo = parent.receiversTable[permit.destNode.getIpAddress()];
+                UdpReceiverEntry &receiverInfo = parent.receiversTable[permit.destNode];
                 unsigned payload = receiverInfo.sendData(permit, bucket);
                 if (udpSnifferEnabled)
                     send_sniff(sniffType::idle);
@@ -691,7 +691,7 @@ public:
     CSendManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int q_size, int _numQueues, const IpAddress &_myIP, TokenBucket *_bucket)
         : bucket(_bucket),
           myIP(_myIP),
-          receiversTable([_myIP, _numQueues, q_size, server_flow_port, data_port](const IpAddress &ip) { return new UdpReceiverEntry(ip, _myIP, _numQueues, q_size, server_flow_port, data_port);})
+          receiversTable([_myIP, _numQueues, q_size, server_flow_port, data_port](const ServerIdentifier &ip) { return new UdpReceiverEntry(ip.getIpAddress(), _myIP, _numQueues, q_size, server_flow_port, data_port);})
     {
 #ifndef _WIN32
         setpriority(PRIO_PROCESS, 0, -3);
@@ -721,26 +721,23 @@ public:
 
     virtual IMessagePacker *createMessagePacker(ruid_t ruid, unsigned sequence, const void *messageHeader, unsigned headerSize, const ServerIdentifier &destNode, int queue) override
     {
-        const IpAddress dest = destNode.getIpAddress();
-        return ::createMessagePacker(ruid, sequence, messageHeader, headerSize, *this, receiversTable[dest], myIP, getNextMessageSequence(), queue);
+        return ::createMessagePacker(ruid, sequence, messageHeader, headerSize, *this, receiversTable[destNode], myIP, getNextMessageSequence(), queue);
     }
 
     virtual bool dataQueued(ruid_t ruid, unsigned msgId, const ServerIdentifier &destNode) override
     {
-        const IpAddress dest = destNode.getIpAddress();
         UdpPacketHeader pkHdr;
         pkHdr.ruid = ruid;
         pkHdr.msgId = msgId;
-        return receiversTable[dest].dataQueued(pkHdr);
+        return receiversTable[destNode].dataQueued(pkHdr);
     }
 
     virtual bool abortData(ruid_t ruid, unsigned msgId, const ServerIdentifier &destNode)
     {
-        const IpAddress dest = destNode.getIpAddress();
         UdpPacketHeader pkHdr;
         pkHdr.ruid = ruid;
         pkHdr.msgId = msgId;
-        return receiversTable[dest].removeData((void*) &pkHdr, &UdpReceiverEntry::comparePacket);
+        return receiversTable[destNode].removeData((void*) &pkHdr, &UdpReceiverEntry::comparePacket);
     }
 
     virtual bool allDone() 

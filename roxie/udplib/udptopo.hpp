@@ -98,9 +98,9 @@ private:
 
 // In containerized mode with dynamic topology , we prefer a different mechanism for tracking node health
 
-extern UDPLIB_API void noteNodeSick(const IpAddress &node);
-extern UDPLIB_API void noteNodeHealthy(const IpAddress &node);
-extern UDPLIB_API unsigned getIbytiDelay(const IpAddress &node);
+extern UDPLIB_API void noteNodeSick(const ServerIdentifier &node);
+extern UDPLIB_API void noteNodeHealthy(const ServerIdentifier &node);
+extern UDPLIB_API unsigned getIbytiDelay(const ServerIdentifier &node);
 
 interface ITopologyServer : public IInterface
 {
