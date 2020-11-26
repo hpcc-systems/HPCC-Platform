@@ -101,9 +101,14 @@ void * checked_calloc(size_t size, size_t num, char const * label)
     return ret;
 }
 
-inline bool checkIsCompressed(unsigned int flags, size32_t fixedSize, bool grouped)
+inline bool checkWriteIsCompressed(unsigned int flags, size32_t fixedSize, bool grouped)
 {
     return ((flags & TDWnewcompress) || ((flags & TDXcompress) && ((0 == fixedSize) || (fixedSize+(grouped?1:0) >= MIN_ROWCOMPRESS_RECSIZE))));
+}
+
+inline bool checkReadIsCompressed(unsigned int flags, size32_t fixedSize, bool grouped)
+{
+    return ((flags & TDXcompress) && ((0 == fixedSize) || (fixedSize+(grouped?1:0) >= MIN_ROWCOMPRESS_RECSIZE)));
 }
 
 //=====================================================================================================
@@ -546,7 +551,7 @@ void CHThorDiskWriteActivity::open()
     Linked<IRecordSize> groupedMeta = input->queryOutputMeta()->querySerializedDiskMeta();
     if (grouped)
         groupedMeta.setown(createDeltaRecordSize(groupedMeta, +1));
-    blockcompressed = checkIsCompressed(helper.getFlags(), serializedOutputMeta.getFixedSize(), grouped);//TDWnewcompress for new compression, else check for row compression
+    blockcompressed = checkWriteIsCompressed(helper.getFlags(), serializedOutputMeta.getFixedSize(), grouped);//TDWnewcompress for new compression, else check for row compression
     void *ekey;
     size32_t ekeylen;
     helper.getEncryptKey(ekeylen,ekey);
@@ -8278,7 +8283,7 @@ void CHThorDiskReadBaseActivity::resolve()
             fdesc.setown(ldFile->getFileDescriptor());
             gatherInfo(fdesc);
             if (ldFile->isExternal())
-                compressed = checkIsCompressed(helper.getFlags(), fixedDiskRecordSize, false);//grouped=FALSE because fixedDiskRecordSize already includes grouped
+                compressed = checkWriteIsCompressed(helper.getFlags(), fixedDiskRecordSize, false);//grouped=FALSE because fixedDiskRecordSize already includes grouped
             IDistributedFile *dFile = ldFile->queryDistributedFile();
             if (dFile)  //only makes sense for distributed (non local) files
             {
@@ -8359,7 +8364,7 @@ void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
     }
     else
     {
-        compressed = checkIsCompressed(helper.getFlags(), fixedDiskRecordSize, false);//grouped=FALSE because fixedDiskRecordSize already includes grouped
+        compressed = checkReadIsCompressed(helper.getFlags(), fixedDiskRecordSize, false); //grouped=FALSE because fixedDiskRecordSize already includes grouped
     }
     void *k;
     size32_t kl;
