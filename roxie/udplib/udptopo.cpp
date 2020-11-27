@@ -265,6 +265,7 @@ public:
     TopologyManager() { currentTopology.setown(new CTopologyServer); };
     void setServers(const StringArray &_topoServers);
     void setRoles(const std::vector<RoxieEndpointInfo> &myRoles);
+    void closedown();
     const ITopologyServer &getCurrent();
 
     bool update();
@@ -400,6 +401,14 @@ void TopologyManager::setRoles(const std::vector<RoxieEndpointInfo> &myRoles)
     currentTopology.swap(newServer);
 }
 
+void TopologyManager::closedown()
+{
+    topoBuf.replaceString("server|", "-server|");
+    topoBuf.replaceString("agent|", "-agent|");
+    freeze(false);
+    update();
+}
+
 extern UDPLIB_API const ITopologyServer *getTopology()
 {
     return &topologyManager.getCurrent();
@@ -456,6 +465,7 @@ extern UDPLIB_API void publishTopology(unsigned traceLevel)
                 }
                 waitTime = topoUpdateInterval;
             }
+            topologyManager.closedown();
         });
     }
 }

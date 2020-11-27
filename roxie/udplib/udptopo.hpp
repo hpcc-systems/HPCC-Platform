@@ -126,6 +126,8 @@ struct RoxieEndpointInfo
 
 extern UDPLIB_API void initializeTopology(const StringArray &topoServers, const std::vector<RoxieEndpointInfo> &myRoles);
 extern UDPLIB_API void publishTopology(unsigned traceLevel);
+extern UDPLIB_API void stopTopoThread();
+
 #ifndef _CONTAINERIZED
 extern UDPLIB_API void createStaticTopology(const std::vector<RoxieEndpointInfo> &allRoles, unsigned traceLevel);
 #endif

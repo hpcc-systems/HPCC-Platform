@@ -123,10 +123,18 @@ void init_signals()
 
 void updateTopology(const std::string &newInfo)
 {
-    unsigned &found = topology[newInfo];
-    if (found==0)
-        responseDirty = true;
-    found = msTick();
+    if (newInfo[0]=='-')
+    {
+        if (topology.erase(newInfo.substr(1)))
+            responseDirty = true;
+    }
+    else
+    {
+        unsigned &found = topology[newInfo];
+        if (found==0)
+            responseDirty = true;
+        found = msTick();
+    }
 }
 
 void timeoutTopology()
