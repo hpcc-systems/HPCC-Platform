@@ -3308,27 +3308,6 @@ void testMultiConnect()
     printf("connect took %d\n",msTick()-t);
 }
 
-#if 0
-void testDaliLog(bool listener)
-{
-    startLogMsgChildReceiver();
-    startLogMsgParentReceiver();
-    if (listener) {
-        ILogMsgListener * listener = startLogMsgListener();
-        fileMsgHandler = getRollingFileLogMsgHandler("datest1", ".log", MSGFIELD_STANDARD, false, true, NULL);
-        listener->addMonitorOwn(fileMsgHandler, getCategoryLogMsgFilter(MSGAUD_audit, MSGCLS_all, TopDetail));
-        connectLogMsgListenerToDali(); 
-        Sleep(1000*60*5);
-        disconnectLogMsgListenerFromDali();
-    }
-    else {
-        connectLogMsgManagerToDali();
-        LOG(MCauditInfo, "W2134");
-        disconnectLogMsgManagerFromDali();
-    }
-}
-#endif
-
 void testlockprop(const char *lfn)
 {
     Owned<IDistributedFile> f1 = queryDistributedFileDirectory().lookup(lfn,UNKNOWN_USER,false,false,false,nullptr,defaultNonPrivilegedUser);

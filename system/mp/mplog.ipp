@@ -42,14 +42,13 @@ protected:
 class LogMsgLogReceiverThread : public LogMsgReceiverThread
 {
 public:
-    LogMsgLogReceiverThread(MPLogId _cid, INode * _child, bool _isListener) : LogMsgReceiverThread("LogMsgLogReceiver"), childNode(_child), cid(_cid), isListener(_isListener) {}
+    LogMsgLogReceiverThread(MPLogId _cid, INode * _child) : LogMsgReceiverThread("LogMsgLogReceiver"), childNode(_child), cid(_cid) {}
     int                       run();
     void                      stop();
 private:
     LogMsg                    msgBuffer;
     INode *                   childNode;
     MPLogId                   cid;
-    bool                      isListener;
 };
 
 // Class on managers's list of children which sends new filters to children, and holds thread which receives log messages
@@ -57,7 +56,7 @@ private:
 class CLogMsgLinkToChild : implements ILogMsgLinkToChild, public CInterface
 {
 public:
-    CLogMsgLinkToChild(MPLogId _cid, MPLogId _pid, INode * _childNode, bool isListener, bool _connected = false);
+    CLogMsgLinkToChild(MPLogId _cid, MPLogId _pid, INode * _childNode, bool _connected = false);
     ~CLogMsgLinkToChild();
     IMPLEMENT_IINTERFACE;
     void                      sendFilter(ILogMsgFilter * filter) const;
@@ -80,16 +79,14 @@ private:
 class IdLinkToChildPair : public CInterface
 {
 public:
-    IdLinkToChildPair(MPLogId _cid, INode const * _node, ILogMsgLinkToChild * _link, bool _isListener) : cid(_cid), node(_node), link(_link), isList(_isListener) {}
+    IdLinkToChildPair(MPLogId _cid, INode const * _node, ILogMsgLinkToChild * _link) : cid(_cid), node(_node), link(_link) {}
     MPLogId                   queryId() const { return cid; }
     INode const *             queryNode() const { return node; }
     ILogMsgLinkToChild *      queryLink() const { return link; }
-    bool                      isListener() const { return isList; }
 private:
     MPLogId                   cid;
     INode const *             node;
     ILogMsgLinkToChild *      link;
-    bool                      isList;
 };
 
 // Thread in CLogMsgManager which receives adoption requests from children
@@ -100,7 +97,7 @@ public:
     LogMsgChildReceiverThread() : LogMsgReceiverThread("LogMsgChildReceiver"), nextId(0) {}
     int                       run();
     void                      stop();
-    MPLogId                   addChildToManager(MPLogId pid, INode * childNode, bool isListener, bool connected);
+    MPLogId                   addChildToManager(MPLogId pid, INode * childNode, bool connected);
     bool                      removeChildFromManager(MPLogId cid, bool disconnected);
     bool                      removeChildFromManager(INode const * node, bool disconnected);
 private:

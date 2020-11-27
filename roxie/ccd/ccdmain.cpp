@@ -705,6 +705,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 
         Owned<const IQueryDll> standAloneDll;
         const char *wuid = topology->queryProp("@workunit");
+        if (wuid)
+            setDefaultJobId(wuid);
         if (topology->hasProp("@loadWorkunit"))
         {
             StringBuffer workunitName;

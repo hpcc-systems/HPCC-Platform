@@ -674,7 +674,7 @@ int main(int argc, const char* argv[])
             lf->setLogDirSubdir("audit");//add to tail of config log dir
             lf->setName("DaAudit");//override default filename
             lf->setCreateAliasFile(false);
-            lf->setMsgFields(MSGFIELD_timeDate | MSGFIELD_code);
+            lf->setMsgFields(MSGFIELD_timeDate | MSGFIELD_code | MSGFIELD_job);
             lf->setMsgAudiences(MSGAUD_audit);
             lf->setMaxDetail(TopDetail);
             lf->beginLogging();
@@ -753,7 +753,6 @@ int main(int argc, const char* argv[])
             covenMain();
             removeAbortHandler(actionOnAbort);
         }
-        stopLogMsgListener();
         stopServer();
         stopPerformanceMonitor();
     }

@@ -24,6 +24,7 @@
 #include "jmisc.hpp"
 #include "jqueue.tpp"
 #include "jregexp.hpp"
+#include "jlog.ipp"
 #include <assert.h>
 #ifdef _WIN32
 #include <process.h>
@@ -127,6 +128,7 @@ unsigned WINAPI Thread::_threadmain(LPVOID v)
 void *Thread::_threadmain(void *v)
 #endif
 {
+    resetThreadLogging();   // Not strictly needed if everything handled via thread_local variable's constructors...
     Thread * t = (Thread *)v;
 #ifdef _WIN32
     if (SEHHandling) 
@@ -916,6 +918,7 @@ public:
     {
         do
         {
+            resetThreadLogging();
             sem.wait();
             {
                 CriticalBlock block(parent.crit); // to synchronize

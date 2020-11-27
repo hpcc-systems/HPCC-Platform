@@ -886,9 +886,6 @@ int main( int argc, const char *argv[]  )
         CSDSServerStatus &serverStatus = openThorServerStatus();
 
         Owned<CRegistryServer> registry = new CRegistryServer();
-        StringBuffer thorEpStr;
-        LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getUrlStr(thorEpStr).str());
-        LOG(MCdebugProgress, thorJob, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
 
         serverStatus.queryProperties()->setProp("@thorname", thorname);
         serverStatus.queryProperties()->setProp("@cluster", nodeGroup.str()); // JCSMORE rename
@@ -911,6 +908,10 @@ int main( int argc, const char *argv[]  )
             throw makeStringException(0, "missing --workunit");
         if (isEmptyString(graphName))
             throw makeStringException(0, "missing --graphName");
+        setDefaultJobId(workunit);
+        StringBuffer thorEpStr;
+        LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getUrlStr(thorEpStr).str());
+        LOG(MCdebugProgress, thorJob, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
 
         if (!globals->hasProp("@numWorkers"))
             throw makeStringException(0, "Default number of workers not defined (numWorkers)");
@@ -936,6 +937,9 @@ int main( int argc, const char *argv[]  )
 
         applyK8sYaml("thorworker", workunit, cloudJobName, "jobspec", { { "graphName", graphName}, { "master", myEp.str() }, { "%numWorkers", std::to_string(numWorkers)} }, false);
 #else
+        StringBuffer thorEpStr;
+        LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getUrlStr(thorEpStr).str());
+        LOG(MCdebugProgress, thorJob, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
         unsigned localThorPortInc = globals->getPropInt("@localThorPortInc", DEFAULT_SLAVEPORTINC);
         unsigned slaveBasePort = globals->getPropInt("@slaveport", DEFAULT_THORSLAVEPORT);
         Owned<IGroup> rawGroup = getClusterNodeGroup(thorname, "ThorCluster");
