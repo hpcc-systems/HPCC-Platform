@@ -21010,7 +21010,7 @@ public:
     {
     }
 
-    virtual void doExecuteAction(unsigned parentExtractSize, const byte * parentExtract) 
+    virtual void doExecuteAction(unsigned parentExtractSize, const byte * parentExtract) override
     {
         bool cond;
         {
@@ -21019,6 +21019,19 @@ public:
         }
         stopDependencies(parentExtractSize, parentExtract, cond ? 2 : 1);
         executeDependencies(parentExtractSize, parentExtract, cond ? 1 : 2);
+    }
+
+    virtual void stop() override
+    {
+        if (state != STATEstopped)
+        {
+            ForEachItemIn(idx, dependencies)
+            {
+                if (dependencyControlIds.item(idx) != 0)
+                    dependencies.item(idx).stop();
+            }
+        }
+        CRoxieServerActionBaseActivity::stop();
     }
 
 };
