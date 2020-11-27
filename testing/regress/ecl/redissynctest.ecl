@@ -17,6 +17,7 @@
 
 //class=embedded
 //class=3rdparty
+//class=3rdpartyservice
 
 //nohthor
 
