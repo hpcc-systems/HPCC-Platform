@@ -337,16 +337,18 @@ endif(TOP_LEVEL_PROJECT)
 ## Run file configuration to set build tag along with install lines for generated
 ## config files.
 ###
-set(BUILD_TAG "${projname}_${version}-${stagever}")
-if(USE_GIT_DESCRIBE OR CHECK_GIT_TAG)
-    FETCH_GIT_TAG(${CMAKE_SOURCE_DIR} ${projname}_${version} GIT_BUILD_TAG)
-    message("-- Git tag is '${GIT_BUILD_TAG}'")
-    if(NOT "${GIT_BUILD_TAG}" STREQUAL "${BUILD_TAG}")
-        if(CHECK_GIT_TAG)
-            message(FATAL_ERROR "Git tag '${GIT_BUILD_TAG}' does not match source version '${BUILD_TAG}'")
-        else()
-            if(NOT "${GIT_BUILD_TAG}" STREQUAL "") # probably means being built from a tarball...
-                set(BUILD_TAG "${BUILD_TAG}[${GIT_BUILD_TAG}]")
+if(NOT BUILD_TAG)
+    set(BUILD_TAG "${projname}_${version}-${stagever}")
+    if(USE_GIT_DESCRIBE OR CHECK_GIT_TAG)
+        FETCH_GIT_TAG(${CMAKE_SOURCE_DIR} ${projname}_${version} GIT_BUILD_TAG)
+        message("-- Git tag is '${GIT_BUILD_TAG}'")
+        if(NOT "${GIT_BUILD_TAG}" STREQUAL "${BUILD_TAG}")
+            if(CHECK_GIT_TAG)
+                message(FATAL_ERROR "Git tag '${GIT_BUILD_TAG}' does not match source version '${BUILD_TAG}'")
+            else()
+                if(NOT "${GIT_BUILD_TAG}" STREQUAL "") # probably means being built from a tarball...
+                    set(BUILD_TAG "${BUILD_TAG}[${GIT_BUILD_TAG}]")
+                endif()
             endif()
         endif()
     endif()
