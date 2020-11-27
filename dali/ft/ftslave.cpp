@@ -141,6 +141,7 @@ int main(int argc, char * argv[])
 {
     InitModuleObjects();
     setDaliServixSocketCaching(true);
+    installDefaultFileHooks(nullptr);
     FtSlave slave;
     slave.run(argc, argv);
     return 0;
