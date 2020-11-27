@@ -11757,7 +11757,7 @@ protected:
         }
         else
         {
-            if (isContainerized())
+            if (isContainerized() && fileNameServiceDali)
             {
                 StringBuffer nasGroupName;
                 queryNamedGroupStore().getNasGroupName(nasGroupName, 1);
@@ -12247,7 +12247,7 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
 
         if (!clusters.length())
         {
-            if (isContainerized())
+            if (isContainerized() && fileNameServiceDali)
             {
                 StringBuffer nasGroupName;
                 queryNamedGroupStore().getNasGroupName(nasGroupName, 1);
