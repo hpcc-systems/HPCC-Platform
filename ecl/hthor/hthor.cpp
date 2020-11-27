@@ -11128,7 +11128,6 @@ void CHThorNewDiskReadActivity::ready()
     if (helper.getFlags() & TDRlimitskips)
         limit = (unsigned __int64) -1;
     stopAfter = helper.getChooseNLimit();
-    assertex(stopAfter != 0);
     if (!helper.transformMayFilter() && !helper.hasMatchFilter())
         remoteLimit = stopAfter;
     finishedParts = false;
