@@ -2066,6 +2066,13 @@ public:
                     hiQueue.enqueue(packet);
                 else
                     loQueue.enqueue(packet);
+                for (unsigned subChannel = 0; subChannel < MAX_SUBCHANNEL; subChannel++)
+                {
+                    if (header.subChannels[subChannel].isMe() || header.subChannels[subChannel].isNull())
+                        break;
+                    noteNodeSick(header.subChannels[subChannel].getIpAddress());
+                }
+
                 DelayedPacketEntry *goer = finger;
                 finger = finger->next;
                 removeEntry(goer);
