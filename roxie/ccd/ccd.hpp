@@ -51,7 +51,15 @@
 
 #define ROXIE_STATEFILE_VERSION 2
 
+// Have not yet tested impact of new IBYTI handling in non-containerized systems
+
 #ifdef _CONTAINERIZED
+#define NEW_IBYTI
+#endif
+
+#if defined(_CONTAINERIZED) || defined (NEW_IBYTI)
+// Both containerized mode and new IBYTI mode assume subchannels are passed in header.
+// It SHOULD also work, and may be beneficial, in non-containerized systems but has not as yet been confirmed.
 #define SUBCHANNELS_IN_HEADER
 #endif
 
