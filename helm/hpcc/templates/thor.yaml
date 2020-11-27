@@ -13,7 +13,7 @@
 {{- $eclAgentScope := dict "name" $eclAgentName "useChildProcesses" $eclAgentUseChildProcesses "replicas" $eclAgentReplicas | merge (pick . "keepJobs") }}
 {{- $thorAgentScope := dict "name" $thorAgentName "replicas" $thorAgentReplicas  | merge (pick . "keepJobs") }}
 {{- $hthorScope := dict "name" $hthorName | merge (pick . "multiJobLinger") }}
-{{- $thorScope := omit . "eclagent" "thoragent" "hthor" "logging" "eclAgentResources" "managerResources" "workerResources" "eclAgentUseChildProcesses" "eclAgentReplicas" "thorAgentReplicas" "eclAgentType" }}
+{{- $thorScope := omit . "eclagent" "thoragent" "hthor" "logging" "eclAgentResources" "eclAgentUseChildProcesses" "eclAgentReplicas" "thorAgentReplicas" "eclAgentType" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
