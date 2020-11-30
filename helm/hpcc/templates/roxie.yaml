@@ -2,6 +2,7 @@
 {{- if not $roxie.disabled -}}
 {{- include "hpcc.checkDefaultStoragePlane" (dict "root" $ "me" $roxie )}}
 {{- if not $roxie.localAgent -}}
+{{- $_ := set $roxie "localAgent" false -}}
 {{- $toponame := printf "%s-toposerver" $roxie.name -}}
 {{- $numChannels := $roxie.numChannels | int | default 1 -}}
 {{- $topoport := $roxie.topoport | int | default 9004 -}}
