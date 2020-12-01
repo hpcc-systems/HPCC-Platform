@@ -99,7 +99,7 @@ class Suite:
                         exclude=False
                         exclusionReason=''
                         if isSetup:
-                            exclude = eclfile.testExclusion('setup')
+                            exclude = eclfile.testExclusion('setup') or eclfile.testExclusion(self.clusterName)
                             exclusionReason=' setup'
                         elif ( 'all' not in  classIncluded ) or ('none' not in classExcluded):
                             included = True
