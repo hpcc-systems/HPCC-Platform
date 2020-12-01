@@ -24,6 +24,7 @@
 #include "jmisc.hpp"
 #include "jqueue.tpp"
 #include "jregexp.hpp"
+#include "jisem.hpp"
 #include <assert.h>
 #ifdef _WIN32
 #include <process.h>
@@ -317,7 +318,8 @@ void Thread::handleException(IException *e)
     assertex(exceptionHandlers);
     if (exceptionHandlers->ordinality() == 0)
     {
-        PrintExceptionLog(e,getName());
+        if (!dynamic_cast<InterruptedSemaphoreException *>(e))
+            PrintExceptionLog(e,getName());
         //throw; // don't rethrow unhandled, preferable over alternative of causing process death
         e->Release();
     }

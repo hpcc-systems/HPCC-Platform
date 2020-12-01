@@ -382,7 +382,6 @@ void TopologyManager::setServers(const StringArray &_topoServers)
 void TopologyManager::setRoles(const std::vector<RoxieEndpointInfo> &myRoles)
 {
     topoBuf.clear();
-    DBGLOG("TopologyManager::setRoles - %d roles", (int) myRoles.size());
     for (const auto &role : myRoles)
     {
         switch (role.role)

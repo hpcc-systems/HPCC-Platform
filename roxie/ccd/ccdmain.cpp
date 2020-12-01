@@ -728,6 +728,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         if (standAloneDll || wuid)
         {
             oneShotRoxie = true;
+            DBGLOG("Starting roxie - wuid=%s", wuid ? wuid : "<none>");
             allFilesDynamic = true;
             if (topology->getPropBool("@server", false))
             {
@@ -1391,13 +1392,14 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                 E->Release();
             }
         }
+        DBGLOG("Roxie closing down");
         shuttingDown = true;
         if (pingInterval)
             stopPingTimer();
         setSEHtoExceptionHandler(NULL);
         while (socketListeners.isItem(0))
         {
-            socketListeners.item(0).stop(1000);
+            socketListeners.item(0).stop();
             socketListeners.remove(0);
         }
         packetDiscarder->stop();
@@ -1457,6 +1459,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #endif
     return 0;
 }
+
+// These defaults only apply when roxie is linked into a standalone executable
+// Note that the defaults for roxie executable (in whatever mode) are set in roxie.cpp
 
 static constexpr const char * standaloneDefaultYaml = R"!!(
 version: "1.0"

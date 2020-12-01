@@ -751,7 +751,7 @@ public:
         started.wait();
     }
 
-    virtual bool stop(unsigned timeout)
+    virtual bool stop()
     {
         if (running)
         {
@@ -759,7 +759,7 @@ public:
             join();
             Release();
         }
-        return pool->joinAll(false, timeout);
+        return pool->joinAll(false);
     }
 
     void reportBadQuery(const char *name, const IRoxieContextLogger &logctx)
@@ -973,14 +973,14 @@ public:
     {
         UNIMPLEMENTED;
     }
-    virtual bool stop(unsigned timeout)
+    virtual bool stop()
     {
         if (queue)
         {
             DBGLOG("RoxieWorkUnitListener::stop");
             queue->cancelAcceptConversation();
         }
-        return RoxieListener::stop(timeout);
+        return RoxieListener::stop();
     }
 
     virtual void stopListening()
@@ -1092,7 +1092,8 @@ public:
 
     virtual bool stop() override
     {
-        IERRLOG("RoxieQueryWorker stopped with queries active");
+        if (traceLevel)
+            DBGLOG("RoxieQueryWorker thread stop requested with query active - ignoring");
         return true;
     }
 
