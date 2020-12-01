@@ -299,6 +299,7 @@ protected:
             case SSTworkflow:
             case SSTgraph:
                 // SSTworkflow and SSTgraph may be safely ignored.  They are not required to produce the statistics.
+                expandProcessTreeFromStats(rootTarget, target, &cur);
                 continue;
             case SSTfunction:
                 //MORE:Should function scopes be included in the graph scope somehow, and if so how?
@@ -8462,6 +8463,9 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
 
     if (!statTree)
     {
+        /* NB: Sasha archive uses this structure directly
+         * if it changes, the code in saarch.cpp needs updating
+         */
         statTree = stats->addPropTree("Statistic");
         statTree->setProp("@creator", creator);
         statTree->setProp("@scope", scope);
