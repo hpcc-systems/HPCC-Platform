@@ -1432,6 +1432,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
     setNodeCaching(false); // ditto
     perfMonHook.clear();
     stopAeronDriver();
+    stopTopoThread();
 
     strdup("Make sure leak checking is working");
     roxiemem::releaseRoxieHeap();
