@@ -429,7 +429,16 @@ private:
 public:
     CVaultManager()
     {
-        IPropertyTree *config = queryComponentConfig().queryPropTree("vaults");
+        IPropertyTree *config = nullptr;
+        try
+        {
+            config = queryComponentConfig().queryPropTree("vaults");
+        }
+        catch (IException * e)
+        {
+            EXCLOG(e);
+            e->Release();
+        }
         if (!config)
             return;
         Owned<IPropertyTreeIterator> iter = config->getElements("*");
