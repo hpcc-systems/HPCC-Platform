@@ -34,8 +34,9 @@ global:
     # kubeApiCidr: 172.17.0.3/32  
     # kubeApiPort: 7443
 
-  #cost:
-  #  perCpu: 0.126
+  cost:
+    moneyLocale: "en_US.UTF-8"
+    # perCpu: 0.126
 
 ## storage:
 ##
