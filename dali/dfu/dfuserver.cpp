@@ -185,6 +185,9 @@ int main(int argc, const char *argv[])
             engine.setown(createDFUengine());
             engine->setDFUServerName(name);
             addAbortHandler(exitDFUserver);
+
+            IPropertyTree * config = nullptr;
+            installDefaultFileHooks(config);
         }
         const char *q = queue.str();
         for (;;) {
