@@ -393,7 +393,7 @@ public:
     CRoxieAeronSendManager(unsigned _dataPort, unsigned _numQueues, const IpAddress &_myIP)
     : dataPort(_dataPort),
       numQueues(_numQueues),
-      receiversTable([this](const IpAddress &ip) { return new UdpAeronReceiverEntry(ip, dataPort, aeron, numQueues);}),
+      receiversTable([this](const ServerIdentifier &ip) { return new UdpAeronReceiverEntry(ip.getIpAddress(), dataPort, aeron, numQueues);}),
       myIP(_myIP)
     {
         if (useEmbeddedAeronDriver && !is_running())

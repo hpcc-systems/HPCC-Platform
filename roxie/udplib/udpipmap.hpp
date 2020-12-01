@@ -31,7 +31,7 @@ private:
     class list
     {
     public:
-        list(const IpAddress &_ip, const list *_next, std::function<T *(const IpAddress &)> tfunc) : ip(_ip), next(_next)
+        list(const ServerIdentifier &_ip, const list *_next, std::function<T *(const ServerIdentifier &)> tfunc) : ip(_ip), next(_next)
         {
             entry = tfunc(ip);
         }
@@ -39,7 +39,7 @@ private:
         {
             delete entry;
         }
-        const IpAddress ip;
+        const ServerIdentifier ip;
         const list *next;
         T *entry;
     };
@@ -86,11 +86,11 @@ private:
     };
 
 public:
-    IpMapOf<T>(std::function<T *(const IpAddress &)> _tfunc) : tfunc(_tfunc)
+    IpMapOf<T>(std::function<T *(const ServerIdentifier &)> _tfunc) : tfunc(_tfunc)
     {
     }
-    T &lookup(const IpAddress &) const;
-    inline T &operator[](const IpAddress &ip) const { return lookup(ip); }
+    T &lookup(const ServerIdentifier &) const;
+    inline T &operator[](const ServerIdentifier &ip) const { return lookup(ip); }
     myIterator begin()
     {
         // Take care as it's possible for firstHash to be updated on another thread as we are running
@@ -103,22 +103,22 @@ public:
     myIterator end()   { return myIterator(nullptr, 256, nullptr); }
 
 private:
-    const std::function<T *(const IpAddress &)> tfunc;
+    const std::function<T *(const ServerIdentifier &)> tfunc;
     mutable std::atomic<const list *> table[256] = {};
     mutable CriticalSection lock;
     mutable std::atomic<unsigned> firstHash = { 256 };
 };
 
-template<class T> T &IpMapOf<T>::lookup(const IpAddress &ip) const
+template<class T> T &IpMapOf<T>::lookup(const ServerIdentifier &ip) const
 {
-   unsigned hash = ip.fasthash() & 0xff;
+   unsigned hash = ip.hash() & 0xff;
    for (;;)
    {
        const list *head = table[hash].load(std::memory_order_acquire);
        const list *finger = head;
        while (finger)
        {
-           if (finger->ip.ipequals(ip))
+           if (finger->ip == ip)
                return *finger->entry;
            finger = finger->next;
        }
