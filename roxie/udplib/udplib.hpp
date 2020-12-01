@@ -61,7 +61,11 @@ public:
     }
     unsigned hash() const
     {
-        return netAddress;
+        return hashc((const byte *)&netAddress,sizeof(netAddress),0);
+    }
+    unsigned fasthash() const
+    {
+        return netAddress >> 24;
     }
     inline void setIp(const IpAddress &_ip)
     {
