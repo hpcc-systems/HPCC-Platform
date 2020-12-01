@@ -142,7 +142,7 @@ public:
             else
                 cost = (timeMaxLocalExecute - timeAvgLocalExecute);
 
-            result.set(ANA_IOSKEW_CHILDRECORDS_ID, cost, "Significant skew in records causes uneven %s time", category);
+            result.set(ANA_IOSKEW_RECORDS_ID, cost, "Significant skew in records causes uneven %s time", category);
             updateInformation(result, activity);
             return true;
         }

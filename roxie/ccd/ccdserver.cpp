@@ -9728,10 +9728,7 @@ private:
         catch (IException *e)
         {
             // NB: the original exception is probably a IPipeProcessException, but because InterruptableSemaphore rethrows it, we must catch it as an IException
-            if (QUERYINTERFACE(e, IPipeProcessException))
-                pipeException.setown(e);
-            else
-                throw;
+            pipeException.setown(e);
         }
         verifyPipe();
         if (pipeException) // NB: verifyPipe may throw error based on pipe prog. output 1st.
@@ -9841,7 +9838,7 @@ public:
 
     virtual void onExecute()
     {
-        Owned<IPipeProcessException> pipeException;
+        Owned<IException> pipeException;
         try
         {
             for (;;)
@@ -9862,7 +9859,7 @@ public:
             if (!recreate)
                 closePipe();
         }
-        catch (IPipeProcessException *e)
+        catch (IException *e)
         {
             pipeException.setown(e);
         }
@@ -11760,7 +11757,7 @@ protected:
         }
         else
         {
-            if (isContainerized())
+            if (isContainerized() && fileNameServiceDali)
             {
                 StringBuffer nasGroupName;
                 queryNamedGroupStore().getNasGroupName(nasGroupName, 1);
@@ -11867,7 +11864,7 @@ public:
 
     virtual void reset()
     {
-        CRoxieServerActivity::reset();
+        CRoxieServerInternalSinkActivity::reset();
         diskout.clear();
         outSeq.clear();
         writer.clear();
@@ -12250,7 +12247,7 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
 
         if (!clusters.length())
         {
-            if (isContainerized())
+            if (isContainerized() && fileNameServiceDali)
             {
                 StringBuffer nasGroupName;
                 queryNamedGroupStore().getNasGroupName(nasGroupName, 1);
@@ -21010,7 +21007,7 @@ public:
     {
     }
 
-    virtual void doExecuteAction(unsigned parentExtractSize, const byte * parentExtract) 
+    virtual void doExecuteAction(unsigned parentExtractSize, const byte * parentExtract) override
     {
         bool cond;
         {
@@ -21019,6 +21016,19 @@ public:
         }
         stopDependencies(parentExtractSize, parentExtract, cond ? 2 : 1);
         executeDependencies(parentExtractSize, parentExtract, cond ? 1 : 2);
+    }
+
+    virtual void stop() override
+    {
+        if (state != STATEstopped)
+        {
+            ForEachItemIn(idx, dependencies)
+            {
+                if (dependencyControlIds.item(idx) != 0)
+                    dependencies.item(idx).stop();
+            }
+        }
+        CRoxieServerActionBaseActivity::stop();
     }
 
 };
@@ -21114,8 +21124,17 @@ public:
     virtual void doExecuteAction(unsigned parentExtractSize, const byte * parentExtract) 
     {
         unsigned numBranches = helper.numBranches();
-        for (unsigned branch=1; branch <= numBranches; branch++)
-            executeDependencies(parentExtractSize, parentExtract, branch);
+        try
+        {
+            for (unsigned branch=1; branch <= numBranches; branch++)
+                executeDependencies(parentExtractSize, parentExtract, branch);
+        }
+        catch (...)
+        {
+            for (unsigned branch=1; branch <= numBranches; branch++)
+                stopDependencies(parentExtractSize, parentExtract, branch);
+            throw;
+        }
     }
 
 };
@@ -21534,7 +21553,7 @@ public:
             }
         }
         size32_t outputLimitBytes = 0;
-        IConstWorkUnit *workunit = serverContext->queryWorkUnit();
+        IConstWorkUnit *workunit = sequence == ResultSequenceInternal ? nullptr : serverContext->queryWorkUnit();
         if (workunit)
         {
             size32_t outputLimit;
@@ -26990,9 +27009,58 @@ public:
     virtual void checkForAbort() { checkAbort(); }
 };
 
+class CRoxieServerSoapActionBase : public CRoxieServerSoapActivityBase
+{
+public:
+    CRoxieServerSoapActionBase(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerSoapActivityBase(_ctx, _factory, _probeManager)
+    {
+    }
+
+    virtual void execute(unsigned parentExtractSize, const byte * parentExtract)
+    {
+        CriticalBlock b(ecrit);
+        if (exception)
+            throw(exception.getLink());
+        if (!executed)
+        {
+            try
+            {
+                executed = true;
+                start(parentExtractSize, parentExtract, false);
+                {
+                    ActivityTimer t(activityStats, timeActivities); // unfortunately this is not really best place for seeing in debugger.
+                    onExecute();
+                }
+                stop();
+            }
+            catch (IException *E)
+            {
+                ctx->notifyAbort(E);
+                exception.set(E);
+                abort();
+                throw E;
+            }
+        }
+    }
+
+    virtual void onExecute() = 0;
+
+    virtual void reset() override
+    {
+        executed = false;
+        exception.clear();
+        CRoxieServerSoapActivityBase::reset();
+    }
+
+protected:
+    bool executed = false;
+    Linked<IException> exception;
+    CriticalSection ecrit;
+};
 //---------------------------------------------------------------------------
 
-class CRoxieServerSoapRowCallActivity : public CRoxieServerSoapActivityBase 
+class CRoxieServerSoapRowCallActivity : public CRoxieServerSoapActivityBase
 {
     IHThorSoapCallArg & callHelper;
 
@@ -27060,16 +27128,15 @@ IRoxieServerActivityFactory *createRoxieServerSoapRowCallActivityFactory(unsigne
 
 //---------------------------------------------------------------------------
 
-class CRoxieServerSoapRowActionActivity : public CRoxieServerSoapActivityBase 
+class CRoxieServerSoapRowActionActivity : public CRoxieServerSoapActionBase
 {
 public:
     CRoxieServerSoapRowActionActivity(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerSoapActivityBase(_ctx, _factory, _probeManager)
+        : CRoxieServerSoapActionBase(_ctx, _factory, _probeManager)
     {}
 
-    virtual void execute(unsigned parentExtractSize, const byte * parentExtract)
+    virtual void onExecute() override
     {
-        //MORE: parentExtract not passed to start - although shouldn't be a problem.
         soaphelper.setown(createSoapCallHelper(this, NULL, ctx->queryAuthToken(), SCrow, pClientCert, *this, this));
         soaphelper->start();
         soaphelper->waitUntilDone();
@@ -27193,11 +27260,11 @@ IRoxieServerActivityFactory *createRoxieServerSoapDatasetCallActivityFactory(uns
 
 //---------------------------------------------------------------------------
 
-class CRoxieServerSoapDatasetActionActivity : public CRoxieServerSoapActivityBase 
+class CRoxieServerSoapDatasetActionActivity : public CRoxieServerSoapActionBase
 {
 public:
     CRoxieServerSoapDatasetActionActivity(IRoxieAgentContext *_ctx, const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerSoapActivityBase(_ctx, _factory, _probeManager)
+        : CRoxieServerSoapActionBase(_ctx, _factory, _probeManager)
     {}
 
     virtual const void *getNextRow()
@@ -27209,34 +27276,15 @@ public:
         return nextrec;
     }
 
-    virtual void execute(unsigned parentExtractSize, const byte * parentExtract)
+    virtual void onExecute() override
     {
-        try
-        {
-            start(parentExtractSize, parentExtract, false);
-            soaphelper.setown(createSoapCallHelper(this, NULL, ctx->queryAuthToken(), SCdataset, pClientCert, *this, this));
-            soaphelper->start();
-            soaphelper->waitUntilDone();
-            IException *e = soaphelper->getError();
-            soaphelper.clear();
-            if (e)
-                throw e;
-            stop();
-        }
-        catch (IException *E)
-        {
-            ctx->notifyAbort(E);
-            abort();
-            throw;
-        }
-        catch(...)
-        {
-            Owned<IException> E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught at %s:%d", sanitizeSourceFile(__FILE__), __LINE__);
-            ctx->notifyAbort(E);
-            abort();
-            throw;
-
-        }
+        soaphelper.setown(createSoapCallHelper(this, NULL, ctx->queryAuthToken(), SCdataset, pClientCert, *this, this));
+        soaphelper->start();
+        soaphelper->waitUntilDone();
+        IException *e = soaphelper->getError();
+        soaphelper.clear();
+        if (e)
+            throw e;
     }
 
     virtual IFinalRoxieInput *queryOutput(unsigned idx)

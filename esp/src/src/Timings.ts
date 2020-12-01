@@ -24,6 +24,11 @@ export class WUTimelinePatched extends WUTimeline {
 
     constructor() {
         super();
+        this._gantt.bucketHeight(16);
+        this.strokeWidth(0);
+        this.tooltipHTML(d => {
+            return d[d.length - 1].calcTooltip(); 
+        });
     }
 
     data(): any;

@@ -33,7 +33,13 @@
 #include "workflow.hpp"
 #include "mpcomm.hpp"
 
+#ifndef _CONTAINERIZED
+#define ROXIE_DALI_CACHE
+#endif
+
+#ifdef ROXIE_DALI_CACHE
 const char *roxieStateName = "RoxieLocalState.xml";
+#endif
 
 class CDaliPackageWatcher : public CInterface, implements ISafeSDSSubscription, implements ISDSNodeSubscription, implements IDaliPackageWatcher
 {
@@ -235,6 +241,7 @@ private:
         connectWatcher.join();
     }
 
+#ifdef ROXIE_DALI_CACHE
     // The cache is static since it outlives the dali connections
 
     static CriticalSection cacheCrit;
@@ -287,6 +294,12 @@ private:
                 cache->addPropTree(newLoc, LINK(val));
         }
     }
+#else
+    inline static void initCache() {}
+    inline static void loadCache() {}
+    inline IPropertyTree *readCache(const char *xpath) { return nullptr; }
+    inline static void writeCache(const char *foundLoc, const char *newLoc, IPropertyTree *val) {}
+#endif
 
     IPropertyTree *loadDaliTree(const char *path, const char *id)
     {
@@ -588,6 +601,7 @@ public:
 
     virtual void commitCache()
     {
+#ifdef ROXIE_DALI_CACHE
         if (isConnected && cache && !oneShotRoxie)
         {
             CriticalBlock b(cacheCrit);
@@ -606,6 +620,7 @@ public:
                 cacheFile->rename(oldCacheFileName);
             newFile->rename(cacheFileName);
         }
+#endif
     }
 
     virtual IConstWorkUnit *attachWorkunit(const char *wuid, ILoadedDllEntry *source)
@@ -702,8 +717,10 @@ public:
 
     static void releaseCache()
     {
+#ifdef ROXIE_DALI_CACHE
         CriticalBlock b(cacheCrit);
         cache.clear();
+#endif
     }
 
     virtual void releaseSubscription(IDaliPackageWatcher *subscription)
@@ -903,8 +920,10 @@ public:
 bool CRoxieDaliHelper::isConnected = false;
 CRoxieDaliHelper * CRoxieDaliHelper::daliHelper;
 CriticalSection CRoxieDaliHelper::daliHelperCrit;
+#ifdef ROXIE_DALI_CACHE
 CriticalSection CRoxieDaliHelper::cacheCrit;
 Owned<IPropertyTree> CRoxieDaliHelper::cache;
+#endif
 
 CriticalSection CRoxieDllServer::crit;
 

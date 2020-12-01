@@ -653,6 +653,11 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         topology = loadConfiguration(useOldTopology ? nullptr : defaultYaml, argv, "roxie", "ROXIE", topologyFile, nullptr, "@netAddress");
         saveTopology();
         localAgent = topology->getPropBool("@localAgent", topology->getPropBool("@localSlave", false));  // legacy name
+        numChannels = topology->getPropInt("@numChannels", 0);
+#ifdef _CONTAINERIZED
+        if (!numChannels)
+            throw makeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels not set");
+#endif
         const char *channels = topology->queryProp("@channels");
         if (channels)
         {
@@ -675,7 +680,10 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
 #ifdef _CONTAINERIZED
         else if (localAgent)
-            agentChannels.push_back(std::pair<unsigned, unsigned>(1, 0));
+        {
+            for (unsigned channel = 1; channel <= numChannels; channel++)
+                agentChannels.push_back(std::pair<unsigned, unsigned>(channel, 0));
+        }
 #endif
         const char *topos = topology->queryProp("@topologyServers");
         StringArray topoValues;
@@ -877,7 +885,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             envInstallNASHooks(nas);
         }
         useAeron = topology->getPropBool("@useAeron", false);
-        numChannels = topology->getPropInt("@numChannels", 0);
         doIbytiDelay = topology->getPropBool("@doIbytiDelay", true);
         minIbytiDelay = topology->getPropInt("@minIbytiDelay", 2);
         initIbytiDelay = topology->getPropInt("@initIbytiDelay", 50);
@@ -1149,8 +1156,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #endif
 
 #ifdef _CONTAINERIZED
-        if (!numChannels)
-            throw makeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels not set");
         IpAddress myIP(".");
         myNode.setIp(myIP);
         if (topology->getPropBool("@server", true))

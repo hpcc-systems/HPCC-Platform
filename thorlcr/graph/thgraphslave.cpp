@@ -872,6 +872,7 @@ void CSlaveGraph::init(MemoryBuffer &mb)
     waitBarrier = queryJobChannel().createBarrier(waitBarrierTag);
     if (doneBarrierTag != TAG_NULL)
         doneBarrier = queryJobChannel().createBarrier(doneBarrierTag);
+    sourceActDependents.setown(createPTree(mb));
     unsigned subCount;
     mb.read(subCount);
     while (subCount--)

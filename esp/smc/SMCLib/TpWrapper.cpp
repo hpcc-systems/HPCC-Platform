@@ -2010,3 +2010,44 @@ extern TPWRAPPER_API ISashaCommand* archiveOrRestoreWorkunits(StringArray& wuids
             sashaAddress.str());
     return cmd.getClear();
 }
+
+extern TPWRAPPER_API IStringIterator* getContainerTargetClusters(const char* processType, const char* processName)
+{
+    Owned<CStringArrayIterator> ret = new CStringArrayIterator;
+    Owned<IPropertyTreeIterator> queues = queryComponentConfig().getElements("queues");
+    ForEach(*queues)
+    {
+        IPropertyTree& queue = queues->query();
+        if (!isEmptyString(processType))
+        {
+            const char* type = queue.queryProp("@type");
+            if (isEmptyString(type) || !strieq(type, processType))
+                continue;
+        }
+        const char* qName = queue.queryProp("@name");
+        if (isEmptyString(qName))
+            continue;
+
+        if (!isEmptyString(processName) && !strieq(qName, processName))
+            continue;
+
+        ret->append_unique(qName);
+    }
+    if (!isEmptyString(processType) && !strieq("roxie", processType))
+        return ret.getClear();
+
+    Owned<IPropertyTreeIterator> services = queryComponentConfig().getElements("services[@type='roxie']");
+    ForEach(*services)
+    {
+        IPropertyTree& service = services->query();
+        const char* targetName = service.queryProp("@target");
+        if (isEmptyString(targetName))
+            continue;
+
+        if (!isEmptyString(processName) && !strieq(targetName, processName))
+            continue;
+
+        ret->append_unique(targetName);
+    }
+    return ret.getClear();
+}

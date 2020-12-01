@@ -299,6 +299,7 @@ protected:
             case SSTworkflow:
             case SSTgraph:
                 // SSTworkflow and SSTgraph may be safely ignored.  They are not required to produce the statistics.
+                expandProcessTreeFromStats(rootTarget, target, &cur);
                 continue;
             case SSTfunction:
                 //MORE:Should function scopes be included in the graph scope somehow, and if so how?
@@ -3990,7 +3991,19 @@ public:
         if (workUnitTraceLevel > 1)
             DBGLOG("Releasing locked workunit %s", queryWuid());
         if (c)
-            c->unlockRemote();
+        {
+            try
+            {
+                c->unlockRemote();
+            }
+            catch (IException *E)
+            {
+                // Exceptions here should be very uncommon - but there's also not a lot we can do if we get one
+                // Allowing them to be thrown out of the destructor is going to terminate the program which is NOT what we want.
+                EXCLOG(E);
+                ::Release(E);
+            }
+        }
     }
 
     virtual IConstWorkUnit * unlock()
@@ -8456,6 +8469,9 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
 
     if (!statTree)
     {
+        /* NB: Sasha archive uses this structure directly
+         * if it changes, the code in saarch.cpp needs updating
+         */
         statTree = stats->addPropTree("Statistic");
         statTree->setProp("@creator", creator);
         statTree->setProp("@scope", scope);

@@ -1433,8 +1433,6 @@ IHqlExpression * SequenceNumberAllocator::doTransformRootExpr(IHqlExpression * e
     case no_keypatch:
     case no_outputscalar:
         return createTransformed(expr);         //NB: Do not common up!!!
-    case no_setmeta:
-        return LINK(expr);
     default:
         {
             OwnedHqlExpr transformed = transform(expr);

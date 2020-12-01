@@ -2424,6 +2424,7 @@ void CMasterGraph::serializeGraphInit(MemoryBuffer &mb)
     mb.append((int)startBarrierTag);
     mb.append((int)waitBarrierTag);
     mb.append((int)doneBarrierTag);
+    sourceActDependents->serialize(mb);
     mb.append(queryChildGraphCount());
     Owned<IThorGraphIterator> childIter = getChildGraphIterator();
     ForEach (*childIter)

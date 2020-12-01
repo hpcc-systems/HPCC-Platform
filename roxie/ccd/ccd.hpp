@@ -51,7 +51,15 @@
 
 #define ROXIE_STATEFILE_VERSION 2
 
+// Have not yet tested impact of new IBYTI handling in non-containerized systems
+
 #ifdef _CONTAINERIZED
+#define NEW_IBYTI
+#endif
+
+#if defined(_CONTAINERIZED) || defined (NEW_IBYTI)
+// Both containerized mode and new IBYTI mode assume subchannels are passed in header.
+// It SHOULD also work, and may be beneficial, in non-containerized systems but has not as yet been confirmed.
 #define SUBCHANNELS_IN_HEADER
 #endif
 
@@ -139,6 +147,8 @@ public:
     }
 };
 
+extern bool localAgent;
+
 class RoxiePacketHeader
 {
 private:
@@ -187,6 +197,8 @@ public:
 #ifdef SUBCHANNELS_IN_HEADER
     unsigned mySubChannel() const // NOTE - 0 based
     {
+        if (localAgent)
+            return 0;
         for (unsigned idx = 0; idx < MAX_SUBCHANNEL; idx++)
         {
             if (subChannels[idx].isMe())
@@ -197,6 +209,8 @@ public:
 
     bool hasBuddies() const
     {
+        if (localAgent)
+            return false;
         if (subChannels[1].isNull())
         {
             assert(subChannels[0].isMe());
@@ -267,7 +281,6 @@ extern bool debugPermitted;
 extern bool useRemoteResources;
 extern bool checkFileDate;
 extern bool lazyOpen;
-extern bool localAgent;
 extern bool useAeron;
 extern bool ignoreOrphans;
 extern bool doIbytiDelay;
