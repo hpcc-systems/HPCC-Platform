@@ -11864,7 +11864,7 @@ public:
 
     virtual void reset()
     {
-        CRoxieServerActivity::reset();
+        CRoxieServerInternalSinkActivity::reset();
         diskout.clear();
         outSeq.clear();
         writer.clear();
