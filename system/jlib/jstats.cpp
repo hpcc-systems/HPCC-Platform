@@ -28,6 +28,7 @@
 #include <sstream>
 #include <iomanip>
 #include <ctype.h>
+#include <cmath>
 
 #ifdef _WIN32
 #include <sys/timeb.h>
