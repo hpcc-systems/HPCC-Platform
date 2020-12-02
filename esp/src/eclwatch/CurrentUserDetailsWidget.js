@@ -69,7 +69,7 @@ function (declare, lang, i18n, nlsHPCC, dom, domForm, arrayUtil,
                 }).then(function (response) {
                     if (lang.exists("UpdateUserResponse", response)) {
                         arrayUtil.forEach(context.userForm.getDescendants(), function (item, idx) {
-                            item.set('value', "");
+                            item.set("value", "");
                         });
                     }
                 });

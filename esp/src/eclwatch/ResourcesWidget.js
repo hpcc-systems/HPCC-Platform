@@ -65,7 +65,7 @@ define([
                 columns: {
                     col1: selector({
                         width: 27,
-                        selectorType: 'checkbox'
+                        selectorType: "checkbox"
                     }),
                     DisplayPath: {
                         label: this.i18n.Name, sortable: true,

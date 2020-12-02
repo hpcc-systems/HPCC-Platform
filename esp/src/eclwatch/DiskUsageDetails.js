@@ -46,7 +46,7 @@ define([
                         .lazyRender()
                         ;
                 }
-            }
+            };
         },
 
         resize: function (args) {
@@ -91,7 +91,7 @@ define([
                         .lazyRender()
                         ;
                 }
-            }
+            };
 
             this.widget.BorderContainer.resize();
         },

@@ -70,7 +70,7 @@ define([
 
         _onFilterApply: function (event) {
             if (event) {
-                var formData = this.toObject(event.currentTarget.form)
+                var formData = this.toObject(event.currentTarget.form);
                 this.initRecentFilter(formData);
             }
             this.filterDropDown.closeDropDown();
@@ -177,7 +177,7 @@ define([
             var context = this;
             if (this.userName !== null) {
                 if (!Utility.isObjectEmpty(retVal)) {
-                    Recent.addToStack(this.params.ws_key, retVal, 5, true).then(function(val){
+                    Recent.addToStack(this.params.ws_key, retVal, 5, true).then(function (val){
                         context.loadRecentFilters(retVal);
                     });
                 }

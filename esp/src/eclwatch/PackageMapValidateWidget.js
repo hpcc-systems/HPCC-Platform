@@ -105,13 +105,13 @@ define([
             if (this.targets.length > 0) {
                 var defaultTarget = 0;
                 for (var i = 0; i < this.targets.length; ++i) {
-                    if ((defaultTarget === 0) && (this.targets[i].type === 'roxie'))
+                    if ((defaultTarget === 0) && (this.targets[i].type === "roxie"))
                         defaultTarget = i; //first roxie
                     this.targetSelectControl.options.push({ label: this.targets[i].label, value: this.targets[i].value });
                 }
                 this.targetSelectControl.set("value", this.targets[defaultTarget].label);
                 if (this.targets[defaultTarget].processes !== undefined)
-                    this.updateProcessSelections(this.targets[defaultTarget], '');
+                    this.updateProcessSelections(this.targets[defaultTarget], "");
             }
         },
 
@@ -128,8 +128,8 @@ define([
                     }
                 }
             }
-            this.processSelectControl.options.push({ label: this.i18n.ANY, value: 'ANY' });
-            this.processSelectControl.set("value", '');
+            this.processSelectControl.options.push({ label: this.i18n.ANY, value: "ANY" });
+            this.processSelectControl.set("value", "");
         },
 
         addProcessSelections: function (processes) {
@@ -146,7 +146,7 @@ define([
 
         initResultDisplay: function () {
             this.resultControl = registry.byId(this.id + "Result");
-            this.resultControl.init({ sourceMode: 'text/plain', readOnly: true });
+            this.resultControl.init({ sourceMode: "text/plain", readOnly: true });
             this.resultControl.setText(this.i18n.ValidateResultHere);
         },
 
@@ -171,11 +171,11 @@ define([
             var context = this;
             var process = this.processSelectControl.getValue();
 
-            if (process === 'ANY') {
-                process = '*';
+            if (process === "ANY") {
+                process = "*";
             }
 
-            this.editorControl.setText('');
+            this.editorControl.setText("");
             WsPackageMaps.getPackage({
                 target: this.targetSelectControl.getValue(),
                 process: process
@@ -195,7 +195,7 @@ define([
             var context = this;
             var content = this.editorControl.getText();
 
-            if (content === '') {
+            if (content === "") {
                 alert(this.i18n.PackageContentNotSet);
                 return;
             }
@@ -210,7 +210,7 @@ define([
             }).then(function (response) {
                 if (lang.exists("ValidatePackageResponse", response)) {
                     var responseText = context.validateResponseToText(response.ValidatePackageResponse);
-                    if (responseText === '') {
+                    if (responseText === "") {
                         context.resultControl.setText(context.i18n.Empty);
                     } else {
                         responseText = context.i18n.ValidateResult + responseText;

@@ -343,7 +343,7 @@ define([
                 lang.mixin(request, {
                     password1: request.password,
                     password2: request.password
-                })
+                });
                 WsAccess.AddUser({
                     request: request
                 }).then(function (response) {
@@ -363,7 +363,7 @@ define([
         },
 
         _onAddPermissionSubmit: function (event) {
-            var selRow = {}
+            var selRow = {};
             selRow["BasednName"] = this.addPermissionType.get("value");
             if (selRow) {
                 var request = lang.mixin(selRow, domForm.toObject(this.id + "AddPermissionForm"));
@@ -406,7 +406,7 @@ define([
                             basedn: item.__hpcc_parent.basedn,
                             rtype: item.__hpcc_parent.rtype,
                             rtitle: item.__hpcc_parent.rtitle
-                        }
+                        };
                     }
                     deleteRequests[item.__hpcc_id]["names_i" + idx] = item.name;
                 }, this);
@@ -514,7 +514,7 @@ define([
                     name: {
                         label: this.i18n.GroupName,
                         formatter: function (_name, idx) {
-                            return "<a href='#' class='dgrid-row-url'>" + _name + "</a>"
+                            return "<a href='#' class='dgrid-row-url'>" + _name + "</a>";
                         }
                     },
                     groupOwner: {
@@ -588,7 +588,7 @@ define([
                 retVal = new GroupDetailsWidget({
                     id: id,
                     title: params.Name,
-                    iconClass: 'iconPeople',
+                    iconClass: "iconPeople",
                     closable: true,
                     params: params
                 });
@@ -615,7 +615,7 @@ define([
                         label: this.i18n.Username,
                         sortable: true,
                         formatter: function (_name, idx) {
-                            return "<a href='#' class='dgrid-row-url'>" + _name + "</a>"
+                            return "<a href='#' class='dgrid-row-url'>" + _name + "</a>";
                         }
                     },
                     employeeID: {
@@ -694,7 +694,7 @@ define([
                 retVal = new UserDetailsWidget({
                     id: id,
                     title: params.Username,
-                    iconClass: 'iconPerson',
+                    iconClass: "iconPerson",
                     closable: true,
                     params: params
                 });
@@ -755,7 +755,7 @@ define([
                         label: this.i18n.Name,
                         formatter: function (_name, idx) {
                             if (idx.__hpcc_parent) {
-                                return "<a href='#' class='dgrid-row-url'>" + _name + "</a>"
+                                return "<a href='#' class='dgrid-row-url'>" + _name + "</a>";
                             } else {
                                 return _name;
                             }
@@ -833,7 +833,7 @@ define([
                 retVal = new ShowIndividualPermissionsWidget({
                     id: id,
                     title: params.TabName ? params.TabName : params.Name,
-                    iconClass: 'iconPeople',
+                    iconClass: "iconPeople",
                     closable: true,
                     params: params
                 });

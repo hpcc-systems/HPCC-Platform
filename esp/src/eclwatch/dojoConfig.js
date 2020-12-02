@@ -53,39 +53,39 @@ function getConfig(env) {
         },
         packages: [
             {
-                name: 'dojo',
-                location: baseUrl + '/node_modules/dojo',
-                lib: '.'
+                name: "dojo",
+                location: baseUrl + "/node_modules/dojo",
+                lib: "."
             },
             {
-                name: 'dijit',
-                location: baseUrl + '/node_modules/dijit',
-                lib: '.'
+                name: "dijit",
+                location: baseUrl + "/node_modules/dijit",
+                lib: "."
             },
             {
-                name: 'dojox',
-                location: baseUrl + '/node_modules/dojox',
-                lib: '.'
+                name: "dojox",
+                location: baseUrl + "/node_modules/dojox",
+                lib: "."
             },
             {
-                name: 'dojo-themes',
-                location: baseUrl + '/node_modules/dojo-themes',
-                lib: '.'
+                name: "dojo-themes",
+                location: baseUrl + "/node_modules/dojo-themes",
+                lib: "."
             },
             {
-                name: 'dgrid',
-                location: baseUrl + '/dgrid',
-                lib: '.'
+                name: "dgrid",
+                location: baseUrl + "/dgrid",
+                lib: "."
             },
             {
-                name: 'xstyle',
-                location: baseUrl + '/xstyle',
-                lib: '.'
+                name: "xstyle",
+                location: baseUrl + "/xstyle",
+                lib: "."
             },
             {
-                name: 'put-selector',
-                location: baseUrl + '/put-selector',
-                lib: '.'
+                name: "put-selector",
+                location: baseUrl + "/put-selector",
+                lib: "."
             }
         ]
     };

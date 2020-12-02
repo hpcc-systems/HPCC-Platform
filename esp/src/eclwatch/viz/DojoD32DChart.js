@@ -71,7 +71,7 @@ define([
                     deferred.resolve(this.chart);
                     break;
                 default:
-                    console.log("Invalid visualization:  " + this._chartType)
+                    console.log("Invalid visualization:  " + this._chartType);
                     deferred.resolve(null);
             }
             return deferred.promise;
@@ -104,7 +104,7 @@ define([
                         window.clearTimeout(timeoutID);
                     }
                     timeoutID = window.setTimeout(fn, timeout);
-                }
+                };
             };
 
             var _debounced_draw = _debounce(lang.hitch(this, function () {

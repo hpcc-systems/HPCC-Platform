@@ -412,7 +412,7 @@ define([
                 var baseFolder = this._dropZoneTarget.machine.Directory;
                 var selectedFolder = this.get("value");
                 return baseFolder + selectedFolder;
-            }
+            };
             if (this._dropZoneTarget) {
                 this._loadDropZoneFolders(pathSepChar, this._dropZoneTarget.machine.Netaddress, this._dropZoneTarget.machine.Directory, this._dropZoneTarget.machine.OS).then(function (results) {
                     results.sort();
@@ -426,7 +426,7 @@ define([
                         })
                     });
                     context.set("store", store);
-                    context.set("placeholder", defaultPath)
+                    context.set("placeholder", defaultPath);
                     context._postLoad();
                 });
             }
@@ -466,12 +466,12 @@ define([
                             context.options.push({
                                 label: targetData[i].Queue,
                                 value: targetData[i].Queue
-                            })
+                            });
                         }
                         context._postLoad();
                     }
                 }
-            })
+            });
         },
 
         loadSprayTargets: function () {
@@ -588,7 +588,7 @@ define([
                     var shortestLabel = "";
                     for (var i = 0; i < targetData.length; ++i) {
                         options.push({
-                            label: targetData[i].name,// + " " + targetData[i].filesize + " " + targetData[i].modifiedtime,
+                            label: targetData[i].name, // + " " + targetData[i].filesize + " " + targetData[i].modifiedtime,
                             value: targetData[i].name
                         });
                         if (shortestLabelLen > targetData[i].name.length) {

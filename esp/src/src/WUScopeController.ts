@@ -392,7 +392,7 @@ export abstract class WUScopeControllerBase<ISubgraph, IVertex, IEdge, IGraphDat
         const funcTooltips: string[] = [];
         scope.children().forEach(row => {
             funcTooltips.push(this.calcTooltipTable(row));
-        })
+        });
 
         return `<h4 align="center">${highlightText("Label", label)}</h4>
             <table>

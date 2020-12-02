@@ -335,7 +335,7 @@ define([
                 columns: {
                     col1: selector({
                         width: 27,
-                        selectorType: 'checkbox'
+                        selectorType: "checkbox"
                     }),
                     Suspended: {
                         label: this.i18n.Suspended,
@@ -632,7 +632,6 @@ define([
                 registry.byId(this.id + "Options").closeDropDown();
             }
         },
-
 
         _onRowDblClick: function (item, workunitTab) {
             var tab = null;

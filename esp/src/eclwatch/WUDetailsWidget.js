@@ -325,7 +325,7 @@ define([
 
         initTab: function () {
             if (!this.wu) {
-                return
+                return;
             }
             var currSel = this.getSelectedChild();
             if (currSel.id === this.widget._Variables.id && !this.widget._Variables.__hpcc_initalized) {
@@ -388,7 +388,7 @@ define([
         },
 
         objectToText: function (obj) {
-            var text = ""
+            var text = "";
             for (var key in obj) {
                 text += "<tr><td>" + key + ":</td>";
                 if (typeof obj[key] === "object") {
@@ -425,7 +425,7 @@ define([
                                 value: targetData[i]
                             });
                         }
-                        context.allowedClusters.set("value", "")
+                        context.allowedClusters.set("value", "");
                         domClass.add(context.id + "Cluster", "hidden");
                     } else {
                         domClass.add(context.id + "AllowedClusters", "hidden");

@@ -65,7 +65,7 @@ define([
                                 request: {
                                     Cluster: selections[i].Name
                                 }
-                            })
+                            });
                         }
                     }
                     context.refreshGrid();
@@ -80,7 +80,7 @@ define([
                     if (confirm(context.i18n.CancelAllMessage)) {
                         WsDFUXref.DFUXRefBuildCancel({
                             request: {}
-                        })
+                        });
                     }
                     context.refreshGrid();
                 },
@@ -95,7 +95,7 @@ define([
                 columns: {
                     col1: selector({
                         width: 10,
-                        selectorType: 'checkbox',
+                        selectorType: "checkbox",
                         label: ""
                     }),
                     Name: {
