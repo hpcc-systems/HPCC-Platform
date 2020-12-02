@@ -527,14 +527,6 @@ class Regression:
                     query.setWuid(wuid)
                     query.diff = query.getEclccWarningChanges()
                     report[0].addResult(query)
-                elif query.testFail():
-                    logger.debug("Intentionally fails",  extra={'taskId':cnt})
-                    res = True
-                    wuid="No WUID"
-                    url = "N/A (Intentionally fails)"
-                    query.setWuid(wuid)
-                    query.diff = ''
-                    report[0].addResult(query)
                 else:
                     eclCmd = ECLcmd()
                     try:
@@ -569,13 +561,23 @@ class Regression:
                             PrintException(repr(e) + " runQuery() ")
 
                     wuid = query.getWuid()
-                    logger.debug("CMD result: '%s', wuid:'%s'"  % ( res,  wuid),  extra={'taskId':cnt})
                     if wuid == 'Not found':
                         res = False
+                        wuid="No WUID"
+                    if query.testFail():
+                        logger.debug("Intentionally fails",  extra={'taskId':cnt})
+                        if res == False:
+                            res = True
+                    logger.debug("CMD result: '%s', wuid:'%s'"  % ( res,  wuid),  extra={'taskId':cnt})
+                   
             else:
-                res = False
-                report[0].addResult(query)
                 wuid="N/A"
+                if query.testFail():
+                    res = True
+                    report[0].addResult(query)
+                else:
+                    res = False
+                    report[0].addResult(query)
 
             if wuid and wuid.startswith("W"):
                 if self.config.useSsl.lower() == 'true':
@@ -586,6 +588,7 @@ class Regression:
                 url += "/?Widget=WUDetailsWidget&Wuid="
                 url += wuid
             elif query.testFail():
+                url = "N/A"
                 res = True
             else:
                 url = "N/A"
@@ -595,6 +598,8 @@ class Regression:
             elapsTime = time.time()-startTime
             if res:
                 logger.info("%3d. Pass %s - %s (%d sec)" % (cnt, query.getBaseEclRealName(), wuid,  elapsTime),  extra={'taskId':cnt})
+                if query.testFail():
+                    logger.info("%3d. Intentionally fails" % (cnt),  extra={'taskId':cnt})
                 logger.info("%3d. URL %s" % (cnt,url))
             else:
                 if not wuid or not wuid.startswith("W"):
@@ -608,6 +613,7 @@ class Regression:
             query.setElapsTime(elapsTime)
             self.exitmutexes[th].release()
         except Exception as e:
+            PrintException(repr(e) + " runQuery()")
             logger.error("Unexpected error:'%s' (line: %s ) :%s " %( sys.exc_info()[0], str(inspect.stack()[0][2]),  repr(e) ) ,  extra={'taskId':cnt})
             elapsTime = time.time()-startTime
             query.setElapsTime(elapsTime)

@@ -59,10 +59,10 @@ class ECLCC(Shell):
                 os.unlink(filename)
             result, stderr = self.getArchive(ecl)
 
-            if result.startswith( 'Error()'):
+            if result.startswith( 'Error('):
                 if ecl.testFail():
                     logger.debug("%3d. Fail is the expected result (ecl:'%s')", ecl.getTaskId(),  ecl.getBaseEclRealName())
-                    retVal = True
+                    retVal = False # True
                 else:
                     retVal = False
                     ecl.diff += ("%3d. Test: %s\n") % (ecl.getTaskId(), ecl.getBaseEclRealName())
