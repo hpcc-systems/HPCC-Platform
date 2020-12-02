@@ -1,0 +1,22 @@
+
+Thank you for installing the HPCC chart.
+
+This chart has defined the following HPCC components:
+{{- $names := dict -}}
+{{- range $sectionName, $section := .Values -}}
+{{-  if hasPrefix "[]" (typeOf $section) -}}
+{{-   range $component := $section -}}
+{{-    if hasKey $component "name" -}}
+{{-     if not $component.disabled -}}
+{{-      if hasKey $names $component.name -}}
+{{-       required ( printf "Component name %s in section %s was already seen in section %s" $component.name $sectionName (get $names $component.name)) nil -}}
+{{-      else }}
+  {{ $sectionName }}.{{ $component.name }}
+{{-       $_ := set $names $component.name $sectionName -}}
+{{-      end -}}
+{{-     end -}}
+{{-    end -}}
+{{-   end -}}
+{{-  end -}}
+{{- end }}
+

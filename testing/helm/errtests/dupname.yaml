@@ -1,0 +1,11 @@
+
+eclagent:
+- name: hthor
+
+- name: roxie
+
+eclccserver:
+- name: myeclccserver
+
+roxie:
+- name: roxie

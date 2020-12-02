@@ -85,14 +85,14 @@ bool ChannelInfo::otherAgentHasPriority(unsigned priorityHash, unsigned otherAge
     return false;
 }
 
-static unsigned *createNewNodeHealthScore(const IpAddress &)
+static unsigned *createNewNodeHealthScore(const ServerIdentifier &)
 {
     return new unsigned(initIbytiDelay);
 }
 
 static IpMapOf<unsigned> buddyHealth(createNewNodeHealthScore);   // For each buddy IP ever seen, maintains a score of how long I should wait for it to respond when it is the 'first responder'
 
-void noteNodeSick(const IpAddress &node)
+void noteNodeSick(const ServerIdentifier &node)
 {
     // NOTE - IpMapOf is thread safe (we never remove entries). Two threads hitting at the same time may result in the change from one being lost, but that's not a disaster
     unsigned current = buddyHealth[node];
@@ -102,13 +102,13 @@ void noteNodeSick(const IpAddress &node)
     buddyHealth[node] = newDelay;
 }
 
-void noteNodeHealthy(const IpAddress &node)
+void noteNodeHealthy(const ServerIdentifier &node)
 {
     // NOTE - IpMapOf is thread safe (we never remove entries). Two threads hitting at the same time may result in the change from one being lost, but that's not a disaster
     buddyHealth[node] = initIbytiDelay;
 }
 
-unsigned getIbytiDelay(const IpAddress &node)
+unsigned getIbytiDelay(const ServerIdentifier &node)
 {
     return buddyHealth[node];
 }
