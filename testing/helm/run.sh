@@ -34,8 +34,15 @@ do
    helm lint $hpccchart ${options} --values $file > results.txt 2> errors.txt
    if [ $? -eq 0 ]
    then
-      echo $file should have failed
-      failed=1
+      helm template $hpccchart ${options} --values $file > results.txt 2> errors.txt
+      if [ $? -eq 0 ]
+      then
+         echo $file should have failed
+         failed=1
+      else
+         echo "$file failed - correctly"
+         cat errors.txt
+      fi
    else
       echo "$file failed - correctly"
       cat results.txt
