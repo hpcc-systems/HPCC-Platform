@@ -93,7 +93,7 @@ define([
         },
 
         objectToText: function (obj) {
-            var text = ""
+            var text = "";
             for (var key in obj) {
                 text += "<tr><td>" + key + ":</td>";
                 if (typeof obj[key] === "object") {

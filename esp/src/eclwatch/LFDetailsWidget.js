@@ -134,23 +134,23 @@ define([
                         DropZoneMachines: true,
                         callback: function (value, row) {
                             var path = targetRow.machine.Directory.indexOf("\\");
-                            targetRow.machine.Name = value
-                            targetRow.machine.Netaddress = value
+                            targetRow.machine.Name = value;
+                            targetRow.machine.Netaddress = value;
                             if (context.desprayTargetPath) {
                                 context.desprayTargetPath._dropZoneTarget = targetRow;
                                 if (path > -1) {
-                                    pathSepChar = "\\"
-                                    context.pathSepCharG = "\\"
+                                    pathSepChar = "\\";
+                                    context.pathSepCharG = "\\";
                                 } else {
                                     pathSepChar = "/";
-                                    context.pathSepCharG = "/"
+                                    context.pathSepCharG = "/";
                                 }
                                 context.desprayTargetPath.loadDropZoneFolders(pathSepChar, targetRow.machine.Directory);
                             }
                         }
                     });
                 }
-            }
+            };
             this.desprayTargetPath = registry.byId(this.id + "DesprayTargetPath");
             this.fileBelongsToWidget = registry.byId(this.id + "_FileBelongs");
 

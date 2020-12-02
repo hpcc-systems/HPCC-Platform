@@ -202,7 +202,7 @@ define([
                 this.onNewTabSelection({
                     oldWidget: null,
                     newWidget: child
-                })
+                });
             }
             if (!doHash) {
                 this.disableHashing--;

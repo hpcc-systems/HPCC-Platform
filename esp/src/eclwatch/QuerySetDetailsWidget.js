@@ -231,7 +231,7 @@ define([
                 var count = 0;
                 arrayUtil.forEach(context.query.SuperFiles.SuperFile, function (item, idx) {
                     arrayUtil.forEach(item.SubFiles.File, function (item, idx) {
-                        count++
+                        count++;
                     });
                 });
             } else if (name === "LogicalFiles") {

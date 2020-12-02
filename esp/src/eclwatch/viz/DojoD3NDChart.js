@@ -81,7 +81,7 @@ define([
                     deferred.resolve(this.chart);
                     break;
                 default:
-                    console.log("Invalid visualization:  " + this._chartType)
+                    console.log("Invalid visualization:  " + this._chartType);
                     deferred.resolve(null);
             }
             return deferred.promise;

@@ -52,9 +52,9 @@ define([
 
         addContextMenuItems: function () {
             var context = this;
-            this.appendContextMenuItem(this.i18n.Delete, function () { context._onDelete() });
+            this.appendContextMenuItem(this.i18n.Delete, function () { context._onDelete(); });
             this.contextMenu.addChild(new MenuSeparator());
-            this.appendContextMenuItem(this.i18n.Bind, function () { context._onBind() });
+            this.appendContextMenuItem(this.i18n.Bind, function () { context._onBind(); });
         },
 
         _onBind: function () {
@@ -175,7 +175,7 @@ define([
                 columns: {
                     col1: selector({
                         width: 27,
-                        selectorType: 'radio',
+                        selectorType: "radio",
                         unhidable: true,
                         label: ""
                     }),
@@ -250,7 +250,7 @@ define([
                         });
                     }
                     context.refreshGrid();
-                })
+                });
             }
         },
 
@@ -308,7 +308,7 @@ define([
                             CreatedTime: item.History.CreatedTime,
                             LastEditBy: item.History.LastEditBy,
                             LastEditTime: item.History.LastEditTime
-                        }
+                        };
                         results.push(Def);
                     });
                     Utility.alphanumSort(results, "Name");
