@@ -58,21 +58,21 @@ define([
                         variables.push(lang.mixin({
                             Type: context.i18n.ECL
                         }, item));
-                    })
+                    });
                 },
                 onGetApplicationValues: function (values) {
                     arrayUtil.forEach(values, function (item, idx) {
                         variables.push(lang.mixin({
                             Type: item.Application
                         }, item));
-                    })
+                    });
                 },
                 onGetDebugValues: function (values) {
                     arrayUtil.forEach(values, function (item, idx) {
                         variables.push(lang.mixin({
                             Type: context.i18n.Debug
                         }, item));
-                    })
+                    });
                 },
                 onAfterSend: function (wu) {
                     context.store.setData(variables);

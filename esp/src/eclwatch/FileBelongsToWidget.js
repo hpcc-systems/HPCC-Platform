@@ -34,7 +34,7 @@ define([
                 columns: {
                     sel: selector({
                         width: 27,
-                        selectorType: 'checkbox'
+                        selectorType: "checkbox"
                     }),
                     Name: { label: this.i18n.Name }
                 }

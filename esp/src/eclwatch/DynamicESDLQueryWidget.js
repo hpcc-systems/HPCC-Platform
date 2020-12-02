@@ -52,7 +52,7 @@ define([
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
                 if (currSel.id === this.id + "_Grid") {
-                    this.refreshGrid()
+                    this.refreshGrid();
                 } else if (currSel.id === this.definitionQueryWidget.id && !this.definitionQueryWidget.initalized) {
                     this.definitionQueryWidget.init({
                         firstLoad: true
@@ -118,7 +118,7 @@ define([
                 columns: {
                     col1: selector({
                         width: 30,
-                        selectorType: 'checkbox',
+                        selectorType: "checkbox",
                         disabled: function (item) {
                             if (item.type === "binding") {
                                 return false;
@@ -177,7 +177,7 @@ define([
 
             retVal.on(".dgrid-row:dblclick", function (evt) {
                 evt.preventDefault();
-                context.grid.refresh()
+                context.grid.refresh();
             });
 
             retVal.onSelectionChanged(function (event) {
@@ -238,7 +238,7 @@ define([
 
             this.esdlEspProcessesDropDown = new TargetSelectWidget({
                 style: "float:left; width:100%;"
-            })
+            });
 
             this.definitionDropDown.init({
                 LoadDESDLDefinitions: true
@@ -313,7 +313,7 @@ define([
                         });
                         context.refreshGrid();
                     }
-                })
+                });
             }
         },
 

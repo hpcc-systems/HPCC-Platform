@@ -240,7 +240,7 @@ define([
                 });
             } else if (retVal.StartDate && !retVal.FromTime) {
                 lang.mixin(retVal, {
-                    StartDate: registry.byId(this.id + "FromDate").attr("value").toISOString().replace(/T.*Z/, '') + "T00:00:00Z"
+                    StartDate: registry.byId(this.id + "FromDate").attr("value").toISOString().replace(/T.*Z/, "") + "T00:00:00Z"
                 });
             }
             if (retVal.EndDate && retVal.ToTime) {
@@ -249,7 +249,7 @@ define([
                 });
             } else if (retVal.EndDate && !retVal.ToTime) {
                 lang.mixin(retVal, {
-                    EndDate: registry.byId(this.id + "ToDate").attr("value").toISOString().replace(/T.*Z/, '') + "T23:59:59Z"
+                    EndDate: registry.byId(this.id + "ToDate").attr("value").toISOString().replace(/T.*Z/, "") + "T23:59:59Z"
                 });
             }
             if (retVal.StartDate && retVal.EndDate) {
@@ -456,7 +456,7 @@ define([
                 columns: {
                     col1: selector({
                         width: 27,
-                        selectorType: 'checkbox'
+                        selectorType: "checkbox"
                     }),
                     Protected: {
                         renderHeaderCell: function (node) {
@@ -574,8 +574,8 @@ define([
                 }
             }
 
-            this.wuCopyButton.set("disabled", !hasSelection)
-            this.wuCopyButton.set("iconClass", !hasSelection ? "iconCopyDisabled" : "iconCopy")
+            this.wuCopyButton.set("disabled", !hasSelection);
+            this.wuCopyButton.set("iconClass", !hasSelection ? "iconCopyDisabled" : "iconCopy");
             registry.byId(this.id + "Open").set("disabled", !hasSelection);
             registry.byId(this.id + "Delete").set("disabled", !hasNotProtected);
             registry.byId(this.id + "Abort").set("disabled", !hasNotCompleted);

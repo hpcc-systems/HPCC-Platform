@@ -106,12 +106,12 @@ define([
                         autoSave: true,
                         canEdit: function (object, value) {
                             if (object.__hpcc_type === "Permission" || object.AccountName === "Administrators") {
-                                return false
+                                return false;
                             }
                             return true;
                         },
                         renderHeaderCell: function (node) {
-                            node.innerHTML = context.i18n.DenyAccess
+                            node.innerHTML = context.i18n.DenyAccess;
                         }
                     }, CheckBox),
                     deny_read: editor({
@@ -122,12 +122,12 @@ define([
                         autoSave: true,
                         canEdit: function (object, value) {
                             if (object.__hpcc_type === "Permission" || object.AccountName === "Administrators") {
-                                return false
+                                return false;
                             }
                             return true;
                         },
                         renderHeaderCell: function (node) {
-                            node.innerHTML = context.i18n.DenyRead
+                            node.innerHTML = context.i18n.DenyRead;
                         }
                     }, CheckBox),
                     deny_write: editor({
@@ -138,12 +138,12 @@ define([
                         autoSave: true,
                         canEdit: function (object, value) {
                             if (object.__hpcc_type === "Permission" || object.AccountName === "Administrators") {
-                                return false
+                                return false;
                             }
                             return true;
                         },
                         renderHeaderCell: function (node) {
-                            node.innerHTML = context.i18n.DenyWrite
+                            node.innerHTML = context.i18n.DenyWrite;
                         }
                     }, CheckBox),
                     deny_full: editor({
@@ -154,12 +154,12 @@ define([
                         autoSave: true,
                         canEdit: function (object, value) {
                             if (object.__hpcc_type === "Permission" || object.AccountName === "Administrators") {
-                                return false
+                                return false;
                             }
                             return true;
                         },
                         renderHeaderCell: function (node) {
-                            node.innerHTML = context.i18n.DenyFull
+                            node.innerHTML = context.i18n.DenyFull;
                         }
                     }, CheckBox)
                 }

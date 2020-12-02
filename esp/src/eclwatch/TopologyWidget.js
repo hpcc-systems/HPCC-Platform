@@ -221,7 +221,7 @@ define([
 
             new ToolbarSeparator().placeAt(this.viewModeMachines.domNode, "after");
 
-            this.machineInformationDropDown = this.createLabelAndElement("machineinformation", "Machine Information", "Select", this.i18n.MachineInformation, [{ label: this.i18n.MachineInformation, value: "GetMachineInfo", selected: true }])
+            this.machineInformationDropDown = this.createLabelAndElement("machineinformation", "Machine Information", "Select", this.i18n.MachineInformation, [{ label: this.i18n.MachineInformation, value: "GetMachineInfo", selected: true }]);
             this.getProcessorInformation = this.createLabelAndElement("GetProcessorInfo", this.i18n.ProcessorInformation, "CheckBox");
             this.getStorageInformation = this.createLabelAndElement("GetStorageInfo", this.i18n.StorageInformation, "CheckBox");
             this.localFileSystemsOnly = this.createLabelAndElement("LocalFileSystemsOnly", this.i18n.LocalFileSystemsOnly, "CheckBox");
@@ -243,7 +243,7 @@ define([
                 columns: [
                     selector({
                         width: 18,
-                        selectorType: 'checkbox',
+                        selectorType: "checkbox",
                         sortable: false,
                         disabled: function (item) {
                             if (item.__hpcc_treeItem) {
@@ -378,8 +378,8 @@ define([
                         checked: true,
                         title: label,
                         onChange: function (b) {
-                            var state = this.get('value');
-                            context.listenAndDisable(state, id)
+                            var state = this.get("value");
+                            context.listenAndDisable(state, id);
                         }
                     });
                     break;
@@ -415,10 +415,10 @@ define([
                 this.filter.tableContainer.domNode.appendChild(
                     dojo.create(label ? "div" : "span", {
                         id: this.id + id,
-                        innerHTML: label ? "<label for=" + control + " style='float:left;width:40%'>" + label + ":</label>" : '',
+                        innerHTML: label ? "<label for=" + control + " style='float:left;width:40%'>" + label + ":</label>" : "",
                         style: "vertical-align:middle;padding:2px 0 2px 5px;"
                     })
-                )
+                );
                 control.placeAt(this.id + id);
             }
         },

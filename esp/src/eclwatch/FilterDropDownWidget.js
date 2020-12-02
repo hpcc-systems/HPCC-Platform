@@ -71,7 +71,7 @@ define([
 
         _onFilterApply: function (event) {
             if (event) {
-                var formData = this.toObject(event.currentTarget.form)
+                var formData = this.toObject(event.currentTarget.form);
                 this.initRecentFilter(formData);
             }
             this.filterDropDown.closeDropDown();

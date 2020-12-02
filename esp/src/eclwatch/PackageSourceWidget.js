@@ -92,7 +92,7 @@ define([
                 else {
                     WsPackageMaps.validatePackage(params).then(function (response) {
                         var responseText = context.validateResponseToText(response.ValidatePackageResponse);
-                        if (responseText === '')
+                        if (responseText === "")
                             context.editor.setValue("(Empty)");
                         else
                             context.editor.setValue(responseText);

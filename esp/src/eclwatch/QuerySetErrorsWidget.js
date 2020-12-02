@@ -37,7 +37,7 @@ define([
             var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
                 columns: {
-                    col1: selector({ width: 27, selectorType: 'checkbox' }),
+                    col1: selector({ width: 27, selectorType: "checkbox" }),
                     Cluster: { label: this.i18n.Cluster, width: 108, sortable: false },
                     Errors: { label: this.i18n.Error, width: 108, sortable: false },
                     State: { label: this.i18n.State, width: 108, sortable: false }
@@ -56,7 +56,7 @@ define([
                             Cluster: item.Cluster,
                             Errors: item.Errors,
                             State: item.State
-                        }
+                        };
                         errors.push(error);
                     });
                 }

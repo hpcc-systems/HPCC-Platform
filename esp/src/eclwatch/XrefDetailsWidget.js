@@ -85,7 +85,7 @@ define([
                 dom.byId(this.id + "LastMessage").textContent = params.Status;
             }
 
-            if (params.Status.indexOf('Generated') !== -1) {
+            if (params.Status.indexOf("Generated") !== -1) {
                 this.setDisabled(this.widget._FoundFiles.id, false);
                 this.setDisabled(this.widget._OrphanFiles.id, false);
                 this.setDisabled(this.widget._LostFiles.id, false);

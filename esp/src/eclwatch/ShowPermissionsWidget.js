@@ -111,7 +111,7 @@ define([
                         autoSave: true,
                         canEdit: function (object, value) { return object.__hpcc_type !== "Permission"; },
                         renderHeaderCell: function (node) {
-                            node.innerHTML = context.i18n.DenyAccess
+                            node.innerHTML = context.i18n.DenyAccess;
                         }
                     }, CheckBox),
                     deny_read: editor({
@@ -122,7 +122,7 @@ define([
                         autoSave: true,
                         canEdit: function (object, value) { return object.__hpcc_type !== "Permission"; },
                         renderHeaderCell: function (node) {
-                            node.innerHTML = context.i18n.DenyRead
+                            node.innerHTML = context.i18n.DenyRead;
                         }
                     }, CheckBox),
                     deny_write: editor({
@@ -133,7 +133,7 @@ define([
                         autoSave: true,
                         canEdit: function (object, value) { return object.__hpcc_type !== "Permission"; },
                         renderHeaderCell: function (node) {
-                            node.innerHTML = context.i18n.DenyWrite
+                            node.innerHTML = context.i18n.DenyWrite;
                         }
                     }, CheckBox),
                     deny_full: editor({
@@ -144,7 +144,7 @@ define([
                         autoSave: true,
                         canEdit: function (object, value) { return object.__hpcc_type !== "Permission"; },
                         renderHeaderCell: function (node) {
-                            node.innerHTML = context.i18n.DenyFull
+                            node.innerHTML = context.i18n.DenyFull;
                         }
                     }, CheckBox)
                 }

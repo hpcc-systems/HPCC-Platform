@@ -178,11 +178,11 @@ define([
             this.timingTreeMap = registry.byId(this.id + "TimingsTreeMap");
             this.timingTreeMap.onClick = function (value) {
                 context.syncSelectionFrom(context.timingTreeMap);
-            }
+            };
             this.timingTreeMap.onDblClick = function (value) {
                 var mainItem = context.main.getItem(value.SubGraphId);
                 context.main.centerOnItem(mainItem, true);
-            }
+            };
         },
 
         _initDialogs: function () {
@@ -309,7 +309,7 @@ define([
         },
 
         _onRenderSVG: function () {
-            var context = this
+            var context = this;
             this.main.localLayout(function (svg) {
                 html.set(dom.byId(context.id + "InfoDialogContent"), "<div style='border: 1px inset grey; width: 640px; height: 480px; overflow : auto; '>" + svg + "</div>");
                 context.infoDialog.set("title", this.i18n.RenderedSVG);

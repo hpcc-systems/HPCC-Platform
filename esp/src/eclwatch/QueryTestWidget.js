@@ -105,7 +105,7 @@ define([
                             });
                             context.responseSchemaTab.addChild(responseSchema);
                             //  .../WsEcl/definitions/query/roxie/countydeeds.1/result/jo_orig.xsd?display
-                            context.setContent(responseSchema, "definitions", "/result/" + item.Name.replace(/ /g, '_') + ".xsd?display");
+                            context.setContent(responseSchema, "definitions", "/result/" + item.Name.replace(/ /g, "_") + ".xsd?display");
                         });
                     });
                 } else if (currSel.id === this.id + "_Request") {

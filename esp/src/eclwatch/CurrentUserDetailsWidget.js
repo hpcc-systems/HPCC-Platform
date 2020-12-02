@@ -70,7 +70,7 @@ define([
                 }).then(function (response) {
                     if (lang.exists("UpdateUserResponse", response)) {
                         arrayUtil.forEach(context.userForm.getDescendants(), function (item, idx) {
-                            item.set('value', "");
+                            item.set("value", "");
                         });
                     }
                 });
