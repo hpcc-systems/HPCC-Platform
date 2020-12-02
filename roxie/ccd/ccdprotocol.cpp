@@ -128,7 +128,7 @@ public:
         started.wait();
     }
 
-    virtual bool stop(unsigned timeout)
+    virtual bool stop()
     {
         if (running)
         {
@@ -136,7 +136,7 @@ public:
             join();
             Release();
         }
-        return pool->joinAll(false, timeout);
+        return pool->joinAll(false);
     }
 
     void setThreadAffinity(int numCores)
@@ -244,11 +244,11 @@ public:
         return sink.get();
     }
 
-    virtual bool stop(unsigned timeout)
+    virtual bool stop()
     {
         if (socket)
             socket->cancel_accept();
-        return ProtocolListener::stop(timeout);
+        return ProtocolListener::stop();
     }
 
     virtual void disconnectQueue()
@@ -398,7 +398,8 @@ public:
 
     virtual bool stop() override
     {
-        IERRLOG("RoxieQueryWorker stopped with queries active");
+        if (traceLevel)
+            DBGLOG("RoxieQueryWorker thread stop requested with query active - ignoring");
         return true;
     }
 

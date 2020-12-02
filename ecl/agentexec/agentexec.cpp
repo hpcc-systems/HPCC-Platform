@@ -26,14 +26,17 @@
 #include "environment.hpp"
 #include "dafdesc.hpp"
 
-class CEclAgentExecutionServer : public CInterfaceOf<IThreadFactory>
+class CEclAgentExecutionServer : public CInterfaceOf<IThreadFactory>, implements IAbortHandler
 {
 public:
+    IMPLEMENT_IINTERFACE_USING(CInterfaceOf<IThreadFactory>);
+
     CEclAgentExecutionServer(IPropertyTree *config);
     ~CEclAgentExecutionServer();
 
     int run();
     virtual IPooledThread *createNew() override;
+    virtual bool onAbort() override;
 private:
     bool executeWorkunit(const char * wuid);
 
@@ -45,6 +48,7 @@ private:
 #ifdef _CONTAINERIZED
     Owned<IThreadPool> pool;
 #endif
+    std::atomic<bool> running = { false };
 };
 
 //---------------------------------------------------------------------------------
@@ -133,7 +137,9 @@ int CEclAgentExecutionServer::run()
 
     try 
     {
-        while (true)
+        running = true;
+        LocalIAbortHandler abortHandler(*this);
+        while (running)
         {
 #ifdef _CONTAINERIZED
             if (!pool->waitAvailable(10000))
@@ -170,6 +176,7 @@ int CEclAgentExecutionServer::run()
                 break;
             }
         }
+        DBGLOG("Closing down");
     }
 
     catch (IException *e) 
@@ -303,6 +310,15 @@ IPooledThread *CEclAgentExecutionServer::createNew()
 #else
     throwUnexpected();
 #endif
+}
+
+bool CEclAgentExecutionServer::onAbort()
+{
+    DBGLOG("Close down requested");
+    running = false;
+    if (queue)
+        queue->cancelAcceptConversation();
+    return false;
 }
 
 bool CEclAgentExecutionServer::executeWorkunit(const char * wuid)

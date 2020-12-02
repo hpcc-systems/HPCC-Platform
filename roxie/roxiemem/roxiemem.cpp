@@ -348,7 +348,8 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
                     //If we notify heapBlockSize items at a time it will always be a multiple of hugePageSize so shouldn't trigger defragmentation
                     heapNotifyUnusedEachBlock = !retainMemory;
                 }
-                DBGLOG("Transparent huge pages used for roxiemem heap");
+                if (memTraceLevel)
+                    DBGLOG("Transparent huge pages used for roxiemem heap");
             }
         }
         else
@@ -356,21 +357,29 @@ static void initializeHeap(bool allowHugePages, bool allowTransparentHugePages, 
             if (!allowTransparentHugePages)
             {
                 madvise(heapBase,memsize,MADV_NOHUGEPAGE);
-                DBGLOG("Transparent huge pages disabled in configuration by user.");
+                if (memTraceLevel)
+                    DBGLOG("Transparent huge pages disabled in configuration by user.");
             }
-            else
+            else if (memTraceLevel)
                 DBGLOG("Transparent huge pages unsupported or disabled by system.");
         }
 #else
-        DBGLOG("Transparent huge pages are not supported on this kernel.  Requires kernel version > 2.6.38.");
+        if (memTraceLevel)
+            DBGLOG("Transparent huge pages are not supported on this kernel.  Requires kernel version > 2.6.38.");
 #endif
     }
 #endif
 
     if (heapNotifyUnusedEachFree)
-        DBGLOG("Memory released to OS on each %uk 'page'", (unsigned)(HEAP_ALIGNMENT_SIZE/1024));
+    {
+        if (memTraceLevel)
+            DBGLOG("Memory released to OS on each %uk 'page'", (unsigned)(HEAP_ALIGNMENT_SIZE/1024));
+    }
     else if (heapNotifyUnusedEachBlock)
-        DBGLOG("Memory released to OS in %uk blocks", (unsigned)(HEAP_ALIGNMENT_SIZE*HEAP_BITS/1024));
+    {
+        if (memTraceLevel)
+            DBGLOG("Memory released to OS in %uk blocks", (unsigned)(HEAP_ALIGNMENT_SIZE*HEAP_BITS/1024));
+    }
     else
     {
         DBGLOG("MEMORY WILL NOT BE RELEASED TO OS");
