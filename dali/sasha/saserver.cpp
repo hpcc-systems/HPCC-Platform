@@ -351,7 +351,9 @@ int main(int argc, const char* argv[])
                 coalesceDatastore(force);
             }
             else {
+#ifndef _CONTAINERIZED
                 startPerformanceMonitor(serverConfig->getPropInt("@perfReportDelay", DEFAULT_PERF_REPORT_DELAY)*1000);
+#endif
                 AddServers();
                 addAbortHandler(actionOnAbort);
 
@@ -397,7 +399,9 @@ int main(int argc, const char* argv[])
                 delete stopThread;
 
                 PROGLOG("SASERVER exiting");
+#ifndef _CONTAINERIZED
                 stopPerformanceMonitor();
+#endif
             }
             delete SashaServerStatus;
             SashaServerStatus = NULL;
@@ -405,7 +409,9 @@ int main(int argc, const char* argv[])
     }
     catch(IException *e){ 
         EXCLOG(e, "Sasha Server Exception: ");
+#ifndef _CONTAINERIZED
         stopPerformanceMonitor();
+#endif
         e->Release();
     }
     catch (const char *s) {

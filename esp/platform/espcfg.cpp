@@ -364,9 +364,10 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
         const unsigned dafilesrvConnectTimeout = m_cfg->getPropInt("@dafilesrvConnectTimeout", 10)*1000;
         const unsigned dafilesrvReadTimeout = m_cfg->getPropInt("@dafilesrvReadTimeout", 10)*1000;
         setRemoteFileTimeouts(dafilesrvConnectTimeout, dafilesrvReadTimeout);
-
+#ifndef _CONTAINERIZED
 #ifndef _DEBUG
         startPerformanceMonitor(m_cfg->getPropInt("@perfReportDelay", 60)*1000);
+#endif
 #endif
 
         IPropertyTreeIterator *pt_iter = NULL;

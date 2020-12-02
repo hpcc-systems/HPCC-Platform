@@ -209,7 +209,9 @@ unsigned leafCacheMB = 50;
 unsigned blobCacheMB = 0;
 
 unsigned roxiePort = 0;
+#ifndef _CONTAINERIZED
 Owned<IPerfMonHook> perfMonHook;
+#endif
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
@@ -1116,11 +1118,12 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             mtu_size = 1400;    // upper limit on outbound buffer size - allow some header room too
             roxiemem::setDataAlignmentSize(0x400);
         }
-        unsigned pinterval = topology->getPropInt("@systemMonitorInterval",1000*60);
+#ifndef _CONTAINERIZED
         perfMonHook.setown(roxiemem::createRoxieMemStatsPerfMonHook());  // Note - we create even if pinterval is 0, as can be enabled via control message
+        unsigned pinterval = topology->getPropInt("@systemMonitorInterval",1000*60);
         if (pinterval)
             startPerformanceMonitor(pinterval, PerfMonStandard, perfMonHook);
-
+#endif
 
         topology->getProp("@pluginDirectory", pluginDirectory);
         StringBuffer packageDirectory;
@@ -1417,7 +1420,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
     }
 
     roxieMetrics.clear();
+#ifndef _CONTAINERIZED
     stopPerformanceMonitor();
+#endif
     ::Release(globalPackageSetManager);
     globalPackageSetManager = NULL;
     stopDelayedReleaser();
@@ -1428,7 +1433,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
     releaseRoxieStateCache();
     setDaliServixSocketCaching(false);  // make sure it cleans up or you get bogus memleak reports
     setNodeCaching(false); // ditto
+#ifndef _CONTAINERIZED
     perfMonHook.clear();
+#endif
     stopAeronDriver();
     stopTopoThread();
 
