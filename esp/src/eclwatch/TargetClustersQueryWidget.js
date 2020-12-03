@@ -181,7 +181,7 @@ define([
             });
 
             retVal.on(".dgrid-row:dblclick", function (evt) {
-                event.preventDefault();
+                evt.preventDefault();
             });
 
             retVal.on("dgrid-select", function (event) {
