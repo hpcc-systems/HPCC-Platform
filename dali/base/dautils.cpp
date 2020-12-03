@@ -286,6 +286,24 @@ CDfsLogicalFileName & CDfsLogicalFileName::operator = (CDfsLogicalFileName const
     return *this;
 }
 
+bool CDfsLogicalFileName::isExternalPlane() const
+{
+    return external && startsWithIgnoreCase(lfn, PLANE_SCOPE "::");
+}
+
+bool CDfsLogicalFileName::getExternalPlane(StringBuffer & plane) const
+{
+    if (!isExternalPlane())
+        return false;
+
+    const char * start = lfn.str() + strlen(PLANE_SCOPE "::");
+    const char * end = strstr(start,"::");
+    assertex(end);
+    plane.append(end-start, start);
+    return true;
+}
+
+
 void CDfsLogicalFileName::set(const CDfsLogicalFileName &other)
 {
     lfn.set(other.lfn);
@@ -590,8 +608,8 @@ bool CDfsLogicalFileName::normalizeExternal(const char * name, StringAttr &res, 
         normalizeScope(s1, s1, ns1-s1, planeName, strict);
 
         Owned<IStoragePlane> plane = getStoragePlane(planeName, true);
-        if (plane->numDevices() != 1)
-            throw makeStringExceptionV(-1, "Scope contains invalid storage plane '%s'", name);
+        if (plane->numDevices() == 0)
+            throw makeStringExceptionV(-1, "Scope contains invalid storage plane '%s'", planeName.str());
             
         str.append("::").append(planeName);
         str.append(ns1);

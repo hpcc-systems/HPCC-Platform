@@ -34,6 +34,7 @@ set (    SRCS
          dadfs.cpp 
          dadiags.cpp 
          dafdesc.cpp 
+         dameta.cpp
          danqs.cpp 
          dasds.cpp 
          dasess.cpp 
@@ -48,6 +49,7 @@ set (    INCLUDES
          dadfs.hpp
          dadiags.hpp
          dafdesc.hpp
+         dameta.hpp
          danqs.hpp
          daqueue.hpp
          dasds.hpp
