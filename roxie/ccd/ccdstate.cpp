@@ -2743,12 +2743,16 @@ private:
             }
             else if (stricmp(queryName, "control:systemMonitor")==0)
             {
+#ifndef _CONTAINERIZED
                 unsigned interval = control->getPropInt("@interval", 60000);
                 bool enable = control->getPropBool("@enable", true);
                 if (enable)
                     startPerformanceMonitor(interval, PerfMonStandard, perfMonHook);
                 else
                     stopPerformanceMonitor();
+#else
+                UNIMPLEMENTED; //better than ignoring 'control:systemMonitor' in containerized mode
+#endif
             }
             //MORE: control:stats??
             else

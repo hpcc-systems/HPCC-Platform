@@ -528,9 +528,11 @@ int main( int argc, const char *argv[]  )
                     multiThorMemoryThreshold = 0;
             }
 
+#ifndef _CONTAINERIZED
             unsigned pinterval = globals->getPropInt("@system_monitor_interval",1000*60);
             if (pinterval)
                 startPerformanceMonitor(pinterval, PerfMonStandard, nullptr);
+#endif
 
 #ifdef _CONTAINERIZED
             class CServerThread : public CSimpleInterfaceOf<IThreaded>
@@ -581,7 +583,9 @@ int main( int argc, const char *argv[]  )
             FLLOG(MCexception(e), thorJob, e,"ThorSlave");
         unregisterException.setown(e);
     }
+#ifndef _CONTAINERIZED
     stopPerformanceMonitor();
+#endif
     ClearTempDirs();
 
     if (multiThorMemoryThreshold)

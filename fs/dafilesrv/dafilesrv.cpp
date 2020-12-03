@@ -834,6 +834,7 @@ int main(int argc,char **argv)
     server->setThrottle(ThrottleStd, parallelRequestLimit, throttleDelayMs, throttleCPULimit);
     server->setThrottle(ThrottleSlow, parallelSlowRequestLimit, throttleSlowDelayMs, throttleSlowCPULimit);
 
+#ifndef _CONTAINERIZED
     class CPerfHook : public CSimpleInterfaceOf<IPerfMonHook>
     {
     public:
@@ -850,6 +851,8 @@ int main(int argc,char **argv)
         }
     } perfHook;
     startPerformanceMonitor(10*60*1000, PerfMonStandard, &perfHook);
+#endif
+
     writeSentinelFile(sentinelFile);
     try
     {
@@ -869,7 +872,11 @@ int main(int argc,char **argv)
             removeSentinelFile(sentinelFile); // so init does not keep trying to start it ...
         e->Release();
     }
+
+#ifndef _CONTAINERIZED
     stopPerformanceMonitor();
+#endif
+
     if (server)
         server->stop();
     server.clear();
