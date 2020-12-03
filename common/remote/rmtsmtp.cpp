@@ -478,7 +478,6 @@ class CMailInfo
 
     static char const * toHeader;
     static char const * ccHeader;
-    static char const * bccHeader;
     static char const * subjectHeader;
     static char const * senderHeader;
 public:
@@ -492,22 +491,12 @@ public:
         validator.validateAddress(sender.get(), "email sender address");
 
         getRecipients(validator, _to, to);
-        if(strlen(toHeader) + to.length() > 998)
-            throw MakeStringException(0, "Email recipient address list too long: %u characters", to.length());
 
         if (_cc && _cc[0])
-        {
             getRecipients(validator, _cc, cc);
-            if(strlen(ccHeader) + cc.length() > 998)
-                throw MakeStringException(0, "Email cc: recipient address list too long: %u characters", cc.length());
-        }
 
         if (_bcc && _bcc[0])
-        {
             getRecipients(validator, _bcc, bcc);
-            if(strlen(bccHeader) + bcc.length() > 998)
-                throw MakeStringException(0, "Email bcc: recipient address list too long: %u characters", cc.length());
-        }
 
         if(strlen(subjectHeader) + subject.length() > 998)
             throw MakeStringException(0, "Email subject too long: %" I64F "u characters",  static_cast<__uint64>(subject.length()));
@@ -638,7 +627,6 @@ private:
 
 char const * CMailInfo::toHeader = "To: ";
 char const * CMailInfo::ccHeader = "Cc: ";
-char const * CMailInfo::bccHeader = "Bcc: ";
 char const * CMailInfo::subjectHeader = "Subject: ";
 char const * CMailInfo::senderHeader = "From: ";
 
