@@ -14,7 +14,7 @@ on:
 
 jobs:
   build:
-    name: Build
+    name: "Build and publish release container"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

@@ -26,6 +26,7 @@ on:
 
 jobs:
   build:
+    name: "Check eclwatch and npm"
     runs-on: ubuntu-latest
 
     steps:
