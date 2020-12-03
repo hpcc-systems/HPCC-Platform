@@ -259,7 +259,7 @@ int main(int argc, char* argv[])
 
     objects.kill();
     ExitModuleObjects();
-    return wasSuccessful;
+    return wasSuccessful ? 0 : 1; // 0 == exit code success
 }
 
 
