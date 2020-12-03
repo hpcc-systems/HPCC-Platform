@@ -14,7 +14,7 @@ on:
 
 jobs:
   build:
-    name: Build
+    name: "Build and publish debug container"
     runs-on: ubuntu-latest
     if: github.repository == 'hpcc-systems/HPCC-Platform'
     steps:

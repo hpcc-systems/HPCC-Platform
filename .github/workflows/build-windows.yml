@@ -22,6 +22,7 @@ on:
 
 jobs:
   build:
+    name: "Check compiles on Win32"
     runs-on: windows-latest
     steps:
       - name: Display build summary
