@@ -1032,7 +1032,7 @@ void CWsTopologyEx::readTpLogFileRequest(IEspContext &context, const char* fileN
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "This log file has no timestamp.");
 
         if  (req.getLastHours_isNull())
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invlid 'Hours' field.");
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid 'Hours' field.");
 
         readLogReq.lastHours = req.getLastHours();
         unsigned hour, minute, second, nano;
@@ -1051,7 +1051,7 @@ void CWsTopologyEx::readTpLogFileRequest(IEspContext &context, const char* fileN
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "This log file has no timestamp.");
 
         if ((readLogReq.startDate.length() < 8) && (readLogReq.endDate.length() < 8))
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invlid 'Time' field.");
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid 'Time' field.");
         break;
     }
     }

@@ -14,7 +14,7 @@ on:
 
 jobs:
   build:
-    name: Build
+    name: "Build and publish release container"
     runs-on: ubuntu-latest
     if: github.repository == 'hpcc-systems/HPCC-Platform'
     steps:
@@ -26,3 +26,17 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           latest: 1   # this should only be set on the current minor branch
+
+      - name: Notify on failure
+        uses: hpcc-systems/action-send-mail@v2
+        if: ${{ failure() }}
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{secrets.GMAIL_USER}}
+          password: ${{secrets.GMAIL_PW}}
+          subject: Github Actions job result
+          body: Build job of ${{github.repository}} failed!
+          to: ${{secrets.GMAIL_RECIPIENTS}}
+          from: Github Actions
+

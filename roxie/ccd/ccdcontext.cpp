@@ -1391,10 +1391,6 @@ public:
         if (linuxYield)
             sched_yield();
 #endif
-#ifdef _DEBUG
-        if (shuttingDown)
-            throw MakeStringException(ROXIE_FORCE_SHUTDOWN, "Roxie is shutting down");
-#endif
         if (aborted) // NOTE - don't bother getting lock before reading this (for speed) - a false read is very unlikely and not a problem
         {
             CriticalBlock b(abortLock);

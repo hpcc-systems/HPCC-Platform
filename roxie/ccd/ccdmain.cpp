@@ -209,7 +209,9 @@ unsigned leafCacheMB = 50;
 unsigned blobCacheMB = 0;
 
 unsigned roxiePort = 0;
+#ifndef _CONTAINERIZED
 Owned<IPerfMonHook> perfMonHook;
+#endif
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
@@ -730,6 +732,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         if (standAloneDll || wuid)
         {
             oneShotRoxie = true;
+            DBGLOG("Starting roxie - wuid=%s", wuid ? wuid : "<none>");
             allFilesDynamic = true;
             if (topology->getPropBool("@server", false))
             {
@@ -1118,11 +1121,12 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             mtu_size = 1400;    // upper limit on outbound buffer size - allow some header room too
             roxiemem::setDataAlignmentSize(0x400);
         }
-        unsigned pinterval = topology->getPropInt("@systemMonitorInterval",1000*60);
+#ifndef _CONTAINERIZED
         perfMonHook.setown(roxiemem::createRoxieMemStatsPerfMonHook());  // Note - we create even if pinterval is 0, as can be enabled via control message
+        unsigned pinterval = topology->getPropInt("@systemMonitorInterval",1000*60);
         if (pinterval)
             startPerformanceMonitor(pinterval, PerfMonStandard, perfMonHook);
-
+#endif
 
         topology->getProp("@pluginDirectory", pluginDirectory);
         StringBuffer packageDirectory;
@@ -1393,13 +1397,14 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                 E->Release();
             }
         }
+        DBGLOG("Roxie closing down");
         shuttingDown = true;
         if (pingInterval)
             stopPingTimer();
         setSEHtoExceptionHandler(NULL);
         while (socketListeners.isItem(0))
         {
-            socketListeners.item(0).stop(1000);
+            socketListeners.item(0).stop();
             socketListeners.remove(0);
         }
         packetDiscarder->stop();
@@ -1419,7 +1424,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
     }
 
     roxieMetrics.clear();
+#ifndef _CONTAINERIZED
     stopPerformanceMonitor();
+#endif
     ::Release(globalPackageSetManager);
     globalPackageSetManager = NULL;
     stopDelayedReleaser();
@@ -1430,7 +1437,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
     releaseRoxieStateCache();
     setDaliServixSocketCaching(false);  // make sure it cleans up or you get bogus memleak reports
     setNodeCaching(false); // ditto
+#ifndef _CONTAINERIZED
     perfMonHook.clear();
+#endif
     stopAeronDriver();
     stopTopoThread();
 
@@ -1459,6 +1468,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #endif
     return 0;
 }
+
+// These defaults only apply when roxie is linked into a standalone executable
+// Note that the defaults for roxie executable (in whatever mode) are set in roxie.cpp
 
 static constexpr const char * standaloneDefaultYaml = R"!!(
 version: "1.0"

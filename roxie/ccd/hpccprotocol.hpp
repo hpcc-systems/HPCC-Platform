@@ -110,7 +110,7 @@ interface IHpccProtocolListener : extends IInterface
     virtual const SocketEndpoint &queryEndpoint() const = 0;
 
     virtual void start() = 0;
-    virtual bool stop(unsigned timeout) = 0;
+    virtual bool stop() = 0;
     virtual void stopListening() = 0;
     virtual void disconnectQueue() = 0;
 

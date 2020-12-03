@@ -1012,10 +1012,11 @@ int main( int argc, const char *argv[]  )
 
             writeSentinelFile(sentinelFile);
 
+#ifndef _CONTAINERIZED
             unsigned pinterval = globals->getPropInt("@system_monitor_interval",1000*60);
             if (pinterval)
                 startPerformanceMonitor(pinterval, PerfMonStandard, nullptr);
-
+#endif
             // NB: workunit/graphName only set in one-shot mode (if isCloud())
             thorMain(logHandler, workunit, graphName);
             LOG(MCauditInfo, ",Progress,Thor,Terminate,%s,%s,%s",thorname,nodeGroup.str(),queueName.str());
@@ -1048,7 +1049,9 @@ int main( int argc, const char *argv[]  )
     thorEndHandler->start(30);
 
     PROGLOG("Thor closing down 5");
+#ifndef _CONTAINERIZED
     stopPerformanceMonitor();
+#endif
     disconnectLogMsgManagerFromDali();
     closeThorServerStatus();
     PROGLOG("Thor closing down 4");

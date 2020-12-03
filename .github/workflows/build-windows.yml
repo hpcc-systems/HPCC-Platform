@@ -5,23 +5,32 @@ on:
     branches:
       - "master"
       - "candidate-*"
+      - "!candidate-7.10.*"
       - "!candidate-7.8.*"
       - "!candidate-7.6.*"
       - "!candidate-7.4.*"
       - "!candidate-7.2.*"
       - "!candidate-7.0.*"
       - "!candidate-6.*"
-    paths-ignore:
-      - docs/**
-      - esp/src/**/*
-      - dockerfiles/**
-      - helm/**
-      - ecllibrary/**
-      - testing/**
-      - initfiles/**
 
 jobs:
+  pre_job:
+    # continue-on-error: true # Uncomment once integration is finished
+    runs-on: ubuntu-latest
+    # Map a step output to a job output
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: hpcc-systems/skip-duplicate-actions@master
+        with:
+          github_token: ${{ github.token }}
+          paths_ignore: '["docs/**", "esp/src/**/*", "dockerfiles/**", "helm/**", "ecllibrary/**", "testing/**", "initfiles/**" ]'
+
   build:
+    name: "Check compiles on Win32"
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: windows-latest
     steps:
       - name: Display build summary

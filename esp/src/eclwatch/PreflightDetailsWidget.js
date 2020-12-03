@@ -164,7 +164,7 @@ define([
                             CPULoad: {
                                 label: this.i18n.CPULoad,
                                 renderCell: function (object, value, node, options) {
-                                    switch (request < value) {
+                                    switch ( value > request) {
                                         case true:
                                             domClass.add(node, "ErrorCell");
                                             break;

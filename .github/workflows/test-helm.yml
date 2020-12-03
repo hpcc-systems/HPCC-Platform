@@ -11,9 +11,6 @@ on:
       - "!candidate-7.2.*"
       - "!candidate-7.0.*"
       - "!candidate-6.*"
-    paths:
-      - "helm/**/*"
-      - "testing/helm/**/*"
   pull_request:
     branches:
       - "master"
@@ -24,14 +21,25 @@ on:
       - "!candidate-7.2.*"
       - "!candidate-7.0.*"
       - "!candidate-6.*"
-    paths:
-      - "helm/**/*"
-      - "testing/helm/**/*"
 
 jobs:
+  pre_job:
+     # continue-on-error: true # Uncomment once integration is finished
+     runs-on: ubuntu-latest
+     # Map a step output to a job output
+     outputs:
+       should_skip: ${{ steps.skip_check.outputs.should_skip }}
+     steps:
+       - id: skip_check
+         uses: hpcc-systems/skip-duplicate-actions@master
+         with:
+           github_token: ${{ github.token }}
+           paths: '["helm/**/*", "testing/helm/**/*" ]'
   build:
+    name: "Check helm chart lint"
     runs-on: ubuntu-latest
-    if: github.repository == 'hpcc-systems/HPCC-Platform'
+    needs: pre_job
+    if: ${{ github.repository == 'hpcc-systems/HPCC-Platform' && needs.pre_job.outputs.should_skip != 'true' }}
     steps:
       - uses: actions/checkout@v2
         with:

@@ -197,7 +197,8 @@ private:
                 }
                 else if (owner->connect(ROXIE_DALI_CONNECT_TIMEOUT))
                 {
-                    DBGLOG("roxie: CRoxieDaliConnectWatcher reconnected");
+                    if (traceLevel)
+                        DBGLOG("CRoxieDaliConnectWatcher reconnected");
                     try
                     {
                         owner->disconnectSem.wait();

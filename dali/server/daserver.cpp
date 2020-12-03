@@ -687,7 +687,10 @@ int main(int argc, const char* argv[])
             UseSysLogForOperatorMessages();
         AddServers(auditDir.str());
         addAbortHandler(actionOnAbort);
+
+#ifndef _CONTAINERIZED
         startPerformanceMonitor(serverConfig->getPropInt("Coven/@perfReportDelay", DEFAULT_PERF_REPORT_DELAY)*1000);
+#endif
         StringBuffer absPath;
         makeAbsolutePath(dataPath.str(), absPath);
         setPerformanceMonitorPrimaryFileSystem(absPath.str());
@@ -710,7 +713,9 @@ int main(int argc, const char* argv[])
         {
             EXCLOG(e, "Failed whilst starting servers");
             stopServer();
+#ifndef _CONTAINERIZED
             stopPerformanceMonitor();
+#endif
             throw;
         }
         try {
@@ -730,7 +735,9 @@ int main(int argc, const char* argv[])
         catch (IException *e) {
             EXCLOG(e, "LDAP initialization error");
             stopServer();
+#ifndef _CONTAINERIZED
             stopPerformanceMonitor();
+#endif
             throw;
         }
         PROGLOG("DASERVER[%d] starting - listening to port %d",myrank,queryMyNode()->endpoint().port);
@@ -754,7 +761,9 @@ int main(int argc, const char* argv[])
             removeAbortHandler(actionOnAbort);
         }
         stopServer();
+#ifndef _CONTAINERIZED
         stopPerformanceMonitor();
+#endif
     }
     catch (IException *e) {
         EXCLOG(e, "Exception");

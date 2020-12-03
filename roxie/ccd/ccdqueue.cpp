@@ -848,7 +848,8 @@ void doUnload(IRoxieQueryPacket *packet, const IRoxieContextLogger &logctx)
 {
     const RoxiePacketHeader &header = packet->queryHeader();
     unsigned channelNo = header.channel;
-    logctx.CTXLOG("Unload received for channel %d", channelNo);
+    if (logctx.queryTraceLevel())
+        logctx.CTXLOG("Unload received for channel %d", channelNo);
     hash64_t hashValue = header.queryHash;
     hashValue = rtlHash64Data(sizeof(channelNo), &channelNo, hashValue);
     SpinBlock b(onDemandQueriesCrit);

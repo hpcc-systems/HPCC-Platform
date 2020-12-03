@@ -1615,9 +1615,7 @@ int CSocket::logPollError(unsigned revents, const char *rwstr)
     }
     else if (revents & POLLNVAL)
     {
-        StringBuffer errStr;
-        errStr.appendf("%s POLLNVAL", rwstr);
-        LOGERR2(999,3,errStr.str());
+        // These are typically expected - when closing a socket in order to interrupt a thread that waits on it, for example
     }
     else
     {

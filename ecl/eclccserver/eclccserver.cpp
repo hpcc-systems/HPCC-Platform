@@ -907,9 +907,12 @@ int main(int argc, const char *argv[])
         }
         else
         {
+#ifndef _CONTAINERIZED
             unsigned optMonitorInterval = globals->getPropInt("@monitorInterval", 60);
             if (optMonitorInterval)
                 startPerformanceMonitor(optMonitorInterval*1000, PerfMonStandard, nullptr);
+#endif
+
 #ifdef _CONTAINERIZED
             bool filtered = false;
             std::unordered_map<std::string, bool> listenQueues;
@@ -967,7 +970,9 @@ int main(int argc, const char *argv[])
     {
         IERRLOG("Terminating unexpectedly");
     }
+#ifndef _CONTAINERIZED
     stopPerformanceMonitor();
+#endif
     globals.clear();
     UseSysLogForOperatorMessages(false);
     ::closedownClientProcess(); // dali client closedown
