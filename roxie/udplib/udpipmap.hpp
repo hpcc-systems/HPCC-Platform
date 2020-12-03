@@ -111,7 +111,7 @@ private:
 
 template<class T> T &IpMapOf<T>::lookup(const ServerIdentifier &ip) const
 {
-   unsigned hash = ip.hash() & 0xff;
+   unsigned hash = ip.fasthash() & 0xff;
    for (;;)
    {
        const list *head = table[hash].load(std::memory_order_acquire);
