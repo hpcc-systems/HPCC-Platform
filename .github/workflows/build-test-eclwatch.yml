@@ -26,6 +26,7 @@ on:
 
 jobs:
   build:
+    name: "Check eclwatch and npm"
     if: github.repository == 'hpcc-systems/HPCC-Platform'
     runs-on: ubuntu-latest
     steps:
