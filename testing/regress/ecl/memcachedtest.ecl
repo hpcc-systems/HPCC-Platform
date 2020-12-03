@@ -17,6 +17,7 @@
 
 //class=embedded
 //class=3rdparty
+//class=3rdpartyservice
 
 IMPORT memcached FROM lib_memcached;
 IMPORT Std;
