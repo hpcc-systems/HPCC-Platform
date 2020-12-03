@@ -1175,7 +1175,8 @@ public:
             {
                 distributor->disconnect(true);
                 distributor->join();
-            }            
+            }
+            aggregateStream.clear();
         }
         PARENT::stop();
     }
