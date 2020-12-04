@@ -104,16 +104,24 @@ public:
         return LINK(tree);
     }
 
-    IPropertyTree *getPackageMaps()
+    IPropertyTree *ensurePackageMapsOrSets(IPropertyTree *root, const char* path)
     {
-        Owned<IPropertyTree> root = getTree();
-        return root->getPropTree("PackageMaps");
+        Owned<IPropertyTree> ret = root->getPropTree(path);
+        if (!ret)
+            ret.setown(createPTree(path, ipt_lowmem));
+        return ret.getClear();
     }
 
-    IPropertyTree *getPackageSets()
+    IPropertyTree *ensurePackageMaps()
     {
         Owned<IPropertyTree> root = getTree();
-        return root->getPropTree("PackageSets");
+        return ensurePackageMapsOrSets(root, "PackageMaps");
+    }
+
+    IPropertyTree *ensurePackageSets()
+    {
+        Owned<IPropertyTree> root = getTree();
+        return ensurePackageMapsOrSets(root, "PackageSets");
     }
 
     StringBuffer &toStr(StringBuffer &s)
