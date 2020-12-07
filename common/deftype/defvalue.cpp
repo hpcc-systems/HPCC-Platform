@@ -31,13 +31,9 @@
 
 BoolValue *BoolValue::trueconst;
 BoolValue *BoolValue::falseconst;
-static IAtom * asciiAtom;
-static IAtom * ebcdicAtom;
 
 MODULE_INIT(INIT_PRIORITY_DEFVALUE)
 {
-    asciiAtom = createLowerCaseAtom("ascii");
-    ebcdicAtom = createLowerCaseAtom("ebcdic");
     BoolValue::trueconst = new BoolValue(true);
     BoolValue::falseconst = new BoolValue(false);
     return true;
@@ -214,7 +210,7 @@ IValue * CValue::doCastTo(unsigned osize, const char * text, ITypeInfo *t)
         }
     }
 
-    Owned<ICharsetInfo> charset = getCharset(asciiAtom);
+    Owned<ICharsetInfo> charset = getAsciiCharset();
     ITranslationInfo * translation = queryDefaultTranslation(charset, type->queryCharset());
     if (translation)
     {
@@ -499,7 +495,7 @@ IValue *StringValue::castTo(ITypeInfo *t)
         return t->castFrom(type->getSize(), str);        //NB: Must not go through translation in default case
 
     ICharsetInfo * srcCharset = type->queryCharset();
-    Owned<ICharsetInfo> asciiCharset = getCharset(asciiAtom);
+    Owned<ICharsetInfo> asciiCharset = getAsciiCharset();
     if (queryDefaultTranslation(asciiCharset, srcCharset))
     {
         Owned<ITypeInfo> asciiType = getAsciiType(type);
@@ -544,7 +540,7 @@ const char *StringValue::getStringValue(StringBuffer &out)
 const char *StringValue::getUTF8Value(StringBuffer &out)
 {
     ICharsetInfo * srcCharset = type->queryCharset();
-    Owned<ICharsetInfo> asciiCharset = getCharset(asciiAtom);
+    Owned<ICharsetInfo> asciiCharset = getAsciiCharset();
     if (queryDefaultTranslation(asciiCharset, srcCharset))
     {
         Owned<ITypeInfo> asciiType = getAsciiType(type);

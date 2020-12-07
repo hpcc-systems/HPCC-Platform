@@ -27,7 +27,7 @@
 
 #include "eclcmd_common.hpp"
 
-StringBuffer eclccpath;
+static StringBuffer eclccpath;
 
 const char *queryEclccPath(bool optVerbose)
 {

@@ -50,7 +50,6 @@
 
 
 static bool optVerbose;
-static StringBuffer eclccpath;
 
 /*
  * Version comparison code.

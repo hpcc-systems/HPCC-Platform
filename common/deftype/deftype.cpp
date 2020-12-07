@@ -3035,6 +3035,11 @@ ITranslationInfo * getDefaultTranslation(ICharsetInfo * tgt, ICharsetInfo * src)
     return translator;
 }
 
+ICharsetInfo * getAsciiCharset()
+{
+    return getCharset(asciiAtom);
+}
+
 //---------------------------------------------------------------------------
 
 ITypeInfo * getStretchedType(unsigned newLen, ITypeInfo * type)

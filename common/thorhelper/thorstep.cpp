@@ -30,7 +30,6 @@
 
 using roxiemem::OwnedConstRoxieRow;
 
-const static SmartStepExtra knownLowestFrequencyTermStepExtra(SSEFreadAhead, NULL);
 const static SmartStepExtra unknownFrequencyTermStepExtra(SSEFreturnMismatches, NULL);
 const static SmartStepExtra nonSeekStepExtra(SSEFreturnUnbufferedMatches, NULL);                    // if doing next() instead of nextGE()
 const static SmartStepExtra nonBufferedMatchStepExtra(SSEFreturnUnbufferedMatches, NULL);
