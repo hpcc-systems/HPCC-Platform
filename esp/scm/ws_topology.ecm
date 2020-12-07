@@ -17,11 +17,11 @@
 
 ////////////////////////////////////////////////////////////
 
-ESPenum DeployOnlyFilter : string
+ESPenum RoxieQueueFilter : string
 {
     All("All"),
-    DeployOnly("DeployOnly"),
-    NotDeployOnly("NotDeployOnly")
+    QueriesOnly("QueriesOnly"),
+    WorkunitsOnly("WorkunitsOnly")
 };
 
 //  ===========================================================================
@@ -69,7 +69,7 @@ ESPStruct TpLogicalCluster
         [min_ver("1.14")] string LanguageVersion;
     [min_ver("1.11")] string Process;
     [min_ver("1.22")] string Type;
-    [min_ver("1.31")] bool DeployOnly;
+    [min_ver("1.31")] bool QueriesOnly;
 };
 //  ===========================================================================
 
@@ -383,7 +383,7 @@ ESPresponse [exceptions_inline]TpClusterQueryResponse
 ESPrequest TpLogicalClusterQueryRequest
 {
     string EclServerQueue;
-    [min_ver("1.31")] ESPenum DeployOnlyFilter DeployOnlyFilter;
+    [min_ver("1.31")] ESPenum RoxieQueueFilter RoxieQueueFilter;
 };
 
 ESPresponse [exceptions_inline] TpLogicalClusterQueryResponse

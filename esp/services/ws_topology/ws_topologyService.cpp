@@ -1323,18 +1323,18 @@ bool CWsTopologyEx::onTpLogicalClusterQuery(IEspContext &context, IEspTpLogicalC
         CConstWUClusterInfoArray wuClusters;
 #ifdef _CONTAINERIZED
         double version = context.getClientVersion();
-        CDeployOnlyFilter deployOnlyFilter = req.getDeployOnlyFilter();
-        if (deployOnlyFilter == DeployOnlyFilter_Undefined)
-            deployOnlyFilter = CDeployOnlyFilter_All;
+        CRoxieQueueFilter roxieQueueFilter = req.getRoxieQueueFilter();
+        if (roxieQueueFilter == RoxieQueueFilter_Undefined)
+            roxieQueueFilter = CRoxieQueueFilter_All;
 
         Owned<IPropertyTreeIterator> iter = queryComponentConfig().getElements("queues");
         ForEach(*iter)
         {
             IPropertyTree &queue = iter->query();
-            bool deployOnly = queue.getPropBool("@deployOnly");
-            if (deployOnly && (deployOnlyFilter == CDeployOnlyFilter_NotDeployOnly))
+            bool queriesOnly = queue.getPropBool("@queriesOnly");
+            if (queriesOnly && (roxieQueueFilter == CRoxieQueueFilter_WorkunitsOnly))
                 continue;
-            if (!deployOnly && (deployOnlyFilter == CDeployOnlyFilter_DeployOnly))
+            if (!queriesOnly && (roxieQueueFilter == CRoxieQueueFilter_QueriesOnly))
                 continue;
 
             Owned<IEspTpLogicalCluster> cluster = createTpLogicalCluster();
@@ -1342,7 +1342,7 @@ bool CWsTopologyEx::onTpLogicalClusterQuery(IEspContext &context, IEspTpLogicalC
             cluster->setType(queue.queryProp("@type"));
             cluster->setLanguageVersion("3.0.0");
             if (version >= 1.31)
-                cluster->setDeployOnly(deployOnly);
+                cluster->setQueriesOnly(queriesOnly);
             clusters.append(*cluster.getClear());
         }
 #else
