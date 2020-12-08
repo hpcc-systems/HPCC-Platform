@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="urn:hpccsystems:ws:wstest@ver=3" elementFormDefault="qualified" targetNamespace="urn:hpccsystems:ws:wstest@ver=3">
+  <xsd:element name="string" nillable="true" type="xsd:string"/>
+  <xsd:complexType name="EspException">
+    <xsd:all>
+      <xsd:element name="Code" type="xsd:string" minOccurs="0"/>
+      <xsd:element name="Audience" type="xsd:string" minOccurs="0"/>
+      <xsd:element name="Source" type="xsd:string" minOccurs="0"/>
+      <xsd:element name="Message" type="xsd:string" minOccurs="0"/>
+    </xsd:all>
+  </xsd:complexType>
+  <xsd:complexType name="ArrayOfEspException">
+    <xsd:sequence>
+      <xsd:element name="Source" type="xsd:string" minOccurs="0"/>
+      <xsd:element name="Exception" type="tns:EspException" minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:element name="Exceptions" type="tns:ArrayOfEspException"/>
+  <xsd:simpleType name="AnnotatedEnum">
+    <xsd:annotation>
+      <xsd:appinfo>
+        <item name="1" description="Force"/>
+        <item name="2" description="Balance"/>
+        <item name="3" description="Push"/>
+      </xsd:appinfo>
+    </xsd:annotation>
+    <xsd:restriction base="xsd:int">
+      <xsd:enumeration value="1"/>
+      <xsd:enumeration value="2"/>
+      <xsd:enumeration value="3"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+  <xsd:complexType name="FooBar">
+    <xsd:all>
+      <xsd:element minOccurs="0" name="Foo" type="xsd:string"/>
+      <xsd:element minOccurs="0" name="Bar" type="xsd:string"/>
+    </xsd:all>
+  </xsd:complexType>
+  <xsd:complexType name="ArrayOfFooBar">
+    <xsd:sequence>
+      <xsd:element minOccurs="0" maxOccurs="unbounded" name="FooBar" type="tns:FooBar"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:complexType name="AllVersionArrays">
+    <xsd:all>
+      <xsd:element minOccurs="0" name="StringArray" type="tns:EspStringArray"/>
+      <xsd:element minOccurs="0" name="FooBarArray" type="tns:ArrayOfFooBar"/>
+      <xsd:element minOccurs="0" name="NamedItemFooBarArray">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element minOccurs="0" maxOccurs="unbounded" name="NamedItem" type="tns:FooBar"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:all>
+  </xsd:complexType>
+  <xsd:complexType name="EspStringArray">
+    <xsd:sequence>
+      <xsd:element name="Item" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:element name="AllVersionReportRequest">
+    <xsd:complexType>
+      <xsd:all>
+        <xsd:element minOccurs="0" name="Annotate20ColsIntVal" type="xsd:int"/>
+        <xsd:element minOccurs="0" name="UnrelentingForce" type="tns:AnnotatedEnum" default="1"/>
+        <xsd:element minOccurs="0" name="Arrays" type="tns:AllVersionArrays"/>
+      </xsd:all>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="MinVersionReportRequest">
+    <xsd:complexType>
+      <xsd:all>
+        <xsd:element minOccurs="0" name="RequestString" type="xsd:string"/>
+      </xsd:all>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="WsTestPingRequest">
+    <xsd:complexType>
+      <xsd:all/>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="AllVersionReportResponse">
+    <xsd:complexType>
+      <xsd:all>
+        <xsd:element minOccurs="0" name="ResultVal" type="xsd:string"/>
+        <xsd:element minOccurs="0" name="ResultArrays" type="tns:AllVersionArrays"/>
+      </xsd:all>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="MinVersionReportResponse">
+    <xsd:complexType>
+      <xsd:all>
+        <xsd:element minOccurs="0" name="ResponseString" type="xsd:string"/>
+      </xsd:all>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="WsTestPingResponse">
+    <xsd:complexType>
+      <xsd:all/>
+    </xsd:complexType>
+  </xsd:element>
+</xsd:schema>

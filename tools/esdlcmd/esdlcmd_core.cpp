@@ -328,17 +328,20 @@ public:
 
         generateNamespace(tns);
 
-        params->setProp( "tnsParam", tns );
-        params->setProp( "optional", optOptional );
+        // All params are treated as expressions, so any strings must be quoted
+        // 1/0 are not equivalent to true/false, as 0 evaluates to true
+
+        setXpathQuotedParam(params, "tnsParam", tns.str());
+        setXpathQuotedParam(params, "optional", optOptional.str());
 
         if( optAllAnnot )
         {
-            params->setProp( "all_annot_Param", 1 );
+            params->setProp( "all_annot_Param", "true()" );
         }
 
         if( optNoAnnot )
         {
-            params->setProp( "no_annot_Param", 1 );
+            params->setProp( "no_annot_Param", "true()" );
         }
     }
 
@@ -558,21 +561,24 @@ public:
         params.set(createProperties());
         generateNamespace(tns);
 
-        params->setProp( "tnsParam", tns );
-        params->setProp( "optional", optOptional );
+        // All params are treated as expressions, so any strings must be quoted
+        // 1/0 are not equivalent to true/false, as 0 evaluates to true
+
+        setXpathQuotedParam(params, "tnsParam", tns.str());
+        setXpathQuotedParam(params, "optional", optOptional.str());
 
         if( optAllAnnot )
         {
-            params->setProp( "all_annot_Param", 1 );
+            params->setProp( "all_annot_Param", "true()" );
         }
 
         if( optNoAnnot )
         {
-            params->setProp( "no_annot_Param", 1 );
+            params->setProp( "no_annot_Param", "true()" );
         }
 
         params->setProp( "create_wsdl", "true()" );
-        params->setProp( "location", optWsdlAddress.get());
+        setXpathQuotedParam(params, "location", optWsdlAddress.str());
     }
 
 public:
@@ -1018,7 +1024,7 @@ public:
         else
         {
             Owned<IProperties> params = createProperties();
-            params->setProp("installdir", INSTALL_DIR);
+            setXpathQuotedParam(params, "installdir", INSTALL_DIR);
             cmdHelper.defHelper->loadTransform( xsltpath, params.get(), EsdlXslToCppCMake);
             cmdHelper.defHelper->toMicroService( *structs, outputBuffer, EsdlXslToCppCMake, NULL, optFlags );
             saveAsFile(sourcedir.str(), "CMakeLists.txt", outputBuffer.str(), NULL);
