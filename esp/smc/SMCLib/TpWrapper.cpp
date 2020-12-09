@@ -2192,3 +2192,24 @@ extern TPWRAPPER_API unsigned getContainerWUClusterInfo(CConstWUClusterInfoArray
 
     return clusters.ordinality();
 }
+
+extern TPWRAPPER_API void initContainerRoxieTargets(MapStringToMyClass<ISmartSocketFactory>& connMap)
+{
+    Owned<IPropertyTreeIterator> services = queryComponentConfig().getElements("services[@type='roxie']");
+    ForEach(*services)
+    {
+        IPropertyTree& service = services->query();
+        const char* name = service.queryProp("@name");
+        const char* target = service.queryProp("@target");
+        const char* port = service.queryProp("@port");
+
+        if (isEmptyString(target) || isEmptyString(name)) //bad config?
+            continue;
+
+        StringBuffer s;
+        s.append(name).append(':').append(port ? port : "9876");
+        Owned<ISmartSocketFactory> sf = new CSmartSocketFactory(s.str(), false, 60, (unsigned) -1);
+        connMap.setValue(target, sf.get());
+    }
+}
+
