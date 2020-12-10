@@ -190,7 +190,7 @@ int CEspProtocolThread::run()
     {
         IERRLOG("Unknown Exception in CEspProtocolThread::run while processing request.");
     }
-    returnSocket();
+    CEspProtocolThread::returnSocket();
     Release();
     return 0;
 }

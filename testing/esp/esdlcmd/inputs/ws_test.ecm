@@ -1,0 +1,57 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2020 HPCC Systems®.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+EspInclude(wsm_allversionreport);
+
+ESPrequest MinVersionReportRequest
+{
+    string RequestString;
+};
+
+ESPresponse MinVersionReportResponse
+{
+    string ResponseString;
+};
+
+ESPrequest VersionRangeReportRequest
+{
+    string RequestString;
+};
+
+ESPrequest VersionRangeReportResponse
+{
+    string ResponseString;
+};
+
+// AllVersionReport definitions in separate file to exercise the
+// file loading/include functionality of the tool
+
+ESPservice [
+    auth_feature("DEFERRED"),
+    version("1"),
+    default_client_version("1"),
+] WsTest
+{
+    // should be present regardless of version filtering
+    ESPmethod AllVersionReport(AllVersionReportRequest, AllVersionReportResponse);
+
+    // --iv
+    // present by default (no "--iv" parameter) and when "--iv" parameter >= 2
+    ESPmethod [min_ver("2")] MinVersion(MinVersionReportRequest, MinVersionReportResponse);
+    // present by default (no "--iv" parameter) and when "--iv" parameter >= 2 and < 3
+    ESPmethod [min_ver("2"), depr_ver("3")] VersionRangeReport(VersionRangeReportRequest, VersionRangeReportResponse);
+};

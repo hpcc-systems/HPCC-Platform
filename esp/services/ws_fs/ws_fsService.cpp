@@ -2981,9 +2981,9 @@ bool CFileSprayEx::onDropZoneFileSearch(IEspContext &context, IEspDropZoneFileSe
         if (!directory.length())
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "DropZone Directory not found for %s.", dropZoneName);
 
-        IpAddress ipToMatch;
-        ipToMatch.ipset(dropZoneServerReq);
-        if (ipToMatch.isNull())
+        IpAddress ipAddress;
+        ipAddress.ipset(dropZoneServerReq);
+        if (ipAddress.isNull())
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid server %s specified.", dropZoneServerReq);
 
         double version = context.getClientVersion();
@@ -2999,12 +2999,11 @@ bool CFileSprayEx::onDropZoneFileSearch(IEspContext &context, IEspDropZoneFileSe
             if (server.isEmpty())
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid server for dropzone %s.", dropZoneName);
 
-            IpAddress ipAddr;
-            ipAddr.ipset(server.str());
-            if (ipAddr.ipequals(ipToMatch))
+            //Do string compare here because the server could be a pseudo-host name.
+            if (strieq(dropZoneServerReq, server))
             {
                 serverFound = true;
-                searchDropZoneFiles(context, ipAddr, directory.str(), nameFilter, files, filesFound);
+                searchDropZoneFiles(context, ipAddress, directory.str(), nameFilter, files, filesFound);
                 break;
             }
         }
@@ -3182,15 +3181,7 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
     {
         context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
 
-        IpAddress ipToMatch;
         const char* netAddress = req.getNetAddress();
-        if (!isEmptyString(netAddress))
-        {
-            ipToMatch.ipset(netAddress);
-            if (ipToMatch.isNull())
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid server %s specified.", netAddress);
-        }
-
         bool filesFromALinux = false;
         IArrayOf<IEspDropZone> dropZoneList;
         bool ECLWatchVisibleOnly = req.getECLWatchVisibleOnly();
@@ -3222,19 +3213,15 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
                 if (name.isEmpty() || server.isEmpty())
                     continue;
 
-                IpAddress ipAddr;
-                ipAddr.ipset(server.str());
-                ipAddr.getIpText(networkAddress);
-
                 Owned<IEspDropZone> aDropZone = createDropZone();
                 aDropZone->setName(dropZoneName.str());
                 aDropZone->setComputer(name.str());
-                aDropZone->setNetAddress(networkAddress.str());
+                aDropZone->setNetAddress(server);
 
                 aDropZone->setPath(directory.str());
                 if (isLinux)
                     aDropZone->setLinux("true");
-                if (!isEmptyString(netAddress) && ipAddr.ipequals(ipToMatch))
+                if (!isEmptyString(netAddress) && strieq(netAddress, server))
                     filesFromALinux = isLinux;
 
                 dropZoneList.append(*aDropZone.getClear());

@@ -453,29 +453,21 @@ void CWsWorkunitsEx::refreshValidClusters()
     validClusters.kill();
 #ifdef _CONTAINERIZED
     // discovered from generated cluster names
-    Owned<IPropertyTreeIterator> iter = queryComponentConfig().getElements("queues");
-    ForEach(*iter)
-    {
-        IPropertyTree &queue = iter->query();
-        const char *qName = queue.queryProp("@name");
-        bool* found = validClusters.getValue(qName);
-        if (!found || !*found)
-        {
-            validClusters.setValue(qName, true);
-            PROGLOG("adding valid cluster: %s", qName);
-        }
-    }
+    Owned<IStringIterator> it = getContainerTargetClusters(nullptr, nullptr);
 #else
-    Owned<IStringIterator> it = getTargetClusters(NULL, NULL);
+    Owned<IStringIterator> it = getTargetClusters(nullptr, nullptr);
+#endif
     ForEach(*it)
     {
         SCMStringBuffer s;
         IStringVal &val = it->str(s);
         bool* found = validClusters.getValue(val.str());
         if (!found || !*found)
+        {
             validClusters.setValue(val.str(), true);
+            PROGLOG("adding valid cluster: %s", val.str());
+        }
     }
-#endif
 }
 
 bool CWsWorkunitsEx::isValidCluster(const char *cluster)
@@ -3744,20 +3736,28 @@ bool CWsWorkunitsEx::onWUShowScheduled(IEspContext &context, IEspWUShowScheduled
         if(notEmpty(req.getPushEventText()))
             resp.setPushEventText(req.getPushEventText());
 
+        unsigned i = 0;
+        IArrayOf<IEspServerInfo> servers;
+#ifdef _CONTAINERIZED
+        Owned<IStringIterator> targets = getContainerTargetClusters(nullptr, nullptr);
+        ForEach(*targets)
+        {
+            SCMStringBuffer target;
+            targets->str(target);
+            const char *iclusterName = target.str();
+#else
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> environment = factory->openEnvironment();
         Owned<IPropertyTree> root = &environment->getPTree();
 
-        unsigned i = 0;
         Owned<IPropertyTreeIterator> ic = root->getElements("Software/Topology/Cluster");
-        IArrayOf<IEspServerInfo> servers;
         ForEach(*ic)
         {
             IPropertyTree &cluster = ic->query();
             const char *iclusterName = cluster.queryProp("@name");
             if (isEmpty(iclusterName))
                 continue;
-
+#endif
             if (filters.cluster.isEmpty())
                 getScheduledWUs(context, &filters, iclusterName, results);
             else if (strieq(filters.cluster, iclusterName))
