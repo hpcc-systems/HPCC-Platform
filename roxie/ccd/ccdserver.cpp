@@ -2755,6 +2755,15 @@ public:
             return NULL;
     }
 
+    virtual void stop() override
+    {
+        for (unsigned idx = 0; idx < numStreams; idx++)
+        {
+            streamArray[idx]->stop();
+        }
+        CRoxieServerActivity::stop();
+    }
+
     virtual void reset()
     {
         for (unsigned i = 0; i < numInputs; i++)
@@ -20760,6 +20769,8 @@ public:
     {
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         cond = helper.getCondition();
+        if (traceStartStop)
+            DBGLOG("IfActivity::start %d - cond = %d", activityId, (int) cond);
         if (cond)
         {
             if (inputTrue)
