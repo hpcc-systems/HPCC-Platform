@@ -52,12 +52,24 @@
 <Dataset name='count_choosen_indexReadNoHitKeyedLimit'>
  <Row><count_choosen_indexReadNoHitKeyedLimit>1</count_choosen_indexReadNoHitKeyedLimit></Row>
 </Dataset>
+<Dataset name='normIndexReadHitLocalLimit'>
+</Dataset>
+<Dataset name='normIndexReadHitGlobalLimit'>
+</Dataset>
+<Dataset name='normIndexReadHitOnFail'>
+ <Row><addr>LIMIT EXCEEDED</addr></Row>
+</Dataset>
 <Dataset name='normIndexReadNoHitRowLimit'>
  <Row><addr>somewhere</addr></Row>
  <Row><addr>somewhere</addr></Row>
 </Dataset>
 <Dataset name='choosen_normIndexReadNoHitRowLimit'>
  <Row><addr>somewhere</addr></Row>
+</Dataset>
+<Dataset name='normIndexReadHitKeyedLimit'>
+</Dataset>
+<Dataset name='normIndexReadHitKeyedOnFail'>
+ <Row><addr>KEYED LIMIT EXCEEDED</addr></Row>
 </Dataset>
 <Dataset name='normIndexReadNoHitKeyedLimit'>
  <Row><addr>somewhere</addr></Row>
