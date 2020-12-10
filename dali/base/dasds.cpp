@@ -82,6 +82,18 @@ static unsigned readWriteTimeout = 60000;
 
 static unsigned msgCount=(unsigned)-1;
 
+// # HELP sds_requests The total number of Dali SDS requests handled
+// # TYPE sds_requests counter
+// Probably requires this counter to be held in a __int64 scalar.
+
+// # HELP sds_active_requests Current number of active SDS requests being handled.
+// # TYPE sds_active_requests gauge
+// A unsigned scalar should suffice, i.e. never going to have that many active transactions
+
+// # HELP sds_pending_requests Current number of pending SDS requests.
+// # TYPE sds_pending_requests gauge
+// A unsigned scalar should suffice, i.e. never going to have that many pending transactions
+
 // #define TEST_NOTIFY_HANDLER
 
 #define TRACE_QWAITING
@@ -3744,6 +3756,14 @@ int CSDSTransactionServer::run()
             mb.clear();
             if (coven.recv(mb, RANK_ALL, MPTAG_DALI_SDS_REQUEST, NULL))
             {
+                // 1) Need to increment sds_requests here
+                // NB: it will never be decremented. This is total for life of this instance.
+                
+                // 2) Need to increment sds_active_requests here
+                // and ensure it's scoped, such that it is guaranteed
+                // to decrement when handling is complete.
+                // NB: most transactions are handled asynchronously, so decrement will need to happen on another thread
+
                 msgCount++;
                 try
                 {
@@ -3767,6 +3787,11 @@ int CSDSTransactionServer::run()
                         case DAMP_SDSCMD_GETELEMENTSRAW:
                         case DAMP_SDSCMD_GETCOUNT:
                         {
+                            // 1) Need to increment sds_pending_requests here.
+                            // NB: pending requests are those received, but not yet being handled (not active)
+                            // e.g. because thread pool limits are blocking them.
+                            // sds_pending_requests should be decremented, when the transactions starts in processMessage()
+
                             mb.reset();
                             handler.handleMessage(mb);
                             mb.clear(); // ^ has copied mb
@@ -4075,6 +4100,13 @@ bool translateOldFormat(CServerRemoteTree *parentServerTree, IPropertyTree *pare
 
 void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
 {
+    // 1) Decrement sds_pending_requests here.
+    // NB: request has started, no longer pending
+    // See CSDSTransactionServer::run() for where needs to be incremented. 
+
+    // 2) Ensure sds_active_requests is decremented, when processMessage() is finished
+    // e.g. use a scoped object here, and decrement in dtor.
+
     TimingBlock xactTimingBlock(xactTimingStats);
     ICoven &coven = queryCoven();
 
