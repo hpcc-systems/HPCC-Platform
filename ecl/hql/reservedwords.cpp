@@ -58,6 +58,7 @@ static const char * eclReserved2[] = { //HPCC and OS environment settings
     "__ecl_version_major__",
     "__ecl_version_minor__",
     "__ecl_version_subminor__",
+    "__is_little_endian__",
     "__line__",
     "__os__",
     "__platform__",

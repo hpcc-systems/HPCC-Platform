@@ -1072,6 +1072,11 @@ __STAND_ALONE__     {
                         setupdatepos;
                         return (__STAND_ALONE__);
                     }
+__IS_LITTLE_ENDIAN__ {
+                        setupdatepos;
+                        returnToken.setExpr(createConstant(__BYTE_ORDER == __LITTLE_ENDIAN));
+                        return (BOOL_CONST);
+                    }
 __TARGET_PLATFORM__ { RETURNSYM(__TARGET_PLATFORM__); }
 
 {percent}{alphanumcolon}*{percent} {
