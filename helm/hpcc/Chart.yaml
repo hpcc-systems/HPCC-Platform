@@ -10,4 +10,34 @@ version: 0.1.0
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application.
-appVersion: 0.1.0
+appVersion: 0.2.0
+
+# Requires 'helm dependency update' command
+dependencies:
+# An Elastic Stack environment is managed by default
+# To disable: --set managedelasticstack=false
+# and speficy alternate log processor
+- name: filebeat # Optional stderr log-forwarder
+  version: 7.6.1
+  repository: https://helm.elastic.co
+  tags:
+    - managedelasticstack #to disable: --set managedelasticstack=false
+  condition: global.logging.managedElasticStack.enabled
+- name: elasticsearch # Optional managed logging back-end store
+  version: 7.6.1
+  repository: https://helm.elastic.co
+  tags: #we can use tags to enable/disable
+    - managedelasticstack #to disable: --set managedelasticstack=false
+  condition: global.logging.managedElasticStack.enabled
+- name: logstash # Optional managed logging front-end
+  version: 7.9.3
+  repository: https://helm.elastic.co
+  tags:
+    - managedelasticstack #to disable: --set managedelasticstack=false
+  condition: global.logging.managedElasticStack.logstash.enabled
+- name: kibana # Optional managed logging front-end
+  version: 7.6.1
+  repository: https://helm.elastic.co
+  tags:
+    - managedelasticstack #to disable: --set managedelasticstack=false
+  condition: global.logging.managedElasticStack.kibana.enabled

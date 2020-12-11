@@ -1,5 +1,9 @@
 # Default values for hpcc.
 
+#tags:
+#-  managedElasticStack: false
+#might be necessary to disable ELK dependancy, unless we can live w/ a hardcoded block in logging for ELK
+
 global:
   # Settings in the global section apply to all HPCC components in all subcharts
 
@@ -12,6 +16,23 @@ global:
   # logging sets the default logging information for all components. Can be overridden locally
   logging:
     detail: 100
+    #default log processor, managed by hpcc
+    #hard-coded element for dependancy condition, otherwise use top level tags in cobination w/ processor array
+    managedElasticStack:
+      enabled: true
+      kibana:
+        enabled: true
+      logstash:
+        enabled: true
+
+    #HPCC doesn't need to know about down-stream log processing, these processors would be alternatives
+    processor:
+    -  type: "elasticstack"
+       #managed: true
+       endpoint: "1.1.1.1/somepath:222"
+    #-  type: "fluentd" ##for local file
+    #   endpoint: "local"
+
 
   # Specify a defaultEsp to control which eclservices service is returned from Std.File.GetEspURL, and other uses
   # If not specified, the first esp component that exposes eclservices application is assumed.
