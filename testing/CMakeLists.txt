@@ -14,11 +14,15 @@
 #    limitations under the License.
 ################################################################################
 HPCC_ADD_SUBDIRECTORY (unittests)
-HPCC_ADD_SUBDIRECTORY (regress)
-install( DIRECTORY regress DESTINATION "./testing" COMPONENT Runtime
-         USE_SOURCE_PERMISSIONS
-         FILES_MATCHING
-         PATTERN "regress/ecl-test"
-         PATTERN "regress/ecl-test.json"
-         PATTERN "regress/environment.xml"
-         PATTERN "regress/README.rst" )
+
+
+Install ( DIRECTORY regress DESTINATION "./testing" COMPONENT Runtime
+          USE_SOURCE_PERMISSIONS
+          PATTERN "environment.xml.in" EXCLUDE
+          PATTERN "ecl-test-cluster160.json" EXCLUDE
+        )
+
+configure_file("regress/environment.xml.in" "regress/environment.xml")
+
+Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/regress/environment.xml DESTINATION "./testing/regress" COMPONENT Runtime )
+
