@@ -855,7 +855,7 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
                 if(!cw)
                     throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
 
-                WsWuHelpers::submitWsWorkunit(context, cw, NULL, NULL, 0, 0, req.getRecompile(), req.getResetWorkflow(), false);
+                WsWuHelpers::submitWsWorkunit(context, cw, nullptr, nullptr, 0, 0, req.getRecompile(), req.getResetWorkflow(), false, nullptr, nullptr, nullptr, nullptr);
 
                 if (version < 1.40)
                     continue;
@@ -1016,7 +1016,7 @@ bool CWsWorkunitsEx::onWUSubmit(IEspContext &context, IEspWUSubmitRequest &req, 
             WsWuHelpers::runWsWuQuery(context, cw, info.queryset.str(), info.query.str(), cluster, NULL);
         }
         else
-            WsWuHelpers::submitWsWorkunit(context, cw, cluster, req.getSnapshot(), req.getMaxRunTime(), req.getMaxCost(), true, false, false);
+            WsWuHelpers::submitWsWorkunit(context, cw, cluster, req.getSnapshot(), req.getMaxRunTime(), req.getMaxCost(), true, false, false, nullptr, nullptr, nullptr, nullptr);
 
         PROGLOG("WUSubmit: %s", wuid.str());
         if (req.getBlockTillFinishTimer() != 0)
@@ -1274,7 +1274,7 @@ bool CWsWorkunitsEx::onWUSyntaxCheckECL(IEspContext &context, IEspWUSyntaxCheckR
         wu->commit();
         wu.clear();
 
-        WsWuHelpers::submitWsWorkunit(context, wuid.str(), req.getCluster(), req.getSnapshot(), 0, 0, true, false, false);
+        WsWuHelpers::submitWsWorkunit(context, wuid.str(), req.getCluster(), req.getSnapshot(), 0, 0, true, false, false, nullptr, nullptr, nullptr, nullptr);
         waitForWorkUnitToComplete(wuid.str(), req.getTimeToWait());
 
         Owned<IConstWorkUnit> cw(factory->openWorkUnit(wuid.str()));
@@ -1343,7 +1343,7 @@ bool CWsWorkunitsEx::onWUCompileECL(IEspContext &context, IEspWUCompileECLReques
 
         StringAttr wuid(wu->queryWuid());  // NB queryWuid() not valid after workunit,clear()        StringAttr wuid(wu->queryWuid());
 
-        WsWuHelpers::submitWsWorkunit(context, wuid.str(), req.getCluster(), req.getSnapshot(), 0, 0, true, false, false);
+        WsWuHelpers::submitWsWorkunit(context, wuid.str(), req.getCluster(), req.getSnapshot(), 0, 0, true, false, false, nullptr, nullptr, nullptr, nullptr);
         waitForWorkUnitToComplete(wuid.str(),req.getTimeToWait());
 
         Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
@@ -1439,7 +1439,7 @@ bool CWsWorkunitsEx::onWUGetDependancyTrees(IEspContext& context, IEspWUGetDepen
         wu->commit();
         wu.clear();
 
-        WsWuHelpers::submitWsWorkunit(context, wuid.str(), req.getCluster(), req.getSnapshot(), 0, 0, true, false, false);
+        WsWuHelpers::submitWsWorkunit(context, wuid.str(), req.getCluster(), req.getSnapshot(), 0, 0, true, false, false, nullptr, nullptr, nullptr, nullptr);
 
         int state = waitForWorkUnitToComplete(wuid.str(), timeMilliSec);
         Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
@@ -4642,7 +4642,7 @@ void deployEclOrArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req,
     wu->commit();
     wu.clear();
 
-    WsWuHelpers::submitWsWorkunit(context, wuid.str(), req.getCluster(), NULL, 0, 0, true, false, false, NULL, NULL, &req.getDebugValues());
+    WsWuHelpers::submitWsWorkunit(context, wuid.str(), req.getCluster(), nullptr, 0, 0, true, false, false, nullptr, nullptr, &req.getDebugValues(), nullptr);
     waitForWorkUnitToCompile(wuid.str(), req.getWait());
 
     WsWuInfo winfo(context, wuid.str());
@@ -5347,7 +5347,7 @@ void CWsWorkunitsEx::checkEclDefinitionSyntax(IEspContext &context, const char *
     wu->commit();
     wu.clear();
 
-    WsWuHelpers::submitWsWorkunit(context, wuid.str(), target, nullptr, 0, 0, true, false, false);
+    WsWuHelpers::submitWsWorkunit(context, wuid.str(), target, nullptr, 0, 0, true, false, false, nullptr, nullptr, nullptr, nullptr);
     waitForWorkUnitToComplete(wuid.str(), msToWait);
 
     Owned<IConstWorkUnit> cw(factory->openWorkUnit(wuid.str()));
