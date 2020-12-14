@@ -17,6 +17,7 @@
 
 // todo look at IRemoteFileServer stop
 
+#include <vector>
 
 #include "platform.h"
 #include "limits.h"
@@ -760,6 +761,7 @@ public:
 
 interface IRemoteReadActivity;
 interface IRemoteWriteActivity;
+interface IRemoteFetchActivity;
 interface IRemoteActivity : extends IInterface
 {
     virtual unsigned __int64 queryProcessed() const = 0;
@@ -771,6 +773,7 @@ interface IRemoteActivity : extends IInterface
     virtual void flushStatistics(CClientStats &stats) = 0;
     virtual IRemoteReadActivity *queryIsReadActivity() { return nullptr; }
     virtual IRemoteWriteActivity *queryIsWriteActivity() { return nullptr; }
+    virtual IRemoteFetchActivity *queryIsFetchActivity() { return nullptr; }
 };
 
 
@@ -778,6 +781,12 @@ interface IRemoteReadActivity : extends IRemoteActivity
 {
     virtual const void *nextRow(MemoryBufferBuilder &outBuilder, size32_t &sz) = 0;
     virtual bool requiresPostProject() const = 0;
+    virtual void seek(offset_t pos) = 0;
+};
+
+interface IRemoteFetchActivity : extends IRemoteReadActivity
+{
+    virtual void loadFetchBatch(IPropertyTree *fetch) = 0;
 };
 
 interface IRemoteWriteActivity : extends IRemoteActivity
@@ -816,6 +825,14 @@ class CRemoteRequest : public CSimpleInterfaceOf<IInterface>
     {
         IRemoteReadActivity *readActivity = activity->queryIsReadActivity();
         assertex(readActivity);
+
+        IRemoteFetchActivity *fetchActivity = activity->queryIsFetchActivity();
+        if (fetchActivity)
+        {
+            IPropertyTree *fetchBranch = requestTree->queryPropTree("fetch");
+            if (fetchBranch)
+                fetchActivity->loadFetchBatch(fetchBranch);
+        }
 
         MemoryBuffer compressMb;
 
@@ -917,7 +934,7 @@ class CRemoteRequest : public CSimpleInterfaceOf<IInterface>
             // finalize responseMb
             dataLenMarker.write(compressor ? totalDataSz : responseMb.length()-dataStartPos);
             DelayedSizeMarker cursorLenMarker(responseMb); // cursor length
-            if (!eoi)
+            if (!eoi || fetchActivity) // if fetching, then still want cursor for continuation
                 readActivity->serializeCursor(responseMb);
             cursorLenMarker.write();
             if (compressor)
@@ -1194,13 +1211,17 @@ public:
     {
         throwUnexpected();
     }
-    virtual IRemoteReadActivity *queryIsReadActivity()
+    virtual IRemoteReadActivity *queryIsReadActivity() override
     {
         return this;
     }
     virtual bool requiresPostProject() const override
     {
         return false;
+    }
+    virtual void seek(offset_t pos) override
+    {
+        throwUnexpected();
     }
 //interface IVirtualFieldCallback
     virtual const char * queryLogicalFilename(const void * row) override
@@ -1233,10 +1254,11 @@ protected:
     unsigned __int64 startPos = 0;
     bool compressed = false;
     bool cursorDirty = false;
+    bool fetching = false;
+    unsigned __int64 bytesRead = 0;
     // virtual field values
     unsigned partNum = 0;
     offset_t baseFpos = 0;
-    unsigned __int64 bytesRead = 0;
 
     virtual bool refreshCursor()
     {
@@ -1246,6 +1268,12 @@ protected:
             return true;
         }
         return false;
+    }
+    void setFetchPos(offset_t fpos)
+    {
+        startPos = fpos;
+        cursorDirty = true;
+        fetching = true;
     }
     bool checkOpen() // NB: returns true if this call opened file
     {
@@ -1312,6 +1340,12 @@ public:
         // NB: will be called by same thread that is reading.
         stats.addRead(bytesRead);
         bytesRead = 0;
+    }
+// IRemoteReadActivity impl.
+    virtual void seek(offset_t pos) override
+    {
+        setFetchPos(pos);
+        checkOpen();
     }
 // IVirtualFieldCallback impl.
     virtual unsigned __int64 getFilePosition(const void * row) override
@@ -1424,11 +1458,20 @@ public:
                     }
                 }
             }
-            eofSeen = true;
+            break;
         }
-        close();
+        if (!fetching) // when in fetch mode, don't assume file won't be used again (likely will be another batch)
+        {
+            eofSeen = true;
+            close();
+        }
         retSz = 0;
         return nullptr;
+    }
+    virtual void seek(offset_t pos) override
+    {
+        setFetchPos(pos);
+        checkOpen();
     }
     virtual void serializeCursor(MemoryBuffer &tgt) const override
     {
@@ -1544,7 +1587,7 @@ class CRemoteCsvReadActivity : public CRemoteExternalFormatReadActivity
             return false;
         csvSplitter.init(numInputFields, maxRowSize, csvQuote, csvSeparate, csvTerminate, csvEscape, preserveWhitespace);
 
-        if (headerLines)
+        if (headerLines && !fetching) // NB: would be harmless if skipped headers on open if fetching, but it's a waste of time
         {
             do
             {
@@ -1614,17 +1657,27 @@ public:
             {
                 outBuilder.finishRow(retSz);
                 ++processed;
-                inputStream->skip(lineLength);
+                if (!fetching) // harmless, but pointless to skip if fetching
+                    inputStream->skip(lineLength);
                 return ret;
             }
             else
                 outBuilder.removeBytes(retSz);
-            inputStream->skip(lineLength);
+            if (!fetching) // harmless, but pointless to skip if fetching
+                inputStream->skip(lineLength);
         }
-        eofSeen = true;
-        close();
+        if (!fetching) // when in fetch mode, don't assume file won't be used again (likely will be another batch)
+        {
+            eofSeen = true;
+            close();
+        }
         retSz = 0;
         return nullptr;
+    }
+    virtual void seek(offset_t pos) override
+    {
+        setFetchPos(pos);
+        checkOpen();
     }
 };
 
@@ -1888,10 +1941,18 @@ public:
                     outBuilder.removeBytes(retSz);
             }
         }
-        eofSeen = true;
-        close();
+        if (!fetching) // when in fetch mode, don't assume file won't be used again (likely will be another batch)
+        {
+            eofSeen = true;
+            close();
+        }
         retSz = 0;
         return nullptr;
+    }
+    virtual void seek(offset_t pos) override
+    {
+        setFetchPos(pos);
+        checkOpen();
     }
 // IXMLSelect impl.
     virtual void match(IColumnProvider &entry, offset_t startOffset, offset_t endOffset)
@@ -1986,7 +2047,7 @@ public:
     {
         input->flushStatistics(stats);
     }
-    virtual IRemoteReadActivity *queryIsReadActivity()
+    virtual IRemoteReadActivity *queryIsReadActivity() override
     {
         return this;
     }
@@ -2009,8 +2070,113 @@ public:
     {
         return false;
     }
+    virtual void seek(offset_t pos) override
+    {
+        throwUnexpected();
+    }
 };
 
+
+class CRemoteCompoundBatchFPosFetchActivity : public CSimpleInterfaceOf<IRemoteFetchActivity>
+{
+    Linked<IRemoteReadActivity> input;
+    std::vector<offset_t> fposs;
+    unsigned fetchItemIndex = 0;
+    StringAttr fileName;
+
+    bool handleNextFetch()
+    {
+        if (fetchItemIndex == fposs.size()) // end
+            return false;
+        offset_t fpos = fposs[fetchItemIndex++];
+        input->seek(fpos);
+        return true;
+    }
+public:
+    CRemoteCompoundBatchFPosFetchActivity(IPropertyTree &requestTree, IRemoteReadActivity *_input) : input(_input)
+    {
+        fileName.set(requestTree.queryProp("node/fileName"));
+    }
+// IRemoteReadActivity impl.
+    virtual StringBuffer &getInfoStr(StringBuffer &out) const override
+    {
+        return input->getInfoStr(out).append(" - CompoundBatchFPosFetch");
+    }
+    virtual const void *nextRow(MemoryBufferBuilder &outBuilder, size32_t &retSz) override
+    {
+        while (handleNextFetch())
+        {
+            const void *ret = input->nextRow(outBuilder, retSz);
+            if (ret)
+                return ret;
+        }
+        retSz = 0;
+        return nullptr;
+    }
+    virtual unsigned __int64 queryProcessed() const override
+    {
+        return input->queryProcessed();
+    }
+    virtual IOutputMetaData *queryOutputMeta() const override
+    {
+        return input->queryOutputMeta();
+    }
+    virtual bool isGrouped() const override
+    {
+        return input->isGrouped();
+    }
+    virtual bool requiresPostProject() const override
+    {
+        return input->requiresPostProject();
+    }
+    virtual void flushStatistics(CClientStats &stats) override
+    {
+        input->flushStatistics(stats);
+    }
+    virtual IRemoteReadActivity *queryIsReadActivity() override
+    {
+        return this;
+    }
+    virtual void seek(offset_t pos) override
+    {
+        throwUnexpected();
+    }
+    virtual void loadFetchBatch(IPropertyTree *fetch) override
+    {
+        if (isGrouped())
+            throw createDafsExceptionV(DAFSERR_cmdstream_protocol_failure, "Output cannot be grouped when fetching. fileName=%s", fileName.get());
+
+        // remove consumed fpos'
+        fposs.erase(fposs.begin(), fposs.begin() + fetchItemIndex);
+        fetchItemIndex = 0;
+
+        Owned<IPropertyTreeIterator> iter = fetch->getElements("fpos");
+        ForEach (*iter)
+            fposs.push_back(iter->query().getPropInt64(nullptr));
+    }
+    virtual void serializeCursor(MemoryBuffer &tgt) const override
+    {
+        tgt.append((unsigned)(fposs.size()-fetchItemIndex));
+        for (unsigned i=fetchItemIndex; i<fposs.size(); i++)
+            tgt.append(fposs[i]);
+        input->serializeCursor(tgt);
+    }
+    virtual void restoreCursor(MemoryBuffer &src) override
+    {
+        fposs.clear();
+        unsigned num;
+        src.read(num);
+        while (num--)
+        {
+            offset_t fpos;
+            src.read(fpos);
+            fposs.push_back(fpos);
+        }
+        fetchItemIndex = 0;
+        input->restoreCursor(src);
+    }
+    virtual IRemoteFetchActivity *queryIsFetchActivity() override { return this; }
+};
 
 class CRemoteIndexBaseActivity : public CRemoteDiskBaseActivity
 {
@@ -2595,7 +2761,16 @@ IRemoteActivity *createOutputActivity(IPropertyTree &requestTree, bool authorize
 {
     IPropertyTree *actNode = requestTree.queryPropTree("node");
     assertex(actNode);
-    return createRemoteActivity(*actNode, authorizedOnly, keyPairInfo);
+    Owned<IRemoteActivity> activity = createRemoteActivity(*actNode, authorizedOnly, keyPairInfo);
+    if (requestTree.hasProp("fetch"))
+    {
+        IRemoteReadActivity *readActivity = activity->queryIsReadActivity();
+        if (!readActivity)
+            throw createDafsExceptionV(DAFSERR_cmdstream_protocol_failure, "fpos fetching specified in non reading activity");
+        return new CRemoteCompoundBatchFPosFetchActivity(requestTree, readActivity);
+    }
+    else
+        return activity.getClear();
 }
 
 #define MAX_KEYDATA_SZ 0x10000
@@ -4511,6 +4686,35 @@ public:
          *  }
          * }
          *
+         * Fetch fpos stream example:
+         * {
+         *  "format" : "binary",
+         *  "replyLimit" : "64",
+         *  "fetch" : {
+         *   "fpos" : "30",
+         *   "fpos" : "90"
+         *  },
+         *  "node" : {
+         *   "kind" : "diskread",
+         *   "fileName": "examplefilename",
+         *   "input" : {
+         *    "f1" : "string5",
+         *    "f2" : "string5"
+         *   }
+         *  }
+         * }
+         * 
+         * fetch continuation:
+         * {
+         *  "format" : "binary",
+         *  "handle" : "1234",
+         *  "replyLimit" : "64",
+         *  "fetch" : {
+         *   "fpos" : "120",
+         *   "fpos" : "135",
+         *   "fpos" : "150"
+         *  }
+         * }
          */
 
         int cursorHandle = requestTree->getPropInt("handle");
