@@ -212,7 +212,6 @@ public:
         const char* instanceName, const char *ipAddress, const char* logDate, int slaveNum,
         MemoryBuffer& buf, const char* outFile, bool forDownload);
     void getWorkunitResTxt(MemoryBuffer& buf);
-    void getWorkunitArchiveQuery(IStringVal& str);
     void getWorkunitArchiveQuery(StringBuffer& str);
     void getWorkunitArchiveQuery(MemoryBuffer& mb);
     void getWorkunitDll(StringBuffer &name, MemoryBuffer& buf);
@@ -229,7 +228,6 @@ public:
     void listArchiveFiles(IPropertyTree* archive, const char* path, IArrayOf<IEspWUArchiveModule>& modules, IArrayOf<IEspWUArchiveFile>& files);
     void getArchiveFile(IPropertyTree* archive, const char* moduleName, const char* attrName, const char* path, StringBuffer& file);
     void setWUAbortTime(IEspECLWorkunit &info, unsigned __int64 abortTS);
-    IConstWUQuery* getEmbeddedQuery();
 
     void addTimerToList(SCMStringBuffer& name, const char * scope, IConstWUStatistic & stat, IArrayOf<IEspECLTimer>& timers);
 protected:
