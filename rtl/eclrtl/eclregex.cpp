@@ -69,7 +69,7 @@ public:
             {
                 sample = (char *)rtlMalloc(_len + 1);  //required for findstr
                 memcpy(sample, _str + _from, _len);
-                sample[_len] = (char)NULL;
+                sample[_len] = '\0';
                 matched = regex_search(sample, subs, *regEx);
             }
             else
