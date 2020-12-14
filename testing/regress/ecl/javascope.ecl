@@ -48,6 +48,7 @@ implicit(STRING p, STRING s) := MODULE
         }
 //        System.out.println("created  " + idx + x.class.getName());
       }
+      @SuppressWarnings("deprecation")
       public void finalize()
       {
 //        System.out.println("finalize " + n + " " + idx);
