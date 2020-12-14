@@ -1470,11 +1470,13 @@ RecordTranslationMode getTranslationMode(CActivityBase &activity)
 {
     bool local = true;
     StringBuffer val;
-    activity.getOpt("layoutTranslation", val);
+    activity.queryContainer().queryXGMML().getProp("hint[@name=\"layouttranslation\"]/@value", val);
     if (!val.length())
     {
-        globals->getProp("@fieldTranslationEnabled", val);
         local = false;
+        activity.queryJob().getOpt("layoutTranslation", val);
+        if (!val.length())
+            globals->getProp("@fieldTranslationEnabled", val);
     }
     return getTranslationMode(val, local);
 }
