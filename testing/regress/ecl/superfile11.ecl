@@ -36,7 +36,7 @@ ds1 := DATASET([{1,'A'}, {1,'B'}, {1,'C'}], rec);
 ds2 := DATASET([{2,'D'}, {2,'E'}], rec);
 
 inlinesuper := '{'+prefix+'subfile1,'+prefix+'subfile2}';
-isuper := DATASET(inlinesuper, rec, FLAT);
+isuper := DATASET(inlinesuper, rec, FLAT, OPT);
 isupero := DATASET(inlinesuper, rec, FLAT, OPT);
 
 SEQUENTIAL(
