@@ -7283,35 +7283,34 @@ public:
     {
         offset_t startOffset = curOffset;
         StringBuffer value;
-        if (readValue(value)==elementTypeNull)
-            return;
-
-        if ('@'==*name)
+        if (readValue(value)!=elementTypeNull)
         {
-            if (!skipAttributes)
-                iEvent->newAttribute(name, value.str());
-            return;
-        }
-        else if ('#'==*name)
-        {
-            dbgassertex(retValue && isValueBinary);
-            *isValueBinary = false;
-            if (0 == strncmp(name+1, "value", 5)) // this is a special IPT JSON prop name, representing a 'complex' value
+            if ('@'==*name)
             {
-                if ('\0' == *(name+6)) // #value
+                if (!skipAttributes)
+                    iEvent->newAttribute(name, value.str());
+                return;
+            }
+            else if ('#'==*name)
+            {
+                dbgassertex(retValue && isValueBinary);
+                *isValueBinary = false;
+                if (0 == strncmp(name+1, "value", 5)) // this is a special IPT JSON prop name, representing a 'complex' value
                 {
-                    retValue->swapWith(value);
-                    return;
-                }
-                else if (streq(name+6, "bin")) // #valuebin
-                {
-                    *isValueBinary = true;
-                    JBASE64_Decode(value.str(), *retValue);
-                    return;
+                    if ('\0' == *(name+6)) // #value
+                    {
+                        retValue->swapWith(value);
+                        return;
+                    }
+                    else if (streq(name+6, "bin")) // #valuebin
+                    {
+                        *isValueBinary = true;
+                        JBASE64_Decode(value.str(), *retValue);
+                        return;
+                    }
                 }
             }
         }
-
         iEvent->beginNode(name, false, startOffset);
         iEvent->beginNodeContent(name);
         iEvent->endNode(name, value.length(), value.str(), false, curOffset);
