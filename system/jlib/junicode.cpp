@@ -451,6 +451,12 @@ MemoryBuffer & appendUtf8(MemoryBuffer & out, UTF32 value)
     return out.append(writeUtf8(temp, sizeof(temp), value), temp);
 }
 
+StringBuffer & appendUtf8(StringBuffer & out, UTF32 value)
+{
+    char temp[4];
+    return out.append(writeUtf8(temp, sizeof(temp), value), temp);
+}
+
 MemoryBuffer & appendUtf16le(MemoryBuffer & out, UTF32 value)
 {
     char temp[4];
