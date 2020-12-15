@@ -82,7 +82,9 @@ class CLoggingManager : implements ILoggingManager, public CInterface
     bool oneTankFile = false, decoupledLogging = false, initialized = false;
     Owned<ILogFailSafe> logFailSafe;
     CLogContentFilter logContentFilter;
+    unsigned serviceMask = 0;
 
+    inline void setServiceMaskService(LOGServiceType service) { serviceMask |= (1 << service); }
     IEspLogAgent* loadLoggingAgent(const char* name, const char* dll, const char* type, IPropertyTree* cfg);
     bool updateLogImpl(IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp);
     bool saveToTankFile(IEspUpdateLogRequestWrap& req, CLogRequestInFile* reqInFile);
@@ -103,6 +105,7 @@ public:
     virtual bool init(IPropertyTree* cfg, const char* service);
 
     virtual IEspLogEntry* createLogEntry();
+    bool hasService(LOGServiceType service) const override;
     virtual bool updateLog(IEspContext* espContext, IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp);
     virtual bool updateLog(IEspLogEntry* entry, StringBuffer& status);
     virtual bool getTransactionSeed(StringBuffer& transactionSeed, StringBuffer& status);

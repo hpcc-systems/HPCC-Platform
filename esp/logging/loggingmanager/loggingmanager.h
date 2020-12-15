@@ -21,6 +21,7 @@
 #include "jiface.hpp"
 #include "esp.hpp"
 #include "loggingagentbase.hpp"
+#include "pluginloader.hpp"
 
 #define LOGGINGMANAGERLIB "loggingmanager"
 #define LOGGINGDBSINGLEINSERT "SingleInsert"
@@ -58,6 +59,7 @@ interface ILoggingManager : implements IInterface
 {
     virtual bool init(IPropertyTree* loggingConfig, const char* service) = 0;
     virtual IEspLogEntry* createLogEntry() = 0;
+    virtual bool hasService(LOGServiceType service) const = 0;
     virtual bool updateLog(IEspLogEntry* entry, StringBuffer& status) = 0;
     virtual bool updateLog(IEspContext* espContext, IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp) = 0;
     virtual bool getTransactionSeed(StringBuffer& transactionSeed, StringBuffer& status) = 0;
@@ -66,5 +68,24 @@ interface ILoggingManager : implements IInterface
 };
 
 typedef ILoggingManager* (*newLoggingManager_t_)();
+
+/**
+ * CLogManagerLoader is a simple wrapper of a single instantation of TPluginLoader
+ * for the creation of ILoggingManager instances.
+ */
+class CLoggingManagerLoader
+{
+    TPluginLoader<newLoggingManager_t_> m_loader;
+public:
+    CLoggingManagerLoader(const char* libraryDefault, const char* entryPointDefault, const char* libraryXPath, const char* entryPointXPath)
+        : m_loader(isEmptyString(libraryDefault) ? LOGGINGMANAGERLIB : libraryDefault, isEmptyString(entryPointDefault) ? "newLoggingManager" : entryPointDefault, libraryXPath, entryPointXPath)
+    {
+    }
+
+    ILoggingManager* create(const IPTree& configuration)
+    {
+        return m_loader.create<ILoggingManager>(configuration, [&](newLoggingManager_t_ entryPoint) { return entryPoint(); });
+    }
+};
 
 #endif // !defined(__LOGGINGMANAGER_H__)
