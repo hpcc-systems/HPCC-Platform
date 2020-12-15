@@ -122,12 +122,12 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual IPropertyTree *getBranch(const char *xpath) const = 0;
     virtual IPropertyTree *queryBranch(const char *xpath) const = 0;
     virtual bool hasChildren() const = 0;
-    virtual unsigned numUniq() = 0;
-    virtual unsigned numChildren() = 0;
+    virtual unsigned numUniq() const = 0;
+    virtual unsigned numChildren() const = 0;
     virtual bool isCaseInsensitive() const = 0;
     virtual bool IsShared() const = 0;
     virtual void localizeElements(const char *xpath, bool allTail=false) = 0;
-    virtual unsigned getCount(const char *xpath) = 0;
+    virtual unsigned getCount(const char *xpath) const = 0;
     virtual IPropertyTree *addPropTreeArrayItem(const char *xpath, IPropertyTree *val) = 0;
     virtual bool isArray(const char *xpath=NULL) const = 0;
     virtual unsigned getAttributeCount() const = 0;
@@ -214,7 +214,7 @@ jlib_decl IPullPTreeReader *createPullJSONStringReader(const char *json, IPTreeN
 jlib_decl IPullPTreeReader *createPullJSONBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions=ptr_ignoreWhiteSpace);
 
 jlib_decl void mergePTree(IPropertyTree *target, IPropertyTree *toMerge);
-jlib_decl void synchronizePTree(IPropertyTree *target, IPropertyTree *source, bool removeTargetsNotInSource=true, bool rootsMustMatch=true);
+jlib_decl void synchronizePTree(IPropertyTree *target, const IPropertyTree *source, bool removeTargetsNotInSource=true, bool rootsMustMatch=true);
 jlib_decl IPropertyTree *ensurePTree(IPropertyTree *root, const char *xpath);
 jlib_decl bool areMatchingPTrees(const IPropertyTree * left, const IPropertyTree * right);
 
@@ -277,7 +277,7 @@ jlib_decl bool validateXPathSyntax(const char *xpath, StringBuffer *error=NULL);
 jlib_decl bool validateXMLParseXPath(const char *xpath, StringBuffer *error=NULL);
 jlib_decl IPropertyTree *getXPathMatchTree(IPropertyTree &parent, const char *xpath);
 jlib_decl IPropertyTreeIterator *createNullPTreeIterator();
-jlib_decl bool isEmptyPTree(IPropertyTree *t);
+jlib_decl bool isEmptyPTree(const IPropertyTree *t);
 
 jlib_decl void extractJavadoc(IPropertyTree * result, const char * text);       // Pass in a javadoc style comment (without head/tail) and extract information into a property tree.
 
@@ -299,7 +299,7 @@ inline static bool isValidXPathChr(char c)
 }
 
 //export for unit test
-jlib_decl void mergeConfiguration(IPropertyTree & target, IPropertyTree & source, const char *altNameAttribute=nullptr, bool overwriteAttr=true);
+jlib_decl void mergeConfiguration(IPropertyTree & target, const IPropertyTree & source, const char *altNameAttribute=nullptr, bool overwriteAttr=true);
 
 jlib_decl IPropertyTree * loadArgsIntoConfiguration(IPropertyTree *config, const char * * argv, std::initializer_list<const char *> ignoreOptions = {});
 jlib_decl IPropertyTree * loadConfiguration(IPropertyTree * defaultConfig, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute=nullptr);
