@@ -1653,6 +1653,13 @@ StringBuffer & appendUtf8AsECL(StringBuffer &out, unsigned len, const char * src
     return appendStringExpandControl(out, len, src, false, false, true);
 }
 
+StringBuffer & appendStringAsUtf8(StringBuffer &out, unsigned len, const char * src)
+{
+    for (unsigned i=0; i < len; i++)
+        appendUtf8(out, (byte)src[i]);
+    return out;
+}
+
 
 StringBuffer & appendStringAsQuotedCPP(StringBuffer &out, unsigned len, const char * src, bool addBreak)
 {
@@ -2586,21 +2593,21 @@ bool startsWithIgnoreCase(const char* src, const char* prefix)
     return *prefix==0;
 }
 
-bool endsWith(const char* src, const char* dst)
+bool endsWith(const char* src, const char* suffix)
 {
     size_t srcLen = strlen(src);
-    size_t dstLen = strlen(dst);
-    if (dstLen<=srcLen)
-        return memcmp(dst, src+srcLen-dstLen, dstLen)==0;
+    size_t suffixLen = strlen(suffix);
+    if (suffixLen<=srcLen)
+        return memcmp(suffix, src+srcLen-suffixLen, suffixLen)==0;
     return false;
 }
 
-bool endsWithIgnoreCase(const char* src, const char* dst)
+bool endsWithIgnoreCase(const char* src, const char* suffix)
 {
     size_t srcLen = strlen(src);
-    size_t dstLen = strlen(dst);
-    if (dstLen<=srcLen)
-        return memicmp(dst, src+srcLen-dstLen, dstLen)==0;
+    size_t suffixLen = strlen(suffix);
+    if (suffixLen<=srcLen)
+        return memicmp(suffix, src+srcLen-suffixLen, suffixLen)==0;
     return false;
 }
 

@@ -64,6 +64,7 @@ extern jlib_decl unsigned writeUtf32le(void * target, unsigned maxLength, UTF32 
 extern jlib_decl unsigned writeUtf32be(void * target, unsigned maxLength, UTF32 value);
 
 extern jlib_decl MemoryBuffer & appendUtf8(MemoryBuffer & out, UTF32 value);
+extern jlib_decl StringBuffer & appendUtf8(StringBuffer & out, UTF32 value);
 extern jlib_decl MemoryBuffer & appendUtf16le(MemoryBuffer & out, UTF32 value);
 extern jlib_decl MemoryBuffer & appendUtf16be(MemoryBuffer & out, UTF32 value);
 extern jlib_decl MemoryBuffer & appendUtf32le(MemoryBuffer & out, UTF32 value);
