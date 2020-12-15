@@ -2875,6 +2875,15 @@ public:
                  {nullptr,                                 nullptr}   // terminator
                  };
 
+            const char *invalidLfns[] = {
+                 "~scope::inv/alid",
+                 "~scope::::invalid",
+                 "~scope::single:colon:invalid",
+                 "~scope::triple:::colon:invalid",
+                 "~scope::missing::",
+                 nullptr   // terminator
+            };
+
         // Check results
         const bool externalFile = true;
         const bool internalFile = false;
@@ -2927,6 +2936,29 @@ public:
                 EXCLOG(e, err.str());
                 e->Release();
                 CPPUNIT_FAIL(err.str());
+            }
+            nlfn++;
+        }
+
+        PROGLOG("Checking invalid logical filenames");
+        nlfn=0;
+        for (;;)
+        {
+            const char *lfn = invalidLfns[nlfn];
+            if (nullptr == lfn)
+                break;
+
+            CDfsLogicalFileName dlfn;
+            try
+            {
+                dlfn.set(lfn);
+                VStringBuffer errMsg("Logical filename '%s' is invalid and should have caused a parsing exception", lfn);
+                CPPUNIT_ASSERT_MESSAGE(errMsg.str(), 0);
+            }
+            catch(IException *e)
+            {
+                EXCLOG(e, nullptr);
+                e->Release();
             }
             nlfn++;
         }

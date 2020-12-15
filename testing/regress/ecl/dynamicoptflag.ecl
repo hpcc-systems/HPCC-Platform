@@ -34,7 +34,7 @@ count(p);
 output(p(f='NOT'));
 count(p(f='NOT'));
 
-p2 := PRELOAD(dataset(DYNAMIC(prefix + 'no:_such_file_again'), {string10 f}, FLAT, OPT), 2);
+p2 := PRELOAD(dataset(DYNAMIC(prefix + 'no_such_file_again'), {string10 f}, FLAT, OPT), 2);
 output(p2);
 count(p2);
 output(p2(f='NOT'));

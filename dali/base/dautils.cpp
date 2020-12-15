@@ -417,7 +417,20 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
         switch (c)
         {
             case '@': ct = s; break;
-            case ':': ct = nullptr; break;
+            case ':':
+            {
+                if (*(s+1) == ':')
+                {
+                    ++s;
+                    char nextc=*(s+1);
+                    if (!validFNameChar(nextc) && (!allowWild || ('*' != nextc) && ('?' != nextc) && ('{' != nextc)))
+                        throw makeStringExceptionV(-1, "Unexpected character '%c' following scope separate in logical name '%s' detected", *(s+1), name);
+                }
+                else
+                    throw makeStringExceptionV(-1, "Invalid single colon in logical name '%s' detected", name);
+                ct = nullptr;
+                break;
+            }
             case '?':
             case '*': wilddetected = true; break;
             case '~':
