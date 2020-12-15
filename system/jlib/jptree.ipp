@@ -81,7 +81,7 @@ public:
     { 
         _releaseAll();
     }
-    virtual unsigned numChildren();
+    virtual unsigned numChildren() const;
     virtual IPropertyTreeIterator *getIterator(bool sort);
     virtual bool set(const char *key, IPropertyTree *tree)
     {
@@ -672,10 +672,10 @@ public:
     virtual IPropertyTreeIterator *getElements(const char *xpath, IPTIteratorCodes flags = iptiter_null) const override;
     virtual void localizeElements(const char *xpath, bool allTail=false) override;
     virtual bool hasChildren() const override { return children && children->count()?true:false; }
-    virtual unsigned numUniq() override { return checkChildren()?children->count():0; }
-    virtual unsigned numChildren() override;
+    virtual unsigned numUniq() const override { return checkChildren()?children->count():0; }
+    virtual unsigned numChildren() const override;
     virtual bool isCaseInsensitive() const override { return isnocase(); }
-    virtual unsigned getCount(const char *xpath) override;
+    virtual unsigned getCount(const char *xpath) const override;
     virtual IPropertyTree *addPropTreeArrayItem(const char *xpath, IPropertyTree *val) override;
     virtual bool isArray(const char *xpath=NULL) const override;
     virtual unsigned getAttributeCount() const override;
