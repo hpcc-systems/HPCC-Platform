@@ -63,11 +63,10 @@ spec:
 ---
 {{- range $service := $roxie.services }}
 {{- if ne (int $service.port)  0 }}
-{{- $name := printf "%s-%s" $roxie.name $service.name }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ $name | quote }}
+  name: {{ $service.name | quote }}
   labels:
     type: roxie-service
 spec:
