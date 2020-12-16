@@ -1695,9 +1695,7 @@ public:
 class RoxieReceiverBase : implements IRoxieOutputQueueManager, public CInterface
 {
 protected:
-#ifdef ROXIE_SLA_LOGIC
     RoxieQueue slaQueue;
-#endif
     RoxieQueue hiQueue;
     RoxieQueue loQueue;
     unsigned numWorkers;
@@ -1705,11 +1703,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-#ifdef ROXIE_SLA_LOGIC
     RoxieReceiverBase(unsigned _numWorkers) : slaQueue(headRegionSize, _numWorkers), hiQueue(headRegionSize, _numWorkers), loQueue(headRegionSize, _numWorkers), numWorkers(_numWorkers)
-#else
-    RoxieReceiverBase(unsigned _numWorkers) : hiQueue(headRegionSize, _numWorkers), loQueue(headRegionSize, _numWorkers), numWorkers(_numWorkers)
-#endif
     {
     }
 
@@ -1720,9 +1714,7 @@ public:
 
     virtual void setHeadRegionSize(unsigned newSize)
     {
-#ifdef ROXIE_SLA_LOGIC
         slaQueue.setHeadRegionSize(newSize);
-#endif
         hiQueue.setHeadRegionSize(newSize);
         loQueue.setHeadRegionSize(newSize);
     }
@@ -1731,27 +1723,21 @@ public:
     {
         loQueue.start();
         hiQueue.start();
-#ifdef ROXIE_SLA_LOGIC
         slaQueue.start();
-#endif
     }
 
     virtual void stop() 
     {
         loQueue.stopAll();
         hiQueue.stopAll();
-#ifdef ROXIE_SLA_LOGIC
         slaQueue.stopAll();
-#endif
     }
 
     virtual void join()  
     { 
         loQueue.join();
         hiQueue.join();
-#ifdef ROXIE_SLA_LOGIC
         slaQueue.join();
-#endif
     }
 
     IArrayOf<CallbackEntry> callbacks;
@@ -2038,12 +2024,7 @@ public:
     }
 
     // Move any that we are done waiting for our buddy onto the active queue
-    void checkExpired(
-            unsigned now,
-#ifdef ROXIE_SLA_LOGIC
-            RoxieQueue &slaQueue,
-#endif
-            RoxieQueue &hiQueue, RoxieQueue &loQueue)
+    void checkExpired(unsigned now, RoxieQueue &slaQueue, RoxieQueue &hiQueue, RoxieQueue &loQueue)
     {
         assert(GetCurrentThreadId()==roxiePacketReaderThread);
         DelayedPacketEntry *finger = head;
@@ -2058,12 +2039,9 @@ public:
                     StringBuffer s;
                     DBGLOG("No IBYTI received yet for delayed packet %s", header.toString(s).str());
                 }
-#ifdef ROXIE_SLA_LOGIC
                 if (header.activityId & ROXIE_SLA_PRIORITY)
                     slaQueue.enqueue(packet);
-                else
-#endif
-                if (header.activityId & ROXIE_HIGH_PRIORITY)
+                else if (header.activityId & ROXIE_HIGH_PRIORITY)
                     hiQueue.enqueue(packet);
                 else
                     loQueue.enqueue(packet);
@@ -2145,21 +2123,11 @@ public:
         }
         return min;
     }
-    void checkExpired(
-            unsigned now,
-#ifdef ROXIE_SLA_LOGIC
-            RoxieQueue &slaQueue,
-#endif
-            RoxieQueue &hiQueue, RoxieQueue &loQueue)
+    void checkExpired(unsigned now, RoxieQueue &slaQueue, RoxieQueue &hiQueue, RoxieQueue &loQueue)
     {
         for (unsigned queue = 0; queue <= maxSeen; queue++)
         {
-            queues[queue].checkExpired(
-                    now,
-#ifdef ROXIE_SLA_LOGIC
-                    slaQueue,
-#endif
-                    hiQueue, loQueue);
+            queues[queue].checkExpired(now, slaQueue, hiQueue, loQueue);
         }
     }
 private:
@@ -2199,21 +2167,11 @@ public:
         }
         return ret;
     }
-    void checkExpired(
-            unsigned now,
-#ifdef ROXIE_SLA_LOGIC
-            RoxieQueue &slaQueue,
-#endif
-            RoxieQueue &hiQueue, RoxieQueue &loQueue)
+    void checkExpired(unsigned now, RoxieQueue &slaQueue, RoxieQueue &hiQueue, RoxieQueue &loQueue)
     {
         ForEachItemIn(idx, channels)
         {
-            channels.item(idx).checkExpired(
-                    now,
-#ifdef ROXIE_SLA_LOGIC
-                    slaQueue,
-#endif
-                    hiQueue, loQueue);
+            channels.item(idx).checkExpired(now, slaQueue, hiQueue, loQueue);
         }
     }
 private:
@@ -2650,12 +2608,9 @@ public:
                     StringBuffer s;
                     DBGLOG("Read roxie packet: %s", header.toString(s).str());
                 }
-#ifdef ROXIE_SLA_LOGIC
                 if (header.activityId & ROXIE_SLA_PRIORITY)
                     processMessage(mb, header, slaQueue);
-                else
-#endif
-                if (header.activityId & ROXIE_HIGH_PRIORITY)
+                else if (header.activityId & ROXIE_HIGH_PRIORITY)
                     processMessage(mb, header, hiQueue);
                 else
                     processMessage(mb, header, loQueue);
@@ -2697,12 +2652,7 @@ public:
                 }
             }
 #ifdef NEW_IBYTI
-            delayed.checkExpired(
-                            msTick(),
-#ifdef ROXIE_SLA_LOGIC
-                            slaQueue,
-#endif
-                            hiQueue, loQueue);
+            delayed.checkExpired(msTick(), slaQueue, hiQueue, loQueue);
 #endif
         }
         return 0;
@@ -3080,12 +3030,9 @@ public:
                 return; // No point sending the retry in localAgent mode
             }
             RoxieQueue *targetQueue;
-#ifdef ROXIE_SLA_LOGIC
             if (header.activityId & ROXIE_SLA_PRIORITY)
                 targetQueue = &slaQueue;
-            else
-#endif
-            if (header.activityId & ROXIE_HIGH_PRIORITY)
+            else if (header.activityId & ROXIE_HIGH_PRIORITY)
                 targetQueue = &hiQueue;
             else
                 targetQueue = &loQueue;
