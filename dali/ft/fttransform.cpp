@@ -826,8 +826,13 @@ processedProgress:
                 continue;
             }
 
+            const RemoteFilename & outputFilename = curPartition.outputName;
+            auto fsProperties = outputFilename.queryFileSystemProperties();
             RemoteFilename localTempFilename;
-            getDfuTempName(localTempFilename, curPartition.outputName);
+            if (!fsProperties.canRename)
+                localTempFilename.set(outputFilename);
+            else
+                getDfuTempName(localTempFilename, outputFilename);
 
             StringBuffer localFilename;
             localTempFilename.getPath(localFilename);
@@ -852,7 +857,7 @@ processedProgress:
             LOG(MCdebugProgress, unknownJob, "Start pulling to file: %s", localFilename.str());
 
             //Find the last partition entry that refers to the same file.
-            if (!compressOutput)
+            if (!compressOutput && fsProperties.preExtendOutput)
             {
                 PartitionPoint & lastChunk = partition.item(queryLastOutput(curOutput));
                 if (lastChunk.outputLength)
@@ -893,15 +898,16 @@ processedProgress:
         {
             PartitionPoint & curPartition = partition.item(i);
             OutputProgress & curProgress = progress.item(i);
+            const RemoteFilename & outputFilename = curPartition.outputName;
+            const auto & fsProperties = outputFilename.queryFileSystemProperties();
             if (curPartition.whichOutput != prevOutput)
             {
                 if (curProgress.status != OutputProgress::StatusRenamed)
                 {
-                    //rename the files..
-                    renameDfuTempToFinal(curPartition.outputName);
+                    if (fsProperties.canRename)
+                        renameDfuTempToFinal(curPartition.outputName);
 
                     OwnedIFile output = createIFile(curPartition.outputName);
-
                     if (fileUmask != -1)
                         output->setFilePermissions(~fileUmask&0666);
 
@@ -915,20 +921,20 @@ processedProgress:
                     }
                     else if (!curPartition.modifiedTime.isNull())
                     {
-                        OwnedIFile output = createIFile(curPartition.outputName);
                         output->setTime(&curPartition.modifiedTime, &curPartition.modifiedTime, NULL);
                     }
                     else
                         output->getTime(NULL, &curProgress.resultTime, NULL);
 
-                    //Notify the master that the file has been renamed - and send the modified time.
-                    msg.setEndian(__BIG_ENDIAN);
-                    curProgress.status = OutputProgress::StatusRenamed;
                     if (compressOutput)
                     {
                         curProgress.compressedPartSize = output->size();
                         curProgress.hasCompressed = true;
                     }
+
+                    //Notify the master that the file has been renamed - and send the modified time.
+                    msg.setEndian(__BIG_ENDIAN);
+                    curProgress.status = OutputProgress::StatusRenamed;
                     curProgress.serializeCore(msg.clear().append(false));
                     curProgress.serializeExtra(msg, 1);
                     if (!catchWriteBuffer(masterSocket, msg))

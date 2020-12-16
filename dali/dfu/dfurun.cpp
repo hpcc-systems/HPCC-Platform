@@ -445,9 +445,6 @@ class CDFUengine: public CInterface, implements IDFUengine
         filename.getLocalPath(filePath);
         const char * pfilePath = filePath.str();
 
-        if (filename.queryIP().isLoopBack())
-            throwError1(DFTERR_LocalhostAddressUsed, pfilePath);
-
     #ifdef _DEBUG
         LOG(MCdebugInfo, unknownJob, "File path is '%s'", filePath.str());
     #endif
