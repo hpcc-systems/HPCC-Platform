@@ -37,7 +37,7 @@ ECL_REDIS_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     pb->moduleName = "lib_redis";
     pb->ECL = nullptr;
     pb->flags = PLUGIN_IMPLICIT_MODULE;
-    pb->description = "ECL plugin library for the C API hiredis\n";
+    pb->description = "ECL plugin library for the C API hiredis";
     return true;
 }
 

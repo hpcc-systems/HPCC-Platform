@@ -40,7 +40,7 @@ ECL_EXAMPLE_PLUGIN_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     pb->moduleName = "lib_redis";
     pb->ECL = NULL;
     pb->flags = PLUGIN_IMPLICIT_MODULE;
-    pb->description = "ECL plugin library for BLAH BLAH BLAH\n";
+    pb->description = "ECL plugin library for BLAH BLAH BLAH";
     return true;
 }
 

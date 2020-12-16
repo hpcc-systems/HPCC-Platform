@@ -1092,7 +1092,7 @@ ECL_KAFKA_API bool getECLPluginDefinition(ECLPluginDefinitionBlock* pb)
     pb->moduleName = "kafka";
     pb->ECL = NULL;
     pb->flags = PLUGIN_IMPLICIT_MODULE;
-    pb->description = "ECL plugin library for the C++ API in librdkafka++\n";
+    pb->description = "ECL plugin library for the C++ API in librdkafka++";
 
     return true;
 }
