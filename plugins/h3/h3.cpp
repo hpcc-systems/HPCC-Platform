@@ -39,7 +39,7 @@ ECL_H3_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     pb->moduleName = "lib_h3";
     pb->ECL = NULL;
     pb->flags = PLUGIN_IMPLICIT_MODULE;
-    pb->description = "ECL plugin library for uber h3\n";
+    pb->description = "ECL plugin library for uber h3";
     return true;
 }
 
