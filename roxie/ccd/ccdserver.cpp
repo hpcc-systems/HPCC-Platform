@@ -24869,8 +24869,8 @@ class CRoxieServerIndexNormalizeActivity : public CRoxieServerIndexReadBaseActiv
 
 public:
     CRoxieServerIndexNormalizeActivity(IRoxieAgentContext *_ctx, const CRoxieServerBaseIndexActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
-                                       bool _sorted, bool _isLocal)
-        : CRoxieServerIndexReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _sorted, _isLocal, false),
+                                       bool _sorted, bool _isLocal, bool _maySkip)
+        : CRoxieServerIndexReadBaseActivity(_ctx, _factory, _probeManager, _remoteId, _sorted, _isLocal, _maySkip),
           readHelper((IHThorIndexNormalizeArg &)basehelper)
     {
         limitTransformExtra = &readHelper;
@@ -24967,11 +24967,6 @@ public:
         }
     }
 
-    virtual const void *createLimitFailRow(bool isKeyed)
-    {
-        UNIMPLEMENTED;
-    }
-
 };
 
 class CRoxieServerIndexNormalizeActivityFactory : public CRoxieServerBaseIndexActivityFactory
@@ -24987,7 +24982,7 @@ public:
         if (!variableFileName && (keySet==NULL || keySet->length()==0))
             return new CRoxieServerNullActivity(_ctx, this, _probeManager);
         else
-            return new CRoxieServerIndexNormalizeActivity(_ctx, this, _probeManager, remoteId, sorted, isLocal);
+            return new CRoxieServerIndexNormalizeActivity(_ctx, this, _probeManager, remoteId, sorted, isLocal, maySkip);
     }
 };
 

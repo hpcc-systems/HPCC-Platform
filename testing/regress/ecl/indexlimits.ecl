@@ -104,16 +104,15 @@ SEQUENTIAL(
   OUTPUT(COUNT(indexReadNoHitKeyedLimit), NAMED('count_indexReadNoHitKeyedLimit'));
   OUTPUT(COUNT(CHOOSEN(indexReadNoHitKeyedLimit, 1)), NAMED('count_choosen_indexReadNoHitKeyedLimit'));
 
-// below commented out tests, fail in Roxie (incorrectly throw limit exception)
 // normalize tests
-//  OUTPUT(normIndexReadHitLocalLimit, NAMED('normIndexReadHitLocalLimit'));
-//  OUTPUT(normIndexReadHitGlobalLimit, NAMED('normIndexReadHitGlobalLimit'));
-//  OUTPUT(normIndexReadHitOnFail, NAMED('normIndexReadHitOnFail'));
+  OUTPUT(normIndexReadHitLocalLimit, NAMED('normIndexReadHitLocalLimit'));
+  OUTPUT(normIndexReadHitGlobalLimit, NAMED('normIndexReadHitGlobalLimit'));
+  OUTPUT(normIndexReadHitOnFail, NAMED('normIndexReadHitOnFail'));
   OUTPUT(normIndexReadNoHitRowLimit, NAMED('normIndexReadNoHitRowLimit'));
   OUTPUT(CHOOSEN(normIndexReadNoHitRowLimit, 1), NAMED('choosen_normIndexReadNoHitRowLimit')); // NB: choosen follows limit
  
-//  OUTPUT(normIndexReadHitKeyedLimit, NAMED('normIndexReadHitKeyedLimit'));
-//  OUTPUT(normIndexReadHitKeyedOnFail, NAMED('normIndexReadHitKeyedOnFail'));
+  OUTPUT(normIndexReadHitKeyedLimit, NAMED('normIndexReadHitKeyedLimit'));
+  OUTPUT(normIndexReadHitKeyedOnFail, NAMED('normIndexReadHitKeyedOnFail'));
   OUTPUT(normIndexReadNoHitKeyedLimit, NAMED('normIndexReadNoHitKeyedLimit'));
   OUTPUT(CHOOSEN(normIndexReadNoHitKeyedLimit, 1), NAMED('choosen_normIndexReadNoHitKeyedLimit'));
  );
