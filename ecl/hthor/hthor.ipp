@@ -2327,6 +2327,7 @@ protected:
     Owned<IOutputRowDeserializer> deserializer;
     CThorContiguousRowBuffer prefetchBuffer;
     CThorStreamDeserializerSource deserializeSource;
+    MemoryBuffer translatedRow;
 public:
     CHThorBinaryDiskReadBase(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind, IPropertyTree *_node);
 
@@ -2482,6 +2483,7 @@ class CHThorDiskAggregateActivity : public CHThorBinaryDiskReadBase
 protected:
     IHThorDiskAggregateArg &helper;
     RtlDynamicRowBuilder outBuilder;
+    MemoryBuffer translatedRow;
     bool finished;
 
     virtual void gatherInfo(IFileDescriptor * fileDesc);
@@ -2526,6 +2528,7 @@ class CHThorDiskGroupAggregateActivity : public CHThorBinaryDiskReadBase, implem
 protected:
     IHThorDiskGroupAggregateArg &helper;
     RowAggregator aggregated;
+    MemoryBuffer translatedRow;
     bool eof;
     bool gathered;
 
