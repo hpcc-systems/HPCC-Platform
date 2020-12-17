@@ -696,6 +696,15 @@ extern DLLSERVER_API bool getEmbeddedManifestXML(const ILoadedDllEntry *dll, Str
     return decompressResource(len, data, xml);
 }
 
+extern DLLSERVER_API bool getEmbeddedArchiveXML(ILoadedDllEntry *dll, StringBuffer &xml)
+{
+    size32_t len = 0;
+    const void * data = NULL;
+    if (!dll->getResource(len, data, "ARCHIVE", 1000))
+        return false;
+    return decompressResource(len, data, xml);
+}
+
 extern DLLSERVER_API IPropertyTree *getEmbeddedManifestPTree(const ILoadedDllEntry *dll)
 {
     StringBuffer xml;

@@ -2250,46 +2250,31 @@ void WsWuInfo::getWorkunitResTxt(MemoryBuffer& buf)
     queryDllServer().getDll(query->getQueryResTxtName(resname).str(), buf);
 }
 
-IConstWUQuery* WsWuInfo::getEmbeddedQuery()
-{
-    Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false, nullptr);
-    if (wv)
-        return wv->getEmbeddedQuery();
 
-    return NULL;
-}
-
-void WsWuInfo::getWorkunitArchiveQuery(IStringVal& str)
+void WsWuInfo::getWorkunitArchiveQuery(StringBuffer& str)
 {
     Owned<IConstWUQuery> query = cw->getQuery();
     if(!query)
         throw MakeStringException(ECLWATCH_QUERY_NOT_FOUND_FOR_WU,"No query for workunit %s.",wuid.str());
 
-    query->getQueryText(str);
+    StringBufferAdaptor istr(str);
+    query->getQueryText(istr);
     if ((str.length() < 1) || !isArchiveQuery(str.str()))
     {
         if (!query->hasArchive())
             throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Archive query not found for workunit %s.", wuid.str());
 
-        Owned<IConstWUQuery> embeddedQuery = getEmbeddedQuery();
-        if (!embeddedQuery)
-            throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Embedded query not found for workunit %s.", wuid.str());
-
-        embeddedQuery->getQueryText(str);
-        if ((str.length() < 1) || !isArchiveQuery(str.str()))
+        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, NULL, false, nullptr);
+        if (!wv)
+            throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Cannot create webview for workunit %s.", wuid.str());
+        if (!wv->getEmbeddedArchive(str) || (str.length() < 1) || !isArchiveQuery(str.str()))
             throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Archive query not found for workunit %s.", wuid.str());
     }
 }
 
-void WsWuInfo::getWorkunitArchiveQuery(StringBuffer& buf)
-{
-    StringBufferAdaptor queryText(buf);
-    getWorkunitArchiveQuery(queryText);
-}
-
 void WsWuInfo::getWorkunitArchiveQuery(MemoryBuffer& buf)
 {
-    SCMStringBuffer queryText;
+    StringBuffer queryText;
     getWorkunitArchiveQuery(queryText);
     buf.append(queryText.length(), queryText.str());
 }

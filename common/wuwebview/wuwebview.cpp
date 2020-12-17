@@ -338,7 +338,7 @@ public:
     void getResource(const char *name, StringBuffer &content, StringBuffer &abspath, const char *type);
     bool getResourceByPath(const char *path, MemoryBuffer &mb);
     StringBuffer &getManifest(StringBuffer &mf){return toXML(ensureManifest(), mf);}
-    IConstWUQuery* getEmbeddedQuery();
+    bool getEmbeddedArchive(StringBuffer &ret);
 
     void calculateResourceIncludePaths();
     virtual bool getInclude(const char *includename, MemoryBuffer &includebuf, bool &pathOnly);
@@ -926,18 +926,26 @@ void WuWebView::addInputsFromXml(const char *xml)
     addInputsFromPTree(pt.get());
 }
 
-IConstWUQuery* WuWebView::getEmbeddedQuery()
+bool WuWebView::getEmbeddedArchive(StringBuffer &ret)
 {
     if (!loadDll())
-        return NULL;
-
+        return false;
+    if (getEmbeddedArchiveXML(dll, ret))
+        return true;
+    // Try the old way, in case it's an older dll
     StringBuffer dllXML;
     if (!getEmbeddedWorkUnitXML(dll, dllXML))
-        return NULL;
+        return false;
 
     Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit(dllXML.str());
-    return embeddedWU->getQuery();
+    Owned<IConstWUQuery> embeddedQuery = embeddedWU->getQuery();
+    if (!embeddedQuery)
+        return false;
+    StringBufferAdaptor iret(ret);
+    embeddedQuery->getQueryText(iret);
+    return true;
 }
+
 
 extern WUWEBVIEW_API IWuWebView *createWuWebView(IConstWorkUnit &wu, const char *target, const char *queryname, const char *dir, bool mapEspDirectories, IPropertyTree *xsltcfg)
 {
