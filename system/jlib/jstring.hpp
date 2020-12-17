@@ -390,6 +390,8 @@ extern jlib_decl StringBuffer & appendStringAsSQL(StringBuffer & out, unsigned l
 extern jlib_decl StringBuffer & appendStringAsECL(StringBuffer & out, unsigned len, const char * src);
 extern jlib_decl StringBuffer & appendStringAsQuotedECL(StringBuffer &out, unsigned len, const char * src);
 extern jlib_decl StringBuffer & appendUtf8AsECL(StringBuffer &out, unsigned len, const char * src);
+extern jlib_decl StringBuffer & appendStringAsUtf8(StringBuffer &out, unsigned len, const char * src);
+
 
 extern jlib_decl const char *decodeJSON(const char *x, StringBuffer &ret, unsigned len=(unsigned)-1, const char **errMark=NULL);
 extern jlib_decl void extractItem(StringBuffer & res, const char * src, const char * sep, int whichItem, bool caps);
@@ -577,10 +579,10 @@ extern jlib_decl StringBuffer & ncnameUnescape(char const * in, StringBuffer & o
 extern jlib_decl StringBuffer & elideString(StringBuffer & s, unsigned maxLength);
 
 extern jlib_decl bool startsWith(const char* src, const char* prefix);
-extern jlib_decl bool endsWith(const char* src, const char* dst);
+extern jlib_decl bool endsWith(const char* src, const char* suffix);
 
 extern jlib_decl bool startsWithIgnoreCase(const char* src, const char* prefix);
-extern jlib_decl bool endsWithIgnoreCase(const char* src, const char* dst);
+extern jlib_decl bool endsWithIgnoreCase(const char* src, const char* suffix);
 
 inline bool strieq(const char* s, const char* t) { return stricmp(s,t)==0; }
 inline bool streq(const char* s, const char* t) { return strcmp(s,t)==0; }

@@ -43,11 +43,12 @@ while [[ $rsync_stat -ne 0 && $rsync_att -gt 0 ]] ; do
     log "rsync returns ${rsync_stat}"
 done
 if [ ! -f @RUNTIME_PATH@/${_component}/spark-hpcc-env.sh ] ; then
-    log "Error, $slavesfname file missing"
+    log "Error, $workersfname file missing"
     exit 1
 fi
 source @RUNTIME_PATH@/${_component}/spark-hpcc-env.sh
 
 MASTER_URL="spark://${MASTER_IP}:${SPARK_MASTER_PORT}"
 
+#external provided spark-hadoop file
 @INSTALL_DIR@/externals/spark-hadoop/sbin/${_command}-slave.sh ${MASTER_URL}

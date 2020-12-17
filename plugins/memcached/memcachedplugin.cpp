@@ -36,7 +36,7 @@ ECL_MEMCACHED_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     pb->moduleName = "lib_memcached";
     pb->ECL = NULL;
     pb->flags = PLUGIN_IMPLICIT_MODULE;
-    pb->description = "ECL plugin library for the C/C++ API libmemcached (http://libmemcached.org/)\n";
+    pb->description = "ECL plugin library for the C/C++ API libmemcached (http://libmemcached.org/)";
     return true;
 }
 

@@ -185,7 +185,7 @@ kind: Deployment
 metadata:
   name: {{ $name | quote}}
 spec:
-  replicas: {{ $roxie.channelReplicas | default 1 }}
+  replicas: {{ $roxie.replicas | default 1 }}
   selector:
     matchLabels:
       run: {{ $name | quote}}

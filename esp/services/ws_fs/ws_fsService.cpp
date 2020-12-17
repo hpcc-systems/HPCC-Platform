@@ -533,7 +533,7 @@ bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, const char* group
                     // MORE - should extend to systems with higher redundancy
                     break;
                 case grp_hthor:
-                    getConfigurationDirectory(directories, "data", "hthor", cluster, defaultFolder);
+                    getConfigurationDirectory(directories, "data", "eclagent", cluster, defaultFolder);
                     break;
                 case grp_thor:
                 default:

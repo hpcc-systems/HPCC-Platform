@@ -39,6 +39,8 @@ extern DLLSERVER_API ILoadedDllEntry * createDllEntry(const char *name, bool isG
 extern DLLSERVER_API ILoadedDllEntry * createExeDllEntry(const char *name);
 extern DLLSERVER_API bool getEmbeddedWorkUnitXML(ILoadedDllEntry *dll, StringBuffer &xml);
 extern DLLSERVER_API bool getEmbeddedManifestXML(const ILoadedDllEntry *dll, StringBuffer &xml);
+extern DLLSERVER_API bool getEmbeddedArchiveXML(ILoadedDllEntry *dll, StringBuffer &xml);
+
 extern DLLSERVER_API IPropertyTree *getEmbeddedManifestPTree(const ILoadedDllEntry *dll);
 
 extern DLLSERVER_API bool checkEmbeddedWorkUnitXML(ILoadedDllEntry *dll);

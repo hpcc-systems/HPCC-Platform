@@ -53,18 +53,18 @@ trap "terminate" SIGINT SIGTERM
 
 while [[ 1 ]]; do
     if [[ -e @PID_PATH@/${component}.pid ]]; then
-        _master_pid="$(cat @PID_PATH@/${component}.pid)"
-        if ! kill -0 ${_master_pid}; then
-            log "spark master not running, attempting restart of ${component}"
+        _manager_pid="$(cat @PID_PATH@/${component}.pid)"
+        if ! kill -0 ${_manager_pid}; then
+            log "spark manager not running, attempting restart of ${component}"
             @ADMIN_PATH@/sparkthor.sh start ${component}
             ln -s -T @PID_PATH@/spark-hpcc-org.apache.spark.deploy.master.Master-1.pid @PID_PATH@/${component}.pid
         fi
     else
-        log "Starting spark master ${component}"
+        log "Starting spark manager ${component}"
         @ADMIN_PATH@/sparkthor.sh start ${component}
         ln -s -T @PID_PATH@/spark-hpcc-org.apache.spark.deploy.master.Master-1.pid @PID_PATH@/${component}.pid
     fi
-    _master_pid="$(cat @PID_PATH@/${component}.pid)"
-    log "waiting on spark master process :: ${_master_pid}"
-    wait_external $_master_pid
+    _manager_pid="$(cat @PID_PATH@/${component}.pid)"
+    log "waiting on spark manager process :: ${_manager_pid}"
+    wait_external $_manager_pid
 done

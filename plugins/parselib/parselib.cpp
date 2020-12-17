@@ -25,10 +25,10 @@
 
 #define PARSELIB_VERSION "PARSELIB 1.0.1"
 
-IAtom * separatorTagAtom;
+static IAtom * _separator_TagAtom;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    separatorTagAtom = createAtom("<separator>");
+    _separator_TagAtom = createAtom("<separator>");
     return true;
 }
 
@@ -74,7 +74,7 @@ static bool hasChildren(IMatchWalker * walker)
         Owned<IMatchWalker> child = walker->getChild(i);
         if (!child)
             return false;
-        if (child->queryName() != separatorTagAtom)
+        if (child->queryName() != _separator_TagAtom)
             return true;
     }
 }
@@ -95,7 +95,7 @@ static void expandElementText(StringBuffer & s, IMatchWalker * walker)
 static void getDefaultParseTree(StringBuffer & s, IMatchWalker * cur)
 {
     IAtom * name = cur->queryName();
-    if (name != separatorTagAtom)
+    if (name != _separator_TagAtom)
     {
         if (name)
         {
@@ -129,7 +129,7 @@ static void getDefaultParseTree(StringBuffer & s, IMatchWalker * cur)
 static void getXmlParseTree(StringBuffer & s, IMatchWalker * walker, unsigned indent)
 {
     IAtom * name = walker->queryName();
-    if (name != separatorTagAtom)
+    if (name != _separator_TagAtom)
     {
         unsigned max = walker->numChildren();
         if (!name)

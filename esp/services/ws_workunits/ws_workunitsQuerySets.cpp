@@ -1846,7 +1846,7 @@ bool CWsWorkunitsEx::onWURecreateQuery(IEspContext &context, IEspWURecreateQuery
         copyWorkunitForRecompile(context, factory, srcWuid, wuid, jobname);
         resp.setWuid(wuid);
 
-        WsWuHelpers::submitWsWorkunit(context, wuid.str(), target, NULL, 0, true, false, false, NULL, NULL, &req.getDebugValues());
+        WsWuHelpers::submitWsWorkunit(context, wuid.str(), target, nullptr, 0, 0, true, false, false, nullptr, nullptr, &req.getDebugValues(), nullptr);
         waitForWorkUnitToCompile(wuid.str(), req.getWait());
 
         Owned<IConstWorkUnit> cw(factory->openWorkUnit(wuid.str()));

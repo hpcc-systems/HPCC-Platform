@@ -212,7 +212,6 @@ public:
         const char* instanceName, const char *ipAddress, const char* logDate, int slaveNum,
         MemoryBuffer& buf, const char* outFile, bool forDownload);
     void getWorkunitResTxt(MemoryBuffer& buf);
-    void getWorkunitArchiveQuery(IStringVal& str);
     void getWorkunitArchiveQuery(StringBuffer& str);
     void getWorkunitArchiveQuery(MemoryBuffer& mb);
     void getWorkunitDll(StringBuffer &name, MemoryBuffer& buf);
@@ -229,7 +228,6 @@ public:
     void listArchiveFiles(IPropertyTree* archive, const char* path, IArrayOf<IEspWUArchiveModule>& modules, IArrayOf<IEspWUArchiveFile>& files);
     void getArchiveFile(IPropertyTree* archive, const char* moduleName, const char* attrName, const char* path, StringBuffer& file);
     void setWUAbortTime(IEspECLWorkunit &info, unsigned __int64 abortTS);
-    IConstWUQuery* getEmbeddedQuery();
 
     void addTimerToList(SCMStringBuffer& name, const char * scope, IConstWUStatistic & stat, IArrayOf<IEspECLTimer>& timers);
 protected:
@@ -518,10 +516,10 @@ namespace WsWuHelpers
 {
     void setXmlParameters(IWorkUnit *wu, const char *xml, bool setJobname=false);
     void submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, const char* cluster, const char* snapshot, int maxruntime,  int maxcost, bool compile, bool resetWorkflow, bool resetVariables,
-            const char *paramXml=NULL, IArrayOf<IConstNamedValue> *variables=NULL, IArrayOf<IConstNamedValue> *debugs=NULL, IArrayOf<IConstApplicationValue> *applications=NULL);
+            const char *paramXml, IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs, IArrayOf<IConstApplicationValue> *applications);
     void setXmlParameters(IWorkUnit *wu, const char *xml, IArrayOf<IConstNamedValue> *variables, bool setJobname=false);
     void submitWsWorkunit(IEspContext& context, const char *wuid, const char* cluster, const char* snapshot, int maxruntime,  int maxcost, bool compile, bool resetWorkflow, bool resetVariables,
-            const char *paramXml=NULL, IArrayOf<IConstNamedValue> *variables=NULL, IArrayOf<IConstNamedValue> *debugs=NULL, IArrayOf<IConstApplicationValue> *applications=NULL);
+            const char *paramXml, IArrayOf<IConstNamedValue> *variables, IArrayOf<IConstNamedValue> *debugs, IArrayOf<IConstApplicationValue> *applications);
     void copyWsWorkunit(IEspContext &context, IWorkUnit &wu, const char *srcWuid);
     void runWsWorkunit(IEspContext &context, StringBuffer &wuid, const char *srcWuid, const char *cluster, const char *paramXml=NULL,
             IArrayOf<IConstNamedValue> *variables=NULL, IArrayOf<IConstNamedValue> *debugs=NULL, IArrayOf<IConstApplicationValue> *applications=NULL);

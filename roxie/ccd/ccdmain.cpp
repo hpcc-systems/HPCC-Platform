@@ -732,7 +732,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         if (standAloneDll || wuid)
         {
             oneShotRoxie = true;
-            DBGLOG("Starting roxie - wuid=%s", wuid ? wuid : "<none>");
+            if (wuid)
+                DBGLOG("Starting roxie - wuid=%s", wuid);
             allFilesDynamic = true;
             if (topology->getPropBool("@server", false))
             {

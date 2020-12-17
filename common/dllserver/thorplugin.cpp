@@ -285,13 +285,14 @@ public:
 class HelperDll : implements ILoadedDllEntry, public CInterface
 {
     SharedObject so;
-    StringAttr name;
     Linked<const IFileIO> dllFile;
     Owned<IMemoryMappedFile> mappedDll;
     mutable std::atomic<IPropertyTree *> manifest {nullptr};
     mutable CriticalSection manifestLock;
     mutable StringMapOf<ManifestFileList> manifestFiles;
 
+protected:
+    StringAttr name;
     bool logLoad;
 public:
     IMPLEMENT_IINTERFACE;
@@ -325,8 +326,8 @@ public:
 
     bool init(IPluginContextEx * pluginCtx);
 
-    virtual bool checkVersion(const char *expected);
-    virtual void logLoaded();
+    virtual bool checkVersion(const char *expected) override;
+    virtual void logLoaded() override;
 };
 
 HelperDll::HelperDll(const char *_name, const IFileIO *_dllFile)
@@ -603,17 +604,8 @@ bool PluginDll::checkVersion(const char *expected)
 
 void PluginDll::logLoaded()
 {
-    HelperDll::logLoaded();
-    DBGLOG("Current reported version is %s", pb.version);
-    if (pb.compatibleVersions)
-    {
-        const char **finger = pb.compatibleVersions;
-        while (*finger)
-        {
-            DBGLOG("Compatible version %s", *finger);
-            finger++;
-        }
-    }
+    logLoad = true;
+    DBGLOG("Loaded DLL %s [%s]", name.get(), pb.version);
 }
 
 extern DLLSERVER_API ILoadedDllEntry * createDllEntry(const char *path, bool isGlobal, const IFileIO *dllFile, bool resourcesOnly)
@@ -700,6 +692,15 @@ extern DLLSERVER_API bool getEmbeddedManifestXML(const ILoadedDllEntry *dll, Str
     size32_t len = 0;
     const void * data = NULL;
     if (!dll->getResource(len, data, "MANIFEST", 1000))
+        return false;
+    return decompressResource(len, data, xml);
+}
+
+extern DLLSERVER_API bool getEmbeddedArchiveXML(ILoadedDllEntry *dll, StringBuffer &xml)
+{
+    size32_t len = 0;
+    const void * data = NULL;
+    if (!dll->getResource(len, data, "ARCHIVE", 1000))
         return false;
     return decompressResource(len, data, xml);
 }

@@ -981,7 +981,7 @@ bool CwssqlEx::onExecuteSQL(IEspContext &context, IEspExecuteSQLRequest &req, IE
                 wu.clear();
 
                 context.addTraceSummaryTimeStamp(LogNormal, "strtWUCompile");
-                WsWuHelpers::submitWsWorkunit(context, compiledwuid.str(), cluster, NULL, 0, true, false, false, NULL, NULL, NULL);
+                WsWuHelpers::submitWsWorkunit(context, compiledwuid.str(), cluster, nullptr, 0, 0, true, false, false, nullptr, nullptr, nullptr, nullptr);
                 waitForWorkUnitToCompile(compiledwuid.str(), req.getWait());
                 context.addTraceSummaryTimeStamp(LogNormal, "endWUCompile");
             }
@@ -1025,7 +1025,7 @@ bool CwssqlEx::onExecuteSQL(IEspContext &context, IEspExecuteSQLRequest &req, IE
             else
             {
                 context.addTraceSummaryTimeStamp(LogNormal, "StartWUSubmit");
-                WsWuHelpers::submitWsWorkunit(context, compiledwuid.str(), cluster, NULL, 0, false, true, true, NULL, NULL, NULL);
+                WsWuHelpers::submitWsWorkunit(context, compiledwuid.str(), cluster, nullptr, 0, 0, false, true, true, nullptr, nullptr, nullptr, nullptr);
                 context.addTraceSummaryTimeStamp(LogNormal, "EndWUSubmit");
                 runningwuid.set(compiledwuid.str());
                 if (cacheeligible)
@@ -1430,7 +1430,7 @@ bool CwssqlEx::onPrepareSQL(IEspContext &context, IEspPrepareSQLRequest &req, IE
 //                    wu->commit();
 //                    wu.clear();
 //
-//                    WsWuProcess::submitWsWorkunit(context, newwuid.str(), req.getTargetCluster(), NULL, 0, true, false, false, xmlparams.str(), NULL, NULL);
+//                    WsWuProcess::submitWsWorkunit(context, newwuid.str(), req.getTargetCluster(), NULL, 0, 0, true, false, false, xmlparams.str(), NULL, NULL);
 //                    waitForWorkUnitToCompile(newwuid.str(), req.getWait());
 //
 //                    wuid.s.set(newwuid.str());
@@ -1472,7 +1472,7 @@ bool CwssqlEx::onPrepareSQL(IEspContext &context, IEspPrepareSQLRequest &req, IE
                 wu->commit();
                 wu.clear();
 
-                WsWuHelpers::submitWsWorkunit(context, wuid.str(), cluster, NULL, 0, true, false, false, xmlparams.str(), NULL, NULL);
+                WsWuHelpers::submitWsWorkunit(context, wuid.str(), cluster, nullptr, 0, 0, true, false, false, xmlparams.str(), nullptr, nullptr, nullptr);
                 success = waitForWorkUnitToCompile(wuid.str(), req.getWait());
             }
 
@@ -1874,7 +1874,7 @@ bool CwssqlEx::onCreateTableAndLoad(IEspContext &context, IEspCreateTableAndLoad
     wu.clear();
 
     ESPLOG(LogMax, "WsSQL: compiling WU...");
-    WsWuHelpers::submitWsWorkunit(context, compiledwuid.str(), cluster, NULL, 0, true, false, false, NULL, NULL, NULL);
+    WsWuHelpers::submitWsWorkunit(context, compiledwuid.str(), cluster, nullptr, 0, 0, true, false, false, nullptr, nullptr, nullptr, nullptr);
     waitForWorkUnitToCompile(compiledwuid.str(), req.getWait());
 
     ESPLOG(LogMax, "WsSQL: finish compiling WU...");
@@ -1896,7 +1896,7 @@ bool CwssqlEx::onCreateTableAndLoad(IEspContext &context, IEspCreateTableAndLoad
     else
     {
         ESPLOG(LogMax, "WsSQL: executing WU(%s)...", compiledwuid.str());
-        WsWuHelpers::submitWsWorkunit(context, compiledwuid.str(), cluster, NULL, 0, false, true, true, NULL, NULL, NULL);
+        WsWuHelpers::submitWsWorkunit(context, compiledwuid.str(), cluster, nullptr, 0, 0, false, true, true, nullptr, nullptr, nullptr, nullptr);
 
         ESPLOG(LogMax, "WsSQL: waiting on WU(%s)...", compiledwuid.str());
         waitForWorkUnitToComplete(compiledwuid.str(), req.getWait());

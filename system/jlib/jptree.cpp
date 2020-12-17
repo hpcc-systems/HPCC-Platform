@@ -234,7 +234,7 @@ unsigned ChildMap::getHashFromElement(const void *e) const
     return elem.queryHash();
 }
 
-unsigned ChildMap::numChildren()
+unsigned ChildMap::numChildren() const
 {
     SuperHashIteratorOf<IPropertyTree> iter(*this);
     if (!iter.first()) return 0;
@@ -2706,13 +2706,13 @@ void PTree::localizeElements(const char *xpath, bool allTail)
     // null action for local ptree
 }
 
-unsigned PTree::numChildren()
+unsigned PTree::numChildren() const
 {
     if (!checkChildren()) return 0;
     return children->numChildren();
 }
 
-unsigned PTree::getCount(const char *xpath)
+unsigned PTree::getCount(const char *xpath) const
 {
     unsigned c=0;
     Owned<IPropertyTreeIterator> iter = getElements(xpath);
@@ -3132,6 +3132,7 @@ void PTree::addLocal(size32_t l, const void *data, bool _binary, int pos)
         IPropertyTree *element1 = detach();
         array = new CPTArray();
         addingNewElement(*element1, ANE_APPEND);
+        static_cast<PTree *>(element1)->setOwner(array);
         array->addElement(element1);
         value = array;
     }
@@ -3857,7 +3858,7 @@ bool CAtomPTree::removeAttribute(const char *key)
 ///////////////////
 
 
-bool isEmptyPTree(IPropertyTree *t)
+bool isEmptyPTree(const IPropertyTree *t)
 {
     if (!t)
         return true;
@@ -4273,12 +4274,15 @@ void mergePTree(IPropertyTree *target, IPropertyTree *toMerge)
     }
 }
 
-void _synchronizePTree(IPropertyTree *target, IPropertyTree *source, bool removeTargetsNotInSource)
+void _synchronizePTree(IPropertyTree *target, const IPropertyTree *source, bool removeTargetsNotInSource)
 {
     Owned<IAttributeIterator> aiter = target->getAttributes();
     StringArray targetAttrs;
-    ForEach (*aiter)
-        targetAttrs.append(aiter->queryName());
+    if (removeTargetsNotInSource)
+    {
+        ForEach (*aiter)
+            targetAttrs.append(aiter->queryName());
+    }
 
     aiter.setown(source->getAttributes());
     ForEach (*aiter)
@@ -4298,7 +4302,8 @@ void _synchronizePTree(IPropertyTree *target, IPropertyTree *source, bool remove
             else if (NULL == tValue ||0 != strcmp(sValue, tValue))
                 target->setProp(attr, sValue);
 
-            targetAttrs.zap(attr);
+            if (removeTargetsNotInSource)
+                targetAttrs.zap(attr);
         }
     }
 
@@ -4409,7 +4414,7 @@ void _synchronizePTree(IPropertyTree *target, IPropertyTree *source, bool remove
  * presevers ordering of matching elements.
  * If removeTargetsNotInSource = true (default) elements in the target not present in the source will be removed
  */
-void synchronizePTree(IPropertyTree *target, IPropertyTree *source, bool removeTargetsNotInSource, bool rootsMustMatch)
+void synchronizePTree(IPropertyTree *target, const IPropertyTree *source, bool removeTargetsNotInSource, bool rootsMustMatch)
 {
     if (rootsMustMatch)
     {
@@ -6956,7 +6961,7 @@ class COrderedPTree : public BASE_PTREE
         COrderedChildMap<BASECHILDMAP>() : BASECHILDMAP() { }
         ~COrderedChildMap<BASECHILDMAP>() { SELF::kill(); }
 
-        virtual unsigned numChildren() override { return order.ordinality(); }
+        virtual unsigned numChildren() const override { return order.ordinality(); }
         virtual IPropertyTreeIterator *getIterator(bool sort) override
         {
             class CPTArrayIterator : public ArrayIIteratorOf<IArrayOf<IPropertyTree>, IPropertyTree, IPropertyTreeIterator>
@@ -7283,35 +7288,34 @@ public:
     {
         offset_t startOffset = curOffset;
         StringBuffer value;
-        if (readValue(value)==elementTypeNull)
-            return;
-
-        if ('@'==*name)
+        if (readValue(value)!=elementTypeNull)
         {
-            if (!skipAttributes)
-                iEvent->newAttribute(name, value.str());
-            return;
-        }
-        else if ('#'==*name)
-        {
-            dbgassertex(retValue && isValueBinary);
-            *isValueBinary = false;
-            if (0 == strncmp(name+1, "value", 5)) // this is a special IPT JSON prop name, representing a 'complex' value
+            if ('@'==*name)
             {
-                if ('\0' == *(name+6)) // #value
+                if (!skipAttributes)
+                    iEvent->newAttribute(name, value.str());
+                return;
+            }
+            else if ('#'==*name)
+            {
+                dbgassertex(retValue && isValueBinary);
+                *isValueBinary = false;
+                if (0 == strncmp(name+1, "value", 5)) // this is a special IPT JSON prop name, representing a 'complex' value
                 {
-                    retValue->swapWith(value);
-                    return;
-                }
-                else if (streq(name+6, "bin")) // #valuebin
-                {
-                    *isValueBinary = true;
-                    JBASE64_Decode(value.str(), *retValue);
-                    return;
+                    if ('\0' == *(name+6)) // #value
+                    {
+                        retValue->swapWith(value);
+                        return;
+                    }
+                    else if (streq(name+6, "bin")) // #valuebin
+                    {
+                        *isValueBinary = true;
+                        JBASE64_Decode(value.str(), *retValue);
+                        return;
+                    }
                 }
             }
         }
-
         iEvent->beginNode(name, false, startOffset);
         iEvent->beginNodeContent(name);
         iEvent->endNode(name, value.length(), value.str(), false, curOffset);
@@ -8244,7 +8248,7 @@ static IPropertyTree *ensureMergeConfigTarget(IPropertyTree &target, const char 
     return match;
 }
 
-void mergeConfiguration(IPropertyTree & target, IPropertyTree & source, const char *altNameAttribute, bool overwriteAttr)
+void mergeConfiguration(IPropertyTree & target, const IPropertyTree & source, const char *altNameAttribute, bool overwriteAttr)
 {
     Owned<IAttributeIterator> aiter = source.getAttributes();
     ForEach(*aiter)
@@ -8280,8 +8284,7 @@ void mergeConfiguration(IPropertyTree & target, IPropertyTree & source, const ch
     }
 
     const char * sourceValue = source.queryProp("");
-    if (sourceValue)
-        target.setProp("", sourceValue);
+    target.setProp("", sourceValue);
 }
 
 /*
