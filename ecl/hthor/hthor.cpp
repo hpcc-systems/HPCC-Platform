@@ -9010,6 +9010,12 @@ const void *CHThorDiskNormalizeActivity::nextRow()
             {
                 try
                 {
+                    if (unlikely(translator))
+                    {
+                        MemoryBufferBuilder aBuilder(translatedRow.clear(), 0);
+                        translator->translate(aBuilder, *this, next);
+                        next = aBuilder.getSelf();
+                    }
                     expanding = helper.first(next);
                 }
                 catch(IException * e)
@@ -9100,7 +9106,16 @@ const void *CHThorDiskAggregateActivity::nextRow()
                 const byte * next = prefetchBuffer.queryRow();
                 size32_t sizeRead = prefetchBuffer.queryRowSize();
                 if (segMonitorsMatch(next))
-                    helper.processRow(outBuilder, next);
+                {
+                    if (unlikely(translator))
+                    {
+                        MemoryBufferBuilder aBuilder(translatedRow.clear(), 0);
+                        translator->translate(aBuilder, *this, next);
+                        helper.processRow(outBuilder, aBuilder.getSelf());
+                    }
+                    else
+                        helper.processRow(outBuilder, next);
+                }
                 prefetchBuffer.finishedRow();
                 localOffset += sizeRead;
             }
@@ -9272,7 +9287,16 @@ const void *CHThorDiskGroupAggregateActivity::nextRow()
                     size32_t sizeRead = prefetchBuffer.queryRowSize();
 
                     if (segMonitorsMatch(next))
-                        helper.processRow(next, this);
+                   {
+                        if (unlikely(translator))
+                        {
+                            MemoryBufferBuilder aBuilder(translatedRow.clear(), 0);
+                            translator->translate(aBuilder, *this, next);
+                            helper.processRow(aBuilder.getSelf(), this);
+                        }
+                        else
+                            helper.processRow(next, this);
+                    }
 
                     prefetchBuffer.finishedRow();
                     localOffset += sizeRead;
