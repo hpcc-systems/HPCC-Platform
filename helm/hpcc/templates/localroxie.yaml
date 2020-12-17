@@ -10,7 +10,7 @@ kind: Deployment
 metadata:
   name: {{ $roxie.name | quote }}
 spec:
-  replicas: {{ $roxie.serverReplicas | default 1 }}
+  replicas: {{ $roxie.replicas | default 1 }}
   selector:
     matchLabels:
       run: {{ $roxie.name | quote }}
