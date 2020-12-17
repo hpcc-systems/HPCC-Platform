@@ -179,6 +179,12 @@ define([
         initLogGrid: function () {
             var context = this;
             var store = new WsTopology.CreateTpLogFileStore();
+            store.on("preFetch", function () {
+                context.refreshActionState(true);
+            });
+            store.on("postFetch", function () {
+                context.refreshActionState(false);
+            });
             store.on("pageLoaded", function (page) {
                 context.rawText.setText(page);
             });
@@ -211,9 +217,6 @@ define([
                         context._onRowDblClick(item.Wuid);
                     }
                 });
-                this.logGrid.onSelectionChanged(function (event) {
-                    context.refreshActionState();
-                });
                 this.logGrid.startup();
             }
         },
@@ -231,8 +234,10 @@ define([
             }
         },
 
-        refreshActionState: function () {
-            var selection = this.logGrid.getSelected();
+        refreshActionState: function (loading) {
+            registry.byId(this.id + "DownloadText").set("disabled", loading);
+            registry.byId(this.id + "DownloadZip").set("disabled", loading);
+            registry.byId(this.id + "DownloadGZip").set("disabled", loading);
         }
     });
 });
