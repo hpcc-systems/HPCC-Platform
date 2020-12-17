@@ -249,13 +249,15 @@ roxie:
   - name: roxie
     port: 9876
     listenQueue: 200
-    numThreads: 0
+    numThreads: 30
     external: true
+  ## replicas indicates the number of replicas per channel
+  replicas: 2  
   numChannels: 2
   ## Set serverReplicas to indicate a separate replicaSet of roxie servers, with agent nodes not acting as servers
   serverReplicas: 0
   topoReplicas: 1
-  ## Set localAgent to true for a scalable cluster of "single-node" roxie servers
+  ## Set localAgent to true for a scalable cluster of "single-node" roxie servers, each implementing all channels locally
   localAgent: false
   useAeron: false
   #channelResources:
