@@ -31,6 +31,7 @@ set (    SRCS
          csvsplitter.cpp 
          thorcommon.cpp 
          thorfile.cpp 
+         thormeta.cpp
          thorparse.cpp 
          thorpipe.cpp 
          thorread.cpp
@@ -53,6 +54,7 @@ set (    SRCS
          csvsplitter.hpp 
          thorcommon.hpp 
          thorfile.hpp 
+         thormeta.hpp
          thorparse.hpp 
          thorpipe.hpp 
          thorread.hpp
@@ -70,6 +72,8 @@ set (    SRCS
          thorsort.hpp
          persistent.cpp
          persistent.hpp
+         thorstore.cpp
+         thorstore.hpp
          
          roxiedebug.hpp
          roxiedebug.ipp

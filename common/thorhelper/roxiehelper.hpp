@@ -564,7 +564,7 @@ private:
 //==============================================================================================================
 
 THORHELPER_API StringBuffer & mangleHelperFileName(StringBuffer & out, const char * in, const char * wuid, unsigned int flags);
-THORHELPER_API StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in);
+THORHELPER_API StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in, const char * optWuid);
 THORHELPER_API StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally, bool ignoreForeignPrefix);
 
 THORHELPER_API ISectionTimer * queryNullSectionTimer();

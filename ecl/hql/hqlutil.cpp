@@ -10273,6 +10273,10 @@ void getFieldTypeInfo(FieldTypeInfoStruct &out, ITypeInfo *type)
                 out.fieldType |= RFTMlinkcounted;
                 out.fieldType &= ~RFTMunknownsize;
             }
+
+            // DATASET(record, COUNT()/SIZEOF) cannot currently be serialized/deserialized
+            if (queryAttributeModifier(type, _childAttr_Atom))
+                out.fieldType |= RFTMnoserialize;
             break;
         }
     case type_dictionary:
@@ -10585,4 +10589,25 @@ const RtlTypeInfo *buildRtlType(IRtlFieldTypeDeserializer &deserializer, ITypeIn
         info.fieldType |= info.childType->fieldType & RFTMinherited;
 
     return deserializer.addType(info, type);
+}
+
+
+IHqlExpression * queryAttributeModifier(ITypeInfo * type, IAtom * name)
+{
+    ITypeInfo * cur = type;
+    for(;;)
+    {
+        typemod_t mod = cur->queryModifier();
+        if (mod == typemod_none)
+            break;
+        if (mod == typemod_attr)
+        {
+            IHqlExpression * attr = (IHqlExpression *)cur->queryModifierExtra();
+            if (!name || (name == attr->queryName()))
+                return attr;
+        }
+
+        cur = cur->queryTypeBase();
+    }
+    return nullptr;
 }

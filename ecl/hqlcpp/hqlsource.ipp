@@ -36,6 +36,7 @@ public:
     void gatherVirtualFields(IHqlExpression * record, bool ignoreVirtuals, bool ensureSerialized);
     bool hasVirtuals()      { return virtuals.ordinality() != 0; }
     bool hasVirtualsOrDeserialize() { return requiresDeserialize || virtuals.ordinality() != 0; }
+    bool canAppendVirtuals() { return simpleVirtualsAtEnd; }
 
 public:
     HqlExprArray    physicalFields;

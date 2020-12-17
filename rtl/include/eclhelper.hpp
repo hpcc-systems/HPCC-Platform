@@ -1110,6 +1110,7 @@ enum
     TDXupdateaccessed   = 0x0010,
     TDXdynamicfilename  = 0x0020,
     TDXjobtemp          = 0x0040,       // stay around while a wu is being executed.
+    TDXgeneric          = 0x0080,       // generic form of disk read/write
 
 //disk read flags
     TDRoptional         = 0x00000100,
@@ -1122,7 +1123,7 @@ enum
     TDRcountkeyedlimit  = 0x00008000,
     TDRkeyedlimitskips  = 0x00010000,
     TDRlimitskips       = 0x00020000,
-    //unused              0x00040000,
+    TDRfileposcallback  = 0x00040000,
     TDRaggregateexists  = 0x00080000,       // only aggregate is exists()
     TDRgroupmonitors    = 0x00100000,       // are segement monitors created for all group by conditions.
     TDRlimitcreates     = 0x00200000,
@@ -1132,6 +1133,8 @@ enum
     TDRtransformvirtual = 0x02000000,       // transform uses a virtual field.
     TDRdynformatoptions = 0x04000000,
     TDRinvariantfilename= 0x08000000,       // filename is non constant but has the same value for the whole query
+    TDRprojectleading   = 0x10000000,       // The projeted format matches leading fields of the source row (so no need to project if disappearing quickly)
+    TDRcloneappendvirtual = 0x20000000,     // Can clone the disk record and then append the virtual fields.
 
 //disk write flags
     TDWextend           = 0x0100,
@@ -2404,6 +2407,28 @@ struct IHThorIndexReadBaseArg : extends IHThorCompoundBaseArg
     virtual IHThorSteppedSourceExtra *querySteppingExtra() = 0;
 };
 
+
+/*
+ queryDiskRecordSize()
+    This is the expected record on disk.  It is always the serialialized form.  With the new disk reading implementation it may contain
+    the virtual fields as well as real fields.
+
+ queryProjectedDiskRecordSize()
+    This is the format that the transsform/match function expect as input.  It is generally the deserialized vesion of
+    the expected record with any fields that are not required removed.  If not transform is required then the row is
+    will match the queryOutputMetaData()
+
+There are some record formats that are not supported by the translation code (see canDefinitelyProcessWithTranslator() in hqlattr):
+    alien data types
+    dataset(record, count(x))
+    dataset(record, sizeof(x))
+    ifblock(complex-expression)
+
+    If these occur then the compound disk operations are disabled - field projection will not happen.  The projectedDiskRecordSize
+    will match the queryDiskRecordSize() and the transform will perform the deserialization.  The generated queryDiskRecordSize()
+    function will need to be used for calculating the size of the input record.
+
+*/
 struct IHThorDiskReadBaseArg : extends IHThorCompoundBaseArg
 {
     virtual const char * getFileName() = 0;

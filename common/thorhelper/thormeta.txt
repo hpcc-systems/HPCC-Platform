@@ -1,0 +1,8 @@
+Questions arising out of walking through the sketched out implementation:
+
+How do split points fit in?   They can be used when distribution does not need to be preserved.
+When are locations resolved?  Likely to be late on the agent nodes which allows better fallback, and potentially hot swapping to a backup copy.
+What information is signed?  The entire blob of xml that comes back from the esp service is signed.
+How do we reuse buffering classes cleanly?
+
+Implementing FETCH and partition reading required basic interface to request reading for a range of the file.  Fits in well with the range support of S3/azure

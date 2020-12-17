@@ -832,8 +832,9 @@ void CPropertyTreeWriter::outputString(unsigned len, const char *field, const ch
         len = rtlTrimStrLen(len, field);
     if ((flags & XWFopt) && (rtlTrimStrLen(len, field) == 0))
         return;
-    StringBuffer tmp(len, field);
-    target->setProp(fieldname, tmp.str());
+    StringBuffer tmp;
+    appendStringAsUtf8(tmp, len, field);
+    target->addProp(fieldname, tmp.str());
 }
 
 
@@ -897,8 +898,14 @@ void CPropertyTreeWriter::outputUnicode(unsigned len, const UChar *field, const 
         len = rtlTrimUnicodeStrLen(len, field);
     if ((flags & XWFopt) && (rtlTrimUnicodeStrLen(len, field) == 0))
         return;
+
     StringBuffer fieldStr;
-    outputXmlUnicode(len, field, fieldname, fieldStr);
+    char * buff = 0;
+    unsigned bufflen = 0;
+    rtlUnicodeToCodepageX(bufflen, buff, len, field, "utf-8");
+    fieldStr.append(bufflen, buff);
+    rtlFree(buff);
+
     target->setProp(fieldname, fieldStr);
 }
 
@@ -909,8 +916,8 @@ void CPropertyTreeWriter::outputUtf8(unsigned len, const char *field, const char
     if ((flags & XWFopt) && (rtlTrimUtf8StrLen(len, field) == 0))
         return;
     StringBuffer fieldStr;
-    outputXmlUtf8(len, field, nullptr, fieldStr);
-    target->setProp(fieldname, fieldStr);
+    fieldStr.append(rtlUtf8Size(len, field), field);
+    target->setProp(fieldname, fieldStr); //MORE: addProp - discuss in code review!
 }
 
 void CPropertyTreeWriter::outputXmlns(const char *name, const char *uri)

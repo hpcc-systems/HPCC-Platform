@@ -305,8 +305,6 @@ void VirtualFieldsInfo::gatherVirtualFields(IHqlExpression * _record, bool ignor
         if (virtualAttr)
         {
             selects.append(*LINK(cur));
-            if (isUnknownSize(cur->queryType()))
-                simpleVirtualsAtEnd = false;
             if (virtuals.find(*virtualAttr) == NotFound)
                 virtuals.append(*LINK(virtualAttr));
         }
@@ -634,7 +632,7 @@ static bool forceLegacyMapping(IHqlExpression * expr)
 class SourceBuilder
 {
 public:
-    SourceBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
+    SourceBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr, bool canReadGenerically)
         : tableExpr(_tableExpr), newInputMapping(false), translator(_translator)
     { 
         nameExpr.setown(foldHqlExpression(_nameExpr));
@@ -663,6 +661,7 @@ public:
         isUnfilteredCount = false;
         requiresOrderedMerge = false;
         genericDiskReads = translator.queryOptions().genericDiskReads;
+        genericDiskRead = genericDiskReads && canReadGenerically;
         rootSelfRow = NULL;
         activityKind = TAKnone;
 
@@ -673,7 +672,7 @@ public:
             else
                 newInputMapping = translator.queryOptions().newDiskReadMapping;
 
-            if (forceLegacyMapping(tableExpr))
+            if (!genericDiskRead && forceLegacyMapping(tableExpr))
                 newInputMapping = false;
 
             //If this index has been translated using the legacy method then ensure we continue to use that method
@@ -798,12 +797,13 @@ public:
     bool            useImplementationClass;
     bool            isUnfilteredCount;
     bool            isVirtualLogicalFilenameUsed = false;
+    bool            isVirtualLogicalFileposUsed = false;
     bool            transformUsesVirtualLogicalFilename = false;
     bool            transformUsesVirtualFilePosition = false;
     bool            requiresOrderedMerge;
     bool            newInputMapping;
     bool            extractCanMatch = false;
-    bool            genericDiskReads;
+    bool            genericDiskReads = false;
     bool            genericDiskRead = false;
     bool            hasDynamicOptions = false;
 
@@ -926,6 +926,8 @@ void SourceBuilder::analyse(IHqlExpression * expr)
             {
                 if (containsVirtualField(tableExpr->queryRecord(), logicalFilenameAtom))
                     isVirtualLogicalFilenameUsed = true;
+                if (containsVirtualField(tableExpr->queryRecord(), filepositionAtom) || containsVirtualField(tableExpr->queryRecord(), localFilePositionAtom))
+                    isVirtualLogicalFileposUsed = true;
             }
         }
         break;
@@ -2703,9 +2705,10 @@ void SourceBuilder::deduceDiskRecords()
     {
         projectedRecord.set(tableExpr->queryRecord());
         expectedRecord.setown(getSerializedForm(physicalRecord, diskAtom));
-        //MORE: HPCC-18469 Reduce projected to the fields that are actually required by the dataset, and will need to remap field references.
 
-        if (fieldInfo.hasVirtuals())
+        //If the record translator can proccess the record then virtual fields can be anywhere, otherwise they need
+        //to be at the end so they can be appended - and the projected format will match the serialized disk format
+        if (!canDefinitelyProcessWithTranslator(projectedRecord) && !fieldInfo.canAppendVirtuals())
         {
             StringBuffer typeName;
             unsigned recordTypeFlags = translator.buildRtlType(typeName, projectedRecord->queryType());
@@ -2845,14 +2848,13 @@ class DiskReadBuilderBase : public SourceBuilder
 {
 public:
     DiskReadBuilderBase(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr, bool canReadGenerically)
-        : SourceBuilder(_translator, _tableExpr, _nameExpr), monitors(_tableExpr, _translator, 0, true, true)
+        : SourceBuilder(_translator, _tableExpr, _nameExpr, canReadGenerically), monitors(_tableExpr, _translator, 0, true, true)
     {
         fpos.setown(getFilepos(tableExpr, false));
         lfpos.setown(getFilepos(tableExpr, true));
         logicalFilenameMarker.setown(getFileLogicalName(tableExpr));
         mode = tableExpr->queryChild(2);
         modeOp = mode->getOperator();
-        genericDiskRead = genericDiskReads && canReadGenerically;
         includeFormatCrc = ((modeOp != no_csv) || genericDiskRead) && (modeOp != no_pipe);
     }
 
@@ -2963,6 +2965,8 @@ void DiskReadBuilderBase::buildFlagsMember(IHqlExpression * expr)
     if (tableExpr->hasAttribute(unsortedAtom)) flags.append("|TDRunsorted");
     if (tableExpr->hasAttribute(optAtom)) flags.append("|TDRoptional");
     if (tableExpr->hasAttribute(_workflowPersist_Atom)) flags.append("|TDXupdateaccessed");
+    if (genericDiskRead) flags.append("|TDXgeneric");
+
     if (isPreloaded) flags.append("|TDRpreload");
     if (monitors.isKeyed()) flags.append("|TDRkeyed");
     if (limitExpr)
@@ -2989,19 +2993,20 @@ void DiskReadBuilderBase::buildFlagsMember(IHqlExpression * expr)
     if (isUnfilteredCount) flags.append("|TDRunfilteredcount");
     if (isVirtualLogicalFilenameUsed || transformUsesVirtualLogicalFilename)
         flags.append("|TDRfilenamecallback");
+    if (isVirtualLogicalFileposUsed || transformUsesVirtualFilePosition)
+        flags.append("|TDRfileposcallback");
     if (transformUsesVirtualFilePosition || transformUsesVirtualLogicalFilename)
         flags.append("|TDRtransformvirtual");
     if (requiresOrderedMerge) flags.append("|TDRorderedmerge");
     if (hasDynamicOptions) flags.append("|TDRdynformatoptions");
+    if (fieldInfo.hasVirtuals() && fieldInfo.canAppendVirtuals())
+    {
+        if (!canDefinitelyProcessWithTranslator(projectedRecord))
+            flags.append("|TDRcloneappendvirtual");
+    }
 
     if (flags.length())
         translator.doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
-
-    //New activity doesn't currently support virtual callbacks from the transform.
-    //At a later date this error will be removed, and a new variant of the activity will be created
-    //that does not imposing the overhead of tracking filepositions on the general cases.
-    if (genericDiskRead && (transformUsesVirtualFilePosition || transformUsesVirtualLogicalFilename))
-        throwError(HQLERR_NoVirtualAndAlien);
 }
 
 
@@ -3113,6 +3118,11 @@ void DiskReadBuilder::analyseGraph(IHqlExpression * expr)
     DiskReadBuilderBase::analyseGraph(expr);
     if (newInputMapping && extractCanMatch && firstTransformer)
     {
+        //If the record cannot be read using the serialized meta information, do not reduce the fields because the translator
+        //cannot perform the mapping.
+        if (!canDefinitelyProcessWithTranslator(projectedRecord))
+            return;
+
         //Calculate the minimum set of fields required by any post-filters and projects.
         projectedRecord.setown(getMinimumInputRecord(translator, firstTransformer));
         if (projectedRecord != firstTransformer->queryChild(0)->queryRecord())
@@ -3329,11 +3339,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskRead(BuildCtx & ctx, IHqlE
         const bool forceAllProjectedSerialized = options.forceAllProjectedDiskSerialized;
         //Reading from a spill file uses the in-memory format to optimize on-demand spilling.
         bool optimizeInMemorySpill = targetThor();
-        bool useInMemoryFormat = optimizeInMemorySpill && isSimpleProjectingDiskRead(expr);
+        IHqlExpression * record = tableExpr->queryRecord();
+        bool useInMemoryFormat = optimizeInMemorySpill && isSimpleProjectingDiskRead(expr) && !canDefinitelyProcessWithTranslator(record);
         if (forceAllProjectedSerialized || !useInMemoryFormat)
         {
             //else if the the table isn't serialized, then map to a serialized table, and then project to the real format
-            if (recordRequiresSerialization(tableExpr->queryRecord(), diskAtom))
+            if (recordRequiresSerialization(record, diskAtom))
             {
                 OwnedHqlExpr transformed = buildTableFromSerialized(expr);
                 //Need to wrap a possible no_usertable, otherwise the localisation can go wrong.
@@ -3697,7 +3708,7 @@ class ChildBuilderBase : public SourceBuilder
 {
 public:
     ChildBuilderBase(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
-        : SourceBuilder(_translator, _tableExpr, _nameExpr)
+        : SourceBuilder(_translator, _tableExpr, _nameExpr, false)
     { 
     }
 
@@ -3972,7 +3983,7 @@ class IndexReadBuilderBase : public SourceBuilder
     friend class MonitorRemovalTransformer;
 public:
     IndexReadBuilderBase(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
-        : SourceBuilder(_translator, _tableExpr, _nameExpr),
+        : SourceBuilder(_translator, _tableExpr, _nameExpr, false),
           monitors(_tableExpr, _translator, -(int)numPayloadFields(_tableExpr), false, getHintBool(_tableExpr, createValueSetsAtom, _translator.queryOptions().createValueSets))
     {
     }
@@ -4878,7 +4889,7 @@ class FetchBuilder : public SourceBuilder
 {
 public:
     FetchBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr, IHqlExpression * _fetchExpr)
-        : SourceBuilder(_translator, _tableExpr, _nameExpr)
+        : SourceBuilder(_translator, _tableExpr, _nameExpr, false)
     {
         compoundExpr.set(_fetchExpr);
         fetchExpr.set(queryFetch(_fetchExpr));

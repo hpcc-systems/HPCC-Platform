@@ -141,3 +141,6 @@ IF (createMultiPart,
         buildindex(LocalFiles.DG_IntIndex, overwrite,NOROOT,BLOOM(DG_parentId), PARTITION(DG_parentId));
    )
 );
+
+seqDs := DATASET(16, transform(Files.SeqRecord, self.seq := counter), DISTRIBUTED);
+OUTPUT(seqDs, , Files.Seq_Filename, OVERWRITE);

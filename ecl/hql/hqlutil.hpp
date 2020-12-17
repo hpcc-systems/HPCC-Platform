@@ -874,5 +874,6 @@ protected:
 
 extern HQL_API bool joinHasRightOnlyHardMatch(IHqlExpression * expr, bool allowSlidingMatch);
 extern HQL_API void gatherParseWarnings(IErrorReceiver * errs, IHqlExpression * expr, IErrorArray & warnings);
+extern HQL_API IHqlExpression * queryAttributeModifier(ITypeInfo * type, IAtom * name);
 
 #endif

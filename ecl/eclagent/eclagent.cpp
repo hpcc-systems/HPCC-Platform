@@ -619,7 +619,7 @@ const char *EclAgent::queryTempfilePath()
 
 StringBuffer & EclAgent::getTempfileBase(StringBuffer & buff)
 {
-    return buff.append(queryTempfilePath()).append(PATHSEPCHAR).append(wuid);
+    return buff.append(queryTempfilePath()).append(PATHSEPCHAR).appendLower(wuid);
 }
 
 const char *EclAgent::queryTemporaryFile(const char *fname)
