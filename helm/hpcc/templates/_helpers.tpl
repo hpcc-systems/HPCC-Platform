@@ -406,7 +406,6 @@ Check that the storage and spill planes for a component exist
 {{- end }}
 {{- end -}}
 
-
 {{/*
 Add config arg for a component
 */}}
