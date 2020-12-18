@@ -650,7 +650,7 @@ protected:
         unsigned expiryTime = 60;
         unsigned maxFileAccessExpirySeconds = 300;
 
-        unsigned numRecsInTest = 1000;
+        unsigned numRecsPerPart = 1000;
 
         const char *eclRecDef = "{ string5 f1; string10 f2; };";
         size32_t fixedRecSize = 15;
@@ -691,7 +691,7 @@ protected:
             Owned<IDFUFilePartWriter> writer = newFile->createFilePartWriter(p);
             writer->start();
 
-            for (unsigned r=0; r<numRecsInTest; r++)
+            for (unsigned r=0; r<numRecsPerPart; r++)
             {
                 VStringBuffer rowData("%5u%10u", r, r);
                 writer->write(fixedRecSize, rowData.str());
@@ -700,7 +700,7 @@ protected:
                     writer->write(0, nullptr); // eog
             }
         }
-        newFile->setFilePropertyInt("@recordCount", numRecsInTest);
+        newFile->setFilePropertyInt("@recordCount", numRecsPerPart);
 
         // publish would normally happen here, but this unittest is self-contained (no esp etc.)
 
@@ -712,7 +712,7 @@ protected:
             Owned<IDFUFilePartReader> reader = newFile->createFilePartReader(p, 0, nullptr, true);
             reader->start();
 
-            for (unsigned r=0; r<numRecsInTest; r++)
+            for (unsigned r=0; r<numRecsPerPart; r++)
             {
                 size32_t sz;
                 const void *row = reader->nextRow(sz);
@@ -731,6 +731,51 @@ protected:
         {
             VStringBuffer errMsg("DFU write/read test: crc's don't match. Write crc=%x, read crc=%x", writeCrc32.get(), readCrc32.get());
             CPPUNIT_ASSERT_MESSAGE(errMsg.str(), 0);
+        }
+
+
+        // read back from fetch stream
+        class CFPosStream : public CSimpleInterfaceOf<IFPosStream>
+        {
+            offset_t nextFPos = 0;
+            offset_t endPos = 0;
+            size32_t fixedSz;
+        public:
+            CFPosStream(unsigned numRecs, size32_t _fixedSz) : fixedSz(_fixedSz)
+            {
+                endPos = numRecs * fixedSz;
+            }
+            virtual bool next(offset_t &fpos) override
+            {
+                fpos = nextFPos;
+                nextFPos += fixedSz * 10; // skip ahead 10 recs
+                return fpos < endPos;
+            }
+            virtual bool peekAvailable() const override
+            {
+                return nextFPos < endPos;
+            }
+        };
+
+        Owned<IFPosStream> fposStream = new CFPosStream(numRecsPerPart, fixedRecSize+(grouped?1:0));
+        for (unsigned p=0; p<n; p++)
+        {
+            Owned<IDFUFilePartReader> reader = newFile->createFilePartReader(p, 0, nullptr, false);
+
+            reader->setFetchStream(fposStream);
+
+            reader->start();
+
+            for (unsigned r=0; r<numRecsPerPart; r++)
+            {
+                size32_t sz;
+                const void *row = reader->nextRow(sz);
+                if (!row)
+                    break;
+#ifdef _DEBUG
+                printf("%.*s%.*s\n", 5, (const char *)row, 10, ((const char *)row)+5);
+#endif
+            }
         }
     }
     void testDaFsStreamingStd()

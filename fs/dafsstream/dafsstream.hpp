@@ -59,6 +59,11 @@ interface DAFSCLIENT_API IDFUFilePartBase : extends IInterface
     virtual IOutputMetaData *queryMeta() const = 0;
 };
 
+interface IFPosStream : extends IInterface
+{
+    virtual bool next(offset_t &fpos) = 0;
+    virtual bool peekAvailable() const = 0;
+};
 interface DAFSCLIENT_API IDFUFilePartReader : extends IDFUFilePartBase
 {
     virtual const void *nextRow(size32_t &sz) = 0;
@@ -69,6 +74,7 @@ interface DAFSCLIENT_API IDFUFilePartReader : extends IDFUFilePartBase
     virtual void clearFieldFilters() = 0;
     virtual void setOutputRecordFormat(const char *eclRecDef) = 0;
     virtual void addVirtualFieldMapping(const char *fieldName, const char *fieldValue) = 0;
+    virtual void setFetchStream(IFPosStream *fposStream) = 0;
 };
 
 interface DAFSCLIENT_API IDFUFilePartWriter : extends IDFUFilePartBase
