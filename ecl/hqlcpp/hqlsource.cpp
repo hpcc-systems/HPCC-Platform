@@ -2845,7 +2845,7 @@ class DiskReadBuilderBase : public SourceBuilder
 {
 public:
     DiskReadBuilderBase(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr, bool canReadGenerically)
-        : SourceBuilder(_translator, _tableExpr, _nameExpr), monitors(_tableExpr, _translator, 0, true, false)
+        : SourceBuilder(_translator, _tableExpr, _nameExpr), monitors(_tableExpr, _translator, 0, true, true)
     {
         fpos.setown(getFilepos(tableExpr, false));
         lfpos.setown(getFilepos(tableExpr, true));
@@ -3966,13 +3966,15 @@ static ABoundActivity * buildNullIndexActivity(HqlCppTranslator & translator, Bu
     return translator.buildCachedActivity(ctx, expr);
 }
 
+
 class IndexReadBuilderBase : public SourceBuilder
 {
     friend class MonitorRemovalTransformer;
 public:
     IndexReadBuilderBase(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
-        : SourceBuilder(_translator, _tableExpr, _nameExpr), monitors(_tableExpr, _translator, -(int)numPayloadFields(_tableExpr), false, false)
-    { 
+        : SourceBuilder(_translator, _tableExpr, _nameExpr),
+          monitors(_tableExpr, _translator, -(int)numPayloadFields(_tableExpr), false, getHintBool(_tableExpr, createValueSetsAtom, _translator.queryOptions().createValueSets))
+    {
     }
 
     virtual void buildMembers(IHqlExpression * expr);
@@ -4087,7 +4089,7 @@ void IndexReadBuilderBase::buildFlagsMember(IHqlExpression * expr)
     if (isNonConstantAndQueryInvariant(nameExpr)) flags.append("|TIRinvariantfilename");
     if (translator.hasDynamicFilename(tableExpr)) flags.append("|TIRdynamicfilename");
     if (requiresOrderedMerge) flags.append("|TIRorderedmerge");
-    if (translator.queryOptions().createValueSets)
+    if (monitors.useValueSets())
         flags.append("|TIRnewfilters");
     if (containsOperator(expr, no_id2blob))
         flags.append("|TIRusesblob");

@@ -1,0 +1,11 @@
+<Dataset name='Result 1'>
+ <Row><forename>Fred      </forename></Row>
+ <Row><forename>Wilma     </forename></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><forename>Elizabeth </forename></Row>
+ <Row><forename>Philip    </forename></Row>
+ <Row><forename>Abigail   </forename></Row>
+ <Row><forename>Gavin     </forename></Row>
+ <Row><forename>Liz       </forename></Row>
+</Dataset>

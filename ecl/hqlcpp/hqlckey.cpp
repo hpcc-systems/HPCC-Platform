@@ -164,6 +164,7 @@ public:
     bool requireActivityForKey() const                      { return hasComplexIndex; }
 
     void reportFailureReason(IHqlExpression * cond)         { monitors->reportFailureReason(cond); }
+    bool useValueSets() const { return createValueSets; }
 
 protected:
     void buildClearRecord(BuildCtx & ctx, RecordSelectIterator & rawIter, RecordSelectIterator & keyIter);
@@ -203,6 +204,7 @@ protected:
     bool            canOptimizeTransfer;
     bool            hasComplexIndex;
     bool            keyHasFileposition;
+    bool            createValueSets;
 };
 
 KeyedJoinInfo::KeyedJoinInfo(HqlCppTranslator & _translator, IHqlExpression * _expr, bool _canOptimizeTransfer) : translator(_translator)
@@ -247,6 +249,10 @@ KeyedJoinInfo::KeyedJoinInfo(HqlCppTranslator & _translator, IHqlExpression * _e
     }
 
     keyHasFileposition = getBoolAttribute(key, filepositionAtom, true);
+
+    //Allow a hint on the join to override an option on the key,
+    createValueSets = getHintBool(key, createValueSetsAtom, translator.queryOptions().createValueSets);
+    createValueSets = getHintBool(expr, createValueSetsAtom, createValueSets);
 
     if (!originalKey)
         originalKey.set(key);
@@ -1074,7 +1080,7 @@ bool KeyedJoinInfo::processFilter()
 
     //Now extract the filters from it.
     OwnedHqlExpr extra;
-    monitors = new CppFilterExtractor(rawKey, translator, -(int)numPayloadFields(rawKey), false, false);
+    monitors = new CppFilterExtractor(rawKey, translator, -(int)numPayloadFields(rawKey), false, createValueSets);
     if (newFilter)
         monitors->extractFilters(newFilter, extra);
 
@@ -1353,7 +1359,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedJoinOrDenormalize(BuildCt
         flags.append("|JFdynamicindexfilename");
     if (boundIndexActivity)
         flags.append("|JFindexfromactivity");
-    if (options.createValueSets)
+    if (info.useValueSets())
         flags.append("|JFnewfilters");
     if (flags.length())
         doBuildUnsignedFunction(instance->classctx, "getJoinFlags", flags.str()+1);
@@ -1476,7 +1482,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedDistribute(BuildCtx & ctx
         flags.append("|KDFvarindexfilename");
     if (dynamic)
         flags.append("|KDFdynamicindexfilename");
-    if (options.createValueSets)
+    if (info.useValueSets())
         flags.append("|KDFnewfilters");
 
     if (flags.length())
