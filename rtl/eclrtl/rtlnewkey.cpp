@@ -458,6 +458,7 @@ public:
             else
             {
                 out.append("'");
+                //MORE: If the field type is a string or data it may contain characters that are not technically supported in utf8 e.g. \0
                 appendUtf8AsECL(out, size, text.getstr());
                 out.append("'");
             }
