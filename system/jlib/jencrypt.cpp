@@ -1743,7 +1743,7 @@ void Rijndael::decrypt(const UINT8 a[16], UINT8 b[16])
 // JLIB stuff starts here -- ADF
 //-----------------------------------------------------------------------------
 
-const char *aesErrorText[] = 
+static const char *aesErrorText[] = 
 {
     "Success",
     "Unsupported Mode",
