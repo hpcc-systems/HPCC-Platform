@@ -71,13 +71,15 @@ typedef int (*cpp_service_method_t)(const char* CtxXML, const char* ReqXML, Stri
 class EsdlServiceImpl : public CInterface, implements IEspService
 {
 private:
+    inline Owned<ILoggingManager>& loggingManager() { return m_oDynamicLoggingManager ? m_oDynamicLoggingManager : m_oStaticLoggingManager; }
     IEspContainer *container;
     MapStringToMyClass<ISmartSocketFactory> connMap;
     MapStringToMyClass<IEmbedServiceContext> javaServiceMap;
     MapStringToMyClass<IException> javaExceptionMap;
     MapStringToMyClass<IEspPlugin> cppPluginMap;
     MapStringTo<cpp_service_method_t, cpp_service_method_t> cppProcMap;
-    Owned<ILoggingManager> m_oLoggingManager;
+    Owned<ILoggingManager> m_oDynamicLoggingManager;
+    Owned<ILoggingManager> m_oStaticLoggingManager;
     bool m_bGenerateLocalTrxId;
     MapStringToMyClass<IEsdlCustomTransform> m_customRequestTransformMap;
     Owned<IEsdlCustomTransform> m_serviceLevelRequestTransform;
@@ -159,9 +161,10 @@ public:
         m_methodCRTransformErrors.kill();
     }
 
-    virtual bool loadLogggingManager();
+    virtual bool loadLoggingManager(Owned<ILoggingManager>& manager, IPTree* configuration);
     virtual void init(const IPropertyTree *cfg, const char *process, const char *service);
     virtual void configureTargets(IPropertyTree *cfg, const char *service);
+    virtual void configureLogging(IPropertyTree *cfg);
     void configureJavaMethod(const char *method, IPropertyTree &entry, const char *classPath);
     void configureCppMethod(const char *method, IPropertyTree &entry, IEspPlugin*& plugin);
     void configureUrlMethod(const char *method, IPropertyTree &entry);

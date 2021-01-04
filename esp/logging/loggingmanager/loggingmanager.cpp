@@ -78,6 +78,12 @@ bool CLoggingManager::init(IPropertyTree* cfg, const char* service)
         }
         loggingAgent->init(agentName, agentType, &loggingAgentTree, service);
         loggingAgent->initVariants(&loggingAgentTree);
+        if (loggingAgent->hasService(LGSTGetTransactionID))
+            setServiceMaskService(LGSTGetTransactionID);
+        if (loggingAgent->hasService(LGSTGetTransactionSeed))
+            setServiceMaskService(LGSTGetTransactionSeed);
+        if (loggingAgent->hasService(LGSTUpdateLOG))
+            setServiceMaskService(LGSTUpdateLOG);
         IUpdateLogThread* logThread = createUpdateLogThread(&loggingAgentTree, service, agentName, failSafeLogsDir.get(), loggingAgent);
         if(!logThread)
             throw MakeStringException(-1, "Failed to create update log thread for %s", agentName);
@@ -108,6 +114,11 @@ IEspLogAgent* CLoggingManager::loadLoggingAgent(const char* name, const char* dl
 IEspLogEntry* CLoggingManager::createLogEntry()
 {
     return new CEspLogEntry();
+}
+
+bool CLoggingManager::hasService(LOGServiceType service) const
+{
+    return ((serviceMask & (1 << service)) != 0);
 }
 
 bool CLoggingManager::updateLog(IEspLogEntry* entry, StringBuffer& status)

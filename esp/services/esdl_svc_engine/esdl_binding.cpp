@@ -187,33 +187,21 @@ void clearState(const char * stateFileFullPath)
     saveState("", NULL, stateFileFullPath);
 }
 
-bool EsdlServiceImpl::loadLogggingManager()
+bool EsdlServiceImpl::loadLoggingManager(Owned<ILoggingManager>& manager, IPTree* configuration)
 {
-    if (!m_oLoggingManager)
+    static CLoggingManagerLoader loader(nullptr, nullptr, nullptr, nullptr);
+    if (!configuration)
     {
-        StringBuffer realName;
-        realName.append(SharedObjectPrefix).append(LOGGINGMANAGERLIB).append(SharedObjectExtension);
-
-        HINSTANCE loggingManagerLib = LoadSharedObject(realName.str(), true, false);
-
-        if(loggingManagerLib == NULL)
-        {
-            ESPLOG(LogNormal,"ESP service %s: cannot load logging manager library(%s)", m_espServiceName.str(), realName.str());
-            return false;
-        }
-
-        newLoggingManager_t_ xproc = NULL;
-        xproc = (newLoggingManager_t_)GetSharedProcedure(loggingManagerLib, "newLoggingManager");
-
-        if (!xproc)
-        {
-            ESPLOG(LogNormal,"ESP service %s: procedure newLogggingManager of %s can't be loaded\n", m_espServiceName.str(), realName.str());
-            return false;
-        }
-
-        m_oLoggingManager.setown((ILoggingManager*) xproc());
+        manager.clear();
     }
-
+    else
+    {
+        manager.setown(loader.create(*configuration));
+        if (!manager)
+            throw MakeStringException(-1, "ESDL Service %s could not load logging manager", m_espServiceName.str());
+        manager->init(configuration, m_espServiceName);
+    }
+    m_bGenerateLocalTrxId = (!loggingManager() || !loggingManager()->hasService(LGSTGetTransactionID));
     return true;
 }
 
@@ -239,20 +227,7 @@ void EsdlServiceImpl::init(const IPropertyTree *cfg,
         if (m_espServiceType.length() <= 0)
             throw MakeStringException(-1, "Could not determine ESDL service configuration type: esp process '%s' service name '%s'", process, service);
 
-        IPropertyTree* loggingConfig = srvcfg->queryPropTree("LoggingManager");
-        if (loggingConfig)
-        {
-            ESPLOG(LogMin, "ESP Service %s attempting to load configured logging manager.", service);
-            if (loadLogggingManager())
-            {
-                m_oLoggingManager->init(loggingConfig, service);
-                m_bGenerateLocalTrxId = false;
-            }
-            else
-                throw MakeStringException(-1, "ESDL Service %s could not load logging manager", service);
-        }
-        else
-            ESPLOG(LogNormal, "ESP Service %s is not attached to any logging manager.", service);
+        loadLoggingManager(m_oStaticLoggingManager, srvcfg->queryPropTree("LoggingManager"));
 
         m_usesURLNameSpace = false;
         m_namespaceScheme.set(srvcfg->queryProp("@namespaceScheme"));
@@ -613,6 +588,11 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
         DBGLOG("ESDL Binding: While configuring method targets: method configuration not found for %s.", service);
 }
 
+void EsdlServiceImpl::configureLogging(IPropertyTree* cfg)
+{
+    loadLoggingManager(m_oDynamicLoggingManager, cfg);
+}
+
 #define ROXIEREQ_FLAGS (ESDL_TRANS_START_AT_ROOT | ESDL_TRANS_ROW_OUT | ESDL_TRANS_TRIM | ESDL_TRANS_OUTPUT_XMLTAG)
 #define ESDLREQ_FLAGS (ESDL_TRANS_START_AT_ROOT | ESDL_TRANS_TRIM | ESDL_TRANS_OUTPUT_XMLTAG)
 #define ESDLDEP_FLAGS (DEPFLAG_COLLAPSE | DEPFLAG_ARRAYOF)
@@ -715,7 +695,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
     StringBuffer trxid;
     if (!m_bGenerateLocalTrxId)
     {
-        if (m_oLoggingManager)
+        if (loggingManager())
         {
             context.addTraceSummaryTimeStamp(LogNormal, "srt-trxid");
             StringBuffer wsaddress;
@@ -732,7 +712,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
             trxidbasics.setValue(sTransactionIdentifier, uniqueId.str());
 
             StringBuffer trxidstatus;
-            if (!m_oLoggingManager->getTransactionID(&trxidbasics,trxid, trxidstatus))
+            if (!loggingManager()->getTransactionID(&trxidbasics,trxid, trxidstatus))
                 ESPLOG(LogMin,"DESDL: Logging Agent generated Transaction ID failed: %s", trxidstatus.str());
             context.addTraceSummaryTimeStamp(LogNormal, "end-trxid");
         }
@@ -928,9 +908,9 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
 bool EsdlServiceImpl::handleResultLogging(IEspContext &espcontext, IEsdlScriptContext *scriptContext, IPropertyTree * reqcontext, IPropertyTree * request,const char *rawreq, const char * rawresp, const char * finalresp, const char * logdata)
 {
     bool success = true;
-    if (m_oLoggingManager)
+    if (loggingManager())
     {
-        Owned<IEspLogEntry> entry = m_oLoggingManager->createLogEntry();
+        Owned<IEspLogEntry> entry = loggingManager()->createLogEntry();
         entry->setOption(LOGGINGDBSINGLEINSERT);
         entry->setOwnEspContext(LINK(&espcontext));
         entry->setOwnUserContextTree(LINK(reqcontext));
@@ -942,7 +922,7 @@ bool EsdlServiceImpl::handleResultLogging(IEspContext &espcontext, IEsdlScriptCo
         if (scriptContext)
             entry->setOwnScriptValuesTree(scriptContext->createPTreeFromSection(ESDLScriptCtxSection_Logging));
         StringBuffer logresp;
-        success = m_oLoggingManager->updateLog(entry, logresp);
+        success = loggingManager()->updateLog(entry, logresp);
         ESPLOG(LogMin,"ESDLService: Attempted to log ESP transaction: %s", logresp.str());
     }
 
@@ -1818,6 +1798,7 @@ bool EsdlBindingImpl::reloadBindingFromCentralStore(const char* bindingId)
 
             m_pESDLService->m_espServiceType.set(loadedname);
             m_pESDLService->configureTargets(tempEsdlBndCfg, loadedname);
+            m_pESDLService->configureLogging(tempEsdlBndCfg->queryPropTree("Definition[1]/LoggingManager"));
             m_esdlBndCfg.setown(tempEsdlBndCfg.getClear());
         }
         else
@@ -1923,8 +1904,9 @@ void EsdlBindingImpl::addService(IPropertyTree *esdlArchive, const char * name,
 
                 configureProxies(m_esdlBndCfg, name);
 
-                 m_pESDLService->configureTargets(m_esdlBndCfg, name);
-                 CEspBinding::addService(name, host, port, service);
+                m_pESDLService->configureTargets(m_esdlBndCfg, name);
+                m_pESDLService->configureLogging(m_esdlBndCfg->queryPropTree("Definition[1]/LoggingManager"));
+                CEspBinding::addService(name, host, port, service);
             }
             else
                 DBGLOG("ESDL Binding: Error adding service '%s': ESDL definition objectnot available", name);
