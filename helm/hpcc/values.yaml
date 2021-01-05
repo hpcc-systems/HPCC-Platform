@@ -102,6 +102,14 @@ secrets:
   ecl: {}
     ## Category for secrets published to all components that run ecl
 
+  codeSign: {}
+    #gpg-private-key-1: codesign-gpg-key-1
+    #gpg-private-key-2: codesign-gpg-key-2
+
+  codeVerify: {}
+    #gpg-public-key-1: codesign-gpg-public-key-1
+    #gpg-public-key-2: codesign-gpg-public-key-2
+
   system: {}
     ## Category for secrets published to all components for system level useage
 
@@ -126,6 +134,10 @@ vaults:
     #ECL code will have direct access to these secrets
 
   esp:
+
+  codeSign:
+
+  codeVerify:
 
 bundles: []
 ## Specifying bundles here will cause the indicated bundles to be downloaded and installed automatically

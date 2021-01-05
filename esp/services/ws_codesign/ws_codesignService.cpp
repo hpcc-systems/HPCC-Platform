@@ -35,6 +35,9 @@ void Cws_codesignEx::init(IPropertyTree *cfg, const char *process, const char *s
     StringBuffer xpath;
     xpath.appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]", process, service);
     m_serviceCfg.setown(cfg->getPropTree(xpath.str()));
+#ifdef _CONTAINERIZED
+    queryCodeSigner().initForContainer();
+#endif
 }
 
 bool Cws_codesignEx::onSign(IEspContext &context, IEspSignRequest &req, IEspSignResponse &resp)

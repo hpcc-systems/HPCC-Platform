@@ -35,6 +35,7 @@
 #endif
 #include <unordered_map>
 #include <string>
+#include "codesigner.hpp"
 
 static Owned<IPropertyTree> globals;
 static const char * * globalArgv = nullptr;
@@ -914,6 +915,8 @@ int main(int argc, const char *argv[])
 #endif
 
 #ifdef _CONTAINERIZED
+            queryCodeSigner().initForContainer();
+
             bool filtered = false;
             std::unordered_map<std::string, bool> listenQueues;
             Owned<IPTreeIterator> listening = globals->getElements("listen");

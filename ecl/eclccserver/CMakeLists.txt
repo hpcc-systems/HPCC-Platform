@@ -43,6 +43,7 @@ include_directories (
          ./../../common/dllserver 
          ./../../system/jlib
          ./../../system/security/shared
+         ${HPCC_SOURCE_DIR}/system/codesigner
     )
 
 HPCC_ADD_EXECUTABLE ( eclccserver ${SRCS} ${INCLUDES} )

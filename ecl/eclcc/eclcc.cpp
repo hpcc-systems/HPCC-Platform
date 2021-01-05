@@ -58,6 +58,7 @@
 
 #include "reservedwords.hpp"
 #include "eclcc.hpp"
+#include "codesigner.hpp"
 
 #ifndef _CONTAINERIZED
 #include "environment.hpp"
@@ -526,6 +527,11 @@ int main(int argc, const char *argv[])
         queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
 #else
         setupContainerizedLogMsgHandler();
+        bool useChildProcesses = configuration->getPropInt("@useChildProcesses", false);
+        if (!useChildProcesses)  // If using eclcc in separate container (useChildProcesses==false),
+        {                        // it will need to create a directory for gpg and import keys from secrets
+            queryCodeSigner().initForContainer();
+        }
 #endif
         exitCode = doMain(argc, argv);
         stopPerformanceMonitor();
@@ -2102,7 +2108,6 @@ bool EclCC::processFiles()
             return false;
         }
     }
-
 
     StringBuffer searchPath;
     if (!optNoStdInc && stdIncludeLibraryPath.length())

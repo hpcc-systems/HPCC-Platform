@@ -18,6 +18,8 @@
 #include "jlib.hpp"
 #include "jexcept.hpp"
 #include "jlog.hpp"
+#include "jfile.hpp"
+#include "jsecrets.hpp"
 #include "gpgcodesigner.hpp"
 #include "atomic"
 
@@ -31,6 +33,7 @@
  */
 class GpgCodeSigner : implements ICodeSigner
 {
+    virtual void initForContainer();
     virtual void sign(const char * text, const char * userId, const char * passphrase, StringBuffer & signedText) override;
     virtual bool verifySignature(const char * text, StringBuffer & signer) override;
     virtual bool hasSignature(const char * text) const override;
@@ -38,11 +41,20 @@ class GpgCodeSigner : implements ICodeSigner
     virtual StringArray &getUserIds(StringArray & userIds) override;
 private:
     void initGpg(void);
+    bool importKey(const char *key, const char *passphrase);
+    void importKeysFromSecret(const char * cat, const char *type);
+    void importSigningKeysFromSecrets();
+    void importVerifyKeysFromSecrets();
     bool getKeyGrip(const char * user, StringBuffer & keygrip);
     void clearPassphrase(const char * key);
     CriticalSection crit;
     std::atomic<bool> isGpgV1{false};
     std::atomic<bool> isInitialized{false};
+    std::atomic<bool> getSignKeysFromSecrets {false};
+    std::atomic<bool> getVerifyKeysFromSecrets {false};
+    StringBuffer gpgOptions;
+    StringBuffer gpgHomeDir;
+    bool createNewGpgHomeDir = false;
     static constexpr const char* signatureMsgHeader = "-----BEGIN PGP SIGNED MESSAGE-----";
     static constexpr const char* signatureBegin = "-----BEGIN PGP SIGNATURE-----";
 };
@@ -70,7 +82,128 @@ void GpgCodeSigner::initGpg(void)
     if (ret != 0)
         throw makeStringExceptionV(MSGAUD_operator, CODESIGNER_ERR_GPG, "Error running gpg: %s", errmsg.str());
     isGpgV1 = strstr(output.str(), "gpg (GnuPG) 1.");
+    if (createNewGpgHomeDir)
+    {
+        try
+        {
+            Owned<IFile> dir = createIFile(gpgHomeDir);
+            dir->createDirectory();
+        }
+        catch (IException *e)
+        {
+            OERRLOG("Create directory failed: %s", gpgHomeDir.str());
+            e->Release();
+        }
+        createNewGpgHomeDir = false;
+    }
     isInitialized = true;
+}
+
+/**
+ * Import a gpg key
+ *
+ * @param key           The gpg key
+ * @param passphrase    The passphrase for key (optional)
+ *
+ * @return              True if successfully imported
+ *                      False if import failed
+ */
+bool GpgCodeSigner::importKey(const char *key, const char *passphrase)
+{
+    initGpg();
+    VStringBuffer cmd("gpg %s --batch --passphrase-fd 0 --import ", gpgOptions.str());
+    StringBuffer output, errmsg;
+    VStringBuffer input("%s\n", passphrase);
+    input.append(key);
+    int ret = runExternalCommand(output, errmsg, cmd.str(), input);
+    if (ret != 0)
+    {
+        OERRLOG("External command failed: %s", errmsg.str());
+        return false;
+    }
+    return true;
+}
+
+/**
+ * Import a key from secrets
+ *
+ * @param key           Secrets category
+ * @param keytype       Type of key: public or private
+ */
+void GpgCodeSigner::importKeysFromSecret(const char * cat, const char *keytype)
+{
+    unsigned importCount = 0;
+    unsigned failCount = 0;
+    for (int keyentry = 1; ; keyentry++)
+    {
+        VStringBuffer keysecretname("gpg-%s-key-%d", keytype, keyentry);
+        Owned<IPropertyTree> secretKey = getSecret(cat, keysecretname.str());
+        if (secretKey)
+        {
+            StringBuffer gpgKey;
+            if (secretKey->getProp(keytype, gpgKey))
+            {
+                StringBuffer passphrase;
+                secretKey->getProp("passphrase", passphrase);
+                if (importKey(gpgKey, passphrase))
+                    ++importCount;
+                else
+                    ++failCount;
+            }
+        }
+        else
+        {
+            break; // finished importing keys
+        }
+    }
+    if (failCount)
+        OERRLOG("Keys imported from %s/gpg-%s-key-* failed: %u (succeeded %u)", cat, keytype, failCount, importCount);
+    else
+        DBGLOG("Keys imported from %s/gpg-%s-key-*: %u", cat, keytype, importCount);
+}
+
+/**
+ * Imports signing keys from secrets
+ * - Imports takes place just once. All subsequant calls ignored.
+ * - (this may be called before every operation so keys imported only if needed)
+ */
+void GpgCodeSigner::importSigningKeysFromSecrets()
+{
+    if (!getSignKeysFromSecrets) return;
+    CriticalBlock block(crit);
+    if (!getSignKeysFromSecrets) return;
+    importKeysFromSecret("codeSign","private");
+    getSignKeysFromSecrets = false;
+}
+
+/**
+ * Imports verifying keys from secrets
+ * - Imports takes place just once. All subsequant calls ignored.
+ * - (this may be called before every operation so keys imported only if needed)
+ */
+void GpgCodeSigner::importVerifyKeysFromSecrets()
+{
+    if (!getVerifyKeysFromSecrets) return;
+    CriticalBlock block(crit);
+    if (!getVerifyKeysFromSecrets) return;
+    importKeysFromSecret("codeVerify","public");
+    getVerifyKeysFromSecrets = false;
+}
+
+/**
+ * Initialize gpg code signer for containers
+ * - uses current directory for gpg instead of home directory (which may not exist)
+ */
+void GpgCodeSigner::initForContainer()
+{
+    // Processes running in containers may be owned by a user without a home directory
+    // so use a directory under the current directory (create it later on 1st use)
+    appendCurrentDirectory(gpgHomeDir, false);
+    addPathSepChar(gpgHomeDir).append("gnugpg");
+    gpgOptions.appendf(" --homedir %s", gpgHomeDir.str());
+    createNewGpgHomeDir = true;
+    getSignKeysFromSecrets = true;
+    getVerifyKeysFromSecrets = true;
 }
 
 /**
@@ -95,6 +228,7 @@ void GpgCodeSigner::sign(const char * text, const char * userId, const char * pa
     if (strchr(userId, '\"')!=nullptr || strlen(userId) > 2000)
         throw makeStringExceptionV(MSGAUD_user, CODESIGNER_ERR_BADUSERID, "Invalid user id: %s", userId);
 
+    importSigningKeysFromSecrets();
     StringBuffer keygrip;
     if (!isGpgV1)
     {
@@ -103,7 +237,7 @@ void GpgCodeSigner::sign(const char * text, const char * userId, const char * pa
         clearPassphrase(keygrip);
     }
     StringBuffer cmd, errmsg;
-    cmd.setf("gpg --clearsign -u \"%s\" --yes --batch --passphrase-fd 0", userId);
+    cmd.setf("gpg %s --clearsign -u \"%s\" --yes --batch --passphrase-fd 0", gpgOptions.str(), userId);
     if (!isGpgV1)
         cmd.append(" --pinentry-mode loopback");
     VStringBuffer input("%s\n", passphrase);
@@ -138,8 +272,11 @@ void GpgCodeSigner::sign(const char * text, const char * userId, const char * pa
 bool GpgCodeSigner::verifySignature(const char * text, StringBuffer & signer)
 {
     initGpg();
+    importVerifyKeysFromSecrets();
+
     Owned<IPipeProcess> pipe = createPipeProcess();
-    if (!pipe->run("gpg", "gpg --verify -", ".", true, false, true, 0, false))
+    VStringBuffer cmd("gpg %s --verify -", gpgOptions.str());
+    if (!pipe->run("gpg", cmd.str(), ".", true, false, true, 0, false))
         throw makeStringExceptionV(MSGAUD_user, CODESIGNER_ERR_VERIFY, "Code sign verify failed (gpg --verify failed)");
     pipe->write(strlen(text), text);
     pipe->closeInput();
@@ -252,10 +389,15 @@ const char* skipn(const char * str, char c, int n)
 StringArray &GpgCodeSigner::getUserIds(StringArray & userIds)
 {
     initGpg();
+    importSigningKeysFromSecrets();
     StringBuffer errmsg, output("\n");
-    int ret = runExternalCommand(output, errmsg, "gpg --list-secret-keys --with-colon", nullptr);
+    VStringBuffer cmd("gpg %s --list-secret-keys --with-colon", gpgOptions.str());
+    int ret = runExternalCommand(output, errmsg, cmd.str(), nullptr);
     if (ret != 0)
+    {
+        IERRLOG("list secret keys failed: %s", errmsg.str());
         throw makeStringExceptionV(MSGAUD_user, CODESIGNER_ERR_LISTKEYS, "list secret keys failed: %s", errmsg.str());
+    }
 
     const char* START = "\nuid:";
     if (isGpgV1)
@@ -317,9 +459,9 @@ bool GpgCodeSigner::getKeyGrip(const char * userId, StringBuffer & keygrip)
 
     StringBuffer cmd;
     if (isGpgV1)
-        cmd.appendf("gpg --list-secret-keys \"=%s\"", userId); // = means exact match
+        cmd.appendf("gpg %s --list-secret-keys \"=%s\"", gpgOptions.str(), userId); // = means exact match
     else
-        cmd.appendf("gpg --list-secret-keys --with-keygrip \"=%s\"", userId); // = means exact match
+        cmd.appendf("gpg %s --list-secret-keys --with-keygrip \"=%s\"", gpgOptions.str(), userId); // = means exact match
 
     StringBuffer output, errmsg;
     int ret = runExternalCommand(output, errmsg, cmd.str(), nullptr);
@@ -351,6 +493,6 @@ void GpgCodeSigner::clearPassphrase(const char * key)
 {
     initGpg();
     StringBuffer output, errmsg;
-    VStringBuffer cmd("gpg-connect-agent \"clear_passphrase --mode=normal %s\" /bye", key);
+    VStringBuffer cmd("gpg-connect-agent %s \"clear_passphrase --mode=normal %s\" /bye", gpgOptions.str(), key);
     runExternalCommand(output, errmsg, cmd.str(), nullptr);
 }
