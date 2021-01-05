@@ -49,7 +49,9 @@ bool Cws_codesignEx::onSign(IEspContext &context, IEspSignRequest &req, IEspSign
         resp.setErrMsg("Please provide both UserID and Text");
         return false;
     }
-    StringBuffer signedText, errmsg;
+    StringBuffer tmpbuf, signedText, errmsg;
+    if (queryCodeSigner().hasSignature(text))
+        text = queryCodeSigner().stripSignature(text, tmpbuf).str();  // remove  existing signature
     bool ret = queryCodeSigner().sign(text, userid.str(), req.getKeyPass(), signedText, errmsg);
 
     if (!ret)
