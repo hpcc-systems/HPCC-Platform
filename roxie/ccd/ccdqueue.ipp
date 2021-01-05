@@ -106,7 +106,7 @@ interface IPacketDiscarder : public IInterface
 };
 
 extern IRoxieOutputQueueManager *ROQ;
-extern IRoxieOutputQueueManager *createOutputQueueManager(unsigned snifferChannel, unsigned numWorkers);
+extern IRoxieOutputQueueManager *createOutputQueueManager(unsigned snifferChannel, unsigned numWorkers, bool encrypted);
 extern IReceiveManager *createLocalReceiveManager();
 extern IPacketDiscarder *createPacketDiscarder();
 extern void startPingTimer();

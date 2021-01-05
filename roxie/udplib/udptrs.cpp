@@ -22,6 +22,7 @@
 
 #include "jsocket.hpp"
 #include "jlog.hpp"
+#include "jencrypt.hpp"
 #include "roxie.hpp"
 #ifdef _WIN32
 #include <winsock.h>
@@ -78,12 +79,20 @@ using roxiemem::DataBuffer;
  *    - resend rts if we send data but there is some remaining
  */
 
+static byte key[32] = {
+    0xf7, 0xe8, 0x79, 0x40, 0x44, 0x16, 0x66, 0x18, 0x52, 0xb8, 0x18, 0x6e, 0x76, 0xd1, 0x68, 0xd3,
+    0x87, 0x47, 0x01, 0xe6, 0x66, 0x62, 0x2f, 0xbe, 0xc1, 0xd5, 0x9f, 0x4a, 0x53, 0x27, 0xae, 0xa1,
+};
+
+
+
 class UdpReceiverEntry : public IUdpReceiverEntry
 {
 private:
     queue_t *output_queue = nullptr;
     bool    initialized = false;
     const bool isLocal = false;
+    const bool encrypted = false;
     ISocket *send_flow_socket = nullptr;
     ISocket *data_socket = nullptr;
     const unsigned numQueues;
@@ -181,6 +190,7 @@ public:
                 break;
 #endif
         }
+        MemoryBuffer encryptBuffer;
         for (DataBuffer *buffer: toSend)
         {
             UdpPacketHeader *header = (UdpPacketHeader*) buffer->data;
@@ -192,7 +202,13 @@ public:
             }
             try
             {
-                data_socket->write(buffer->data, length);
+                if (encrypted)
+                {
+                    aesEncrypt(key, sizeof(key), buffer->data, length, encryptBuffer.clear());
+                    data_socket->write(encryptBuffer.toByteArray(), encryptBuffer.length());
+                }
+                else
+                    data_socket->write(buffer->data, length);
             }
             catch(IException *e)
             {
@@ -307,8 +323,8 @@ public:
         return nullptr;
     }
 
-    UdpReceiverEntry(const IpAddress &_ip, const IpAddress &_sourceIP, unsigned _numQueues, unsigned _queueSize, unsigned _sendFlowPort, unsigned _dataPort)
-    : ip (_ip), sourceIP(_sourceIP), numQueues(_numQueues), isLocal(_ip.isLocal())
+    UdpReceiverEntry(const IpAddress &_ip, const IpAddress &_sourceIP, unsigned _numQueues, unsigned _queueSize, unsigned _sendFlowPort, unsigned _dataPort, bool _encrypted)
+    : ip (_ip), sourceIP(_sourceIP), numQueues(_numQueues), isLocal(_ip.isLocal()), encrypted(_encrypted)
     {
         assert(!initialized);
         assert(numQueues > 0);
@@ -688,10 +704,10 @@ class CSendManager : implements ISendManager, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CSendManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int q_size, int _numQueues, const IpAddress &_myIP, TokenBucket *_bucket)
+    CSendManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int q_size, int _numQueues, const IpAddress &_myIP, TokenBucket *_bucket, bool encrypted)
         : bucket(_bucket),
           myIP(_myIP),
-          receiversTable([_myIP, _numQueues, q_size, server_flow_port, data_port](const ServerIdentifier &ip) { return new UdpReceiverEntry(ip.getIpAddress(), _myIP, _numQueues, q_size, server_flow_port, data_port);})
+          receiversTable([_myIP, _numQueues, q_size, server_flow_port, data_port, encrypted](const ServerIdentifier &ip) { return new UdpReceiverEntry(ip.getIpAddress(), _myIP, _numQueues, q_size, server_flow_port, data_port, encrypted);})
     {
 #ifndef _WIN32
         setpriority(PRIO_PROCESS, 0, -3);
@@ -753,10 +769,10 @@ public:
 
 };
 
-ISendManager *createSendManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int queue_size_pr_server, int queues_pr_server, TokenBucket *rateLimiter)
+ISendManager *createSendManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int queue_size_pr_server, int queues_pr_server, TokenBucket *rateLimiter, bool encryptionInTransit)
 {
     assertex(!myNode.getIpAddress().isNull());
-    return new CSendManager(server_flow_port, data_port, client_flow_port, sniffer_port, sniffer_multicast_ip, queue_size_pr_server, queues_pr_server, myNode.getIpAddress(), rateLimiter);
+    return new CSendManager(server_flow_port, data_port, client_flow_port, sniffer_port, sniffer_multicast_ip, queue_size_pr_server, queues_pr_server, myNode.getIpAddress(), rateLimiter, encryptionInTransit);
 }
 
 class CMessagePacker : implements IMessagePacker, public CInterface
