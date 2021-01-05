@@ -35,7 +35,7 @@ interface IPendingCallback : public IInterface
 
 interface IRoxieOutputQueueManager : public IInterface
 {
-    virtual void sendPacket(IRoxieQueryPacket *x, const IRoxieContextLogger &logctx) = 0;
+    virtual void sendPacket(IDeserializedRoxieQueryPacket *x, const IRoxieContextLogger &logctx) = 0;
     virtual void sendIbyti(RoxiePacketHeader &header, const IRoxieContextLogger &logctx, unsigned subChannel) = 0;
     virtual void sendAbort(RoxiePacketHeader &header, const IRoxieContextLogger &logctx) = 0;
     virtual void sendAbortCallback(const RoxiePacketHeader &header, const char *lfn, const IRoxieContextLogger &logctx) = 0;

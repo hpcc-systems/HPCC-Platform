@@ -221,7 +221,7 @@ interface IDebuggerContext : extends IInterface
 //==============================================================================================================
 class RoxiePacketHeader;
 
-interface IRoxieQueryPacket;
+interface IDeserializedRoxieQueryPacket;
 
 interface IDebuggableContext : public IInterface
 {
@@ -236,7 +236,7 @@ interface IDebuggableContext : public IInterface
     virtual unsigned getDefaultHistoryCapacity() const = 0;
     virtual bool getExecuteSequentially() const = 0;
     virtual unsigned queryChannel() const = 0;
-    virtual IRoxieQueryPacket *onDebugCallback(const RoxiePacketHeader &header, size32_t len, char *data) = 0;
+    virtual IDeserializedRoxieQueryPacket *onDebugCallback(const RoxiePacketHeader &header, size32_t len, char *data) = 0;
     virtual void serialize(MemoryBuffer &buff) const = 0;
     virtual void noteGraphChanged() = 0;
     virtual void addBreakpoint(IBreakpointInfo &bp) = 0;

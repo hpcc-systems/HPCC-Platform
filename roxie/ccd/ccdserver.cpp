@@ -2926,19 +2926,19 @@ class CRoxieServerQueryPacket : implements IRoxieServerQueryPacket, public CInte
 {
 protected:
     Owned<IMessageResult> result;
-    Owned<IRoxieQueryPacket> packet;
+    Owned<IDeserializedRoxieQueryPacket> packet;
     Linked<IRoxieServerQueryPacket> continuation;
     unsigned hash;
     unsigned seq;
     unsigned lastDebugSequence;
-    Owned<IRoxieQueryPacket> lastDebugResponse;
+    Owned<IDeserializedRoxieQueryPacket> lastDebugResponse;
 
     ILRUChain *prev;
     ILRUChain *next;
     bool delayed;
 public:
     IMPLEMENT_IINTERFACE;
-    CRoxieServerQueryPacket(IRoxieQueryPacket *p) : packet(p)
+    CRoxieServerQueryPacket(IDeserializedRoxieQueryPacket *p) : packet(p)
     {
         hash = 0;
         seq = 0;
@@ -2947,7 +2947,7 @@ public:
         delayed = false;
         lastDebugSequence = 0;
     }
-    virtual IRoxieQueryPacket *queryPacket() const
+    virtual IDeserializedRoxieQueryPacket *queryPacket() const
     {
         return packet;
     }
@@ -2971,15 +2971,11 @@ public:
     {
         return result != NULL;
     }
-    virtual bool hasContinuation() const 
-    {
-        return continuation != NULL;
-    }
     virtual void setDelayed(bool _delayed)
     {
         delayed = _delayed;
     }
-    virtual void setPacket(IRoxieQueryPacket *_packet)
+    virtual void setPacket(IDeserializedRoxieQueryPacket *_packet)
     {
         packet.setown(_packet);
     }
@@ -3035,7 +3031,7 @@ public:
         prev = NULL;
     }
 
-    virtual IRoxieQueryPacket *getDebugResponse(unsigned sequence)
+    virtual IDeserializedRoxieQueryPacket *getDebugResponse(unsigned sequence)
     {
         if (sequence == lastDebugSequence)
             return lastDebugResponse.getLink();
@@ -3048,7 +3044,7 @@ public:
             throwUnexpected();
     }
 
-    virtual void setDebugResponse(unsigned sequence, IRoxieQueryPacket *response)
+    virtual void setDebugResponse(unsigned sequence, IDeserializedRoxieQueryPacket *response)
     {
         lastDebugSequence = sequence;
         lastDebugResponse.set(response);
@@ -3619,7 +3615,7 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
 
     };
 
-    IRoxieServerQueryPacket *createRoxieServerQueryPacket(IRoxieQueryPacket *p)
+    IRoxieServerQueryPacket *createRoxieServerQueryPacket(IDeserializedRoxieQueryPacket *p)
     {
         return new CRoxieServerQueryPacket(p);
     }
@@ -3639,7 +3635,7 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
                 s.append("LIMIT");
             else
             {
-                IRoxieQueryPacket *i = p.queryPacket();
+                IDeserializedRoxieQueryPacket *i = p.queryPacket();
                 s.appendf("%s", p.hasResult() ? "COMPLETE " : "PENDING ");
                 if (i)
                 {
@@ -3660,7 +3656,7 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
             IRoxieServerQueryPacket &p = pending.item(idx);
             if (!p.hasResult())
             {
-                IRoxieQueryPacket *i = p.queryPacket();
+                IDeserializedRoxieQueryPacket *i = p.queryPacket();
                 if (i)
                 {
                     RoxiePacketHeader &header = i->queryHeader();
@@ -3732,7 +3728,7 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
             IRoxieServerQueryPacket &p = pending.item(idx);
             if (!p.hasResult() && !p.isDelayed())
             {
-                IRoxieQueryPacket *i = p.queryPacket();
+                IDeserializedRoxieQueryPacket *i = p.queryPacket();
                 if (i)
                 {
                     if (!i->queryHeader().retry())
@@ -3790,10 +3786,10 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
             needsFlush = false;
         }
 
-        inline IRoxieQueryPacket *flush()
+        inline IDeserializedRoxieQueryPacket *flush()
         {
             CriticalBlock cb(crit);
-            Owned<IRoxieQueryPacket> ret;
+            Owned<IDeserializedRoxieQueryPacket> ret;
             if (needsFlush)
             {
                 buffer.setLength(nextBuf - buffer.toByteArray());
@@ -4083,11 +4079,11 @@ public:
         deferredStart = true;
     }
 
-    void send(IRoxieQueryPacket *p)
+    void send(IDeserializedRoxieQueryPacket *p)
     {
         if (p)
         {
-            Linked<IRoxieQueryPacket> saver(p); // avoids a race with abortPending, without keeping pendingCrit locked over the send which we might prefer not to
+            Linked<IDeserializedRoxieQueryPacket> saver(p); // avoids a race with abortPending, without keeping pendingCrit locked over the send which we might prefer not to
             assertex(p->queryHeader().uid==ruid);
 
             // MORE: Maybe we should base the fastlane flag on some other 
@@ -4127,7 +4123,7 @@ public:
                 unsigned i;
                 for (i = 1; i <= numChannels; i++)
                 {
-                    IRoxieQueryPacket *q = p->clonePacket(i);
+                    IDeserializedRoxieQueryPacket *q = p->clonePacket(i);
                     IRoxieServerQueryPacket *rsqp = createRoxieServerQueryPacket(q);
                     rsqp->setSequence(sentSequence++);
                     if (deferredStart)
@@ -4573,7 +4569,7 @@ public:
                 CriticalBlock b(pendingCrit);
                 unsigned idx = 0;
                 IRoxieServerQueryPacket *original = NULL;
-                IRoxieQueryPacket *op;
+                IDeserializedRoxieQueryPacket *op;
                 while (pending.isItem(idx))
                 {
                     original = &pending.item(idx);
@@ -4642,7 +4638,7 @@ public:
                             agentInfo.setBuffer(*rowlen, rowdata, false);
                             unsigned debugSequence;
                             agentInfo.read(debugSequence);
-                            Owned<IRoxieQueryPacket> reply = original->getDebugResponse(debugSequence);
+                            Owned<IDeserializedRoxieQueryPacket> reply = original->getDebugResponse(debugSequence);
                             if (!reply)
                                 reply.setown(activity.queryContext()->queryDebugContext()->onDebugCallback(header, *rowlen, rowdata));
                             if (reply)
@@ -4808,8 +4804,8 @@ public:
 
                             MemoryBuffer nextQuery;
                             nextQuery.append(sizeof(RoxiePacketHeader), &header);
-                            nextQuery.append(metaLen, metaData);
                             nextQuery.append(op->getTraceLength(), op->queryTraceInfo());
+                            nextQuery.append(metaLen, metaData);
                             nextQuery.append(op->getContextLength(), op->queryContextData());
                             if (resendSequence == CONTINUESEQUENCE_MAX)
                             {
@@ -4821,7 +4817,7 @@ public:
                             RoxiePacketHeader *newHeader = (RoxiePacketHeader *) nextQuery.toByteArray();
                             newHeader->continueSequence = resendSequence; // NOTE - we clear the skipTo flag since continuation of a skip is NOT a skip...
                             newHeader->retries &= ~ROXIE_RETRIES_MASK;
-                            IRoxieQueryPacket *resend = createRoxiePacket(nextQuery);
+                            IDeserializedRoxieQueryPacket *resend = createRoxiePacket(nextQuery);
                             CRoxieServerQueryPacket *fqp = new CRoxieServerQueryPacket(resend);
                             fqp->setSequence(original->getSequence());
                             pending.add(*fqp, idx+1); // note that pending takes ownership. sendPacket does not release.

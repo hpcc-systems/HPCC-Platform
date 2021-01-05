@@ -1401,7 +1401,7 @@ public:
     }
 };
 
-extern void doDebugRequest(IRoxieQueryPacket *packet, const IRoxieContextLogger &logctx)
+extern void doDebugRequest(IDeserializedRoxieQueryPacket *packet, const IRoxieContextLogger &logctx)
 {
     RoxiePacketHeader newHeader(packet->queryHeader(), ROXIE_DEBUGREQUEST, 0);  // subchannel not relevant
     Owned<IMessagePacker> output = ROQ->createOutputStream(newHeader, true, logctx);
@@ -1459,7 +1459,7 @@ protected:
         ruid_t ruid = getNextRuid();
         RoxiePacketHeader header(id, ruid, channel, 0);
         MemoryBuffer b;
-        b.append(sizeof(header), &header);
+        b.append(sizeof(RoxiePacketHeader), &header);
         b.append ((char) LOGGING_FLAGSPRESENT);
         b.append("PROXY"); // MORE - a better log prefix might be good...
         request.serialize(b);
@@ -1467,7 +1467,7 @@ protected:
         Owned<IRowManager> rowManager = roxiemem::createRowManager(1, NULL, *logctx, NULL, false);
         Owned<IMessageCollator> mc = ROQ->queryReceiveManager()->createMessageCollator(rowManager, ruid);
 
-        Owned<IRoxieQueryPacket> packet = createRoxiePacket(b);
+        Owned<IDeserializedRoxieQueryPacket> packet = createRoxiePacket(b);
         ROQ->sendPacket(packet, *logctx);
 
         for (unsigned retries = 1; retries <= MAX_DEBUGREQUEST_RETRIES; retries++)

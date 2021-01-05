@@ -434,23 +434,17 @@ static bool channelWrite(RoxiePacketHeader &buf, bool includeSelf)
 
 //============================================================================================
 
-class CRoxieQueryPacket : implements IRoxieQueryPacket, public CInterface
+class CRoxieQueryPacketBase : public CInterface
 {
 protected:
     RoxiePacketHeader *data;
-    const byte *continuationData; 
-    unsigned continuationLength;
-    const byte *smartStepInfoData; 
-    unsigned smartStepInfoLength;
-    const byte *contextData;
-    unsigned contextLength;
     const byte *traceInfo;
     unsigned traceLength;
-    
+
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieQueryPacket(const void *_data, int lengthRemaining) : data((RoxiePacketHeader *) _data)
+    CRoxieQueryPacketBase(const void *_data, int lengthRemaining) : data((RoxiePacketHeader *) _data)
     {
         assertex(lengthRemaining >= (int) sizeof(RoxiePacketHeader));
         data->packetlength = lengthRemaining;
@@ -458,42 +452,11 @@ public:
         lengthRemaining -= sizeof(RoxiePacketHeader);
         if (data->activityId == ROXIE_FILECALLBACK || data->activityId == ROXIE_DEBUGCALLBACK || data->retries == QUERY_ABORTED)
         {
-            continuationData = NULL;
-            continuationLength = 0;
-            smartStepInfoData = NULL;
-            smartStepInfoLength = 0;
             traceInfo = NULL;
             traceLength = 0;
         }
         else
         {
-            if (data->continueSequence & ~CONTINUE_SEQUENCE_SKIPTO)
-            {
-                assertex(lengthRemaining >= (int) sizeof(unsigned short));
-                continuationLength = *(unsigned short *) finger;
-                continuationData = finger + sizeof(unsigned short);
-                finger = continuationData + continuationLength;
-                lengthRemaining -= continuationLength + sizeof(unsigned short);
-            }
-            else
-            {
-                continuationData = NULL;
-                continuationLength = 0;
-            }
-            if (data->continueSequence & CONTINUE_SEQUENCE_SKIPTO)
-            {
-                assertex(lengthRemaining >= (int) sizeof(unsigned short));
-                smartStepInfoLength = *(unsigned short *) finger;
-                smartStepInfoData = finger + sizeof(unsigned short);
-                finger = smartStepInfoData + smartStepInfoLength;
-                lengthRemaining -= smartStepInfoLength + sizeof(unsigned short);
-            }
-            else
-            {
-                smartStepInfoData = NULL;
-                smartStepInfoLength = 0;
-            }
-            assertex(lengthRemaining > 1);
             traceInfo = finger;
             lengthRemaining--;
             if (*finger++ & LOGGING_DEBUGGERACTIVE)
@@ -517,19 +480,65 @@ public:
             }
             traceLength = finger - traceInfo;
         }
+    }
+
+    ~CRoxieQueryPacketBase()
+    {
+        free(data);
+    }
+
+};
+
+class CRoxieQueryPacket : public CRoxieQueryPacketBase, implements IDeserializedRoxieQueryPacket
+{
+protected:
+    const byte *continuationData = nullptr;
+    unsigned continuationLength = 0;
+    const byte *smartStepInfoData = nullptr;
+    unsigned smartStepInfoLength = 0;
+    const byte *contextData = nullptr;
+    unsigned contextLength = 0;
+    
+public:
+    IMPLEMENT_IINTERFACE;
+    CRoxieQueryPacket(const void *_data, int length) : CRoxieQueryPacketBase(_data, length)
+    {
+        const byte *finger = (const byte *) (data + 1) + traceLength;
+        int lengthRemaining = length - sizeof(RoxiePacketHeader) - traceLength;
+        if (data->continueSequence & ~CONTINUE_SEQUENCE_SKIPTO)
+        {
+            assertex(lengthRemaining >= (int) sizeof(unsigned short));
+            continuationLength = *(unsigned short *) finger;
+            continuationData = finger + sizeof(unsigned short);
+            finger = continuationData + continuationLength;
+            lengthRemaining -= continuationLength + sizeof(unsigned short);
+        }
+        if (data->continueSequence & CONTINUE_SEQUENCE_SKIPTO)
+        {
+            assertex(lengthRemaining >= (int) sizeof(unsigned short));
+            smartStepInfoLength = *(unsigned short *) finger;
+            smartStepInfoData = finger + sizeof(unsigned short);
+            finger = smartStepInfoData + smartStepInfoLength;
+            lengthRemaining -= smartStepInfoLength + sizeof(unsigned short);
+        }
         assertex(lengthRemaining >= 0);
         contextData = finger;
         contextLength = lengthRemaining;
     }
 
-    ~CRoxieQueryPacket()
-    {
-        free(data);
-    }
-
     virtual RoxiePacketHeader &queryHeader() const
     {
         return  *data;
+    }
+
+    virtual const byte *queryTraceInfo() const
+    {
+        return traceInfo;
+    }
+
+    virtual unsigned getTraceLength() const
+    {
+        return traceLength;
     }
 
     virtual const void *queryContinuationData() const
@@ -552,16 +561,6 @@ public:
         return smartStepInfoLength;
     }
 
-    virtual const byte *queryTraceInfo() const
-    {
-        return traceInfo;
-    }
-
-    virtual unsigned getTraceLength() const
-    {
-        return traceLength;
-    }
-
     virtual const void *queryContextData() const
     {
         return contextData;
@@ -572,7 +571,7 @@ public:
         return contextLength;
     }
 
-    virtual IRoxieQueryPacket *clonePacket(unsigned channel) const
+    virtual IDeserializedRoxieQueryPacket *clonePacket(unsigned channel) const
     {
         unsigned length = data->packetlength;
         RoxiePacketHeader *newdata = (RoxiePacketHeader *) malloc(length);
@@ -582,13 +581,15 @@ public:
         return createRoxiePacket(newdata, length);
     }
 
-    virtual IRoxieQueryPacket *insertSkipData(size32_t skipDataLen, const void *skipData) const
+    virtual IDeserializedRoxieQueryPacket *insertSkipData(size32_t skipDataLen, const void *skipData) const
     {
         assertex((data->continueSequence & CONTINUE_SEQUENCE_SKIPTO) == 0); // Should not already be any skipto info in the source packet
 
         unsigned newDataSize = data->packetlength + sizeof(unsigned short) + skipDataLen;
         char *newdata = (char *) malloc(newDataSize);
         unsigned headSize = sizeof(RoxiePacketHeader);
+        if (traceLength)
+            headSize += traceLength;
         if (data->continueSequence & ~CONTINUE_SEQUENCE_SKIPTO)
             headSize += sizeof(unsigned short) + continuationLength;
         memcpy(newdata, data, headSize); // copy in leading part of old data
@@ -599,9 +600,63 @@ public:
         return createRoxiePacket(newdata, newDataSize);
     }
 
+    virtual ISerializedRoxieQueryPacket *serialize() const override
+    {
+        // MORE - if we are encrypting, do so here. Make sure encryption is disabled for localAgent mode
+        // Is there a way to avoid copying the data in localAgent mode?
+        unsigned length = data->packetlength;
+        MemoryBuffer mb;
+        mb.append(length, data);
+        return createSerializedRoxiePacket(mb);
+    }
 };
 
-extern IRoxieQueryPacket *createRoxiePacket(void *_data, unsigned _len)
+class CSerializedRoxieQueryPacket : public CRoxieQueryPacketBase, implements ISerializedRoxieQueryPacket
+{
+public:
+    IMPLEMENT_IINTERFACE;
+    CSerializedRoxieQueryPacket(const void *_data, int length) : CRoxieQueryPacketBase(_data, length)
+    {
+    }
+
+    virtual RoxiePacketHeader &queryHeader() const
+    {
+        return  *data;
+    }
+
+    virtual const byte *queryTraceInfo() const
+    {
+        return traceInfo;
+    }
+
+    virtual unsigned getTraceLength() const
+    {
+        return traceLength;
+    }
+
+    virtual ISerializedRoxieQueryPacket *clonePacket(unsigned channel) const
+    {
+        unsigned length = data->packetlength;
+        RoxiePacketHeader *newdata = (RoxiePacketHeader *) malloc(length);
+        memcpy(newdata, data, length);
+        newdata->channel = channel;
+        newdata->retries |= ROXIE_BROADCAST;
+        return new CSerializedRoxieQueryPacket(newdata, length);
+    }
+
+    virtual IDeserializedRoxieQueryPacket *deserialize() const override
+    {
+        // MORE - if we are encrypting, do so here. Make sure encryption is disabled for localAgent mode
+        // Is there a way to avoid copying the data in localAgent mode?
+        unsigned length = data->packetlength;
+        MemoryBuffer mb;
+        mb.append(length, data);
+        return createRoxiePacket(mb);
+    }
+
+};
+
+extern IDeserializedRoxieQueryPacket *createRoxiePacket(void *_data, unsigned _len)
 {
     if ((unsigned short)_len != _len && !localAgent)
     {
@@ -614,10 +669,24 @@ extern IRoxieQueryPacket *createRoxiePacket(void *_data, unsigned _len)
     return new CRoxieQueryPacket(_data, _len);
 }
 
-extern IRoxieQueryPacket *createRoxiePacket(MemoryBuffer &m)
+extern IDeserializedRoxieQueryPacket *createRoxiePacket(MemoryBuffer &m)
 {
     unsigned length = m.length(); // don't make assumptions about evaluation order of parameters...
     return createRoxiePacket(m.detachOwn(), length);
+}
+
+extern IDeserializedRoxieQueryPacket *deserializeRoxiePacket(MemoryBuffer &m)
+{
+    // MORE - if there is any encryption of the packets, it needs to be decrypted here
+    unsigned length = m.length(); // don't make assumptions about evaluation order of parameters...
+    return createRoxiePacket(m.detachOwn(), length);
+}
+
+extern ISerializedRoxieQueryPacket *createSerializedRoxiePacket(MemoryBuffer &m)
+{
+    // MORE - if there is any encryption of the packets, it needs to be decrypted here
+    unsigned length = m.length(); // don't make assumptions about evaluation order of parameters...
+    return new CSerializedRoxieQueryPacket(m.detachOwn(), length);
 }
 
 //=================================================================================
@@ -628,13 +697,13 @@ AgentContextLogger::AgentContextLogger()
     set(NULL);
 }
 
-AgentContextLogger::AgentContextLogger(IRoxieQueryPacket *packet)
+AgentContextLogger::AgentContextLogger(IRoxieQueryPacketBase *packet)
 {
     GetHostIp(ip);
     set(packet);
 }
 
-void AgentContextLogger::set(IRoxieQueryPacket *packet)
+void AgentContextLogger::set(IRoxieQueryPacketBase *packet)
 {
     anyOutput = false;
     intercept = false;
@@ -783,23 +852,20 @@ static MapXToMyClass<hash64_t, hash64_t, IQueryFactory> onDemandQueryCache;
 
 void sendUnloadMessage(hash64_t hash, const char *id, const IRoxieContextLogger &logctx)
 {
-    unsigned packetSize = sizeof(RoxiePacketHeader) + sizeof(char) + strlen(id) + 1;
-    void *packetData = malloc(packetSize);
-    RoxiePacketHeader *header = (RoxiePacketHeader *) packetData;
     RemoteActivityId unloadId(ROXIE_UNLOAD, hash);
-    header->init(unloadId, 0, 0, 0);
+    RoxiePacketHeader header(unloadId, 0, 0, 0);
 
-    char *finger = (char *) (header + 1);
-    *finger++ = (char) LOGGING_FLAGSPRESENT;
-    strcpy(finger, id);
-    finger += strlen(id)+1;
+    MemoryBuffer mb;
+    mb.append(sizeof(RoxiePacketHeader), &header);
+    mb.append((char) LOGGING_FLAGSPRESENT);
+    mb.append(id);
     if (traceLevel > 1)
         DBGLOG("UNLOAD sent for query %s", id);
-    Owned<IRoxieQueryPacket> packet = createRoxiePacket(packetData, packetSize);
+    Owned<IDeserializedRoxieQueryPacket> packet = createRoxiePacket(mb);
     ROQ->sendPacket(packet, logctx);
 }
 
-void doUnload(IRoxieQueryPacket *packet, const IRoxieContextLogger &logctx)
+void doUnload(IDeserializedRoxieQueryPacket *packet, const IRoxieContextLogger &logctx)
 {
     const RoxiePacketHeader &header = packet->queryHeader();
     unsigned channelNo = header.channel;
@@ -826,7 +892,7 @@ struct PingRecord
     IpAddress senderIP;
 };
 
-void doPing(IRoxieQueryPacket *packet, const IRoxieContextLogger &logctx)
+void doPing(IDeserializedRoxieQueryPacket *packet, const IRoxieContextLogger &logctx)
 {
     const RoxiePacketHeader &header = packet->queryHeader();
     const IpAddress serverIP = header.serverId.getIpAddress();
@@ -908,7 +974,7 @@ private:
 class RoxieQueue : public CInterface, implements IThreadFactory
 {
     Owned <IThreadPool> workers;
-    QueueOf<IRoxieQueryPacket, true> waiting;
+    QueueOf<ISerializedRoxieQueryPacket, true> waiting;
     Semaphore available;
     CriticalSection qcrit;
     unsigned headRegionSize;
@@ -983,7 +1049,7 @@ public:
         workers.clear();  // Breaks a cyclic reference count that would stop us from releasing RoxieReceiverThread otherwise
     }
 
-    void enqueue(IRoxieQueryPacket *x)
+    void enqueue(ISerializedRoxieQueryPacket *x)
     {
         {
 #ifdef TIME_PACKETS
@@ -996,7 +1062,7 @@ public:
         available.signal();
     }
 
-    void enqueueUnique(IRoxieQueryPacket *x, unsigned subChannel)
+    void enqueueUnique(ISerializedRoxieQueryPacket *x, unsigned subChannel)
     {
         RoxiePacketHeader &header = x->queryHeader();
 #ifdef TIME_PACKETS
@@ -1009,7 +1075,7 @@ public:
             unsigned i;
             for (i = 0; i < len; i++)
             {
-                IRoxieQueryPacket *queued = waiting.item(i);
+                ISerializedRoxieQueryPacket *queued = waiting.item(i);
                 if (queued && queued->queryHeader().matchPacket(header))
                 {
                     found = true;
@@ -1049,14 +1115,14 @@ public:
     bool remove(RoxiePacketHeader &x)
     {
         unsigned scanLength = 0;
-        IRoxieQueryPacket *found = nullptr;
+        ISerializedRoxieQueryPacket *found = nullptr;
         {
             CriticalBlock qc(qcrit);
             unsigned len = waiting.ordinality();
             unsigned i;
             for (i = 0; i < len; i++)
             {
-                IRoxieQueryPacket *queued = waiting.item(i);
+                ISerializedRoxieQueryPacket *queued = waiting.item(i);
                 if (queued)
                 {
                     scanLength++;
@@ -1071,12 +1137,6 @@ public:
         }
         if (found)
         {
-#ifdef _DEBUG
-            RoxiePacketHeader &header = found->queryHeader();
-            AgentContextLogger l(found);
-            StringBuffer xx;
-            l.CTXLOG("discarded %s", header.toString(xx).str());
-#endif
             found->Release();
             queueLength--;
             if (scanLength > maxScanLength)
@@ -1101,7 +1161,7 @@ public:
         available.signal(num);
     }
 
-    IRoxieQueryPacket *dequeue()
+    ISerializedRoxieQueryPacket *dequeue()
     {
         CriticalBlock qc(qcrit);
         unsigned lim = waiting.ordinality();
@@ -1157,7 +1217,7 @@ class CRoxieWorker : public CInterface, implements IPooledThread
     bool abortJob;
     bool busy;
     Owned<IRoxieAgentActivity> activity;
-    Owned<IRoxieQueryPacket> packet;
+    Owned<IDeserializedRoxieQueryPacket> packet;
     Owned<const ITopologyServer> topology;
     AgentContextLogger logctx;
 
@@ -1252,7 +1312,7 @@ public:
         return false;
     }
 
-    void throwRemoteException(IException *E, IRoxieAgentActivity *activity, IRoxieQueryPacket *packet, bool isUser)
+    void throwRemoteException(IException *E, IRoxieAgentActivity *activity, IDeserializedRoxieQueryPacket *packet, bool isUser)
     {
         try 
         {
@@ -1497,9 +1557,11 @@ public:
                     if (doIbytiDelay) 
                         ibytiSem.reinit(0U); // Make sure sem is is in no-signaled state
 #endif
-                    packet.setown(queue->dequeue());
-                    if (packet)
+                    Owned<ISerializedRoxieQueryPacket> next = queue->dequeue();
+                    if (next)
                     {
+                        packet.setown(next->deserialize());
+                        next.clear();
                         queueLength--;
                         RoxiePacketHeader &header = packet->queryHeader();
                         logctx.set(packet);
@@ -1716,7 +1778,7 @@ public:
     }
 
 protected:
-    void doFileCallback(IRoxieQueryPacket *packet)
+    void doFileCallback(IDeserializedRoxieQueryPacket *packet)
     {
         // This is called on the main agent reader thread so needs to be as fast as possible to avoid lost packets
         const char *lfn;
@@ -1760,7 +1822,7 @@ class RoxieThrottledPacketSender : public Thread
     InterruptableSemaphore queued;
     Semaphore started;
     unsigned maxPacketSize;
-    SafeQueueOf<IRoxieQueryPacket, false> queue;
+    SafeQueueOf<IDeserializedRoxieQueryPacket, false> queue;
 
     class DECL_EXCEPTION StoppedException: public IException, public CInterface
     {
@@ -1771,14 +1833,14 @@ class RoxieThrottledPacketSender : public Thread
         MessageAudience errorAudience() const { return MSGAUD_user; }
     };
 
-    void enqueue(IRoxieQueryPacket *packet)
+    void enqueue(IDeserializedRoxieQueryPacket *packet)
     {
         packet->Link();
         queue.enqueue(packet);
         queued.signal();
     }
 
-    IRoxieQueryPacket *dequeue()
+    IDeserializedRoxieQueryPacket *dequeue()
     {
         queued.wait();
         return queue.dequeue();
@@ -1805,7 +1867,7 @@ public:
         {
             try
             {
-                Owned<IRoxieQueryPacket> packet = dequeue();
+                Owned<IDeserializedRoxieQueryPacket> packet = dequeue();
                 RoxiePacketHeader &header = packet->queryHeader();
                 unsigned length = packet->queryHeader().packetlength;
 
@@ -1813,6 +1875,7 @@ public:
                     MTIME_SECTION(queryActiveTimer(), "bucket_wait");
                     bucket.wait((length / 1024) + 1);
                 }
+                // MORE - serialize!!
                 if (!channelWrite(header, true))
                     DBGLOG("Roxie packet write wrote too little");
                 packetsSent++;
@@ -1834,7 +1897,7 @@ public:
         return 0;
     }
 
-    virtual void sendPacket(IRoxieQueryPacket *x, const IRoxieContextLogger &logctx)
+    void sendPacket(IDeserializedRoxieQueryPacket *x, const IRoxieContextLogger &logctx)
     {
         RoxiePacketHeader &header = x->queryHeader();
 
@@ -1891,7 +1954,7 @@ class DelayedPacketQueue
         DelayedPacketEntry() = delete;
         DelayedPacketEntry(const DelayedPacketEntry&) = delete;
     public:
-        DelayedPacketEntry(IRoxieQueryPacket *_packet, unsigned _waitExpires)
+        DelayedPacketEntry(ISerializedRoxieQueryPacket *_packet, unsigned _waitExpires)
         : packet(_packet), waitExpires(_waitExpires)
         {
         }
@@ -1906,7 +1969,7 @@ class DelayedPacketQueue
         {
             return packet->queryHeader().matchPacket(ibyti);
         }
-        IRoxieQueryPacket *getClear()
+        ISerializedRoxieQueryPacket *getClear()
         {
             return packet.getClear();
         }
@@ -1915,7 +1978,7 @@ class DelayedPacketQueue
             return packet->queryHeader().toString(ret);
         }
 
-        Owned<IRoxieQueryPacket> packet;
+        Owned<ISerializedRoxieQueryPacket> packet;
         DelayedPacketEntry *next = nullptr;
         DelayedPacketEntry *prev = nullptr;
 
@@ -1951,7 +2014,7 @@ public:
         return false;
     }
 
-    void append(IRoxieQueryPacket *packet, unsigned expires)
+    void append(ISerializedRoxieQueryPacket *packet, unsigned expires)
     {
         // Goes on the end. But percolate the expiry time backwards
         assert(GetCurrentThreadId()==roxiePacketReaderThread);
@@ -1987,7 +2050,7 @@ public:
         {
             if (((int) (finger->waitExpires - now)) <= 0)   // Oddly coded to handle wrapping
             {
-                IRoxieQueryPacket *packet = finger->getClear();
+                ISerializedRoxieQueryPacket *packet = finger->getClear();
                 const RoxiePacketHeader &header = packet->queryHeader();
                 if (traceRoxiePackets)
                 {
@@ -2175,7 +2238,7 @@ public:
             maxPacketSize = 65535;
     }
 
-    virtual void sendPacket(IRoxieQueryPacket *x, const IRoxieContextLogger &logctx)
+    virtual void sendPacket(IDeserializedRoxieQueryPacket *x, const IRoxieContextLogger &logctx)
     {
         if (throttledPacketSendManager)
             throttledPacketSendManager->sendPacket(x, logctx);
@@ -2205,6 +2268,7 @@ public:
                 StringBuffer s;
                 throw MakeStringException(ROXIE_PACKET_ERROR, "Maximum packet length %d exceeded sending packet %s", maxPacketSize, header.toString(s).str());
             }
+            // MORE - serialize around here?
             if (!channelWrite(header, true))
                 logctx.CTXLOG("Roxie packet write wrote too little");
             packetsSent++;
@@ -2411,7 +2475,7 @@ public:
 
                 Owned<const ITopologyServer> topology = getTopology();
                 const std::vector<unsigned> channels = topology->queryChannels();
-                Owned<IRoxieQueryPacket> packet = createRoxiePacket(mb);
+                Owned<ISerializedRoxieQueryPacket> packet = createSerializedRoxiePacket(mb);
                 for (unsigned i = 1; i < channels.size(); i++)
                     queue.enqueue(packet->clonePacket(channels[i]));
                 header.channel = channels[0];
@@ -2426,7 +2490,7 @@ public:
 #endif
             if (header.activityId == ROXIE_FILECALLBACK || header.activityId == ROXIE_DEBUGCALLBACK )
             {
-                Owned<IRoxieQueryPacket> packet = createRoxiePacket(mb);
+                Owned<IDeserializedRoxieQueryPacket> packet = deserializeRoxiePacket(mb);
                 if (traceLevel > 10)
                 {
                     StringBuffer s;
@@ -2446,7 +2510,7 @@ public:
             }
             else
             {
-                Owned<IRoxieQueryPacket> packet = createRoxiePacket(mb);
+                Owned<ISerializedRoxieQueryPacket> packet = createSerializedRoxiePacket(mb);
                 AgentContextLogger logctx(packet);
                 unsigned retries = header.thisChannelRetries(mySubchannel);
                 if (retries)
@@ -2961,7 +3025,7 @@ public:
         receiveManager.setown(new RoxieLocalReceiveManager);
     }
         
-    virtual void sendPacket(IRoxieQueryPacket *packet, const IRoxieContextLogger &logctx) override
+    virtual void sendPacket(IDeserializedRoxieQueryPacket *packet, const IRoxieContextLogger &logctx) override
     {
         RoxiePacketHeader &header = packet->queryHeader();
         unsigned retries = header.thisChannelRetries(0);
@@ -2994,16 +3058,16 @@ public:
 
             if (header.channel)
             {
-                targetQueue->enqueue(LINK(packet));
+                targetQueue->enqueue(packet->serialize());
             }
             else
             {
                 // Turn broadcast packet (channel 0), as early as possible, into non-0 channel packets.
                 // So retries and other communication with Roxie server (which uses non-0 channel numbers) will not cause double work or confusion.
-                // In SUBCHANNELS_IN_HEADER mode this translation has been done on server before sending, except for some control messages like PING or UNLOAD
                 for (unsigned i = 0; i < numChannels; i++)
                 {
-                    targetQueue->enqueue(packet->clonePacket(i+1));
+                    Owned<IDeserializedRoxieQueryPacket> clone = packet->clonePacket(i+1);
+                    targetQueue->enqueue(clone->serialize());
                 }
             }
         }
@@ -3025,7 +3089,7 @@ public:
         }
         MemoryBuffer data;
         data.append(sizeof(abortHeader), &abortHeader);
-        Owned<IRoxieQueryPacket> packet = createRoxiePacket(data);
+        Owned<IDeserializedRoxieQueryPacket> packet = createRoxiePacket(data);
         sendPacket(packet, logctx);
         abortsSent++;
     }
@@ -3041,7 +3105,7 @@ public:
         {
             StringBuffer s; logctx.CTXLOG("Sending ABORT FILECALLBACK packet %s for file %s", abortHeader.toString(s).str(), lfn);
         }
-        Owned<IRoxieQueryPacket> packet = createRoxiePacket(data);
+        Owned<IDeserializedRoxieQueryPacket> packet = createRoxiePacket(data);
         sendPacket(packet, logctx);
         abortsSent++;
     }
@@ -3212,24 +3276,21 @@ class PingTimer : public Thread
     {
         try
         {
-            unsigned packetSize = sizeof(RoxiePacketHeader) + sizeof(char) + strlen("PING") + 1 + sizeof(PingRecord);
-            void *packetData = malloc(packetSize);
-            RoxiePacketHeader *header = (RoxiePacketHeader *) packetData;
             RemoteActivityId pingId(ROXIE_PING | priorityMask, 0);
-            header->init(pingId, 0, 0, 0);
+            RoxiePacketHeader header(pingId, 0, 0, 0);
 
-            char *finger = (char *) (header + 1);
-            *finger++ = (char) LOGGING_FLAGSPRESENT;
-            strcpy(finger, "PING");
-            finger += strlen("PING")+1;
-            if (traceLevel > 1)
-                DBGLOG("PING sent");
+            MemoryBuffer mb;
+            mb.append(sizeof(RoxiePacketHeader), &header);
+            mb.append((char) LOGGING_FLAGSPRESENT);
+            mb.append("PING");
 
             PingRecord data;
             data.senderIP.ipset(myNode.getIpAddress());
             data.tick = usTick();
-            memcpy(finger, &data, sizeof(PingRecord));
-            Owned<IRoxieQueryPacket> packet = createRoxiePacket(packetData, packetSize);
+            mb.append(sizeof(PingRecord), &data);
+            if (traceLevel > 1)
+                DBGLOG("PING sent");
+            Owned<IDeserializedRoxieQueryPacket> packet = createRoxiePacket(mb);
             ROQ->sendPacket(packet, logctx);
         }
         catch (IException *E)

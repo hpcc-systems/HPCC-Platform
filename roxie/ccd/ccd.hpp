@@ -234,20 +234,33 @@ public:
     }
 };
 
-interface IRoxieQueryPacket : extends IInterface
+interface IRoxieQueryPacketBase : extends IInterface
+{
+    virtual RoxiePacketHeader &queryHeader() const = 0;
+    virtual const byte *queryTraceInfo() const = 0;
+    virtual unsigned getTraceLength() const = 0;
+};
+
+interface ISerializedRoxieQueryPacket : extends IRoxieQueryPacketBase
+{
+    virtual IDeserializedRoxieQueryPacket *deserialize() const = 0;
+    virtual ISerializedRoxieQueryPacket *clonePacket(unsigned channel) const = 0;
+};
+
+interface IDeserializedRoxieQueryPacket : extends IRoxieQueryPacketBase
 {
     virtual RoxiePacketHeader &queryHeader() const = 0;
     virtual const void *queryContinuationData() const = 0;
     virtual unsigned getContinuationLength() const = 0;
     virtual const byte *querySmartStepInfoData() const = 0;
     virtual unsigned getSmartStepInfoLength() const = 0;
-    virtual const byte *queryTraceInfo() const = 0;
-    virtual unsigned getTraceLength() const = 0;
     virtual const void *queryContextData() const = 0;
     virtual unsigned getContextLength() const = 0;
 
-    virtual IRoxieQueryPacket *clonePacket(unsigned channel) const = 0;
-    virtual IRoxieQueryPacket *insertSkipData(size32_t skipDataLen, const void *skipData) const = 0;
+    virtual IDeserializedRoxieQueryPacket *clonePacket(unsigned channel) const = 0;
+    virtual IDeserializedRoxieQueryPacket *insertSkipData(size32_t skipDataLen, const void *skipData) const = 0;
+
+    virtual ISerializedRoxieQueryPacket *serialize() const = 0;
 };
 
 interface IQueryDll;
@@ -411,8 +424,13 @@ extern void doUNIMPLEMENTED(unsigned line, const char *file);
 #define UNIMPLEMENTED { doUNIMPLEMENTED(__LINE__, __FILE__); throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "UNIMPLEMENTED"); }
 #define throwUnexpected()          throw MakeStringException(ROXIE_INTERNAL_ERROR, "Internal Error at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__)
 
-extern IRoxieQueryPacket *createRoxiePacket(void *data, unsigned length);
-extern IRoxieQueryPacket *createRoxiePacket(MemoryBuffer &donor); // note: donor is empty after call
+extern IDeserializedRoxieQueryPacket *createRoxiePacket(void *data, unsigned length);
+extern IDeserializedRoxieQueryPacket *createRoxiePacket(MemoryBuffer &donor); // note: donor is empty after call
+// Direct deserialize from received network data
+extern IDeserializedRoxieQueryPacket *deserializeRoxiePacket(MemoryBuffer &donor); // note: donor is empty after call
+// Delayed deserialize from received network data
+extern ISerializedRoxieQueryPacket *createSerializedRoxiePacket(MemoryBuffer &donor); // note: donor is empty after call
+
 extern void dumpBuffer(const char *title, const void *buf, unsigned recSize);
 
 inline unsigned getBondedChannel(unsigned partNo)
@@ -726,15 +744,15 @@ public:
 class AgentContextLogger : public StringContextLogger
 {
     Owned<IMessagePacker> output;
-    mutable bool anyOutput; // messy
-    bool debuggerActive;
-    bool checkingHeap;
+    mutable bool anyOutput = false; // messy
+    bool debuggerActive = false;
+    bool checkingHeap = false;
     IpAddress ip;
     StringAttr wuid;
 public:
     AgentContextLogger();
-    AgentContextLogger(IRoxieQueryPacket *packet);
-    void set(IRoxieQueryPacket *packet);
+    AgentContextLogger(IRoxieQueryPacketBase *packet);
+    void set(IRoxieQueryPacketBase *packet);
     void putStatProcessed(unsigned subGraphId, unsigned actId, unsigned idx, unsigned processed, unsigned strands) const;
     void putStats(unsigned subGraphId, unsigned actId, const CRuntimeStatisticCollection &stats) const;
     void flush();

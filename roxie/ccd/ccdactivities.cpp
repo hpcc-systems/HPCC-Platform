@@ -202,7 +202,7 @@ public:
     {
         CActivityFactory::getActivityMetrics(reply);
     }
-    IRoxieAgentContext *createAgentContext(const AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
+    IRoxieAgentContext *createAgentContext(const AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const
     {
         return queryFactory.createAgentContext(logctx, packet, childQueries.length()!=0);
     }
@@ -288,7 +288,7 @@ class CRoxieAgentActivity : implements CInterfaceOf<IRoxieAgentActivity>, implem
 {
 protected:
     AgentContextLogger &logctx;
-    Linked<IRoxieQueryPacket> packet;
+    Linked<IDeserializedRoxieQueryPacket> packet;
     mutable Owned<IRoxieAgentContext> queryContext; // bit of a hack but easier than changing the ICodeContext callback interface to remove const
     const CAgentActivityFactory *basefactory;
     IArrayOf<IActivityGraph> childGraphs;
@@ -363,7 +363,7 @@ protected:
     {
     }
 
-    CRoxieAgentActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_factory)
+    CRoxieAgentActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_factory)
         : logctx(_logctx), packet(_packet), basefactory(_factory)
     {
         allowFieldTranslation = _factory->getEnableFieldTranslation();
@@ -437,7 +437,7 @@ public:
         }
     }
 
-    virtual IRoxieQueryPacket *queryPacket() const
+    virtual IDeserializedRoxieQueryPacket *queryPacket() const
     {
         return packet;
     }
@@ -843,7 +843,7 @@ protected:
     CriticalSection pcrit;
 
 public:
-    CRoxieDiskReadBaseActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
+    CRoxieDiskReadBaseActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
         IInMemoryIndexManager *_manager,
         ITranslatorSet *_translators,
         unsigned _parallelPartNo, unsigned _numParallel, bool _forceUnkeyed)
@@ -1053,7 +1053,7 @@ protected:
     IHThorDiskReadArg *helper;
 
 public:
-    CRoxieDiskReadActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
+    CRoxieDiskReadActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
         IInMemoryIndexManager *_manager, ITranslatorSet *_translators)
         : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, _translators, 0, 1, false)
     {
@@ -1103,7 +1103,7 @@ protected:
     size32_t maxRowSize;
 
 public:
-    CRoxieCsvReadActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
+    CRoxieCsvReadActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
                           IInMemoryIndexManager *_manager, ITranslatorSet *_translators, const IResolvedFile *_datafile, size32_t _maxRowSize)
         : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, _translators, 0, 1, true), datafile(_datafile), maxRowSize(_maxRowSize)
     {
@@ -1152,7 +1152,7 @@ protected:
     Owned<IDirectReader> ownedReader; // Ensure that the byte stream reader is released
 
 public:
-    CRoxieXmlReadActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
+    CRoxieXmlReadActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
         IInMemoryIndexManager *_manager, ITranslatorSet *_translators)
         : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, _translators, 0, 1, true)
     {
@@ -1194,7 +1194,7 @@ public:
     {
     }
 
-    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
+    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const
     {
         return new CRoxieDiskReadActivity(logctx, packet, helperFactory, this, manager, translators);
     }
@@ -1220,7 +1220,7 @@ public:
             maxRowSize = workunit->getDebugValueInt(OPT_MAXCSVROWSIZE, defaultMaxCsvRowSize) * 1024 * 1024;
     }
 
-    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
+    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const
     {
         return new CRoxieCsvReadActivity(logctx, packet, helperFactory, this, manager, translators, datafile, maxRowSize);
     }
@@ -1240,7 +1240,7 @@ public:
     {
     }
 
-    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
+    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const
     {
         return new CRoxieXmlReadActivity(logctx, packet, helperFactory, this, manager, translators);
     }
@@ -1560,7 +1560,7 @@ protected:
     IHThorDiskNormalizeArg *helper;
 
 public:
-    CRoxieDiskNormalizeActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
+    CRoxieDiskNormalizeActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
         IInMemoryIndexManager *_manager, ITranslatorSet *_translators)
         : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, _translators, 0, 1, false)
     {
@@ -1601,7 +1601,7 @@ public:
     {
     }
 
-    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
+    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const
     {
         return new CRoxieDiskNormalizeActivity(logctx, packet, helperFactory, this, manager, translators);
     }
@@ -1701,7 +1701,7 @@ protected:
     IHThorDiskCountArg *helper;
 
 public:
-    CRoxieDiskCountActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
+    CRoxieDiskCountActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
         IInMemoryIndexManager *_manager, ITranslatorSet *_translators)
         : CRoxieDiskReadBaseActivity(_logctx, _packet, _hFactory, _aFactory, _manager, _translators, 0, 1, false)
     {
@@ -1733,7 +1733,7 @@ public:
     {
     }
 
-    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
+    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const
     {
         return new CRoxieDiskCountActivity(logctx, packet, helperFactory, this, manager, translators);
     }
@@ -1820,7 +1820,7 @@ protected:
     IHThorDiskAggregateArg *helper;
 
 public:
-    CRoxieDiskAggregateActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
+    CRoxieDiskAggregateActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
         IInMemoryIndexManager *_manager,
         ITranslatorSet *_translators,
         unsigned _parallelPartNo, unsigned _numParallel, bool _forceUnkeyed)
@@ -1861,7 +1861,7 @@ protected:
     Owned<IOutputRowDeserializer> deserializer;
 
 public:
-    CParallelRoxieActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_factory, unsigned _numParallel)
+    CParallelRoxieActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_factory, unsigned _numParallel)
         : CRoxieAgentActivity(_logctx, _packet, _hFactory, _factory), numParallel(_numParallel)
     {
         assertex(numParallel > 1);
@@ -1953,7 +1953,7 @@ protected:
     IHThorDiskAggregateArg *helper;
     OwnedConstRoxieRow finalRow;
 public:
-    CParallelRoxieDiskAggregateActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
+    CParallelRoxieDiskAggregateActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
         IInMemoryIndexManager *_manager, ITranslatorSet *_translators, unsigned _numParallel) :
         CParallelRoxieActivity(_logctx, _packet, _hFactory, _aFactory, _numParallel)
     {
@@ -2077,7 +2077,7 @@ public:
     {
     }
 
-    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
+    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const
     {
         if (parallelAggregate > 1)
             return new CParallelRoxieDiskAggregateActivity(logctx, packet, helperFactory, this, manager, translators, parallelAggregate);
@@ -2178,7 +2178,7 @@ protected:
     }
 
 public:
-    CRoxieDiskGroupAggregateActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
+    CRoxieDiskGroupAggregateActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
         IInMemoryIndexManager *_manager,
         ITranslatorSet *_translators,
         unsigned partNo, unsigned numParts, bool _forceUnkeyed)
@@ -2222,7 +2222,7 @@ protected:
     Owned<IRowManager> rowManager;
 
 public:
-    CParallelRoxieDiskGroupAggregateActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
+    CParallelRoxieDiskGroupAggregateActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory,
         IInMemoryIndexManager *_manager, ITranslatorSet *_translators, unsigned _numParallel) :
         CParallelRoxieActivity(_logctx, _packet, _hFactory, _aFactory, _numParallel),
         helper((IHThorDiskGroupAggregateArg *) basehelper),
@@ -2327,7 +2327,7 @@ public:
     {
     }
 
-    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
+    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const
     {
         if (parallelAggregate > 1)
             return new CParallelRoxieDiskGroupAggregateActivity(logctx, packet, helperFactory, this, manager, translators, parallelAggregate);
@@ -2506,7 +2506,7 @@ protected:
         logctx.noteStatistic(StNumIndexRowsRead, accepted+rejected);
     }
 
-    CRoxieKeyedActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieKeyedActivityFactory *_aFactory)
+    CRoxieKeyedActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieKeyedActivityFactory *_aFactory)
         : CRoxieAgentActivity(_logctx, _packet, _hFactory, _aFactory), 
         translators(_aFactory->translators),
         keyArray(_aFactory->keyArray),
@@ -2574,7 +2574,7 @@ protected:
     }
 
 public:
-    CRoxieIndexActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory, unsigned _steppingOffset)
+    CRoxieIndexActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory, unsigned _steppingOffset)
         : CRoxieKeyedActivity(_logctx, _packet, _hFactory, _aFactory),
         steppingOffset(_steppingOffset),
         stepExtra(SSEFreadAhead, NULL)
@@ -2751,7 +2751,7 @@ protected:
     IHThorIndexReadArg * readHelper;
 
 public:
-    CRoxieIndexReadActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory, unsigned _steppingOffset)
+    CRoxieIndexReadActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory, unsigned _steppingOffset)
         : CRoxieIndexActivity(_logctx, _packet, _hFactory, _aFactory, _steppingOffset)
     {
         onCreate();
@@ -3034,7 +3034,7 @@ public:
         }
     }
     
-    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
+    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const
     {
         return new CRoxieIndexReadActivity(logctx, packet, helperFactory, this, steppingOffset);
     }
@@ -3059,7 +3059,7 @@ protected:
     IHThorCompoundNormalizeExtra * normalizeHelper;
 
 public:
-    CRoxieIndexNormalizeActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory)
+    CRoxieIndexNormalizeActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory)
         : CRoxieIndexActivity(_logctx, _packet, _hFactory, _aFactory, 0) //MORE - stepping?
     {
         onCreate();
@@ -3185,7 +3185,7 @@ public:
         init(helper, graphNode);
     }
 
-    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
+    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const
     {
         return new CRoxieIndexNormalizeActivity(logctx, packet, helperFactory, this);
     }
@@ -3212,7 +3212,7 @@ protected:
     unsigned __int64 keyedLimit;
 
 public:
-    CRoxieIndexCountActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory)
+    CRoxieIndexCountActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory)
         : CRoxieIndexActivity(_logctx, _packet, _hFactory, _aFactory, 0)
     {
         onCreate();
@@ -3320,7 +3320,7 @@ public:
         init(helper, graphNode);
     }
 
-    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
+    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const
     {
         return new CRoxieIndexCountActivity(logctx, packet, helperFactory, this);
     }
@@ -3344,7 +3344,7 @@ protected:
     IHThorCompoundAggregateExtra * aggregateHelper;
 
 public:
-    CRoxieIndexAggregateActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory)
+    CRoxieIndexAggregateActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory)
         : CRoxieIndexActivity(_logctx, _packet, _hFactory, _aFactory, 0)
     {
         onCreate();
@@ -3415,7 +3415,7 @@ public:
         init(helper, graphNode);
     }
 
-    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
+    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const
     {
         return new CRoxieIndexAggregateActivity(logctx, packet, helperFactory, this);
     }
@@ -3444,7 +3444,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CRoxieIndexActivity)
 
-    CRoxieIndexGroupAggregateActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory, ThorActivityKind _kind)
+    CRoxieIndexGroupAggregateActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieIndexActivityFactory *_aFactory, ThorActivityKind _kind)
         : CRoxieIndexActivity(_logctx, _packet, _hFactory, _aFactory, 0),
           aggregateHelper((IHThorIndexGroupAggregateArg *) basehelper),
           results(*aggregateHelper, *aggregateHelper), kind(_kind)
@@ -3577,7 +3577,7 @@ public:
         init(helper, graphNode);
     }
 
-    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
+    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const
     {
         return new CRoxieIndexGroupAggregateActivity(logctx, packet, helperFactory, this, kind);
     }
@@ -3622,7 +3622,7 @@ public:
         }
     }
 
-    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const;
+    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const;
 
     virtual StringBuffer &toString(StringBuffer &s) const
     {
@@ -3648,7 +3648,7 @@ protected:
     virtual size32_t doFetch(ARowBuilder & rowBuilder, offset_t pos, offset_t rawpos, void *inputData) = 0;
 
 public:
-    CRoxieFetchActivityBase(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet,  HelperFactory *_hFactory,
+    CRoxieFetchActivityBase(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet,  HelperFactory *_hFactory,
                             const CRoxieFetchActivityFactory *_aFactory,
                             ITranslatorSet *_translators,
                             IFileIOArray *_files)
@@ -3750,7 +3750,7 @@ class CRoxieFetchActivity : public CRoxieFetchActivityBase
     Owned<ISourceRowPrefetcher> rowPrefetcher;
 
 public:
-    CRoxieFetchActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory,
+    CRoxieFetchActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory,
                         const CRoxieFetchActivityFactory *_aFactory,
                         ITranslatorSet *_translators,
                         IFileIOArray *_files)
@@ -3793,7 +3793,7 @@ public:
     }
 };
 
-IRoxieAgentActivity *CRoxieFetchActivityFactory::createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
+IRoxieAgentActivity *CRoxieFetchActivityFactory::createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const
 {
     return new CRoxieFetchActivity(logctx, packet, helperFactory, this, translators, fileArray);
 }
@@ -3807,7 +3807,7 @@ class CRoxieCSVFetchActivity : public CRoxieFetchActivityBase
     CThorStreamDeserializerSource deserializeSource;
 
 public:
-    CRoxieCSVFetchActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory,
+    CRoxieCSVFetchActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory,
                            const CRoxieFetchActivityFactory *_aFactory,
                            ITranslatorSet *_translators,
                            IFileIOArray *_files,
@@ -3878,7 +3878,7 @@ class CRoxieXMLFetchActivity : public CRoxieFetchActivityBase, implements IXMLSe
 public:
     IMPLEMENT_IINTERFACE_USING(CRoxieFetchActivityBase)
 
-    CRoxieXMLFetchActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory,
+    CRoxieXMLFetchActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory,
                            const CRoxieFetchActivityFactory *_aFactory,
                            ITranslatorSet *_translators,
                            IFileIOArray *_files,
@@ -3953,7 +3953,7 @@ public:
             maxRowSize = workunit->getDebugValueInt(OPT_MAXCSVROWSIZE, defaultMaxCsvRowSize) * 1024 * 1024;
     }
 
-    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
+    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const
     {
         return new CRoxieCSVFetchActivity(logctx, packet, helperFactory, this, translators, fileArray, maxColumns, maxRowSize);
     }
@@ -3967,7 +3967,7 @@ public:
     {
     }
 
-    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
+    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const
     {
         return new CRoxieXMLFetchActivity(logctx, packet, helperFactory, this, translators, fileArray, 4096);
     }
@@ -4018,7 +4018,7 @@ public:
         }
     }
 
-    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const;
+    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const;
 
     virtual StringBuffer &toString(StringBuffer &s) const
     {
@@ -4044,7 +4044,7 @@ class CRoxieKeyedJoinIndexActivity : public CRoxieKeyedActivity
     unsigned inputDone;
 
 public:
-    CRoxieKeyedJoinIndexActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieKeyedJoinIndexActivityFactory *_aFactory)
+    CRoxieKeyedJoinIndexActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieKeyedJoinIndexActivityFactory *_aFactory)
         : CRoxieKeyedActivity(_logctx, _packet, _hFactory, _aFactory), factory(_aFactory)
     {
         helper = (IHThorKeyedJoinArg *) basehelper;
@@ -4105,7 +4105,7 @@ public:
             newHeader->activityId = indexActivityId.activityId;
             newHeader->queryHash = indexActivityId.queryHash;
 
-            Owned<IRoxieQueryPacket> indexPacket = createRoxiePacket(indexPacketData);
+            Owned<IDeserializedRoxieQueryPacket> indexPacket = createRoxiePacket(indexPacketData);
             Owned<IAgentActivityFactory> indexActivityFactory = factory->queryQueryFactory().getAgentActivityFactory(indexActivityId.activityId);
             assertex(indexActivityFactory != NULL);
             rootIndexActivity.setown(indexActivityFactory->createActivity(logctx, indexPacket));
@@ -4140,7 +4140,7 @@ public:
     }
 };
 
-IRoxieAgentActivity *CRoxieKeyedJoinIndexActivityFactory::createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
+IRoxieAgentActivity *CRoxieKeyedJoinIndexActivityFactory::createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const
 {
     return new CRoxieKeyedJoinIndexActivity(logctx, packet, helperFactory, this);
 }
@@ -4360,7 +4360,7 @@ public:
 
     }
 
-    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const;
+    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const;
 
     virtual StringBuffer &toString(StringBuffer &s) const
     {
@@ -4392,7 +4392,7 @@ class CRoxieKeyedJoinFetchActivity : public CRoxieAgentActivity
     }
 
 public:
-    CRoxieKeyedJoinFetchActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieKeyedJoinFetchActivityFactory *_aFactory,
+    CRoxieKeyedJoinFetchActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieKeyedJoinFetchActivityFactory *_aFactory,
                                  IFileIOArray *_files, ITranslatorSet *_translators)
         : CRoxieAgentActivity(_logctx, _packet, _hFactory, _aFactory),
           translators(_translators),
@@ -4518,7 +4518,7 @@ IMessagePacker *CRoxieKeyedJoinFetchActivity::process()
         return output.getClear();
 }
 
-IRoxieAgentActivity *CRoxieKeyedJoinFetchActivityFactory::createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
+IRoxieAgentActivity *CRoxieKeyedJoinFetchActivityFactory::createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const
 {
     return new CRoxieKeyedJoinFetchActivity(logctx, packet, helperFactory, this, files, translators);
 }
@@ -4539,7 +4539,7 @@ protected:
     unsigned remoteId;
 
 public:
-    CRoxieRemoteActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory, unsigned _remoteId)
+    CRoxieRemoteActivity(AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CAgentActivityFactory *_aFactory, unsigned _remoteId)
         : CRoxieAgentActivity(_logctx, _packet, _hFactory, _aFactory), 
         remoteId(_remoteId)
     {
@@ -4651,7 +4651,7 @@ public:
     {
     }
 
-    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
+    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const
     {
         return new CRoxieRemoteActivity(logctx, packet, helperFactory, this, remoteId);
     }
@@ -4719,7 +4719,7 @@ public:
         }
     }
 
-    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
+    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const
     {
         throwUnexpected();  // don't actually want to create an activity
     }
