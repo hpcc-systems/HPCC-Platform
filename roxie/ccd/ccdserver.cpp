@@ -2999,10 +2999,6 @@ public:
     {
         return result != NULL;
     }
-    virtual bool hasContinuation() const 
-    {
-        return continuation != NULL;
-    }
     virtual void setDelayed(bool _delayed)
     {
         delayed = _delayed;
@@ -5038,8 +5034,8 @@ public:
 
                             MemoryBuffer nextQuery;
                             nextQuery.append(sizeof(RoxiePacketHeader), &header);
-                            nextQuery.append(metaLen, metaData);
                             nextQuery.append(op->getTraceLength(), op->queryTraceInfo());
+                            nextQuery.append(metaLen, metaData);
                             nextQuery.append(op->getContextLength(), op->queryContextData());
                             if (resendSequence == CONTINUESEQUENCE_MAX)
                             {
