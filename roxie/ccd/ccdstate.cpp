@@ -2803,11 +2803,6 @@ private:
                     traceLevel = MAXTRACELEVEL;
                 topology->setPropInt("@traceLevel", traceLevel);
             }
-            else if (stricmp(queryName, "control:traceServerSideCache")==0)
-            {
-                traceServerSideCache = control->getPropBool("@val", true);
-                topology->setPropInt("@traceServerSideCache", traceServerSideCache);
-            }
             else if (stricmp(queryName, "control:traceSmartStepping")==0)
             {
                 traceSmartStepping = control->getPropBool("@val", true);

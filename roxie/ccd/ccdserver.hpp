@@ -137,12 +137,6 @@ interface IRoxieServerErrorHandler
     virtual const void *createLimitFailRow(bool isKeyed) = 0;
 };
 
-interface IRoxieServerSideCache
-{
-    virtual IRoxieServerQueryPacket *findCachedResult(const IRoxieContextLogger &logctx, IRoxieQueryPacket *p) const = 0;
-    virtual void noteCachedResult(IRoxieServerQueryPacket *out, IMessageResult *in) = 0;
-};
-
 interface IRoxieServerActivityFactory;
 interface IRoxiePackage;
 
@@ -178,8 +172,6 @@ interface IRoxieServerActivity : extends IActivityBase
     virtual void resetOutputsUsed() = 0;        // use for adjusting correct number of uses for a splitter
     virtual void noteOutputUsed() = 0;
     virtual bool isPassThrough() = 0;
-// Roxie server-side caching
-    virtual IRoxieServerSideCache *queryServerSideCache() const = 0;
 // Dynamic file support
     virtual const IResolvedFile *resolveLFN(const char *fileName, bool isOpt, bool isPrivilegedUser) = 0;
     virtual const IResolvedFile *queryVarFileInfo() const = 0;
@@ -221,7 +213,6 @@ interface IRoxieServerActivityFactory : extends IActivityFactory
     virtual IActivityGraph * createChildGraph(IRoxieAgentContext * ctx, IHThorArg *colocalArg, unsigned childId, IRoxieServerActivity *parentActivity, IProbeManager * _probeManager, const IRoxieContextLogger &_logctx) const = 0;
     virtual unsigned __int64 queryLocalTimeNs() const = 0;
     virtual bool isGraphInvariant() const = 0;
-    virtual IRoxieServerSideCache *queryServerSideCache() const = 0;
     virtual unsigned numInputs() const = 0;
     virtual const StatisticsMapping &queryStatsMapping() const = 0;
     virtual bool isInputOrdered(bool consumerOrdered, unsigned idx) const = 0;

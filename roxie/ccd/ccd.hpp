@@ -247,8 +247,6 @@ interface IRoxieQueryPacket : extends IInterface
     virtual unsigned getContextLength() const = 0;
 
     virtual IRoxieQueryPacket *clonePacket(unsigned channel) const = 0;
-    virtual unsigned hash() const = 0;
-    virtual bool cacheMatch(const IRoxieQueryPacket *) const = 0; // note - this checks whether it's a repeat from server's point-of-view
     virtual IRoxieQueryPacket *insertSkipData(size32_t skipDataLen, const void *skipData) const = 0;
 };
 
@@ -314,7 +312,6 @@ extern unsigned preabortIndexReadsThreshold;
 extern bool traceStartStop;
 extern bool traceRoxiePackets;
 extern bool delaySubchannelPackets;
-extern bool traceServerSideCache;
 extern bool traceTranslations;
 extern bool defaultTimeActivities;
 extern bool defaultTraceEnabled;
@@ -335,7 +332,6 @@ extern HardwareInfo hdwInfo;
 extern unsigned parallelAggregate;
 extern bool inMemoryKeysEnabled;
 extern unsigned __int64 minFreeDiskSpace;
-extern unsigned serverSideCacheSize;
 extern bool probeAllRows;
 extern bool steppingEnabled;
 extern bool simpleLocalKeyedJoins;
