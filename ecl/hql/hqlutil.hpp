@@ -251,30 +251,6 @@ extern HQL_API IHqlExpression * createTransformForField(IHqlExpression * field, 
 extern HQL_API IHqlExpression * convertScalarToRow(IHqlExpression * value, ITypeInfo * fieldType);
 extern HQL_API bool splitResultValue(SharedHqlExpr & dataset, SharedHqlExpr & attribute, IHqlExpression * value);
 
-/**
- * Check whether GPG signed file is valid.
- *
- * @param fileSize      Size of file contents
- * @param fileContents  File contents
- *
- * @return             _signed_ attribute containing signature
- *
- * Will throw exception if signature cannot be verified.
- */
-
-extern HQL_API IHqlExpression * checkSignature(unsigned fileSize, const char *fileContents);
-
-/**
- * Strip GPG signature from file
- *
- * @param fileContents  File contents
- * @param out           Buffer for returned value
- *
- * @return              Reference to out
- */
-
-extern HQL_API StringBuffer &stripSignature(StringBuffer &out, const char *fileContents);
-
 //Is 'expr' really dependent on a parameter - expr->isFullyBound() can give false negatives.
 extern HQL_API bool isDependentOnParameter(IHqlExpression * expr);
 extern HQL_API bool isTimed(IHqlExpression * expr);

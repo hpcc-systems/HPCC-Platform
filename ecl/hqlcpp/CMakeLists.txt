@@ -121,6 +121,7 @@ include_directories (
          ./../../common/thorhelper
          ./../../rtl/eclrtl
          ./../../rtl/include
+         ./../../system/codesigner
     )
 
 IF (NOT WIN32)

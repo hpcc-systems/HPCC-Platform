@@ -29,6 +29,7 @@
 #define YY_NO_UNISTD_H
 #include "hqllex.hpp"
 #include "eclrtl.hpp"
+#include "codesigner.hpp"
 
 //#define TIMING_DEBUG
 
@@ -548,7 +549,10 @@ void HqlLex::checkSignature(const attribute & dummyToken)
         return;
     try
     {
-        yyParser->gpgSignature.setown(::checkSignature(text->length(), text->getText()));
+        StringBuffer signer, errmsg;
+        if (!queryCodeSigner().verifySignature(text->getText(), signer, errmsg))
+            throw makeStringExceptionV(0, "gpg: signature not verified");
+        yyParser->gpgSignature.setown(createExprAttribute(_signed_Atom,createConstant(signer.str())));
         yyParser->inSignedModule = true;
     }
     catch (IException *e)

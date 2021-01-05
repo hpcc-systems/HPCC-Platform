@@ -124,6 +124,7 @@ include_directories (
          ./../../ecl/hql 
          ./../../testing/unittests
          ./../../system/security/zcrypt
+         ./../../system/codesigner
     )
 
 if (WIN32)
