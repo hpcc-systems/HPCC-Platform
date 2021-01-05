@@ -95,10 +95,13 @@ set (    SRCS
          junicode.cpp 
          jutil.cpp 
          ${HPCC_SOURCE_DIR}/system/globalid/lnuid.cpp
+         ${HPCC_SOURCE_DIR}/system/codesigner/codesigner.cpp
+         ${HPCC_SOURCE_DIR}/system/codesigner/gpgcodesigner.cpp
          sourcedoc.xml
     )
 
 set (    INCLUDES
+        ${HPCC_SOURCE_DIR}/system/codesigner/codesigner.hpp
         jaio.hpp
         jarray.hpp
         jatomic.hpp

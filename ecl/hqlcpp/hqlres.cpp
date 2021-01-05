@@ -24,6 +24,7 @@
 #include "jexcept.hpp"
 #include "hqlcerrors.hpp"
 #include "thorplugin.hpp"
+#include "codesigner.hpp"
 
 #define BIGSTRING_BASE 101
 #define MANIFEST_BASE 1000
@@ -174,13 +175,15 @@ void ResourceManager::addManifestFile(const char *filename, ICodegenContextCallb
     bool isSigned = false;
     const char *useContents = fileContents;
     // Check for signature
-    if (startsWith(fileContents, "-----BEGIN PGP SIGNED MESSAGE-----"))
+    if (queryCodeSigner().hasSignature(fileContents))
     {
         try
         {
-            OwnedHqlExpr sig = checkSignature(fileContents.length(), fileContents.str());
-            useContents = stripSignature(strippedFileContents, fileContents).str();
-            isSigned = true;
+            StringBuffer signer;
+            isSigned = queryCodeSigner().verifySignature(fileContents, signer);
+            if (!isSigned)
+                throw makeStringExceptionV(MSGAUD_user, CODESIGNER_ERR_VERIFY, "Code sign verify: signature not verified");
+            useContents = queryCodeSigner().stripSignature(fileContents, strippedFileContents).str();
         }
         catch (IException *E)
         {
@@ -313,13 +316,15 @@ void ResourceManager::addManifestsFromArchive(IPropertyTree *archive, ICodegenCo
         const char *xml = manifestContents;
         bool isSigned = false;
         // Check for signature
-        if (startsWith(xml, "-----BEGIN PGP SIGNED MESSAGE-----"))
+        if (queryCodeSigner().hasSignature(xml))
         {
             try
             {
-                OwnedHqlExpr sig = checkSignature(manifestContents.length(), manifestContents.str());
-                xml = stripSignature(strippedManifestContents, manifestContents).str();
-                isSigned = true;
+                StringBuffer signer;
+                isSigned = queryCodeSigner().verifySignature(manifestContents, signer);
+                if (!isSigned)
+                    throw makeStringExceptionV(0, "Code sign verify: signature not verified");
+                xml = queryCodeSigner().stripSignature(manifestContents, strippedManifestContents).str();
             }
             catch (IException *E)
             {

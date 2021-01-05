@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
+    HPCC SYSTEMS software Copyright (C) 2021 HPCC Systems®.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,23 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef _WS_CODESIGNSERVICE_HPP_
-#define _WS_CODESIGNSERVICE_HPP_
+#include "gpgcodesigner.hpp"
 
-#include "ws_codesign_esp.ipp"
-
-class Cws_codesignEx : public Cws_codesign
+extern jlib_decl ICodeSigner &queryCodeSigner()
 {
-private:
-    Owned<IPropertyTree> m_serviceCfg;
-public:
-    IMPLEMENT_IINTERFACE
-
-    Cws_codesignEx();
-    virtual ~Cws_codesignEx();
-    virtual void init(IPropertyTree *cfg, const char *process, const char *service);
-    virtual bool onSign(IEspContext &context, IEspSignRequest &req, IEspSignResponse &resp);
-    virtual bool onListUserIDs(IEspContext &context, IEspListUserIDsRequest &req, IEspListUserIDsResponse &resp);
-};
-
-#endif // _WS_CODESIGNSERVICE_HPP_
+    return queryGpgCodeSigner();
+}

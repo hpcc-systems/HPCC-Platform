@@ -121,6 +121,7 @@ include_directories (
          ./../../common/thorhelper
          ./../../rtl/eclrtl
          ./../../rtl/include
+         ${HPCC_SOURCE_DIR}/system/codesigner
     )
 
 IF (NOT WIN32)

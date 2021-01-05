@@ -124,6 +124,7 @@ include_directories (
          ./../../ecl/hql 
          ./../../testing/unittests
          ./../../system/security/zcrypt
+         ${HPCC_SOURCE_DIR}/system/codesigner
     )
 
 if (WIN32)
