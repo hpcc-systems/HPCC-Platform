@@ -129,7 +129,7 @@ class ScriptTask(Task):
         option. Also user should ensure the script permission to
         protect the script from malicious modification.
         '''
-        cmd = self.script_file + " " + host.ip
+        cmd = self.script_file + " " + host.ip.decode('utf-8')
         self.logger.info(cmd)
         if not self.validateScriptFile():
             self.logger.error("Script file check sum does not match")

@@ -348,7 +348,7 @@ configfile=${CONFIG_DIR}/${ENV_CONF_FILE}
 
 hasPython=0
 save=0
-expected_python_version=2.6
+expected_python_version=3.4
 is_python_installed $expected_python_version
 [[ $? -eq 0 ]] && hasPython=1
 concurrent=0

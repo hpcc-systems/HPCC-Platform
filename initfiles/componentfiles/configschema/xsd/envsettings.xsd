@@ -20,7 +20,7 @@
         xmlns:hpcc="someuri">
     <xs:include schemaLocation="types.xsd"/>
     <hpcc:insert hpcc:schemaPath="/Environment/EnvSettings">
-        <xs:element name="additionalPlugins" hpcc:displayName="Additional Plugins" type="xs:string" hpcc:forcedConfigValue="python2" hpcc:class="setting"/>
+        <xs:element name="additionalPlugins" hpcc:displayName="Additional Plugins" type="xs:string" hpcc:forcedConfigValue="python3" hpcc:class="setting"/>
         <xs:element name="allow_pgcache_flush" hpcc:displayName="Allow PG Cache Flush" type="xs:boolean" hpcc:forcedConfigValue="true" hpcc:class="setting"/>
         <xs:element name="blockname" hpcc:displayName="HPCC" type="xs:boolean" hpcc:forcedConfigValue="HPCCSystems" hpcc:class="setting"/>
         <xs:element name="classpath" hpcc:displayName="Class Path" type="absolutePath" hpcc:forcedConfigValue="${INSTALL_DIR}/classes" hpcc:class="setting"/>
