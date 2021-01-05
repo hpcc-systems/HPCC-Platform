@@ -127,7 +127,7 @@ private:
 
 interface IQueryFactory : extends IInterface
 {
-    virtual IRoxieAgentContext *createAgentContext(const AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet, bool hasChildren) const = 0;
+    virtual IRoxieAgentContext *createAgentContext(const AgentContextLogger &logctx, IRoxieQueryPacket *packet, bool hasChildren) const = 0;
     virtual IActivityGraph *lookupGraph(IRoxieAgentContext *ctx, const char *name, IProbeManager *probeManager, const IRoxieContextLogger &logctx, IRoxieServerActivity *parentActivity) const = 0;
     virtual IAgentActivityFactory *getAgentActivityFactory(unsigned id) const = 0;
     virtual IRoxieServerActivityFactory *getRoxieServerActivityFactory(unsigned id) const = 0;

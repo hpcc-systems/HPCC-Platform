@@ -343,7 +343,7 @@ public:
     virtual void debugPrintVariable(IXmlWriter *output, const char *name, const char *type) const;
 
     virtual void debugInterrupt(IXmlWriter *output);
-    virtual IDeserializedRoxieQueryPacket *onDebugCallback(const RoxiePacketHeader &header, size32_t len, char *data)   {throwUnexpected();};
+    virtual IRoxieQueryPacket *onDebugCallback(const RoxiePacketHeader &header, size32_t len, char *data)   {throwUnexpected();};
     virtual void waitForDebugger(DebugState state, IActivityDebugContext *probe);
     virtual bool onDebuggerTimeout();
 };

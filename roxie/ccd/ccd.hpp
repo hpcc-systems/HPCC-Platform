@@ -243,11 +243,11 @@ interface IRoxieQueryPacketBase : extends IInterface
 
 interface ISerializedRoxieQueryPacket : extends IRoxieQueryPacketBase
 {
-    virtual IDeserializedRoxieQueryPacket *deserialize() const = 0;
+    virtual IRoxieQueryPacket *deserialize() const = 0;
     virtual ISerializedRoxieQueryPacket *clonePacket(unsigned channel) const = 0;
 };
 
-interface IDeserializedRoxieQueryPacket : extends IRoxieQueryPacketBase
+interface IRoxieQueryPacket : extends IRoxieQueryPacketBase
 {
     virtual RoxiePacketHeader &queryHeader() const = 0;
     virtual const void *queryContinuationData() const = 0;
@@ -257,8 +257,8 @@ interface IDeserializedRoxieQueryPacket : extends IRoxieQueryPacketBase
     virtual const void *queryContextData() const = 0;
     virtual unsigned getContextLength() const = 0;
 
-    virtual IDeserializedRoxieQueryPacket *clonePacket(unsigned channel) const = 0;
-    virtual IDeserializedRoxieQueryPacket *insertSkipData(size32_t skipDataLen, const void *skipData) const = 0;
+    virtual IRoxieQueryPacket *clonePacket(unsigned channel) const = 0;
+    virtual IRoxieQueryPacket *insertSkipData(size32_t skipDataLen, const void *skipData) const = 0;
 
     virtual ISerializedRoxieQueryPacket *serialize() const = 0;
 };
@@ -424,10 +424,10 @@ extern void doUNIMPLEMENTED(unsigned line, const char *file);
 #define UNIMPLEMENTED { doUNIMPLEMENTED(__LINE__, __FILE__); throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "UNIMPLEMENTED"); }
 #define throwUnexpected()          throw MakeStringException(ROXIE_INTERNAL_ERROR, "Internal Error at %s(%d)", sanitizeSourceFile(__FILE__), __LINE__)
 
-extern IDeserializedRoxieQueryPacket *createRoxiePacket(void *data, unsigned length);
-extern IDeserializedRoxieQueryPacket *createRoxiePacket(MemoryBuffer &donor); // note: donor is empty after call
+extern IRoxieQueryPacket *createRoxiePacket(void *data, unsigned length);
+extern IRoxieQueryPacket *createRoxiePacket(MemoryBuffer &donor); // note: donor is empty after call
 // Direct deserialize from received network data
-extern IDeserializedRoxieQueryPacket *deserializeRoxiePacket(MemoryBuffer &donor); // note: donor is empty after call
+extern IRoxieQueryPacket *deserializeRoxiePacket(MemoryBuffer &donor); // note: donor is empty after call
 // Delayed deserialize from received network data
 extern ISerializedRoxieQueryPacket *createSerializedRoxiePacket(MemoryBuffer &donor); // note: donor is empty after call
 

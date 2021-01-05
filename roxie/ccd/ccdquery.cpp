@@ -1612,7 +1612,7 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
         return strdup(result ? result : defaultValue);
     }
 
-    virtual IRoxieAgentContext *createAgentContext(const AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet, bool hasChildren) const override
+    virtual IRoxieAgentContext *createAgentContext(const AgentContextLogger &logctx, IRoxieQueryPacket *packet, bool hasChildren) const override
     {
         throwUnexpected();   // only implemented in derived agent class
     }
@@ -2030,7 +2030,7 @@ public:
     {
     }
 
-    virtual IRoxieAgentContext *createAgentContext(const AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet, bool hasChildren) const
+    virtual IRoxieAgentContext *createAgentContext(const AgentContextLogger &logctx, IRoxieQueryPacket *packet, bool hasChildren) const
     {
         return ::createAgentContext(this, logctx, packet, hasChildren);
     }

@@ -37,7 +37,7 @@ interface ILRUChain
 
 interface IRoxieServerQueryPacket : public IInterface, public ILRUChain
 {
-    virtual IDeserializedRoxieQueryPacket *queryPacket() const = 0;
+    virtual IRoxieQueryPacket *queryPacket() const = 0;
     virtual bool hasResult() const = 0;
     virtual IMessageResult *getResult() = 0;
     virtual IMessageResult *queryResult() = 0;
@@ -52,11 +52,11 @@ interface IRoxieServerQueryPacket : public IInterface, public ILRUChain
     virtual bool isDelayed() const = 0;
     virtual unsigned getSequence() const = 0;
     virtual void setDelayed(bool _delayed) = 0;
-    virtual void setPacket(IDeserializedRoxieQueryPacket *packet) = 0;
+    virtual void setPacket(IRoxieQueryPacket *packet) = 0;
     virtual void setSequence(unsigned _seq) = 0;
 
-    virtual IDeserializedRoxieQueryPacket *getDebugResponse(unsigned sequence) = 0;
-    virtual void setDebugResponse(unsigned sequence, IDeserializedRoxieQueryPacket *) = 0;
+    virtual IRoxieQueryPacket *getDebugResponse(unsigned sequence) = 0;
+    virtual void setDebugResponse(unsigned sequence, IRoxieQueryPacket *) = 0;
 };
 
 interface IProbeManager;

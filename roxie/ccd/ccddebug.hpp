@@ -20,12 +20,12 @@
 
 #include <jlib.hpp>
 
-interface IDeserializedRoxieQueryPacket;
+interface IRoxieQueryPacket;
 interface IRoxieContextLogger;
 interface IProbeManager;
 interface IDebuggableContext;
 
-extern void doDebugRequest(IDeserializedRoxieQueryPacket *packet, const IRoxieContextLogger &logctx);
+extern void doDebugRequest(IRoxieQueryPacket *packet, const IRoxieContextLogger &logctx);
 extern IProbeManager *createProbeManager();
 extern IProbeManager *createDebugManager(IDebuggableContext *debugContext, const char *graphName);
 

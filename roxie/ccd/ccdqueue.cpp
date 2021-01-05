@@ -489,7 +489,7 @@ public:
 
 };
 
-class CRoxieQueryPacket : public CRoxieQueryPacketBase, implements IDeserializedRoxieQueryPacket
+class CRoxieQueryPacket : public CRoxieQueryPacketBase, implements IRoxieQueryPacket
 {
 protected:
     const byte *continuationData = nullptr;
@@ -571,7 +571,7 @@ public:
         return contextLength;
     }
 
-    virtual IDeserializedRoxieQueryPacket *clonePacket(unsigned channel) const
+    virtual IRoxieQueryPacket *clonePacket(unsigned channel) const
     {
         unsigned length = data->packetlength;
         RoxiePacketHeader *newdata = (RoxiePacketHeader *) malloc(length);
@@ -581,7 +581,7 @@ public:
         return createRoxiePacket(newdata, length);
     }
 
-    virtual IDeserializedRoxieQueryPacket *insertSkipData(size32_t skipDataLen, const void *skipData) const
+    virtual IRoxieQueryPacket *insertSkipData(size32_t skipDataLen, const void *skipData) const
     {
         assertex((data->continueSequence & CONTINUE_SEQUENCE_SKIPTO) == 0); // Should not already be any skipto info in the source packet
 
@@ -644,7 +644,7 @@ public:
         return new CSerializedRoxieQueryPacket(newdata, length);
     }
 
-    virtual IDeserializedRoxieQueryPacket *deserialize() const override
+    virtual IRoxieQueryPacket *deserialize() const override
     {
         // MORE - if we are encrypting, do so here. Make sure encryption is disabled for localAgent mode
         // Is there a way to avoid copying the data in localAgent mode?
@@ -656,7 +656,7 @@ public:
 
 };
 
-extern IDeserializedRoxieQueryPacket *createRoxiePacket(void *_data, unsigned _len)
+extern IRoxieQueryPacket *createRoxiePacket(void *_data, unsigned _len)
 {
     if ((unsigned short)_len != _len && !localAgent)
     {
@@ -669,13 +669,13 @@ extern IDeserializedRoxieQueryPacket *createRoxiePacket(void *_data, unsigned _l
     return new CRoxieQueryPacket(_data, _len);
 }
 
-extern IDeserializedRoxieQueryPacket *createRoxiePacket(MemoryBuffer &m)
+extern IRoxieQueryPacket *createRoxiePacket(MemoryBuffer &m)
 {
     unsigned length = m.length(); // don't make assumptions about evaluation order of parameters...
     return createRoxiePacket(m.detachOwn(), length);
 }
 
-extern IDeserializedRoxieQueryPacket *deserializeRoxiePacket(MemoryBuffer &m)
+extern IRoxieQueryPacket *deserializeRoxiePacket(MemoryBuffer &m)
 {
     // MORE - if there is any encryption of the packets, it needs to be decrypted here
     unsigned length = m.length(); // don't make assumptions about evaluation order of parameters...
@@ -861,11 +861,11 @@ void sendUnloadMessage(hash64_t hash, const char *id, const IRoxieContextLogger 
     mb.append(id);
     if (traceLevel > 1)
         DBGLOG("UNLOAD sent for query %s", id);
-    Owned<IDeserializedRoxieQueryPacket> packet = createRoxiePacket(mb);
+    Owned<IRoxieQueryPacket> packet = createRoxiePacket(mb);
     ROQ->sendPacket(packet, logctx);
 }
 
-void doUnload(IDeserializedRoxieQueryPacket *packet, const IRoxieContextLogger &logctx)
+void doUnload(IRoxieQueryPacket *packet, const IRoxieContextLogger &logctx)
 {
     const RoxiePacketHeader &header = packet->queryHeader();
     unsigned channelNo = header.channel;
@@ -892,7 +892,7 @@ struct PingRecord
     IpAddress senderIP;
 };
 
-void doPing(IDeserializedRoxieQueryPacket *packet, const IRoxieContextLogger &logctx)
+void doPing(IRoxieQueryPacket *packet, const IRoxieContextLogger &logctx)
 {
     const RoxiePacketHeader &header = packet->queryHeader();
     const IpAddress serverIP = header.serverId.getIpAddress();
@@ -1137,6 +1137,12 @@ public:
         }
         if (found)
         {
+#ifdef _DEBUG
+            RoxiePacketHeader &header = found->queryHeader();
+            AgentContextLogger l(found);
+            StringBuffer xx;
+            l.CTXLOG("discarded %s", header.toString(xx).str());
+#endif
             found->Release();
             queueLength--;
             if (scanLength > maxScanLength)
@@ -1217,7 +1223,7 @@ class CRoxieWorker : public CInterface, implements IPooledThread
     bool abortJob;
     bool busy;
     Owned<IRoxieAgentActivity> activity;
-    Owned<IDeserializedRoxieQueryPacket> packet;
+    Owned<IRoxieQueryPacket> packet;
     Owned<const ITopologyServer> topology;
     AgentContextLogger logctx;
 
@@ -1312,7 +1318,7 @@ public:
         return false;
     }
 
-    void throwRemoteException(IException *E, IRoxieAgentActivity *activity, IDeserializedRoxieQueryPacket *packet, bool isUser)
+    void throwRemoteException(IException *E, IRoxieAgentActivity *activity, IRoxieQueryPacket *packet, bool isUser)
     {
         try 
         {
@@ -1778,7 +1784,7 @@ public:
     }
 
 protected:
-    void doFileCallback(IDeserializedRoxieQueryPacket *packet)
+    void doFileCallback(IRoxieQueryPacket *packet)
     {
         // This is called on the main agent reader thread so needs to be as fast as possible to avoid lost packets
         const char *lfn;
@@ -1822,7 +1828,7 @@ class RoxieThrottledPacketSender : public Thread
     InterruptableSemaphore queued;
     Semaphore started;
     unsigned maxPacketSize;
-    SafeQueueOf<IDeserializedRoxieQueryPacket, false> queue;
+    SafeQueueOf<IRoxieQueryPacket, false> queue;
 
     class DECL_EXCEPTION StoppedException: public IException, public CInterface
     {
@@ -1833,14 +1839,14 @@ class RoxieThrottledPacketSender : public Thread
         MessageAudience errorAudience() const { return MSGAUD_user; }
     };
 
-    void enqueue(IDeserializedRoxieQueryPacket *packet)
+    void enqueue(IRoxieQueryPacket *packet)
     {
         packet->Link();
         queue.enqueue(packet);
         queued.signal();
     }
 
-    IDeserializedRoxieQueryPacket *dequeue()
+    IRoxieQueryPacket *dequeue()
     {
         queued.wait();
         return queue.dequeue();
@@ -1867,7 +1873,7 @@ public:
         {
             try
             {
-                Owned<IDeserializedRoxieQueryPacket> packet = dequeue();
+                Owned<IRoxieQueryPacket> packet = dequeue();
                 RoxiePacketHeader &header = packet->queryHeader();
                 unsigned length = packet->queryHeader().packetlength;
 
@@ -1897,7 +1903,7 @@ public:
         return 0;
     }
 
-    void sendPacket(IDeserializedRoxieQueryPacket *x, const IRoxieContextLogger &logctx)
+    void sendPacket(IRoxieQueryPacket *x, const IRoxieContextLogger &logctx)
     {
         RoxiePacketHeader &header = x->queryHeader();
 
@@ -2238,7 +2244,7 @@ public:
             maxPacketSize = 65535;
     }
 
-    virtual void sendPacket(IDeserializedRoxieQueryPacket *x, const IRoxieContextLogger &logctx)
+    virtual void sendPacket(IRoxieQueryPacket *x, const IRoxieContextLogger &logctx)
     {
         if (throttledPacketSendManager)
             throttledPacketSendManager->sendPacket(x, logctx);
@@ -2318,6 +2324,7 @@ public:
         {
             StringBuffer s; logctx.CTXLOG("Sending ABORT FILECALLBACK packet %s for file %s", abortHeader.toString(s).str(), lfn);
         }
+        // MORE - serialize here? debatable but probably should?
         if (!channelWrite(*(RoxiePacketHeader *) data.toByteArray(), true))
             logctx.CTXLOG("sendAbortCallback wrote too little");
         abortsSent++;
@@ -2490,7 +2497,7 @@ public:
 #endif
             if (header.activityId == ROXIE_FILECALLBACK || header.activityId == ROXIE_DEBUGCALLBACK )
             {
-                Owned<IDeserializedRoxieQueryPacket> packet = deserializeRoxiePacket(mb);
+                Owned<IRoxieQueryPacket> packet = deserializeRoxiePacket(mb);
                 if (traceLevel > 10)
                 {
                     StringBuffer s;
@@ -3025,7 +3032,7 @@ public:
         receiveManager.setown(new RoxieLocalReceiveManager);
     }
         
-    virtual void sendPacket(IDeserializedRoxieQueryPacket *packet, const IRoxieContextLogger &logctx) override
+    virtual void sendPacket(IRoxieQueryPacket *packet, const IRoxieContextLogger &logctx) override
     {
         RoxiePacketHeader &header = packet->queryHeader();
         unsigned retries = header.thisChannelRetries(0);
@@ -3066,7 +3073,7 @@ public:
                 // So retries and other communication with Roxie server (which uses non-0 channel numbers) will not cause double work or confusion.
                 for (unsigned i = 0; i < numChannels; i++)
                 {
-                    Owned<IDeserializedRoxieQueryPacket> clone = packet->clonePacket(i+1);
+                    Owned<IRoxieQueryPacket> clone = packet->clonePacket(i+1);
                     targetQueue->enqueue(clone->serialize());
                 }
             }
@@ -3089,7 +3096,7 @@ public:
         }
         MemoryBuffer data;
         data.append(sizeof(abortHeader), &abortHeader);
-        Owned<IDeserializedRoxieQueryPacket> packet = createRoxiePacket(data);
+        Owned<IRoxieQueryPacket> packet = createRoxiePacket(data);
         sendPacket(packet, logctx);
         abortsSent++;
     }
@@ -3105,7 +3112,7 @@ public:
         {
             StringBuffer s; logctx.CTXLOG("Sending ABORT FILECALLBACK packet %s for file %s", abortHeader.toString(s).str(), lfn);
         }
-        Owned<IDeserializedRoxieQueryPacket> packet = createRoxiePacket(data);
+        Owned<IRoxieQueryPacket> packet = createRoxiePacket(data);
         sendPacket(packet, logctx);
         abortsSent++;
     }
@@ -3290,7 +3297,7 @@ class PingTimer : public Thread
             mb.append(sizeof(PingRecord), &data);
             if (traceLevel > 1)
                 DBGLOG("PING sent");
-            Owned<IDeserializedRoxieQueryPacket> packet = createRoxiePacket(mb);
+            Owned<IRoxieQueryPacket> packet = createRoxiePacket(mb);
             ROQ->sendPacket(packet, logctx);
         }
         catch (IException *E)

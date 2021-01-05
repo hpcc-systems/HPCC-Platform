@@ -54,7 +54,7 @@ interface IRoxieAgentActivity : extends IInterface
     virtual IMessagePacker *process() = 0;
     virtual bool check() = 0;
     virtual void abort() = 0;
-    virtual IDeserializedRoxieQueryPacket *queryPacket() const = 0;
+    virtual IRoxieQueryPacket *queryPacket() const = 0;
     virtual StringBuffer &toString(StringBuffer &) const = 0;
     virtual unsigned queryId() = 0;
     virtual IIndexReadActivityInfo *queryIndexReadActivity() = 0;
@@ -62,7 +62,7 @@ interface IRoxieAgentActivity : extends IInterface
 
 interface IAgentActivityFactory : extends IActivityFactory
 {
-    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IDeserializedRoxieQueryPacket *packet) const = 0;
+    virtual IRoxieAgentActivity *createActivity(AgentContextLogger &logctx, IRoxieQueryPacket *packet) const = 0;
     virtual StringBuffer &toString(StringBuffer &ret) const = 0;
     virtual const char *queryQueryName() const = 0;
     virtual void addChildQuery(unsigned id, ActivityArray *childQuery) = 0;

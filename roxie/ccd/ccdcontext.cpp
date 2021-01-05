@@ -83,7 +83,7 @@ public:
         parentActivity = 0;
     }
 
-    void init(const IDeserializedRoxieQueryPacket *_packet)
+    void init(const IRoxieQueryPacket *_packet)
     {
         unsigned traceLength = _packet->getTraceLength();
         assertex(traceLength);
@@ -165,7 +165,7 @@ public:
         ROQ->removePendingCallback(callback);
     }
 
-    virtual IDeserializedRoxieQueryPacket *onDebugCallback(const RoxiePacketHeader &header, size32_t len, char *data)
+    virtual IRoxieQueryPacket *onDebugCallback(const RoxiePacketHeader &header, size32_t len, char *data)
     {
         // MORE - Implies a server -> agent child -> agent grandchild type situation - need to pass call on to Roxie server (rather as I do for file callback)
         UNIMPLEMENTED;
@@ -2292,7 +2292,7 @@ protected:
     RoxiePacketHeader *header;
 
 public:
-    CAgentContext(const IQueryFactory *_factory, const AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *_packet, bool _hasChildren)
+    CAgentContext(const IQueryFactory *_factory, const AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, bool _hasChildren)
     : CRoxieContextBase(_factory, _logctx)
     {
         if (_packet)
@@ -2351,7 +2351,7 @@ public:
             mb.append(lfn);
             dFile->serializePartial(mb, header.channel, isLocal);
             ((RoxiePacketHeader *) mb.toByteArray())->activityId = ROXIE_FILECALLBACK;
-            Owned<IDeserializedRoxieQueryPacket> reply = createRoxiePacket(mb);
+            Owned<IRoxieQueryPacket> reply = createRoxiePacket(mb);
             reply->queryHeader().retries = 0;
             ROQ->sendPacket(reply, *this); // MORE - the caller's log context might be better? Should we unicast? Note that this does not release the packet
             return;
@@ -2373,7 +2373,7 @@ public:
     }
 };
 
-IRoxieAgentContext *createAgentContext(const IQueryFactory *_factory, const AgentContextLogger &_logctx, IDeserializedRoxieQueryPacket *packet, bool hasChildren)
+IRoxieAgentContext *createAgentContext(const IQueryFactory *_factory, const AgentContextLogger &_logctx, IRoxieQueryPacket *packet, bool hasChildren)
 {
     return new CAgentContext(_factory, _logctx, packet, hasChildren);
 }
@@ -2439,7 +2439,7 @@ public:
         }
     }
 
-    virtual IDeserializedRoxieQueryPacket *onDebugCallback(const RoxiePacketHeader &header, size32_t len, char *data)
+    virtual IRoxieQueryPacket *onDebugCallback(const RoxiePacketHeader &header, size32_t len, char *data)
     {
         MemoryBuffer agentInfo;
         agentInfo.setBuffer(len, data, false);
@@ -2489,7 +2489,7 @@ public:
         mb.append(debugIdString.str());
         serialize(mb);
 
-        Owned<IDeserializedRoxieQueryPacket> reply = createRoxiePacket(mb);
+        Owned<IRoxieQueryPacket> reply = createRoxiePacket(mb);
         reply->queryHeader().activityId = ROXIE_DEBUGCALLBACK;
         reply->queryHeader().retries = 0;
         return reply.getClear();
@@ -3503,7 +3503,7 @@ public:
             mb.append(lfn);
             dFile->serializePartial(mb, header.channel, isLocal);
             ((RoxiePacketHeader *) mb.toByteArray())->activityId = ROXIE_FILECALLBACK;
-            Owned<IDeserializedRoxieQueryPacket> reply = createRoxiePacket(mb);
+            Owned<IRoxieQueryPacket> reply = createRoxiePacket(mb);
             reply->queryHeader().retries = 0;
             ROQ->sendPacket(reply, *this); // MORE - the caller's log context might be better? Should we unicast? Note that this does not release the packet
             return;
