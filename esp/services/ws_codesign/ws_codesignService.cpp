@@ -41,7 +41,7 @@ bool Cws_codesignEx::onSign(IEspContext &context, IEspSignRequest &req, IEspSign
 {
     resp.setRetCode(-1);
 
-    StringBuffer userid(req.getUserID()), signedText;
+    StringBuffer userid(req.getUserID()), signedText, tmpbuf;
     userid.trim();
     const char* text = req.getText();
     if (userid.length() == 0 || !text || !*text)
@@ -51,6 +51,8 @@ bool Cws_codesignEx::onSign(IEspContext &context, IEspSignRequest &req, IEspSign
     }
     try
     {
+        if (queryCodeSigner().hasSignature(text))
+            text = queryCodeSigner().stripSignature(text, tmpbuf).str();  // remove  existing signature
         queryCodeSigner().sign(text, userid.str(), req.getKeyPass(), signedText);
     }
     catch (IException *e)
