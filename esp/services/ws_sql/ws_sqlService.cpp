@@ -64,8 +64,10 @@ bool CwssqlEx::onGetDBMetaData(IEspContext &context, IEspGetDBMetaDataRequest &r
     {
         const char * querysetfilter = req.getQuerySet();
 #ifdef _CONTAINERIZED
+        ESPLOG(LogNormal, "WsSQL: getting containerTargetClusters...");
         Owned<IStringIterator> targets = getContainerTargetClusters(nullptr, nullptr);
 #else
+        ESPLOG(LogNormal, "WsSQL-legacy: getting targetClusters...");
         Owned<IStringIterator> targets = getTargetClusters(nullptr, nullptr);
 #endif
         IArrayOf<IEspHPCCQuerySet> pquerysets;
@@ -202,19 +204,29 @@ bool CwssqlEx::onGetDBMetaData(IEspContext &context, IEspGetDBMetaDataRequest &r
     {
         try
         {
-
+            StringArray dfuclusters;
+#ifdef _CONTAINERIZED
+            ESPLOG(LogNormal, "WsSQL: getting containerTargetClusters...");
+            Owned<IStringIterator> targets = getContainerTargetClusters(nullptr, nullptr);
+            SCMStringBuffer target;
+            ForEach(*targets)
+            {
+                const char *setname = targets->str(target).str();
+                ESPLOG(LogNormal, "WsSQL: found containerTargetClusters: %s", setname);
+                dfuclusters.append(setname);
+            }
+#else
+            ESPLOG(LogNormal, "WsSQL-legacy: getting getTargetClusterList...");
             CTpWrapper topologyWrapper;
             IArrayOf<IEspTpLogicalCluster> clusters;
             topologyWrapper.getTargetClusterList(clusters, req.getClusterType(), NULL);
-
-            StringArray dfuclusters;
 
             ForEachItemIn(k, clusters)
             {
                 IEspTpLogicalCluster& cluster = clusters.item(k);
                 dfuclusters.append(cluster.getName());
             }
-
+#endif
             resp.setClusterNames(dfuclusters);
         }
         catch(IException* e)
