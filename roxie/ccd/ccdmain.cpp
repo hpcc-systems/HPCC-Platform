@@ -83,7 +83,6 @@ bool pretendAllOpt = false;
 bool traceStartStop = false;
 bool traceRoxiePackets = false;
 bool delaySubchannelPackets = false;    // For debugging/testing purposes only
-bool traceServerSideCache = false;
 bool defaultTimeActivities = true;
 bool defaultTraceEnabled = false;
 bool traceTranslations = true;
@@ -201,7 +200,6 @@ SocketEndpoint debugEndpoint;
 HardwareInfo hdwInfo;
 unsigned parallelAggregate;
 bool inMemoryKeysEnabled = true;
-unsigned serverSideCacheSize = 0;
 
 bool nodeCachePreload = false;
 unsigned nodeCacheMB = 100;
@@ -1039,7 +1037,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 
         traceStartStop = topology->getPropBool("@traceStartStop", false);
         watchActivityId = topology->getPropInt("@watchActivityId", 0);
-        traceServerSideCache = topology->getPropBool("@traceServerSideCache", false);
         traceRoxiePackets = topology->getPropBool("@traceRoxiePackets", false);
         delaySubchannelPackets = topology->getPropBool("@delaySubchannelPackets", false);
         IBYTIbufferSize = topology->getPropInt("@IBYTIbufferSize", roxieMulticastEnabled ? 0 : 10);
@@ -1096,7 +1093,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             parallelAggregate = 1;
         simpleLocalKeyedJoins = topology->getPropBool("@simpleLocalKeyedJoins", true);
         inMemoryKeysEnabled = topology->getPropBool("@inMemoryKeysEnabled", true);
-        serverSideCacheSize = topology->getPropInt("@serverSideCacheSize", 0);
 
         setKeyIndexCacheSize((unsigned)-1); // unbound
         nodeCachePreload = topology->getPropBool("@nodeCachePreload", false);

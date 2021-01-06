@@ -599,51 +599,6 @@ public:
         return createRoxiePacket(newdata, newDataSize);
     }
 
-    virtual unsigned hash() const
-    {
-        // This is used for Roxie server-side caching. The hash includes some of the header and all of the payload.
-        unsigned hash = 0;
-        if (continuationLength)
-            hash = hashc((const unsigned char *) continuationData, continuationLength, hash);
-        if (smartStepInfoLength)
-            hash = hashc((const unsigned char *) smartStepInfoData, smartStepInfoLength, hash);
-        // NOTE - don't hash the trace info!
-        hash = hashc((const unsigned char *) contextData, contextLength, hash);
-        hash = hashc((const unsigned char *) &data->channel, sizeof(data->channel), hash);
-        hash = hashc((const unsigned char *) &data->overflowSequence, sizeof(data->overflowSequence), hash); 
-        hash = hashc((const unsigned char *) &data->continueSequence, sizeof(data->continueSequence), hash); 
-        // MORE - sequence fields should always be zero for anything we are caching I think... (?)
-        // Note - no point hashing activityId (as cache is local to one activity) or serverIP (likewise)
-        return hash;
-    }
-
-    virtual bool cacheMatch(const IRoxieQueryPacket *c) const 
-    {
-        // note - this checks whether it's a repeat from Roxie server's point-of-view
-        // So fields that are compared are the same as the ones that are hashed....
-        RoxiePacketHeader &h = c->queryHeader();
-        if (data->channel == h.channel && data->overflowSequence == h.overflowSequence && data->continueSequence == h.continueSequence)
-        {
-            if (continuationLength) // note - we already checked that sequences match
-            {
-                if (continuationLength != c->getContinuationLength())
-                    return false;
-                if (memcmp(continuationData,c->queryContinuationData(),continuationLength)!=0)
-                    return false;
-            }
-            if (smartStepInfoLength)
-            {
-                if (smartStepInfoLength != c->getSmartStepInfoLength())
-                    return false;
-                if (memcmp(smartStepInfoData,c->querySmartStepInfoData(),smartStepInfoLength)!=0)
-                    return false;
-            }
-            // NOTE - trace info NOT compared
-            if (contextLength == c->getContextLength() && memcmp(contextData, c->queryContextData(), contextLength)==0)
-                return true;
-        }
-        return false;
-    }
 };
 
 extern IRoxieQueryPacket *createRoxiePacket(void *_data, unsigned _len)
