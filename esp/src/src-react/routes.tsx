@@ -23,8 +23,7 @@ const routes: Routes = [
         name: "activities",
         path: "/activities",
         children: [
-            { path: "", action: (context) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="ActivityWidget" />) },
-            { path: "/legacy", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="ActivityWidget" />) }
+            { path: "", action: (context) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="ActivityWidget" />) }
         ]
     },
     {
