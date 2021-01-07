@@ -25,7 +25,8 @@ const TpLogFileStore = declare([Memory, Evented], {
         function nextItem(itemParts) {
             let part = "";
             while (itemParts.length && part.trim() === "") {
-                part = itemParts[0]; itemParts.shift();
+                part = itemParts[0];
+                itemParts.shift();
             }
             return part;
         }
@@ -34,6 +35,7 @@ const TpLogFileStore = declare([Memory, Evented], {
             deferredResults.resolve([]);
             deferredResults.total.resolve(0);
         } else {
+            this.emit("preFetch");
             TpLogFile({
                 request: lang.mixin({}, query, {
                     PageNumber: options.start / options.count,
@@ -42,7 +44,7 @@ const TpLogFileStore = declare([Memory, Evented], {
             }).then(lang.hitch(this, function (response) {
                 const data = [];
                 if (lang.exists("TpLogFileResponse.LogData", response)) {
-                    const columns = response.TpLogFileResponse.LogFieldNames.Item;
+                    const columns = response.TpLogFileResponse.LogFieldNames.Item.map(col => Utility.removeSpecialCharacters(col));
                     this.lastPage = response.TpLogFileResponse.LogData;
                     this.emit("pageLoaded", this.lastPage);
                     arrayUtil.forEach(response.TpLogFileResponse.LogData.split("\n"), function (item, idx) {
@@ -54,7 +56,7 @@ const TpLogFileStore = declare([Memory, Evented], {
                             };
 
                             for (let i = 0; i < columns.length; ++i) {
-                                const cleanName = Utility.removeSpecialCharacters(columns[i]);
+                                const cleanName = columns[i];
                                 let value = "";
 
                                 if ((i + 1) === columns.length) {
@@ -76,6 +78,11 @@ const TpLogFileStore = declare([Memory, Evented], {
                     deferredResults.total.resolve(data.length);
                 }
                 return deferredResults.resolve(this.data);
+            })).then(lang.hitch(this, function (response) {
+                this.emit("postFetch");
+                return response;
+            })).catch(lang.hitch(this, function (e) {
+                this.emit("postFetch");
             }));
         }
 

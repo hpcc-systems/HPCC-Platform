@@ -5,9 +5,9 @@
             <input id="${id}logTargetSelect" title="${i18n.Log}:" name="Log" style="width: 300px" data-dojo-props="trim: true" data-dojo-type="TargetSelectWidget" />
             <span data-dojo-type="dijit.ToolbarSeparator"></span>
             <b>${i18n.Download}:</b>
-            <div data-dojo-attach-event="onClick:_onDownloadText" data-dojo-type="dijit.form.Button">${i18n.Text}</div>
-            <div data-dojo-attach-event="onClick:_onDownloadZip" data-dojo-type="dijit.form.Button">${i18n.Zip}</div>
-            <div data-dojo-attach-event="onClick:_onDownloadGZip" data-dojo-type="dijit.form.Button">${i18n.GZip}</div>
+            <div id="${id}DownloadText" data-dojo-attach-event="onClick:_onDownloadText" data-dojo-type="dijit.form.Button">${i18n.Text}</div>
+            <div id="${id}DownloadZip" data-dojo-attach-event="onClick:_onDownloadZip" data-dojo-type="dijit.form.Button">${i18n.Zip}</div>
+            <div id="${id}DownloadGZip" data-dojo-attach-event="onClick:_onDownloadGZip" data-dojo-type="dijit.form.Button">${i18n.GZip}</div>
             <span data-dojo-type="dijit.ToolbarSeparator"></span>
             <div id="${id}Filter" data-dojo-type="FilterDropDownWidget">
                 <input id="${id}FirstNRows" title="${i18n.FirstNRows}:" name="FirstRows" colspan="1" data-dojo-props="dtrim: true, placeHolder:'300'" data-dojo-type="dijit.form.TextBox" />
