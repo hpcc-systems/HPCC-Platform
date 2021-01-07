@@ -10,7 +10,7 @@
 {{- $eclAgentUseChildProcesses := hasKey . "eclAgentUseChildProcesses" | ternary .eclAgentUseChildProcesses true }}
 {{- $eclAgentReplicas := .eclAgentReplicas | default 1 }}
 {{- $thorAgentReplicas := .thorAgentReplicas | default 1 }}
-{{- $eclAgentScope := dict "name" $eclAgentName "useChildProcesses" $eclAgentUseChildProcesses "replicas" $eclAgentReplicas | merge (pick . "keepJobs") }}
+{{- $eclAgentScope := dict "name" $eclAgentName "type" $eclAgentType "useChildProcesses" $eclAgentUseChildProcesses "replicas" $eclAgentReplicas | merge (pick . "keepJobs") }}
 {{- $thorAgentScope := dict "name" $thorAgentName "replicas" $thorAgentReplicas  | merge (pick . "keepJobs") }}
 {{- $hthorScope := dict "name" $hthorName | merge (pick . "multiJobLinger") }}
 {{- $thorScope := omit . "eclagent" "thoragent" "hthor" "logging" "eclAgentResources" "eclAgentUseChildProcesses" "eclAgentReplicas" "thorAgentReplicas" "eclAgentType" }}
