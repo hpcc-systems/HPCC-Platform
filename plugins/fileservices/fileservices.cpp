@@ -142,6 +142,9 @@ static const char * EclDefinition =
 "  varstring GetEspURL(const varstring username = '', const varstring userPW = '') : c,once,entrypoint='fsGetEspURL'; \n"
 "  varstring GetDefaultDropZone() : c,once,entrypoint='fsGetDefaultDropZone'; \n"
 "  dataset(FsDropZoneRecord) GetDropZones() : c,context,entrypoint='fsGetDropZones'; \n"
+"  integer4 GetExpireDays(const varstring lfn) : c,context,entrypoint='fsGetExpireDays'; \n"
+"  SetExpireDays(const varstring lfn, integer4 expireDays) : c,context,entrypoint='fsSetExpireDays'; \n"
+"  ClearExpireDays(const varstring lfn) : c,context,entrypoint='fsClearExpireDays'; \n"
 "END;";
 
 #define WAIT_SECONDS 30
@@ -3007,4 +3010,45 @@ FILESERVICES_API void FILESERVICES_CALL fsGetDropZones(ICodeContext *ctx, size32
 
     __lenResult = mb.length();
     __result = mb.detach();
+}
+
+
+
+FILESERVICES_API int FILESERVICES_CALL fsGetExpireDays(ICodeContext * ctx, const char *_lfn)
+{
+    StringBuffer lfn;
+    constructLogicalName(ctx, _lfn, lfn);
+    Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, false,false, false, nullptr, defaultPrivilegedUser);
+    if (df)
+        return df->getExpire();
+    else
+        throw makeStringExceptionV(0, "GetExpireDays: Could not find logical file %s", lfn.str());
+}
+
+FILESERVICES_API void FILESERVICES_CALL fsSetExpireDays(ICodeContext * ctx, const char *_lfn, int expireDays)
+{
+    if (expireDays < 0)
+        throw makeStringExceptionV(0, "SetExpireDays: expireDays parameter value should be >= 0 (%d)", expireDays);
+
+    StringBuffer lfn;
+    constructLogicalName(ctx, _lfn, lfn);
+    Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, false,false, false, nullptr, defaultPrivilegedUser);
+    if (df)
+        df->setExpire(expireDays);
+    else
+        throw makeStringExceptionV(0, "SetExpireDays: Could not find logical file %s", lfn.str());
+}
+
+FILESERVICES_API void FILESERVICES_CALL fsClearExpireDays(ICodeContext * ctx, const char *_lfn)
+{
+    StringBuffer lfn;
+    constructLogicalName(ctx, _lfn, lfn);
+    Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc, false,false, false, nullptr, defaultPrivilegedUser);
+    if (df)
+        df->setExpire(-1);
+    else
+        throw makeStringExceptionV(0, "ClearExpireDays: Could not find logical file %s", lfn.str());
 }

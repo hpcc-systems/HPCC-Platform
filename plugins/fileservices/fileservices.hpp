@@ -170,6 +170,9 @@ FILESERVICES_API void FILESERVICES_CALL fsDfuPlusExec(ICodeContext * ctx,const c
 FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, const char *userPW);
 FILESERVICES_API char * FILESERVICES_CALL fsGetDefaultDropZone();
 FILESERVICES_API void FILESERVICES_CALL fsGetDropZones(ICodeContext *ctx,size32_t & __lenResult,void * & __result);
+FILESERVICES_API int FILESERVICES_CALL fsGetExpireDays(ICodeContext * ctx, const char *lfn);
+FILESERVICES_API void FILESERVICES_CALL fsSetExpireDays(ICodeContext * ctx, const char *lfn, int expireDays);
+FILESERVICES_API void FILESERVICES_CALL fsClearExpireDays(ICodeContext * ctx, const char *lfn);
 
 }
 

@@ -38,3 +38,12 @@
 <Dataset name='RemotePull'>
  <Row><RemotePull>Pass</RemotePull></Row>
 </Dataset>
+<Dataset name='SetExpireDays'>
+ <Row><SetExpireDays>Pass</SetExpireDays></Row>
+</Dataset>
+<Dataset name='ClearExpireDays'>
+ <Row><ClearExpireDays>Pass</ClearExpireDays></Row>
+</Dataset>
+<Dataset name='ExpireDaysDefault'>
+ <Row><ExpireDaysDefault>Pass</ExpireDaysDefault></Row>
+</Dataset>
