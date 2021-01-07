@@ -3,7 +3,6 @@ ldap:
   serverType: AzureActiveDirectory
   description: LDAP server process
   ldapProtocol: ldap
-  authMethod: kerberos
   localDomain: localdomain
   ldapPort: 389
   ldapSecurePort: 636

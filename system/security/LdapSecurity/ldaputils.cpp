@@ -129,8 +129,7 @@ int LdapUtils::LdapBind(LDAP* ld, int ldapTimeout, const char* domain, const cha
 {
     bool binddone = false;
     int rc = LDAP_SUCCESS;
-    // By default, use kerberos authentication
-    if((method == NULL) || (strlen(method) == 0) || (stricmp(method, "kerberos") == 0))
+    if(isEmptyString(method))
     {
 #ifdef _WIN32
         if(server_type == ACTIVE_DIRECTORY)

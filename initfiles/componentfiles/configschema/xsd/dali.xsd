@@ -95,15 +95,15 @@
                             </xs:restriction>
                         </xs:simpleType>
                     </xs:attribute>
-                    <xs:attribute name="authMethod" type="xs:string" hpcc:presetValue="kerberos"
+                    <xs:attribute name="authMethod" type="xs:string" hpcc:presetValue=""
                                   hpcc:displayName="LDAP Auth Method"
                                   hpcc:visibleIf="/Environment/Software/LDAPServerProcess"
                                   hpcc:requiredIf=".[@ldapProtocol=('ldap','ldaps')]"
-                                  hpcc:tooltip="The protocol to use for LDAP authentication">
+                                  hpcc:tooltip="The method to use for authentication and authorization">
                         <xs:simpleType>
                             <xs:restriction base="xs:string">
-                                <xs:enumeration value="kerberos" hpcc:description=""/>
-                                <xs:enumeration value="simple" hpcc:description=""/>
+                                <xs:enumeration value="" hpcc:description=""/>
+                                <xs:enumeration value="LDAP" hpcc:description=""/>
                                 <xs:enumeration value="secmgrPlugin" hpcc:description=""/>
                             </xs:restriction>
                         </xs:simpleType>
