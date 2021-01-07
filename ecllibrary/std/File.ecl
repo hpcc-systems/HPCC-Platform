@@ -1040,4 +1040,38 @@ EXPORT varstring GetDefaultDropZone() :=
 EXPORT dataset(FsDropZoneRecord) GetDropZones() :=
     lib_fileservices.FileServices.GetDropZones();
 
+/**
+ * Return the expire days property of the specified logical filename.
+ *
+ * @param lfn           The name of the logical file.
+ * @return              Value of @expiredays properties of the file or -1 if that property not exists (never expire)
+ *                      0 return value means using system expire value.
+ *
+ */
+
+EXPORT integer4 GetExpireDays(varstring lfn) := 
+	lib_fileservices.Fileservices.GetExpireDays(lfn);
+	
+
+/**
+ * Set the expire days property of the specified logical filename.
+ *
+ * @param lfn           The name of the logical file.
+ * @param expireDays    Number of days before file expired. 0 means using system expire value.
+ *                      
+ */
+
+EXPORT SetExpireDays(varstring lfn, integer4 expireDays) := 
+	lib_fileservices.Fileservices.SetExpireDays(lfn, expireDays);
+
+/**
+ * Clear the expire days property of the specified logical filename.
+ *
+ * @param lfn           The name of the logical file.
+ *
+ */
+
+EXPORT ClearExpireDays(varstring lfn) := 
+	lib_fileservices.Fileservices.ClearExpireDays(lfn);
+
 END;

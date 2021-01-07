@@ -144,16 +144,36 @@ expireDaysIn8 := FileServices.GetLogicalFileAttribute(DestFile, 'expireDays');
 res8:=if(expireDaysIn8 = '', 'Pass', 'Fail ('+intformat(expireDaysOut8,2,0)+','+expireDaysIn8+')');
 
 
+// File copy test
 
 CopyDestFile := prefix + 'copy_expire.txt';
 expireDaysOut9 := 19;
 expireDaysIn9 := FileServices.GetLogicalFileAttribute(CopyDestFile, 'expireDays');
 res9:=if(expireDaysIn9 = intformat(expireDaysOut9,2,0), 'Pass', 'Fail ('+intformat(expireDaysOut9,2,0)+','+expireDaysIn9+')');
 
+// remotePull test
+
+
 RemotePullDestFile := prefix + 'remote_pull_expire.txt';
 expireDaysOut10 := 23;
 expireDaysIn10 := FileServices.GetLogicalFileAttribute(RemotePullDestFile, 'expireDays');
 res10:=if(expireDaysIn10 = intformat(expireDaysOut10,2,0), 'Pass', 'Fail ('+intformat(expireDaysOut10,2,0)+','+expireDaysIn10+')');
+
+
+// SetExpireDays()/GetExpireDays() tests
+
+expireDaysOut11 := 43;
+expireDaysIn11 := FileServices.GetExpireDays(RemotePullDestFile);
+res11:=if(expireDaysIn11 = expireDaysOut11, 'Pass', 'Fail ('+expireDaysOut11 + ','+expireDaysIn11+')');
+
+expireDaysOut12 := -1; // but omit expireDay parameter
+expireDaysIn12 := FileServices.GetLogicalFileAttribute(RemotePullDestFile, 'expireDays');
+res12:=if(expireDaysIn12 = '', 'Pass', 'Fail ('+intformat(expireDaysOut12,2,0)+','+expireDaysIn12+')');
+
+// The previous test removed @expiredays from RemotePullDestFile, so this should return with never expire (-1) as default
+expireDaysOut13 := -1; // but omit expireDay parameter
+expireDaysIn13 := FileServices.GetExpireDays(RemotePullDestFile);
+res13:=if(expireDaysIn13 = expireDaysOut13, 'Pass', 'Fail ('+expireDaysOut13 + ','+expireDaysIn13+')');
 
 
 sequential (
@@ -272,6 +292,22 @@ sequential (
                              );
      output(res10, NAMED('RemotePull')),
 
+	FileServices.SetExpireDays(
+                             lfn := RemotePullDestFile,
+                             expireDays := expireDaysOut11
+                             );
+
+	output(res11, NAMED('SetExpireDays')),
+	
+	FileServices.ClearExpireDays(
+                             lfn := RemotePullDestFile
+                             );
+
+	output(res12, NAMED('ClearExpireDays')),
+
+	output(res13, NAMED('ExpireDaysDefault')),
+	
+	
     // Clean-up
     FileServices.DeleteExternalFile('.', desprayOutFileName+'_CSV'),
     FileServices.DeleteExternalFile('.', desprayOutFileName+'_XML'),

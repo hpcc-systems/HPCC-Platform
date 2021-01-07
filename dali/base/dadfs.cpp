@@ -3215,6 +3215,20 @@ public:
     virtual bool getAccessedTime(CDateTime &dt) = 0;                            // get date and time last accessed (returns false if not set)
     virtual void setAccessedTime(const CDateTime &dt) = 0;                      // set date and time last accessed
     virtual bool isExternal() const { return external; }
+
+    virtual int getExpire()
+    {
+        return queryAttributes().getPropInt("@expireDays", -1);
+    }
+
+    virtual void setExpire(int expireDays)
+    {
+        DistributedFilePropertyLock lock(this);
+        if (expireDays == -1)
+            queryAttributes().removeProp("@expireDays"); // Never expire
+        else
+            queryAttributes().setPropInt("@expireDays", expireDays);
+    }
 };
 
 class CDistributedFile: public CDistributedFileBase<IDistributedFile>
