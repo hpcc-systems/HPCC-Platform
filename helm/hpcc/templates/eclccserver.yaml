@@ -1,72 +1,22 @@
-{{ range $.Values.eclccserver -}}
-{{- if not .disabled -}}
-apiVersion: apps/v1
-kind: Deployment
+{{/*
+EclccServer configmap
+Pass in dict with root and me
+*/}}
+{{- define "hpcc.eclccServerConfigMap" -}}
+apiVersion: v1
 metadata:
-  name: {{ .name | quote }}
-spec:
-  replicas: {{ .replicas | default 1 }}
-  selector:
-    matchLabels:
-      run: {{ .name | quote }}
-  template:
-    metadata:
-      labels:
-        run: {{ .name | quote }}
-        accessDali: "yes"
-        accessEsp: {{ .useChildProcesses | default false | ternary "yes" "no" | quote }}
-    spec:
-      serviceAccountName: {{ .useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
-      terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
-      initContainers:
-        {{- include "hpcc.checkDllMount" (dict "root" $) | indent 6 }}
-        {{- include "hpcc.addBundles" (dict "root" $ "me" . "imagename" "eclccserver") | indent 6 }}
-      containers:
-      - name: {{ .name | quote }}
-        workingDir: /var/lib/HPCCSystems
-        command: [ eclccserver ] 
-        args: [
-                {{ include "hpcc.configArg" . }},
-                {{ include "hpcc.daliArg" $ }}
-              ]
-{{ include "hpcc.addSentinelProbes" . | indent 8 }}
-{{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
-{{- if .useChildProcesses }}
-{{- include "hpcc.addResources" (dict "me" .resources) | indent 8 }}
-{{- else if not $.Values.global.privileged }}
-{{- include "hpcc.addStubResources" . | indent 8 }}
-{{- end }}
-{{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
-        volumeMounts:
-{{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
-{{ include "hpcc.addDataVolumeMount" (dict "root" $ "me" . ) | indent 8 }}
-{{ include "hpcc.addDllVolumeMount" $ | indent 8 }}
-{{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "system" ) ) | indent 8 }}
-        - name: "hpccbundles"
-          mountPath: "/home/hpcc/.HPCCSystems"
-      volumes:
-{{ include "hpcc.addConfigMapVolume" . | indent 6 }}
-{{ include "hpcc.addDataVolume" (dict "root" $ "me" . ) | indent 6 }}
-{{ include "hpcc.addDllVolume" $ | indent 6 }}
-{{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "system" ) ) | indent 6 }}
-      - name: hpccbundles
-        emptyDir: {}
----
-kind: ConfigMap 
-apiVersion: v1 
-metadata:
-  name: {{ .name }}-configmap 
+  name: {{ .me.name }}-configmap
 data:
-  {{ .name }}.yaml: |
+  {{ .me.name }}.yaml: |
     version: 1.0
     eclccserver:
-{{ toYaml (omit . "logging") | indent 6 }}
-{{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" .) | indent 6 }}
+{{ toYaml (omit .me "logging") | indent 6 }}
+{{- include "hpcc.generateLoggingConfig" . | indent 6 }}
       queues:
-{{ include "hpcc.generateConfigMapQueues" $ | indent 6 }}
+{{ include "hpcc.generateConfigMapQueues" .root | indent 6 }}
     global:
-{{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
-{{- if not .useChildProcesses }} 
+{{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
+{{- if not .me.useChildProcesses }}
   compile-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
@@ -83,29 +33,92 @@ data:
           serviceAccountName: "hpcc-default"
           containers:
           - name: compile-%jobname
-{{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
-{{- include "hpcc.addResources" (dict "me" .resources) | indent 12 }}
-{{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
+{{- include "hpcc.addSecurityContext" . | indent 12 }}
+{{- include "hpcc.addResources" (dict "me" .me.resources) | indent 12 }}
+{{ include "hpcc.addImageAttrs" . | indent 12 }}
             workingDir: /tmp
             command: [ eclccserver ]
             args: [
-                        {{ include "hpcc.configArg" . }},
-                        {{ include "hpcc.daliArg" $ }},
+                        {{ include "hpcc.configArg" .me }},
+                        {{ include "hpcc.daliArg" .root }},
                         %args
                      ]
             volumeMounts:
-{{ include "hpcc.addConfigMapVolumeMount" . | indent 12 }}
-{{ include "hpcc.addDataVolumeMount" (dict "root" $ "me" . ) | indent 12 }}
-{{ include "hpcc.addDllVolumeMount" $ | indent 12 }}
-{{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "system" ) ) | indent 12 }}
+{{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
+{{ include "hpcc.addDataVolumeMount" . | indent 12 }}
+{{ include "hpcc.addDllVolumeMount" .root | indent 12 }}
+{{ include "hpcc.addSecretVolumeMounts" (dict "root" .root "categories" (list "system" ) ) | indent 12 }}
           volumes:
-{{ include "hpcc.addConfigMapVolume" . | indent 10 }}
-{{ include "hpcc.addDataVolume" (dict "root" $ "me" . ) | indent 10 }}
-{{ include "hpcc.addDllVolume" $ | indent 10 }}
-{{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "system" ) ) | indent 10 }}
+{{ include "hpcc.addConfigMapVolume" .me | indent 10 }}
+{{ include "hpcc.addDataVolume" . | indent 10 }}
+{{ include "hpcc.addDllVolume" .root | indent 10 }}
+{{ include "hpcc.addSecretVolumes" (dict "root" .root "categories" (list "system" ) ) | indent 10 }}
           restartPolicy: Never
       backoffLimit: 0
-{{- end }}      
+{{- end }}
+{{- end -}}
+
+
+{{ range $.Values.eclccserver -}}
+{{- if not .disabled -}}
+{{- $commonCtx := dict "root" $ "me" . }}
+{{- $configSHA := include "hpcc.eclccServerConfigMap" $commonCtx | sha256sum }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .name | quote }}
+spec:
+  replicas: {{ .replicas | default 1 }}
+  selector:
+    matchLabels:
+      run: {{ .name | quote }}
+  template:
+    metadata:
+      labels:
+        run: {{ .name | quote }}
+        accessDali: "yes"
+        accessEsp: {{ .useChildProcesses | default false | ternary "yes" "no" | quote }}
+      annotations:
+        checksum/config: {{ $configSHA }}
+    spec:
+      serviceAccountName: {{ .useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
+      terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
+      initContainers:
+        {{- include "hpcc.checkDllMount" $commonCtx | indent 6 }}
+        {{- include "hpcc.addBundles" $commonCtx | indent 6 }}
+      containers:
+      - name: {{ .name | quote }}
+        workingDir: /var/lib/HPCCSystems
+        command: [ eclccserver ] 
+        args: [
+                {{ include "hpcc.configArg" . }},
+                {{ include "hpcc.daliArg" $ }}
+              ]
+{{ include "hpcc.addSentinelProbes" . | indent 8 }}
+{{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
+{{- if .useChildProcesses }}
+{{- include "hpcc.addResources" (dict "me" .resources) | indent 8 }}
+{{- else if not $.Values.global.privileged }}
+{{- include "hpcc.addStubResources" . | indent 8 }}
+{{- end }}
+{{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
+        volumeMounts:
+{{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
+{{ include "hpcc.addDataVolumeMount" $commonCtx | indent 8 }}
+{{ include "hpcc.addDllVolumeMount" $ | indent 8 }}
+{{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "system" ) ) | indent 8 }}
+        - name: "hpccbundles"
+          mountPath: "/home/hpcc/.HPCCSystems"
+      volumes:
+{{ include "hpcc.addConfigMapVolume" . | indent 6 }}
+{{ include "hpcc.addDataVolume" $commonCtx | indent 6 }}
+{{ include "hpcc.addDllVolume" $ | indent 6 }}
+{{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "system" ) ) | indent 6 }}
+      - name: hpccbundles
+        emptyDir: {}
+---
+kind: ConfigMap 
+{{ include "hpcc.eclccServerConfigMap" $commonCtx }}
 
 ---
 {{- end }}

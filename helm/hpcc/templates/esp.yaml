@@ -1,5 +1,30 @@
+{{/*
+Esp configmap
+Pass in dict with root and me
+*/}}
+{{- define "hpcc.espConfigMap" -}}
+apiVersion: v1
+metadata:
+  name: {{ .me.name }}-configmap
+data:
+  {{ .me.name }}.yaml: |
+    version: 1.0
+    esp:
+{{ toYaml (omit .me "logging") | indent 6 }}
+{{- include "hpcc.generateLoggingConfig" . | indent 6 }}
+      queues:
+{{ include "hpcc.generateConfigMapQueues" .root | indent 6 }}
+      services:
+{{ include "hpcc.generateConfigMapServices" .root | indent 6 }}
+{{ include "hpcc.generateVaultConfig" (dict "root" .root "categories" (list "storage" "esp" ) ) | indent 6 }}
+    global:
+{{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
+{{- end -}}
+
 {{ range $.Values.esp -}}
 {{- if not .disabled -}}
+{{- $commonCtx := dict "root" $ "me" . }}
+{{- $configSHA := include "hpcc.espConfigMap" $commonCtx | sha256sum }}
 {{- $application := .application | default "eclwatch" -}}
 apiVersion: apps/v1
 kind: Deployment
@@ -16,6 +41,8 @@ spec:
         run: {{ .name | quote }}
         accessDali: "yes"
         app: {{ $application }}
+      annotations:
+        checksum/config: {{ $configSHA }}
     spec:
       serviceAccountName: "hpcc-default"
       containers:
@@ -28,37 +55,22 @@ spec:
                 {{ include "hpcc.daliArg" $ }}
               ]
 {{ include "hpcc.addSentinelProbes" . | indent 8 }}
-{{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
+{{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
 {{- include "hpcc.addResources" (dict "me" .resources) | indent 8 }}
-{{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 8 }}
+{{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
-{{ include "hpcc.addDataVolumeMount" (dict "root" $ "me" . ) | indent 8 }}
+{{ include "hpcc.addDataVolumeMount" $commonCtx | indent 8 }}
 {{ include "hpcc.addDllVolumeMount" $ | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "system" "storage" ) ) | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
-{{ include "hpcc.addDataVolume" (dict "root" $ "me" . ) | indent 6 }}
+{{ include "hpcc.addDataVolume" $commonCtx | indent 6 }}
 {{ include "hpcc.addDllVolume" $ | indent 6 }}
 {{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "system" "storage" ) ) | indent 6 }}
 ---
 kind: ConfigMap 
-apiVersion: v1 
-metadata:
-  name: {{ .name }}-configmap 
-data:
-  {{ .name }}.yaml: |
-    version: 1.0
-    esp:
-{{ toYaml (omit . "logging") | indent 6 }}
-{{- include "hpcc.generateLoggingConfig" (dict "root" $ "me" .) | indent 6 }}
-      queues:
-{{ include "hpcc.generateConfigMapQueues" $ | indent 6 }}
-      services:
-{{ include "hpcc.generateConfigMapServices" $ | indent 6 }}
-{{ include "hpcc.generateVaultConfig" (dict "root" $ "categories" (list "storage" "esp" ) ) | indent 6 }}
-    global:
-{{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
+{{ include "hpcc.espConfigMap" $commonCtx }}
 
 ---
 apiVersion: v1
