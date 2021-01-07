@@ -277,12 +277,12 @@ bool GpgCodeSigner::verifySignature(const char * text, StringBuffer & signer)
     Owned<IPipeProcess> pipe = createPipeProcess();
     VStringBuffer cmd("gpg %s --verify -", gpgOptions.str());
     if (!pipe->run("gpg", cmd.str(), ".", true, false, true, 0, false))
-        throw makeStringExceptionV(MSGAUD_user, CODESIGNER_ERR_VERIFY, "Code sign verify failed (gpg --verify failed)");
+        throw makeStringException(MSGAUD_user, CODESIGNER_ERR_GPG, "Code sign verify failed (gpg --verify failed)");
     pipe->write(strlen(text), text);
     pipe->closeInput();
     unsigned retcode = pipe->wait();
-    if (retcode)
-        throw makeStringExceptionV(MSGAUD_user, CODESIGNER_ERR_VERIFY, "Code sign verify failed");
+    if (retcode && retcode!=1) // 1==gpg signature not verified.  Otherwise some error
+        throw makeStringExceptionV(MSGAUD_user, CODESIGNER_ERR_VERIFY, "gpg verify failed - error %u", retcode);
 
     StringBuffer buf;
     Owned<ISimpleReadStream> pipeReader = pipe->getErrorStream();
