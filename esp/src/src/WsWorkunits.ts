@@ -221,7 +221,7 @@ export function WUFile(params) {
     return ESPRequest.send("WsWorkunits", "WUFile", params);
 }
 
-export function WUAction(workunits, actionType, callback) {
+export function WUAction(workunits, actionType, callback?) {
     const request = {
         Wuids: workunits,
         WUActionType: actionType

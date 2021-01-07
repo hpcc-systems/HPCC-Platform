@@ -5,5 +5,6 @@ ln/
 .cproject
 .vscode/
 .eclcc/
+!esp/src/.vscode
 eclcc.log
 *.pyc

@@ -71,7 +71,7 @@ define([
                     DisplayPath: {
                         label: this.i18n.Name, sortable: true,
                         formatter: function (url, row) {
-                            return "<a href='#' class='dgrid-row-url'>" + url + "</a>";
+                            return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + url + "</a>";
                         }
                     }
                 }

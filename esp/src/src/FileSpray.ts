@@ -308,7 +308,7 @@ export function GetDFUWorkunits(params) {
     return ESPRequest.send("FileSpray", "GetDFUWorkunits", params);
 }
 
-export function DFUWorkunitsAction(workunits, actionType, callback) {
+export function DFUWorkunitsAction(workunits, actionType, callback?) {
     const request = {
         wuids: workunits,
         Type: actionType

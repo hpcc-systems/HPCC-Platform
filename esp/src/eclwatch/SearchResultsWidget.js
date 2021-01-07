@@ -109,14 +109,14 @@ define([
                     Type: {
                         label: this.i18n.What, width: 108, sortable: true,
                         formatter: function (type, idx) {
-                            return "<a href='#' rowIndex=" + idx + " class='" + context.id + "SearchTypeClick'>" + type + "</a>";
+                            return "<a href='#' onClick='return false;' rowIndex=" + idx + " class='" + context.id + "SearchTypeClick'>" + type + "</a>";
                         }
                     },
                     Reason: { label: this.i18n.Where, width: 108, sortable: true },
                     Summary: {
                         label: this.i18n.Who, sortable: true,
                         formatter: function (summary, idx) {
-                            return "<a href='#' class='dgrid-row-url'>" + summary + "</a>";
+                            return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + summary + "</a>";
                         }
                     }
                 }

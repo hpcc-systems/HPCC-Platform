@@ -2,6 +2,8 @@ build/
 hpcc-js/
 lib/
 node_modules/
-src/nlsHPCCType.ts
 types/
+.vscode/*
+!.vscode/tasks.json
 lws.target.txt
+tmp.*

@@ -136,7 +136,7 @@ define([
                                 img = Utility.getImageHTML("machine.png") + context.i18n.Port + ":";
                             } else if (row.type === "binding") {
                                 img = Utility.getImageHTML("sync.png");
-                                name = "<a href='#' class='dgrid-row-url'>" + _name + "</a>";
+                                name = "<a href='#' onClick='return false;' class='dgrid-row-url'>" + _name + "</a>";
                             }
                             return img + "&nbsp;" + name;
                         },

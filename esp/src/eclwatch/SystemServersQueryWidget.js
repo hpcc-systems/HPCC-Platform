@@ -169,7 +169,7 @@ define([
                         renderCell: function (object, value, node, options) {
                             if (object.Directory && object.Type && object.Type !== "FTSlaveProcess") {
                                 domClass.add(node, "centerInCell");
-                                node.innerHTML = "<a href='#' class='gridClick'/>" + Utility.getImageHTML("configuration.png", context.i18n.Configuration) + "</a>";
+                                node.innerHTML = "<a href='#' onClick='return false;' class='gridClick'/>" + Utility.getImageHTML("configuration.png", context.i18n.Configuration) + "</a>";
                             }
                         },
                     },
@@ -179,7 +179,7 @@ define([
                         renderCell: function (object, value, node, options) {
                             if (object.Informational) {
                                 domClass.add(node, "centerInCell");
-                                node.innerHTML = "<a href='#' class='additionalSystemServersDialog' />" + Utility.getImageHTML("information.png", context.i18n.Informational) + "</a>";
+                                node.innerHTML = "<a href='#' onClick='return false;' class='additionalSystemServersDialog' />" + Utility.getImageHTML("information.png", context.i18n.Informational) + "</a>";
                             }
                         }
                     },
@@ -194,7 +194,7 @@ define([
                                 renderCell: function (object, value, node, options) {
                                     if (object.AuditLog) {
                                         domClass.add(node, "centerInCell");
-                                        node.innerHTML = "<a href='#' class='gridClick'/>" + Utility.getImageHTML("base.gif", context.i18n.AuditLogs) + "</a>";
+                                        node.innerHTML = "<a href='#' onClick='return false;' class='gridClick'/>" + Utility.getImageHTML("base.gif", context.i18n.AuditLogs) + "</a>";
                                     }
                                 },
                             },
@@ -205,7 +205,7 @@ define([
                                 renderCell: function (object, value, node, options) {
                                     if (object.Log) {
                                         domClass.add(node, "centerInCell");
-                                        node.innerHTML = "<a href='#' class='gridClick'/>" + Utility.getImageHTML("base.gif", context.i18n.ComponentLogs) + "</a>";
+                                        node.innerHTML = "<a href='#' onClick='return false;' class='gridClick'/>" + Utility.getImageHTML("base.gif", context.i18n.ComponentLogs) + "</a>";
                                     }
                                 }
                             }

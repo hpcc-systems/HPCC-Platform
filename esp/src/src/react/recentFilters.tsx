@@ -1,10 +1,10 @@
 import * as React from "react";
-import Skeleton from '@material-ui/lab/Skeleton';
+import Skeleton from "@material-ui/lab/Skeleton";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Typography, Paper } from "@material-ui/core";
 import { ThemeProvider } from "@material-ui/core/styles";
-import Tooltip from '@material-ui/core/Tooltip';
+import Tooltip from "@material-ui/core/Tooltip";
 import nlsHPCC from "../nlsHPCC";
-import { theme } from './theme';
+import { theme } from "./theme";
 import { useGet } from "./hooks/useWsStore";
 
 interface RecentFilterProps {
@@ -21,12 +21,12 @@ export const RecentFilters: React.FunctionComponent<RecentFilterProps> = ({
     const handleClick = (e) => {
         const tempObj = JSON.parse(e.currentTarget.value);
         widget.NewPage.onClick(tempObj);
-    }
+    };
 
     const cleanUpFilter = (value:string) => {
-        const result = value.replace(/[{}'"]+/g, '');
+        const result = value.replace(/[{}'"]+/g, "");
         return result;
-    }
+    };
 
     return (
         <>
@@ -55,5 +55,5 @@ export const RecentFilters: React.FunctionComponent<RecentFilterProps> = ({
                 </TableContainer>
             </ThemeProvider> : <Typography variant="subtitle1">{nlsHPCC.NoRecentFiltersFound}</Typography> ) }
         </>
-    )
+    );
 };

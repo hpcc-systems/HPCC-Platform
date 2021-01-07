@@ -221,7 +221,7 @@ define([
                     Name: {
                         label: this.i18n.LogicalName,
                         formatter: function (name, row) {
-                            return "<a href='#' class='dgrid-row-url'>" + name + "</a>";
+                            return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + name + "</a>";
                         }
                     },
                     Owner: { label: this.i18n.Owner, width: 72 },

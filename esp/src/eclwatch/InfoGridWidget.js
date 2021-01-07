@@ -145,10 +145,10 @@ define([
                                 var info = context.extractGraphInfo(Message);
                                 if (info.graphID && info.subgraphID && info.activityID) {
                                     var txt = "Graph " + info.graphID + "[" + info.subgraphID + "], " + info.activityName + "[" + info.activityID + "]";
-                                    Message = Message.replace(txt, "<a href='#' class='dgrid-row-url'>" + txt + "</a>");
+                                    Message = Message.replace(txt, "<a href='#' onClick='return false;' class='dgrid-row-url'>" + txt + "</a>");
                                 } else if (info.graphID && info.subgraphID) {
                                     var txt = "Graph " + info.graphID + "[" + info.subgraphID + "]";
-                                    Message = Message.replace(txt, "<a href='#' class='dgrid-row-url'>" + txt + "</a>");
+                                    Message = Message.replace(txt, "<a href='#' onClick='return false;' class='dgrid-row-url'>" + txt + "</a>");
                                 } else {
                                     Message = Utility.xmlEncode2(Message);
                                 }

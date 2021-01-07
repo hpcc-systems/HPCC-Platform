@@ -109,7 +109,7 @@ define([
                 Name: {
                     label: this.i18n.Name, width: 99, sortable: true,
                     formatter: function (Name, row) {
-                        return context.getStateImageHTML(row) + "&nbsp;<a href='#' class='dgrid-row-url'>" + Name + "</a>";
+                        return context.getStateImageHTML(row) + "&nbsp;<a href='#' onClick='return false;' class='dgrid-row-url'>" + Name + "</a>";
                     }
                 },
                 Label: { label: this.i18n.Label, sortable: true },
