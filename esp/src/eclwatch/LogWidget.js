@@ -59,13 +59,17 @@ define([
             this.reverseButton = registry.byId(this.id + "Reverse");
             this.filter = registry.byId(this.id + "Filter");
             this.filter.on("clear", function (evt) {
-                context._onFilterType();
+                if (context._onFilterType) {
+                    context._onFilterType();
+                }
                 context.refreshHRef();
                 context.refreshGrid();
             });
             this.filter.on("apply", function (evt) {
                 context.refreshHRef();
-                context.logGrid._currentPage = 0;
+                if (context.logGrid) {
+                    context.logGrid._currentPage = 0;
+                }
                 context.refreshGrid();
             });
             this.rawText = registry.byId(this.id + "LogText");
@@ -118,11 +122,15 @@ define([
             } else if (retVal.LastHours) {
                 retVal.FilterType = 2;
             } else if (retVal.StartDate) {
-                if (retVal.StartDate[0] === "T") {
-                    retVal.StartDate = retVal.StartDate.substring(1);
+                if (retVal.StartDate) {
+                    lang.mixin(retVal, {
+                        StartDate: this.getTime("FromTime")
+                    });
                 }
-                if (retVal.EndDate[0] === "T") {
-                    retVal.EndDate = retVal.EndDate.substring(1);
+                if (retVal.EndDate) {
+                    lang.mixin(retVal, {
+                        EndDate: this.getTime("ToTime")
+                    });
                 }
                 retVal.FilterType = 6;
             } else {
@@ -179,6 +187,12 @@ define([
         initLogGrid: function () {
             var context = this;
             var store = new WsTopology.CreateTpLogFileStore();
+            store.on("preFetch", function () {
+                context.refreshActionState(true);
+            });
+            store.on("postFetch", function () {
+                context.refreshActionState(false);
+            });
             store.on("pageLoaded", function (page) {
                 context.rawText.setText(page);
             });
@@ -211,9 +225,6 @@ define([
                         context._onRowDblClick(item.Wuid);
                     }
                 });
-                this.logGrid.onSelectionChanged(function (event) {
-                    context.refreshActionState();
-                });
                 this.logGrid.startup();
             }
         },
@@ -231,8 +242,10 @@ define([
             }
         },
 
-        refreshActionState: function () {
-            var selection = this.logGrid.getSelected();
+        refreshActionState: function (loading) {
+            registry.byId(this.id + "DownloadText").set("disabled", loading);
+            registry.byId(this.id + "DownloadZip").set("disabled", loading);
+            registry.byId(this.id + "DownloadGZip").set("disabled", loading);
         }
     });
 });

@@ -369,9 +369,9 @@ export const IdleWatcher = dojo.declare([Evented], {
 export const Singleton = SingletonData;
 
 export const FormHelper = declare(null, {
-    getISOString(dateField, timeField) {
+    getISOString(dateField, timeField?) {
         const d = registry.byId(this.id + dateField).attr("value");
-        const t = registry.byId(this.id + timeField).attr("value");
+        const t = timeField && registry.byId(this.id + timeField).attr("value");
         if (d) {
             if (t) {
                 d.setHours(t.getHours() - d.getTimezoneOffset() / 60);
@@ -381,6 +381,20 @@ export const FormHelper = declare(null, {
             return d.toISOString();
         }
         return "";
+    },
+    getISOTime(dateField) {
+        const d = registry.byId(this.id + dateField).attr("value");
+        if (d) {
+            return d.toISOString().split("T")[1];
+        }
+        return undefined;
+    },
+    getTime(dateField) {
+        const t = this.getISOTime(dateField);
+        if (t) {
+            return t.split("Z")[0];
+        }
+        return t;
     }
 });
 

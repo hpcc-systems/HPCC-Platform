@@ -146,6 +146,18 @@ class ECLFile:
             pass
 
         self.mergeHashToStrArray(self.optXHash,  self.optX)
+
+        # Process setupExtraD parameters if any
+        self.optD =[]
+        self.optDHash={}
+        if 'setupExtraD' in args:
+            for extraDName, extraDVal in args.setupExtraD.items():
+                extraDVal = extraDVal.strip()
+                optDs = ["-D"+extraDName+"='"+extraDVal+"'"]
+                self.processKeyValPairs(optDs,  self.optDHash)
+            pass
+
+        self.mergeHashToStrArray(self.optDHash,  self.optD)
         pass
 
         self.optF =[]
@@ -593,6 +605,9 @@ class ECLFile:
 
     def getFParameters(self):
         return self.optF
+
+    def getExtraDParameters(self):
+        return self.optD
 
     # Set -D parameter(s) (and generate version string for logger)
     def setDParameters(self,  param):

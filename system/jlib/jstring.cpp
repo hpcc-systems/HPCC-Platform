@@ -1620,7 +1620,8 @@ static StringBuffer & appendStringExpandControl(StringBuffer &out, unsigned len,
                     out.append(c);
                 break;
             default:
-                if (isUtf8 || ((c >= ' ') && (c <= 126)))
+                //Some characters < 32 are illegal unicode, but this may have come from a string/data so output them cleanly as \ooo
+                if ((c >= ' ') && (isUtf8 || (c <= 126)))
                     out.append(c);
                 else
                     out.appendf("\\%03o", c); 

@@ -62,7 +62,7 @@ define([
                     Name: tree({
                         label: "Name", sortable: true,
                         formatter: function (Name, row) {
-                            return Utility.getImageHTML(row.IsSuperFile ? "folder_table.png" : "file.png") + "&nbsp;<a href='#' class='dgrid-row-url'>" + Name + "</a>";
+                            return Utility.getImageHTML(row.IsSuperFile ? "folder_table.png" : "file.png") + "&nbsp;<a href='#' onClick='return false;' class='dgrid-row-url'>" + Name + "</a>";
                         }
                     }),
                     FileCluster: { label: this.i18n.FileCluster, width: 300, sortable: false },

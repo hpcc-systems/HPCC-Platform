@@ -36,7 +36,7 @@ define([
                 Name: {
                     label: this.i18n.Name, sortable: true,
                     formatter: function (Name, row) {
-                        return context.getStateImageHTML(row) + "&nbsp;<a href='#' class='dgrid-row-url'>" + Name + "</a>";
+                        return context.getStateImageHTML(row) + "&nbsp;<a href='#' onClick='return false;' class='dgrid-row-url'>" + Name + "</a>";
                     }
                 },
                 Type: { label: this.i18n.Type, width: 72, sortable: true }

@@ -296,7 +296,7 @@ define([
                         sortable: false,
                         label: this.i18n.PackageMap,
                         formatter: function (Id, idx) {
-                            return "<a href='#' class='dgrid-row-url'>" + Id + "</a>";
+                            return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + Id + "</a>";
                         }
                     },
                     Target: {

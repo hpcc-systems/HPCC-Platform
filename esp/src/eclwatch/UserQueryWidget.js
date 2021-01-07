@@ -515,7 +515,7 @@ define([
                     name: {
                         label: this.i18n.GroupName,
                         formatter: function (_name, idx) {
-                            return "<a href='#' class='dgrid-row-url'>" + _name + "</a>";
+                            return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + _name + "</a>";
                         }
                     },
                     groupOwner: {
@@ -616,7 +616,7 @@ define([
                         label: this.i18n.Username,
                         sortable: true,
                         formatter: function (_name, idx) {
-                            return "<a href='#' class='dgrid-row-url'>" + _name + "</a>";
+                            return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + _name + "</a>";
                         }
                     },
                     employeeID: {
@@ -756,7 +756,7 @@ define([
                         label: this.i18n.Name,
                         formatter: function (_name, idx) {
                             if (idx.__hpcc_parent) {
-                                return "<a href='#' class='dgrid-row-url'>" + _name + "</a>";
+                                return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + _name + "</a>";
                             } else {
                                 return _name;
                             }

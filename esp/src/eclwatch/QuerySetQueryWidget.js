@@ -394,7 +394,7 @@ define([
                         label: this.i18n.ID,
                         width: 380,
                         formatter: function (Id, idx) {
-                            return "<a href='#' class='dgrid-row-url'>" + Id + "</a>";
+                            return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + Id + "</a>";
                         }
                     },
                     Name: {
@@ -409,7 +409,7 @@ define([
                         width: 160,
                         label: this.i18n.WUID,
                         formatter: function (Wuid, idx) {
-                            return "<a href='#' class='dgrid-row-url2'>" + Wuid + "</a>";
+                            return "<a href='#' onClick='return false;' class='dgrid-row-url2'>" + Wuid + "</a>";
                         }
                     },
                     Dll: {

@@ -644,7 +644,7 @@ define([
                             if (row.__hpcc_isDir) {
                                 return name;
                             }
-                            return (row.getStateImageHTML ? row.getStateImageHTML() + "&nbsp;" : "") + "<a href='#' class='dgrid-row-url'>" + name + "</a>";
+                            return (row.getStateImageHTML ? row.getStateImageHTML() + "&nbsp;" : "") + "<a href='#' onClick='return false;' class='dgrid-row-url'>" + name + "</a>";
                         },
                         renderExpando: function (level, hasChildren, expanded, object) {
                             var dir = this.grid.isRTL ? "right" : "left";

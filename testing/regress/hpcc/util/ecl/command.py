@@ -66,7 +66,7 @@ class ECLcmd(Shell):
         if password:
             args.append("--password=" + password)
 
-        args = args + eclfile.getFParameters()
+        args = args + eclfile.getFParameters() + eclfile.getExtraDParameters()
 
         if cmd == 'publish':
             args.append(eclfile.getArchiveName())

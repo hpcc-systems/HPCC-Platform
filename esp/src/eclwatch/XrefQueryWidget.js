@@ -102,7 +102,7 @@ define([
                     Name: {
                         label: this.i18n.Name, width: 100, sortable: false,
                         formatter: function (Name, idx) {
-                            return "<a href='#' class='dgrid-row-url'>" + Name + "</a>";
+                            return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + Name + "</a>";
                         }
                     },
                     Modified: { label: this.i18n.LastRun, width: 30, sortable: false },

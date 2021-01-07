@@ -18,8 +18,11 @@
 //class=embedded
 //class=python2
 
+import ^ as root;
 import python;
-string pcat(string a, string b) := IMPORT(Python, '/opt/HPCCSystems/examples/embed/python_cat.cat':time);
+HPCCBaseDir := #IFDEFINED(root.HPCCBaseDir, '/opt/HPCCSystems/');
+
+string pcat(string a, string b) := IMPORT(Python, HPCCBaseDir + 'examples/embed/python_cat.cat':time);
 pcat('Hello ', 'world!');
 
 integer padd(integer a, integer b) := EMBED(Python :time)

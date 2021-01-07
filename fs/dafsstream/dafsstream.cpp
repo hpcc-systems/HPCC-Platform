@@ -663,6 +663,8 @@ class CDFUPartReader : public CDaFileSrvClientBase, implements IDFUFilePartReade
     std::vector<std::string> fieldFilters;
     bool preserveGrouping = false;
     const size32_t replyHdrSize = sizeof(unsigned) + sizeof(unsigned) + sizeof(unsigned); // errCode+handle+rowDataSz
+    Linked<IFPosStream> fposStream;
+    static constexpr unsigned maxFetchPerBatch = 1000;
 
     void ensureAvailable(size32_t oldSz, const void *oldData)
     {
@@ -701,22 +703,40 @@ class CDFUPartReader : public CDaFileSrvClientBase, implements IDFUFilePartReade
         for (auto &field: fieldFilters)
             requestNode->addProp("keyFilter", field.c_str());
     }
-    unsigned sendReadStart(MemoryBuffer &tgt)
+    IPropertyTree *getFPosBatch(unsigned batchSize)
+    {
+        if (!fposStream)
+            return nullptr;
+        IPropertyTree *fetchBranch = createPTree("fetch");
+        for (unsigned i=0; i<batchSize; i++)
+        {
+            offset_t fpos;
+            if (!fposStream->next(fpos))
+                break;
+            fetchBranch->addPropInt64("fpos", fpos);
+        }
+        return fetchBranch;
+    }
+    unsigned sendReadStart(MemoryBuffer &tgt, IPropertyTree *fetchBatch)
     {
         ensureVariableContentAdded();
+        if (fetchBatch)
+            requestTree->setPropTree("fetch", LINK(fetchBatch));
         sendMb.clear();
         initSendBuffer(sendMb);
         addRequest(requestTree, RFCStreamRead);
 
         return send(tgt);
     }
-    unsigned sendReadContinuation(MemoryBuffer &newReply)
+    unsigned sendReadContinuation(MemoryBuffer &newReply, IPropertyTree *fetchBatch)
     {
         sendMb.clear();
         initSendBuffer(sendMb);
         Owned<IPropertyTree> tree = createPTree();
         tree->setPropInt("handle", handle);
         tree->setProp("format", "binary");
+        if (fetchBatch)
+            tree->setPropTree("fetch", LINK(fetchBatch));
         addRequest(tree, RFCStreamRead);
 
         daFsConnection->send(sendMb, newReply);
@@ -754,9 +774,24 @@ class CDFUPartReader : public CDaFileSrvClientBase, implements IDFUFilePartReade
 
         // ensures gets in one go
         if (wanted>(file->queryRowStreamReplyLimitKb()*1024)) // unlikely
-            requestTree->setPropInt("replyLimit", (wanted+1023)/1024); // found up to nearest # K
+            requestTree->setPropInt("replyLimit", (wanted+1023)/1024); // round up to nearest # K
 
-        unsigned newHandle = sendReadContinuation(newReplyMb);
+        Owned<IPropertyTree> fetchBatch;
+        if (fposStream)
+        {
+            /* The cursor contains amount of remaining [unconsumed] fpos' at start of cursor.
+             * Read it, and reset the read pos in the buffer, so the cursor can be used later if needed
+             */
+            unsigned fpossRemaining;
+            size32_t bufPos = replyMb.getPos();
+            replyMb.skip(bufRemaining);
+            replyMb.read(fpossRemaining);
+            replyMb.reset(bufPos);
+            unsigned batchSize = maxFetchPerBatch-fpossRemaining;
+            fetchBatch.setown(getFPosBatch(batchSize)); // filled if fetching
+        }
+
+        unsigned newHandle = sendReadContinuation(newReplyMb, fetchBatch);
         if (newHandle != handle) // dafilesrv did not recognize handle, send cursor
         {
             assertex(newHandle == 0);
@@ -769,7 +804,7 @@ class CDFUPartReader : public CDaFileSrvClientBase, implements IDFUFilePartReade
 
             requestTree->setProp("cursorBin", cursorInfo);
             newReplyMb.rewrite(leadingSpace);
-            handle = sendReadStart(newReplyMb); // new handle
+            handle = sendReadStart(newReplyMb, fetchBatch); // new handle
             requestTree->removeProp("cursorBin");
         }
         replyMb.swapWith(newReplyMb);
@@ -786,8 +821,23 @@ class CDFUPartReader : public CDaFileSrvClientBase, implements IDFUFilePartReade
             endOfStream = true;
             return;
         }
+
+        Owned<IPropertyTree> fetchBatch;
+        if (fposStream)
+        {
+            /* The cursor contains amount of remaining [unconsumed] fpos' at start of cursor.
+             * Read it, and reset the read pos in the buffer, so the cursor can be used later if needed
+             */
+            unsigned fpossRemaining;
+            size32_t cursorStart = replyMb.getPos();
+            replyMb.read(fpossRemaining);
+            replyMb.reset(cursorStart);
+            unsigned batchSize = maxFetchPerBatch-fpossRemaining;
+            fetchBatch.setown(getFPosBatch(batchSize)); // filled if fetching
+        }
+
         MemoryBuffer newReply;
-        unsigned newHandle = sendReadContinuation(newReply);
+        unsigned newHandle = sendReadContinuation(newReply, fetchBatch);
         if (newHandle == handle)
             replyMb.swapWith(newReply);
         else // dafilesrv did not recognize handle, send cursor
@@ -797,7 +847,7 @@ class CDFUPartReader : public CDaFileSrvClientBase, implements IDFUFilePartReade
             StringBuffer cursorInfo;
             JBASE64_Encode(replyMb.readDirect(cursorLength), cursorLength, cursorInfo, false);
             requestTree->setProp("cursorBin", cursorInfo);
-            handle = sendReadStart(replyMb.clear()); // new handle
+            handle = sendReadStart(replyMb.clear(), fetchBatch); // new handle
             requestTree->removeProp("cursorBin");
         }
         ensureAvailable(0, nullptr); // reads from replyMb
@@ -939,7 +989,8 @@ public:
         eog = false;
         eoi = false;
         pendingFinishRow = false;
-        handle = sendReadStart(replyMb.clear());
+        Owned<IPropertyTree> fetchBatch = getFPosBatch(maxFetchPerBatch); // filled if fetching
+        handle = sendReadStart(replyMb.clear(), fetchBatch);
         ensureAvailable(0, nullptr); // reads from replyMb
         started = true;
     }
@@ -1053,6 +1104,10 @@ public:
     {
         variableContentDirty = true;
         virtualFields[fieldName] = fieldValue;
+    }
+    virtual void setFetchStream(IFPosStream *_fposStream) override
+    {
+        fposStream.set(_fposStream);
     }
 };
 

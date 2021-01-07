@@ -1158,6 +1158,7 @@ protected:
         testKeyed("extra=['MAR','MAS']", "1|257|258|");
         testKeyed("extra=('MAR','MAS')", "1|");
         testKeyed("name=['AB','AC']", "2|257|");
+        testKeyed("extra=['MA\\000','MA\\377']", "1|257|258|515|");
     }
 
     void generateOrderedRows(PointerArray & rows, const RtlRecord & rowRecord)

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useId } from "@fluentui/react-hooks";
 import { Widget } from "@hpcc-js/common";
 
 export interface VisualizationProps {
@@ -8,7 +9,6 @@ export interface VisualizationProps {
     height?: string;
 }
 
-let g_id = 0;
 export const VisualizationComponent: React.FunctionComponent<VisualizationProps> = ({
     widget,
     widgetProps,
@@ -16,7 +16,7 @@ export const VisualizationComponent: React.FunctionComponent<VisualizationProps>
     height = "240px"
 }) => {
 
-    const [divID] = React.useState("viz-component-" + ++g_id);
+    const divID = useId("viz-component-");
     const [widgetInstance, setWidgetInstance] = React.useState<Widget>(undefined);
 
     React.useEffect(() => {

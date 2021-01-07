@@ -108,7 +108,7 @@ define([
 
         updateInput: function (name, oldValue, newValue) {
             if (name === "Wuid" && newValue) {
-                this.inherited(arguments, [name, oldValue, "<a id='" + this.id + "WuidHRef' href='#'>" + newValue + "</a>"]);
+                this.inherited(arguments, [name, oldValue, "<a id='" + this.id + "WuidHRef' href='#' onClick='return false;'>" + newValue + "</a>"]);
                 var context = this;
                 on(dom.byId(this.id + "WuidHRef"), "click", function (evt) {
                     var tab = context.ensurePane(newValue, {
@@ -117,7 +117,7 @@ define([
                     context.selectChild(tab);
                 });
             } else if (name === "GraphSummary" && newValue) {
-                this.inherited(arguments, [name, oldValue, "<a id='" + this.id + "GraphHRef' href='#'>" + newValue + "</a>"]);
+                this.inherited(arguments, [name, oldValue, "<a id='" + this.id + "GraphHRef' href='#' onClick='return false;'>" + newValue + "</a>"]);
                 var context = this;
                 var Wuid = this.thor.Wuid;
                 var GraphName = this.thor.Graph;
