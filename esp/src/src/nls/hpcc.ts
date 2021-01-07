@@ -573,6 +573,7 @@ export = {
         Preflight: "Preflight",
         PreloadAllPackages: "Preload All Packages",
         PreserveCompression: "Preserve Compression",
+        PreserveParts: "Preserve File Parts",
         PressCtrlCToCopy: "Press ctrl+c to copy.",
         Preview: "Preview",
         PrimaryLost: "Primary Lost",
