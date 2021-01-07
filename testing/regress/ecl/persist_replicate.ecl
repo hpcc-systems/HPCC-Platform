@@ -15,6 +15,8 @@
     limitations under the License.
 ##############################################################################*/
 
+//class=spray
+
 import Std.File;
 import $.setup;
 prefix := setup.Files(false, false).FilePrefix;
