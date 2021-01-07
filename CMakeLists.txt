@@ -485,7 +485,7 @@ if(TOP_LEVEL_PROJECT)
 
             add_custom_target(SIGN
                 COMMAND signtool sign /f "${SIGN_DIRECTORY}/hpcc_code_signing.pfx"
-/p "${PFX_PASSWORD}" /t "http://timestamp.verisign.com/scripts/timstamp.dll"
+/p "${PFX_PASSWORD}" /t "http://timestamp.globalsign.com/scripts/timstamp.dll"
 "${CMAKE_BINARY_DIR}/${PACKAGE_FILE_NAME_PREFIX}*.exe"
                 COMMENT "Digital Signature"
             )
