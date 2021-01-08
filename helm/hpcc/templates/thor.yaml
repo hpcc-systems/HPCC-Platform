@@ -290,5 +290,6 @@ spec:
 ---
 kind: ConfigMap
 {{ include "hpcc.thorConfigMap" $commonCtx }}
+---
 {{- end }}
 {{- end }}
