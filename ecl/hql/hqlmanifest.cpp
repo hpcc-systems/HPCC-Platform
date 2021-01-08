@@ -18,6 +18,7 @@
 #include "hql.hpp"
 #include "hqlutil.hpp"
 #include "hqlmanifest.hpp"
+#include "codesigner.hpp"
 
 //-------------------------------------------------------------------------------------------------------------------
 // Process manifest resources.
@@ -34,12 +35,11 @@ public:
             const char *xml = fileContents.str();
             StringBuffer body;
             // Check for signature
-            if (startsWith(fileContents, "-----BEGIN PGP SIGNED MESSAGE-----"))
+            if (queryCodeSigner().hasSignature(fileContents))
             {
                 // Note - we do not check the signature here - we are creating an archive, and typically that means we
                 // are on the client machine, while the signature can only be checked on the server where the keys are installed.
-                stripSignature(body, fileContents);
-                xml = body.str();
+                xml = queryCodeSigner().stripSignature(fileContents, body).str();
                 isSigned = true;
             }
             manifest.setown(createPTreeFromXMLString(xml));
