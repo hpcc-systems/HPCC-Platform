@@ -157,7 +157,7 @@
           Scripts</link>) to make starting larger multi-node systems
           easier.</para>
 
-          <para>CentOS 6, Ubuntu 14.04, and other System V users see <link
+          <para>System V users please refer to <link
           linkend="hpcc-init">Appendix: hpcc-init</link>.</para>
         </listitem>
 
@@ -293,27 +293,7 @@
           using the -Uvh options), however then you would have to negotiate
           installing any additional dependencies.</para>
 
-          <para><variablelist>
-              <varlistentry>
-                <term>Note:</term>
 
-                <listitem>
-                  <para>If you are using CentOS 6 you may need to run the
-                  following command to properly enable the
-                  installation.</para>
-                </listitem>
-              </varlistentry>
-            </variablelist></para>
-
-          <para><programlisting>sudo wget \
- http://people.centos.org/tru/devtools-2/devtools-2.repo -O /etc/yum.repos.d/devtools-2.repo</programlisting></para>
-
-          <para>This will add the devtools-2.repo file to your system. Verify
-          that the following information is in the devtools-2.repo file for
-          the yum installation to work. <programlisting>[testing-devtools-2-centos-6]
-name=testing 2 devtools for CentOS 6 
-baseurl=http://people.centos.org/tru/devtools-2/6/$basearch/RPMS
-gpgcheck=0</programlisting></para>
         </sect3>
 
         <sect3 id="Installing_Ubuntu-Debian">
@@ -1999,7 +1979,7 @@ init_start_thor--></property></para>
     <sect1 id="hpcc-init">
       <title>hpcc-init</title>
 
-      <para>CentOS 6 and other System V based operating systems do not support
+      <para>Systems utilizing System V based init systems do not support
       the systemd calls utilized by HPCC Systems. We will continue to support
       the old System V style init.d calls.</para>
 
@@ -2403,9 +2383,6 @@ add1(10);
             platform.</para>
 
             <para><emphasis role="bold">RPM-based systems:</emphasis></para>
-
-            <para>JavaScript support is available for CentOS 6.x or later (not
-            available for CentOS 5.x).</para>
 
             <para>On an RPM-based system (CentOS/Red Hat) install <emphasis
             role="bold">v8embed.</emphasis></para>
