@@ -27,6 +27,7 @@ file(COPY
     ${CMAKE_CURRENT_SOURCE_DIR}/package-lock.json
     ${CMAKE_CURRENT_SOURCE_DIR}/put-selector
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react
     ${CMAKE_CURRENT_SOURCE_DIR}/stub.htm
     ${CMAKE_CURRENT_SOURCE_DIR}/tsconfig.json
     ${CMAKE_CURRENT_SOURCE_DIR}/webpack.config.js
@@ -278,6 +279,11 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/src/WUGraphLegend.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/WUScopeController.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/WUStatus.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/layouts/DojoAdapter.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/util/history.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/index.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-react/routes.tsx
+    ${CMAKE_CURRENT_SOURCE_DIR}/stub.htm
 )
 
 if ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
