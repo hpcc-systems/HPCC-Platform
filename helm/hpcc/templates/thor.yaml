@@ -278,6 +278,6 @@ data:
             matchLabels:
               app: thor
               job: %jobname
-               
+---
 {{- end }}
 {{- end }}
