@@ -2034,7 +2034,7 @@ bool Cws_accessEx::onResourceAdd(IEspContext &context, IEspResourceAddRequest &r
 
             ISecResource* r = rlist->addResource(namebuf.str());
             r->setDescription(req.getDescription());
-            secmgr->addResourcesEx(rtype, *usr, rlist, PT_DEFAULT, basednReq->getBasedn());
+            secmgr->addResourcesEx(rtype, *usr, rlist, PT_ADMINISTRATORS_ONLY, basednReq->getBasedn());
 
             if(str2type(basednReq->getRtype()) == RT_FILE_SCOPE && newResources.ordinality())
             {
