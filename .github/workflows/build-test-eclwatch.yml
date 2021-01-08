@@ -44,7 +44,7 @@ jobs:
           submodules: "recursive"
       - uses: actions/setup-node@v1
         with:
-          node-version: "12.x"
+          node-version: "14.x"
       - name: Install Dependencies
         working-directory: ./esp/src
         run: npm ci
