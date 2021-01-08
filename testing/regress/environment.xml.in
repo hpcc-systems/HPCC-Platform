@@ -286,7 +286,6 @@
           state=""
           trustedPeers="anyone"/>
    <Authentication htpasswdFile="/etc/HPCCSystems/.htpasswd"
-                   ldapAuthMethod="kerberos"
                    ldapConnections="10"
                    ldapServer=""
                    method="none"

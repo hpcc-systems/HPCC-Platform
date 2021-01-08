@@ -116,7 +116,6 @@
                     txSummaryResourceReq="false">
             <Authentication checkViewPermissions="false"
                             htpasswdFile="/etc/HPCCSystems/.htpasswd"
-                            ldapAuthMethod="kerberos"
                             ldapConnections="10"
                             ldapServer=""
                             method="ldap"

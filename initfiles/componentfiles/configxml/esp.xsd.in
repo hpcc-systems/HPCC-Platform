@@ -377,19 +377,6 @@
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="ldapAuthMethod" use="optional" default="kerberos">
-                            <xs:annotation>
-                                <xs:appinfo>
-                                    <tooltip>The protocol to use for LDAP authentication (kerberos or simple).</tooltip>
-                                </xs:appinfo>
-                            </xs:annotation>
-                            <xs:simpleType>
-                                <xs:restriction base="xs:string">
-                                    <xs:enumeration value="kerberos"/>
-                                    <xs:enumeration value="simple"/>
-                                </xs:restriction>
-                            </xs:simpleType>
-                        </xs:attribute>
                         <xs:attribute name="ldapConnections" use="optional" default="10">
                             <xs:annotation>
                                 <xs:appinfo>

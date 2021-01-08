@@ -77,7 +77,7 @@
       <EspBinding name="ws_sql_myws_sqlbinding_myesp" service="ws_sql_ws_sql_myesp" protocol="http" type="ws_sqlSoapBinding" plugin="ws_sql" netAddress="0.0.0.0" port="8510" defaultBinding="true" wsdlServiceAddress="" defaultServiceVersion=""/>
       <EspService name="DESDLServiceTemplate" type="DESDLServiceTemplate" plugin="esdl_svc_engine" namespaceBase="urn:hpccsystems:ws"/>
       <EspBinding name="DESDLBindingTemplate" service="DESDLServiceTemplate" protocol="http" type="EsdlBinding" plugin="esdl_svc_engine" netAddress="0.0.0.0" port="0"/>
-   <Authentication checkViewPermissions="false" htpasswdFile="/etc/HPCCSystems/.htpasswd" ldapAuthMethod="kerberos" 
+   <Authentication checkViewPermissions="false" htpasswdFile="/etc/HPCCSystems/.htpasswd"
                    ldapConnections="10" ldapServer="" method="none" passwordExpirationWarningDays="10"/>
    </EspProcess>
   </Software>

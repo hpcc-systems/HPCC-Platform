@@ -38,7 +38,7 @@ interface IConstWUGraphProgress;
 
 class graphmaster_decl CThorStatsCollection : public CInterface
 {
-    std::vector<OwnedMalloc<CRuntimeStatisticCollection>> nodeStats;
+    std::vector<OwnedPtr<CRuntimeStatisticCollection>> nodeStats;
     const StatisticsMapping & mapping;
 public:
     CThorStatsCollection(const StatisticsMapping & _mapping) : mapping(_mapping), nodeStats(queryClusterWidth())
@@ -237,7 +237,7 @@ class graphmaster_decl CMasterActivity : public CActivityBase, implements IThrea
     IArrayOf<IDistributedFile> readFiles;
 
 protected:
-    std::vector<OwnedMalloc<CThorEdgeCollection>> edgeStatsVector;
+    std::vector<OwnedPtr<CThorEdgeCollection>> edgeStatsVector;
     CThorStatsCollection statsCollection;
     IBitSet *notedWarnings;
 

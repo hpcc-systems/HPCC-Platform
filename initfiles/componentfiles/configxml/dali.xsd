@@ -374,16 +374,16 @@
         </xs:restriction>
       </xs:simpleType>
     </xs:attribute>
-    <xs:attribute name="authMethod" use="optional" default="kerberos">
+    <xs:attribute name="authMethod" use="optional" default="">
       <xs:annotation>
         <xs:appinfo>
-          <tooltip>The protocol to use for LDAP authentication.</tooltip>
+          <tooltip>The method to use for authentication and authorization.</tooltip>
         </xs:appinfo>
       </xs:annotation>
       <xs:simpleType>
         <xs:restriction base="xs:string">
-          <xs:enumeration value="kerberos"/>
-          <xs:enumeration value="simple"/>
+          <xs:enumeration value=""/>
+          <xs:enumeration value="LDAP"/>
           <xs:enumeration value="secmgrPlugin"/>
         </xs:restriction>
       </xs:simpleType>

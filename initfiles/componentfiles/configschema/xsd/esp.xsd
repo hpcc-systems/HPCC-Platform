@@ -145,10 +145,10 @@
                                     <xs:restriction base="xs:string">
                                         <xs:enumeration value="none" hpcc:description=""/>
                                         <xs:enumeration value="ldap"
-                                                        hpcc:requiredAttributes="ldapServer,ldapAuthMethod,ldapConnections,passwordExpirationWarningDays,checkViewPermissions"
+                                                        hpcc:requiredAttributes="ldapServer,ldapConnections,passwordExpirationWarningDays,checkViewPermissions"
                                                         hpcc:description=""/>
                                         <xs:enumeration value="ldaps"
-                                                        hpcc:requiredAttributes="ldapServer,ldapAuthMethod,ldapConnections,passwordExpirationWarningDays,checkViewPermissions"
+                                                        hpcc:requiredAttributes="ldapServer,ldapConnections,passwordExpirationWarningDays,checkViewPermissions"
                                                         hpcc:description=""/>
                                         <xs:enumeration value="userNameOnly"
                                                         hpcc:requiredAttributes="getUserNameURL,getUserNameUnrestrictedResources"
@@ -160,17 +160,6 @@
                             <xs:attribute name="ldapServer" type="xs:string"
                                           hpcc:displayName="LDAP Server" hpcc:requiredIf=".[@method=('ldap','ldaps')]"
                                           hpcc:tooltip="The ldap server to be used for authentication"/>
-                            <xs:attribute name="ldapAuthMethod" type="xs:string"
-                                          hpcc:presetValue="kerberos" hpcc:displayName="LDAP Auth Method"
-                                          hpcc:requiredIf=".[@method=('ldap','ldaps')]"
-                                          hpcc:tooltip="The protocol to use for LDAP authentication">
-                                <xs:simpleType>
-                                    <xs:restriction base="xs:string">
-                                        <xs:enumeration value="kerberos" hpcc:description=""/>
-                                        <xs:enumeration value="simple" hpcc:description=""/>
-                                    </xs:restriction>
-                                </xs:simpleType>
-                            </xs:attribute>
                             <xs:attribute name="ldapConnections" type="xs:nonNegativeInteger"
                                           hpcc:presetValue="10" hpcc:displayName="LDAP Connections"
                                           hpcc:tooltip="Maximum number of connections to the LDAP server"

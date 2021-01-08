@@ -16,6 +16,7 @@
 ############################################################################## */
 
 //class=embedded
+//class=embedded-js
 //class=3rdparty
 
 import Javascript;
