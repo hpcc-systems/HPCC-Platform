@@ -17,6 +17,13 @@
 
 ////////////////////////////////////////////////////////////
 
+ESPenum RoxieQueueFilter : string
+{
+    All("All"),
+    QueriesOnly("QueriesOnly"),
+    WorkunitsOnly("WorkunitsOnly")
+};
+
 //  ===========================================================================
 
 ESPStruct TpMachine
@@ -62,6 +69,7 @@ ESPStruct TpLogicalCluster
         [min_ver("1.14")] string LanguageVersion;
     [min_ver("1.11")] string Process;
     [min_ver("1.22")] string Type;
+    [min_ver("1.31")] bool QueriesOnly;
 };
 //  ===========================================================================
 
@@ -375,6 +383,7 @@ ESPresponse [exceptions_inline]TpClusterQueryResponse
 ESPrequest TpLogicalClusterQueryRequest
 {
     string EclServerQueue;
+    [min_ver("1.31")] ESPenum RoxieQueueFilter RoxieQueueFilter;
 };
 
 ESPresponse [exceptions_inline] TpLogicalClusterQueryResponse
@@ -637,7 +646,7 @@ ESPresponse [nil_remove, exceptions_inline] TpDropZoneQueryResponse
     ESParray<ESPstruct TpDropZone>    TpDropZones;
 };
 
-ESPservice [auth_feature("DEFERRED"), noforms, version("1.30"), cache_group("ESPWsTP"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
+ESPservice [auth_feature("DEFERRED"), noforms, version("1.31"), cache_group("ESPWsTP"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
 {
     ESPmethod [cache_seconds(180), cache_global(1), resp_xsl_default("/esp/xslt/targetclusters.xslt")] TpTargetClusterQuery(TpTargetClusterQueryRequest, TpTargetClusterQueryResponse);
     ESPmethod [cache_seconds(180), cache_global(1), resp_xsl_default("/esp/xslt/topology.xslt")] TpClusterQuery(TpClusterQueryRequest, TpClusterQueryResponse);
