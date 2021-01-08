@@ -1322,14 +1322,27 @@ bool CWsTopologyEx::onTpLogicalClusterQuery(IEspContext &context, IEspTpLogicalC
         IArrayOf<IEspTpLogicalCluster> clusters;
         CConstWUClusterInfoArray wuClusters;
 #ifdef _CONTAINERIZED
+        double version = context.getClientVersion();
+        CRoxieQueueFilter roxieQueueFilter = req.getRoxieQueueFilter();
+        if (roxieQueueFilter == RoxieQueueFilter_Undefined)
+            roxieQueueFilter = CRoxieQueueFilter_All;
+
         Owned<IPropertyTreeIterator> iter = queryComponentConfig().getElements("queues");
         ForEach(*iter)
         {
             IPropertyTree &queue = iter->query();
+            bool queriesOnly = queue.getPropBool("@queriesOnly");
+            if (queriesOnly && (roxieQueueFilter == CRoxieQueueFilter_WorkunitsOnly))
+                continue;
+            if (!queriesOnly && (roxieQueueFilter == CRoxieQueueFilter_QueriesOnly))
+                continue;
+
             Owned<IEspTpLogicalCluster> cluster = createTpLogicalCluster();
             cluster->setName(queue.queryProp("@name"));
             cluster->setType(queue.queryProp("@type"));
             cluster->setLanguageVersion("3.0.0");
+            if (version >= 1.31)
+                cluster->setQueriesOnly(queriesOnly);
             clusters.append(*cluster.getClear());
         }
 #else
