@@ -41,17 +41,16 @@ extern ECLRTL_API RecordTranslationMode getTranslationMode(const char *val, bool
     else if (strieq(val, "alwaysDisk") || strieq(val, "disk"))
     {
         if (!isLocal)
-            throw makeStringException(0, "alwaysDisk translation mode can only be set via HINT");
+            WARNLOG("alwaysDisk translation mode should only ever be used via a HINT");
         return RecordTranslationMode::AlwaysDisk;
     }
     else if (strieq(val, "alwaysECL") || strieq(val, "ecl"))
     {
-        if (!isLocal)
-            throw makeStringException(0, "alwaysECL translation mode can only be set via HINT");
-        return RecordTranslationMode::AlwaysECL;
+        if (isLocal)
+            return RecordTranslationMode::AlwaysECL;
+        WARNLOG("Unsupported alwaysECL translation mode used globally, translation disabled - use with HINT to set locally.");
     }
-    else
-        return RecordTranslationMode::None;
+    return RecordTranslationMode::None;
 }
 
 extern ECLRTL_API const char *getTranslationModeText(RecordTranslationMode val)
