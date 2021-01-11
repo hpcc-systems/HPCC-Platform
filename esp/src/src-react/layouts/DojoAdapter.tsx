@@ -31,8 +31,9 @@ export const DojoAdapter: React.FunctionComponent<DojoProps> = ({
     React.useEffect(() => {
 
         const elem = document.createElement("div");
-        myRef.current.innerText = "";
-        myRef.current.appendChild(elem);
+        const divRef = myRef.current;
+        divRef.innerText = "";
+        divRef.appendChild(elem);
 
         let widget = undefined;
 
@@ -78,12 +79,12 @@ export const DojoAdapter: React.FunctionComponent<DojoProps> = ({
                 });
                 //  ---
 
-                const domNode = ReactDOM.findDOMNode(myRef.current) as Element;
+                const domNode = ReactDOM.findDOMNode(divRef) as Element;
                 domNode.innerHTML = "";
             }
             widget = null;  //  Avoid race condition  ---
         };
-    }, [widgetClassID]);
+    }, [onWidgetMount, params, uid, widgetClass, widgetClassID]);
 
     return <div ref={myRef} style={{ width: "100%", height: "100%" }}>{nlsHPCC.Loading} {widgetClassID}...</div>;
 };

@@ -85,7 +85,7 @@ export const WUStatus: React.FunctionComponent<WUStatus> = ({
         return () => {
             wuWatchHandle.release();
         };
-    }, []);
+    }, [wuid]);
 
     return (
         <MuiThemeProvider theme={theme}>
