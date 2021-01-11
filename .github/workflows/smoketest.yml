@@ -52,6 +52,9 @@ on:
       - "!candidate-7.0.*"
       - "!candidate-6.*"
 
+# NB: this fails to cancel in-flight actions, with error 'Resource not accessible by integration',
+# but it's non-fatal. Appears to be dependent on what permissions the PR owner has, i.e. the github token used
+# does not have permission to cancel actions.
 jobs:
   check-skip:
     # continue-on-error: true # Uncomment once integration is finished
