@@ -41,11 +41,6 @@ on:
       - "!candidate-7.2.*"
       - "!candidate-7.0.*"
       - "!candidate-6.*"
-    paths-ignore:
-      - "devdoc/**"
-      - "docs/**"
-      - "helm/**"
-      - "clienttools/**"
 
   pull_request:
     branches:
@@ -56,15 +51,25 @@ on:
       - "!candidate-7.2.*"
       - "!candidate-7.0.*"
       - "!candidate-6.*"
-    paths-ignore:
-      - "devdoc/**"
-      - "docs/**"
-      - "helm/**"
-      - "clienttools/**"
 
 jobs:
+  check-skip:
+    # continue-on-error: true # Uncomment once integration is finished
+    runs-on: ubuntu-latest
+    # Map a step output to a job output
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: hpcc-systems/skip-duplicate-actions@master
+        with:
+          github_token: ${{ github.token }}
+          paths_ignore: '["clienttools/**", "devdoc/**", "dockerfiles/**", "docs/**", "helm/**" ]'
+
   build-and-setup:
     name: Build platform and regress setup container
+    needs: check-skip
+    if: ${{ needs.check-skip.outputs.should_skip != 'true' }}
     runs-on: ubuntu-20.04
     timeout-minutes: 120 # Generous, typical build time from clean is < 60
     outputs:
