@@ -2966,6 +2966,8 @@ protected:
     Owned<IColumnProvider> cur;
 };
 
+constexpr unsigned daliResultOutputMax = 100; // MB
+
 #ifdef STARTQUERY_EXPORTS
 #define STARTQUERY_API DECL_EXPORT
 #else
