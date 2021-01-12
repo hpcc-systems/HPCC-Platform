@@ -1,10 +1,13 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
+import { initializeIcons } from "@fluentui/react";
 import { initSession } from "src/Session";
 
 import "css!dojo-themes/flat/flat.css";
 import "css!hpcc/css/ecl.css";
 import "css!hpcc/css/hpcc.css";
+
+initializeIcons();
 
 declare const dojoConfig: any;
 
@@ -23,7 +26,9 @@ dojoConfig.disableLegacyHashing = true;
 
 initSession();
 
-ReactDOM.render(
-    <h1>ECL Watch 8.0 - comming to a cloud near you in 2021</h1>,
-    document.getElementById("placeholder")
-);
+import("./components/Frame").then(_ => {
+    ReactDOM.render(
+        <_.DevFrame />,
+        document.getElementById("placeholder")
+    );
+});

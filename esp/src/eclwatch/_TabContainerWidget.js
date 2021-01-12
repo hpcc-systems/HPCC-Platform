@@ -123,7 +123,7 @@ define([
             if (!path)
                 return;
 
-            if (noHash) {
+            if (noHash || dojoConfig.disableLegacyHashing) {
                 var d = 0;
             } else {
                 hash(path, replace);
