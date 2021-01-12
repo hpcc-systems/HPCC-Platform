@@ -1,11 +1,11 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
-import { useId } from "@fluentui/react-hooks";
+import { useConst, useId } from "@fluentui/react-hooks";
 import * as registry from "dijit/registry";
 import nlsHPCC from "src/nlsHPCC";
 import { resolve } from "src/Utility";
 
-export interface DojoProps {
+export interface DojoAdapterProps {
     widgetClassID?: string;
     widgetClass?: any;
     params?: object;
@@ -18,7 +18,7 @@ export interface DojoState {
     widget: any;
 }
 
-export const DojoAdapter: React.FunctionComponent<DojoProps> = ({
+export const DojoAdapter: React.FunctionComponent<DojoAdapterProps> = ({
     widgetClassID,
     widgetClass,
     params,
@@ -87,4 +87,47 @@ export const DojoAdapter: React.FunctionComponent<DojoProps> = ({
     }, [onWidgetMount, params, uid, widgetClass, widgetClassID]);
 
     return <div ref={myRef} style={{ width: "100%", height: "100%" }}>{nlsHPCC.Loading} {widgetClassID}...</div>;
+};
+
+export interface DojoComponentProps {
+    Widget: any;
+    WidgetParams: any;
+    postCreate?: (widget: any) => void;
+}
+
+export const DojoComponent: React.FunctionComponent<DojoComponentProps> = ({
+    Widget,
+    WidgetParams,
+    postCreate
+}) => {
+
+    const id = useId();
+    const divID = useConst(`dojo-component-${id}`);
+
+    React.useEffect(() => {
+        const w = new Widget({
+            ...WidgetParams,
+            id: `dojo-component-widget-${id}`,
+            style: {
+                margin: "0px",
+                padding: "0px",
+                width: "100%",
+                height: "100%"
+            }
+        }, divID);
+
+        if (postCreate) {
+            postCreate(w);
+        }
+
+        return () => {
+            w.destroyRecursive();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    return <div style={{ width: "100%", height: "100%", position: "relative" }}>
+        <div id={divID} className="dojo-component">
+        </div>
+    </div>;
 };

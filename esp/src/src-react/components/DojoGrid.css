@@ -1,0 +1,66 @@
+:root {
+    --grid-font-family: "Segoe WPC", "Segoe UI", sans-serif;
+    --header-font-size: 14px;
+    --row-font-size: 13px;
+    --grid-background: transparent;
+    --grid-selectionForeground: rgb(50, 49, 48);
+    --grid-selectionBackground: rgb(235, 235, 235);
+    --grid-hoverBackground: rgb(247, 245, 243);
+    --grid-selectionHoverBackground: rgb(227, 225, 223);
+}
+
+.flat .dojo-component.dgrid.dgrid-grid {
+    font-family: var(--grid-font-family);
+    border-style: hidden;
+}
+
+.flat .dojo-component.dgrid .dgrid-header-row {
+    background-color: var(--grid-background);
+    font-size: var(--header-font-size);
+    line-height: 32px;
+}
+
+.flat .dojo-component.dgrid .dgrid-header-row .dgrid-cell {
+    border-bottom-color: var(--grid-selectionBackground);
+}
+
+.flat .dojo-component.dgrid .dgrid-header-row:focus {
+    outline-width: 0px;
+}
+
+.flat .dojo-component.dgrid .dgrid-header.dgrid-header-scroll {
+    background-color: var(--grid-background);
+}
+
+.flat .dojo-component.dgrid .dgrid-row {
+    font-family: var(--grid-font-family);
+    font-size: var(--row-font-size);
+    line-height: 22px;
+}
+
+.flat .dojo-component.dgrid .dgrid-row:hover {
+    background-color: var(--grid-hoverBackground);
+}
+
+.flat .dojo-component.dgrid .dgrid-row.dgrid-selected:hover {
+    background-color: var(--grid-selectionHoverBackground);
+}
+
+.flat .dojo-component.dgrid .dgrid-row .dgrid-selected {
+    background-color: var(--grid-selectionBackground);
+    color: var(--grid-selectionForeground);
+    border-color: var(--grid-background);
+}
+
+.flat .dojo-component.dgrid .dgrid-cell {
+    border-color: var(--grid-background);
+}
+
+.flat .dojo-component.dgrid .dgrid-focus:focus {
+    outline-width: 0px;
+}
+
+.flat .dojo-component.dgrid .dgrid-fakeline {
+    border: 0px;
+    margin: 2px;
+}

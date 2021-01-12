@@ -17,6 +17,7 @@ const navLinkGroups: INavLinkGroup[] = [
         name: "ECL",
         links: [
             { url: "#/workunits", name: nlsHPCC.Workunits },
+            { url: "#/workunits/legacy", name: `${nlsHPCC.Workunits} (L)` },
             { url: "#/play", name: nlsHPCC.Playground },
         ]
     },
@@ -65,12 +66,12 @@ const navStyles = (width: number, height: number): Partial<INavStyles> => {
             boxSizing: "border-box",
             border: "1px solid #eee",
             overflow: "auto",
-        },
+        }
     };
 };
 
 interface DevMenuProps {
-    location: string,
+    location: string
 }
 
 export const DevMenu: React.FunctionComponent<DevMenuProps> = ({
