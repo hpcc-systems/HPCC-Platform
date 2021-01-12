@@ -474,8 +474,7 @@ bool CWsWorkunitsEx::onWUCopyLogicalFiles(IEspContext &context, IEspWUCopyLogica
         cluster.set(req.getCluster());
     else
         cluster.set(cw->queryClusterName());
-    if (!isValidCluster(cluster))
-        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", cluster.str());
+    validateTargetName(cluster);
 
     Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster.str());
 
@@ -880,10 +879,7 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
         target.set(req.getCluster());
     else
         target.set(cw->queryClusterName());
-    if (!target.length())
-        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Cluster name not defined for publishing workunit %s", wuid.str());
-    if (!isValidCluster(target.str()))
-        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", target.str());
+    validateTargetName(target);
 
     DBGLOG("%s publishing wuid %s to target %s as query %s", context.queryUserId(), wuid.str(), target.str(), queryName.str());
 
@@ -1827,11 +1823,9 @@ bool CWsWorkunitsEx::onWUListQueriesUsingFile(IEspContext &context, IEspWUListQu
 bool CWsWorkunitsEx::onWUQueryFiles(IEspContext &context, IEspWUQueryFilesRequest &req, IEspWUQueryFilesResponse &resp)
 {
     const char *target = req.getTarget();
+    validateTargetName(target);
+
     const char *query = req.getQueryId();
-    if (!target || !*target)
-        throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Target not specified");
-    if (!isValidCluster(target))
-        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid target name: %s", target);
     if (!query || !*query)
         throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query not specified");
     Owned<IPropertyTree> registeredQuery = resolveQueryAlias(target, query, true);
@@ -2506,10 +2500,7 @@ void expandQueryActionTargetList(IProperties *queryIds, IPropertyTree *queryset,
 bool CWsWorkunitsEx::onWUQueryConfig(IEspContext &context, IEspWUQueryConfigRequest & req, IEspWUQueryConfigResponse & resp)
 {
     StringAttr target(req.getTarget());
-    if (target.isEmpty())
-        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Target name required");
-    if (!isValidCluster(target))
-        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid target name: %s", target.get());
+    validateTargetName(target);
 
     Owned<IPropertyTree> queryset = getQueryRegistry(target.get(), false);
     if (!queryset)
@@ -3004,14 +2995,11 @@ bool CWsWorkunitsEx::onWUCopyQuerySet(IEspContext &context, IEspWUCopyQuerySetRe
     StringBuffer srcTarget;
     if (!splitQueryPath(source, srcAddress, srcTarget, NULL))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid source target");
-    if (!srcAddress.length() && !isValidCluster(srcTarget))
-        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid source target name: %s", source);
+    if (!srcTarget.isEmpty())
+        validateTargetName(srcTarget);
 
     const char *target = req.getTarget();
-    if (!target || !*target)
-        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "No destination target specified");
-    if (!isValidCluster(target))
-        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid destination target name: %s", target);
+    validateTargetName(target);
 
     DBGLOG("%s copying queryset %s from %s target %s", context.queryUserId(), target, srcAddress.str(), srcTarget.str());
 
@@ -3069,8 +3057,7 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid target queryset name");
     if (req.getCluster() && *req.getCluster() && !strieq(req.getCluster(), target)) //backward compatability check
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid target cluster and queryset must match");
-    if (!isValidCluster(target))
-        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid target name: %s", target);
+    validateTargetName(target);
 
     StringBuffer srcAddress, srcQuerySet, srcQuery;
     if (!splitQueryPath(source, srcAddress, srcQuerySet, &srcQuery))
