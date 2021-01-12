@@ -17,10 +17,11 @@ RETURN MODULE
  * @param sender        The sender of the email. Defaults to GETENV(emailSenderAddress)
  * @param cc            Optional comma-delimited addresses of carbon-copy recipients. Defaults to an empty string (none).
  * @param bcc           Optional comma-delimited addresses of blind-carbon-copy recipients. Defaults to an empty string (none).
+ * @param highPriority  Optional; if true, message is sent with high priority. Defaults to false (normal priority).
  */
 
-EXPORT SendEmail(varstring to, varstring subject, varstring body, varstring mailServer=GETENV('SMTPserver'), unsigned4 port=(unsigned4) GETENV('SMTPport', '25'), varstring sender=GETENV('emailSenderAddress'), varstring cc='', varstring bcc='') :=
-    lib_fileservices.FileServices.SendEmail(to, subject, body, mailServer, port, sender, cc, bcc);
+EXPORT SendEmail(varstring to, varstring subject, varstring body, varstring mailServer=GETENV('SMTPserver'), unsigned4 port=(unsigned4) GETENV('SMTPport', '25'), varstring sender=GETENV('emailSenderAddress'), varstring cc='', varstring bcc='', boolean highPriority=false) :=
+    lib_fileservices.FileServices.SendEmail(to, subject, body, mailServer, port, sender, cc, bcc, highPriority);
 
 /*
  * Sends an email message with a text attachment using a mail server.
@@ -34,10 +35,11 @@ EXPORT SendEmail(varstring to, varstring subject, varstring body, varstring mail
  * @param sender        The sender of the email. Defaults to GETENV(emailSenderAddress)
  * @param cc            Optional comma-delimited addresses of carbon-copy recipients. Defaults to an empty string (none).
  * @param bcc           Optional comma-delimited addresses of blind-carbon-copy recipients. Defaults to an empty string (none).
+ * @param highPriority  Optional; if true, message is sent with high priority. Defaults to false (normal priority).
  */
 
-EXPORT SendEmailAttachText(varstring to, varstring subject, varstring body, varstring attachment, varstring mimeType, varstring attachmentName, varstring mailServer=GETENV('SMTPserver'), unsigned4 port=(unsigned4) GETENV('SMTPport', '25'), varstring sender=GETENV('emailSenderAddress'), varstring cc='', varstring bcc='') :=
-    lib_fileservices.FileServices.SendEmailAttachText(to, subject, body, attachment, mimeType, attachmentName, mailServer, port, sender, cc, bcc);
+EXPORT SendEmailAttachText(varstring to, varstring subject, varstring body, varstring attachment, varstring mimeType, varstring attachmentName, varstring mailServer=GETENV('SMTPserver'), unsigned4 port=(unsigned4) GETENV('SMTPport', '25'), varstring sender=GETENV('emailSenderAddress'), varstring cc='', varstring bcc='', boolean highPriority=false) :=
+    lib_fileservices.FileServices.SendEmailAttachText(to, subject, body, attachment, mimeType, attachmentName, mailServer, port, sender, cc, bcc, highPriority);
 
 /*
  * Sends an email message with an arbitrary attachment using a mail server.
@@ -53,9 +55,10 @@ EXPORT SendEmailAttachText(varstring to, varstring subject, varstring body, vars
  * @param sender            The sender of the email. Defaults to GETENV(emailSenderAddress)
  * @param cc                Optional comma-delimited addresses of carbon-copy recipients. Defaults to an empty string (none).
  * @param bcc               Optional comma-delimited addresses of blind-carbon-copy recipients. Defaults to an empty string (none).
+ * @param highPriority  Optional; if true, message is sent with high priority. Defaults to false (normal priority).
  */
 
-EXPORT SendEmailAttachData(varstring to, varstring subject, varstring body, data attachment, varstring mimeType, varstring attachmentName, varstring mailServer=GETENV('SMTPserver'), unsigned4 port=(unsigned4) GETENV('SMTPport', '25'), varstring sender=GETENV('emailSenderAddress'), varstring cc='', varstring bcc='') :=
-    lib_fileservices.FileServices.SendEmailAttachData(to, subject, body, attachment, mimeType, attachmentName, mailServer, port, sender, cc, bcc);
+EXPORT SendEmailAttachData(varstring to, varstring subject, varstring body, data attachment, varstring mimeType, varstring attachmentName, varstring mailServer=GETENV('SMTPserver'), unsigned4 port=(unsigned4) GETENV('SMTPport', '25'), varstring sender=GETENV('emailSenderAddress'), varstring cc='', varstring bcc='', boolean highPriority=false) :=
+    lib_fileservices.FileServices.SendEmailAttachData(to, subject, body, attachment, mimeType, attachmentName, mailServer, port, sender, cc, bcc, highPriority);
 
 END;

@@ -475,14 +475,15 @@ class CMailInfo
     StringBuffer lastAction;
     char inbuff[200];
     unsigned inlen;
+    bool highPriority;
 
     static char const * toHeader;
     static char const * ccHeader;
     static char const * subjectHeader;
     static char const * senderHeader;
 public:
-    CMailInfo(char const * _to, char const * _cc, char const * _bcc, char const * _subject, char const * _mailServer, unsigned _port, char const * _sender, StringArray *_warnings)
-        : subject(_subject), mailServer(_mailServer), port(_port), sender(_sender), lastAction("process initialization"), inlen(0)
+    CMailInfo(char const * _to, char const * _cc, char const * _bcc, char const * _subject, char const * _mailServer, unsigned _port, char const * _sender, StringArray *_warnings, bool _highPriority)
+        : subject(_subject), mailServer(_mailServer), port(_port), sender(_sender), lastAction("process initialization"), inlen(0), highPriority(_highPriority)
     {
         warnings = _warnings;
         CSMTPValidator validator;
@@ -585,6 +586,11 @@ public:
             header.append(ccHeader).append(cc.str()).append("\r\n");
         // Do not append bcc (that's what makes it "blind")
         header.append(subjectHeader).append(subject.get()).append("\r\n");
+        if (highPriority)
+        {
+            header.append("X-Priority: 1\r\n");
+            header.append("Importance: high\r\n");
+        }
         header.append("MIME-Version: 1.0\r\n");
     }
 
@@ -801,43 +807,43 @@ static void doSendEmail(CMailInfo & info, CMailPart const & part)
     info.read();
 }
 
-void sendEmail(const char * to, const char * cc, const char * bcc, const char * subject, const char * body, const char * mailServer, unsigned port, const char * sender, StringArray *warnings)
+void sendEmail(const char * to, const char * cc, const char * bcc, const char * subject, const char * body, const char * mailServer, unsigned port, const char * sender, StringArray *warnings, bool highPriority)
 {
-    CMailInfo info(to, cc, bcc, subject, mailServer, port, sender, warnings);
+    CMailInfo info(to, cc, bcc, subject, mailServer, port, sender, warnings, highPriority);
     CTextMailPart bodyPart(body, "text/plain; charset=ISO-8859-1", NULL);
     doSendEmail(info, bodyPart);
 }
 
-void sendEmail(const char * to, const char * subject, const char * body, const char * mailServer, unsigned port, const char * sender, StringArray *warnings)
+void sendEmail(const char * to, const char * subject, const char * body, const char * mailServer, unsigned port, const char * sender, StringArray *warnings, bool highPriority)
 {
-    sendEmail(to, nullptr, nullptr, subject, body, mailServer, port, sender, warnings);
+    sendEmail(to, nullptr, nullptr, subject, body, mailServer, port, sender, warnings, highPriority);
 }
 
-void sendEmailAttachText(const char * to, const char * cc, const char * bcc, const char * subject, const char * body, const char * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings)
+void sendEmailAttachText(const char * to, const char * cc, const char * bcc, const char * subject, const char * body, const char * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings, bool highPriority)
 {
-    CMailInfo info(to, cc, bcc, subject, mailServer, port, sender, warnings);
+    CMailInfo info(to, cc, bcc, subject, mailServer, port, sender, warnings, highPriority);
     CTextMailPart inlinedPart(body, "text/plain; charset=ISO-8859-1", NULL);
     CTextMailPart attachmentPart(attachment, mimeType, attachmentName);
     CMultiMailPart multiPart(inlinedPart, attachmentPart);
     doSendEmail(info, multiPart);
 }
 
-void sendEmailAttachText(const char * to, const char * subject, const char * body, const char * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings)
+void sendEmailAttachText(const char * to, const char * subject, const char * body, const char * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings, bool highPriority)
 {
-    sendEmailAttachText(to, nullptr, nullptr, subject, body, attachment, mimeType, attachmentName, mailServer, port, sender, warnings);
+    sendEmailAttachText(to, nullptr, nullptr, subject, body, attachment, mimeType, attachmentName, mailServer, port, sender, warnings, highPriority);
 }
 
-void sendEmailAttachData(const char * to, const char * cc, const char * bcc, const char * subject, const char * body, size32_t lenAttachment, const void * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings)
+void sendEmailAttachData(const char * to, const char * cc, const char * bcc, const char * subject, const char * body, size32_t lenAttachment, const void * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings, bool highPriority)
 {
-    CMailInfo info(to, cc, bcc, subject, mailServer, port, sender, warnings);
+    CMailInfo info(to, cc, bcc, subject, mailServer, port, sender, warnings, highPriority);
     CTextMailPart inlinedPart(body, "text/plain; charset=ISO-8859-1", NULL);
     CDataMailPart attachmentPart(lenAttachment, attachment, mimeType, attachmentName);
     CMultiMailPart multiPart(inlinedPart, attachmentPart);
     doSendEmail(info, multiPart);
 }
 
-void sendEmailAttachData(const char * to, const char * subject, const char * body, size32_t lenAttachment, const void * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings)
+void sendEmailAttachData(const char * to, const char * subject, const char * body, size32_t lenAttachment, const void * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, StringArray *warnings, bool highPriority)
 {
-    sendEmailAttachData(to, nullptr, nullptr, subject, body, lenAttachment, attachment, mimeType, attachmentName, mailServer, port, sender, warnings);
+    sendEmailAttachData(to, nullptr, nullptr, subject, body, lenAttachment, attachment, mimeType, attachmentName, mailServer, port, sender, warnings, highPriority);
 }
 
