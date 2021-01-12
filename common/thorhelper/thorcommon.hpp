@@ -29,6 +29,7 @@
 #include "thorhelper.hpp"
 #include "thorxmlwrite.hpp"
 
+static unsigned const defaultDaliResultOutputMax = 2000; // MB
 static unsigned const defaultDaliResultLimit = 10; // MB
 static unsigned const defaultMaxCsvRowSize = 10; // MB
 
