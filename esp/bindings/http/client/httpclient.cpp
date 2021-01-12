@@ -30,6 +30,7 @@
 #include "SOAP/Platform/soapmessage.hpp"
 
 static Owned<CHttpClientContext> theHttpClientContext;
+static MapStringToMyClass<CHttpClientContext> httpClientContextsUsingSecrets;
 static CriticalSection httpCrit;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
@@ -40,6 +41,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 MODULE_EXIT()
 {
     theHttpClientContext.clear();
+    httpClientContextsUsingSecrets.kill();
 }
 
 /*************************************************************************
@@ -101,12 +103,12 @@ IHttpClient* CHttpClientContext::createHttpClient(const char* proxy, const char*
 
             if(m_config.get() == NULL)
             {
-                createSecureSocketContext_t xproc = NULL;
-                xproc = (createSecureSocketContext_t) pplg->getProcAddress("createSecureSocketContext");
+                createSecureSocketContextSecret_t xproc = NULL;
+                xproc = (createSecureSocketContextSecret_t) pplg->getProcAddress("createSecureSocketContextSecret");
                 if (xproc)
-                    m_ssctx.setown(xproc(ClientSocket));
+                    m_ssctx.setown(xproc(m_mtls_secret.str(), ClientSocket));
                 else
-                    throw MakeStringException(-1, "procedure createSecureSocketContext can't be loaded");
+                    throw MakeStringException(-1, "procedure createSecureSocketContextSecret can't be loaded");
             }
             else
             {
@@ -1046,6 +1048,25 @@ IHttpClientContext* getHttpClientContext()
         theHttpClientContext.setown(new CHttpClientContext());
     }
     return theHttpClientContext.getLink();
+}
+
+IHttpClientContext* getHttpClientSecretContext(const char *secret)
+{
+    if (isEmptyString(secret))
+        return getHttpClientContext();
+    else
+    {
+        CriticalBlock b(httpCrit);
+        CHttpClientContext *ctx = httpClientContextsUsingSecrets.getValue(secret);
+        if(ctx == NULL)
+        {
+            Owned<CHttpClientContext> newctx = new CHttpClientContext();
+            newctx->setMtlsSecretName(secret);
+            httpClientContextsUsingSecrets.setValue(secret, newctx.getLink());
+            return newctx.getClear();
+        }
+        return LINK(ctx);
+    }
 }
 
 IHttpClientContext* createHttpClientContext(IPropertyTree* config)

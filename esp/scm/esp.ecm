@@ -310,6 +310,8 @@ SCMinterface IEspClientRpcSettings(IEspStruct)
 
     void setReadTimeOutSecs(unsigned val);
     unsigned getReadTimeOutSecs();
+    void setMtlsSecretName(const char *name);
+    const char *getMtlsSecretName();
 };
 
 SCMinterface IEspResponse(IEspStruct)

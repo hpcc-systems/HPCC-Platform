@@ -115,6 +115,53 @@ storage:
     # existingClaim: ""
     # forcePermissions: false
 
+## The certificates section can be used to enable cert-manager to generate TLS certificates for each component in the hpcc.
+## You must first install cert-manager to use this feature.
+## https://cert-manager.io/docs/installation/kubernetes/#installing-with-helm
+##
+## The Certificate issuers are divided into "local" (those which will be used for local mutual TLS) and "public" those
+## which will be publicly accesible and therefore need to be recognized by browsers and/or other entities.
+##
+## Both public and local issuers have a spec section. The contents of the "spec" are documented in the cer-manager
+## "Issuer configuration" documentation. https://cert-manager.io/docs/configuration/#supported-issuer-types
+##
+## The default configuration is meant to provide reasonable functionality without additional dependencies.
+##
+## Public issuers can be tricky if you want browsers to recognize the certificates.  This is a complex topic outside the scope
+## of this comment.  The default for the public issuer generates self signed certifiecates. The expectation is that this will be
+## overriden by the configuration of an external certificate authority or vault in QA and production environments.
+##
+## The default for the local (mTLS) issuer is designed to act as our own local certificate authority. We need only need to recognize
+## what a component is, and that it belongs to this cluster.
+## But a kubernetes secret must be provided for the certificate authority key-pair.  The default name for the secret
+## is "local-issuer-ca-key-pair". The secret is a standard kubernetes.io/tls secret and should provide data values for
+## "tls.crt" and "tls.key".
+##
+## The local issuer can also be configured to use an external certificate authority or vault.
+##
+certificates:
+  enabled: false
+  issuers:
+    local:
+      name: hpcc-local-issuer
+      ## kind can be changed to ClusterIssue to refer to a ClusterIssuer. https://cert-manager.io/docs/reference/api-docs/#cert-manager.io/v1.ClusterIssuer
+      kind: Issuer
+      ## do not define spec (set spec: null), to reference an Issuer resource that already exists in the cluster
+      ## change spec if you'd like to change how certificates get issued... see ## https://cert-manager.io/docs/configuration/#supported-issuer-types
+      ## for information on what spec should contain.
+      spec:
+        ca:
+          secretName: hpcc-local-issuer-key-pair
+    public:
+      name: hpcc-public-issuer
+      ## kind can be changed to ClusterIssue to refer to a ClusterIssuer. https://cert-manager.io/docs/reference/api-docs/#cert-manager.io/v1.ClusterIssuer
+      kind: Issuer
+      ## do not define spec (set spec: null), to reference an Issuer resource that already exists in the cluster
+      ## change spec if you'd like to change how certificates get issued... see ## https://cert-manager.io/docs/configuration/#supported-issuer-types
+      ## for information on what spec should contain.
+      spec:
+        selfSigned: {}
+
 ## The secrets section contains a set of categories, each of which contain a list of secrets.  The categories deterime which
 ## components have access to the secrets.
 ## For each secret:
@@ -302,7 +349,6 @@ esp:
   ## Pre-configured esp applications include eclwatch, eclservices, and eclqueries
   application: eclwatch
   auth: none
-  tls: off
   replicas: 1
   ## port can be used to change the local port used by the pod. If omitted, the default port (8880) is used
   port: 8888
@@ -313,47 +359,40 @@ esp:
   #resources:
   #  cpu: "1"
   #  memory: "2G"
-
 - name: eclservices
   application: eclservices
   auth: none
-  tls: off
   replicas: 1
   servicePort: 8010
   public: false
   #resources:
   #  cpu: "250m"
   #  memory: "1G"
-
 - name: eclqueries
   application: eclqueries
   auth: none
-  tls: off
   replicas: 1
   public: true
   servicePort: 8002
   #resources:
   #  cpu: "250m"
   #  memory: "1G"
-
 - name: esdl-sandbox
   application: esdl-sandbox
   auth: none
-  tls: off
   replicas: 1
   public: true
   servicePort: 8899
   #resources:
   #  cpu: "250m"
   #  memory: "1G"
-
 - name: sql2ecl
   application: sql2ecl
   auth: none
-  tls: off
   replicas: 1
   public: true
   servicePort: 8510
+  #domain: hpccsql.com
   #resources:
   #  cpu: "250m"
   #  memory: "1G"

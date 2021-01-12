@@ -148,7 +148,7 @@ int CSoapClient::postRequest(const char* contenttype, const char* soapaction, IR
     //Send request and get response
     if(m_transportclient.get() == NULL)
     {
-        Owned<IHttpClientContext> httpctx = getHttpClientContext();
+        Owned<IHttpClientContext> httpctx = getHttpClientSecretContext(m_mtls_secret);
         Owned<IHttpClient> httpclient = httpctx->createHttpClient(call->getProxy(), call->get_url());
         if (m_disableKeepAlive)
             httpclient->disableKeepAlive();

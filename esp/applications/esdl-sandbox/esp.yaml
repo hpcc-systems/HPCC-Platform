@@ -13,14 +13,13 @@ esp:
    logDir: "-"
 
    tls_config:
-     certificate: /etc/HPCCSystems/certificates/{$instance}/server.crt
-     privatekey: /etc/HPCCSystems/certificates/{$instance}/private.key
-     cipherList:
-       verify:
-          enable: false
-          address_match: false
-          accept_selfsigned: true
-          ca_certificates:
-            - path: "ca.pem"
-          trusted_peers:
-            - anyone
+     certificate: /opt/HPCCSystems/secrets/certificates/public/tls.crt
+     privatekey: /opt/HPCCSystems/secrets/certificates/public/tls.key
+     cipherList: "ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:RSA+AES:RSA+3DES:!aNULL:!MD5"
+     verify:
+       enable: false
+       address_match: false
+       accept_selfsigned: false
+       trusted_peers: [ anyone ]
+       ca_certificates:
+       - path: "/opt/HPCCSystems/secrets/certificates/public/ca.crt"

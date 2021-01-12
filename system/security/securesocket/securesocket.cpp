@@ -23,6 +23,7 @@
 //jlib
 #include "jliball.hpp"
 #include "string.h"
+#include "jsecrets.hpp"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -1612,6 +1613,17 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx2(IPropertyTre
         return server_securesocket_context.getLink();
     }
 }       
+
+SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecret(const char *mtlsSecretName, SecureSocketType sockettype)
+{
+    IPropertyTree *info = queryMtlsSecretInfo(mtlsSecretName);
+    //if the secret doesn't exist doesn't exist just go on without it. IF it is required the tls connection will fail. 
+    //This is primarily for client side... server side would probably use the explict ptree config or explict cert param at least for now.
+    if (info)
+        return createSecureSocketContextEx2(info, sockettype);
+    else
+        return createSecureSocketContext(sockettype);
+}
 
 SECURESOCKET_API ICertificate *createCertificate()
 {
