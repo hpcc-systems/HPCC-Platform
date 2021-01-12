@@ -3,7 +3,8 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
   <bookinfo>
-    <title>HPCC Systems<superscript>®</superscript> Monitoring and Reporting (Technical Preview)</title>
+    <title>HPCC Systems<superscript>®</superscript> Monitoring and Reporting
+    (Technical Preview)</title>
 
     <mediaobject>
       <imageobject>
@@ -69,9 +70,9 @@
 
     <para><emphasis role="bold">Ganglia:</emphasis></para>
 
-    <para>The HPCC Systems monitoring component leverages Ganglia, an open source,
-    scalable, distributed monitoring system to display system information in a
-    graphical manner.</para>
+    <para>The HPCC Systems monitoring component leverages Ganglia, an open
+    source, scalable, distributed monitoring system to display system
+    information in a graphical manner.</para>
 
     <para>With the the graphical monitoring component you can: <itemizedlist>
         <listitem>
@@ -106,13 +107,13 @@
 
     <para><emphasis role="bold">Nagios</emphasis></para>
 
-    <para>The HPCC Systems reporting and alerting component leverages Nagios, a
-    powerful monitoring and notification system, which can help you identify
+    <para>The HPCC Systems reporting and alerting component leverages Nagios,
+    a powerful monitoring and notification system, which can help you identify
     and resolve infrastructure problems before they affect critical
     processes.</para>
 
-    <para>With the HPCC Systems reporting and alerting component you can set up alerts
-    to inform of any changes to:</para>
+    <para>With the HPCC Systems reporting and alerting component you can set
+    up alerts to inform of any changes to:</para>
 
     <para><itemizedlist>
         <listitem>
@@ -156,13 +157,13 @@
   <chapter id="Ganglya_Overview">
     <title>Ganglia</title>
 
-    <para>The HPCC Systems monitoring component leverages Ganglia, an open source,
-    scalable, distributed monitoring system, to produce a graphical view of a
-    Roxie cluster's servers. Ganglia leverages widely accepted technologies
-    for data representation. It provides near real-time monitoring and
-    visualizations for performance metrics. If your enterprise already has a
-    Ganglia monitoring server, you can easily add Roxie clusters to its
-    monitoring.</para>
+    <para>The HPCC Systems monitoring component leverages Ganglia, an open
+    source, scalable, distributed monitoring system, to produce a graphical
+    view of a Roxie cluster's servers. Ganglia leverages widely accepted
+    technologies for data representation. It provides near real-time
+    monitoring and visualizations for performance metrics. If your enterprise
+    already has a Ganglia monitoring server, you can easily add Roxie clusters
+    to its monitoring.</para>
 
     <sect1 id="Ganglia_Overview">
       <title>Ganglia Overview</title>
@@ -236,8 +237,8 @@
         <emphasis>/etc/ganglia/conf.d</emphasis> and
         <emphasis>/etc/ganglia/.pyconf</emphasis> files in place and then add
         the Roxie nodes you wish to monitor. You can do that by installing the
-        Ganglia components and HPCC Systems Monitoring components on to each Roxie
-        node.</para>
+        Ganglia components and HPCC Systems Monitoring components on to each
+        Roxie node.</para>
 
         <para>If you do not have Ganglia, or want to install it, read the
         Ganglia documentation provided at the above link, and install it and
@@ -247,13 +248,13 @@
         <sect3 id="Installing-HPCCGanglia" role="brk">
           <title>Installing the HPCC Systems Monitoring component</title>
 
-          <para>The HPCC Systems Monitoring component is available for download. The
-          HPCC Systems Monitoring components leverage the Ganglia monitoring tools,
-          and would only be needed if you do not already have Ganglia
-          monitoring components on your system.</para>
+          <para>The HPCC Systems Monitoring component is available for
+          download. The HPCC Systems Monitoring components leverage the
+          Ganglia monitoring tools, and would only be needed if you do not
+          already have Ganglia monitoring components on your system.</para>
 
-          <para>To get the HPCC Systems Monitoring components, find the appropriate
-          package for your system.</para>
+          <para>To get the HPCC Systems Monitoring components, find the
+          appropriate package for your system.</para>
 
           <para>Packages are available for download from the HPCC
           Systems<superscript>®</superscript> site:</para>
@@ -269,10 +270,10 @@
           <para>Find and install the appropriate package for your
           system.</para>
 
-          <para>For example, if you have a CentOS 6.x system, get the RPM
+          <para>For example, if you have a CentOS 8.x system, get the RPM
           package.</para>
 
-          <programlisting>hpccsystems-ganglia-monitoring-4.2.0-rc1.el6.x86_64.rpm</programlisting>
+          <programlisting>hpccsystems-ganglia-monitoring-7.12.18-rc1.el8.x86_64.rpm</programlisting>
 
           <para>Install the monitoring package on the system that you want to
           monitor. Optionally, you can look at that installation package
@@ -286,8 +287,8 @@
       <title>The HPCC Systems Ganglia Viewer</title>
 
       <para>A Ganglia viewer comes preinstalled and configured in the 4.2.x
-      (or later) HPCC Systems Virtual Machine. The monitoring provided with the
-      Virtual Machine is set up to monitor Roxie instances on the network.
+      (or later) HPCC Systems Virtual Machine. The monitoring provided with
+      the Virtual Machine is set up to monitor Roxie instances on the network.
       This document introduces the monitoring and describes how to get it
       working on your system. <figure>
           <title>HPCC Systems Monitoring</title>
@@ -331,9 +332,9 @@
       implement them on a larger system, is to examine the metrics in
       action.</para>
 
-      <para>Ganglia integration is built into the current HPCC Systems Virtual Machine
-      images. Download and start up a virtual image and look at how the
-      monitoring component works.</para>
+      <para>Ganglia integration is built into the current HPCC Systems Virtual
+      Machine images. Download and start up a virtual image and look at how
+      the monitoring component works.</para>
 
       <para>This allows you:</para>
 
@@ -391,8 +392,8 @@
         </listitem>
 
         <listitem>
-          <para>Deploy the monitoring daemon (gmond) and the HPCC Systems Monitoring
-          package to each of the nodes you wish to monitor.</para>
+          <para>Deploy the monitoring daemon (gmond) and the HPCC Systems
+          Monitoring package to each of the nodes you wish to monitor.</para>
         </listitem>
       </orderedlist>
 
@@ -400,9 +401,9 @@
       more Roxie nodes installed anywhere on the same network utilizing
       multi-cast.</para>
 
-      <para>To add a new Roxie node, install the HPCC Systems Monitoring package on to
-      each Roxie node to monitor. In most basic configurations you may need to
-      add the node(s) IP address(es) to the
+      <para>To add a new Roxie node, install the HPCC Systems Monitoring
+      package on to each Roxie node to monitor. In most basic configurations
+      you may need to add the node(s) IP address(es) to the
       <emphasis>/etc/ganglia/gmetad.conf</emphasis> file. As long as the new
       Roxie node can communicate with (for example ping) the Monitoring
       component host, the graphs for that will automatically be added to the
@@ -424,10 +425,10 @@
     <sect1 id="GangliaInECLWatch">
       <title>Ganglia in ECL Watch</title>
 
-      <para>With the Ganglia for HPCC Systems Plugin installed. You can view the
-      Ganglia statistics and graphs right through the ECL Watch interface. The
-      out of the box monitoring displays several key statistics by default.
-      You can customize and configure the views.</para>
+      <para>With the Ganglia for HPCC Systems Plugin installed. You can view
+      the Ganglia statistics and graphs right through the ECL Watch interface.
+      The out of the box monitoring displays several key statistics by
+      default. You can customize and configure the views.</para>
 
       <figure>
         <title>Ganglia in ECL Watch</title>
@@ -451,8 +452,8 @@
         <para>In order to get the Ganglia in ECL Watch, You need to have
         Ganglia on your HPCC Systems. <orderedlist>
             <listitem>
-              <para>Install or ensure you have the HPCC Systems Monitoring components
-              on a node where ECL Watch is installed.</para>
+              <para>Install or ensure you have the HPCC Systems Monitoring
+              components on a node where ECL Watch is installed.</para>
             </listitem>
 
             <listitem>
@@ -502,15 +503,16 @@
   <chapter id="HPCC_Nagios_Chapter">
     <title>Nagios</title>
 
-    <para>The HPCC Systems Reporting component leverages Nagios, an open source,
-    system and network infrastructure monitoring application to monitor and
-    alert HPCC Systems Administrators. Nagios leverages established and accepted open
-    source technologies to alert users to changes or potential issues. Nagios
-    provides regular periodic system monitoring and reporting.</para>
+    <para>The HPCC Systems Reporting component leverages Nagios, an open
+    source, system and network infrastructure monitoring application to
+    monitor and alert HPCC Systems Administrators. Nagios leverages
+    established and accepted open source technologies to alert users to
+    changes or potential issues. Nagios provides regular periodic system
+    monitoring and reporting.</para>
 
-    <para>With the HPCC Systems integration, you can generate Nagios configuration
-    files to monitor HPCC Systems server health. Once the Nagios is configured, you
-    can monitor:<itemizedlist>
+    <para>With the HPCC Systems integration, you can generate Nagios
+    configuration files to monitor HPCC Systems server health. Once the Nagios
+    is configured, you can monitor:<itemizedlist>
         <listitem>
           <para>Disk Usage</para>
         </listitem>
@@ -569,13 +571,14 @@
       <title>Nagios Introduction</title>
 
       <para>Nagios is a powerful monitoring and notification system, which can
-      be used with HPCC Systems to help identify and resolve infrastructure problems
-      before they affect critical processes. Nagios hardware notifications can
-      help keep your system highly available and alerts can assist in
-      pre-emptive maintenance for processes which are down or behaving outside
-      expected parameters to ensure system stability, reliability, and uptime.
-      Scripts and tools are provided to extract HPCC Systems platform system metrics
-      and easily integrate that data into Nagios.</para>
+      be used with HPCC Systems to help identify and resolve infrastructure
+      problems before they affect critical processes. Nagios hardware
+      notifications can help keep your system highly available and alerts can
+      assist in pre-emptive maintenance for processes which are down or
+      behaving outside expected parameters to ensure system stability,
+      reliability, and uptime. Scripts and tools are provided to extract HPCC
+      Systems platform system metrics and easily integrate that data into
+      Nagios.</para>
 
       <para>Administrators should note that different platforms may not
       support all plugins. The <emphasis>hpcc-nagios-tools</emphasis> utility
@@ -596,8 +599,8 @@
           </listitem>
 
           <listitem>
-            <para>Review our HPCC Systems Monitoring and Reporting documentation in
-            its entirety.</para>
+            <para>Review our HPCC Systems Monitoring and Reporting
+            documentation in its entirety.</para>
           </listitem>
 
           <listitem>
@@ -623,9 +626,9 @@
       implement it on a larger system, is to examine an established session in
       action.</para>
 
-      <para>Nagios integration is built into the current HPCC Systems Virtual Machine
-      images. Download and start up a virtual image and look at how the
-      monitoring component works.</para>
+      <para>Nagios integration is built into the current HPCC Systems Virtual
+      Machine images. Download and start up a virtual image and look at how
+      the monitoring component works.</para>
 
       <para>The Nagios component for HPCC Systems on the VM allows you:</para>
 
@@ -746,26 +749,27 @@
       <title>Installation of Nagios</title>
 
       <para>The HPCC Systems Nagios package provides tools and utilities for
-      generating Nagios configurations. These configurations check HPCC Systems and
-      perform some of the HPCC Systems specific checks. HPCC Systems Nagios installation is
-      provided on the HPCC Systems<superscript>®</superscript> portal.</para>
+      generating Nagios configurations. These configurations check HPCC
+      Systems and perform some of the HPCC Systems specific checks. HPCC
+      Systems Nagios installation is provided on the HPCC
+      Systems<superscript>®</superscript> portal.</para>
 
       <sect2 id="HPCC_Nagios_Installation">
         <title>HPCC Systems Nagios Installation Package</title>
 
-        <para>To get the HPCC Systems Nagios monitoring on your system you need the
-        Installation package. Download the installation package from the HPCC
-        Systems portal.</para>
+        <para>To get the HPCC Systems Nagios monitoring on your system you
+        need the Installation package. Download the installation package from
+        the HPCC Systems portal.</para>
 
         <para>The HPCC Systems<superscript>®</superscript> web portal is where
-        you can find HPCC Systems resources, downloads, plugins, as well as helpful
-        information.</para>
+        you can find HPCC Systems resources, downloads, plugins, as well as
+        helpful information.</para>
 
         <para><ulink
         url="http://hpccsystems.com/download/free-community-edition/monitoring">http://hpccsystems.com/</ulink></para>
 
-        <para>You can find the HPCC Systems Monitoring and Reporting Installation
-        packages at:</para>
+        <para>You can find the HPCC Systems Monitoring and Reporting
+        Installation packages at:</para>
 
         <para><ulink
         url="http://hpccsystems.com/download/free-community-edition/monitoring">http://hpccsystems.com/download/free-community-edition/monitoring</ulink></para>
@@ -777,8 +781,8 @@
       <sect2 id="HPCC_InstallNagios" role="brk">
         <title>Install Nagios</title>
 
-        <para>To Install Nagios for HPCC Systems, you must have HPCC Systems platform
-        installed and also have the open-source Nagios package
+        <para>To Install Nagios for HPCC Systems, you must have HPCC Systems
+        platform installed and also have the open-source Nagios package
         installed.</para>
 
         <para><orderedlist>
@@ -789,8 +793,8 @@
               Nagios monitoring must have network connectivity to all the
               monitored nodes.</para>
 
-              <para>With the hpcc-nagios tools installed, you have HPCC Systems check
-              utilities in:</para>
+              <para>With the hpcc-nagios tools installed, you have HPCC
+              Systems check utilities in:</para>
 
               <para><programlisting> /usr/lib/nagios/plugins/ </programlisting></para>
             </listitem>
@@ -804,9 +808,9 @@
               configurations. The generated configurations can be modified
               with optional flags to fit the environment that is being
               monitored. The default package also provides some utilities to
-              monitor HPCC Systems processes such as Roxies, ESP Services by node and
-              port, Dali, and dafilesrv. Other processes could also be
-              monitored if a check utility is provided and the generated
+              monitor HPCC Systems processes such as Roxies, ESP Services by
+              node and port, Dali, and dafilesrv. Other processes could also
+              be monitored if a check utility is provided and the generated
               config file is modified (find/replace all would probably
               suffice).</para>
             </listitem>

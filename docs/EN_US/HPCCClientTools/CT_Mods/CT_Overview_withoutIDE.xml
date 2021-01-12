@@ -128,11 +128,6 @@
       switch, the U or upgrade will perform an upgrade if a previous version
       is already installed. <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting></para>
 
-      <para>If you are using CentOS 6 you may need to run the following
-      command to properly enable the installation.</para>
-
-      <para><programlisting>sudo wget http://people.centos.org/tru/devtools-2/devtools-2.repo -O /etc/yum.repos.d/devtools-2.repo</programlisting></para>
-
       <para><emphasis role="bold">Debian-Based Systems
       (Ubuntu):</emphasis></para>
 
