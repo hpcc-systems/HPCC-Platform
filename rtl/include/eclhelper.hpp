@@ -173,7 +173,6 @@ interface IRecordSize : public IInterface
 interface IXmlWriter : public IInterface
 {
 public:
-    virtual void flushContent(bool close) = 0;
     virtual void outputQuoted(const char *text) = 0;
     virtual void outputString(unsigned len, const char *field, const char *fieldname) = 0;
     virtual void outputBool(bool field, const char *fieldname) = 0;
@@ -196,6 +195,7 @@ public:
     virtual void outputInlineXml(const char *text) = 0; //for appending raw xml content
     virtual void outputXmlns(const char *name, const char *uri) = 0;
     inline void outputCString(const char *field, const char *fieldname) { outputString((size32_t)strlen(field), field, fieldname); }
+    virtual void flushContent(bool close) = 0;
 };
 
 interface IFieldProcessor : public IInterface

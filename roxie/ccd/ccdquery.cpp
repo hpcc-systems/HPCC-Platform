@@ -1784,6 +1784,20 @@ unsigned checkWorkunitVersionConsistency(const IConstWorkUnit *wu)
         throw makeStringException(ROXIE_MISMATCH, "Attempting to execute a workunit that hasn't been compiled");
     if (wuVersion > ACTIVITY_INTERFACE_VERSION || wuVersion < MIN_ACTIVITY_INTERFACE_VERSION)
         throw MakeStringException(ROXIE_MISMATCH, "Workunit was compiled for eclhelper interface version %d, this roxie requires version %d..%d", wuVersion, MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
+    if (wuVersion == 652)
+    {
+        // Any workunit compiled using eclcc 7.12.0-7.12.18 is not compatible
+        StringBuffer buildVersion, eclVersion;
+        wu->getBuildVersion(StringBufferAdaptor(buildVersion), StringBufferAdaptor(eclVersion));
+        const char *version = strstr(buildVersion, "7.12.");
+        if (version)
+        {
+            const char *point = version + strlen("7.12.");
+            unsigned pointVer = atoi(point);
+            if (pointVer <= 18)
+                throw MakeStringException(ROXIE_MISMATCH, "Workunit was compiled by eclcc version %s which is not compatible with this runtime", buildVersion.str());
+        }
+    }
     return wuVersion;
 }
 
