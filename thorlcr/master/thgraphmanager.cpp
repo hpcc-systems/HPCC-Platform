@@ -429,6 +429,20 @@ bool CJobManager::execute(IConstWorkUnit *workunit, const char *wuid, const char
             throw makeStringException(0, "Attempting to execute a workunit that hasn't been compiled");
         if ((workunit->getCodeVersion() > ACTIVITY_INTERFACE_VERSION) || (workunit->getCodeVersion() < MIN_ACTIVITY_INTERFACE_VERSION))
             throw MakeStringException(0, "Workunit was compiled for eclagent interface version %d, this thor requires version %d..%d", workunit->getCodeVersion(), MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
+        if (workunit->getCodeVersion() == 652)
+        {
+            // Any workunit compiled using eclcc 7.12.0-7.12.18 is not compatible
+            StringBuffer buildVersion, eclVersion;
+            workunit->getBuildVersion(StringBufferAdaptor(buildVersion), StringBufferAdaptor(eclVersion));
+            const char *version = strstr(buildVersion, "7.12.");
+            if (version)
+            {
+                const char *point = version + strlen("7.12.");
+                unsigned pointVer = atoi(point);
+                if (pointVer <= 18)
+                    throw MakeStringException(0, "Workunit was compiled by eclcc version %s which is not compatible with this runtime", buildVersion.str());
+            }
+        }
 
         if (debugListener)
         {
