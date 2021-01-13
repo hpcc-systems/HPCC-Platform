@@ -404,11 +404,8 @@ void Http::SplitURL(const char* url, StringBuffer& protocol,StringBuffer& UserNa
     }
 
     char buf[URL_MAX+1];
-    int len = strlen(url);
-    if(len > URL_MAX)
-        len = URL_MAX;
-    strncpy(buf, url, len);
-    buf[len] = 0;
+    strncpy(buf, url, URL_MAX);
+    buf[URL_MAX] = 0;
 
     char* hostptr;
     char *username = NULL;
