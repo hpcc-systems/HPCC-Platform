@@ -1542,6 +1542,9 @@ void HqlCppTranslator::cacheOptions()
     size32_t outputLimit = wu()->getDebugValueInt("outputLimitMb", 0);
     if (outputLimit > daliResultOutputMax)
         throwError2(HQLERR_OutputLimitMaxExceeded, daliResultOutputMax, outputLimit);
+    if (outputLimit > futureResultOutputMax)
+        WARNING2(CategoryDeprecated, HQLERR_OutputLimitFutureMaxExceeded, futureResultOutputMax, outputLimit);
+
     SCMStringBuffer targetText;
     wu()->getDebugValue("targetClusterType", targetText);
     ClusterType clusterType = getClusterType(targetText.s.str());
