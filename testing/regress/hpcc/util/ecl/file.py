@@ -75,7 +75,7 @@ class ECLFile:
         self.ecl = self.baseEcl
         self.xml_e = self.baseXml
         self.xml_r = self.baseXml
-        self.xml_a = 'archive_' + self.baseXml
+        self.xml_a = 'archive_' + self.cluster + '_' + self.baseXml
         self.jobname = self.basename
         self.diff = ''
         self.aborted = False
@@ -257,7 +257,7 @@ class ECLFile:
         #print("ECLFile.getArchiveName()")
         logger.debug("%3d. getArchiveName(isVersions:'%s')", self.taskId, self.isVersions )
         if self.isVersions:
-            dynamicFilename='archive_' + self.basename
+            dynamicFilename='archive_' + self.cluster + '_' + self.basename
             dynamicFilename+= '_v'+ str(self.versionId)
             dynamicFilename += '.xml'
             return os.path.join(self.dir_a, dynamicFilename)
@@ -649,6 +649,7 @@ class ECLFile:
                 open(expectedKeyPath, 'w').write("\n".join(self.eclccWarning))
                 pass
         try:
+            logger.debug("%3d.  self.eclccWarning: " +  self.eclccWarning,  self.taskId )
             diffLines = ''
             d = list(difflib.unified_diff(eclccKeyContent, self.eclccWarning, fromfile=expectedKeyPath, tofile="eclcc warning",  lineterm = ""))
             diffLines = "\n".join(d)
@@ -659,8 +660,8 @@ class ECLFile:
                 self.eclccWarningChanges += "\tEclcc generated warning changed\n"
                 logger.debug( "type(diffLines) is %s: ",  repr(type(diffLines)), extra={'taskId':self.taskId})
                 if type(diffLines) == type(' '):
-                    diffLines = unicodedata.normalize('NFKD', diffLines).encode('ascii','ignore').replace('\'','').replace('\\u', '\\\\u')
-                    diffLines = str(diffLines)
+                    diffLines = unicodedata.normalize('NFKD', diffLines).encode('ascii','ignore') #.replace('\'','').replace('\\u', '\\\\u')
+                    diffLines = str(diffLines).replace('\'','').replace('\\u', '\\\\u')
                 else:
                     diffLines = str(diffLines)
                 self.eclccWarningChanges += str(diffLines)
