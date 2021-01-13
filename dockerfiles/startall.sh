@@ -25,6 +25,7 @@ scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 restArgs=()
 
 CMD="install"
+DEP_UPDATE_ARG="--dependency-update"
 while [ "$#" -gt 0 ]; do
   arg=$1
   if [[ ${arg:0:1} == '-' ]]; then
@@ -40,11 +41,15 @@ while [ "$#" -gt 0 ]; do
       p) shift
          PERSIST=$1
          ;;
+      x) shift;
+          DEP_UPDATE_ARG=""
+         ;;
       h) echo "Usage: startall.sh [options]"
          echo "    -d <docker-repo>   Docker repository to fetch images from"
          echo "    -l                 Build image label to use"
-         echo "    -u                 Use "upgrade" rather than "install"
-         echo "    -p <location>      Use local persistent data
+         echo "    -u                 Use "upgrade" rather than "install""
+         echo "    -x                 Do not issue dependency-update"
+         echo "    -p <location>      Use local persistent data"
          exit
          ;;
       *) restArgs+=(${arg})
@@ -64,9 +69,9 @@ if [[ -n ${PERSIST} ]] ; then
   mkdir -p ${PERSIST}/dali
   mkdir -p ${PERSIST}/data
   helm ${CMD} localfile $scriptdir/../helm/examples/local/hpcc-localfile --set common.hostpath=${PERSIST} | grep -A100 storage > localstorage.yaml && \
-  helm ${CMD} mycluster $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL --set global.privileged=true -f localstorage.yaml ${restArgs[@]}
+  helm ${CMD} mycluster $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL --set global.privileged=true -f localstorage.yaml $DEP_UPDATE_ARG ${restArgs[@]}
 else
-  helm ${CMD} mycluster $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL --set global.privileged=true ${restArgs[@]}
+  helm ${CMD} mycluster $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL --set global.privileged=true $DEP_UPDATE_ARG ${restArgs[@]}
 fi
 
 sleep 1
