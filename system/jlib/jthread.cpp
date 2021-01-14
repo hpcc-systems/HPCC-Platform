@@ -736,7 +736,7 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
             for (i=0;(i<num)&&(i<maxatonce);i++)
                 ready.signal();
             IArrayOf<Thread> started;
-            started.ensure(num);
+            started.ensureCapacity(num);
             for (i=0;i<num;i++) {
                 ready.wait();
                 if (abortFollowingException && e) break;
@@ -792,7 +792,7 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
                 }
             };
             IArrayOf<Thread> started;
-            started.ensure(num);
+            started.ensureCapacity(num);
             for (i=0;i<num-1;i++)
             {
                 Owned<Thread> thread = new cdothread(this,i,&errmutex,e);

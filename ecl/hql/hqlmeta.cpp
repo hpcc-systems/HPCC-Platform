@@ -1788,7 +1788,7 @@ IHqlExpression * createMatchingDistribution(IHqlExpression * expr, const HqlExpr
         return LINK(expr);
 
     HqlExprArray args;
-    args.ensure(max);
+    args.ensureCapacity(max);
     ForEachChild(i, expr)
     {
         IHqlExpression * mapped = createMatchingDistribution(expr->queryChild(i), oldSort, newSort);

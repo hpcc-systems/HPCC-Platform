@@ -3388,7 +3388,7 @@ public:
         mb.read(count);
         if (count)
         {
-            ldInfo.ensure(count);
+            ldInfo.ensureCapacity(count);
             for (unsigned c=0; c<count; c++)
                 ldInfo.append(new CLockMetaData(mb));
         }

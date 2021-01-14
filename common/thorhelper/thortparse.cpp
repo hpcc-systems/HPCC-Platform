@@ -87,7 +87,7 @@ NonTerminal::NonTerminal(symbol_id _id, IAtom * _name, FeatureValue & _features,
 {
     unsigned nullCount = 0;
     unsigned nonNullIndex = 0;
-    reduced.ensure(numSymbols);
+    reduced.ensureCapacity(numSymbols);
     for (unsigned i= 0; i < numSymbols; i++)
     {
         GrammarSymbol * cur = symbols[i];
@@ -1038,7 +1038,7 @@ void TomitaResultIterator::reset(const GrammarSymbolArray & _values)
     if (def->notMatchedOnly)
         return;
 
-    values.ensure(numValues);
+    values.ensureCapacity(numValues);
     for (unsigned i = 0; i < numValues; i++)
         values.append(OLINK(_values.item(i)));
 

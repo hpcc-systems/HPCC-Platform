@@ -1260,7 +1260,7 @@ IHqlExpression * ThorScalarTransformer::createTransformed(IHqlExpression * expr)
             HqlExprArray children;
             unsigned firstArg = 0;
             unsigned numChildren = expr->numChildren();
-            children.ensure(numChildren);
+            children.ensureCapacity(numChildren);
             if (op != no_map)
             {
                 firstArg = 1;
@@ -1890,7 +1890,7 @@ protected:
                 unsigned max = expr->numChildren();
                 unsigned idx;
                 bool diff = false;
-                args.ensure(max);
+                args.ensureCapacity(max);
                 for (idx = 0; idx < max; idx++)
                 {
                     IHqlExpression * child = expr->queryChild(idx);
@@ -10358,7 +10358,7 @@ IHqlExpression * HqlScopeTagger::transformAmbiguousChildren(IHqlExpression * exp
 
     bool same = true;
     HqlExprArray args;
-    args.ensure(max);
+    args.ensureCapacity(max);
     for(unsigned i=0; i < max; i++)
     {
         IHqlExpression * cur = expr->queryChild(i);
@@ -10378,7 +10378,7 @@ IHqlExpression * HqlScopeTagger::transformCall(IHqlExpression * expr)
     unsigned max = expr->numChildren();
     bool same = true;
     HqlExprArray args;
-    args.ensure(max);
+    args.ensureCapacity(max);
     for(unsigned i=0; i < max; i++)
     {
         IHqlExpression * cur = expr->queryChild(i);
@@ -13751,7 +13751,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
 
     bool same = true;
     HqlExprArray children;
-    children.ensure(max);
+    children.ensureCapacity(max);
     for (unsigned idx=0;idx<max;idx++)
     {
         IHqlExpression * child = expr->queryChild(idx);

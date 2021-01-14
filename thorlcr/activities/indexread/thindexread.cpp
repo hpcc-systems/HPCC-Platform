@@ -76,7 +76,7 @@ protected:
         IDistributedSuperFile *super = f->querySuperFile();
 
         unsigned nparts = f->numParts(); // includes tlks if any, but unused in array
-        performPartLookup.ensure(nparts);
+        performPartLookup.ensureCapacity(nparts);
 
         bool checkTLKConsistency = (nullptr != super) && !localKey && (0 != (TIRsorted & indexBaseHelper->getFlags()));
         if (nofilter)

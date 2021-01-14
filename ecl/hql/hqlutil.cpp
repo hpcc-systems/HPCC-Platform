@@ -1151,7 +1151,7 @@ IHqlExpression * JoinOrderSpotter::doTraverseStripSelect(IHqlExpression * expr, 
         if (max != 0)
         {
             HqlExprArray args;
-            args.ensure(max);
+            args.ensureCapacity(max);
 
             unsigned idx;
             bool same = true;
@@ -6081,7 +6081,7 @@ extern HQL_API bool containsVirtualField(IHqlExpression * record, IAtom * kind)
 IHqlExpression * removeVirtualFields(IHqlExpression * record)
 {
     HqlExprArray args;
-    args.ensure(record->numChildren());
+    args.ensureCapacity(record->numChildren());
     ForEachChild(i, record)
     {
         IHqlExpression * cur = record->queryChild(i);

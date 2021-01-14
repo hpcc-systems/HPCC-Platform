@@ -1000,7 +1000,7 @@ void ImplicitProjectInfo::addActiveSelects(const SelectUsedArray & src)
     if (selectsUsed.ordinality() == 0)
     {
         //No need to check for pre-existence, can be significant
-        selectsUsed.ensure(numSrc);
+        selectsUsed.ensureCapacity(numSrc);
         for (unsigned i=0; i < numSrc; i++)
             selectsUsed.append(src.item(i));
     }

@@ -284,7 +284,7 @@ inline void appendArray(ARRAY & target, const ARRAY & source)
     unsigned max = source.ordinality();
     if (max)
     {
-        target.ensure(target.ordinality() + max);
+        target.ensureSpace(max);
         for (unsigned i=0; i < max; ++i)
             target.append(OLINK(source.item(i)));
     }
@@ -295,7 +295,7 @@ inline void appendArray(IArray & target, const IArray & source)
     unsigned max = source.ordinality();
     if (max)
     {
-        target.ensure(target.ordinality() + max);
+        target.ensureSpace(max);
         for (unsigned i=0; i < max; ++i)
             target.append(OLINK(source.item(i)));
     }

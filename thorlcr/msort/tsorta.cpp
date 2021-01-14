@@ -95,7 +95,7 @@ void CThorKeyArray::expandFPos()
     if (!filepos)
     {
         filepos.setown(new Int64Array);
-        filepos->ensure(keys.ordinality());
+        filepos->ensureCapacity(keys.ordinality());
         for (unsigned i=0;i<keys.ordinality();i++)
             filepos->append(getFixedFilePos(i));
         filerecsize = 0;
@@ -163,7 +163,7 @@ void CThorKeyArray::add(const void *row)
     else if (serialrowsize!=keySz)
     {
         sizes.setown(new UnsignedArray);
-        sizes->ensure(keys.ordinality()+1);
+        sizes->ensureCapacity(keys.ordinality()+1);
         for (unsigned i=0;i<keys.ordinality();i++)
             sizes->append(serialrowsize);
         sizes->append(keySz);
@@ -290,7 +290,7 @@ void CThorKeyArray::sort()
     if (sizes)
     {
         OwnedPtr<UnsignedArray> newsizes(new UnsignedArray);
-        newsizes->ensure(n);
+        newsizes->ensureCapacity(n);
         for (i = 0; i<n; i++)
             newsizes->append(sizes->item(ra[i]));
         sizes.setown(newsizes.getClear());
@@ -324,7 +324,7 @@ void CThorKeyArray::createSortedPartition(unsigned pn)
     if (sizes)
     {
         OwnedPtr<UnsignedArray> newsizes(new UnsignedArray);
-        newsizes->ensure(pn);
+        newsizes->ensureCapacity(pn);
         for (i = 1; i<pn; i++) {
             unsigned p = i*n/pn;
             newsizes->append(sizes->item(ra[p]));
@@ -448,7 +448,7 @@ void CThorKeyArray::calcPositions(IFile *file,CThorKeyArray &sample)
     // calculates positions based on sample
     // not fast!
     filepos.setown(new Int64Array);
-    filepos->ensure(ordinality());
+    filepos->ensureCapacity(ordinality());
     for (unsigned i0=0;i0<ordinality();i0++)
         filepos->append(-1);
     filerecsize = 0;
@@ -519,12 +519,12 @@ void CThorKeyArray::split()
     if (sizes)
     {
         newSizes.setown(new UnsignedArray);
-        newSizes->ensure(n);
+        newSizes->ensureCapacity(n);
     }
     if (filepos)
     {
         newFilePos.setown(new Int64Array);
-        newFilePos->ensure(n);
+        newFilePos->ensureCapacity(n);
     }
     unsigned newss = 0;
     for (unsigned i=0;i<n;i+=2)

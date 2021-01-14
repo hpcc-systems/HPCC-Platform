@@ -983,7 +983,7 @@ protected:
         cProvider(IRowStream **_streams, unsigned numstreams, IRowLinkCounter *_linkcounter)
             : linkcounter(_linkcounter)
         {
-            ostreams.ensure(numstreams);
+            ostreams.ensureCapacity(numstreams);
             unsigned n = 0;
             while (n<numstreams) 
                 ostreams.append(*LINK(_streams[n++]));

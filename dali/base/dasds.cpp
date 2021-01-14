@@ -6649,8 +6649,8 @@ public:
     {
         unsigned c;
         src.read(c);
-        xpaths.ensure(c);
-        modes.ensure(c);
+        xpaths.ensureCapacity(c);
+        modes.ensureCapacity(c);
         while (c--)
         {
             StringAttr xpath;

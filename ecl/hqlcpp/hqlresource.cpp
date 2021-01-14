@@ -1459,7 +1459,7 @@ IHqlExpression * ActivityInvariantHoister::replaceResourcedReferences(ActivityIn
     {
         bool same = true;
         HqlExprArray args;
-        args.ensure(expr->numChildren());
+        args.ensureCapacity(expr->numChildren());
         ForEachChild(i, expr)
         {
             IHqlExpression * cur = expr->queryChild(i);

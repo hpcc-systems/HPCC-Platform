@@ -506,7 +506,7 @@ protected:
                 targets.append(new CTarget(*this, 0, false, "DESTINATION=ALL"));
             else
             {
-                targets.ensure(owner.numnodes);
+                targets.ensureCapacity(owner.numnodes);
                 for (unsigned n=0; n<owner.numnodes; n++)
                 {
                     VStringBuffer info("DESTINATION=%u", n);
@@ -3026,7 +3026,7 @@ protected:
         }
         else if (_numHashTables > numHashTables)
         {
-            _hashTables.ensure(_numHashTables);
+            _hashTables.ensureCapacity(_numHashTables);
             hashTables = (CHashTableRowTable **)_hashTables.getArray();
             for (unsigned i=numHashTables; i<_numHashTables; i++)
             {
@@ -3667,7 +3667,7 @@ unsigned CBucketHandler::getActivityId() const
 void CBucketHandler::init(unsigned _numBuckets, IRowStream *keyStream)
 {
     numBuckets = _numBuckets;
-    _buckets.ensure(numBuckets);
+    _buckets.ensureCapacity(numBuckets);
     buckets = (CBucket **)_buckets.getArray();
     for (unsigned i=0; i<numBuckets; i++)
     {

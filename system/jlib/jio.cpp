@@ -1277,7 +1277,7 @@ public:
         num = _num;
         idx = 0;
         assertex(num);
-        oinstreams.ensure(num);
+        oinstreams.ensureCapacity(num);
         for (unsigned n = 0;n<num;n++)
             oinstreams.append(*LINK(_in[n]));
         in = oinstreams.getArray();
