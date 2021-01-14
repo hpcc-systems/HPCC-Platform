@@ -401,15 +401,8 @@ HttpClientErrCode CHttpClient::sendRequest(const char* method, const char* conte
     {
         StringBuffer uidpair;
         uidpair.append(m_userid.get()).append(":").append(m_password.get());
-        StringBuffer result;
-        JBASE64_Encode(uidpair.str(), uidpair.length(), result, false);
         StringBuffer authhdr("Basic ");
-
-        //Remove the \n from the end of the encoded string.
-        //Should it even be there??
-        result.setCharAt(result.length() - 1,0);
-
-        authhdr.append(result.str());
+        JBASE64_Encode(uidpair.str(), uidpair.length(), authhdr, false);
         httprequest->addHeader("Authorization", authhdr.str());
     }
     if(m_realm.length() > 0)
@@ -706,11 +699,8 @@ HttpClientErrCode CHttpClient::sendRequest(IProperties *headers, const char* met
     {
         StringBuffer uidpair;
         uidpair.append(m_userid.get()).append(":").append(m_password.get());
-        StringBuffer result;
-        JBASE64_Encode(uidpair.str(), uidpair.length(), result, false);
         StringBuffer authhdr("Basic ");
-
-        authhdr.append(result.str());
+        JBASE64_Encode(uidpair.str(), uidpair.length(), authhdr, false);
         httprequest->addHeader("Authorization", authhdr.str());
     }
     if(m_realm.length() > 0)
@@ -893,15 +883,8 @@ HttpClientErrCode CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp
     {
         StringBuffer uidpair;
         uidpair.append(m_userid.get()).append(":").append(m_password.get());
-        StringBuffer result;
-        JBASE64_Encode(uidpair.str(), uidpair.length(), result, false);
         StringBuffer authhdr("Basic ");
-
-        //Remove the \n from the end of the encoded string.
-        //Should it even be there??
-        result.setCharAt(result.length() - 1,0);
-
-        authhdr.append(result.str());
+        JBASE64_Encode(uidpair.str(), uidpair.length(), authhdr, false);
         httprequest->addHeader("Authorization", authhdr.str());
         if(m_proxy.length())
             httprequest->addHeader("Proxy-Authorization", authhdr.str());

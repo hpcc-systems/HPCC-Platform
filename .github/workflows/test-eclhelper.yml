@@ -1,0 +1,19 @@
+name: Check that eclhelper interface has not changed
+
+on:
+  pull_request:
+    branches:
+      - "master"
+      - "candidate-*"
+
+jobs:
+  build:
+    name: "Check eclhelper interface"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+      - name: Check eclhelper
+        run: git diff HEAD^ --exit-code -- rtl/include/eclhelper.hpp
