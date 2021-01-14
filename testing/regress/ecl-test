@@ -155,8 +155,8 @@ class RegressMain:
                 if os.path.isfile(eclPath):
                     eclFiles.append(eclPath)
                 else:
-                    logging.error("%s. ECL file '%s' doesn't exist!" % (1,  eclPath))
-                    raise Error("4001")
+                    # Do not raise an error if file not exists
+                    logger.debug("To be excluded ECL file '%s' not exists!" % ( eclPath))
 
         if len(eclFiles) > 1:
             # Remove duplicates
@@ -287,6 +287,11 @@ class RegressMain:
             logging.critical(e)
             exit(e.getErrorCode());
 
+        if self.args.loglevel == 'info':
+            logger.setLevel(logging.INFO)
+        elif self.args.loglevel == 'debug':
+            logger.setLevel(logging.DEBUG)
+            
         regressionSuiteMainDir = os.path.dirname(__file__)
         regressionSuiteFullPath = os.path.realpath(regressionSuiteMainDir)
 
@@ -408,7 +413,7 @@ class RegressMain:
             self.args.setupExtraX.append('espIp=' + self.config.espIp )
 
             self.regress = Regression(self.args)
-            logging.debug("Suite full path:%s",  regressionSuiteFullPath)
+            logger.debug("Suite full path:%s",  regressionSuiteFullPath)
 
             # process file exclusion
             excludeItems = []
