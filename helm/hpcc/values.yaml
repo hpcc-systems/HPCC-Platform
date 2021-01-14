@@ -93,16 +93,16 @@ secrets:
   #timeout: 300 # timeout period for cached secrets.  Should be similar to the k8s refresh period.
 
   #Secret categories follow, remove the {} if a secret is defined in a section
-  storage:
+  storage: {}
     ## Secrets that are required for accessing storage.  Currently exposed in the engines, but in the future will
     ## likely be restricted to esp (when it becomes the meta-data provider)
     ## For example, to set the secret associated with the azure storage account "mystorageaccount" use
     ##azure-mystorageaccount: storage-myazuresecret
 
-  ecl:
+  ecl: {}
     ## Category for secrets published to all components that run ecl
 
-  system:
+  system: {}
     ## Category for secrets published to all components for system level useage
 
 ## The vaults section mirrors the secret section but leverages vault for the storage of secrets.
