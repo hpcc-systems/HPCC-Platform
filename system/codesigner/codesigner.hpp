@@ -30,6 +30,7 @@
 
 interface ICodeSigner
 {
+    virtual void initForContainer() = 0;
     virtual void sign(const char * text, const char * userId, const char * passphrase, StringBuffer & signedText) = 0;
     virtual bool verifySignature(const char *text, StringBuffer &signer) = 0;
     virtual bool hasSignature(const char *text) const = 0;

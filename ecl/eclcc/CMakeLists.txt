@@ -48,6 +48,7 @@ include_directories (
          ./../../fs/dafsclient
          ./../../system/security/shared
          ./../../system/security/zcrypt
+         ${HPCC_SOURCE_DIR}/system/codesigner
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )
