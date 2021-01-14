@@ -2367,6 +2367,7 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         IDFUfileSpec *source = wu->queryUpdateSource();
         IDFUfileSpec *destination = wu->queryUpdateDestination();
         IDFUoptions *options = wu->queryUpdateOptions();
+        bool preserveFileParts = req.getWrap();
 
         source->setLogicalName(srcname);
 
@@ -2379,6 +2380,10 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
 
             StringBuffer destfileWithPath, umask;
             getDropZoneInfoByIP(version, destip, destfile, destfileWithPath, umask);
+            //Ensure the filename is dependent on the file part if parts are being preserved
+            if (preserveFileParts && !strstr(destfileWithPath, "$P$"))
+                destfileWithPath.append("._$P$_of_$N$");
+
             rfn.setPath(ep, destfileWithPath.str());
             if (umask.length())
                 options->setUMask(umask.str());
@@ -2419,7 +2424,7 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         if(req.getNorecover())
             options->setNoRecover(true);
 
-        if (req.getWrap()) {
+        if (preserveFileParts) {
             options->setPush();             // I think needed for a despray
             destination->setWrap(true);
         }

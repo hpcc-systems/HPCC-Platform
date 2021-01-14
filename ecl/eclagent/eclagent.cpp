@@ -1876,6 +1876,20 @@ void EclAgent::doProcess()
                 throw makeStringException(0, "Attempting to execute a workunit that hasn't been compiled");
             if (checkVersion && ((eclccCodeVersion > ACTIVITY_INTERFACE_VERSION) || (eclccCodeVersion < MIN_ACTIVITY_INTERFACE_VERSION)))
                 failv(0, "Workunit was compiled for eclagent interface version %d, this eclagent requires version %d..%d", eclccCodeVersion, MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
+            if (checkVersion && eclccCodeVersion == 652)
+            {
+                // Any workunit compiled using eclcc 7.12.0-7.12.18 is not compatible
+                StringBuffer buildVersion, eclVersion;
+                w->getBuildVersion(StringBufferAdaptor(buildVersion), StringBufferAdaptor(eclVersion));
+                const char *version = strstr(buildVersion, "7.12.");
+                if (version)
+                {
+                    const char *point = version + strlen("7.12.");
+                    unsigned pointVer = atoi(point);
+                    if (pointVer <= 18)
+                        failv(0, "Workunit was compiled by eclcc version %s which is not compatible with this runtime", buildVersion.str());
+                }
+            }
             if(noRetry && (w->getState() == WUStateFailed))
                 throw MakeStringException(0, "Ecl agent started in 'no retry' mode for failed workunit, so failing");
             w->setState(WUStateRunning);
