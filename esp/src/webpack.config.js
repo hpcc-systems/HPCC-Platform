@@ -21,7 +21,7 @@ proxyItems.forEach(item => {
 });
 
 module.exports = function (env) {
-    const isDev = env?.development || env === "development";
+    const isDev = (env && env.development) || env === "development";
     const isProduction = !isDev;
 
     const entry = {
