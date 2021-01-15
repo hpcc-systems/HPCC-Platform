@@ -944,6 +944,8 @@ public:
 
         // first see if target exists (and remove if does and overwrite specified)
         Owned<IDistributedFile> dfile = queryDistributedFileDirectory().lookup(dlfn,ctx.user,true,false,false,nullptr,defaultPrivilegedUser);
+// Attemmpt 1 always lock the file. The problem is: all file (super-/subfile is locked, therefore logical file can't be deleted
+//Owned<IDistributedFile> dfile = queryDistributedFileDirectory().lookup(dlfn,ctx.user,true,false,true,nullptr,defaultPrivilegedUser);
         if (dfile) {
             if (!ctx.superoptions->getOverwrite())
                 throw MakeStringException(-1,"Destination file %s already exists",dlfn.get());
@@ -956,9 +958,27 @@ public:
                     PROGLOG("File copy of %s not done as file unchanged",srclfn);
                     return;
                 }
+                dfile->detach();
+                dfile.clear();
             }
-            dfile->detach();
-            dfile.clear();
+            else
+            {
+//#define WORKING 1
+#ifdef WORKING
+                // Attempt 2
+                // Remove superfile to enable copy/overwrite subfile(s)
+                dfile->detach();
+                // Re-create and lock superfile immediately
+                Owned<IDistributedSuperFile> sfile = queryDistributedFileDirectory().createSuperFile(dlfn.get(),ctx.user,true,false);
+                dfile.setown(queryDistributedFileDirectory().lookup(dlfn,ctx.user,true,false,true,nullptr,defaultPrivilegedUser));
+#else
+                /// Attempt 3
+                // Lock the superfile to prevent re-creation.
+                dfile.setown(queryDistributedFileDirectory().lookup(dlfn,ctx.user,true,false,true,nullptr,defaultPrivilegedUser));
+                // remove subfiles to allow copy/overwrite them
+                dfile->querySuperFile()->removeOwnedSubFiles(false, nullptr);
+#endif
+            }
         }
         if (strcmp(ftree->queryName(),queryDfsXmlBranchName(DXB_File))==0) {
             StringAttr wuid;
@@ -987,6 +1007,12 @@ public:
                 subfiles.append(dlfnres.get());
                 if ((ctx.level==1)&&ctx.feedback)
                     ctx.feedback->displayProgress(numtodo?(numdone*100/numtodo):0,0,"unknown",0,0,"",0,0,0);
+            }
+            // Remove superfile if it is still exist
+            if (dfile)
+            {
+                dfile->detach();
+                dfile.clear();
             }
             // now construct the superfile
             Owned<IDistributedSuperFile> sfile = queryDistributedFileDirectory().createSuperFile(dlfn.get(),ctx.user,true,false);
