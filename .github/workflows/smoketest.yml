@@ -32,16 +32,6 @@ env:
   cacheversion: 1
 
 on:
-  push:
-    branches:
-      - "master"
-      - "candidate-*"
-      - "!candidate-7.6.*"
-      - "!candidate-7.4.*"
-      - "!candidate-7.2.*"
-      - "!candidate-7.0.*"
-      - "!candidate-6.*"
-
   pull_request:
     branches:
       - "master"
