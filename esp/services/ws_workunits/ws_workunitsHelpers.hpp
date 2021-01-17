@@ -241,8 +241,6 @@ public:
     StringAttr wuid;
 };
 
-void getSashaNode(SocketEndpoint &ep);
-
 struct WsWuSearch
 {
     WsWuSearch(IEspContext& context,const char* owner=NULL,const char* state=NULL,const char* cluster=NULL,const char* startDate=NULL,const char* endDate=NULL,const char* jobname=NULL);

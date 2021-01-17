@@ -91,7 +91,7 @@ public:
         triggered = true;
     }
 
-    bool checkDurationAndThrottle(unsigned start,unsigned start1, bool &stopped)
+    bool checkDurationAndThrottle(unsigned start,unsigned start1, std::atomic<bool> &stopped)
     {
         unsigned tt = 0;
         if (throttle) {

@@ -48,12 +48,12 @@ data:
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
 {{ include "hpcc.addDataVolumeMount" . | indent 12 }}
-{{ include "hpcc.addDllVolumeMount" .root | indent 12 }}
+{{ include "hpcc.addDllVolumeMount" . | indent 12 }}
 {{ include "hpcc.addSecretVolumeMounts" (dict "root" .root "categories" (list "system" "codeVerify" ) ) | indent 12 }}
           volumes:
 {{ include "hpcc.addConfigMapVolume" .me | indent 10 }}
 {{ include "hpcc.addDataVolume" . | indent 10 }}
-{{ include "hpcc.addDllVolume" .root | indent 10 }}
+{{ include "hpcc.addDllVolume" . | indent 10 }}
 {{ include "hpcc.addSecretVolumes" (dict "root" .root "categories" (list "system" "codeVerify" ) ) | indent 10 }}
           restartPolicy: Never
       backoffLimit: 0
@@ -107,14 +107,14 @@ spec:
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
 {{ include "hpcc.addDataVolumeMount" $commonCtx | indent 8 }}
-{{ include "hpcc.addDllVolumeMount" $ | indent 8 }}
+{{ include "hpcc.addDllVolumeMount" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "system" "codeVerify" ) ) | indent 8 }}
         - name: "hpccbundles"
           mountPath: "/home/hpcc/.HPCCSystems"
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
 {{ include "hpcc.addDataVolume" $commonCtx | indent 6 }}
-{{ include "hpcc.addDllVolume" $ | indent 6 }}
+{{ include "hpcc.addDllVolume" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "system" "codeVerify" ) ) | indent 6 }}
       - name: hpccbundles
         emptyDir: {}

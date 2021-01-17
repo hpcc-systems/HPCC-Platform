@@ -27,13 +27,10 @@ MODULE_EXIT()
 }
 
 
-void coalesceDatastore(bool force)
+void coalesceDatastore(IPropertyTree *coalesceProps, bool force)
 {
     try
     {
-        Owned<IPropertyTree> coalesceProps = serverConfig->getPropTree("Coalescer");
-        if (!coalesceProps)
-            coalesceProps.setown(createPTree("Coalescer"));
         StringBuffer dataPath, backupPath;
         IPropertyTree &confProps = querySDS().queryProperties();
         confProps.getProp("@dataPathUrl", dataPath); 
@@ -74,8 +71,9 @@ void coalesceDatastore(bool force)
                     if (!deltaIFile->exists())
                         break;
                     offset_t dsz = deltaIFile->size();
-                    if (minDeltaSize > dsz/1024) {
-                        PROGLOG("COALESCER: Delta size %" I64F "d less than minimum, exiting",dsz);
+                    if (minDeltaSize > dsz/1024)
+                    {
+                        PROGLOG("COALESCER: Delta size %" I64F "u less than minimum (%" I64F "u K), exiting", dsz, minDeltaSize);
                         break;
                     }
                 }
@@ -172,11 +170,12 @@ class CSashaSDSCoalescingServer: public ISashaServer, public Thread
     bool stopped;
     Semaphore stopsem;
     CriticalSection suspendResumeCrit;
+    Linked<IPropertyTree> coalesceProps;
 public:
     IMPLEMENT_IINTERFACE;
 
-    CSashaSDSCoalescingServer()
-        : Thread("CSashaSDSCoalescingServer")
+    CSashaSDSCoalescingServer(IPropertyTree *_config)
+        : coalesceProps(_config), Thread("CSashaSDSCoalescingServer")
     {
         stopped = false;
     }
@@ -230,9 +229,6 @@ public:
     {
         do
         {
-            Owned<IPropertyTree> coalesceProps = serverConfig->getPropTree("Coalescer");
-            if (!coalesceProps)
-                coalesceProps.setown(createPTree("Coalescer"));
             unsigned interval = coalesceProps->getPropInt("@interval",DEFAULT_INTERVAL);
             if (!interval)
             {
@@ -251,7 +247,11 @@ public:
                     DWORD runcode;
                     HANDLE h;
                     StringBuffer cmd(sashaProgramName);
-                    cmd.append(" coalesce");
+                    cmd.append(" --coalesce");
+#ifdef _CONTAINERIZED
+                    cmd.append(" --config=").append(coalesceProps->queryProp("@config"));
+                    cmd.append(" --daliServers=").append(coalesceProps->queryProp("@daliServers"));
+#endif                    
                     char cwd[1024];
                     if (GetCurrentDirectory(1024, cwd))
                         PROGLOG("COALESCE: Running '%s' in '%s'",cmd.str(),cwd);
@@ -267,12 +267,12 @@ public:
                                 interrupt_program(h, false);
                                 break;
                             }
-                            PROGLOG("COALESCER running");
+                            PROGLOG("COALESCE running");
                         }
                         if (stopped)
-                            PROGLOG("COAESCE stopped");
+                            PROGLOG("COALESCE stopped");
                         else
-                            PROGLOG("COAESCE returned %d",(int)runcode);
+                            PROGLOG("COALESCE returned %d",(int)runcode);
                     }
                 }
             }
@@ -286,7 +286,14 @@ public:
 ISashaServer *createSashaSDSCoalescingServer()
 {
     assertex(!sashaSDSCoalescingServer); // initialization problem
-    sashaSDSCoalescingServer = new CSashaSDSCoalescingServer();
+#ifdef _CONTAINERIZED
+    Linked<IPropertyTree> config = serverConfig;
+#else
+    Owned<IPropertyTree> config = serverConfig->getPropTree("Coalescer");
+    if (!config)
+        config.setown(createPTree("Coalescer"));
+#endif
+    sashaSDSCoalescingServer = new CSashaSDSCoalescingServer(config);
     return sashaSDSCoalescingServer;
 }
 

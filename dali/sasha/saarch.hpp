@@ -3,7 +3,15 @@
 
 interface ISashaServer;
 interface ISashaCommand;
-extern ISashaServer *createSashaArchiverServer(); 
+
+#ifndef _CONTAINERIZED
+extern ISashaServer *createSashaArchiverServer();
+#else
+extern ISashaServer *createSashaWUArchiverServer(); 
+extern ISashaServer *createSashaDFUWUArchiverServer(); 
+extern ISashaServer *createSashaCachedWURemoverServer(); 
+extern ISashaServer *createSashaDFURecoveryArchiverServer(); 
+#endif
 
 bool processArchiverCommand(ISashaCommand *cmd);
 

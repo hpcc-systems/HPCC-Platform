@@ -1504,7 +1504,8 @@ void getArchivedWUInfo(IEspContext &context, const char* sashaServerIP, unsigned
     if (sashaServerIP && *sashaServerIP)
         ep.set(sashaServerIP, sashaServerPort);
     else
-        getSashaNode(ep);
+        getSashaServiceEP(ep, "sasha-wu-archiver", true);
+
     if (getWsWuInfoFromSasha(context, ep, wuid, &resp.updateWorkunit()))
     {
         resp.setCanCompile(false);
@@ -2401,7 +2402,8 @@ public:
         if (sashaServerIP && *sashaServerIP)
             ep.set(sashaServerIP, sashaServerPort);
         else
-            getSashaNode(ep);
+            getSashaServiceEP(ep, "sasha-wu-archiver", true);
+
         Owned<INode> sashaserver = createINode(ep);
 
         Owned<ISashaCommand> cmd = createSashaCommand();
@@ -3126,7 +3128,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
 IPropertyTree *getArchivedWorkUnitProperties(const char *wuid, bool dfuWU)
 {
     SocketEndpoint ep;
-    getSashaNode(ep);
+    getSashaServiceEP(ep, "sasha-wu-archiver", true);
     Owned<INode> node = createINode(ep);
     if (!node)
         throw MakeStringException(ECLWATCH_INODE_NOT_FOUND, "INode not found.");

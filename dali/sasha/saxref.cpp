@@ -2263,17 +2263,22 @@ class CSashaExpiryServer: public ISashaServer, public Thread
     Semaphore stopsem;
     Mutex runmutex;
     Owned<IUserDescriptor> udesc;
+    Linked<IPropertyTree> props;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CSashaExpiryServer()
-        : Thread("CSashaExpiryServer")
+    CSashaExpiryServer(IPropertyTree *_config)
+        : props(_config), Thread("CSashaExpiryServer")
     {
         stopped = false;
 
         StringBuffer userName;
+#ifdef _CONTAINERIZED
+        props->getProp("@user", userName);
+#else
         serverConfig->getProp("@sashaUser", userName);
+#endif
         udesc.setown(createUserDescriptor());
         udesc->set(userName.str(), nullptr);
     }
@@ -2308,8 +2313,8 @@ public:
         if (stopped)
             return;
         PROGLOG(LOGPFX2 "Started");
-        unsigned defaultExpireDays = serverConfig->getPropInt("DfuExpiry/@expiryDefault", DEFAULT_EXPIRYDAYS);
-        unsigned defaultPersistExpireDays = serverConfig->getPropInt("DfuExpiry/@persistExpiryDefault", DEFAULT_PERSISTEXPIRYDAYS);
+        unsigned defaultExpireDays = props->getPropInt("@expiryDefault", DEFAULT_EXPIRYDAYS);
+        unsigned defaultPersistExpireDays = props->getPropInt("@persistExpiryDefault", DEFAULT_PERSISTEXPIRYDAYS);
         StringArray expirylist;
         Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator("*",udesc,true,false);
         ForEach(*iter)
@@ -2377,9 +2382,6 @@ public:
 
     int run()
     {
-        Owned<IPropertyTree> props = serverConfig->getPropTree("DfuExpiry");
-        if (!props)
-            props.setown(createPTree("DfuExpiry"));
         unsigned interval = props->getPropInt("@interval",DEFAULT_EXPIRY_INTERVAL);
         if (!interval)
             stopped = true;
@@ -2420,6 +2422,13 @@ public:
 ISashaServer *createSashaFileExpiryServer()
 {
     assertex(!sashaExpiryServer); // initialization problem
-    sashaExpiryServer = new CSashaExpiryServer();
+#ifdef _CONTAINERIZED
+    Linked<IPropertyTree> config = serverConfig;
+#else
+    Owned<IPropertyTree> config = serverConfig->getPropTree("DfuExpiry");
+    if (!config)
+        config.setown(createPTree("DfuExpiry"));
+#endif
+    sashaExpiryServer = new CSashaExpiryServer(config);
     return sashaExpiryServer;
 }

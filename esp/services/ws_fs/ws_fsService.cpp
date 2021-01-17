@@ -724,19 +724,8 @@ bool CFileSprayEx::GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorku
     StringBuffer user;
     context.getUserID(user);
 
-    StringBuffer sashaAddress;
-    IArrayOf<IConstTpSashaServer> sashaservers;
-    CTpWrapper dummy;
-    dummy.getTpSashaServers(sashaservers);
-    ForEachItemIn(i, sashaservers)
-    {
-        IConstTpSashaServer& sashaserver = sashaservers.item(i);
-        IArrayOf<IConstTpMachine> &sashaservermachine = sashaserver.getTpMachines();
-        sashaAddress.append(sashaservermachine.item(0).getNetaddress());
-    }
-
     SocketEndpoint ep;
-    ep.set(sashaAddress,DEFAULT_SASHA_PORT);
+    getSashaServiceEP(ep, "sasha-dfuwu-archiver", true);
     Owned<INode> sashaserver = createINode(ep);
 
     __int64 count=req.getPageSize();
@@ -752,8 +741,8 @@ bool CFileSprayEx::GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorku
     cmd->setOnline(false);
     cmd->setArchived(true);
     cmd->setDFU(true);
-   cmd->setLimit((int) count+1);
-   cmd->setStart((int)begin);
+    cmd->setLimit((int) count+1);
+    cmd->setStart((int)begin);
     if(req.getCluster() && *req.getCluster())
         cmd->setCluster(req.getCluster());
     if(req.getOwner() && *req.getOwner())
@@ -805,8 +794,8 @@ bool CFileSprayEx::GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorku
 
     resp.setPageStartFrom(begin+1);
     resp.setNextPage(-1);
-   if(count < actualCount)
-   {
+    if(count < actualCount)
+    {
         if (results.length() > count)
         {
             results.pop();
@@ -828,7 +817,7 @@ bool CFileSprayEx::GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorku
             resp.setPrevPage(0);
     }
 
-   resp.setPageSize(count);
+    resp.setPageSize(count);
     resp.setResults(results);
 
     StringBuffer basicQuery;
@@ -1236,7 +1225,7 @@ void CFileSprayEx::getInfoFromSasha(IEspContext &context, const char *sashaServe
     cmd->setAction(SCA_GET);
     cmd->setArchived(true);
     cmd->setDFU(true);
-    SocketEndpoint ep(sashaServer, DEFAULT_SASHA_PORT);
+    SocketEndpoint ep(sashaServer);
     Owned<INode> node = createINode(ep);
     if (!cmd->send(node,1*60*1000))
     {
@@ -1341,22 +1330,9 @@ bool CFileSprayEx::getArchivedWUInfo(IEspContext &context, IEspGetDFUWorkunit &r
     const char *wuid = req.getWuid();
     if (wuid && *wuid)
     {
-        StringBuffer sashaAddress;
-        IArrayOf<IConstTpSashaServer> sashaservers;
-        CTpWrapper dummy;
-        dummy.getTpSashaServers(sashaservers);
-        ForEachItemIn(i, sashaservers)
-        {
-            IConstTpSashaServer& sashaserver = sashaservers.item(i);
-            IArrayOf<IConstTpMachine> &sashaservermachine = sashaserver.getTpMachines();
-            sashaAddress.append(sashaservermachine.item(0).getNetaddress());
-        }
-        if (sashaAddress.length() < 1)
-        {
-            throw MakeStringException(ECLWATCH_ARCHIVE_SERVER_NOT_FOUND,"Archive server not found.");
-        }
-
-        getInfoFromSasha(context, sashaAddress.str(), wuid, &resp.updateResult());
+        StringBuffer serviceEndpoint;
+        getSashaService(serviceEndpoint, "sasha-dfuwu-archiver", true);
+        getInfoFromSasha(context, serviceEndpoint, wuid, &resp.updateResult());
         return true;
     }
 

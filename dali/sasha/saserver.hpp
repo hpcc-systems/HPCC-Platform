@@ -19,7 +19,7 @@ extern void setMsgLevel(unsigned level);
 
 extern void requestStop(IException *e);
 
-extern void coalesceDatastore(bool force);
+extern void coalesceDatastore(IPropertyTree *config, bool force);
 
 extern const char *sashaProgramName;
 

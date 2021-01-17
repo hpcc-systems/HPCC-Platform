@@ -1972,29 +1972,16 @@ void CTpWrapper::getAttPath(const char* Path,StringBuffer& returnStr)
 
 extern TPWRAPPER_API ISashaCommand* archiveOrRestoreWorkunits(StringArray& wuids, IProperties* params, bool archive, bool dfu)
 {
-
     StringBuffer sashaAddress;
-    unsigned port = DEFAULT_SASHA_PORT;
     if (params && params->hasProp("sashaServerIP"))
     {
         sashaAddress.set(params->queryProp("sashaServerIP"));
-        port = params->getPropInt("sashaServerPort", DEFAULT_SASHA_PORT);
+        sashaAddress.append(':').append(params->getPropInt("sashaServerPort", DEFAULT_SASHA_PORT));
     }
     else
-    {
-        IArrayOf<IConstTpSashaServer> sashaservers;
-        CTpWrapper dummy;
-        dummy.getTpSashaServers(sashaservers);
-        if (sashaservers.ordinality() == 0)
-            throw makeStringException(ECLWATCH_ARCHIVE_SERVER_NOT_FOUND, "Sasha server not found");
+        getSashaService(sashaAddress, "sasha-wu-archiver", true);
 
-        IArrayOf<IConstTpMachine>& sashaservermachine = sashaservers.item(0).getTpMachines();
-        sashaAddress.set(sashaservermachine.item(0).getNetaddress());
-        if (sashaAddress.isEmpty())
-            throw makeStringException(ECLWATCH_ARCHIVE_SERVER_NOT_FOUND, "Sasha address not found");
-    }
-
-    SocketEndpoint ep(sashaAddress.str(), port);
+    SocketEndpoint ep(sashaAddress);
     Owned<INode> node = createINode(ep);
     Owned<ISashaCommand> cmd = createSashaCommand();
     cmd->setAction(archive ? SCA_ARCHIVE : SCA_RESTORE);
@@ -2297,4 +2284,51 @@ extern TPWRAPPER_API void validateTargetName(const char* target)
 
     targetsDirty = true;
 #endif
+}
+
+bool getSashaService(StringBuffer &serviceAddress, const char *serviceName, bool failIfNotFound)
+{
+    if (!isEmptyString(serviceName))
+    {
+#ifdef _CONTAINERIZED
+        VStringBuffer serviceQualifier("services[@type='sasha'][@name='%s']", serviceName);
+        IPropertyTree *serviceTree = queryComponentConfig().queryPropTree(serviceQualifier);
+        if (serviceTree)
+        {
+            serviceAddress.append(serviceName).append(':').append(serviceTree->queryProp("@port"));
+            return true;
+        }
+#else
+        // all services are on same sasha on bare-metal as far as esp services are concerned
+        StringBuffer sashaAddress;
+        IArrayOf<IConstTpSashaServer> sashaservers;
+        CTpWrapper dummy;
+        dummy.getTpSashaServers(sashaservers);
+        if (0 != sashaservers.ordinality())
+        {
+            // NB: this code (in bare-matal) doesn't handle >1 Sasha.
+            // Prior to this change, it would have failed to [try to] contact any Sasha.
+            IConstTpSashaServer& sashaserver = sashaservers.item(0);
+            IArrayOf<IConstTpMachine> &sashaservermachine = sashaserver.getTpMachines();
+            sashaAddress.append(sashaservermachine.item(0).getNetaddress());
+            if (!sashaAddress.isEmpty())
+            {
+                serviceAddress.append(sashaAddress).append(':').append(DEFAULT_SASHA_PORT);
+                return true;
+            }
+        }
+#endif
+    }
+    if (failIfNotFound)
+        throw makeStringExceptionV(ECLWATCH_ARCHIVE_SERVER_NOT_FOUND, "Sasha '%s' server not found", serviceName);
+    return false;
+}
+
+bool getSashaServiceEP(SocketEndpoint &serviceEndpoint, const char *service, bool failIfNotFound)
+{
+    StringBuffer serviceAddress;
+    if (!getSashaService(serviceAddress, service, failIfNotFound))
+        return false;
+    serviceEndpoint.set(serviceAddress);
+    return true;
 }
