@@ -1,5 +1,7 @@
 import * as React from "react";
-import { FormGroup, TextField, FormControlLabel, Checkbox, Dialog, DialogTitle, DialogContent, DialogActions, Button, MenuItem, TextFieldProps } from "@material-ui/core";
+import { getTheme, mergeStyleSets, FontWeights, IDragOptions, IIconProps, ContextualMenu, DefaultButton, PrimaryButton, IconButton, Checkbox, Dropdown, IStackStyles, Modal, Stack, TextField, IDropdownProps, IDropdownOption } from "@fluentui/react";
+import { useId } from "@fluentui/react-hooks";
+import { TextField as MaterialUITextField } from "@material-ui/core";
 import { Topology, TpLogicalClusterQuery } from "@hpcc-js/comms";
 import { TpGroupQuery } from "src/WsTopology";
 import { States } from "src/WsWorkunits";
@@ -11,9 +13,7 @@ type FieldType = "string" | "checkbox" | "datetime" |
     "file-type" | "file-sortby" |
     "queries-suspend-state" | "queries-active-state" |
     "target-cluster" | "target-group" |
-    "logicalfile-type" |
-    "dfuworkunit-state"
-    ;
+    "logicalfile-type" | "dfuworkunit-state";
 
 const states = Object.keys(States).map(s => States[s]);
 const dfustates = Object.keys(DFUStates).map(s => DFUStates[s]);
@@ -90,8 +90,8 @@ type Field = StringField | CheckboxField | DateTimeField |
     FileTypeField | FileSortByField |
     QueriesSuspendStateField | QueriesActiveStateField |
     TargetClusterField | TargetGroupField |
-    LogicalFileType |
-    DFUWorkunitStateField;
+    LogicalFileType | DFUWorkunitStateField;
+
 export type Fields = { [name: string]: Field };
 export type Values = { [name: string]: string | number | boolean | (string | number | boolean)[] };
 
@@ -105,35 +105,55 @@ const fieldsToRequest = (fields: Fields) => {
     return retVal;
 };
 
-const TargetClusterTextField: React.FunctionComponent<TextFieldProps> = (props) => {
+const TargetClusterTextField: React.FunctionComponent<IDropdownProps> = (props) => {
 
-    const [targetClusters, setTargetClusters] = React.useState<TpLogicalClusterQuery.TpLogicalCluster[]>([]);
+    const [targetClusters, setTargetClusters] = React.useState<IDropdownOption[]>([]);
 
     React.useEffect(() => {
         const topology = new Topology({ baseUrl: "" });
-        topology.fetchLogicalClusters().then(response => {
-            setTargetClusters([{ Name: "", Type: "", LanguageVersion: "", Process: "", Queue: "" }, ...response]);
+        topology.fetchLogicalClusters().then((response: TpLogicalClusterQuery.TpLogicalCluster[]) => {
+            setTargetClusters(
+                [
+                    { Name: "", Type: "", LanguageVersion: "", Process: "", Queue: "" },
+                    ...response
+                ]
+                .map(n => {
+                    return {
+                        key: n.Name,
+                        text: n.Name + (n.Name !== n.Type ? ` (${n.Type})` : "")
+                    };
+                })
+            );
         });
     }, []);
 
-    return <TextField {...props} >
-        {targetClusters.map(tc => <MenuItem key={tc.Name} value={tc.Name}>{tc.Name}{tc.Name !== tc.Type ? ` (${tc.Type})` : ""}</MenuItem>)}
-    </TextField>;
+    return <Dropdown
+        {...props}
+        options={targetClusters}
+    />;
 };
 
-export const TargetGroupTextField: React.FunctionComponent<TextFieldProps> = (props) => {
+export const TargetGroupTextField: React.FunctionComponent<IDropdownProps> = (props) => {
 
-    const [targetGroups, setTargetGroups] = React.useState([]);
+    const [targetGroups, setTargetGroups] = React.useState<IDropdownOption[]>([]);
 
     React.useEffect(() => {
         TpGroupQuery({}).then(({ TpGroupQueryResponse }) => {
-            setTargetGroups(TpGroupQueryResponse.TpGroups.TpGroup);
+            setTargetGroups(
+                TpGroupQueryResponse.TpGroups.TpGroup.map(n => {
+                    return {
+                        key: n.Name,
+                        text: n.Name + (n.Name !== n.Kind ? ` (${n.Kind})` : "")
+                    };
+                })
+            );
         });
     }, []);
 
-    return <TextField {...props} >
-        {targetGroups.map(tc => <MenuItem key={tc.Name} value={tc.Name}>{tc.Name}{tc.Name !== tc.Kind ? ` (${tc.Kind})` : ""}</MenuItem>)}
-    </TextField>;
+    return <Dropdown
+        {...props}
+        options={targetGroups}
+    />;
 };
 
 interface FormContentProps {
@@ -174,11 +194,11 @@ export const FormContent: React.FunctionComponent<FormContentProps> = ({
         const field = localFields[ev.target.name];
         switch (field.type) {
             case "checkbox":
-                localFields[ev.target.name].value = ev.target.checked;
+                field.value = ev.target.checked;
                 setLocalFields({ ...localFields });
                 break;
             default:
-                localFields[ev.target.name].value = ev.target.value;
+                field.value = ev.target.value;
                 setLocalFields({ ...localFields });
                 break;
         }
@@ -193,104 +213,230 @@ export const FormContent: React.FunctionComponent<FormContentProps> = ({
         switch (field.type) {
             case "string":
                 field.value = field.value || "";
-                formFields.push(<TextField key={fieldID} label={field.label} type="string" name={fieldID} value={field.value} placeholder={field.placeholder} onChange={handleChange} />);
+                formFields.push(
+                    <TextField 
+                        key={fieldID} 
+                        label={field.label} 
+                        type="string" 
+                        name={fieldID} 
+                        value={field.value} 
+                        placeholder={field.placeholder} 
+                        onChange={handleChange} 
+                    />
+                );
                 break;
             case "checkbox":
                 field.value = field.value || false;
-                formFields.push(<FormControlLabel key={fieldID} label={field.label} name={fieldID} control={
-                    <Checkbox checked={field.value === true ? true : false} onChange={handleChange} />
-                } />);
+                formFields.push(
+                    <Checkbox 
+                        key={fieldID} 
+                        label={field.label} 
+                        name={fieldID} 
+                        checked={field.value === true ? true : false} 
+                        onChange={handleChange} 
+                    />
+                );
                 break;
             case "datetime":
                 field.value = field.value || "";
-                formFields.push(<TextField key={fieldID} label={field.label} type="datetime-local" name={fieldID} value={field.value} placeholder={field.placeholder} onChange={handleChange} InputLabelProps={{ shrink: true }} />);
+                formFields.push(
+                    <MaterialUITextField
+                        key={fieldID}
+                        label={field.label}
+                        type="datetime-local"
+                        name={fieldID}
+                        value={field.value}
+                        placeholder={field.placeholder}
+                        onChange={handleChange}
+                        InputLabelProps={{ shrink: true }}
+                    />
+                );
                 break;
             case "workunit-state":
                 field.value = field.value || "";
                 formFields.push(
-                    <TextField key={fieldID} label={field.label} select name={fieldID} value={field.value} placeholder={field.placeholder} onChange={handleChange} >
-                        {states.map(state => <MenuItem key={state} value={state}>{state}</MenuItem>)}
-                    </TextField>
+                    <Dropdown
+                        key={fieldID}
+                        label={field.label}
+                        defaultSelectedKey={field.value}
+                        options={states.map(state => {
+                            return {
+                                key: state,
+                                text: state
+                            };
+                        })}
+                        onChange={(ev, row) => {
+                            localFields[fieldID].value = row.key as string;
+                            setLocalFields({ ...localFields });
+                        }}
+                        placeholder={field.placeholder}
+                    />
                 );
                 break;
             case "file-type":
                 field.value = field.value || "";
                 formFields.push(
-                    <TextField key={fieldID} label={field.label} select name={fieldID} value={field.value} placeholder={field.placeholder} onChange={handleChange} >
-                        <MenuItem key={""} value="">{nlsHPCC.LogicalFilesAndSuperfiles}</MenuItem>
-                        <MenuItem key={"Logical Files Only"} value="Logical Files Only">{nlsHPCC.LogicalFilesOnly}</MenuItem>
-                        <MenuItem key={"Superfiles Only"} value="Superfiles Only">{nlsHPCC.SuperfilesOnly}</MenuItem>
-                        <MenuItem key={"Not in Superfiles"} value="Not in Superfiles">{nlsHPCC.NotInSuperfiles}</MenuItem>
-                    </TextField>
+                    <Dropdown
+                        key={fieldID}
+                        label={field.label}
+                        defaultSelectedKey={field.value}
+                        options={[
+                            { key: "", text: nlsHPCC.LogicalFilesAndSuperfiles },
+                            { key: "Logical Files Only", text: nlsHPCC.LogicalFilesOnly },
+                            { key: "Superfiles Only", text: nlsHPCC.SuperfilesOnly },
+                            { key: "Not in Superfiles", text: nlsHPCC.NotInSuperfiles },
+                        ]}
+                        onChange={(ev, row) => {
+                            localFields[fieldID].value = row.key as string;
+                            setLocalFields({ ...localFields });
+                        }}
+                        placeholder={field.placeholder}
+                    />
                 );
                 break;
             case "file-sortby":
                 field.value = field.value || "";
                 formFields.push(
-                    <TextField key={fieldID} label={field.label} select name={fieldID} value={field.value} placeholder={field.placeholder} onChange={handleChange} >
-                        <MenuItem key={""} value="">&nbsp;</MenuItem>
-                        <MenuItem key={"Newest"} value="Newest">{nlsHPCC.Newest}</MenuItem>
-                        <MenuItem key={"Oldest"} value="Oldest">{nlsHPCC.Oldest}</MenuItem>
-                        <MenuItem key={"Smallest"} value="Smallest">{nlsHPCC.Smallest}</MenuItem>
-                        <MenuItem key={"Largest"} value="Largest">{nlsHPCC.Largest}</MenuItem>
-                    </TextField>
+                    <Dropdown
+                        key={fieldID}
+                        label={field.label}
+                        defaultSelectedKey={field.value}
+                        options={[
+                            { key: "", text: "" },
+                            { key: "Newest", text: nlsHPCC.Newest },
+                            { key: "Oldest", text: nlsHPCC.Oldest },
+                            { key: "Smallest", text: nlsHPCC.Smallest },
+                            { key: "Largest", text: nlsHPCC.Largest }
+                        ]}
+                        onChange={(ev, row) => {
+                            localFields[fieldID].value = row.key as string;
+                            setLocalFields({ ...localFields });
+                        }}
+                        placeholder={field.placeholder}
+                    />
                 );
                 break;
             case "queries-suspend-state":
                 field.value = field.value || "";
                 formFields.push(
-                    <TextField key={fieldID} label={field.label} select name={fieldID} value={field.value} placeholder={field.placeholder} onChange={handleChange} >
-                        <MenuItem key={""} value="">&nbsp;</MenuItem>
-                        <MenuItem key={"Not suspended"} value="Not suspended">{nlsHPCC.NotSuspended}</MenuItem>
-                        <MenuItem key={"Suspended"} value="Suspended">{nlsHPCC.Suspended}</MenuItem>
-                        <MenuItem key={"Suspended by user"} value="Suspended by user">{nlsHPCC.SuspendedByUser}</MenuItem>
-                        <MenuItem key={"Suspended by first node"} value="Suspended by first node">{nlsHPCC.SuspendedByFirstNode}</MenuItem>
-                        <MenuItem key={"Suspended by any node"} value="Suspended by any node">{nlsHPCC.SuspendedByAnyNode}</MenuItem>
-                    </TextField>
+                    <Dropdown
+                        key={fieldID}
+                        label={field.label}
+                        defaultSelectedKey={field.value}
+                        options={[
+                            { key: "", text: "" },
+                            { key: "Not suspended", text: nlsHPCC.NotSuspended },
+                            { key: "Suspended", text: nlsHPCC.Suspended },
+                            { key: "Suspended by user", text: nlsHPCC.SuspendedByUser },
+                            { key: "Suspended by first node", text: nlsHPCC.SuspendedByFirstNode },
+                            { key: "Suspended by any node", text: nlsHPCC.SuspendedByAnyNode },
+                        ]}
+                        onChange={(ev, row) => {
+                            localFields[fieldID].value = row.key as string;
+                            setLocalFields({ ...localFields });
+                        }}
+                        placeholder={field.placeholder}
+                    />
                 );
                 break;
             case "queries-active-state":
                 field.value = field.value || "";
                 formFields.push(
-                    <TextField key={fieldID} label={field.label} select name={fieldID} value={field.value} placeholder={field.placeholder} onChange={handleChange} >
-                        <MenuItem key={""} value="">&nbsp;</MenuItem>
-                        <MenuItem key={"1"} value="1">{nlsHPCC.Active}</MenuItem>
-                        <MenuItem key={"0"} value="0">{nlsHPCC.NotActive}</MenuItem>
-                    </TextField>
+                    <Dropdown
+                        key={fieldID}
+                        label={field.label}
+                        defaultSelectedKey={field.value}
+                        options={[
+                            { key: "", text: "" },
+                            { key: "1", text: nlsHPCC.Active },
+                            { key: "0", text: nlsHPCC.NotActive }
+                        ]}
+                        onChange={(ev, row) => {
+                            localFields[fieldID].value = row.key as string;
+                            setLocalFields({ ...localFields });
+                        }}
+                        placeholder={field.placeholder}
+                    />
                 );
                 break;
             case "target-cluster":
                 field.value = field.value || "";
-                formFields.push(<TargetClusterTextField key={fieldID} label={field.label} select name={fieldID} value={field.value} placeholder={field.placeholder} onChange={handleChange} />);
+                formFields.push(
+                    <TargetClusterTextField
+                        key={fieldID}
+                        label={field.label}
+                        defaultSelectedKey={field.value}
+                        onChange={(ev, row) => {
+                            localFields[fieldID].value = row.key as string;
+                            setLocalFields({ ...localFields });
+                        }}
+                        placeholder={field.placeholder}
+                        options={[]}
+                    />
+                );
                 break;
             case "target-group":
                 field.value = field.value || "";
-                formFields.push(<TargetGroupTextField key={fieldID} label={field.label} select name={fieldID} value={field.value} placeholder={field.placeholder} onChange={handleChange} />);
-                break;
-            case "logicalfile-type":
-                field.value = field.value || "Created";
                 formFields.push(
-                    <TextField key={fieldID} label={field.label} select name={fieldID} value={field.value} disabled={field.disabled(localFields)} placeholder={field.placeholder} onChange={handleChange} >
-                        <MenuItem key={"Created"} value="Created">{nlsHPCC.CreatedByWorkunit}</MenuItem>
-                        <MenuItem key={"Used"} value="Used">{nlsHPCC.UsedByWorkunit}</MenuItem>
-                    </TextField>
+                    <TargetGroupTextField
+                        key={fieldID}
+                        label={field.label}
+                        defaultSelectedKey=""
+                        onChange={(ev, row) => {
+                            localFields[fieldID].value = row.key as string;
+                            setLocalFields({ ...localFields });
+                        }}
+                        placeholder={field.placeholder}
+                        options={[]}
+                    />
                 );
                 break;
             case "dfuworkunit-state":
                 field.value = field.value || "";
                 formFields.push(
-                    <TextField key={fieldID} label={field.label} select name={fieldID} value={field.value} placeholder={field.placeholder} onChange={handleChange} >
-                        {dfustates.map(state => <MenuItem key={state} value={state}>{state}</MenuItem>)}
-                    </TextField>
+                    <Dropdown
+                        key={fieldID}
+                        label={field.label}
+                        defaultSelectedKey=""
+                        options={dfustates.map(state => {
+                            return {
+                                key: state,
+                                text: state
+                            };
+                        })}
+                        onChange={(ev, row) => {
+                            localFields[fieldID].value = row.key as string;
+                            setLocalFields({ ...localFields });
+                        }}
+                        placeholder={field.placeholder}
+                    />
                 );
                 break;
-
+            case "logicalfile-type":
+                field.value = field.value || "Created";
+                formFields.push(
+                    <Dropdown
+                        key={fieldID}
+                        label={field.label}
+                        defaultSelectedKey=""
+                        options={[
+                            { key: "Created", text: nlsHPCC.CreatedByWorkunit },
+                            { key: "Used", text: nlsHPCC.UsedByWorkunit }
+                        ]}
+                        onChange={(ev, row) => {
+                            localFields[fieldID].value = row.key as string;
+                            setLocalFields({ ...localFields });
+                        }}
+                        placeholder={field.placeholder}
+                    />
+                );
+                break;
         }
     }
 
-    return <FormGroup style={{ minWidth: "320px" }}>
+    return <>
         {...formFields}
-    </FormGroup >;
+    </>;
 };
 
 interface FilterProps {
@@ -313,34 +459,114 @@ export const Filter: React.FunctionComponent<FilterProps> = ({
 
     const closeFilter = () => setShowFilter(false);
 
-    return <Dialog onClose={closeFilter} aria-labelledby="simple-dialog-title" open={showFilter} >
-        <DialogTitle id="form-dialog-title">{nlsHPCC.Filter}</DialogTitle>
-        <DialogContent>
-            <FormContent
-                fields={filterFields}
-                doSubmit={doSubmit}
-                doReset={doReset}
-                onSubmit={fields => {
-                    setDoSubmit(false);
-                    onApply(fields);
-                }}
-                onReset={() => {
-                    setDoReset(false);
-                }}
+    const titleId = useId("title");
+
+    const dragOptions: IDragOptions = {
+        moveMenuItemText: "Move",
+        closeMenuItemText: "Close",
+        menu: ContextualMenu,
+    };
+
+    const theme = getTheme();
+
+    const contentStyles = mergeStyleSets({
+        container: {
+            display: "flex",
+            flexFlow: "column nowrap",
+            alignItems: "stretch",
+        },
+        header: [
+            {
+                flex: "1 1 auto",
+                borderTop: `4px solid ${theme.palette.themePrimary}`,
+                color: theme.palette.neutralPrimary,
+                display: "flex",
+                alignItems: "center",
+                fontWeight: FontWeights.semibold,
+                padding: "12px 12px 14px 24px",
+            },
+        ],
+        body: {
+            flex: "4 4 auto",
+            padding: "0 24px 24px 24px",
+            overflowY: "hidden",
+            selectors: {
+                p: { margin: "14px 0" },
+                "p:first-child": { marginTop: 0 },
+                "p:last-child": { marginBottom: 0 },
+            },
+        },
+    });
+
+    const cancelIcon: IIconProps = { iconName: "Cancel" };
+    const iconButtonStyles = {
+        root: {
+            color: theme.palette.neutralPrimary,
+            marginLeft: "auto",
+            marginTop: "4px",
+            marginRight: "2px",
+        },
+        rootHovered: {
+            color: theme.palette.neutralDark,
+        },
+    };
+    const buttonStackStyles: IStackStyles = {
+        root: {
+            height: "56px",
+        },
+    };
+    return <Modal
+        titleAriaId={titleId}
+        isOpen={showFilter}
+        onDismiss={closeFilter}
+        isBlocking={false}
+        containerClassName={contentStyles.container}
+        dragOptions={dragOptions}
+    >
+        <div className={contentStyles.header}>
+            <span id={titleId}>Filter</span>
+            <IconButton
+                styles={iconButtonStyles}
+                iconProps={cancelIcon}
+                ariaLabel="Close popup modal"
+                onClick={closeFilter}
             />
-        </DialogContent>
-        <DialogActions>
-            <Button variant="contained" color="primary" onClick={() => {
-                setDoSubmit(true);
-                closeFilter();
-            }} >
-                {nlsHPCC.Apply}
-            </Button>
-            <Button variant="contained" color="secondary" onClick={() => {
-                setDoReset(true);
-            }} >
-                {nlsHPCC.Clear}
-            </Button>
-        </DialogActions>
-    </Dialog>;
+        </div>
+        <div className={contentStyles.body}>
+            <Stack>
+                <FormContent
+                    fields={filterFields}
+                    doSubmit={doSubmit}
+                    doReset={doReset}
+                    onSubmit={fields => {
+                        setDoSubmit(false);
+                        onApply(fields);
+                    }}
+                    onReset={() => {
+                        setDoReset(false);
+                    }}
+                />
+            </Stack>
+            <Stack
+                horizontal
+                horizontalAlign="space-between"
+                verticalAlign="end"
+                styles={buttonStackStyles}
+            >
+                <DefaultButton
+                    text={nlsHPCC.Clear}
+                    onClick={() => {
+                        setDoReset(true);
+                    }}
+                />
+                <PrimaryButton
+                    text={nlsHPCC.Apply}
+                    onClick={() => {
+                        setDoSubmit(true);
+                        closeFilter();
+                    }}
+                />
+            </Stack>
+        </div>
+    </Modal>;
 };
