@@ -166,7 +166,14 @@ export function TpTargetClusterQuery(params) {
 export function TpGroupQuery(params) {
     return ESPRequest.send("WsTopology", "TpGroupQuery", params);
 }
-export function TpLogicalClusterQuery(params?) {
+
+export enum RoxieQueueFilter {
+    All = "All",
+    QueriesOnly = "QueriesOnly",
+    WorkunitsOnly = "WorkunitsOnly"
+}
+
+export function TpLogicalClusterQuery(params?: { EclServerQueue?: string, RoxieQueueFilter?: RoxieQueueFilter }) {
     return ESPRequest.send("WsTopology", "TpLogicalClusterQuery", params).then(function (response) {
         let best = null;
         let hthor = null;

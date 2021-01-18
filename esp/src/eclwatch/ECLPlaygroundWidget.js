@@ -100,7 +100,7 @@ define([
             }
 
             this.Wuid = params.Wuid;
-            this.targetSelectWidget.init(params);
+            this.targetSelectWidget.init({ SubmitTargets: true });
 
             this.initEditor();
             this.editorControl.init(params);
