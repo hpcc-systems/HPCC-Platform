@@ -383,7 +383,7 @@ jobs:
         if [[ "$(grep -oP '(?<=^Failure: )[0-9]+$' ${{ github.workspace }}/regress/log/${{ matrix.engine }}.*.log)" -gt 0 ]]; then exit 1; fi
 
     - name: logs-on-failure
-      if: ${{ failure() }}
+      if: ${{ failure() || cancelled() }}
       uses: actions/upload-artifact@v2
       with:
         name: regress-fail-logs-${{ matrix.engine }}-${{ steps.vars.outputs.matrix-setname }}
