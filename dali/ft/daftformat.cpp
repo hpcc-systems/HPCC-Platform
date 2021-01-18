@@ -1737,6 +1737,8 @@ void CJsonInputPartitioner::setSource(unsigned _whichInput, const RemoteFilename
 
     inStream.setown(createIOStream(inIO));
     json.setown(new JsonSplitter(format, *inStream));
+    if (thisHeaderSize > 0)
+        inStream ->seek(thisHeaderSize, IFSbegin); // Skip BOM
     json->getHeaderLength();
 }
 

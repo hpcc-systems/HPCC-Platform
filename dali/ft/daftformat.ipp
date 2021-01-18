@@ -558,9 +558,10 @@ protected:
         JSON_DBGLOG("CJsonInputPartitioner::findSplitPoint: splitOffset %lld", splitOffset);
         JSON_DBGLOG("CJsonInputPartitioner::findSplitPoint: cursor(inputOffset: %lld, nextInputOffset: %lld, outputOffset: %lld, trimLength: %lld",
                         cursor.inputOffset, cursor.nextInputOffset, cursor.outputOffset, cursor.trimLength);
-        cursor.inputOffset = 0;
         if (!splitOffset) //header + 0 is first offset
             return;
+
+        cursor.inputOffset = 0;
 
         if (eof)
             return;
