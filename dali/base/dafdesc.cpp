@@ -3298,8 +3298,7 @@ static void generateHosts(IPropertyTree * storage, GroupInfoArray & groups)
             StringBuffer host;
             ForEachItemIn(i, cur.hosts)
             {
-                IPropertyTree * entry2 = createPTree("host");
-                IPropertyTree * entry = plane->addPropTreeArrayItem("hosts", entry2);
+                IPropertyTree * entry = plane->addPropTreeArrayItem("hosts", createPTree());
                 entry->setProp("", cur.hosts.item(i));
             }
         }

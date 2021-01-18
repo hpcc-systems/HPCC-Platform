@@ -93,6 +93,8 @@ public:
     void setExternal(const SocketEndpoint &dafsip,const char *path);
     void setExternal(const RemoteFilename &rfn);
     bool isExternal() const { return external; }
+    bool isExternalPlane() const;
+    bool getExternalPlane(StringBuffer & plane) const;
     /*
      * Multi files are temporary SuperFiles only. SuperFiles created
      * by the user do not fit into this category and are created
