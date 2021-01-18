@@ -36,7 +36,7 @@ global:
 
   cost:
     moneyLocale: "en_US.UTF-8"
-    # perCpu: 0.126
+    perCpu: 0.126
 
 ## storage:
 ##
