@@ -237,12 +237,16 @@ struct CActiveWorkunitWrapper: public CActiveWorkunit
 
 void CActivityInfo::createActivityInfo(IEspContext& context)
 {
+    CConstWUClusterInfoArray clusters;
+#ifndef _CONTAINERIZED
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
 
-    CConstWUClusterInfoArray clusters;
     Owned<IPropertyTree> envRoot= &env->getPTree();
     getEnvironmentClusterInfo(envRoot, clusters);
+#else
+    getContainerWUClusterInfo(clusters);
+#endif
 
     try
     {
@@ -261,7 +265,11 @@ void CActivityInfo::createActivityInfo(IEspContext& context)
     IPropertyTree* serverStatusRoot = connStatusServers->queryRoot();
 
     readTargetClusterInfo(clusters, serverStatusRoot);
+#ifndef _CONTAINERIZED
     readActiveWUsAndQueuedWUs(context, envRoot, serverStatusRoot);
+#else
+    readActiveWUsAndQueuedWUs(context, nullptr, serverStatusRoot);
+#endif
 
     timeCached.setNow();
 }
@@ -322,9 +330,13 @@ void CActivityInfo::readTargetClusterInfo(IConstWUClusterInfo& cluster, IPropert
 
     if (serverStatusRoot)
     {
+#ifndef _CONTAINERIZED
         smcQueue->foundQueueInStatusServer = findQueueInStatusServer(serverStatusRoot, statusServerName.str(), targetCluster->queueName.get());
         if (!smcQueue->foundQueueInStatusServer)
             targetCluster->clusterStatusDetails.appendf("Cluster %s not listening for workunits; ", clusterName.str());
+#else
+        smcQueue->foundQueueInStatusServer = true; //Server is launched dynamically.
+#endif
     }
 
     targetCluster->serverQueue.notFoundInJobQueues = !readJobQueue(targetCluster->serverQueue.queueName.str(), targetCluster->wuidsOnServerQueue, targetCluster->serverQueue.queueState, targetCluster->serverQueue.queueStateDetails);
@@ -418,8 +430,11 @@ void CActivityInfo::readActiveWUsAndQueuedWUs(IEspContext& context, IPropertyTre
     readRunningWUsAndJobQueueforOtherStatusServers(context, serverStatusRoot);
     //TODO: add queued WUs for ECLCCServer/ECLServer here. Right now, they are under target clusters.
 
+#ifndef _CONTAINERIZED
     getDFUServersAndWUs(context, envRoot, serverStatusRoot);
     getDFURecoveryJobs();
+    //For containerized HPCC, we do not know how to find out DFU Server queues, as well as running DFU WUs, for now.
+#endif
 }
 
 void CActivityInfo::readRunningWUsOnStatusServer(IEspContext& context, IPropertyTree* serverStatusRoot, WsSMCStatusServerType statusServerType)
