@@ -2951,7 +2951,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             if (constValue)
             {
                 unsigned idx = constValue->getBoolValue() ? 1 : 2;
-                IHqlExpression * branch = expr->queryChild(idx);
+                IHqlExpression * branch = queryRealChild(expr, idx);
                 if (!branch)
                 {
                     assertex(expr->isAction());
@@ -4402,7 +4402,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
             if (isNull(expr->queryChild(1)))
             {
                 //A no_null action is treated the same as a non existant action.
-                IHqlExpression * falseBranch = expr->queryChild(2);
+                IHqlExpression * falseBranch = queryRealChild(expr, 2);
                 if (!falseBranch || isNull(falseBranch))
                     return replaceWithNull(expr);
             }
@@ -5860,7 +5860,8 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
     case no_sequential:
     case no_parallel:
     case no_orderedactionlist:
-        if (expr->numChildren() == 1)
+        if ((expr->numChildren() == 1) ||
+            ((expr->numChildren() == 2) && expr->queryChild(1)->isAttribute()))
         {
             if (expr->queryChild(0)->isAttribute())
                 return createValue(no_null, makeVoidType());
@@ -6341,7 +6342,7 @@ IHqlExpression * CExprFolderTransformer::createTransformed(IHqlExpression * expr
             if (constValue)
             {
                 unsigned idx = constValue->getBoolValue() ? 1 : 2;
-                IHqlExpression * branch = expr->queryChild(idx);
+                IHqlExpression * branch = queryRealChild(expr, idx);
                 OwnedHqlExpr ret;
                 if (!branch)
                 {
@@ -6824,7 +6825,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     //Intersections of the inputs...
     case no_if:
         {
-            IHqlExpression * rhs = expr->queryChild(2);
+            IHqlExpression * rhs = queryRealChild(expr, 2);
             if (!rhs)
                 break;
         }
@@ -7253,7 +7254,7 @@ public:
                 if (condValue)
                 {
                     unsigned idx = condValue->getBoolValue() ? 1 : 2;
-                    IHqlExpression * branch = expr->queryChild(idx);
+                    IHqlExpression * branch = queryRealChild(expr, idx);
                     if (branch)
                         return transform(branch);
                     assertex(expr->isAction());

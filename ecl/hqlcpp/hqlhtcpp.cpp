@@ -9272,9 +9272,13 @@ public:
             {
                 ForEachChild(idx, expr)
                 {
-                    buildStmt(ctx, expr->queryChild(idx));
-                    if (op == no_sequential)
-                        flush(ctx);
+                    IHqlExpression * cur = expr->queryChild(idx);
+                    if (!cur->isAttribute())
+                    {
+                        buildStmt(ctx, cur);
+                        if (op == no_sequential)
+                            flush(ctx);
+                    }
                 }
                 break;
             }
@@ -18540,7 +18544,11 @@ void HqlCppTranslator::buildWorkflowItem(BuildCtx & ctx, IHqlStmt * switchStmt, 
     HqlExprArray exprs;
     unwindCommaCompound(exprs, expr);
     ForEachItemIn(i, exprs)
-        buildStmt(condctx, &exprs.item(i));
+    {
+        IHqlExpression & cur = exprs.item(i);
+        if (!cur.isAttribute())
+            buildStmt(condctx, &cur);
+    }
 
     if (caseStmt->numChildren() == 0)
         condctx.addGroup();             // ensure a break statement is generated...

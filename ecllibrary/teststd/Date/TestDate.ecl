@@ -439,6 +439,4 @@ EXPORT TestDate := MODULE
     EXPORT Test01 := OUTPUT(x);
   END;
 
-  EXPORT Main := [EVALUATE(TestConstant), EVALUATE(TestDynamicFunctions), EVALUATE(TestDynamic)];
-
 END;

@@ -1413,6 +1413,8 @@ extern HQL_API IHqlExpression * createPureVirtual(ITypeInfo * type);
 extern HQL_API IHqlExpression * cloneOrLink(IHqlExpression * expr, HqlExprArray & children);
 extern HQL_API IHqlExpression * createConstantOne();
 extern HQL_API IHqlExpression * createLocalAttribute();
+extern HQL_API IHqlExpression * createNullUidAttribute();
+
 extern HQL_API bool isNullExpr(IHqlExpression * expr, IHqlExpression * field);
 inline bool isNull(IHqlExpression * expr)       { return expr->getOperator() == no_null; }
 inline bool isNullAction(IHqlExpression * expr) { return isNull(expr) && expr->isAction(); }

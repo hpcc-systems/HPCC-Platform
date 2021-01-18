@@ -53,7 +53,7 @@ protected:
 
 //---------------------------------------------------------------------------
 
-enum YesNoOption { OptionUnknown, OptionNo, OptionMaybe, OptionSome, OptionYes };   //NB: last 3 IN ascending order of definiteness.
+enum YesNoOption { OptionUnknown, OptionNo, OptionMaybe, OptionSome, OptionYes, OptionIgnore };   //NB: last 3 IN ascending order of definiteness.
 
 class HqlThorBoundaryInfo : public NewTransformInfo
 {
