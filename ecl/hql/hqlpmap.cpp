@@ -666,7 +666,7 @@ IHqlExpression * NewProjectMapper2::doExpandFields(IHqlExpression * expr, IHqlEx
             if (numNonHidden == 0)
                 numNonHidden = max;
             HqlExprArray args;
-            args.ensure(max);
+            args.ensureCapacity(max);
             bool same = true;
             for (unsigned idx=0; idx < max; idx++)
             {
@@ -806,7 +806,7 @@ IHqlExpression * NewProjectMapper2::doCollapseFields(IHqlExpression * expr, IHql
     if (numNonHidden == 0)
         numNonHidden = max;
     HqlExprArray args;
-    args.ensure(max);
+    args.ensureCapacity(max);
     bool same = true;
     for (unsigned idx=0; idx < max; idx++)
     {

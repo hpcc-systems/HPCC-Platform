@@ -77,9 +77,10 @@ protected:
     void * _doBAdd(void *, size32_t size, StdCompare compare, bool & isNew);
     void * _doBSearch(const void *, size32_t size, StdCompare compare) const;
     void _doSort(size32_t size, StdCompare compare);
-    void _ensure(aindex_t, size32_t);
+    void _ensure(aindex_t req, size32_t iSize);
     inline void _init() { max=0; _head=0; used=0; }                                 // inline because it is called a lot
     void _reallocate(aindex_t newlen, size32_t iSize);
+    void _reallocateExact(aindex_t newLen, size32_t itemSize);
     void _doRotateR(aindex_t pos1, aindex_t pos2, size32_t iSize, aindex_t num);
     void _doRotateL(aindex_t pos1, aindex_t pos2, size32_t iSize, aindex_t num);
     void _space(size32_t iSize);
@@ -97,13 +98,15 @@ protected:
 template <unsigned SIZE> class AllocatorOf : public Allocator
 {
 public:
-    inline void ensure(aindex_t num)                        { _ensure(num, SIZE); }
+    inline void ensureCapacity(aindex_t num)                 { _ensure(num, SIZE); }                // never shrink, reallocate exactly
+    inline void ensureSpace(aindex_t num)                    { _reallocateExact(used+num, SIZE); }  // reallocate exactly
     inline void rotateR(aindex_t pos1, aindex_t pos2)        { _doRotateR(pos1, pos2, SIZE, 1); }
     inline void rotateL(aindex_t pos1, aindex_t pos2)        { _doRotateL(pos1, pos2, SIZE, 1); }
     inline void rotateRN(aindex_t pos1, aindex_t pos2, aindex_t num)        { _doRotateR(pos1, pos2, SIZE, num); }
     inline void rotateLN(aindex_t pos1, aindex_t pos2, aindex_t num)        { _doRotateL(pos1, pos2, SIZE, num); }
     inline void swap(aindex_t pos1, aindex_t pos2)           { _doSwap(pos1, pos2, SIZE); }
     inline void transfer(aindex_t to, aindex_t from)         { _doTransfer(to, from, SIZE); }
+    inline void trimMemory()                                 { _reallocateExact(used, SIZE); }
 
 protected:
     inline void _space(void)                                { Allocator::_space(SIZE); }

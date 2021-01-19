@@ -366,7 +366,7 @@ class CBitSetThreadSafe : public CBitSetBase<CBitSetArrayHelper>
         buffer.read(count);
         if (count)
         {
-            bits.ensure(count);
+            bits.ensureCapacity(count);
             while (count--)
             {
                 bits_t b;

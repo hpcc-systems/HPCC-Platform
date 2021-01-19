@@ -1431,7 +1431,7 @@ public:
             mpTag = container.queryJobChannel().deserializeMPTag(data);
 
             unsigned slaves = container.queryJob().querySlaves();
-            rhsSlaveRows.ensure(slaves);
+            rhsSlaveRows.ensureCapacity(slaves);
             for (unsigned s=0; s<container.queryJob().querySlaves(); s++)
                 rhsSlaveRows.append(new CThorRowArrayWithFlushMarker(*this));
             channels.allocateN(queryJob().queryJobChannels());

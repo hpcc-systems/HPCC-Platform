@@ -1681,7 +1681,7 @@ public:
 
         unsigned numStats;
         in.read(numStats);
-        stats.ensure(numStats);
+        stats.ensureCapacity(numStats);
         while (numStats-- > 0)
         {
             Statistic next (in, version);

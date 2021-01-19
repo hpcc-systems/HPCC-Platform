@@ -907,7 +907,7 @@ void CseScopeInfo::calcCommonLocation()
 void CseScopeInfo::cloneAliases(ICopyArrayOf<CseScopeInfo> & target) const
 {
     unsigned max = childAliases.ordinality();
-    target.ensure(target.ordinality() + max);
+    target.ensureSpace(max);
     for (unsigned i=0; i < max; ++i)
         target.append(childAliases.item(i));
 }

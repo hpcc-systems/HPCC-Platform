@@ -265,7 +265,7 @@ public:
         LOG(MCdebugProgress, thorJob, "Waiting for %d slaves to register", slaves);
 
         IPointerArrayOf<INode> connectedSlaves;
-        connectedSlaves.ensure(slaves);
+        connectedSlaves.ensureCapacity(slaves);
         unsigned remaining = slaves;
         INode *_sender = nullptr;
         CMessageBuffer msg;

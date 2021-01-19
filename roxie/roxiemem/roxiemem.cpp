@@ -9166,7 +9166,7 @@ protected:
     void createRows(IRowManager * rowManager, size_t numRows, ConstPointerArray & target, bool shuffle)
     {
         Owned<IFixedRowHeap> heap = rowManager->createFixedRowHeap(tuningAllocSize, 0, RHFpacked);
-        target.ensure(numTuningRows);
+        target.ensureSpace(numTuningRows);
         for (size_t i = 0; i < numRows; i++)
             target.append(heap->allocate());
 

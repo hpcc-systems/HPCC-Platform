@@ -1222,7 +1222,7 @@ HqlStmt::HqlStmt(StmtKind _kind, HqlStmts * _container)
 void HqlStmt::addExpr(IHqlExpression * expr)
 {
     //Only allocate a single extra expression at a time, since statements generally have very few (1) expressions
-    exprs.ensure(exprs.ordinality()+1);
+    exprs.ensureSpace(1);
     exprs.append(*expr);
 }
 

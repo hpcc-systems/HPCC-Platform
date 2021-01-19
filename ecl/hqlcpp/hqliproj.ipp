@@ -69,10 +69,10 @@ public:
             return *singleValue;
         return HqlExprCopyArray::item(i);
     }
-    void ensure(unsigned max)
+    void ensureCapacity(unsigned max)
     {
         if (max > 1)
-            HqlExprCopyArray::ensure(max);
+            HqlExprCopyArray::ensureCapacity(max);
     }
     unsigned find(IHqlExpression & cur) const
     {

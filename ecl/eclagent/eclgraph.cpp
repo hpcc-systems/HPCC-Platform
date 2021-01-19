@@ -1430,7 +1430,7 @@ const void * GraphResult::getLinkedRowResult()
 
 GraphResults::GraphResults(unsigned _maxResults)
 {
-    results.ensure(_maxResults);
+    results.ensureCapacity(_maxResults);
 }
 
 void GraphResults::clear()

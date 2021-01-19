@@ -477,7 +477,7 @@ bool HqlTransformerBase::optimizedTransformChildren(IHqlExpression * expr, HqlEx
         if (idx == max)
             return true;
 
-        children.ensure(max);
+        children.ensureCapacity(max);
         for (unsigned i=numDone; i < idx; i++)
             children.append(*LINK(expr->queryChild(i)));
         children.append(*lastTransformedChild.getClear());
@@ -485,7 +485,7 @@ bool HqlTransformerBase::optimizedTransformChildren(IHqlExpression * expr, HqlEx
     }
     else
     {
-        children.ensure(max);
+        children.ensureCapacity(max);
         idx = numDone;
     }
 
@@ -530,7 +530,7 @@ bool HqlTransformerBase::transformChildren(IHqlExpression * expr, HqlExprArray &
         if (&children.item(idx) != expr->queryChild(idx))
             same = false;
 
-    children.ensure(max);
+    children.ensureCapacity(max);
     for (idx=numDone;idx<max;idx++)
     {
         IHqlExpression * child = expr->queryChild(idx);
@@ -1023,6 +1023,7 @@ IHqlExpression * QuickHqlTransformer::createTransformedBody(IHqlExpression * exp
             if (newDs == ds)
                 return LINK(expr);
 
+            children.ensureCapacity(expr->numChildren());
             children.append(*LINK(newDs));
             if (ds->queryRecord() == newDs->queryRecord())
                 children.append(*LINK(field));
@@ -1399,7 +1400,7 @@ IHqlExpression * NewHqlTransformer::quickTransformTransform(IHqlExpression * exp
     bool same = true;
     unsigned max = expr->numChildren();
     HqlExprArray children;
-    children.ensure(max);
+    children.ensureCapacity(max);
     for (unsigned i=0; i < max; i++)
     {
         IHqlExpression * cur = expr->queryChild(i);
@@ -1695,7 +1696,7 @@ IHqlExpression * NewHqlTransformer::getTransformedChildren(IHqlExpression * expr
     unsigned max = expr->numChildren();
     unsigned idx;
     bool same = true;
-    children.ensure(max);
+    children.ensureCapacity(max);
     for (idx=0;idx<max;idx++)
     {
         IHqlExpression * child = expr->queryChild(idx);
@@ -3449,7 +3450,7 @@ IHqlExpression * updateChildSelectors(IHqlExpression * expr, IHqlExpression * ol
     unsigned max = expr->numChildren();
     unsigned i;
     HqlExprArray args;
-    args.ensure(max);
+    args.ensureCapacity(max);
     for (i = 0; i < firstChild; i++)
         args.append(*LINK(expr->queryChild(i)));
 
@@ -3478,7 +3479,7 @@ IHqlExpression * updateMappedFields(IHqlExpression * expr, IHqlExpression * oldS
     unsigned max = expr->numChildren();
     unsigned i;
     HqlExprArray args;
-    args.ensure(max);
+    args.ensureCapacity(max);
     for (i = 0; i < firstChild; i++)
         args.append(*LINK(expr->queryChild(i)));
 
@@ -3508,7 +3509,7 @@ IHqlExpression * updateActiveSelectorFields(IHqlExpression * expr, IHqlExpressio
     unsigned max = expr->numChildren();
     unsigned i;
     HqlExprArray args;
-    args.ensure(max);
+    args.ensureCapacity(max);
     for (i = 0; i < firstChild; i++)
         args.append(*LINK(expr->queryChild(i)));
 
@@ -3964,7 +3965,7 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
 
     node_operator op = expr->getOperator();
     unsigned numChildren = expr->numChildren();
-    children.ensure(numChildren);
+    children.ensureCapacity(numChildren);
 
     unsigned idx;
     switch (op)

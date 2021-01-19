@@ -868,7 +868,7 @@ public:
             const CFieldOffsetSize * fields = rawMeta->queryFields();
             unsigned maxFields = rawMeta->getNumFields();
             seekGEOffset = fields[0].offset;
-            seekSizes.ensure(maxFields);
+            seekSizes.ensureCapacity(maxFields);
             seekSizes.append(fields[0].size);
             for (unsigned i=1; i < maxFields; i++)
                 seekSizes.append(seekSizes.item(i-1) + fields[i].size);

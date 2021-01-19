@@ -329,7 +329,7 @@ public:
         offsetMapSz = 0;
         if (numParts)
         {
-            parts.ensure(numParts);
+            parts.ensureCapacity(numParts);
             deserializePartFileDescriptors(data, parts);
         }
         data.read(offsetCount);
