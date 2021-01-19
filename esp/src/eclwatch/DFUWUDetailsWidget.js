@@ -266,6 +266,18 @@ define([
                             Name: this.wu.DestLogicalName
                         });
                     }
+                    if (this.wu.SourceFormatMessage === "csv") {
+                        dom.byId(this.id + "SourceType").innerText = "(" + nlsHPCC.CSV + ")";
+                    } else if (this.wu.SourceFormatMessage === "fixed") {
+                        dom.byId(this.id + "SourceType").innerText = "(" + nlsHPCC.Fixed + ")";
+                    } else if (!!this.wu.RowTag) {
+                        dom.byId(this.id + "SourceType").innerText = "(" + nlsHPCC.XML + "/" + nlsHPCC.JSON + ")";
+                    }
+                    if (this.wu.DestFormatMessage === "csv") {
+                        dom.byId(this.id + "TargetType").innerText = "(" + nlsHPCC.CSV + ")";
+                    } else if (this.wu.DestFormatMessage === "fixed") {
+                        dom.byId(this.id + "TargetType").innerText = "(" + nlsHPCC.Fixed + ")";
+                    }
                     break;
             }
         },
