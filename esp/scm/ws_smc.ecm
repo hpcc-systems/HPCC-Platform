@@ -327,6 +327,7 @@ ESPenum RoxieControlCmdType : string
 ESPrequest RoxieControlCmdRequest
 {
     string ProcessCluster;
+    [min_ver("1.24")] string TargetCluster;
     ESPenum RoxieControlCmdType Command;
     int Wait;
 };
@@ -413,7 +414,7 @@ ESPresponse [exceptions_inline] GetBuildInfoResponse
     ESParray<ESPstruct NamedValue> BuildInfo;
 };
 
-ESPservice [auth_feature("DEFERRED"), noforms, version("1.23"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+ESPservice [auth_feature("DEFERRED"), noforms, version("1.24"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
     ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);

@@ -438,6 +438,9 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     getConfigurationDirectory(directories, "data", "esp", process, dataDirectory);
     wuFactory.setown(getWorkUnitFactory());
 
+#ifdef _CONTAINERIZED
+    initContainerRoxieTargets(roxieConnMap);
+#endif
     m_sched.start();
     filesInUse.subscribe();
 

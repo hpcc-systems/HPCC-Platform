@@ -989,6 +989,7 @@ ESPresponse [exceptions_inline, nil_remove] WUGetArchiveFileResponse
 ESPrequest [nil_remove] WUGetNumFileToCopyRequest
 {
     string ClusterName;
+    [min_ver("1.81")] string TargetName;
     [min_ver("1.69")] int64 PageSize(0);
     [min_ver("1.69")] int64 PageStartFrom(0);
     [min_ver("1.69")] string Sortby;
