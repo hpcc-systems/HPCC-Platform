@@ -2193,6 +2193,21 @@ extern TPWRAPPER_API unsigned getContainerWUClusterInfo(CConstWUClusterInfoArray
     return clusters.ordinality();
 }
 
+extern TPWRAPPER_API IConstWUClusterInfo* getWUClusterInfoByName(const char* clusterName)
+{
+#ifndef _CONTAINERIZED
+    return getTargetClusterInfo(clusterName);
+#else
+    VStringBuffer xpath("queues[@name='%s']", clusterName);
+    IPropertyTree* queue = queryComponentConfig().queryPropTree(xpath);
+    if (!queue)
+        return nullptr;
+
+    return new CContainerWUClusterInfo(queue->queryProp("@name"), queue->queryProp("@type"),
+        (unsigned) queue->getPropInt("@width", 1));
+#endif
+}
+
 extern TPWRAPPER_API void initContainerRoxieTargets(MapStringToMyClass<ISmartSocketFactory>& connMap)
 {
     Owned<IPropertyTreeIterator> services = queryComponentConfig().getElements("services[@type='roxie']");

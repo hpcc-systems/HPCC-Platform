@@ -31,6 +31,7 @@
 #include "hqlexpr.hpp"
 #include "rmtsmtp.hpp"
 #include "LogicFileWrapper.hpp"
+#include "TpWrapper.hpp"
 
 #ifndef _NO_LDAP
 #include "ldapsecurity.ipp"
@@ -1290,11 +1291,7 @@ bool WsWuInfo::getClusterInfo(IEspECLWorkunit &info, unsigned long flags)
     {
         int clusterTypeFlag = 0;
 
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
-        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-        Owned<IPropertyTree> root = &constEnv->getPTree();
-
-        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName.str());
+        Owned<IConstWUClusterInfo> clusterInfo = getWUClusterInfoByName(clusterName.str());
         if (clusterInfo.get())
         {//Set thor flag or roxie flag in order to display some options for thor or roxie
             ClusterType platform = clusterInfo->getPlatform();
