@@ -11930,9 +11930,10 @@ public:
 class CRoxieServerDiskWriteActivityFactory : public CRoxieServerMultiOutputFactory
 {
     bool isTemp;
+    bool isRoot;
 public:
-    CRoxieServerDiskWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
-        : CRoxieServerMultiOutputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
+    CRoxieServerDiskWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
+        : CRoxieServerMultiOutputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
     {
         Owned<IHThorDiskWriteArg> helper = (IHThorDiskWriteArg *) helperFactory();
         isTemp = (helper->getFlags() & TDXtemporary) != 0;
@@ -11969,14 +11970,14 @@ public:
 
     virtual bool isSink() const
     {
-        return numOutputs == 0 && (kind==TAKspillwrite || !isTemp); // MORE - check with Gavin if this is right if not a temp but reread in  same job...
+        return numOutputs == 0 && (kind==TAKspillwrite || (!isTemp && isRoot)); // MORE - check with Gavin if this is right if not a temp but reread in  same job...
     }
 
 };
 
-IRoxieServerActivityFactory *createRoxieServerDiskWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+IRoxieServerActivityFactory *createRoxieServerDiskWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
 {
-    return new CRoxieServerDiskWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
+    return new CRoxieServerDiskWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _isRoot);
 }
 
 //=================================================================================
@@ -12362,9 +12363,10 @@ public:
 
 class CRoxieServerIndexWriteActivityFactory : public CRoxieServerMultiOutputFactory
 {
+    bool isRoot;
 public:
     CRoxieServerIndexWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
-        : CRoxieServerMultiOutputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
+        : CRoxieServerMultiOutputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
     {
         setNumOutputs(0);
     }
@@ -12376,7 +12378,7 @@ public:
 
     virtual bool isSink() const
     {
-        return true;
+        return isRoot;
     }
     virtual const StatisticsMapping &queryStatsMapping() const
     {
