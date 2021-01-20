@@ -73,7 +73,7 @@ class DiskUsageStore extends Memory {
 
 export function CreateDiskUsageStore() {
     const store = new DiskUsageStore();
-    return Observable(store);
+    return new Observable(store);
 }
 
 export function DFUArrayAction(logicalFiles, actionType) {

@@ -111,33 +111,44 @@ export function getStateImageHTML(stateID: number, complete: boolean, archived: 
     return Utility.getImageHTML(getStateImageName(stateID, complete, archived));
 }
 
-const Store = declare([ESPRequest.Store], {
-    service: "WsWorkunits",
-    action: "WUQuery",
-    responseQualifier: "WUQueryResponse.Workunits.ECLWorkunit",
-    responseTotalQualifier: "WUQueryResponse.NumWUs",
-    idProperty: "Wuid",
-    startProperty: "PageStartFrom",
-    countProperty: "Count",
+class Store extends ESPRequest.Store {
 
-    constructor() {
+    service = "WsWorkunits";
+    action = "WUQuery";
+    responseQualifier = "WUQueryResponse.Workunits.ECLWorkunit";
+    responseTotalQualifier = "WUQueryResponse.NumWUs";
+    idProperty = "Wuid";
+
+    startProperty = "PageStartFrom";
+    countProperty = "Count";
+
+    _watched: object;
+    busy: boolean;
+    _toUnwatch: any;
+
+    constructor(options?) {
+        super(options);
         this._watched = {};
-    },
+    }
+
     preRequest(request) {
         if (request.Sortby && request.Sortby === "TotalClusterTime") {
             request.Sortby = "ClusterTime";
         }
         this.busy = true;
-    },
+    }
+
     preProcessFullResponse(response, request, query, options) {
         this.busy = false;
         this._toUnwatch = lang.mixin({}, this._watched);
-    },
+    }
+
     create(id) {
         return new Workunit({
             Wuid: id
         });
-    },
+    }
+
     update(id, item) {
         const storeItem = this.get(id);
         storeItem.updateData(item);
@@ -151,7 +162,12 @@ const Store = declare([ESPRequest.Store], {
         } else {
             delete this._toUnwatch[id];
         }
-    },
+    }
+
+    notify(storeItem: any, id: any) {
+        throw new Error("Method not implemented.");
+    }
+
     postProcessResults() {
         for (const key in this._toUnwatch) {
             this._toUnwatch[key].unwatch();
@@ -159,7 +175,7 @@ const Store = declare([ESPRequest.Store], {
         }
         delete this._toUnwatch;
     }
-});
+}
 
 const Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
     i18n: nlsHPCC,
@@ -1005,5 +1021,5 @@ export function Get(wuid, data?) {
 
 export function CreateWUQueryStore(options) {
     const store = new Store(options);
-    return Observable(store);
+    return new Observable(store);
 }

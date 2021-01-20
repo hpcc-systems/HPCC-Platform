@@ -237,7 +237,7 @@ export function TpLogFile(params) {
 }
 export function CreateTpLogFileStore() {
     const store = new TpLogFileStore();
-    return Observable(store);
+    return new Observable(store);
 }
 export function TpGetServerVersion() {
     const connection = new Connection({ baseUrl: "/esp", type: "get" });

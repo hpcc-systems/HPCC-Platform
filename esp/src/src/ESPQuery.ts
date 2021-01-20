@@ -14,17 +14,18 @@ import nlsHPCC from "./nlsHPCC";
 import * as WsEcl from "./WsEcl";
 import * as WsWorkunits from "./WsWorkunits";
 
-const Store = declare([ESPRequest.Store], {
-    i18n: nlsHPCC,
-    service: "WsWorkunits",
-    action: "WUListQueries",
-    responseQualifier: "WUListQueriesResponse.QuerysetQueries.QuerySetQuery",
-    responseTotalQualifier: "WUListQueriesResponse.NumberOfQueries",
-    idProperty: "__hpcc_id",
-    startProperty: "PageStartFrom",
-    countProperty: "PageSize",
+class Store extends ESPRequest.Store {
 
-    _watched: [],
+    service = "WsWorkunits";
+    action = "WUListQueries";
+    responseQualifier = "WUListQueriesResponse.QuerysetQueries.QuerySetQuery";
+    responseTotalQualifier = "WUListQueriesResponse.NumberOfQueries";
+    idProperty = "__hpcc_id";
+
+    startProperty = "PageStartFrom";
+    countProperty = "PageSize";
+
+    _watched = [];
 
     create(__hpcc_id) {
         const tmp = __hpcc_id.split(":");
@@ -33,7 +34,8 @@ const Store = declare([ESPRequest.Store], {
             QuerySetId: tmp[0],
             Id: tmp[1]
         });
-    },
+    }
+
     update(id, item) {
         const storeItem = this.get(id);
         storeItem.updateData(item);
@@ -45,10 +47,9 @@ const Store = declare([ESPRequest.Store], {
                 }
             });
         }
-    },
+    }
 
     preProcessRow(item, request, query, options) {
-        const context = this;
         let ErrorCount = 0;
         let StatusMessage;
         let MixedNodeStates;
@@ -57,17 +58,17 @@ const Store = declare([ESPRequest.Store], {
             arrayUtil.some(item.Clusters.ClusterQueryState, function (cqs, idx) {
                 if (lang.exists("Errors", cqs) && cqs.Errors || cqs.State !== "Available") {
                     ErrorCount++;
-                    StatusMessage = context.i18n.SuspendedByCluster;
+                    StatusMessage = nlsHPCC.SuspendedByCluster;
                     return false;
                 }
                 if (lang.exists("MixedNodeStates", cqs) && cqs.MixedNodeStates === true) {
-                    StatusMessage = context.i18n.MixedNodeStates;
+                    StatusMessage = nlsHPCC.MixedNodeStates;
                     MixedNodeStates = true;
                 }
             });
         }
         if (item.Suspended === true) {
-            StatusMessage = this.i18n.SuspendedByUser;
+            StatusMessage = nlsHPCC.SuspendedByUser;
         }
 
         lang.mixin(item, {
@@ -76,7 +77,7 @@ const Store = declare([ESPRequest.Store], {
             MixedNodeStates
         });
     }
-});
+}
 
 const Query = declare([ESPUtil.Singleton], {  // jshint ignore:line
     i18n: nlsHPCC,

@@ -402,12 +402,12 @@ define([
 
         createTreeStore: function () {
             var store = new GraphStore.GraphTreeStore();
-            return Observable(store);
+            return new Observable(store);
         },
 
         createStore: function () {
             var store = new GraphStore.GraphStore();
-            return Observable(store);
+            return new Observable(store);
         },
 
         showToolbar: function (show) {

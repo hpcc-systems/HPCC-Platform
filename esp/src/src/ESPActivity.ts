@@ -219,5 +219,5 @@ export function Get() {
 
 export function CreateActivityStore(options) {
     const store = new Store(options);
-    return Observable(store);
+    return new Observable(store);
 }

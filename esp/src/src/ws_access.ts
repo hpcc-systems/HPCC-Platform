@@ -625,7 +625,7 @@ export function CreateUsersStore(groupname, observable) {
     const store = new UsersStore();
     store.groupname = groupname;
     if (observable) {
-        return Observable(store);
+        return new Observable(store);
     }
     return store;
 }
@@ -634,7 +634,7 @@ export function CreateGroupsStore(username, observable) {
     const store = new GroupsStore();
     store.username = username;
     if (observable) {
-        return Observable(store);
+        return new Observable(store);
     }
     return store;
 }
@@ -643,7 +643,7 @@ export function CreatePermissionsStore(groupname, username) {
     const store = new PermissionsStore();
     store.groupname = groupname;
     store.username = username;
-    return Observable(store);
+    return new Observable(store);
 }
 
 export function CreateAccountPermissionsStore(IsGroup, IncludeGroup, AccountName) {
@@ -651,7 +651,7 @@ export function CreateAccountPermissionsStore(IsGroup, IncludeGroup, AccountName
     store.IsGroup = IsGroup;
     store.IncludeGroup = IncludeGroup;
     store.AccountName = AccountName;
-    return Observable(store);
+    return new Observable(store);
 }
 
 export function CreateInheritedPermissionsStore(IsGroup, IncludeGroup, AccountName, TabName) {
@@ -660,14 +660,14 @@ export function CreateInheritedPermissionsStore(IsGroup, IncludeGroup, AccountNa
     store.IncludeGroup = IncludeGroup;
     store.AccountName = AccountName;
     store.TabName = TabName;
-    return Observable(store);
+    return new Observable(store);
 }
 
 export function CreateIndividualPermissionsStore(basedn, name) {
     const store = new IndividualPermissionsStore();
     store.basedn = basedn;
     store.name = name;
-    return Observable(store);
+    return new Observable(store);
 }
 
 export function CreateResourcesStore(groupname, username, basedn, name) {
@@ -676,5 +676,5 @@ export function CreateResourcesStore(groupname, username, basedn, name) {
     store.username = username;
     store.basedn = basedn;
     store.name = name;
-    return Observable(store);
+    return new Observable(store);
 }

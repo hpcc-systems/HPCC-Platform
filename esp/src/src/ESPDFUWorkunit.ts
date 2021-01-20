@@ -10,16 +10,19 @@ import * as Utility from "./Utility";
 
 const i18n = nlsHPCC;
 
-const Store = declare([ESPRequest.Store], {
-    service: "FileSpray",
-    action: "GetDFUWorkunits",
-    responseQualifier: "GetDFUWorkunitsResponse.results.DFUWorkunit",
-    responseTotalQualifier: "GetDFUWorkunitsResponse.NumWUs",
-    idProperty: "ID",
-    startProperty: "PageStartFrom",
-    countProperty: "PageSize",
+class Store extends ESPRequest.Store {
 
-    _watched: [],
+    service = "FileSpray";
+    action = "GetDFUWorkunits";
+    responseQualifier = "GetDFUWorkunitsResponse.results.DFUWorkunit";
+    responseTotalQualifier = "GetDFUWorkunitsResponse.NumWUs";
+    idProperty = "ID";
+
+    startProperty = "PageStartFrom";
+    countProperty = "PageSize";
+
+    _watched = [];
+
     preRequest(request) {
         switch (request.Sortby) {
             case "ClusterName":
@@ -35,13 +38,15 @@ const Store = declare([ESPRequest.Store], {
                 request.Sortby = "State";
                 break;
         }
-    },
+    }
+
     create(id) {
         return new Workunit({
             ID: id,
             Wuid: id
         });
-    },
+    }
+
     update(id, item) {
         const storeItem = this.get(id);
         storeItem.updateData(item);
@@ -54,7 +59,7 @@ const Store = declare([ESPRequest.Store], {
             });
         }
     }
-});
+}
 
 const Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], { // jshint ignore:line
     //  Asserts  ---
@@ -300,6 +305,6 @@ export function Get(wuid, data?) {
 
 export function CreateWUQueryStore(options) {
     let store = new Store(options);
-    store = Observable(store);
+    store = new Observable(store);
     return store;
 }

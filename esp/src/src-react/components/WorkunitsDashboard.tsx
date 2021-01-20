@@ -168,7 +168,7 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
         ;
 
     //  Table ---
-    const workunitsStore = useConst(Observable(new Memory({ idProperty: "Wuid", data: [] })));
+    const workunitsStore = useConst(new Observable(new Memory({ idProperty: "Wuid", data: [] })));
     const tablePipeline = chain(
         filter(row => filterProps.cluster === undefined || row.Cluster === filterProps.cluster),
         filter(row => filterProps.owner === undefined || row.Owner === filterProps.owner),

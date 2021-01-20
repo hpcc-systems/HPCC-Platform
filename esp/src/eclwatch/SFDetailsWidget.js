@@ -175,7 +175,7 @@ define([
                 idProperty: "Name",
                 data: []
             });
-            this.subfilesStore = Observable(store);
+            this.subfilesStore = new Observable(store);
             this.subfilesGrid = new declare([ESPUtil.Grid(false, true)])({
                 columns: {
                     sel: selector({

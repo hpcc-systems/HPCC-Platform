@@ -45,7 +45,7 @@ define([
                     idProperty: "__hpcc_id",
                     data: []
                 });
-                this.filePartsStore = Observable(store);
+                this.filePartsStore = new Observable(store);
 
                 this.filePartsGrid = new declare([OnDemandGrid, Keyboard, ColumnResizer, DijitRegistry])({
                     allowSelectAll: true,
