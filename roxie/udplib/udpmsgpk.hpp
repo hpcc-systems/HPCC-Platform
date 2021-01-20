@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+#ifndef UDPMSGPK_INCL
+#define UDPMSGPK_INCL
+
 #include "roxiemem.hpp"
 #include <queue>
 
@@ -53,3 +56,6 @@ public:
     bool attach_databuffer(roxiemem::DataBuffer *dataBuff);
     bool attach_data(const void *data, unsigned len);
 };
+
+#endif
+

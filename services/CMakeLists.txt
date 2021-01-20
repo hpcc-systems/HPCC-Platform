@@ -13,4 +13,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+
+if (USE_UNITY_BUILD)
+    SET(CMAKE_UNITY_BUILD TRUE)
+endif ()
+
 add_subdirectory (runagent)

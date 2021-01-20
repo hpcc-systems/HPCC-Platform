@@ -13,6 +13,11 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+
+if (USE_UNITY_BUILD)
+    set(CMAKE_UNITY_BUILD TRUE)
+endif ()
+
 HPCC_ADD_SUBDIRECTORY (eclrtl)
 HPCC_ADD_SUBDIRECTORY (include)
 HPCC_ADD_SUBDIRECTORY (nbcd)

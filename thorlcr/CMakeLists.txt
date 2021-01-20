@@ -14,6 +14,10 @@
 #    limitations under the License.
 ################################################################################
 
+if (USE_UNITY_BUILD)
+    SET (CMAKE_UNITY_BUILD TRUE)
+endif ()
+
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
     SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wno-reorder -Wno-unused-parameter -Wno-overloaded-virtual -Wno-delete-non-virtual-dtor")
 endif()

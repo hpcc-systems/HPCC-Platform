@@ -13,6 +13,11 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+
+if (USE_UNITY_BUILD)
+    SET(CMAKE_UNITY_BUILD TRUE)
+endif ()
+
 HPCC_ADD_SUBDIRECTORY (deftype)
 HPCC_ADD_SUBDIRECTORY (dllserver)
 HPCC_ADD_SUBDIRECTORY (environment)

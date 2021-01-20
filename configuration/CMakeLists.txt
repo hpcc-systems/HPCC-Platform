@@ -14,6 +14,10 @@
 #    limitations under the License.
 ################################################################################
 
+if (USE_UNITY_BUILD)
+  SET(CMAKE_UNITY_BUILD TRUE)
+endif ()
+
 if (INCLUDE_CONFIG_MANAGER)
   HPCC_ADD_SUBDIRECTORY (configmgr)
   HPCC_ADD_SUBDIRECTORY (cli)

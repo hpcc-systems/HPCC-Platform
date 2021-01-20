@@ -16,6 +16,10 @@
 
 # Component: ws_loggingservice
 
+if (USE_UNITY_BUILD)
+    SET(CMAKE_UNITY_BUILD FALSE)
+endif ()
+
 project( ws_loggingservice )
 
 # include (${HPCC_SOURCE_DIR}/cmake_modules/shares.cmake)

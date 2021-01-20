@@ -14,6 +14,10 @@
 #    limitations under the License.
 ################################################################################
 
+if (USE_UNITY_BUILD)
+    SET(CMAKE_UNITY_BUILD TRUE)
+endif ()
+
 HPCC_ADD_SUBDIRECTORY (dafsserver)
 HPCC_ADD_SUBDIRECTORY (dafilesrv)
 HPCC_ADD_SUBDIRECTORY (dafscontrol)

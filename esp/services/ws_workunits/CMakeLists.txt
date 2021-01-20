@@ -22,6 +22,10 @@
 #    Cmake Input File for ws_workunits
 #####################################################
 
+if (USE_UNITY_BUILD)
+    SET(CMAKE_UNITY_BUILD FALSE)
+endif ()
+
 project( ws_workunits )
 
 include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)

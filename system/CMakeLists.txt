@@ -14,6 +14,10 @@
 #    limitations under the License.
 ################################################################################
 
+if (USE_UNITY_BUILD)
+    SET(CMAKE_UNITY_BUILD TRUE)
+endif ()
+
 HPCC_ADD_SUBDIRECTORY (include)
 HPCC_ADD_SUBDIRECTORY (jhtree)
 HPCC_ADD_SUBDIRECTORY (yaml)
@@ -30,6 +34,10 @@ if (NOT JLIB_ONLY)
    HPCC_ADD_SUBDIRECTORY (xmllibtest "PLATFORM")
    
    if (USE_AERON)
+      if (USE_UNITY_BUILD)
+          SET(CMAKE_UNITY_BUILD FALSE)
+      endif ()
+
       project (aeron_include)
       remove_definitions(-fvisibility=hidden)
       if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX)

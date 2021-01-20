@@ -13,6 +13,11 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+
+if (USE_UNITY_BUILD)
+  SET(CMAKE_UNITY_BUILD FALSE)
+endif ()
+
 IF (USE_OPENLDAP)
 HPCC_ADD_SUBDIRECTORY (LdapSecurity)
 ENDIF(USE_OPENLDAP)
