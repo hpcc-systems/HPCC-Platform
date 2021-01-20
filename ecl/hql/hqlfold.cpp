@@ -4445,7 +4445,10 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                     return replaceWithNull(expr);
 
                 if (leftIsNull)
-                    cvtRightProject = true;
+                {
+                    if (op == no_join)
+                        cvtRightProject = true;
+                }
                 else if (rightIsNull)
                 {
                     //JOIN(ds,<null>) becomes a project
@@ -4531,12 +4534,18 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 }
             }
 
+            //MORE: What about no_matched_injoin(left/right)
             if (cvtLeftProject)
             {
                 IHqlExpression * selSeq = querySelSeq(expr);
+                OwnedHqlExpr left = createSelector(no_left, child, selSeq);
                 OwnedHqlExpr right = createSelector(no_right, rhs, selSeq);
+                OwnedHqlExpr matchedLeft = createValue(no_matched_injoin, makeBoolType(), LINK(left));
+                OwnedHqlExpr matchedRight = createValue(no_matched_injoin, makeBoolType(), LINK(right));
                 OwnedHqlExpr null = createRow(no_newrow, createNullExpr(right));
-                OwnedHqlExpr newTransform = replaceSelector(expr->queryChild(3), right, null);
+                OwnedHqlExpr transformNoMatchedLeft = replaceExpression(expr->queryChild(3), matchedLeft, queryBoolExpr(true));
+                OwnedHqlExpr transformNoMatchedRight = replaceExpression(transformNoMatchedLeft, matchedRight, queryBoolExpr(false));
+                OwnedHqlExpr newTransform = replaceSelector(transformNoMatchedRight, right, null);
                 if (op == no_denormalizegroup)
                 {
                     IHqlExpression * rowsid = expr->queryAttribute(_rowsid_Atom);
@@ -4563,26 +4572,33 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 return ret.getClear();
             }
 
-            //This is pretty unlikely, and may introduce an ambiguity in LEFT (if selector sequences aren't unique)
             if (cvtRightProject && !isGrouped(expr))
             {
-#if 0
                 IHqlExpression * selSeq = querySelSeq(expr);
+                //References to LEFT are replaced with null values
                 OwnedHqlExpr left = createSelector(no_left, child, selSeq);
-                OwnedHqlExpr null = createRow(no_newrow, createNullExpr(left));
-                OwnedHqlExpr transformNoLeft  = replaceSelector(expr->queryChild(3), left, null);
                 OwnedHqlExpr right = createSelector(no_right, rhs, selSeq);
-                OwnedHqlExpr newLeft = createSelector(no_left, child, selSeq);
+                OwnedHqlExpr matchedLeft = createValue(no_matched_injoin, makeBoolType(), LINK(left));
+                OwnedHqlExpr matchedRight = createValue(no_matched_injoin, makeBoolType(), LINK(right));
+                OwnedHqlExpr null = createRow(no_newrow, createNullExpr(left));
+                OwnedHqlExpr transformNoMatchedLeft = replaceExpression(expr->queryChild(3), matchedLeft, queryBoolExpr(false));
+                OwnedHqlExpr transformNoMatchedRight = replaceExpression(transformNoMatchedLeft, matchedRight, queryBoolExpr(true));
+                OwnedHqlExpr transformNoLeft  = replaceSelector(transformNoMatchedRight, left, null);
+
+                //Create a new selseq to ensure there are no clashes with projects or anything else
+                OwnedHqlExpr newSelSeq = createUniqueSelectorSequence();
+                //References to RIGHT now become references to LEFT
+                OwnedHqlExpr newLeft = createSelector(no_left, rhs, newSelSeq);
+
                 OwnedHqlExpr newTransform  = replaceSelector(transformNoLeft, right, newLeft);
 
                 HqlExprArray args;
                 args.append(*preserveGrouping(rhs, expr));
                 args.append(*newTransform.getClear());
-                args.append(*LINK(selSeq));
+                args.append(*LINK(newSelSeq));
                 OwnedHqlExpr ret = createDataset(no_hqlproject, args);
                 DBGLOG("Folder: Replace JOIN(<empty>, ds) with PROJECT");
                 return ret.getClear();
-#endif
             }
             break;
         }
