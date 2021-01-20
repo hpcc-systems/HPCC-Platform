@@ -6,7 +6,7 @@ define([
     "dojo/_base/Deferred",
     "dojo/data/ItemFileReadStore",
     "dojo/promise/all",
-    "dojo/store/Memory",
+    "src/Memory",
 
     "src/WsTopology",
     "src/WsWorkunits",
@@ -16,7 +16,7 @@ define([
     "src/WsPackageMaps",
     "src/Utility"
 
-], function (lang, nlsHPCCMod, arrayUtil, xhr, Deferred, ItemFileReadStore, all, Memory,
+], function (lang, nlsHPCCMod, arrayUtil, xhr, Deferred, ItemFileReadStore, all, MemoryMod,
     WsTopology, WsWorkunits, FileSpray, WsAccess, WsESDLConfig, WsPackageMaps, Utility) {
 
     var nlsHPCC = nlsHPCCMod.default;
@@ -416,7 +416,7 @@ define([
             if (this._dropZoneTarget) {
                 this._loadDropZoneFolders(pathSepChar, this._dropZoneTarget.machine.Netaddress, this._dropZoneTarget.machine.Directory, this._dropZoneTarget.machine.OS).then(function (results) {
                     results.sort();
-                    var store = new Memory({
+                    var store = new MemoryMod.Memory({
                         data: arrayUtil.map(results, function (_path) {
                             var path = _path.substring(context._dropZoneTarget.machine.Directory.length);
                             return {

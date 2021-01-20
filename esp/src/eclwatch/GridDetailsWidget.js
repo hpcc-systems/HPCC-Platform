@@ -2,7 +2,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "src/nlsHPCC",
-    "dojo/store/Memory",
+    "src/Memory",
     "dojo/store/Observable",
 
     "dijit/registry",
@@ -24,7 +24,7 @@ define([
     "dijit/ToolbarSeparator",
     "dijit/layout/ContentPane"
 
-], function (declare, lang, nlsHPCCMod, Memory, Observable,
+], function (declare, lang, nlsHPCCMod, MemoryMod, Observable,
     registry, Menu, MenuItem, MenuSeparator,
     _TabContainerWidget, Utility, ESPUtil,
     template) {
@@ -98,23 +98,10 @@ define([
 
         initGrid: function () {
             var context = this;
-            var MyMemory = declare("MyMemory", [Memory], {
+            var store = new MemoryMod.AlphaNumSortMemory(this.alphanumSort, {
                 idProperty: this.idProperty,
-                data: [],
-                setData: function (data, noDataMessage) {
-                    var retVal = this.inherited(arguments);
-                    context.setGridNoDataMessage(noDataMessage || context.i18n.noDataMessage);
-                    return retVal;
-                },
-                query: function (query, options) {
-                    var retVal = this.inherited(arguments);
-                    if (lang.exists("sort", options) && options.sort.length && context.alphanumSort[options.sort[0].attribute]) {
-                        Utility.alphanumSort(retVal, options.sort[0].attribute, options.sort[0].descending);
-                    }
-                    return retVal;
-                }
+                data: []
             });
-            var store = new MyMemory();
             this.store = Observable(store);
             this.grid = this.createGrid(this.id + "Grid");
             this.setGridNoDataMessage(this.i18n.loadingMessage);

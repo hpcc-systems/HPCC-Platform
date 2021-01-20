@@ -1,8 +1,9 @@
 ﻿import * as arrayUtil from "dojo/_base/array";
 import * as declare from "dojo/_base/declare";
-import * as Memory from "dojo/store/Memory";
+// import * as Memory from "dojo/store/Memory";
 
 import * as ESPUtil from "./ESPUtil";
+import { Memory } from "./Memory";
 
 const TreeItem = declare([ESPUtil.Singleton], {
     __hpcc_type: "none",
@@ -67,23 +68,29 @@ const TreeNode = declare(null, {
     }
 });
 
-const TreeStore = declare([Memory], {
-    idProperty: "__hpcc_id",
-    treeSeparator: "->",
+class TreeStore extends Memory {
+    idProperty = "__hpcc_id";
+
+    treeSeparator = "->";
+    cachedTreeNodes: object;
+    cacheTreeItems: any;
+    out_edges: any;
+    in_edges: any;
 
     constructor(args) {
+        super(args);
         this.clear();
-    },
+    }
 
     clear() {
         this.cachedTreeNodes = {};
-    },
+    }
 
     setRootNode(rootItem) {
         const rootNode = this.createTreeNode(null, rootItem);
         this.setData([rootNode]);
         return rootNode;
-    },
+    }
 
     createTreeNode(parentNode, treeItem) {
         const retVal = new TreeNode(this, parentNode, treeItem);
@@ -92,7 +99,7 @@ const TreeStore = declare([Memory], {
         }
         this.cachedTreeNodes[retVal.getUniqueID()] = retVal;
         return retVal;
-    },
+    }
 
     addItem(treeItem) {
         if (this.cacheTreeItems[treeItem.getUniqueID()]) {
@@ -101,32 +108,32 @@ const TreeStore = declare([Memory], {
         treeItem.__hpcc_store = this;
         this.cacheTreeItems[treeItem.getUniqueID()] = treeItem;
         return treeItem;
-    },
+    }
 
     addChild(source, target) {
         this.out_edges[source.getUniqueID()].put(this.createTreeNode(source, target));
         this.in_edges[target.getUniqueID()].put(this.createTreeNode(target, source));
         return target;
-    },
+    }
 
     addChildren(source, targets) {
         arrayUtil.forEach(targets, function (target) {
             this.addChild(source, target);
         }, this);
-    },
+    }
 
     mayHaveChildren(treeNode) {
         return treeNode.mayHaveChildren && treeNode.mayHaveChildren();
-    },
+    }
 
     get(id) {
         return this.cachedTreeNodes[id];
-    },
+    }
 
     getChildren(parent, options) {
         return parent.getChildren(options);
     }
-});
+}
 
 export const Store = TreeStore;
 export const Item = TreeItem;

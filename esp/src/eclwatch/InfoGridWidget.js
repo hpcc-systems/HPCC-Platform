@@ -6,7 +6,7 @@ define([
     "dojo/dom",
     "dojo/dom-construct",
     "dojo/dom-class",
-    "dojo/store/Memory",
+    "src/Memory",
     "dojo/store/Observable",
     "dojo/topic",
     "dojo/has",
@@ -29,7 +29,7 @@ define([
     "dijit/Toolbar",
     "dijit/ToolbarSeparator"
 ],
-    function (declare, lang, nlsHPCCMod, arrayUtil, dom, domConstruct, domClass, Memory, Observable, topic, has,
+    function (declare, lang, nlsHPCCMod, arrayUtil, dom, domConstruct, domClass, MemoryMod, Observable, topic, has,
         registry,
         _Widget, ESPUtil, ESPWorkunit, Utility,
         template) {
@@ -110,7 +110,7 @@ define([
                 }
 
                 var context = this;
-                var store = new Memory({
+                var store = new MemoryMod.Memory({
                     idProperty: "id",
                     data: []
                 });

@@ -3,7 +3,7 @@ define([
     "dojo/_base/lang",
     "src/nlsHPCC",
     "dojo/_base/array",
-    "dojo/store/Memory",
+    "src/Memory",
     "dojo/store/Observable",
     "dojo/on",
     "dojo/promise/all",
@@ -25,7 +25,7 @@ define([
     "src/ESPUtil",
     "src/Utility"
 
-], function (declare, lang, nlsHPCCMod, arrayUtil, Memory, Observable, on, all,
+], function (declare, lang, nlsHPCCMod, arrayUtil, MemoryMod, Observable, on, all,
     Standby, validate,
     selector,
     GridDetailsWidget, WsWorkunits, ESPWorkunit, ESPDFUWorkunit, ESPLogicalFile, ESPQuery, FileSpray, WsDfu, DelayLoadWidget, ESPUtil, Utility) {
@@ -92,10 +92,10 @@ define([
         },
 
         createGrid: function (domID) {
-            this.eclStore = new Observable(new Memory({ idProperty: "Wuid", data: [] }));
-            this.dfuStore = new Observable(new Memory({ idProperty: "ID", data: [] }));
-            this.fileStore = new Observable(new Memory({ idProperty: "__hpcc_id", data: [] }));
-            this.queryStore = new Observable(new Memory({ idProperty: "__hpcc_id", data: [] }));
+            this.eclStore = new Observable(new MemoryMod.Memory({ idProperty: "Wuid", data: [] }));
+            this.dfuStore = new Observable(new MemoryMod.Memory({ idProperty: "ID", data: [] }));
+            this.fileStore = new Observable(new MemoryMod.Memory({ idProperty: "__hpcc_id", data: [] }));
+            this.queryStore = new Observable(new MemoryMod.Memory({ idProperty: "__hpcc_id", data: [] }));
             this.eclTab = this.ensurePane({ id: this.i18n.ECLWorkunit }, { type: this.i18n.ECLWorkunit });
             this.dfuTab = this.ensurePane({ id: this.i18n.DFUWorkunit }, { type: this.i18n.DFUWorkunit });
             this.fileTab = this.ensurePane({ id: this.i18n.LogicalFile }, { type: this.i18n.LogicalFile });

@@ -1,7 +1,7 @@
 define([
     "dojo/_base/declare",
     "src/nlsHPCC",
-    "dojo/store/Memory",
+    "src/Memory",
     "dojo/store/Observable",
 
     "dgrid/OnDemandGrid",
@@ -15,7 +15,7 @@ define([
 
     "dijit/layout/ContentPane"
 ],
-    function (declare, nlsHPCCMod, Memory, Observable,
+    function (declare, nlsHPCCMod, MemoryMod, Observable,
         OnDemandGrid, Keyboard, ColumnResizer, DijitRegistry,
         _Widget,
         template) {
@@ -41,7 +41,7 @@ define([
 
             startup: function (args) {
                 this.inherited(arguments);
-                var store = new Memory({
+                var store = new MemoryMod.Memory({
                     idProperty: "__hpcc_id",
                     data: []
                 });
