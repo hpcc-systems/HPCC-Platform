@@ -446,7 +446,7 @@ protected:
     unsigned contextLength;
     const byte *traceInfo;
     unsigned traceLength;
-    
+
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -467,6 +467,29 @@ public:
         }
         else
         {
+            assertex(lengthRemaining > 1);
+            traceInfo = finger;
+            lengthRemaining--;
+            if (*finger++ & LOGGING_DEBUGGERACTIVE)
+            {
+                assertex(lengthRemaining >= (int) sizeof(unsigned short));
+                unsigned short debugLen = *(unsigned short *) finger;
+                finger += debugLen + sizeof(unsigned short);
+                lengthRemaining -= debugLen + sizeof(unsigned short);
+            }
+            for (;;)
+            {
+                assertex(lengthRemaining>0);
+                if (!*finger)
+                {
+                    lengthRemaining--;
+                    finger++;
+                    break;
+                }
+                lengthRemaining--;
+                finger++;
+            }
+            traceLength = finger - traceInfo;
             if (data->continueSequence & ~CONTINUE_SEQUENCE_SKIPTO)
             {
                 assertex(lengthRemaining >= (int) sizeof(unsigned short));
@@ -493,29 +516,6 @@ public:
                 smartStepInfoData = NULL;
                 smartStepInfoLength = 0;
             }
-            assertex(lengthRemaining > 1);
-            traceInfo = finger;
-            lengthRemaining--;
-            if (*finger++ & LOGGING_DEBUGGERACTIVE)
-            {
-                assertex(lengthRemaining >= (int) sizeof(unsigned short));
-                unsigned short debugLen = *(unsigned short *) finger;
-                finger += debugLen + sizeof(unsigned short);
-                lengthRemaining -= debugLen + sizeof(unsigned short);
-            }
-            for (;;)
-            {
-                assertex(lengthRemaining>0);
-                if (!*finger)
-                {
-                    lengthRemaining--;
-                    finger++;
-                    break;
-                }
-                lengthRemaining--;
-                finger++;
-            }
-            traceLength = finger - traceInfo;
         }
         assertex(lengthRemaining >= 0);
         contextData = finger;
@@ -589,6 +589,8 @@ public:
         unsigned newDataSize = data->packetlength + sizeof(unsigned short) + skipDataLen;
         char *newdata = (char *) malloc(newDataSize);
         unsigned headSize = sizeof(RoxiePacketHeader);
+        if (traceLength)
+            headSize += traceLength;
         if (data->continueSequence & ~CONTINUE_SEQUENCE_SKIPTO)
             headSize += sizeof(unsigned short) + continuationLength;
         memcpy(newdata, data, headSize); // copy in leading part of old data
