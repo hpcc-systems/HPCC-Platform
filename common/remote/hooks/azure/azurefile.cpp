@@ -153,34 +153,34 @@ class AzureFile : implements CInterfaceOf<IFile>
     friend class AzureFileBlockBlobWriteIO;
 public:
     AzureFile(const char *_azureFileName);
-    virtual bool exists()
+    virtual bool exists() override
     {
         ensureMetaData();
         return fileExists;
     }
-    virtual bool getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateTime * accessedTime);
-    virtual fileBool isDirectory()
+    virtual bool getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateTime * accessedTime) override;
+    virtual fileBool isDirectory() override
     {
         ensureMetaData();
         if (!fileExists)
             return fileBool::notFound;
         return isDir ? fileBool::foundYes : fileBool::foundNo;
     }
-    virtual fileBool isFile()
+    virtual fileBool isFile() override
     {
         ensureMetaData();
         if (!fileExists)
             return fileBool::notFound;
         return !isDir ? fileBool::foundYes : fileBool::foundNo;
     }
-    virtual fileBool isReadOnly()
+    virtual fileBool isReadOnly() override
     {
         ensureMetaData();
         if (!fileExists)
             return fileBool::notFound;
         return fileBool::foundYes;
     }
-    virtual IFileIO * open(IFOmode mode, IFEflags extraFlags=IFEnone)
+    virtual IFileIO * open(IFOmode mode, IFEflags extraFlags=IFEnone) override
     {
         if (mode == IFOcreate)
             return createFileWriteIO();
@@ -191,30 +191,30 @@ public:
     {
         UNIMPLEMENTED;
     }
-    virtual IFileIO * openShared(IFOmode mode, IFSHmode shmode, IFEflags extraFlags=IFEnone)
+    virtual IFileIO * openShared(IFOmode mode, IFSHmode shmode, IFEflags extraFlags=IFEnone) override
     {
         if (mode == IFOcreate)
             return createFileWriteIO();
         assertex(mode==IFOread);
         return createFileReadIO();
     }
-    virtual const char * queryFilename()
+    virtual const char * queryFilename() override
     {
         return fullName.str();
     }
-    virtual offset_t size()
+    virtual offset_t size() override
     {
         ensureMetaData();
         return fileSize;
     }
 
 // Directory functions
-    virtual IDirectoryIterator *directoryFiles(const char *mask, bool sub, bool includeDirs)
+    virtual IDirectoryIterator *directoryFiles(const char *mask, bool sub, bool includeDirs) override
     {
-        UNIMPLEMENTED;
+        UNIMPLEMENTED_X("AzureFile::directoryFiles");
         return createNullDirectoryIterator();
     }
-    virtual bool getInfo(bool &isdir,offset_t &size,CDateTime &modtime)
+    virtual bool getInfo(bool &isdir,offset_t &size,CDateTime &modtime) override
     {
         ensureMetaData();
         isdir = isDir;
@@ -224,18 +224,25 @@ public:
     }
 
     // Not going to be implemented - this IFile interface is too big..
-    virtual bool setTime(const CDateTime * createTime, const CDateTime * modifiedTime, const CDateTime * accessedTime) { UNIMPLEMENTED; }
-    virtual bool remove();
-    virtual void rename(const char *newTail) { UNIMPLEMENTED; }
-    virtual void move(const char *newName) { UNIMPLEMENTED; }
-    virtual void setReadOnly(bool ro) { UNIMPLEMENTED; }
-    virtual void setFilePermissions(unsigned fPerms) { UNIMPLEMENTED; }
-    virtual bool setCompression(bool set) { UNIMPLEMENTED; }
-    virtual offset_t compressedSize() { UNIMPLEMENTED; }
-    virtual unsigned getCRC() { UNIMPLEMENTED; }
-    virtual void setCreateFlags(unsigned short cflags) { UNIMPLEMENTED; }
-    virtual void setShareMode(IFSHmode shmode) { UNIMPLEMENTED; }
-    virtual bool createDirectory();
+    virtual bool setTime(const CDateTime * createTime, const CDateTime * modifiedTime, const CDateTime * accessedTime) override
+    {
+        DBGLOG("AzureFile::setTime ignored");
+        return false;
+    }
+    virtual bool remove() override;
+    virtual void rename(const char *newTail) override { UNIMPLEMENTED_X("AzureFile::rename"); }
+    virtual void move(const char *newName) override { UNIMPLEMENTED_X("AzureFile::move"); }
+    virtual void setReadOnly(bool ro) override { UNIMPLEMENTED_X("AzureFile::setReadOnly"); }
+    virtual void setFilePermissions(unsigned fPerms) override
+    {
+        DBGLOG("AzureFile::setFilePermissions() ignored");
+    }
+    virtual bool setCompression(bool set) override { UNIMPLEMENTED_X("AzureFile::setCompression"); }
+    virtual offset_t compressedSize() override { UNIMPLEMENTED_X("AzureFile::compressedSize"); }
+    virtual unsigned getCRC() override { UNIMPLEMENTED_X("AzureFile::getCRC"); }
+    virtual void setCreateFlags(unsigned short cflags) override { UNIMPLEMENTED_X("AzureFile::setCreateFlags"); }
+    virtual void setShareMode(IFSHmode shmode) override { UNIMPLEMENTED_X("AzureFile::setSharedMode"); }
+    virtual bool createDirectory() override;
     virtual IDirectoryDifferenceIterator *monitorDirectory(
                                   IDirectoryIterator *prev=NULL,    // in (NULL means use current as baseline)
                                   const char *mask=NULL,
@@ -243,10 +250,10 @@ public:
                                   bool includedirs=false,
                                   unsigned checkinterval=60*1000,
                                   unsigned timeout=(unsigned)-1,
-                                  Semaphore *abortsem=NULL)  { UNIMPLEMENTED; }
-    virtual void copySection(const RemoteFilename &dest, offset_t toOfs=(offset_t)-1, offset_t fromOfs=0, offset_t size=(offset_t)-1, ICopyFileProgress *progress=NULL, CFflags copyFlags=CFnone) { UNIMPLEMENTED; }
-    virtual void copyTo(IFile *dest, size32_t buffersize=DEFAULT_COPY_BLKSIZE, ICopyFileProgress *progress=NULL, bool usetmp=false, CFflags copyFlags=CFnone) { UNIMPLEMENTED; }
-    virtual IMemoryMappedFile *openMemoryMapped(offset_t ofs=0, memsize_t len=(memsize_t)-1, bool write=false)  { UNIMPLEMENTED; }
+                                  Semaphore *abortsem=NULL) override { UNIMPLEMENTED_X("AzureFile::monitorDirectory"); }
+    virtual void copySection(const RemoteFilename &dest, offset_t toOfs=(offset_t)-1, offset_t fromOfs=0, offset_t size=(offset_t)-1, ICopyFileProgress *progress=NULL, CFflags copyFlags=CFnone) override { UNIMPLEMENTED_X("AzureFile::copySection"); }
+    virtual void copyTo(IFile *dest, size32_t buffersize=DEFAULT_COPY_BLKSIZE, ICopyFileProgress *progress=NULL, bool usetmp=false, CFflags copyFlags=CFnone) override { UNIMPLEMENTED_X("AzureFile::copyTo"); }
+    virtual IMemoryMappedFile *openMemoryMapped(offset_t ofs=0, memsize_t len=(memsize_t)-1, bool write=false) override { UNIMPLEMENTED_X("AzureFile::openMemoryMapped"); }
 
 protected:
     void createAppendBlob();

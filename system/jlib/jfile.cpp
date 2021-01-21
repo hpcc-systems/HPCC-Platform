@@ -4467,6 +4467,12 @@ bool RemoteFilename::isUnixPath() const // bit arbitrary
 #endif
 }
 
+bool RemoteFilename::isUrl() const
+{
+    return ::isUrl(tailpath);
+}
+
+
 char RemoteFilename::getPathSeparator() const
 {
     return isUnixPath()?'/':'\\';
@@ -4488,7 +4494,7 @@ StringBuffer & RemoteFilename::getRemotePath(StringBuffer & out) const
 {   // this creates a name that can be used by windows or linux
 
     // Any filenames in the format protocol:// should not be converted to //ip:....
-    if (isUrl(tailpath))
+    if (isUrl())
         return getLocalPath(out);
 
     char c=getPathSeparator();
@@ -4512,6 +4518,10 @@ StringBuffer & RemoteFilename::getRemotePath(StringBuffer & out) const
     return out;
 }
 
+const FileSystemProperties & RemoteFilename::queryFileSystemProperties() const
+{
+    return ::queryFileSystemProperties(tailpath);
+}
 
 bool RemoteFilename::isLocal() const
 {
@@ -6996,3 +7006,16 @@ void FileIOStats::trace()
         printf("Writes: %u  Bytes: %u  TimeMs: %u\n", (unsigned)ioWrites, (unsigned)ioWriteBytes, (unsigned)cycle_to_millisec(ioWriteCycles));
 }
 
+//--------------------------------------------------------------------------------------------------------------------
+
+static constexpr FileSystemProperties linuxFileSystemProperties     {true, true, true, true, 0x10000};             // 64K
+static constexpr FileSystemProperties defaultUrlFileSystemProperties{false, false, false, false, 0x400000};        // 4Mb
+
+//This implementation should eventually make use of the file hook.
+const FileSystemProperties & queryFileSystemProperties(const char * filename)
+{
+    if (isUrl(filename))
+        return defaultUrlFileSystemProperties;
+    else
+        return linuxFileSystemProperties;
+}
