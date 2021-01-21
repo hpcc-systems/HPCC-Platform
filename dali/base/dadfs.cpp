@@ -8338,11 +8338,11 @@ IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_l
     else
         localtrans.setown(new CDistributedFileTransaction(user));
 
-    IDistributedSuperFile *sfile = localtrans->lookupSuperFile(logicalname.get());
+    Owned<IDistributedSuperFile> sfile = localtrans->lookupSuperFile(logicalname.get());
     if (sfile)
     {
         if (ifdoesnotexist)
-            return sfile;
+            return sfile.getClear();
         else
             throw MakeStringException(-1,"createSuperFile: SuperFile %s already exists",logicalname.get());
     }
