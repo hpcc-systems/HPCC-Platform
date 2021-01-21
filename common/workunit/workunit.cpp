@@ -12807,12 +12807,7 @@ static void clearAliases(IPropertyTree * queryRegistry, const char * id)
 
     StringBuffer xpath;
     xpath.append("Alias[@id=\"").append(lcId).append("\"]");
-
-    Owned<IPropertyTreeIterator> iter = queryRegistry->getElements(xpath);
-    ForEach(*iter)
-    {
-        queryRegistry->removeProp(xpath.str());
-    }
+    while (queryRegistry->removeProp(xpath));
 }
 
 IPropertyTree * addNamedQuery(IPropertyTree * queryRegistry, const char * name, const char * wuid, const char * dll, bool library, const char *userid, const char *snapshot)
