@@ -105,6 +105,8 @@ define([
                 this.set("value", "");
                 this.set("placeholder", "");
                 this.loadDropZoneMachines();
+            } else if (params.SubmitTargets === true) {
+                this.loadTargets(true);
             } else {
                 this.loadTargets();
             }
@@ -524,9 +526,10 @@ define([
             this._postLoad();
         },
 
-        loadTargets: function () {
+        loadTargets: function (executeOnly) {
             var context = this;
             WsTopology.TpLogicalClusterQuery({
+                RoxieQueueFilter: executeOnly ? WsTopology.RoxieQueueFilter.WorkunitsOnly : undefined
             }).then(function (response) {
                 if (lang.exists("TpLogicalClusterQueryResponse.TpLogicalClusters.TpLogicalCluster", response)) {
                     var targetData = response.TpLogicalClusterQueryResponse.TpLogicalClusters.TpLogicalCluster;
