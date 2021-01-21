@@ -59,10 +59,11 @@ struct BuildFilterState
 class CppFilterExtractor final : public FilterExtractor
 {
 public:
-    CppFilterExtractor(IHqlExpression * _tableExpr, HqlCppTranslator & _translator, int _numKeyableFields, bool isDiskRead, bool forceValueSets);
+    CppFilterExtractor(IHqlExpression * _tableExpr, HqlCppTranslator & _translator, int _numKeyableFields, bool isDiskRead, bool _createValueSets);
 
     void buildSegments(BuildCtx & ctx, const char * listName, bool _ignoreUnkeyed);
     bool createGroupingMonitor(BuildCtx ctx, const char * listName, IHqlExpression * select, unsigned & maxField);
+    bool useValueSets() const { return createValueSets; }
 
 protected:
     void buildEmptyKeySegment(BuildFilterState & buildState, BuildCtx & ctx, KeySelectorInfo & selectorInfo);

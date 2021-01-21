@@ -439,8 +439,8 @@ IHqlExpression * castToFieldAndBack(IHqlExpression * left, IHqlExpression * righ
 
 //---------------------------------------------------------------------------------------------------------------------
 
-FilterExtractor::FilterExtractor(IErrorReceiver & _errorReceiver, IHqlExpression * _tableExpr, int _numKeyableFields, bool _isDiskRead, bool forceValueSets)
-    : errorReceiver(_errorReceiver), createValueSets(forceValueSets)
+FilterExtractor::FilterExtractor(IErrorReceiver & _errorReceiver, IHqlExpression * _tableExpr, int _numKeyableFields, bool _isDiskRead, bool _createValueSets)
+    : errorReceiver(_errorReceiver), createValueSets(_createValueSets)
 {
     tableExpr = _tableExpr;
 

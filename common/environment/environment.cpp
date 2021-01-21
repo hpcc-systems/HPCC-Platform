@@ -1976,7 +1976,7 @@ IConstDropZoneInfo * CLocalEnvironment::getDropZoneByAddressPath(const char * ne
                 serverIP.getIpText(serverIpString);
                 LOG(MCdebugInfo, unknownJob, "Listed server: '%s', IP: '%s'", dropzoneServer.str(), serverIpString.str());
 #endif
-                if (targetIp.ipequals(serverIP))
+                if (strisame(netaddress, dropzoneServer) || targetIp.ipequals(serverIP))
                 {
                     // OK the target is a valid machine in the server list we have a right drop zone candidate
                     // Keep this candidate drop zone if its directory path is shorter than we already have
@@ -2013,8 +2013,9 @@ IConstDropZoneInfoIterator * CLocalEnvironment::getDropZoneIteratorByAddress(con
                 {
                     IConstDropZoneServerInfo &serverElem = serverIter->query();
                     StringBuffer serverName;
-                    IpAddress serverIp(serverElem.getServer(serverName).str());
-                    if (serverIp.ipequals(toMatch))
+                    serverElem.getServer(serverName);
+                    IpAddress serverIp(serverName);
+                    if (strisame(addr, serverName) || serverIp.ipequals(toMatch))
                     {
                         matches.append(*LINK(&dz));
                         break;

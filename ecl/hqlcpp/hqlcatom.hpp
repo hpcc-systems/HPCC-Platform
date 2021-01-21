@@ -40,6 +40,7 @@ extern IAtom * classAtom;
 extern IAtom * clearAtom;
 extern IAtom * __clearHelperAtom;
 extern IAtom * _conditionalRowMarker_Atom;
+extern IAtom * createValueSetsAtom;
 extern IAtom * csvReadMarkerAtom;
 extern IAtom * decimalAtom;
 extern IAtom * declareAtom;

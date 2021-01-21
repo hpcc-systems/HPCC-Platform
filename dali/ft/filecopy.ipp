@@ -199,7 +199,7 @@ public:
     void updateProgress(const OutputProgress & newProgress);
     unsigned numParallelSlaves();
     void setError(const SocketEndpoint & ep, IException * e);
-    bool canLocateSlaveForNode(const IpAddress &ip);
+    bool canLocateSlaveForNode(const IpAddress &ip) const;
     void checkSourceTarget(IFileDescriptor * file);
     void setOperation(dfu_operation op);
     dfu_operation getOperation() const;
@@ -251,16 +251,19 @@ protected:
     unsigned numParallelConnections(unsigned limit);
     void performTransfer();
     void pullParts();
+    void pushWholeParts();
     void pushParts();
-    const char * queryFixedSlave();
-    const char * querySlaveExecutable(const IpAddress &ip, StringBuffer &ret);
+    const char * queryFixedSlave() const;
+    const char * querySlaveExecutable(const IpAddress &ip, StringBuffer &ret) const;
     const char * querySplitPrefix();
     bool restorePartition();
     void savePartition();
     void setCopyCompressedRaw();
     void setSource(IFileDescriptor * source, unsigned copy, unsigned mirrorCopy = (unsigned)-1);
     void updateTargetProperties();
-    bool usePullOperation();
+    bool usePullOperation() const;
+    bool usePushOperation() const;
+    bool usePushWholeOperation() const;
     void updateSizeRead();
     void waitForTransferSem(Semaphore & sem);
     void addPrefix(size32_t len, const void * data, unsigned idx, PartitionPointArray & partitionWork);
@@ -269,6 +272,9 @@ protected:
     void storeCsvRecordStructure(IFormatPartitioner &partitioner);
     void examineCsvStructure();
     IFormatPartitioner * createPartitioner(aindex_t index, bool calcOutput, unsigned numParts);
+    bool canRenameOutput() const;
+    void checkSprayOptions();
+    bool writeFromMultipleSlaves() const { return usePushOperation(); } //more: could avoid if 1:1 push
 
     class CAbortRequestCallback : implements IAbortRequestCallback
     {
@@ -280,7 +286,7 @@ protected:
 
 
 private:
-    bool calcUsePull();
+    bool calcUsePull() const;
     // Get and store Remote File Name parts into the History record
     void splitAndCollectFileInfo(IPropertyTree * newRecord, RemoteFilename &remoteFileName,
                                  bool isDistributedSource = true);
@@ -317,8 +323,8 @@ protected:
     unsigned                lastSDSTick;
     unsigned                lastOperatorTick;
     unsigned                numSlavesCompleted;
-    bool                    calcedPullPush;
-    bool                    cachedUsePull;
+    mutable bool            calcedPullPush;
+    mutable bool            cachedUsePull;
     bool                    cachedInputCRC;
     bool                    calcedInputCRC;
     bool                    isRecovering;

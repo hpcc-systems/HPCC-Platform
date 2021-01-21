@@ -2096,6 +2096,12 @@ void unwindHintAttrs(HqlExprArray & args, IHqlExpression * expr)
     }
 }
 
+bool getHintBool(IHqlExpression * expr, IAtom * name, bool dft)
+{
+    IHqlExpression * match = queryHint(expr, name);
+    return getBoolAttributeValue(match, dft);
+}
+
 //---------------------------------------------------------------------------
 
 IHqlExpression * createCompare(node_operator op, IHqlExpression * l, IHqlExpression * r)
