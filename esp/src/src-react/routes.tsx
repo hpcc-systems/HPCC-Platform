@@ -92,7 +92,7 @@ const routes: Routes = [
     {
         path: "/queries",
         children: [
-            { path: "", action: (context) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="QuerySetQueryWidget" />) },
+            { path: "", action: (context) => import("./components/Queries").then(_ => <_.Queries filter={parseSearch(context.search) as any} />) },
             { path: "/legacy", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="QuerySetQueryWidget" />) },
             { path: "/:QuerySetId/:Id", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="QuerySetDetailsWidget" params={params} />) }
         ]
