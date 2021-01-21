@@ -28,6 +28,7 @@ const navLinkGroups: INavLinkGroup[] = [
             { url: "#/files", name: nlsHPCC.LogicalFiles },
             { url: "#/landingzone", name: nlsHPCC.LandingZones },
             { url: "#/dfuworkunits", name: nlsHPCC.Workunits },
+            { url: "#/dfuworkunits/legacy", name: `${nlsHPCC.Workunits} (L)` },
             { url: "#/xref", name: nlsHPCC.XRef },
         ]
     },

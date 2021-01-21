@@ -76,7 +76,7 @@ const routes: Routes = [
     {
         path: "/dfuworkunits",
         children: [
-            { path: "", action: (context) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="GetDFUWorkunitsWidget" />) },
+            { path: "", action: (context) => import("./components/DFUWorkunits").then(_ => <_.DFUWorkunits filter={parseSearch(context.search) as any} />) },
             { path: "/legacy", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="GetDFUWorkunitsWidget" />) },
             { path: "/:Wuid", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="DFUWUDetailsWidget" params={params} />) }
         ]
