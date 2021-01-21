@@ -16,8 +16,11 @@
 ############################################################################## */
 
 IMPORT STD;
+import $.setup;
 
 #onwarning (4523, ignore);
+
+prefix := setup.Files(false, false).QueryFilePrefix;
 
 rec := RECORD
  string15 fname;
@@ -28,16 +31,23 @@ END;
 inds1 := DATASET([{ 'Aaron', 'Jones', 100}, {'Adam', 'Smith', 90}, {'Bob', 'Brown', 80}, {'Brian', 'Brown', 70 }, {'Charles', 'Dance', 60}, {'Christopher', 'Gould', 50},  {'David', 'Brokenshire', 40}, {'Edward', 'Green', 30}, {'Egbert', 'Sillyname', 20}, {'Freddy', 'Peters', 10} ], rec, DISTRIBUTED);
 inds2 := DATASET(10, TRANSFORM(rec, SELF.fname := (string)COUNTER; SELF.lname := (string)HASH(COUNTER); SELF.age := 1000-COUNTER));
 
-i := INDEX(inds1, { fname }, { lname, age }, '~myindex');
-i2 := INDEX(inds2, { fname }, { lname, age }, '~myindex');
+indexName := prefix + 'myindex';
+i := INDEX(inds1, { fname }, { lname, age }, indexName);
+i2 := INDEX(inds2, { fname }, { lname, age }, indexName);
 
-
+ds1 := prefix + 'ds1';
+ds2 := prefix + 'ds2';
 
 SEQUENTIAL(
- OUTPUT(inds1, , '~ds1', OVERWRITE);
- OUTPUT(inds2, , '~ds2', OVERWRITE);
- BUILDINDEX(i, SORTED, OVERWRITE);
- OUTPUT(i);
- BUILDINDEX(i2, OVERWRITE);
- OUTPUT(i2);
+    OUTPUT(inds1, , ds1, OVERWRITE);
+    OUTPUT(inds2, , ds2, OVERWRITE);
+    BUILDINDEX(i, SORTED, OVERWRITE);
+    OUTPUT(i);
+    BUILDINDEX(i2, OVERWRITE);
+    OUTPUT(i2);
+ 
+    // Clean-up
+    Std.File.DeleteLogicalFile(indexName);
+    Std.File.DeleteLogicalFile(ds1);
+    Std.File.DeleteLogicalFile(ds2);
 );
