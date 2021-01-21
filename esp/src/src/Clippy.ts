@@ -5,6 +5,8 @@ import * as mouse from "dojo/mouse";
 import * as on from "dojo/on";
 import nlsHPCC from "./nlsHPCC";
 
+// TESTING
+
 export function attach(domID: string): void {
     const clipboard: Clipboard = new Clipboard(`#${domID}`);
     clipboard.on("success", e => {
