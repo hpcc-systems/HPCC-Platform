@@ -105,7 +105,7 @@ public:
 class HQL_API FilterExtractor
 {
 public:
-    FilterExtractor(IErrorReceiver & _errorReceiver, IHqlExpression * _tableExpr, int _numKeyableFields, bool isDiskRead, bool forceValueSets);
+    FilterExtractor(IErrorReceiver & _errorReceiver, IHqlExpression * _tableExpr, int _numKeyableFields, bool isDiskRead, bool _createValueSets);
 
     void appendFilter(IHqlExpression * expr)                { keyed.appendPostFilter(expr); }
     void extractFilters(IHqlExpression * filter, SharedHqlExpr & extraFilter);

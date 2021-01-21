@@ -42,6 +42,7 @@ IAtom * classAtom;
 IAtom * clearAtom;
 IAtom * __clearHelperAtom;
 IAtom * _conditionalRowMarker_Atom;
+IAtom * createValueSetsAtom;
 IAtom * csvReadMarkerAtom;
 IAtom * decimalAtom;
 IAtom * declareAtom;
@@ -1459,6 +1460,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEATOM(class);
     MAKEATOM(clear);
     MAKEATOM(__clearHelper);
+    MAKEATOM(createValueSets);
     MAKEATOM(csvReadMarker);
     MAKEATOM(decimal);
     MAKEATOM(declare);
