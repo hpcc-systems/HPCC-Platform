@@ -24,12 +24,15 @@
     "bundle-watch": "npm run bundle-dev -- --watch",
     "build": "npm-run-all --parallel copy-res compile --serial bundle",
     "build-dev": "npm-run-all --parallel copy-res compile --serial bundle-dev",
+    "docker-build": "cd test-ui && docker build --rm -f \"./Dockerfile\" -t eclwatch-test:latest \".\"",
+    "docker-run": "docker run eclwatch-test:latest https://play.hpccsystems.com:18010/",
     "dev-start-ws": "ws",
     "dev-start": "run-p bundle-watch dev-start-ws",
     "dev-start-verbose": "ws --verbose.include request response",
     "rm-hpcc": "rimraf ./node_modules/@hpcc-js",
     "start": "webpack-dev-server -d --env development",
-    "test": "run-s lint"
+    "test-ui": "node ./tests/index.js",
+    "test": "run-s lint test-ui"
   },
   "main": "src/stub.js",
   "dependencies": {
@@ -52,7 +55,7 @@
     "@material-ui/core": "4.8.3",
     "@material-ui/icons": "4.9.1",
     "@material-ui/lab": "4.0.0-alpha.47",
-    "clipboard": "2.0.4",
+    "clipboard": "2.0.4", 
     "codemirror": "5.50.2",
     "detect-browser": "5.0.0",
     "dijit": "1.16.3",
