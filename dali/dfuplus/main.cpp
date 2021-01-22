@@ -160,6 +160,7 @@ void handleSyntax()
     out.append("        dstname=<destination-logical-name>\n");
     out.append("            -- To add remote files from another dali directly, use these\n");
     out.append("               options instead of srcxml:\n");
+    out.append("        dstcluster=<destination-cluster> -- which cluster contains the files\n");
     out.append("        srcname=<source-logical-name>\n");
     out.append("        srcdali=<source-dali-ip>\n");
     out.append("        srcusername=<user-name-for-source-dali>\n");
@@ -268,7 +269,7 @@ int main(int argc, const char* argv[])
     if(!action || !*action)
     {
         handleSyntax();
-        fprintf(stderr, "\nERROR: please specify one action");
+        fprintf(stderr, "\nERROR: please specify one action\n");
         releaseAtoms();
         return DFUERR_TooFewArguments;
     }
