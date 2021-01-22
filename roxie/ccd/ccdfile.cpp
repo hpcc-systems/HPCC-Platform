@@ -755,6 +755,7 @@ public:
 private:
     static StringBuffer &appendRange(StringBuffer &ret, offset_t start, offset_t end, bool diskCache)
     {
+        ret.append(' ');
         if (!diskCache)
             ret.append('*');
         if (start==end)
