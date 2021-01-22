@@ -147,6 +147,8 @@ spec:
         roxie-cluster: {{ $roxie.name | quote }}
         accessDali: "yes"
         accessEsp: "yes"
+      annotations:
+        checksum/config: {{ $configSHA }}
     spec:
       serviceAccountName: "hpcc-default"
       initContainers:
@@ -211,6 +213,8 @@ spec:
         roxie-cluster: {{ $roxie.name | quote }}
         accessDali: "yes"
         accessEsp: "yes"
+      annotations:
+        checksum/config: {{ $configSHA }}
     spec:
       serviceAccountName: "hpcc-default"
       initContainers:
