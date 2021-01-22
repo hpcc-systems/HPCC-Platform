@@ -12,7 +12,7 @@ import * as json from "dojo/json";
 import * as on from "dojo/on";
 import * as query from "dojo/query";
 import * as Stateful from "dojo/Stateful";
-import * as Memory from "dojo/store/Memory";
+import { Memory } from "./Memory";
 
 // @ts-ignore
 import * as ColumnResizer from "dgrid/extensions/ColumnResizer";
@@ -29,7 +29,6 @@ import * as OnDemandGrid from "dgrid/OnDemandGrid";
 // @ts-ignore
 import * as Selection from "dgrid/Selection";
 
-import { declareDecorator } from "./DeclareDecorator";
 import nlsHPCC from "./nlsHPCC";
 import { userKeyValStore } from "./KeyValStore";
 import { Pagination } from "./Pagination";
@@ -398,20 +397,7 @@ export const FormHelper = declare(null, {
     }
 });
 
-type Memory = {
-    data: any[];
-    queryEngine: any;
-    setData(data: any);
-    query(query: any, options: any): any;
-};
-
-export interface UndefinedMemoryBase extends Memory {
-}
-
-@declareDecorator("UndefinedMemoryBase", Memory)
-export class UndefinedMemoryBase { }
-
-export class UndefinedMemory extends UndefinedMemoryBase {
+export class UndefinedMemory extends Memory {
 
     constructor() {
         super();

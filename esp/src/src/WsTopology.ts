@@ -1,22 +1,38 @@
 import { Connection } from "@hpcc-js/comms";
 import * as arrayUtil from "dojo/_base/array";
-import * as declare from "dojo/_base/declare";
 import * as Deferred from "dojo/_base/Deferred";
 import * as lang from "dojo/_base/lang";
-import * as Evented from "dojo/Evented";
-import * as Memory from "dojo/store/Memory";
 import * as Observable from "dojo/store/Observable";
 import * as QueryResults from "dojo/store/util/QueryResults";
+import * as on from "dojo/on";
+import * as aspect from "dojo/aspect";
 
 import * as ESPRequest from "./ESPRequest";
 import * as Utility from "./Utility";
+import { Memory } from "src/Memory";
 
 declare const dojoConfig;
 
-const TpLogFileStore = declare([Memory, Evented], {
+class TpLogFileStore extends Memory {
+
     constructor() {
+        super();
         this.idProperty = "__hpcc_id";
-    },
+    }
+
+    //  Evented  ---
+    on(type, listener) {
+        return on.parse(this, type, listener, function (target, type) {
+            return aspect.after(target, "on" + type, listener, true);
+        });
+    }
+
+    emit(type, event?) {
+        const args = [this];
+        args.push.apply(args, arguments);
+        return on.emit.apply(on, args);
+    }
+    //  --- --- ---
 
     query(query, options) {
         const deferredResults = new Deferred();
@@ -88,7 +104,7 @@ const TpLogFileStore = declare([Memory, Evented], {
 
         return QueryResults(deferredResults);
     }
-});
+}
 
 export function TpServiceQuery(params) {
     lang.mixin(params.request, {
