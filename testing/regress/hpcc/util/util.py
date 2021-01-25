@@ -215,7 +215,7 @@ def abortWorkunit(wuid, taskId = -1, engine = None):
                 for p in hpccProcesses:
                     createStackTrace(wuid, p, taskId)
             else:
-                logger.debug("%3d. abortWorkunit(wuid:'%s', engine:'%s') related process to generate stack trace not found.", taskId, wuid, str(engine))
+                logger.error("%3d. abortWorkunit(wuid:'%s', engine:'%s') related process to generate stack trace not found.", taskId, wuid, str(engine))
             pass
         else:
             err = Error("7100")

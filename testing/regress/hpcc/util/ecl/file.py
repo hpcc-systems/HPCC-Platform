@@ -86,7 +86,7 @@ class ECLFile:
         self.isVersions=False
         self.version=''
         self.versionId=0
-        self.timeout = int(args.timeout)
+        self.timeout = self.checkFileTimeout(int(args.timeout))
         self.args = args
         self.eclccWarning = ''
         self.eclccWarningChanges = ''
@@ -463,30 +463,29 @@ class ECLFile:
     def setVersionId(self,  id):
         self.versionId=id
 
-    def getTimeout(self):
-        timeout = 0
-        if  self.timeout == 0:
-            # Standard string has a problem with unicode characters
-            # use byte arrays and binary file open instead
-            tag = '//timeout'
-            logger.debug("%3d. getTimeout (ecl:'%s', tag:'%s')", self.taskId,  self.ecl, tag)
-            eclText = open(self.getEcl(), 'rb')
-            for line in eclText:
-                try:
-                    line = line.decode("utf-8")
-                except UnicodeDecodeError:
-                    line = str(line)
-                if tag in line:
-                    timeoutParts = line.split()
-                    if len(timeoutParts) == 2:
-                        if (timeoutParts[1] == '-1') or isPositiveIntNum(timeoutParts[1]) :
-                            timeout = int(timeoutParts[1])
-                            self.timeout = timeout
-                    break
-        else:
-            timeout = self.timeout
+    def checkFileTimeout(self,  timeout):
+        timeout = timeout
+        # Standard string has a problem with unicode characters
+        # use byte arrays and binary file open instead
+        tag = '//timeout'
+        logger.debug("%3d. checkFileTimeout (ecl:'%s', tag:'%s')", self.taskId,  self.ecl, tag)
+        eclText = open(self.getEcl(), 'rb')
+        for line in eclText:
+            try:
+                line = line.decode("utf-8")
+            except UnicodeDecodeError:
+                line = str(line)
+            if tag in line:
+                timeoutParts = line.split()
+                if len(timeoutParts) == 2:
+                    if (timeoutParts[1] == '-1') or isPositiveIntNum(timeoutParts[1]) :
+                        timeout = int(timeoutParts[1])
+                break
         logger.debug("%3d. Timeout is :%d sec",  self.taskId,  timeout)
         return timeout
+
+    def getTimeout(self):
+        return self.timeout
 
     def setTimeout(self,  timeout):
         self.timeout = timeout
