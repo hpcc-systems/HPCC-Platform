@@ -219,8 +219,7 @@
                     monitorinterval="900"
                     monitorqueue="dfuserver_monitor_queue"
                     name="mydfuserver"
-                    queue="dfuserver_queue"
-                    transferBufferSize="65536">
+                    queue="dfuserver_queue">
    <Instance computer="localhost"
              directory="${RUNTIME_PATH}/mydfuserver"
              name="s1"

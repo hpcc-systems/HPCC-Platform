@@ -236,7 +236,7 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="transferBufferSize" type="xs:nonNegativeInteger" use="optional" default="65536">
+            <xs:attribute name="transferBufferSize" type="xs:nonNegativeInteger" use="optional" default="1048576">
                 <xs:annotation>
                     <xs:appinfo>
                         <tooltip>Default buffer size used when transferring data.</tooltip>
