@@ -25,7 +25,6 @@ scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 restArgs=()
 
 CMD="install"
-DEP_UPDATE_ARG="--dependency-update"
 while [ "$#" -gt 0 ]; do
   arg=$1
   if [[ ${arg:0:1} == '-' ]]; then
@@ -41,14 +40,13 @@ while [ "$#" -gt 0 ]; do
       p) shift
          PERSIST=$1
          ;;
-      x) shift;
-          DEP_UPDATE_ARG=""
+      c) DEP_UPDATE_ARG="--dependency-update"
          ;;
       h) echo "Usage: startall.sh [options]"
          echo "    -d <docker-repo>   Docker repository to fetch images from"
          echo "    -l                 Build image label to use"
          echo "    -u                 Use "upgrade" rather than "install""
-         echo "    -x                 Do not issue dependency-update"
+         echo "    -c                 Update chart dependencies"
          echo "    -p <location>      Use local persistent data"
          exit
          ;;
@@ -60,6 +58,28 @@ while [ "$#" -gt 0 ]; do
   fi
   shift
 done
+
+if [[ -n "${DEP_UPDATE_ARG}" ]]; then
+  if [[ "${CMD}" = "upgrade" ]]; then
+    echo "Chart dependencies cannot be updated whilst performing a helm upgrade"
+    DEP_UPDATE_ARG=""
+  fi
+else
+  missingDeps=0
+  while IFS= read -r line
+  do
+    echo "${line}"
+    if echo "${line}" | egrep -q 'missing$'; then
+      let "missingDeps++"
+    fi
+  done < <(helm dependency list ${scriptdir}/../helm/hpcc)
+  if [[ ${missingDeps} -gt 0 ]]; then
+    echo "Some of the chart dependencies are missing."
+    echo "Either issue a 'helm dependency update ${scriptdir}/../helm/hpcc' to fetch them,"
+    echo "or rerun $0 with option -c to auto update them."
+    exit 0
+  fi
+fi
 
 [[ -n ${INPUT_DOCKER_REPO} ]] && DOCKER_REPO=${INPUT_DOCKER_REPO}
 [[ -z ${LABEL} ]] && LABEL=$(docker image ls | fgrep "${DOCKER_REPO}/platform-core" | head -n 1 | awk '{print $2}')
