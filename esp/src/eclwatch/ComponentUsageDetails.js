@@ -4,12 +4,11 @@ define([
 
     "dijit/registry",
 
-    "hpcc/_TabContainerWidget",
+    "hpcc/_Widget",
     "src/ESPUtil",
     "src/DiskUsage",
-    "hpcc/DelayLoadWidget",
 
-    "dojo/text!../templates/DiskUsageDetails.html",
+    "dojo/text!../templates/ComponentUsageDetails.html",
 
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
@@ -25,32 +24,17 @@ define([
 
 ], function (declare, nlsHPCCMod,
     registry,
-    _TabContainerWidget, ESPUtil, DiskUsage, DelayLoadWidget,
+    _Widget, ESPUtil, DiskUsage,
     template) {
 
     var nlsHPCC = nlsHPCCMod.default;
-    return declare("DiskUsageDetails", [_TabContainerWidget, ESPUtil.FormHelper], {
+    return declare("DiskUsageDetails", [_Widget, ESPUtil.FormHelper], {
         templateString: template,
         baseClass: "DiskUsageDetails",
         i18n: nlsHPCC,
 
         postCreate: function (args) {
             this.inherited(arguments);
-            this.mainTab = registry.byId(this.id + "_Main");
-
-            var context = this;
-
-            this._diskSummaryPane = registry.byId(this.id + "DiskSummaryCP");
-            var origResize = this._diskSummaryPane.resize;
-            this._diskSummaryPane.resize = function (size) {
-                origResize.apply(this, arguments);
-                if (context._diskSummary) {
-                    context._diskSummary
-                        .resize({ width: size.w, height: size.h || context._diskSummaryPane.h })
-                        .lazyRender()
-                        ;
-                }
-            };
         },
 
         resize: function (args) {
@@ -72,22 +56,9 @@ define([
             if (this.inherited(arguments))
                 return;
 
-            this.mainTab.set("title", params.name);
-
             var context = this;
-            this._diskSummary = new DiskUsage.Summary(params.name)
-                .target(this.id + "DiskSummary")
-                .render()
-                .refresh()
-                ;
-
-            var context = this;
-            this._diskUsage = new DiskUsage.Details(params.name)
+            this._diskUsage = new DiskUsage.ComponentDetails(params.component)
                 .target(this.id + "DiskUsageGrid")
-                .on("componentClick", function (component) {
-                    var newTab = context.ensurePane(component, component, { component });
-                    context.selectChild(newTab);
-                })
                 .render()
                 .refresh()
                 ;
@@ -110,7 +81,7 @@ define([
         initTab: function () {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
-                if (currSel.id === this.mainTab.id) {
+                if (currSel.id === this.workunitsTab.id) {
                 } else {
                     if (!currSel.initalized) {
                         currSel.init(currSel.params);
@@ -119,24 +90,7 @@ define([
             }
         },
 
-        ensurePane: function (id, title, params) {
-            id = this.createChildTabID(id);
-            var retVal = registry.byId(id);
-            if (!retVal) {
-                retVal = new DelayLoadWidget({
-                    id: id,
-                    title: title,
-                    closable: true,
-                    delayWidget: "ComponentUsageDetails",
-                    params: params
-                });
-                this.addChild(retVal, 1);
-            }
-            return retVal;
-        },
-
         refreshGrid: function (clearSelection) {
-            this._diskSummary.refresh();
             this._diskUsage.refresh();
         }
     });

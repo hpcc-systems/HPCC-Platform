@@ -27,7 +27,7 @@ export interface WorkunitsDashboardFilter {
     cluster?: string;
     owner?: string;
     state?: string;
-    protected?: string;
+    protected?: boolean;
     day?: string;
 }
 
@@ -70,11 +70,11 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
     ).current;
 
     const clusterPipeline = chain(
-        filter(row => filterProps.state === undefined || row.State === filterProps.state),
+        filter<WorkunitEx>(row => filterProps.state === undefined || row.State === filterProps.state),
         filter(row => filterProps.owner === undefined || row.Owner === filterProps.owner),
         filter(row => filterProps.day === undefined || row.Day === filterProps.day),
         filter(row => filterProps.protected === undefined || row.Protected === filterProps.protected),
-        group((row: WUQuery.ECLWorkunit) => row.Cluster),
+        group(row => row.Cluster),
         map(row => [row.key, row.value.length] as [string, number]),
         sort((l, r) => l[0].localeCompare(r[0])),
     );
@@ -91,11 +91,11 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
     ).current;
 
     const ownerPipeline = chain(
-        filter(row => filterProps.cluster === undefined || row.Cluster === filterProps.cluster),
+        filter<WorkunitEx>(row => filterProps.cluster === undefined || row.Cluster === filterProps.cluster),
         filter(row => filterProps.state === undefined || row.State === filterProps.state),
         filter(row => filterProps.day === undefined || row.Day === filterProps.day),
         filter(row => filterProps.protected === undefined || row.Protected === filterProps.protected),
-        group((row: WUQuery.ECLWorkunit) => row.Owner),
+        group(row => row.Owner),
         map(row => [row.key, row.value.length] as [string, number]),
         sort((l, r) => l[0].localeCompare(r[0])),
     );
@@ -112,11 +112,11 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
     ).current;
 
     const statePipeline = chain(
-        filter(row => filterProps.cluster === undefined || row.Cluster === filterProps.cluster),
+        filter<WorkunitEx>(row => filterProps.cluster === undefined || row.Cluster === filterProps.cluster),
         filter(row => filterProps.owner === undefined || row.Owner === filterProps.owner),
         filter(row => filterProps.day === undefined || row.Day === filterProps.day),
         filter(row => filterProps.protected === undefined || row.Protected === filterProps.protected),
-        group((row: WUQuery.ECLWorkunit) => row.State),
+        group(row => row.State),
         map(row => [row.key, row.value.length])
     );
 
@@ -132,10 +132,10 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
     ).current;
 
     const protectedPipeline = chain(
-        filter(row => filterProps.cluster === undefined || row.Cluster === filterProps.cluster),
+        filter<WorkunitEx>(row => filterProps.cluster === undefined || row.Cluster === filterProps.cluster),
         filter(row => filterProps.owner === undefined || row.Owner === filterProps.owner),
         filter(row => filterProps.day === undefined || row.Day === filterProps.day),
-        group((row: WorkunitEx) => "" + row.Protected),
+        group(row => "" + row.Protected),
         map(row => [row.key, row.value.length])
     );
 
@@ -154,7 +154,7 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
     ).current;
 
     const dayPipeline = chain(
-        filter(row => filterProps.cluster === undefined || row.Cluster === filterProps.cluster),
+        filter<WorkunitEx>(row => filterProps.cluster === undefined || row.Cluster === filterProps.cluster),
         filter(row => filterProps.owner === undefined || row.Owner === filterProps.owner),
         filter(row => filterProps.state === undefined || row.State === filterProps.state),
         filter(row => filterProps.protected === undefined || row.Protected === filterProps.protected),
@@ -170,7 +170,7 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
     //  Table ---
     const workunitsStore = useConst(Observable(new Memory({ idProperty: "Wuid", data: [] })));
     const tablePipeline = chain(
-        filter(row => filterProps.cluster === undefined || row.Cluster === filterProps.cluster),
+        filter<WorkunitEx>(row => filterProps.cluster === undefined || row.Cluster === filterProps.cluster),
         filter(row => filterProps.owner === undefined || row.Owner === filterProps.owner),
         filter(row => filterProps.state === undefined || row.State === filterProps.state),
         filter(row => filterProps.protected === undefined || row.Protected === filterProps.protected),

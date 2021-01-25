@@ -441,6 +441,9 @@ export function resolve(hpccWidget, callback) {
         case "DiskUsageDetails":
             require(["hpcc/DiskUsageDetails"], doLoad);
             break;
+        case "ComponentUsageDetails":
+            require(["hpcc/ComponentUsageDetails"], doLoad);
+            break;
         case "viz/DojoD3Choropleth":
             require(["hpcc/viz/DojoD3Choropleth"], doLoad);
             break;

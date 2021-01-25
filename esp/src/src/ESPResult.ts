@@ -9,6 +9,7 @@ import * as parser from "dojox/xml/parser";
 
 import { ESPBase } from "./ESPBase";
 import * as ESPRequest from "./ESPRequest";
+import { Get as LFGet } from "./ESPLogicalFile";
 import nlsHPCC from "./nlsHPCC";
 import * as Utility from "./Utility";
 import * as WsWorkunits from "./WsWorkunits";
@@ -197,6 +198,9 @@ class Result {
     XmlSchema: string;
     ECLSchemas: any;
     wu: any;
+
+    FileName: string;
+    LogicalFile: any;
 
     constructor(args) {
         if (args) {
@@ -680,6 +684,14 @@ class Result {
         }
         retVal += "END;\n";
         return retVal;
+    }
+
+    fetchLogicalFile(): Promise<any> {
+        if (this.FileName) {
+            this.LogicalFile = LFGet(this.Cluster, this.FileName);
+            return this.LogicalFile.refresh().then(() => this.LogicalFile);
+        }
+        return Promise.resolve(undefined);
     }
 }
 
