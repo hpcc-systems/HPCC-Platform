@@ -17,12 +17,11 @@ jobs:
         with:
           fetch-depth: 2
       - name: check-skips
-#        needs: Checkout
         run: echo '::set-output name=should-skip::`git diff HEAD^ --exit-code -- rtl/include/eclhelper.hpp && echo false || echo true`'
-#        shell: bash
-#      - name: Do it all
-#        needs: check-skips
-#        if: ${{ needs.check-skips.outputs.should_skip != 'true' }}
-#        run: echo 'I ran'
+        shell: bash
+      - name: Do it all
+        needs: check-skips
+        if: ${{ needs.check-skips.outputs.should_skip != 'true' }}
+        run: echo 'I ran'
 
         
