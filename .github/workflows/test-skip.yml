@@ -23,6 +23,6 @@ jobs:
       - name: Do it all
         needs: check-skips
         if: ${{ needs.check-skips.outputs.should_skip != 'true' }}
-        run: echo "I ran!"
+        run: echo 'I ran'
 
         
