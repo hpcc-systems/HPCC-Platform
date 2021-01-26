@@ -239,7 +239,7 @@ interface IEspContainer : extends IInterface
     virtual LogLevel getTxSummaryLevel() = 0;
     virtual bool getTxSummaryResourceReq() = 0;
     virtual void setTxSummaryResourceReq(bool req) = 0;
-    virtual void log(LogLevel level, const char*,...) __attribute__((format(printf, 3, 4))) = 0;
+    //virtual void log(LogLevel level, const char*,...) __attribute__((format(printf, 3, 4))) = 0;
     virtual unsigned getSlowProcessingTime() = 0;
     virtual void setFrameTitle(const char* title) = 0;
     virtual const char* getFrameTitle() = 0;

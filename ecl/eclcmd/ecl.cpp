@@ -44,6 +44,9 @@ static int doMain(int argc, const char *argv[])
 int main(int argc, const char *argv[])
 {
     InitModuleObjects();
+    //only here to manipulate default log level on stderr stream for smoketest purposes
+    Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, LogMin, true);
+    queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
     queryStderrLogMsgHandler()->setMessageFields(0);
     unsigned exitCode = doMain(argc, argv);
     releaseAtoms();

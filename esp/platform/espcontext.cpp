@@ -894,6 +894,52 @@ LogLevel getEspLogLevel(IEspContext* ctx)
     return LogMin;
 }
 
+constexpr LogMsgCategory LegacyESPMC_TrxDbg(MSGAUD_all, MSGCLS_information, CriticalMsgThreshold);
+
+constexpr LogMsgCategory LegacyESPMC_Mute(MSGAUD_operator, MSGCLS_disaster, 0);
+constexpr LogMsgCategory LegacyESPMC_Quiet(MSGAUD_programmer, MSGCLS_warning, WarnMsgThreshold); //fatal/err/warns
+constexpr LogMsgCategory LegacyESPMC_Medium(MSGAUD_operator, MSGCLS_information, ProgressMsgThreshold);//fatal/err/warns/audit/info
+constexpr LogMsgCategory LegacyESPMC_Loud(MSGAUD_all, MSGCLS_information, InfoMsgThreshold);
+
+LogMsgCategory MapLegacyLogLevelToLogCategory(LogLevel level)
+{
+    switch (level)
+    {
+        case LogNone:
+            return LegacyESPMC_Mute;
+        case LogMin:
+            return LegacyESPMC_Quiet;
+        case LogNormal:
+            return LegacyESPMC_Medium;
+        case LogMax:
+        default:
+            return LegacyESPMC_Loud;
+    }
+}
+
+LogMsgCategory getEspLogCategory(IEspContext* ctx)
+{
+    if (ctx)
+    {
+        ISecPropertyList* properties = ctx->querySecuritySettings();
+        if (properties)
+        {
+            ISecProperty* sec = properties->findProperty("DebugMode");
+            if (sec)
+            {
+                const char* mode = sec->getValue();
+                if ( mode && (streq(mode,"1") || streq(mode, "true")) )
+                    return LegacyESPMC_TrxDbg;
+            }
+        }
+    }
+
+    if (getContainer())
+        return MapLegacyLogLevelToLogCategory(getContainer()->getLogLevel());
+
+    return LegacyESPMC_Quiet;
+}
+
 LogLevel getTxSummaryLevel()
 {
     if (getContainer())
@@ -929,27 +975,46 @@ unsigned getSlowProcessingTime()
     return false;
 }
 
+//#ifndef _CONTAINERIZED
+void NEWESPLOG(const char* fmt, ...)
+{
+    va_list args;
+    va_start(args,fmt);
+    VALOG(getEspLogCategory(nullptr), unknownJob, fmt, args);
+    va_end(args);
+}
+
 void ESPLOG(LogLevel level, const char* fmt, ...)
 {
     if (getEspLogLevel(NULL)>=level)
     {
         va_list args;
         va_start(args,fmt);
-        VALOG(MCdebugInfo, unknownJob, fmt, args);
+        VALOG(getEspLogCategory(nullptr), unknownJob, fmt, args);
         va_end(args);
     }
 }
 
+void NEWESPLOG(IEspContext* ctx, const char* fmt, ...)
+{
+    va_list args;
+    va_start(args,fmt);
+    VALOG(getEspLogCategory(ctx), unknownJob, fmt, args);
+    va_end(args);
+}
+
+//The context can set the transaction to log at debug level
 void ESPLOG(IEspContext* ctx, LogLevel level, const char* fmt, ...)
 {
     if (getEspLogLevel(ctx)>=level)
     {
         va_list args;
         va_start(args,fmt);
-        VALOG(MCdebugInfo, unknownJob, fmt, args);
+        VALOG(getEspLogCategory(ctx), unknownJob, fmt, args);
         va_end(args);
     }
 }
+//#endif
 
 void setEspContainer(IEspContainer* container)
 {

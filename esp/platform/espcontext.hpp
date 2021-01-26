@@ -132,6 +132,8 @@ esp_http_decl LogLevel getTxSummaryLevel();
 esp_http_decl bool getTxSummaryResourceReq();
 esp_http_decl unsigned getSlowProcessingTime();
 
+esp_http_decl void NEWESPLOG(IEspContext* ctx, const char* fmt, ...) __attribute__((format(printf, 2, 3)));
+esp_http_decl void NEWESPLOG(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 esp_http_decl void ESPLOG(IEspContext* ctx, LogLevel level, const char* fmt, ...) __attribute__((format(printf, 3, 4)));
 esp_http_decl void ESPLOG(LogLevel level, const char* fmt, ...) __attribute__((format(printf, 2, 3)));
 esp_http_decl void setEspContainer(IEspContainer* container);
