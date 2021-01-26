@@ -20,11 +20,9 @@ jobs:
       - name: Check skips
         # The test below means we skip if anything in .github has changed, and do not skip otherwise
         # We want to skip if there are changes OTHER than in .github
-        run: 'echo "::set-output name=should-skip::`git diff HEAD^ --exit-code --quiet -- .github && echo false || echo true`"'
+        run: 'echo "::set-output name=should-skip::`git diff HEAD^ --exit-code --quiet -- \':!.github\' && echo true || echo false`"'
         shell: bash
         id: check-skips
-      - name: test-it
-        run: echo ${{ steps.check-skips.outputs.should-skip }}
 
   build:
     name: Do it all
