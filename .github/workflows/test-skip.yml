@@ -13,14 +13,6 @@ jobs:
     outputs:
       should-skip: ${{ steps.check-skips.outputs.should-skip }}
     steps:
-#      - name: Checkout
-#        uses: actions/checkout@v2
-#        with:
-#          fetch-depth: 2
-#      - name: Check skips
-#        run: 'echo "::set-output name=should-skip::`git diff HEAD^ --exit-code --quiet -- :\!.github && echo true || echo false`"'
-#        shell: bash
-#        id: check-skips
       - name: Check skips
         id: check-skips
         run: |
@@ -28,14 +20,18 @@ jobs:
           REQUIRE="esp/"
           URL="https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files"
           curl -s -X GET -G $URL | jq -r '.[] | .filename' > files
+          echo "There are changes in the following files"
           cat files
           if grep -q -v "$IGNORE" files; then
             if grep -q "$REQUIRE" files; then
+              echo "Not skipping"
               echo ::set-output name=should-skip::false  
             else
+              echo "Skipping because no files from REQUIRE list found in changes"
               echo ::set-output name=should-skip::true
             fi
           else
+              echo "Skipping because only files from IGNORE list found in changes"
             echo ::set-output name=should-skip::true
           fi
 
