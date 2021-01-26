@@ -26,6 +26,9 @@
 #include "esphttp.hpp"
 #include <list>
 #include <map>
+#include "../../protocols/http/espmetrics.hpp"
+
+
 
 class CTxSummary : extends CInterface
 {
@@ -85,6 +88,9 @@ protected:
 private:
     bool __contains(const char* key) const;
 
+    static void initMetrics();
+    static std::once_flag initMetricsFlag;
+
     struct Entry
     {
         StringAttr key;
@@ -103,6 +109,7 @@ private:
     Entries         m_entries;
     Timers          m_timers;
     unsigned        m_creationTime;
+    static EspMetrics *pEspMetrics;  // for milestone 1
 };
 
 

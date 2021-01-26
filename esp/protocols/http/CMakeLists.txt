@@ -49,6 +49,7 @@ set(SRCS
     ../../platform/txsummary.cpp
     mapinfo.cpp
     plugin.cpp
+    espmetrics.cpp
     )
 
 include_directories(
@@ -64,10 +65,11 @@ include_directories(
     ./../../../system/security/shared
     ./../../../system/security/LdapSecurity
     ./../../../system/security/zcrypt
-    ./../../../system/mp 
+    ./../../../system/mp
     ./../../../dali/base
     ./../../../common/workunit
     ${HPCC_SOURCE_DIR}/common/thorhelper
+    ./../../../metrics/framework
     )
 
 add_definitions(-DESPHTTP_EXPORTS -DESP_TIMING -D_USRDLL -DESP_PLUGIN)
@@ -84,6 +86,7 @@ target_link_libraries(
     dalibase
     thorhelper      # this should not be dependent on the engine helper dll
     workunit        # neither should it be dependent on the wokunit dll
+    hpccmetrics
     )
 
 if(LIBMEMCACHED_FOUND)
