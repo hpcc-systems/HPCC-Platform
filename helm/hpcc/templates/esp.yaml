@@ -16,7 +16,7 @@ data:
 {{ include "hpcc.generateConfigMapQueues" .root | indent 6 }}
       services:
 {{ include "hpcc.generateConfigMapServices" .root | indent 6 }}
-{{ include "hpcc.generateVaultConfig" (dict "root" .root "categories" (list "storage" "esp" ) ) | indent 6 }}
+{{ include "hpcc.generateVaultConfig" (dict "root" .root "categories" (list "storage" "esp" "codeSign") ) | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
 {{- end -}}
