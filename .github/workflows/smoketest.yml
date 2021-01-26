@@ -278,11 +278,12 @@ jobs:
       run: |
         # configure ecl-test.json with correct paths
         jq --arg rootdir "${{ github.workspace }}" \
-          '.Regress.dropzonePath = $rootdir + "/install" + .Regress.dropzonePath | .Regress.setupExtraParams.OriginalTextFilesOsPath = $rootdir + "/install" + .Regress.setupExtraParams.OriginalTextFilesOsPath | .Regress.setupExtraDParams.HPCCBaseDir = $rootdir + "/install" + .Regress.setupExtraDParams.HPCCBaseDir | .Regress.regressionDir = $rootdir + "/regress" | .Regress.logDir = $rootdir + "/regress/log"' \
+          '.Regress.dropzonePath = $rootdir + "/install" + .Regress.dropzonePath | .Regress.setupExtraParams.OriginalTextFilesOsPath = $rootdir + "/install" + .Regress.setupExtraParams.OriginalTextFilesOsPath | .Regress.setupExtraDParams.HPCCBaseDir = $rootdir + "/install" + .Regress.setupExtraDParams.HPCCBaseDir | .Regress.regressionDir = $rootdir + "/regress" | .Regress.maxAttemptCount = "1" | .Regress.logDir = $rootdir + "/regress/log"' \
           install/opt/HPCCSystems/testing/regress/ecl-test.json > ecl-test.json
         mv -f ecl-test.json install/opt/HPCCSystems/testing/regress/ecl-test.json
         # configure environment.xml to slavesPerNode=2, channelsPerNode=1
         xmlstarlet ed -L -u 'Environment/Software/ThorCluster/@slavesPerNode' -v 2 -u 'Environment/Software/ThorCluster/@channelsPerSlave' -v 1 install/etc/HPCCSystems/environment.xml
+        cp ${{ github.workspace }}/src/.github/workflows/timeoutcmd install/opt/HPCCSystems/bin/
         mkdir copy
         cp -rp install copy/
         rm -rf copy/install/var/lib/HPCCSystems/hpcc-data
@@ -290,6 +291,7 @@ jobs:
 
     - name: Run regression suite setup
       if: steps.cache.outputs.cache-hit != 'true' && github.event_name == 'pull_request'
+      timeout-minutes: 10
       run: |
         export LANG="en_US.UTF-8"
         sudo update-locale
@@ -297,7 +299,9 @@ jobs:
         install/opt/HPCCSystems/etc/init.d/hpcc-init start
         mkdir -p regress
         cd install/opt/HPCCSystems/testing/regress
-        ./ecl-test setup --pq 2 --generateStackTrace
+        # force regression suite to timeout after 8 minutes, so it captures ZAP report of any inflight hung queries
+        timeoutcmd $((8 * 60)) \
+          ./ecl-test setup --pq 2 --generateStackTrace
         ${{ github.workspace }}/install/opt/HPCCSystems/etc/init.d/hpcc-init stop
 
     - name: regression-setup-logs-artifact
@@ -401,7 +405,9 @@ jobs:
         fi
         echo queries after exclude: ${queries}
 
-        ./ecl-test query --pq 2 --target ${{ matrix.engine }} --excludeclass python2,embedded-r,embedded-js,3rdpartyservice,spray --generateStackTrace ${queries}
+        # force regression suite to timeout after 28 minutes, so it captures ZAP report of any inflight hung queries
+        timeoutcmd $((28 * 60)) \
+          ./ecl-test query --pq 2 --target ${{ matrix.engine }} --excludeclass python2,embedded-r,embedded-js,3rdpartyservice,spray --generateStackTrace ${queries}
         grep Failure: ${{ github.workspace }}/regress/log/${{ matrix.engine }}.*.log
         if [[ "$(grep -oP '(?<=^Failure: )[0-9]+$' ${{ github.workspace }}/regress/log/${{ matrix.engine }}.*.log)" -gt 0 ]]; then exit 1; fi
 
