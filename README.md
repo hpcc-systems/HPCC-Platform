@@ -57,7 +57,7 @@ ECL IDE is a modern IDE used to code, debug and monitor ECL programs.
 
 ## ESP
 
- ESP (Enterprise Services Platform) provides an easy to use interface to access ECL queries using XML, HTTP, SOAP and REST.
+ESP (Enterprise Services Platform) provides an easy to use interface to access ECL queries using XML, HTTP, SOAP and REST.
 
 * Standards-based interface to access ECL functions
 
