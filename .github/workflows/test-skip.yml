@@ -25,9 +25,9 @@ jobs:
         id: check-skips
         run: |
           URL="https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files"
-          FILES=$(curl -s -X GET -G $URL | jq -r '.[] | .filename')
-          echo $FILES
-          if echo $FILES | grep -q -v .github; then
+          curl -s -X GET -G $URL | jq -r '.[] | .filename' > files
+          cat files
+          if grep -q -v .github files; then
             echo ::set-output name=should-skip::true
           else
             echo ::set-output name=should-skip::false
