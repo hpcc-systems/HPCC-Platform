@@ -17,11 +17,12 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 2
-      - name: check-skips
+      - name: Check skips
         # The test below means we skip if anything in .github has changed, and do not skip otherwise
         # We want to skip if there are changes OTHER than in .github
         run: 'echo "::set-output name=should-skip::`git diff HEAD^ --exit-code --quiet -- .github && echo false || echo true`"'
         shell: bash
+        id: check-skips
       - name: test-it
         run: echo ${{ steps.check-skips.outputs.should-skip }}
 
