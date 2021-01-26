@@ -20,6 +20,7 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xml:space="default" xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-result-prefixes="seisint set">
     <xsl:import href="esp_service.xsl"/>
     <xsl:import href="logging_agent.xsl"/>
+    <xsl:import href="modularlogagent.xsl"/>
     <xsl:import href="wslogserviceespagent.xsl"/>
 
     <xsl:template match="EspService">
@@ -93,6 +94,7 @@
                     <xsl:for-each select="$managerNode/ESPLoggingAgent">
                         <xsl:variable name="agentName" select="@ESPLoggingAgent"/>
                         <xsl:variable name="espLoggingAgentNode" select="/Environment/Software/ESPLoggingAgent[@name=$agentName]"/>
+                        <xsl:variable name="modularlogagentNode" select="/Environment/Software/ModularLogAgent[@name=$agentName]"/>
                         <xsl:variable name="wsLogServiceESPAgentNode" select="/Environment/Software/WsLogServiceESPAgent[@name=$agentName]"/>
                         <xsl:variable name="disableFailSafe" select="$managerNode/@DecoupledLogging"/>
                         <xsl:choose>
@@ -100,6 +102,13 @@
                                 <xsl:call-template name="ESPLoggingAgent">
                                     <xsl:with-param name="agentName" select="$agentName"/>
                                     <xsl:with-param name="agentNode" select="$espLoggingAgentNode"/>
+                                </xsl:call-template>
+                            </xsl:when>
+                            <xsl:when test="($modularlogagentNode)">
+                                <xsl:call-template name="ModularLogAgent">
+                                    <xsl:with-param name="agentName" select="$agentName"/>
+                                    <xsl:with-param name="agentNode" select="$modularlogagentNode"/>
+                                    <xsl:with-param name="disableFailSafe" select="$disableFailSafe"/>
                                 </xsl:call-template>
                             </xsl:when>
                             <xsl:when test="($wsLogServiceESPAgentNode)">

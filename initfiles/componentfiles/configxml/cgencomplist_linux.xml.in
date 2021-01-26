@@ -102,6 +102,7 @@
   </Component>
   <Component name="CassandraLoggingAgent" processName='CassandraLoggingAgent' schema='cassandraloggingagent.xsd' deployable='no'/>
   <Component name="ESPLoggingAgent" processName='ESPLoggingAgent' schema='esploggingagent.xsd' deployable='no'/>
+  <Component name="ModularLogAgent" processName='ModularLogAgent' schema='modularlogagent.xsd' deployable='no'/>
   <Component name="LoggingManager" processName='LoggingManager' schema='loggingmanager.xsd' deployable='no'/>
   <Component name="WsDecoupledLog" processName='EspService' schema='esp_service_decoupledlogging.xsd' deployable='no'>
     <File name="@temp/esp_service_decoupledlogging.xsl" method="esp_service_module"/>

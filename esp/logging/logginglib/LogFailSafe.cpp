@@ -31,6 +31,9 @@
 #include "jmisc.hpp"
 #include "soapbind.hpp"
 
+#include "logconfigptree.hpp"
+using namespace LogConfigPTree;
+
 #define RECEIVING "_acked_"
 #define SENDING   "_sending_"
 
@@ -83,16 +86,16 @@ CLogFailSafe::~CLogFailSafe()
 
 void CLogFailSafe::readCfg(IPropertyTree* cfg)
 {
-    StringBuffer safeRolloverThreshold(cfg->queryProp(PropSafeRolloverThreshold));
+    StringBuffer safeRolloverThreshold(queryConfigValue(cfg, PropSafeRolloverThreshold));
     if (!safeRolloverThreshold.isEmpty())
         readSafeRolloverThresholdCfg(safeRolloverThreshold);
 
-    const char* logsDir = cfg->queryProp(PropFailSafeLogsDir);
+    const char* logsDir = queryConfigValue(cfg, PropFailSafeLogsDir);
     if (!isEmptyString(logsDir))
         m_logsdir.set(logsDir);
     else
         m_logsdir.set(DefaultFailSafeLogsDir);
-    decoupledLogging = cfg->getPropBool(PropDecoupledLogging, false);
+    decoupledLogging = getConfigValue<bool>(cfg, PropDecoupledLogging, false);
 }
 
 void CLogFailSafe::readSafeRolloverThresholdCfg(StringBuffer& safeRolloverThreshold)

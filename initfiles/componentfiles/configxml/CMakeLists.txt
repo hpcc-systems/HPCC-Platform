@@ -100,6 +100,7 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/esploggingagent.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/wslogging.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/cassandraloggingagent.xsd
+    ${CMAKE_CURRENT_SOURCE_DIR}/modularlogagent.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/daliplugin.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/backupnode.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/backupnode_vars.xsl

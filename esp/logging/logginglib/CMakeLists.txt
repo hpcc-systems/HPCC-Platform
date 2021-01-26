@@ -42,6 +42,7 @@ set ( SRCS
     ${HPCC_SOURCE_DIR}/esp/logging/logginglib/LogSerializer.cpp
     ${HPCC_SOURCE_DIR}/esp/logging/logginglib/LogFailSafe.cpp
     ${HPCC_SOURCE_DIR}/esp/logging/logginglib/logthread.cpp
+    ${HPCC_SOURCE_DIR}/esp/logging/logginglib/modularlogagent.cpp
 )
 
 HPCC_ADD_LIBRARY( logginglib SHARED ${SRCS} )

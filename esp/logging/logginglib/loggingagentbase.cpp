@@ -345,52 +345,14 @@ IEspUpdateLogRequestWrap* CLogContentFilter::filterLogContent(IEspUpdateLogReque
     return newReq.getClear();
 }
 
-CLogAgentBase::CVariantIterator::CVariantIterator(const CLogAgentBase& agent)
-    : m_agent(&agent)
-    , m_variantIt(m_agent->agentVariants.end())
-{
-}
-
-CLogAgentBase::CVariantIterator::~CVariantIterator()
-{
-}
-
-bool CLogAgentBase::CVariantIterator::first()
-{
-    m_variantIt = m_agent->agentVariants.begin();
-    return isValid();
-}
-
-bool CLogAgentBase::CVariantIterator::next()
-{
-    if (m_variantIt != m_agent->agentVariants.end())
-        ++m_variantIt;
-    return isValid();
-}
-
-bool CLogAgentBase::CVariantIterator::isValid()
-{
-    return (m_variantIt != m_agent->agentVariants.end());
-}
-
-const IEspLogAgentVariant& CLogAgentBase::CVariantIterator::query()
-{
-    if (!isValid())
-        throw MakeStringException(0, "CVariantIterator::query called in invalid state");
-    IEspLogAgentVariant* entry = m_variantIt->get();
-    if (nullptr == entry)
-        throw MakeStringException(0, "CVariantIterator::query encountered a NULL variant");
-    return *entry;
-}
-
-CLogAgentBase::CVariant::CVariant(const char* name, const char* type, const char* group)
+CEspLogAgentVariant::CEspLogAgentVariant(const char* name, const char* type, const char* group)
 {
     m_name.setown(normalize(name));
     m_type.setown(normalize(type));
     m_group.setown(normalize(group));
 }
 
-String* CLogAgentBase::CVariant::normalize(const char* token)
+String* CEspLogAgentVariant::normalize(const char* token)
 {
     struct PoolComparator
     {
@@ -422,6 +384,42 @@ String* CLogAgentBase::CVariant::normalize(const char* token)
     return tmp.getClear();
 }
 
+CEspLogAgentVariantIterator::CEspLogAgentVariantIterator()
+{
+}
+
+CEspLogAgentVariantIterator::~CEspLogAgentVariantIterator()
+{
+}
+
+bool CEspLogAgentVariantIterator::first()
+{
+    m_variantIt = variants().begin();
+    return isValid();
+}
+
+bool CEspLogAgentVariantIterator::next()
+{
+    if (m_variantIt != variants().end())
+        ++m_variantIt;
+    return isValid();
+}
+
+bool CEspLogAgentVariantIterator::isValid()
+{
+    return (m_variantIt != variants().end());
+}
+
+const IEspLogAgentVariant& CEspLogAgentVariantIterator::query()
+{
+    if (!isValid())
+        throw makeStringException(0, "CEspLogAgentVariantIterator::query called in invalid state");
+    IEspLogAgentVariant* entry = m_variantIt->get();
+    if (nullptr == entry)
+        throw makeStringException(0, "CEspLogAgentVariantIterator::query encountered a NULL variant");
+    return *entry;
+}
+
 bool CLogAgentBase::initVariants(IPropertyTree* cfg)
 {
     Owned<IPropertyTreeIterator> variantNodes(cfg->getElements("//Variant"));
@@ -430,15 +428,15 @@ bool CLogAgentBase::initVariants(IPropertyTree* cfg)
         IPTree& variant = variantNodes->query();
         const char* type = variant.queryProp("@type");
         const char* group = variant.queryProp("@group");
-        Owned<CVariant> instance = new CVariant(agentName.get(), type, group);
-        Variants::iterator it = agentVariants.find(instance);
+        Owned<CEspLogAgentVariant> instance = new CEspLogAgentVariant(agentName.get(), type, group);
+        CEspLogAgentVariants::iterator it = agentVariants.find(instance);
 
         if (agentVariants.end() == it)
             agentVariants.insert(instance.getClear());
     }
 
     if (agentVariants.empty())
-        agentVariants.insert(new CVariant(agentName.get(), nullptr, nullptr));
+        agentVariants.insert(new CEspLogAgentVariant(agentName.get(), nullptr, nullptr));
     return true;
 }
 

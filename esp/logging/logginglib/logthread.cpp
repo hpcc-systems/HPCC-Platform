@@ -23,6 +23,9 @@
 #include "logthread.hpp"
 #include "compressutil.hpp"
 
+#include "logconfigptree.hpp"
+using namespace LogConfigPTree;
+
 const char* const PropMaxLogQueueLength = "MaxLogQueueLength";
 const char* const PropQueueSizeSignal = "QueueSizeSignal";
 const char* const PropMaxTriesRS = "MaxTriesRS";
@@ -71,12 +74,12 @@ CLogThread::CLogThread(IPropertyTree* _cfg , const char* _service, const char* _
 
     logAgent.setown(_logAgent);
 
-    maxLogQueueLength = _cfg->getPropInt(PropMaxLogQueueLength, MaxLogQueueLength);
-    signalGrowingQueueAt = _cfg->getPropInt(PropQueueSizeSignal, QueueSizeSignal);
-    maxLogRetries = _cfg->getPropInt(PropMaxTriesRS, DefaultMaxTriesRS);
+    maxLogQueueLength = getConfigValue<int>(_cfg, PropMaxLogQueueLength, MaxLogQueueLength);
+    signalGrowingQueueAt = getConfigValue<int>(_cfg, PropQueueSizeSignal, QueueSizeSignal);
+    maxLogRetries = getConfigValue<int>(_cfg, PropMaxTriesRS, DefaultMaxTriesRS);
     //For decoupled logging, the fail safe is not needed because the logging agent always
     //picks up the logging requests from tank file.
-    ensureFailSafe = _cfg->getPropBool(PropFailSafe) && !_cfg->getPropBool(PropDisableFailSafe, false);
+    ensureFailSafe = getConfigValue<bool>(_cfg, PropFailSafe) && !getConfigValue<bool>(_cfg, PropDisableFailSafe, false);
     if(ensureFailSafe)
     {
         logFailSafe.setown(createFailSafeLogger(_cfg, _service, _agentName));
@@ -92,16 +95,16 @@ CLogThread::CLogThread(IPropertyTree* _cfg , const char* _service, const char* _
         Owned<CLogRequestReaderSettings> settings = new CLogRequestReaderSettings();
         settings->tankFileDir.set(tankFileDir.get());
 
-        const char* ackedFiles = _cfg->queryProp(PropAckedFiles);
+        const char* ackedFiles = queryConfigValue(_cfg, PropAckedFiles);
         settings->ackedFileList.set(isEmptyString(ackedFiles) ? PropDefaultAckedFiles : ackedFiles);
-        const char* ackedLogRequestFile = _cfg->queryProp(PropAckedLogRequests);
+        const char* ackedLogRequestFile = queryConfigValue(_cfg, PropAckedLogRequests);
         settings->ackedLogRequestFile.set(isEmptyString(ackedLogRequestFile) ? PropDefaultAckedLogRequests : ackedLogRequestFile);
-        int pendingLogBufferSize = _cfg->getPropInt(PropPendingLogBufferSize, DEFAULTPENDINGLOGBUFFERSIZE);
+        int pendingLogBufferSize = getConfigValue<int>(_cfg, PropPendingLogBufferSize, DEFAULTPENDINGLOGBUFFERSIZE);
         if (pendingLogBufferSize <= 0)
             throw MakeStringException(-1, "The %s (%d) should be greater than 0.", PropPendingLogBufferSize, pendingLogBufferSize);
 
         settings->pendingLogBufferSize = pendingLogBufferSize;
-        int waitSeconds = _cfg->getPropInt(PropReadRequestWaitingSeconds, DEFAULTREADLOGREQUESTWAITSECOND);
+        int waitSeconds = getConfigValue<int>(_cfg, PropReadRequestWaitingSeconds, DEFAULTREADLOGREQUESTWAITSECOND);
         if (waitSeconds <= 0)
             throw MakeStringException(-1, "The %s (%d) should be greater than 0.", PropReadRequestWaitingSeconds, waitSeconds);
 

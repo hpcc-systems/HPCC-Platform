@@ -361,6 +361,35 @@ public:
     IEspUpdateLogRequestWrap* filterLogContent(IEspUpdateLogRequestWrap* req);
 };
 
+class LOGGINGCOMMON_API CEspLogAgentVariant : implements CInterfaceOf<IEspLogAgentVariant>
+{
+public:
+    CEspLogAgentVariant(const char* name, const char* type, const char* group);
+    virtual const char* getName() const override { return m_name->str(); }
+    virtual const char* getType() const override { return m_type->str(); }
+    virtual const char* getGroup() const override { return m_group->str(); }
+private:
+    String* normalize(const char* token);
+    Owned<String> m_name;
+    Owned<String> m_type;
+    Owned<String> m_group;
+};
+using CEspLogAgentVariants = std::set<Owned<CEspLogAgentVariant>, IEspLogAgentVariantComparator>;
+class LOGGINGCOMMON_API CEspLogAgentVariantIterator : implements CInterfaceOf<const IEspLogAgentVariantIterator>
+{
+public:
+    CEspLogAgentVariantIterator();
+    ~CEspLogAgentVariantIterator();
+    virtual bool first() override;
+    virtual bool next() override;
+    virtual bool isValid() override;
+    virtual const IEspLogAgentVariant& query() override;
+protected:
+    virtual const CEspLogAgentVariants& variants() const = 0;
+protected:
+    CEspLogAgentVariants::const_iterator m_variantIt;
+};
+
 class LOGGINGCOMMON_API CLogAgentBase : public CInterface, implements IEspLogAgent
 {
 protected:
@@ -406,33 +435,14 @@ public:
     bool initVariants(IPropertyTree* cfg) override;
     IEspLogAgentVariantIterator* getVariants() const override;
 protected:
-    class CVariant : implements CInterfaceOf<IEspLogAgentVariant>
+    CEspLogAgentVariants agentVariants;
+    class CVariantIterator : extends CEspLogAgentVariantIterator
     {
-    public:
-        CVariant(const char* name, const char* type, const char* group);
-        const char* getName() const override { return m_name->str(); }
-        const char* getType() const override { return m_type->str(); }
-        const char* getGroup() const override { return m_group->str(); }
-    private:
-        String* normalize(const char* token);
-        Owned<String> m_name;
-        Owned<String> m_type;
-        Owned<String> m_group;
-    };
-    using Variants = std::set<Owned<CVariant>, IEspLogAgentVariantComparator>;
-    Variants agentVariants;
-    class CVariantIterator : implements CInterfaceOf<const IEspLogAgentVariantIterator>
-    {
-    public:
-        CVariantIterator(const CLogAgentBase& agent);
-        ~CVariantIterator();
-        bool first() override;
-        bool next() override;
-        bool isValid() override;
-        const IEspLogAgentVariant& query() override;
     protected:
+        const CEspLogAgentVariants& variants() const override { return m_agent->agentVariants; }
         Linked<const CLogAgentBase> m_agent;
-        Variants::const_iterator    m_variantIt;
+    public:
+        CVariantIterator(const CLogAgentBase& agent) { m_agent.set(&agent); m_variantIt = variants().end(); }
     };
 };
 
