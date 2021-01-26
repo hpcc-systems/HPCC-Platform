@@ -23,6 +23,7 @@ jobs:
         shell: bash
   build:
     name: Do it all
+    runs-on: ubuntu-latest
     needs: check-skips
     if: ${{ needs.check-skips.outputs.should-skip != 'true' }}
     steps:
