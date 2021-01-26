@@ -19,12 +19,27 @@
 #include "jlog.hpp"
 #include "jutil.hpp"
 #include <algorithm>
+#include "espcontext.hpp"
 
 using std::find_if;
 using std::for_each;
 
 #define VALIDATE_KEY(k) if (!(k) || !(*k)) return false
 #define MATCH_KEY       [&](const Entry& entry) { return stricmp(entry.key.str(), key) == 0; }
+
+std::shared_ptr<hpccMetrics::CounterMetric> CTxSummary::pRequestCount;
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    CTxSummary::pRequestCount = hpccMetrics::createMetric<hpccMetrics::CounterMetric>("requests", "Number of Requests");
+    return true;
+}
+
+MODULE_EXIT()
+{
+    CTxSummary::pRequestCount = nullptr;
+}
+
 
 bool operator < (const StringAttr& a, const StringAttr& b)
 {
@@ -34,6 +49,7 @@ bool operator < (const StringAttr& a, const StringAttr& b)
 CTxSummary::CTxSummary(unsigned creationTime)
 : m_creationTime(creationTime ? creationTime : msTick())
 {
+    pRequestCount->inc(1);
 }
 
 CTxSummary::~CTxSummary()

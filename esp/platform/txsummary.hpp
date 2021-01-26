@@ -26,6 +26,8 @@
 #include "esphttp.hpp"
 #include <list>
 #include <map>
+#include "jmetrics.hpp"
+
 
 class CTxSummary : extends CInterface
 {
@@ -77,6 +79,8 @@ public:
     // Adds the given milliseconds to an existing or new named CumulativeTimer.
     // The same conditions as for getTimer apply.
     virtual bool updateTimer(const char* name, unsigned long long delta, const LogLevel logLevel = LogMin);
+
+    static std::shared_ptr<hpccMetrics::CounterMetric> pRequestCount;
 
 protected:
     // Log the summary contents on destruction.

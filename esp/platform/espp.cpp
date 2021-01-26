@@ -48,6 +48,9 @@
 #include "rmtfile.hpp"
 #include "dafdesc.hpp"
 
+#include "jmetrics.hpp"
+using namespace hpccMetrics;
+
 void CEspServer::sendSnmpMessage(const char* msg) { throwUnexpected(); }
 
 bool CEspServer::addCacheClient(const char *id, const char *cacheInitString)
@@ -141,53 +144,53 @@ int start_init_main(int argc, const char** argv, int (*init_main_func)(int,const
 #define RESET_ESP_SIGNAL_HANDLER(sig, handler)
 
 int start_init_main(int argc, const char** argv, int (*init_main_func)(int, const char**))
-{ 
-    if(argc > 1 && !strcmp(argv[1], "work")) 
-    { 
+{
+    if(argc > 1 && !strcmp(argv[1], "work"))
+    {
         const char** newargv = new const char*[argc - 1];
-        newargv[0] = argv[0]; 
-        for(int i = 2; i < argc; i++) 
-        { 
-            newargv[i - 1] = argv[i]; 
-        } 
-        int rtcode = init_main_func(argc - 1, newargv); 
+        newargv[0] = argv[0];
+        for(int i = 2; i < argc; i++)
+        {
+            newargv[i - 1] = argv[i];
+        }
+        int rtcode = init_main_func(argc - 1, newargv);
         delete[] newargv;
         return rtcode;
-    } 
-    else 
-    { 
-        StringBuffer command; 
-        command.append(argv[0]); 
-        command.append(" work "); 
-        for(int i = 1; i < argc; i++) 
-        { 
-            command.append(argv[i]); 
-            command.append(" "); 
-        } 
-        DWORD exitcode = 0; 
-        while(true) 
-        { 
-            PROGLOG("Starting working process: %s", command.str()); 
-            PROCESS_INFORMATION process; 
-            STARTUPINFO si; 
-            GetStartupInfo(&si); 
-            if(!CreateProcess(NULL, (char*)command.str(), NULL, NULL, FALSE, 0, NULL, NULL, &si, &process)) 
-            { 
-                IERRLOG("Process failed: %d\r\n",GetLastError()); 
-                exit(-1); 
-            } 
-            WaitForSingleObject(process.hProcess,INFINITE); 
-            GetExitCodeProcess(process.hProcess, &exitcode); 
-            PROGLOG("Working process exited, exitcode=%d", exitcode); 
-            if(exitcode == TERMINATE_EXITCODE) 
-            { 
-                DBGLOG("This is telling the monitoring process to exit too. Exiting once and for all...."); 
-                exit(exitcode); 
-            } 
-            CloseHandle(process.hProcess); 
-            CloseHandle(process.hThread); 
+    }
+    else
+    {
+        StringBuffer command;
+        command.append(argv[0]);
+        command.append(" work ");
+        for(int i = 1; i < argc; i++)
+        {
+            command.append(argv[i]);
+            command.append(" ");
+        }
+        DWORD exitcode = 0;
+        while(true)
+        {
+            PROGLOG("Starting working process: %s", command.str());
+            PROCESS_INFORMATION process;
+            STARTUPINFO si;
+            GetStartupInfo(&si);
+            if(!CreateProcess(NULL, (char*)command.str(), NULL, NULL, FALSE, 0, NULL, NULL, &si, &process))
+            {
+                IERRLOG("Process failed: %d\r\n",GetLastError());
+                exit(-1);
+            }
+            WaitForSingleObject(process.hProcess,INFINITE);
+            GetExitCodeProcess(process.hProcess, &exitcode);
+            PROGLOG("Working process exited, exitcode=%d", exitcode);
+            if(exitcode == TERMINATE_EXITCODE)
+            {
+                DBGLOG("This is telling the monitoring process to exit too. Exiting once and for all....");
+                exit(exitcode);
+            }
+            CloseHandle(process.hProcess);
+            CloseHandle(process.hThread);
             Sleep(1000);
-        } 
+        }
     }
 }
 
@@ -210,35 +213,35 @@ int start_init_main(int argc, const char** argv, int (*init_main_func)(int, cons
 int work_main(CEspConfig& config, CEspServer& server);
 int do_work_main(CEspConfig& config, CEspServer& server)
 {
-   int result; 
-   int numchildren = 0; 
-   pid_t childpid=0; 
+   int result;
+   int numchildren = 0;
+   pid_t childpid=0;
 
-createworker: 
-   childpid = fork(); 
-   if(childpid < 0) 
-   { 
-      IERRLOG("Unable to create new process"); 
-      result = -1; 
-   } 
-   else if(childpid == 0) 
+createworker:
+   childpid = fork();
+   if(childpid < 0)
+   {
+      IERRLOG("Unable to create new process");
+      result = -1;
+   }
+   else if(childpid == 0)
    {
         result = work_main(config, server);
-   } 
-   else 
-   { 
-      DBGLOG("New process generated, pid=%d", childpid); 
-      numchildren++; 
-      if(numchildren < MAX_CHILDREN) 
-         goto createworker; 
-      
-      int status; 
-      childpid = wait3(&status, 0, NULL); 
-      DBGLOG("Attention: child process exited, pid = %d", childpid); 
-      numchildren--; 
-      DBGLOG("Bringing up a new process..."); 
-      sleep(1); 
-      goto createworker; 
+   }
+   else
+   {
+      DBGLOG("New process generated, pid=%d", childpid);
+      numchildren++;
+      if(numchildren < MAX_CHILDREN)
+         goto createworker;
+
+      int status;
+      childpid = wait3(&status, 0, NULL);
+      DBGLOG("Attention: child process exited, pid = %d", childpid);
+      numchildren--;
+      DBGLOG("Bringing up a new process...");
+      sleep(1);
+      goto createworker;
    }
 
    return result;
@@ -304,7 +307,7 @@ void openEspLogFile(IPropertyTree* envpt, IPropertyTree* procpt)
 
     if (procpt->getPropBool("@enableSysLog", false))
         UseSysLogForOperatorMessages();
-}   
+}
 
 
 static constexpr const char * defaultYaml = R"!!(
@@ -351,6 +354,20 @@ static void usage()
 
 IPropertyTree *buildApplicationLegacyConfig(const char *application, const char* argv[]);
 
+//
+// Initialize metrics
+void initializeMetrics(CEspConfig* config)
+{
+    //
+    // Initialize metrics
+    Owned<IPropertyTree> pMetricsTree = config->queryConfigPTree()->getPropTree("metrics");
+    if (pMetricsTree != nullptr)
+    {
+        MetricsReporter &metricsReporter = queryMetricsReporter();
+        metricsReporter.init(pMetricsTree);
+        metricsReporter.startCollecting();
+    }
+}
 
 int init_main(int argc, const char* argv[])
 {
@@ -391,7 +408,7 @@ int init_main(int argc, const char* argv[])
 
     int result = -1;
 
-#ifdef _WIN32 
+#ifdef _WIN32
     if (!interactive)
         ::SetErrorMode(SEM_NOGPFAULTERRORBOX|SEM_FAILCRITICALERRORS);
 #endif
@@ -528,8 +545,10 @@ int init_main(int argc, const char* argv[])
             setEspContainer(server.get());
 
             config->loadAll();
-            config->bindServer(*server.get(), *server.get()); 
+            config->bindServer(*server.get(), *server.get());
             config->checkESPCache(*server.get());
+
+            initializeMetrics(config);
         }
         catch(IException* e)
         {
@@ -552,12 +571,12 @@ int init_main(int argc, const char* argv[])
     {
         OERRLOG("!!! Unable to load ESP configuration.");
     }
-    
+
     return result;
 }
 
 //command line arguments:
-// [pre] if "work", special init behavior, but removed before init_main  
+// [pre] if "work", special init behavior, but removed before init_main
 // [1] process name
 // [2] config location - local file name or dali address
 // [3] config location type - "dali" or ""
@@ -565,9 +584,9 @@ int init_main(int argc, const char* argv[])
 int main(int argc, const char* argv[])
 {
     start_init_main(argc, argv, init_main);
+    queryMetricsReporter().stopCollecting();
     stopPerformanceMonitor();
     UseSysLogForOperatorMessages(false);
     releaseAtoms();
     return 0;
 }
-
