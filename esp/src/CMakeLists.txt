@@ -16,6 +16,12 @@
 
 project ( eclwatch ) 
 
+file(REMOVE_RECURSE
+    ${CMAKE_CURRENT_BINARY_DIR}/eclwatch
+    ${CMAKE_CURRENT_BINARY_DIR}/src
+    ${CMAKE_CURRENT_BINARY_DIR}/src-react
+)
+
 file(COPY
     ${CMAKE_CURRENT_SOURCE_DIR}/dgrid
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch
