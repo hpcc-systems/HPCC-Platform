@@ -13,16 +13,25 @@ jobs:
     outputs:
       should-skip: ${{ steps.check-skips.outputs.should-skip }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 2
+#      - name: Checkout
+#        uses: actions/checkout@v2
+#        with:
+#          fetch-depth: 2
+#      - name: Check skips
+#        run: 'echo "::set-output name=should-skip::`git diff HEAD^ --exit-code --quiet -- :\!.github && echo true || echo false`"'
+#        shell: bash
+#        id: check-skips
       - name: Check skips
-        # The test below means we skip if anything in .github has changed, and do not skip otherwise
-        # We want to skip if there are changes OTHER than in .github
-        run: 'echo "::set-output name=should-skip::`git diff HEAD^ --exit-code --quiet -- :\!.github && echo true || echo false`"'
-        shell: bash
         id: check-skips
+        run: |
+          URL="https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files"
+          FILES=$(curl -s -X GET -G $URL | jq -r '.[] | .filename')
+          echo $FILES
+          if echo $FILES | grep -q -v .github; then
+            echo ::set-output name=should-skip::true
+          else
+            echo ::set-output name=should-skip::false
+          fi
 
   build:
     name: Do it all
