@@ -23,14 +23,23 @@ jobs:
 #        id: check-skips
       - name: Check skips
         id: check-skips
+        with:
+           ignore: ^.github|^docs
+           require: ^esp
         run: |
+          IGNORE=".github/|doc/"
+          REQUIRE="esp/"
           URL="https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files"
           curl -s -X GET -G $URL | jq -r '.[] | .filename' > files
           cat files
-          if grep -q -v .github files; then
-            echo ::set-output name=should-skip::true
+          if grep -q -v "$IGNORE" files; then
+            if grep -q "$REQUIRE" files; then
+              echo ::set-output name=should-skip::false  
+            else
+              echo ::set-output name=should-skip::true
+            fi
           else
-            echo ::set-output name=should-skip::false
+            echo ::set-output name=should-skip::true
           fi
 
   build:
