@@ -332,6 +332,7 @@ class Regression:
             pass
 
         except KeyboardInterrupt as e:
+            logger.warning(repr(e))
             exc = e
             pass
 
@@ -339,9 +340,9 @@ class Regression:
             #Some of them finished, others are not yet, but should check the still running tasks' timeout and retry state
             for threadId in range(self.maxthreads):
                 if self.exitmutexes[threadId].locked():
-                    if exc != None:
-                        print(("Thread :%d, is locked" % (threadId)))
                     query = suiteItems[self.taskParam[threadId]['taskId']]
+                    if exc != None:
+                        logger.warning("Thread :%d, is locked for %s. Terminate it." % (threadId,  query.ecl))
                     self.retryCount = int(self.config.maxAttemptCount)
                     self.CheckTimeout(self.taskParam[threadId]['taskId']+1, threadId,  query)
 
@@ -353,7 +354,7 @@ class Regression:
             self.closeLogging()
 
             if exc != None:
-                print(str(exc)+"(line: "+str(inspect.stack()[0][2])+")")
+                logger.debug(str(exc)+"(line: "+str(inspect.stack()[0][2])+")")
                 raise(exc)
 
 
@@ -457,6 +458,7 @@ class Regression:
             raise(e)
 
         except KeyboardInterrupt as e:
+            logger.warning(repr(e))
             suite.close()
             raise(e)
 
@@ -502,6 +504,7 @@ class Regression:
             raise(e)
 
         except KeyboardInterrupt as e:
+            logger.warning(repr(e))
             eclfile.close()
             raise(e)
 
