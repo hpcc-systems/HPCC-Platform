@@ -3208,35 +3208,44 @@ void getWorkunitCluster(IEspContext &context, const char *wuid, SCMStringBuffer 
     if (isEmpty(wuid))
         return;
 
-    if ('W' == wuid[0])
+    try
     {
-        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
-        if (cw)
-            cluster.set(cw->queryClusterName());
-        else if (checkArchiveWUs)
+        if ('W' == wuid[0])
         {
-            Owned<IPropertyTree> wuProps = getArchivedWorkUnitProperties(wuid, false);
-            if (wuProps)
-                cluster.set(wuProps->queryProp("@clusterName"));
+            Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+            Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
+            if (cw)
+                cluster.set(cw->queryClusterName());
+            else if (checkArchiveWUs)
+            {
+                Owned<IPropertyTree> wuProps = getArchivedWorkUnitProperties(wuid, false);
+                if (wuProps)
+                    cluster.set(wuProps->queryProp("@clusterName"));
+            }
+        }
+        else
+        {
+            Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
+            Owned<IConstDFUWorkUnit> cw = factory->openWorkUnit(wuid, false);
+            if(cw)
+            {
+                StringBuffer tmp;
+                if (cw->getClusterName(tmp).length()!=0)
+                    cluster.set(tmp.str());
+            }
+            else if (checkArchiveWUs)
+            {
+                Owned<IPropertyTree> wuProps = getArchivedWorkUnitProperties(wuid, true);
+                if (wuProps)
+                    cluster.set(wuProps->queryProp("@clusterName"));
+            }
         }
     }
-    else
+    catch (IException * e)
     {
-        Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-        Owned<IConstDFUWorkUnit> cw = factory->openWorkUnit(wuid, false);
-        if(cw)
-        {
-            StringBuffer tmp;
-            if (cw->getClusterName(tmp).length()!=0)
-                cluster.set(tmp.str());
-        }
-        else if (checkArchiveWUs)
-        {
-            Owned<IPropertyTree> wuProps = getArchivedWorkUnitProperties(wuid, true);
-            if (wuProps)
-                cluster.set(wuProps->queryProp("@clusterName"));
-        }
+        //Catch exception if the sasha server has not be configured
+        DBGLOG(e, "GetWorkunitCluster");
+        e->Release();
     }
 }
 

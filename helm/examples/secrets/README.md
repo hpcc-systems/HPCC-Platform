@@ -29,8 +29,11 @@ helm repo add hashicorp https://helm.releases.hashicorp.com
 
 Install vault server.
 
+Note that a recent change to the developer mode vault means that you have to set the VAULT_DEV_LISTEN_ADDRESS environment variable as shown in order
+to access the vault service from an external pod.
+
 ```bash
-helm install vault hashicorp/vault --set "server.dev.enabled=true"
+helm install vault hashicorp/vault --set "server.dev.enabled=true" --set 'server.extraEnvironmentVars.VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200'
 ```
 
 ## Setting up vault

@@ -60,7 +60,7 @@ jobs:
           paths_ignore: '["clienttools/**", "devdoc/**", "dockerfiles/**", "docs/**", "helm/**" ]'
 
   build-and-setup:
-    name: Build platform and regress setup container
+    name: Build platform and regress setup
     needs: check-skip
     if: ${{ needs.check-skip.outputs.should_skip != 'true' }}
     runs-on: ubuntu-20.04
@@ -90,10 +90,10 @@ jobs:
           echo ::set-output name=sha::${{ github.sha }}; \
           echo ::set-output name=base_ref::${GITHUB_REF#refs/heads/}; \
         fi
-        if [[ "${{ github.actor }}" = "${{ github.repository_owner }}" ]]; then \
+        if [[ "${{ github.event.pull_request.head.repo.owner.login }}" = "${{ github.repository_owner }}" ]]; then \
           echo ::set-output name=repository::${{ github.repository }}; \
         else \
-          echo ::set-output name=repository::$(echo -n ${{ github.actor }}/ ; echo -n ${{ github.repository }} | sed -E -n 's@^[^/]+/(.+)$@\1@p'); \
+          echo ::set-output name=repository::$(echo -n ${{ github.event.pull_request.head.repo.owner.login }}/ ; echo -n ${{ github.repository }} | sed -E -n 's@^[^/]+/(.+)$@\1@p'); \
         fi
 
     # NB: restore-keys set to e.g. hpccbuild-1-7.12.10, hpccbuild-1-7.12, hpccbuild-1-7, hpccbuild-1-
@@ -121,6 +121,11 @@ jobs:
         echo "Actor      = ${{ github.actor }}"
         echo "github.repository = ${{ github.repository }}"
         echo "repository = ${{ steps.vars.outputs.repository }}"
+        echo "repository_owner = ${{ github.repository_owner }}"
+        echo "github.workspace = ${{ github.workspace }}"
+        echo "runner.workspace = ${{ runner.workspace }}"
+        echo "github.event.pull_request.head.repo.owner.login = ${{ github.event.pull_request.head.repo.owner.login }}"
+
         if [[ "${{ github.event_name }}" = 'pull_request' ]]; then \
           echo "PR base_ref = ${{ github.base_ref }}"; \
           echo "PR head_ref = ${{ github.head_ref }}"; \
@@ -137,10 +142,15 @@ jobs:
       if: steps.cache.outputs.cache-hit != 'true'
       id: check-cache
       run: |
-        echo ::set-output name=cache-exists::$(if [[ -d build-cache ]]; then echo true; else echo false; fi)
-        if [[ -d build-cache ]]; then \
-          stat build-cache src-cache; \
-          du -sh build-cache src-cache; \
+        if [[ -n "${{ secrets.SMOKETEST_SKIP_CACHE }}" ]]; then \
+          echo "Cache found, but ignored because SMOKETEST_SKIP_CACHE set" ;\
+          rm -rf build-cache src-cache; \
+        else
+          echo ::set-output name=cache-exists::$(if [[ -d build-cache ]]; then echo true; else echo false; fi) ;\
+          if [[ -d build-cache ]]; then \
+            stat build-cache src-cache; \
+            du -sh build-cache src-cache; \
+          fi ;\
         fi
 
     - name: Dependencies20.04
@@ -185,28 +195,31 @@ jobs:
         echo Attempting to use existing cache
         echo Fetching branch: ${{ steps.vars.outputs.branch }}
         git clone --branch ${{ steps.vars.outputs.branch }} -n https://github.com/${{ steps.vars.outputs.repository }} src
-        mv build-cache build
         cd src
-        if [[ "commit" == "$(git cat-file -t $(cat ../build/cache-sha))" ]]; then \
+        if [[ "commit" == "$(git cat-file -t $(cat ../build-cache/cache-sha))" ]]; then \
+          mv ../build-cache ../build ; \
           echo Checking out cache SHA: $(cat ../build/cache-sha); \
           git checkout $(cat ../build/cache-sha); \
+          git submodule update --init --recursive --jobs 4 ; \
+          cd ../src-cache; \
+          echo "Cached source tree files:" ; \
+          find . -type f; \
+          echo ================ ; \
+          find . -type f | cpio -p -dum ../src ; \
+          cd ../src; \
+          find . -type f -exec touch -r ../build/cache-timestamp {} + ; \
+          git checkout ${{ steps.vars.outputs.branch }} ;\
+          git submodule update --init --recursive --jobs 4 ; \
+          echo Changed files \(from SHA: $(cat ../build/cache-sha)\): ; \
+          find -name '.git*' -prune -o -newer ../build/cache-timestamp -type f -print ; \
         else \
-          echo git diff failed \(SHA $(cat ../build/cache-sha) missing?\). Using base_ref; \
-          git checkout ${{ steps.vars.outputs.base_ref }}; \
+          echo git diff failed \(SHA $(cat ../build-cache/cache-sha) missing?\). Using base_ref; \
+          rm -rf ../build-cache ../src-cache ; \
+          mkdir ../build ; \
+          mkdir ../src-cache ; \
+          git checkout ${{ steps.vars.outputs.branch }} ; \
+          git submodule update --init --recursive --jobs 4 ; \
         fi
-        git submodule update --init --recursive --jobs 4
-        cd ../src-cache
-        echo Cached source tree files:
-        find . -type f
-        echo ================
-        find . -type f | cpio -p -dum ../src
-        cd ../src
-        find . -type f -exec touch -r ../build/cache-timestamp {} +
-        git checkout ${{ steps.vars.outputs.branch }}
-        git submodule update --init --recursive --jobs 4
-        echo Changed files \(from SHA: $(cat ../build/cache-sha)\):
-        find -name '.git*' -prune -o -newer ../build/cache-timestamp -type f -print
-
     - name: Cache miss checkout
       if: steps.cache.outputs.cache-hit != 'true' && steps.check-cache.outputs.cache-exists != 'true'
       uses: actions/checkout@v2
@@ -233,6 +246,16 @@ jobs:
         touch ../cmake-timestamp
         ../cmake/cmake ../src -Wno-dev -DRUNTIME_USER=$(whoami) -DRUNTIME_GROUP=$(id -gn) -DDESTDIR=$(realpath ..)/install -DINCLUDE_PLUGINS=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_PYTHON2=0 -DUSE_PYTHON3=1 -DSUPPRESS_SPARK=1 -DUSE_CPPUNIT=1 -DUSE_CASSANDRA=Off -DCMAKE_CXX_FLAGS="-DBUILD_TAG=\\\"dummytag\\\" -DBUILD_VERSION_MAJOR=1 -DBUILD_VERSION_MINOR=1 -DBUILD_VERSION_POINT=0" -DBUILD_TAG="smoketest"
         make -j$(nproc) install
+
+    - name: build-logs-artifact
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-logs
+        path: |
+          build/CMakeCache.txt
+          build/CMakeFiles/CMakeOutput.log
+          build/CMakeFiles/CMakeError.log
 
     # Cache contains:
     # - make binaries (build-cache)
@@ -274,14 +297,14 @@ jobs:
         install/opt/HPCCSystems/etc/init.d/hpcc-init start
         mkdir -p regress
         cd install/opt/HPCCSystems/testing/regress
-        ./ecl-test setup --pq 2
+        ./ecl-test setup --pq 2 --generateStackTrace
         ${{ github.workspace }}/install/opt/HPCCSystems/etc/init.d/hpcc-init stop
 
-    - name: logs-on-failure-or-cancellation
+    - name: regression-setup-logs-artifact
       if: ${{ failure() || cancelled() }}
       uses: actions/upload-artifact@v2
       with:
-        name: alllogs
+        name: regress-setup-logs
         path: |
           install/var/log/HPCCSystems
           regress/
@@ -378,15 +401,15 @@ jobs:
         fi
         echo queries after exclude: ${queries}
 
-        ./ecl-test query --pq 2 --target ${{ matrix.engine }} --excludeclass python2,embedded-r,embedded-js,3rdpartyservice,spray ${queries}
+        ./ecl-test query --pq 2 --target ${{ matrix.engine }} --excludeclass python2,embedded-r,embedded-js,3rdpartyservice,spray --generateStackTrace ${queries}
         grep Failure: ${{ github.workspace }}/regress/log/${{ matrix.engine }}.*.log
         if [[ "$(grep -oP '(?<=^Failure: )[0-9]+$' ${{ github.workspace }}/regress/log/${{ matrix.engine }}.*.log)" -gt 0 ]]; then exit 1; fi
 
-    - name: logs-on-failure
+    - name: regression-run-logs-artifact
       if: ${{ failure() || cancelled() }}
       uses: actions/upload-artifact@v2
       with:
-        name: regress-fail-logs-${{ matrix.engine }}-${{ steps.vars.outputs.matrix-setname }}
+        name: regression-run-logs-${{ matrix.engine }}-${{ steps.vars.outputs.matrix-setname }}
         path: |
           install/var/log/HPCCSystems
           regress/

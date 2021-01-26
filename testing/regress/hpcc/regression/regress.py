@@ -233,6 +233,7 @@ class Regression:
                     query.setIgnoreResult(self.args.ignoreResult)
                     query.setJobname(time.strftime("%y%m%d-%H%M%S"))
                     timeout = query.getTimeout()
+                    logger.debug("Query timeout:%d", -1, timeout)
                     oldCnt = cnt
 
                 started = False
@@ -247,11 +248,12 @@ class Regression:
                                 self.timeouts[startThreadId] = timeout
                             else:
                                 self.timeouts[startThreadId] = self.timeout
+                                timeout = self.timeout
 
-                            self.taskParam[startThreadId]['timeoutValue'] = self.timeout
+                            self.taskParam[startThreadId]['timeoutValue'] = timeout
                             query = suiteItems[self.taskParam[startThreadId]['taskId']]
-                            query.setTimeout(self.timeout)
-                            #logger.debug("self.timeout[%d]:%d", startThreadId, self.timeouts[startThreadId])
+                            logger.debug("self.timeout:%d, self.timeouts[thread:%d]:%d", self.timeout, startThreadId, self.timeouts[startThreadId])
+                            query.setTimeout(timeout)
                             self.taskParam[startThreadId]['jobName'] = query.getJobname()
                             self.taskParam[startThreadId]['retryCount'] = int(self.config.maxAttemptCount)
                             self.exitmutexes[startThreadId].acquire()
@@ -374,7 +376,7 @@ class Regression:
                 wuid =  queryWuid(query.getJobname(),  query.getTaskId())
                 self.retryCount -= 1;
                 if self.retryCount> 0:
-                    self.timeouts[threadId] =  self.timeout
+                    self.timeouts[threadId] = query.getTimeout()
                     self.loggermutex.acquire()
                     logger.warn("%3d. %s has not started yet. Reset due to timeout after %d sec (%d retry attempt(s) remain)." % (cnt, query.ecl, self.timeouts[threadId],  self.retryCount),  extra={'taskId':cnt})
                     logger.debug("%3d. Task parameters: thread id: %d, ecl:'%s',state:'%s', retry count:%d." % (cnt, threadId,  query.ecl,   wuid['state'],  self.retryCount),  extra={'taskId':cnt})
