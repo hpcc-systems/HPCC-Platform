@@ -1,4 +1,3 @@
-
 name: Test skip functionality
 
 on:
@@ -23,6 +22,9 @@ jobs:
         # We want to skip if there are changes OTHER than in .github
         run: 'echo "::set-output name=should-skip::`git diff HEAD^ --exit-code --quiet -- .github && echo false || echo true`"'
         shell: bash
+      - name: test-it
+        run: echo ${{ steps.check-skips.outputs.should-skip }}
+
   build:
     name: Do it all
     runs-on: ubuntu-latest
