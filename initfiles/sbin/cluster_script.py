@@ -22,11 +22,11 @@ import sys
 import os
 import os.path
 import getopt
-import Queue
+import queue
 import time
 import datetime
 import logging
-import ConfigParser
+import configparser
 import signal
 
 def signal_handler(signal, frame):
@@ -73,7 +73,7 @@ class ScriptExecution(object):
 
     def get_config(self, key):
         if not self.hpcc_config:
-            self.hpcc_config = ConfigParser.ConfigParser()
+            self.hpcc_config = configparser.ConfigParser()
             self.hpcc_config.read(self.env_conf)
 
         return self.hpcc_config.get(self.section, key)
@@ -98,7 +98,7 @@ class ScriptExecution(object):
     def setup(self):
 
 
-        self.queue = Queue.Queue()
+        self.queue = queue.Queue()
 
         # Get hosts information
         if self.host_list_file:

@@ -205,7 +205,7 @@ export KEY_DIR
 
 createPayload;
 
-expected_python_version=2.6
+expected_python_version=3.4
 is_python_installed ${expected_python_version}
 
 if [ $? -eq 0 ]

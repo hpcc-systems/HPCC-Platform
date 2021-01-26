@@ -18,7 +18,7 @@
 '''
 
 import threading
-import Queue
+import queue
 
 class ThreadWithQueue(threading.Thread):
     '''
@@ -41,7 +41,7 @@ class ThreadWithQueue(threading.Thread):
     def run(self):
         while self.keepAlive:
             try:
-                # block is false, timeout is 1 second. Ignore Queue.Empty exception
+                # block is false, timeout is 1 second. Ignore queue.Empty exception
                 # thread is controlled by keepAlive
                 items = self.queue.get(False, 1)
                 func = items[0]
@@ -49,4 +49,4 @@ class ThreadWithQueue(threading.Thread):
                 func(*args)
 
                 self.queue.task_done()
-            except Queue.Empty: pass
+            except queue.Empty: pass
