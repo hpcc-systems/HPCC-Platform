@@ -23,9 +23,6 @@ jobs:
 #        id: check-skips
       - name: Check skips
         id: check-skips
-        with:
-           ignore: ^.github|^docs
-           require: ^esp
         run: |
           IGNORE=".github/|doc/"
           REQUIRE="esp/"
