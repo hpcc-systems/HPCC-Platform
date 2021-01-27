@@ -1108,7 +1108,18 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         updateAffinity(affinity);
 
         minFreeDiskSpace = topology->getPropInt64("@minFreeDiskSpace", (1024 * 0x100000)); // default to 1 GB
-        if (topology->getPropBool("@jumboFrames", false))
+        mtu_size = topology->getPropInt("@mtuPayload", 0);
+        if (mtu_size)
+        {
+            if (mtu_size < 1400 || mtu_size > 9000)
+                throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid settings - mtuPayload should be between 1400 and 9000");
+            unsigned alignment = 0x400;
+            while (alignment*2 < mtu_size)
+                alignment *= 2;
+            roxiemem::setDataAlignmentSize(alignment);  // smallest power of two under mtuSize
+
+        }
+        else if (topology->getPropBool("@jumboFrames", false))
         {
             mtu_size = 9000;    // upper limit on outbound buffer size - allow some header room too
             roxiemem::setDataAlignmentSize(0x2000);

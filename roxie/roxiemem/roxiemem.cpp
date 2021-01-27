@@ -6628,13 +6628,13 @@ extern IDataBufferManager *createDataBufferManager(size32_t size)
 
 extern void setDataAlignmentSize(unsigned size)
 {
-    if (memTraceLevel >= 3) 
+    if (memTraceLevel)
         DBGLOG("RoxieMemMgr: setDataAlignmentSize to %u", size); 
 
     if ((size == 0) || ((HEAP_ALIGNMENT_SIZE % size) != 0))
         throw MakeStringException(ROXIEMM_INVALID_MEMORY_ALIGNMENT, "setDataAlignmentSize %u must be a factor of %u", size, (unsigned)HEAP_ALIGNMENT_SIZE);
 
-    if (size==0x400 || size==0x2000)
+    if (size>=0x400 && size<=0x2000)
         DATA_ALIGNMENT_SIZE = size;
     else
         throw MakeStringException(ROXIEMM_INVALID_MEMORY_ALIGNMENT, "Invalid parameter to setDataAlignmentSize %u", size);
