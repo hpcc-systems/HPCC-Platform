@@ -18,15 +18,31 @@
 #include "espcontext.hpp"
 #include "esdl_script.hpp"
 #include "wsexcept.hpp"
+#include "httpclient.hpp"
+
+#include <xpp/XmlPullParser.h>
+using namespace xpp;
 
 interface IEsdlTransformOperation : public IInterface
 {
-    virtual const char *queryMergedTarget() = 0;
-    virtual bool process(IEsdlScriptContext * context, IPropertyTree *content, IXpathContext * xpathContext) = 0;
+    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) = 0;
     virtual void toDBGLog() = 0;
 };
 
-IEsdlTransformOperation *createEsdlTransformOperation(IPropertyTree *element, const StringBuffer &prefix);
+IEsdlTransformOperation *createEsdlTransformOperation(XmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors);
+void createEsdlTransformOperations(IArrayOf<IEsdlTransformOperation> &operations, XmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors);
+void createEsdlTransformChooseOperations(IArrayOf<IEsdlTransformOperation> &operations, XmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors);
+typedef void (*esdlOperationsFactory_t)(IArrayOf<IEsdlTransformOperation> &operations, XmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors);
+
+bool getStartTagValueBool(StartTag &stag, const char *name, bool defaultValue)
+{
+    if (isEmptyString(name))
+        return defaultValue;
+    const char *value = stag.getValue(name);
+    if (isEmptyString(value))
+        return defaultValue;
+    return strToBool(value);
+}
 
 inline void esdlOperationError(int code, const char *op, const char *msg, const char *traceName, bool exception)
 {
@@ -69,44 +85,89 @@ static inline StringBuffer &makeOperationTagName(StringBuffer &s, const StringBu
 class CEsdlTransformOperationBase : public CInterfaceOf<IEsdlTransformOperation>
 {
 protected:
-    StringAttr m_mergedTarget;
     StringAttr m_tagname;
     StringAttr m_traceName;
     bool m_ignoreCodingErrors = false; //ideally used only for debugging
 
 public:
-    CEsdlTransformOperationBase(IPropertyTree *tree, const StringBuffer &prefix)
+    CEsdlTransformOperationBase(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix)
     {
-        m_tagname.set(tree->queryName());
-        if (tree->hasProp("@trace"))
-            m_traceName.set(tree->queryProp("@trace"));
-        if (tree->hasProp("@_crtTarget"))
-            m_mergedTarget.set(tree->queryProp("@_crtTarget"));
-        m_ignoreCodingErrors = tree->getPropBool("@optional", false);
-    }
-
-    virtual const char *queryMergedTarget() override
-    {
-        return m_mergedTarget;
+        m_tagname.set(stag.getLocalName());
+        m_traceName.set(stag.getValue("trace"));
+        m_ignoreCodingErrors = getStartTagValueBool(stag, "optional", false);
     }
 };
 
+class CEsdlTransformOperationWithChildren : public CEsdlTransformOperationBase
+{
+protected:
+    IArrayOf<IEsdlTransformOperation> m_children;
+    bool m_withVariables = false;
 
-class CEsdlTransformOperationVariable : public CEsdlTransformOperationBase
+public:
+    CEsdlTransformOperationWithChildren(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, bool withVariables, esdlOperationsFactory_t factory) : CEsdlTransformOperationBase(xpp, stag, prefix), m_withVariables(withVariables)
+    {
+        //load children
+        if (factory)
+            factory(m_children, xpp, prefix, withVariables, m_ignoreCodingErrors);
+        else
+            createEsdlTransformOperations(m_children, xpp, prefix, withVariables, m_ignoreCodingErrors);
+    }
+
+    virtual ~CEsdlTransformOperationWithChildren(){}
+
+    virtual bool processChildren(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext)
+    {
+        if (!m_children.length())
+            return false;
+
+        Owned<CXpathContextScope> scope = m_withVariables ? new CXpathContextScope(sourceContext, m_tagname) : nullptr;
+        bool ret = false;
+        ForEachItemIn(i, m_children)
+        {
+            if (m_children.item(i).process(scriptContext, targetContext, sourceContext))
+                ret = true;
+        }
+        return ret;
+    }
+
+    virtual void toDBGLog () override
+    {
+    #if defined(_DEBUG)
+        ForEachItemIn(i, m_children)
+            m_children.item(i).toDBGLog();
+    #endif
+    }
+};
+
+class CEsdlTransformOperationWithoutChildren : public CEsdlTransformOperationBase
+{
+public:
+    CEsdlTransformOperationWithoutChildren(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationBase(xpp, stag, prefix)
+    {
+        if (xpp.skipSubTreeEx())
+            esdlOperationError(ESDL_SCRIPT_Error, m_tagname, "should not have child tags", m_traceName, !m_ignoreCodingErrors);
+    }
+
+    virtual ~CEsdlTransformOperationWithoutChildren(){}
+
+};
+
+class CEsdlTransformOperationVariable : public CEsdlTransformOperationWithChildren
 {
 protected:
     StringAttr m_name;
     Owned<ICompiledXpath> m_select;
 
 public:
-    CEsdlTransformOperationVariable(IPropertyTree *tree, const StringBuffer &prefix) : CEsdlTransformOperationBase(tree, prefix)
+    CEsdlTransformOperationVariable(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
     {
         if (m_traceName.isEmpty())
-            m_traceName.set(tree->queryProp("@name"));
-        m_name.set(tree->queryProp("@name"));
+            m_traceName.set(stag.getValue("name"));
+        m_name.set(stag.getValue("name"));
         if (m_name.isEmpty())
             esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname, "without name", m_traceName, !m_ignoreCodingErrors);
-        const char *select = tree->queryProp("@select");
+        const char *select = stag.getValue("select");
         if (!isEmptyString(select))
             m_select.setown(compileXpath(select));
     }
@@ -115,11 +176,22 @@ public:
     {
     }
 
-    virtual bool process(IEsdlScriptContext * context, IPropertyTree *content, IXpathContext * xpathContext) override
+    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
         if (m_select)
-            return xpathContext->addCompiledVariable(m_name, m_select);
-        return xpathContext->addVariable(m_name, "");
+            return sourceContext->addCompiledVariable(m_name, m_select);
+        else if (m_children.length())
+        {
+            VStringBuffer xpath("/esdl_script_context/temporaries/%s", m_name.str());
+            CXpathContextLocation location(targetContext);
+
+            targetContext->ensureLocation(xpath, true);
+            processChildren(scriptContext, targetContext, sourceContext); //bulid nodeset
+            sourceContext->addXpathVariable(m_name, xpath);
+            return false;
+        }
+        sourceContext->addVariable(m_name, "");
+        return false;
     }
 
     virtual void toDBGLog() override
@@ -130,10 +202,290 @@ public:
     }
 };
 
+class CEsdlTransformOperationHttpContentXml : public CEsdlTransformOperationWithChildren
+{
+
+public:
+    CEsdlTransformOperationHttpContentXml(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
+    {
+    }
+
+    virtual ~CEsdlTransformOperationHttpContentXml(){}
+
+    bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    {
+        CXpathContextLocation location(targetContext);
+        targetContext->addElementToLocation("content");
+        return processChildren(scriptContext, targetContext, sourceContext);
+    }
+
+    virtual void toDBGLog () override
+    {
+    #if defined(_DEBUG)
+        DBGLOG (">>>>>>>>>>> %s >>>>>>>>>>", m_tagname.str());
+        CEsdlTransformOperationWithChildren::toDBGLog();
+        DBGLOG (">>>>>>>>>>> %s >>>>>>>>>>", m_tagname.str());
+    #endif
+    }
+};
+
+interface IEsdlTransformOperationHttpHeader : public IInterface
+{
+    virtual bool processHeader(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext, IProperties *headers) = 0;
+};
+
+
+class CEsdlTransformOperationHttpHeader : public CEsdlTransformOperationWithoutChildren, implements IEsdlTransformOperationHttpHeader
+{
+protected:
+    StringAttr m_name;
+    Owned<ICompiledXpath> m_xpath_name;
+    Owned<ICompiledXpath> m_value;
+
+public:
+    IMPLEMENT_IINTERFACE_USING(CEsdlTransformOperationWithoutChildren)
+
+    CEsdlTransformOperationHttpHeader(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
+    {
+        m_name.set(stag.getValue("name"));
+        const char *xpath_name = stag.getValue("xpath_name");
+        if (m_name.isEmpty() && isEmptyString(xpath_name))
+            esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname, "without name or xpath_name", m_traceName, !m_ignoreCodingErrors);
+        if (!isEmptyString(xpath_name))
+            m_xpath_name.setown(compileXpath(xpath_name));
+
+        const char *value = stag.getValue("value");
+        if (isEmptyString(value))
+            esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname, "without value", m_traceName, !m_ignoreCodingErrors);
+        m_value.setown(compileXpath(value));
+    }
+
+    virtual ~CEsdlTransformOperationHttpHeader(){}
+
+    bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    {
+        return processHeader(scriptContext, targetContext, sourceContext, nullptr);
+    }
+
+    bool processHeader(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext, IProperties *headers) override
+    {
+        CXpathContextLocation location(targetContext);
+        targetContext->addElementToLocation("header");
+        StringBuffer name;
+        if (m_xpath_name)
+            sourceContext->evaluateAsString(m_xpath_name, name);
+        else
+            name.set(m_name);
+
+        StringBuffer value;
+        if (m_value)
+            sourceContext->evaluateAsString(m_value, value);
+        if (name.length() && value.length())
+        {
+            if (headers)
+                headers->setProp(name, value);
+            targetContext->ensureSetValue("@name", name, true);
+            targetContext->ensureSetValue("@value", value, true);
+        }
+        return false;
+    }
+
+    virtual void toDBGLog () override
+    {
+    #if defined(_DEBUG)
+        DBGLOG ("> %s (%s, value(%s)) >>>>>>>>>>", m_tagname.str(), m_xpath_name ? m_xpath_name->getXpath() : m_name.str(), m_value ? m_value->getXpath() : "");
+    #endif
+    }
+};
+
+
+
+class CEsdlTransformOperationHttpPostXml : public CEsdlTransformOperationBase
+{
+protected:
+    StringAttr m_name;
+    StringAttr m_section;
+    Owned<ICompiledXpath> m_url;
+    IArrayOf<IEsdlTransformOperationHttpHeader> m_headers;
+    Owned<IEsdlTransformOperation> m_content;
+
+public:
+    CEsdlTransformOperationHttpPostXml(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationBase(xpp, stag, prefix)
+    {
+        m_name.set(stag.getValue("name"));
+        if (m_traceName.isEmpty())
+            m_traceName.set(m_name.str());
+        m_section.set(stag.getValue("section"));
+        if (m_section.isEmpty())
+            m_section.set("temporaries");
+        if (m_name.isEmpty())
+            esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname, "without name", m_traceName, !m_ignoreCodingErrors);
+        const char *url = stag.getValue("url");
+        if (isEmptyString(url))
+            esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname, "without url", m_traceName, !m_ignoreCodingErrors);
+        m_url.setown(compileXpath(url));
+
+        int type = 0;
+        while((type = xpp.next()) != XmlPullParser::END_DOCUMENT)
+        {
+            switch(type)
+            {
+                case XmlPullParser::START_TAG:
+                {
+                    StartTag stag;
+                    xpp.readStartTag(stag);
+                    const char *op = stag.getLocalName();
+                    if (isEmptyString(op))
+                        esdlOperationError(ESDL_SCRIPT_Error, m_tagname, "unknown error", m_traceName, !m_ignoreCodingErrors);
+                    if (streq(op, "http-header"))
+                        m_headers.append(*new CEsdlTransformOperationHttpHeader(xpp, stag, prefix));
+                    else if (streq(op, "content"))
+                        m_content.setown(new CEsdlTransformOperationHttpContentXml(xpp, stag, prefix));
+                    else
+                        xpp.skipSubTreeEx();
+                    break;
+                }
+                case XmlPullParser::END_TAG:
+                case XmlPullParser::END_DOCUMENT:
+                    return;
+            }
+        }
+    }
+
+    virtual ~CEsdlTransformOperationHttpPostXml()
+    {
+    }
+
+    void buildHeaders(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext, IProperties *headers)
+    {
+        if (!m_headers.length())
+            return;
+        CXpathContextLocation location(targetContext);
+        targetContext->addElementToLocation("headers");
+        ForEachItemIn(i, m_headers)
+            m_headers.item(i).processHeader(scriptContext, targetContext, sourceContext, headers);
+    }
+
+    void buildRequest(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext, const char *url, IProperties *headers)
+    {
+        CXpathContextLocation location(targetContext);
+        targetContext->addElementToLocation("request");
+        targetContext->ensureSetValue("@url", url, true);
+        buildHeaders(scriptContext, targetContext, sourceContext, headers);
+        if (m_content)
+            m_content->process(scriptContext, targetContext, sourceContext);
+    }
+
+    void postRequest(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext, const char *url, IProperties *headers)
+    {
+        VStringBuffer xpath("/esdl_script_context/%s/%s/request/content/*[1]", m_section.str(), m_name.str());
+
+        StringBuffer content;
+        sourceContext->toXml(xpath, content);
+        if (!content)
+            return;
+        CXpathContextLocation location(targetContext);
+        targetContext->addElementToLocation("response");
+
+        Owned<IHttpClientContext> httpCtx = getHttpClientContext();
+        Owned<IHttpClient> httpclient = httpCtx->createHttpClient(NULL, url);
+        if (!httpclient)
+            return;
+
+        try
+        {
+            StringBuffer status;
+            StringBuffer response;
+            StringBuffer errmsg;
+
+            if (headers && !headers->hasProp("Accept"))
+                headers->setProp("Accept", "text/html, application/xml");
+
+            HttpClientErrCode code = HttpClientErrCode::OK;
+            Owned<IHttpMessage> resp = httpclient->sendRequestEx("POST", "text/xml", content, code, errmsg, headers);
+            targetContext->ensureSetValue("@status", status.str(), true);
+
+            StringBuffer err;
+            err.append((int) code);
+            targetContext->ensureSetValue("@error-code", err.str(), true);
+            if (code != HttpClientErrCode::OK)
+                throw MakeStringException(ESDL_SCRIPT_Error, "ESDL Script error sending request in http-post-xml %s url(%s)", m_traceName.str(), url);
+
+            resp->getStatus(status);
+            targetContext->ensureSetValue("@status", status.str(), true);
+
+            resp->getContent(response);
+            if (!response.trim().length())
+                throw MakeStringException(ESDL_SCRIPT_Error, "ESDL Script empty result calling http-post-xml %s url(%s)", m_traceName.str(), url);
+
+            StringBuffer contentType;
+            resp->getContentType(contentType);
+            targetContext->ensureSetValue("@content-type", contentType.str(), true);
+            if (strnicmp("text/xml", contentType.str(), 8)==0 || strnicmp("application/xml", contentType.str(), 15) ==0)
+            {
+                CXpathContextLocation content_location(targetContext);
+                targetContext->addElementToLocation("content");
+                targetContext->addXmlContent(response.str());
+            }
+            else
+            {
+                targetContext->ensureSetValue("@status", "error", true);
+                targetContext->ensureSetValue("text", response.str(), true);
+            }
+        }
+        catch(IMultiException *me)
+        {
+            StringBuffer xml;
+            me->serialize(xml);
+            CXpathContextLocation content_location(targetContext);
+            targetContext->ensureSetValue("@status", "error", true);
+            targetContext->addElementToLocation("content");
+            targetContext->addXmlContent(xml.str());
+            me->Release();
+        }
+        catch(IException *E)
+        {
+            StringBuffer xml;
+            Owned<IMultiException> me = makeMultiException("ESDLScript");
+            me->append(*LINK(E));
+            me->serialize(xml);
+            CXpathContextLocation content_location(targetContext);
+            targetContext->ensureSetValue("@status", "error", true);
+            targetContext->addElementToLocation("content");
+            targetContext->addXmlContent(xml.str());
+            E->Release();
+        }
+    }
+
+    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    {
+        VStringBuffer xpath("/esdl_script_context/%s/%s", m_section.str(), m_name.str());
+        CXpathContextLocation location(targetContext);
+        targetContext->ensureLocation(xpath, true);
+        StringBuffer url;
+        if (m_url)
+            sourceContext->evaluateAsString(m_url, url);
+
+        Owned<IProperties> headers = createProperties();
+        buildRequest(scriptContext, targetContext, sourceContext, url, headers);
+        postRequest(scriptContext, targetContext, sourceContext, url, headers);
+
+        sourceContext->addXpathVariable(m_name, xpath);
+        return false;
+    }
+
+    virtual void toDBGLog() override
+    {
+#if defined(_DEBUG)
+        DBGLOG(">%s> %s with name(%s) url(%s)", m_name.str(), m_tagname.str(), m_name.str(), m_url ? m_url->getXpath() : "url error");
+#endif
+    }
+};
+
 class CEsdlTransformOperationParameter : public CEsdlTransformOperationVariable
 {
 public:
-    CEsdlTransformOperationParameter(IPropertyTree *tree, const StringBuffer &prefix) : CEsdlTransformOperationVariable(tree, prefix)
+    CEsdlTransformOperationParameter(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationVariable(xpp, stag, prefix)
     {
     }
 
@@ -141,15 +493,15 @@ public:
     {
     }
 
-    virtual bool process(IEsdlScriptContext * context, IPropertyTree *content, IXpathContext * xpathContext) override
+    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
         if (m_select)
-            return xpathContext->declareCompiledParameter(m_name, m_select);
-        return xpathContext->declareParameter(m_name, "");
+            return sourceContext->declareCompiledParameter(m_name, m_select);
+        return sourceContext->declareParameter(m_name, "");
     }
 };
 
-class CEsdlTransformOperationSetSectionAttributeBase : public CEsdlTransformOperationBase
+class CEsdlTransformOperationSetSectionAttributeBase : public CEsdlTransformOperationWithoutChildren
 {
 protected:
     StringAttr m_name;
@@ -157,24 +509,24 @@ protected:
     Owned<ICompiledXpath> m_select;
 
 public:
-    CEsdlTransformOperationSetSectionAttributeBase(IPropertyTree *tree, const StringBuffer &prefix, const char *attrName) : CEsdlTransformOperationBase(tree, prefix)
+    CEsdlTransformOperationSetSectionAttributeBase(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, const char *attrName) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
     {
         if (m_traceName.isEmpty())
-            m_traceName.set(tree->queryProp("@name"));
+            m_traceName.set(stag.getValue("name"));
         if (!isEmptyString(attrName))
             m_name.set(attrName);
         else
         {
-            m_name.set(tree->queryProp("@name"));
+            m_name.set(stag.getValue("name"));
 
-            const char *xpath_name = tree->queryProp("@xpath_name");
+            const char *xpath_name = stag.getValue("xpath_name");
             if (!isEmptyString(xpath_name))
                 m_xpath_name.setown(compileXpath(xpath_name));
             else if (m_name.isEmpty())
                 esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname, "without name", m_traceName, !m_ignoreCodingErrors); //don't mention value, it's deprecated
         }
 
-        const char *select = tree->queryProp("@select");
+        const char *select = stag.getValue("select");
         if (isEmptyString(select))
             esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname, "without select", m_traceName, !m_ignoreCodingErrors); //don't mention value, it's deprecated
         m_select.setown(compileXpath(select));
@@ -191,7 +543,7 @@ public:
 
     virtual const char *getSectionName() = 0;
 
-    virtual bool process(IEsdlScriptContext * context, IPropertyTree *content, IXpathContext * xpathContext) override
+    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
         if ((!m_name && !m_xpath_name) || !m_select)
             return false; //only here if "optional" backward compatible support for now (optional syntax errors aren't actually helpful)
@@ -199,13 +551,13 @@ public:
         {
             StringBuffer name;
             if (m_xpath_name)
-                xpathContext->evaluateAsString(m_xpath_name, name);
+                sourceContext->evaluateAsString(m_xpath_name, name);
             else
                 name.set(m_name);
 
             StringBuffer value;
-            xpathContext->evaluateAsString(m_select, value);
-            context->setAttribute(getSectionName(), name, value);
+            sourceContext->evaluateAsString(m_select, value);
+            scriptContext->setAttribute(getSectionName(), name, value);
         }
         catch (IException* e)
         {
@@ -226,7 +578,7 @@ public:
 class CEsdlTransformOperationStoreValue : public CEsdlTransformOperationSetSectionAttributeBase
 {
 public:
-    CEsdlTransformOperationStoreValue(IPropertyTree *tree, const StringBuffer &prefix) : CEsdlTransformOperationSetSectionAttributeBase(tree, prefix, nullptr)
+    CEsdlTransformOperationStoreValue(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationSetSectionAttributeBase(xpp, stag, prefix, nullptr)
     {
     }
 
@@ -237,7 +589,7 @@ public:
 class CEsdlTransformOperationSetLogProfile : public CEsdlTransformOperationSetSectionAttributeBase
 {
 public:
-    CEsdlTransformOperationSetLogProfile(IPropertyTree *tree, const StringBuffer &prefix) : CEsdlTransformOperationSetSectionAttributeBase(tree, prefix, "profile")
+    CEsdlTransformOperationSetLogProfile(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationSetSectionAttributeBase(xpp, stag, prefix, "profile")
     {
     }
 
@@ -248,7 +600,7 @@ public:
 class CEsdlTransformOperationSetLogOption : public CEsdlTransformOperationSetSectionAttributeBase
 {
 public:
-    CEsdlTransformOperationSetLogOption(IPropertyTree *tree, const StringBuffer &prefix) : CEsdlTransformOperationSetSectionAttributeBase(tree, prefix, nullptr)
+    CEsdlTransformOperationSetLogOption(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationSetSectionAttributeBase(xpp, stag, prefix, nullptr)
     {
     }
 
@@ -256,33 +608,38 @@ public:
     const char *getSectionName() override {return ESDLScriptCtxSection_Logging;}
 };
 
-class CEsdlTransformOperationSetValue : public CEsdlTransformOperationBase
+class CEsdlTransformOperationSetValue : public CEsdlTransformOperationWithoutChildren
 {
 protected:
     Owned<ICompiledXpath> m_select;
     Owned<ICompiledXpath> m_xpath_target;
     StringAttr m_target;
+    bool m_required = true;
 
 public:
-    CEsdlTransformOperationSetValue(IPropertyTree *tree, const StringBuffer &prefix) : CEsdlTransformOperationBase(tree, prefix)
+    CEsdlTransformOperationSetValue(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
     {
-        if (m_traceName.isEmpty() && tree->hasProp("@name"))
-            m_traceName.set(tree->queryProp("@name"));
+        if (m_traceName.isEmpty())
+            m_traceName.set(stag.getValue("name"));
 
-        if (isEmptyString(tree->queryProp("@target")) && isEmptyString(tree->queryProp("@xpath_target")))
+        const char *xpath_target = stag.getValue("xpath_target");
+        const char *target = stag.getValue("target");
+
+        if (isEmptyString(target) && isEmptyString(xpath_target))
             esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname.str(), "without target", m_traceName.str(), !m_ignoreCodingErrors);
 
-        const char *select = tree->queryProp("@select");
+        const char *select = stag.getValue("select");
         if (isEmptyString(select))
-            select = tree->queryProp("@value");
+            select = stag.getValue("value");
         if (isEmptyString(select))
             esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname, "without select", m_traceName, !m_ignoreCodingErrors); //don't mention value, it's deprecated
 
         m_select.setown(compileXpath(select));
-        if (tree->hasProp("@xpath_target"))
-            m_xpath_target.setown(compileXpath(tree->queryProp("@xpath_target")));
-        else if (tree->hasProp("@target"))
-            m_target.set(tree->queryProp("@target"));
+        if (!isEmptyString(xpath_target))
+            m_xpath_target.setown(compileXpath(xpath_target));
+        else if (!isEmptyString(target))
+            m_target.set(target);
+        m_required = getStartTagValueBool(stag, "required", true);
     }
 
     virtual void toDBGLog() override
@@ -294,15 +651,15 @@ public:
 
     virtual ~CEsdlTransformOperationSetValue(){}
 
-    virtual bool process(IEsdlScriptContext * context, IPropertyTree *content, IXpathContext * xpathContext) override
+    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
         if ((!m_xpath_target && m_target.isEmpty()) || !m_select)
             return false; //only here if "optional" backward compatible support for now (optional syntax errors aren't actually helpful
         try
         {
             StringBuffer value;
-            xpathContext->evaluateAsString(m_select, value);
-            return doSet(xpathContext, content, value);
+            sourceContext->evaluateAsString(m_select, value);
+            return doSet(sourceContext, targetContext, value);
         }
         catch (IException* e)
         {
@@ -328,42 +685,87 @@ public:
         }
         return m_target.str();
     }
-    virtual bool doSet(IXpathContext * xpathContext, IPropertyTree *tree, const char *value)
+    virtual bool doSet(IXpathContext * sourceContext, IXpathContext *targetContext, const char *value)
     {
         StringBuffer xpath;
-        const char *target = getTargetPath(xpathContext, xpath);
-        ensurePTree(tree, target);
-        tree->setProp(target, value);
+        const char *target = getTargetPath(sourceContext, xpath);
+        targetContext->ensureSetValue(target, value, m_required);
         return true;
     }
 };
 
-class CEsdlTransformOperationRenameNode : public CEsdlTransformOperationBase
+class CEsdlTransformOperationNamespace : public CEsdlTransformOperationWithoutChildren
+{
+protected:
+    StringAttr m_prefix;
+    StringAttr m_uri;
+    bool m_current = false;
+
+public:
+    CEsdlTransformOperationNamespace(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
+    {
+        const char *pfx = stag.getValue("prefix");
+        const char *uri = stag.getValue("uri");
+        if (m_traceName.isEmpty())
+            m_traceName.set(pfx);
+
+        if (!pfx && isEmptyString(uri))
+            esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname.str(), "without prefix or uri", m_traceName.str(), !m_ignoreCodingErrors);
+        m_uri.set(uri);
+        m_prefix.set(pfx);
+        m_current = getStartTagValueBool(stag, "current", m_uri.isEmpty());
+    }
+
+    virtual void toDBGLog() override
+    {
+#if defined(_DEBUG)
+        DBGLOG(">%s> %s(prefix('%s'), uri('%s'), current(%d))", m_traceName.str(), m_tagname.str(), m_prefix.str(), m_uri.str(), m_current);
+#endif
+    }
+
+    virtual ~CEsdlTransformOperationNamespace(){}
+
+    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    {
+        targetContext->setLocationNamespace(m_prefix, m_uri, m_current);
+        return false;
+    }
+};
+
+class CEsdlTransformOperationRenameNode : public CEsdlTransformOperationWithoutChildren
 {
 protected:
     StringAttr m_target;
     StringAttr m_new_name;
     Owned<ICompiledXpath> m_xpath_target;
     Owned<ICompiledXpath> m_xpath_new_name;
+    bool m_all = false;
 
 public:
-    CEsdlTransformOperationRenameNode(IPropertyTree *tree, const StringBuffer &prefix) : CEsdlTransformOperationBase(tree, prefix)
+    CEsdlTransformOperationRenameNode(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
     {
-        if (isEmptyString(tree->queryProp("@new_name")) && isEmptyString(tree->queryProp("@xpath_new_name")))
+        const char *new_name = stag.getValue("new_name");
+        const char *xpath_new_name = stag.getValue("xpath_new_name");
+        if (isEmptyString(new_name) && isEmptyString(xpath_new_name))
             esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname.str(), "without new name", m_traceName.str(), !m_ignoreCodingErrors);
+        if (m_traceName.isEmpty())
+            m_traceName.set(new_name ? new_name : xpath_new_name);
 
-        if (isEmptyString(tree->queryProp("@target")) && isEmptyString(tree->queryProp("@xpath_target")))
+        const char *target = stag.getValue("target");
+        const char *xpath_target = stag.getValue("xpath_target");
+        if (isEmptyString(target) && isEmptyString(xpath_target))
             esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname.str(), "without target", m_traceName.str(), !m_ignoreCodingErrors);
 
-        if (tree->hasProp("@xpath_target"))
-            m_xpath_target.setown(compileXpath(tree->queryProp("@xpath_target")));
-        else if (tree->hasProp("@target"))
-            m_target.set(tree->queryProp("@target"));
+        if (!isEmptyString(xpath_target))
+            m_xpath_target.setown(compileXpath(xpath_target));
+        else if (!isEmptyString(target))
+            m_target.set(target);
 
-        if (tree->hasProp("@xpath_new_name"))
-            m_xpath_new_name.setown(compileXpath(tree->queryProp("@xpath_new_name")));
-        else if (tree->hasProp("@new_name"))
-            m_new_name.set(tree->queryProp("@new_name"));
+        if (!isEmptyString(xpath_new_name))
+            m_xpath_new_name.setown(compileXpath(xpath_new_name));
+        else if (!isEmptyString(new_name))
+            m_new_name.set(new_name);
+        m_all = getStartTagValueBool(stag, "all", false);
     }
 
     virtual void toDBGLog() override
@@ -377,7 +779,7 @@ public:
 
     virtual ~CEsdlTransformOperationRenameNode(){}
 
-    virtual bool process(IEsdlScriptContext * context, IPropertyTree *content, IXpathContext * xpathContext) override
+    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
         if ((!m_xpath_target && m_target.isEmpty()) || (!m_xpath_new_name && m_new_name.isEmpty()))
             return false; //only here if "optional" backward compatible support for now (optional syntax errors aren't actually helpful
@@ -385,21 +787,17 @@ public:
         {
             StringBuffer path;
             if (m_xpath_target)
-                xpathContext->evaluateAsString(m_xpath_target, path);
+                sourceContext->evaluateAsString(m_xpath_target, path);
             else
                 path.set(m_target);
 
             StringBuffer name;
             if (m_xpath_new_name)
-                xpathContext->evaluateAsString(m_xpath_new_name, name);
+                sourceContext->evaluateAsString(m_xpath_new_name, name);
             else
                 name.set(m_new_name);
 
-            //make sure we only rename one.  we can add a multi-node support in the future (when we are libxml2 based?)
-            //don't want users to depend on quirky behavior
-            if (content->getCount(path)>1)
-                throw MakeStringException(ESDL_SCRIPT_Error, "EsdlCustomTransform ambiguous xpath %s renaming single node", path.str());
-            content->renameProp(path, name);
+            targetContext->rename(path, name, m_all);
         }
         catch (IException* e)
         {
@@ -417,17 +815,66 @@ public:
     }
 };
 
-class CEsdlTransformOperationRemoveNode : public CEsdlTransformOperationBase
+class CEsdlTransformOperationCopyOf : public CEsdlTransformOperationWithoutChildren
+{
+protected:
+    Owned<ICompiledXpath> m_select;
+    StringAttr m_new_name;
+
+public:
+    CEsdlTransformOperationCopyOf(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
+    {
+        const char *select = stag.getValue("select");
+        if (isEmptyString(select))
+            esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname.str(), "without select", m_traceName.str(), !m_ignoreCodingErrors);
+
+        m_select.setown(compileXpath(select));
+        m_new_name.set(stag.getValue("new_name"));
+    }
+
+    virtual void toDBGLog() override
+    {
+#if defined(_DEBUG)
+        DBGLOG(">%s> %s(%s, new_name('%s'))", m_traceName.str(), m_tagname.str(), m_select->getXpath(), m_new_name.str());
+#endif
+    }
+
+    virtual ~CEsdlTransformOperationCopyOf(){}
+
+    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    {
+        try
+        {
+            targetContext->copyFromPrimaryContext(m_select, m_new_name);
+        }
+        catch (IException* e)
+        {
+            int code = e->errorCode();
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            esdlOperationError(code, m_tagname, msg, m_traceName, !m_ignoreCodingErrors);
+        }
+        catch (...)
+        {
+            esdlOperationError(ESDL_SCRIPT_Error, m_tagname, "unknown exception processing", m_traceName, !m_ignoreCodingErrors);
+        }
+        return false;
+    }
+};
+
+class CEsdlTransformOperationRemoveNode : public CEsdlTransformOperationWithoutChildren
 {
 protected:
     StringAttr m_target;
     Owned<ICompiledXpath> m_xpath_target;
+    bool m_all = false;
 
 public:
-    CEsdlTransformOperationRemoveNode(IPropertyTree *tree, const StringBuffer &prefix) : CEsdlTransformOperationBase(tree, prefix)
+    CEsdlTransformOperationRemoveNode(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
     {
-        const char *target = tree->queryProp("@target");
-        const char *xpath_target = tree->queryProp("@xpath_target");
+        const char *target = stag.getValue("target");
+        const char *xpath_target = stag.getValue("xpath_target");
         if (isEmptyString(target) && isEmptyString(xpath_target))
             esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname.str(), "without target", m_traceName.str(), !m_ignoreCodingErrors);
         if (target && isWildString(target))
@@ -437,6 +884,7 @@ public:
             m_xpath_target.setown(compileXpath(xpath_target));
         else if (!isEmptyString(target))
             m_target.set(target);
+        m_all = getStartTagValueBool(stag, "all", false);
     }
 
     virtual void toDBGLog() override
@@ -449,7 +897,7 @@ public:
 
     virtual ~CEsdlTransformOperationRemoveNode(){}
 
-    virtual bool process(IEsdlScriptContext * context, IPropertyTree *content, IXpathContext * xpathContext) override
+    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
         if ((!m_xpath_target && m_target.isEmpty()))
             return false; //only here if "optional" backward compatible support for now (optional syntax errors aren't actually helpful
@@ -457,15 +905,11 @@ public:
         {
             StringBuffer path;
             if (m_xpath_target)
-                xpathContext->evaluateAsString(m_xpath_target, path);
+                sourceContext->evaluateAsString(m_xpath_target, path);
             else
                 path.set(m_target);
 
-            //make sure we only remove one.  we can add a multi-node support in the future (when we are libxml2 based?)
-            //don't want users to depend on quirky behavior
-            if (content->getCount(path)>1)
-                throw MakeStringException(ESDL_SCRIPT_Error, "EsdlCustomTransform ambiguous xpath %s removing single node", path.str());
-            content->removeProp(path);
+            targetContext->remove(path, m_all);
         }
         catch (IException* e)
         {
@@ -486,16 +930,15 @@ public:
 class CEsdlTransformOperationAppendValue : public CEsdlTransformOperationSetValue
 {
 public:
-    CEsdlTransformOperationAppendValue(IPropertyTree *tree, const StringBuffer &prefix) : CEsdlTransformOperationSetValue(tree, prefix){}
+    CEsdlTransformOperationAppendValue(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationSetValue(xpp, stag, prefix){}
 
     virtual ~CEsdlTransformOperationAppendValue(){}
 
-    virtual bool doSet(IXpathContext * xpathContext, IPropertyTree *tree, const char *value)
+    virtual bool doSet(IXpathContext * sourceContext, IXpathContext *targetContext, const char *value) override
     {
         StringBuffer xpath;
-        const char *target = getTargetPath(xpathContext, xpath);
-        ensurePTree(tree, target);
-        tree->appendProp(target, value);
+        const char *target = getTargetPath(sourceContext, xpath);
+        targetContext->ensureAppendToValue(target, value, m_required);
         return true;
     }
 };
@@ -503,56 +946,52 @@ public:
 class CEsdlTransformOperationAddValue : public CEsdlTransformOperationSetValue
 {
 public:
-    CEsdlTransformOperationAddValue(IPropertyTree *tree, const StringBuffer &prefix) : CEsdlTransformOperationSetValue(tree, prefix){}
+    CEsdlTransformOperationAddValue(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationSetValue(xpp, stag, prefix){}
 
     virtual ~CEsdlTransformOperationAddValue(){}
 
-    virtual bool doSet(IXpathContext * xpathContext, IPropertyTree *tree, const char *value)
+    virtual bool doSet(IXpathContext * sourceContext, IXpathContext *targetContext, const char *value) override
     {
         StringBuffer xpath;
-        const char *target = getTargetPath(xpathContext, xpath);
-        if (tree->getCount(target)==0)
-        {
-            ensurePTree(tree, target);
-            tree->setProp(target, value);
-        }
-        else
-            tree->addProp(target, value);
+        const char *target = getTargetPath(sourceContext, xpath);
+        targetContext->ensureAddValue(target, value, m_required);
         return true;
     }
 };
 
-class CEsdlTransformOperationFail : public CEsdlTransformOperationBase
+class CEsdlTransformOperationFail : public CEsdlTransformOperationWithoutChildren
 {
 protected:
     Owned<ICompiledXpath> m_message;
     Owned<ICompiledXpath> m_code;
 
 public:
-    CEsdlTransformOperationFail(IPropertyTree *tree, const StringBuffer &prefix) : CEsdlTransformOperationBase(tree, prefix)
+    CEsdlTransformOperationFail(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
     {
-        if (m_traceName.isEmpty() && tree->hasProp("@name"))
-            m_traceName.set(tree->queryProp("@name"));
+        if (m_traceName.isEmpty())
+            m_traceName.set(stag.getValue("name"));
 
-        if (isEmptyString(tree->queryProp("@code")))
+        const char *code = stag.getValue("code");
+        const char *message = stag.getValue("message");
+        if (isEmptyString(code))
             esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname, "without code", m_traceName.str(), true);
-        if (isEmptyString(tree->queryProp("@message")))
+        if (isEmptyString(message))
             esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname, "without message", m_traceName.str(), true);
 
-        m_code.setown(compileXpath(tree->queryProp("@code")));
-        m_message.setown(compileXpath(tree->queryProp("@message")));
+        m_code.setown(compileXpath(code));
+        m_message.setown(compileXpath(message));
     }
 
     virtual ~CEsdlTransformOperationFail()
     {
     }
 
-    virtual bool process(IEsdlScriptContext * context, IPropertyTree *content, IXpathContext * xpathContext) override
+    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
-        int code = m_code.get() ? (int) xpathContext->evaluateAsNumber(m_code) : ESDL_SCRIPT_Error;
+        int code = m_code.get() ? (int) sourceContext->evaluateAsNumber(m_code) : ESDL_SCRIPT_Error;
         StringBuffer msg;
         if (m_message.get())
-            xpathContext->evaluateAsString(m_message, msg);
+            sourceContext->evaluateAsString(m_message, msg);
         throw makeStringException(code, msg.str());
         return true; //avoid compilation error
     }
@@ -571,22 +1010,23 @@ private:
     Owned<ICompiledXpath> m_test; //assert is like a conditional fail
 
 public:
-    CEsdlTransformOperationAssert(IPropertyTree *tree, const StringBuffer &prefix) : CEsdlTransformOperationFail(tree, prefix)
+    CEsdlTransformOperationAssert(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationFail(xpp, stag, prefix)
     {
-        if (isEmptyString(tree->queryProp("@test")))
+        const char *test = stag.getValue("test");
+        if (isEmptyString(test))
             esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname, "without test", m_traceName.str(), true);
-        m_test.setown(compileXpath(tree->queryProp("@test")));
+        m_test.setown(compileXpath(test));
     }
 
     virtual ~CEsdlTransformOperationAssert()
     {
     }
 
-    virtual bool process(IEsdlScriptContext * context, IPropertyTree *content, IXpathContext * xpathContext) override
+    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
-        if (m_test && xpathContext->evaluateAsBoolean(m_test))
+        if (m_test && sourceContext->evaluateAsBoolean(m_test))
             return false;
-        return CEsdlTransformOperationFail::process(context, content, xpathContext);
+        return CEsdlTransformOperationFail::process(scriptContext, targetContext, sourceContext);
     }
 
     virtual void toDBGLog() override
@@ -598,91 +1038,31 @@ public:
     }
 };
 
-class CEsdlTransformOperationWithChildren : public CEsdlTransformOperationBase
-{
-protected:
-    IArrayOf<IEsdlTransformOperation> m_children;
-
-public:
-    CEsdlTransformOperationWithChildren(IPropertyTree *tree, const StringBuffer &prefix, bool withVariables) : CEsdlTransformOperationBase(tree, prefix)
-    {
-        if (tree)
-            loadChildren(tree, prefix, withVariables);
-    }
-
-    virtual ~CEsdlTransformOperationWithChildren(){}
-
-    virtual bool processChildren(IEsdlScriptContext * context, IPropertyTree *content, IXpathContext * xpathContext)
-    {
-        bool ret = false;
-        ForEachItemIn(i, m_children)
-        {
-            if (m_children.item(i).process(context, content, xpathContext))
-                ret = true;
-        }
-        return ret;
-    }
-
-    virtual void toDBGLog () override
-    {
-    #if defined(_DEBUG)
-        ForEachItemIn(i, m_children)
-            m_children.item(i).toDBGLog();
-    #endif
-    }
-
-protected:
-    virtual void loadChildren(IPropertyTree * tree, const StringBuffer &prefix, bool withVariables)
-    {
-        if (withVariables)
-        {
-            StringBuffer xpath;
-            Owned<IPropertyTreeIterator> parameters = tree->getElements(makeOperationTagName(xpath, prefix, "param"));
-            ForEach(*parameters)
-                m_children.append(*new CEsdlTransformOperationParameter(&parameters->query(), prefix));
-
-            Owned<IPropertyTreeIterator> variables = tree->getElements(makeOperationTagName(xpath.clear(), prefix, "variable"));
-            ForEach(*variables)
-                m_children.append(*new CEsdlTransformOperationVariable(&variables->query(), prefix));
-        }
-        Owned<IPropertyTreeIterator> children = tree->getElements("*");
-        ForEach(*children)
-        {
-            Owned<IEsdlTransformOperation> operation = createEsdlTransformOperation(&children->query(), prefix);
-            if (operation)
-                m_children.append(*operation.getClear());
-        }
-    }
-};
-
 class CEsdlTransformOperationForEach : public CEsdlTransformOperationWithChildren
 {
 protected:
     Owned<ICompiledXpath> m_select;
 
 public:
-    CEsdlTransformOperationForEach(IPropertyTree *tree, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(tree, prefix, true)
+    CEsdlTransformOperationForEach(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
     {
-        if (tree)
-        {
-            if (isEmptyString(tree->queryProp("@select")))
-                esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname, "without select", !m_ignoreCodingErrors);
-            m_select.setown(compileXpath(tree->queryProp("@select")));
-        }
+        const char *select = stag.getValue("select");
+        if (isEmptyString(select))
+            esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname, "without select", !m_ignoreCodingErrors);
+        m_select.setown(compileXpath(select));
     }
 
     virtual ~CEsdlTransformOperationForEach(){}
 
-    bool process(IEsdlScriptContext * context, IPropertyTree *content, IXpathContext * xpathContext) override
+    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
-        Owned<IXpathContextIterator> contexts = evaluate(xpathContext);
+        Owned<IXpathContextIterator> contexts = evaluate(sourceContext);
         if (!contexts)
             return false;
         if (!contexts->first())
             return false;
-        CXpathContextScope scope(xpathContext, "for-each"); //new variables are scoped
         ForEach(*contexts)
-            processChildren(context, content, &contexts->query());
+            processChildren(scriptContext, targetContext, &contexts->query());
         return true;
     }
 
@@ -727,37 +1107,37 @@ private:
     char m_op = 'i'; //'i'=if, 'w'=when, 'o'=otherwise
 
 public:
-    CEsdlTransformOperationConditional(IPropertyTree * tree, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(tree, prefix, true)
+    CEsdlTransformOperationConditional(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
     {
-        if (tree)
+        const char *op = stag.getLocalName();
+        if (isEmptyString(op)) //should never get here, we checked already, but
+            esdlOperationError(ESDL_SCRIPT_UnknownOperation, m_tagname, "unrecognized conditional missing tag name", !m_ignoreCodingErrors);
+        //m_ignoreCodingErrors means op may still be null
+        else if (!op || streq(op, "if"))
+            m_op = 'i';
+        else if (streq(op, "when"))
+            m_op = 'w';
+        else if (streq(op, "otherwise"))
+            m_op = 'o';
+        else //should never get here either, but
+            esdlOperationError(ESDL_SCRIPT_UnknownOperation, m_tagname, "unrecognized conditional tag name", !m_ignoreCodingErrors);
+
+        if (m_op!='o')
         {
-            const char *op = checkSkipOpPrefix(tree->queryName(), prefix);
-            if (isEmptyString(op))
-                esdlOperationError(ESDL_SCRIPT_UnknownOperation, m_tagname, "unrecognized conditional", !m_ignoreCodingErrors);
-            //m_ignoreCodingErrors means op may still be null
-            if (!op || streq(op, "if"))
-                m_op = 'i';
-            else if (streq(op, "when"))
-                m_op = 'w';
-            else if (streq(op, "otherwise"))
-                m_op = 'o';
-            if (m_op!='o')
-            {
-                if (isEmptyString(tree->queryProp("@test")))
-                    esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname, "without test", !m_ignoreCodingErrors);
-                m_test.setown(compileXpath(tree->queryProp("@test")));
-            }
+            const char *test = stag.getValue("test");
+            if (isEmptyString(test))
+                esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname, "without test", !m_ignoreCodingErrors);
+            m_test.setown(compileXpath(test));
         }
     }
 
     virtual ~CEsdlTransformOperationConditional(){}
 
-    bool process(IEsdlScriptContext * context, IPropertyTree *content, IXpathContext * xpathContext) override
+    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
-        if (!evaluate(xpathContext))
+        if (!evaluate(sourceContext))
             return false;
-        CXpathContextScope scope(xpathContext, m_tagname); //child variables are scoped
-        processChildren(context, content, xpathContext);
+        processChildren(scriptContext, targetContext, sourceContext);
         return true; //just means that evaluation succeeded and attempted to process children
     }
 
@@ -797,31 +1177,65 @@ private:
     }
 };
 
+void loadChooseChildren(IArrayOf<IEsdlTransformOperation> &operations, XmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors)
+{
+    Owned<CEsdlTransformOperationConditional> otherwise;
+
+    int type = 0;
+    while((type = xpp.next()) != XmlPullParser::END_DOCUMENT)
+    {
+        switch(type)
+        {
+            case XmlPullParser::START_TAG:
+            {
+                StartTag opTag;
+                xpp.readStartTag(opTag);
+                const char *op = opTag.getLocalName();
+                if (streq(op, "when"))
+                    operations.append(*new CEsdlTransformOperationConditional(xpp, opTag, prefix));
+                else if (streq(op, "otherwise"))
+                {
+                    if (otherwise)
+                        esdlOperationError(ESDL_SCRIPT_Error, op, "only 1 otherwise per choose statement allowed", ignoreCodingErrors);
+                    otherwise.setown(new CEsdlTransformOperationConditional(xpp, opTag, prefix));
+                }
+                break;
+            }
+            case XmlPullParser::END_TAG:
+            case XmlPullParser::END_DOCUMENT:
+            {
+                if (otherwise)
+                    operations.append(*otherwise.getClear());
+                return;
+            }
+        }
+    }
+}
+
 class CEsdlTransformOperationChoose : public CEsdlTransformOperationWithChildren
 {
 public:
-    CEsdlTransformOperationChoose(IPropertyTree * tree, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(tree, prefix, false)
+    CEsdlTransformOperationChoose(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, false, loadChooseChildren)
     {
-        if (tree)
-        {
-            loadWhens(tree, prefix);
-            loadOtherwise(tree, prefix);
-        }
     }
 
     virtual ~CEsdlTransformOperationChoose(){}
 
-    bool process(IEsdlScriptContext * context, IPropertyTree *content, IXpathContext * xpathContext) override
+    bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
-        return processChildren(context, content, xpathContext);
+        return processChildren(scriptContext, targetContext, sourceContext);
     }
 
-    virtual bool processChildren(IEsdlScriptContext * context, IPropertyTree *content, IXpathContext * xpathContext) override
+    virtual bool processChildren(IEsdlScriptContext * scriptContext, IXpathContext *targetContext, IXpathContext * sourceContext) override
     {
-        ForEachItemIn(i, m_children)
+        if (m_children.length())
         {
-            if (m_children.item(i).process(context, content, xpathContext))
-                return true;
+            CXpathContextScope scope(sourceContext, "choose");
+            ForEachItemIn(i, m_children)
+            {
+                if (m_children.item(i).process(scriptContext, targetContext, sourceContext))
+                    return true;
+            }
         }
         return false;
     }
@@ -834,62 +1248,246 @@ public:
         DBGLOG (">>>>>>>>>>> %s >>>>>>>>>>", m_tagname.str());
     #endif
     }
+};
 
+class CEsdlTransformOperationTarget : public CEsdlTransformOperationWithChildren
+{
 protected:
-    void loadWhens(IPropertyTree * tree, const StringBuffer &prefix)
+    Owned<ICompiledXpath> m_xpath;
+    bool m_required = true;
+    bool m_ensure = false;
+
+public:
+    CEsdlTransformOperationTarget(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
     {
-        StringBuffer xpath;
-        Owned<IPropertyTreeIterator> children = tree->getElements(makeOperationTagName(xpath, prefix, "when"));
-        ForEach(*children)
-            m_children.append(*new CEsdlTransformOperationConditional(&children->query(), prefix));
+        const char *xpath = stag.getValue("xpath");
+        if (isEmptyString(xpath))
+            esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, "target", "without xpath parameter", m_traceName.str(), !m_ignoreCodingErrors);
+
+        m_xpath.setown(compileXpath(xpath));
+        m_required = getStartTagValueBool(stag, "required", m_required);
     }
 
-    void loadOtherwise(IPropertyTree * tree, const StringBuffer &prefix)
+    virtual ~CEsdlTransformOperationTarget(){}
+
+    bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
     {
-        StringBuffer xpath;
-        IPropertyTree * otherwise = tree->queryPropTree(makeOperationTagName(xpath, prefix, "otherwise"));
-        if (!otherwise)
-            return;
-        m_children.append(*new CEsdlTransformOperationConditional(otherwise, prefix));
+        CXpathContextLocation location(targetContext);
+        bool success = false;
+        if (m_ensure)
+            success = targetContext->ensureLocation(m_xpath->getXpath(), m_required);
+        else
+            success = targetContext->setLocation(m_xpath, m_required);
+
+        if (success)
+            return processChildren(scriptContext, targetContext, sourceContext);
+        return false;
     }
-    virtual void loadChildren(IPropertyTree * tree, const StringBuffer &prefix, bool withVariables) override
+
+    virtual void toDBGLog () override
     {
-        loadWhens(tree, prefix);
-        loadOtherwise(tree, prefix);
+    #if defined(_DEBUG)
+        DBGLOG(">>>%s> %s(%s)>>>>", m_traceName.str(), m_tagname.str(), m_xpath.get() ? m_xpath->getXpath() : "");
+        CEsdlTransformOperationWithChildren::toDBGLog();
+        DBGLOG (">>>>>>>>>>> %s >>>>>>>>>>", m_tagname.str());
+    #endif
     }
 };
 
-IEsdlTransformOperation *createEsdlTransformOperation(IPropertyTree *element, const StringBuffer &prefix)
+class CEsdlTransformOperationIfTarget : public CEsdlTransformOperationTarget
 {
-    const char *op = checkSkipOpPrefix(element->queryName(), prefix);
+public:
+    CEsdlTransformOperationIfTarget(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationTarget(xpp, stag, prefix)
+    {
+        m_required = false;
+    }
+
+    virtual ~CEsdlTransformOperationIfTarget(){}
+};
+
+class CEsdlTransformOperationEnsureTarget : public CEsdlTransformOperationTarget
+{
+public:
+    CEsdlTransformOperationEnsureTarget(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationTarget(xpp, stag, prefix)
+    {
+        m_ensure = true;
+    }
+
+    virtual ~CEsdlTransformOperationEnsureTarget(){}
+};
+
+class CEsdlTransformOperationSource : public CEsdlTransformOperationWithChildren
+{
+protected:
+    Owned<ICompiledXpath> m_xpath;
+    bool m_required = true;
+
+public:
+    CEsdlTransformOperationSource(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, false, nullptr)
+    {
+        const char *xpath = stag.getValue("xpath");
+        if (isEmptyString(xpath))
+            esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, "target", "without xpath parameter", m_traceName.str(), !m_ignoreCodingErrors);
+
+        m_xpath.setown(compileXpath(xpath));
+        m_required = getStartTagValueBool(stag, "required", m_required);
+    }
+
+    virtual ~CEsdlTransformOperationSource(){}
+
+    bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    {
+        CXpathContextLocation location(sourceContext);
+        if (sourceContext->setLocation(m_xpath, m_required))
+            return processChildren(scriptContext, targetContext, sourceContext);
+        return false;
+    }
+
+    virtual void toDBGLog () override
+    {
+    #if defined(_DEBUG)
+        DBGLOG(">>>%s> %s(%s)>>>>", m_traceName.str(), m_tagname.str(), m_xpath.get() ? m_xpath->getXpath() : "");
+        CEsdlTransformOperationWithChildren::toDBGLog();
+        DBGLOG (">>>>>>>>>>> %s >>>>>>>>>>", m_tagname.str());
+    #endif
+    }
+};
+
+class CEsdlTransformOperationIfSource : public CEsdlTransformOperationSource
+{
+public:
+    CEsdlTransformOperationIfSource(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationSource(xpp, stag, prefix)
+    {
+        m_required = false;
+    }
+
+    virtual ~CEsdlTransformOperationIfSource(){}
+};
+
+
+class CEsdlTransformOperationElement : public CEsdlTransformOperationWithChildren
+{
+protected:
+    StringBuffer m_name;
+    StringBuffer m_nsuri;
+
+public:
+    CEsdlTransformOperationElement(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
+    {
+        m_name.set(stag.getValue("name"));
+        if (m_name.isEmpty())
+            esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, "element", "without name parameter", m_traceName.str(), !m_ignoreCodingErrors);
+        if (m_traceName.isEmpty())
+            m_traceName.set(m_name);
+
+        if (!validateXMLTag(m_name))
+        {
+            VStringBuffer msg("with invalid element name '%s'", m_name.str());
+            esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, "element", msg.str(), m_traceName.str(), !m_ignoreCodingErrors);
+        }
+
+        m_nsuri.set(stag.getValue("namespace"));
+    }
+
+    virtual ~CEsdlTransformOperationElement(){}
+
+    bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    {
+        CXpathContextLocation location(targetContext);
+        targetContext->addElementToLocation(m_name);
+        return processChildren(scriptContext, targetContext, sourceContext);
+    }
+
+    virtual void toDBGLog () override
+    {
+    #if defined(_DEBUG)
+        DBGLOG (">>>>>>>>>>> %s (%s, nsuri(%s)) >>>>>>>>>>", m_tagname.str(), m_name.str(), m_nsuri.str());
+        CEsdlTransformOperationWithChildren::toDBGLog();
+        DBGLOG (">>>>>>>>>>> %s >>>>>>>>>>", m_tagname.str());
+    #endif
+    }
+};
+
+void createEsdlTransformOperations(IArrayOf<IEsdlTransformOperation> &operations, XmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors)
+{
+    int type = 0;
+    while((type = xpp.next()) != XmlPullParser::END_DOCUMENT)
+    {
+        switch(type)
+        {
+            case XmlPullParser::START_TAG:
+            {
+                Owned<IEsdlTransformOperation> operation = createEsdlTransformOperation(xpp, prefix, withVariables, ignoreCodingErrors);
+                if (operation)
+                    operations.append(*operation.getClear());
+                break;
+            }
+            case XmlPullParser::END_TAG:
+                return;
+            case XmlPullParser::END_DOCUMENT:
+                return;
+        }
+    }
+}
+
+IEsdlTransformOperation *createEsdlTransformOperation(XmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors)
+{
+    StartTag stag;
+    xpp.readStartTag(stag);
+    const char *op = stag.getLocalName();
     if (isEmptyString(op))
         return nullptr;
+    if (withVariables)
+    {
+        if (streq(op, "variable"))
+            return new CEsdlTransformOperationVariable(xpp, stag, prefix);
+        if (streq(op, "param"))
+            return new CEsdlTransformOperationParameter(xpp, stag, prefix);
+    }
     if (streq(op, "choose"))
-        return new CEsdlTransformOperationChoose(element, prefix);
+        return new CEsdlTransformOperationChoose(xpp, stag, prefix);
     if (streq(op, "for-each"))
-        return new CEsdlTransformOperationForEach(element, prefix);
+        return new CEsdlTransformOperationForEach(xpp, stag, prefix);
     if (streq(op, "if"))
-        return new CEsdlTransformOperationConditional(element, prefix);
+        return new CEsdlTransformOperationConditional(xpp, stag, prefix);
     if (streq(op, "set-value") || streq(op, "SetValue"))
-        return new CEsdlTransformOperationSetValue(element, prefix);
+        return new CEsdlTransformOperationSetValue(xpp, stag, prefix);
     if (streq(op, "append-to-value") || streq(op, "AppendValue"))
-        return new CEsdlTransformOperationAppendValue(element, prefix);
+        return new CEsdlTransformOperationAppendValue(xpp, stag, prefix);
     if (streq(op, "add-value"))
-        return new CEsdlTransformOperationAddValue(element, prefix);
+        return new CEsdlTransformOperationAddValue(xpp, stag, prefix);
     if (streq(op, "fail"))
-        return new CEsdlTransformOperationFail(element, prefix);
+        return new CEsdlTransformOperationFail(xpp, stag, prefix);
     if (streq(op, "assert"))
-        return new CEsdlTransformOperationAssert(element, prefix);
+        return new CEsdlTransformOperationAssert(xpp, stag, prefix);
     if (streq(op, "store-value"))
-        return new CEsdlTransformOperationStoreValue(element, prefix);
+        return new CEsdlTransformOperationStoreValue(xpp, stag, prefix);
     if (streq(op, "set-log-profile"))
-        return new CEsdlTransformOperationSetLogProfile(element, prefix);
+        return new CEsdlTransformOperationSetLogProfile(xpp, stag, prefix);
     if (streq(op, "set-log-option"))
-        return new CEsdlTransformOperationSetLogOption(element, prefix);
+        return new CEsdlTransformOperationSetLogOption(xpp, stag, prefix);
     if (streq(op, "rename-node"))
-        return new CEsdlTransformOperationRenameNode(element, prefix);
+        return new CEsdlTransformOperationRenameNode(xpp, stag, prefix);
     if (streq(op, "remove-node"))
-        return new CEsdlTransformOperationRemoveNode(element, prefix);
+        return new CEsdlTransformOperationRemoveNode(xpp, stag, prefix);
+    if (streq(op, "source"))
+        return new CEsdlTransformOperationSource(xpp, stag, prefix);
+    if (streq(op, "if-source"))
+        return new CEsdlTransformOperationIfSource(xpp, stag, prefix);
+    if (streq(op, "target"))
+        return new CEsdlTransformOperationTarget(xpp, stag, prefix);
+    if (streq(op, "if-target"))
+        return new CEsdlTransformOperationIfTarget(xpp, stag, prefix);
+    if (streq(op, "ensure-target"))
+        return new CEsdlTransformOperationEnsureTarget(xpp, stag, prefix);
+    if (streq(op, "element"))
+        return new CEsdlTransformOperationElement(xpp, stag, prefix);
+    if (streq(op, "copy-of"))
+        return new CEsdlTransformOperationCopyOf(xpp, stag, prefix);
+    if (streq(op, "namespace"))
+        return new CEsdlTransformOperationNamespace(xpp, stag, prefix);
+    if (streq(op, "http-post-xml"))
+        return new CEsdlTransformOperationHttpPostXml(xpp, stag, prefix);
     return nullptr;
 }
 
@@ -903,118 +1501,58 @@ static inline void replaceVariable(StringBuffer &s, IXpathContext *xpathContext,
         s.replaceString(match, val);
     }
 }
-static IPropertyTree *getTargetPTree(IPropertyTree *tree, IXpathContext *xpathContext, const char *target)
-{
-    StringBuffer xpath(target);
-    if (xpath.length())
-    {
-        //we can use real xpath processing in the future, for now simple substitution is fine
-        replaceVariable(xpath, xpathContext, "query");
-        replaceVariable(xpath, xpathContext, "method");
-        replaceVariable(xpath, xpathContext, "service");
-        replaceVariable(xpath, xpathContext, "request");
-
-        IPropertyTree *child = tree->queryPropTree(xpath.str());  //get pointer to the write-able area
-        if (!child)
-            throw MakeStringException(ESDL_SCRIPT_Error, "EsdlCustomTransform error getting target xpath %s", xpath.str());
-        return child;
-    }
-    return tree;
-}
-static IPropertyTree *getOperationTargetPTree(MapStringToMyClass<IPropertyTree> &treeMap, IPropertyTree *currentTree, IEsdlTransformOperation &operation, IPropertyTree *tree, IXpathContext *xpathContext, const char *target)
-{
-    const char *mergedTarget = operation.queryMergedTarget();
-    if (isEmptyString(mergedTarget) || streq(mergedTarget, target))
-        return currentTree;
-    IPropertyTree *opTree = treeMap.getValue(mergedTarget);
-    if (opTree)
-        return opTree;
-    opTree = getTargetPTree(tree, xpathContext, mergedTarget);
-    if (opTree)
-        treeMap.setValue(mergedTarget, opTree);
-    return opTree;
-}
 
 class CEsdlCustomTransform : public CInterfaceOf<IEsdlCustomTransform>
 {
 private:
-    IArrayOf<IEsdlTransformOperation> m_variables; //keep separate and only at top level for now
     IArrayOf<IEsdlTransformOperation> m_operations;
     Owned<IProperties> namespaces = createProperties(false);
     StringAttr m_name;
     StringAttr m_target;
+    StringAttr m_source;
     StringBuffer m_prefix;
 
 public:
     CEsdlCustomTransform(){}
-    void verifyPrefixDeclared(IPropertyTree &tree, const char *prefix)
+
+    CEsdlCustomTransform(XmlPullParser &xpp, StartTag &stag, const char *ns_prefix) : m_prefix(ns_prefix)
     {
-        StringBuffer attpath("@xmlns");
-        if (!isEmptyString(prefix))
-            attpath.append(':').append(prefix);
-        const char *uri = tree.queryProp(attpath.str());
-        if (!uri || !streq(uri, "urn:hpcc:esdl:script"))
-            throw MakeStringException(ESDL_SCRIPT_Error, "Undeclared script xmlns prefix %s", isEmptyString(prefix) ? "<default>" : prefix);
-    }
-    CEsdlCustomTransform(IPropertyTree &tree, const char *ns_prefix) : m_prefix(ns_prefix)
-    {
-        if (m_prefix.length())
-            m_prefix.append(':');
-        else
+        const char *tag = stag.getLocalName();
+
+        m_name.set(stag.getValue("name"));
+        m_target.set(stag.getValue("target"));
+        m_source.set(stag.getValue("source"));
+
+        DBGLOG("Compiling ESDL Transform: '%s'", m_name.str());
+
+        map< string, const SXT_CHAR* >::iterator it = xpp.getNsBegin();
+        while (it != xpp.getNsEnd())
         {
-            const char *tag = tree.queryName();
-            if (!tag)
-                m_prefix.set("xsdl:");
-            else
+            if (it->first.compare("xml")!=0)
+                namespaces->setProp(it->first.c_str(), it->second);
+            it++;
+        }
+
+        int type = 0;
+        while((type = xpp.next()) != XmlPullParser::END_DOCUMENT)
+        {
+            switch(type)
             {
-                const char *colon = strchr(tag, ':');
-                if (!colon)
-                    verifyPrefixDeclared(tree, nullptr);
-                else
+                case XmlPullParser::START_TAG:
                 {
-                    if (colon == tag)
-                        throw MakeStringException(ESDL_SCRIPT_Error, "Tag shouldn't start with colon %s", tag);
-                    m_prefix.append(colon-tag, tag);
-                    if (!streq(m_prefix, "xsdl"))
-                        verifyPrefixDeclared(tree, m_prefix);
-                    //add back the colon for easy comparison
-                    m_prefix.append(':');
+                    Owned<IEsdlTransformOperation> operation = createEsdlTransformOperation(xpp, m_prefix, true, false);
+                    if (operation)
+                        m_operations.append(*operation.getClear());
+                    break;
                 }
+                case XmlPullParser::END_TAG:
+                case XmlPullParser::END_DOCUMENT:
+                    return;
             }
         }
-
-        m_name.set(tree.queryProp("@name"));
-        m_target.set(tree.queryProp("@target"));
-
-        DBGLOG("Compiling custom ESDL Transform: '%s'", m_name.str());
-
-        Owned<IAttributeIterator> attributes = tree.getAttributes();
-        ForEach(*attributes)
-        {
-            const char *name = attributes->queryName();
-            if (strncmp(name, "@xmlns:", 7)==0)
-                namespaces->setProp(name+7, attributes->queryValue());
-        }
-
-        StringBuffer xpath;
-        Owned<IPropertyTreeIterator> parameters = tree.getElements(makeOperationTagName(xpath, m_prefix, "param"));
-        ForEach(*parameters)
-            m_variables.append(*new CEsdlTransformOperationParameter(&parameters->query(), m_prefix));
-
-        Owned<IPropertyTreeIterator> variables = tree.getElements(makeOperationTagName(xpath.clear(), m_prefix, "variable"));
-        ForEach(*variables)
-            m_variables.append(*new CEsdlTransformOperationVariable(&variables->query(), m_prefix));
-
-        Owned<IPropertyTreeIterator> children = tree.getElements("*");
-        ForEach(*children)
-        {
-            Owned<IEsdlTransformOperation> operation = createEsdlTransformOperation(&children->query(), m_prefix);
-            if (operation)
-                m_operations.append(*operation.getClear());
-        }
     }
 
-    virtual void appendEsdlURIPrefixes(StringArray &prefixes) override
+    virtual void appendPrefixes(StringArray &prefixes) override
     {
         if (m_prefix.length())
         {
@@ -1036,47 +1574,76 @@ public:
 
     virtual ~CEsdlCustomTransform(){}
 
-    void processTransformImpl(IEsdlScriptContext * context, IPropertyTree *theroot, IXpathContext *xpathContext, const char *target)
+    void processTransformImpl(IEsdlScriptContext * scriptContext, const char *srcSection, const char *tgtSection, IXpathContext *sourceContext, const char *target) override
     {
+        if (m_target.length())
+            target = m_target.str();
+        Owned<IXpathContext> targetXpath = nullptr;
+        if (isEmptyString(tgtSection))
+            targetXpath.setown(scriptContext->createXpathContext(sourceContext, srcSection, true));
+        else
+            targetXpath.setown(scriptContext->getCopiedSectionXpathContext(sourceContext, tgtSection, srcSection, true));
+
         Owned<IProperties> savedNamespaces = createProperties(false);
         Owned<IPropertyIterator> ns = namespaces->getIterator();
         ForEach(*ns)
         {
             const char *prefix = ns->getPropKey();
-            const char *existing = xpathContext->queryNamespace(prefix);
+            const char *existing = sourceContext->queryNamespace(prefix);
             savedNamespaces->setProp(prefix, isEmptyString(existing) ? "" : existing);
-            xpathContext->registerNamespace(prefix, namespaces->queryProp(prefix));
+            sourceContext->registerNamespace(prefix, namespaces->queryProp(prefix));
+            targetXpath->registerNamespace(prefix, namespaces->queryProp(prefix));
         }
-        CXpathContextScope scope(xpathContext, "transform", savedNamespaces);
-        if (m_target.length())
-            target = m_target.str();
-        MapStringToMyClass<IPropertyTree> treeMap; //cache trees because when there are merged targets they are likely to repeat
-        IPropertyTree *txTree = getTargetPTree(theroot, xpathContext, target);
-        treeMap.setValue(target, txTree);
-        ForEachItemIn(v, m_variables)
-            m_variables.item(v).process(context, txTree, xpathContext);
+        CXpathContextScope scope(sourceContext, "transform", savedNamespaces);
+        if (!isEmptyString(target) && !streq(target, "."))
+            targetXpath->setLocation(target, true);
+        if (!m_source.isEmpty() && !streq(m_source, "."))
+            sourceContext->setLocation(m_source, true);
         ForEachItemIn(i, m_operations)
-        {
-            IPropertyTree *opTree = getOperationTargetPTree(treeMap, txTree, m_operations.item(i), theroot, xpathContext, target);
-            m_operations.item(i).process(context, opTree, xpathContext);
-        }
+            m_operations.item(i).process(scriptContext, targetXpath, sourceContext);
+        scriptContext->cleanupBetweenScripts();
     }
 
-    void processTransform(IEsdlScriptContext * scriptCtx, const char *srcSection, const char *tgtSection) override
+    void processTransform(IEsdlScriptContext * scriptCtx, const char *srcSection, const char *tgtSection) override;
+};
+
+class CEsdlCustomTransformWrapper : public CInterfaceOf<IEsdlTransformSet>
+{
+    Linked<CEsdlCustomTransform> crt;
+public:
+    CEsdlCustomTransformWrapper(CEsdlCustomTransform *t) : crt(t) {}
+    void processTransformImpl(IEsdlScriptContext * context, const char *srcSection, const char *tgtSection, IXpathContext *sourceContext, const char *target) override
     {
-        processServiceAndMethodTransforms(scriptCtx, {static_cast<IEsdlCustomTransform*>(this)}, srcSection, tgtSection);
+        crt->processTransformImpl(context, srcSection, tgtSection, sourceContext, target);
+    }
+    void appendPrefixes(StringArray &prefixes) override
+    {
+        crt->appendPrefixes(prefixes);
+    }
+    aindex_t length() override
+    {
+        return crt ? 1 : 0;
     }
 };
 
-void processServiceAndMethodTransforms(IEsdlScriptContext * scriptCtx, std::initializer_list<IEsdlCustomTransform *> const &transforms, const char *srcSection, const char *tgtSection)
+void CEsdlCustomTransform::processTransform(IEsdlScriptContext * scriptCtx, const char *srcSection, const char *tgtSection)
+{
+    CEsdlCustomTransformWrapper tfw(this);
+    processServiceAndMethodTransforms(scriptCtx, {static_cast<IEsdlTransformSet*>(&tfw)}, srcSection, tgtSection);
+}
+
+void processServiceAndMethodTransforms(IEsdlScriptContext * scriptCtx, std::initializer_list<IEsdlTransformSet *> const &transforms, const char *srcSection, const char *tgtSection)
 {
     LogLevel level = LogMin;
     if (!scriptCtx)
         return;
     if (!transforms.size())
         return;
-    if (isEmptyString(srcSection)||isEmptyString(tgtSection))
+    if (isEmptyString(srcSection))
+    {
+      if (!isEmptyString(tgtSection))
         return;
+    }
     level = (LogLevel) scriptCtx->getXPathInt64("target/*/@traceLevel", level);
 
     const char *method = scriptCtx->queryAttribute(ESDLScriptCtxSection_ESDLInfo, "method");
@@ -1103,25 +1670,25 @@ void processServiceAndMethodTransforms(IEsdlScriptContext * scriptCtx, std::init
     }
 
     bool strictParams = scriptCtx->getXPathBool("config/*/@strictParams", false);
-    Owned<IXpathContext> xpathContext = scriptCtx->createXpathContext(srcSection, strictParams);
+    Owned<IXpathContext> sourceContext = scriptCtx->createXpathContext(nullptr, srcSection, strictParams);
 
     StringArray prefixes;
-    for ( IEsdlCustomTransform * const & item : transforms)
+    for ( IEsdlTransformSet * const & item : transforms)
     {
         if (item)
-            item->appendEsdlURIPrefixes(prefixes);
+            item->appendPrefixes(prefixes);
     }
 
-    registerEsdlXPathExtensions(xpathContext, scriptCtx, prefixes);
+    registerEsdlXPathExtensions(sourceContext, scriptCtx, prefixes);
 
     VStringBuffer ver("%g", context->getClientVersion());
-    if(!xpathContext->addVariable("clientversion", ver.str()))
+    if(!sourceContext->addVariable("clientversion", ver.str()))
         OERRLOG("Could not set ESDL Script variable: clientversion:'%s'", ver.str());
 
     //in case transform wants to make use of these values:
     //make them few well known values variables rather than inputs so they are automatically available
     StringBuffer temp;
-    xpathContext->addVariable("query", scriptCtx->getXPathString("target/*/@queryname", temp));
+    sourceContext->addVariable("query", scriptCtx->getXPathString("target/*/@queryname", temp));
 
     ISecUser *user = context->queryUser();
     if (user)
@@ -1148,60 +1715,250 @@ void processServiceAndMethodTransforms(IEsdlScriptContext * scriptCtx, std::init
         {
             const char *name = userPropIt->getPropKey();
             if (name && *name)
-                xpathContext->addInputValue(name, user->getProperty(name));
+                sourceContext->addInputValue(name, user->getProperty(name));
         }
 
         auto it = statusLabels.find(user->getStatus());
 
-        xpathContext->addInputValue("espUserName", user->getName());
-        xpathContext->addInputValue("espUserRealm", user->getRealm() ? user->getRealm() : "");
-        xpathContext->addInputValue("espUserPeer", user->getPeer() ? user->getPeer() : "");
-        xpathContext->addInputValue("espUserStatus", VStringBuffer("%d", int(user->getStatus())));
+        sourceContext->addInputValue("espUserName", user->getName());
+        sourceContext->addInputValue("espUserRealm", user->getRealm() ? user->getRealm() : "");
+        sourceContext->addInputValue("espUserPeer", user->getPeer() ? user->getPeer() : "");
+        sourceContext->addInputValue("espUserStatus", VStringBuffer("%d", int(user->getStatus())));
         if (it != statusLabels.end())
-            xpathContext->addInputValue("espUserStatusString", it->second);
+            sourceContext->addInputValue("espUserStatusString", it->second);
         else
             throw MakeStringException(ESDL_SCRIPT_Error, "encountered unexpected secure user status (%d) while processing transform", int(user->getStatus()));
     }
     else
     {
         // enable transforms to distinguish secure versus insecure requests
-        xpathContext->addInputValue("espUserName", "");
-        xpathContext->addInputValue("espUserRealm", "");
-        xpathContext->addInputValue("espUserPeer", "");
-        xpathContext->addInputValue("espUserStatus", "");
-        xpathContext->addInputValue("espUserStatusString", "");
+        sourceContext->addInputValue("espUserName", "");
+        sourceContext->addInputValue("espUserRealm", "");
+        sourceContext->addInputValue("espUserPeer", "");
+        sourceContext->addInputValue("espUserStatus", "");
+        sourceContext->addInputValue("espUserStatusString", "");
     }
-
-    //the need for this will go away when the right hand side is libxml2 based
-    StringBuffer content;
-    scriptCtx->toXML(content, srcSection, false);
-
-    Owned<IPropertyTree> theroot = createPTreeFromXMLString(content.str());
 
     StringBuffer defaultTarget; //This default gives us backward compatibility with only being able to write to the actual request
     StringBuffer queryName;
     const char *tgtQueryName = scriptCtx->getXPathString("target/*/@queryname", queryName);
-    defaultTarget.setf("soap:Body/%s/%s", tgtQueryName ? tgtQueryName : method, reqtype);
+    if (!isEmptyString(srcSection) && streq(srcSection, ESDLScriptCtxSection_ESDLRequest))
+        defaultTarget.setf("soap:Body/%s/%s", tgtQueryName ? tgtQueryName : method, reqtype);
 
     for ( auto&& item : transforms)
     {
         if (item)
         {
-            CEsdlCustomTransform *transform = static_cast<CEsdlCustomTransform*>(item);
-            transform->processTransformImpl(scriptCtx, theroot, xpathContext, defaultTarget);
+            item->processTransformImpl(scriptCtx, srcSection, tgtSection, sourceContext, defaultTarget);
         }
     }
 
-    scriptCtx->setContent(tgtSection, theroot);
-
     if (level >= LogMax)
     {
-        scriptCtx->toXML(content.clear());
+        StringBuffer content;
+        scriptCtx->toXML(content);
         DBGLOG(1,"Entire script context after transforms: %s", content.str());
     }
 }
 
-IEsdlCustomTransform *createEsdlCustomTransform(IPropertyTree &tree, const char *ns_prefix)
+IEsdlCustomTransform *createEsdlCustomTransform(const char *scriptXml, const char *ns_prefix)
 {
-    return new CEsdlCustomTransform(tree, ns_prefix);
+    if (isEmptyString(scriptXml))
+        return nullptr;
+    std::unique_ptr<XmlPullParser> xpp(new XmlPullParser());
+    int bufSize = strlen(scriptXml);
+    xpp->setSupportNamespaces(true);
+    xpp->setInput(scriptXml, bufSize);
+
+    int type;
+    StartTag stag;
+    EndTag etag;
+
+
+    while((type = xpp->next()) != XmlPullParser::END_DOCUMENT)
+    {
+        if(type == XmlPullParser::START_TAG)
+        {
+            StartTag stag;
+            xpp->readStartTag(stag);
+            if (strieq(stag.getLocalName(), "Transforms")) //allow common mistake,.. starting with the outer tag, not the script
+                continue;
+            return new CEsdlCustomTransform(*xpp, stag, ns_prefix);
+        }
+    }
+    return nullptr;
+}
+
+class CEsdlTransformSet : public CInterfaceOf<IEsdlTransformSet>
+{
+        IArrayOf<CEsdlCustomTransform> transforms;
+
+public:
+    CEsdlTransformSet()
+    {
+    }
+    virtual void appendPrefixes(StringArray &prefixes) override
+    {
+        ForEachItemIn(i, transforms)
+            transforms.item(i).appendPrefixes(prefixes);
+    }
+
+    virtual void processTransformImpl(IEsdlScriptContext * scriptContext, const char *srcSection, const char *tgtSection, IXpathContext *sourceContext, const char *target) override
+    {
+        ForEachItemIn(i, transforms)
+            transforms.item(i).processTransformImpl(scriptContext, srcSection, tgtSection, sourceContext, target);
+    }
+    virtual void add(XmlPullParser &xpp, StartTag &stag)
+    {
+        transforms.append(*new CEsdlCustomTransform(xpp, stag, nullptr));
+    }
+    virtual aindex_t length() override
+    {
+        return transforms.length();
+    }
+};
+
+class CEsdlTransformEntryPointMap : public CInterfaceOf<IEsdlTransformEntryPointMap>
+{
+    MapStringToMyClass<CEsdlTransformSet> map;
+
+public:
+    CEsdlTransformEntryPointMap()
+    {
+    }
+
+    virtual void addChild(XmlPullParser &xpp, StartTag &childTag, bool &foundNonLegacyTransforms)
+    {
+        const char *tagname = childTag.getLocalName();
+        if (streq("Scripts", tagname) || streq("Transforms", tagname)) //allow nesting of root structure
+            add(xpp, childTag, foundNonLegacyTransforms);
+        else
+        {
+            if (streq(tagname, ESDLScriptEntryPoint_Legacy))
+                tagname = ESDLScriptEntryPoint_BackendRequest;
+            else
+                foundNonLegacyTransforms = true;
+            CEsdlTransformSet *set = map.getValue(tagname);
+            if (set)
+                set->add(xpp, childTag);
+            else
+            {
+                Owned<CEsdlTransformSet> set = new CEsdlTransformSet();
+                map.setValue(tagname, set);
+                set->add(xpp, childTag);
+            }
+        }
+    }
+
+    virtual void add(XmlPullParser &xpp, StartTag &stag, bool &foundNonLegacyTransforms)
+    {
+        int type;
+        StartTag childTag;
+        while((type = xpp.next()) != XmlPullParser::END_DOCUMENT)
+        {
+            switch (type)
+            {
+                case XmlPullParser::START_TAG:
+                {
+                    xpp.readStartTag(childTag);
+                    const char *tagname = childTag.getLocalName();
+                    if (streq("Scripts", tagname) || streq("Transforms", tagname)) //allow nesting of container structures for maximum compatability
+                        add(xpp, childTag, foundNonLegacyTransforms);
+                    else
+                        addChild(xpp, childTag,foundNonLegacyTransforms);
+                    break;
+                }
+                case XmlPullParser::END_TAG:
+                    return;
+            }
+        }
+    }
+    void add(const char *scriptXml, bool &foundNonLegacyTransforms)
+    {
+        if (isEmptyString(scriptXml))
+            return;
+        std::unique_ptr<XmlPullParser> xpp(new XmlPullParser());
+        int bufSize = strlen(scriptXml);
+        xpp->setSupportNamespaces(true);
+        xpp->setInput(scriptXml, bufSize);
+
+        int type;
+        StartTag stag;
+        while((type = xpp->next()) != XmlPullParser::END_DOCUMENT)
+        {
+            switch (type)
+            {
+                case XmlPullParser::START_TAG:
+                {
+                    xpp->readStartTag(stag);
+                    addChild(*xpp, stag, foundNonLegacyTransforms);
+                    break;
+                }
+            }
+        }
+    }
+
+    virtual IEsdlTransformSet *queryEntryPoint(const char *name) override
+    {
+        return map.getValue(name);
+    }
+    virtual void removeEntryPoint(const char *name) override
+    {
+        map.remove(name);
+    }
+};
+
+
+class CEsdlTransformMethodMap : public CInterfaceOf<IEsdlTransformMethodMap>
+{
+    MapStringToMyClass<CEsdlTransformEntryPointMap> map;
+
+public:
+    CEsdlTransformMethodMap()
+    {
+    }
+
+    virtual IEsdlTransformEntryPointMap *queryMethod(const char *name) override
+    {
+        return map.getValue(name);
+    }
+
+    virtual IEsdlTransformSet *queryMethodEntryPoint(const char *method, const char *name) override
+    {
+        IEsdlTransformEntryPointMap *epm = queryMethod(method);
+        if (epm)
+            return epm->queryEntryPoint(name);
+        return nullptr;
+    }
+
+    virtual void removeMethod(const char *name) override
+    {
+        map.remove(name);
+    }
+    virtual void addMethodTransforms(const char *method, const char *scriptXml, bool &foundNonLegacyTransforms) override
+    {
+        try
+        {
+            CEsdlTransformEntryPointMap *entry = map.getValue(method ? method : "");
+            if (entry)
+                entry->add(scriptXml, foundNonLegacyTransforms);
+            else
+            {
+                Owned<CEsdlTransformEntryPointMap> epm = new CEsdlTransformEntryPointMap();
+                epm->add(scriptXml, foundNonLegacyTransforms);
+                map.setValue(method, epm.get());
+            }
+        }
+        catch (XmlPullParserException& xppe)
+        {
+            VStringBuffer msg("Error parsing ESDL transform script (method '%s', line %d, col %d) %s", method ? method : "", xppe.getLineNumber(), xppe.getColumnNumber(), xppe.what());
+            IERRLOG("%s", msg.str());
+            throw MakeStringException(ESDL_SCRIPT_Error, "%s", msg.str());
+        }
+    }
+};
+
+esdl_decl IEsdlTransformMethodMap *createEsdlTransformMethodMap()
+{
+    return new CEsdlTransformMethodMap();
 }

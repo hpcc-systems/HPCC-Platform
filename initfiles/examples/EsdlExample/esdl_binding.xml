@@ -1,29 +1,46 @@
- <Methods>
-       <xsdl:CustomRequestTransform>
-          <xsdl:choose>
-             <xsdl:when test="$clientversion=1.9">
-                <xsdl:SetValue target="Row/Name/First"  value="'service'" />
-             </xsdl:when>
-             <xsdl:otherwise>
-                <xsdl:SetValue target="Row/Name/Last" value="'zz'"/>
-             </xsdl:otherwise>
-          </xsdl:choose>
-       </xsdl:CustomRequestTransform>
-    <Method name="JavaEchoPersonInfo" querytype="java" javamethod="EsdlExample.EsdlExampleService.JavaEchoPersonInfo"/>
-    <Method name="CppEchoPersonInfo" querytype="cpp" method="onEsdlExampleCppEchoPersonInfo" plugin="libEsdlExampleService.so"/>
-    <Method name="RoxieEchoPersonInfo" querytype="roxie" url="http://localhost:9876/roxie" queryname="RoxieEchoPersonInfo">
-         <xsdl:CustomRequestTransform target="soap:Body/{$query}">
+<Methods>
+   <Scripts><![CDATA[
+      <Transforms xmlns:xsdl='urn:hpcc:esdl:script'>
+         <xsdl:CustomRequestTransform>
             <xsdl:choose>
                <xsdl:when test="$clientversion=1.9">
-                  <xsdl:SetValue target="vertest"  value="'v1.9'"/>
-                  <xsdl:SetValue target="RoxieEchoPersonInfoRequest/Row/Name/First"  value="'v1.9'"/>
+                  <xsdl:SetValue target="Row/Name/First" value="'service'" />
                </xsdl:when>
                <xsdl:otherwise>
-                  <xsdl:SetValue target="vertest"  value="concat('v', $clientversion)"/>
-                  <xsdl:SetValue target="RoxieEchoPersonInfoRequest/Row/Name/Last" value="concat('v', $clientversion)"/>
+                  <xsdl:SetValue target="Row/Name/Last" value="'zz'"/>
                </xsdl:otherwise>
             </xsdl:choose>
+            </xsdl:CustomRequestTransform>
+            <xsdl:CustomRequestTransform>
+               <xsdl:element name="www">
+               <xsdl:SetValue target="yyy" value="'111'"/>
+               </xsdl:element>
          </xsdl:CustomRequestTransform>
+      </Transforms>
+      ]]>
+   </Scripts>
+   <Method name="RoxieEchoPersonInfo" querytype="roxie" url="http://localhost:9876/roxie" queryname="RoxieEchoPersonInfo">
+      <Scripts><![CDATA[
+         <Transforms xmlns:xsdl='urn:hpcc:esdl:script'>
+         <xsdl:CustomRequestTransform target="soap:Body/{$query}">
+         <xsdl:choose>
+            <xsdl:when test="$clientversion=1.9">
+            <xsdl:SetValue target="vertest" value="'v1.9'"/>
+            <xsdl:SetValue target="RoxieEchoPersonInfoRequest/Row/Name/First" value="'v1.9'"/>
+            </xsdl:when>
+            <xsdl:otherwise>
+            <xsdl:SetValue target="vertest" value="concat('v', $clientversion)"/>
+            <xsdl:SetValue target="RoxieEchoPersonInfoRequest/Row/Name/Last" value="concat('v', $clientversion)"/>
+            </xsdl:otherwise>
+         </xsdl:choose>
+         </xsdl:CustomRequestTransform>
+         <xsdl:CustomRequestTransform>
+         <xsdl:element name="abc">
+            <xsdl:SetValue target="xyz" value="'000'"/>
+         </xsdl:element>
+         </xsdl:CustomRequestTransform>
+         </Transforms>
+      ]]>
+      </Scripts>
    </Method>
 </Methods>
-

@@ -703,3 +703,8 @@ extern IXpathContext* getXpathContext(const char * xmldoc, bool strictParameterD
 {
     UNIMPLEMENTED;
 }
+
+extern IXpathContext *createChildXpathContext(IXpathContext *parent, IEsdlScriptContext *scriptContext, const char *section, bool strictParameterDeclaration, bool removeDocNamespaces)
+{
+    UNIMPLEMENTED;
+}

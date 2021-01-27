@@ -18,9 +18,10 @@
 project( esdllib )
 
 include_directories (
-    ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
     ${HPCC_SOURCE_DIR}/system/xmllib
     ${HPCC_SOURCE_DIR}/esp/bindings
+    ${HPCC_SOURCE_DIR}/esp/bindings/http/client
+    ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
     ${HPCC_SOURCE_DIR}/esp/platform
     ${HPCC_SOURCE_DIR}/system/include
     ${HPCC_SOURCE_DIR}/esp/esdllib
@@ -67,6 +68,7 @@ target_link_libraries ( esdllib
     jlib
     xmllib
     thorhelper
+    esphttp
 )
 
 IF (USE_LIBXSLT)

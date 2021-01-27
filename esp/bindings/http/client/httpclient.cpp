@@ -640,13 +640,13 @@ int CHttpClient::sendRequest(IProperties *headers, const char* method, const cha
     return static_cast<int>(ret);
 }
 
-HttpClientErrCode CHttpClient::sendRequest(IProperties *headers, const char* method, const char* contenttype, StringBuffer& content, StringBuffer& responseContent, StringBuffer& responseStatus, bool alwaysReadContent, bool forceNewConnection)
+IHttpMessage *CHttpClient::sendRequestEx(const char* method, const char* contenttype, StringBuffer& content, HttpClientErrCode &code, StringBuffer &errmsg, IProperties *headers, bool alwaysReadContent, bool forceNewConnection)
 {
-    StringBuffer errmsg;
     if (connect(errmsg, forceNewConnection) < 0)
     {
-        responseContent.append(errmsg);
-        return HttpClientErrCode::Error;
+        errmsg.append(errmsg);
+        code = HttpClientErrCode::Error;
+        return nullptr;
     }
 
     Owned<CHttpRequest> httprequest;
@@ -655,21 +655,15 @@ HttpClientErrCode CHttpClient::sendRequest(IProperties *headers, const char* met
     httprequest.setown(new CHttpRequest(*m_socket));
     httpresponse.setown(new CHttpResponse(*m_socket));
 
+    if(m_proxy.length() <= 0)
+        httprequest->setPath(m_path.get());
+    else
+        httprequest->setPath(m_url.get());
+
     httprequest->setMethod(method);
     httprequest->setVersion("HTTP/1.1");
-
-    if(m_proxy.length() <= 0)
-    {
-        httprequest->setPath(m_path.get());
-    }
-    else
-    {
-        httprequest->setPath(m_url.get());
-    }
-
     httprequest->setHost(m_host.get());
     httprequest->setPort(m_port);
-
     httprequest->setContentType(contenttype);
 
     bool alreadyEncoded = false;
@@ -739,7 +733,10 @@ HttpClientErrCode CHttpClient::sendRequest(IProperties *headers, const char* met
     m_exceptions.setown(MakeMultiException());
     int ret = httpresponse->receive(alwaysReadContent, m_exceptions);
     if (ret < 0 && m_isPersistentSocket && httpresponse->getPeerClosed())
-        return HttpClientErrCode::PeerClosed;
+    {
+        code = HttpClientErrCode::PeerClosed;
+        return nullptr;
+    }
 
 #ifdef COOKIE_HANDLING
     if(m_context)
@@ -756,16 +753,27 @@ HttpClientErrCode CHttpClient::sendRequest(IProperties *headers, const char* met
     }
 #endif
 
-    httpresponse->getContent(responseContent);
-    httpresponse->getStatus(responseStatus);
-
     m_persistable = httpresponse->getPersistentEligible();
     m_numRequests++;
+
+    code = HttpClientErrCode::OK;
+    return httpresponse.getClear();
+}
+
+HttpClientErrCode CHttpClient::sendRequest(IProperties *headers, const char* method, const char* contenttype, StringBuffer& content, StringBuffer& responseContent, StringBuffer& responseStatus, bool alwaysReadContent, bool forceNewConnection)
+{
+    HttpClientErrCode code = HttpClientErrCode::OK;
+    Owned<IHttpMessage> resp = sendRequestEx(method, contenttype, content, code, responseContent, headers, alwaysReadContent, forceNewConnection);
+    if (!resp || code != HttpClientErrCode::OK)
+        return code;
+
+    resp->getContent(responseContent);
+    resp->getStatus(responseStatus);
 
     if (getEspLogLevel()>LogNormal)
         DBGLOG("Response content: %s", responseContent.str());
 
-    return HttpClientErrCode::OK;
+    return code;
 }
 
 int CHttpClient::sendRequest(const char* method, const char* contenttype, StringBuffer& request, StringBuffer& response, StringBuffer& responseStatus, bool alwaysReadContent)

@@ -45,6 +45,9 @@ SCMinterface IHttpMessage (IInterface)
     int receive(bool alwaysReadContent, IMultiException *me);
     int send();
     StringBuffer& getContent(StringBuffer& buf);
+    StringBuffer& getContentType(StringBuffer& contenttype);
+    StringBuffer& getHeader(const char* headername, StringBuffer& headerval);
+    StringBuffer& getStatus(StringBuffer& status);
 };
 
 typedef enum ESPSerializationFormat_

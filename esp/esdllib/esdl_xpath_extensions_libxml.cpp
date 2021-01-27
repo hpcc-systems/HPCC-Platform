@@ -345,6 +345,69 @@ static void storedValueExistsFunction (xmlXPathParserContextPtr ctxt, int nargs)
     xmlXPathReturnBoolean(ctxt, (!value) ? 0 : 1);
 }
 
+//esdl tokenize function will create temporaries in the root/temp section/node of the document
+//so this is not a general purpose function in that sense
+//this section should be cleared after every script runs
+//we may allow overriding the storage location in the future
+//
+static void strTokenizeFunction(xmlXPathParserContextPtr ctxt, int nargs)
+{
+    IEsdlScriptContext *scriptContext = getEsdlScriptContext(ctxt);
+    if (!scriptContext)
+    {
+        xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
+        return;
+    }
+
+    if ((nargs < 1) || (nargs > 2))
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    xmlChar *delimiters;
+    if (nargs == 2)
+    {
+        delimiters = xmlXPathPopString(ctxt);
+        if (xmlXPathCheckError(ctxt))
+            return;
+    }
+    else
+    {
+        delimiters = xmlStrdup((const xmlChar *) "\t\r\n ");
+    }
+
+    if (delimiters == NULL)
+        return;
+
+    xmlChar *str = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt) || (str == NULL))
+    {
+        if (str)
+            xmlFree(str);
+        xmlFree(delimiters);
+        return;
+    }
+
+    StringBuffer resultPath;
+    if (!scriptContext->tokenize((const char *)str, (const char *)delimiters, resultPath))
+    {
+        xmlFree(str);
+        xmlFree(delimiters);
+        xmlXPathSetError((ctxt), XPATH_EXPR_ERROR);
+        return;
+    }
+
+    xmlXPathObjectPtr ret = xmlXPathEval((const xmlChar *) resultPath.str(), ctxt->context);
+    if (ret != NULL)
+        valuePush(ctxt, ret);
+    else
+        valuePush(ctxt, xmlXPathNewNodeSet(NULL));
+
+    xmlFree(str);
+    xmlFree(delimiters);
+}
+
 void registerEsdlXPathExtensionsForURI(IXpathContext *xpathContext, const char *uri)
 {
     xpathContext->registerFunction(uri, "validateFeaturesAccess", (void *)validateFeaturesAccessFunction);
@@ -355,6 +418,7 @@ void registerEsdlXPathExtensionsForURI(IXpathContext *xpathContext, const char *
     xpathContext->registerFunction(uri, "getLogProfile", (void *)getLogProfileFunction);
     xpathContext->registerFunction(uri, "getLogOption", (void *)getLogOptionFunction);
     xpathContext->registerFunction(uri, "logOptionExists", (void *)logOptionExistsFunction);
+    xpathContext->registerFunction(uri, "tokenize", (void *)strTokenizeFunction);
 }
 
 void registerEsdlXPathExtensions(IXpathContext *xpathContext, IEsdlScriptContext *context, const StringArray &prefixes)

@@ -1,0 +1,147 @@
+<Methods>
+   <Scripts><![CDATA[
+      <Transforms xmlns:es='urn:hpcc:esdl:script'>
+         <es:BackendRequest>
+            <es:set-value target="Row/Name/First" value="'modified-request-at-service'" />
+         </es:BackendRequest>
+         <es:BackendRequest>
+            <es:set-value target="BRSRV2" value="'s2'" />
+         </es:BackendRequest>
+         <es:BackendRequest>
+            <es:set-value target="BRSRV3" value="'s3'" />
+         </es:BackendRequest>
+         <es:BackendResponse xmlns:resp="urn:hpccsystems:ecl:roxieechopersoninfo" xmlns:ds1="urn:hpccsystems:ecl:roxieechopersoninfo:result:roxieechopersoninforesponse">
+            <es:target xpath="soap:Body">
+              <es:target xpath="resp:RoxieEchoPersonInfoResponse">
+                <es:target xpath="resp:Results/resp:Result">
+                  <es:target xpath="ds1:Dataset[@name='RoxieEchoPersonInfoResponse']">
+                   <es:set-value target="ds1:Row/ds1:Name/ds1:Last" value="'modified-response-at-service'" />
+                  </es:target>
+                </es:target>
+              </es:target>
+            </es:target>
+         </es:BackendResponse>
+         <es:BackendResponse>
+            <es:set-value target="BRESPSRV2" value="'s22'" />
+         </es:BackendResponse>
+         <es:BackendResponse>
+            <es:set-value target="BRESPSRV3" value="'s33'" />
+         </es:BackendResponse>
+         <es:PreLogging>
+            <es:set-value target="PLSRV1" value="'s111'" />
+         </es:PreLogging>
+         <es:PreLogging>
+            <es:set-value target="PLSRV2" value="'s222'" />
+         </es:PreLogging>
+         <es:PreLogging>
+            <es:set-value target="PLSRV3" value="'s333'" />
+         </es:PreLogging>
+      </Transforms>
+      ]]>
+   </Scripts>
+   <Method name="RoxieEchoPersonInfo" querytype="roxie" url="http://localhost:9876/roxie" queryname="RoxieEchoPersonInfo">
+      <Scripts><![CDATA[
+         <Transforms xmlns:es='urn:hpcc:esdl:script'>
+         <es:BackendRequest>
+            <es:append-to-value target="Row/Name/First" value="'-and-method'" />
+         </es:BackendRequest>
+         <es:BackendRequest>
+            <es:set-value target="BRMTH2" value="'m2'" />
+         </es:BackendRequest>
+         <es:BackendRequest>
+            <es:set-value target="BRMTH3" value="'m3'" />
+         </es:BackendRequest>
+         <es:BackendResponse xmlns:resp="urn:hpccsystems:ecl:roxieechopersoninfo" xmlns:ds1="urn:hpccsystems:ecl:roxieechopersoninfo:result:roxieechopersoninforesponse">
+            <es:target xpath="soap:Body">
+              <es:target xpath="resp:RoxieEchoPersonInfoResponse">
+                <es:target xpath="resp:Results/resp:Result">
+                  <es:target xpath="ds1:Dataset[@name='RoxieEchoPersonInfoResponse']">
+                    <es:append-to-value target="ds1:Row/ds1:Name/ds1:Last" value="'-and-method'" />
+                  </es:target>
+                </es:target>
+              </es:target>
+            </es:target>
+         </es:BackendResponse>
+         <es:BackendResponse xmlns:resp="urn:hpccsystems:ecl:roxieechopersoninfo" xmlns:ds1="urn:hpccsystems:ecl:roxieechopersoninfo:result:roxieechopersoninforesponse">
+            <es:http-post-xml url="'http://127.0.0.1:9876'" section="logdata/LogDataset" name="roxie_call_success">
+              <es:content>
+                <es:element name="Envelope">
+                  <es:namespace prefix="soap" uri="http://schemas.xmlsoap.org/soap/envelope/" current="true" />
+                  <es:element name="Body">
+                    <es:element name="roxieechopersoninfoRequest">
+                      <es:namespace uri="urn:hpccsystems:ecl:roxieechopersoninfo" current="true" />
+                      <es:element name="roxieechopersoninforequest">
+                        <es:element name="Row">
+                          <es:element name="Name">
+                            <es:set-value target="First" value="'echoFirst'"/>
+                            <es:set-value target="Last" value="'echoLast'"/>
+                            <es:element name="Aliases">
+                              <es:set-value target="Alias" value="'echoA1'"/>
+                              <es:add-value target="Alias" value="'echoA2'"/>
+                            </es:element>
+                          </es:element>
+                        </es:element>
+                      </es:element>
+                    </es:element>
+                  </es:element>
+                </es:element>
+              </es:content>
+            </es:http-post-xml>
+            <es:target xpath="soap:Body">
+              <es:target xpath="resp:RoxieEchoPersonInfoResponse">
+                <es:target xpath="resp:Results/resp:Result">
+                  <es:target xpath="ds1:Dataset[@name='RoxieEchoPersonInfoResponse']">
+                    <es:source xpath="$roxie_call_success/response/content">
+                      <es:source xpath="soap:Envelope/soap:Body">
+                        <es:source xpath="resp:roxieechopersoninfoResponse/resp:Results/resp:Result">
+                          <es:source xpath="ds1:Dataset/ds1:Row">
+                            <es:append-to-value target="ds1:Row/ds1:Name/ds1:Last" value="concat('-plus-echoed-alias-', ds1:Name/ds1:Aliases/ds1:Alias[2])" />
+                          </es:source>
+                        </es:source>
+                      </es:source>
+                    </es:source>
+                  </es:target>
+                </es:target>
+              </es:target>
+            </es:target>
+         </es:BackendResponse>
+         <es:BackendResponse>
+            <es:set-value target="BRESPMTH3" value="'m33'" />
+         </es:BackendResponse>
+         <es:PreLogging>
+            <es:http-post-xml url="'http://127.0.0.1:9876'" section="logdata/LogDatasets" name="roxie_call_exception">
+              <es:content>
+                <es:element name="Envelope">
+                  <es:namespace prefix="soap" uri="http://schemas.xmlsoap.org/soap/envelope/" current="true" />
+                  <es:element name="Body">
+                    <es:element name="nonexistent_query">
+                      <es:namespace uri="urn:hpccsystems:ecl:roxieechopersoninfo" current="true" />
+                      <es:element name="nonexistent_queryrequest">
+                        <es:element name="Row">
+                          <es:element name="Name">
+                            <es:set-value target="First" value="'aaa'"/>
+                            <es:set-value target="Last" value="'bbb'"/>
+                            <es:element name="Aliases">
+                              <es:set-value target="Alias" value="'ccc'"/>
+                              <es:add-value target="Alias" value="'ddd'"/>
+                            </es:element>
+                          </es:element>
+                        </es:element>
+                      </es:element>
+                    </es:element>
+                  </es:element>
+                </es:element>
+              </es:content>
+            </es:http-post-xml>
+         </es:PreLogging>
+         <es:PreLogging>
+            <es:set-value target="PLMTH2" value="'m222'" />
+         </es:PreLogging>
+         <es:PreLogging>
+            <es:set-value target="PLMTH3" value="'m333'" />
+         </es:PreLogging>
+         </Transforms>
+      ]]>
+      </Scripts>
+   </Method>
+</Methods>

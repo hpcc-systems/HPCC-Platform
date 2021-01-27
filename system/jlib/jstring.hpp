@@ -404,6 +404,13 @@ extern jlib_decl int utf8CharLen(unsigned char ch);
 extern jlib_decl int utf8CharLen(const unsigned char *ch, unsigned maxsize = (unsigned)-1);
 
 extern jlib_decl StringBuffer &replaceString(StringBuffer & result, size_t lenSource, const char *source, size_t lenOldStr, const char* oldStr, size_t lenNewStr, const char* newStr);
+
+interface IVariableSubstitutionHelper
+{
+    virtual bool findVariable(const char *name, StringBuffer &value) = 0;
+};
+
+extern jlib_decl StringBuffer &replaceVariables(StringBuffer & result, const char *source, bool exceptions, IVariableSubstitutionHelper *helper, const char* delim = "${", const char* term = "}");
 extern jlib_decl StringBuffer &replaceEnvVariables(StringBuffer & result, const char *source, bool exceptions, const char* delim = "${env.", const char* term = "}");
 
 inline const char *encodeUtf8XML(const char *x, StringBuffer &ret, unsigned flags=false, unsigned len=(unsigned)-1)

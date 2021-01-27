@@ -73,6 +73,9 @@ class EsdlServiceImpl : public CInterface, implements IEspService
 private:
     inline Owned<ILoggingManager>& loggingManager() { return m_oDynamicLoggingManager ? m_oDynamicLoggingManager : m_oStaticLoggingManager; }
     IEspContainer *container;
+    Owned<IEsdlTransformMethodMap> m_transforms = createEsdlTransformMethodMap();
+    bool nonLegacyTransforms = false;
+
     MapStringToMyClass<ISmartSocketFactory> connMap;
     MapStringToMyClass<IEmbedServiceContext> javaServiceMap;
     MapStringToMyClass<IException> javaExceptionMap;
@@ -81,9 +84,7 @@ private:
     Owned<ILoggingManager> m_oDynamicLoggingManager;
     Owned<ILoggingManager> m_oStaticLoggingManager;
     bool m_bGenerateLocalTrxId;
-    MapStringToMyClass<IEsdlCustomTransform> m_customRequestTransformMap;
-    Owned<IEsdlCustomTransform> m_serviceLevelRequestTransform;
-    bool m_serviceLevelCrtFail = false;
+    StringAttr m_serviceScriptError;
     using MethodAccessMap = MapStringTo<SecAccessFlags>;
     using MethodAccessMaps = MapStringTo<Owned<MethodAccessMap> >;
     MethodAccessMaps            m_methodAccessMaps;
@@ -105,11 +106,15 @@ public:
     StringBuffer                m_serviceNameSpaceBase;
     StringAttr                  m_namespaceScheme;
     bool                        m_usesURLNameSpace;
-    MapStringTo<StringAttr, const char *> m_methodCRTransformErrors;
+
+    using TransformErrorMap = MapStringTo<StringAttr, const char *>;
+    TransformErrorMap m_methodScriptErrors;
 
 public:
     IMPLEMENT_IINTERFACE;
-    EsdlServiceImpl(){}
+    EsdlServiceImpl()
+    {
+    }
 
     virtual ~EsdlServiceImpl();
 
@@ -158,7 +163,7 @@ public:
             m_pEsdlTransformer.clear();
         if(m_pServiceMethodTargets)
             m_pServiceMethodTargets.clear();
-        m_methodCRTransformErrors.kill();
+        m_methodScriptErrors.kill();
     }
 
     virtual bool loadLoggingManager(Owned<ILoggingManager>& manager, IPTree* configuration);
@@ -168,12 +173,13 @@ public:
     void configureJavaMethod(const char *method, IPropertyTree &entry, const char *classPath);
     void configureCppMethod(const char *method, IPropertyTree &entry, IEspPlugin*& plugin);
     void configureUrlMethod(const char *method, IPropertyTree &entry);
-    void addServiceLevelRequestTransform(IPropertyTree *customRequestTransform);
-    void addMethodLevelRequestTransform(const char *method, IPropertyTree &methodCfg, IPropertyTree *customRequestTransform);
+
+    void handleTransformError(StringAttr &serviceError, TransformErrorMap &methodErrors, IException *e, const char *service, const char *method);
+    void addTransforms(IPropertyTree *cfgParent, const char *service, const char *method, bool removeCfgIEntries);
 
     IEsdlScriptContext* checkCreateEsdlServiceScriptContext(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *tgtcfg);
 
-    virtual void handleServiceRequest(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, const char *ns, const char *schema_location, IPropertyTree *req, StringBuffer &out, StringBuffer &logdata, unsigned int flags);
+    virtual void handleServiceRequest(IEspContext &context, Owned<IEsdlScriptContext> &scriptContext, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, const char *ns, const char *schema_location, IPropertyTree *req, StringBuffer &out, StringBuffer &logdata, StringBuffer &origResp, StringBuffer &soapmsg, unsigned int flags);
     virtual void generateTransactionId(IEspContext & context, StringBuffer & trxid)=0;
     void generateTargetURL(IEspContext & context, IPropertyTree *srvinfo, StringBuffer & url, bool isproxy);
     void sendTargetSOAP(IEspContext & context, IPropertyTree *srvinfo, const char * req, StringBuffer &resp, bool isproxy,const char * targeturl);
@@ -183,10 +189,9 @@ public:
     virtual void esdl_log(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *tgtcfg, IPropertyTree *tgtctx, IPropertyTree *req_pt, const char *xmlresp, const char *logdata, unsigned int timetaken){}
     virtual void processHeaders(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer &req, StringBuffer &headers){};
     virtual void processRequest(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer &req) {};
-    virtual void processResponse(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer &resp) {};
     void prepareFinalRequest(IEspContext &context, IEsdlScriptContext *scriptContext, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, bool isroxie, const char* ns, StringBuffer &reqcontent, StringBuffer &reqProcessed);
     virtual void createServersList(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, StringBuffer &servers) {};
-    virtual bool handleResultLogging(IEspContext &espcontext, IEsdlScriptContext *scriptContext, IPropertyTree * reqcontext, IPropertyTree * request,  const char * rawreq, const char * rawresp, const char * finalresp, const char * logdata);
+    virtual bool handleResultLogging(IEspContext &espcontext, IEsdlScriptContext *scriptContext, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree * reqcontext, IPropertyTree * request,  const char * rawreq, const char * rawresp, const char * finalresp, const char * logdata);
     void handleEchoTest(const char *mthName, IPropertyTree *req, StringBuffer &soapResp, ESPSerializationFormat format);
     void handlePingRequest(const char *srvName, StringBuffer &out, unsigned int flags);
     virtual void handleFinalRequest(IEspContext &context, IEsdlScriptContext *scriptContext, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *ns, StringBuffer& req, StringBuffer &out, bool isroxie, bool isproxy, StringBuffer &rawreq);

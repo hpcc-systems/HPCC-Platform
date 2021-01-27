@@ -23,6 +23,13 @@
 
 #define HTTP_CLIENT_DEFAULT_CONNECT_TIMEOUT 3000
 
+enum class HttpClientErrCode
+{
+    PeerClosed = -2,
+    Error = -1,
+    OK = 0
+};
+
 interface IHttpClient : extends ITransportClient
 {
     virtual void setProxy(const char* proxy) = 0;
@@ -39,8 +46,9 @@ interface IHttpClient : extends ITransportClient
     virtual int sendRequest(IProperties *headers, const char* method, const char* contenttype, StringBuffer& content, StringBuffer &response, StringBuffer& responseStatus, bool alwaysReadContent = false) = 0;
     virtual int proxyRequest(IHttpMessage *request, IHttpMessage *response, bool resetForwardedFor) = 0;
 
-    virtual int postRequest(ISoapMessage & request, ISoapMessage & response) = 0;
+    virtual IHttpMessage *sendRequestEx(const char* method, const char* contenttype, StringBuffer& content, HttpClientErrCode &code, StringBuffer &errmsg, IProperties *headers = nullptr, bool alwaysReadContent = false, bool forceNewConnection = false) = 0;
 
+    virtual int postRequest(ISoapMessage & request, ISoapMessage & response) = 0;
 };
 
 interface IHttpClientContext : extends IInterface
