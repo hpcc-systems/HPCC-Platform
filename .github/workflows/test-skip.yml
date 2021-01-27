@@ -1,0 +1,47 @@
+name: Test skip functionality
+
+on:
+  pull_request:
+    branches:
+      - "master"
+      - "candidate-*"
+
+jobs:
+  check-skips:
+    name: "Test skip functionality"
+    runs-on: ubuntu-latest
+    outputs:
+      should-skip: ${{ steps.check-skips.outputs.should-skip }}
+    steps:
+      - name: Check skips
+        id: check-skips
+        run: |
+          IGNORE=".github/|doc/"
+          REQUIRE="esp/"
+          URL="https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files"
+          curl -s -X GET -G $URL | jq -r '.[] | .filename' > files
+          echo "There are changes in the following files"
+          cat files
+          if grep -q -v "$IGNORE" files; then
+            if grep -q "$REQUIRE" files; then
+              echo "Not skipping"
+              echo ::set-output name=should-skip::false  
+            else
+              echo "Skipping because no files from REQUIRE list found in changes"
+              echo ::set-output name=should-skip::true
+            fi
+          else
+              echo "Skipping because only files from IGNORE list found in changes"
+            echo ::set-output name=should-skip::true
+          fi
+
+  build:
+    name: Do it all
+    runs-on: ubuntu-latest
+    needs: check-skips
+    if: ${{ needs.check-skips.outputs.should-skip != 'true' }}
+    steps:
+      - name: BigExpensiveBuild
+        run: echo ${{ needs.check-skips.outputs.should-skip }}
+
+        
