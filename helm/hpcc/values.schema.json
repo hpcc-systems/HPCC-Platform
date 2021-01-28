@@ -5,6 +5,9 @@
     "global": {
       "$ref": "#/definitions/global"
     },
+    "security" : {
+      "$ref": "#/definitions/security"
+    },
     "hostgroups": {
       "$ref": "#/definitions/hostgroups"
     },
@@ -200,6 +203,35 @@
 
       },
       "additionalProperties": false
+    },
+    "security": {
+      "type": "object",
+      "properties": {
+        "eclSecurity": {
+          "$ref": "#/definitions/eclSecurity"
+        }
+      }
+    },
+    "eclSecurity": {
+      "type": "object",
+      "properties": {
+        "embedded": {
+          "$ref": "#/definitions/eclSecurityValues"
+        },
+        "pipe": {
+          "$ref": "#/definitions/eclSecurityValues"
+        },
+        "extern": {
+          "$ref": "#/definitions/eclSecurityValues"
+        },
+        "datafile": {
+          "$ref": "#/definitions/eclSecurityValues"
+        }
+      }
+    },
+    "eclSecurityValues": {
+      "type": "string",
+      "enum": ["deny", "allow", "allowSigned"]
     },
     "image": {
       "type": "object",

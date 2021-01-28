@@ -252,6 +252,9 @@ public:
         cclogFilename.append("cc.").append((unsigned)GetCurrentProcessId()).append(".log");
         defaultAllowed[false] = true;  // May want to change that?
         defaultAllowed[true] = true;
+#ifdef _CONTAINERIZED
+        setSecurityOptions();
+#endif
     }
     ~EclCC()
     {
@@ -268,6 +271,7 @@ public:
     }
     bool printKeywordsToXml();
     int parseCommandLineOptions(int argc, const char* argv[]);
+    void setSecurityOptions();
     void loadOptions();
     void loadManifestOptions();
     bool processFiles();
@@ -2931,6 +2935,30 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
     return 0;
 }
 
+void EclCC::setSecurityOptions()
+{
+    IPropertyTree *eclSecurity = configuration->getPropTree("eclSecurity");
+    if (eclSecurity)
+    {
+        // Name of security option in configuration yaml
+        const char * configName[] = {"@embedded", "@pipe", "@extern", "@datafile" };
+        // Name of security option used internally
+        const char * securityOption[] = {"cpp", "pipe", "extern", "datafile" };
+        for (int i=0; i < 4; i++)
+        {
+            const char * optVal = eclSecurity->queryProp(configName[i]);
+            if (optVal)
+            {
+                if (!strcmp(optVal, "allow"))
+                    allowedPermissions.append(securityOption[i]);
+                else if (!strcmp(optVal, "deny"))
+                    deniedPermissions.append(securityOption[i]);
+                else if (!strcmp(optVal, "allowSigned"))
+                    allowSignedPermissions.append(securityOption[i]);
+            }
+        }
+    }
+}
 //=========================================================================================
 
 

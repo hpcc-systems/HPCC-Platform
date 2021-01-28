@@ -38,6 +38,17 @@ global:
     moneyLocale: "en_US.UTF-8"
     perCpu: 0.126
 
+security:
+  eclSecurity:
+    # Possible values:
+    # allow - functionality is permitted
+    # deny - functionality is not permitted
+    # allowSigned - functionality permitted only if code signed
+    embedded: "allowSigned"
+    pipe:  "allowSigned"
+    extern: "allow"
+    datafile: "allow"
+
 ##Minimal instance of Elastic stack will be deployed alongside HPCC components
 ##Elastic stack is comprised of several components which follow below and can be customized
 ##by overwriting/setting helm chart values here
