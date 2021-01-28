@@ -187,7 +187,7 @@ public:
     }
 };
 
-extern roxiemem_decl unsigned DATA_ALIGNMENT_SIZE;  // Permissible values are 0x400 and 0x2000
+extern roxiemem_decl unsigned DATA_ALIGNMENT_SIZE;  // Permissible values are powers of two between 0x400 and 0x2000
 
 #define DATA_ALIGNMENT_MASK ((~((memsize_t) DATA_ALIGNMENT_SIZE)) + 1)
 
@@ -228,7 +228,7 @@ public:
     char data[1]; // actually DATA_PAYLOAD
 };
 
-#define DATA_PAYLOAD (roxiemem::DATA_ALIGNMENT_SIZE - sizeof(roxiemem::DataBuffer)) // actually should be offsetof(DataBuffer, data)
+#define DATA_PAYLOAD (roxiemem::DATA_ALIGNMENT_SIZE - offsetof(roxiemem::DataBuffer, data))
 
 class CDataBufferManager;
 class roxiemem_decl DataBufferBottom : public HeapletBase
