@@ -22,7 +22,7 @@
 #include "daft.hpp"
 #include "ftbase.ipp"
 
-#define DEFAULT_STD_BUFFER_SIZE         0x10000
+#define DEFAULT_STD_BUFFER_SIZE         0x100000
 #define EFX_BLOCK_HEADER_TYPE   unsigned
 #define EFX_BLOCK_HEADER_SIZE   sizeof(EFX_BLOCK_HEADER_TYPE)
 #define VARIABLE_LENGTH_TYPE    unsigned

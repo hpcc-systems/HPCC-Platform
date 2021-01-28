@@ -37,7 +37,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -74,8 +74,8 @@
       have an HPCC Cluster running version 7.0.0 or later. Java 8 is also
       required. You will need to configure the Sparkthor component. The
       Sparkthor component needs to be associated with a valid existing Thor
-      cluster. The Spark slave nodes will be created alongside each Thor
-      slave. The Integrated Spark Master node will be designated during
+      cluster. The Spark worker nodes will be created alongside each Thor
+      worker. The Integrated Spark Manager node will be designated during
       configuration, along with any other Spark node resources. Then the
       Sparkthor component will spawn an Integrated Spark cluster at start up.
       You will also have a SPARK-HPCC jar connector available.</para>
@@ -278,7 +278,7 @@
                   <row>
                     <entry>SPARK_MASTER_WEBUI_PORT</entry>
 
-                    <entry>Base port to use for master web interface</entry>
+                    <entry>Base port to use for manager web interface</entry>
 
                     <entry>8080</entry>
 
@@ -288,7 +288,7 @@
                   <row>
                     <entry>SPARK_MASTER_PORT</entry>
 
-                    <entry>Base port to use for master</entry>
+                    <entry>Base port to use for manager</entry>
 
                     <entry>7077</entry>
 
@@ -358,11 +358,11 @@
         </listitem>
 
         <listitem>
-          <para>Specify a Spark Master Node; Select the Instances tab.
+          <para>Specify a Spark Manager Node; Select the Instances tab.
           Right-click on the Instances table and choose <emphasis
           role="bold">Add Instances </emphasis></para>
 
-          <para>Add the instance of your Spark master node.</para>
+          <para>Add the instance of your Spark manager node.</para>
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
@@ -377,7 +377,7 @@
                     <entry><inlinegraphic
                     fileref="images/caution.png" /></entry>
 
-                    <entry>NOTE: You can only have one Spark Master
+                    <entry>NOTE: You can only have one Spark Manager
                     Instance</entry>
                   </row>
                 </tbody>
@@ -432,12 +432,12 @@
                   xpointer="element(/1)"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-      <para>Using a browser, navigate to your Integrated Master Spark instance
-      (the instance you added above) running on port 8080 of your HPCC
-      System.</para>
+      <para>Using a browser, navigate to your Integrated Spark's Manager
+      instance (the instance you added above) running on port 8080 of your
+      HPCC System.</para>
 
       <para>For example, http://nnn.nnn.nnn.nnn:8080, where nnn.nnn.nnn.nnn is
-      your Integrated Spark Master node's IP address.</para>
+      your Integrated Spark Manager node's IP address.</para>
 
       <programlisting>https://192.168.56.101:8080</programlisting>
 
@@ -558,7 +558,7 @@
           UNSIGNED8 values from HPCC data can cause an integer overflow in
           Java. UNSIGNED8 values are often used as unique identifiers in
           datasets, in which case overflowing would be acceptable as the
-          overflowed value will still be unique. </para>
+          overflowed value will still be unique.</para>
 
           <para>The Spark-HPCC connector allows unsigned values to overflow in
           Java and will not report a exception. The caller is responsible for
@@ -590,7 +590,7 @@
 
         <para><graphic fileref="images/ECLWA-SprkThor.jpg" /></para>
 
-        <para>This reports information for the master node of the integrated
+        <para>This reports information for the manager node of the integrated
         Spark cluster. Here you can verify that the cluster is up and running,
         and you can run preflight by selecting the SparkThor cluster and
         pressing the submit button at the bottom of that page.</para>
@@ -743,7 +743,7 @@
       case, the <emphasis>org.hpccsystems.spark.RemapInfo</emphasis> class is
       used to define the information needed to change the addressing. There
       are two options that can be used. The first option is that each Thor
-      slave node can be assigned an IP that is visible to the Spark cluster.
+      worker node can be assigned an IP that is visible to the Spark cluster.
       These addresses must be a contiguous range. The second option is to
       assign an IP and a contiguous range of port numbers. The
       <emphasis>RemapInfo</emphasis> object is supplied as a parameter.</para>

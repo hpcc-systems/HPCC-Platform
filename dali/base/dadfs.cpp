@@ -5073,6 +5073,8 @@ protected:
             {
                 CDfsLogicalFileName subfn;
                 subfn.set(name);
+                if (subfn.isForeign() || subfn.isExternal())
+                    continue; // can't be owned by a super in this environment, no locking
                 CFileLock fconnlockSub;
                 // JCSMORE - this is really not right, but consistent with previous version
                 // MORE: Use CDistributedSuperFile::linkSuperOwner(false) - ie. unlink

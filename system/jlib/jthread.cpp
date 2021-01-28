@@ -799,7 +799,27 @@ void CAsyncFor::For(unsigned num,unsigned maxatonce,bool abortFollowingException
                 thread->start();
                 started.append(*thread.getClear());
             }
-            Do(num-1);
+
+            try {
+                Do(num-1);
+            }
+            catch (IException * _e)
+            {
+                synchronized block(errmutex);
+                if (e)
+                    _e->Release();  // only return first
+                else
+                    e = _e;
+            }
+#ifndef NO_CATCHALL
+            catch (...)
+            {
+                synchronized block(errmutex);
+                if (!e)
+                    e = MakeStringException(0, "Unknown exception in main Thread");
+            }
+#endif
+
             ForEachItemIn(idx, started)
             {
                 started.item(idx).join();

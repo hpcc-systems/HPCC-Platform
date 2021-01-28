@@ -1790,7 +1790,10 @@ unsigned checkWorkunitVersionConsistency(const IConstWorkUnit *wu)
         StringBuffer buildVersion, eclVersion;
         wu->getBuildVersion(StringBufferAdaptor(buildVersion), StringBufferAdaptor(eclVersion));
         const char *version = strstr(buildVersion, "7.12.");
-        if (version)
+
+        //Avoid matching a version number in the path that was used to build (enclosed in [] at the end)
+        const char *extra = strchr(buildVersion, '[');
+        if (version && (!extra || version < extra))
         {
             const char *point = version + strlen("7.12.");
             unsigned pointVer = atoi(point);

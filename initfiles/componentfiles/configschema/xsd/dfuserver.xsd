@@ -64,7 +64,7 @@
                 <xs:attribute name="monitorinterval" hpcc:displayname="Monitor Interval (s)" type="xs:nonNegativeInteger"
                               hpcc:presetValue="900" hpcc:tooltip="Specifies the polling interval for DFU monitoring (in seconds)"/>
                 <xs:attribute name="transferBufferSize" hpcc:displayName="Transfer Buffer Size (bytes)" type="xs:nonNegativeInteger"
-                              hpcc:presetValue="65536" hpcc:tooltip="Default buffer size used when transferring data"/>
+                              hpcc:presetValue="1048576" hpcc:tooltip="Default buffer size used when transferring data"/>
             </xs:complexType>
         </xs:element>
     </hpcc:insert>
