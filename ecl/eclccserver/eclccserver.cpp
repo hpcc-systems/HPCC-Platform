@@ -546,6 +546,7 @@ public:
         Owned<IPropertyTree> queueInfo = globals->getBranch(xpath);
         assertex(queueInfo);
         const char *platformName = queueInfo->queryProp("@type");
+        bool queriesOnly = queueInfo->getPropBool("@queriesOnly");
 #else
         Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName.str());
         if (!clusterInfo)
@@ -606,6 +607,12 @@ public:
                 {
                     workunit->setState(WUStateCompleted);
                 }
+#ifdef _CONTAINERIZED
+                else if (queriesOnly)
+                {
+                    workunit->setState(WUStateCompleted);
+                }
+#endif
                 else
                 {
                     workunit->schedule();
