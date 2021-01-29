@@ -1,5 +1,7 @@
 import * as React from "react";
-import { Breadcrumb, DefaultPalette, FontSizes, IBreadcrumbItem, IBreadcrumbStyleProps, IBreadcrumbStyles, Image, IStyleFunctionOrObject, Link, Stack, Toggle } from "@fluentui/react";
+import { Breadcrumb, DefaultPalette, FontSizes, IBreadcrumbItem, IBreadcrumbStyleProps, IBreadcrumbStyles, Image, IStyleFunctionOrObject, Link, SearchBox, Stack, Toggle } from "@fluentui/react";
+
+import nlsHPCC from "src/nlsHPCC";
 
 const breadCrumbStyles: IStyleFunctionOrObject<IBreadcrumbStyleProps, IBreadcrumbStyles> = {
     itemLink: { fontSize: FontSizes.size10, lineHeight: 14, paddingLeft: 2, paddingRight: 2 },
@@ -35,9 +37,10 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                     <Stack.Item align="center" styles={{ root: { minWidth: 240 } }}>
                         <Breadcrumb items={itemsWithHref} styles={breadCrumbStyles} />
                     </Stack.Item>
+                    <Stack.Item align="center">
+                        <SearchBox onSearch={newValue => { window.location.href = `#/search/${newValue.trim()}`; }} placeholder={nlsHPCC.PlaceholderFindText} styles={{ root: { minWidth: 320 } }} />
+                    </Stack.Item>
                 </Stack>
-                <Stack.Item>
-                </Stack.Item>
                 <Stack horizontal tokens={{ childrenGap: 18 }} >
                     <Stack.Item align="center">
                         <Link href="/esp/files/stub.htm">Legacy ECL Watch</Link>
