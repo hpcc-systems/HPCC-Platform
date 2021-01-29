@@ -224,9 +224,10 @@ const LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
         this.set("DFUFileParts", DFUFileParts);
     },
     _CompressedFileSizeSetter(CompressedFileSize) {
-        this.CompressedFileSize = "";
+        this.CompressedFileSize = undefined;
         if (CompressedFileSize) {
-            this.CompressedFileSize = CompressedFileSize.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            this.CompressedFileSize = CompressedFileSize;
+            this.set("CompressedFileSizeString", CompressedFileSize.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","));
         }
     },
     _StatSetter(Stat) {
