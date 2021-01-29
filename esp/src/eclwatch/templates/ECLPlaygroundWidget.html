@@ -26,6 +26,19 @@
         <div id="${id}SubmitPane" class="edgePanel" data-dojo-props="region: 'bottom'" data-dojo-type="dijit.layout.ContentPane">
             <div style="display: inline-block; vertical-align: middle">
                 <button id="${id}SubmitBtn" data-dojo-attach-event="onClick:_onSubmit" data-dojo-type="dijit.form.Button">${i18n.Submit}</button>
+                <div id="${id}PublishBtn" data-dojo-type="dijit.form.DropDownButton">
+                    <span>${i18n.Publish}</span>
+                    <div data-dojo-type="dijit.TooltipDialog">
+                        <div id="${id}PublishForm" style="width:460px" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                            <div class="dijitDialogPaneContentArea" data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                                <input id="${id}Jobname2" title="${i18n.JobName}:" colspan="2" style="width:100%" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
+                            </div>
+                            <div class="dijitDialogPaneActionBar">
+                                <button type="submit" data-dojo-attach-event="onClick:_onPublish" data-dojo-type="dijit.form.Button">${i18n.Submit}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <label for="Target">${i18n.Target}:</label>
                 <div id="${id}TargetSelect" style="display: inline-block; vertical-align: middle" data-dojo-type="TargetSelectWidget">
                 </div>

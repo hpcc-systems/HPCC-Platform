@@ -4,8 +4,11 @@ define([
     "src/nlsHPCC",
     "dojo/dom",
     "dojo/query",
+    "dojo/dom-style",
 
     "dijit/registry",
+
+    "@hpcc-js/comms",
 
     "hpcc/_Widget",
     "src/ESPWorkunit",
@@ -24,8 +27,9 @@ define([
     "hpcc/InfoGridWidget",
     "hpcc/VizWidget"
 
-], function (declare, lang, nlsHPCCMod, dom, query,
+], function (declare, lang, nlsHPCCMod, dom, query, domStyle,
     registry,
+    hpccComms,
     _Widget, ESPWorkunit, ESPQuery,
     template) {
 
@@ -49,6 +53,7 @@ define([
 
         postCreate: function (args) {
             this.inherited(arguments);
+            this.publishForm = registry.byId(this.id + "PublishForm");
             this._initControls();
         },
 
@@ -99,13 +104,25 @@ define([
                 this.hideTitle();
             }
 
+            var context = this;
             this.Wuid = params.Wuid;
-            this.targetSelectWidget.init({ SubmitTargets: true });
+            this.targetSelectWidget.init(params);
+            this.targetSelectWidget.on("change", function () {
+                var logicalCluster = context.targetSelectWidget.selectedTarget();
+                var submitBtn = registry.byId(context.id + "SubmitBtn");
+                var publishBtn = registry.byId(context.id + "PublishBtn");
+                if (logicalCluster.QueriesOnly) {
+                    domStyle.set(submitBtn.domNode, "display", "none");
+                    domStyle.set(publishBtn.domNode, "display", null);
+                } else {
+                    domStyle.set(submitBtn.domNode, "display", null);
+                    domStyle.set(publishBtn.domNode, "display", "none");
+                }
+            });
 
             this.initEditor();
             this.editorControl.init(params);
 
-            var context = this;
             this.initGraph();
 
             if (params.Wuid) {
@@ -306,6 +323,31 @@ define([
                     },
                     onSubmit: function () {
                     }
+                });
+            }
+        },
+
+        _onPublish: function (evt) {
+            this.resetPage();
+            if (this.publishForm.validate()) {
+                registry.byId(this.id + "PublishBtn").closeDropDown();
+                var selectedTarget = this.targetSelectWidget.selectedTarget();
+                var ecl = this.editorControl.getText();
+                var jobname = dom.byId(this.id + "Jobname2").value;
+                var context = this;
+                hpccComms.Workunit.compile({ baseUrl: "" }, selectedTarget.Name, ecl).then(function (wu) {
+                    context.wu = wu;
+                    return context.wu.watchUntilComplete(function () {
+                        context.updateInput("State", "", wu.State);
+                    });
+                }).then(function () {
+                    context.updateInput("State", "", "Publishing");
+                    return context.wu.publish(jobname);
+                }).then(function (response) {
+                    var a = dojo.byId(context.id + "State");
+                    a.textContent = "Published";
+                    a.style.visibility = "visible";
+                    a.href = dojoConfig.urlInfo.pathname + "?QuerySetId=" + response.QuerySet + "&Id=" + response.QueryId + "&Widget=QuerySetDetailsWidget";
                 });
             }
         }

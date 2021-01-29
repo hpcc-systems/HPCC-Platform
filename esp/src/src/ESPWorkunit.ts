@@ -6,7 +6,7 @@ import * as all from "dojo/promise/all";
 import * as Observable from "dojo/store/Observable";
 import * as topic from "dojo/topic";
 
-import { Workunit as HPCCWorkunit } from "@hpcc-js/comms";
+import { Workunit as HPCCWorkunit, WUUpdate } from "@hpcc-js/comms";
 import { IEvent } from "@hpcc-js/util";
 
 import * as ESPRequest from "./ESPRequest";
@@ -177,7 +177,7 @@ const Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
         this.set("hasCompleted", WsWorkunits.isComplete(this.StateID, actionEx));
     },
     _ActionExSetter(ActionEx) {
-        if (this.StateID) {
+        if (this.StateID !== undefined) {
             this.ActionEx = ActionEx;
             this.set("hasCompleted", WsWorkunits.isComplete(this.StateID, this.ActionEx));
         }
@@ -1007,3 +1007,5 @@ export function CreateWUQueryStore(options) {
     const store = new Store(options);
     return Observable(store);
 }
+
+export const Action = WUUpdate.Action;

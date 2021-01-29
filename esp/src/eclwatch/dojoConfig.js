@@ -32,6 +32,7 @@ function getConfig(env) {
             "@hpcc-js/common": hpccBaseUrl + "/common/dist/index",
             "@hpcc-js/comms": hpccBaseUrl + "/comms/dist/index",
             "@hpcc-js/composite": hpccBaseUrl + "/composite/dist/index",
+            "@hpcc-js/dataflow": hpccBaseUrl + "/dataflow/dist/index",
             "@hpcc-js/dgrid": hpccBaseUrl + "/dgrid/dist/index",
             "@hpcc-js/dgrid-shim": hpccBaseUrl + "/dgrid-shim/dist/index",
             "@hpcc-js/eclwatch": hpccBaseUrl + "/eclwatch/dist/index",
