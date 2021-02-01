@@ -616,6 +616,10 @@ public:
     {
         return isCodeSigned;
     }
+    virtual RecordTranslationMode getEnableFieldTranslation() const
+    {
+        return CActivityFactory::getEnableFieldTranslation();
+    }
 };
 
 class CRoxieServerMultiInputInfo
@@ -1675,7 +1679,7 @@ public:
 protected:
     RecordTranslationMode getEnableFieldTranslation() const
     {
-        return factory->queryQueryFactory().queryOptions().enableFieldTranslation;
+        return factory->getEnableFieldTranslation();
     }
 };
 
