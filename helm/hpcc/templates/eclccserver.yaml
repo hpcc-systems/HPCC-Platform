@@ -14,6 +14,7 @@ data:
 {{- include "hpcc.generateLoggingConfig" . | indent 6 }}
       queues:
 {{ include "hpcc.generateConfigMapQueues" .root | indent 6 }}
+{{ include "hpcc.generateVaultConfig" (dict "root" .root "categories" (list "codeVerify") ) | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
 {{- if not .me.useChildProcesses }}
