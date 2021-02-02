@@ -227,6 +227,7 @@ interface IRoxieServerActivityFactory : extends IActivityFactory
     virtual bool isInputOrdered(bool consumerOrdered, unsigned idx) const = 0;
     virtual roxiemem::RoxieHeapFlags getHeapFlags() const = 0;
     virtual bool isActivityCodeSigned() const = 0;
+    virtual RecordTranslationMode getEnableFieldTranslation() const = 0;
 };
 interface IGraphResult : public IInterface
 {

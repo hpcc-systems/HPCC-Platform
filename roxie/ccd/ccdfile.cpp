@@ -2735,6 +2735,8 @@ public:
                     {
                         if (formatCrcs.item(idx) && expectedFormatCrc && (formatCrcs.item(idx) != expectedFormatCrc))
                             DBGLOG("Overriding stored record layout reading file %s", subname);
+
+                        thisFormatCrc = expectedFormatCrc;
                     }
                     else
                     {
