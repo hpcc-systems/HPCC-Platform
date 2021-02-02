@@ -1,14 +1,12 @@
 import * as arrayUtil from "dojo/_base/array";
 import * as config from "dojo/_base/config";
-import * as declare from "dojo/_base/declare";
 import * as Deferred from "dojo/_base/Deferred";
 import * as lang from "dojo/_base/lang";
 import * as cookie from "dojo/cookie";
 import * as QueryResults from "dojo/store/util/QueryResults";
 import * as topic from "dojo/topic";
-import * as ESPUtil from "./ESPUtil";
-
 import * as hpccComms from "@hpcc-js/comms";
+import * as ESPUtil from "./ESPUtil";
 
 declare const dojo: any;
 declare const debugConfig: any;
@@ -331,42 +329,39 @@ export function send(service, action, params?) {
     return helper.send(service, action, params);
 }
 
-export const Store = declare(null, {
-    SortbyProperty: "Sortby",
-    DescendingProperty: "Descending",
-    useSingletons: true,
+export abstract class Store {
+    SortbyProperty = "Sortby";
+    DescendingProperty = "Descending";
+    useSingletons = true;
 
-    constructor(options) {
+    cachedArray: object;
+    abstract service: any;
+    abstract action: any;
+    abstract responseQualifier: any;
+    abstract idProperty: any;
+    startProperty: any;
+    countProperty: any;
+    preProcessFullResponse: any;
+    preProcessResponse: any;
+    preProcessRow: any;
+    postProcessResults: any;
+    responseTotalQualifier: any;
+
+    constructor() {
         this.cachedArray = {};
-
-        if (!this.service) {
-            throw new Error("service:  Undefined - Missing service name (eg 'WsWorkunts').");
-        }
-        if (!this.action) {
-            throw new Error("action:  Undefined - Missing action name (eg 'WUQuery').");
-        }
-        if (!this.responseQualifier) {
-            throw new Error("responseQualifier:  Undefined - Missing action name (eg 'Workunits.ECLWorkunit').");
-        }
-        if (!this.idProperty) {
-            throw new Error("idProperty:  Undefined - Missing ID field (eg 'Wuid').");
-        }
-        if (options) {
-            declare.safeMixin(this, options);
-        }
-    },
+    }
 
     endsWith(str, suffix) {
         return str.indexOf(suffix, str.length - suffix.length) !== -1;
-    },
+    }
 
     getIdentity(item) {
         return item[this.idProperty];
-    },
+    }
 
     getCachedArray(create) {
         return this.useSingletons ? lang.getObject(this.service + "." + this.action, create, _StoreSingletons) : this.cachedArray;
-    },
+    }
 
     exists(id) {
         const cachedArray = this.getCachedArray(false);
@@ -374,9 +369,9 @@ export const Store = declare(null, {
             return cachedArray[id] !== undefined;
         }
         return false;
-    },
+    }
 
-    get(id, item) {
+    get(id, item?) {
         if (!this.exists(id)) {
             const cachedArray = this.getCachedArray(true);
             cachedArray[id] = this.create(id, item);
@@ -384,33 +379,36 @@ export const Store = declare(null, {
         }
         const cachedArray = this.getCachedArray(false);
         return cachedArray[id];
-    },
+    }
 
     create(id, item) {
         const retVal = {
         };
         retVal[this.idProperty] = id;
         return retVal;
-    },
+    }
 
     update(id, item) {
         lang.mixin(this.get(id), item);
-    },
+    }
 
     remove(id) {
         const cachedArray = this.getCachedArray(false);
         if (cachedArray) {
             delete cachedArray[id];
         }
-    },
+    }
 
     _hasResponseContent(response) {
         return lang.exists(this.responseQualifier, response);
-    },
+    }
 
     _getResponseContent(response) {
         return lang.getObject(this.responseQualifier, false, response);
-    },
+    }
+
+    preRequest(request) {
+    }
 
     query(query, options) {
         const request = query;
@@ -469,4 +467,4 @@ export const Store = declare(null, {
         });
         return QueryResults(deferredResults);
     }
-});
+}
