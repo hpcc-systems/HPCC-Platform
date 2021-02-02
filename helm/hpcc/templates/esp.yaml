@@ -16,16 +16,18 @@ data:
 {{ include "hpcc.generateConfigMapQueues" .root | indent 6 }}
       services:
 {{ include "hpcc.generateConfigMapServices" .root | indent 6 }}
-{{ include "hpcc.generateVaultConfig" (dict "root" .root "categories" (list "storage" "esp" "codeSign") ) | indent 6 }}
+{{ include "hpcc.generateVaultConfig" (dict "root" .root "categories" .secretsCategories ) | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
 {{- end -}}
 
 {{ range $.Values.esp -}}
 {{- if not .disabled -}}
-{{- $commonCtx := dict "root" $ "me" . }}
-{{- $configSHA := include "hpcc.espConfigMap" $commonCtx | sha256sum }}
 {{- $application := .application | default "eclwatch" -}}
+{{- $secretsCategories := ternary (list "storage" "esp" "codeSign" "codeVerify")  (list "storage" "esp") (eq $application "eclwatch") -}}
+{{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories -}}
+{{- $configSHA := include "hpcc.espConfigMap" $commonCtx | sha256sum }}
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -62,12 +64,12 @@ spec:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
 {{ include "hpcc.addDataVolumeMount" $commonCtx | indent 8 }}
 {{ include "hpcc.addDllVolumeMount" $ | indent 8 }}
-{{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "system" "storage" "codeSign" ) ) | indent 8 }}
+{{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" $secretsCategories ) | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
 {{ include "hpcc.addDataVolume" $commonCtx | indent 6 }}
 {{ include "hpcc.addDllVolume" $ | indent 6 }}
-{{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "system" "storage" "codeSign") ) | indent 6 }}
+{{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" $secretsCategories ) | indent 6 }}
 ---
 kind: ConfigMap 
 {{ include "hpcc.espConfigMap" $commonCtx }}
