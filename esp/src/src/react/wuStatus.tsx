@@ -99,7 +99,7 @@ export const WUStatus: React.FunctionComponent<WUStatus> = ({
                         <StepLabel {...labelProps}>{label}</StepLabel>
                     </Step>;
                 })}
-            </Stepper>;
+            </Stepper>
         </MuiThemeProvider>
     );
 };

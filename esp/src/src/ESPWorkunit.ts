@@ -613,6 +613,7 @@ const Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
                 IncludeApplicationValues: args.onGetApplicationValues ? true : false,
                 IncludeWorkflows: args.onGetWorkflows ? true : false,
                 IncludeXmlSchemas: false,
+                IncludeServiceNames: args.onGetServiceNames ? true : false,
                 SuppressResultSchemas: true
             }
         }).then(function (response) {
@@ -692,6 +693,9 @@ const Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
                 }
                 if (args.onGetWorkflows && lang.exists("Workflows.ECLWorkflow", context)) {
                     args.onGetWorkflows(context.Workflows.ECLWorkflow);
+                }
+                if (args.onGetServiceNames && lang.exists("ServiceNames.Item", context)) {
+                    args.onGetServiceNames(context.ServiceNames.Item);
                 }
                 if (args.onAfterSend) {
                     args.onAfterSend(context);
@@ -971,6 +975,16 @@ const Workunit = declare([ESPUtil.Singleton], {  // jshint ignore:line
                 });
                 onFetchGraphXgmml("", "");
             }
+        });
+    },
+    fetchServiceNames(onFetchServiceNames: (items: string[]) => void = items => { }) {
+        if (this.serviceNames && this.serviceNames.length) {
+            onFetchServiceNames(this.serviceNames);
+            return;
+        }
+
+        this.getInfo({
+            onGetServiceNames: onFetchServiceNames
         });
     },
     setGraphSvg(graphName, svg) {
