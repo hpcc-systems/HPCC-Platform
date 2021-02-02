@@ -12,14 +12,15 @@ data:
     roxie:
 {{ toYaml (omit .me "logging") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" . | indent 6 }}
-{{ include "hpcc.generateVaultConfig" (dict "root" .root "categories" (list "storage" "ecl" "ecl-user" ) ) | indent 6 }}
+{{ include "hpcc.generateVaultConfig" . | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
 {{- end -}}
 
 {{ range $roxie := $.Values.roxie -}}
 {{- if not $roxie.disabled  -}}
-{{- $commonCtx := dict "root" $ "me" $roxie }}
+{{- $secretsCategories := list "system" "ecl-user" "ecl" "storage" }}
+{{- $commonCtx := dict "root" $ "me" $roxie "secretsCategories" $secretsCategories }}
 {{- $configSHA := include "hpcc.localroxieConfigMap" $commonCtx | sha256sum }}
 {{- include "hpcc.checkDefaultStoragePlane" $commonCtx }}
 {{- if $roxie.localAgent -}}
@@ -77,12 +78,12 @@ spec:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
 {{ include "hpcc.addDataVolumeMount" $commonCtx | indent 8 }}
 {{ include "hpcc.addDllVolumeMount" $commonCtx | indent 8 }}
-{{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "system" "ecl" "storage" ) ) | indent 8 }}
+{{- include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
 {{ include "hpcc.addDataVolume" $commonCtx | indent 6 }}
 {{ include "hpcc.addDllVolume" $commonCtx | indent 6 }}
-{{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "system" "ecl" "storage" ) ) | indent 6 }}
+{{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
 ---
 {{- range $service := $roxie.services }}
 {{- if ne (int $service.port)  0 }}

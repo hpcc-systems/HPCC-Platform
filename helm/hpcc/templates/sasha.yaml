@@ -2,12 +2,13 @@
 {{- if not $sashaServices.disabled -}}
 {{ range $sashaName, $_sasha := $sashaServices -}}
 {{ $sasha := ($_sasha | default dict) -}}
-{{ if not $sasha.disabled -}}
-{{ $_ := set $sasha "name" $sashaName -}}
-{{ $_ := set $sasha "access" (splitList " " (include "hpcc.getSashaServiceAccess" $sasha)) -}}
-{{ $commonCtx := dict "root" $ "me" $sasha -}}
-{{ $configSHA := include "hpcc.sashaConfigMap" $commonCtx | sha256sum -}}
-{{ $serviceName := printf "sasha-%s" $sashaName -}}
+{{- if not $sasha.disabled -}}
+{{- $_ := set $sasha "name" $sashaName -}}
+{{- $_ := set $sasha "access" (splitList " " (include "hpcc.getSashaServiceAccess" $sasha)) -}}
+{{- $secretsCategories := append ((or (has "data" $sasha.access) (has "dalidata" $sasha.access)) | ternary (list "storage") list) "system" -}}
+{{- $commonCtx := dict "root" $ "me" $sasha "secretsCategories" $secretsCategories -}}
+{{- $configSHA := include "hpcc.sashaConfigMap" $commonCtx | sha256sum -}}
+{{- $serviceName := printf "sasha-%s" $sashaName -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -30,12 +31,10 @@ spec:
 {{- include "hpcc.addSashaContainer" $commonCtx | indent 6 }}
         volumeMounts:
 {{- include "hpcc.addSashaVolumeMounts" $commonCtx | indent 8 }}
+{{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
       volumes:
 {{- include "hpcc.addSashaVolumes" $commonCtx | indent 6 }}
-{{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "system" ) ) | indent 6 -}}
-{{- if has "data" $sasha.access -}}
-{{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "storage" ) ) | indent 6 -}}
-{{- end }}
+{{- include "hpcc.addSecretVolumes"  $commonCtx | indent 6 }}
 ---
 {{- if and (not $sasha.disabled) ($sasha.servicePort) -}}
 {{ include "hpcc.addSashaService" $commonCtx }}
