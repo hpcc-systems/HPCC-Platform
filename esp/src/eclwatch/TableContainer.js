@@ -16,7 +16,6 @@ define([
 
             arrayUtil.forEach(this.getChildren(), lang.hitch(this, function (child, index) {
                 child.set("label", child.get("label").split(" ").join("&nbsp;"));
-                child.set("title", child.get("title").split(" ").join("&nbsp;"));
             }));
 
             this.inherited(arguments);
