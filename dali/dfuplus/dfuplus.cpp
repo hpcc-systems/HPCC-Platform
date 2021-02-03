@@ -728,8 +728,6 @@ int CDfuPlusHelper::despray()
     MemoryBuffer xmlbuf;
     if(dstxml == nullptr)
     {
-        if(dstfile == nullptr)
-            throw MakeStringException(-1, "dstfile not specified");
         if(dstip == nullptr) {
 #ifdef DAFILESRV_LOCAL
             progress("dstip not specified - assuming spray from local machine\n");
@@ -750,7 +748,7 @@ int CDfuPlusHelper::despray()
     }
 
     if(dstxml == nullptr)
-        info("\nDespraying %s to host %s file %s\n", srcname, dstip, dstfile);
+        info("\nDespraying %s to host %s file %s\n", srcname, dstip, dstfile ? dstfile : "");
     else
         info("\nDespraying %s\n", srcname);
 
@@ -1427,9 +1425,12 @@ int CDfuPlusHelper::add()
         int len = buf.length();
         xmlbuf.setBuffer(len, buf.detach(), true);
 
+        const char* dstcluster = globals->queryProp("dstcluster");
+
         Owned<IClientAddRequest> req = dfuclient->createAddRequest();
         req->setDstname(lfn);
         req->setXmlmap(xmlbuf);
+        req->setDstcluster(dstcluster);
 
         Owned<IClientAddResponse> resp = dfuclient->Add(req);
 

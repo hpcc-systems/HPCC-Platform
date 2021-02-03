@@ -2328,6 +2328,24 @@ void CFileSprayEx::getDropZoneInfoByIP(double clientVersion, const char* ip, con
     }
 }
 
+static StringBuffer & expandLogicalAsPhysical(StringBuffer & target, const char * name, const char * separator)
+{
+    const char * cur = name;
+    for (;;)
+    {
+        const char * colon = strstr(cur, "::");
+        if (!colon)
+            break;
+
+        //MORE: Process special characters?
+        target.append(colon - cur, cur);
+        target.append(separator);
+        cur = colon + 2;
+    }
+
+    return target.append(cur);
+}
+
 bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDesprayResponse &resp)
 {
     try
@@ -2342,6 +2360,7 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         double version = context.getClientVersion();
         const char* destip = req.getDestIP();
         StringBuffer destPath;
+        StringBuffer implicitDestFile;
         const char* destfile = getStandardPosixPath(destPath, req.getDestPath()).str();
 
         MemoryBuffer& dstxml = (MemoryBuffer&)req.getDstxml();
@@ -2349,8 +2368,13 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         {
             if(!destip || !*destip)
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination network IP not specified.");
+
+            //If the destination filename is not provided, calculate a relative filename from the logical filename
             if(!destfile || !*destfile)
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination file not specified.");
+            {
+                expandLogicalAsPhysical(implicitDestFile, srcname, "/");
+                destfile = implicitDestFile;
+            }
         }
 
         StringBuffer srcTitle;

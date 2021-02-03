@@ -1043,7 +1043,7 @@ public:
         return out;
     }
 
-    void addFileXML(const char *lfn, const StringBuffer &xml, IUserDescriptor *user)
+    virtual void addFileXML(const char *lfn, const StringBuffer &xml, const char * cluster, IUserDescriptor *user) override
     {
         Owned<IPropertyTree> t = createPTreeFromXMLString(xml);
         IDistributedFileDirectory &dfd = queryDistributedFileDirectory();
@@ -1062,6 +1062,36 @@ public:
         else if (0 == strcmp(nodeName, queryDfsXmlBranchName(DXB_File)))
         {
             // Logical file map
+            //Patch the cluster before the file is created
+            if (!isEmptyString(cluster))
+            {
+                //In containerized mode the directory is configured somewhere else...
+                //replace @directory with a directory calculated from the storage plane
+                //prefix and the scope of the logical filename
+                //MORE: This could should be commoned up with similar code elsewhere
+                Owned<IStoragePlane> plane = getStoragePlane(cluster, true);
+                StringBuffer location(plane->queryPrefix());
+                const char * temp = lfn;
+                for (;;)
+                {
+                    const char * sep = strstr(temp, "::");
+                    if (!sep)
+                        break;
+                    addPathSepChar(location);
+                    location.appendLower(sep - temp, temp);
+                    temp = sep + 2;
+                }
+                t->setProp("@directory", location);
+
+                //Remove any clusters in the incoming definition, and replace it with a single entry
+                while (t->removeProp("Cluster"))
+                {
+                    //Loop again incase there are any other matches - currently removeProp() appears to remove the whole
+                    //list, but when qualified it would only remove the 1st...
+                }
+                IPropertyTree * entry = t->addPropTree("Cluster", createPTree());
+                entry->setProp("@name", cluster);
+            }
 
             Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(t, &queryNamedGroupStore(), 0);
             file.setown(dfd.createNew(fdesc));
