@@ -17,6 +17,7 @@ spec:
         app: dali
     spec:
       serviceAccountName: "hpcc-default"
+{{- include "hpcc.addPodSecurityContext" (dict "root" $ "me" .) | indent 6 -}}
       initContainers: 
         {{- include "hpcc.checkDaliMount" (dict "root" $) | indent 6 }}
       containers:

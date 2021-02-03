@@ -519,6 +519,18 @@ Add any bundles
 Add security context
 Pass in a dictionary with root and me defined
 */}}
+{{- define "hpcc.addPodSecurityContext" }}
+securityContext:
+  fsGroup: 10001
+  runAsNonRoot: true
+  runAsUser: 10000
+  runAsGroup: 10001
+{{ end -}}
+
+{{/*
+Add security context
+Pass in a dictionary with root and me defined
+*/}}
 {{- define "hpcc.addSecurityContext" }}
 securityContext:
 {{- if .root.Values.global.privileged }}
@@ -532,9 +544,6 @@ securityContext:
     - ALL
   allowPrivilegeEscalation: false
 {{- end }}
-  runAsNonRoot: true
-  runAsUser: 10000
-  runAsGroup: 10001
   readOnlyRootFilesystem: true
 {{ end -}}
 
