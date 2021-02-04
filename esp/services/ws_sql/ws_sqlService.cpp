@@ -30,8 +30,6 @@ void CwssqlEx::init(IPropertyTree *_cfg, const char *_process, const char *_serv
         throw MakeStringException(-1, "ws_sqlEx: Problem initiating ECLFunctions structure");
     }
 
-    refreshValidClusters();
-
     setWsSqlBuildVersion(BUILD_TAG);
 }
 
@@ -831,8 +829,7 @@ void CwssqlEx::processMultipleClusterOption(StringArray & clusters, const char  
         hashoptions.appendf("\n#OPTION('AllowedClusters', '%s", targetcluster);
         ForEachItemIn(i,clusters)
         {
-            if (!isValidCluster(clusters.item(i)))
-                throw MakeStringException(-1, "Invalid alternate cluster name: %s", clusters.item(i));
+            validateTargetName(clusters.item(i));
 
             hashoptions.appendf(",%s", clusters.item(i));
         }
@@ -946,11 +943,7 @@ bool CwssqlEx::onExecuteSQL(IEspContext &context, IEspExecuteSQLRequest &req, IE
         if (compiledwuid.length()==0)
         {
             {
-                if (isEmpty(cluster))
-                    throw MakeStringException(-1,"Target cluster not set.");
-
-                if (!isValidCluster(cluster))
-                    throw MakeStringException(-1, "Invalid cluster name: %s", cluster);
+                validateTargetName(cluster);
 
                 if (querytype == SQLTypeCreateAndLoad)
                     clonable = false;
@@ -1018,8 +1011,8 @@ bool CwssqlEx::onExecuteSQL(IEspContext &context, IEspExecuteSQLRequest &req, IE
                 createWUXMLParams(xmlparams, parsedSQL, NULL, cw);
             else if (querytype == SQLTypeSelect)
             {
-                if (notEmpty(cluster) && !isValidCluster(cluster))
-                    throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", cluster);
+                if (!isEmptyString(cluster))
+                    validateTargetName(cluster);
 
                 createWUXMLParams(xmlparams, parsedSQL->getParamList());
             }
@@ -1232,8 +1225,8 @@ bool CwssqlEx::onExecutePreparedSQL(IEspContext &context, IEspExecutePreparedSQL
        context.ensureFeatureAccess(WSSQLACCESS, SecAccess_Write, -1, "WsSQL::ExecutePreparedSQL: Permission denied.");
 
        const char *cluster = req.getTargetCluster();
-       if (notEmpty(cluster) && !isValidCluster(cluster))
-           throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", cluster);
+       if (!isEmptyString(cluster))
+           validateTargetName(cluster);
 
        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
 
@@ -1450,11 +1443,7 @@ bool CwssqlEx::onPrepareSQL(IEspContext &context, IEspPrepareSQLRequest &req, IE
             }
             else
             {
-                if (isEmpty(cluster))
-                    throw MakeStringException(1,"Target cluster not set.");
-
-                if (!isValidCluster(cluster))
-                    throw MakeStringException(-1/*ECLWATCH_INVALID_CLUSTER_NAME*/, "Invalid cluster name: %s", cluster);
+                validateTargetName(cluster);
 
                 ECLEngine::generateECL(parsedSQL, ecltext);
                 if (hashoptions.length() > 0)
@@ -1686,8 +1675,8 @@ bool CwssqlEx::onCreateTableAndLoad(IEspContext &context, IEspCreateTableAndLoad
         throw MakeStringException(-1, "WsSQL::CreateTableAndLoad: Error: Target TableName is invalid: %s.", targetTableName);
 
     const char * cluster = req.getTargetCluster();
-    if (notEmpty(cluster) && !isValidCluster(cluster))
-        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "WsSQL::CreateTableAndLoad: Invalid cluster name: %s", cluster);
+    if (!isEmptyString(cluster))
+        validateTargetName(cluster);
 
     IConstDataSourceInfo & datasource = req.getDataSource();
 
@@ -1979,38 +1968,6 @@ bool CwssqlEx::onGetResults(IEspContext &context, IEspGetResultsRequest &req, IE
     return success;
 }
 
-void CwssqlEx::refreshValidClusters()
-{
-    validClusters.kill();
-#ifdef _CONTAINERIZED
-    Owned<IStringIterator> it = getContainerTargetClusters(nullptr, nullptr);
-#else
-    Owned<IStringIterator> it = getTargetClusters(nullptr, nullptr);
-#endif
-    ForEach(*it)
-    {
-        SCMStringBuffer s;
-        IStringVal &val = it->str(s);
-        if (!validClusters.getValue(val.str()))
-            validClusters.setValue(val.str(), true);
-    }
-}
-
-bool CwssqlEx::isValidCluster(const char *cluster)
-{
-    if (!cluster || !*cluster)
-        return false;
-    CriticalBlock block(crit);
-    if (validClusters.getValue(cluster))
-        return true;
-    if (validateTargetClusterName(cluster))
-    {
-        refreshValidClusters();
-        return true;
-    }
-    return false;
-}
-
 bool CwssqlEx::publishWorkunit(IEspContext &context, const char * queryname, const char * wuid, const char * targetcluster)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
@@ -2019,7 +1976,7 @@ bool CwssqlEx::publishWorkunit(IEspContext &context, const char * queryname, con
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot find the workunit %s", wuid);
 
     SCMStringBuffer queryName;
-    if (notEmpty(queryname))
+    if (!isEmptyString(queryname))
         queryName.set(queryname);
     else
         queryName.set(cw->queryJobName());
@@ -2028,15 +1985,12 @@ bool CwssqlEx::publishWorkunit(IEspContext &context, const char * queryname, con
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Query/Job name not defined for publishing workunit %s", wuid);
 
     SCMStringBuffer target;
-    if (notEmpty(targetcluster))
+    if (!isEmptyString(targetcluster))
         target.set(targetcluster);
     else
         target.set(cw->queryClusterName());
 
-    if (!target.length())
-        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Cluster name not defined for publishing workunit %s", wuid);
-    if (!isValidCluster(target.str()))
-        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", target.str());
+    validateTargetName(target.str());
     //RODRIGO this is needed:
     //copyQueryFilesToCluster(context, cw, "", target.str(), queryName.str(), false);
 

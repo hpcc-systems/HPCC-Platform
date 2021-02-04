@@ -222,8 +222,6 @@ public:
         CWsWorkunits::setContainer(container);
         m_sched.setContainer(container);
     }
-    void refreshValidClusters();
-    bool isValidCluster(const char *cluster);
     void deploySharedObjectReq(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp, const char *dir, const char *xml=NULL);
     unsigned getGraphIdsByQueryId(const char *target, const char *queryId, StringArray& graphIds);
     bool getQueryFiles(IEspContext &context, const char* wuid, const char* query, const char* target, StringArray& logicalFiles, IArrayOf<IEspQuerySuperFile> *superFiles);
@@ -412,8 +410,6 @@ private:
     Owned<WUArchiveCache> wuArchiveCache;
     StringAttr sashaServerIp;
     unsigned short sashaServerPort;
-    BoolHash validClusters;
-    CriticalSection crit;
     WUSchedule m_sched;
     unsigned short port;
     Owned<IPropertyTree> directories;

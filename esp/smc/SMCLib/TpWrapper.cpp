@@ -2228,3 +2228,73 @@ extern TPWRAPPER_API void initContainerRoxieTargets(MapStringToMyClass<ISmartSoc
     }
 }
 
+extern TPWRAPPER_API unsigned getThorClusterNames(StringArray& targetNames, StringArray& queueNames)
+{
+#ifndef _CONTAINERIZED
+    StringArray thorNames, groupNames;
+    getEnvironmentThorClusterNames(thorNames, groupNames, targetNames, queueNames);
+#else
+    Owned<IStringIterator> targets = getContainerTargetClusters("thor", nullptr);
+    ForEach(*targets)
+    {
+        SCMStringBuffer target;
+        targets->str(target);
+        targetNames.append(target.str());
+
+        StringBuffer qName;
+        queueNames.append(getClusterThorQueueName(qName, target.str()));
+    }
+#endif
+    return targetNames.ordinality();
+}
+
+static std::set<std::string> validTargets;
+static CriticalSection validTargetSect;
+static bool targetsDirty = true;
+
+static void refreshValidTargets()
+{
+    validTargets.clear();
+#ifdef _CONTAINERIZED
+    // discovered from generated cluster names
+    Owned<IStringIterator> it = getContainerTargetClusters(nullptr, nullptr);
+#else
+    Owned<IStringIterator> it = getTargetClusters(nullptr, nullptr);
+#endif
+    ForEach(*it)
+    {
+        SCMStringBuffer s;
+        IStringVal& val = it->str(s);
+        if (validTargets.find(val.str()) == validTargets.end())
+        {
+            validTargets.insert(val.str());
+            PROGLOG("adding valid target: %s", val.str());
+        }
+    }
+}
+
+extern TPWRAPPER_API void validateTargetName(const char* target)
+{
+    if (isEmptyString(target))
+        throw makeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Empty target name.");
+
+    CriticalBlock block(validTargetSect);
+    if (targetsDirty)
+    {
+        refreshValidTargets();
+        targetsDirty = false;
+    }
+
+    if (validTargets.find(target) != validTargets.end())
+        return;
+
+#ifdef _CONTAINERIZED
+    //Currently, if there's any change to the target queues, esp will be auto restarted by K8s.
+    throw makeStringExceptionV(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid target name: %s", target);
+#else
+    if (!validateTargetClusterName(target))
+        throw makeStringExceptionV(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid target name: %s", target);
+
+    targetsDirty = true;
+#endif
+}

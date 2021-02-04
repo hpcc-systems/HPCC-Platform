@@ -357,7 +357,6 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     DBGLOG("Initializing %s service [process = %s]", service, process);
 
     checkUpdateQuerysetLibraries();
-    refreshValidClusters();
 
     daliServers.set(cfg->queryProp("Software/EspProcess/@daliServers"));
     const char *computer = cfg->queryProp("Software/EspProcess/@computer");
@@ -449,44 +448,6 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     Owned<CClusterQueryStateThreadFactory> threadFactory = new CClusterQueryStateThreadFactory();
     clusterQueryStatePool.setown(createThreadPool("CheckAndSetClusterQueryState Thread Pool", threadFactory, NULL,
             cfg->getPropInt(xpath.str(), CHECK_QUERY_STATUS_THREAD_POOL_SIZE)));
-}
-
-void CWsWorkunitsEx::refreshValidClusters()
-{
-    validClusters.kill();
-#ifdef _CONTAINERIZED
-    // discovered from generated cluster names
-    Owned<IStringIterator> it = getContainerTargetClusters(nullptr, nullptr);
-#else
-    Owned<IStringIterator> it = getTargetClusters(nullptr, nullptr);
-#endif
-    ForEach(*it)
-    {
-        SCMStringBuffer s;
-        IStringVal &val = it->str(s);
-        bool* found = validClusters.getValue(val.str());
-        if (!found || !*found)
-        {
-            validClusters.setValue(val.str(), true);
-            PROGLOG("adding valid cluster: %s", val.str());
-        }
-    }
-}
-
-bool CWsWorkunitsEx::isValidCluster(const char *cluster)
-{
-    if (!cluster || !*cluster)
-        return false;
-    CriticalBlock block(crit);
-    bool* found = validClusters.getValue(cluster);
-    if (found && *found)
-        return true;
-    if (validateTargetClusterName(cluster))
-    {
-        refreshValidClusters();
-        return true;
-    }
-    return false;
 }
 
 bool CWsWorkunitsEx::onWUCreate(IEspContext &context, IEspWUCreateRequest &req, IEspWUCreateResponse &resp)
@@ -581,8 +542,7 @@ bool CWsWorkunitsEx::onWUUpdate(IEspContext &context, IEspWUUpdateRequest &req, 
         {
             if (origValueChanged(req.getClusterSelection(), req.getClusterOrig(), s.clear(), false))
             {
-                if (!isValidCluster(s.str()))
-                    throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", s.str());
+                validateTargetName(s);
                 if (req.getState() == WUStateBlocked)
                     switchWorkUnitQueue(wu.get(), s.str());
                 else if ((req.getState() != WUStateSubmitted) && (req.getState() != WUStateRunning) && (req.getState() != WUStateDebugPaused) && (req.getState() != WUStateDebugRunning))
@@ -941,10 +901,7 @@ bool CWsWorkunitsEx::onWUSchedule(IEspContext &context, IEspWUScheduleRequest &r
         WsWuHelpers::checkAndTrimWorkunit("WUSchedule", wuid);
 
         const char* cluster = req.getCluster();
-        if (isEmpty(cluster))
-             throw MakeStringException(ECLWATCH_INVALID_INPUT,"No Cluster defined.");
-        if (!isValidCluster(cluster))
-            throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", cluster);
+        validateTargetName(cluster);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
         WorkunitUpdate wu(factory->updateWorkUnit(wuid.str()));
@@ -996,10 +953,7 @@ bool CWsWorkunitsEx::onWUSubmit(IEspContext &context, IEspWUSubmitRequest &req, 
         WsWuHelpers::checkAndTrimWorkunit("WUSubmit", wuid);
 
         const char *cluster = req.getCluster();
-        if (isEmpty(cluster))
-            throw MakeStringException(ECLWATCH_INVALID_INPUT,"No Cluster defined.");
-        if (!isValidCluster(cluster))
-            throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", cluster);
+        validateTargetName(cluster);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
         Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str());
@@ -1056,8 +1010,8 @@ bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWU
     try
     {
         const char *cluster = req.getCluster();
-        if (notEmpty(cluster) && !isValidCluster(cluster))
-            throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", cluster);
+        if (!isEmptyString(cluster))
+            validateTargetName(cluster);
 
         StringBuffer wuidStr(req.getWuid());
         const char* runWuid = wuidStr.trim().str();
@@ -4845,8 +4799,8 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
     {
         ensureWsCreateWorkunitAccess(context);
 
-        if (notEmpty(req.getCluster()) && !isValidCluster(req.getCluster()))
-            throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", req.getCluster());
+        if (!isEmptyString(req.getCluster()))
+            validateTargetName(req.getCluster());
         if (!type || !*type)
             throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT, "WUDeployWorkunit unspecified object type.");
         if (strieq(type, "archive")|| strieq(type, "ecl_text"))
