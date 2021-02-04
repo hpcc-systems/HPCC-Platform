@@ -105,9 +105,9 @@ export class ECLArchiveWidget {
         };
 
         const wu = Workunit.attach({ baseUrl: "" }, params.Wuid);
-        wu.refresh(true).then(function (wuInfo) {
-            context.editor.text(wuInfo.Query.Text);
-            if (!wuInfo.HasArchiveQuery) {
+        wu.fetchQuery().then(function (query) {
+            context.editor.text(query.Text);
+            if (!wu.HasArchiveQuery) {
                 context.archiveViewer
                     .target(context.id + "EclContent")
                     .addWidget(context.editor)

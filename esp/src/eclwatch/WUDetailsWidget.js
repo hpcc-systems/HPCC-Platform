@@ -177,6 +177,7 @@ define([
         },
         _onRefresh: function (event) {
             this.wu.refresh(true);
+            this.wu.fetchServiceNames();
         },
         _onClone: function (event) {
             this.wu.clone();
@@ -309,6 +310,7 @@ define([
                     context.updateInput(name, oldValue, newValue);
                 });
                 this.wu.refresh();
+                this.wu.fetchServiceNames();
             }
 
             this.infoGridWidget.init(params);
@@ -602,6 +604,9 @@ define([
             } else if (name === "Scope" && newValue) {
                 domClass.remove("scopeOptional", "hidden");
                 domClass.add("scopeOptional", "show");
+            } else if (name === "ServiceNames" && newValue && newValue.Item) {
+                var domElem = registry.byId(this.id + "ServiceNamesCustom");
+                domElem.set("value", newValue.Item.join("\n"));
             }
             if (name === "__hpcc_changedCount" && newValue > 0) {
                 var getInt = function (item) {
