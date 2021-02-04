@@ -32,6 +32,7 @@ public:
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
     virtual bool onSign(IEspContext &context, IEspSignRequest &req, IEspSignResponse &resp);
     virtual bool onListUserIDs(IEspContext &context, IEspListUserIDsRequest &req, IEspListUserIDsResponse &resp);
+    virtual bool onVerify(IEspContext &context, IEspVerifyRequest &req, IEspVerifyResponse &resp);
 };
 
 #endif // _WS_CODESIGNSERVICE_HPP_
