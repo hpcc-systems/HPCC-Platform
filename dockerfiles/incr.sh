@@ -26,9 +26,10 @@
 
 # NB: INPUT_* may be pre-set as environment variables.
 
-while getopts “d:fhlpt:u:b:” opt; do
+while getopts “d:fhlptn:u:b:” opt; do
   case $opt in
     l) TAGLATEST=1 ;;
+    n) CUSTOM_TAG_NAME=$OPTARG ;;
     p) PUSH=1 ;;
     t) INPUT_BUILD_THREADS=$OPTARG ;;
     d) INPUT_DOCKER_REPO=$OPTARG ;;
@@ -41,6 +42,7 @@ while getopts “d:fhlpt:u:b:” opt; do
        echo "    -b                 Build type (e.g. Debug / Release)"
        echo "    -h                 Display help"
        echo "    -l                 Tag the images as the latest"
+       echo "    -n                 Tag the image with a custom name (e.g. -c HPCC-25285)"
        echo "    -p                 Push images to docker repo"
        echo "    -t <num-threads>   Override the number of build threads"
        echo "    -u <user>          Specify the build user"
@@ -140,15 +142,18 @@ build_image() {
        --build-arg BUILD_TYPE=${BUILD_TYPE} ${@:3} \
        ${dockerfolder}/ 
   fi
-  if [ "$TAGLATEST" = "1" ] ; then
-    docker tag ${DOCKER_REPO}/${name}:${label} ${DOCKER_REPO}/${name}:latest
+
+  if [ "$TAGLATEST" = "1" ]; then
+    local tag="latest"
+  elif [ -n "$CUSTOM_TAG_NAME" ]; then
+    local tag="$CUSTOM_TAG_NAME"
+  fi
+
+  if [ "$tag" != "$label" ]; then
+    docker tag ${DOCKER_REPO}/${name}:${label} ${DOCKER_REPO}/${name}:${tag}
     if [ "$PUSH" = "1" ] ; then
       docker push ${DOCKER_REPO}/${name}:${label}
-      docker push ${DOCKER_REPO}/${name}:latest
-    fi
-  else
-    if [ "$PUSH" = "1" ] ; then
-      docker push ${DOCKER_REPO}/${name}:${label}
+      docker push ${DOCKER_REPO}/${name}:${tag}
     fi
   fi
 }
