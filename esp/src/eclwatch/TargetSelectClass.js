@@ -105,8 +105,6 @@ define([
                 this.set("value", "");
                 this.set("placeholder", "");
                 this.loadDropZoneMachines();
-            } else if (params.SubmitTargets === true) {
-                this.loadTargets(true);
             } else {
                 this.loadTargets();
             }
@@ -526,18 +524,19 @@ define([
             this._postLoad();
         },
 
-        loadTargets: function (executeOnly) {
+        loadTargets: function () {
             var context = this;
             WsTopology.TpLogicalClusterQuery({
-                RoxieQueueFilter: executeOnly ? WsTopology.RoxieQueueFilter.WorkunitsOnly : undefined
             }).then(function (response) {
                 if (lang.exists("TpLogicalClusterQueryResponse.TpLogicalClusters.TpLogicalCluster", response)) {
                     var targetData = response.TpLogicalClusterQueryResponse.TpLogicalClusters.TpLogicalCluster;
+                    context.logicalClusters = {};
                     for (var i = 0; i < targetData.length; ++i) {
                         context.options.push({
                             label: targetData[i].Name,
                             value: targetData[i].Name
                         });
+                        context.logicalClusters[targetData[i].Name] = targetData[i];
                     }
 
                     if (!context.includeBlank && context._value === "") {
@@ -550,6 +549,10 @@ define([
                 }
                 context._postLoad();
             });
+        },
+
+        selectedTarget() {
+            return this.logicalClusters[this.get("value")];
         },
 
         loadECLSamples: function () {
