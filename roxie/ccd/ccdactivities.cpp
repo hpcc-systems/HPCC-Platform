@@ -2430,7 +2430,7 @@ public:
             datafile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit(), true, isCodeSigned));
             if (datafile)
             {
-                translators.setown(datafile->getTranslators(projectedCrc, projectedMeta, expectedCrc, expectedMeta, queryFactory.queryOptions().enableFieldTranslation, FileFormatMode::index, queryFactory.queryQueryName()));
+                translators.setown(datafile->getTranslators(projectedCrc, projectedMeta, expectedCrc, expectedMeta, getEnableFieldTranslation(), FileFormatMode::index, queryFactory.queryQueryName()));
                 keyArray.setown(datafile->getKeyArray(isOpt, queryFactory.queryChannel()));
             }
         }
@@ -4012,7 +4012,7 @@ public:
             datafile.setown(_queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, true, _queryFactory.queryWorkUnit(), true, isCodeSigned));
             if (datafile)
             {
-                translators.setown(datafile->getTranslators(projectedCrc, projectedMeta, expectedCrc, expectedMeta, queryFactory.queryOptions().enableFieldTranslation, FileFormatMode::index, queryFactory.queryQueryName()));
+                translators.setown(datafile->getTranslators(projectedCrc, projectedMeta, expectedCrc, expectedMeta, getEnableFieldTranslation(), FileFormatMode::index, queryFactory.queryQueryName()));
                 keyArray.setown(datafile->getKeyArray(isOpt, queryFactory.queryChannel()));
             }
         }

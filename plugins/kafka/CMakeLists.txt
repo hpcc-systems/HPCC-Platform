@@ -66,6 +66,7 @@ if(KAFKA)
             COMMAND if [ ! -f ${LIBRDKAFKA_BUILD_DIR}/src/Makefile.config ]\; then echo "Configuring librdkafka" && cd ${LIBRDKAFKA_BUILD_DIR}/src && ./configure --prefix=${LIBRDKAFKA_BUILD_DIR}\; fi
             # If either there is no checksum file or if the checksums are different, re-make librdkafka
             COMMAND if [ ! -f ${LIBRDKAFKA_BUILD_DIR}/src/_md5.txt ] || ! md5sum --quiet --status -c ${LIBRDKAFKA_BUILD_DIR}/src/_md5.txt\; then echo "Building librdkafka" && cd ${LIBRDKAFKA_BUILD_DIR}/src && make libs && make install\; fi
+            COMMAND rm -f ${LIBRDKAFKA_BUILD_DIR}/src/_md5.txt
             COMMENT Copying and building librdkafka)
 
         install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${LIBRDKAFKA_BUILD_DIR}/lib\")")
