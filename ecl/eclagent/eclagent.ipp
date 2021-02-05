@@ -929,7 +929,6 @@ private:
     class LegacyInputProbe : public CInterface, implements IHThorInput, implements IEngineRowStream
     {
         IHThorInput  *in;
-        EclSubGraph  *owner;
         size32_t    maxRowSize;
         unsigned sourceId;
         unsigned outputIndex;
@@ -939,8 +938,8 @@ private:
     public:
         IMPLEMENT_IINTERFACE;
 
-        LegacyInputProbe(IHThorInput *_in, EclSubGraph *_owner, unsigned _sourceId, int outputidx)
-            : in(_in), owner(_owner), sourceId(_sourceId), outputIndex(outputidx)
+        LegacyInputProbe(IHThorInput *_in, unsigned _sourceId, int outputidx)
+            : in(_in), sourceId(_sourceId), outputIndex(outputidx)
         {
             StringAttrBuilder edgeIdText(edgeId);
             edgeIdText.append(_sourceId).append("_").append(outputidx);
@@ -1010,7 +1009,7 @@ private:
     public:
         virtual IEclGraphResults * resolveLocalQuery(__int64 activityId)
         {
-            if (activityId == container->queryId())
+            if ((unsigned __int64)activityId == container->queryId())
                 return container;
             return ctx->resolveLocalQuery(activityId);
         }
@@ -1050,7 +1049,7 @@ public:
     {
         if (probeEnabled)
         {
-            LegacyInputProbe *probe = new LegacyInputProbe(in, this, sourceId, outputidx);
+            LegacyInputProbe *probe = new LegacyInputProbe(in, sourceId, outputidx);
             probes.append(*probe);
             return probe;
         }

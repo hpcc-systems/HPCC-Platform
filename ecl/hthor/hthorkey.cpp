@@ -47,8 +47,8 @@ static IKeyIndex *openKeyFile(IDistributedFilePart & keyFile)
         try
         {
             OwnedIFile ifile = createIFile(keyFile.getFilename(rfn,copy));
-            unsigned __int64 thissize = ifile->size();
-            if (thissize != -1)
+            offset_t thissize = ifile->size();
+            if (thissize != (offset_t)-1)
             {
                 StringBuffer remotePath;
                 rfn.getPath(remotePath);
@@ -74,19 +74,6 @@ static IKeyIndex *openKeyFile(IDistributedFilePart & keyFile)
     keyFile.getFilename(rfn).getRemotePath(url);
     throw MakeStringException(1001, "Could not open key file at %s%s", url.str(), (numCopies > 1) ? " or any alternate location." : ".");
 }
-
-static void setProgress(IPropertyTree &node, const char *name, const char *value)
-{
-    StringBuffer attr("@");
-    node.setProp(attr.append(name).str(), value);
-}
-
-static void setProgress(IPropertyTree &node, const char *name, unsigned __int64 value)
-{
-    StringBuffer attr("@");
-    node.setPropInt64(attr.append(name).str(), value);
-}
-
 
 class TransformCallback : public CInterface, implements IThorIndexCallback 
 {
@@ -1707,20 +1694,19 @@ class ThreadedPartHandler : public CInterface
 {
 protected:
     Linked<IThreadPool> threadPool;
-    PooledThreadHandle threadHandle;
+    PooledThreadHandle threadHandle = 0;
     QueueOf<ROW, true> pending;
     CriticalSection crit;
     Semaphore limit;
-    bool started;
+    bool started = false;
     Owned<IDistributedFilePart> part;
     IThreadedExceptionHandler *handler;
 
 public:
     typedef ThreadedPartHandler<ROW> SELF;
     ThreadedPartHandler(IDistributedFilePart *_part, IThreadedExceptionHandler *_handler, IThreadPool * _threadPool)
-        : limit(MAX_FETCH_LOOKAHEAD), part(_part), handler(_handler), threadHandle(0), threadPool(_threadPool)
+        : threadPool(_threadPool), limit(MAX_FETCH_LOOKAHEAD), part(_part), handler(_handler)
     {
-        started = false;
     }
 
     ~ThreadedPartHandler()
@@ -1833,8 +1819,8 @@ public:
           encryptionkey(_encryptionkey), 
           activityId(_activityId), 
           outputMeta(_outputMeta),
-          prefetcher(_prefetcher),
-          rowAllocator(_rowAllocator)
+          rowAllocator(_rowAllocator),
+          prefetcher(_prefetcher)
     {
         base = _base;
         top = _base + _size;
@@ -1871,8 +1857,8 @@ public:
             try
             {
                 OwnedIFile ifile = createIFile(part->getFilename(rfn,copy));
-                unsigned __int64 thissize = ifile->size();
-                if (thissize != -1)
+                offset_t thissize = ifile->size();
+                if (thissize != (offset_t)-1)
                 {
                     IPropertyTree & props = part->queryAttributes();
                     unsigned __int64 expectedSize;
@@ -1885,7 +1871,7 @@ public:
                         expectedSize = props.getPropInt64("@compressedSize", -1);
                     else
                         expectedSize = props.getPropInt64("@size", -1);
-                    if(thissize != expectedSize && expectedSize != -1)
+                    if(thissize != expectedSize && expectedSize != (unsigned __int64)-1)
                         throw MakeStringException(0, "File size mismatch: file %s was supposed to be %" I64F "d bytes but appears to be %" I64F "d bytes", ifile->queryFilename(), expectedSize, thissize); 
                     if(blockcompressed)
                         rawFile.setown(createCompressedFileReader(ifile,eexp));
@@ -1980,7 +1966,7 @@ protected:
     static offset_t getPartSize(IDistributedFilePart *part)
     {
         offset_t partsize = part->queryAttributes().getPropInt64("@size", -1);
-        if (partsize==-1)
+        if (partsize == (offset_t)-1)
         {
             MTIME_SECTION(queryActiveTimer(), "Fetch remote file size");
             unsigned numCopies = part->numCopies();
@@ -1991,7 +1977,7 @@ protected:
                 {
                     OwnedIFile ifile = createIFile(part->getFilename(rfn,copy));
                     partsize = ifile->size();
-                    if (partsize != -1)
+                    if (partsize != (offset_t)-1)
                     {
                         // TODO: Create DistributedFilePropertyLock for parts
                         part->lockProperties();
@@ -2007,7 +1993,7 @@ protected:
                 }
             }
         }
-        if (partsize==-1)
+        if (partsize == (offset_t)-1)
             throw MakeStringException(0, "Unable to determine size of filepart"); 
         return partsize;
     }
@@ -2892,7 +2878,7 @@ public:
 
     IMPLEMENT_IINTERFACE;
 
-    CJoinGroup(const void *_left, IJoinProcessor *_join, CJoinGroup *_groupStart) : join(_join), matches(*this)
+    CJoinGroup(const void *_left, IJoinProcessor *_join, CJoinGroup *_groupStart) : matches(*this),join(_join)
     {
         candidates = 0;
         left = _left;
@@ -2981,7 +2967,7 @@ protected:
     unsigned matchcount;
     CIArrayOf<MatchSet> matchsets;
     atomic_t endMarkersPending;
-    IJoinProcessor *join;
+    IJoinProcessor *join = nullptr;
     mutable CriticalSection crit;
     CJoinGroup *groupStart;
     unsigned candidates;
@@ -3088,7 +3074,6 @@ class KeyedLookupPartHandler : extends ThreadedPartHandler<MatchSet>, implements
     Owned<IKeyManager> manager;
     IAgentContext &agent;
     DistributedKeyLookupHandler * tlk;
-    unsigned subno;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -3164,7 +3149,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     DistributedKeyLookupHandler(IDistributedFile *f, IJoinProcessor &_owner, IAgentContext &_agent)
-        : file(f), owner(_owner), agent(_agent)
+        : owner(_owner), file(f), agent(_agent)
     {
         threadPool.setown(createThreadPool("hthor keyed join lookup thread pool", &threadFactory));
         IDistributedSuperFile *super = f->querySuperFile();
@@ -3259,7 +3244,7 @@ public:
 };
 
 KeyedLookupPartHandler::KeyedLookupPartHandler(IJoinProcessor &_owner, IDistributedFilePart *_part, DistributedKeyLookupHandler * _tlk, unsigned _subno, IThreadPool * _threadPool, IAgentContext &_agent)
-    : owner(_owner), ThreadedPartHandler<MatchSet>(_part, _tlk, _threadPool), agent(_agent), tlk(_tlk), subno(_subno)
+    : ThreadedPartHandler<MatchSet>(_part, _tlk, _threadPool), owner(_owner), agent(_agent), tlk(_tlk)
 {
 }
 

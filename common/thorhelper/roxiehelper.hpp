@@ -488,14 +488,14 @@ public:
     {
     }
 
-    void append(double data);
-    void encodeString(const char *x, unsigned len, bool utf8=false);
-    void encodeData(const void *data, unsigned len);
-    void startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend = false, const IProperties *xmlns=NULL, bool adaptive=false);
-    void startScalar(const char *resultName, unsigned sequence, bool simpleTag, const char *simplename=nullptr);
-    virtual void setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size, bool simpleTag = false, const char *simplename=nullptr);
-    virtual void setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size, bool simpleTag = false, const char *simplename=nullptr);
-    virtual void flushXML(StringBuffer &current, bool isClosing)
+    virtual void append(double data) override;
+    virtual void encodeString(const char *x, unsigned len, bool utf8=false) override;
+    virtual void encodeData(const void *data, unsigned len) override;
+    virtual void startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend = false, const IProperties *xmlns=NULL, bool adaptive=false) override;
+    virtual void startScalar(const char *resultName, unsigned sequence, bool simpleTag, const char *simplename=nullptr) override;
+    virtual void setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size) override;
+    virtual void setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size) override;
+    virtual void flushXML(StringBuffer &current, bool isClosing) override
     {
         FlushingStringBuffer::flushXML(current, isClosing, (extend) ? "," : nullptr);
     }

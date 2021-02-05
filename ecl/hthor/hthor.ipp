@@ -200,21 +200,22 @@ class CHThorActivityBase : public CInterface, implements IHThorActivity, impleme
 {
 protected:
     enum ActivityState { StateCreated, StateReady, StateDone };
-    IHThorInput *input;
+    IHThorInput *input = nullptr;
     IHThorArg & help;
     ThorActivityKind kind;
     EclGraph & graph;
-    CHThorActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _help, ThorActivityKind _kind, EclGraph & _graph);
-    ~CHThorActivityBase();
     IAgentContext &agent;
     CachedOutputMetaData outputMeta;
-    unsigned __int64 processed;
-    unsigned __int64 initialProcessed;
+    unsigned __int64 processed = 0;
+    unsigned __int64 initialProcessed = 0;
     unsigned activityId;
     unsigned subgraphId;
+    IEngineRowAllocator *rowAllocator = nullptr;
+
+    CHThorActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _help, ThorActivityKind _kind, EclGraph & _graph);
+    ~CHThorActivityBase();
     IException * makeWrappedException(IException * e) const;
     IException * makeWrappedException(IException * e, char const * extra) const;
-    IEngineRowAllocator *rowAllocator;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -567,9 +568,8 @@ private:
 class HashDedupTable : public SuperHashTable
 {
 public:
-    HashDedupTable(IHThorHashDedupArg & _helper, unsigned _activityId)
-        : helper(_helper), 
-          activityId(_activityId)
+    HashDedupTable(IHThorHashDedupArg & _helper)
+        : helper(_helper)
     {
         queryBestCompare = helper.queryCompareBest();
     }
@@ -607,7 +607,6 @@ public:
 
 private:
     IHThorHashDedupArg & helper;
-    unsigned activityId;
     Owned<IEngineRowAllocator> keyRowAllocator;
     ICompare * queryBestCompare;
 };
@@ -633,7 +632,6 @@ class CHThorNormalizeActivity : public CHThorSimpleActivityBase
 {
     IHThorNormalizeArg &helper;
     OwnedConstRoxieRow inbuff;
-    bool isVariable;
     unsigned numThisRow;
     unsigned curRow;
     unsigned __int64 numProcessedLastGroup;
@@ -917,11 +915,10 @@ public:
 
 class CHThorHashAggregateActivity : public CHThorSimpleActivityBase
 {
-    IHThorHashAggregateArg &helper;
     RowAggregator aggregated;
 
-    bool eof;
-    bool gathered;
+    bool eof = false;
+    bool gathered = false;
     bool isGroupedAggregate;
 public:
     CHThorHashAggregateActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorHashAggregateArg &_arg, ThorActivityKind _kind, EclGraph & _graph, bool _isGroupedAggregate);
@@ -951,7 +948,7 @@ public:
 class CHThorFirstNActivity : public CHThorSimpleActivityBase
 {
     IHThorFirstNArg &helper;
-    __int64 doneThisGroup = 0;
+    __uint64 doneThisGroup = 0;
     __uint64 limit = 0;  // You would think int was enough for most practical cases...
     __uint64 skip = 0;
     bool finished = false;
@@ -1051,7 +1048,6 @@ public:
 
 class CHThorDegroupActivity : public CHThorSteppableActivityBase
 {
-    IHThorDegroupArg &helper;
 public:
     CHThorDegroupActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDegroupArg &_arg, ThorActivityKind _kind, EclGraph & _graph);
 
@@ -1118,8 +1114,8 @@ protected:
 class CSimpleSorterBase : public ISorter, public CInterface
 {
 public:
-    CSimpleSorterBase(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta) : compare(_compare), finger(0), rowManager(_rowManager),
-        rowsToSort(_rowManager, _initialSize, _commitDelta, UNKNOWN_ROWSET_ID) {}
+    CSimpleSorterBase(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta) : rowManager(_rowManager), compare(_compare),
+        rowsToSort(_rowManager, _initialSize, _commitDelta, UNKNOWN_ROWSET_ID), finger(0) {}
     virtual ~CSimpleSorterBase()                            { killSorted(); }
     IMPLEMENT_IINTERFACE;
     virtual bool addRow(const void * next)                  { return rowsToSort.append(next); }
@@ -1144,7 +1140,7 @@ public:
 
 protected:
     roxiemem::IRowManager * rowManager;
-    unsigned activityId;
+    unsigned activityId = 0;
     ICompare * compare;
     DynamicRoxieOutputRowArray rowsToSort;
     aindex_t finger;
@@ -1167,7 +1163,8 @@ public:
 class CStableSorter : public CSimpleSorterBase
 {
 public:
-    CStableSorter(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta, roxiemem::IBufferedRowCallback * _rowCB) : CSimpleSorterBase(_compare, _rowManager, _initialSize, _commitDelta), commitDelta(_commitDelta), index(NULL), indexCapacity(0) {}
+    CStableSorter(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta, roxiemem::IBufferedRowCallback * _rowCB)
+     : CSimpleSorterBase(_compare, _rowManager, _initialSize, _commitDelta), index(NULL), indexCapacity(0), commitDelta(_commitDelta) {}
     virtual ~CStableSorter() { killSorted(); }
 
     virtual bool addRow(const void * next);
@@ -1629,8 +1626,6 @@ public:
 
 class CHThorDatasetResultActivity : public CHThorResultActivity
 {
-    IHThorDatasetResultArg &helper;
-
 public:
     IMPLEMENT_SINKACTIVITY;
 
@@ -1640,8 +1635,6 @@ public:
 
 class CHThorRowResultActivity : public CHThorResultActivity
 {
-    IHThorRowResultArg &helper;
-
 public:
     IMPLEMENT_SINKACTIVITY;
 
@@ -1667,7 +1660,6 @@ public:
 
 class CHThorNullActivity : public CHThorSimpleActivityBase
 {
-    IHThorArg &helper;
 public:
     CHThorNullActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind, EclGraph & _graph);
 
@@ -1820,7 +1812,6 @@ public:
 
 class CHThorRegroupActivity : public CHThorMultiInputActivity
 {
-    IHThorRegroupArg &helper;
     unsigned inputIndex;
     bool eof;
     unsigned __int64 numProcessedLastGroup;
@@ -2725,7 +2716,6 @@ public:
 
 class CHThorGraphLoopResultWriteActivity : public CHThorActivityBase
 {
-    IHThorGraphLoopResultWriteArg &helper;
     ILocalEclGraphResults * graph;
 
 public:

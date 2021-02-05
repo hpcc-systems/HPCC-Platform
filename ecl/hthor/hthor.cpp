@@ -60,8 +60,6 @@
 
 static unsigned const hthorReadBufferSize = 0x10000;
 static offset_t const defaultHThorDiskWriteSizeLimit = I64C(10*1024*1024*1024); //10 GB, per Nigel
-static size32_t const spillStreamBufferSize = 0x10000;
-static unsigned const hthorPipeWaitTimeout = 100; //100ms - fairly arbitrary choice
 
 using roxiemem::IRowManager;
 using roxiemem::OwnedRoxieRow;
@@ -193,11 +191,9 @@ bool isRemoteReadCandidate(const IAgentContext &agent, const RemoteFilename &rfn
 
 //=====================================================================================================
 
-CHThorActivityBase::CHThorActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _help, ThorActivityKind _kind, EclGraph & _graph) : agent(_agent), help(_help),  outputMeta(help.queryOutputMeta()), kind(_kind), activityId(_activityId), subgraphId(_subgraphId), graph(_graph)
+CHThorActivityBase::CHThorActivityBase(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg & _help, ThorActivityKind _kind, EclGraph & _graph)
+: help(_help), kind(_kind), graph(_graph), agent(_agent), outputMeta(help.queryOutputMeta()), activityId(_activityId), subgraphId(_subgraphId)
 {
-    input = NULL;
-    processed = 0;
-    rowAllocator = NULL;    
 }
 
 void CHThorActivityBase::setInput(unsigned index, IHThorInput *_input)
@@ -337,7 +333,7 @@ class CHThorClusterWriteHandler : public ClusterWriteHandler
     IAgentContext &agent;
 public:
     CHThorClusterWriteHandler(char const * _logicalName, char const * _activityType, IAgentContext &_agent) 
-        : agent(_agent), ClusterWriteHandler(_logicalName, _activityType)
+        : ClusterWriteHandler(_logicalName, _activityType), agent(_agent)
     {
     }
 
@@ -2810,7 +2806,7 @@ bool HashDedupTable::insertBest(const void * nextrow)
 }
 
 CHThorHashDedupActivity::CHThorHashDedupActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorHashDedupArg & _arg, ThorActivityKind _kind, EclGraph & _graph)
-: CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg), table(_arg, activityId), hashTableFilled(false), hashDedupTableIter(table)
+: CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg), table(_arg), hashTableFilled(false), hashDedupTableIter(table)
 {
     keepBest = helper.keepBest();
 }
@@ -3458,9 +3454,9 @@ const void * CHThorAggregateActivity::nextRow()
 //=====================================================================================================
 
 CHThorHashAggregateActivity::CHThorHashAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorHashAggregateArg &_arg, ThorActivityKind _kind, EclGraph & _graph, bool _isGroupedAggregate)
-: CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg),
-  isGroupedAggregate(_isGroupedAggregate),
-  aggregated(_arg, _arg)
+: CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph),
+  aggregated(_arg, _arg),
+  isGroupedAggregate(_isGroupedAggregate)
 {
 }
 
@@ -3853,7 +3849,7 @@ bool CHThorChooseSetsEnthActivity::includeRow(const void * row)
 
 //=====================================================================================================
 
-CHThorDegroupActivity::CHThorDegroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDegroupArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
+CHThorDegroupActivity::CHThorDegroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDegroupArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSteppableActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph)
 {
 }
 
@@ -5598,7 +5594,8 @@ const void * CHThorLookupJoinActivity::LookupTable::doFind(const void * left) co
     return NULL;
 }
 
-CHThorLookupJoinActivity::CHThorLookupJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorHashJoinArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg), table(0), outBuilder(NULL)
+CHThorLookupJoinActivity::CHThorLookupJoinActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorHashJoinArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
+ : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg), outBuilder(NULL), table(0)
 {
 }
 
@@ -6530,7 +6527,7 @@ const void *CHThorInlineTableActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorNullActivity::CHThorNullActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
+CHThorNullActivity::CHThorNullActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph)
 {
 }
 
@@ -6770,7 +6767,7 @@ const void *CHThorNonEmptyActivity::nextRow()
 
 //=====================================================================================================
 
-CHThorRegroupActivity::CHThorRegroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRegroupArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
+CHThorRegroupActivity::CHThorRegroupActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRegroupArg &_arg, ThorActivityKind _kind, EclGraph & _graph) : CHThorMultiInputActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph)
 {
 }
 
@@ -7349,7 +7346,7 @@ void CHThorTopNActivity::ready()
 {
     CHThorSimpleActivityBase::ready();
     limit = helper.getLimit();
-    assertex(limit == (size_t)limit);
+    assertex(limit == (__int64)(size_t)limit);
     sorted = (const void * *)checked_calloc((size_t)(limit+1), sizeof(void *), "topn");
     sortedCount = 0;
     curIndex = 0;
@@ -7809,7 +7806,7 @@ void CHThorResultActivity::extractResult(unsigned & retSize, void * & ret)
 //=====================================================================================================
 
 CHThorDatasetResultActivity::CHThorDatasetResultActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDatasetResultArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
- : CHThorResultActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
+ : CHThorResultActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph)
 {
 }
 
@@ -7834,7 +7831,7 @@ void CHThorDatasetResultActivity::execute()
 //=====================================================================================================
 
 CHThorRowResultActivity::CHThorRowResultActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRowResultArg &_arg, ThorActivityKind _kind, EclGraph & _graph)
- : CHThorResultActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
+ : CHThorResultActivity(_agent, _activityId, _subgraphId, _arg, _kind, _graph)
 {
 }
 
@@ -8170,7 +8167,6 @@ void CHThorDiskReadBaseActivity::ready()
 
     unsigned expectedCrc = helper.getDiskFormatCrc();
     unsigned projectedCrc = helper.getProjectedFormatCrc();
-    unsigned actualCrc = expectedCrc;
     IDistributedFile *dFile = nullptr;
     if (ldFile)
         dFile = ldFile->queryDistributedFile();  // Null for local file usage
@@ -8434,7 +8430,6 @@ bool CHThorDiskReadBaseActivity::openNext()
               (!dfsParts&&(partNum<ldFile->numParts())))
         {
             IDistributedFilePart * curPart = dfsParts?&dfsParts->query():NULL;
-            IDistributedFile *dFile = ldFile->queryDistributedFile();  // Null for local file usage
 
             unsigned numCopies = curPart?curPart->numCopies():ldFile->numPartCopies(partNum);
             //MORE: Order of copies should be optimized at this point....
@@ -9938,7 +9933,7 @@ const void *CHThorGraphLoopResultReadActivity::nextRow()
 //=====================================================================================================
 
 CHThorGraphLoopResultWriteActivity::CHThorGraphLoopResultWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorGraphLoopResultWriteArg &_arg, ThorActivityKind _kind, EclGraph & _graph, __int64 graphId)
- : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph), helper(_arg)
+ : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind, _graph)
 {
     graph = resolveLocalQuery(graphId);
 }
@@ -11203,7 +11198,6 @@ const void *CHThorNewDiskReadActivity::nextRow()
                 const byte * next = (const byte *)inputRowStream->nextRow(nextSize);
                 if (!isSpecialRow(next))
                 {
-                    size32_t thisSize = 0;
                     if (likely(!hasMatchFilter || helper.canMatch(next)))
                     {
                         size32_t thisSize = helper.transform(outBuilder.ensureRow(), next);
