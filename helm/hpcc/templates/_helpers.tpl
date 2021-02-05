@@ -526,16 +526,17 @@ securityContext:
   capabilities:
     add:
     - SYS_PTRACE
+  readOnlyRootFilesystem: false
 {{- else }}
   capabilities:
     drop:
     - ALL
   allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
 {{- end }}
   runAsNonRoot: true
   runAsUser: 10000
   runAsGroup: 10001
-  readOnlyRootFilesystem: true
 {{ end -}}
 
 {{/*
