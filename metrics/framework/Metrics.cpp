@@ -17,13 +17,13 @@ using namespace hpccMetrics;
 
 void CounterMetric::getReportValues(MeasurementVector &mv) const
 {
-    mv.emplace_back((std::make_shared<Measurement<uint32_t>>(name, description, ValueType::INTEGER, count.load())));
+    mv.emplace_back((std::make_shared<Measurement<uint32_t>>(name, description, ValueType::METRICS_INTEGER, count.load())));
 }
 
 
 void GaugeMetric::getReportValues(MeasurementVector &mv) const
 {
-    mv.emplace_back((std::make_shared<Measurement<float>>(name, description, ValueType::FLOAT, gaugeValue.load())));
+    mv.emplace_back((std::make_shared<Measurement<float>>(name, description, ValueType::METRICS_FLOAT, gaugeValue.load())));
 }
 
 

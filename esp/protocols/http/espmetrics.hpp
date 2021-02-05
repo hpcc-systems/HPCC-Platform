@@ -16,7 +16,7 @@
     limitations under the License.
 ############################################################################## */
 
-#pragma onece
+#pragma once
 
 #include <memory>
 #include "Metrics.hpp"

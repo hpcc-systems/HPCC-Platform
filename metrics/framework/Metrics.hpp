@@ -37,23 +37,23 @@ namespace hpccMetrics {
  * Enumerates the type of the value in a measurement
  */
 enum ValueType {
-    NONE,
-    STRING,
-    LONG,
-    INTEGER,
-    DOUBLE,
-    FLOAT,
-    DATE,
-    DATE_NANOS,
-    BOOLEAN
+    METRICS_NONE,
+    METRICS_STRING,
+    METRICS_LONG,
+    METRICS_INTEGER,
+    METRICS_DOUBLE,
+    METRICS_FLOAT,
+    METRICS_DATE,
+    METRICS_DATE_NANOS,
+    METRICS_BOOLEAN
 } ;
 
 /*
  * Enumerates the metric type.
  */
 enum MetricType {
-    COUNTER,
-    GAUGE
+    METRICS_COUNTER,
+    METRICS_GAUGE
 };
 
 /*
@@ -171,7 +171,7 @@ class CounterMetric : public Metric
     public:
 
         CounterMetric(const char *name, const char *description) :
-                Metric{name, description, MetricType::GAUGE}  { }
+                Metric{name, description, MetricType::METRICS_GAUGE}  { }
         ~CounterMetric() override = default;
         void inc(uint32_t val)
         {
@@ -193,7 +193,7 @@ protected:
 class GaugeMetric : public Metric {
     public:
         GaugeMetric(const char *name, const char *description) :
-                Metric{name, description, MetricType::GAUGE}  { }
+                Metric{name, description, MetricType::METRICS_GAUGE}  { }
 
         /*
          * Update the value as indicated
