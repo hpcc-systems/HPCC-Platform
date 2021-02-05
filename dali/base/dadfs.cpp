@@ -1150,11 +1150,13 @@ public:
 // === Transactions
 class CDFAction: public CInterface
 {
-    unsigned locked;
+    unsigned locked = 0;
+    unsigned timeoutCount = 0;
 protected:
-    IDistributedFileTransactionExt *transaction;
+    IDistributedFileTransactionExt *transaction = nullptr;
     IArrayOf<IDistributedFile> lockedFiles;
-    DFTransactionState state;
+    DFTransactionState state = TAS_NONE;
+    StringBuffer tracing;
     void addFileLock(IDistributedFile *file)
     {
         // derived's prepare must call this before locking
@@ -1174,7 +1176,13 @@ protected:
                 if (SDSExcpt_LockTimeout != e->errorCode())
                     throw;
                 e->Release();
-                PROGLOG("CDFAction lock timed out on %s",lockedFiles.item(i).queryLogicalName());
+                PROGLOG("CDFAction[%s] lock timed out on %s", tracing.str(), lockedFiles.item(i).queryLogicalName());
+
+                /* Can be v. useful to know what call stack is if stuck..
+                 * Trace after 30 timeouts (each timeout period ~60s)
+                 */
+                if (0 == (++timeoutCount % 30))
+                    PrintStackReport();
                 return false;
             }
             locked++;
@@ -1189,9 +1197,8 @@ protected:
         lockedFiles.kill();
     }
 public:
-    CDFAction() : locked(0), state(TAS_NONE)
+    CDFAction()
     {
-        transaction = NULL;
     }
     // Clear all locked files (when re-using transaction on auto-commit mode)
     virtual ~CDFAction()
@@ -4719,6 +4726,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
         cAddSubFileAction(const char *_parentlname,const char *_subfile,bool _before,const char *_other)
             : parentlname(_parentlname), subfile(_subfile), before(_before), other(_other)
         {
+            tracing.appendf("AddSubFile: %s, to super: %s", _subfile, _parentlname);
         }
         virtual bool prepare()
         {
@@ -4794,6 +4802,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
         cRemoveSubFileAction(const char *_parentlname,const char *_subfile,bool _remsub=false)
             : parentlname(_parentlname), subfile(_subfile), remsub(_remsub)
         {
+            tracing.appendf("RemoveSubFile: %s, from super: %s", _subfile, _parentlname);
         }
         virtual bool prepare()
         {
@@ -4885,6 +4894,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
         cRemoveOwnedSubFilesAction(IDistributedFileTransaction *_transaction, const char *_parentlname,bool _remsub=false)
             : parentlname(_parentlname), remsub(_remsub)
         {
+            tracing.appendf("RemoveOwnedSubFiles: super: %s", _parentlname);
         }
         virtual bool prepare()
         {
@@ -4967,6 +4977,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
         cSwapFileAction(const char *_super1Name, const char *_super2Name)
             : super1Name(_super1Name), super2Name(_super2Name)
         {
+            tracing.appendf("SwapFile: super1: %s, super2: %s", _super1Name, _super2Name);
         }
         virtual bool prepare()
         {
@@ -7948,6 +7959,7 @@ public:
                            bool _interleaved)
         : parent(_parent), user(_user), created(false), interleaved(_interleaved)
     {
+        tracing.appendf("CreateSuperFile: super: %s", _flname);
         logicalname.set(_flname);
     }
     IDistributedSuperFile *getSuper()
@@ -8081,6 +8093,7 @@ public:
                            bool _delSub)
         : user(_user), delSub(_delSub)
     {
+        tracing.appendf("RemoveSuperFile: super: %s", _flname);
         logicalname.set(_flname);
     }
     virtual bool prepare()
@@ -8152,6 +8165,7 @@ public:
                       const char *_newname)
         : user(_user), parent(_parent)
     {
+        tracing.appendf("RenameFile: name: %s, newname: %s", _flname, _newname);
         fromName.set(_flname);
         // Basic consistency checking
         toName.set(_newname);
