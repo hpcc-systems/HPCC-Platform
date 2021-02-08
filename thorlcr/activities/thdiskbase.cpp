@@ -284,13 +284,10 @@ void CWriteMasterBase::publish()
                             dbgassertex(iFileIO.get());
                             iFileIO.clear();
                             // ensure copies have matching datestamps, as they would do normally (backupnode expects it)
-                            if (partDesc->numCopies() > 1)
-                            {
-                                if (0 == c)
-                                    iFile->getTime(&createTime, &modifiedTime, NULL);
-                                else
-                                    iFile->setTime(&createTime, &modifiedTime, NULL);
-                            }
+                            if (0 == c)
+                                iFile->getTime(&createTime, &modifiedTime, NULL);
+                            else
+                                iFile->setTime(&createTime, &modifiedTime, NULL);
                         }
                         catch (IException *e)
                         {
@@ -302,7 +299,14 @@ void CWriteMasterBase::publish()
                             queryJob().fireException(e2);
                         }
                     }
-                    partDesc->queryProperties().setPropInt64("@size", 0);
+                    IPropertyTree &props = partDesc->queryProperties();
+                    StringBuffer timeStr;
+                    modifiedTime.getString(timeStr);
+                    props.setProp("@modified", timeStr.str());
+                    props.setPropInt64("@recordCount", 0);
+                    props.setPropInt64("@size", 0);
+                    if (compressed)
+                        props.setPropInt64("@compressedSize", 0);
                     p++;
                 }
             }
