@@ -51,6 +51,7 @@ elasticsearch:
   replicas: 1           #default is 3, for minimal systems 1 replicas should be adequate
   minimumMasterNodes: 1 #default is 2, for minimal systems 1 master node should be adequate
   labels: {"managedby" : "HPCC"}
+  clusterHealthCheckParams: "local=true" #local node health status
   #volumeClaimTemplate:
     #accessModes: [ "ReadWriteOnce" ]
     #resources:
