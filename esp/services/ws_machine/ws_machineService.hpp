@@ -301,27 +301,29 @@ IMPLEMENT_IINTERFACE;
 class CStorageData  : public CInterface
 {
     StringBuffer    m_diskSpaceTitle;
-    __int64         m_diskSpaceAvailable;
-    __int64         m_diskSpaceTotal;
-    int             m_diskSpacePercentAvail;
+    StringAttr      m_path;
+    __int64         m_diskSpaceAvailable = 0;
+    __int64         m_diskSpaceUsed = 0;
+    __int64         m_diskSpaceTotal = 0;
+    int             m_diskSpacePercentAvail = 0;
+    bool            m_readTitle = false;
+    bool            m_readPath = false;
+    bool            m_toMByte = 0;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-	CStorageData()
-    {
-        m_diskSpaceTitle.clear();
-        m_diskSpaceAvailable = 0;
-        m_diskSpaceTotal = 0;
-        m_diskSpacePercentAvail = 0;
-    }
-	CStorageData(const char* diskSpaceTitle, __int64 diskSpaceAvailable, __int64 diskSpaceTotal, int diskSpacePercentAvail)
+    CStorageData() {}
+    CStorageData(const char* diskSpaceTitle, __int64 diskSpaceAvailable, __int64 diskSpaceTotal, int diskSpacePercentAvail)
         : m_diskSpaceAvailable(diskSpaceAvailable), m_diskSpaceTotal(diskSpaceTotal), m_diskSpacePercentAvail(diskSpacePercentAvail)
     {
         m_diskSpaceTitle = diskSpaceTitle;
     }
-	virtual ~CStorageData(){}
+    CStorageData(bool readTitle, bool readPath, bool toMByte)
+        : m_readTitle(readTitle), m_readPath(readPath), m_toMByte(toMByte) {}
+    virtual ~CStorageData(){}
 
+    bool read(const char* s);
     void setDiskSpaceTitle(const char* title)
     {
         m_diskSpaceTitle.clear().append(title);
@@ -332,6 +334,11 @@ public:
         return m_diskSpaceTitle.str();
     }
 
+    const char* getDiskSpacePath()
+    {
+        return m_path.get();
+    }
+
     void setDiskSpaceAvailable(__int64 space)
     {
         m_diskSpaceAvailable = space;
@@ -340,6 +347,11 @@ public:
     const __int64 getDiskSpaceAvailable()
     {
         return m_diskSpaceAvailable;
+    }
+
+    const __int64 getDiskSpaceUsed()
+    {
+        return m_diskSpaceUsed;
     }
 
     void setDiskSpaceTotal(__int64 space)
@@ -818,7 +830,6 @@ private:
     void buildProcessPath(StringBuffer &buf, const char * procName,CMachineInfoThreadParam * pParam);
     void readProcessData(const char* response, CMachineInfoThreadParam* pParam);
     void readRunningProcesses(const char* response, CMachineInfoThreadParam* pParam);
-    bool readStorageSpace(const char *line, StringBuffer& title, __int64& free, __int64& total, int& percentAvail);
     void addProcessData(CMachineData* machine, const char* processType, const char* compName, const char* path, unsigned processNumber);
     void setMachineInfo(IEspContext& context, CMachineInfoThreadParam* pParam, const char *response, int error);
     void setProcessInfo(IEspContext& context, CMachineInfoThreadParam* pParam, const char* response, int error, CProcessData& process, bool firstProcess, IEspMachineInfoEx* pMachineInfo);
@@ -857,7 +868,6 @@ private:
         IArrayOf<IEspNodeGroupUsage>& nodeGroupUsages);
     void readComponentUsageResult(IEspContext& context, IPropertyTree* usageReq, const IPropertyTree* uniqueUsages,
         IArrayOf<IEspComponentUsage>& componentUsages);
-    bool readDiskSpaceResponse(const char* buf, __int64& free, __int64& used, int& percentAvail, StringBuffer& pathUsed);
     void addChannels(CGetMachineInfoData& machineInfoData, IPropertyTree* envRoot, const char* componentType, const char* componentName);
     StringBuffer& setUsageTimeStr(CUsageCache* usageCache, StringBuffer& timeStr);
 
