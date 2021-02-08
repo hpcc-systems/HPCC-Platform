@@ -166,7 +166,7 @@ class METRICS_API Metric : public IMetric
         MetricType metricType;
 };
 
-class CounterMetric : public Metric
+class METRICS_API CounterMetric : public Metric
 {
     public:
 
@@ -190,7 +190,7 @@ protected:
 /*
  * Metric used to track the current state of some internal measurement.
  */
-class GaugeMetric : public Metric {
+class METRICS_API GaugeMetric : public Metric {
     public:
         GaugeMetric(const char *name, const char *description) :
                 Metric{name, description, MetricType::METRICS_GAUGE}  { }
