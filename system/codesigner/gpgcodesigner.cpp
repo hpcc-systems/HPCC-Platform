@@ -88,6 +88,7 @@ void GpgCodeSigner::initGpg(void)
         {
             Owned<IFile> dir = createIFile(gpgHomeDir);
             dir->createDirectory();
+            dir->setFilePermissions(0700);
         }
         catch (IException *e)
         {
