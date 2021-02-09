@@ -615,3 +615,14 @@ resources:
     memory: "100M"
 {{- end -}}
 
+
+{{/*
+Generate vault info
+*/}}
+{{- define "hpcc.generateEclccSecurity" -}}
+{{- with .Values.security -}}
+{{- if not (empty .eclSecurity) -}}
+{{- toYaml (deepCopy .) }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
