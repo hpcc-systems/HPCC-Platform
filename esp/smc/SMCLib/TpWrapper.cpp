@@ -1970,6 +1970,31 @@ void CTpWrapper::getAttPath(const char* Path,StringBuffer& returnStr)
     JBASE64_Decode(Path, returnStr);
 }
 
+void CTpWrapper::getTpStoragePlanes(double version, const char* planeName, IArrayOf<IConstTpStoragePlane>& storagePlanes)
+{
+    IPropertyTree* storage = queryGlobalConfig().queryPropTree("storage");
+    if (!storage)
+        return;
+
+    Owned<IPropertyTreeIterator> planes = storage->getElements("planes");
+    ForEach(*planes)
+    {
+        IPropertyTree& plane = planes->query();
+        const char* name = plane.queryProp("@name");
+        if (isEmptyString(name) || (!isEmptyString(planeName) && !strieq(planeName, name)))
+            continue;
+
+        Owned<IEspTpStoragePlane> storagePlane = createTpStoragePlane();
+        storagePlane->setName(name);
+        storagePlane->setHosts(plane.queryProp("@hosts"));
+        storagePlane->setPrefix(plane.queryProp("@prefix"));
+        storagePlane->setNumDevices(plane.getPropInt("@numDevices", 1));
+        storagePlanes.append(*storagePlane.getLink());
+        if (!isEmptyString(planeName))
+            break;
+    }
+}
+
 extern TPWRAPPER_API ISashaCommand* archiveOrRestoreWorkunits(StringArray& wuids, IProperties* params, bool archive, bool dfu)
 {
     StringBuffer sashaAddress;

@@ -1954,3 +1954,17 @@ bool CWsTopologyEx::onTpDropZoneQuery(IEspContext &context, IEspTpDropZoneQueryR
     }
     return false;
 }
+
+bool CWsTopologyEx::onTpStoragePlaneQuery(IEspContext &context, IEspTpStoragePlaneQueryRequest &req, IEspTpStoragePlaneQueryResponse &resp)
+{
+    try
+    {
+        context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpStoragePlaneQuery: Permission denied.");
+        m_TpWrapper.getTpStoragePlanes(context.getClientVersion(), req.getName(), resp.getTpStoragePlanes());
+    }
+    catch(IException *e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return false;
+}

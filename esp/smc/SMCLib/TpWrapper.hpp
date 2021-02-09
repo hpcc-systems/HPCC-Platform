@@ -185,6 +185,7 @@ public:
     void getTpDkcSlaves(IArrayOf<IConstTpDkcSlave>& list);
     void getTpGenesisServers(IArrayOf<IConstTpGenesisServer>& list);
     void getTpSparkThors(double clientVersion, const char* name, IArrayOf<IConstTpSparkThor>& list);
+    void getTpStoragePlanes(double version, const char* planeName, IArrayOf<IConstTpStoragePlane>& list);
 
     void queryTargetClusters(double version, const char* clusterType, const char* clusterName, IArrayOf<IEspTpTargetCluster>& clusterList);
     void getTargetClusterList(IArrayOf<IEspTpLogicalCluster>& clusters, const char* clusterType = NULL, const char* clusterName = NULL);
