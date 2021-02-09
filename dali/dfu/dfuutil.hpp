@@ -44,7 +44,7 @@ interface IDFUhelper: extends IInterface
     virtual void removeSuper(const char *superfname, IUserDescriptor *user, unsigned numtodelete=0, const char **subfiles=NULL, bool delsub=false, bool removesuperfile=true) = 0;
     virtual void listSubFiles(const char *superfname,StringAttrArray &out, IUserDescriptor *user) = 0;
     virtual StringBuffer &getFileXML(const char *lfn,StringBuffer &out, IUserDescriptor *user) = 0;
-    virtual void addFileXML(const char *lfn,const StringBuffer &xml, IUserDescriptor *user) = 0;
+    virtual void addFileXML(const char *lfn,const StringBuffer &xml, const char * cluster, IUserDescriptor *user) = 0;
     virtual void addFileRemote(const char *lfn,SocketEndpoint &srcdali,const char *srclfn,IUserDescriptor *srcuser,IUserDescriptor *user) = 0;
     virtual void superForeignCopy(const char *lfn,SocketEndpoint &srcdali,const char *srclfn,IUserDescriptor *srcuser,IUserDescriptor *user, bool overwrite, IDfuFileCopier *copier) = 0;
 

@@ -473,6 +473,7 @@ ESPrequest AddRequest
 {
     string dstname;
     [http_content("text/xml")] binary xmlmap;
+    [min_ver("1.57")] string dstcluster;
 };
 
 ESPresponse [exceptions_inline, nil_remove] AddResponse
@@ -965,8 +966,8 @@ ESPresponse [exceptions_inline, nil_remove] DFUFilePublishResponse
 //  ===========================================================================
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.56"),
-    default_client_version("1.56"),
+    version("1.57"),
+    default_client_version("1.57"),
     noforms,
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {

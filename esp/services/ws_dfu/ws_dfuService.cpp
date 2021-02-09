@@ -3963,7 +3963,7 @@ bool CWsDfuEx::onAdd(IEspContext &context, IEspAddRequest &req, IEspAddResponse 
 
         Owned<IDFUhelper> dfuhelper = createIDFUhelper();
         StringBuffer xmlstr(req.getXmlmap().length(),(const char*)req.getXmlmap().bufferBase());
-        dfuhelper->addFileXML(req.getDstname(), xmlstr, userdesc.get());
+        dfuhelper->addFileXML(req.getDstname(), xmlstr, req.getDstcluster(), userdesc.get());
     }
     catch(IException* e)
     {
