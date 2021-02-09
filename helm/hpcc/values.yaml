@@ -44,8 +44,8 @@ security:
     # allow - functionality is permitted
     # deny - functionality is not permitted
     # allowSigned - functionality permitted only if code signed
-    embedded: "allowSigned"
-    pipe:  "allowSigned"
+    embedded: "allow"
+    pipe:  "allow"
     extern: "allow"
     datafile: "allow"
 
