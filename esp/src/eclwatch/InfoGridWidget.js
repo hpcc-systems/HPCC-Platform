@@ -114,7 +114,7 @@ define([
                     idProperty: "id",
                     data: []
                 });
-                this.infoStore = Observable(store);
+                this.infoStore = new Observable(store);
 
                 this.infoGrid = new declare([ESPUtil.Grid(false, true)])({
                     selectionMode: "single",

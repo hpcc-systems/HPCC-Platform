@@ -102,7 +102,7 @@ define([
                 idProperty: this.idProperty,
                 data: []
             });
-            this.store = Observable(store);
+            this.store = new Observable(store);
             this.grid = this.createGrid(this.id + "Grid");
             this.setGridNoDataMessage(this.i18n.loadingMessage);
 

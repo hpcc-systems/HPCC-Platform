@@ -135,7 +135,7 @@ define([
                     idProperty: "__hpcc_id",
                     data: result
                 });
-                this.store = Observable(store);
+                this.store = new Observable(store);
                 this.grid = new declare([ESPUtil.Grid(false, true)])({
                     columns: columns,
                     store: this.store

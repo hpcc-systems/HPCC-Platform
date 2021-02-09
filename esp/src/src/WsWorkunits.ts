@@ -1,5 +1,4 @@
 import * as arrayUtil from "dojo/_base/array";
-import * as declare from "dojo/_base/declare";
 import * as Deferred from "dojo/_base/Deferred";
 import * as lang from "dojo/_base/lang";
 import * as all from "dojo/promise/all";
@@ -10,18 +9,20 @@ import nlsHPCC from "./nlsHPCC";
 
 declare const dojo;
 
-const EventScheduleStore = declare([ESPRequest.Store], {
-    service: "WsWorkunits",
-    action: "WUShowScheduled",
-    responseQualifier: "WUShowScheduledResponse.Workunits.ScheduledWU",
-    idProperty: "calculatedID",
+class EventScheduleStore extends ESPRequest.Store {
+
+    service = "WsWorkunits";
+    action = "WUShowScheduled";
+    responseQualifier = "WUShowScheduledResponse.Workunits.ScheduledWU";
+    responseTotalQualifier = undefined;
+    idProperty = "calculatedID";
 
     preProcessRow(row) {
         lang.mixin(row, {
             calculatedID: row.Wuid + row.EventText
         });
     }
-});
+}
 
 //  From common/workunit/workunit.hpp
 //  (not actually used - just for reference)
@@ -313,7 +314,7 @@ export function GetVisualisations() {
 
 export function CreateEventScheduleStore(options) {
     const store = new EventScheduleStore(options);
-    return Observable(store);
+    return new Observable(store);
 }
 
 //  Helpers  ---

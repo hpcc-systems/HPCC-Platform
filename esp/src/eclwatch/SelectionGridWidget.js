@@ -53,7 +53,7 @@
                 idProperty: this.idProperty,
                 data: []
             });
-            this.store = Observable(store);
+            this.store = new Observable(store);
 
             this.grid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry])({
                 store: this.store,

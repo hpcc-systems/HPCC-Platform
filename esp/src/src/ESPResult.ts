@@ -7,14 +7,13 @@ import * as domConstruct from "dojo/dom-construct";
 import * as entities from "dojox/html/entities";
 import * as parser from "dojox/xml/parser";
 
-import { ESPBase } from "./ESPBase";
 import * as ESPRequest from "./ESPRequest";
 import { Get as LFGet } from "./ESPLogicalFile";
 import nlsHPCC from "./nlsHPCC";
 import * as Utility from "./Utility";
 import * as WsWorkunits from "./WsWorkunits";
 
-const safeEncode = function (item) {
+function safeEncode(item) {
     switch (Object.prototype.toString.call(item)) {
         case "[object Boolean]":
         case "[object Number]":
@@ -27,158 +26,181 @@ const safeEncode = function (item) {
             console.log("Unknown cell type:  " + Object.prototype.toString.call(item));
     }
     return item;
-};
-
-function RowFormatter(columns, row) {
-    this._columns = [];
-    this._columnIdx = {};
-    this._formattedRow = {};
-    this.flattenColumns(columns, row);
-
-    this._grid = {};
-    this.formatRow(columns, row);
 }
-
-RowFormatter.prototype.flattenColumns = function (columns) {
-    const context = this;
-    arrayUtil.forEach(columns, function (column) {
-        context.flattenColumn(column);
-    });
-};
-
-RowFormatter.prototype.flattenColumn = function (column) {
-    if (column.children) {
-        const context = this;
-        arrayUtil.forEach(column.children, function (column) {
-            context.flattenColumn(column);
-        });
-    } else {
-        this._columnIdx[column.field] = this._columns.length;
-        this._columns.push(column.field);
-    }
-};
 
 const LINE_SPLITTER = "<br><hr style='border: 0px; border-bottom: 1px solid rgb(238, 221, 204);'>";
 const LINE_SPLITTER2 = "<br><hr style='visibility: hidden; border: 0px; border-bottom: 1px solid rgb(238, 221, 204);'>";
-RowFormatter.prototype.formatRow = function (columns, row, rowIdx) {
-    rowIdx = rowIdx || 0;
-    row = row || {};
-    const context = this;
-    let maxChildLen = 0;
-    const colLenBefore = {};
-    arrayUtil.forEach(columns, function (column) {
-        if (!column.children && context._formattedRow[column.field] !== undefined) {
-            colLenBefore[column.field] = ("" + context._formattedRow[column.field]).split(LINE_SPLITTER).length;
-        }
-        const rowArr = row instanceof Array ? row : [row];
-        for (let colIdx = 0; colIdx < rowArr.length; ++colIdx) {
-            const r = rowArr[colIdx];
-            maxChildLen = Math.max(maxChildLen, context.formatCell(column, column.isRawHTML ? r[column.leafID] : safeEncode(r[column.leafID]), rowIdx));
-        }
-    });
-    arrayUtil.forEach(columns, function (column) {
-        if (!column.children) {
-            const cellLength = ("" + context._formattedRow[column.field]).split(LINE_SPLITTER).length - (colLenBefore[column.field] || 0);
-            const delta = maxChildLen - cellLength;
-            if (delta > 0) {
-                const paddingArr = [];
-                paddingArr.length = delta + 1;
-                const padding = paddingArr.join(LINE_SPLITTER2);
-                context._formattedRow[column.field] += padding;
-            }
-        }
-    });
-    return maxChildLen;
-};
+class RowFormatter {
 
-RowFormatter.prototype.formatCell = function (column, cell, rowIdx) {
-    let internalRows = 0;
-    if (column.children) {
-        const children = cell && cell.Row ? cell.Row : [cell];
-        if (children.length === 0) {
-            children.push({});
-        }
+    _columns: any[];
+    _columnIdx: any;
+    _formattedRow: any;
+    _grid: any;
+
+    constructor(columns, row) {
+        this._columns = [];
+        this._columnIdx = {};
+        this._formattedRow = {};
+        this.flattenColumns(columns);
+
+        this._grid = {};
+        this.formatRow(columns, row);
+    }
+
+    flattenColumns(columns) {
         const context = this;
-        arrayUtil.forEach(children, function (row, idx) {
-            internalRows += context.formatRow(column.children, row, rowIdx + idx) + 1;
+        arrayUtil.forEach(columns, function (column) {
+            context.flattenColumn(column);
         });
-        return children.length;
     }
-    if (this._formattedRow[column.field] === undefined) {
-        this._formattedRow[column.field] = cell === undefined ? "" : cell;
-        ++internalRows;
-    } else {
-        this._formattedRow[column.field] += LINE_SPLITTER + (cell === undefined ? "" : cell);
-        ++internalRows;
-    }
-    if (!this._grid[rowIdx]) {
-        this._grid[rowIdx] = {};
-    }
-    this._grid[rowIdx][column.field] = cell;
-    return internalRows;
-};
 
-RowFormatter.prototype.row = function (column) {
-    const retVal = {};
-    const context = this;
-    arrayUtil.forEach(this._columns, function (column) {
-        retVal[column] = context._formattedRow[column];
-    });
-    return retVal;
-};
-
-const Store = declare([ESPRequest.Store, ESPBase], {
-    service: "WsWorkunits",
-    action: "WUResult",
-    responseQualifier: "WUResultResponse.Result",
-    responseTotalQualifier: "WUResultResponse.Total",
-    idProperty: "__hpcc_id",
-    startProperty: "Start",
-    countProperty: "Count",
-    useSingletons: false,
-    preRequest(request) {
-        if (request.FilterBy) {
-            ESPRequest.flattenMap(request, "FilterBy", "NamedValue", true, true);
-        }
-        if (this.name && this.cluster) {
-            this.idPrefix = this.name + "_" + this.cluster;
-            request["LogicalName"] = this.name;
-            request["Cluster"] = this.cluster;
-        } else if (this.name) {
-            this.idPrefix = this.name;
-            request["LogicalName"] = this.name;
-        } else {
-            this.idPrefix = this.wuid + "_" + this.sequence;
-            request["Wuid"] = this.wuid;
-            request["Sequence"] = this.sequence;
-        }
-        if (request.includeXmlSchema) {
-            request["SuppressXmlSchema"] = false;
-        } else {
-            request["SuppressXmlSchema"] = true;
-        }
-    },
-    preProcessResponse(response, request) {
-        if (response.Total === -1 || response.Total === 9223372036854776000 || response.Total === Number.MAX_VALUE) {
-            response.Total = response.Start + response.Count + 1000;
-        }
-        if (lang.exists("Result.Row", response)) {
+    flattenColumn(column) {
+        if (column.children) {
             const context = this;
-            const retVal = context._structure ? this.formatRows(context._structure, response.Result.Row) : response.Result.Row;
-            arrayUtil.forEach(retVal, function (item, index) {
-                item.__hpcc_rowNum = request.Start + index + 1;
-                item.__hpcc_id = context.idPrefix + "_" + item.__hpcc_rowNum;
+            arrayUtil.forEach(column.children, function (column) {
+                context.flattenColumn(column);
             });
-            response.Result = retVal;
+        } else {
+            this._columnIdx[column.field] = this._columns.length;
+            this._columns.push(column.field);
         }
-    },
+    }
+
+    formatRow(columns, row, rowIdx?) {
+        rowIdx = rowIdx || 0;
+        row = row || {};
+        const context = this;
+        let maxChildLen = 0;
+        const colLenBefore = {};
+        arrayUtil.forEach(columns, function (column) {
+            if (!column.children && context._formattedRow[column.field] !== undefined) {
+                colLenBefore[column.field] = ("" + context._formattedRow[column.field]).split(LINE_SPLITTER).length;
+            }
+            const rowArr = row instanceof Array ? row : [row];
+            for (let colIdx = 0; colIdx < rowArr.length; ++colIdx) {
+                const r = rowArr[colIdx];
+                maxChildLen = Math.max(maxChildLen, context.formatCell(column, column.isRawHTML ? r[column.leafID] : safeEncode(r[column.leafID]), rowIdx));
+            }
+        });
+        arrayUtil.forEach(columns, function (column) {
+            if (!column.children) {
+                const cellLength = ("" + context._formattedRow[column.field]).split(LINE_SPLITTER).length - (colLenBefore[column.field] || 0);
+                const delta = maxChildLen - cellLength;
+                if (delta > 0) {
+                    const paddingArr = [];
+                    paddingArr.length = delta + 1;
+                    const padding = paddingArr.join(LINE_SPLITTER2);
+                    context._formattedRow[column.field] += padding;
+                }
+            }
+        });
+        return maxChildLen;
+    }
+
+    formatCell(column, cell, rowIdx) {
+        let internalRows = 0;
+        if (column.children) {
+            const children = cell && cell.Row ? cell.Row : [cell];
+            if (children.length === 0) {
+                children.push({});
+            }
+            const context = this;
+            arrayUtil.forEach(children, function (row, idx) {
+                internalRows += context.formatRow(column.children, row, rowIdx + idx) + 1;
+            });
+            return children.length;
+        }
+        if (this._formattedRow[column.field] === undefined) {
+            this._formattedRow[column.field] = cell === undefined ? "" : cell;
+            ++internalRows;
+        } else {
+            this._formattedRow[column.field] += LINE_SPLITTER + (cell === undefined ? "" : cell);
+            ++internalRows;
+        }
+        if (!this._grid[rowIdx]) {
+            this._grid[rowIdx] = {};
+        }
+        this._grid[rowIdx][column.field] = cell;
+        return internalRows;
+    }
+
+    row() {
+        const retVal = {};
+        const context = this;
+        arrayUtil.forEach(this._columns, function (column) {
+            retVal[column] = context._formattedRow[column];
+        });
+        return retVal;
+    }
+}
+
+class Store extends ESPRequest.Store {
+    service = "WsWorkunits";
+    action = "WUResult";
+    responseQualifier = "WUResultResponse.Result";
+    responseTotalQualifier = "WUResultResponse.Total";
+    idProperty = "__hpcc_id";
+
+    startProperty = "Start";
+    countProperty = "Count";
+
+    useSingletons = false;
+    name: any;
+    cluster: any;
+    idPrefix: string;
+    wuid: string;
+    sequence: string;
+    _structure: any;
+
+    constructor(options?) {
+        super(options);
+
+        this.preRequest = (request) => {
+            if (request.FilterBy) {
+                ESPRequest.flattenMap(request, "FilterBy", "NamedValue", true, true);
+            }
+            if (this.name && this.cluster) {
+                this.idPrefix = this.name + "_" + this.cluster;
+                request["LogicalName"] = this.name;
+                request["Cluster"] = this.cluster;
+            } else if (this.name) {
+                this.idPrefix = this.name;
+                request["LogicalName"] = this.name;
+            } else {
+                this.idPrefix = this.wuid + "_" + this.sequence;
+                request["Wuid"] = this.wuid;
+                request["Sequence"] = this.sequence;
+            }
+            if (request.includeXmlSchema) {
+                request["SuppressXmlSchema"] = false;
+            } else {
+                request["SuppressXmlSchema"] = true;
+            }
+        };
+
+        this.preProcessResponse = (response, request) => {
+            if (response.Total === -1 || response.Total === 9223372036854776000 || response.Total === Number.MAX_VALUE) {
+                response.Total = response.Start + response.Count + 1000;
+            }
+            if (lang.exists("Result.Row", response)) {
+                const context = this;
+                const retVal = context._structure ? this.formatRows(context._structure, response.Result.Row) : response.Result.Row;
+                arrayUtil.forEach(retVal, function (item, index) {
+                    item.__hpcc_rowNum = request.Start + index + 1;
+                    item.__hpcc_id = context.idPrefix + "_" + item.__hpcc_rowNum;
+                });
+                response.Result = retVal;
+            }
+        };
+    }
+
     formatRows(columns, rows) {
         return arrayUtil.map(rows, function (row) {
             const rowFormatter = new RowFormatter(columns, row);
             return rowFormatter.row();
         });
     }
-});
+}
 
 class Result {
     i18n = nlsHPCC;

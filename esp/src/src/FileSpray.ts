@@ -1,19 +1,22 @@
 import * as arrayUtil from "dojo/_base/array";
-import * as declare from "dojo/_base/declare";
 import * as lang from "dojo/_base/lang";
 import * as Observable from "dojo/store/Observable";
 import * as QueryResults from "dojo/store/util/QueryResults";
 
 import * as ESPRequest from "./ESPRequest";
-import * as ESPUtil from "./ESPUtil";
 
 declare const dojo;
 
-const FileListStore = declare([ESPRequest.Store], {
-    service: "FileSpray",
-    action: "FileList",
-    responseQualifier: "FileListResponse.files.PhysicalFileStruct",
-    idProperty: "calculatedID",
+class FileListStore extends ESPRequest.Store {
+
+    service = "FileSpray";
+    action = "FileList";
+    responseQualifier = "FileListResponse.files.PhysicalFileStruct";
+    responseTotalQualifier = undefined;
+    idProperty = "calculatedID";
+
+    parent: any;
+
     create(id) {
         const retVal = {
             lfEncode(path) {
@@ -64,7 +67,8 @@ const FileListStore = declare([ESPRequest.Store], {
         };
         retVal[this.idProperty] = id;
         return retVal;
-    },
+    }
+
     preProcessRow(row) {
         const fullPath = this.parent.fullPath + row.name + (row.isDir ? "/" : "");
         const fullFolderPathParts = fullPath.split("/");
@@ -79,7 +83,8 @@ const FileListStore = declare([ESPRequest.Store], {
             displayName: row.name,
             type: row.isDir ? "folder" : "file"
         });
-    },
+    }
+
     postProcessResults(items) {
         items.sort(function (l, r) {
             if (l.isDir === r.isDir) {
@@ -94,18 +99,21 @@ const FileListStore = declare([ESPRequest.Store], {
             return 1;
         });
     }
-});
+}
 
-const LandingZonesFilterStore = declare([ESPRequest.Store], {
-    service: "FileSpray",
-    action: "DropZoneFileSearch",
-    responseQualifier: "DropZoneFileSearchResponse.Files.PhysicalFileStruct",
-    idProperty: "calculatedID",
-    constructor(options) {
-        if (options) {
-            declare.safeMixin(this, options);
-        }
-    },
+class LandingZonesFilterStore extends ESPRequest.Store {
+
+    service = "FileSpray";
+    action = "DropZoneFileSearch";
+    responseQualifier = "DropZoneFileSearchResponse.Files.PhysicalFileStruct";
+    responseTotalQualifier = undefined;
+    idProperty = "calculatedID";
+    dropZone: any;
+
+    constructor(options?) {
+        super(options);
+    }
+
     preProcessRow(row) {
         const fullPath = this.dropZone.machine.Directory + "/" + (row.Path === null ? "" : (row.Path + "/"));
         lang.mixin(row, {
@@ -118,27 +126,31 @@ const LandingZonesFilterStore = declare([ESPRequest.Store], {
             type: row.isDir ? "filteredFolder" : "file"
         });
     }
-});
+}
 
-const LandingZonesStore = declare([ESPRequest.Store], {
-    service: "WsTopology",
-    action: "TpDropZoneQuery",
-    responseQualifier: "TpDropZoneQueryResponse.TpDropZones.TpDropZone",
-    idProperty: "calculatedID",
-    constructor(options) {
-        if (options) {
-            declare.safeMixin(this, options);
-        }
-        this.userAddedFiles = {};
-    },
-    query: ESPUtil.override(function (inherited, query, options) {
+class LandingZonesStore extends ESPRequest.Store {
+
+    service = "WsTopology";
+    action = "TpDropZoneQuery";
+    responseQualifier = "TpDropZoneQueryResponse.TpDropZones.TpDropZone";
+    responseTotalQualifier = undefined;
+    idProperty = "calculatedID";
+
+    userAddedFiles: object = {};
+
+    constructor(options?) {
+        super(options);
+    }
+
+    query(query, options) {
         if (!query.filter) {
-            return inherited(query, options);
+            return super.query(query, options);
         }
         const landingZonesFilterStore = new LandingZonesFilterStore({ dropZone: query.filter.__dropZone, server: query.filter.Server });
         delete query.filter.__dropZone;
         return landingZonesFilterStore.query(query.filter, options);
-    }),
+    }
+
     addUserFile(_file) {
         //  Just add a file "reference" so it can be remotely sprayed etc.
         const fileListStore = new FileListStore({
@@ -148,22 +160,26 @@ const LandingZonesStore = declare([ESPRequest.Store], {
         const file = fileListStore.get(_file.calculatedID);
         fileListStore.update(_file.calculatedID, _file);
         this.userAddedFiles[file.calculatedID] = file;
-    },
+    }
+
     removeUserFile(_file) {
         const fileListStore = new FileListStore({
             parent: null
         });
         fileListStore.remove(_file.calculatedID);
         delete this.userAddedFiles[_file.calculatedID];
-    },
+    }
+
     postProcessResults(items) {
         for (const key in this.userAddedFiles) {
             items.push(this.userAddedFiles[key]);
         }
-    },
+    }
+
     preRequest(request) {
         request.ECLWatchVisibleOnly = true;
-    },
+    }
+
     preProcessRow(row) {
         lang.mixin(row, {
             OS: row.Linux === "true" ? 2 : 0
@@ -175,7 +191,8 @@ const LandingZonesStore = declare([ESPRequest.Store], {
             fullPath: row.Path + (row.Path && !this.endsWith(row.Path, "/") ? "/" : ""),
             DropZone: row
         });
-    },
+    }
+
     mayHaveChildren(item) {
         switch (item.type) {
             case "dropzone":
@@ -184,7 +201,8 @@ const LandingZonesStore = declare([ESPRequest.Store], {
                 return true;
         }
         return false;
-    },
+    }
+
     getChildren(parent, options) {
         const children = [];
         if (parent.TpMachines) {
@@ -204,7 +222,7 @@ const LandingZonesStore = declare([ESPRequest.Store], {
             });
             return QueryResults(children);
         } else if (parent.isMachine || parent.isDir) {
-            const store = Observable(new FileListStore({
+            const store = new Observable(new FileListStore({
                 parent
             }));
             return store.query({
@@ -215,14 +233,7 @@ const LandingZonesStore = declare([ESPRequest.Store], {
             });
         }
     }
-});
-
-export const LogFileStore = declare([ESPRequest.Store], {
-    service: "FileSpray",
-    action: "FileList",
-    responseQualifier: "FileListResponse.files.PhysicalFileStruct",
-    idProperty: ""
-});
+}
 
 export const States = {
     0: "unknown",
@@ -291,17 +302,17 @@ export const FormatMessages = {
 
 export function CreateLandingZonesStore(options) {
     const store = new LandingZonesStore(options);
-    return Observable(store);
+    return new Observable(store);
 }
 
 export function CreateFileListStore(options) {
     const store = new FileListStore(options);
-    return Observable(store);
+    return new Observable(store);
 }
 
 export function CreateLandingZonesFilterStore(options) {
     const store = new LandingZonesFilterStore(options);
-    return Observable(store);
+    return new Observable(store);
 }
 
 export function GetDFUWorkunits(params) {
