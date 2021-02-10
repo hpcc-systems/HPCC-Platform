@@ -201,20 +201,6 @@ WsWUExceptions::WsWUExceptions(IConstWorkUnit& wu): numerr(0), numwrn(0), numinf
     }
 }
 
-#define SDS_LOCK_TIMEOUT 30000
-
-void getSashaNode(SocketEndpoint &ep)
-{
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
-    Owned<IConstEnvironment> env = factory->openEnvironment();
-    Owned<IPropertyTree> root = &env->getPTree();
-    IPropertyTree *pt = root->queryPropTree("Software/SashaServerProcess[1]/Instance[1]");
-    if (!pt)
-        throw MakeStringException(ECLWATCH_ARCHIVE_SERVER_NOT_FOUND, "Archive Server not found.");
-    ep.set(pt->queryProp("@netAddress"), pt->getPropInt("@port",DEFAULT_SASHA_PORT));
-}
-
-
 void WsWuInfo::getSourceFiles(IEspECLWorkunit &info, unsigned long flags)
 {
     if (!(flags & WUINFO_IncludeSourceFiles))

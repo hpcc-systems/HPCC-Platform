@@ -53,11 +53,11 @@ spec:
       containers:
       - name: {{ $commonCtx.toponame | quote }}
 {{ include "hpcc.addSentinelProbes" $roxie | indent 8 }}
-{{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
+{{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
 {{- if not $.Values.global.privileged }}
 {{- include "hpcc.addStubResources" . | indent 8 }}
 {{- end }}
-{{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie) | indent 8 }}
+{{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         workingDir: /var/lib/HPCCSystems
         command: [ toposerver ] 
         volumeMounts:
@@ -176,16 +176,16 @@ spec:
 {{ include "hpcc.addSentinelProbes" $roxie | indent 8 }}
 {{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{- include "hpcc.addResources" (dict "me" $roxie.serverResources) | indent 8 }}
-{{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie) | indent 8 }}
+{{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" $roxie | indent 8 }}
-{{ include "hpcc.addDataVolumeMount" (dict "root" $ "me" . ) | indent 8 }}
-{{ include "hpcc.addDllVolumeMount" $ | indent 8 }}
+{{ include "hpcc.addDataVolumeMount" $commonCtx | indent 8 }}
+{{ include "hpcc.addDllVolumeMount" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "system" "ecl" "storage" ) ) | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" $roxie | indent 6 }}
-{{ include "hpcc.addDataVolume" (dict "root" $ "me" . ) | indent 6 }}
-{{ include "hpcc.addDllVolume" $ | indent 6 }}
+{{ include "hpcc.addDataVolume" $commonCtx | indent 6 }}
+{{ include "hpcc.addDllVolume" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "system" "ecl" "storage" ) ) | indent 6 }}
 ---
 
@@ -245,16 +245,16 @@ spec:
 {{- end }}
 {{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{- include "hpcc.addResources" (dict "me" $roxie.channelResources) | indent 8 }}
-{{ include "hpcc.addImageAttrs" (dict "root" $ "me" $roxie) | indent 8 }}
+{{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" $roxie | indent 8 }}
-{{ include "hpcc.addDataVolumeMount" (dict "root" $ "me" $roxie ) | indent 8 }}
-{{ include "hpcc.addDllVolumeMount" $ | indent 8 }}
+{{ include "hpcc.addDataVolumeMount" $commonCtx | indent 8 }}
+{{ include "hpcc.addDllVolumeMount" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "system" "ecl" "storage" ) ) | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" $roxie | indent 6 }}
-{{ include "hpcc.addDataVolume" (dict "root" $ "me" $roxie ) | indent 6 }}
-{{ include "hpcc.addDllVolume" $ | indent 6 }}
+{{ include "hpcc.addDataVolume" $commonCtx | indent 6 }}
+{{ include "hpcc.addDllVolume" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "system" "ecl" "storage" ) ) | indent 6 }}
 
 ---

@@ -1,24 +1,5 @@
-{{- if (not .Values.storage.dllStorage.existingClaim) }}
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: {{ printf "%s-dllstorage-pvc" (include "hpcc.fullname" .) }}
-  labels:
-    app.kubernetes.io/name: {{ printf "%s-dllstorage-pvc" (include "hpcc.fullname" .) }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
-    helm.sh/chart: {{ include "hpcc.chart" . }}
-spec:
-  accessModes:
-    - ReadWriteMany
-  resources:
-    requests:
-      storage: {{ .Values.storage.dllStorage.storageSize }}
-{{- if .Values.storage.dllStorage.storageClass }}
-{{- if (eq "-" .Values.storage.dllStorage.storageClass) }}
-  storageClassName: ""
-{{- else }}
-  storageClassName: "{{ .Values.storage.dllStorage.storageClass }}"
-{{- end }}
-{{- end }}
+{{- $storage := (.Values.storage | default dict) -}}
+{{- $dllStorage := ($storage.dllStorage | default dict) -}}
+{{- if (not $dllStorage.existingClaim) }}
+{{ include "hpcc.addPVC" (dict "root" $ "name" "dllstorage-pvc" "me" $dllStorage) }}
 {{- end }}

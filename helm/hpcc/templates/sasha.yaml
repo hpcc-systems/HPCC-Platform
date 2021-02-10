@@ -1,0 +1,47 @@
+{{ range $.Values.sasha -}}
+{{- if not .disabled -}}
+{{- $commonCtx := dict "root" $ "me" . }}
+{{- $configSHA := include "hpcc.sashaConfigMap" $commonCtx | sha256sum }}
+{{- $serviceName := printf "sasha-%s" .service }}
+{{- $_ := set $commonCtx.me "access" (splitList " " (include "hpcc.getSashaServiceAccess" .)) -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $serviceName | quote }}
+spec:
+  replicas: {{ .replicas | default 1 }}
+  selector:
+    matchLabels:
+      run: {{ $serviceName | quote }}
+  template:
+    metadata:
+      labels:
+        run: {{ $serviceName | quote }}
+        accessDali: {{ (has "dali" $commonCtx.me.access) | ternary "yes" "no" | quote }}
+      annotations:
+        checksum/config: {{ $configSHA }}
+    spec:
+      serviceAccountName: "hpcc-default"
+      containers:
+{{- include "hpcc.addSashaContainer" $commonCtx | indent 6 }}
+        volumeMounts:
+{{- include "hpcc.addSashaVolumeMounts" $commonCtx | indent 8 }}
+      volumes:
+{{- include "hpcc.addSashaVolumes" $commonCtx | indent 6 }}
+---
+{{- if and (not .disabled) (.servicePort) -}}
+{{ include "hpcc.addSashaService" $commonCtx }}
+---
+{{- end }}
+kind: ConfigMap 
+{{ include "hpcc.sashaConfigMap" $commonCtx }}
+---
+{{- if .storage }}
+{{- if (not .storage.existingClaim) }}
+{{ include "hpcc.addPVC" (dict "root" $ "name" (printf "sasha-%s" .service) "me" .storage) }}
+{{- end }}
+---
+{{- end }}
+
+{{- end }}
+{{- end }}

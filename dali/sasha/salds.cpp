@@ -20,6 +20,13 @@ class CLargeDataStore: public CInterface, implements ILargeDataStore
     void initBase()
     {
         if (!LdsBaseDir.get()) {
+#ifdef _CONTAINERIZED
+            StringBuffer path;
+            serverConfig->getProp("@storagePath", path);
+            assertex(!isEmptyString(path));
+            addPathSepChar(path);
+            LdsBaseDir.set(path);
+#else
             StringBuffer basedir;
             const char *ldsrootdir="LDS";
             IPropertyTree *ldsprops = serverConfig->queryPropTree("LDS");
@@ -48,6 +55,7 @@ class CLargeDataStore: public CInterface, implements ILargeDataStore
                 ldsrootdir++;
             }
             LdsBaseDir.set(basedir.str(),basedir.length());
+#endif
         }
     }
 

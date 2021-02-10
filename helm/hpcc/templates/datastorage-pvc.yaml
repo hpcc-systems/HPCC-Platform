@@ -1,24 +1,5 @@
-{{- if (not .Values.storage.dataStorage.existingClaim) }}
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: {{ printf "%s-datastorage-pvc" (include "hpcc.fullname" .) }}
-  labels:
-    app.kubernetes.io/name: {{ printf "%s-datastorage-pvc" (include "hpcc.fullname" .) }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
-    helm.sh/chart: {{ include "hpcc.chart" . }}
-spec:
-  accessModes:
-    - ReadWriteMany
-  resources:
-    requests:
-      storage: {{ .Values.storage.dataStorage.storageSize }}
-{{- if .Values.storage.dataStorage.storageClass }}
-{{- if (eq "-" .Values.storage.dataStorage.storageClass) }}
-  storageClassName: ""
-{{- else }}
-  storageClassName: "{{ .Values.storage.dataStorage.storageClass }}"
-{{- end }}
-{{- end }}
+{{- $storage := (.Values.storage | default dict) -}}
+{{- $dataStorage := ($storage.dataStorage | default dict) -}}
+{{- if (not $dataStorage.existingClaim) }}
+{{ include "hpcc.addPVC" (dict "root" $ "name" "datastorage-pvc" "me" $dataStorage) }}
 {{- end }}
