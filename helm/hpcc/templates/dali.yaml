@@ -76,7 +76,7 @@ data:
 {{- if not .disabled -}}
 {{- $_ := set . "access" (splitList " " (include "hpcc.getSashaServiceAccess" .)) -}}
 kind: ConfigMap
-{{- with (. | merge (pick $daliScope "logging")) }}
+{{- with (. | merge (pick $daliScope "logging") | merge (dict "inDaliPod" true)) }}
 {{ include "hpcc.sashaConfigMap" (dict "root" $ "me" .) }}
 {{- end }}
 ---
