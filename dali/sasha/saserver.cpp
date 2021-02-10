@@ -333,44 +333,44 @@ int main(int argc, const char* argv[])
     NoQuickEditSection x;
 #endif
 
-    serverConfig.setown(loadConfiguration(defaultYaml, argv, "sasha", "SASHA", "sashaconf.xml", nullptr));
-
-    Owned<IFile> sentinelFile;
-
-    stop = serverConfig->hasProp("@stop");
-    if (!stop)
-    {
-        coalescer = serverConfig->hasProp("@coalesce");
-        if (coalescer)
-            force = serverConfig->hasProp("@force");
-        else
-        {
-            sentinelFile.setown(createSentinelTarget());
-            removeSentinelFile(sentinelFile);
-        }
-    }
-
-#ifndef _CONTAINERIZED
-    StringBuffer logname;
-    StringBuffer logdir;
-    if (!stop)
-    {
-        Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(serverConfig, "sasha");
-        lf->setName("saserver");//override default filename
-        if (coalescer)
-            lf->setPostfix("coalesce");
-        lf->setMaxDetail(TopDetail);
-        lf->beginLogging();
-    }
-#else
-    setupContainerizedLogMsgHandler();
-#endif
-    DBGLOG("Build %s", BUILD_TAG);
-
     bool enableSNMP = false;
 
     try
     {
+        serverConfig.setown(loadConfiguration(defaultYaml, argv, "sasha", "SASHA", "sashaconf.xml", nullptr));
+
+        Owned<IFile> sentinelFile;
+
+        stop = serverConfig->hasProp("@stop");
+        if (!stop)
+        {
+            coalescer = serverConfig->hasProp("@coalesce");
+            if (coalescer)
+                force = serverConfig->hasProp("@force");
+            else
+            {
+                sentinelFile.setown(createSentinelTarget());
+                removeSentinelFile(sentinelFile);
+            }
+        }
+
+    #ifndef _CONTAINERIZED
+        StringBuffer logname;
+        StringBuffer logdir;
+        if (!stop)
+        {
+            Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(serverConfig, "sasha");
+            lf->setName("saserver");//override default filename
+            if (coalescer)
+                lf->setPostfix("coalesce");
+            lf->setMaxDetail(TopDetail);
+            lf->beginLogging();
+        }
+    #else
+        setupContainerizedLogMsgHandler();
+    #endif
+        DBGLOG("Build %s", BUILD_TAG);
+
         unsigned short port = serverConfig->getPropInt("@port");
         if (!port)
         {
