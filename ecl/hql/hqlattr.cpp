@@ -4073,9 +4073,13 @@ inline bool isSelfSelect(IHqlExpression * expr)
     return true;
 }
 
-//This should possibly cache the results for a record using an attribute....
-bool canDefinitelyProcessWithTranslator(IHqlExpression * record)
+//This should possibly cache the results for a record using an attribute....  it does protect against excessive recursion by caching
+//results for a record for each call.
+static bool checkCanDefinitelyProcessWithTranslator(IHqlExpression * record)
 {
+    if (record->queryTransformExtra())
+        return true;
+
     dbgassertex(record->getOperator() == no_record);
     ForEachChild(i, record)
     {
@@ -4094,7 +4098,7 @@ bool canDefinitelyProcessWithTranslator(IHqlExpression * record)
             case type_row:
                 if (hasReferenceModifier(type))  // Never currently generated
                     return false;
-                if (!canDefinitelyProcessWithTranslator(cur->queryRecord()))
+                if (!checkCanDefinitelyProcessWithTranslator(cur->queryRecord()))
                     return false;
                 break;
             case type_dictionary:
@@ -4112,6 +4116,8 @@ bool canDefinitelyProcessWithTranslator(IHqlExpression * record)
                                 return false;
                         }
                     }
+                    if (!checkCanDefinitelyProcessWithTranslator(cur->queryRecord()))
+                        return false;
                     break;
                 }
             }
@@ -4119,24 +4125,37 @@ bool canDefinitelyProcessWithTranslator(IHqlExpression * record)
         }
         case no_ifblock:
             {
+                if (!checkCanDefinitelyProcessWithTranslator(cur->queryChild(1)))
+                    return false;
                 IHqlExpression * cond = cur->queryChild(0);
                 node_operator condOp = cond->getOperator();
                 //Match the subset of the expressions that are supported by the record translation
                 //false positives are acceptable, false negatives are not
-                if ((condOp == no_eq) || (condOp == no_ne))
+                if ((condOp == no_eq) || (condOp == no_ne) || (condOp == no_in) || (condOp == no_notin))
                 {
                     //SELF.x [=|!=] constant
                     IHqlExpression * lhs = cond->queryChild(0);
                     IHqlExpression * rhs = cond->queryChild(1);
-                    if (isSelfSelect(lhs) && rhs->getOperator() == no_constant)
-                        return true;
+                    if (isSelfSelect(lhs) && rhs->isConstant())
+                        break;
                 }
                 else if (isSelfSelect(cond)) // SELF.someboolean
-                    return true;
+                    break;
                 return false;
             }
+        case no_record:
+            if (!checkCanDefinitelyProcessWithTranslator(cur))
+                return false;
+            break;
         }
     }
 
+    record->setTransformExtra(record);
     return true;
+}
+
+bool canDefinitelyProcessWithTranslator(IHqlExpression * record)
+{
+    TransformMutexBlock block;
+    return checkCanDefinitelyProcessWithTranslator(record);
 }
