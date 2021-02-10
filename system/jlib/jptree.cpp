@@ -1031,8 +1031,10 @@ aindex_t PTree::getChildMatchPos(const char *xpath)
     if (!childIter->first())
         return (aindex_t)-1;
     IPropertyTree &childMatch = childIter->query();
+#ifdef _DEBUG
     if (childIter->next())
         AMBIGUOUS_PATH("addPropX", xpath);
+#endif
 
     if (value)
         if (value->isArray())
@@ -1069,7 +1071,9 @@ void PTree::resolveParentChild(const char *xpath, IPropertyTree *&parent, IPrope
         if (this != &pathIter->query())
         {
             IPropertyTree *currentPath = NULL;
+#ifdef _DEBUG
             bool multiplePaths = false;
+#endif
             bool multipleChildMatches = false;
             for (;;)
             {
@@ -1079,21 +1083,30 @@ void PTree::resolveParentChild(const char *xpath, IPropertyTree *&parent, IPrope
                 if (childIter->first())
                 {
                     child = &childIter->query();
+#ifdef _DEBUG
                     if (parent)
                         AMBIGUOUS_PATH("resolveParentChild", xpath);
+#endif
                     if (!multipleChildMatches && childIter->next())
                         multipleChildMatches = true;
 
                     parent = currentPath;
                 }
                 if (pathIter->next())
+                {
+#ifdef _DEBUG
                     multiplePaths = true;
-                else break;
+#endif
+                }
+                else
+                    break;
             }
             if (!parent)
             {
+#ifdef _DEBUG
                 if (multiplePaths) // i.e. no unique path to child found and multiple parent paths
                     AMBIGUOUS_PATH("resolveParentChild", xpath);
+#endif
                 parent = currentPath;
             }
             if (multipleChildMatches)
@@ -1400,8 +1413,10 @@ bool PTree::renameProp(const char *xpath, const char *newName)
             if (!iter->first())
                 return false;
             IPropertyTree &branch = iter->query();
+#ifdef _DEBUG
             if (iter->next())
                 AMBIGUOUS_PATH("renameProp", xpath);
+#endif
             return branch.renameProp(prop, newName);
         }
         else
@@ -1527,8 +1542,11 @@ IPropertyTree *PTree::queryPropTree(const char *xpath) const
     if (iter->first())
     {
         element = &iter->query();
+#ifdef _DEBUG
+        //The following call can double the cost of finding a match from an IPropertyTree
         if (iter->next())
             AMBIGUOUS_PATH("getProp",xpath);
+#endif
     }
     return element;
 }
@@ -1609,8 +1627,10 @@ bool PTree::isArray(const char *xpath) const
                 if (!iter->first())
                     return false;
                 IPropertyTree &branch = iter->query();
+#ifdef _DEBUG
                 if (iter->next())
                     AMBIGUOUS_PATH("isArray", xpath);
+#endif
                 return branch.isArray(prop);
             }
             else
