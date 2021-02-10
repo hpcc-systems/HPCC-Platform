@@ -215,6 +215,11 @@ public:
             elems.append(iter.get());
         elems.sort(compare);
     }
+    CPTArrayIterator(IArrayOf<IPropertyTree> & ownedElems, TreeCompareFunc compare) : ArrayIIteratorOf<IArrayOf<IPropertyTree>, IPropertyTree, IPropertyTreeIterator>(elems)
+    {
+        elems.swapWith(ownedElems);
+        elems.sort(compare);
+    }
 };
 IPropertyTreeIterator * createSortedIterator(IPropertyTreeIterator & iter)
 {
@@ -223,6 +228,10 @@ IPropertyTreeIterator * createSortedIterator(IPropertyTreeIterator & iter)
 IPropertyTreeIterator * createSortedIterator(IPropertyTreeIterator & iter, TreeCompareFunc compare)
 {
     return new CPTArrayIterator(iter, compare);
+}
+IPropertyTreeIterator * createSortedIterator(IArrayOf<IPropertyTree> & ownedElems, TreeCompareFunc compare)
+{
+    return new CPTArrayIterator(ownedElems, compare);
 }
 //////////////////
 
