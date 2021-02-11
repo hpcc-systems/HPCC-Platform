@@ -239,6 +239,7 @@ jlib_decl bool checkParseUrlPathNodeValue(const char *s, StringBuffer &name, Str
 
 typedef int (*TreeCompareFunc)(IInterface * const *ll, IInterface * const *rr);
 jlib_decl IPropertyTreeIterator * createSortedIterator(IPropertyTreeIterator & iter, TreeCompareFunc compare);
+jlib_decl IPropertyTreeIterator * createSortedIterator(IArrayOf<IPropertyTree> & ownedElems, TreeCompareFunc compare);
 
 
 #define XML_SortTags 0x01

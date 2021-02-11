@@ -2110,7 +2110,7 @@ IQueryFactory *createAgentQueryFactory(const char *id, const IQueryDll *dll, con
         else if (dll)
         {
             checkWorkunitVersionConsistency(dll);
-            Owned<IQueryFactory> serverFactory = CQueryFactory::getCachedQuery(hashValue, 0);
+            Owned<IQueryFactory> serverFactory = createServerQueryFactory(id, LINK(dll), package, stateInfo, isDynamic, forceRetry);
             assertex(serverFactory);
             ret.setown(new CAgentQueryFactory(id, dll, package, hashValue, channel, serverFactory->querySharedOnceContext(), isDynamic));
         }
