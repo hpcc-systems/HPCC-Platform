@@ -26,9 +26,10 @@
 
 # NB: INPUT_* may be pre-set as environment variables.
 
-while getopts “d:fhlpt:u:b:” opt; do
+while getopts “d:fhlptn:u:b:” opt; do
   case $opt in
     l) TAGLATEST=1 ;;
+    n) CUSTOM_TAG_NAME=$OPTARG ;;
     p) PUSH=1 ;;
     t) INPUT_BUILD_THREADS=$OPTARG ;;
     d) INPUT_DOCKER_REPO=$OPTARG ;;
@@ -41,6 +42,7 @@ while getopts “d:fhlpt:u:b:” opt; do
        echo "    -b                 Build type (e.g. Debug / Release)"
        echo "    -h                 Display help"
        echo "    -l                 Tag the images as the latest"
+       echo "    -n                 Tag the image with a custom name (e.g. -n HPCC-25285)"
        echo "    -p                 Push images to docker repo"
        echo "    -t <num-threads>   Override the number of build threads"
        echo "    -u <user>          Specify the build user"
@@ -129,27 +131,37 @@ pushd $DIR 2>&1 > /dev/null
 build_image() {
   local name=$1
   local dockerfolder=$2
+  local tags=("${BUILD_LABEL}")
   # if 2nd arg. present, it names the docker folder, otherwise same as $name
   [[ -z ${dockerfolder} ]] && dockerfolder=$name
   local label=$BUILD_LABEL
 
   if ! docker pull ${DOCKER_REPO}/${name}:${label} ; then
     docker image build -t ${DOCKER_REPO}/${name}:${label} \
-       --build-arg DOCKER_REPO=${DOCKER_REPO} \
-       --build-arg BUILD_LABEL=${BUILD_LABEL} \
-       --build-arg BUILD_TYPE=${BUILD_TYPE} ${@:3} \
-       ${dockerfolder}/ 
+        --build-arg DOCKER_REPO=${DOCKER_REPO} \
+        --build-arg BUILD_LABEL=${BUILD_LABEL} \
+        --build-arg BUILD_TYPE=${BUILD_TYPE} ${@:3} \
+        ${dockerfolder}/ 
   fi
-  if [ "$TAGLATEST" = "1" ] ; then
-    docker tag ${DOCKER_REPO}/${name}:${label} ${DOCKER_REPO}/${name}:latest
-    if [ "$PUSH" = "1" ] ; then
-      docker push ${DOCKER_REPO}/${name}:${label}
-      docker push ${DOCKER_REPO}/${name}:latest
-    fi
-  else
-    if [ "$PUSH" = "1" ] ; then
-      docker push ${DOCKER_REPO}/${name}:${label}
-    fi
+
+  if [ "$TAGLATEST" = "1" ]; then
+    local tag="latest"
+    docker tag ${DOCKER_REPO}/${name}:${label} ${DOCKER_REPO}/${name}:${tag}
+    tags+=("$tag")
+  fi
+
+  if [ -n "$CUSTOM_TAG_NAME" ]; then
+    local tag="$CUSTOM_TAG_NAME"
+    docker tag ${DOCKER_REPO}/${name}:${label} ${DOCKER_REPO}/${name}:${tag}
+    tags+=("$tag")
+  fi
+
+  if [ "$PUSH" = "1" ] ; then
+    for tag in "${tags[@]}";
+    do
+      docker push ${DOCKER_REPO}/${name}:${tag}
+      echo "${tag} pushed"
+    done
   fi
 }
 
@@ -171,4 +183,3 @@ else
 fi
 
 echo Built ${DOCKER_REPO}/*:${BUILD_LABEL}
-
