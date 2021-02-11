@@ -81,4 +81,4 @@ ENV PATH="/opt/HPCCSystems/bin:${PATH}"
 ENV HPCC_containerized=1
 ENV HPCC_DLLSERVER_PATH=/var/lib/HPCCSystems/queries
 WORKDIR /var/lib/HPCCSystems
-RUN eclcc -pch && rm eclcc.log
+RUN eclcc -pch

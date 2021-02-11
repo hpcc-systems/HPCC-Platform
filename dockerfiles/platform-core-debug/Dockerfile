@@ -37,4 +37,4 @@ ENV HPCC_DLLSERVER_PATH=/var/lib/HPCCSystems/queries
 
 USER hpcc
 WORKDIR /var/lib/HPCCSystems
-RUN eclcc -pch && rm eclcc.log
+RUN eclcc -pch
