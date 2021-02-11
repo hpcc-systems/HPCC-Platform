@@ -677,7 +677,7 @@ data:
 {{- $categories := list "system" -}}
 {{- if has "data" .me.access -}}
 {{- $categories := append $categories "storage" -}}
-{{- end -}}
+{{- end }}
 {{ include "hpcc.generateVaultConfig" (dict "root" .root "categories" $categories ) | indent 6 }}
 {{- if .me.storage }}
       storagePath: {{ include "hpcc.getVolumeMountPrefix" (dict "root" .root "name" (printf "sasha-%s" .me.service) "me" .me.storage) }}
