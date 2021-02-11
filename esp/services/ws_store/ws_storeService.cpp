@@ -94,13 +94,13 @@ void CwsstoreEx::init(IPropertyTree *_cfg, const char *_process, const char *_se
             VStringBuffer xpath("Stores/Store[%s='%s']", ESP_STORE_NAME_ATT, id.str());
             if (stores && stores->hasProp(xpath.str()))
             {
-                ESPLOG(LogMin, "CwsstoreEx: Creating Store: '%s'%s", id.str(), isDefault ? " - as Default" : "");
-
-                m_storeProvider->createStore(type.str(), id.str(), description.str(), secuser.get(), maxvalsize);
+                ESPLOG(LogMin, "CwsstoreEx: Detected previously created store '%s'.", id.str());
             }
             else
             {
-                ESPLOG(LogMin, "CwsstoreEx: Detected previously created store '%s'.", id.str());
+                ESPLOG(LogMin, "CwsstoreEx: Creating Store: '%s'%s", id.str(), isDefault ? " - as Default" : "");
+
+                m_storeProvider->createStore(type.str(), id.str(), description.str(), secuser.get(), maxvalsize);
             }
 
             if (isDefault)

@@ -1575,20 +1575,13 @@ private:
                 return true;
             case SChildGraph:
             {
+#ifdef _DEBUG
+                assertex(treeIters.tos().query().getPropInt("att[@name='_kind']/@value") == TAKsubgraph);
                 unsigned numIters = treeIters.ordinality();
-                //This should really be implemented by a filter on the node - but it would require _kind/_parentActivity to move to the node tag
-                if (treeIters.tos().query().getPropInt("att[@name='_kind']/@value") != TAKsubgraph)
-                {
-                    state = SChildGraphNext;
-                    break;
-                }
                 unsigned parentActivityId = treeIters.item(numIters-2).query().getPropInt("@id");
                 unsigned parentId = treeIters.tos().query().getPropInt("att[@name='_parentActivity']/@value");
-                if (parentId != parentActivityId)
-                {
-                    state = SChildGraphNext;
-                    break;
-                }
+                assertex(parentId == parentActivityId);
+#endif
                 scopeId.set(ChildGraphScopePrefix).append(treeIters.tos().query().getPropInt("@id"));
                 pushScope(scopeId);
                 scopeType = SSTchildgraph;
@@ -1694,11 +1687,27 @@ private:
             }
             case SSubGraphFirstActivity:
             {
+                //Walk the contents of each subgraph once, splitting the entries into activities and child graphs
+                IArrayOf<IPropertyTree> activities;
+                IArrayOf<IPropertyTree> childGraphs;
                 Owned<IPropertyTreeIterator> treeIter = treeIters.tos().query().getElements("att/graph/node");
-                if (treeIter && treeIter->first())
+                ForEach(*treeIter)
                 {
-                    treeIter.setown(createSortedIterator(*treeIter, compareActivityNode));
-                    pushIterator(treeIter, SSubGraphEnd);
+                    IPropertyTree & cur = treeIter->get();
+                    if (cur.getPropInt("att[@name='_kind']/@value") != TAKsubgraph)
+                        activities.append(cur);
+                    else
+                        childGraphs.append(cur);
+                }
+                if (activities.ordinality())
+                {
+                    //Create an iterator for the child graphs in this subgraph which is iterated in order as the activities are processed
+                    Owned<IPropertyTreeIterator> graphIter = createSortedIterator(childGraphs, compareSubGraphNode);
+                    graphIter->first();
+                    childGraphIters.append(*graphIter.getClear());
+
+                    Owned<IPropertyTreeIterator> activityIter = createSortedIterator(activities, compareActivityNode);
+                    pushIterator(activityIter, SSubGraphEnd);
                     state = SActivity;
                 }
                 else
@@ -1727,7 +1736,11 @@ private:
                 if (treeIters.tos().next())
                     state = SActivity;
                 else
+                {
+                    assertex(!childGraphIters.tos().isValid());
+                    childGraphIters.pop();
                     state = popIterator();
+                }
                 break;
             case SChildGraphNext:
                 if (treeIters.tos().next())
@@ -1737,13 +1750,22 @@ private:
                 break;
             case SChildGraphFirst:
             {
-                unsigned numIters = treeIters.ordinality();
-                IPropertyTreeIterator & graphIter = treeIters.item(numIters-2);
-                Owned<IPropertyTreeIterator> treeIter = graphIter.query().getElements("att/graph/node");
-                //Really want to filter by <att name="_parentActivity" value="<parentid>">
-                if (treeIter && treeIter->first())
+                unsigned parentActivityId = treeIters.tos().query().getPropInt("@id");
+                IArrayOf<IPropertyTree> childGraphs;
+                IPropertyTreeIterator & allGraphs = childGraphIters.tos();
+                while (allGraphs.isValid())
                 {
-                    treeIter.setown(createSortedIterator(*treeIter, compareSubGraphNode));
+                    IPropertyTree & cur = allGraphs.query();
+                    unsigned parentId = cur.getPropInt("att[@name='_parentActivity']/@value");
+                    if (parentId != parentActivityId)
+                        break;
+                    childGraphs.append(OLINK(cur));
+                    allGraphs.next();
+                }
+
+                if (childGraphs.ordinality())
+                {
+                    Owned<IPropertyTreeIterator> treeIter = createSortedIterator(childGraphs, compareSubGraphNode);
                     pushIterator(treeIter, SActivityEnd);
                     state = SChildGraph;
                 }
@@ -1839,10 +1861,12 @@ private:
         case SGraph:
             state = SDone;
             break;
+        case SActivity:
+            childGraphIters.pop();
+            //fall through
         case SChildGraph:
         case SSubGraph:
         case SEdge:
-        case SActivity:
             popScope();
             state = popIterator();
             break;
@@ -1859,6 +1883,7 @@ protected:
     Owned<IConstWUGraphIterator> graphIter;
     Owned<IPropertyTree> curGraph;
     IArrayOf<IPropertyTreeIterator> treeIters;
+    IArrayOf<IPropertyTreeIterator> childGraphIters;
     UnsignedArray scopeLengths;
     UnsignedArray stateStack;
     StringBuffer curScopeName;
