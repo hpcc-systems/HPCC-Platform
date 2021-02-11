@@ -26810,6 +26810,7 @@ public:
             }
             catch (IException *E)
             {
+                E = makeWrappedException(E);
                 ctx->notifyAbort(E);
                 exception.set(E);
                 abort();
@@ -26856,23 +26857,30 @@ public:
         ActivityTimer t(activityStats, timeActivities);
         if(eof) return NULL;
 
-        if (soaphelper == NULL)
+        try
         {
-            if (factory->getKind()==TAKhttp_rowdataset)
-                soaphelper.setown(createHttpCallHelper(this, rowAllocator, authToken.str(), SCrow, pClientCert, *this, this));
-            else
-                soaphelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCrow, pClientCert, *this, this));
-            soaphelper->start();
-        }
+            if (soaphelper == NULL)
+            {
+                if (factory->getKind()==TAKhttp_rowdataset)
+                    soaphelper.setown(createHttpCallHelper(this, rowAllocator, authToken.str(), SCrow, pClientCert, *this, this));
+                else
+                    soaphelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCrow, pClientCert, *this, this));
+                soaphelper->start();
+            }
 
-        OwnedConstRoxieRow ret = soaphelper->getRow();
-        if (!ret)
-        {
-            eof = true;
-            return NULL;
+            OwnedConstRoxieRow ret = soaphelper->getRow();
+            if (!ret)
+            {
+                eof = true;
+                return NULL;
+            }
+            ++processed;
+            return ret.getClear();
         }
-        ++processed;
-        return ret.getClear();
+        catch (IException *E)
+        {
+            throw makeWrappedException(E);
+        }
     }
 };
 
@@ -26991,20 +26999,27 @@ public:
         ActivityTimer t(activityStats, timeActivities);
         if(eof) return NULL;
 
-        if (soaphelper == NULL)
+        try
         {
-            soaphelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCdataset, pClientCert, *this, this));
-            soaphelper->start();
-        }
+            if (soaphelper == NULL)
+            {
+                soaphelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCdataset, pClientCert, *this, this));
+                soaphelper->start();
+            }
 
-        OwnedConstRoxieRow ret = soaphelper->getRow();
-        if (!ret)
-        {
-            eof = true;
-            return NULL;
+            OwnedConstRoxieRow ret = soaphelper->getRow();
+            if (!ret)
+            {
+                eof = true;
+                return NULL;
+            }
+            ++processed;
+            return ret.getClear();
         }
-        ++processed;
-        return ret.getClear();
+        catch (IException *E)
+        {
+            throw makeWrappedException(E);
+        }
     }
 };
 
