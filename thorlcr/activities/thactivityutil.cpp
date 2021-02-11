@@ -609,25 +609,15 @@ class CWriteHandler : implements IFileIO, public CInterface
     bool remote;
     CFIPScope fipScope;
     unsigned twFlags;
+    bool closed = false;
 
-public:
-    IMPLEMENT_IINTERFACE_USING(CInterface);
-
-    CWriteHandler(CActivityBase &_activity, IPartDescriptor &_partDesc, IFile *_primary, IFileIO *_primaryio, ICopyFileProgress *_iProgress, unsigned _twFlags, bool *_aborted)
-        : activity(_activity), partDesc(_partDesc), primary(_primary), primaryio(_primaryio), iProgress(_iProgress), twFlags(_twFlags), aborted(_aborted), fipScope(primary->queryFilename())
+    void checkAndHandleClose()
     {
-        RemoteFilename rfn;
-        partDesc.getFilename(0, rfn);
-        remote = !rfn.isLocal();
-        rfn.getPath(primaryName);
-        if (globals->getPropBool("@replicateAsync", true))
-            cancelReplicates(&activity, partDesc);
-    }
-    virtual void beforeDispose() override
-    {
-        // Can't throw in destructor...
-        // Note that if we do throw the CWriteHandler object is liable to be leaked...
-        primaryio.clear(); // should close
+        if (closed)
+            return;
+        closed = true;
+        primaryio->close();
+        primaryio.clear();
         if (aborted && *aborted)
         {
             primary->remove(); // i.e. never completed, so remove partial (temp) primary
@@ -692,6 +682,34 @@ public:
         if (partDesc.numCopies()>1)
             _doReplicate(&activity, partDesc, iProgress);
     }
+
+public:
+    IMPLEMENT_IINTERFACE_USING(CInterface);
+
+    CWriteHandler(CActivityBase &_activity, IPartDescriptor &_partDesc, IFile *_primary, IFileIO *_primaryio, ICopyFileProgress *_iProgress, unsigned _twFlags, bool *_aborted)
+        : activity(_activity), partDesc(_partDesc), primary(_primary), primaryio(_primaryio), iProgress(_iProgress), twFlags(_twFlags), aborted(_aborted), fipScope(primary->queryFilename())
+    {
+        RemoteFilename rfn;
+        partDesc.getFilename(0, rfn);
+        remote = !rfn.isLocal();
+        rfn.getPath(primaryName);
+        if (globals->getPropBool("@replicateAsync", true))
+            cancelReplicates(&activity, partDesc);
+    }
+    virtual void beforeDispose() override
+    {
+        // Can't throw in destructor...
+        // Note that if we do throw the CWriteHandler object is liable to be leaked...
+        try
+        {
+            checkAndHandleClose();
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "CWriteHandler::beforeDispose");
+            e->Release();
+        }
+    }
 // IFileIO impl.
     virtual size32_t read(offset_t pos, size32_t len, void * data) { return primaryio->read(pos, len, data); }
     virtual offset_t size() { return primaryio->size(); }
@@ -700,7 +718,10 @@ public:
     virtual unsigned __int64 getStatistic(StatisticKind kind) { return primaryio->getStatistic(kind); }
     virtual void setSize(offset_t size) { primaryio->setSize(size); }
     virtual void flush() { primaryio->flush(); }
-    virtual void close() { primaryio->close(); }
+    virtual void close() 
+    {
+        checkAndHandleClose();
+    }
 };
 
 IFileIO *createMultipleWrite(CActivityBase *activity, IPartDescriptor &partDesc, unsigned recordSize, unsigned twFlags, bool &compress, ICompressor *ecomp, ICopyFileProgress *iProgress, bool *aborted, StringBuffer *_outLocationName)
