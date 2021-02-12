@@ -1,9 +1,9 @@
-import * as Memory from "dojo/store/Memory";
 import * as Observable from "dojo/store/Observable";
 import * as ESPWorkunit from "src/ESPWorkunit";
 import * as ESPDFUWorkunit from "src/ESPDFUWorkunit";
 import * as ESPLogicalFile from "src/ESPLogicalFile";
 import * as ESPQuery from "src/ESPQuery";
+import { Memory } from "./Memory";
 import * as WsWorkunits from "./WsWorkunits";
 import * as FileSpray from "./FileSpray";
 import * as WsDfu from "./WsDfu";
@@ -19,10 +19,10 @@ export class ESPSearch {
     protected _searchText: string;
 
     store = Observable(new Memory());
-    eclStore = Observable(new Memory({ idProperty: "Wuid", data: [] }));
-    dfuStore = Observable(new Memory({ idProperty: "ID", data: [] }));
-    fileStore = Observable(new Memory({ idProperty: "__hpcc_id", data: [] }));
-    queryStore = Observable(new Memory({ idProperty: "__hpcc_id", data: [] }));
+    eclStore = Observable(new Memory("Wuid"));
+    dfuStore = Observable(new Memory("ID"));
+    fileStore = Observable(new Memory("__hpcc_id"));
+    queryStore = Observable(new Memory("__hpcc_id"));
 
     constructor(private begin: (searchCount: number) => void, private update: () => void, private end: (success: boolean) => void) {
     }

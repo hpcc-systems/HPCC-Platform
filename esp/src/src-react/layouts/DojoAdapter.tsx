@@ -5,23 +5,25 @@ import * as registry from "dijit/registry";
 import nlsHPCC from "src/nlsHPCC";
 import { resolve } from "src/Utility";
 
-export interface DojoAdapterProps {
-    widgetClassID?: string;
-    widgetClass?: any;
-    params?: object;
-    onWidgetMount?: (widget) => void;
-}
-
 export interface DojoState {
     uid: number;
     widgetClassID?: string;
     widget: any;
 }
 
+export interface DojoAdapterProps {
+    widgetClassID?: string;
+    widgetClass?: any;
+    params?: object;
+    delayProps?: object;
+    onWidgetMount?: (widget) => void;
+}
+
 export const DojoAdapter: React.FunctionComponent<DojoAdapterProps> = ({
     widgetClassID,
     widgetClass,
     params,
+    delayProps,
     onWidgetMount
 }) => {
 
@@ -54,9 +56,9 @@ export const DojoAdapter: React.FunctionComponent<DojoAdapterProps> = ({
                         padding: "0px",
                         width: "100%",
                         height: "100%"
-                    }
+                    },
+                    ...delayProps
                 }, elem);
-                // widget.placeAt(elem, "replace");
                 widget.startup();
                 widget.resize();
                 if (widget.init) {
@@ -84,7 +86,7 @@ export const DojoAdapter: React.FunctionComponent<DojoAdapterProps> = ({
             }
             widget = null;  //  Avoid race condition  ---
         };
-    }, [onWidgetMount, params, uid, widgetClass, widgetClassID]);
+    }, [onWidgetMount, params, delayProps, uid, widgetClass, widgetClassID]);
 
     return <div ref={myRef} style={{ width: "100%", height: "100%" }}>{nlsHPCC.Loading} {widgetClassID}...</div>;
 };

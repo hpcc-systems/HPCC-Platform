@@ -1,7 +1,7 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
-import * as Memory from "dojo/store/Memory";
+import { AlphaNumSortMemory } from "src/Memory";
 import * as Observable from "dojo/store/Observable";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
@@ -9,19 +9,6 @@ import { useWorkunitResults } from "../hooks/Workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { ShortVerticalDivider } from "./Common";
 import { DojoGrid, selector } from "./DojoGrid";
-
-class MyMemory extends Memory {
-    idProperty: "__hpcc_id";
-    alphanumSort: { [column: string]: boolean } = {};
-
-    query(query, options) {
-        const retVal = super.query(query, options);
-        if (options.sort && options.sort.length && this.alphanumSort[options.sort[0].attribute]) {
-            Utility.alphanumSort(retVal, options.sort[0].attribute, options.sort[0].descending);
-        }
-        return retVal;
-    }
-}
 
 const defaultUIState = {
     hasSelection: false
@@ -66,10 +53,8 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
     ];
 
     //  Grid ---
-    const gridStore = useConst(new Observable(new MyMemory()));
-    gridStore.alphanumSort["Name"] = true;
-    gridStore.alphanumSort["Value"] = true;
-
+    const gridStore = useConst(new Observable(new AlphaNumSortMemory("__hpcc_id", { Name: true, Value: true })));
+    const gridQuery = useConst({});
     const gridSort = useConst([{ attribute: "Wuid", "descending": true }]);
     const gridColumns = useConst({
         col1: selector({
@@ -106,7 +91,7 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
     });
 
     const refreshTable = (clearSelection = false) => {
-        grid?.set("query", {});
+        grid?.set("query", gridQuery);
         if (clearSelection) {
             grid?.clearSelection();
         }
@@ -125,13 +110,14 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
 
     React.useEffect(() => {
         gridStore.setData(results.map(row => {
-            const tmp: any = row.ResultViews;
+            const tmp: any = row?.ResultViews;
             return {
                 __hpcc_id: row.Sequence,
                 Name: row.Name,
                 FileName: row.FileName,
                 Value: row.Value,
-                ResultViews: tmp.View,
+                ResultViews: tmp?.View,
+                Sequence: row.Sequence
             };
         }));
         refreshTable();
@@ -141,7 +127,7 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
     return <HolyGrail
         header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
         main={
-            <DojoGrid store={gridStore} query={{}} sort={gridSort} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
+            <DojoGrid store={gridStore} query={gridQuery} sort={gridSort} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
         }
     />;
 };

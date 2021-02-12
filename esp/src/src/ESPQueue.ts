@@ -8,16 +8,16 @@ import * as WsSMC from "./WsSMC";
 import { Memory } from "./Memory";
 
 class Store extends Memory {
-    idProperty: "__hpcc_id"
+
+    constructor() {
+        super("__hpcc_id");
+    }
 }
 
 class QueueMemory extends Memory {
 
-    idProperty = "__hpcc_id";
-    data = [];
-
     constructor(protected parent) {
-        super();
+        super("__hpcc_id");
     }
 
 }

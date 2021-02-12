@@ -41,10 +41,7 @@ define([
 
             startup: function (args) {
                 this.inherited(arguments);
-                var store = new MemoryMod.Memory({
-                    idProperty: "__hpcc_id",
-                    data: []
-                });
+                var store = new MemoryMod.Memory("__hpcc_id");
                 this.filePartsStore = new Observable(store);
 
                 this.filePartsGrid = new declare([OnDemandGrid, Keyboard, ColumnResizer, DijitRegistry])({

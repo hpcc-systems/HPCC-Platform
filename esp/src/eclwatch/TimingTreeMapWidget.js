@@ -232,10 +232,8 @@ define([
                         }, timers[i]));
                     }
                 }
-                this.store = new MemoryMod.Memory({
-                    idProperty: "__hpcc_id",
-                    data: timerData
-                });
+                this.store = new MemoryMod.Memory("__hpcc_id");
+                this.store.setData(timerData);
 
                 var context = this;
                 this.treeMap.set("store", this.store);

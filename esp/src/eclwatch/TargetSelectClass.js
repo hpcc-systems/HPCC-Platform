@@ -416,15 +416,14 @@ define([
             if (this._dropZoneTarget) {
                 this._loadDropZoneFolders(pathSepChar, this._dropZoneTarget.machine.Netaddress, this._dropZoneTarget.machine.Directory, this._dropZoneTarget.machine.OS).then(function (results) {
                     results.sort();
-                    var store = new MemoryMod.Memory({
-                        data: arrayUtil.map(results, function (_path) {
-                            var path = _path.substring(context._dropZoneTarget.machine.Directory.length);
-                            return {
-                                name: path,
-                                id: _path
-                            };
-                        })
-                    });
+                    var store = new MemoryMod.Memory();
+                    store.setData(arrayUtil.map(results, function (_path) {
+                        var path = _path.substring(context._dropZoneTarget.machine.Directory.length);
+                        return {
+                            name: path,
+                            id: _path
+                        };
+                    }));
                     context.set("store", store);
                     context.set("placeholder", defaultPath);
                     context._postLoad();

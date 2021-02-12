@@ -131,10 +131,8 @@ define([
                 arrayUtil.forEach(result, function (item, idx) {
                     item["__hpcc_id"] = idx;
                 });
-                var store = new MemoryMod.Memory({
-                    idProperty: "__hpcc_id",
-                    data: result
-                });
+                var store = new MemoryMod.Memory("__hpcc_id");
+                store.setData(result);
                 this.store = new Observable(store);
                 this.grid = new declare([ESPUtil.Grid(false, true)])({
                     columns: columns,

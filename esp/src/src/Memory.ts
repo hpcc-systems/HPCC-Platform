@@ -12,15 +12,13 @@ export interface MemoryOptions {
 
 export class Memory {
 
-    data = null;
-    idProperty = "id";
-    index = null;
-    queryEngine = SimpleQueryEngine;
+    protected data = null;
+    private idProperty: string;
+    private index = null;
+    protected queryEngine = SimpleQueryEngine;
 
-    constructor(options: MemoryOptions = {}) {
-        for (const i in options) {
-            this[i] = options[i];
-        }
+    constructor(idProperty: string = "id") {
+        this.idProperty = idProperty;
         this.setData(this.data || []);
     }
 
@@ -83,8 +81,8 @@ export class Memory {
 
 export class AlphaNumSortMemory extends Memory {
 
-    constructor(protected alphanumSort: { [id: string]: boolean }, options: MemoryOptions = {}) {
-        super(options);
+    constructor(idProperty: string = "id", protected alphanumSort: { [id: string]: boolean }) {
+        super(idProperty);
     }
 
     query(query, options) {

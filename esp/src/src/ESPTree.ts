@@ -1,7 +1,5 @@
 ﻿import * as arrayUtil from "dojo/_base/array";
 import * as declare from "dojo/_base/declare";
-// import * as Memory from "dojo/store/Memory";
-
 import * as ESPUtil from "./ESPUtil";
 import { Memory } from "./Memory";
 
@@ -69,7 +67,6 @@ const TreeNode = declare(null, {
 });
 
 class TreeStore extends Memory {
-    idProperty = "__hpcc_id";
 
     treeSeparator = "->";
     cachedTreeNodes: object;
@@ -77,8 +74,8 @@ class TreeStore extends Memory {
     out_edges: any;
     in_edges: any;
 
-    constructor(args) {
-        super(args);
+    constructor() {
+        super("__hpcc_id");
         this.clear();
     }
 
