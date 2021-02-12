@@ -16,4 +16,5 @@ application:
    - ws_esdlconfig
    - ws_store
    - ws_codesign
+   - ws_resources
    - WSDali

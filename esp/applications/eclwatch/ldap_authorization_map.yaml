@@ -146,6 +146,11 @@ ldap:
          -  path: ConfigAccess
             resource: ConfigAccess
             description: Access to super computer environment
+      ws_resources:
+         Feature:
+         -  path: ResourceQueryAccess
+            resource: ResourceQueryAccess
+            description: Access to resources
       WsPackageProcess: []
       ws_account: []
       ws_access: []
