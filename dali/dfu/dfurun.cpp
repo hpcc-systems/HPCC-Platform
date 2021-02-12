@@ -48,6 +48,7 @@ test multiclusteradd with replicate
 #include "dfurun.hpp"
 #include "eventqueue.hpp"
 #include "wujobq.hpp"
+#include "dameta.hpp"
 
 #define SDS_CONNECT_TIMEOUT (5*60*100)
 
@@ -458,10 +459,23 @@ class CDFUengine: public CInterface, implements IDFUengine
         if ((isDotDotString != nullptr) || (isDotString != nullptr))
             throwError3(DFTERR_InvalidFilePath, pfilePath, dotDotString, dotString);
 
-        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
-        Owned<IConstEnvironment> env = factory->openEnvironment();
         StringBuffer netaddress;
         filename.queryIP().getIpText(netaddress);
+#ifdef _CONTAINERIZED
+        Owned<IPropertyTreeIterator> planes = getDropZonePlanesIterator();
+        ForEach(*planes)
+        {
+            IPropertyTree & plane = planes->query();
+            const char * fullDropZoneDir = plane.queryProp("@prefix");
+            assertex(fullDropZoneDir);
+            // note: for bare-metal drop-zones, will need to compare ip address
+            if (startsWith(pfilePath, fullDropZoneDir))
+                return;
+        }
+        throwError1(DFTERR_NoMatchingDropzonePlane, pfilePath);
+#else
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+        Owned<IConstEnvironment> env = factory->openEnvironment();
 
         Owned<IConstDropZoneInfo> dropZone = env->getDropZoneByAddressPath(netaddress.str(), pfilePath);
         if (!dropZone)
@@ -482,6 +496,7 @@ class CDFUengine: public CInterface, implements IDFUengine
                 , (dropZone->isECLWatchVisible() ? "" : "not ")
                 );
         }
+#endif
 #endif
     }
 

@@ -175,6 +175,27 @@
         ]
       }
     },
+    "dfuserver": {
+      "description": "dfuserver process",
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "name": {
+              "type": "string",
+              "description": "The name of the dfuserver process"
+            },
+            "disabled": {
+              "type": "boolean"
+            },
+            "maxJobs": {
+              "type": "integer"
+            },
+            "required": [ "name" ]
+          }
+        ]
+      }
+    },
     "roxie": {
       "description": "eclagent process",
       "type": "array",
@@ -387,6 +408,10 @@
           "description": "a list of labels associated with this plane, e.g. lz, data. NB: if blank/unset, treated as if 'data'",
           "type": "array",
           "items": { "type": "string" }
+        },
+        "umask" : {
+          "description": "file creation mask (used by despray)",
+          "type" : "string"
         }
       },
       "required": [ "name", "prefix" ],

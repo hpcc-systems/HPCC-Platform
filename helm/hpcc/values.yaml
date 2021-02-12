@@ -303,6 +303,10 @@ sasha:
     #expiryDefault: 4
     #user: sasha
 
+dfuserver:
+- name: dfuserver
+  maxJobs: 1
+
 eclagent:
 - name: hthor
   ## replicas indicates how many eclagent pods should be started
