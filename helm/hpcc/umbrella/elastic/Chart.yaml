@@ -1,0 +1,38 @@
+apiVersion: v2
+name: hpcc
+description: A Helm chart for launching a HPCC cluster using Kubernetes
+icon: https://hpccsystems.com/sites/default/files/header-logo_0.png
+type: application
+
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+version: 0.1.0
+
+# This is the version number of the application being deployed. This version number should be
+# incremented each time you make changes to the application.
+
+appVersion: 0.1.0
+
+# Dependencies can be automatically updated via HELM dependancy update command:
+# > 'helm dependency update HPCC-Systems/helm/hpcc' command
+# or helm install parameter —dependency-update
+# > helm install HPCC-Systems/helm/hpcc --set global.image.version=latest —-dependency-update
+# For details please see HPCC-Systems/helm/hpcc/README.md
+dependencies:
+# An Elastic Stack environment is managed by default
+# To disable: --set elasticsearch.enabled=false --set kibana.enabled=false
+# and speficy alternate log processor
+# Kibana is an optional front-end system, and is disabled by default.
+# To Enable: --set elasticsearch.enabled=true --set kibana.enabled=true
+- name: filebeat # Managed stderr log-forwarder
+  version: 7.9.3
+  repository: https://helm.elastic.co
+  condition: elasticsearch.enabled
+- name: elasticsearch # Managed logging processor engine
+  version: 7.9.3
+  repository: https://helm.elastic.co
+  condition: elasticsearch.enabled
+- name: kibana # Optional managed logging processor front-end
+  version: 7.9.3
+  repository: https://helm.elastic.co
+  condition: kibana.enabled #should only enable if elasticsearch.enabled=true

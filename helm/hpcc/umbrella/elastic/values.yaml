@@ -1,0 +1,60 @@
+# Default values for hpcc + elastic.
+
+##The elasticsearch component can be customized by modifying helm chart values here.
+elasticsearch:
+  enabled: true
+  description: "HPCC Managed Elasticsearch"
+  ##See https://github.com/elastic/helm-charts/blob/master/elasticsearch/values.yaml for all available options
+  antiAffinity: "soft"  #default is HARD, for minimal systems soft might be necessary
+  replicas: 1           #default is 3, for minimal systems 1 replicas should be adequate
+  minimumMasterNodes: 1 #default is 2, for minimal systems 1 master node should be adequate
+  labels: {"managedby" : "HPCC"}
+  clusterHealthCheckParams: "local=true" #local node health status
+  volumeClaimTemplate:
+    accessModes: [ "ReadWriteOnce" ]
+    resources:
+      requests:
+        storage: 5Gi
+  #persistence:
+    #enabled: true
+    #labels:
+      # Add default labels for the volumeClaimTemplate fo the StatefulSet
+      #enabled: false
+    #annotations: {}
+
+##The filebeat component can be customized by modifying helm chart values here.
+filebeat:
+  description: "HPCC Managed filebeat"
+  ##See https://github.com/elastic/helm-charts/blob/master/filebeat/values.yaml for all available options
+  labels: {"managedby" : "HPCC"}
+  ## Allows you to add any config files in /usr/share/filebeat
+  ## such as filebeat.yml
+  #filebeatConfig:
+    #filebeat.yml: |
+      #filebeat.inputs:
+      #- type: container
+      #  paths:
+      #    - /var/log/containers/*.log
+        #processors:
+        #- add_kubernetes_metadata:
+            #host: ${NODE_NAME}
+            #matchers:
+            #- logs_path:
+                #logs_path: "/var/log/containers/"
+      #output.elasticsearch:
+      #  host: '${NODE_NAME}'
+      #  hosts: '${ELASTICSEARCH_HOSTS:elasticsearch-master:9200}'
+      #  index: "hpcc-%{[fields.log_type]}-%{[agent.version]}-%{+yyyy.MM.dd}"
+
+##The kibana component can be customized by modifying helm chart values here.
+kibana:
+  enabled: false
+  description: "HPCC Managed Kibana"
+  ##See https://github.com/elastic/helm-charts/blob/master/kibana/values.yaml for all available options
+  labels: {"managedby" : "HPCC"}
+  ## Allows you to add any config files in /usr/share/kibana/config/
+  ## such as kibana.yml
+  #kibanaConfig: {}
+  #   kibana.yml: |
+  #     key:
+  #       nestedkey: value
