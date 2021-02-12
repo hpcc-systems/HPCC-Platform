@@ -154,15 +154,6 @@
       "description": "sasha services",
       "type": "object",
       "$ref": "#/definitions/sashaservice"
-    },
-    "kibana": {
-      "description": "HPCC managed Elastic Stack deployment Kibana (log visualizer) component"
-    },
-    "elasticsearch": {
-      "description": "HPCC managed Elastic Stack deployment ElasticSearch (log processor) component"
-    },
-    "filebeat": {
-      "description": "HPCC managed Elastic Stack deployment Filebeat (log agent) component"
     }
   },
   "required": [
