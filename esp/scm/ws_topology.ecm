@@ -59,7 +59,15 @@ ESPStruct TpCluster
     [min_ver("1.15")] bool   HasThorSpareProcess;
     [min_ver("1.12")] ESParray<ESPstruct TpMachine> TpMachines;
 };
+
 //  ===========================================================================
+ESPStruct TpServiceTarget
+{
+    string Name;
+    string Type;
+    unsigned Port;
+    bool TLSSecure;
+};
 
 //  ===========================================================================
 ESPStruct TpLogicalCluster
@@ -646,7 +654,18 @@ ESPresponse [nil_remove, exceptions_inline] TpDropZoneQueryResponse
     ESParray<ESPstruct TpDropZone>    TpDropZones;
 };
 
-ESPservice [auth_feature("DEFERRED"), noforms, version("1.31"), cache_group("ESPWsTP"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
+ESPrequest TpServiceTargetQueryRequest
+{
+    string Type;
+    string Name;
+};
+
+ESPresponse [nil_remove, exceptions_inline] TpServiceTargetQueryResponse
+{
+    ESParray<ESPstruct TpServiceTarget> TpServiceTargets;
+};
+
+ESPservice [auth_feature("DEFERRED"), noforms, version("1.32"), cache_group("ESPWsTP"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
 {
     ESPmethod [cache_seconds(180), cache_global(1), resp_xsl_default("/esp/xslt/targetclusters.xslt")] TpTargetClusterQuery(TpTargetClusterQueryRequest, TpTargetClusterQueryResponse);
     ESPmethod [cache_seconds(180), cache_global(1), resp_xsl_default("/esp/xslt/topology.xslt")] TpClusterQuery(TpClusterQueryRequest, TpClusterQueryResponse);
@@ -669,6 +688,7 @@ ESPservice [auth_feature("DEFERRED"), noforms, version("1.31"), cache_group("ESP
     ESPmethod [cache_seconds(180), cache_global(1), min_ver(1.25)] TpMachineInfo(TpMachineInfoRequest, TpMachineInfoResponse);
 
     ESPmethod SystemLog(SystemLogRequest, SystemLogResponse);
+    ESPmethod [min_ver(1.32)] TpServiceTargetQuery(TpServiceTargetQueryRequest, TpServiceTargetQueryResponse);
 };
 
 SCMexportdef(WSWU);

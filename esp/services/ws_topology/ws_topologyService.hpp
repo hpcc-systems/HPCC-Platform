@@ -173,6 +173,7 @@ public:
     bool onTpGetComponentFile(IEspContext &context, IEspTpGetComponentFileRequest &req, IEspTpGetComponentFileResponse &resp);
 
     bool onTpThorStatus(IEspContext &context, IEspTpThorStatusRequest &req, IEspTpThorStatusResponse &resp);
+    bool onTpServiceTargetQuery(IEspContext &context, IEspTpServiceTargetQueryRequest &req, IEspTpServiceTargetQueryResponse &resp);
 };
 
 
