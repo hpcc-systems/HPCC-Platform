@@ -25,6 +25,7 @@
 #include "rmtssh.hpp"
 #include "platform.h"
 #include "TpWrapper.hpp"
+#include <math.h>
 
 static const int THREAD_POOL_SIZE = 40;
 static const int THREAD_POOL_STACK_SIZE = 64000;
@@ -1445,15 +1446,14 @@ void Cws_machineEx::readStorageData(const char* response, CMachineInfoThreadPara
 
         if (buf.length() > 0)
         {
-            StringBuffer diskSpaceTitle;
-            int diskSpacePercentAvail = 0;
-            __int64 diskSpaceAvailable = 0, diskSpaceTotal = 0;
-            if (!readStorageSpace(buf.str(), diskSpaceTitle, diskSpaceAvailable, diskSpaceTotal, diskSpacePercentAvail))
+            Owned<CStorageData> sData = new CStorageData(true, false, true);
+            if (!sData->read(buf))
                 DBGLOG("Invalid storage information on %s: %s", pParam->m_machineData.getNetworkAddress(), buf.str());
-            else if ((diskSpaceTitle.length() > 0) && !excludePartition(diskSpaceTitle.str()))
+            else
             {
-                Owned<CStorageData> diskData = new CStorageData(diskSpaceTitle, diskSpaceAvailable, diskSpaceTotal, diskSpacePercentAvail);
-                storage.append(*diskData.getClear());
+                const char* title = sData->getDiskSpaceTitle();
+                if (!isEmptyString(title) && !excludePartition(title))
+                    storage.append(*sData.getClear());
             }
         }
         if (!pStr || (strnicmp(pStr, "---ProcessList1---", 18)==0))
@@ -1461,53 +1461,46 @@ void Cws_machineEx::readStorageData(const char* response, CMachineInfoThreadPara
     }
 }
 
-bool Cws_machineEx::readStorageSpace(const char *line, StringBuffer& title, __int64& free, __int64& total, int& percentAvail)
+bool CStorageData::read(const char* s)
 {
-    if (!line || !*line)
+    if (isEmptyString(s))
         return false;
 
-    StringBuffer freeStr, usedStr;
-
-    const char* pStr = line;
-    const char* pStr1 = strchr(pStr, ':');
-    if (!pStr1)
-        return false;
-
-    title.clear().append(pStr, 0, pStr1 - pStr);
-    pStr = pStr1 + 2;
-    pStr1 = (char*) strchr(pStr, ' ');
-    if (!pStr1)
-        return false;
-
-    usedStr.append(pStr, 0, pStr1 - pStr);
-    pStr = pStr1 + 1;
-    if (!pStr)
-        return false;
-
-    freeStr.append(pStr);
-
-    __int64 factor1 = 1;
-    if (freeStr.length() > 9)
+    const char* pStr = s;
+    if (m_readTitle)
     {
-        freeStr.setLength(freeStr.length()-6);
-        factor1 = 1000000;
-    }
-    free = atol(freeStr.str())*factor1;
+        const char* finger = strchr(pStr, ':');
+        if (!finger)
+            return false;
 
-    __int64 factor2 = 1;
-    if (usedStr.length() > 9)
+        m_diskSpaceTitle.append(pStr, 0, finger - pStr);
+        pStr = finger + 2;
+    }
+
+    StringArray data;
+    data.appendList(pStr, " ");
+    if (data.length() < 2)
+        return false;
+
+    m_diskSpaceUsed = atol(data.item(0));
+    m_diskSpaceAvailable = atol(data.item(1));
+    if (m_toMByte)
     {
-        usedStr.setLength(usedStr.length()-6);
-        factor2 = 1000000;
+        //Convert from kilobytes to megabytes
+        m_diskSpaceAvailable = llround((double)m_diskSpaceAvailable/1024);
+        m_diskSpaceUsed = llround((double)m_diskSpaceUsed/1024);
     }
-    __int64 used = atol(usedStr.str())*factor2;
 
-    total = free + used;
-    if (total > 0)
-        percentAvail = (int) ((free*100)/total);
+    m_diskSpaceTotal = m_diskSpaceAvailable + m_diskSpaceUsed;
+    if (m_diskSpaceTotal > 0)
+        m_diskSpacePercentAvail = round((float)m_diskSpaceAvailable*100/m_diskSpaceTotal);
 
-    free = (__int64) free /1000; //MByte
-    total = (__int64) total /1000; //MByte
+    //If a given path (ex. /var/lib/HPCCSystems/hpcc-mirror/thor) in the usage request does not exist,
+    //the data.item(2) is the path (ex. /var/lib/HPCCSystems/hpcc-mirror/) the usage script is used
+    //to read the DiskSpace.
+    if (m_readPath && (data.length() > 2))
+        m_path.set(data.item(2));
+
     return true;
 }
 
@@ -2675,32 +2668,6 @@ void Cws_machineEx::getMachineUsages(IEspContext& context, IPropertyTree* unique
         m_threadPool->join(threadHandles.item(i));
 }
 
-bool Cws_machineEx::readDiskSpaceResponse(const char* response, __int64& free, __int64& used, int& percentAvail, StringBuffer& pathUsed)
-{
-    if (isEmptyString(response))
-        return false;
-
-    StringArray data;
-    data.appendList(response, " ");
-    if (data.length() < 2)
-        return false;
-
-    used = atol(data.item(0));
-    free = atol(data.item(1));
-
-    __int64 total = free + used;
-    if (total > 0)
-        percentAvail = (int) ((free*100)/total);
-
-    //The given path (ex. /var/lib/HPCCSystems/hpcc-mirror/thor) in the usage request does not exist.
-    //The data.item(2) is the path (ex. /var/lib/HPCCSystems/hpcc-mirror/) the usage script is used
-    //to read the DiskSpace.
-    if (data.length() > 2)
-        pathUsed.set(data.item(2));
-
-    return true;
-}
-
 void Cws_machineEx::getMachineUsage(IEspContext& context, CGetMachineUsageThreadParam* param)
 {
     VStringBuffer command("/%s/sbin/usage -d=", environmentConfData.m_executionPath.str());
@@ -2734,23 +2701,22 @@ void Cws_machineEx::getMachineUsage(IEspContext& context, CGetMachineUsageThread
     {
         IPropertyTree& diskPathTree = diskPathList->query();
 
-        StringBuffer aDiskPathResp, pathUsed;
+        StringBuffer aDiskPathResp;
         VStringBuffer diskPath("%s:", diskPathTree.queryProp("@path"));
         readALineFromResult(response, diskPath, aDiskPathResp, true);
 
-        int percentAvail = 0;
-        __int64 diskSpaceAvailable = 0, diskSpaceUsed = 0;
-        if (!readDiskSpaceResponse(aDiskPathResp.str(), diskSpaceAvailable, diskSpaceUsed, percentAvail, pathUsed))
+        CStorageData sData(false, true, false);
+        if (!sData.read(aDiskPathResp))
         {
             DBGLOG("Failed to read disc space on %s: %s", param->request->queryProp("@netAddress"), aDiskPathResp.str());
             diskPathTree.addProp("@error", "Failed to read disc space.");
             continue;
         }
-
-        diskPathTree.addPropInt64("@used", diskSpaceUsed);
-        diskPathTree.addPropInt64("@available", diskSpaceAvailable);
-        diskPathTree.addPropInt("@percentAvail", percentAvail);
-        if (!pathUsed.isEmpty())
+        diskPathTree.addPropInt64("@used", sData.getDiskSpaceUsed());
+        diskPathTree.addPropInt64("@available", sData.getDiskSpaceAvailable());
+        diskPathTree.addPropInt("@percentAvail", sData.getDiskSpacePercentAvail());
+        const char* pathUsed = sData.getDiskSpacePath();
+        if (!isEmptyString(pathUsed))
             diskPathTree.addProp("@pathUsed", pathUsed);
     }
 }
