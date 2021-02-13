@@ -1,15 +1,17 @@
-{{ range $.Values.sasha -}}
-{{- if not .disabled -}}
-{{- $commonCtx := dict "root" $ "me" . }}
-{{- $configSHA := include "hpcc.sashaConfigMap" $commonCtx | sha256sum }}
-{{- $serviceName := printf "sasha-%s" .service }}
-{{- $_ := set $commonCtx.me "access" (splitList " " (include "hpcc.getSashaServiceAccess" .)) -}}
+{{ range $sashaName, $_sasha := $.Values.sasha -}}
+{{ $sasha := ($_sasha | default dict) -}}
+{{ if not $sasha.disabled -}}
+{{ $_ := set $sasha "name" $sashaName -}}
+{{ $_ := set $sasha "access" (splitList " " (include "hpcc.getSashaServiceAccess" $sasha)) -}}
+{{ $commonCtx := dict "root" $ "me" $sasha -}}
+{{ $configSHA := include "hpcc.sashaConfigMap" $commonCtx | sha256sum -}}
+{{ $serviceName := printf "sasha-%s" $sashaName -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ $serviceName | quote }}
 spec:
-  replicas: {{ .replicas | default 1 }}
+  replicas: {{ $sasha.replicas | default 1 }}
   selector:
     matchLabels:
       run: {{ $serviceName | quote }}
@@ -17,7 +19,7 @@ spec:
     metadata:
       labels:
         run: {{ $serviceName | quote }}
-        accessDali: {{ (has "dali" $commonCtx.me.access) | ternary "yes" "no" | quote }}
+        accessDali: {{ (has "dali" $sasha.access) | ternary "yes" "no" | quote }}
       annotations:
         checksum/config: {{ $configSHA }}
     spec:
@@ -28,20 +30,23 @@ spec:
 {{- include "hpcc.addSashaVolumeMounts" $commonCtx | indent 8 }}
       volumes:
 {{- include "hpcc.addSashaVolumes" $commonCtx | indent 6 }}
+{{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "system" ) ) | indent 6 -}}
+{{- if has "data" $sasha.access -}}
+{{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "storage" ) ) | indent 6 -}}
+{{- end }}
 ---
-{{- if and (not .disabled) (.servicePort) -}}
+{{- if and (not $sasha.disabled) ($sasha.servicePort) -}}
 {{ include "hpcc.addSashaService" $commonCtx }}
 ---
 {{- end }}
 kind: ConfigMap 
 {{ include "hpcc.sashaConfigMap" $commonCtx }}
 ---
-{{- if .storage }}
+{{- if $sasha.storage }}
 {{- if (not .storage.existingClaim) }}
-{{ include "hpcc.addPVC" (dict "root" $ "name" (printf "sasha-%s" .service) "me" .storage) }}
+{{ include "hpcc.addPVC" (dict "root" $ "name" (printf "sasha-%s" $sasha.name) "me" $sasha.storage) }}
 {{- end }}
 ---
 {{- end }}
-
 {{- end }}
 {{- end }}
