@@ -25,6 +25,7 @@ import subprocess
 import sys
 import traceback
 import linecache
+import inspect
 
 logger = logging.getLogger('RegressionTestEngine')
 
@@ -197,42 +198,47 @@ def createStackTrace(wuid, proc, taskId, logDir = ""):
     logger.debug("%3d. Create Stack Trace result:'%s'", taskId, result)
 
 def abortWorkunit(wuid, taskId = -1, engine = None):
+    state=False
     wuid = wuid.strip()
-    logger.debug("%3d. abortWorkunit(wuid:'%s', engine: '%s')", taskId, wuid, str(engine))
-    logger.debug("%3d. config: generateStackTrace: '%s'", taskId, str(gConfig.generateStackTrace))
-    if (gConfig.generateStackTrace and (engine !=  None)):
-        if isSudoer():
-            if engine.startswith('thor'):
-                hpccProcesses = queryEngineProcess("thormaster", taskId)
-                hpccProcesses += queryEngineProcess("thorslave", taskId)
-            elif engine.startswith('hthor'):
-                hpccProcesses = queryEngineProcess("eclagent", taskId)
-                hpccProcesses += queryEngineProcess("hthor", taskId)
-            elif engine.startswith('roxie'):
-                hpccProcesses = queryEngineProcess("roxie", taskId)
-                
-            if len(hpccProcesses) > 0:
-                for p in hpccProcesses:
-                    createStackTrace(wuid, p, taskId)
+    if wuid.upper().startswith('W'):
+        logger.debug("%3d. abortWorkunit(wuid:'%s', engine: '%s')", taskId, wuid, str(engine))
+        logger.debug("%3d. config: generateStackTrace: '%s'", taskId, str(gConfig.generateStackTrace))
+        if (gConfig.generateStackTrace and (engine !=  None)):
+            if isSudoer():
+                if engine.startswith('thor'):
+                    hpccProcesses = queryEngineProcess("thormaster", taskId)
+                    hpccProcesses += queryEngineProcess("thorslave", taskId)
+                elif engine.startswith('hthor'):
+                    hpccProcesses = queryEngineProcess("eclagent", taskId)
+                    hpccProcesses += queryEngineProcess("hthor", taskId)
+                elif engine.startswith('roxie'):
+                    hpccProcesses = queryEngineProcess("roxie", taskId)
+                    
+                if len(hpccProcesses) > 0:
+                    for p in hpccProcesses:
+                        createStackTrace(wuid, p, taskId)
+                else:
+                    logger.error("%3d. abortWorkunit(wuid:'%s', engine:'%s') related process to generate stack trace not found.", taskId, wuid, str(engine))
+                pass
             else:
-                logger.error("%3d. abortWorkunit(wuid:'%s', engine:'%s') related process to generate stack trace not found.", taskId, wuid, str(engine))
-            pass
-        else:
-            err = Error("7100")
-            logger.error("%s. clearOSCache error:%s" % (taskId,  err))
-            logger.error(traceback.format_exc())
-            raise Error(err)
-            pass
+                err = Error("7100")
+                logger.error("%s. clearOSCache error:%s" % (taskId,  err))
+                logger.error(traceback.format_exc())
+                raise Error(err)
+                pass
 
-    shell = Shell()
-    cmd = 'ecl'
-    defaults=[]
-    args = []
-    args.append('abort')
-    args.append('-wu=' + wuid)
-    addCommonEclArgs(args)
+        shell = Shell()
+        cmd = 'ecl'
+        defaults=[]
+        args = []
+        args.append('abort')
+        args.append('-wu=' + wuid)
+        addCommonEclArgs(args)
 
-    state=shell.command(cmd, *defaults)(*args)
+        state=shell.command(cmd, *defaults)(*args)
+    else:
+        logger.error("%3d. abortWorkunit(wuid:'%s', engine:'%s') invalid WUID.", taskId, wuid, str(engine))
+        
     return state
 
 def createZAP(wuid, taskId,  reason=''):
@@ -431,12 +437,22 @@ def clearOSCache(testId = -1):
     pass
 
 
-def PrintException(msg = ''):
+def printException(msg = '',  debug = False):
     exc_type, exc_obj, tb = sys.exc_info()
     f = tb.tb_frame
     lineno = tb.tb_lineno
     filename = f.f_code.co_filename
     linecache.checkcache(filename)
     line = linecache.getline(filename, lineno, f.f_globals)
-    print ('EXCEPTION IN (%s, LINE %s CODE:"%s"): %s' % ( filename, lineno, line.strip(), msg))
-    print(traceback.format_exc())
+    if debug:
+        logger.debug('EXCEPTION IN (%s, LINE %s CODE:"%s"): %s' % ( filename, lineno, line.strip(), msg))
+        logger.debug(traceback.format_exc())
+    else:
+        print ('EXCEPTION IN (%s, LINE %s CODE:"%s"): %s' % ( filename, lineno, line.strip(), msg))
+        print(traceback.format_exc())
+
+def getCodeInfo(currentFrame= None):
+    retVal = "'' (No frame info)"
+    if currentFrame != None:
+        retVal = "%s:%s" % (os.path.basename(os.path.abspath(inspect.getfile(currentFrame))),  currentFrame.f_lineno)
+    return(retVal)

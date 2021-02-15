@@ -25,7 +25,7 @@ import re
 import xml.etree.ElementTree as ET
 import unicodedata
 
-from ...util.util import isPositiveIntNum, getConfig, PrintException
+from ...util.util import isPositiveIntNum, getConfig, printException
 from ...common.error import Error
 
 logger = logging.getLogger('RegressionTestEngine')
@@ -526,7 +526,7 @@ class ECLFile:
                     else:
                         diffLines = repr(diffLines)
                 except Exception as e:
-                    PrintException(repr(e) + " runQuery() end")
+                    printException(repr(e) + " runQuery() end")
                     
                     
                 self.diff += str(diffLines)
