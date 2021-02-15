@@ -3211,6 +3211,14 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
         context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
 
         const char* netAddress = req.getNetAddress();
+        if (!isEmptyString(netAddress))
+        {
+            IpAddress ipToCheck;
+            ipToCheck.ipset(netAddress);
+            if (ipToCheck.isNull())
+                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid server %s specified.", netAddress);
+        }
+
         bool filesFromALinux = false;
         IArrayOf<IEspDropZone> dropZoneList;
         bool ECLWatchVisibleOnly = req.getECLWatchVisibleOnly();
