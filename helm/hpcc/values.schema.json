@@ -8,6 +8,31 @@
     "hostgroups": {
       "$ref": "#/definitions/hostgroups"
     },
+    "placement": {
+      "type": "array",
+      "items": {
+        "type": "object",
+         "properties": {
+           "pods": {
+              "type": "array",
+              "items": { "type": "string" }
+	   },
+           "nodeSelector": {
+             "$ref": "#/definitions/nodeSelector"
+	  },
+          "tolerations": {
+            "$ref": "#/definitions/tolerations"
+	  },
+          "affinity": {
+            "type": "object"
+	  },
+          "schedulerNames": {
+            "type": "array",
+            "items": { "type": "string" }
+	  }
+        }
+      }
+    },
     "storage": {
       "type": "object",
       "properties": {
@@ -685,6 +710,36 @@
         "eclAgentResources": {
           "$ref": "#/definitions/resources"
         }
+      }
+    },
+    "nodeSelector": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "tolerations": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/toleration" }
+    },
+    "toleration": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+	},
+        "operator": {
+          "type": "string"
+	},
+        "value": {
+          "type": "string"
+	},
+        "effect": {
+          "type": "string"
+	},
+        "tolerationSeconds": {
+          "type": "integer"
+	}
       }
     }
   }

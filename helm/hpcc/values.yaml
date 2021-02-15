@@ -38,6 +38,64 @@ global:
     moneyLocale: "en_US.UTF-8"
     # perCpu: 0.126
 
+## placement
+## The placement, Kubernetes Scheduler, is responsible for finding the best Node
+## for a Pod. It can be configured through placement to include an array of objects
+## to configure the Kubernetes Scheduler. It must have a "pods" list which tells which
+## pod the settings will be applied to. The list item with suffix "-" means it is Job
+## which tries to distinguish from the same pod name for Development type. If possible
+## tries use unique name to avoid the ambiguity.
+## Here are the HPCC Systems Pods' name or prefixs:
+##   eclwatch, hthor, eclservices, eclqueries, esdl-sandbox, sql2ecl
+##   mydali, roxie-workunit, myeclccserver, roxie-toposerver
+##   thor-eclagent, thor-thoragent
+##   hthor-, compile-, thormanager-, thorworker-, roxie-agent-
+## The settings can be also to one or more group names:
+##    dali, esp, eclagent, eclccserver, roxie, thor
+## Supported placement configuration:
+## 1) nodeSelector
+## 2) taints/tolerations
+## 3) affinity
+##    There is no schema check for the content of affinity. Reference
+##    https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+## 4) schedulerName: list of scheduler profile names. This requires Kubernetes 1.20.0
+##    beta and later releases
+## Examples:
+#placement:
+#- pods: ["eclwatch", "roxie-workunit", "compile-", "mydali"]
+#  nodeSelector:
+#  name: npone
+#- pods: ["thorworker-", "thor-thoragent", "thormanager-","thor-eclagent","hthor-"]
+#  nodeSelector:
+#    name: nptwo
+#  tolerations:
+#  - key: "name"
+#    operator: "Equal"
+#    value: "nptwo"
+#    effect: "NoSchedule"
+#- pods: ["thorworker-"]
+#  affinity:
+#    nodeAffinity:
+#      requiredDuringSchedulingIgnoredDuringExecution:
+#        nodeSelectorTerms:
+#        - matchExpressions:
+#           - key: kubernetes.io/e2e-az-name
+#             operator: In
+#             values:
+#             - e2e-az1
+#             - e2e-az2
+#- pods: ["sql2ecl"]
+#  schedulerNames: ["my-scheduler"]
+## The settings will be applied to all thor pods
+#- pods: ["thor"]
+#  nodeSelector:
+#    name: nptwo
+#  tolerations:
+#  - key: "name"
+#    operator: "Equal"
+#    value: "nptwo"
+#    effect: "NoSchedule"
+
 ## storage:
 ##
 ## If storage.[type].existingClaim is defined, a Persistent Volume Claim must
@@ -138,6 +196,7 @@ dali:
   #resources:
   #  cpu: "1"
   #  memory: "4G"
+
 
 eclagent:
 - name: hthor

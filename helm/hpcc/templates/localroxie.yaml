@@ -22,6 +22,7 @@ spec:
         accessDali: "yes"
         accessEsp: "yes"
     spec:
+      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" $roxie.name "group" "roxie") | indent 6 }}
       serviceAccountName: "hpcc-default"
       initContainers:
         {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}

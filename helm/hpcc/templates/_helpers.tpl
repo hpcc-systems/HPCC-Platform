@@ -615,3 +615,41 @@ resources:
     memory: "100M"
 {{- end -}}
 
+
+{{/*
+Create placement related settings
+*/}}
+{{- define "hpcc.doPlacement" -}}
+{{- if .placement.nodeSelector }}
+nodeSelector:
+{{ toYaml .placement.nodeSelector | indent 2  }}
+{{- end -}}
+{{- if .placement.tolerations }}
+tolerations:
+{{ toYaml .placement.tolerations }}
+{{- end -}}
+{{- if .placement.affinity }}
+affinity:
+{{ toYaml .placement.affinity }}
+{{- end -}}
+{{- if .placement.schedulerNames -}}
+{{- range $profileName := .placement.schedulerNames }}
+schedulerName: {{ $profileName }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Check if there is any placement configuration
+*/}}
+{{- define "hpcc.placementMatchName" -}}
+{{- if .root.Values.placement }}
+{{- $pod := .pod -}}
+{{- $group := .group -}}
+{{- range $placement := .root.Values.placement -}}
+{{- if or (has $pod $placement.pods) (has $group $placement.pods) -}}
+{{ include "hpcc.doPlacement" (dict "placement" $placement) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
