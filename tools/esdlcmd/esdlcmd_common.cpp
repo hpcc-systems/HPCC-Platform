@@ -58,7 +58,7 @@ void saveAsFile(const char * filepath, const char *filename, const char *text, c
         path.append(ext);
 
     Owned<IFile> file = createIFile(path.str());
-    Owned<IFileIO> io = file->open(IFOcreaterw);
+    Owned<IFileIO> io = file->open(IFOcreate);
 
     DBGLOG("Writing to file %s", file->queryFilename());
 

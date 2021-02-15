@@ -2322,7 +2322,7 @@ bool CWsDeployFileInfo::rollbackEnvironmentForCloud(IEspContext &context, IEspRo
             {
                 StringBuffer sbBackup;
                 Owned<IFile> pFile = createIFile(m_cloudEnvBkupFileName.str());
-                Owned<IFileIO> pFileIO = pFile->open(IFOreadwrite);
+                Owned<IFileIO> pFileIO = pFile->open(IFOwrite);
                 StringBuffer sbxml;
                 {
                     Owned <IPropertyTree> pTree = createPTree(*pFileIO);

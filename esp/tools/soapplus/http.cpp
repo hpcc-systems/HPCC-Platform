@@ -880,7 +880,7 @@ void HttpClient::addEspRequest(const char* requestId, const char* service, const
         fname.append(".xml");
         Owned<IFile> file = createIFile(fname.str());
         Owned<IFileIO> io;
-        io.setown(file->open(IFOcreaterw));
+        io.setown(file->open(IFOcreate));
 
         if (io.get())
             io->write(0, request.length(), request.str());
@@ -1461,7 +1461,7 @@ int HttpClient::sendRequest(StringBuffer& request, const char* fname, HttpStat* 
         fname1.append("request").append(PATHSEPCHAR);
         fname1.append(fname);
         Owned<IFile> file1 = createIFile(fname1.str());
-        io_o1.setown(file1->open(IFOcreaterw));
+        io_o1.setown(file1->open(IFOcreate));
         if(io_o1.get() == NULL)
         {
             fprintf(m_logfile, "file %s can't be created", file1->queryFilename());
@@ -1472,7 +1472,7 @@ int HttpClient::sendRequest(StringBuffer& request, const char* fname, HttpStat* 
         fname2.append("response_full").append(PATHSEPCHAR);
         fname2.append(fname);
         Owned<IFile> file2 = createIFile(fname2.str());
-        io_o2.setown(file2->open(IFOcreaterw));
+        io_o2.setown(file2->open(IFOcreate));
         if(io_o2.get() == NULL)
         {
             fprintf(m_logfile, "file %s can't be created", file2->queryFilename());
@@ -1484,7 +1484,7 @@ int HttpClient::sendRequest(StringBuffer& request, const char* fname, HttpStat* 
         fname3.append("response_content").append(PATHSEPCHAR);
         fname3.append(fname);
         Owned<IFile> file3 = createIFile(fname3.str());
-        io_o3.setown(file3->open(IFOcreaterw));
+        io_o3.setown(file3->open(IFOcreate));
         if(io_o3.get() == NULL)
         {
             fprintf(m_logfile, "file %s can't be created", file3->queryFilename());
@@ -2183,7 +2183,7 @@ int SimpleServer::start()
             }
 
             Owned<IFile> req_f = createIFile(req_outfname.str());
-            Owned<IFileIO>req_io = req_f->open(IFOcreaterw);
+            Owned<IFileIO>req_io = req_f->open(IFOcreate);
             if(req_io.get() == NULL)
             {
                 fprintf(m_logfile, "file %s can't be created", req_outfname.str());
@@ -2191,7 +2191,7 @@ int SimpleServer::start()
             }
             req_io->write(0, requestbuf.length(), requestbuf.str());
             Owned<IFile> resp_f = createIFile(resp_outfname.str());
-            Owned<IFileIO>resp_io = resp_f->open(IFOcreaterw);
+            Owned<IFileIO>resp_io = resp_f->open(IFOcreate);
             if(resp_io.get() == NULL)
             {
                 fprintf(m_logfile, "file %s can't be created", resp_outfname.str());

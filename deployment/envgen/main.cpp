@@ -405,7 +405,7 @@ int main(int argc, char** argv)
       pFile.setown(createIFile(out_envname));
       
       Owned<IFileIO> pFileIO;
-      pFileIO.setown(pFile->open(IFOcreaterw));
+      pFileIO.setown(pFile->open(IFOcreate));
       pFileIO->write(0, env.length(), env.str());
     }
   }

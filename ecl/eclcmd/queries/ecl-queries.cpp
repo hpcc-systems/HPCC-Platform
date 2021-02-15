@@ -1257,7 +1257,7 @@ public:
             return;
 
         Owned<IFile> file = createIFile(filepath);
-        Owned<IFileIO> io = file->open(IFOcreaterw);
+        Owned<IFileIO> io = file->open(IFOcreate);
 
         fprintf(stdout, "\nWriting to file %s\n", file->queryFilename());
 

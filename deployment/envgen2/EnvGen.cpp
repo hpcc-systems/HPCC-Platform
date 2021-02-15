@@ -677,7 +677,7 @@ bool CEnvGen::process()
    pFile.setown(createIFile(envFile));
 
    Owned<IFileIO> pFileIO;
-   pFileIO.setown(pFile->open(IFOcreaterw));
+   pFileIO.setown(pFile->open(IFOcreate));
    pFileIO->write(0, out.length(), out.str());
 
    //printf("%s", out.str());

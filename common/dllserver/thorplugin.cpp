@@ -538,7 +538,7 @@ const StringArray &HelperDll::queryManifestFiles(const char *type, const char *w
                 extractName.append(id).append('.').append(type);
             recursiveCreateDirectoryForFile(extractName);
             OwnedIFile f = createIFile(extractName);
-            OwnedIFileIO o = f->open(IFOcreaterw);
+            OwnedIFileIO o = f->open(IFOcreate);
             assertex(o.get() != nullptr);
             o->write(0, len, data);
             list->append(extractName);

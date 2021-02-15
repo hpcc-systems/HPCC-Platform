@@ -180,7 +180,7 @@ private:
     void writeToOutput(size32_t len, const char* content)
     {
         Owned<IFile> f = createIFile(optOutput.get());
-        Owned<IFileIO> fio = f->open(IFOcreaterw);
+        Owned<IFileIO> fio = f->open(IFOcreate);
         if (fio)
         {
             fio->write(0, len, (const void*)content);

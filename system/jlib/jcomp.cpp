@@ -385,7 +385,7 @@ void CppCompiler::writeLogFile(const char* filepath, StringBuffer& log)
     if(f->exists())
         f->remove();
 
-    Owned <IFileIO> fio = f->open(IFOcreaterw);
+    Owned <IFileIO> fio = f->open(IFOcreate);
     if(fio.get())
         fio->write(0, log.length(), log.str());
 }

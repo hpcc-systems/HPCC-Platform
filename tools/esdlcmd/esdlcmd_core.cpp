@@ -418,7 +418,7 @@ public:
 
         Owned<IFile> file = createIFile(path.str());
         Owned<IFileIO> io;
-        io.setown(file->open(IFOcreaterw));
+        io.setown(file->open(IFOcreate));
 
         DBGLOG("Writing to file %s", file->queryFilename());
 
@@ -786,7 +786,7 @@ public:
 
         Owned<IFile> file = createIFile(path);
         Owned<IFileIO> io;
-        io.setown(file->open(IFOcreaterw));
+        io.setown(file->open(IFOcreate));
 
         DBGLOG("Writing java to file %s", file->queryFilename());
 
@@ -1098,7 +1098,7 @@ public:
 
         Owned<IFile> file = createIFile(path);
         Owned<IFileIO> io;
-        io.setown(file->open(IFOcreaterw));
+        io.setown(file->open(IFOcreate));
 
         DBGLOG("Writing c++ to file %s", file->queryFilename());
 
