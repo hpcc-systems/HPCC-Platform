@@ -694,6 +694,11 @@ void CXslTransform::message(StringBuffer& out, const char* in, IXslTransform* pT
     pTrans->m_sMessages.append(in).append('\n');
 }
 
+extern ICompiledXpath* compileOptionalXpath(const char * xpath)
+{
+    UNIMPLEMENTED;
+}
+
 extern ICompiledXpath* compileXpath(const char * xpath)
 {
     UNIMPLEMENTED;

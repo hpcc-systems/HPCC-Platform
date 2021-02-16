@@ -63,6 +63,9 @@ include_directories (
          ./../../system/security/cryptohelper
          ./../../configuration/configmgr/configmgrlib
          ${HPCC_SOURCE_DIR}/system/xmllib
+         ${HPCC_SOURCE_DIR}/rtl/eclrtl
+         ${HPCC_SOURCE_DIR}/rtl/include
+         ${HPCC_SOURCE_DIR}/common/dllserver
          ${HPCC_SOURCE_DIR}/ecl/hql
          ${HPCC_SOURCE_DIR}/configuration/configmgr/RapidJSON/include
          ${HPCC_SOURCE_DIR}/esp/bindings

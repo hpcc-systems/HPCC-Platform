@@ -1628,12 +1628,15 @@ int Esdl2Transformer::process(IEspContext &ctx, EsdlProcessMode mode, const char
             tctx.root_type.set(root->queryName());
             root->process(tctx, (root_name) ? root_name : root_type);
             rc = tctx.counter;
-            if (mode==EsdlRequestMode)
+            if (mode!=EsdlRequestMode)
+                out.set(respWriter->str());
+            else
             {
                 Esdl2Request *rootreq = dynamic_cast<Esdl2Request *>(root);
-                if (rootreq)
+                if (!rootreq || !rootreq->hasDefaults())
+                    out.set(respWriter->str());
+                else
                 {
-                    DBGLOG("XML: %s", respWriter->str());
                     OwnedPTree req = createPTreeFromXMLString(respWriter->str(), false);
                     if (!req.get())
                         req.setown(createPTree(root_type,false));

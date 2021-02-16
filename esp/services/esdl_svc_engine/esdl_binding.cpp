@@ -614,6 +614,8 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
                         localCppPluginMap.setValue(pluginName, plugin);
                 }
             }
+            else if (type && strieq(type, "script"))
+                DBGLOG("Purely scripted service method %s", method);
             else
                 configureUrlMethod(method, methodCfg);
             DBGLOG("Method %s configured", method);
@@ -639,7 +641,8 @@ enum EsdlMethodImplType
     EsdlMethodImplWsEcl,
     EsdlMethodImplProxy,
     EsdlMethodImplJava,
-    EsdlMethodImplCpp
+    EsdlMethodImplCpp,
+    EsdlMethodImplScript
 };
 
 inline EsdlMethodImplType getEsdlMethodImplType(const char *querytype)
@@ -656,6 +659,8 @@ inline EsdlMethodImplType getEsdlMethodImplType(const char *querytype)
             return EsdlMethodImplJava;
         if (strieq(querytype, "cpp"))
             return EsdlMethodImplCpp;
+        if (strieq(querytype, "script"))
+            return EsdlMethodImplScript;
     }
     return EsdlMethodImplRoxie;
 }
@@ -665,7 +670,7 @@ static inline bool isPublishedQuery(EsdlMethodImplType implType)
     return (implType==EsdlMethodImplRoxie || implType==EsdlMethodImplWsEcl);
 }
 
-IEsdlScriptContext* EsdlServiceImpl::checkCreateEsdlServiceScriptContext(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *tgtcfg)
+IEsdlScriptContext* EsdlServiceImpl::checkCreateEsdlServiceScriptContext(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *tgtcfg, IPropertyTree *originalRequest)
 {
     IEsdlTransformEntryPointMap *serviceEPm = m_transforms->queryMethod("");
     IEsdlTransformEntryPointMap *methodEPm = m_transforms->queryMethod(mthdef.queryMethodName());
@@ -679,11 +684,75 @@ IEsdlScriptContext* EsdlServiceImpl::checkCreateEsdlServiceScriptContext(IEspCon
     scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request_type", mthdef.queryRequestType());
     scriptContext->setAttribute(ESDLScriptCtxSection_ESDLInfo, "request", mthdef.queryRequestType());  //this could diverge from request_type in the future
 
+    if (originalRequest)
+        scriptContext->setContent(ESDLScriptCtxSection_OriginalRequest, originalRequest);
     if (tgtcfg)
         scriptContext->setContent(ESDLScriptCtxSection_TargetConfig, tgtcfg);
     if (m_oEspBindingCfg)
         scriptContext->setContent(ESDLScriptCtxSection_BindingConfig, m_oEspBindingCfg.get());
     return scriptContext.getClear();
+}
+
+void EsdlServiceImpl::runPostEsdlScript(IEspContext &context,
+                                         IEsdlScriptContext *scriptContext,
+                                         IEsdlDefService &srvdef,
+                                         IEsdlDefMethod &mthdef,
+                                         StringBuffer &content,
+                                         unsigned txResultFlags,
+                                         const char *ns,
+                                         const char *schema_location)
+{
+    if (scriptContext)
+    {
+        IEsdlTransformSet *serviceIRTs = m_transforms->queryMethodEntryPoint("", ESDLScriptEntryPoint_InitialEsdlResponse);
+        IEsdlTransformSet *methodIRTs = m_transforms->queryMethodEntryPoint(mthdef.queryName(), ESDLScriptEntryPoint_InitialEsdlResponse);
+
+        if (serviceIRTs || methodIRTs)
+        {
+            scriptContext->setContent(ESDLScriptCtxSection_InitialESDLResponse, content.str());
+
+            context.addTraceSummaryTimeStamp(LogNormal, "srt-modifytrans");
+            processServiceAndMethodTransforms(scriptContext, {serviceIRTs, methodIRTs}, ESDLScriptCtxSection_InitialESDLResponse, ESDLScriptCtxSection_ModifiedESDLResponse);
+            scriptContext->toXML(content.clear(), ESDLScriptCtxSection_ModifiedESDLResponse);
+            context.addTraceSummaryTimeStamp(LogNormal, "end-modifytrans");
+
+            //have to make a second ESDL pass (this stage is always a basic response format, never an HPCC/Roxie format)
+            StringBuffer out;
+            m_pEsdlTransformer->process(context, EsdlResponseMode, srvdef.queryName(), mthdef.queryName(), out, content.str(), txResultFlags, ns, schema_location);
+            content.swapWith(out);
+        }
+    }
+
+}
+
+void EsdlServiceImpl::runServiceScript(IEspContext &context,
+                                         IEsdlScriptContext *scriptContext,
+                                         IEsdlDefService &srvdef,
+                                         IEsdlDefMethod &mthdef,
+                                         const char *reqcontent,
+                                         StringBuffer &respcontent,
+                                         unsigned txResultFlags,
+                                         const char *ns,
+                                         const char *schema_location)
+{
+    if (scriptContext)
+    {
+        IEsdlTransformSet *serviceSTs = m_transforms->queryMethodEntryPoint("", ESDLScriptEntryPoint_ScriptedService);
+        IEsdlTransformSet *methodSTs = m_transforms->queryMethodEntryPoint(mthdef.queryName(), ESDLScriptEntryPoint_ScriptedService);
+
+        if (serviceSTs || methodSTs)
+        {
+            scriptContext->setContent(ESDLScriptCtxSection_ScriptRequest, reqcontent);
+
+            context.addTraceSummaryTimeStamp(LogNormal, "srt-script-service");
+            VStringBuffer emptyResponse("<%s/>", mthdef.queryResponseType());
+            scriptContext->setContent(ESDLScriptCtxSection_ScriptResponse, emptyResponse.str());
+            processServiceAndMethodTransforms(scriptContext, {serviceSTs, methodSTs}, ESDLScriptCtxSection_ScriptRequest, ESDLScriptCtxSection_ScriptResponse);
+            scriptContext->toXML(respcontent.clear(), ESDLScriptCtxSection_ScriptResponse);
+            context.addTraceSummaryTimeStamp(LogNormal, "end-script-service");
+        }
+    }
+
 }
 
 void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
@@ -905,7 +974,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
         else
         {
             //Future: support transforms for all transaction types by moving scripts and script processing up
-            scriptContext.setown(checkCreateEsdlServiceScriptContext(context, srvdef, mthdef, tgtcfg));
+            scriptContext.setown(checkCreateEsdlServiceScriptContext(context, srvdef, mthdef, tgtcfg, req));
 
             Owned<IXmlWriterExt> reqWriter = createIXmlWriterExt(0, 0, NULL, WTStandard);
 
@@ -922,10 +991,11 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
             reqcontent.set(reqWriter->str());
             context.addTraceSummaryTimeStamp(LogNormal, "serialized-xmlreq");
 
-            handleFinalRequest(context, scriptContext, tgtcfg, tgtctx, srvdef, mthdef, ns, reqcontent, origResp, isPublishedQuery(implType), implType==EsdlMethodImplProxy, soapmsg);
+            if (implType==EsdlMethodImplScript)
+                runServiceScript(context, scriptContext, srvdef, mthdef, reqcontent, origResp, txResultFlags, ns, schema_location);
+            else
+                handleFinalRequest(context, scriptContext, tgtcfg, tgtctx, srvdef, mthdef, ns, reqcontent, origResp, isPublishedQuery(implType), implType==EsdlMethodImplProxy, soapmsg);
             context.addTraceSummaryTimeStamp(LogNormal, "end-HFReq");
-
-
 
             if (isPublishedQuery(implType))
             {
@@ -933,13 +1003,16 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
                 Owned<IXmlWriterExt> respWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSONRootless : WTStandard);
                 m_pEsdlTransformer->processHPCCResult(context, mthdef, origResp.str(), respWriter.get(), logdata, txResultFlags, ns, schema_location);
                 context.addTraceSummaryTimeStamp(LogNormal, "end-procres");
-
                 out.append(respWriter->str());
+                runPostEsdlScript(context, scriptContext, srvdef, mthdef, out, txResultFlags, ns, schema_location);
             }
             else if(implType==EsdlMethodImplProxy)
                 getSoapBody(out, origResp);
             else
+            {
                 m_pEsdlTransformer->process(context, EsdlResponseMode, srvdef.queryName(), mthdef.queryName(), out, origResp.str(), txResultFlags, ns, schema_location);
+                runPostEsdlScript(context, scriptContext, srvdef, mthdef, out, txResultFlags, ns, schema_location);
+            }
         }
     }
 
@@ -3514,7 +3587,7 @@ int EsdlBindingImpl::onGetRoxieBuilder(CHttpRequest* request, CHttpResponse* res
 
                     tgtctx.setown( m_pESDLService->createTargetContext(*context, tgtcfg, *defsrv, *defmth, req_pt));
 
-                    Owned<IEsdlScriptContext> scriptContext = m_pESDLService->checkCreateEsdlServiceScriptContext(*context, *defsrv, *defmth, tgtcfg.get());
+                    Owned<IEsdlScriptContext> scriptContext = m_pESDLService->checkCreateEsdlServiceScriptContext(*context, *defsrv, *defmth, tgtcfg.get(), req_pt);
                     m_pESDLService->prepareFinalRequest(*context, scriptContext, tgtcfg, tgtctx, *defsrv, *defmth, true, ns.str(), reqcontent, roxiemsg);
                 }
                 else

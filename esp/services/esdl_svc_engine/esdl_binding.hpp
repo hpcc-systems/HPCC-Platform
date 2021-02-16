@@ -177,7 +177,9 @@ public:
     void handleTransformError(StringAttr &serviceError, TransformErrorMap &methodErrors, IException *e, const char *service, const char *method);
     void addTransforms(IPropertyTree *cfgParent, const char *service, const char *method, bool removeCfgIEntries);
 
-    IEsdlScriptContext* checkCreateEsdlServiceScriptContext(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *tgtcfg);
+    IEsdlScriptContext* checkCreateEsdlServiceScriptContext(IEspContext &context, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, IPropertyTree *tgtcfg, IPropertyTree *origReq);
+    void runPostEsdlScript(IEspContext &context, IEsdlScriptContext *scriptContext, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, StringBuffer &out, unsigned txResultFlags, const char *ns, const char *schema_location);
+    void runServiceScript(IEspContext &context, IEsdlScriptContext *scriptContext, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, const char *reqcontent, StringBuffer &out, unsigned txResultFlags, const char *ns, const char *schema_location);
 
     virtual void handleServiceRequest(IEspContext &context, Owned<IEsdlScriptContext> &scriptContext, IEsdlDefService &srvdef, IEsdlDefMethod &mthdef, Owned<IPropertyTree> &tgtcfg, Owned<IPropertyTree> &tgtctx, const char *ns, const char *schema_location, IPropertyTree *req, StringBuffer &out, StringBuffer &logdata, StringBuffer &origResp, StringBuffer &soapmsg, unsigned int flags);
     virtual void generateTransactionId(IEspContext & context, StringBuffer & trxid)=0;

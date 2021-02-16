@@ -387,6 +387,13 @@ public:
     {
         Esdl2Base::serialize(out, "EsdlRequest");
     }
+    bool hasDefaults()
+    {
+        if (!defvals)
+            return false;
+        Owned<IPropertyIterator> it = defvals->getIterator();
+        return (it && it->first());
+    }
 
     virtual void buildDefaults(Esdl2Transformer *xformer);
 

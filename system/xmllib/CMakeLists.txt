@@ -56,6 +56,8 @@ include_directories (
          ./../../system/include
          ./../../system/jlib
          ./../../ecl/hql
+         ./../../rtl/include
+         ./../../rtl/eclrtl
          ${LIB_INCLUDE_DIR}
     )
 
@@ -65,5 +67,6 @@ HPCC_ADD_LIBRARY( xmllib SHARED ${SRCS} )
 install ( TARGETS xmllib RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( xmllib
          ${LIB_LIBRARIES}
+         eclrtl
          jlib
     )

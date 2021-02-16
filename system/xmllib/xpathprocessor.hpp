@@ -20,6 +20,7 @@
 
 #include "xmllib.hpp"
 #include "jliball.hpp"
+#include "eclhelper.hpp"
 
 interface XMLLIB_API ICompiledXpath : public IInterface
 {
@@ -74,6 +75,7 @@ interface XMLLIB_API IXpathContext : public IInterface
     virtual  IXpathContextIterator *evaluateAsNodeSet(ICompiledXpath * compiledXpath) = 0;
     virtual StringBuffer &toXml(const char *xpath, StringBuffer & xml) = 0;
     virtual void addXmlContent(const char *xml) = 0;
+    virtual IXmlWriter *createXmlWriter() = 0;
 };
 
 interface IXpathContextIterator : extends IIteratorOf<IXpathContext> { };
@@ -124,6 +126,7 @@ public:
 };
 
 extern "C" XMLLIB_API ICompiledXpath* compileXpath(const char * xpath);
+extern "C" XMLLIB_API ICompiledXpath* compileOptionalXpath(const char * xpath);
 extern "C" XMLLIB_API IXpathContext*  getXpathContext(const char * xmldoc, bool strictParameterDeclaration, bool removeDocNamespaces);
 
 #define ESDLScriptCtxSection_Store "store"
@@ -132,10 +135,15 @@ extern "C" XMLLIB_API IXpathContext*  getXpathContext(const char * xmldoc, bool 
 #define ESDLScriptCtxSection_TargetConfig "target"
 #define ESDLScriptCtxSection_BindingConfig "config"
 #define ESDLScriptCtxSection_ESDLInfo "esdl"
+#define ESDLScriptCtxSection_OriginalRequest "original_request"
 #define ESDLScriptCtxSection_ESDLRequest "esdl_request"
 #define ESDLScriptCtxSection_FinalRequest "final_request"
 #define ESDLScriptCtxSection_InitialResponse "initial_response"
 #define ESDLScriptCtxSection_PreESDLResponse "pre_esdl_response"
+#define ESDLScriptCtxSection_InitialESDLResponse "initial_esdl_response"
+#define ESDLScriptCtxSection_ModifiedESDLResponse "modified_esdl_response"
+#define ESDLScriptCtxSection_ScriptRequest "script_request"
+#define ESDLScriptCtxSection_ScriptResponse "script_response"
 
 interface IEsdlScriptContext : extends IInterface
 {
