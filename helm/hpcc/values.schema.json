@@ -801,22 +801,26 @@
       "oneOf": [
         {
           "type": "object",
-          "allOf": [{ "$ref": "#/definitions/sashacommon" }],
-          "properties": {
-            "minDeltaSize": {
-              "type": "integer",
-              "description": "Coalescing will only begin, if the delta size is above this threashold (K)"
-            },
-            "disabled": {},
-            "interval": {},
-            "servicePort": {},
-            "port": {},
-            "at" : {},
-            "throttle": {},
-            "storage": {},
-            "resources": {}
-          },
-          "additionalProperties": false
+          "allOf": [
+            { "$ref": "#/definitions/sashacommon" },
+            {
+              "properties": {
+                "minDeltaSize": {
+                  "type": "integer",
+                  "description": "Coalescing will only begin, if the delta size is above this threashold (K)"
+                },
+                "disabled": {},
+                "interval": {},
+                "servicePort": {},
+                "port": {},
+                "at" : {},
+                "throttle": {},
+                "storage": {},
+                "resources": {}    
+              },
+              "additionalProperties": false
+            }
+          ]
         },
         {
           "type": "null"
@@ -827,41 +831,46 @@
       "oneOf": [
         {
           "type": "object",
-          "allOf": [{ "$ref": "#/definitions/sashacommon" }],
-          "allOf": [{ "$ref": "#/definitions/sasha-limitcutoff" }],
-          "properties": {
-            "backup": {
-              "type": "integer",
-              "description": "minimum workunit age to backup (days, 0 disables)",
-              "default": "0"
-            },
-            "duration": {
-              "type": "integer",
-              "description": "Maximum duration to run WorkUnit archiving session (hours, 0 unlimited)",
-              "default": "0"
-            },
-            "keepResultFiles": {
-              "type": "boolean",
-              "description": "option to keep result files owned by workunits after workunit is archived",
-              "default": "false"
-            },
-            "retryinterval": {
-              "type": "integer",
-              "description": "minimal time before retrying archive of failed WorkUnits (days)",
-              "default": "7"
-            },
-            "disabled": {},
-            "interval": {},
-            "servicePort": {},
-            "port": {},
-            "at" : {},
-            "throttle": {},
-            "storage": {},
-            "resources": {},
-            "limit": {},
-            "cutoff": {}
-          },
-          "additionalProperties": false
+          "allOf": [
+            { "$ref": "#/definitions/sashacommon" },
+            { "$ref": "#/definitions/sasha-limitcutoff" },
+            {
+              "properties": 
+              {
+                "backup": {
+                  "type": "integer",
+                  "description": "minimum workunit age to backup (days, 0 disables)",
+                  "default": "0"
+                },
+                "duration": {
+                  "type": "integer",
+                  "description": "Maximum duration to run WorkUnit archiving session (hours, 0 unlimited)",
+                  "default": "0"
+                },
+                "keepResultFiles": {
+                  "type": "boolean",
+                  "description": "option to keep result files owned by workunits after workunit is archived",
+                  "default": "false"
+                },
+                "retryinterval": {
+                  "type": "integer",
+                  "description": "minimal time before retrying archive of failed WorkUnits (days)",
+                  "default": "7"
+                },
+                "disabled": {},
+                "interval": {},
+                "servicePort": {},
+                "port": {},
+                "at" : {},
+                "throttle": {},
+                "storage": {},
+                "resources": {},
+                "limit": {},
+                "cutoff": {}    
+              },
+              "additionalProperties": false
+            }
+          ]
         },
         {
           "type": "null"
@@ -869,52 +878,58 @@
       ]
     },
     "sasha-dfuwu-archiver": {
-      "type": "object",
-      "allOf": [{ "$ref": "#/definitions/sashacommon" }],
-      "allOf": [{ "$ref": "#/definitions/sasha-limitcutoff" }],
-      "properties": {
-        "persistExpiryDefault": {
-          "type": "integer",
-          "description": "Default number of days to delete unused persist files",
-          "default": "7"
+      "oneOf": [
+        {
+          "type": "object",
+          "allOf": [ 
+            { "$ref": "#/definitions/sashacommon" },
+            { "$ref": "#/definitions/sasha-limitcutoff" },
+            {
+              "properties": 
+              {
+                "disabled": {},
+                "interval": {},
+                "servicePort": {},
+                "port": {},
+                "at" : {},
+                "throttle": {},
+                "storage": {},
+                "resources": {},
+                "limit": {},
+                "cutoff": {}
+              },
+              "additionalProperties": false
+            }
+          ]
         },
-        "expiryDefault": {
-          "type": "integer",
-          "description": "Default number of days to delete unused standard files that are flagged with EXPIRY",
-          "default": "14"
-        },
-        "disabled": {},
-        "interval": {},
-        "servicePort": {},
-        "port": {},
-        "at" : {},
-        "throttle": {},
-        "storage": {},
-        "resources": {},
-        "limit": {},
-        "cutoff": {}
-      },
-      "additionalProperties": false
+        {
+          "type": "null"
+        }
+      ]
     },
     "sasha-dfurecovery-archiver": {
       "oneOf": [
         {
           "type": "object",
-          "allOf": [{ "$ref": "#/definitions/sashacommon" }],
-          "allOf": [{ "$ref": "#/definitions/sasha-limitcutoff" }],
-          "properties": {
-            "disabled": {},
-            "interval": {},
-            "servicePort": {},
-            "port": {},
-            "at" : {},
-            "throttle": {},
-            "storage": {},
-            "resources": {},
-            "limit": {},
-            "cutoff": {}
-          },
-          "additionalProperties": false
+          "allOf": [
+            { "$ref": "#/definitions/sashacommon" },
+            { "$ref": "#/definitions/sasha-limitcutoff" },
+            {
+              "properties": {
+                "disabled": {},
+                "interval": {},
+                "servicePort": {},
+                "port": {},
+                "at" : {},
+                "throttle": {},
+                "storage": {},
+                "resources": {},
+                "limit": {},
+                "cutoff": {}    
+              },
+              "additionalProperties": false
+            }
+          ]
         },
         {
           "type": "null"

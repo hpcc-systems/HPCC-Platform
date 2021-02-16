@@ -239,7 +239,6 @@ dali:
       #interval: 2 # (hours)
       #at: "* * * * *" # cron type schedule, i.e. Min(0-59) Hour(0-23) DayOfMonth(1-31) Month(1-12) DayOfWeek(0-6)
       #minDeltaSize: 50 # (Kb) will not start coalescing until delta log is above this threshold
-      #recoverFromIncErrors: false # Try to continue after transaction load failures
       #resources:
       #  cpu: "1"
       #  memory: "1G"
