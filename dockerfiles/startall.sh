@@ -60,6 +60,7 @@ done
 [[ -z ${LABEL} ]] && LABEL=$(docker image ls | fgrep "${DOCKER_REPO}/platform-core" | head -n 1 | awk '{print $2}')
 
 if [[ -n ${PERSIST} ]] ; then
+  PERSIST=$(realpath -q $PERSIST || echo $PERSIST)
   PERSIST_PATH=$(echo $PERSIST | sed 's/\\//g')
   mkdir -p ${PERSIST_PATH}/dlls
   mkdir -p ${PERSIST_PATH}/dali
