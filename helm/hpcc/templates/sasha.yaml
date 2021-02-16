@@ -47,6 +47,6 @@ kind: ConfigMap
 {{ include "hpcc.addPVC" (dict "root" $ "name" (printf "sasha-%s" $sasha.name) "me" $sasha.storage) }}
 {{- end }}
 ---
-{{- end }}
+{{ end -}}
 {{- end }}
 {{- end }}
