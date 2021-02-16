@@ -144,6 +144,7 @@ public:
 };
 
 extern bool localAgent;
+extern bool encryptInTransit;
 
 class RoxiePacketHeader
 {
@@ -234,6 +235,16 @@ public:
     }
 };
 
+
+interface ISerializedRoxieQueryPacket : extends IInterface
+{
+    virtual RoxiePacketHeader &queryHeader() const = 0;
+    virtual const byte *queryTraceInfo() const = 0;
+    virtual unsigned getTraceLength() const = 0;
+    virtual IRoxieQueryPacket *deserialize() const = 0;
+    virtual ISerializedRoxieQueryPacket *cloneSerializedPacket(unsigned channel) const = 0;
+};
+
 interface IRoxieQueryPacket : extends IInterface
 {
     virtual RoxiePacketHeader &queryHeader() const = 0;
@@ -248,6 +259,8 @@ interface IRoxieQueryPacket : extends IInterface
 
     virtual IRoxieQueryPacket *clonePacket(unsigned channel) const = 0;
     virtual IRoxieQueryPacket *insertSkipData(size32_t skipDataLen, const void *skipData) const = 0;
+
+    virtual ISerializedRoxieQueryPacket *serialize() const = 0;
 };
 
 interface IQueryDll;
@@ -413,6 +426,11 @@ extern void doUNIMPLEMENTED(unsigned line, const char *file);
 
 extern IRoxieQueryPacket *createRoxiePacket(void *data, unsigned length);
 extern IRoxieQueryPacket *createRoxiePacket(MemoryBuffer &donor); // note: donor is empty after call
+// Direct deserialize callbeck packets from received network data
+extern IRoxieQueryPacket *deserializeCallbackPacket(MemoryBuffer &donor); // note: donor is empty after call
+// Delayed deserialize from received network data
+extern ISerializedRoxieQueryPacket *createSerializedRoxiePacket(MemoryBuffer &donor); // note: donor is empty after call
+
 extern void dumpBuffer(const char *title, const void *buf, unsigned recSize);
 
 inline unsigned getBondedChannel(unsigned partNo)
@@ -733,8 +751,8 @@ class AgentContextLogger : public StringContextLogger
     StringAttr wuid;
 public:
     AgentContextLogger();
-    AgentContextLogger(IRoxieQueryPacket *packet);
-    void set(IRoxieQueryPacket *packet);
+    AgentContextLogger(ISerializedRoxieQueryPacket *packet);
+    void set(ISerializedRoxieQueryPacket *packet);
     void putStatProcessed(unsigned subGraphId, unsigned actId, unsigned idx, unsigned processed, unsigned strands) const;
     void putStats(unsigned subGraphId, unsigned actId, const CRuntimeStatisticCollection &stats) const;
     void flush();

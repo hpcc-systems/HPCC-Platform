@@ -100,6 +100,7 @@ typedef unsigned short UINT16;
 #define RIJNDAEL_NOT_INITIALIZED -5
 #define RIJNDAEL_BAD_DIRECTION -6
 #define RIJNDAEL_CORRUPTED_DATA -7
+#define RIJNDAEL_INSUFFICIENT_SPACE -8
 
 class Rijndael
 {   
@@ -164,9 +165,9 @@ public:
     int blockDecrypt(const UINT8 *input, int inputLen, UINT8 *outBuffer);
     // Decrypts the input vector
     // Input len is in BYTES!
-    // outBuffer must be at least inputLen bytes long
+    // outBuffer must be at least outputLen bytes long
     // Returns the decrypted buffer length in BYTES and an error code < 0 in case of error
-    int padDecrypt(const UINT8 *input, int inputOctets, UINT8 *outBuffer);
+    int padDecrypt(const UINT8 *input, int inputOctets, UINT8 *outBuffer, int outputLen);
 protected:
     void keySched(UINT8 key[_MAX_KEY_COLUMNS][4]);
     void keyEncToDec();
@@ -1415,7 +1416,7 @@ int Rijndael::blockDecrypt(const UINT8 *input, int inputLen, UINT8 *outBuffer)
     return 128*numBlocks;
 }
 
-int Rijndael::padDecrypt(const UINT8 *input, int inputOctets, UINT8 *outBuffer)
+int Rijndael::padDecrypt(const UINT8 *input, int inputOctets, UINT8 *outBuffer, int outlen)
 {
     int i, numBlocks, padLen;
     UINT8 block[16];
@@ -1427,7 +1428,8 @@ int Rijndael::padDecrypt(const UINT8 *input, int inputOctets, UINT8 *outBuffer)
     if(input == 0 || inputOctets <= 0)return 0;
 
     if((inputOctets % 16) != 0)return RIJNDAEL_CORRUPTED_DATA;
-
+    if (inputOctets-16 > outlen)
+        return RIJNDAEL_INSUFFICIENT_SPACE;
     numBlocks = inputOctets/16;
 
     switch(m_mode){
@@ -1446,6 +1448,8 @@ int Rijndael::padDecrypt(const UINT8 *input, int inputOctets, UINT8 *outBuffer)
             {
                 if(block[i] != padLen)return RIJNDAEL_CORRUPTED_DATA;
             }
+            if (outlen < inputOctets-padLen)
+                return RIJNDAEL_INSUFFICIENT_SPACE;
             memcpy(outBuffer, block, 16 - padLen);
         break;  
         case CBC:
@@ -1475,6 +1479,8 @@ int Rijndael::padDecrypt(const UINT8 *input, int inputOctets, UINT8 *outBuffer)
             {
                 if(block[i] != padLen)return RIJNDAEL_CORRUPTED_DATA;
             }
+            if (outlen < inputOctets-padLen)
+                return RIJNDAEL_INSUFFICIENT_SPACE;
             memcpy(outBuffer, block, 16 - padLen);
             break;
         
@@ -1753,6 +1759,7 @@ static const char *aesErrorText[] =
     "Not Initialized",
     "Bad Direction",
     "Corrupted Data"
+    "Output buffer too small"
 };
 
 inline const char *getAesErrorText(int err)
@@ -1782,10 +1789,10 @@ MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size
     
     rin.init(Rijndael::CBC, Rijndael::Encrypt, (const UINT8 *)key, keyType);
     size32_t truncInLen = (size32_t)inlen; //MORE: Modify the padEncrypt function
-    int len = rin.padEncrypt((const UINT8 *)input, truncInLen, (UINT8 *) output.clear().reserveTruncate(truncInLen + 16));
-
+    size32_t origLen = output.length();
+    int len = rin.padEncrypt((const UINT8 *)input, truncInLen, (UINT8 *) output.reserveTruncate(truncInLen + 16));
     if(len >= 0)
-        output.setLength(len);
+        output.setLength(origLen+len);
     else 
         throw MakeStringException(-1,"AES Encryption error: %d, %s", len, getAesErrorText(len));
     return output;
@@ -1798,13 +1805,26 @@ MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size
     
     rin.init(Rijndael::CBC, Rijndael::Decrypt, (const UINT8 *)key, keyType);
     size32_t truncInLen = (size32_t)inlen;
-    int len = rin.padDecrypt((const UINT8 *)input, truncInLen, (UINT8 *) output.clear().reserveTruncate(truncInLen));
-
+    size32_t origLen = output.length();
+    int len = rin.padDecrypt((const UINT8 *)input, truncInLen, (UINT8 *) output.reserveTruncate(truncInLen), truncInLen);
     if(len >= 0)
-        output.setLength(len);
+        output.setLength(origLen+len);
     else 
         throw MakeStringException(-1,"AES Decryption error: %d, %s", len, getAesErrorText(len));
     return output;
+}
+
+size_t aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, void *output, size_t outlen)
+{
+    Rijndael rin;
+    Rijndael::KeyLength keyType = getAesKeyType(keylen);
+
+    rin.init(Rijndael::CBC, Rijndael::Decrypt, (const UINT8 *)key, keyType);
+    size32_t truncInLen = (size32_t)inlen;
+    int len = rin.padDecrypt((const UINT8 *)input, truncInLen, (UINT8 *) output, outlen);
+    if(len < 0)
+        throw MakeStringException(-1,"AES Decryption error: %d, %s", len, getAesErrorText(len));
+    return len;
 }
 
 } // end of namespace jlib
@@ -1817,6 +1837,11 @@ MemoryBuffer &aesEncrypt(const void *key, size_t keylen, const void *input, size
 MemoryBuffer &aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, MemoryBuffer &output)
 {
     return jlib::aesDecrypt(key, keylen, input, inlen, output);
+}
+
+size_t aesDecrypt(const void *key, size_t keylen, const void *input, size_t inlen, void *output, size_t outlen)
+{
+    return jlib::aesDecrypt(key, keylen, input, inlen, output, outlen);
 }
 
 #define CRYPTSIZE 32

@@ -1707,7 +1707,7 @@ public:
             // We are parsing lines that look like:
             // <channel>|<filename>|<pagelist>
             //
-            // Where pagelist is a space-separated list of page numers or (inclusive) ranges.
+            // Where pagelist is a space-separated list of page numbers or (inclusive) ranges.
             // A page number or range prefixed by a * means that the page(s) was found in the jhtree cache.
             //
             // For example,

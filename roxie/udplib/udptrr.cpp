@@ -23,6 +23,7 @@
 #include "jlog.hpp"
 #include "jisem.hpp"
 #include "jsocket.hpp"
+#include "jencrypt.hpp"
 #include "udplib.hpp"
 #include "udptrr.hpp"
 #include "udptrs.hpp"
@@ -46,6 +47,11 @@ using roxiemem::DataBuffer;
 using roxiemem::IRowManager;
 
 unsigned udpRetryBusySenders = 0; // seems faster with 0 than 1 in my testing on small clusters and sustained throughput
+
+static byte key[32] = {
+    0xf7, 0xe8, 0x79, 0x40, 0x44, 0x16, 0x66, 0x18, 0x52, 0xb8, 0x18, 0x6e, 0x76, 0xd1, 0x68, 0xd3,
+    0x87, 0x47, 0x01, 0xe6, 0x66, 0x62, 0x2f, 0xbe, 0xc1, 0xd5, 0x9f, 0x4a, 0x53, 0x27, 0xae, 0xa1,
+};
 
 class CReceiveManager : implements IReceiveManager, public CInterface
 {
@@ -601,13 +607,27 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         #endif
             DataBuffer *b = NULL;
             started.signal();
+            MemoryBuffer encryptData;
+            size32_t max_payload = DATA_PAYLOAD;
+            void *encryptedBuffer = nullptr;
+            if (parent.encrypted)
+            {
+                max_payload = DATA_PAYLOAD+16;  // AES function may add up to 16 bytes of padding
+                encryptedBuffer = encryptData.reserveTruncate(max_payload);
+            }
             while (running) 
             {
                 try 
                 {
                     unsigned int res;
                     b = bufferManager->allocate();
-                    receive_socket->read(b->data, 1, DATA_PAYLOAD, res, 5);
+                    if (parent.encrypted)
+                    {
+                        receive_socket->read(encryptedBuffer, 1, max_payload, res, 5);
+                        res = aesDecrypt(key, sizeof(key), encryptedBuffer, res, b->data, DATA_PAYLOAD);
+                    }
+                    else
+                        receive_socket->read(b->data, 1, DATA_PAYLOAD, res, 5);
                     parent.inflight--;
                     // MORE - reset it to zero if we fail to read data, or if avail_read returns 0.
                     UdpPacketHeader &hdr = *(UdpPacketHeader *) b->data;
@@ -681,6 +701,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
     int                  data_port;
 
     std::atomic<bool> running = { false };
+    bool encrypted = false;
 
     typedef std::map<ruid_t, CMessageCollator*> uid_map;
     uid_map         collators;
@@ -717,12 +738,13 @@ class CReceiveManager : implements IReceiveManager, public CInterface
 
     public:
     IMPLEMENT_IINTERFACE;
-    CReceiveManager(int server_flow_port, int d_port, int client_flow_port, int snif_port, const IpAddress &multicast_ip, int queue_size, int m_slot_pr_client)
+    CReceiveManager(int server_flow_port, int d_port, int client_flow_port, int snif_port, const IpAddress &multicast_ip, int queue_size, int m_slot_pr_client, bool _encrypted)
         : collatorThread(*this), sendersTable([client_flow_port](const ServerIdentifier &ip) { return new UdpSenderEntry(ip.getIpAddress(), client_flow_port);})
     {
 #ifndef _WIN32
         setpriority(PRIO_PROCESS, 0, -15);
 #endif
+        encrypted = _encrypted;
         receive_flow_port = server_flow_port;
         data_port = d_port;
         input_queue_size = queue_size;
@@ -838,10 +860,11 @@ class CReceiveManager : implements IReceiveManager, public CInterface
 
 IReceiveManager *createReceiveManager(int server_flow_port, int data_port, int client_flow_port,
                                       int sniffer_port, const IpAddress &sniffer_multicast_ip,
-                                      int udpQueueSize, unsigned maxSlotsPerSender)
+                                      int udpQueueSize, unsigned maxSlotsPerSender,
+                                      bool encrypted)
 {
     assertex (maxSlotsPerSender <= (unsigned) udpQueueSize);
-    return new CReceiveManager(server_flow_port, data_port, client_flow_port, sniffer_port, sniffer_multicast_ip, udpQueueSize, maxSlotsPerSender);
+    return new CReceiveManager(server_flow_port, data_port, client_flow_port, sniffer_port, sniffer_multicast_ip, udpQueueSize, maxSlotsPerSender, encrypted);
 }
 
 /*
