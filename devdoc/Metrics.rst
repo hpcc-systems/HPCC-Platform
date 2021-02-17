@@ -306,12 +306,8 @@ metrics.sinks.name
     component config based on value
 
 metrics.sinks.type
-    The type for the sink. The type defines how to find the sink in order to load it. The value is
-    used as follows:
-
-    1. Name of the shared object library to load, which may include a full path,
-       otherwise standard library path searching for the OS is used.
-    2. As part of a standard hpcc lib name in "libhpccmetrics_<type>"
+    The type for the sink. The type is subsituted into the following pattern to determine the lib to load:
+    libhpccmetrics<type><shared_object_extension>
 
 metrics.sinks.settings
     A set of key/value pairs that passed to the sink when initialized. It should contain information

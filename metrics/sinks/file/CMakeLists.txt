@@ -17,7 +17,7 @@
 project(hpccmetrics_filesink)
 
 set ( srcs
-        FileSink.cpp
+        fileSink.cpp
         )
 
 include_directories(
@@ -26,7 +26,7 @@ include_directories(
         ${HPCC_SOURCE_DIR}/system/jlib
 )
 
-add_definitions( -DMETRICSDLL)
+add_definitions( -D_METRICS_FILESINK_LIB_EXPORTS)
 HPCC_ADD_LIBRARY( hpccmetrics_filesink SHARED ${srcs} )
 TARGET_LINK_LIBRARIES( hpccmetrics_filesink jlib hpccmetrics)
 INSTALL ( TARGETS hpccmetrics_filesink RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )

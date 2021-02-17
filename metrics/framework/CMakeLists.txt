@@ -18,7 +18,7 @@ project(hpccmetrics)
 
 
 set ( srcs
-        Metrics.cpp
+        metrics.cpp
         )
 
 include_directories(
@@ -26,7 +26,7 @@ include_directories(
         ${HPCC_SOURCE_DIR}/system/jlib
 )
 
-add_definitions( -D_USRDLL -DMETRICSDLL)
+add_definitions( -D_USRDLL -D_METRICSLIB_EXPORTS)
 HPCC_ADD_LIBRARY( hpccmetrics SHARED ${srcs} )
 TARGET_LINK_LIBRARIES( hpccmetrics jlib )
 INSTALL ( TARGETS hpccmetrics RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )

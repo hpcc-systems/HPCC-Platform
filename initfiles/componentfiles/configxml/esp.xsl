@@ -71,7 +71,6 @@
         </xsl:copy>
     </xsl:template>
 
-
     <xsl:template match="/Environment/Software/EspProcess">
         <!-- note that this can only be @name=$process since it is guided by template
           for /Environment above -->
@@ -84,6 +83,8 @@
             </xsl:attribute>
 
             <xsl:call-template name="addEnvironmentInfo"/>
+
+            <xsl:call-template name="addMetricsConfig"/>
 
             <xsl:if test="ESPCacheGroup[1]">
                <xsl:value-of disable-output-escaping="yes" select="$break" />
@@ -633,6 +634,10 @@
             </Environment>
         </xsl:template>
 
+    <xsl:template name="addMetricsConfig">
+        <xsl:copy-of select="/Environment/Software/metrics"/>
+    </xsl:template>
+
      <xsl:template match="/Environment/Software/EspProcess" mode="EclWatch">
         <xsl:for-each select="EspBinding">
             <xsl:variable name="protocol" select="@protocol"/>
@@ -671,7 +676,7 @@
                  </xsl:for-each>
                  <xsl:for-each select="$bindingNode/AuthenticateFeature[@authenticate='Yes']">
                     <Feature name="{@name}" path="{@path}" resource="{@resource}" required="{@access}" description="{@description}"/>
-                 </xsl:for-each>                              
+                 </xsl:for-each>
                  <xsl:for-each select="$bindingNode/AuthenticateSetting[@include='Yes']">
                     <Setting path="{@path}" resource="{@resource}" description="{@description}"/>
                  </xsl:for-each>
@@ -697,7 +702,7 @@
            </xsl:when>
         </xsl:choose>
      </xsl:template>
-   
+
         <xsl:template name="printUniqueTokens">
             <xsl:param name="s"/><!--space delimited string of tokens with space as last char-->
             <xsl:param name="enclosingTagName"/>

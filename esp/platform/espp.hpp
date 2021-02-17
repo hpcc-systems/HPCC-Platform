@@ -20,6 +20,7 @@
 
 #include "espthread.hpp"
 #include "espcfg.ipp"
+#include "espmetrics.hpp"
 
 typedef ISocket * isockp;
 
@@ -67,6 +68,8 @@ private:
     unsigned countCacheClients = 0;
     MapStringToMyClass<IEspCache> cacheClientMap;
     Owned<IPropertyTree> applicationConfig;
+    EspMetrics espMetrics;
+
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -87,6 +90,7 @@ public:
         m_slowProcessingTime = config->m_options.slowProcessingTime;
         m_frameTitle.set(config->m_options.frameTitle);
         m_SEHMappingEnabled = false;
+        espMetrics.init(config->queryConfigPTree());
     }
 
     ~CEspServer()
@@ -143,7 +147,7 @@ public:
         }
 
         // YMA: there'll be a leak here, but it's ok.
-        CEspTerminator* terminator = new CEspTerminator;  
+        CEspTerminator* terminator = new CEspTerminator;
         terminator->start();
 
         m_exiting=true;
@@ -183,6 +187,10 @@ public:
             VALOG(MCdebugInfo, unknownJob, fmt, args);
             va_end(args);
         }
+    }
+    EspMetrics *getEspMetrics()
+    {
+        return &espMetrics;
     }
 
 //IEspServer

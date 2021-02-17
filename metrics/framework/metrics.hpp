@@ -25,18 +25,20 @@
 #include "jiface.hpp"
 #include "jptree.hpp"
 
-#ifdef METRICSDLL
+#ifdef _METRICSLIB_EXPORTS
 #define METRICS_API DECL_EXPORT
 #else
 #define METRICS_API DECL_IMPORT
 #endif
+
 
 namespace hpccMetrics {
 
 /*
  * Enumerates the type of the value in a measurement
  */
-enum ValueType {
+enum ValueType
+{
     METRICS_NONE,
     METRICS_STRING,
     METRICS_LONG,
@@ -51,7 +53,8 @@ enum ValueType {
 /*
  * Enumerates the metric type.
  */
-enum MetricType {
+enum MetricType
+{
     METRICS_COUNTER,
     METRICS_GAUGE
 };
@@ -65,8 +68,8 @@ enum MetricType {
 class MeasurementBase
 {
     public:
-        std::string getName() const { return name; }
-        std::string getDescription() const { return description; }
+        const std::string &getName() const { return name; }
+        const std::string &getDescription() const { return description; }
         ValueType getValueType() { return(valueType); }
         virtual std::string valueToString() const = 0;
 
@@ -122,12 +125,12 @@ interface IMetric
     /*
      * Returns the metric name
      */
-    virtual std::string getName() const = 0;
+    virtual const std::string &getName() const = 0;
 
     /*
      * Returns metric description
      */
-    virtual std::string getDescription() const = 0;
+    virtual const std::string &getDescription() const = 0;
 
     /*
      * Returns the metric type.
@@ -149,8 +152,8 @@ class METRICS_API Metric : public IMetric
 {
     public:
         virtual ~Metric() = default;
-        std::string getName() const override { return name; }
-        std::string getDescription() const override { return description; }
+        const std::string &getName() const override { return name; }
+        const std::string &getDescription() const override { return description; }
         MetricType getMetricType() const override { return metricType; }
 
     protected:
@@ -169,10 +172,8 @@ class METRICS_API Metric : public IMetric
 class METRICS_API CounterMetric : public Metric
 {
     public:
-
         CounterMetric(const char *name, const char *description) :
                 Metric{name, description, MetricType::METRICS_GAUGE}  { }
-        ~CounterMetric() override = default;
         void inc(uint32_t val)
         {
             count.fetch_add(val);
@@ -180,10 +181,8 @@ class METRICS_API CounterMetric : public Metric
 
         void getReportValues(MeasurementVector &mv) const override;
 
-
-protected:
-
-    std::atomic<uint32_t> count{0};
+    protected:
+        std::atomic<uint32_t> count{0};
 };
 
 
@@ -198,59 +197,42 @@ class METRICS_API GaugeMetric : public Metric {
         /*
          * Update the value as indicated
          */
-        void add(float val)
+        void add(int32_t delta)
         {
-            auto current = gaugeValue.load();
-            while (!gaugeValue.compare_exchange_weak(current, current + val));
+            gaugeValue += delta;
         }
-        //void inc(float inc) { value += inc; }
-
-        /*
-         * Decrement the value
-         */
-        //void dec(float dec) { value -= dec; }
 
         /*
          * Set the value
          */
-        void set(float val) { gaugeValue = val; }
+        void set(int32_t val) { gaugeValue = val; }
 
         /*
          * Read the current value
          */
-        float getValue() const { return gaugeValue; }
+        int32_t getValue() const { return gaugeValue; }
 
         /*
          * Get current gauge value
          */
         void getReportValues(MeasurementVector &mv) const override;
 
-
     protected:
-        std::atomic<float> gaugeValue{0};
+        std::atomic<int32_t> gaugeValue{0};
 };
 
 
 class MetricsReporter;
-interface IMetricSink
-{
-    virtual void startCollection(MetricsReporter *pReporter) = 0;
-    virtual void stopCollection() = 0;
-    virtual std::string getName() const = 0;
-    virtual std::string getType() const = 0;
-};
 
 
-extern "C" { typedef hpccMetrics::IMetricSink* (*getSinkInstance)(const char *, const IPropertyTree *pSettingsTree); }
-
-class METRICS_API MetricSink : public IMetricSink
+class METRICS_API MetricSink
 {
     public:
         virtual ~MetricSink() = default;
-        std::string getName() const override { return name; }
-        std::string getType() const override { return type; }
-        static IMetricSink *getSinkFromLib(const char *type, const char *sinkName, const IPropertyTree *pSettingsTree);
-        static IMetricSink *getSinkFromLib(const char *type, const char *getInstanceProcName, const char *sinkName, const IPropertyTree *pSettingsTree);
+        virtual void startCollection(MetricsReporter *pReporter) = 0;
+        virtual void stopCollection() = 0;
+        const std::string &getName() const { return name; }
+        const std::string &getType() const { return type; }
 
     protected:
         MetricSink(std::string _name, std::string _type) :
@@ -263,10 +245,12 @@ class METRICS_API MetricSink : public IMetricSink
         MetricsReporter *pReporter = nullptr;
 };
 
+extern "C" { typedef hpccMetrics::MetricSink* (*getSinkInstance)(const char *, const IPropertyTree *pSettingsTree); }
 
 struct SinkInfo
 {
-    IMetricSink *pSink = nullptr;             // ptr to the sink
+    explicit SinkInfo(MetricSink *_pSink) : pSink{_pSink} {}
+    MetricSink *pSink = nullptr;             // ptr to the sink
     std::vector<std::string> reportMetrics;   // vector of metrics to report (empty for none)
 };
 
@@ -275,7 +259,7 @@ class METRICS_API MetricsReporter
 {
     public:
         MetricsReporter() = default;
-        virtual ~MetricsReporter() = default;
+        ~MetricsReporter();
         void init(IPropertyTree *pMetricsTree);
 
         /*
@@ -289,17 +273,14 @@ class METRICS_API MetricsReporter
 
     protected:
         bool initializeSinks(IPropertyTreeIterator *pSinkIt);
+        static MetricSink *getSinkFromLib(const char *type, const char *sinkName, const IPropertyTree *pSettingsTree);
 
     protected:
         StringBuffer componentPrefix;
         StringBuffer globalPrefix;
         std::map<std::string, SinkInfo> sinks;
         std::map<std::string, std::weak_ptr<IMetric>> metrics;
-        //std::map<std::string, std::shared_ptr<IMetric>> metrics;
-        std::mutex reportMutex;
         std::mutex metricVectorMutex;
 };
-
-
 
 }

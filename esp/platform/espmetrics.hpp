@@ -19,16 +19,16 @@
 #pragma once
 
 #include <memory>
-#include "Metrics.hpp"
+#include "../../metrics/framework/metrics.hpp"
 
 using namespace hpccMetrics;
 
 class EspMetrics {
 
     public:
-        EspMetrics() { };
-        ~EspMetrics() { };
-        void init(const char *configYml);
+        EspMetrics() = default;
+        ~EspMetrics() = default;
+        void init(IPropertyTree* pConfigTree);
 
     public:
 

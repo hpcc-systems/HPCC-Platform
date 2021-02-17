@@ -19,7 +19,7 @@
 #include "jlog.hpp"
 #include "jutil.hpp"
 #include <algorithm>
-#include <mutex>
+#include "espcontext.hpp"
 
 using std::find_if;
 using std::for_each;
@@ -32,22 +32,10 @@ bool operator < (const StringAttr& a, const StringAttr& b)
     return (stricmp(a.str(), b.str()) < 0);
 }
 
-EspMetrics *CTxSummary::pEspMetrics = nullptr;
-std::once_flag CTxSummary::initMetricsFlag;
-
 CTxSummary::CTxSummary(unsigned creationTime)
 : m_creationTime(creationTime ? creationTime : msTick())
 {
-    //
-    // In initialize metrics, but just once
-    std::call_once(initMetricsFlag, initMetrics);
-
-    //
-    // If metrics have been initialized, increment the count of requests
-    if (pEspMetrics)
-    {
-        pEspMetrics->pCountRequests->inc(1);
-    }
+    getESPContainer()->getEspMetrics()->pCountRequests->inc(1);
 }
 
 CTxSummary::~CTxSummary()
@@ -175,27 +163,4 @@ void CTxSummary::log(const LogLevel logLevel)
 bool CTxSummary::__contains(const char* key) const
 {
     return find_if(m_entries.begin(), m_entries.end(), MATCH_KEY) != m_entries.end();
-}
-
-
-void CTxSummary::initMetrics()
-{
-    //
-    // Test config
-    const char *testConfigYml = R"!!(esp:
-  metrics:
-    name: config_name
-    prefix: component_prefix.
-    sinks:
-      - type: filesink
-        name: default
-        settings:
-          filename: /tmp/espmetrics.txt
-          clear: true
-          period: 5
-)!!";
-
-    auto  pTempEspMetrics = new EspMetrics();
-    pTempEspMetrics->init(testConfigYml);
-    pEspMetrics = pTempEspMetrics;
 }

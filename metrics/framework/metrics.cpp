@@ -11,7 +11,8 @@
     limitations under the License.
 ############################################################################## */
 
-#include "Metrics.hpp"
+#include "metrics.hpp"
+#include "jlog.hpp"
 
 using namespace hpccMetrics;
 
@@ -27,53 +28,20 @@ void GaugeMetric::getReportValues(MeasurementVector &mv) const
 }
 
 
-IMetricSink *MetricSink::getSinkFromLib(const char *type, const char *sinkName, const IPropertyTree *pSettingsTree)
+MetricsReporter::~MetricsReporter()
 {
-    return MetricSink::getSinkFromLib(type, "", sinkName, pSettingsTree);
-}
-
-IMetricSink *MetricSink::getSinkFromLib(const char *type, const char *getInstanceProcName, const char *sinkName, const IPropertyTree *pSettingsTree)
-{
-    std::string libName;
-
-    //
-    // First, treat type as a full library name
-    libName = type;
-    if (libName.find(SharedObjectExtension) == std::string::npos)
+    for (auto const &sinkIt : sinks)
     {
-        libName.append(SharedObjectExtension);
+        delete sinkIt.second.pSink;
     }
-    HINSTANCE libHandle = LoadSharedObject(libName.c_str(), true, false);
-
-    //
-    // If type wasn't the lib name, treat it as a type
-    if (libHandle == nullptr)
-    {
-        libName.clear();
-        libName.append("libhpccmetrics_").append(type).append(SharedObjectExtension);
-        libHandle = LoadSharedObject(libName.c_str(), true, false);
-    }
-
-    //
-    // If able to load the lib, get the instance proc and create the sink instance
-    IMetricSink *pSink = nullptr;
-    if (libHandle != nullptr)
-    {
-        const char *epName = !isEmptyString(getInstanceProcName) ? getInstanceProcName : "getSinkInstance";
-        auto getInstanceProc = (getSinkInstance) GetSharedProcedure(libHandle, epName);
-        if (getInstanceProc != nullptr)
-        {
-            const char *name = isEmptyString(sinkName) ? type : sinkName;
-            pSink = getInstanceProc(name, pSettingsTree);
-        }
-    }
-    return pSink;
 }
 
 
 void MetricsReporter::init(IPropertyTree *pMetricsTree)
 {
-    initializeSinks(pMetricsTree->getElements("sinks"));
+//    initializeSinks(pMetricsTree->getElements("sinks"));
+    auto pSinkTree = pMetricsTree->getPropTree("sinks");
+    initializeSinks(pSinkTree->getElements("sink"));
 }
 
 
@@ -157,13 +125,11 @@ bool MetricsReporter::initializeSinks(IPropertyTreeIterator *pSinkIt)
     for (pSinkIt->first(); pSinkIt->isValid() && rc; pSinkIt->next())
     {
         SinkInfo *pSinkInfo;
-        IPropertyTree &sinkTree = pSinkIt->query();
+        IPropertyTree &sinkTree =  pSinkIt->get(); // pSinkIt->query();
 
-        StringBuffer cfgSinkType, cfgLibName, cfgSinkName, cfgProcName;
+        StringBuffer cfgSinkType, cfgSinkName;
         sinkTree.getProp("@type", cfgSinkType);  // this one is required
-        sinkTree.getProp("@libname", cfgLibName);
         sinkTree.getProp("@name", cfgSinkName);
-        sinkTree.getProp("@instance_proc", cfgProcName);
 
         std::string sinkName = cfgSinkName.isEmpty() ? "default" : cfgSinkName.str();
 
@@ -176,14 +142,11 @@ bool MetricsReporter::initializeSinks(IPropertyTreeIterator *pSinkIt)
         }
         else
         {
-            const char *type = cfgLibName.isEmpty() ? cfgSinkType.str() : cfgLibName.str();
-            IPropertyTree *pSinkSettings = sinkTree.getPropTree("./settings");
-            IMetricSink *pSink = MetricSink::getSinkFromLib(type, cfgProcName.str(), sinkName.c_str(), pSinkSettings);
+            IPropertyTree *pSinkSettings = sinkTree.getPropTree("settings");
+            MetricSink *pSink = getSinkFromLib(cfgSinkType.str(), (const char *)sinkName.c_str(), pSinkSettings);
             if (pSink != nullptr)
             {
-                SinkInfo sinkInfo;
-                sinkInfo.pSink = pSink;
-                auto insertRc = sinks.insert({pSink->getName(), sinkInfo});
+                auto insertRc = sinks.insert({pSink->getName(), SinkInfo{pSink}});
                 pSinkInfo = &insertRc.first->second;
             }
         }
@@ -209,4 +172,28 @@ bool MetricsReporter::initializeSinks(IPropertyTreeIterator *pSinkIt)
         }
     }
     return rc;
+}
+
+
+MetricSink *MetricsReporter::getSinkFromLib(const char *type, const char *sinkName, const IPropertyTree *pSettingsTree)
+{
+    std::string libName;
+
+    libName.append("libhpccmetrics_").append(type).append(SharedObjectExtension);
+
+    HINSTANCE libHandle = LoadSharedObject(libName.c_str(), true, false);
+
+    //
+    // If able to load the lib, get the instance proc and create the sink instance
+    MetricSink *pSink = nullptr;
+    if (libHandle != nullptr)
+    {
+        auto getInstanceProc = (getSinkInstance) GetSharedProcedure(libHandle, "getSinkInstance");
+        if (getInstanceProc != nullptr)
+        {
+            const char *name = isEmptyString(sinkName) ? type : sinkName;
+            pSink = getInstanceProc(name, pSettingsTree);
+        }
+    }
+    return pSink;
 }

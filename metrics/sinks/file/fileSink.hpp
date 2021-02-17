@@ -14,18 +14,27 @@
 
 #pragma once
 
-#include "Metrics.hpp"
+#include "metrics.hpp"
 #include "jptree.hpp"
 #include "jstring.hpp"
 #include <thread>
 
+
+#ifdef _METRICS_FILESINK_LIB_EXPORTS
+#define FILESIMK_API DECL_EXPORT
+#else
+#define FILESIMK_API DECL_IMPORT
+#endif
+
+
 using namespace hpccMetrics;
 
-class METRICS_API FileMetricSink : public MetricSink
+class FILESIMK_API FileMetricSink : public MetricSink
 {
     public:
 
         explicit FileMetricSink(const char *name, const IPropertyTree *pSettingsTree);
+        ~FileMetricSink();
         void startCollection(MetricsReporter *pReporter) override;
         void stopCollection() override;
 
@@ -39,4 +48,5 @@ class METRICS_API FileMetricSink : public MetricSink
         std::chrono::seconds periodSeconds;
         std::thread collectThread;
         bool stopCollectionFlag = false;
+        bool isCollecting = false;
 };

@@ -2,7 +2,7 @@
 #include <thread>
 #include <chrono>
 #include <jptree.hpp>
-#include "Metrics.hpp"
+#include "metrics.hpp"
 
 
 using namespace hpccMetrics;

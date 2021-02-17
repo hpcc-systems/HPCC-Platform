@@ -11,16 +11,16 @@
     limitations under the License.
 ############################################################################## */
 
-#include "FileSink.hpp"
+#include "fileSink.hpp"
 #include <cstdio>
 #include <thread>
 
 using namespace hpccMetrics;
 
-extern "C" IMetricSink* getSinkInstance(const char *name, const IPropertyTree *pSettingsTree)
+extern "C" MetricSink* getSinkInstance(const char *name, const IPropertyTree *pSettingsTree)
 {
     std::string sinkName(name);
-    IMetricSink *pSink = new FileMetricSink(name, pSettingsTree);
+    MetricSink *pSink = new FileMetricSink(name, pSettingsTree);
     return pSink;
 }
 
@@ -51,9 +51,19 @@ FileMetricSink::FileMetricSink(const char *name, const IPropertyTree *pSettingsT
 }
 
 
+FileMetricSink::~FileMetricSink()
+{
+    if (isCollecting)
+    {
+        collectThread.join();
+    }
+}
+
+
 void FileMetricSink::startCollection(MetricsReporter *_pReporter)
 {
     pReporter = _pReporter;
+    isCollecting = true;
     collectThread = std::thread(&FileMetricSink::collectionThread, this);
 }
 

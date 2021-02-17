@@ -15,34 +15,35 @@
 ################################################################################
 
 
-# Component: esp 
+# Component: esp
 #####################################################
 # Description:
 # ------------
 #    Cmake Input File for esp
 #####################################################
 
-project( esp ) 
+project( esp )
 
-set (    SRCS 
+set (    SRCS
          application_config.cpp
-         espcfg.cpp 
-         espp.cpp 
+         espcfg.cpp
+         espp.cpp
+         espmetrics.cpp
     )
 
-include_directories ( 
-         ./../bindings/SOAP/xpp 
-         ./../../system/xmllib 
-         ./../../system/security/shared 
-         ./../../system/security/securesocket 
-         ./../bindings 
-         ./../platform 
-         ./../../system/include 
-         ./../../dali/base 
-         ./../../system/jlib 
-         ./../bindings/http/platform 
-         ./../../common/environment 
-         ./../../system/mp 
+include_directories (
+         ./../bindings/SOAP/xpp
+         ./../../system/xmllib
+         ./../../system/security/shared
+         ./../../system/security/securesocket
+         ./../bindings
+         ./../platform
+         ./../../system/include
+         ./../../dali/base
+         ./../../system/jlib
+         ./../bindings/http/platform
+         ./../../common/environment
+         ./../../system/mp
          ./../../fs/dafsclient
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
@@ -52,14 +53,15 @@ ADD_DEFINITIONS( -D_CONSOLE -DESPCFG_EXPORTS)
 
 HPCC_ADD_EXECUTABLE ( esp ${SRCS} )
 install ( TARGETS esp RUNTIME DESTINATION ${EXEC_DIR} )
-target_link_libraries ( esp 
+target_link_libraries ( esp
          jlib
-         mp 
+         mp
          ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
-         xmllib 
-         esphttp 
-         hrpc 
-         remote 
-         dalibase 
-         environment 
-    ) 
+         xmllib
+         esphttp
+         hrpc
+         remote
+         dalibase
+         environment
+         hpccmetrics
+    )

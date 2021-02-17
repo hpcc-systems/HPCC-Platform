@@ -16,14 +16,23 @@
 
 using namespace hpccMetrics;
 
-void EspMetrics::init(const char *testConfigYml)
+
+void EspMetrics::init(IPropertyTree* pConfigTree)
 {
-    IPropertyTree *pSettings = createPTreeFromYAMLString(testConfigYml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
-    IPropertyTree *pEspMetricsConfig = pSettings->getPropTree("esp/metrics");
+    IPropertyTree *pMetricsTree = pConfigTree->getPropTree("metrics");
 
     //
-    // Init reporter with config
-    metricsReporter.init(pEspMetricsConfig);
+    // If no metrics config found, don't init. Note that metric objects still
+    // need to be created.
+    if (pMetricsTree != nullptr)
+    {
+        StringBuffer cfgname;
+        pMetricsTree->getProp("@name", cfgname);
+
+        //
+        // Init reporter with config
+        metricsReporter.init(pMetricsTree);
+    }
 
     //
     // Now create the counter for requests and add it to the reporter
@@ -31,6 +40,7 @@ void EspMetrics::init(const char *testConfigYml)
     metricsReporter.addMetric(pCountRequests);
 
     //
-    // Finally, start reporting
+    // Finally, start reporting (if no config was found, essentially a noop)
     metricsReporter.startCollecting();
 }
+

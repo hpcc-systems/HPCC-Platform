@@ -18,6 +18,7 @@
 #include "seclib.hpp"
 #include "esplog.hpp"
 #include "mapinfo.hpp"
+#include "espmetrics.hpp"
 
 SCMinterface IEspStringIntMap(IInterface)
 {
@@ -181,7 +182,7 @@ interface IEspContext : extends IInterface
 
     virtual void addOptGroup(const char* optGroup) = 0;
     virtual BoolHash& queryOptGroups() = 0;
-    
+
     virtual StringArray& queryCustomHeaders() = 0;
     virtual void addCustomerHeader(const char* name, const char* val) = 0;
 
@@ -258,6 +259,7 @@ interface IEspContainer : extends IInterface
     virtual void clearCacheByGroupID(const char* ids, StringArray& errorMsgs) = 0;
     virtual IPropertyTree *queryApplicationConfig() = 0;
     virtual void setApplicationConfig(IPropertyTree *config) = 0;
+    virtual EspMetrics *getEspMetrics() = 0;
 };
 
 interface IEspRpcBinding;
@@ -334,9 +336,9 @@ SCMinterface IEspService(IInterface)
 
 SCMinterface IEspServiceRequest(IInterface)
 {
-    unsigned long getClientIP() const; 
-    const char *getUserName() const; 
-    const char *getPasswordHash() const; 
+    unsigned long getClientIP() const;
+    const char *getUserName() const;
+    const char *getPasswordHash() const;
 };
 
 
@@ -401,21 +403,21 @@ SCMinterface IEspServer(IInterface)
 SCMinterface IEspServiceCfg(IInterface)
 {
    void init(IPropertyTree &env, const char *proc, const char *service);
-  
+
    bool refresh();
 };
 
 SCMinterface IEspBindingCfg(IInterface)
 {
    void init(IPropertyTree &env, const char *proc, const char *service, const char *binding);
-  
+
    bool refresh();
 };
 
 SCMinterface IEspProtocolCfg(IInterface)
 {
    void init(IPropertyTree &env, const char *proc, const char *service, const char *binding);
-  
+
    bool refresh();
 };
 
@@ -465,7 +467,7 @@ SCMinterface IEspSimpleDataRequest(IInterface)
     bool getIncludeGraph();
     bool getIncludeResultSchemas();
     bool getEncodeDataset();
-    MapStrToBuf *getDataAttachments();  
+    MapStrToBuf *getDataAttachments();
     const char *getClusterName();
     int getWuTimeout();
     bool getNoWuAbort();
