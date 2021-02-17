@@ -18,6 +18,8 @@
 #onwarning (4522, ignore);
 #onwarning (4523, ignore);
 
+#option ('allKeyedFiltersOptional', false);
+
 //version multiPart=false,createValueSets=false
 //version multiPart=true,createValueSets=false
 
@@ -66,6 +68,7 @@ SEQUENTIAL(
     output(limit(wordIndex(KEYED(kind =1) AND KEYED(word = 'am') AND WILD(doc) AND KEYED(segment = 0)), 3, keyed, onfail(mkFailureIR('am'))));
     //Filter on wpos should ensure there are < 9
     output(limit(wordIndex(KEYED(kind =1) AND KEYED(word = 'and') AND WILD(doc) AND KEYED(segment = 0) AND KEYED(wpos < 20)), 9, keyed, onfail(mkFailureIR('and'))));
+    output(limit(wordIndex(KEYED(kind =1) AND KEYED(word = 'and') AND WILD(doc) AND KEYED(segment = 0, OPT(FALSE)) AND KEYED(wpos < 20, OPT(FALSE))), 9, keyed, onfail(mkFailureIR('and'))));
     //Filter on wpos is opt, so limit will be triggered
     output(limit(wordIndex(KEYED(kind =1) AND KEYED(word = 'and') AND KEYED(doc=0 or 0 = 0) AND KEYED(segment = 0, OPT) AND KEYED(wpos < 20, OPT)), 9, keyed, onfail(mkFailureIR('and'))));
     output('keyed');

@@ -831,6 +831,7 @@ struct HqlCppOptions
     bool                forceAllProjectedDiskSerialized;
     bool                newIndexReadMapping;
     bool                diskReadsAreSimple;
+    bool                allKeyedFiltersOptional;
     bool                genericDiskReads;
     bool                generateActivityFormats;
     bool                generateDiskFormats;

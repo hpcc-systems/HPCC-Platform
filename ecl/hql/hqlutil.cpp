@@ -10285,7 +10285,7 @@ static IFieldFilter * createIfBlockFilter(IRtlFieldTypeDeserializer &deserialize
     OwnedHqlExpr mappedCondition = replaceSelector(cond, querySelfReference(), dummyDataset);
     Owned <IErrorReceiver> errorReceiver = createThrowingErrorReceiver();
 
-    FilterExtractor extractor(*errorReceiver, dummyDataset, rowRecord->numChildren(), true, true);
+    FilterExtractor extractor(*errorReceiver, dummyDataset, rowRecord->numChildren(), true, true, false);
     OwnedHqlExpr extraFilter;
     extractor.extractFilters(mappedCondition, extraFilter);
 
