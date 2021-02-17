@@ -37,17 +37,17 @@
   <sect1 id="Working_with_a_data_file">
     <title>Working with data files</title>
 
-    <para>Once you start working with your HPCC Systems platform, you will want to
-    process some real data, this section shows you how to load data to your
-    HPCC Systems platform.</para>
+    <para>Once you start working with your HPCC Systems platform, you will
+    want to process some real data, this section shows you how to load data to
+    your HPCC Systems platform.</para>
 
     <sect2 id="Cautions_and_Warnings">
       <title>Before you begin</title>
 
       <para>First, you should consider the size of the data and the capacity
-      of your system. A typical production HPCC Systems platform would have much more
-      data capacity than a development system. The size of the files you wish
-      to work with is limited by the size of your system.</para>
+      of your system. A typical production HPCC Systems platform would have
+      much more data capacity than a development system. The size of the files
+      you wish to work with is limited by the size of your system.</para>
     </sect2>
 
     <sect2 id="Uploading_a_file">
@@ -1327,6 +1327,14 @@
 
                     <entry>Check this box to use a single network connection
                     to despray.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Preserve File Parts
+                    </emphasis></entry>
+
+                    <entry>Check this box to preserve the original file parts
+                    and write multiple files to the landing zone.</entry>
                   </row>
                 </tbody>
               </tgroup>
