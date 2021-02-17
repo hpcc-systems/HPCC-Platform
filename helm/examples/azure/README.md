@@ -18,6 +18,9 @@ This may be okay for experimentation, where you do not care that your files are 
 The hpcc-azurefile helm chart will provision a new Storage Class and a Persistent Volume Claim for each of the required HPCC storage types.
 Once installed the generated PVC names should be used when installing the HPCC helm chart.
 The values-retained-azurefile.yaml is an example of the HPCC storage settings that should be applied, after the "hpcc-azurefile" helm chart is installed.
+
+The storage class used in this example supports mountOptions, which are used to ensure that the mounts are owned by user and group 'hpcc' with suitable file permissions.
+
 NB: The output of installing this chart, will contain a generated example with the correct PVC names.
 
 Example use:
