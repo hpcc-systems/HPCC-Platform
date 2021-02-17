@@ -73,13 +73,13 @@ esp:
 secretTimeout: {{ .Values.secrets.timeout | default 300 }}
 storage:
   daliPlane: {{ $daliStoragePlane }}
-  dllsPlane: {{ $daliStoragePlane }}
+  dllsPlane: {{ $dllStoragePlane }}
   dataPlane: {{ $dataStoragePlane }}
   spillPlane: {{ $spillStoragePlane }}
   planes:
 {{- /*Generate entries for each data plane (removing the pvc).  Exclude the planes used for dlls and dali.*/ -}}
 {{- range $plane := $planes -}}
- {{- if and (ne $plane.name $daliStoragePlane) (ne $plane.name $dllStoragePlane) }}
+ {{- if has "data" $plane.labels }}
   - name: {{ $plane.name | quote }}
 {{ toYaml (unset (unset (deepCopy $plane) "name") "pvc")| indent 4 }}
  {{- end }}
@@ -146,13 +146,9 @@ If any storage planes are defined that name pvcs they will be mounted
 {{- $storage := (.root.Values.storage | default dict) -}}
 {{- $planes := ($storage.planes | default list) -}}
 {{- $dataStorage := ($storage.dataStorage | default dict) -}}
-{{- $daliStorage := ($storage.daliStorage | default dict) -}}
-{{- $dllStorage := ($storage.dllStorage | default dict) -}}
-{{- $daliStoragePlane := ($daliStorage.plane | default "") -}}
-{{- $dllStoragePlane := ($dllStorage.plane | default "") -}}
 {{- range $plane := $planes -}}
  {{- if $plane.pvc -}}
-  {{- if and (ne $plane.name $daliStoragePlane) (ne $plane.name $dllStoragePlane) -}}
+  {{- if has "data" $plane.labels -}}
    {{- $num := int ( $plane.numDevices | default 1 ) -}}
    {{- if le $num 1 }}
 - name: {{ lower $plane.name }}-pv
@@ -183,11 +179,9 @@ Pass in dict with root
 {{- $dataStorage := ($storage.dataStorage | default dict) -}}
 {{- $daliStorage := ($storage.daliStorage | default dict) -}}
 {{- $dllStorage := ($storage.dllStorage | default dict) -}}
-{{- $daliStoragePlane := ($daliStorage.plane | default "") -}}
-{{- $dllStoragePlane := ($dllStorage.plane | default "") -}}
 {{- range $plane := $planes -}}
  {{- if $plane.pvc -}}
-  {{- if and (ne $plane.name $daliStoragePlane) (ne $plane.name $dllStoragePlane) -}}
+  {{- if has "data" $plane.labels -}}
    {{- $num := int ( $plane.numDevices | default 1 ) -}}
    {{- $pvc := $plane.pvc | required (printf "pvc for %s not supplied" $plane.name) }}
    {{- if le $num 1 }}
@@ -219,8 +213,9 @@ Pass in dict with root, me, name, and optional path
 {{- $storage := (.root.Values.storage | default dict) -}}
 {{- $planes := ($storage.planes | default list) -}}
 {{- if .me.plane -}}
+{{- $me := .me -}}
  {{- range $plane := $planes -}}
-  {{- if and ($plane.pvc) (eq $plane.name .me.plane) -}} # NB: can only be 1 match
+  {{- if and ($plane.pvc) (eq $plane.name $me.plane) -}}
 {{ $plane.prefix }}
   {{- end -}}
  {{- end -}}
@@ -250,7 +245,7 @@ Pass in dict with root
 {{- $storage := (.root.Values.storage | default dict) -}}
 {{- $planes := ($storage.planes | default list) -}}
 {{- $dllStorage := ($storage.dllStorage | default dict) -}}
-{{ include "hpcc.addVolumeMount" (dict "root" .root "name" "dllstorage-pvc" "path" "queries" "me" $dllStorage) }}
+{{ include "hpcc.addVolumeMount" (dict "root" .root "name" ($dllStorage.plane | default "dllstorage-pvc") "path" "queries" "me" $dllStorage) }}
 {{- end -}}
 
 {{/*
@@ -261,7 +256,7 @@ Pass in dict with root
 {{- $storage := (.root.Values.storage | default dict) -}}
 {{- $planes := ($storage.planes | default list) -}}
 {{- $daliStorage := ($storage.daliStorage | default dict) -}}
-{{ include "hpcc.addVolumeMount" (dict "root" .root "name" "dalistorage-pvc" "path" "dalistorage" "me" $daliStorage) }}
+{{ include "hpcc.addVolumeMount" (dict "root" .root "name" ($daliStorage.plane | default "dalistorage-pvc") "path" "dalistorage" "me" $daliStorage) }}
 {{- end -}}
 
 {{/*
@@ -273,8 +268,9 @@ Pass in dict with root, me and name
 {{- $storage := (.root.Values.storage | default dict) -}}
 {{- $planes := ($storage.planes | default list) -}}
 {{- if .me.plane -}}
+{{- $me := .me -}}
  {{- range $plane := $planes -}}
-  {{- if and ($plane.pvc) (eq $plane.name .me.plane) -}}
+  {{- if and ($plane.pvc) (eq $plane.name $me.plane) -}}
 - name: {{ .name }}
   persistentVolumeClaim:
     claimName: {{ $plane.pvc }}
@@ -718,7 +714,7 @@ Pass in dict with root, me
 {{- define "hpcc.addSashaVolumeMounts" }}
 {{- $serviceName := printf "sasha-%s" .me.name -}}
 {{- if .me.storage }}
-{{ include "hpcc.addVolumeMount" (dict "root" .root "name" $serviceName "me" .me.storage ) -}}
+{{ include "hpcc.addVolumeMount" (dict "root" .root "name" (.me.storage.plane | default $serviceName) "me" .me.storage ) -}}
 {{- end }}
 {{ with (dict "name" $serviceName ) -}}
 {{ include "hpcc.addConfigMapVolumeMount" . }}

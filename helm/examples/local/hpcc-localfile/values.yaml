@@ -1,18 +1,26 @@
 # Default values for hpcc-localfile.
 
+# NB: hostpath and 'subPath's must exist on host
 common:
-  #The host path provides the location on the host machine that will contain the data.  The value can be overriden for
-  #each individual component
-  hostpath: "/var/lib/HPCCSystem/hpcc-data"
+  #The host path provides the location on the host machine that will contain the data.
+  hostpath: "/run/desktop/mnt/host/c/hpccdata"
+  mountPrefix: "/var/lib/HPCCSystems"
 
-dllStorage:
+planes:
+- name: dali
+  subPath: dalistorage
+  size: 1Gi
+- name: dll
+  subPath: queries # cannot currently be changed
+  size: 1Gi
+  rwmany: true
+- name: sasha
+  subPath: sasha
+  size: 1Gi
+  rwmany: true
+- name: data
+  subPath: hpcc-data # cannot currently be changed
   size: 3Gi
-  # hostpath: "/var/lib/HPCCSystem/hpcc-data/dlls/"
+  labels: [ "data" ] # NB: "data" planes will be mounted by platform by default
+  rwmany: true
 
-dataStorage:
-  size: 1Gi
-  #hostpath: "/var/lib/HPCCSystem/hpcc-data/data/"
-
-daliStorage:
-  size: 1Gi
-  #hostpath: "/var/lib/HPCCSystem/hpcc-data/dali/"

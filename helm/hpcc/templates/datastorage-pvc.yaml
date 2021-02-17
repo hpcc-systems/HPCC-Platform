@@ -1,5 +1,5 @@
 {{- $storage := (.Values.storage | default dict) -}}
 {{- $dataStorage := ($storage.dataStorage | default dict) -}}
-{{- if (not $dataStorage.existingClaim) }}
+{{- if and (not $dataStorage.existingClaim) (not $dataStorage.plane) }}
 {{ include "hpcc.addPVC" (dict "root" $ "name" "datastorage-pvc" "me" $dataStorage) }}
 {{- end }}

@@ -17,14 +17,14 @@ Examples of use:
 
   With a host directory of c:\hpccdata
 
-  helm install localfile examples/local/hpcc-localfile --set common.hostpath=/run/desktop/mnt/host/c/hpccdata
+  helm install hpcc-localfile examples/local/hpcc-localfile --set common.hostpath=/run/desktop/mnt/host/c/hpccdata
   helm install mycluster hpcc/ --set global.image.version=latest -f examples/local/values-localfile.yaml
 
 #### Docker desktop (using osx):
 
   With a host directory of /User/myuser/hpccdata
 
-  helm install localfile examples/local/hpcc-localfile --set common.hostpath=/User/myuser/hpccdata
+  helm install hpcc-localfile examples/local/hpcc-localfile --set common.hostpath=/User/myuser/hpccdata
   helm install mycluster hpcc/ --set global.image.version=latest -f examples/local/values-localfile.yaml
 
 #### Minikube:
@@ -41,7 +41,7 @@ Examples of use:
 
     minikube mount /home/myuser/hpccdata:/mnt/hpccdata --gid=1000 --uid=999
 
-    helm install localfile examples/local/hpcc-localfile --set common.hostpath=/mnt/hpccdata
+    helm install hpcc-localfile examples/local/hpcc-localfile --set common.hostpath=/mnt/hpccdata
     helm install mycluster hpcc/ --set global.image.version=latest -f examples/local/values-localfile.yaml
 
 

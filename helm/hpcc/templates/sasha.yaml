@@ -43,7 +43,7 @@ kind: ConfigMap
 {{ include "hpcc.sashaConfigMap" $commonCtx }}
 ---
 {{- if $sasha.storage }}
-{{- if (not .storage.existingClaim) }}
+{{- if and (not $sasha.storage.existingClaim) (not $sasha.storage.plane) }}
 {{ include "hpcc.addPVC" (dict "root" $ "name" (printf "sasha-%s" $sasha.name) "me" $sasha.storage) }}
 {{- end }}
 ---

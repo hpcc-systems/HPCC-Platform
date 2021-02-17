@@ -327,6 +327,11 @@
           "description": "which planes (if any) the data is replicated onto (primarily bare metal)",
           "type": "array",
           "items": { "type": "string" }
+        },
+        "labels": {
+          "description": "a list of labels associated with this plane, e.g. lz, data",
+          "type": "array",
+          "items": { "type": "string" }
         }
       },
       "required": [ "name", "prefix" ],
