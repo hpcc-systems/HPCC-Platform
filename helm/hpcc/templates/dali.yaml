@@ -1,93 +1,104 @@
-{{ range $.Values.dali -}}
-{{- if not .disabled -}}
-{{- $commonCtx := dict "root" $ "me" . }}
+{{ range $dali := $.Values.dali -}}
+{{- if not $dali.disabled -}}
+{{- $commonCtx := dict "root" $ "me" $dali }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .name | quote }}
+  name: {{ $dali.name | quote }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      run: {{ .name | quote }}
+      run: {{ $dali.name | quote }}
       app: dali
   template:
     metadata:
       labels:
-        run: {{ .name | quote }}
+        run: {{ $dali.name | quote }}
         app: dali
     spec:
       serviceAccountName: "hpcc-default"
       initContainers: 
         {{- include "hpcc.checkDaliMount" (dict "root" $) | indent 6 }}
       containers:
-      - name: {{ .name | quote }}
+      - name: {{ $dali.name | quote }}
         workingDir: /var/lib/HPCCSystems
         command: [ daserver ] 
         args: [
-                {{ include "hpcc.configArg" . }}
+                {{ include "hpcc.configArg" $dali }}
               ]
-{{ include "hpcc.addSentinelProbes" . | indent 8 }}
+{{ include "hpcc.addSentinelProbes" $dali | indent 8 }}
 {{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
-{{- include "hpcc.addResources" (dict "me" .resources) | indent 8 }}
+{{- include "hpcc.addResources" (dict "me" $dali.resources) | indent 8 }}
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
-{{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
+{{ include "hpcc.addConfigMapVolumeMount" $dali | indent 8 }}
 {{ include "hpcc.addDaliVolumeMount" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "system" ) ) | indent 8 }}
-{{- range .services -}}
-{{- if not .disabled -}}
-{{- $_ := set . "access" (splitList " " (include "hpcc.getSashaServiceAccess" .)) -}}
+{{- range $sashaName, $_sasha := $dali.services -}}
+{{- $sasha := ($_sasha | default dict) -}}
+{{- if not $sasha.disabled -}}
+{{- $_ := set $sasha "name" $sashaName -}}
+{{- with ($sasha | merge (dict "access" (splitList " " (include "hpcc.getSashaServiceAccess" $sasha)))) }}
 {{ include "hpcc.addSashaContainer" (dict "root" $ "me" .) | indent 6 }}
         volumeMounts:
 {{- include "hpcc.addSashaVolumeMounts" (dict "root" $ "me" .) | indent 8 }}
 {{- end }}
 {{- end }}
+{{- end }}
       volumes:
-{{ include "hpcc.addConfigMapVolume" . | indent 6 }}
-{{- range .services -}}
-{{- if not .disabled -}}
-{{- $_ := set . "access" (without (splitList " " (include "hpcc.getSashaServiceAccess" .)) "dalidata") -}}
-{{- include "hpcc.addSashaVolumes" (dict "root" $ "me" .) | indent 6 }}
+{{ include "hpcc.addConfigMapVolume" $dali | indent 6 }}
+{{- $tmpDaliScope := dict -}}
+{{- $_ := set $tmpDaliScope "sashaAccess" list -}}
+{{- range $sashaName, $_sasha := $dali.services -}}
+{{- $sasha := ($_sasha | default dict) -}}
+{{- if not $sasha.disabled -}}
+{{- $_ := set $sasha "name" $sashaName -}}
+{{- $_ := set $tmpDaliScope "sashaAccess" (concat $tmpDaliScope.sashaAccess (splitList " " (include "hpcc.getSashaServiceAccess" $sasha))) -}}
+{{- include "hpcc.addSashaVolumes" (dict "root" $ "me" $sasha) | indent 6 }}
 {{- end }}
 {{- end }}
 {{ include "hpcc.addDaliVolume" $commonCtx | indent 6 }}
-{{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "system" ) ) | indent 6 }}
-{{- if or (has "data" .access) (has "dalidata" .access) -}}
-{{ include "hpcc.addSecretVolumes" (dict "root" .root "categories" (list "storage" ) ) | indent 6 -}}
+{{- if has "data" $tmpDaliScope.sashaAccess }}
+{{ include "hpcc.addDataVolume" $commonCtx | indent 6}}
+{{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "storage" ) ) | indent 6 }}
 {{- end }}
+{{- if has "dll" $tmpDaliScope.sashaAccess }}
+{{ include "hpcc.addDllVolume" $commonCtx | indent 6 -}}
+{{- end }}
+{{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "system" ) ) | indent 6 }}
 ---
 kind: ConfigMap 
 apiVersion: v1 
 metadata:
-  name: {{ .name }}-configmap 
+  name: {{ $dali.name }}-configmap 
 data:
-  {{ .name }}.yaml: |
+  {{ $dali.name }}.yaml: |
     version: 1.0
     dali:
-{{ toYaml (omit . "logging" "services") | indent 6 }}
+{{ toYaml (omit $dali "logging" "services") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" $commonCtx | indent 6 }}
 {{ include "hpcc.generateVaultConfig" (dict "root" $ "categories" (list "system" ) ) | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
 ---
-{{- $daliScope := . -}}
-{{- range .services -}}
-{{- if not .disabled -}}
-{{- $_ := set . "access" (splitList " " (include "hpcc.getSashaServiceAccess" .)) -}}
+{{- range $sashaName, $_sasha := .services -}}
+{{- $sasha := ($_sasha | default dict) -}}
+{{- if not $sasha.disabled -}}
+{{- $_ := set $sasha "name" $sashaName -}}
 kind: ConfigMap
-{{- with (. | merge (pick $daliScope "logging") | merge (dict "inDaliPod" true)) }}
+{{- with ($sasha | merge (pick $dali "logging") | merge (dict "inDaliPod" true "access" (splitList " " (include "hpcc.getSashaServiceAccess" $sasha)))) }}
 {{ include "hpcc.sashaConfigMap" (dict "root" $ "me" .) }}
 {{- end }}
 ---
-{{- if .servicePort -}}
-{{ include "hpcc.addSashaService" (dict "root" $ "me" .) }}
+{{- if $sasha.servicePort -}}
+{{ include "hpcc.addSashaService" (dict "root" $ "me" $sasha) }}
 ---
 {{- end }}
 
-{{- if .storage }}
-{{- if (not .storage.existingClaim) }}
-{{ include "hpcc.addPVC" (dict "root" $ "name" (printf "sasha-%s" .service) "me" .storage) }}
+{{- if $sasha.storage }}
+{{- if (not $sasha.storage.existingClaim) }}
+{{ include "hpcc.addPVC" (dict "root" $ "name" (printf "sasha-%s" $sashaName) "me" $sasha.storage) }}
 {{- end }}
 ---
 {{- end }}
@@ -109,7 +120,8 @@ spec:
 {{- if (not $.Values.storage.daliStorage.existingClaim) }}
 {{- $storage := ($.Values.storage | default dict) -}}
 {{- $daliStorage := ($storage.daliStorage | default dict) -}}
-{{- $modeForCoalescer := (has "coalescer" .services) | ternary "ReadWriteOnce" "ReadWriteMany" -}}
+{{- $services := (.services | default dict) -}}
+{{- $modeForCoalescer := (hasKey $services "coalescer") | ternary "ReadWriteOnce" "ReadWriteMany" -}}
 {{- include "hpcc.addPVC" (dict "root" $ "name" "dalistorage-pvc" "mode" $modeForCoalescer "me" $daliStorage) -}}
 {{- end }}
 {{- end }}

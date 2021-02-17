@@ -234,70 +234,69 @@ bundles: []
 dali:
 - name: mydali
   services: # internal house keeping services
-  - service: coalescer
-    #servicePort: 8877
-    #interval: 2 # (hours)
-    #at: "* * * * *" # cron type schedule, i.e. Min(0-59) Hour(0-23) DayOfMonth(1-31) Month(1-12) DayOfWeek(0-6)
-    #minDeltaSize: 50 # (Kb) will not start coalescing until delta log is above this threshold
-    #recoverFromIncErrors: false # Try to continue after transaction load failures
-    #resources:
-    #  cpu: "1"
-    #  memory: "1G"
+    coalescer:
+      #servicePort: 8877
+      #interval: 2 # (hours)
+      #at: "* * * * *" # cron type schedule, i.e. Min(0-59) Hour(0-23) DayOfMonth(1-31) Month(1-12) DayOfWeek(0-6)
+      #minDeltaSize: 50 # (Kb) will not start coalescing until delta log is above this threshold
+      #resources:
+      #  cpu: "1"
+      #  memory: "1G"
 
-  # metaAccess: "shared" # enable if coalescer running in separate pod, and thus needs access to meta over PVC mount
+  #metaAccess: "shared" # enable if coalescer running in separate pod, and thus needs access to meta over PVC mount
 
   #resources:
   #  cpu: "1"
   #  memory: "4G"
 
 sasha:
-- service: wu-archiver
-  #disabled: true
-  servicePort: 8877
-  storage:
-    #existingClaim: pvc
-    storageSize: 1Gi
-    storageClass: ""
-    # forcePermissions: false
-  #interval: 6 # (hours)
-  #limit: 1000 # threshold number of workunits before archiving starts (0 disables)
-  #cutoff: 8 # minimum workunit age to archive (days)
-  #backup: 0 # minimum workunit age to backup (days, 0 disables)
-  #at: "* * * * *"
-  #duration: 0 # (maxDuration) - Maximum duration to run WorkUnit archiving session (hours, 0 unlimited)
-  #throttle: 0 # throttle ratio (0-99, 0 no throttling, 50 is half speed)
-  #retryinterval: 7 # minimal time before retrying archive of failed WorkUnits (days)
-  #keepResultFiles: false # option to keep result files owned by workunits after workunit is archived
+  wu-archiver:
+    #disabled: true
+    servicePort: 8877
+    storage:
+      #existingClaim: pvc
+      storageSize: 1Gi
+      storageClass: ""
+      # forcePermissions: false
+    #interval: 6 # (hours)
+    #limit: 1000 # threshold number of workunits before archiving starts (0 disables)
+    #cutoff: 8 # minimum workunit age to archive (days)
+    #backup: 0 # minimum workunit age to backup (days, 0 disables)
+    #at: "* * * * *"
+    #duration: 0 # (maxDuration) - Maximum duration to run WorkUnit archiving session (hours, 0 unlimited)
+    #throttle: 0 # throttle ratio (0-99, 0 no throttling, 50 is half speed)
+    #retryinterval: 7 # minimal time before retrying archive of failed WorkUnits (days)
+    #keepResultFiles: false # option to keep result files owned by workunits after workunit is archived
 
-- service: dfuwu-archiver
-  #disabled: true
-  servicePort: 8877
-  storage:
-    #existingClaim: pvc
-    storageSize: 1Gi
-    storageClass: ""
-    #forcePermissions: false
-  #limit: 1000 # threshold number of DFU workunits before archiving starts (0 disables)
-  #cutoff: 14 # minimum DFU workunit age to archive (days)
-  #interval: 24 # minimum interval between running DFU recovery archiver (in hours, 0 disables)
-  #at: "* * * * *" # schedule to run DFU workunit archiver (cron format)
-  #duration: 0 # (maxDuration) maximum duration to run DFU WorkUnit archiving session (hours, 0 unlimited)
-  #throttle: 0 # throttle ratio (0-99, 0 no throttling, 50 is half speed)
+  dfuwu-archiver:
+    #disabled: true
+    servicePort: 8877
+    storage:
+      #existingClaim: pvc
+      storageSize: 1Gi
+      storageClass: ""
+      #forcePermissions: false
+    #limit: 1000 # threshold number of DFU workunits before archiving starts (0 disables)
+    #cutoff: 14 # minimum DFU workunit age to archive (days)
+    #interval: 24 # minimum interval between running DFU recovery archiver (in hours, 0 disables)
+    #at: "* * * * *" # schedule to run DFU workunit archiver (cron format)
+    #duration: 0 # (maxDuration) maximum duration to run DFU WorkUnit archiving session (hours, 0 unlimited)
+    #throttle: 0 # throttle ratio (0-99, 0 no throttling, 50 is half speed)
 
-- service: dfurecovery-archiver
-  #disabled: true
-  #limit: 20 # threshold number of DFU recovery items before archiving starts (0 disables)
-  #cutoff: 4 # minimum DFU recovery item age to archive (days)
-  #interval: 12 # minimum interval between running DFU recovery archiver(in hours, 0 disables)
-  #at: "* * * * *" # schedule to run DFU recovery archiver (cron format)
+  dfurecovery-archiver:
+    #disabled: true
+    #limit: 20 # threshold number of DFU recovery items before archiving starts (0 disables)
+    #cutoff: 4 # minimum DFU recovery item age to archive (days)
+    #interval: 12 # minimum interval between running DFU recovery archiver(in hours, 0 disables)
+    #at: "* * * * *" # schedule to run DFU recovery archiver (cron format)
 
-- service: file-expiry
-  #disabled: true
-  #interval: 1
-  #at: "* 3 * * *"
-  #persistExpiryDefault: 7
-  #expiryDefault: 4
-  #user: sasha
+  file-expiry:
+    #disabled: true
+    #interval: 1
+    #at: "* 3 * * *"
+    #persistExpiryDefault: 7
+    #expiryDefault: 4
+    #user: sasha
 
 eclagent:
 - name: hthor

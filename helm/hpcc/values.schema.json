@@ -151,9 +151,9 @@
       "items": { "$ref": "#/definitions/thor" }
     },
     "sasha": {
-      "description": "sasha process",
-      "type": "array",
-      "items": { "$ref": "#/definitions/sashaservice" }
+      "description": "sasha services",
+      "type": "object",
+      "$ref": "#/definitions/sashaservice"
     },
     "kibana": {
       "description": "HPCC managed Elastic Stack deployment Kibana (log visualizer) component"
@@ -496,9 +496,9 @@
           "$ref": "#/definitions/resources"
         },
         "services": {
-          "description": "sasha process",
-          "type": "array",
-          "items": { "$ref": "#/definitions/sashaservice" }
+          "description": "sasha services",
+          "type": "object",
+          "$ref": "#/definitions/sashaservice"
         }
       }
     },
@@ -752,7 +752,6 @@
     },
     "sashacommon": {
       "type": "object",
-      "required": [ "service" ],
       "properties": {
         "disabled": {
           "type": "boolean"
@@ -799,151 +798,201 @@
       }
     },
     "sasha-coalescer": {
-      "type": "object",
-      "allOf": [{ "$ref": "#/definitions/sashacommon" }],
-      "properties": {
-        "service": { "const": "coalescer" },
-        "minDeltaSize": {
-          "type": "integer",
-          "description": "Coalescing will only begin, if the delta size is above this threashold (K)"
+      "oneOf": [
+        {
+          "type": "object",
+          "allOf": [
+            { "$ref": "#/definitions/sashacommon" },
+            {
+              "properties": {
+                "minDeltaSize": {
+                  "type": "integer",
+                  "description": "Coalescing will only begin, if the delta size is above this threashold (K)"
+                },
+                "disabled": {},
+                "interval": {},
+                "servicePort": {},
+                "port": {},
+                "at" : {},
+                "throttle": {},
+                "storage": {},
+                "resources": {}    
+              },
+              "additionalProperties": false
+            }
+          ]
         },
-        "disabled": {},
-        "interval": {},
-        "servicePort": {},
-        "port": {},
-        "at" : {},
-        "throttle": {},
-        "storage": {},
-        "resources": {}
-      },
-      "additionalProperties": false
+        {
+          "type": "null"
+        }
+      ]
     },
     "sasha-wu-archiver": {
-      "type": "object",
-      "allOf": [{ "$ref": "#/definitions/sashacommon" }],
-      "allOf": [{ "$ref": "#/definitions/sasha-limitcutoff" }],
-      "properties": {
-        "service": { "const": "wu-archiver" },
-        "backup": {
-          "type": "integer",
-          "description": "minimum workunit age to backup (days, 0 disables)",
-          "default": "0"
+      "oneOf": [
+        {
+          "type": "object",
+          "allOf": [
+            { "$ref": "#/definitions/sashacommon" },
+            { "$ref": "#/definitions/sasha-limitcutoff" },
+            {
+              "properties": 
+              {
+                "backup": {
+                  "type": "integer",
+                  "description": "minimum workunit age to backup (days, 0 disables)",
+                  "default": "0"
+                },
+                "duration": {
+                  "type": "integer",
+                  "description": "Maximum duration to run WorkUnit archiving session (hours, 0 unlimited)",
+                  "default": "0"
+                },
+                "keepResultFiles": {
+                  "type": "boolean",
+                  "description": "option to keep result files owned by workunits after workunit is archived",
+                  "default": "false"
+                },
+                "retryinterval": {
+                  "type": "integer",
+                  "description": "minimal time before retrying archive of failed WorkUnits (days)",
+                  "default": "7"
+                },
+                "disabled": {},
+                "interval": {},
+                "servicePort": {},
+                "port": {},
+                "at" : {},
+                "throttle": {},
+                "storage": {},
+                "resources": {},
+                "limit": {},
+                "cutoff": {}    
+              },
+              "additionalProperties": false
+            }
+          ]
         },
-        "duration": {
-          "type": "integer",
-          "description": "Maximum duration to run WorkUnit archiving session (hours, 0 unlimited)",
-          "default": "0"
-        },
-        "keepResultFiles": {
-          "type": "boolean",
-          "description": "option to keep result files owned by workunits after workunit is archived",
-          "default": "false"
-        },
-        "retryinterval": {
-          "type": "integer",
-          "description": "minimal time before retrying archive of failed WorkUnits (days)",
-          "default": "7"
-        },
-        "disabled": {},
-        "interval": {},
-        "servicePort": {},
-        "port": {},
-        "at" : {},
-        "throttle": {},
-        "storage": {},
-        "resources": {},
-        "limit": {},
-        "cutoff": {}
-      },
-      "additionalProperties": false
+        {
+          "type": "null"
+        }
+      ]
     },
     "sasha-dfuwu-archiver": {
-      "type": "object",
-      "allOf": [{ "$ref": "#/definitions/sashacommon" }],
-      "allOf": [{ "$ref": "#/definitions/sasha-limitcutoff" }],
-      "properties": {
-        "service": { "const": "dfuwu-archiver" },
-        "persistExpiryDefault": {
-          "type": "integer",
-          "description": "Default number of days to delete unused persist files",
-          "default": "7"
+      "oneOf": [
+        {
+          "type": "object",
+          "allOf": [ 
+            { "$ref": "#/definitions/sashacommon" },
+            { "$ref": "#/definitions/sasha-limitcutoff" },
+            {
+              "properties": 
+              {
+                "disabled": {},
+                "interval": {},
+                "servicePort": {},
+                "port": {},
+                "at" : {},
+                "throttle": {},
+                "storage": {},
+                "resources": {},
+                "limit": {},
+                "cutoff": {}
+              },
+              "additionalProperties": false
+            }
+          ]
         },
-        "expiryDefault": {
-          "type": "integer",
-          "description": "Default number of days to delete unused standard files that are flagged with EXPIRY",
-          "default": "14"
-        },
-        "disabled": {},
-        "interval": {},
-        "servicePort": {},
-        "port": {},
-        "at" : {},
-        "throttle": {},
-        "storage": {},
-        "resources": {},
-        "limit": {},
-        "cutoff": {}
-      },
-      "additionalProperties": false
+        {
+          "type": "null"
+        }
+      ]
     },
     "sasha-dfurecovery-archiver": {
-      "type": "object",
-      "allOf": [{ "$ref": "#/definitions/sashacommon" }],
-      "allOf": [{ "$ref": "#/definitions/sasha-limitcutoff" }],
-      "properties": {
-        "service": { "const": "dfurecovery-archiver" },
-        "disabled": {},
-        "interval": {},
-        "servicePort": {},
-        "port": {},
-        "at" : {},
-        "throttle": {},
-        "storage": {},
-        "resources": {},
-        "limit": {},
-        "cutoff": {}
-      },
-      "additionalProperties": false
+      "oneOf": [
+        {
+          "type": "object",
+          "allOf": [
+            { "$ref": "#/definitions/sashacommon" },
+            { "$ref": "#/definitions/sasha-limitcutoff" },
+            {
+              "properties": {
+                "disabled": {},
+                "interval": {},
+                "servicePort": {},
+                "port": {},
+                "at" : {},
+                "throttle": {},
+                "storage": {},
+                "resources": {},
+                "limit": {},
+                "cutoff": {}    
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "sasha-file-expiry": {
+      "oneOf": [
+        {
+          "type": "object",
+          "allOf": [{ "$ref": "#/definitions/sashacommon" }],
+          "properties": {
+            "persistExpiryDefault": {
+              "type": "integer",
+              "description": "Default number of days to delete unused persist files",
+              "default": "7"
+            },
+            "expiryDefault": {
+              "type": "integer",
+              "description": "Default number of days to delete unused standard files that are flagged with EXPIRY",
+              "default": "14"
+            },
+            "user": {
+              "type": "string",
+              "description": "A username authorized to access and remove expired files"
+            },
+            "disabled": {},
+            "interval": {},
+            "servicePort": {},
+            "port": {},
+            "at" : {},
+            "throttle": {},
+            "storage": {},
+            "resources": {}
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sashaservice": {
+      "description": "sasha services",
       "type": "object",
-      "allOf": [{ "$ref": "#/definitions/sashacommon" }],
       "properties": {
-        "service": { "const": "file-expiry" },
-        "persistExpiryDefault": {
-          "type": "integer",
-          "description": "Default number of days to delete unused persist files",
-          "default": "7"
+        "coalescer": {
+          "$ref": "#/definitions/sasha-coalescer"
         },
-        "expiryDefault": {
-          "type": "integer",
-          "description": "Default number of days to delete unused standard files that are flagged with EXPIRY",
-          "default": "14"
+        "wu-archiver": {
+          "$ref": "#/definitions/sasha-wu-archiver"
         },
-        "user": {
-          "type": "string",
-          "description": "A username authorized to access and remove expired files"
+        "dfuwu-archiver": {
+          "$ref": "#/definitions/sasha-dfuwu-archiver"
         },
-        "disabled": {},
-        "interval": {},
-        "servicePort": {},
-        "port": {},
-        "at" : {},
-        "throttle": {},
-        "storage": {},
-        "resources": {}
+        "dfurecovery-archiver": {
+          "$ref": "#/definitions/sasha-dfurecovery-archiver"
+        },
+        "file-expiry": {
+          "$ref": "#/definitions/sasha-file-expiry"
+        }
       },
       "additionalProperties": false
-    },
-    "sashaservice" : {
-      "type": "object",
-      "oneOf": [
-        { "$ref": "#/definitions/sasha-coalescer" },
-        { "$ref": "#/definitions/sasha-wu-archiver" },
-        { "$ref": "#/definitions/sasha-dfuwu-archiver" },
-        { "$ref": "#/definitions/sasha-dfurecovery-archiver" },
-        { "$ref": "#/definitions/sasha-file-expiry" }
-      ]
     }
   }
 }

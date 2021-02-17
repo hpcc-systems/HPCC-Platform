@@ -609,17 +609,19 @@ Generate list of available services
   public: {{ $esp.public }}
 {{ end -}}
 {{- range $dali := $.Values.dali -}}
-{{- range $sasha := $dali.services -}}
+{{- range $sashaName, $_sasha := $dali.services -}}
+{{- $sasha := ($_sasha | default dict) -}}
 {{- if and (not $sasha.disabled) ($sasha.servicePort) -}}
-- name: {{ printf "sasha-%s" $sasha.service }}
+- name: {{ printf "sasha-%s" $sashaName }}
   type: sasha
   port: {{ $sasha.servicePort }}
 {{ end -}}
 {{ end -}}
 {{ end -}}
-{{- range $sasha := $.Values.sasha -}}
+{{- range $sashaName, $_sasha := $.Values.sasha -}}
+{{- $sasha := ($_sasha | default dict) -}}
 {{- if and (not $sasha.disabled) ($sasha.servicePort) -}}
-- name: {{ printf "sasha-%s" $sasha.service }}
+- name: {{ printf "sasha-%s" $sashaName }}
   type: sasha
   port: {{ $sasha.servicePort }}
 {{ end -}}
@@ -664,12 +666,12 @@ Sasha configmap
 Pass in dict with root and me
 */}}
 {{- define "hpcc.sashaConfigMap" -}}
-{{- $serviceName := printf "sasha-%s" .me.service -}}
+{{- $configMapName := printf "sasha-%s" .me.name -}}
 apiVersion: v1
 metadata:
-  name: {{ printf "%s-configmap" $serviceName }}
+  name: {{ printf "%s-configmap" $configMapName }}
 data:
-  {{ $serviceName }}.yaml: |
+  {{ $configMapName }}.yaml: |
     version: 1.0
     sasha:
 {{ toYaml (omit .me "logging") | indent 6 }}
@@ -680,7 +682,7 @@ data:
 {{- end }}
 {{ include "hpcc.generateVaultConfig" (dict "root" .root "categories" $categories ) | indent 6 }}
 {{- if .me.storage }}
-      storagePath: {{ include "hpcc.getVolumeMountPrefix" (dict "root" .root "name" (printf "sasha-%s" .me.service) "me" .me.storage) }}
+      storagePath: {{ include "hpcc.getVolumeMountPrefix" (dict "root" .root "name" (printf "sasha-%s" .me.name) "me" .me.storage) }}
 {{- end }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
@@ -690,7 +692,7 @@ data:
 A template to generate Sasha service containers
 */}}
 {{- define "hpcc.addSashaContainer" }}
-{{- $serviceName := printf "sasha-%s" .me.service }}
+{{- $serviceName := printf "sasha-%s" .me.name }}
 - name: {{ $serviceName | quote }}
   workingDir: /var/lib/HPCCSystems
   command: [ saserver ] 
@@ -698,7 +700,7 @@ A template to generate Sasha service containers
 {{- with (dict "name" $serviceName) }}
           {{ include "hpcc.configArg" . }},
 {{- end }}
-          "--service={{ .me.service }}",
+          "--service={{ .me.name }}",
 {{ include "hpcc.daliArg" .root | indent 10 }}
         ]
 {{- include "hpcc.addResources" (dict "me" .me.resources) | indent 2 }}
@@ -714,7 +716,7 @@ A template to generate Sasha service
 Pass in dict with root, me
 */}}
 {{- define "hpcc.addSashaVolumeMounts" }}
-{{- $serviceName := printf "sasha-%s" .me.service -}}
+{{- $serviceName := printf "sasha-%s" .me.name -}}
 {{- if .me.storage }}
 {{ include "hpcc.addVolumeMount" (dict "root" .root "name" $serviceName "me" .me.storage ) -}}
 {{- end }}
@@ -742,7 +744,7 @@ A template to generate Sasha service
 Pass in dict with root, me
 */}}
 {{- define "hpcc.addSashaVolumes" }}
-{{- $serviceName := printf "sasha-%s" .me.service -}}
+{{- $serviceName := printf "sasha-%s" .me.name -}}
 {{- if .me.storage }}
 {{ include "hpcc.addVolume" (dict "root" .root "name" $serviceName "me" .me.storage) -}}
 {{- end }}
@@ -758,10 +760,6 @@ Pass in dict with root, me
 {{- if has "dll" .me.access }}
 {{ include "hpcc.addDllVolume" . -}}
 {{- end }}
-{{ include "hpcc.addSecretVolumes" (dict "root" .root "categories" (list "system" ) ) -}}
-{{- if has "data" .me.access -}}
-{{ include "hpcc.addSecretVolumes" (dict "root" .root "categories" (list "storage" ) ) -}}
-{{- end }}
 {{- end -}}
 
 {{/*
@@ -769,7 +767,7 @@ A template to generate Sasha service
 Pass in dict me
 */}}
 {{- define "hpcc.addSashaService" }}
-{{- $serviceName := printf "sasha-%s" .me.service }}
+{{- $serviceName := printf "sasha-%s" .me.name }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -789,18 +787,18 @@ spec:
 Return access permssions for a given service
 */}}
 {{- define "hpcc.getSashaServiceAccess" }}
-{{- if (eq "coalescer" .service) -}}
+{{- if (eq "coalescer" .name) -}}
 dalidata
-{{- else if (eq "wu-archiver" .service) -}}
+{{- else if (eq "wu-archiver" .name) -}}
 dali data dll
-{{- else if (eq "dfuwu-archiver" .service) -}}
+{{- else if (eq "dfuwu-archiver" .name) -}}
 dali
-{{- else if (eq "dfurecovery-archiver" .service) -}}
+{{- else if (eq "dfurecovery-archiver" .name) -}}
 dali
-{{- else if (eq "file-expiry" .service) -}}
+{{- else if (eq "file-expiry" .name) -}}
 dali data
 {{- else -}}
-{{- $_ := fail (printf "Unknown sasha service:" .service ) -}}
+{{- $_ := fail (printf "Unknown sasha service:" .name ) -}}
 {{- end -}}
 {{- end -}}
 
