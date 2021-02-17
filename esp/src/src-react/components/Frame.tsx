@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ThemeProvider } from "@fluentui/react-theme-provider";
+import { ThemeProvider } from "@fluentui/react";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { hashHistory } from "../util/history";
 import { router } from "../routes";
