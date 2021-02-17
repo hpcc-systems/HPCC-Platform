@@ -20,11 +20,12 @@
 # Others may not be wanted at all in container mode - scikit example??
 
 ARG BUILD_LABEL
-FROM hpccsystems/platform-core:${BUILD_LABEL}
+ARG DOCKER_REPO
+FROM ${DOCKER_REPO}/platform-core:${BUILD_LABEL}
 USER root
 
 # Machine Learning Dependencies
-RUN apt-get install -y python3 python3-pip --fix-missing
+RUN apt-get update && apt-get install -y python3 python3-pip --fix-missing
 RUN python3 -m pip install --upgrade pip
 RUN pip3 install       \
     scikit-learn

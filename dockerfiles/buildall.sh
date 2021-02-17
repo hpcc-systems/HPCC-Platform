@@ -36,7 +36,7 @@ set -e
 build_image platform-build-base ${BASE_VER}
 build_image platform-build
 build_image platform-core
-build_ml_image
+build_ml_images
 
 if [[ -n ${INPUT_PASSWORD} ]] ; then
   echo "::set-output name=${BUILD_LABEL}"
