@@ -15,9 +15,9 @@
 ################################################################################
 include_directories (${SCM_GENERATED_DIR})
 
-if (USE_UNITY_BUILD)
-    SET(CMAKE_UNITY_BUILD TRUE)
-endif ()
+# if (USE_UNITY_BUILD)
+#     SET(CMAKE_UNITY_BUILD TRUE)
+# endif ()
 
 HPCC_ADD_SUBDIRECTORY (bindings)
 HPCC_ADD_SUBDIRECTORY (clients "PLATFORM")

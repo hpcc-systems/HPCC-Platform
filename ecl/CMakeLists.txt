@@ -14,9 +14,9 @@
 #    limitations under the License.
 ################################################################################
 
-if (USE_UNITY_BUILD)
-    SET(CMAKE_UNITY_BUILD TRUE)
-endif ()
+# if (USE_UNITY_BUILD)
+#     SET(CMAKE_UNITY_BUILD TRUE)
+# endif ()
 
 HPCC_ADD_SUBDIRECTORY (agentexec "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (eclagent "PLATFORM")

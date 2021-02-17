@@ -24,9 +24,7 @@
 
 project( dafsclient ) 
 
-if (USE_UNITY_BUILD)
-    SET(CMAKE_UNITY_BUILD FALSE)
-endif ()
+SET(CMAKE_UNITY_BUILD FALSE)
 
 set (    SRCS 
          rmtfile.cpp 

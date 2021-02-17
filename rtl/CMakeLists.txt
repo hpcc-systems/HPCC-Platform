@@ -14,9 +14,9 @@
 #    limitations under the License.
 ################################################################################
 
-if (USE_UNITY_BUILD)
-    set(CMAKE_UNITY_BUILD TRUE)
-endif ()
+# if (USE_UNITY_BUILD)
+#     set(CMAKE_UNITY_BUILD TRUE)
+# endif ()
 
 HPCC_ADD_SUBDIRECTORY (eclrtl)
 HPCC_ADD_SUBDIRECTORY (include)

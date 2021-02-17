@@ -14,9 +14,7 @@
 #    limitations under the License.
 ################################################################################
 
-if (USE_UNITY_BUILD)
-  SET(CMAKE_UNITY_BUILD FALSE)
-endif ()
+SET(CMAKE_UNITY_BUILD FALSE)
 
 IF (USE_OPENLDAP)
 HPCC_ADD_SUBDIRECTORY (LdapSecurity)

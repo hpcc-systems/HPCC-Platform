@@ -22,9 +22,9 @@
 #    Cmake Input File for esp
 #####################################################
 
-if (USE_UNITY_BUILD)
-     set( CMAKE_UNITY_BUILD TRUE )
-endif ()
+# if (USE_UNITY_BUILD)
+#      set( CMAKE_UNITY_BUILD TRUE )
+# endif ()
 
 project( esp ) 
 

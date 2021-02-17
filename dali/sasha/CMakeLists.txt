@@ -24,9 +24,7 @@
 
 project (sasha)
 
-if (USE_UNITY_BUILD)
-    SET(CMAKE_UNITY_BUILD FALSE)
-endif ()
+SET(UNITY_BUILD FALSE)
 
 INCLUDE(CheckLibraryExists) 
 
