@@ -1459,7 +1459,21 @@ public:
                         throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "STATE: activity %d reset without stop", activityId);
                     if (traceStartStop || traceLevel > 2)
                         CTXLOG("STATE: activity %d reset without stop", activityId);
-                    stop();
+                    try
+                    {
+                        stop();
+                    }
+                    catch (IException *E)
+                    {
+                        EXCLOG(E, "Unexpected exception in stop() called from reset()");
+                        printStackReport();
+                        ::Release(E);
+                    }
+                    catch (...)
+                    {
+                        DBGLOG("Unexpected unknown exception in stop() called from reset()");
+                        printStackReport();
+                    }
                 }
                 state = STATEreset;
 #ifdef TRACE_STARTSTOP
