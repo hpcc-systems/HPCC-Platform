@@ -439,8 +439,8 @@ IHqlExpression * castToFieldAndBack(IHqlExpression * left, IHqlExpression * righ
 
 //---------------------------------------------------------------------------------------------------------------------
 
-FilterExtractor::FilterExtractor(IErrorReceiver & _errorReceiver, IHqlExpression * _tableExpr, int _numKeyableFields, bool _isDiskRead, bool _createValueSets)
-    : errorReceiver(_errorReceiver), createValueSets(_createValueSets)
+FilterExtractor::FilterExtractor(IErrorReceiver & _errorReceiver, IHqlExpression * _tableExpr, int _numKeyableFields, bool _isDiskRead, bool _createValueSets, bool _allKeyedFiltersOptional)
+    : errorReceiver(_errorReceiver), createValueSets(_createValueSets), allKeyedFiltersOptional(_allKeyedFiltersOptional)
 {
     tableExpr = _tableExpr;
 
@@ -1549,7 +1549,7 @@ bool FilterExtractor::extractFilters(KeyConditionInfo & matches, IHqlExpression 
             KeyFailureInfo reason;
             reason.merge(failReason);
             failReason.clear();
-            bool extend = expr->hasAttribute(extendAtom);
+            bool extend = getBoolAttribute(expr, extendAtom, allKeyedFiltersOptional);
             if (!extractFilters(matches, l, extend ? KeyedExtend : KeyedYes))
             {
                 if (!extend)

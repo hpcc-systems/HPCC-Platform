@@ -1,0 +1,109 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>non-limited</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><kind>1</kind><word>am                  </word><doc>281474976710658</doc><segment>0</segment><wpos>30</wpos><wip>1</wip><flags>1</flags><original>am                  </original><dpos>148</dpos></Row>
+ <Row><kind>1</kind><word>am                  </word><doc>1125899906842631</doc><segment>0</segment><wpos>10</wpos><wip>1</wip><flags>1</flags><original>am                  </original><dpos>40</dpos></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>13</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><kind>1</kind><word>and                 </word><doc>281474976710658</doc><segment>0</segment><wpos>19</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>98</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>281474976710658</doc><segment>0</segment><wpos>24</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>121</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>281474976710659</doc><segment>0</segment><wpos>9</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>48</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>281474976710659</doc><segment>0</segment><wpos>21</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>102</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>281474976710660</doc><segment>0</segment><wpos>21</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>112</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>281474976710661</doc><segment>0</segment><wpos>22</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>100</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>281474976710661</doc><segment>0</segment><wpos>27</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>122</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>844424930131971</doc><segment>0</segment><wpos>4</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>13</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>844424930131972</doc><segment>0</segment><wpos>5</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>14</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>844424930131972</doc><segment>0</segment><wpos>7</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>24</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>1125899906842625</doc><segment>0</segment><wpos>6</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>19</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>1125899906842626</doc><segment>0</segment><wpos>4</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>10</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>1125899906842630</doc><segment>0</segment><wpos>8</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>38</dpos></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>8</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><kind>1</kind><word>and                 </word><doc>281474976710658</doc><segment>0</segment><wpos>19</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>98</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>281474976710659</doc><segment>0</segment><wpos>9</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>48</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>844424930131971</doc><segment>0</segment><wpos>4</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>13</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>844424930131972</doc><segment>0</segment><wpos>5</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>14</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>844424930131972</doc><segment>0</segment><wpos>7</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>24</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>1125899906842625</doc><segment>0</segment><wpos>6</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>19</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>1125899906842626</doc><segment>0</segment><wpos>4</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>10</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>1125899906842630</doc><segment>0</segment><wpos>8</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>38</dpos></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><kind>1</kind><word>and                 </word><doc>281474976710658</doc><segment>0</segment><wpos>19</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>98</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>281474976710659</doc><segment>0</segment><wpos>9</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>48</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>844424930131971</doc><segment>0</segment><wpos>4</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>13</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>844424930131972</doc><segment>0</segment><wpos>5</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>14</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>844424930131972</doc><segment>0</segment><wpos>7</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>24</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>1125899906842625</doc><segment>0</segment><wpos>6</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>19</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>1125899906842626</doc><segment>0</segment><wpos>4</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>10</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>1125899906842630</doc><segment>0</segment><wpos>8</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>38</dpos></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>limited</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><kind>1</kind><word>am                  </word><doc>281474976710658</doc><segment>0</segment><wpos>30</wpos><wip>1</wip><flags>1</flags><original>am                  </original><dpos>148</dpos></Row>
+ <Row><kind>1</kind><word>am                  </word><doc>1125899906842631</doc><segment>0</segment><wpos>10</wpos><wip>1</wip><flags>1</flags><original>am                  </original><dpos>40</dpos></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><kind>1</kind><word>and                 </word><doc>281474976710658</doc><segment>0</segment><wpos>19</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>98</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>281474976710659</doc><segment>0</segment><wpos>9</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>48</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>844424930131971</doc><segment>0</segment><wpos>4</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>13</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>844424930131972</doc><segment>0</segment><wpos>5</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>14</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>844424930131972</doc><segment>0</segment><wpos>7</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>24</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>1125899906842625</doc><segment>0</segment><wpos>6</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>19</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>1125899906842626</doc><segment>0</segment><wpos>4</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>10</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>1125899906842630</doc><segment>0</segment><wpos>8</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>38</dpos></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><kind>1</kind><word>and                 </word><doc>281474976710658</doc><segment>0</segment><wpos>19</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>98</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>281474976710659</doc><segment>0</segment><wpos>9</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>48</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>844424930131971</doc><segment>0</segment><wpos>4</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>13</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>844424930131972</doc><segment>0</segment><wpos>5</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>14</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>844424930131972</doc><segment>0</segment><wpos>7</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>24</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>1125899906842625</doc><segment>0</segment><wpos>6</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>19</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>1125899906842626</doc><segment>0</segment><wpos>4</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>10</dpos></Row>
+ <Row><kind>1</kind><word>and                 </word><doc>1125899906842630</doc><segment>0</segment><wpos>8</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>38</dpos></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><kind>0</kind><word>Failed to match     </word><doc>0</doc><segment>0</segment><wpos>0</wpos><wip>0</wip><flags>0</flags><original>                    </original><dpos>0</dpos></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><Result_13>keyed</Result_13></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><search>am</search><kind>1</kind><word>am                  </word><doc>1125899906842631</doc><segment>0</segment><wpos>10</wpos><wip>1</wip><flags>1</flags><original>am                  </original><dpos>40</dpos></Row>
+ <Row><search>and</search><kind>1</kind><word>and                 </word><doc>281474976710658</doc><segment>0</segment><wpos>19</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>98</dpos></Row>
+ <Row><search>and</search><kind>1</kind><word>and                 </word><doc>281474976710659</doc><segment>0</segment><wpos>9</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>48</dpos></Row>
+ <Row><search>and</search><kind>1</kind><word>and                 </word><doc>844424930131971</doc><segment>0</segment><wpos>4</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>13</dpos></Row>
+ <Row><search>and</search><kind>1</kind><word>and                 </word><doc>844424930131972</doc><segment>0</segment><wpos>5</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>14</dpos></Row>
+ <Row><search>and</search><kind>1</kind><word>and                 </word><doc>844424930131972</doc><segment>0</segment><wpos>7</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>24</dpos></Row>
+ <Row><search>and</search><kind>1</kind><word>and                 </word><doc>1125899906842625</doc><segment>0</segment><wpos>6</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>19</dpos></Row>
+ <Row><search>and</search><kind>1</kind><word>and                 </word><doc>1125899906842626</doc><segment>0</segment><wpos>4</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>10</dpos></Row>
+ <Row><search>and</search><kind>1</kind><word>and                 </word><doc>1125899906842630</doc><segment>0</segment><wpos>8</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>38</dpos></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><Result_15>keyed limited</Result_15></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><search>am</search><kind>1</kind><word>am                  </word><doc>1125899906842631</doc><segment>0</segment><wpos>10</wpos><wip>1</wip><flags>1</flags><original>am                  </original><dpos>40</dpos></Row>
+ <Row><search>and</search><kind>1</kind><word>and                 </word><doc>281474976710658</doc><segment>0</segment><wpos>19</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>98</dpos></Row>
+ <Row><search>and</search><kind>1</kind><word>and                 </word><doc>281474976710659</doc><segment>0</segment><wpos>9</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>48</dpos></Row>
+ <Row><search>and</search><kind>1</kind><word>and                 </word><doc>844424930131971</doc><segment>0</segment><wpos>4</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>13</dpos></Row>
+ <Row><search>and</search><kind>1</kind><word>and                 </word><doc>844424930131972</doc><segment>0</segment><wpos>5</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>14</dpos></Row>
+ <Row><search>and</search><kind>1</kind><word>and                 </word><doc>844424930131972</doc><segment>0</segment><wpos>7</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>24</dpos></Row>
+ <Row><search>and</search><kind>1</kind><word>and                 </word><doc>1125899906842625</doc><segment>0</segment><wpos>6</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>19</dpos></Row>
+ <Row><search>and</search><kind>1</kind><word>and                 </word><doc>1125899906842626</doc><segment>0</segment><wpos>4</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>10</dpos></Row>
+ <Row><search>and</search><kind>1</kind><word>and                 </word><doc>1125899906842630</doc><segment>0</segment><wpos>8</wpos><wip>1</wip><flags>1</flags><original>and                 </original><dpos>38</dpos></Row>
+</Dataset>
+<Dataset name='Result 17'>
+ <Row><Result_17>done</Result_17></Row>
+</Dataset>

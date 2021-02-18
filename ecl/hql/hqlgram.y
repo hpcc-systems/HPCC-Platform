@@ -1773,7 +1773,7 @@ optPersistOpts
     ;
 
 persistOpts
-    : persistOpt
+: persistOpt
     | persistOpts ',' persistOpt
                         {
                             $$.setExpr(createComma($1.getExpr(), $3.getExpr()), $1);
@@ -6885,11 +6885,11 @@ primexpr1
                             IHqlExpression * e = $3.getExpr();
                             $$.setExpr(createValue(no_assertkeyed, e->getType(), e));
                         }
-    | KEYED '(' expression ',' OPT ')'
+    | KEYED '(' expression ',' OPT optConstBoolArg ')'
                         {
                             parser->normalizeExpression($3);
                             IHqlExpression * e = $3.getExpr();
-                            $$.setExpr(createValue(no_assertkeyed, e->getType(), e, createAttribute(extendAtom)));
+                            $$.setExpr(createValue(no_assertkeyed, e->getType(), e, createExprAttribute(extendAtom, $6.getExpr())));
                         }
     | STEPPED '(' expression ')'
                         {
