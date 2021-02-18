@@ -39,6 +39,10 @@ include_directories (
          ${CMAKE_BINARY_DIR}/oss
     )
 
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-switch -Wno-unused-parameter -Werror -Wno-error=delete-non-virtual-dtor")
+endif()
+
 ADD_DEFINITIONS( -DNO_SYBASE -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( hthor ${SRCS} )

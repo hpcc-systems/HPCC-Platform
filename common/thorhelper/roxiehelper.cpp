@@ -2370,18 +2370,18 @@ void FlushingJsonBuffer::startScalar(const char *resultName, unsigned sequence, 
     }
 }
 
-void FlushingJsonBuffer::setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size, bool simpleTag, const char *simpleName)
+void FlushingJsonBuffer::setScalarInt(const char *resultName, unsigned sequence, __int64 value, unsigned size)
 {
-    startScalar(resultName, sequence, simpleTag, simpleName);
+    startScalar(resultName, sequence, false, nullptr);
     if (size < 7) //JavaScript only supports 53 significant bits
         s.append(value);
     else
         s.append('"').append(value).append('"');
 }
 
-void FlushingJsonBuffer::setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size, bool simpleTag, const char *simpleName)
+void FlushingJsonBuffer::setScalarUInt(const char *resultName, unsigned sequence, unsigned __int64 value, unsigned size)
 {
-    startScalar(resultName, sequence, simpleTag, simpleName);
+    startScalar(resultName, sequence, false, nullptr);
     if (size < 7) //JavaScript doesn't support unsigned, and only supports 53 significant bits
         s.append(value);
     else

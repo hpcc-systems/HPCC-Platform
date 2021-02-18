@@ -418,7 +418,7 @@ bool EclGraphElement::alreadyUpToDate(IAgentContext & agent)
     }
 
     IPropertyTree & cur = f->queryAttributes();
-    if ((eclCRC != cur.getPropInt("@eclCRC")) || (totalCRC != cur.getPropInt64("@totalCRC")))
+    if ((eclCRC != (unsigned)cur.getPropInt("@eclCRC")) || (totalCRC != (unsigned __int64)cur.getPropInt64("@totalCRC")))
         return false;
     return true;
 }
@@ -754,7 +754,7 @@ IHThorException * EclGraphElement::makeWrappedException(IException * e)
 //---------------------------------------------------------------------------
 
 EclSubGraph::EclSubGraph(IAgentContext & _agent, EclGraph & _parent, EclSubGraph * _owner, unsigned _seqNo, bool enableProbe, CHThorDebugContext * _debugContext, IProbeManager * _probeManager)
-    : parent(_parent), owner(_owner), seqNo(_seqNo), probeEnabled(enableProbe), debugContext(_debugContext), probeManager(_probeManager), isLoopBody(false)
+    : probeEnabled(enableProbe), seqNo(_seqNo), parent(_parent), owner(_owner), debugContext(_debugContext), probeManager(_probeManager), isLoopBody(false)
 {
     executed = false;
     created = false;
@@ -1249,7 +1249,6 @@ void EclGraph::execute(const byte * parentExtract)
     try
     {
         unsigned startTime = msTick();
-        aindex_t lastSink = -1;
         ForEachItemIn(idx, graphs)
         {
             EclSubGraph & cur = graphs.item(idx);

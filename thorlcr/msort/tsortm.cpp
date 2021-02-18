@@ -1175,11 +1175,13 @@ public:
                             splitMap.setown(CalcPartitionUsingSampling());
                         else
 #endif
+                        {
 #ifdef TRACE_PARTITION
                             splitMap.setown(CalcPartition(true));
 #else
                             splitMap.setown(CalcPartition(false));
 #endif
+                        }
                     }
                     if (!partitioninfo->splitkeys.checkSorted(icompare))
                     {

@@ -104,6 +104,7 @@ interface IConstInstanceInfo : extends IConstEnvBase
 
 interface IConstDropZoneServerInfo : extends IConstEnvBase
 {
+    using IConstEnvBase::getName;     // The following function has a different prototype to the base interface
     virtual StringBuffer & getName(StringBuffer & name) const = 0;
     virtual StringBuffer & getServer(StringBuffer & server) const = 0;
 };
@@ -140,6 +141,7 @@ interface IConstDfuQueueInfoIterator : extends IIteratorOf<IConstDfuQueueInfo>
 
 interface IConstDaFileSrvInfo : extends IConstEnvBase
 {
+    using IConstEnvBase::getName;     // The following function has a different prototype to the base interface
     virtual const char *getName() const = 0;
     virtual unsigned getPort() const = 0;
     virtual bool getSecure() const = 0;
@@ -152,6 +154,7 @@ interface IConstInstanceInfoIterator : extends IIteratorOf<IConstInstanceInfo>
 
 interface IConstSparkThorInfo : extends IConstEnvBase
 {
+    using IConstEnvBase::getName;     // The following function has a different prototype to the base interface
     virtual IStringVal & getName(IStringVal & str) const = 0;
     virtual IStringVal & getBuild(IStringVal & str) const = 0;
     virtual IStringVal & getThorClusterName(IStringVal & str) const = 0;

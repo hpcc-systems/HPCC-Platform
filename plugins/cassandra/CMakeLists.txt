@@ -70,6 +70,13 @@ if(USE_CASSANDRA)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-copy")
     endif ()
   endif()
+  if (CMAKE_COMPILER_IS_CLANG)
+  # From time to time need to add flags in here to disable warnings, if a new compiler picks up something new.
+  # e.g.
+    if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 10.0.0)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-copy")
+    endif ()
+  endif()
   if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
     remove_definitions (-fsanitize=undefined -fno-sanitize=alignment -fsanitize-trap=undefined)
   endif()

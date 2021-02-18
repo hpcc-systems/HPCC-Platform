@@ -85,7 +85,6 @@ typedef IEclProcess* (* EclProcessFactory)();
 
 constexpr LogMsgCategory MCsetresult = MCprogress(100);     // Category used to inform when setting result
 constexpr LogMsgCategory MCgetresult = MCprogress(200);     // Category used to inform when getting result
-constexpr LogMsgCategory MCresolve = MCprogress(100);       // Category used to inform during name resolution
 constexpr LogMsgCategory MCrunlock = MCprogress(100);      // Category used to inform about run lock progress
 
 Owned<IPropertyTree> agentTopology;
@@ -336,14 +335,11 @@ public:
     virtual void threadmain() override
     {
         StringBuffer rawText;
-        unsigned priority = (unsigned) -2;
-        unsigned memused = 0;
         IpAddress peer;
         bool continuationNeeded;
         bool isStatus;
 
         Owned<IDebuggerContext> debuggerContext;
-        unsigned slavesReplyLen = 0;
         HttpHelper httpHelper(NULL);
         try
         {
@@ -373,7 +369,6 @@ public:
             return;
         }
 
-        bool isRaw = false;
         bool isHTTP = false;
         Owned<IPropertyTree> queryXml;
         StringBuffer sanitizedText;
@@ -397,8 +392,6 @@ public:
             }
             bool isRequest = false;
             bool isRequestArray = false;
-            bool isBlind = false;
-            bool isDebug = false;
 
             sanitizeQuery(queryXml, queryName, sanitizedText, isHTTP, uid, isRequest, isRequestArray);
             DBGLOG("Received debug query %s", sanitizedText.str());
@@ -919,7 +912,6 @@ UChar *EclAgent::getResultVarUnicode(const char * stepname, unsigned sequence)
     PROTECTED_GETRESULT(stepname, sequence, "VarUnicode", "unicode",
         MemoryBuffer result;
         r->getResultUnicode(MemoryBuffer2IDataVal(result));
-        unsigned tlen = result.length()/2;
         result.append((UChar)0);
         return (UChar *)result.detach();
     );
@@ -1437,7 +1429,6 @@ ILocalOrDistributedFile *EclAgent::resolveLFN(const char *fname, const char *err
 
 bool EclAgent::fileExists(const char *name)
 {
-    unsigned __int64 size = 0;
     StringBuffer lfn;
     expandLogicalName(lfn, name);
 
@@ -1619,7 +1610,7 @@ void EclAgent::restoreCluster(IWorkUnit *wu)
 
 unsigned EclAgent::getNodes()//retrieve node count for current cluster
 {
-    if (clusterWidth == -1)
+    if (clusterWidth == (unsigned)-1)
     {
         if (!isStandAloneExe)
         {
@@ -3066,8 +3057,8 @@ char * EclAgent::queryIndexMetaData(char const * lfn, char const * xpath)
         try
         {
             OwnedIFile file = createIFile(part->getFilename(rfn, copy));
-            unsigned __int64 thissize = file->size();
-            if(thissize != -1)
+            offset_t thissize = file->size();
+            if(thissize != (offset_t)-1)
             {
                 StringBuffer remotePath;
                 rfn.getPath(remotePath);
@@ -4014,7 +4005,7 @@ class DebugProbe : public InputProbe, implements IActivityDebugContext
 public:
     DebugProbe(IHThorInput *_in, IEngineRowStream *_stream, unsigned _sourceId, unsigned _sourceIdx, DebugActivityRecord *_sourceAct, unsigned _targetId, unsigned _targetIdx, DebugActivityRecord *_targetAct, unsigned _iteration, unsigned _channel, IDebuggableContext *_debugContext)
         : InputProbe(_in, _stream, _sourceId, _sourceIdx, _targetId, _targetIdx, _iteration, _channel),
-          sourceAct(_sourceAct), targetAct(_targetAct), debugContext(_debugContext)
+          debugContext(_debugContext), sourceAct(_sourceAct), targetAct(_targetAct)
     {
         historyCapacity = debugContext->getDefaultHistoryCapacity();
         nextHistorySlot = 0;
