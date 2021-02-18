@@ -105,7 +105,7 @@ public:
 class HQL_API FilterExtractor
 {
 public:
-    FilterExtractor(IErrorReceiver & _errorReceiver, IHqlExpression * _tableExpr, int _numKeyableFields, bool isDiskRead, bool forceValueSets);
+    FilterExtractor(IErrorReceiver & _errorReceiver, IHqlExpression * _tableExpr, int _numKeyableFields, bool isDiskRead, bool forceValueSets, bool _allKeyedFiltersOptional);
 
     void appendFilter(IHqlExpression * expr)                { keyed.appendPostFilter(expr); }
     void extractFilters(IHqlExpression * filter, SharedHqlExpr & extraFilter);
@@ -182,6 +182,7 @@ protected:
     bool keyedExplicitly;
     bool allowDynamicFormatChange;
     const bool createValueSets;
+    const bool allKeyedFiltersOptional;
 };
 
 extern HQL_API IHqlExpression * getExplicitlyPromotedCompare(IHqlExpression * filter);

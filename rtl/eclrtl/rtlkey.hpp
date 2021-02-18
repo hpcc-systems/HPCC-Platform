@@ -113,7 +113,7 @@ interface IBlobCreator
 
 enum FFoption : byte
 {
-    FFkeyed = 1,
+    FFkeyed = 0,
     FFopt = 1,
     FFpost = 2,
 };
