@@ -6066,6 +6066,8 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
     }
     resp.setType(kind);
 
+    df->setAccessed();
+
     LOG(MCauditInfo,",FileAccess,EspProcess,READ,%s,%s,%s,jobid=%s,expirySecs=%d", cluster.str(), userID.str(), fileName.str(), requestId, expirySecs);
 }
 
