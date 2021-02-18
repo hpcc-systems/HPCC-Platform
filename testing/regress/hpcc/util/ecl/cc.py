@@ -22,7 +22,7 @@ import logging
 
 from ...common.error import Error
 from ...common.shell import Shell
-from ...util.util import PrintException
+from ...util.util import printException
 
 logger = logging.getLogger('RegressionTestEngine')
 
@@ -92,7 +92,7 @@ class ECLCC(Shell):
                 FILE.close()
                 retVal = True
         except Exception as e:
-            PrintException(repr(e) + "ECLCC.makeArchive()")
+            printException(repr(e) + "ECLCC.makeArchive()")
             
         return retVal
 

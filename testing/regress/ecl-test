@@ -24,12 +24,14 @@ import platform
 import atexit
 import traceback
 import glob
-
+import inspect
+import signal
 import argparse
+
 from hpcc.regression.regress import Regression
 from hpcc.util.util import checkClusters, checkHpccStatus
 from hpcc.util.util import setConfig, checkPqParam, getVersionNumbers, checkXParam, convertPath
-from hpcc.util.util import getEclRunArgs, isSudoer
+from hpcc.util.util import getEclRunArgs, isSudoer, getCodeInfo
 from hpcc.util.expandcheck import ExpandCheck
 from hpcc.common.error import Error
 from hpcc.common.config import Config
@@ -110,6 +112,9 @@ class RegressMain:
             except IOError:
                 logging.error("%s. Some query does not exist!" % (0))
                 exit()
+            except Exception as e:
+                logging.critical(e)
+                logging.critical(traceback.format_exc())
 
     def setup(self):
         if len(self.args.setup) > 0:
@@ -456,12 +461,22 @@ class RegressMain:
             logging.critical(traceback.format_exc())
             exit(-1)
         except KeyboardInterrupt:
+            logger.debug("%3d. Keyboard interrupt in %s." % (-1, getCodeInfo(inspect.currentframe()) ))
             logging.critical("Keyboard Interrupt Caught.")
         finally:
             if self.regress:
-                self.regress.StopTimeoutThread()
+                self.regress.close()
+                self.regress = None
         exit()
 
+
+def signalHandler(signum, frame):
+    logging.critical("Signal %d received" %(signum))
+    raise KeyboardInterrupt
+    
 if __name__ == "__main__":
+    signal.signal(signal.SIGINT, signalHandler)
+    signal.signal(signal.SIGTERM, signalHandler)
+
     regressMain = RegressMain()
     regressMain.main()

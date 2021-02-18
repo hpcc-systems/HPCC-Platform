@@ -15,6 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
+#include <stdexcept>
 #include "SchemaValue.hpp"
 #include "EnvironmentValue.hpp"
 #include "EnvironmentNode.hpp"
