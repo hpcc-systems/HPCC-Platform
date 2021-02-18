@@ -76,7 +76,7 @@ void BuildFilterState::popSetName()
 //---------------------------------------------------------------------------------------------------------------------
 
 CppFilterExtractor::CppFilterExtractor(IHqlExpression * _tableExpr, HqlCppTranslator & _translator, int _numKeyableFields, bool _isDiskRead, bool _createValueSets)
-    : FilterExtractor(_translator, _tableExpr, _numKeyableFields, _isDiskRead, _createValueSets, _translator.queryOptions().allKeyedFiltersOptional)), translator(_translator)
+    : FilterExtractor(_translator, _tableExpr, _numKeyableFields, _isDiskRead, _createValueSets, _translator.queryOptions().allKeyedFiltersOptional), translator(_translator)
 {
     if (createValueSets)
     {
