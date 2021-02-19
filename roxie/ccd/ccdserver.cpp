@@ -1027,6 +1027,8 @@ public:
         if (state!=STATEreset)
         {
             DBGLOG("STATE: Activity %d destroyed but not reset", activityId);
+            printStackReport();
+            _exit(1);
             state = STATEreset;  // bit pointless but there you go... 
         }
     }
@@ -1463,21 +1465,7 @@ public:
                         throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "STATE: activity %d reset without stop", activityId);
                     if (traceStartStop || traceLevel > 2)
                         CTXLOG("STATE: activity %d reset without stop", activityId);
-                    try
-                    {
-                        stop();
-                    }
-                    catch (IException *E)
-                    {
-                        EXCLOG(E, "Unexpected exception in stop() called from reset()");
-                        printStackReport();
-                        ::Release(E);
-                    }
-                    catch (...)
-                    {
-                        DBGLOG("Unexpected unknown exception in stop() called from reset()");
-                        printStackReport();
-                    }
+                    stop();
                 }
                 state = STATEreset;
 #ifdef TRACE_STARTSTOP
