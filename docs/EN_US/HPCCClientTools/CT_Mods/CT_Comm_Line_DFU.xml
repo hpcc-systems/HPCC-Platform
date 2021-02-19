@@ -677,6 +677,20 @@ END;</programlisting>
                   originally came from. If you never need to do that, then the
                   filesize option may be omitted. </para></entry>
                 </row>
+
+                <row>
+                  <entry><emphasis>wrap= 0 | 1</emphasis></entry>
+
+                  <entry>Optional. If set to 1, desprays as multiple files on
+                  the landing zone. Default is 0.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>multicopy= 0 | 1</emphasis></entry>
+
+                  <entry>Optional. If set to 1, each destination part gets the
+                  whole file. Default is 0.</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable>
