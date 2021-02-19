@@ -104,11 +104,7 @@ public:
     virtual void close();
     virtual unsigned __int64 getStatistic(StatisticKind kind);
 
-    bool create(const char * filename, bool replace);
-    bool open(const char * filename);
-
     HANDLE queryHandle() { return file; } // for debugging
-
 
 protected:
     CriticalSection     cs;
@@ -144,6 +140,38 @@ protected:
     Linked<IFileIO>     io;
     offset_t            headerSize;
     offset_t            maxLength;
+};
+
+//A wrapper class than can be used to ensure the interface is used in a sensible way - e.g.
+//files are closed before destruction when writing.  Sensible buffering is in place.
+class jlib_decl CCheckingFileIO : implements CInterfaceOf<IFileIO>
+{
+public:
+    CCheckingFileIO(const char * _filename, IFileIO * _io) : filename(_filename), io(_io) {}
+    ~CCheckingFileIO();
+
+    virtual size32_t read(offset_t pos, size32_t len, void * data) override;
+    virtual offset_t size() override;
+    virtual size32_t write(offset_t pos, size32_t len, const void * data) override;
+    virtual void setSize(offset_t size) override;
+    virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) override;
+    virtual void flush() override;
+    virtual void close() override;
+    virtual unsigned __int64 getStatistic(StatisticKind kind) override;
+
+protected:
+    void report(const char * format, ...) __attribute__((format(printf, 2, 3)));
+
+protected:
+    CriticalSection cs;
+    StringAttr filename;
+    Linked<IFileIO> io;
+    bool closed = false;
+    bool traced = false;
+    unsigned minSeqReadSize = 0x10000;
+    unsigned minWriteSize = 0x010000;
+    offset_t lastReadPos = (offset_t)-1;
+    size32_t lastWriteSize = 0;
 };
 
 
