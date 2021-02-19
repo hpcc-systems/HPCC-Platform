@@ -1,8 +1,13 @@
 # HPCC Log Processing via Elastic Stack
 
+## HPCC Managed Lightweight Elastic Stack
+HPCC provides a simple chart for deployment of a local, light-weight Elastic Stack instance.
+Please view HPCC-Platform/helm/managed/logging/elastic for more information
+
+## Stand Alone Elastic Stack
 Setting up a base Elastic Stack cluster to process HPCC Systems component logs is straightforward. Elastic provides Helm charts to deploy each of their components, so we'll add the Elastic helm-charts repository locally:
 
-	> helm repo add elastic https://helm.elastic.co
+    > helm repo add elastic https://helm.elastic.co
 
 We'll install the Filebeat component (log agent) , and ElasticSearch (log store and indexer). By default, Filebeat will forward the log entries to the ElasticSearch default endpoint:
 

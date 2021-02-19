@@ -1,0 +1,24 @@
+apiVersion: v2
+name: elastic4hpcclogs
+description: A Helm chart for launching a lightweight Elastic Stack cluster using Kubernetes
+type: application
+
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+version: 0.1.0
+
+# Dependencies can be automatically updated via HELM dependancy update command:
+# > 'helm dependency update' command
+# or helm install parameter —dependency-update
+# > helm install myelastic ./ —-dependency-update
+dependencies:
+- name: filebeat
+  version: 7.9.3
+  repository: https://helm.elastic.co
+- name: elasticsearch
+  version: 7.9.3
+  repository: https://helm.elastic.co
+- name: kibana # Optional managed logging processor front-end
+  version: 7.9.3
+  repository: https://helm.elastic.co
+  condition: kibana.enabled

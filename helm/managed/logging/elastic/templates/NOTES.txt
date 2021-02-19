@@ -1,0 +1,6 @@
+Thank you for installing {{ .Chart.Name }}.
+A lightweight Elastic Search instance for HPCC component log processing.
+
+This deployment varies slightly from defaults set by Elastic, please review the effective values.
+
+PLEASE NOTE: Elastic Search declares PVC(s) which might require explicit manual removal when no longer needed.
