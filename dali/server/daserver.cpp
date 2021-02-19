@@ -184,8 +184,6 @@ static IPropertyTree *getSecMgrPluginPropTree(const IPropertyTree *configTree)
  */
 static bool populateAllowListFromEnvironment(IAllowListWriter &writer)
 {
-    if (isContainerized())
-        return false;
     Owned<IRemoteConnection> conn = querySDS().connect("/Environment", 0, 0, INFINITE);
     assertex(conn);
     if (!conn->queryRoot()->hasProp("Software/DaliServerProcess"))
@@ -653,10 +651,10 @@ int main(int argc, const char* argv[])
 
         unsigned short myport = epa.item(myrank).port;
         startMPServer(DCR_DaliServer, myport, true, true);
+#ifndef _CONTAINERIZED
         Owned<IMPServer> mpServer = getMPServer();
         Owned<IAllowListHandler> allowListHandler = createAllowListHandler(populateAllowListFromEnvironment, formatDaliRole);
         mpServer->installAllowListCallback(allowListHandler);
-#ifndef _CONTAINERIZED
         setMsgLevel(fileMsgHandler, serverConfig->getPropInt("SDS/@msgLevel", 100));
 #endif
         startLogMsgChildReceiver();
