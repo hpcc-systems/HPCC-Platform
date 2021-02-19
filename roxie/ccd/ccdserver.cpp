@@ -1459,10 +1459,10 @@ public:
             {
                 if (state==STATEstarted || state==STATEstarting)
                 {
+                    VStringBuffer err("STATE: activity %d reset without stop", activityId);
+                    ctx->queryCodeContext()->addWuException(err.str(), ROXIE_INTERNAL_ERROR, SeverityError, "roxie");
                     if (ctx->queryOptions().failOnLeaks)
                         throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "STATE: activity %d reset without stop", activityId);
-                    if (traceStartStop || traceLevel > 2)
-                        CTXLOG("STATE: activity %d reset without stop", activityId);
                     try
                     {
                         stop();

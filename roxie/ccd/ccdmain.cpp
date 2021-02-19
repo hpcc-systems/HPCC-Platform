@@ -135,7 +135,7 @@ bool selfTestMode = false;
 bool defaultCollectFactoryStatistics = true;
 bool defaultNoSeekBuildIndex = false;
 unsigned parallelLoadQueries = 8;
-bool alwaysFailOnLeaks = true;
+bool alwaysFailOnLeaks = false;
 
 bool useOldTopology = false;
 
@@ -1068,7 +1068,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         parallelLoadQueries = topology->getPropInt("@parallelLoadQueries", 8);
         if (!parallelLoadQueries)
             parallelLoadQueries = 1;
-        alwaysFailOnLeaks = topology->getPropBool("@alwaysFailOnLeaks", true);
+        alwaysFailOnLeaks = topology->getPropBool("@alwaysFailOnLeaks", false);
 
         enableKeyDiff = topology->getPropBool("@enableKeyDiff", true);
         cacheReportPeriodSeconds = topology->getPropInt("@cacheReportPeriodSeconds", 5*60);
