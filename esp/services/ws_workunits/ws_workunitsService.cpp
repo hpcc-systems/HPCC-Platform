@@ -2715,7 +2715,7 @@ void getCSVHeaders(const IResultSetMetaData& metaIn, CommonCSVWriter* writer, un
     }
 }
 
-unsigned getResultCSV(IStringVal& ret, INewResultSet* result, const char* name, __int64 start, unsigned& count)
+unsigned getResultCSV(IStringVal& ret, INewResultSet* result, const char* name, __int64 start, unsigned& count, IAbortRequestCallback* abortCheck)
 {
     unsigned headerLayer = 0;
     CSVOptions csvOptions;
@@ -2728,12 +2728,12 @@ unsigned getResultCSV(IStringVal& ret, INewResultSet* result, const char* name, 
     writer->finishCSVHeaders();
 
     Owned<IResultSetCursor> cursor = result->createCursor();
-    count = writeResultCursorXml(*writer, cursor, name, start, count, NULL);
+    count = writeResultCursorXml(*writer, cursor, name, start, count, nullptr, nullptr, false, abortCheck);
     ret.set(writer->str());
     return count;
 }
 
-void appendResultSet(MemoryBuffer& mb, INewResultSet* result, const char *name, __int64 start, unsigned& count, __int64& total, bool bin, bool xsd, ESPSerializationFormat fmt, const IProperties *xmlns)
+void appendResultSet(IEspContext &context, MemoryBuffer& mb, INewResultSet* result, const char *name, __int64 start, unsigned& count, __int64& total, bool bin, bool xsd, ESPSerializationFormat fmt, const IProperties *xmlns)
 {
     if (!result)
         return;
@@ -2757,12 +2757,13 @@ void appendResultSet(MemoryBuffer& mb, INewResultSet* result, const char *name, 
             MemoryBuffer & buffer;
         } adaptor(mb);
 
+        CESPAbortRequestCallback abortCallback(&context);
         if (fmt==ESPSerializationCSV)
-            count = getResultCSV(adaptor, result, name, (unsigned) start, count);
+            count = getResultCSV(adaptor, result, name, (unsigned) start, count, &abortCallback);
         else if (fmt==ESPSerializationJSON)
-            count = getResultJSON(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL);
+            count = getResultJSON(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL, &abortCallback);
         else
-            count = getResultXml(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL, xmlns);
+            count = getResultXml(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL, xmlns, &abortCallback);
     }
 }
 
@@ -2878,12 +2879,12 @@ void CWsWorkunitsEx::getWsWuResult(IEspContext &context, const char *wuid, const
                                        wuid, wuResultMaxSize/0x100000);
         }
 
-        appendResultSet(mb, rs, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns());
+        appendResultSet(context, mb, rs, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns());
     }
     else
     {
         Owned<INewResultSet> filteredResult = createFilteredResultSet(rs, filterBy);
-        appendResultSet(mb, filteredResult, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns());
+        appendResultSet(context, mb, filteredResult, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns());
     }
 
     wuState = cw->getState();
@@ -3222,13 +3223,13 @@ void CWsWorkunitsEx::getFileResults(IEspContext &context, const char *logicalNam
                                        logicalName, wuResultMaxSize/0x100000);
         }
     
-        appendResultSet(buf, result, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), NULL);
+        appendResultSet(context, buf, result, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), nullptr);
     }
     else
     {
         // NB: this could be still be very big, appendResultSet should be changed to ensure filtered result doesn't grow bigger than wuResultMaxSize
         Owned<INewResultSet> filteredResult = createFilteredResultSet(result, filterBy);
-        appendResultSet(buf, filteredResult, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), NULL);
+        appendResultSet(context, buf, filteredResult, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), nullptr);
     }
 }
 

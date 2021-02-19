@@ -35,6 +35,7 @@
 #include "jstats.h"
 #include "jutil.hpp"
 #include "jprop.hpp"
+#include "jmisc.hpp"
 #include "wuattr.hpp"
 #include <vector>
 #include <list>

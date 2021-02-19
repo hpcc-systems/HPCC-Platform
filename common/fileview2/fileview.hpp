@@ -160,10 +160,13 @@ extern FILEVIEW_API IResultSetFactory * getSecResultSetFactory(ISecManager *secm
 extern FILEVIEW_API int findResultSetColumn(const INewResultSet * results, const char * columnName);
 
 extern FILEVIEW_API unsigned getResultCursorXml(IStringVal & ret, IResultSetCursor * cursor, const char * name, unsigned start=0, unsigned count=0, const char * schemaName=NULL, const IProperties *xmlns=NULL);
-extern FILEVIEW_API unsigned getResultXml(IStringVal & ret, INewResultSet * cursor,  const char* name, unsigned start=0, unsigned count=0, const char * schemaName=NULL, const IProperties *xmlns=NULL);
-extern FILEVIEW_API unsigned getResultJSON(IStringVal & ret, INewResultSet * cursor,  const char* name, unsigned start=0, unsigned count=0, const char * schemaName=NULL);
+extern FILEVIEW_API unsigned getResultXml(IStringVal & ret, INewResultSet * cursor,  const char * name,
+    unsigned start=0, unsigned count=0, const char * schemaName=nullptr, const IProperties * xmlns=nullptr, IAbortRequestCallback * abortCheck=nullptr);
+extern FILEVIEW_API unsigned getResultJSON(IStringVal & ret, INewResultSet * cursor,  const char* name,
+    unsigned start=0, unsigned count=0, const char * schemaName=nullptr, IAbortRequestCallback * abortCheck=nullptr);
 extern FILEVIEW_API unsigned writeResultCursorXml(IXmlWriter & writer, IResultSetCursor * cursor, const char * name,
-    unsigned start=0, unsigned count=0, const char * schemaName=NULL, const IProperties *xmlns = NULL, bool flushContent = false);
+    unsigned start=0, unsigned count=0, const char * schemaName=nullptr, const IProperties * xmlns=nullptr, bool flushContent=false,
+    IAbortRequestCallback * abortCheck=nullptr);
 extern FILEVIEW_API unsigned writeResultXml(IXmlWriter & writer, INewResultSet * cursor,  const char* name, unsigned start=0, unsigned count=0, const char * schemaName=NULL, const IProperties *xmlns = NULL);
 
 extern FILEVIEW_API unsigned getResultCursorBin(MemoryBuffer & ret, IResultSetCursor * cursor, unsigned start=0, unsigned count=0);
