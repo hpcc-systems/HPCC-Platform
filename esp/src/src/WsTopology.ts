@@ -64,8 +64,8 @@ const TpLogFileStore = declare([Memory, Evented], {
                                 }
 
                                 tempObj[cleanName] = value;
-                                data.push(tempObj);
                             }
+                            data.push(tempObj);
                         }
                     }, this);
                 }
