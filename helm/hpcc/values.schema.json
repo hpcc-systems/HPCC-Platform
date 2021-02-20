@@ -12,24 +12,24 @@
       "type": "array",
       "items": {
         "type": "object",
-         "properties": {
-           "pods": {
-              "type": "array",
-              "items": { "type": "string" }
-	   },
-           "nodeSelector": {
-             "$ref": "#/definitions/nodeSelector"
-	  },
+        "properties": {
+          "pods": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "nodeSelector": {
+            "$ref": "#/definitions/nodeSelector"
+          },
           "tolerations": {
             "$ref": "#/definitions/tolerations"
-	  },
+          },
           "affinity": {
             "type": "object"
-	  },
+          },
           "schedulerNames": {
             "type": "array",
             "items": { "type": "string" }
-	  }
+          }
         }
       }
     },
@@ -727,19 +727,19 @@
       "properties": {
         "key": {
           "type": "string"
-	},
+        },
         "operator": {
           "type": "string"
-	},
+        },
         "value": {
           "type": "string"
-	},
+        },
         "effect": {
           "type": "string"
-	},
+        },
         "tolerationSeconds": {
           "type": "integer"
-	}
+        }
       }
     }
   }

@@ -16,7 +16,7 @@ spec:
         accessDali: "yes"
         accessEsp: {{ .useChildProcesses | default false | ternary "yes" "no" | quote }}
     spec:
-      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" .name "group" "eclccserver") | indent 8 }}
+      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" .name "cluster" .name "type" "eclccserver") | indent 8 }}
       serviceAccountName: {{ .useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
       terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
       initContainers:
@@ -81,7 +81,7 @@ data:
             accessDali: "yes"
             accessEsp: "yes"
         spec:
-          {{- include "hpcc.placementMatchName" (dict "root" $ "pod" "compile-" "group" "eclccserver") | indent 10 }}
+          {{- include "hpcc.placementMatchName" (dict "root" $ "pod" (printf "%s-compile-" .name) "cluster" .name "type" "eclccserver") | indent 10 }}
           serviceAccountName: "hpcc-default"
           containers:
           - name: compile-%jobname

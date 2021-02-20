@@ -30,7 +30,7 @@ spec:
         accessDali: "yes"
         accessEsp: {{ $eclAgentUseChildProcesses | ternary "yes" "no" | quote }}
     spec:
-      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" $eclAgentName "group" "thor") | indent 6 }}
+      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" $eclAgentName "cluster" .name "type" "thor") | indent 6 }}
       serviceAccountName: {{ $eclAgentUseChildProcesses | ternary "hpcc-default" "hpcc-agent" }}
       containers:
       - name: {{ $eclAgentName | quote }}
@@ -75,7 +75,7 @@ spec:
         accessDali: "yes"
         accessEsp: "no"
     spec:
-      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" $thorAgentName "group" "thor") | indent 6 }}
+      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" $thorAgentName "cluster" .name "type" "thor") | indent 6 }}
       serviceAccountName: "hpcc-thoragent"
       containers:
       - name: {{ $thorAgentName | quote }}
@@ -145,7 +145,7 @@ data:
             accessDali: "yes"
             accessEsp: "yes"
         spec:
-          {{- include "hpcc.placementMatchName" (dict "root" $ "pod" (printf "%s-" $eclAgentType) "group" "thor") | indent 10 }}
+          {{- include "hpcc.placementMatchName" (dict "root" $ "pod" (printf "%s-%s-" .name $eclAgentType) "cluster" .name "type" "thor") | indent 10 }}
           serviceAccountName: "hpcc-agent"
           initContainers: 
             {{- include "hpcc.checkDataMount" (dict "root" $) | indent 10 }}
@@ -190,7 +190,7 @@ data:
             accessEsp: "yes"
             job: %jobname
         spec:
-          {{- include "hpcc.placementMatchName" (dict "root" $ "pod" "thormanager-" "group" "thor") | indent 10 }}
+          {{- include "hpcc.placementMatchName" (dict "root" $ "pod" (printf "%s-thormanager-" .name) "cluster" .name "type" "thor") | indent 10 }}
           serviceAccountName: hpcc-agent
           initContainers:
             {{- include "hpcc.checkDataMount" (dict "root" $) | indent 10 }}
@@ -225,7 +225,7 @@ data:
     metadata:
       name: thorworker-%jobname
     spec:
-      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" "thorworker-" "group" "thor") | indent 6 }}
+      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" (printf "%s-thorworker-" .name) "cluster" .name "type" "thor") | indent 6 }}
       parallelism: %numWorkers
       ttlSecondsAfterFinished: 100
       template:

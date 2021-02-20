@@ -618,11 +618,12 @@ resources:
 
 {{/*
 Create placement related settings
+Pass in dict with placement
 */}}
 {{- define "hpcc.doPlacement" -}}
 {{- if .placement.nodeSelector }}
 nodeSelector:
-{{ toYaml .placement.nodeSelector | indent 2  }}
+{{ toYaml .placement.nodeSelector | indent 2 }}
 {{- end -}}
 {{- if .placement.tolerations }}
 tolerations:
@@ -641,13 +642,15 @@ schedulerName: {{ $profileName }}
 
 {{/*
 Check if there is any placement configuration
+Pass in dict with root, pod, cluster and type
 */}}
 {{- define "hpcc.placementMatchName" -}}
 {{- if .root.Values.placement }}
 {{- $pod := .pod -}}
-{{- $group := .group -}}
+{{- $cluster := .cluster -}}
+{{- $type := .type -}}
 {{- range $placement := .root.Values.placement -}}
-{{- if or (has $pod $placement.pods) (has $group $placement.pods) -}}
+{{- if or (has $pod $placement.pods) (has $cluster $placement.pods) (has $type $placement.pods) -}}
 {{ include "hpcc.doPlacement" (dict "placement" $placement) -}}
 {{- end -}}
 {{- end -}}

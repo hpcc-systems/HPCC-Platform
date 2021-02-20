@@ -16,7 +16,7 @@ spec:
         run: {{ .name | quote }}
         app: dali
     spec:
-      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" .name "group" "dali") | indent 6 }}
+      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" .name "cluster" .name "type" "dali") | indent 6 }}
       serviceAccountName: "hpcc-default"
       initContainers: 
         {{- include "hpcc.checkDaliMount" (dict "root" $) | indent 6 }}

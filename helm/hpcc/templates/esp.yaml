@@ -17,7 +17,7 @@ spec:
         accessDali: "yes"
         app: {{ $application }}
     spec:
-      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" .name "group" "esp") | indent 6 }}
+      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" .name "cluster" .name "type" "esp") | indent 6 }}
       serviceAccountName: "hpcc-default"
       containers:
       - name: {{ .name | quote }}

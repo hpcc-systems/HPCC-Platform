@@ -23,7 +23,7 @@ spec:
         run: {{ $toponame | quote }}
         roxie-cluster: {{ $roxie.name | quote }}
     spec:
-      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" $toponame "group" "roxie") | indent 6 }}
+      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" $toponame "cluster" $roxie.name "type" "roxie") | indent 6 }}
       serviceAccountName: "hpcc-default"
       containers:
       - name: {{ $toponame | quote }}
@@ -137,7 +137,7 @@ spec:
         accessDali: "yes"
         accessEsp: "yes"
     spec:
-      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" $servername "group" "roxie") | indent 6 }}
+      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" $servername "cluster" $roxie.name "type" "roxie") | indent 6 }}
       serviceAccountName: "hpcc-default"
       initContainers:
         {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
@@ -202,7 +202,7 @@ spec:
         accessDali: "yes"
         accessEsp: "yes"
     spec:
-      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" $name "group" "roxie") | indent 6 }}
+      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" $name "cluster" $roxie.name "type" "roxie") | indent 6 }}
       serviceAccountName: "hpcc-default"
       initContainers:
         {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
