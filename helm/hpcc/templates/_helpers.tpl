@@ -332,13 +332,13 @@ Add Secret volume for a component
 {{- $component := .component -}}
 {{- $categories := .categories -}}
 {{- range $category, $key := .root.Values.secrets -}}
- {{- if (has $category $categories) -}}
-{{- range $secretid, $secretname := $key -}}
+{{- if (has $category $categories) -}}
+{{- range $secretid, $secretname := $key }}
 - name: secret-{{ $secretid }}
   secret:
     secretName: {{ $secretname }}
 {{ end -}}
- {{- end -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 
