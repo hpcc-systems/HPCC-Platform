@@ -25,17 +25,17 @@
           <row>
             <entry>Return:</entry>
 
-            <entry>TOJSON returns a STRING.</entry>
+            <entry>TOJSON returns a UTF8.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
   <para>The <emphasis role="bold">TOJSON </emphasis>function returns a single
-  string with the data in the <emphasis>record</emphasis> re-formatted as
-  JSON. If the RECORD structure of the <emphasis>record</emphasis> has XPATHs
-  defined, then they will be used, otherwise the lower-cased field names are
-  used as the JSON tag names.</para>
+  UTF-8 string with the data in the <emphasis>record</emphasis> re-formatted
+  as JSON. If the RECORD structure of the <emphasis>record</emphasis> has
+  XPATHs defined, then they will be used, otherwise the lower-cased field
+  names are used as the JSON tag names.</para>
 
   <para>Example:</para>
 
