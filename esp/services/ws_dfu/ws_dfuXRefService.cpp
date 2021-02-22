@@ -79,6 +79,32 @@ static void dfuXrefXMLToJSON(StringBuffer& buf)
     }
 }
 
+const char* CWsDfuXRefEx::formatResult(IEspContext& context, StringBuffer& result, StringBuffer& encodedResult)
+{
+    if (context.getResponseFormat() == ESPSerializationJSON)
+    {
+        dfuXrefXMLToJSON(result);
+        return result;
+    }
+    if (context.getClientVersion() < 1.02)
+        return result;
+
+    return encodeXML(result, encodedResult);
+}
+
+const char* CWsDfuXRefEx::formatResult(IEspContext& context, IPropertyTree* result, StringBuffer& formatedResult)
+{
+    if (context.getResponseFormat() == ESPSerializationJSON)
+        return toJSON(result, formatedResult);
+
+    if (context.getClientVersion() < 1.02)
+        return toXML(result, formatedResult);
+
+    StringBuffer tmp;
+    toXML(result, tmp);
+    return encodeXML(tmp, formatedResult);
+}
+
 void CWsDfuXRefEx::init(IPropertyTree *cfg, const char *process, const char *service)
 {
     DBGLOG("Initializing %s service [process = %s]", service, process);
@@ -160,7 +186,13 @@ bool CWsDfuXRefEx::onDFUXRefArrayAction(IEspContext &context, IEspDFUXRefArrayAc
         }
 
         xRefNode->commit();
-        resp.setDFUXRefArrayActionResult(returnStr);
+        if ((fmt == ESPSerializationJSON) || (context.getClientVersion() < 1.02))
+            resp.setDFUXRefArrayActionResult(returnStr);
+        else
+        {
+            StringBuffer encodedReturnStr;
+            resp.setDFUXRefArrayActionResult(encodeXML(returnStr, encodedReturnStr));
+        }
     }
     catch(IException *e)
     {   
@@ -212,10 +244,7 @@ void CWsDfuXRefEx::readLostFileQueryResult(IEspContext &context, StringBuffer &b
         }
     }
 
-    if (context.getResponseFormat() == ESPSerializationJSON)
-        toJSON(lostFilesQueryResult, buf.clear());
-    else
-        toXML(lostFilesQueryResult, buf.clear());
+    formatResult(context, lostFilesQueryResult, buf.clear());
 }
 
 bool CWsDfuXRefEx::onDFUXRefLostFiles(IEspContext &context, IEspDFUXRefLostFilesQueryRequest &req, IEspDFUXRefLostFilesQueryResponse &resp)
@@ -261,9 +290,8 @@ bool CWsDfuXRefEx::onDFUXRefFoundFiles(IEspContext &context, IEspDFUXRefFoundFil
         if (buf.isEmpty())
             return true;
 
-        if (context.getResponseFormat() == ESPSerializationJSON)
-            dfuXrefXMLToJSON(buf);
-        resp.setDFUXRefFoundFilesQueryResult(buf);
+        StringBuffer encodedXML;
+        resp.setDFUXRefFoundFilesQueryResult(formatResult(context, buf, encodedXML));
     }
     catch(IException *e)
     {   
@@ -288,9 +316,8 @@ bool CWsDfuXRefEx::onDFUXRefOrphanFiles(IEspContext &context, IEspDFUXRefOrphanF
         if (buf.isEmpty())
             return true;
 
-        if (context.getResponseFormat() == ESPSerializationJSON)
-            dfuXrefXMLToJSON(buf);
-        resp.setDFUXRefOrphanFilesQueryResult(buf);
+        StringBuffer encodedXML;
+        resp.setDFUXRefOrphanFilesQueryResult(formatResult(context, buf, encodedXML));
     }
     catch(IException *e)
     {   
@@ -311,9 +338,8 @@ bool CWsDfuXRefEx::onDFUXRefMessages(IEspContext &context, IEspDFUXRefMessagesQu
         if (buf.isEmpty())
             return true;
 
-        if (context.getResponseFormat() == ESPSerializationJSON)
-            dfuXrefXMLToJSON(buf);
-        resp.setDFUXRefMessagesQueryResult(buf);
+        StringBuffer encodedXML;
+        resp.setDFUXRefMessagesQueryResult(formatResult(context, buf, encodedXML));
     }
     catch(IException *e)
     {   
@@ -364,12 +390,7 @@ bool CWsDfuXRefEx::onDFUXRefDirectories(IEspContext &context, IEspDFUXRefDirecto
         ForEach(*iter)
             updateSkew(iter->query());
 
-        if (context.getResponseFormat() == ESPSerializationJSON)
-            toJSON(dirs, buf.clear());
-        else
-            toXML(dirs, buf.clear());
-
-        resp.setDFUXRefDirectoriesQueryResult(buf);
+        resp.setDFUXRefDirectoriesQueryResult(formatResult(context, dirs, buf.clear()));
     }
     catch(IException *e)
     {   
@@ -430,26 +451,33 @@ bool CWsDfuXRefEx::onDFUXRefBuild(IEspContext &context, IEspDFUXRefBuildRequest 
         { //The XRef build request for this cluster has been queued. No need to queue again.
             appendReplyMessage(fmt == ESPSerializationJSON, returnStr, "/WsDFUXRef/DFUXRefList",
                 "An XRef build for cluster %s is in process. Click here to return to the main XRef List.", cluster);
-            resp.setDFUXRefActionResult(returnStr);
-            return true;
+        }
+        else
+        {
+            //create the node if it doesn;t exist
+            Owned<IXRefNode> xRefNode = XRefNodeManager->getXRefNode(cluster);
+            if (!xRefNode)
+                xRefNode.setown(XRefNodeManager->CreateXRefNode(cluster));
+            if (!xRefNode)
+                throw MakeStringException(ECLWATCH_CANNOT_FIND_IXREFFILESNODE, "XRefNode not created for %s.", cluster);
+
+            if (!m_XRefbuilder->isRunning())
+                appendReplyMessage(fmt == ESPSerializationJSON, returnStr, "/WsDFUXRef/DFUXRefList",
+                    "Running XRef Process. Click here to return to the main XRef List.");
+            else
+                appendReplyMessage(fmt == ESPSerializationJSON, returnStr, "/WsDFUXRef/DFUXRefList",
+                    "Someone is currently running a Xref build. Your request will be added to the queue. Please click here to return to the main page.");
+
+            m_XRefbuilder->queueRequest(xRefNode, cluster);
         }
 
-        //create the node if it doesn;t exist
-        Owned<IXRefNode> xRefNode = XRefNodeManager->getXRefNode(cluster);
-        if (!xRefNode)
-            xRefNode.setown(XRefNodeManager->CreateXRefNode(cluster));
-        if (!xRefNode)
-            throw MakeStringException(ECLWATCH_CANNOT_FIND_IXREFFILESNODE, "XRefNode not created for %s.", cluster);
-
-        if (!m_XRefbuilder->isRunning())
-            appendReplyMessage(fmt == ESPSerializationJSON, returnStr,"/WsDFUXRef/DFUXRefList",
-                "Running XRef Process. Click here to return to the main XRef List.");
+        if ((fmt == ESPSerializationJSON) || (context.getClientVersion() < 1.02))
+            resp.setDFUXRefActionResult(returnStr);
         else
-            appendReplyMessage(fmt == ESPSerializationJSON, returnStr,"/WsDFUXRef/DFUXRefList",
-                "Someone is currently running a Xref build. Your request will be added to the queue. Please click here to return to the main page.");
-
-        m_XRefbuilder->queueRequest(xRefNode, cluster);
-        resp.setDFUXRefActionResult(returnStr);
+        {
+            StringBuffer encodedReturnStr;
+            resp.setDFUXRefActionResult(encodeXML(returnStr, encodedReturnStr));
+        }
     }
     catch(IException *e)
     {   
@@ -471,10 +499,18 @@ bool CWsDfuXRefEx::onDFUXRefBuildCancel(IEspContext &context, IEspDFUXRefBuildCa
             returnStr.append("{ \"Message\": { \"Value\": ");
             returnStr.append("\"All Queued items have been cleared. The current running job will continue to execute.\",");
             returnStr.append("\"href\": \"/WsDFUXRef/DFUXRefList\" } }");
+            resp.setDFUXRefBuildCancelResult(returnStr);
+            return true;
         }
+
+        returnStr.append("<Message><Value>All Queued items have been cleared. The current running job will continue to execute.</Value><href>/WsDFUXRef/DFUXRefList</href></Message>");
+        if (context.getClientVersion() < 1.02)
+            resp.setDFUXRefBuildCancelResult(returnStr);
         else
-            returnStr.appendf("<Message><Value>All Queued items have been cleared. The current running job will continue to execute.</Value><href>/WsDFUXRef/DFUXRefList</href></Message>");
-        resp.setDFUXRefBuildCancelResult(returnStr.str());
+        {
+            StringBuffer encodedReturnStr;
+            resp.setDFUXRefBuildCancelResult(encodeXML(returnStr, encodedReturnStr));
+        }
     }
     catch(IException *e)
     {   
@@ -545,10 +581,7 @@ bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &r
         addXRefNode("SuperFiles", xrefNodeTree);
 
         StringBuffer buf;
-        if (context.getResponseFormat() == ESPSerializationJSON)
-            resp.setDFUXRefListResult(toJSON(xrefNodeTree, buf).str());
-        else
-            resp.setDFUXRefListResult(toXML(xrefNodeTree, buf).str());
+        resp.setDFUXRefListResult(formatResult(context, xrefNodeTree, buf));
     }
     catch(IException *e)
     {   
