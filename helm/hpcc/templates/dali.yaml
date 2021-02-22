@@ -117,9 +117,9 @@ spec:
     run: {{ .name | quote }}
   type: ClusterIP
 ---
-{{- if (not $.Values.storage.daliStorage.existingClaim) }}
 {{- $storage := ($.Values.storage | default dict) -}}
 {{- $daliStorage := ($storage.daliStorage | default dict) -}}
+{{- if (and (not $daliStorage.existingClaim) (not $daliStorage.plane)) }}
 {{- $services := (.services | default dict) -}}
 {{- $modeForCoalescer := (hasKey $services "coalescer") | ternary "ReadWriteOnce" "ReadWriteMany" -}}
 {{- include "hpcc.addPVC" (dict "root" $ "name" "dalistorage-pvc" "mode" $modeForCoalescer "me" $daliStorage) -}}
