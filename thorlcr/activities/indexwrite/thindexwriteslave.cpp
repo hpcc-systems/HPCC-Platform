@@ -41,6 +41,7 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
     Owned<IPartDescriptor> partDesc, tlkDesc;
     IHThorIndexWriteArg *helper;
     Owned <IKeyBuilder> builder;
+    OwnedIFileIO builderIFileIO;
     Owned<IRowStream> myInputStream;
     Owned<IPropertyTree> metadata;
     Linked<IEngineRowAllocator> outRowAllocator;
@@ -182,8 +183,8 @@ public:
         if (metadata->getPropBool("_useTrailingHeader", true))
             flags |= USE_TRAILING_HEADER;
         unsigned twFlags = isUrl(partFname) ? TW_Direct : TW_RenameToPrimary;
-        OwnedIFileIO iFileIO = createMultipleWrite(this, partDesc, 0, twFlags, compress, NULL, this, &abortSoon);
-        Owned<IFileIOStream> out = createBufferedIOStream(iFileIO, 0x100000);
+        builderIFileIO.setown(createMultipleWrite(this, partDesc, 0, twFlags, compress, NULL, this, &abortSoon));
+        Owned<IFileIOStream> out = createBufferedIOStream(builderIFileIO, 0x100000);
         if (!needsSeek)
             out.setown(createNoSeekIOStream(out));
 
@@ -239,7 +240,12 @@ public:
         try 
         { 
             metadata.clear();
-            builder.clear(); 
+            builder.clear();
+            if (builderIFileIO)
+            {
+                builderIFileIO->close();
+                builderIFileIO.clear();
+            }
         }
         catch (IException *_e)
         {
