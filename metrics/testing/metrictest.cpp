@@ -2,7 +2,7 @@
 #include <thread>
 #include <chrono>
 #include <jptree.hpp>
-#include "metrics.hpp"
+#include "jmetrics.hpp"
 
 
 using namespace hpccMetrics;
@@ -73,7 +73,8 @@ const char *testConfigYml = R"!!(component:
     name: config_name
     prefix: component_prefix.
     sinks:
-      - type: filesink
+      - sink: placeholder
+        type: filesink
         name: default
         settings:
           filename: testout.txt
@@ -111,6 +112,14 @@ int main(int argc, char *argv[])
         pSinkTree->removeProp("@filename");
         pSinkTree->addProp("@filename", sinkReportFilename.c_str());
     }
+
+    if (isMetricsInitialized())
+    {
+        int i;
+        i = 4;
+    }
+
+    MetricsReporter &myReporter = getMetricsReporter();
 
     //
     // Init reporter with config

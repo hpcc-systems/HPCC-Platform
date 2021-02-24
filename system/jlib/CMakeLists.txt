@@ -14,20 +14,20 @@
 #    limitations under the License.
 ################################################################################
 
-# Component: jlib 
+# Component: jlib
 #####################################################
 # Description:
 # ------------
 #    Cmake Input File for jlib
 #####################################################
 
-project( jlib ) 
+project( jlib )
 
-INCLUDE(CheckLibraryExists) 
+INCLUDE(CheckLibraryExists)
 
 if (NOT WIN32 AND NOT WIN64)
-CHECK_LIBRARY_EXISTS(dl dlopen "" HAVE_LIBDL) 
-CHECK_LIBRARY_EXISTS(crypt crypt "" HAVE_LIBCRYPT) 
+CHECK_LIBRARY_EXISTS(dl dlopen "" HAVE_LIBDL)
+CHECK_LIBRARY_EXISTS(crypt crypt "" HAVE_LIBCRYPT)
 endif ()
 
 if(NOT TARGET lzma)
@@ -46,54 +46,55 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
   SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-switch -Wno-unused-parameter -Werror -Wno-error=delete-non-virtual-dtor")
 endif()
 
-set (    SRCS 
+set (    SRCS
     ${SCM_GENERATED_INCLUDES}
-         jargv.cpp 
-         jarray.cpp 
-         javahash.cpp 
-         jbsocket.cpp 
-         jbuff.cpp 
-         jcomp.cpp 
-         jcrc.cpp 
-         jdebug.cpp 
-         jencrypt.cpp 
-         jexcept.cpp 
-         jfile.cpp 
-         jflz.cpp 
-         jhash.cpp 
-         jiface.cpp 
-         jio.cpp 
-         jiter.cpp 
-         jkeyboard.cpp 
-         jlib.cpp 
-         jlog.cpp 
+         jargv.cpp
+         jarray.cpp
+         javahash.cpp
+         jbsocket.cpp
+         jbuff.cpp
+         jcomp.cpp
+         jcrc.cpp
+         jdebug.cpp
+         jencrypt.cpp
+         jexcept.cpp
+         jfile.cpp
+         jflz.cpp
+         jhash.cpp
+         jiface.cpp
+         jio.cpp
+         jiter.cpp
+         jkeyboard.cpp
+         jlib.cpp
+         jlog.cpp
          jlz4.cpp
-         jlzma.cpp 
-         jlzw.cpp 
-         jmd5.cpp 
-         jmemleak.cpp 
-         jmisc.cpp 
-         jmutex.cpp 
-         jobserve.cpp 
-         jprop.cpp 
-         jptree.cpp 
+         jlzma.cpp
+         jlzw.cpp
+         jmd5.cpp
+         jmemleak.cpp
+         jmisc.cpp
+         jmutex.cpp
+         jobserve.cpp
+         jprop.cpp
+         jptree.cpp
          jqueue.cpp
-         jregexp.cpp 
+         jregexp.cpp
          jrowstream.cpp
          jsecrets.cpp
-         jsem.cpp 
-         jset.cpp 
-         jsmartsock.cpp 
-         jsocket.cpp 
-         jsort.cpp 
-         jstats.cpp 
-         jstream.cpp 
-         jstring.cpp 
+         jsem.cpp
+         jset.cpp
+         jsmartsock.cpp
+         jsocket.cpp
+         jsort.cpp
+         jstats.cpp
+         jstream.cpp
+         jstring.cpp
          jsuperhash.cpp
-         jthread.cpp 
-         jtime.cpp 
-         junicode.cpp 
-         jutil.cpp 
+         jthread.cpp
+         jtime.cpp
+         junicode.cpp
+         jutil.cpp
+         jmetrics.cpp
          ${HPCC_SOURCE_DIR}/system/globalid/lnuid.cpp
          ${HPCC_SOURCE_DIR}/system/codesigner/codesigner.cpp
          ${HPCC_SOURCE_DIR}/system/codesigner/gpgcodesigner.cpp
@@ -191,7 +192,7 @@ if (CMAKE_COMPILER_IS_GNUCC)
     endif ()
 endif ()
 
-include_directories ( 
+include_directories (
          ${HPCC_SOURCE_DIR}/system/jlib
          ${HPCC_SOURCE_DIR}/system/win32
          ${HPCC_SOURCE_DIR}/system/include
@@ -201,7 +202,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/security/cryptohelper
          ${HPCC_SOURCE_DIR}/system/yaml/libyaml/include
          ${HPCC_SOURCE_DIR}/system/httplib
-         ${CMAKE_CURRENT_BINARY_DIR}  # for generated jelog.h file 
+         ${CMAKE_CURRENT_BINARY_DIR}  # for generated jelog.h file
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
     )
@@ -242,10 +243,10 @@ if (NOT PLUGIN)
         add_custom_command ( DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/jelog.mc
                          OUTPUT ${EXECUTABLE_OUTPUT_PATH}/${CMAKE_CFG_INTDIR}/jelog.dll ${CMAKE_CURRENT_BINARY_DIR}/jelog.h
                          COMMAND echo mc -r ${WINDOWS_CMAKE_CURRENT_BINARY_DIR} -h ${WINDOWS_CMAKE_CURRENT_BINARY_DIR} ${WINDOWS_CMAKE_CURRENT_SOURCE_DIR}
-                         COMMAND echo rc -r -fo ${CMAKE_CURRENT_BINARY_DIR}/jelog.res ${CMAKE_CURRENT_BINARY_DIR}/jelog.rc 
+                         COMMAND echo rc -r -fo ${CMAKE_CURRENT_BINARY_DIR}/jelog.res ${CMAKE_CURRENT_BINARY_DIR}/jelog.rc
                          COMMAND echo link -dll -noentry -machine:IX86 -out:${EXECUTABLE_OUTPUT_PATH}/${CMAKE_CFG_INTDIR}/jelog.dll ${CMAKE_CURRENT_BINARY_DIR}/jelog.res
                          COMMAND mc -r ${WINDOWS_CMAKE_CURRENT_BINARY_DIR} -h ${WINDOWS_CMAKE_CURRENT_BINARY_DIR} ${WINDOWS_CMAKE_CURRENT_SOURCE_DIR}
-                         COMMAND rc -r -fo ${CMAKE_CURRENT_BINARY_DIR}/jelog.res ${CMAKE_CURRENT_BINARY_DIR}/jelog.rc 
+                         COMMAND rc -r -fo ${CMAKE_CURRENT_BINARY_DIR}/jelog.res ${CMAKE_CURRENT_BINARY_DIR}/jelog.rc
                          COMMAND link -dll -noentry -machine:IX86 -out:${EXECUTABLE_OUTPUT_PATH}/${CMAKE_CFG_INTDIR}/jelog.dll ${CMAKE_CURRENT_BINARY_DIR}/jelog.res
                         )
         add_custom_target ( jelog ALL DEPENDS ${EXECUTABLE_OUTPUT_PATH}/${CMAKE_CFG_INTDIR}/jelog.dll )

@@ -20,7 +20,6 @@
 
 #include "espthread.hpp"
 #include "espcfg.ipp"
-#include "espmetrics.hpp"
 
 typedef ISocket * isockp;
 
@@ -68,7 +67,6 @@ private:
     unsigned countCacheClients = 0;
     MapStringToMyClass<IEspCache> cacheClientMap;
     Owned<IPropertyTree> applicationConfig;
-    EspMetrics espMetrics;
 
 
 public:
@@ -90,7 +88,6 @@ public:
         m_slowProcessingTime = config->m_options.slowProcessingTime;
         m_frameTitle.set(config->m_options.frameTitle);
         m_SEHMappingEnabled = false;
-        espMetrics.init(config->queryConfigPTree());
     }
 
     ~CEspServer()
@@ -188,10 +185,7 @@ public:
             va_end(args);
         }
     }
-    EspMetrics *getEspMetrics()
-    {
-        return &espMetrics;
-    }
+
 
 //IEspServer
     void addProtocol(IEspProtocol &protocol)

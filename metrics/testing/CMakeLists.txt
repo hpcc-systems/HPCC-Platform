@@ -24,10 +24,9 @@ INCLUDE_DIRECTORIES(
         ${CMAKE_BINARY_DIR}
         ${CMAKE_BINARY_DIR}/oss
         ${HPCC_SOURCE_DIR}/system/include
-        ${HPCC_SOURCE_DIR}/metrics/framework
         ${HPCC_SOURCE_DIR}/system/jlib
 )
 
 HPCC_ADD_EXECUTABLE ( metrictest ${SRC_FILES} )
-TARGET_LINK_LIBRARIES( metrictest jlib hpccmetrics)
+TARGET_LINK_LIBRARIES( metrictest jlib)
 INSTALL ( TARGETS metrictest RUNTIME DESTINATION ${EXEC_DIR} )

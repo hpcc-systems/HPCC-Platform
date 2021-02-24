@@ -28,7 +28,6 @@ set (    SRCS
          application_config.cpp
          espcfg.cpp
          espp.cpp
-         espmetrics.cpp
     )
 
 include_directories (
@@ -63,5 +62,4 @@ target_link_libraries ( esp
          remote
          dalibase
          environment
-         hpccmetrics
     )

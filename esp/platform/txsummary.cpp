@@ -32,10 +32,11 @@ bool operator < (const StringAttr& a, const StringAttr& b)
     return (stricmp(a.str(), b.str()) < 0);
 }
 
+
 CTxSummary::CTxSummary(unsigned creationTime)
 : m_creationTime(creationTime ? creationTime : msTick())
 {
-    getESPContainer()->getEspMetrics()->pCountRequests->inc(1);
+
 }
 
 CTxSummary::~CTxSummary()
