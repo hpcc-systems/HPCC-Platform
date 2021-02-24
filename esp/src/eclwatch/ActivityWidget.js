@@ -284,6 +284,7 @@ define([
                 }
             });
             this.createStackControllerTooltip(this.id + "AutoRefresh", this.i18n.AutoRefresh + ": " + this.autoRefreshButton.get("checked"));
+            this.resize();
         },
 
         createGrid: function (domID) {
