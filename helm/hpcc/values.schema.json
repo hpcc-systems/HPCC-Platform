@@ -195,8 +195,24 @@
               "type": "number"
             }
           }
+        },
+        "misc": {
+          "description": "Miscellaneous settings",
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "postJobCommand": {
+                  "description": "Execute this command when a K8s Job launched by a deployment ends, either gracefully or when terminated externally causing a preStop event",
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
-
       },
       "additionalProperties": false
     },

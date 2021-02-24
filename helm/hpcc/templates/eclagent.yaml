@@ -39,13 +39,26 @@ data:
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" .me.resources) | indent 12 }}
+{{- $misc := .root.Values.global.misc | default dict }}
+{{- $postJobCommand := $misc.postJobCommand | default "" }}
+{{- $appCmd := printf "%s %s %s %%args" $apptype (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
             workingDir: /var/lib/HPCCSystems
-            command: [ {{ $apptype | quote }} ]
-            args: [
-                        {{ include "hpcc.configArg" .me }},
-                        {{ include "hpcc.daliArg" .root }},
-                        %args
-                     ]
+{{- if $postJobCommand }}
+            lifecycle:
+              preStop:
+                exec:
+                  command:
+                  - >-
+                      {{ $misc.postJobCommand }}
+{{- end }}
+            command: ["/bin/bash"]
+            args:
+            - -c
+            - >-
+                {{ $appCmd }}
+{{- if $postJobCommand -}} ;
+                {{ $misc.postJobCommand }}
+{{- end }}
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
 {{ include "hpcc.addDataVolumeMount" . | indent 12 }}
