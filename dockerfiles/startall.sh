@@ -46,9 +46,13 @@ while [ "$#" -gt 0 ]; do
          echo "    -d <docker-repo>   Docker repository to fetch images from"
          echo "    -l                 Build image label to use"
          echo "    -u                 Use "upgrade" rather than "install""
+         echo "    -t                 Generate templates instead of starting the system"
          echo "    -c                 Update chart dependencies"
          echo "    -p <location>      Use local persistent data"
          exit
+         ;;
+      t) CMD="template"
+         restArgs+="--debug"
          ;;
       *) restArgs+=(${arg})
          ;;
@@ -96,6 +100,7 @@ else
   helm ${CMD} mycluster $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL --set global.privileged=true $DEP_UPDATE_ARG ${restArgs[@]}
 fi
 
-sleep 1
-kubectl get pods
-
+if [ ${CMD} != "template" ] ; then
+  sleep 1
+  kubectl get pods
+fi
