@@ -38,13 +38,26 @@ data:
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" .me.resources) | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
+{{- $misc := .root.Values.global.misc | default dict -}}
+{{- $postJobCommand := $misc.postJobCommand | default "" }}
+{{- $eclccserverCmd := printf "eclccserver %s %s %%args" (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
             workingDir: /tmp
-            command: [ eclccserver ]
-            args: [
-                        {{ include "hpcc.configArg" .me }},
-                        {{ include "hpcc.daliArg" .root }},
-                        %args
-                     ]
+{{- if $postJobCommand }}
+            lifecycle:
+              preStop:
+                exec:
+                  command:
+                  - >-
+                      {{ $misc.postJobCommand }}
+{{- end }}
+            command: ["/bin/bash"]
+            args:
+            - -c
+            - >-
+                {{ $eclccserverCmd }}
+{{- if $postJobCommand -}} ;
+                {{ $misc.postJobCommand }}
+{{- end }}
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
 {{ include "hpcc.addDataVolumeMount" . | indent 12 }}

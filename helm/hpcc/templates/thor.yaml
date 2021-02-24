@@ -9,6 +9,8 @@ Pass in dict with root and me
 {{- $thorAgentScope := dict "name" .thorAgentName "replicas" .thorAgentReplicas  | merge (pick .me "keepJobs") }}
 {{- $hthorScope := dict "name" $hthorName | merge (pick .me "multiJobLinger") }}
 {{- $thorScope := omit .me "eclagent" "thoragent" "hthor" "logging" "eclAgentResources" "eclAgentUseChildProcesses" "eclAgentReplicas" "thorAgentReplicas" "eclAgentType" }}
+{{- $misc := .root.Values.global.misc | default dict }}
+{{- $postJobCommand := $misc.postJobCommand | default "" }}
 apiVersion: v1 
 metadata:
   name: {{ $thorScope.name }}-configmap
@@ -58,13 +60,24 @@ data:
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" .eclAgentResources) | indent 12 }}
+{{- $agentCmd := printf "%s %s %s %%args" $eclAgentType (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
             workingDir: /var/lib/HPCCSystems
-            command: [ {{ $eclAgentType | quote }} ] 
-            args: [
-                        {{ include "hpcc.configArg" .me }},
-                        {{ include "hpcc.daliArg" .root }},
-                        %args
-                     ]
+{{- if $postJobCommand }}
+            lifecycle:
+              preStop:
+                exec:
+                  command:
+                  - >-
+                      {{ $misc.postJobCommand }}
+{{- end }}
+            command: ["/bin/bash"]
+            args:
+            - -c
+            - >-
+                {{ $agentCmd }}
+{{- if $postJobCommand -}} ;
+                {{ $misc.postJobCommand }}
+{{- end }}
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
 {{ include "hpcc.addDataVolumeMount" . | indent 12 }}
@@ -102,13 +115,24 @@ data:
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" $thorScope.managerResources) | indent 12 }}
+{{- $thorManagerCmd := printf "thormaster_lcr %s %s %%args" (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
             workingDir: /var/lib/HPCCSystems
-            command: [ thormaster_lcr ] 
-            args: [
-                    {{ include "hpcc.configArg" .me }},
-                    {{ include "hpcc.daliArg" .root }},
-                    %args
-                  ]
+{{- if $postJobCommand }}
+            lifecycle:
+              preStop:
+                exec:
+                  command:
+                  - >-
+                      {{ $misc.postJobCommand }}
+{{- end }}
+            command: ["/bin/bash"]
+            args:
+            - -c
+            - >-
+                {{ $thorManagerCmd }}
+{{- if $postJobCommand -}} ;
+                {{ $misc.postJobCommand }}
+{{- end }}
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
 {{ include "hpcc.addDataVolumeMount" . | indent 12 }}
@@ -143,13 +167,24 @@ data:
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" $thorScope.workerResources) | indent 12 }}
+{{- $thorWorkerCmd := printf "thorslave_lcr %s %s %%args" (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
             workingDir: /var/lib/HPCCSystems
-            command: [ thorslave_lcr ] 
-            args: [
-                    {{ include "hpcc.configArg" .me }},
-                    {{ include "hpcc.daliArg" .root }},
-                    %args
-                  ]
+{{- if $postJobCommand }}
+            lifecycle:
+              preStop:
+                exec:
+                  command:
+                  - >-
+                      {{ $misc.postJobCommand }}
+{{- end }}
+            command: ["/bin/bash"]
+            args:
+            - -c
+            - >-
+                {{ $thorWorkerCmd }}
+{{- if $postJobCommand -}} ;
+                {{ $misc.postJobCommand }}
+{{- end }}
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
 {{ include "hpcc.addDataVolumeMount" . | indent 12 }}
