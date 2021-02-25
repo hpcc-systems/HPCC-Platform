@@ -37,7 +37,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para />
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -541,7 +541,7 @@
       dataset. The dataset can be obtained from a variety of sources,
       including the HPCC-Systems/ecl-ml repository. IrisDs.ecl (can be found
       under the ML/Tests/Explanatory folder: <ulink
-      url="https://github.com/hpcc-systems/ecl-ml/blob/master/ML/Tests/Explanatory/IrisDS.ecl">https://github.com/hpcc-systems/ecl-ml/blob/master/ML/Tests/Explanatory/IrisDS.ecl</ulink>)
+      url="https://github.com/hpcc-systems/Spark-HPCC/blob/master/Examples/src/main/ecl/IrisDS.ecl">https://github.com/hpcc-systems/Spark-HPCC/blob/master/Examples/src/main/ecl/IrisDS.ecl</ulink>)
       can be executed to generate the Iris dataset in HPCC. A walk-through of
       the examples is provided in the Examples section.</para>
 
