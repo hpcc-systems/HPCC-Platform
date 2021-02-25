@@ -67,7 +67,7 @@ if(USE_CASSANDRA)
   # From time to time need to add flags in here to disable warnings, if a new compiler picks up something new.
   # e.g.
     if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.2.0)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-copy")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-copy -Wno-deprecated-declarations")
     endif ()
   endif()
   if (CMAKE_COMPILER_IS_CLANG)
