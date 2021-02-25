@@ -487,8 +487,7 @@ if(TOP_LEVEL_PROJECT)
 
             add_custom_target(SIGN
                 COMMAND signtool sign /f "${SIGN_DIRECTORY}/hpcc_code_signing.pfx"
-/p "${PFX_PASSWORD}" /t "http://timestamp.globalsign.com/scripts/timstamp.dll"
-"${CMAKE_BINARY_DIR}/${PACKAGE_FILE_NAME_PREFIX}*.exe"
+/p "${PFX_PASSWORD}" /tr "http://timestamp.digicert.com" "${CMAKE_BINARY_DIR}/${PACKAGE_FILE_NAME_PREFIX}*.exe"
                 COMMENT "Digital Signature"
             )
             add_dependencies(SIGN PACKAGE)
