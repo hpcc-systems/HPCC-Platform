@@ -14,6 +14,5 @@
 #    limitations under the License.
 ################################################################################
 
-#HPCC_ADD_SUBDIRECTORY (framework)
 HPCC_ADD_SUBDIRECTORY (sinks)
 HPCC_ADD_SUBDIRECTORY (testing)

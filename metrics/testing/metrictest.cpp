@@ -8,30 +8,11 @@
 using namespace hpccMetrics;
 
 void processThread(int, unsigned, bool, const std::string&, unsigned, unsigned);
-//std::shared_ptr<CounterMetric> pEventCountMetric;
+std::shared_ptr<CounterMetric> pEventCountMetric;
 std::shared_ptr<GaugeMetric> pQueueSizeMetric;
-//std::shared_ptr<QueueLatencyMetric> pQueueLatencyMetric;
-//std::shared_ptr<RateMetric> pRateMetric;
+
 
 MetricsReporter *pReporter;
-
-
-//const char *testYml = R"!!(config:
-//  metrics:
-//    name: config_name
-//    sinks:
-//      - type: sinktype
-//        name: sinkname
-//        config:
-//          key1: data1
-//          key2: data2
-//          Key3:
-//            key3.1: data3.1
-//            key3.2: data3.2
-//    prefixes:
-//      - key1: val1
-//      - key2: val2
-//)!!";
 
 
 const char *globalConfigYml = R"!!(config:
@@ -83,23 +64,16 @@ const char *testConfigYml = R"!!(component:
 )!!";
 
 
-
-MetricsReporter reporter;
-
 int main(int argc, char *argv[])
 {
     InitModuleObjects();
 
     //
     // Simulate retrieving the component and global config
-    //IPropertyTree *pSettingsGlobal = createPTreeFromYAMLString(globalConfigYml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
-    //PropertyTree *pSettingsLocal = createPTreeFromYAMLString(localConfigYml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
     IPropertyTree *pSettings = createPTreeFromYAMLString(testConfigYml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
 
     //
     // Retrieve the global and component metrics config
-    //IPropertyTree *pGlobalMetricsTree = pSettingsGlobal->getPropTree("config/metrics");
-    //IPropertyTree *pLocalMetricsTree = pSettingsLocal->getPropTree("roxie/metrics");
     IPropertyTree *pMetricsTree = pSettings->getPropTree("component/metrics");
 
     //
@@ -113,28 +87,24 @@ int main(int argc, char *argv[])
         pSinkTree->addProp("@filename", sinkReportFilename.c_str());
     }
 
-    if (isMetricsInitialized())
-    {
-        int i;
-        i = 4;
-    }
 
+    //
+    // Get singleton
     MetricsReporter &myReporter = getMetricsReporter();
 
     //
     // Init reporter with config
-    reporter.init(pMetricsTree);
+    myReporter.init(pMetricsTree);
 
     //
     // Now create the metrics and add them to the reporter
-    //pEventCountMetric = std::make_shared<CounterMetric>("requests", "The number of requests");
-    //reporter.addMetric(pEventCountMetric);
+    pEventCountMetric = std::make_shared<CounterMetric>("requests", "The number of requests");
+    myReporter.addMetric(pEventCountMetric);
 
     pQueueSizeMetric = std::make_shared<GaugeMetric>("queuesize", "request queue size");
-    reporter.addMetric(pQueueSizeMetric);
+    myReporter.addMetric(pQueueSizeMetric);
 
-    reporter.startCollecting();
-
+    myReporter.startCollecting();
 
     //
     // Starts some threads, each updating metrics
@@ -144,7 +114,7 @@ int main(int argc, char *argv[])
     first.join();
     second.join();
 
-    reporter.stopCollecting();
+    myReporter.stopCollecting();
 
     printf("Test complete\n");
 }
@@ -157,8 +127,9 @@ void processThread(int numLoops, unsigned delay, bool addDynamic, const std::str
     {
         if (addDynamic && i == addAfter)
         {
+            MetricsReporter &myReporter = getMetricsReporter();
             pDynamicMetric = std::make_shared<GaugeMetric>(name.c_str(), "The dynamic number of requests");
-            reporter.addMetric(pDynamicMetric);
+            myReporter.addMetric(pDynamicMetric);
         }
         else if (addDynamic && i == (addAfter + deleteAfter))
         {
@@ -171,7 +142,7 @@ void processThread(int numLoops, unsigned delay, bool addDynamic, const std::str
             pDynamicMetric->add(1);
         }
 
-        //pEventCountMetric->inc(2u);
+        pEventCountMetric->inc(2u);
         pQueueSizeMetric->add(3);
         std::this_thread::sleep_for(std::chrono::seconds(delay));
         pQueueSizeMetric->add(-11);

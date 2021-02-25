@@ -71,7 +71,7 @@ MetricsReporter::~MetricsReporter()
 
 void MetricsReporter::init(IPropertyTree *pMetricsTree)
 {
-    auto pSinkTree = pMetricsTree->getPropTree("sinks");
+    Owned<IPropertyTree> pSinkTree = pMetricsTree->getPropTree("sinks");
     auto sinkElementsIt = pSinkTree->getElements("sink");
     initializeSinks(sinkElementsIt);
 }
@@ -157,11 +157,11 @@ bool MetricsReporter::initializeSinks(IPropertyTreeIterator *pSinkIt)
     for (pSinkIt->first(); pSinkIt->isValid() && rc; pSinkIt->next())
     {
         SinkInfo *pSinkInfo;
-        IPropertyTree &sinkTree =  pSinkIt->get(); // pSinkIt->query();
+        Owned<IPropertyTree> pSinkTree = &pSinkIt->get(); // pSinkIt->query();
 
         StringBuffer cfgSinkType, cfgSinkName;
-        sinkTree.getProp("@type", cfgSinkType);  // this one is required
-        sinkTree.getProp("@name", cfgSinkName);
+        pSinkTree->getProp("@type", cfgSinkType);  // this one is required
+        pSinkTree->getProp("@name", cfgSinkName);
 
         std::string sinkName = cfgSinkName.isEmpty() ? "default" : cfgSinkName.str();
 
@@ -174,7 +174,7 @@ bool MetricsReporter::initializeSinks(IPropertyTreeIterator *pSinkIt)
         }
         else
         {
-            IPropertyTree *pSinkSettings = sinkTree.getPropTree("settings");
+            Owned<IPropertyTree> pSinkSettings = pSinkTree->getPropTree("settings");
             MetricSink *pSink = getSinkFromLib(cfgSinkType.str(), (const char *)sinkName.c_str(), pSinkSettings);
             if (pSink != nullptr)
             {
@@ -189,7 +189,7 @@ bool MetricsReporter::initializeSinks(IPropertyTreeIterator *pSinkIt)
         {
             //
             // Now add defined metrics if present
-            IPropertyTreeIterator *pSinkMetricsIt = sinkTree.getElements("metrics");
+            Owned<IPropertyTreeIterator> pSinkMetricsIt = pSinkTree->getElements("metrics");
             for (pSinkMetricsIt->first(); pSinkMetricsIt->isValid(); pSinkMetricsIt->next())
             {
                 StringBuffer metricName, measurementType, description;

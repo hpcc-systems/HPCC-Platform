@@ -21,15 +21,15 @@
 
 
 #ifdef _METRICS_FILESINK_LIB_EXPORTS
-#define FILESIMK_API DECL_EXPORT
+#define FILESINK_API DECL_EXPORT
 #else
-#define FILESIMK_API DECL_IMPORT
+#define FILESINK_API DECL_IMPORT
 #endif
 
 
 using namespace hpccMetrics;
 
-class FILESIMK_API FileMetricSink : public MetricSink
+class FILESINK_API FileMetricSink : public MetricSink
 {
     public:
 

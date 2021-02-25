@@ -32,7 +32,9 @@ class MetricsReporter;
 class MetricsRegistry;
 
 bool jlib_decl isMetricsInitialized();
+bool jlib_decl isMetricsInitialized(const char *);
 MetricsReporter jlib_decl &getMetricsReporter();
+MetricsReporter jlib_decl &getMetricsReporter(const char *);
 MetricsRegistry jlib_decl &getMetricsRegistry();
 bool jlib_decl initializeMetrics();
 
