@@ -211,6 +211,9 @@ define([
             if (confirm(this.i18n.DeleteSelectedFiles + "\n" + list)) {
                 var context = this;
                 WsDfu.DFUArrayAction(selection, "Delete").then(function (response) {
+                    selection.forEach(item => {
+                        context.listStore.remove(ESPLogicalFile.createID(item.Cluster, item.Name));
+                    });
                     context.refreshGrid(true);
                 });
             }
