@@ -405,6 +405,8 @@ export class WUTimelineEx extends WUTimeline {
 
     constructor() {
         super();
+        this._gantt.bucketHeight(16);
+        this.strokeWidth(0);
     }
 
     data(): any;
