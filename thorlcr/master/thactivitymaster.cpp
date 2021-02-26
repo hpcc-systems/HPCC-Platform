@@ -157,6 +157,7 @@ public:
             case TAKhttp_rowdataset:
             case TAKdistributed:
             case TAKtrace:
+            case TAKemptyaction:
                 ret = new CMasterActivity(this);
                 break;
             case TAKskipcatch:
