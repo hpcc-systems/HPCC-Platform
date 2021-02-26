@@ -341,6 +341,7 @@ CHttpMessage::~CHttpMessage()
         m_context.clear();
         m_queryparams.clear();
         m_content_stream.clear();
+        m_content_ptree.clear();
     }
     catch(...)
     {
@@ -693,6 +694,18 @@ void CHttpMessage::setContent(IFileIOStream* stream)
     }
 }
 
+void CHttpMessage::setContent(IPropertyTree* ptree, bool addXMLHeaderToContent, bool addXMLStylesheetToContent)
+{
+    if (ptree == nullptr)
+        return;
+
+    m_content_ptree.set(ptree);
+    m_content_length = 0;
+    m_addXMLHeaderToContent = addXMLHeaderToContent;
+    m_addXMLStylesheetToContent = addXMLStylesheetToContent;
+    m_content.clear();
+}
+
 /*
 void CHttpMessage::appendContent(const char* content)
 {
@@ -814,6 +827,59 @@ void CHttpMessage::logMessage(MessageLogFlag messageLogFlag, StringBuffer& conte
     return;
 }
 
+static const unsigned defaultHttpMessageFlushThreshold = 10000; 
+
+class CHttpMessageIOAdapter : public CInterfaceOf<IIOStream>
+{
+    StringBuffer out;
+    CHttpMessage* response = nullptr;
+    unsigned flushThreshold = defaultHttpMessageFlushThreshold;
+    void sendChunk();
+public:
+    CHttpMessageIOAdapter(CHttpMessage* _response, unsigned _flushThreshold, bool addXMLHeaderToContent, bool addXMLStylesheetToContent) : response(_response), flushThreshold(_flushThreshold)
+    {
+        if (addXMLHeaderToContent)
+            out.set("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        if (addXMLStylesheetToContent)
+            out.append("<?xml-stylesheet href=\"../esp/xslt/xmlformatter.xsl\" type=\"text/xsl\"?>");
+    }
+    ~CHttpMessageIOAdapter();
+
+    virtual void flush() override {};
+    virtual size32_t read(size32_t len, void * data) override { UNIMPLEMENTED; return 0; }
+    virtual size32_t write(size32_t len, const void * data) override;
+};
+
+CHttpMessageIOAdapter::~CHttpMessageIOAdapter()
+{
+    if (!out.isEmpty())
+    {
+        sendChunk();
+        out.clear();
+    }
+    sendChunk(); //send 0\r\n\r\n
+}
+
+size32_t CHttpMessageIOAdapter::write(size32_t len, const void * data)
+{
+    out.append(len, (const char *)data);
+    if (out.length() < flushThreshold)
+        return out.length();
+
+    sendChunk();
+    out.clear();
+    return 0;
+}
+
+void CHttpMessageIOAdapter::sendChunk()
+{
+    VStringBuffer sizeStr("%x\r\n", out.length());
+    response->sendChunk(sizeStr);
+
+    out.append("\r\n");
+    response->sendChunk(out);
+}
+
 int CHttpMessage::send()
 {
     bool logMsg = getEspLogResponses();
@@ -860,6 +926,14 @@ int CHttpMessage::send()
         setPersistentEligible(false);
         IERRLOG("In CHttpMessage::send(%d) -- Unknown exception writing to socket(%d).", __LINE__, m_socket.OShandle());
         return -1;
+    }
+
+    // When m_content is empty but the stream was set, read content from the stream.
+    if (m_content.isEmpty() && m_content_ptree != nullptr)
+    {
+        CHttpMessageIOAdapter ioa(this, defaultHttpMessageFlushThreshold, m_addXMLHeaderToContent, m_addXMLStylesheetToContent);
+        toXML(m_content_ptree, ioa);
+        return retcode;
     }
 
     // When m_content is empty but the stream was set, read content from the stream.
@@ -2227,6 +2301,8 @@ StringBuffer& CHttpResponse::constructHeaderBuffer(StringBuffer& headerbuf, bool
 
     if(inclLen && m_content_length > 0)
         headerbuf.append("Content-Length: ").append(m_content_length).append("\r\n");
+    else if (m_content.isEmpty() && m_content_ptree != nullptr)
+        headerbuf.append("Transfer-Encoding: chunked\r\n"); //Streaming and no 'Content-Length' header
     else
         setPersistentEligible(false);
 
