@@ -6302,6 +6302,19 @@ CHThorWorkUnitWriteActivity::CHThorWorkUnitWriteActivity(IAgentContext &_agent, 
 {
 }
 
+static void throwWuResultTooLarge(size32_t outputLimit, IHThorWorkUnitWriteArg &helper)
+{
+    StringBuffer errMsg("Dataset too large to output to workunit (limit "); 
+    errMsg.append(outputLimit/0x100000).append(" megabytes), in result (");
+    const char *name = helper.queryName();
+    if (name)
+        errMsg.append("name=").append(name);
+    else
+        errMsg.append("sequence=").append(helper.getSequence());
+    errMsg.append(")");
+    throw MakeStringExceptionDirect(0, errMsg.str());
+}
+
 void CHThorWorkUnitWriteActivity::execute()
 {
     unsigned flags = helper.getFlags();
@@ -6359,18 +6372,8 @@ void CHThorWorkUnitWriteActivity::execute()
                 break;
         }
         size32_t thisSize = inputMeta->getRecordSize(nextrec);
-        if(outputLimit && ((rowdata.length() + thisSize) > outputLimit))
-        {
-            StringBuffer errMsg("Dataset too large to output to workunit (limit "); 
-            errMsg.append(outputLimit/0x100000).append(" megabytes), in result (");
-            const char *name = helper.queryName();
-            if (name)
-                errMsg.append("name=").append(name);
-            else
-                errMsg.append("sequence=").append(helper.getSequence());
-            errMsg.append(")");
-            throw MakeStringExceptionDirect(0, errMsg.str());
-         }
+        if (outputLimit && ((rowdata.length() + thisSize) > outputLimit))
+            throwWuResultTooLarge(outputLimit, helper);
         if (rowSerializer)
         {
             CThorDemoRowSerializer serializerTarget(rowdata);
@@ -6401,7 +6404,12 @@ void CHThorWorkUnitWriteActivity::execute()
     WorkunitUpdate w = agent.updateWorkUnit();
     Owned<IWUResult> result = updateWorkUnitResult(w, helper.queryName(), helper.getSequence());
     if (0 != (POFextend & helper.getFlags()))
+    {
+        __int64 existingSz = result->getResultRawSize(nullptr, nullptr);
+        if (outputLimit && ((rowdata.length() + existingSz) > outputLimit))
+            throwWuResultTooLarge(outputLimit, helper);
         result->addResultRaw(rowdata.length(), rowdata.toByteArray(), ResultFormatRaw);
+    }
     else
         result->setResultRaw(rowdata.length(), rowdata.toByteArray(), ResultFormatRaw);
     result->setResultStatus(ResultStatusCalculated);

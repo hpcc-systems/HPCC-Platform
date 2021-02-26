@@ -26,17 +26,19 @@
           <row>
             <entry>Return:</entry>
 
-            <entry>TOXML returns a STRING.</entry>
+            <entry>TOXML returns a UTF8.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
+  <para></para>
+
   <para>The <emphasis role="bold">TOXML </emphasis>function returns a single
-  string with the data in the <emphasis>record</emphasis> re-formatted as XML.
-  If the RECORD structure of the <emphasis>record</emphasis> has XPATHs
-  defined, then they will be used, otherwise the lower-cased field names are
-  used as the XML tag names.</para>
+  UTF-8 string with the data in the <emphasis>record</emphasis> re-formatted
+  as XML. If the RECORD structure of the <emphasis>record</emphasis> has
+  XPATHs defined, then they will be used, otherwise the lower-cased field
+  names are used as the XML tag names.</para>
 
   <para>Example:</para>
 

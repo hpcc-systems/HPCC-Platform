@@ -440,6 +440,7 @@ void CDiskWriteSlaveActivityBase::close()
             tmpFileIO.setown(outputIO.getClear());
         }
         mergeStats(stats, tmpFileIO, diskWriteRemoteStatistics);
+        tmpFileIO->close(); // NB: close now, do not rely on close in dtor
 
         if (!rfsQueryParallel && dlfn.isExternal() && !lastNode())
         {

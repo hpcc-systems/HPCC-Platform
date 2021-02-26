@@ -14,7 +14,7 @@ import * as WsDfu from "./WsDfu";
 
 const _logicalFiles = {};
 
-const createID = function (Cluster, Name) {
+export const createID = function (Cluster, Name) {
     return (Cluster ? Cluster : "") + "--" + Name;
 };
 
@@ -74,7 +74,10 @@ class Store extends ESPRequest.Store {
             });
         }
     }
-
+    remove(id) {
+        this.inherited(arguments);
+        delete _logicalFiles[id];
+    }
     preProcessRow(item, request, query, options) {
         lang.mixin(item, {
             __hpcc_id: createID(item.NodeGroup, item.Name),

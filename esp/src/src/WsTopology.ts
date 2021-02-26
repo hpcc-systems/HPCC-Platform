@@ -81,8 +81,8 @@ class TpLogFileStore extends Memory {
                                 }
 
                                 tempObj[cleanName] = value;
-                                data.push(tempObj);
                             }
+                            data.push(tempObj);
                         }
                     }, this);
                 }
