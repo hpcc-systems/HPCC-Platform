@@ -55,6 +55,7 @@ class jlib_decl ShortArray : public ArrayOf<short> { };
 class jlib_decl FloatArray : public ArrayOf<float> { };
 class jlib_decl DoubleArray : public ArrayOf<double> { };
 class jlib_decl UnsignedArray : public ArrayOf<unsigned> { };
+class jlib_decl Unsigned64Array : public ArrayOf<unsigned __int64> { };
 class jlib_decl UnsignedShortArray : public ArrayOf<unsigned short> { };
 class jlib_decl PointerArray : public ArrayOf<void *> { };
 class jlib_decl ConstPointerArray : public ArrayOf<const void *> { };

@@ -4280,6 +4280,7 @@ void optimizeHqlExpression(IErrorReceiver & errorProcessor, HqlExprArray & targe
     CTreeOptimizer optimizer(errorProcessor, options);
     optimizer.analyseArray(source, 0);
     optimizer.transformRoot(source, target);
+    sanityCheckTransformation("optimizeHqlExpression", source, target);
 }
 
 

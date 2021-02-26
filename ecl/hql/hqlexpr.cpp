@@ -75,10 +75,22 @@
 //#define SEARCH_NAME2   "v2"
 //#define CHECK_SELSEQ_CONSISTENCY
 #define VERIFY_EXPR_INTEGRITY
+#endif
+
+//#define TRACK_EXPRESSION        // define this and update isTrackingExpression() to monitor expressions through transforms
 
 #if defined(SEARCH_NAME1) || defined(SEARCH_NAME2)
 static void debugMatchedName() {}
 #endif
+
+#ifdef TRACK_EXPRESSION
+static IAtom * searchName = createAtom("thrive__keys__Did_qa");
+static bool isTrackingExpression(IHqlExpression * expr)
+{
+    return (expr->queryName() == searchName);
+}
+#endif
+
 
 #ifdef DEBUG_TRACK_INSTANCEID
 static int checkSeqId(unsigned __int64 seqid, unsigned why)
@@ -108,11 +120,9 @@ static int checkSeqId(unsigned __int64 seqid, unsigned why)
     return 0; // Unknown reason
 }
 
+
 #define CHECK_EXPR_SEQID(x) checkSeqId(seqid, x)
 
-#else
-#define CHECK_EXPR_SEQID(x)
-#endif
 #else
 #define CHECK_EXPR_SEQID(x)
 #endif
@@ -17119,3 +17129,102 @@ N) Produce a list of all the transformations that are done - as a useful start t
 
 */
 
+
+#ifdef TRACK_EXPRESSION
+static HqlTransformerInfo sequenceGathererInfo("SequenceGatherer");
+class SequenceGatherer  : public QuickHqlTransformer
+{
+public:
+    SequenceGatherer(Unsigned64Array & _seqs)
+    : QuickHqlTransformer(sequenceGathererInfo, NULL), seqs(_seqs)
+    {
+    }
+
+    void doAnalyse(IHqlExpression * expr)
+    {
+        if (isTrackingExpression(expr))
+        {
+#ifdef DEBUG_TRACK_INSTANCEID
+            unsigned __int64 seq = querySeqId(expr->queryBody());
+#else
+            unsigned __int64 seq = (unsigned __int64)(expr->queryBody());
+#endif
+            if (!seqs.contains(seq))
+                seqs.append(seq);
+            return;
+        }
+        QuickHqlTransformer::doAnalyse(expr);
+    }
+
+private:
+    Unsigned64Array & seqs;
+};
+
+
+static void gatherSequences(Unsigned64Array & seqs, const HqlExprArray & exprs)
+{
+    SequenceGatherer gatherer(seqs);
+    gatherer.analyseArray(exprs);
+}
+
+static void gatherSequences(Unsigned64Array & matches, IHqlExpression * expr)
+{
+    SequenceGatherer gatherer(matches);
+    gatherer.analyse(expr);
+}
+
+static void reportSanity(const char * title, const Unsigned64Array & beforeSeq, const Unsigned64Array & afterSeq)
+{
+    if (beforeSeq || afterSeq)
+    {
+        StringBuffer beforeText;
+        ForEachItemIn(i1, beforeSeq)
+            beforeText.append(", ").append(beforeSeq.item(i1));
+        StringBuffer afterText;
+        ForEachItemIn(i2, afterSeq)
+            afterText.append(", ").append(afterSeq.item(i2));
+        const char * before = beforeSeq ? beforeText.str() + 2 : "";
+        const char * after = afterSeq ? afterText.str() + 2 : "";
+        DBGLOG("Sanity: %s before %u[%s]->%u[%s]", title, beforeSeq.ordinality(), before, afterSeq.ordinality(), after);
+    }
+}
+
+void sanityCheckTransformation(const char * title, const HqlExprArray & before, const HqlExprArray & after)
+{
+    Unsigned64Array beforeSeq, afterSeq;
+    gatherSequences(beforeSeq, before);
+    gatherSequences(afterSeq, after);
+    reportSanity(title, beforeSeq, afterSeq);
+}
+
+void sanityCheckTransformation(const char * title, IHqlExpression * before, IHqlExpression * after)
+{
+    Unsigned64Array beforeSeq, afterSeq;
+    gatherSequences(beforeSeq, before);
+    gatherSequences(afterSeq, after);
+    reportSanity(title, beforeSeq, afterSeq);
+}
+
+void sanityCheckTransformation(const char * title, IHqlExpression * before, const HqlExprArray & after)
+{
+    Unsigned64Array beforeSeq, afterSeq;
+    gatherSequences(beforeSeq, before);
+    gatherSequences(afterSeq, after);
+    reportSanity(title, beforeSeq, afterSeq);
+}
+
+#else
+
+void sanityCheckTransformation(const char * title, const HqlExprArray & before, const HqlExprArray & after)
+{
+}
+
+void sanityCheckTransformation(const char * title, IHqlExpression * before, IHqlExpression * after)
+{
+}
+
+void sanityCheckTransformation(const char * title, IHqlExpression * before, const HqlExprArray & after)
+{
+}
+
+#endif

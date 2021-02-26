@@ -6735,8 +6735,9 @@ IHqlExpression * resourceThorGraph(HqlCppTranslator & translator, IHqlExpression
     LinkedHqlExpr expr = _expr;
     {
         ActivityInvariantHoister hoister(options);
-        HqlExprArray hoisted;
-        expr.setown(hoister.transformRoot(expr));
+        OwnedHqlExpr transformed = hoister.transformRoot(expr);
+        sanityCheckTransformation("ActivityInvariantHoister", expr, transformed);
+        transformed.swap(expr);
         translator.traceExpression("AfterInvariant Child", expr);
     }
 
@@ -6748,6 +6749,7 @@ IHqlExpression * resourceThorGraph(HqlCppTranslator & translator, IHqlExpression
     {
         EclResourcer resourcer(translator.queryErrorProcessor(), translator.wu(), translator.queryOptions(), options);
         resourcer.resourceGraph(expr, transformed);
+        sanityCheckTransformation("EclResourcer", expr, transformed);
     }
     hoistNestedCompound(translator, transformed);
     return createActionList(transformed);
@@ -6772,8 +6774,9 @@ static IHqlExpression * doResourceGraph(BuildCtx * ctx, HqlCppTranslator & trans
     {
         ActivityInvariantHoister hoister(options);
         hoister.tagActiveCursors(activeRows);
-        HqlExprArray hoisted;
-        expr.setown(hoister.transformRoot(expr));
+        OwnedHqlExpr transformed = hoister.transformRoot(expr);
+        sanityCheckTransformation("ActivityInvariantHoister", expr, transformed);
+        transformed.swap(expr);
         translator.traceExpression("AfterInvariant Child", expr);
     }
 
@@ -6782,6 +6785,7 @@ static IHqlExpression * doResourceGraph(BuildCtx * ctx, HqlCppTranslator & trans
         resourcer.setContext(ctx);
         resourcer.tagActiveCursors(activeRows);
         resourcer.resourceGraph(expr, transformed);
+        sanityCheckTransformation("EclResourcer", expr, transformed);
         totalResults = resourcer.numGraphResults();
     }
 
