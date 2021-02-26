@@ -74,10 +74,12 @@ class Store extends ESPRequest.Store {
             });
         }
     }
+
     remove(id) {
-        this.inherited(arguments);
+        super.remove(id);
         delete _logicalFiles[id];
     }
+
     preProcessRow(item, request, query, options) {
         lang.mixin(item, {
             __hpcc_id: createID(item.NodeGroup, item.Name),
