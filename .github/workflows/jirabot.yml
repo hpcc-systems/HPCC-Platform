@@ -45,7 +45,7 @@ jobs:
             user = os.environ['PULL_REQUEST_AUTHOR_NAME']
             pull_url = os.environ['PULL_REQUEST_URL']
         
-            print("%s %s %s %s %s %s %s" % (jirabot_user, jirabot_pass, jira_url, pr, title, user, pull_url))
+            print("%s %s %s %s %s %s %s" % (jirabot_user.upper().replace('bot','XXX'), jirabot_pass.upper().replace('bot','XXX'), jira_url.replace('hpcc','XXX'), pr, title, user, pull_url))
             status = ''
             issuem = re.search("(HPCC|HH|IDE|EPE|ML|ODBC)-[0-9]+", title)
             if issuem:
