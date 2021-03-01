@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GetExpireDays">
+  <title>GetExpireDays</title>
+
+  <para><emphasis role="bold">STD.File.GetExpireDays<indexterm>
+      <primary>STD.File.GetExpireDays</primary>
+    </indexterm><indexterm>
+      <primary>File.GetExpireDays</primary>
+    </indexterm><indexterm>
+      <primary>GetExpireDays</primary>
+    </indexterm>(</emphasis><emphasis>lfn</emphasis><emphasis
+  role="bold"></emphasis><emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>lfn</emphasis></entry>
+
+          <entry>A string containing the logical name of the file.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">GetExpireDays </emphasis>function retrieves
+  a logical file's expiration criteria (the <emphasis>expireDays</emphasis>
+  attribute). </para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := STD.File.SetExpireDays('~samples::myscope::myfile');
+ //returns a file's expireDays 
+</programlisting>
+
+  <para>See Also: <link linkend="SetExpireDays">SetExpireDays</link>, <link
+  linkend="ClearExpireDays">ClearExpireDays</link></para>
+</sect1>
