@@ -61,7 +61,7 @@ jobs:
                 if user == 'asselitx':
                     user = 'terrenceasselin'
                 options = {
-                  'server': jira_url
+                  'server': 'https://track.hpccsystems.com'
                 }
                 jira = JIRA(options=options, basic_auth=(jirabot_user, jirabot_pass))
                 issue = jira.issue(issue_name)
