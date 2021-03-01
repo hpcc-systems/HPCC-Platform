@@ -8493,8 +8493,10 @@ static void applyCommandLineOption(IPropertyTree * config, const char * option, 
     applyCommandLineOption(config, option, val);
 }
 
+static CriticalSection configCS;
 static Owned<IPropertyTree> componentConfiguration;
 static Owned<IPropertyTree> globalConfiguration;
+
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     return true;
@@ -8505,18 +8507,30 @@ MODULE_EXIT()
     globalConfiguration.clear();
 }
 
-IPropertyTree & queryComponentConfig()
+IPropertyTree * getComponentConfig()
 {
+    CriticalBlock b(configCS);
     if (!componentConfiguration)
         throw makeStringException(99, "Configuration file has not yet been processed");
-    return *componentConfiguration;
+    return componentConfiguration.getLink();
 }
 
-IPropertyTree & queryGlobalConfig()
+IPropertyTree * getGlobalConfig()
 {
+    CriticalBlock b(configCS);
     if (!globalConfiguration)
         throw makeStringException(99, "Configuration file has not yet been processed");
-    return *globalConfiguration;
+    return globalConfiguration.getLink();
+}
+
+Owned<IPropertyTree> getComponentConfigSP()
+{
+    return getComponentConfig();
+}
+
+Owned<IPropertyTree> getGlobalConfigSP()
+{
+    return getGlobalConfig();
 }
 
 jlib_decl IPropertyTree * loadArgsIntoConfiguration(IPropertyTree *config, const char * * argv, std::initializer_list<const char *> ignoreOptions)
@@ -9240,7 +9254,7 @@ void saveYAML(IIOStream &stream, const IPropertyTree *tree, unsigned indent, uns
     toYAML(tree, stream, indent, flags);
 }
 
-jlib_decl IPropertyTree * queryCostsConfiguration()
+jlib_decl IPropertyTree * getCostsConfiguration()
 {
-    return queryComponentConfig().queryPropTree("costs");
+    return getComponentConfigSP()->getPropTree("costs");
 }

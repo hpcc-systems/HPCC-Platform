@@ -46,7 +46,6 @@
 #include "dfuerror.hpp"
 #include "daqueue.hpp"
 
-static Owned<IPropertyTree> globals;
 ILogMsgHandler * fileMsgHandler;
 Owned<IDFUengine> engine;
 
@@ -123,6 +122,7 @@ int main(int argc, const char *argv[])
 
     NoQuickEditSection xxx;
 
+    Owned<IPropertyTree> globals;
     try
     {
         globals.setown(loadConfiguration(defaultYaml, argv, "dfuserver", "DFUSERVER", "dfuserver.xml", nullptr));

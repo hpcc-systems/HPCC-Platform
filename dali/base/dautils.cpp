@@ -55,7 +55,7 @@ IPropertyTreeIterator * getDropZonePlanesIterator(const char * name)
     StringBuffer xpath(lz_plane_path);
     if (!isEmptyString(name))
         xpath.appendf("[@name='%s']", name);
-    return queryGlobalConfig().getElements(xpath);
+    return getGlobalConfigSP()->getElements(xpath);
 }
 IPropertyTree * getDropZonePlane(const char * name)
 {
@@ -63,7 +63,7 @@ IPropertyTree * getDropZonePlane(const char * name)
         throw makeStringException(-1, "Drop zone name required");
     StringBuffer xpath(lz_plane_path);
     xpath.appendf("[@name='%s']", name);
-    return queryGlobalConfig().getPropTree(xpath);
+    return getGlobalConfigSP()->getPropTree(xpath);
 }
 
 extern da_decl const char *queryDfsXmlBranchName(DfsXmlBranchKind kind)

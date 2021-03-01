@@ -32,7 +32,6 @@
 #include "eventqueue.hpp"
 
 static unsigned traceLevel;
-Owned<IPropertyTree> globals;
 
 //=========================================================================================
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -165,7 +164,8 @@ private:
 void openLogFile()
 {
 #ifndef _CONTAINERIZED
-    Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals, "eclscheduler");
+    Owned<IPropertyTree> config = getComponentConfig();
+    Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(config, "eclscheduler");
     lf->beginLogging();
 #else
     setupContainerizedLogMsgHandler();
@@ -210,6 +210,7 @@ int main(int argc, const char *argv[])
     else if (checkFileExists("eclccserver.xml") )
         iniFileName = "eclccserver.xml";
 
+    Owned<IPropertyTree> globals;
     try
     {
         globals.setown(loadConfiguration(defaultYaml, argv, "eclscheduler", "ECLSCHEDULER", iniFileName, nullptr));

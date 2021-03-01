@@ -22,20 +22,20 @@
 
 
 //More to a more central location
-IPropertyTree * queryHostGroup(const char * name)
+IPropertyTree * getHostGroup(const char * name)
 {
     if (isEmptyString(name))
         return nullptr;
     VStringBuffer xpath("storage/hostGroups[@name='%s']", name);
-    IPropertyTree & global = queryGlobalConfig();
-    return global.queryPropTree(xpath);
+    Owned<IPropertyTree> global = getGlobalConfig();
+    return global->getPropTree(xpath);
 }
 
-IPropertyTree * queryStoragePlane(const char * name)
+IPropertyTree * getStoragePlane(const char * name)
 {
     VStringBuffer xpath("storage/planes[@name='%s']", name);
-    IPropertyTree & global = queryGlobalConfig();
-    return global.queryPropTree(xpath);
+    Owned<IPropertyTree> global = getGlobalConfig();
+    return global->getPropTree(xpath);
 }
 
 //Cloned for now - export and use from elsewhere
@@ -116,7 +116,7 @@ void LogicalFileResolver::ensureHostGroup(const char * name)
     if (storage->hasProp(xpath))
         return;
 
-    IPropertyTree * hosts = queryHostGroup(name);
+    Owned<IPropertyTree> hosts = getHostGroup(name);
     if (!hosts)
         throw makeStringExceptionV(0, "No entry found for hostGroup: '%s'", name);
 
@@ -130,7 +130,7 @@ void LogicalFileResolver::ensurePlane(const char * name)
     if (storage->hasProp(xpath))
         return;
 
-    IPropertyTree * plane = queryStoragePlane(name);
+    Owned<IPropertyTree> plane = getStoragePlane(name);
     if (!plane)
         throw makeStringExceptionV(0, "No entry found for plane: '%s'", name);
 

@@ -410,7 +410,7 @@ public:
     std::locale * createMoneyLocale() const
     {
         StringBuffer localestr;
-        queryGlobalConfig().getProp("cost/@moneyLocale", localestr);
+        getGlobalConfigSP()->getProp("cost/@moneyLocale", localestr);
         std::locale * loc = nullptr;
         try
         {

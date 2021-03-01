@@ -305,11 +305,13 @@ jlib_decl void mergeConfiguration(IPropertyTree & target, const IPropertyTree & 
 jlib_decl IPropertyTree * loadArgsIntoConfiguration(IPropertyTree *config, const char * * argv, std::initializer_list<const char *> ignoreOptions = {});
 jlib_decl IPropertyTree * loadConfiguration(IPropertyTree * defaultConfig, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute=nullptr);
 jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute=nullptr);
-jlib_decl IPropertyTree * queryCostsConfiguration();
+jlib_decl IPropertyTree * getCostsConfiguration();
 
 //The following can only be called after loadConfiguration has been called.  All components must call loadConfiguration().
-jlib_decl IPropertyTree & queryGlobalConfig();
-jlib_decl IPropertyTree & queryComponentConfig();
+jlib_decl IPropertyTree * getGlobalConfig();
+jlib_decl IPropertyTree * getComponentConfig();
+jlib_decl Owned<IPropertyTree> getGlobalConfigSP(); // get smart pointer
+jlib_decl Owned<IPropertyTree> getComponentConfigSP(); // get smart pointer
 
 /*
  YAML to PTree support

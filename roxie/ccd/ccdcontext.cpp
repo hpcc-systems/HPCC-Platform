@@ -1617,7 +1617,8 @@ public:
 
         if (realThor)
         {
-            executeThorGraph(name, *workUnit, queryComponentConfig());
+            Owned<IPropertyTree> compConfig = getComponentConfig();
+            executeThorGraph(name, *workUnit, *compConfig);
         }
         else
         {

@@ -10092,8 +10092,7 @@ public:
 
     void constructStorageGroups(bool force, StringBuffer &messages)
     {
-        IPropertyTree & global = queryGlobalConfig();
-        IPropertyTree * storage = global.queryPropTree("storage");
+        Owned<IPropertyTree> storage = getGlobalConfigSP()->getPropTree("storage");
         if (storage)
         {
             Owned<IPropertyTreeIterator> planes = storage->getElements("planes");
