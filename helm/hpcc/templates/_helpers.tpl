@@ -621,37 +621,39 @@ Create placement related settings
 Pass in dict with placement
 */}}
 {{- define "hpcc.doPlacement" -}}
-{{- if .placement.nodeSelector }}
-nodeSelector:
-{{ toYaml .placement.nodeSelector | indent 2 }}
+{{- if .this.placement }}
+{{ toYaml .this.placement }}
 {{- end -}}
-{{- if .placement.tolerations }}
-tolerations:
-{{ toYaml .placement.tolerations }}
 {{- end -}}
-{{- if .placement.affinity }}
-affinity:
-{{ toYaml .placement.affinity }}
+
+{{/*
+Check if there is any placement configuration
+Pass in dict with root, pod and type
+*/}}
+{{- define "hpcc.placementsByPodType" -}}
+{{- if .root.Values.placements }}
+{{- $pod := .pod -}}
+{{- $type := printf "type:%s" .type -}}
+{{- range $placement := .root.Values.placements -}}
+{{- if or (has $pod $placement.pods) (has $type $placement.pods) -}}
+{{ include "hpcc.doPlacement" (dict "this" $placement) -}}
 {{- end -}}
-{{- if .placement.schedulerNames -}}
-{{- range $profileName := .placement.schedulerNames }}
-schedulerName: {{ $profileName }}
 {{- end -}}
 {{- end -}}
 {{- end -}}
 
 {{/*
 Check if there is any placement configuration
-Pass in dict with root, pod, cluster and type
+Pass in dict with root, pod, target and type
 */}}
-{{- define "hpcc.placementMatchName" -}}
-{{- if .root.Values.placement }}
+{{- define "hpcc.placementsByPodTargetType" -}}
+{{- if .root.Values.placements }}
 {{- $pod := .pod -}}
-{{- $cluster := .cluster -}}
-{{- $type := .type -}}
-{{- range $placement := .root.Values.placement -}}
-{{- if or (has $pod $placement.pods) (has $cluster $placement.pods) (has $type $placement.pods) -}}
-{{ include "hpcc.doPlacement" (dict "placement" $placement) -}}
+{{- $target := printf "target:%s" .target -}}
+{{- $type := printf "type:%s" .type -}}
+{{- range $placement := .root.Values.placements -}}
+{{- if or (has $pod $placement.pods) (has $target $placement.pods) (has $type $placement.pods) -}}
+{{ include "hpcc.doPlacement" (dict "this" $placement) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

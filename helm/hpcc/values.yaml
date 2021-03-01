@@ -38,63 +38,75 @@ global:
     moneyLocale: "en_US.UTF-8"
     # perCpu: 0.126
 
-## placement
+## placements
 ## The placement is responsible for finding the best Node for a Pod. It can be configured
 ## through placement to include an array of objects to configure the Kubernetes Scheduler.
-## It must have a "pods" list which tells which pod the settings will be applied to.
-## The list item with suffix "-" and <cluster name> means it is Job which tries to distinguish
-## from the same pod name for Development type.
-## Here are the HPCC Systems Pods' name or prefixs:
-##   eclwatch, hthor, eclservices, eclqueries, esdl-sandbox, sql2ecl
-##   mydali, roxie-workunit, myeclccserver, roxie-toposerver
-##   <cluster name>-thor-eclagent, <cluster name>-thor-thoragent
-##   <cluster name>-hthor-, <cluster-name>-compile-, <cluster name>-thormanager-,
-##   <cluster name>-thorworker-, <cluster name>-roxie-agent-
-## The settings can also be HPCC Systems component types: dali, esp, eclagent, eclccserver,
-## roxie, thor, or a cluster name which is from the array of items of each type.
-## Supported placement configuration:
+## It must have a "pods" list which tells it which pod the settings will be applied to.
+## The synatx is:
+##   placements:
+##   - pods [list]
+##     placement:
+##       <supported configurations>
+##
+## The list item in "pods" can be one of the following:
+## 1) HPCC Systems component types in format: "type:<type name>". <type name> includes
+##    dali, esp, eclagent, eclccserver, roxie, thor. For example "type:esp"
+## 2) Target, the name of array item of above type in format "target:<target name>"
+##    For example "target:roxie", "target:thor".
+## 3) Pod, "Deployment" metadata name, which usually should be from the name of the array
+##    item of a type. For example, "eclwatch", "mydali", "thor-thoragent"..
+## 4) Job name prefix in format: "<target>-<job id>-". For example "myeclccserver-compile-",
+##    thor-hthor-, thor-thormanager-
+##
+## Supported configurations under each "placement"
 ## 1) nodeSelector
 ## 2) taints/tolerations
 ## 3) affinity
 ##    There is no schema check for the content of affinity. Reference
 ##    https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
-## 4) schedulerName: list of scheduler profile names. This requires Kubernetes 1.20.0
-##    beta and later releases
+## 4) schedulerName: profile names. "affinity" defined in scheduler profile  requires
+##    Kubernetes 1.20.0 beta and later releases
+##
 ## Examples:
-#placement:
-#- pods: ["eclwatch", "roxie-workunit", "myeclccserver-compile-", "mydali"]
-#  nodeSelector:
-#    name: npone
-#- pods: ["thor-thorworker-", "thor-thor-thoragent", "thor-thormanager-","thor-thor-eclagent","thor-hthor-"]
-#  nodeSelector:
-#    name: nptwo
-#  tolerations:
-#  - key: "name"
-#    operator: "Equal"
-#    value: "nptwo"
-#    effect: "NoSchedule"
+#placements:
+#- pods: ["eclwatch","roxie-workunit","myeclccserver-compile-","mydali"]
+#  placement:
+#    nodeSelector:
+#      name: npone
+#- pods: ["thor-thorworker-", "thor-thoragent", "thor-thormanager-","thor-eclagent","thor-hthor-"]
+#  placement:
+#    nodeSelector:
+#      name: nptwo
+#    tolerations:
+#    - key: "name"
+#      operator: "Equal"
+#      value: "nptwo"
+#      effect: "NoSchedule"
 #- pods: ["thor-thorworker-"]
-#  affinity:
-#    nodeAffinity:
-#      requiredDuringSchedulingIgnoredDuringExecution:
-#        nodeSelectorTerms:
-#        - matchExpressions:
-#           - key: kubernetes.io/e2e-az-name
-#             operator: In
-#             values:
-#             - e2e-az1
-#             - e2e-az2
-#- pods: ["sql2ecl"]
-#  schedulerNames: ["my-scheduler"]
-## The settings will be applied to all thor pods
-#- pods: ["thor"]
-#  nodeSelector:
-#    name: nptwo
-#  tolerations:
-#  - key: "name"
-#    operator: "Equal"
-#    value: "nptwo"
-#    effect: "NoSchedule"
+#  placement:
+#    affinity:
+#      nodeAffinity:
+#        requiredDuringSchedulingIgnoredDuringExecution:
+#          nodeSelectorTerms:
+#          - matchExpressions:
+#            - key: kubernetes.io/e2e-az-name
+#              operator: In
+#              values:
+#              - e2e-az1
+#              - e2e-az2
+#- pods: ["target:roxie"]
+#  placement:
+#    schedulerName: "my-scheduler"
+## The settings will be applied to all thor pods/jobs and myeclccserver pod and job
+#- pods: ["target:myeclccserver", "type:thor"]
+#  placement:
+#    nodeSelector:
+#      app: "tf-gpu"
+#    tolerations:
+#    - key: "gpu"
+#      operator: "Equal"
+#      value: "true"
+#      effect: "NoSchedule"
 
 ## storage:
 ##
@@ -340,8 +352,3 @@ thor:
   #eclAgentResources:
   #  cpu: "1"
   #  memory: "2G"
-- name: thor2
-  prefix: thor2
-  numWorkers: 3
-  maxJobs: 5
-  maxGraphs: 3

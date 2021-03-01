@@ -8,7 +8,7 @@
     "hostgroups": {
       "$ref": "#/definitions/hostgroups"
     },
-    "placement": {
+    "placements": {
       "type": "array",
       "items": {
         "type": "object",
@@ -17,18 +17,8 @@
             "type": "array",
             "items": { "type": "string" }
           },
-          "nodeSelector": {
-            "$ref": "#/definitions/nodeSelector"
-          },
-          "tolerations": {
-            "$ref": "#/definitions/tolerations"
-          },
-          "affinity": {
-            "type": "object"
-          },
-          "schedulerNames": {
-            "type": "array",
-            "items": { "type": "string" }
+	  "placement": {
+            "$ref": "#/definitions/placement"
           }
         }
       }
@@ -709,6 +699,23 @@
         },
         "eclAgentResources": {
           "$ref": "#/definitions/resources"
+        }
+      }
+    },
+    "placement": {
+      "type": "object",
+      "properties": {
+        "nodeSelector": {
+          "$ref": "#/definitions/nodeSelector"
+        },
+        "tolerations": {
+          "$ref": "#/definitions/tolerations"
+        },
+        "affinity": {
+          "type": "object"
+        },
+        "schedulerName": {
+          "type": "string"
         }
       }
     },

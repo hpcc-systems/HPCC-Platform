@@ -18,7 +18,7 @@ spec:
         accessDali: "yes"
         accessEsp: {{ .useChildProcesses | default false | ternary "yes" "no" | quote }}
     spec:
-      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" .name "cluster" .name "type" "eclagent" ) | indent 6 }}
+            {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" .name "target" .name "type" "eclagent" ) | indent 6 }}
       serviceAccountName: {{ .useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
       initContainers:
         {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
@@ -66,6 +66,7 @@ data:
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
 {{- if not .useChildProcesses }} 
+{{- $jobNamePrefix := printf "%s-%s-" .name $apptype }}
   {{ $apptype }}-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
@@ -79,7 +80,7 @@ data:
             accessDali: "yes"
             accessEsp: "yes"
         spec:
-          {{- include "hpcc.placementMatchName" (dict "root" $ "pod" (printf "%s-%s-" $apptype .name) "cluster" .name "type" "eclagent") | indent 10 }}
+          {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $jobNamePrefix "target" .name "type" "eclagent") | indent 10 }}
           serviceAccountName: "hpcc-default"
           containers:
           - name: {{ $apptype }}-%jobname

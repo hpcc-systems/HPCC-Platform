@@ -30,7 +30,7 @@ spec:
         accessDali: "yes"
         accessEsp: {{ $eclAgentUseChildProcesses | ternary "yes" "no" | quote }}
     spec:
-      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" $eclAgentName "cluster" .name "type" "thor") | indent 6 }}
+      {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $eclAgentName "target" .name "type" "thor") | indent 6 }}
       serviceAccountName: {{ $eclAgentUseChildProcesses | ternary "hpcc-default" "hpcc-agent" }}
       containers:
       - name: {{ $eclAgentName | quote }}
@@ -75,7 +75,7 @@ spec:
         accessDali: "yes"
         accessEsp: "no"
     spec:
-      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" $thorAgentName "cluster" .name "type" "thor") | indent 6 }}
+      {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $thorAgentName "target" .name "type" "thor") | indent 6 }}
       serviceAccountName: "hpcc-thoragent"
       containers:
       - name: {{ $thorAgentName | quote }}
@@ -132,6 +132,7 @@ data:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
 
 {{- if not $eclAgentUseChildProcesses }}
+{{- $eclAgentJobNamePrefix := printf "%s-%s-" .name  $eclAgentType }}
   {{ $eclAgentType }}-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
@@ -145,7 +146,7 @@ data:
             accessDali: "yes"
             accessEsp: "yes"
         spec:
-          {{- include "hpcc.placementMatchName" (dict "root" $ "pod" (printf "%s-%s-" .name $eclAgentType) "cluster" .name "type" "thor") | indent 10 }}
+          {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $eclAgentJobNamePrefix "target" .name "type" "thor") | indent 10 }}
           serviceAccountName: "hpcc-agent"
           initContainers: 
             {{- include "hpcc.checkDataMount" (dict "root" $) | indent 10 }}
@@ -175,6 +176,7 @@ data:
       backoffLimit: 0
 {{- end }}
 
+  {{- $thorMgrJobNamePrefix := printf "%s-thormanager-" .name }}
   thormanager-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
@@ -190,7 +192,7 @@ data:
             accessEsp: "yes"
             job: %jobname
         spec:
-          {{- include "hpcc.placementMatchName" (dict "root" $ "pod" (printf "%s-thormanager-" .name) "cluster" .name "type" "thor") | indent 10 }}
+          {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $thorMgrJobNamePrefix "target" .name "type" "thor") | indent 10 }}
           serviceAccountName: hpcc-agent
           initContainers:
             {{- include "hpcc.checkDataMount" (dict "root" $) | indent 10 }}
@@ -219,13 +221,14 @@ data:
           restartPolicy: Never
       backoffLimit: 0
 
+  {{- $thorWkrJobNamePrefix := printf "%s-thorworker-" .name }}
   thorworker-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
     metadata:
       name: thorworker-%jobname
     spec:
-      {{- include "hpcc.placementMatchName" (dict "root" $ "pod" (printf "%s-thorworker-" .name) "cluster" .name "type" "thor") | indent 6 }}
+      {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $thorWkrJobNamePrefix "target" .name "type" "thor") | indent 6 }}
       parallelism: %numWorkers
       ttlSecondsAfterFinished: 100
       template:
