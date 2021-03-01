@@ -82,8 +82,8 @@ jobs:
                     transitions = jira.transitions(issue)
                     jira.transition_issue(issue, '291')   # Attach Pull Request
                     status += 'Jira updated'
-                print('curl -X POST %s -H "Content-Type: application/json" -H "Authorization: token %s" --data '{ "body": "%s" }' % ( comments_url, github_token, status ))
-                os.system('curl -X POST %s -H "Content-Type: application/json" -H "Authorization: token %s" --data '{ "body": "%s" }' % ( comments_url, github_token, status ))
+                print('curl -X POST %s -H "Content-Type: application/json" -H "Authorization: token %s" --data \'{ "body": "%s" }\'' % ( comments_url, github_token, status ))
+                os.system('curl -X POST %s -H "Content-Type: application/json" -H "Authorization: token %s" --data \'{ "body": "%s" }\'' % ( comments_url, github_token, status ))
                 
             print(status)
         shell: python
