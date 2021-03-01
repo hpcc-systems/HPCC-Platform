@@ -81,5 +81,7 @@ jobs:
                     transitions = jira.transitions(issue)
                     jira.transition_issue(issue, '291')   # Attach Pull Request
                     status += 'Jira updated'
+            else:
+                print('Could not guess Jira number')
             print(status)
         shell: python
