@@ -25,8 +25,8 @@ jobs:
           python -m pip install --upgrade jira
       - name: "Run"
         env: 
-          JIRABOT_USERNAME : ${{ secrets.JIRABOT_USER }}
-          JIRABOT_PASSWORD : ${{ secrets.JIRABOT_PASS }}
+          JIRABOT_USERNAME : ${{ secrets.JIRABOT_USERNAME }}
+          JIRABOT_PASSWORD : ${{ secrets.JIRABOT_PASSWORD }}
           JIRA_URL : ${{ secrets.JIRA_URL }}
           PULL_REQUEST_NUMBER : ${{ github.event.pull_request.number }}
           PULL_REQUEST_TITLE : ${{ github.event.pull_request.title }}
