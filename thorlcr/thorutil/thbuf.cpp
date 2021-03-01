@@ -689,7 +689,7 @@ public:
     void reset(unsigned _chunk)
     {
         chunk = _chunk;
-        rows.kill();
+        rows.clearRows();
     }
     inline unsigned queryChunk() const { return chunk; }
     inline unsigned getRowCount() const { return rows.ordinality(); }
@@ -1055,6 +1055,18 @@ public:
         }
         else if (0 == minSize) // unknown
             minSize = 1;
+
+        /* NB: HPCC-25392 (fix to avoid clearing inMemRows on child query reset)
+         * maxRows is used to intialize the CRowSet::rows' initial allocated row array size.
+         * These row arrays are never freed, and never resized.
+         * On reset the rows are cleared, but the row array is untouched.
+         * When adding rows there are never more added than maxRows added, because a new row set
+         * is created when minChunkSize is exceeded, which is a multiple of min row size, (see putRow)
+         *
+         * This is vital, because both the writer and readers may be reading the same array
+         * concurrently. Resizing the array in putRow, would invalidate the row array that a
+         * reader was currently accessing.
+         */
         maxRows = (minChunkSize / minSize) + 1;
         outputCount = _outputCount;
         unsigned c=0;
