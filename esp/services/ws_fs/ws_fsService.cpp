@@ -160,7 +160,7 @@ void CFileSprayEx::init(IPropertyTree *cfg, const char *process, const char *ser
 #else
     // Using the first queue for now.
     // TODO: Re-design support for multiple queues
-    Owned<IPropertyTreeIterator> dfuQueues = queryComponentConfig().getElements("dfuQueues");
+    Owned<IPropertyTreeIterator> dfuQueues = getComponentConfigSP()->getElements("dfuQueues");
     ForEach(*dfuQueues)
     {
         IPropertyTree & dfuQueue = dfuQueues->query();
@@ -1843,7 +1843,7 @@ static void checkValidDfuQueue(const char * dfuQueue)
         }
 #else
         bool isValidDfuQueueName = false;
-        Owned<IPropertyTreeIterator> dfuServers = queryComponentConfig().getElements("dfuQueues");
+        Owned<IPropertyTreeIterator> dfuServers = getComponentConfigSP()->getElements("dfuQueues");
         ForEach(*dfuServers)
         {
             IPropertyTree & dfuServer = dfuServers->query();
@@ -3463,7 +3463,7 @@ bool CFileSprayEx::onGetSprayTargets(IEspContext &context, IEspGetSprayTargetsRe
         context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
 #ifdef _CONTAINERIZED
         IArrayOf<IEspGroupNode> sprayTargets;
-        Owned<IPropertyTreeIterator> dataPlanes = queryGlobalConfig().getElements("storage/planes[labels='data']");
+        Owned<IPropertyTreeIterator> dataPlanes = getGlobalConfigSP()->getElements("storage/planes[labels='data']");
         ForEach(*dataPlanes)
         {
             IPropertyTree & plane = dataPlanes->query();

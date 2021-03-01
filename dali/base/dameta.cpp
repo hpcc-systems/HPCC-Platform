@@ -22,13 +22,13 @@
 
 
 //More to a more central location
-IPropertyTree * queryHostGroup(const char * name, bool required)
+IPropertyTree * getHostGroup(const char * name, bool required)
 {
     if (!isEmptyString(name))
     {
         VStringBuffer xpath("storage/hostGroups[@name='%s']", name);
-        IPropertyTree & global = queryGlobalConfig();
-        IPropertyTree * match = global.queryPropTree(xpath);
+        Owned<IPropertyTree> global = getGlobalConfig();
+        IPropertyTree * match = global->getPropTree(xpath);
         if (match)
             return match;
     }
@@ -37,18 +37,18 @@ IPropertyTree * queryHostGroup(const char * name, bool required)
     return nullptr;
 }
 
-IPropertyTree * queryStoragePlane(const char * name)
+IPropertyTree * getStoragePlane(const char * name)
 {
     VStringBuffer xpath("storage/planes[@name='%s']", name);
-    IPropertyTree & global = queryGlobalConfig();
-    return global.queryPropTree(xpath);
+    Owned<IPropertyTree> global = getGlobalConfig();
+    return global->getPropTree(xpath);
 }
 
 
 // Expand indirect hostGroups so each hostGroups has an expanded list of host names
 void normalizeHostGroups()
 {
-    Owned<IPropertyTreeIterator> hostGroupIter = queryGlobalConfig().getElements("storage/hostGroups");
+    Owned<IPropertyTreeIterator> hostGroupIter = getGlobalConfigSP()->getElements("storage/hostGroups");
     //Process the groups in order - so that multiple levels of indirection are supported
     ForEach (*hostGroupIter)
     {
@@ -57,7 +57,7 @@ void normalizeHostGroups()
         {
             const char * name = cur.queryProp("@name");
             const char * baseGroup = cur.queryProp("@hostGroup");
-            IPropertyTree * match = queryHostGroup(baseGroup, true);
+            Owned<IPropertyTree> match = getHostGroup(baseGroup, true);
             StringArray hosts;
             Owned<IPropertyTreeIterator> hostIter = match->getElements("hosts");
             ForEach (*hostIter)
@@ -146,8 +146,8 @@ void LogicalFileResolver::ensureHostGroup(const char * name)
     if (storage->hasProp(xpath))
         return;
 
-    IPropertyTree * hosts = queryHostGroup(name, true);
-    storage->addPropTreeArrayItem("hostGroups", LINK(hosts));
+    Owned<IPropertyTree> hosts = getHostGroup(name, true);
+    storage->addPropTreeArrayItem("hostGroups", hosts.getClear());
 }
 
 void LogicalFileResolver::ensurePlane(const char * name)
@@ -157,7 +157,7 @@ void LogicalFileResolver::ensurePlane(const char * name)
     if (storage->hasProp(xpath))
         return;
 
-    IPropertyTree * plane = queryStoragePlane(name);
+    Owned<IPropertyTree> plane = getStoragePlane(name);
     if (!plane)
         throw makeStringExceptionV(0, "No entry found for plane: '%s'", name);
 

@@ -362,7 +362,7 @@ void initializeMetrics(CEspConfig* config)
     Owned<IPropertyTree> pMetricsTree = config->queryConfigPTree()->getPropTree("metrics");
     if (pMetricsTree == nullptr)
     {
-        pMetricsTree.setown(queryComponentConfig().getPropTree("metrics"));
+        pMetricsTree.setown(getComponentConfigSP()->getPropTree("metrics"));
     }
 
     if (pMetricsTree != nullptr)
@@ -475,7 +475,7 @@ int init_main(int argc, const char* argv[])
 
 #ifdef _CONTAINERIZED
         // TBD: Some esp services read daliServers from it's legacy config file
-        procpt->setProp("@daliServers", queryComponentConfig().queryProp("@daliServers"));
+        procpt->setProp("@daliServers", getComponentConfigSP()->queryProp("@daliServers"));
 #endif
 
         const char* build_ver = hpccBuildInfo.buildTag;

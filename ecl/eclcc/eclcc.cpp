@@ -521,7 +521,7 @@ int main(int argc, const char *argv[])
     unsigned exitCode = 0;
     try
     {
-        configuration.setown(loadConfiguration(defaultYaml, argv, "eclccserver", "ECLCCSERVER", nullptr, nullptr));
+        configuration.setown(loadConfiguration(defaultYaml, argv, "eclccserver", "ECLCCSERVER", nullptr, nullptr, nullptr, false));
 
 #ifndef _CONTAINERIZED
         // Turn logging down (we turn it back up if -v option seen)

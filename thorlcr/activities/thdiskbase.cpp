@@ -156,8 +156,8 @@ void CWriteMasterBase::init()
 
         if (idx == 0)
         {
-            const char * defaultCluster = queryDefaultStoragePlane();
-            if (defaultCluster)
+            StringBuffer defaultCluster;
+            if (getDefaultStoragePlane(defaultCluster))
                 clusters.append(defaultCluster);
         }
 

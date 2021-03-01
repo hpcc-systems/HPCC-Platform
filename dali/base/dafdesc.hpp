@@ -332,7 +332,7 @@ extern da_decl void setPartMask(const char * mask);
 extern da_decl bool setReplicateDir(const char *name,StringBuffer &out, bool isrep=true,const char *baseDir=NULL,const char *repDir=NULL); // changes directory of name passed to backup directory
 
 extern da_decl void initializeStorageGroups(bool createPlanesFromGroups);
-extern da_decl const char * queryDefaultStoragePlane();
+extern da_decl bool getDefaultStoragePlane(StringBuffer &ret);
 extern da_decl IStoragePlane * getStoragePlane(const char * name, bool required);
 
 extern da_decl IFileDescriptor *createFileDescriptor();
