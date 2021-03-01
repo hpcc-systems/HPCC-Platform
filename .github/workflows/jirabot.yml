@@ -1,0 +1,28 @@
+# JiraBot github action
+# =====================
+#
+name: jirabot
+
+on:
+  pull_request:
+    branches:
+      - "master"
+      - "candidate-*"
+
+jobs:
+  jirabot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: "actions/setup-python@v2"
+        with:
+          python-version: "3.8"
+      - name: "Install dependencies
+        run: |
+          set -xe
+          python -VV
+          python -m site
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade jira
+
+      - name: "Run"
+        run: echo "python -m jirabot ${{ github.event.pull_request.title }} ${{ github.event.pull_request.url }} ${{ github.event.pull_request.user }}"
