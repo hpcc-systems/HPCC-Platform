@@ -2325,6 +2325,40 @@ IHqlExpression * CTreeOptimizer::replaceWithNullRowDs(IHqlExpression * expr)
 
 }
 
+static IHqlExpression * removeNullActions(IHqlExpression * expr)
+{
+    IHqlExpression * nullAction = nullptr;
+    IHqlExpression * lastAction = nullptr;
+    unsigned numAttrs = 0;
+    HqlExprArray args;
+    args.ensureCapacity(expr->numChildren()-1);
+    ForEachChild(i, expr)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        if (cur->getOperator() != no_null)
+        {
+            args.append(*LINK(cur));
+            if (cur->isAttribute())
+                numAttrs++;
+            else
+                lastAction = cur;
+        }
+        else
+            nullAction = cur;
+    }
+
+    assertex(nullAction);
+    switch (args.ordinality() - numAttrs)
+    {
+    case 0:
+        return LINK(nullAction);
+    case 1:
+        return LINK(lastAction);
+    default:
+        return expr->clone(args);
+    }
+}
+
 
 IHqlExpression * CTreeOptimizer::transformExpanded(IHqlExpression * expr)
 {
@@ -2854,19 +2888,33 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
         }
         break;
     case no_split:
-        node_operator childOp = child->getOperator();
-        if (childOp == no_split)
         {
-            //Don't convert an unbalanced splitter into a balanced splitter
-            //- best would be to set unbalanced on the child, but that would require more complication.
-            if (transformed->hasAttribute(balancedAtom) || !child->hasAttribute(balancedAtom))
-                return removeParentNode(transformed);
-        }
+            node_operator childOp = child->getOperator();
+            if (childOp == no_split)
+            {
+                //Don't convert an unbalanced splitter into a balanced splitter
+                //- best would be to set unbalanced on the child, but that would require more complication.
+                if (transformed->hasAttribute(balancedAtom) || !child->hasAttribute(balancedAtom))
+                    return removeParentNode(transformed);
+            }
 
-        //This would remove splits only used once, but dangerous if we ever get the usage counting wrong...
-        //if (queryBodyExtra(transformed)->useCount == 1)
-        //    return removeParentNode(transformed);
-        break;
+            //This would remove splits only used once, but dangerous if we ever get the usage counting wrong...
+            //if (queryBodyExtra(transformed)->useCount == 1)
+            //    return removeParentNode(transformed);
+            break;
+        }
+    case no_orderedactionlist:
+    case no_parallel:
+    case no_sequential:
+        {
+            ForEachChild(i, transformed)
+            {
+                IHqlExpression * cur = transformed->queryChild(i);
+                if (cur->getOperator() == no_null)
+                    return removeNullActions(transformed);
+            }
+            break;
+        }
     }
 
     bool shared = childrenAreShared(transformed);
