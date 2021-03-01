@@ -48,7 +48,7 @@ jobs:
             comments_url = os.environ['COMMENTS_URL']
             github_token = os.environ['GITHUB_TOKEN']
         
-            print("%s %s %s" % (title, user, pull_url))
+            print("%s %s %s" % (title, user, comments_url))
             status = ''
             issuem = re.search("(HPCC|HH|IDE|EPE|ML|ODBC)-[0-9]+", title)
             if issuem:
