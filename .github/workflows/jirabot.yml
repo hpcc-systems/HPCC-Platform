@@ -31,7 +31,9 @@ jobs:
           PULL_REQUEST_NUMBER : ${{ github.event.pull_request.number }}
           PULL_REQUEST_TITLE : ${{ github.event.pull_request.title }}
           PULL_REQUEST_AUTHOR_NAME : ${{ github.event.pull_request.user.login }}
-          PULL_REQUEST_URL : ${{ github.event.pull_request.url }}
+          COMMENTS_URL: ${{ github.event.pull_request.comments_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
         run: |
             import os
             import re
@@ -43,13 +45,13 @@ jobs:
             pr = os.environ['PULL_REQUEST_NUMBER']
             title = os.environ['PULL_REQUEST_TITLE']
             user = os.environ['PULL_REQUEST_AUTHOR_NAME']
-            pull_url = os.environ['PULL_REQUEST_URL']
+            comments_url = os.environ['COMMENTS_URL']
+            github_token = os.environ['GITHUB_TOKEN']
         
             print("%s %s %s" % (title, user, pull_url))
             status = ''
             issuem = re.search("(HPCC|HH|IDE|EPE|ML|ODBC)-[0-9]+", title)
             if issuem:
-                print(issuem)
                 issue_name = issuem.group()
                 if user == 'dehilsterlexis':
                     user = 'dehilster'
@@ -66,7 +68,6 @@ jobs:
                 }
                 jira = JIRA(options=options, basic_auth=(jirabot_user, jirabot_pass))
                 issue = jira.issue(issue_name)
-                print (issue.fields.assignee)
                 status = jira_url + '/browse/' + issue_name + '\n'
                 if False and issue.fields.status.name != 'Active' and issue.fields.status.name != 'Open' and issue.fields.status.name != 'New' and issue.fields.status.name != 'Discussing' and issue.fields.status.name != 'Awaiting Information':
                     status += 'Jira not updated (state was not active or new)'
@@ -81,7 +82,8 @@ jobs:
                     transitions = jira.transitions(issue)
                     jira.transition_issue(issue, '291')   # Attach Pull Request
                     status += 'Jira updated'
-            else:
-                print('Could not guess Jira number')
+                print('curl -X POST %s -H "Content-Type: application/json" -H "Authorization: token %s" --data '{ "body": "%s" }' % ( comments_url, github_token, status ))
+                os.system('curl -X POST %s -H "Content-Type: application/json" -H "Authorization: token %s" --data '{ "body": "%s" }' % ( comments_url, github_token, status ))
+                
             print(status)
         shell: python
