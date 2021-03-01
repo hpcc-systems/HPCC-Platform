@@ -87,11 +87,11 @@ storage:
 {{- /* Add implicit planes if data or spill storage plane not specified*/ -}}
 {{- if not $dataStorage.plane }}
   - name: hpcc-data-plane
-    mount: {{ .Values.global.defaultDataPath | default "/var/lib/HPCCSystems/hpcc-data" | quote }}
+    prefix: {{ .Values.global.defaultDataPath | default "/var/lib/HPCCSystems/hpcc-data" | quote }}
 {{- end }}
 {{- if not $spillStorage.plane }}
   - name: hpcc-spill-plane
-    mount: {{ .Values.global.defaultSpillPath | default "/var/lib/HPCCSystems/hpcc-spill" | quote }}
+    prefix: {{ .Values.global.defaultSpillPath | default "/var/lib/HPCCSystems/hpcc-spill" | quote }}
 {{- end }}
 {{- if .Values.global.cost }}
 cost:
