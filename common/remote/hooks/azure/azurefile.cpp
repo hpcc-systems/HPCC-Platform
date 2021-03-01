@@ -182,10 +182,8 @@ public:
     }
     virtual IFileIO * open(IFOmode mode, IFEflags extraFlags=IFEnone) override
     {
-        if (mode == IFOcreate)
-            return createFileWriteIO();
-        assertex(mode==IFOread);
-        return createFileReadIO();
+        //Should this be derived from a comman base that implements the setShareMode()?
+        return openShared(mode,IFSHread,extraFlags);
     }
     virtual IFileAsyncIO * openAsync(IFOmode mode)
     {

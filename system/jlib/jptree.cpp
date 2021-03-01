@@ -4548,7 +4548,7 @@ public:
     CommonReaderBase(ISimpleReadStream &_stream, IPTreeNotifyEvent &_iEvent, PTreeReaderOptions _readerOptions, size32_t _bufSize=0) :
         bufSize(_bufSize), readerOptions(_readerOptions), iEvent(&_iEvent)
     {
-        if (!bufSize) bufSize = 0x8000;
+        if (!bufSize) bufSize = 0x20000;
         buf = new byte[bufSize];
         bufRemaining = 0;
         curOffset = 0;
