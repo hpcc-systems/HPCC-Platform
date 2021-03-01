@@ -60,6 +60,9 @@ jobs:
                     user = 'mcmuja01'
                 if user == 'asselitx':
                     user = 'terrenceasselin'
+                options = {
+                  'server': jira_url
+                }
                 jira = JIRA(options=options, basic_auth=(jirabot_user, jirabot_pass))
                 issue = jira.issue(issue_name)
                 print (issue.fields.assignee)
