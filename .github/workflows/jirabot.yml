@@ -68,7 +68,7 @@ jobs:
                 }
                 jira = JIRA(options=options, basic_auth=(jirabot_user, jirabot_pass))
                 issue = jira.issue(issue_name)
-                status = jira_url + '/browse/' + issue_name + ' '
+                status = jira_url + '/browse/' + issue_name + '\\n'
                 if False and issue.fields.status.name != 'Active' and issue.fields.status.name != 'Open' and issue.fields.status.name != 'New' and issue.fields.status.name != 'Discussing' and issue.fields.status.name != 'Awaiting Information':
                     status += 'Jira not updated (state was not active or new)'
                 elif issue.fields.customfield_10010 != None:
