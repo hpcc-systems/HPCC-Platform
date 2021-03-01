@@ -46,7 +46,13 @@ public:
         return true;
     }
 
+    void backupSDSData(IPropertyTree* srcPTree, const char* srcPath, const char* prefix);
+    void importSDSData(const char* dataXML, const char* dataFile, const char* path, bool add);
+
     virtual void init(IPropertyTree* cfg, const char* process, const char* service) override;
+
+    virtual bool onImport(IEspContext& context, IEspImportRequest& req, IEspImportResponse& resp) override;
+    virtual bool onDelete(IEspContext& context, IEspDeleteRequest& req, IEspDeleteResponse& resp) override;
 };
 
 class CWSDaliSoapBindingEx : public CWSDaliSoapBinding
@@ -61,6 +67,7 @@ public:
         : CWSDaliSoapBinding(cfg, bindName, procName, level) { }
 
     virtual int onGet(CHttpRequest* request, CHttpResponse* response) override;
+    virtual int onStartUpload(IEspContext& ctx, CHttpRequest* request, CHttpResponse* response, const char* service, const char* method) override;
 
     virtual void addService(const char* name, const char* host, unsigned short port, IEspService& service) override
     {

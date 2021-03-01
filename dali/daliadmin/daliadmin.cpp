@@ -158,30 +158,11 @@ static void outln(const char *ln)
 
 #define OUTLOG PROGLOG
 
-
-static const char *remLeading(const char *s)
-{
-    if (*s=='/')
-        s++;
-    return s;
-}
-
 static bool isWild(const char *path)
 {
     if (strchr(path,'?')||strchr(path,'*'))
         return true;
     return false;
-}
-
-
-static const char *splitpath(const char *path,StringBuffer &head,StringBuffer &tmp)
-{
-    if (path[0]!='/')
-        path = tmp.append('/').append(path).str();
-    const char *tail = splitXPath(path, head);
-    if (!tail)
-        throw MakeStringException(0, "Expecting xpath tail node in: %s", path);
-    return tail;
 }
 
 // NB: there's strtoll under Linux

@@ -17,9 +17,34 @@
 
 EspInclude(common);
 
-ESPservice [auth_feature("NONE"), //This declares that the method logic handles feature level authorization
-    version("1.00"), default_client_version("1.00"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSDali
+ESPrequest [nil_remove] ImportRequest
 {
+    string XML;
+    string Path;
+    bool Add; //default to false ?
+};
+
+ESPresponse [exceptions_inline, nil_remove] ImportResponse
+{
+    string Message;
+};
+
+ESPrequest [nil_remove] DeleteRequest
+{
+    string Path;
+    bool NoBackup; //default to false ?
+};
+
+ESPresponse [exceptions_inline, nil_remove] DeleteResponse
+{
+    string Message;
+};
+
+ESPservice [auth_feature("NONE"), //This declares that the method logic handles feature level authorization
+    version("1.01"), default_client_version("1.01"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSDali
+{
+    ESPmethod [min_ver("1.01")] Import(ImportRequest, ImportResponse);
+    ESPmethod [min_ver("1.01")] Delete(DeleteRequest, DeleteResponse);
 };
 
 SCMexportdef(WSDali);
