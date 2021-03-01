@@ -12,6 +12,7 @@ if __name__ == "__main__":
     user = os.environ['PULL_REQUEST_AUTHOR_NAME']
     pull_url = os.environ['PULL_REQUEST_URL']
 
+    print("%s %s %s %s %s %s %s" % (jirabot_user, jirabot_pass, jira_url, pr, title, user, pull_url))
     status = ''
     issuem = re.search("(HPCC|HH|IDE|EPE|ML|ODBC)-[0-9]+", title)
     if issuem:
@@ -43,4 +44,4 @@ if __name__ == "__main__":
             transitions = jira.transitions(issue)
             jira.transition_issue(issue, '291')   # Attach Pull Request
             status += 'Jira updated'
-      print(status)
+    print(status)
