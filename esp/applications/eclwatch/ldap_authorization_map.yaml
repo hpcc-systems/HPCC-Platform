@@ -152,3 +152,4 @@ ldap:
       ws_esdlconfig: []
       ws_elk: []
       ws_store: []
+      WSDali: []

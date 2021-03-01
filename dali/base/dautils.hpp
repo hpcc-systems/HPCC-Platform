@@ -536,5 +536,6 @@ extern da_decl ILockInfoCollection *deserializeLockInfoCollection(MemoryBuffer &
 
 extern da_decl void setPageCacheTimeoutMilliSeconds(unsigned timeoutSeconds);
 extern da_decl void setMaxPageCacheItems(unsigned _maxPageCacheItems);
+extern da_decl IRemoteConnection* connectXPathOrFile(const char* path, bool safe, StringBuffer& xpath);
 
 #endif

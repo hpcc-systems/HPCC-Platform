@@ -220,30 +220,6 @@ static unsigned __int64 hextoll(const char *str, bool &error)
     return rolling;
 }
 
-
-static IRemoteConnection *connectXPathOrFile(const char *path,bool safe,StringBuffer &xpath)
-{
-    CDfsLogicalFileName lfn;
-    StringBuffer lfnpath;
-    if ((strstr(path,"::")!=NULL)&&!strchr(path,'/')) {
-        lfn.set(path);
-        lfn.makeFullnameQuery(lfnpath,DXB_File);
-        path = lfnpath.str();
-    }
-    else if (strchr(path+((*path=='/')?1:0),'/')==NULL)
-        safe = true;    // all root trees safe
-    Owned<IRemoteConnection> conn = querySDS().connect(remLeading(path),myProcessSession(),safe?0:RTM_LOCK_READ, daliConnectTimeoutMs);
-    if (!conn&&lfnpath.length()) {
-        lfn.makeFullnameQuery(lfnpath.clear(),DXB_SuperFile);
-        path = lfnpath.str();
-        conn.setown(querySDS().connect(remLeading(path),myProcessSession(),safe?0:RTM_LOCK_READ, daliConnectTimeoutMs));
-    }
-    if (conn.get())
-        xpath.append(path);
-    return conn.getClear();
-}
-
-
 //=============================================================================
 
 static void _export_(const char *path,const char *dst,bool safe=false)
