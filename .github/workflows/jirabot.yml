@@ -24,5 +24,14 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install --upgrade jira
       - name: "Run"
+        env: 
+          JIRABOT_USERNAME : ${{ secrets.JIRABOT_USER }}
+          JIRABOT_PASSWORD : ${{ secrets.JIRABOT_PASS }}
+          JIRA_URL : ${{ secrets.JIRA_URL }}
+          PULL_REQUEST_NUMBER : ${{ github.event.pull_request.number }}
+          PULL_REQUEST_TITLE : ${{ github.event.pull_request.title }}
+          PULL_REQUEST_AUTHOR_NAME : ${{ github.event.pull_request.user.login }}
+          PULL_REQUEST_URL : ${{ github.event.pull_request.url }}
+          
         run: |
-          echo "jirabot ${{ github.event.pull_request.title }} ${{ github.event.pull_request.url }} ${{ github.event.pull_request.user }}"
+          echo "python -m jirabot"
