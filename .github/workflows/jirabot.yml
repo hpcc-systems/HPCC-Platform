@@ -23,7 +23,6 @@ jobs:
           python -m site
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install --upgrade jira
-
       - name: "Run"
         run: |
           echo "jirabot ${{ github.event.pull_request.title }} ${{ github.event.pull_request.url }} ${{ github.event.pull_request.user }}"
