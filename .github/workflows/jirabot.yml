@@ -32,6 +32,5 @@ jobs:
           PULL_REQUEST_TITLE : ${{ github.event.pull_request.title }}
           PULL_REQUEST_AUTHOR_NAME : ${{ github.event.pull_request.user.login }}
           PULL_REQUEST_URL : ${{ github.event.pull_request.url }}
-          
         run: |
-          echo "python -m jirabot"
+          python -m jirabot
