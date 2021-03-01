@@ -37,6 +37,7 @@ ERROR = {
     "6005": "Syntax error in //skip tag!",
     "6006": "Error in build suite",
     "6007": "Regression Test Engine internal error",
+    "6008": "Invalid ESP server port", 
     "7000": "You have not enough privilege to use '--flushDiskCache' parameter. Check sudoer settings or try it with sudo.",
     "7100": "You have not enough privilege to use '--generateStackTrace' parameter. Check sudoer settings or try it with sudo.",
     "8000": "Did you specified '--username' parameter, but it seems the stdin is not a TTY like device. Check your environment or add your password into ecl-test.json config file.", 
