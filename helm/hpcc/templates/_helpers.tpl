@@ -597,6 +597,7 @@ Generate list of available services
   type: roxie
   port: {{ $service.port }}
   target: {{ $roxie.name }}
+  public: {{ $service.external }}
    {{- end -}}
   {{- end }}
 {{ end -}}
