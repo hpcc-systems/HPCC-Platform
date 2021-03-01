@@ -50,7 +50,7 @@ jobs:
             issuem = re.search("(HPCC|HH|IDE|EPE|ML|ODBC)-[0-9]+", title)
             if issuem:
                 print(issuem)
-                issue = issuem.group()
+                issue_name = issuem.group()
                 if user == 'dehilsterlexis':
                     user = 'dehilster'
                 if user == 'kunalaswani':
