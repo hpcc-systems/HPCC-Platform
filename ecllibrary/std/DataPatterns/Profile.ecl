@@ -517,6 +517,7 @@ EXPORT Profile(inFile,
         // Pattern mapping a STRING datatype
         #UNIQUENAME(_MapAllStr);
         LOCAL STRING %_MapAllStr%(STRING s) := EMBED(C++)
+            #option pure;
             __lenResult = lenS;
             __result = static_cast<char*>(rtlMalloc(__lenResult));
 
@@ -1108,7 +1109,7 @@ EXPORT Profile(inFile,
                                     {
                                         %'fieldX'%,
                                         %'fieldY'%,
-                                        CORRELATION(_inFile, %fieldX%, %fieldY%)
+                                        CORRELATION(_inFile, _inFile.%fieldX%, _inFile.%fieldY%)
                                     }
                                     #SET(needsDelim, 1)
 
