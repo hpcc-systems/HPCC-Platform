@@ -527,19 +527,19 @@ public:
         {
             if (data->continueSequence & ~CONTINUE_SEQUENCE_SKIPTO)
             {
-                assertex(lengthRemaining >= (int) sizeof(unsigned short));
-                continuationLength = *(unsigned short *) finger;
-                continuationData = finger + sizeof(unsigned short);
+                assertex(lengthRemaining >= (int) sizeof(unsigned));
+                continuationLength = *(unsigned *) finger;
+                continuationData = finger + sizeof(unsigned);
                 finger = continuationData + continuationLength;
-                lengthRemaining -= continuationLength + sizeof(unsigned short);
+                lengthRemaining -= continuationLength + sizeof(unsigned);
             }
             if (data->continueSequence & CONTINUE_SEQUENCE_SKIPTO)
             {
-                assertex(lengthRemaining >= (int) sizeof(unsigned short));
-                smartStepInfoLength = *(unsigned short *) finger;
-                smartStepInfoData = finger + sizeof(unsigned short);
+                assertex(lengthRemaining >= (int) sizeof(unsigned));
+                smartStepInfoLength = *(unsigned *) finger;
+                smartStepInfoData = finger + sizeof(unsigned);
                 finger = smartStepInfoData + smartStepInfoLength;
-                lengthRemaining -= smartStepInfoLength + sizeof(unsigned short);
+                lengthRemaining -= smartStepInfoLength + sizeof(unsigned);
             }
         }
         assertex(lengthRemaining >= 0);
@@ -606,18 +606,18 @@ public:
     {
         assertex((data->continueSequence & CONTINUE_SEQUENCE_SKIPTO) == 0); // Should not already be any skipto info in the source packet
 
-        unsigned newDataSize = data->packetlength + sizeof(unsigned short) + skipDataLen;
+        unsigned newDataSize = data->packetlength + sizeof(unsigned) + skipDataLen;
         char *newdata = (char *) malloc(newDataSize);
         unsigned headSize = sizeof(RoxiePacketHeader);
         if (traceLength)
             headSize += traceLength;
         if (data->continueSequence & ~CONTINUE_SEQUENCE_SKIPTO)
-            headSize += sizeof(unsigned short) + continuationLength;
+            headSize += sizeof(unsigned) + continuationLength;
         memcpy(newdata, data, headSize); // copy in leading part of old data
         ((RoxiePacketHeader *) newdata)->continueSequence |= CONTINUE_SEQUENCE_SKIPTO; // set flag indicating new data is present
-        *(unsigned short *) (newdata + headSize) = skipDataLen; // add length field for new data
-        memcpy(newdata + headSize + sizeof(unsigned short), skipData, skipDataLen); // copy in new data
-        memcpy(newdata + headSize + sizeof(unsigned short) + skipDataLen, ((char *) data) + headSize, data->packetlength - headSize); // copy in remaining old data
+        *(unsigned *) (newdata + headSize) = skipDataLen; // add length field for new data
+        memcpy(newdata + headSize + sizeof(unsigned), skipData, skipDataLen); // copy in new data
+        memcpy(newdata + headSize + sizeof(unsigned) + skipDataLen, ((char *) data) + headSize, data->packetlength - headSize); // copy in remaining old data
         return createRoxiePacket(newdata, newDataSize);
     }
 

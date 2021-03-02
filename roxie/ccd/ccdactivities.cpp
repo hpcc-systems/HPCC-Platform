@@ -52,7 +52,8 @@ using roxiemem::OwnedConstRoxieRow;
 using roxiemem::OwnedRoxieString;
 using roxiemem::IRowManager;
 
-#define maxContinuationSize 48000 // note - must fit in the 2-byte length field... but also needs to be possible to send back from Roxie server->agent in one packet
+#define continuationErrorThreshold 48000
+#define continuationWarnThreshold 32768
 
 size32_t serializeRow(IOutputRowSerializer * serializer, IMessagePacker *output, const void *unserialized)
 {
@@ -1327,7 +1328,7 @@ public:
         if (!aborted)
         {
             MemoryBuffer si;
-            unsigned short siLen = 0;
+            unsigned siLen = 0;
             si.append(siLen);
             si.append(processed);
             si.append(reader->isKeyed());
@@ -1424,7 +1425,7 @@ public:
                     if (totalSizeSent > indexReadChunkSize)
                     {
                         MemoryBuffer si;
-                        unsigned short siLen = 0;
+                        unsigned siLen = 0;
                         si.append(siLen);
                         si.append(processed);
                         si.append(reader->isKeyed());
@@ -1664,7 +1665,7 @@ public:
             if (totalSizeSent > indexReadChunkSize)
             {
                 MemoryBuffer si;
-                unsigned short siLen = 0;
+                unsigned siLen = 0;
                 si.append(siLen);
                 si.append(processed);
                 si.append(reader->isKeyed());
@@ -2661,29 +2662,61 @@ public:
     bool sendContinuation(IMessagePacker * output)
     {
         MemoryBuffer si;
-        unsigned short siLen = 0;
+        unsigned siLen = 0;
         si.append(siLen);
-        si.append(lastRowCompleteMatch);
+        si.append(false);
+        si.append(lastRowCompleteMatch);  // Note - this flag is also read on server side in isCompleteMatchFlag so (a) be careful about moving it and (b) don't compress it
         si.append(inputsDone);
         si.append(processed);
         si.append(keyprocessed);
         si.append(lastPartNo.partNo);
         si.append(lastPartNo.fileNo);
         tlk->serializeCursorPos(si);
-        if (si.length() <= maxContinuationSize)
+        if (si.length() <= continuationCompressThreshold || (continuationCompressThreshold==0 && si.length() <= continuationErrorThreshold))
         {
             siLen = si.length() - sizeof(siLen);
             si.writeDirect(0, sizeof(siLen), &siLen);
             output->sendMetaInfo(si.toByteArray(), si.length());
             return true;
         }
+        else if (continuationCompressThreshold)
+        {
+            MemoryBuffer compressed;
+            compressed.append(siLen);  // Leaving space to patch when size known
+            compressed.append(true);
+            compressed.append(lastRowCompleteMatch);  // This field is not compressed - see above!
+            compressToBuffer(compressed, si.length() - compressed.length(), si.toByteArray() + compressed.length());
+            bool report = logctx.queryTraceLevel() && (logctx.queryTraceLevel() > 3 || si.length() >= continuationWarnThreshold);
+            if (report)
+                DBGLOG("ERROR: continuation data size %u for %d cursor positions is large - compressed to %u", si.length(), tlk->numActiveKeys(), compressed.length());
+            siLen = compressed.length() - sizeof(siLen);
+            compressed.writeDirect(0, sizeof(siLen), &siLen);
+            output->sendMetaInfo(compressed.toByteArray(), compressed.length());
+            return true;
+        }
         else
+        {
+            DBGLOG("ERROR: continuation data size %u for %d cursor positions is too large", si.length(), tlk->numActiveKeys());
+            DBGLOG("ERROR: set continuationCompressThreshold to compress it");
+            DBGLOG("ERROR: result will be sent as single message, and performance may be degraded");
             return false;
+        }
     }
 
     void readContinuationInfo()
     {
-        resentInfo.read(lastRowCompleteMatch);
+        bool isCompressed;
+        resentInfo.read(isCompressed);
+        resentInfo.read(lastRowCompleteMatch); // This field is not compressed - see above!
+        if (isCompressed)
+        {
+            MemoryBuffer decompressed;
+            decompressToBuffer(decompressed, resentInfo);
+            if (logctx.queryTraceLevel() > 3)
+                 DBGLOG("readContinuationInfo: decompressed from %u to %u", resentInfo.length(), decompressed.length());
+            resentInfo.swapWith(decompressed);
+            resentInfo.reset(0);
+        }
         resentInfo.read(inputsDone);
         resentInfo.read(processed);
         resentInfo.read(keyprocessed);
@@ -4043,6 +4076,74 @@ class CRoxieKeyedJoinIndexActivity : public CRoxieKeyedActivity
     unsigned keepCount;
     unsigned inputDone;
 
+    bool sendContinuation(IMessagePacker * output)
+    {
+        MemoryBuffer si;
+        unsigned siLen = 0;
+        si.append(siLen);
+        si.append(false);
+        si.append(inputDone);
+        si.append(processed);
+        si.append(candidateCount);
+        si.append(keepCount);
+        si.append(lastPartNo.partNo);
+        si.append(lastPartNo.fileNo);
+        tlk->serializeCursorPos(si);
+        if (si.length() <= continuationCompressThreshold || (continuationCompressThreshold==0 && si.length() <= continuationErrorThreshold))
+        {
+            siLen = si.length() - sizeof(siLen);
+            si.writeDirect(0, sizeof(siLen), &siLen);
+            output->sendMetaInfo(si.toByteArray(), si.length());
+            return true;
+        }
+        else if (continuationCompressThreshold)
+        {
+            MemoryBuffer compressed;
+            compressed.append(siLen);  // Leaving space to patch when size known
+            compressed.append(true);
+            compressToBuffer(compressed, si.length() - compressed.length(), si.toByteArray() + compressed.length());
+            bool report = logctx.queryTraceLevel() && (logctx.queryTraceLevel() > 3 || si.length() >= continuationWarnThreshold);
+            if (report)
+                DBGLOG("ERROR: continuation data size %u for %d cursor positions is large - compressed to %u", si.length(), tlk->numActiveKeys(), compressed.length());
+            siLen = compressed.length() - sizeof(siLen);
+            compressed.writeDirect(0, sizeof(siLen), &siLen);
+            output->sendMetaInfo(compressed.toByteArray(), compressed.length());
+            return true;
+        }
+        else
+        {
+            DBGLOG("ERROR: continuation data size %u for %d cursor positions is too large", si.length(), tlk->numActiveKeys());
+            DBGLOG("ERROR: set continuationCompressThreshold to compress it");
+            DBGLOG("ERROR: result will be sent as single message, and performance may be degraded");
+            return false;
+        }
+    }
+
+    void readContinuationInfo()
+    {
+        bool isCompressed;
+        resentInfo.read(isCompressed);
+        if (isCompressed)
+        {
+            MemoryBuffer decompressed;
+            decompressToBuffer(decompressed, resentInfo);
+            if (logctx.queryTraceLevel() > 3)
+                 DBGLOG("readContinuationInfo: decompressed from %u to %u", resentInfo.length(), decompressed.length());
+            resentInfo.swapWith(decompressed);
+            resentInfo.reset(0);
+        }
+        resentInfo.read(inputDone);
+        inputData += inputDone;
+        resentInfo.read(processed);
+        resentInfo.read(candidateCount);
+        resentInfo.read(keepCount);
+        resentInfo.read(lastPartNo.partNo);
+        resentInfo.read(lastPartNo.fileNo);
+        setPartNo(true);
+        tlk->deserializeCursorPos(resentInfo);
+        assertex(resentInfo.remaining() == 0);
+    }
+
 public:
     CRoxieKeyedJoinIndexActivity(AgentContextLogger &_logctx, IRoxieQueryPacket *_packet, HelperFactory *_hFactory, const CRoxieKeyedJoinIndexActivityFactory *_aFactory)
         : CRoxieKeyedActivity(_logctx, _packet, _hFactory, _aFactory), factory(_aFactory)
@@ -4059,18 +4160,7 @@ public:
         inputData = (char *) serializedCreate.readDirect(0);
         inputLength = (serializedCreate.length() - serializedCreate.getPos());
         if (resent)
-        {
-            resentInfo.read(inputDone);
-            inputData += inputDone;
-            resentInfo.read(processed);
-            resentInfo.read(candidateCount);
-            resentInfo.read(keepCount);
-            resentInfo.read(lastPartNo.partNo);
-            resentInfo.read(lastPartNo.fileNo);
-            setPartNo(true);
-            tlk->deserializeCursorPos(resentInfo);
-            assertex(resentInfo.remaining() == 0);
-        }
+            readContinuationInfo();
     }
 
     virtual bool hasNewSegmentMonitors() { return helper->hasNewSegmentMonitors(); }
@@ -4265,21 +4355,8 @@ IMessagePacker *CRoxieKeyedJoinIndexActivity::process()
                         totalSizeSent += KEYEDJOIN_RECORD_SIZE(totalSize);
                         if (totalSizeSent > indexReadChunkSize && !continuationFailed)
                         {
-                            MemoryBuffer si;
-                            unsigned short siLen = 0;
-                            si.append(siLen);
-                            si.append(inputDone);
-                            si.append(processed);
-                            si.append(candidateCount);
-                            si.append(keepCount);
-                            si.append(lastPartNo.partNo);
-                            si.append(lastPartNo.fileNo);
-                            tlk->serializeCursorPos(si);
-                            if (si.length() <= maxContinuationSize)
+                            if (sendContinuation(output))
                             {
-                                siLen = si.length() - sizeof(siLen);
-                                si.writeDirect(0, sizeof(siLen), &siLen);
-                                output->sendMetaInfo(si.toByteArray(), si.length());
                                 noteStats(processed-processedBefore, rejected);
                                 return output.getClear();
                             }
