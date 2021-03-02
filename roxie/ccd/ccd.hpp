@@ -403,6 +403,8 @@ extern unsigned defaultHeapFlags;
 extern bool defaultCheckingHeap;
 extern bool defaultDisableLocalOptimizations;
 
+extern unsigned continuationCompressThreshold;
+
 extern unsigned agentQueryReleaseDelaySeconds;
 extern unsigned coresPerQuery;
 
