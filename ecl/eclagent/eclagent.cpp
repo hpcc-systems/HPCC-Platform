@@ -3629,7 +3629,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
                 }
 
                 const char * appName = argv[0];
-                for (int finger=0; argv[0][finger] != (const char)NULL; finger++)
+                for (int finger=0; argv[0][finger] != '\0'; finger++)
                 {
                     if (argv[0][finger] == PATHSEPCHAR)
                         appName = (const char *)(argv[0] + finger + 1);
