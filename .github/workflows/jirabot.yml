@@ -32,7 +32,7 @@ jobs:
           PULL_REQUEST_NUMBER : ${{ github.event.pull_request.number }}
           PULL_REQUEST_TITLE : ${{ github.event.pull_request.title }}
           PULL_REQUEST_AUTHOR_NAME : ${{ github.event.pull_request.user.login }}
-          PULL_URL: ${{ github.event.pull_request.url }}
+          PULL_URL: ${{ github.event.pull_request.html_url }}
           COMMENTS_URL: ${{ github.event.pull_request.comments_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
