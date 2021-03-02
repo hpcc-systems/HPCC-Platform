@@ -32,6 +32,7 @@ jobs:
           PULL_REQUEST_NUMBER : ${{ github.event.pull_request.number }}
           PULL_REQUEST_TITLE : ${{ github.event.pull_request.title }}
           PULL_REQUEST_AUTHOR_NAME : ${{ github.event.pull_request.user.login }}
+          PULL_URL: ${{ github.event.pull_request.url }}
           COMMENTS_URL: ${{ github.event.pull_request.comments_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
@@ -47,6 +48,7 @@ jobs:
             title = os.environ['PULL_REQUEST_TITLE']
             user = os.environ['PULL_REQUEST_AUTHOR_NAME']
             comments_url = os.environ['COMMENTS_URL']
+            pull_url = os.environ['PULL_URL']
             github_token = os.environ['GITHUB_TOKEN']
         
             print("%s %s %s" % (title, user, comments_url))
