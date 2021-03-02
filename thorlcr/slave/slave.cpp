@@ -670,6 +670,9 @@ public:
             case TAKsimpleaction:
                 ret = createNullSlave(this);
                 break;
+            case TAKemptyaction:
+                ret = createNullSinkSlave(this);
+                break;
             case TAKtopn:
                 if (queryGrouped())
                     ret = createGroupedTopNSlave(this);
