@@ -240,7 +240,7 @@ void CWsWuResultOutHelper::createResultIOS()
     recursiveCreateDirectoryForFile(resultFileNameWithPath);
 
     OwnedIFile resultIFile = createIFile(resultFileNameWithPath);
-    OwnedIFileIO resultIOW = resultIFile->open(IFOcreaterw);
+    OwnedIFileIO resultIOW = resultIFile->open(IFOcreate);
     if (!resultIOW)
         throw makeStringExceptionV(ECLWATCH_CANNOT_OPEN_FILE, "Failed to open %s.", resultFileNameWithPath.str());
     resultIOS.setown(createIOStream(resultIOW));

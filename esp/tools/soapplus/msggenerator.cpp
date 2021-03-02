@@ -499,7 +499,7 @@ StringBuffer& MessageGenerator::generateMessage(const char* method, const char* 
     {
         Owned<IFile> tf = createIFile(m_gfile.get());
         {
-            Owned<IFileIO> tio = tf->open(IFOcreaterw);
+            Owned<IFileIO> tio = tf->open(IFOcreate);
             tio->write(0, message.length(), message.str());
         }
     }
@@ -529,7 +529,7 @@ StringBuffer& MessageGenerator::generateMessage(const char* method, const char* 
 #endif
             Owned<IFile> tf = createIFile(tmpfname.str());
             {
-                Owned<IFileIO> tio = tf->open(IFOcreaterw);
+                Owned<IFileIO> tio = tf->open(IFOcreate);
                 tio->write(0, message.length(), message.str());
             }
             

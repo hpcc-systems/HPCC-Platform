@@ -63,7 +63,7 @@ bool writeToFile(const char* fileName, const char * sb)
   StringBuffer jsName(fileName);
   recursiveCreateDirectoryForFile(fileName);
   Owned<IFile> pFile = createIFile(jsName);
-  Owned<IFileIO> pFileIO = pFile->open(IFOcreaterw);
+  Owned<IFileIO> pFileIO = pFile->open(IFOcreate);
   pFileIO->write(0, strlen(sb), sb);
 
   return true;
