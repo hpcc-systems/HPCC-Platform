@@ -70,8 +70,9 @@ public:
 
     CFatalHandler(unsigned timeout) : CTimeoutTrigger(timeout, "EXCEPTION")
     {
+        start();
     }
-    virtual bool action()
+    virtual bool action() override
     {
         StringBuffer s("FAILED TO RECOVER FROM EXCEPTION, STOPPING THOR");
         FLLOG(MCoperatorWarning, thorJob, exception, s.str());
@@ -84,11 +85,11 @@ public:
         return true;
     }
 // IFatalHandler
-    virtual void inform(IException *e)
+    virtual void inform(IException *e) override
     {
         CTimeoutTrigger::inform(e);
     }
-    virtual void clear()
+    virtual void clear() override
     {
         CTimeoutTrigger::clear();
     }
@@ -1758,9 +1759,10 @@ bool CJobMaster::go()
     public:
         CQueryTimeoutHandler(CJobMaster &_job, unsigned timeout) : CTimeoutTrigger(timeout, "QUERY"), job(_job)
         {
+            start();
             inform(MakeThorException(TE_QueryTimeoutError, "Query took greater than %d seconds", timeout));
         }
-        virtual bool action()
+        virtual bool action() override
         {
             job.fireException(exception);
             return true;
