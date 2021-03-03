@@ -374,16 +374,16 @@ class RegressMain:
                 # Target not specified, use default from config
                 try:
                     if self.args.func == 'setup':
-                        defaultTargets = self.config.defaultSetupEngines
-                        targetSet='defaultSetupEngines'
+                        defaultTargets = self.config.defaultSetupTargets
+                        targetSet='defaultSetupTargets'
                     else:
-                        defaultTargets = self.config.defaultTargetEngines
-                        targetSet='defaultTargetEngines'
+                        defaultTargets = self.config.defaultTargets
+                        targetSet='defaultTargets'
 
                     self.targetEngines = checkClusters(defaultTargets, targetSet)
 
                 except AttributeError:
-                    # It seems there is no defaultSetupClusters|defaulttargetEngines array in the config file
+                    # It seems there is no defaultSetupTargets|defaultTargets array in the config file
                     # use the first one of cluster list in config file
                     self.targetEngines.append(self.config.Engines[0])
             elif 'all' == self.args.target:
