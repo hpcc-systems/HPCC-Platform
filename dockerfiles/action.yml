@@ -19,6 +19,12 @@ inputs:
   latest:
     description: 'Set to 1 to also tag as latest when maturity is release'
     required: false
+  docker_label:
+    description: 'Custom image tag. Default will be based on deduced major.minor.point[-rc]'
+    required: false
+  docker_repo:
+    description: 'Docker repository to use, default: hpccsystems'
+    required: false
 outputs:
   tag:
     description: 'Is the tag, which was pushed'
