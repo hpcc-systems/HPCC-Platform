@@ -36,10 +36,6 @@
 
 #include "securesocket.hpp"
 
-//Metrics
-#include "jmetrics.hpp"
-using namespace hpccMetrics;
-
 #define ESP_FACTORY DECL_EXPORT
 
 IThreadPool* http_thread_pool;
@@ -466,13 +462,6 @@ bool CHttpThread::onRequest()
     httpserver->setSocketReturner(this);
     httpserver->setIsSSL(m_is_ssl);
     httpserver->setShouldClose(m_shouldClose);
-
-    //
-    // Update request count
-    if (isMetricsInitialized())
-    {
-        getMetricsRegistry().getMetric<CounterMetric>("requests")->inc(1);
-    }
 
     httpserver->processRequest();
 

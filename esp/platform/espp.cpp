@@ -365,11 +365,6 @@ void initializeMetrics(CEspConfig* config)
     {
         MetricsReporter &metricsReporter = getMetricsReporter();
         metricsReporter.init(pMetricsTree);
-        std::shared_ptr<CounterMetric> pCountRequests = std::make_shared<CounterMetric>("requests", "Number of requests");
-        metricsReporter.addMetric(pCountRequests);
-
-        MetricsRegistry &metricsRegistry = getMetricsRegistry();
-        metricsRegistry.addMetric(pCountRequests);
         metricsReporter.startCollecting();
     }
 }

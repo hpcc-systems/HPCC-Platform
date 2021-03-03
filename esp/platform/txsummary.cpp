@@ -27,16 +27,25 @@ using std::for_each;
 #define VALIDATE_KEY(k) if (!(k) || !(*k)) return false
 #define MATCH_KEY       [&](const Entry& entry) { return stricmp(entry.key.str(), key) == 0; }
 
+std::shared_ptr<hpccMetrics::CounterMetric> CTxSummary::pRequestCount;
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    CTxSummary::pRequestCount = std::make_shared<hpccMetrics::CounterMetric>("requests", "Number of requests");
+    hpccMetrics::getMetricsReporter().addMetric(CTxSummary::pRequestCount);
+    return true;
+}
+
+
 bool operator < (const StringAttr& a, const StringAttr& b)
 {
     return (stricmp(a.str(), b.str()) < 0);
 }
 
-
 CTxSummary::CTxSummary(unsigned creationTime)
 : m_creationTime(creationTime ? creationTime : msTick())
 {
-
+    pRequestCount->inc(1);
 }
 
 CTxSummary::~CTxSummary()
