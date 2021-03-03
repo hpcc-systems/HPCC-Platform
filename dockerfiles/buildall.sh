@@ -25,7 +25,12 @@ BUILD_TAG=$(git describe --exact-match --tags)  # The git tag for the images we 
 BUILD_LABEL=${BUILD_TAG}                        # The docker hub label for all other components
 BUILD_USER=hpcc-systems                         # The github repo owner
 BUILD_TYPE=                                     # Set to Debug for a debug build, leave blank for default (RelWithDebInfo)
+DOCKER_REPO=hpccsystems
+LN_DOCKER_REPO=hpccsystems
 USE_CPPUNIT=1
+DOCKER_LABEL=${BASE_VER}
+BUILD_LN=0
+GITHUB_LN_TOKEN=missing
 
 #BUILD_ML=all #ml,gnn,gnn-gpu
 ml_features=(
@@ -39,7 +44,13 @@ ml_features=(
 [[ -n ${INPUT_BUILD_USER} ]] && BUILD_USER=${INPUT_BUILD_USER}
 [[ -n ${INPUT_BUILD_VER} ]] && BUILD_TAG=${INPUT_BUILD_VER}
 [[ -n ${GITHUB_REPOSITORY} ]] && BUILD_USER=${GITHUB_REPOSITORY%/*}
+[[ -n ${INPUT_DOCKER_REPO} ]] && DOCKER_REPO=${INPUT_DOCKER_REPO} && LN_DOCKER_REPO=${INPUT_DOCKER_REPO}
+[[ -n ${INPUT_LNDOCKER_REPO} ]] && LN_DOCKER_REPO=${INPUT_LNDOCKER_REPO}
+[[ -n ${INPUT_DOCKER_LABEL} ]] && DOCKER_LABEL=${INPUT_DOCKER_LABEL}
+[[ -n ${INPUT_BUILD_LN} ]] && BUILD_LN=${INPUT_BUILD_LN}
+[[ -n ${INPUT_GITHUB_LN_TOKEN} ]] && GITHUB_LN_TOKEN=${INPUT_GITHUB_LN_TOKEN}
 
+# will need to support different creds, if ln repo is different
 if [[ -n ${INPUT_USERNAME} ]] ; then
   echo ${INPUT_PASSWORD} | docker login -u ${INPUT_USERNAME} --password-stdin ${INPUT_REGISTRY}
   PUSH=1
@@ -80,18 +91,21 @@ fi
 build_image() {
   local name=$1
   local label=$2
+  local buildTag=$3
   [[ -z ${label} ]] && label=$BUILD_LABEL
+  [[ -z ${buildTag} ]] && buildTag=$BUILD_TAG
 
-  if ! docker pull hpccsystems/${name}:${label} ; then
-    docker image build -t hpccsystems/${name}:${label} \
+  if ! docker pull ${DOCKER_REPO}/${name}:${label} ; then
+    docker image build -t ${DOCKER_REPO}/${name}:${label} \
        --build-arg BASE_VER=${BASE_VER} \
-       --build-arg DOCKER_REPO=hpccsystems \
-       --build-arg BUILD_TAG=${BUILD_TAG} \
+       --build-arg DOCKER_REPO=${DOCKER_REPO} \
+       --build-arg BUILD_TAG=${buildTag} \
        --build-arg BUILD_LABEL=${BUILD_LABEL} \
        --build-arg BUILD_USER=${BUILD_USER} \
        --build-arg BUILD_TYPE=${BUILD_TYPE} \
        --build-arg USE_CPPUNIT=${USE_CPPUNIT} \
        --build-arg BUILD_THREADS=${BUILD_THREADS} \
+       --build-arg GITHUB_LN_TOKEN=${GITHUB_LN_TOKEN} \
        ${name}/ 
   fi
   push_image $name $label
@@ -101,14 +115,14 @@ push_image() {
   local name=$1
   local label=$2
   if [ "$LATEST" = "1" ] ; then
-    docker tag hpccsystems/${name}:${label} hpccsystems/${name}:latest
+    docker tag ${DOCKER_REPO}/${name}:${label} ${DOCKER_REPO}/${name}:latest
     if [ "$PUSH" = "1" ] ; then
-      docker push hpccsystems/${name}:${label}
-      docker push hpccsystems/${name}:latest
+      docker push ${DOCKER_REPO}/${name}:${label}
+      docker push ${DOCKER_REPO}/${name}:latest
     fi
   else
     if [ "$PUSH" = "1" ] ; then
-      docker push hpccsystems/${name}:${label}
+      docker push ${DOCKER_REPO}/${name}:${label}
     fi
   fi
 }
@@ -151,8 +165,8 @@ build_ml() {
   local name=$1
   local label=$2
   [[ -z ${label} ]] && label=$BUILD_LABEL
-  docker image build -t hpccsystems/platform-${name}:${label} \
-     --build-arg DOCKER_REPO=hpccsystems \
+  docker image build -t ${DOCKER_REPO}/platform-${name}:${label} \
+     --build-arg DOCKER_REPO=${DOCKER_REPO} \
      --build-arg BUILD_LABEL=${label} \
      ml/${name}/
 }
@@ -160,7 +174,12 @@ build_ml() {
 build_image platform-build-base ${BASE_VER}
 build_image platform-build
 build_image platform-core
-build_ml_image
+#build_ml_image
+if [[ ${BUILD_LN} ]]; then
+  lnBuildTag=${BUILD_TAG/community_/internal_}
+  build_image platform-build-ln ${BUILD_LABEL} ${lnBuildTag}
+  build_image platform-ln-plugins ${BUILD_LABEL}
+fi
 
 if [[ -n ${INPUT_PASSWORD} ]] ; then
   echo "::set-output name=${BUILD_LABEL}"
