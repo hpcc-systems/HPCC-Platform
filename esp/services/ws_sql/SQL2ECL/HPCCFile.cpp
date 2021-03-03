@@ -127,6 +127,37 @@ bool HPCCFile::getFileRecDefwithIndexpos(HPCCColumnMetaData * fieldMetaData, Str
     return false;
 }
 
+bool setChildColumns(HPCCColumnMetaData * parent, IPropertyTree * fieldtree)
+{
+    StringBuffer ecltype;
+    StringBuffer colname;
+
+    if (parent == nullptr || fieldtree == nullptr)
+    {
+        ESPLOG(LogMin, "Could not set HPCC file childcolumns!");
+        return false;
+    }
+
+    Owned<IPropertyTreeIterator> fields = fieldtree->getElements("Field");
+    ForEach(*fields)
+    {
+        IPropertyTree & curField = fields->query();
+        curField.getProp("@ecltype", ecltype.clear());
+        curField.getProp("@name", colname.clear());
+
+        Owned<HPCCColumnMetaData> col = HPCCColumnMetaData::createHPCCColumnMetaData(colname.str());
+        col->setIndex(curField.getPropInt("@position", -1));
+
+        if (strncmp(ecltype, "table of", 8)==0)
+        {
+            setChildColumns(col.get(), &curField);
+        }
+        col->setColumnType(ecltype.str());
+        parent->setChildCol(col);
+    }
+    return true;
+}
+
 bool HPCCFile::setFileColumns(const char * eclString)
 {
     StringBuffer text(eclString);
@@ -151,26 +182,27 @@ bool HPCCFile::setFileColumns(const char * eclString)
 
     StringBuffer ecltype;
     StringBuffer colname;
-    int colsize;
-    int colindex;
 
     Owned<IPropertyTreeIterator> fields = rectree->getElements("Field");
     ForEach(*fields)
     {
-      fields->query().getProp("@ecltype", ecltype.clear());
-      if (strncmp(ecltype, "table of", 8)==0)
-          setHasNestedColumns(true);
+        IPropertyTree & curField = fields->query();
 
-      fields->query().getProp("@name", colname.clear());
-      colsize = fields->query().getPropInt("@size", -1);
-      colindex = fields->query().getPropInt("@position", -1);
+        curField.getProp("@ecltype", ecltype.clear());
+        curField.getProp("@name", colname.clear());
 
-      Owned<HPCCColumnMetaData> col = HPCCColumnMetaData::createHPCCColumnMetaData(colname.str());
-      col->setColumnType(ecltype.str());
-      col->setIndex(colindex);
-      col->setTableName(this->fullname.str());
+        Owned<HPCCColumnMetaData> col = HPCCColumnMetaData::createHPCCColumnMetaData(colname.str());
+        col->setIndex(curField.getPropInt("@position", -1));
+        col->setTableName(this->fullname.str());
 
-      columns.append(*LINK(col));
+        if (strncmp(ecltype, "table of", 8)==0)
+        {
+            setHasNestedColumns(true);
+            if(!setChildColumns(col.get(), &curField))
+                return false;
+        }
+        col->setColumnType(ecltype.str());
+        columns.append(*LINK(col));
     }
 
     return true;
