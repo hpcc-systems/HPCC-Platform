@@ -13801,6 +13801,7 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
 //      logTreeStats(exprs);
 //      logTreeStats(transformed);
 //      DBGLOG("Before normalize %u unique expressions, after normalize %u unique expressions", getNumUniqueExpressions(exprs), getNumUniqueExpressions(transformed));
+        sanityCheckTransformation("Normalize", exprs, transformed);
         replaceArray(exprs, transformed);
         seenForceLocal = normalizer.querySeenForceLocal();
         seenLocalUpload = normalizer.querySeenLocalUpload();
@@ -14140,6 +14141,7 @@ void HqlCppTranslator::applyGlobalOptimizations(HqlExprArray & exprs)
             foldOptions = options.globalFoldOptions;
 
         foldHqlExpression(queryErrorProcessor(), folded, exprs, foldOptions);
+        sanityCheckTransformation("Global fold expressions", exprs, folded);
         replaceArray(exprs, folded);
     }
 
@@ -14150,6 +14152,7 @@ void HqlCppTranslator::applyGlobalOptimizations(HqlExprArray & exprs)
     {
         HqlExprArray folded;
         optimizeHqlExpression(queryErrorProcessor(), folded, exprs, HOOfold);
+        sanityCheckTransformation("Global optimize", exprs, folded);
         replaceArray(exprs, folded);
     }
 

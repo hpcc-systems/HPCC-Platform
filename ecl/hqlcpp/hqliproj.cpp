@@ -3253,6 +3253,7 @@ IHqlExpression * ImplicitProjectTransformer::process(IHqlExpression * expr)
     OwnedHqlExpr ret = transformRoot(expr);
     //cycle_t time6 = msTick();
     //DEBUG_TIMERX(translator.queryTimeReporter(), "EclServer: implicit.transform", time6-time5);
+    sanityCheckTransformation("ImplicitProjectTransformer", expr, ret);
     return ret.getClear();
 }
 

@@ -1798,6 +1798,7 @@ void NewHqlTransformer::transformRoot(HqlExprArray & exprs)
 {
     HqlExprArray temp;
     transformRoot(exprs, temp);
+    sanityCheckTransformation(info.name, exprs, temp);
     exprs.swapWith(temp);
 }
 

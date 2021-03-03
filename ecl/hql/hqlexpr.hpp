@@ -1984,4 +1984,8 @@ extern HQL_API IHqlExpression * annotateIndexBlobs(IHqlExpression * expr);
 extern HQL_API unsigned __int64 querySeqId(IHqlExpression * seq);   // Only for debugging when DEBUG_TRACK_INSTANCEID is defined
 extern HQL_API void enableLocationAnnotations(bool value);
 
+extern HQL_API void sanityCheckTransformation(const char * title, const HqlExprArray & before, const HqlExprArray & after);
+extern HQL_API void sanityCheckTransformation(const char * title, IHqlExpression * before, IHqlExpression * after);
+extern HQL_API void sanityCheckTransformation(const char * title, IHqlExpression * before, const HqlExprArray & after);
+
 #endif
