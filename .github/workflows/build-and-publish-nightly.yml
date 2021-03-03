@@ -1,4 +1,4 @@
-name: Build and publish
+name: Nightly Build and publish
 # This workflow is triggered on new tags of Community Edition 7.8.x or later,
 # or any of the weekly tag names starting 'master'
 on:
