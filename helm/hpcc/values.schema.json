@@ -964,29 +964,36 @@
       ]
     },
     "sashaservice": {
-      "description": "sasha services",
-      "type": "object",
-      "properties": {
-        "coalescer": {
-          "$ref": "#/definitions/sasha-coalescer"
+      "oneOf": [
+        {
+          "description": "sasha services",
+          "type": "object",
+          "properties": {
+            "coalescer": {
+              "$ref": "#/definitions/sasha-coalescer"
+            },
+            "wu-archiver": {
+              "$ref": "#/definitions/sasha-wu-archiver"
+            },
+            "dfuwu-archiver": {
+              "$ref": "#/definitions/sasha-dfuwu-archiver"
+            },
+            "dfurecovery-archiver": {
+              "$ref": "#/definitions/sasha-dfurecovery-archiver"
+            },
+            "file-expiry": {
+              "$ref": "#/definitions/sasha-file-expiry"
+            },
+            "disabled": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
         },
-        "wu-archiver": {
-          "$ref": "#/definitions/sasha-wu-archiver"
-        },
-        "dfuwu-archiver": {
-          "$ref": "#/definitions/sasha-dfuwu-archiver"
-        },
-        "dfurecovery-archiver": {
-          "$ref": "#/definitions/sasha-dfurecovery-archiver"
-        },
-        "file-expiry": {
-          "$ref": "#/definitions/sasha-file-expiry"
-        },
-        "disabled": {
-          "type": "boolean"
+        {
+          "type": "null"
         }
-      },
-      "additionalProperties": false
+      ]
     }
   }
 }

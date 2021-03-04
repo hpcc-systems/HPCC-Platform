@@ -1,5 +1,6 @@
-{{- if and (hasKey $.Values "sasha") (not $.Values.sasha.disabled) -}}
-{{ range $sashaName, $_sasha := $.Values.sasha -}}
+{{- $sashaServices := $.Values.sasha | default dict -}}
+{{- if not $sashaServices.disabled -}}
+{{ range $sashaName, $_sasha := $sashaServices -}}
 {{ $sasha := ($_sasha | default dict) -}}
 {{ if not $sasha.disabled -}}
 {{ $_ := set $sasha "name" $sashaName -}}

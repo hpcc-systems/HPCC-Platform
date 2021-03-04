@@ -1,6 +1,7 @@
 {{ range $dali := $.Values.dali -}}
 {{- if not $dali.disabled -}}
 {{- $commonCtx := dict "root" $ "me" $dali }}
+{{- $sashaServices := $dali.services | default dict -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -35,8 +36,8 @@ spec:
 {{ include "hpcc.addConfigMapVolumeMount" $dali | indent 8 }}
 {{ include "hpcc.addDaliVolumeMount" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "system" ) ) | indent 8 }}
-{{- if and (hasKey $dali "services") (not $dali.services.disabled) -}}
-{{- range $sashaName, $_sasha := $dali.services -}}
+{{- if not $sashaServices.disabled -}}
+{{- range $sashaName, $_sasha := $sashaServices -}}
 {{- $sasha := ($_sasha | default dict) -}}
 {{- if not $sasha.disabled -}}
 {{- $_ := set $sasha "name" $sashaName -}}
@@ -52,8 +53,8 @@ spec:
 {{ include "hpcc.addConfigMapVolume" $dali | indent 6 }}
 {{- $tmpDaliScope := dict -}}
 {{- $_ := set $tmpDaliScope "sashaAccess" list -}}
-{{- if and (hasKey $dali "services") (not $dali.services.disabled) -}}
-{{- range $sashaName, $_sasha := $dali.services -}}
+{{- if not $sashaServices.disabled -}}
+{{- range $sashaName, $_sasha := $sashaServices -}}
 {{- $sasha := ($_sasha | default dict) -}}
 {{- if not $sasha.disabled -}}
 {{- $_ := set $sasha "name" $sashaName -}}
@@ -86,8 +87,8 @@ data:
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
 ---
-{{- if and (hasKey . "services") (not .services.disabled) -}}
-{{- range $sashaName, $_sasha := .services -}}
+{{- if not $sashaServices.disabled -}}
+{{- range $sashaName, $_sasha := $sashaServices -}}
 {{- $sasha := ($_sasha | default dict) -}}
 {{- if not $sasha.disabled -}}
 {{- $_ := set $sasha "name" $sashaName -}}

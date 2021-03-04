@@ -610,8 +610,9 @@ Generate list of available services
   public: {{ $esp.public }}
 {{ end -}}
 {{- range $dali := $.Values.dali -}}
-{{- if and (hasKey $dali "services") (not $dali.services.disabled) -}}
-{{- range $sashaName, $_sasha := $dali.services -}}
+{{- $sashaServices := $dali.services | default dict -}}
+{{- if not $sashaServices.disabled -}}
+{{- range $sashaName, $_sasha := $sashaServices -}}
 {{- $sasha := ($_sasha | default dict) -}}
 {{- if and (not $sasha.disabled) ($sasha.servicePort) -}}
 - name: {{ printf "sasha-%s" $sashaName }}
@@ -621,8 +622,9 @@ Generate list of available services
 {{ end -}}
 {{ end -}}
 {{ end -}}
-{{- if and (hasKey $.Values "sasha") (not $.Values.sasha.disabled) -}}
-{{- range $sashaName, $_sasha := $.Values.sasha -}}
+{{- $sashaServices := $.Values.sasha | default dict -}}
+{{- if not $sashaServices.disabled -}}
+{{- range $sashaName, $_sasha := $sashaServices -}}
 {{- $sasha := ($_sasha | default dict) -}}
 {{- if and (not $sasha.disabled) ($sasha.servicePort) -}}
 - name: {{ printf "sasha-%s" $sashaName }}
