@@ -35,6 +35,7 @@ spec:
 {{ include "hpcc.addConfigMapVolumeMount" $dali | indent 8 }}
 {{ include "hpcc.addDaliVolumeMount" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "system" ) ) | indent 8 }}
+{{- if and (hasKey $dali "services") (not $dali.services.disabled) -}}
 {{- range $sashaName, $_sasha := $dali.services -}}
 {{- $sasha := ($_sasha | default dict) -}}
 {{- if not $sasha.disabled -}}
@@ -46,16 +47,19 @@ spec:
 {{- end }}
 {{- end }}
 {{- end }}
+{{- end }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" $dali | indent 6 }}
 {{- $tmpDaliScope := dict -}}
 {{- $_ := set $tmpDaliScope "sashaAccess" list -}}
+{{- if and (hasKey $dali "services") (not $dali.services.disabled) -}}
 {{- range $sashaName, $_sasha := $dali.services -}}
 {{- $sasha := ($_sasha | default dict) -}}
 {{- if not $sasha.disabled -}}
 {{- $_ := set $sasha "name" $sashaName -}}
 {{- $_ := set $tmpDaliScope "sashaAccess" (concat $tmpDaliScope.sashaAccess (splitList " " (include "hpcc.getSashaServiceAccess" $sasha))) -}}
 {{- include "hpcc.addSashaVolumes" (dict "root" $ "me" $sasha) | indent 6 }}
+{{- end }}
 {{- end }}
 {{- end }}
 {{ include "hpcc.addDaliVolume" $commonCtx | indent 6 }}
@@ -82,6 +86,7 @@ data:
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
 ---
+{{- if and (hasKey . "services") (not .services.disabled) -}}
 {{- range $sashaName, $_sasha := .services -}}
 {{- $sasha := ($_sasha | default dict) -}}
 {{- if not $sasha.disabled -}}
@@ -101,6 +106,7 @@ kind: ConfigMap
 {{ include "hpcc.addPVC" (dict "root" $ "name" (printf "sasha-%s" $sashaName) "me" $sasha.storage) }}
 {{- end }}
 ---
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}

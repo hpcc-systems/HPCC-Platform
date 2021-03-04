@@ -187,6 +187,7 @@ dali:
   #  memory: "4G"
 
 sasha:
+  #disabled: true # disable all services. Alternatively set sasha to null (sasha: null)
   wu-archiver:
     #disabled: true
     servicePort: 8877
