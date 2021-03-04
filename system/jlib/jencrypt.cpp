@@ -1758,8 +1758,8 @@ static const char *aesErrorText[] =
     "Bad Key",
     "Not Initialized",
     "Bad Direction",
-    "Corrupted Data"
-    "Output buffer too small"
+    "Corrupted Data",
+    "Output buffer too small",
 };
 
 inline const char *getAesErrorText(int err)
