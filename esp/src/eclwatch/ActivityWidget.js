@@ -22,6 +22,7 @@ define([
     "src/Clippy",
 
     "dojo/text!../templates/ActivityPageWidget.html",
+    "dojo/text!../templates/ActivityPageContainerWidget.html",
 
     "dijit/form/ToggleButton",
     "dijit/layout/TabContainer",
@@ -34,7 +35,7 @@ define([
     registry, Button, ToolbarSeparator, Tooltip,
     selector, tree,
     GridDetailsWidget, ESPActivity, DelayLoadWidget, ESPUtil, Utility, DiskUsage, Clippy,
-    template
+    template, templateContainer
 ) {
 
     var DelayedRefresh = declare("DelayedRefresh", [], {
@@ -65,7 +66,7 @@ define([
 
     var nlsHPCC = nlsHPCCMod.default;
     return declare("ActivityWidget", [GridDetailsWidget], {
-        templateString: template,
+        templateString: dojoConfig.isContainer ? templateContainer : template,
         i18n: nlsHPCC,
         gridTitle: nlsHPCC.title_Activity,
         idProperty: "__hpcc_id",
@@ -236,16 +237,18 @@ define([
             var context = this;
 
             this._diskSummaryPane = registry.byId(this.id + "DiskSummaryCP");
-            var origResize = this._diskSummaryPane.resize;
-            this._diskSummaryPane.resize = function (size) {
-                origResize.apply(this, arguments);
-                if (context._diskUsage) {
-                    context._diskUsage
-                        .resize({ width: size.w, height: size.h || context._diskSummaryPane.h })
-                        .lazyRender()
-                        ;
-                }
-            };
+            if (this._diskSummaryPane) {
+                var origResize = this._diskSummaryPane.resize;
+                this._diskSummaryPane.resize = function (size) {
+                    origResize.apply(this, arguments);
+                    if (context._diskUsage) {
+                        context._diskUsage
+                            .resize({ width: size.w, height: size.h || context._diskSummaryPane.h })
+                            .lazyRender()
+                            ;
+                    }
+                };
+            }
         },
 
         doSearch: function (searchText) {
@@ -259,17 +262,19 @@ define([
                 return;
 
             var context = this;
-            this._diskUsage = new DiskUsage.Summary()
-                .target(this.id + "DiskSummary")
-                .on("click", function (gauge, details) {
-                    var tab = context.ensurePane({ details: details, __hpcc_id: "Usage:" + details.Name }, { usage: true });
-                    if (tab) {
-                        context.selectChild(tab);
-                    }
-                })
-                .render()
-                .refresh()
-                ;
+            if (this._diskSummaryPane) {
+                this._diskUsage = new DiskUsage.Summary()
+                    .target(this.id + "DiskSummary")
+                    .on("click", function (gauge, details) {
+                        var tab = context.ensurePane({ details: details, __hpcc_id: "Usage:" + details.Name }, { usage: true });
+                        if (tab) {
+                            context.selectChild(tab);
+                        }
+                    })
+                    .render()
+                    .refresh()
+                    ;
+            }
 
             this.autoRefreshButton = registry.byId(this.id + "AutoRefresh");
             this.activity.disableMonitor(true);
@@ -599,9 +604,11 @@ define([
         },
 
         refreshUsage: function (bypassCachedResult) {
-            this._diskUsage
-                .refresh(bypassCachedResult)
-                ;
+            if (this._diskUsage) {
+                this._diskUsage
+                    .refresh(bypassCachedResult)
+                    ;
+            }
         },
 
         refreshGrid: function () {

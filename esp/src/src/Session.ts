@@ -1,6 +1,7 @@
 import * as cookie from "dojo/cookie";
 import * as xhr from "dojo/request/xhr";
 import * as topic from "dojo/topic";
+import { SMCService } from "@hpcc-js/comms";
 import * as ESPUtil from "./ESPUtil";
 
 const espTimeoutSeconds = cookie("ESPSessionTimeoutSeconds") || 600; // 10 minuntes?
@@ -13,6 +14,13 @@ const sessionIsActive = espTimeoutSeconds;
 let _prevReset = Date.now();
 
 declare const dojoConfig;
+
+const smc = new SMCService({ baseUrl: "" });
+smc.GetBuildInfo({}).then(response => {
+    if (response?.BuildInfo?.NamedValue?.filter(row => row.Name === "CONTAINERIZED" && row.Value === "ON")?.length > 0) {
+        dojoConfig.isContainer = true;
+    }
+});
 
 export function initSession() {
     if (sessionIsActive > -1) {

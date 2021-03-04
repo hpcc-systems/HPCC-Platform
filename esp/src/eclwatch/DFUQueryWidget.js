@@ -797,7 +797,6 @@ define([
             registry.byId(this.id + "CopyDropDown").set("disabled", !hasSelection);
             registry.byId(this.id + "RenameDropDown").set("disabled", !hasSelection);
             registry.byId(this.id + "AddtoDropDown").set("disabled", !hasSelection);
-            registry.byId(this.id + "AddtoDropDown").set("disabled", !hasSelection);
             registry.byId(this.id + "DesprayDropDown").set("disabled", !hasSelection);
             registry.byId(this.id + "FilterFilterDropDown").set("disabled", this.treeMode || this.params.searchResults);
 
