@@ -459,6 +459,7 @@ void MemoryBuffer::swapWith(MemoryBuffer & other)
     SWAP(maxLen, other.maxLen, size32_t);
     SWAP(readPos, other.readPos, size32_t);
     SWAP(swapEndian, other.swapEndian, bool);
+    SWAP(ownBuffer, other.ownBuffer, bool);
 }
 
 bool MemoryBuffer::matches(const MemoryBuffer & other) const
