@@ -1,3 +1,4 @@
+{{- if and (hasKey $.Values "sasha") (not $.Values.sasha.disabled) -}}
 {{ range $sashaName, $_sasha := $.Values.sasha -}}
 {{ $sasha := ($_sasha | default dict) -}}
 {{ if not $sasha.disabled -}}
@@ -50,3 +51,4 @@ kind: ConfigMap
 {{ end -}}
 {{- end }}
 {{- end }}
+{{- end -}}

@@ -981,6 +981,9 @@
         },
         "file-expiry": {
           "$ref": "#/definitions/sasha-file-expiry"
+        },
+        "disabled": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false
