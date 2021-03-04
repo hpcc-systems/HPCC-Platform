@@ -228,12 +228,16 @@ protected:
     Owned<IException> exception;
 
 public:
-    CTimeoutTrigger(unsigned _timeout, const char *_description) : timeout(_timeout), description(_description), threaded("TimeoutTrigger")
+    CTimeoutTrigger(unsigned _timeout, const char *_description) : timeout(_timeout), description(_description), threaded("TimeoutTrigger", this)
+    {
+    }
+    void start()
     {
         running = (timeout!=0);
-        threaded.init(this);
+        if (running)
+            threaded.start();
     }
-    virtual ~CTimeoutTrigger()
+    virtual void beforeDispose() override
     {
         stop();
         threaded.join();

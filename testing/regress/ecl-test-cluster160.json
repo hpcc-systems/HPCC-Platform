@@ -35,20 +35,11 @@
         },
         "timeout":"720",
         "maxAttemptCount":"3",
-        "defaultSetupClusters": [
-            "roxie",
-            "hthor",
-            "thor"
+        "defaultSetupTargets": [
+            "thor",
+            "roxie"
         ],
-        "defaultSetupEngines": [
-            "roxie",
-            "hthor",
-            "thor"
-        ],
-        "defaultTargetClusters": [
-            "all"
-        ],
-        "defaultTargetEngines": [
+        "defaultTargets": [
             "all"
         ],
         "Params":[
@@ -63,6 +54,12 @@
         "setupExtraParams":{
             "OriginalTextFilesOsPath" : "/opt/HPCCSystems/testing/regress",
             "OriginalTextFilesIp" : "127.0.0.1"
-        }
+        },
+        "setupExtraDParams":{
+            "HPCCBaseDir" : "/opt/HPCCSystems/"
+        },
+        "FileExclusion":[
+            "*_blahblah.ecl"
+        ]
     }
 }
