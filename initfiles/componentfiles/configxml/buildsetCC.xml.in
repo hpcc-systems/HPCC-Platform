@@ -201,6 +201,10 @@
                         path="OthersWorkunitsAccess"
                         resource="OthersWorkunitsAccess"
                         service="ws_workunits"/>
+                    <AuthenticateFeature description="Access to deploy workunits"
+                        path="DeployWorkunitsAccess"
+                        resource="DeployWorkunitsAccess"
+                        service="ws_workunits"/>
                     <AuthenticateFeature description="Access to ESDL configuration service"
                         path="ESDLConfigAccess"
                         resource="ESDLConfigAccess"
@@ -278,6 +282,10 @@
                     <AuthenticateFeature description="Access to others&apos; workunits"
                         path="OthersWorkunitsAccess"
                         resource="OthersWorkunitsAccess"
+                        service="ws_sql"/>
+                    <AuthenticateFeature description="Access to deploy workunits"
+                        path="DeployWorkunitsAccess"
+                        resource="DeployWorkunitsAccess"
                         service="ws_sql"/>
                 </Properties>
             </BuildSet>

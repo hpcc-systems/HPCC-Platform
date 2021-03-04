@@ -124,6 +124,9 @@
                                     <AuthenticateFeature description="Access to others&apos; workunits"
                                                          path="OthersWorkunitsAccess" resource="OthersWorkunitsAccess"
                                                          service="ws_workunits"/>
+                                    <AuthenticateFeature description="Access to deploy workunits"
+                                                         path="DeployWorkunitsAccess" resource="DeployWorkunitsAccess"
+                                                         service="ws_workunits"/>
                                     <AuthenticateFeature description="Access to ECL direct service"
                                                          path="EclDirectAccess" resource="EclDirectAccess"
                                                          service="ecldirect"/>
