@@ -48,6 +48,7 @@ static const char* const DEFAULT_LOGIN_URL = "/esp/files/Login.html";
 static const char* const DEFAULT_LOGIN_LOGO_URL = "/esp/files/eclwatch/img/Loginlogo.png";
 static const char* const DEFAULT_GET_USER_NAME_URL = "/esp/files/GetUserName.html";
 static const char* const ECLWATCH_STUB_REQ = "/esp/files/stub.htm";
+static const char* const ECLWATCH_INDEX_REQ = "/esp/files/index.html";
 static const char* const DEFAULT_UNRESTRICTED_RESOURCES = "/favicon.ico,/esp/files/*,/esp/xslt/*";
 static const char* const AUTH_STATUS_NA = "NA";
 static const char* const AUTH_STATUS_FAIL = "Fail";

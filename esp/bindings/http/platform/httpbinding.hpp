@@ -372,18 +372,26 @@ public:
     int getCheckSessionTimeoutSeconds() const { return checkSessionTimeoutSeconds; }
     bool isDomainAuthResources(const char* resource)
     {
+        //Check DomainAuthResources specified in domainAuthResources.
         bool* found = domainAuthResources.getValue(resource);
         if (found && *found)
-            return true;
+            return true; //resource used by domain authentication
 
-        if (strieq(resource, "/esp/files/stub.htm"))
-            return false;
-
+        //Check DomainAuthResources specified in domainAuthResourcesWildMatch.
+        //Both ECLWATCH_STUB_REQ and ECLWATCH_INDEX_REQ are stored inside the /esp/files folder.
+        //Most of the files inside the folder are resources which do not need to be authenticated
+        //and the login page may need those resources to show the page. So, the folder may be in
+        //the domainAuthResourcesWildMatch. But, both ECLWATCH_STUB_REQ and ECLWATCH_INDEX_REQ
+        //are not used by the login page and should be authenticated.
+        if (strieq(resource, ECLWATCH_STUB_REQ))
+            return false; //Not used by domain authentication. Should be authenticated.
+        if (strieq(resource, ECLWATCH_INDEX_REQ))
+            return false; //Not used by domain authentication. Should be authenticated.
         ForEachItemIn(i, domainAuthResourcesWildMatch)
         {
             const char* wildResourcePath = domainAuthResourcesWildMatch.item(i);
             if (WildMatch(resource, wildResourcePath, true))
-                return true;
+                return true; //resource used by domain authentication
         }
         return false;
     }
