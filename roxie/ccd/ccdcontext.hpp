@@ -68,6 +68,7 @@ interface IRoxieAgentContext : extends IRoxieContextLogger
     virtual IRoxieServerContext *queryServerContext() = 0;
     virtual IWorkUnitRowReader *getWorkunitRowReader(const char *wuid, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, IEngineRowAllocator *rowAllocator, bool isGrouped) = 0;
     virtual IEngineRowAllocator * getRowAllocatorEx(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const = 0;
+    virtual unsigned checkInterval() const = 0;
 
 };
 

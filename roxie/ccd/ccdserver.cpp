@@ -187,6 +187,10 @@ public:
     {
         ctx->checkAbort();
     }
+    virtual unsigned checkInterval() const
+    {
+        return ctx->checkInterval();
+    }
     virtual void notifyAbort(IException *E) 
     {
         ctx->notifyAbort(E);
@@ -4559,18 +4563,24 @@ public:
     {
         mu.clear();
         unsigned ctxTraceLevel = activity.queryLogCtx().queryTraceLevel();
+        unsigned timeout = remoteId.isSLAPriority() ? slaTimeout : (remoteId.isHighPriority() ? highTimeout : lowTimeout);
+        unsigned checkInterval = activity.queryContext()->checkInterval();
+        if (checkInterval > timeout)
+            checkInterval = timeout;
+        unsigned lastActivity = msTick();
         for (;;)
         {
             checkDelayed();
-            unsigned timeout = remoteId.isSLAPriority() ? slaTimeout : (remoteId.isHighPriority() ? highTimeout : lowTimeout);
             activity.queryContext()->checkAbort();
             bool anyActivity;
             if (ctxTraceLevel > 5)
-                activity.queryLogCtx().CTXLOG("Calling getNextUnpacker(%d)", timeout);
-            mr.setown(mc->getNextResult(timeout, anyActivity));
+                activity.queryLogCtx().CTXLOG("Calling getNextUnpacker(%d)", checkInterval);
+            mr.setown(mc->getNextResult(checkInterval, anyActivity));
             if (ctxTraceLevel > 6)
-                activity.queryLogCtx().CTXLOG("Called getNextUnpacker(%d), activity=%d", timeout, anyActivity);
+                activity.queryLogCtx().CTXLOG("Called getNextUnpacker(%d), activity=%d", checkInterval, anyActivity);
             activity.queryContext()->checkAbort();
+            if (anyActivity)
+                lastActivity = msTick();
             if (mr)
             {
                 unsigned roxieHeaderLen;
@@ -4862,7 +4872,7 @@ public:
             }
             else
             {
-                if (!anyActivity && !localAgent)
+                if (!anyActivity && !localAgent && lastActivity-msTick() >= timeout)
                 {
                     activity.queryLogCtx().CTXLOG("Input has stalled - retry required?");
                     retryPending();
