@@ -658,6 +658,10 @@ public:
         backupdays = props->getPropInt("@backup",0);
     }
 
+    virtual ~CBranchArchiver()
+    {
+    }
+
     virtual IBranchItem *createBranchItem(IPropertyTree &e) = 0;
 
     static int compareBranch(IInterface * const *v1, IInterface * const *v2) // for bAdd only
