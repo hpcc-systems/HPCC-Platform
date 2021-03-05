@@ -85,7 +85,7 @@ define([
                 title: this.i18n.TargetClustersLegacy,
                 style: "border: 0; width: 100%; height: 100%"
             });
-            this.legacyTargetClustersIframeWidget.placeAt(this._tabContainer, "last");
+            this.legacyTargetClustersIframeWidget.placeAt(this._tabContainer, "first");
             this.machineFilter.disable();
         },
 
@@ -106,7 +106,7 @@ define([
                         renderHeaderCell: function (node) {
                             node.innerHTML = Utility.getImageHTML("configuration.png", context.i18n.Configuration);
                         },
-                        width: 8,
+                        width: 12,
                         sortable: false,
                         formatter: function (configuration) {
                             if (configuration === true) {
@@ -120,7 +120,7 @@ define([
                         renderHeaderCell: function (node) {
                             node.innerHTML = Utility.getImageHTML("server.png", context.i18n.Dali);
                         },
-                        width: 8,
+                        width: 12,
                         sortable: false,
                         formatter: function (dali) {
                             if (dali === true) {
