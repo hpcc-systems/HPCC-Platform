@@ -102,6 +102,7 @@
 #define THOROPT_MAXLFN_BLOCKTIME_MINS "maxLfnBlockTimeMins"     // max time permitted to be blocked on a DFS logical file operation.
 #define THOROPT_VALIDATE_FILE_TYPE    "validateFileType"        // validate file type compatibility, e.g. if on fire error if XML reading CSV    (default = true)
 #define THOROPT_MIN_REMOTE_CQ_INDEX_SIZE_MB "minRemoteCQIndexSizeMb" // minimum size of index file to enable server side handling                (default = 0, meaning use heuristic to determin)
+#define THOROPT_KJ_ASSUME_PRIMARY "keyedJoinAssumePrimary"      // assume primary part exists (don't check when mapping, which can be slow)
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning
 
