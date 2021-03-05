@@ -132,12 +132,12 @@ data:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
 
 {{- if not $eclAgentUseChildProcesses }}
-{{- $eclAgentJobNamePrefix := printf "%s-%s-" .name  $eclAgentType }}
+{{- $eclAgentJobName := printf "%s-%jobname" $eclAgentType }}
   {{ $eclAgentType }}-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
     metadata:
-      name: {{ $eclAgentType }}-%jobname
+      name: {{ $eclAgentJobName }}
     spec:
       ttlSecondsAfterFinished: 100
       template:
@@ -146,12 +146,12 @@ data:
             accessDali: "yes"
             accessEsp: "yes"
         spec:
-          {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $eclAgentJobNamePrefix "target" .name "type" "thor") | indent 10 }}
+          {{- include "hpcc.placementsByJobTargetType" (dict "root" $ "job" $eclAgentJobName "target" .name "type" "thor") | indent 10 }}
           serviceAccountName: "hpcc-agent"
           initContainers: 
             {{- include "hpcc.checkDataMount" (dict "root" $) | indent 10 }}
           containers:
-          - name: {{ $eclAgentType }}-%jobname
+          - name: {{ $eclAgentJobName }}
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" .eclAgentResources) | indent 12 }}
@@ -176,12 +176,12 @@ data:
       backoffLimit: 0
 {{- end }}
 
-  {{- $thorMgrJobNamePrefix := printf "%s-thormanager-" .name }}
+  {{- $thorMgrJobName := printf "thormanager-%jobname" }}
   thormanager-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
     metadata:
-      name: thormanager-%jobname
+      name: {{ $thorMgrJobName }}
     spec:
       ttlSecondsAfterFinished: 100
       template:
@@ -192,12 +192,12 @@ data:
             accessEsp: "yes"
             job: %jobname
         spec:
-          {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $thorMgrJobNamePrefix "target" .name "type" "thor") | indent 10 }}
+          {{- include "hpcc.placementsByJobTargetType" (dict "root" $ "job" $thorMgrJobName "target" .name "type" "thor") | indent 10 }}
           serviceAccountName: hpcc-agent
           initContainers:
             {{- include "hpcc.checkDataMount" (dict "root" $) | indent 10 }}
           containers:
-          - name: thormanager-%jobname
+          - name: {{ $thorMgrJobName }}
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" .managerResources) | indent 12 }}
@@ -221,14 +221,14 @@ data:
           restartPolicy: Never
       backoffLimit: 0
 
-  {{- $thorWkrJobNamePrefix := printf "%s-thorworker-" .name }}
+  {{- $thorWkrJobName := printf "thorworker-%jobname" }}
   thorworker-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
     metadata:
-      name: thorworker-%jobname
+      name: {{ $thorWkrJobName }}
     spec:
-      {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $thorWkrJobNamePrefix "target" .name "type" "thor") | indent 6 }}
+      {{- include "hpcc.placementsByJobTargetType" (dict "root" $ "job" $thorWkrJobName "target" .name "type" "thor") | indent 6 }}
       parallelism: %numWorkers
       ttlSecondsAfterFinished: 100
       template:
@@ -240,7 +240,7 @@ data:
         spec:
           serviceAccountName: hpcc-default
           containers:
-          - name: thorworker-%jobname
+          - name: {{ $thorWkrJobName }}
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" .workerResources) | indent 12 }}
@@ -268,7 +268,7 @@ data:
     apiVersion: networking.k8s.io/v1
     kind: NetworkPolicy
     metadata:
-      name: thormanager-%jobname
+      name: {{ $thorMgrJobName }}
     spec:
       podSelector:
         matchLabels:

@@ -55,8 +55,7 @@ global:
 ##    For example "target:roxie", "target:thor".
 ## 3) Pod, "Deployment" metadata name, which usually should be from the name of the array
 ##    item of a type. For example, "eclwatch", "mydali", "thor-thoragent"..
-## 4) Job name prefix in format: "<target>-<job id>-". For example "myeclccserver-compile-",
-##    thor-hthor-, thor-thormanager-
+## 4) Job name regular express:  For example "compile-" or "compile-.*" or exact match "^compile-.*$"
 ##
 ## Supported configurations under each "placement"
 ## 1) nodeSelector
@@ -69,11 +68,11 @@ global:
 ##
 ## Examples:
 #placements:
-#- pods: ["eclwatch","roxie-workunit","myeclccserver-compile-","mydali"]
+#- pods: ["eclwatch","roxie-workunit","^compile-.*$","mydali"]
 #  placement:
 #    nodeSelector:
 #      name: npone
-#- pods: ["thor-thorworker-", "thor-thoragent", "thor-thormanager-","thor-eclagent","thor-hthor-"]
+#- pods: ["thorworker-", "thor-thoragent", "thormanager-","thor-eclagent","hthor-"]
 #  placement:
 #    nodeSelector:
 #      name: nptwo
@@ -82,7 +81,7 @@ global:
 #      operator: "Equal"
 #      value: "nptwo"
 #      effect: "NoSchedule"
-#- pods: ["thor-thorworker-"]
+#- pods: ["thorworker-.*"]
 #  placement:
 #    affinity:
 #      nodeAffinity:

@@ -18,7 +18,7 @@ spec:
         accessDali: "yes"
         accessEsp: {{ .useChildProcesses | default false | ternary "yes" "no" | quote }}
     spec:
-            {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" .name "target" .name "type" "eclagent" ) | indent 6 }}
+      {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" .name "target" .name "type" "eclagent" ) | indent 6 }}
       serviceAccountName: {{ .useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
       initContainers:
         {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
@@ -66,12 +66,12 @@ data:
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
 {{- if not .useChildProcesses }} 
-{{- $jobNamePrefix := printf "%s-%s-" .name $apptype }}
+{{- $jobName := printf "%s-%jobname" $apptype }}
   {{ $apptype }}-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
     metadata:
-      name: {{ $apptype }}-%jobname
+      name: {{ $jobName }}
     spec:
       ttlSecondsAfterFinished: 100
       template:
@@ -80,10 +80,10 @@ data:
             accessDali: "yes"
             accessEsp: "yes"
         spec:
-          {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $jobNamePrefix "target" .name "type" "eclagent") | indent 10 }}
+          {{- include "hpcc.placementsByJobTargetType" (dict "root" $ "job" $jobName "target" .name "type" "eclagent") | indent 10 }}
           serviceAccountName: "hpcc-default"
           containers:
-          - name: {{ $apptype }}-%jobname
+          - name: {{ $jobName }}
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" .resources) | indent 12 }}

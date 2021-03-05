@@ -68,12 +68,12 @@ data:
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
 {{- if not .useChildProcesses }} 
-{{- $jobNamePrefix := printf "%s-compile-" .name }}
+{{- $jobName := printf "compile-%%jobname" }}
   compile-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
     metadata:
-      name: compile-%jobname
+      name: {{ $jobName }}
     spec:
       ttlSecondsAfterFinished: 100
       template:
@@ -82,10 +82,10 @@ data:
             accessDali: "yes"
             accessEsp: "yes"
         spec:
-          {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $jobNamePrefix "target" .name "type" "eclccserver") | indent 10 }}
+          {{- include "hpcc.placementsByJobTargetType" (dict "root" $ "job" $jobName "target" .name "type" "eclccserver") | indent 10 }}
           serviceAccountName: "hpcc-default"
           containers:
-          - name: compile-%jobname
+          - name: {{ $jobName }}
 {{- include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" .resources) | indent 12 }}
 {{ include "hpcc.addImageAttrs" (dict "root" $ "me" .) | indent 12 }}
