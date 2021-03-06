@@ -132,7 +132,7 @@ data:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
 
 {{- if not $eclAgentUseChildProcesses }}
-{{- $eclAgentJobName := printf "%s-%jobname" $eclAgentType }}
+{{- $eclAgentJobName := printf "%s-%%jobname" $eclAgentType }}
   {{ $eclAgentType }}-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
@@ -176,7 +176,7 @@ data:
       backoffLimit: 0
 {{- end }}
 
-  {{- $thorMgrJobName := printf "thormanager-%jobname" }}
+  {{- $thorMgrJobName := printf "thormanager-%%jobname" }}
   thormanager-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
@@ -221,7 +221,7 @@ data:
           restartPolicy: Never
       backoffLimit: 0
 
-  {{- $thorWkrJobName := printf "thorworker-%jobname" }}
+  {{- $thorWkrJobName := printf "thorworker-%%jobname" }}
   thorworker-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job

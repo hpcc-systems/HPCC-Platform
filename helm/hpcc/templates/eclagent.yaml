@@ -66,7 +66,7 @@ data:
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
 {{- if not .useChildProcesses }} 
-{{- $jobName := printf "%s-%jobname" $apptype }}
+{{- $jobName := printf "%s-%%jobname" $apptype }}
   {{ $apptype }}-jobspec.yaml: |
     apiVersion: batch/v1
     kind: Job
