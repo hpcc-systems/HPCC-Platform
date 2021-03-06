@@ -50,6 +50,7 @@ bool rawSend = false;
 bool remoteStreamQuery = false;
 bool remoteStreamForceResend = false;
 bool remoteStreamSendCursor = false;
+bool autoXML = true;
 int verboseDbgLevel = 0;
 
 StringBuffer sendFileName;
@@ -1049,6 +1050,11 @@ int main(int argc, char **argv)
             remoteStreamSendCursor = true;
             ++arg;
         }
+        else if (strieq(argv[arg], "-noxml"))
+        {
+            autoXML = false;
+            ++arg;
+        }
         else
         {
             printf("Unknown argument %s, ignored\n", argv[arg]);
@@ -1175,7 +1181,13 @@ int main(int argc, char **argv)
             }
             else
             {
-                ret = sendQuery(ip, socketPort, query);
+                if (*query == '<' || !autoXML)
+                    ret = sendQuery(ip, socketPort, query);
+                else
+                {
+                    VStringBuffer xquery("<%s/>", query);
+                    ret = sendQuery(ip, socketPort, xquery);
+                }
 
                 if (sendToSocket)
                     finishedReading.wait();

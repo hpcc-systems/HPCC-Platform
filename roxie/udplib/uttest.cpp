@@ -709,13 +709,6 @@ int main(int argc, char * argv[] )
                     usage();
                 udpTraceLevel = atoi(argv[c]);
             }
-            else if (strcmp(ip, "--udpTraceCategories")==0)
-            {
-                c++;
-                if (c==argc)
-                    usage();
-                udpTraceCategories = atoi(argv[c]);
-            }
             else if (strcmp(ip, "--dontSendToSelf")==0)
             {
                 dontSendToSelf = true;

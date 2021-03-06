@@ -52,7 +52,7 @@ interface IRoxieAgentContext : extends IRoxieContextLogger
     virtual void noteChildGraph(unsigned id, IActivityGraph *childGraph) = 0;
     virtual roxiemem::IRowManager &queryRowManager() = 0;
     virtual const QueryOptions &queryOptions() const = 0;
-    virtual void addAgentsReplyLen(unsigned len) = 0;
+    virtual void addAgentsReplyLen(unsigned len, unsigned duplicates, unsigned resends) = 0;
     virtual const char *queryAuthToken() = 0;
     virtual const IResolvedFile *resolveLFN(const char *filename, bool isOpt, bool isPrivilegedUser) = 0;
     virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters, bool isPrivilegedUser) = 0;
@@ -83,7 +83,9 @@ interface IRoxieServerContext : extends IInterface
     virtual void done(bool failed) = 0;
     virtual void finalize(unsigned seqNo) = 0;
     virtual memsize_t getMemoryUsage() = 0;
-    virtual unsigned getAgentsReplyLen() = 0;
+    virtual unsigned getAgentsReplyLen() const = 0;
+    virtual unsigned getAgentsDuplicates() const = 0;
+    virtual unsigned getAgentsResends() const = 0;
 
     virtual unsigned getXmlFlags() const = 0;
     virtual IConstWorkUnit *queryWorkUnit() const = 0;

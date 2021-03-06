@@ -403,6 +403,8 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     addMetric(lastQueryDate, 0);
     addMetric(lastQueryTime, 0);
 
+    addMetric(packetsResent, 0);
+
 #ifdef TIME_PACKETS
     addMetric(packetWaitMax, 0);
     addMetric(packetRunMax, 0);

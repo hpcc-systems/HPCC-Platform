@@ -24,6 +24,7 @@
 #include "jisem.hpp"
 #include "udplib.hpp"
 #include "udptopo.hpp"
+#include "udpsha.hpp"
 #include "ccd.hpp"
 #include "ccddebug.hpp"
 #include "ccdquery.hpp"
@@ -2742,9 +2743,9 @@ class RoxieUdpSocketQueueManager : public RoxieSocketQueueManager
 public:
     RoxieUdpSocketQueueManager(unsigned snifferChannel, unsigned _numWorkers) : RoxieSocketQueueManager(_numWorkers)
     {
-        int udpQueueSize = topology->getPropInt("@udpQueueSize", UDP_QUEUE_SIZE);
-        int udpSendQueueSize = topology->getPropInt("@udpSendQueueSize", UDP_SEND_QUEUE_SIZE);
-        int udpMaxSlotsPerClient = topology->getPropInt("@udpMaxSlotsPerClient", 0x7fffffff);
+        unsigned udpQueueSize = topology->getPropInt("@udpQueueSize", UDP_QUEUE_SIZE);
+        unsigned udpSendQueueSize = topology->getPropInt("@udpSendQueueSize", UDP_SEND_QUEUE_SIZE);
+        unsigned udpMaxSlotsPerClient = topology->getPropInt("@udpMaxSlotsPerClient", 0x7fffffff);
         if (topology->getPropInt("@sendMaxRate", 0))
         {
             unsigned sendMaxRate = topology->getPropInt("@sendMaxRate");
@@ -2757,6 +2758,8 @@ public:
         getChannelIp(snifferIp, snifferChannel);
         if (udpMaxSlotsPerClient > udpQueueSize)
             udpMaxSlotsPerClient = udpQueueSize;
+        if (udpResendEnabled && udpMaxSlotsPerClient > TRACKER_BITS)
+            udpMaxSlotsPerClient = TRACKER_BITS;
         unsigned serverFlowPort = topology->getPropInt("@serverFlowPort", CCD_SERVER_FLOW_PORT);
         unsigned dataPort = topology->getPropInt("@dataPort", CCD_DATA_PORT);
         unsigned clientFlowPort = topology->getPropInt("@clientFlowPort", CCD_CLIENT_FLOW_PORT);
@@ -2970,6 +2973,14 @@ public:
     virtual unsigned queryBytesReceived() const
     {
         return totalBytesReceived;
+    }
+    virtual unsigned queryDuplicates() const
+    {
+        return 0;
+    }
+    virtual unsigned queryResends() const
+    {
+        return 0;
     }
 };
 
