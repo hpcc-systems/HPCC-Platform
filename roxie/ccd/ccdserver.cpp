@@ -295,9 +295,9 @@ public:
     {
         return ctx->queryOptions();
     }
-    virtual void addAgentsReplyLen(unsigned len) 
+    virtual void addAgentsReplyLen(unsigned len, unsigned duplicates, unsigned resends)
     {
-        ctx->addAgentsReplyLen(len);
+        ctx->addAgentsReplyLen(len, duplicates, resends);
     }
     virtual const char *queryAuthToken() 
     {
@@ -4376,7 +4376,7 @@ public:
         merger.reset();
         pending.kill();
         if (mc && ctx)
-            ctx->addAgentsReplyLen(mc->queryBytesReceived());
+            ctx->addAgentsReplyLen(mc->queryBytesReceived(), mc->queryDuplicates(), mc->queryResends());
         mc.clear(); // Or we won't free memory for graphs that get recreated
         mu.clear(); //ditto
         deferredStart = false;
