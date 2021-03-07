@@ -147,6 +147,7 @@ public:
         DataBuffer *prev;
         if (tail && (pktseq > ((UdpPacketHeader*) tail->data)->pktSeq))
         {
+            assert(tail->msgNext==nullptr);
             finger = nullptr;
             prev = tail;
             tail = dataBuff;
@@ -217,7 +218,11 @@ public:
             prev->msgNext = dataBuff;
         }
         else
-            firstPacket = tail = dataBuff;
+        {
+            firstPacket = dataBuff;
+            if (!tail)
+                tail = dataBuff;
+        }
         dataBuff->msgNext = finger;
 #ifdef _DEBUG
         numPackets++;
