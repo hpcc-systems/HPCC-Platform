@@ -3569,14 +3569,14 @@ ILockInfoCollection *deserializeLockInfoCollection(MemoryBuffer &mb)
     return new CLockInfoCollection(mb);
 }
 
-extern da_decl const char* remLeading(const char* s)
+const char* remLeading(const char* s)
 {
     if (*s == '/')
         s++;
     return s;
 }
 
-extern da_decl const char* splitpath(const char* path, StringBuffer& head, StringBuffer& tmp)
+const char* splitpath(const char* path, StringBuffer& head, StringBuffer& tmp)
 {
     if (path[0]!='/')
         path = tmp.append('/').append(path).str();
@@ -3587,7 +3587,7 @@ extern da_decl const char* splitpath(const char* path, StringBuffer& head, Strin
 }
 
 static unsigned daliConnectTimeoutMs = 5000;
-extern da_decl IRemoteConnection* connectXPathOrFile(const char* path, bool safe, StringBuffer& xpath)
+IRemoteConnection* connectXPathOrFile(const char* path, bool safe, StringBuffer& xpath)
 {
     CDfsLogicalFileName lfn;
     StringBuffer lfnPath;

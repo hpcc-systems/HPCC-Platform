@@ -79,23 +79,13 @@ bool CWSDaliEx::onDelete(IEspContext& context, IEspDeleteRequest& req, IEspDelet
 
         StringBuffer head, tmp;
         const char* tail = splitpath(path, head, tmp);
-        Owned<IRemoteConnection> conn = querySDS().connect(head, myProcessSession(), RTM_LOCK_WRITE, daliConnectTimeoutMs);
+        path = remLeading(path);
+        Owned<IRemoteConnection> conn = querySDS().connect(path, myProcessSession(), RTM_LOCK_WRITE, daliConnectTimeoutMs);
         if (!conn)
             throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "Could not connect to %s", head.str());
-
-        Owned<IPropertyTree> root = conn->getRoot();
-        Owned<IPropertyTree> child = root->getPropTree(tail);
-        if (!child)
-            throw makeStringExceptionV(ECLWATCH_INTERNAL_ERROR, "Couldn't find %s/%s", head.str(), tail);
-
         if (!req.getNoBackup())
-            backupSDSData(child, path, tail);
-
-        root->removeTree(child);
-        child.clear();
-        root.clear();
-        conn->commit();
-        conn->close();
+            backupSDSData(conn->queryRoot(), path, tail);
+        conn->close(true);
         resp.setMessage("Dali updated.");
     }
     catch(IException* e)
@@ -109,26 +99,23 @@ void CWSDaliEx::importSDSData(const char* dataXML, const char* dataFile, const c
 {
     StringBuffer head, tmp;
     const char* tail = splitpath(path, head, tmp);
+    path = remLeading(path);
     if (!add)
     {
-        Owned<IRemoteConnection> bconn = querySDS().connect(remLeading(path), myProcessSession(), RTM_LOCK_READ|RTM_SUB, daliConnectTimeoutMs);
+        Owned<IRemoteConnection> bconn = querySDS().connect(path, myProcessSession(), RTM_LOCK_READ|RTM_SUB, daliConnectTimeoutMs);
         if (bconn)
-        {
-            Owned<IPropertyTree> broot = bconn->getRoot();
-            backupSDSData(broot, path, tail);
-        }
+            backupSDSData(bconn->queryRoot(), path, tail);
     }
 
-    Owned<IRemoteConnection> conn = querySDS().connect(head, myProcessSession(), 0, daliConnectTimeoutMs);
+    Owned<IRemoteConnection> conn = querySDS().connect(head, myProcessSession(), RTM_LOCK_WRITE, daliConnectTimeoutMs);
     if (!conn)
         throw makeStringExceptionV(ECLWATCH_CANNOT_CONNECT_DALI, "Could not connect to %s", path);
 
     StringAttr newtail; // must be declared outside the following if
-    Owned<IPropertyTree> root = conn->getRoot();
+    IPropertyTree* root = conn->queryRoot();
     if (!add)
     {
-        Owned<IPropertyTree> child = root->getPropTree(tail);
-        root->removeTree(child);
+        root->removeProp(tail);
 
         //If replacing a qualified branch then remove the qualifiers before calling addProp
         const char* qualifier = strchr(tail, '[');
@@ -148,16 +135,16 @@ void CWSDaliEx::importSDSData(const char* dataXML, const char* dataFile, const c
         removeFileTraceIfFail(dataFile);
     }
 
+#ifndef _CONTAINERIZED
     Owned<IPropertyTree> oldEnvironment;
-    if (streq(path, "Environment")) //This is from daliadmin code. Should also check the path eq. '/Environment' (see the 7th line below)?
-        oldEnvironment.setown(createPTreeFromIPT(conn->queryRoot()));
+    if (streq(path, "Environment"))
+        oldEnvironment.setown(createPTreeFromIPT(root));
+#endif
     root->addPropTree(tail, LINK(branch));
-    conn->commit();
-    PROGLOG("Branch %s imported", path);
     conn->close();
+    PROGLOG("Branch %s imported", path);
 
-    if (*path=='/')
-        path++;
+#ifndef _CONTAINERIZED
     if (streq(path, "Environment"))
      {
         PROGLOG("Refreshing cluster groups from Environment");
@@ -166,6 +153,7 @@ void CWSDaliEx::importSDSData(const char* dataXML, const char* dataFile, const c
         if (!response.isEmpty())
             PROGLOG("updating Environment via import path=%s : %s", path, response.str());
     }
+#endif
 }
 
 void CWSDaliEx::backupSDSData(IPropertyTree* srcPTree, const char* srcPath, const char* prefix)
@@ -264,17 +252,15 @@ int CWSDaliSoapBindingEx::onStartUpload(IEspContext &ctx, CHttpRequest* request,
             request->readContentToFiles(nullptr, daliFolder, fileNames);
             unsigned count = fileNames.ordinality();
             if (count == 0)
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Failed to read upload content.");
-            //For now, we only support importing 1 file per Import request for a better response time.
-            //Some file could be very big. It may take a log time to import.
+                throw makeStringException(ECLWATCH_INVALID_INPUT, "Failed to read upload content.");
             if (count > 1)
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Only one file is allowed.");
+                throw makeStringException(ECLWATCH_INVALID_INPUT, "Only one file is allowed.");
 
             VStringBuffer fileName("%s%s", daliFolder, fileNames.item(0));
             wsdService->importSDSData(nullptr, fileName, path, strToBool(add));
         }
         else
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "WsWorkunits::%s does not support the upload_ option.", method);
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "WsWorkunits::%s does not support the upload_ option.", method);
     }
     catch (IException* e)
     {
@@ -282,7 +268,7 @@ int CWSDaliSoapBindingEx::onStartUpload(IEspContext &ctx, CHttpRequest* request,
     }
     catch (...)
     {
-        me->append(*MakeStringExceptionDirect(ECLWATCH_INTERNAL_ERROR, "Unknown Exception"));
+        me->append(*makeStringException(ECLWATCH_INTERNAL_ERROR, "Unknown Exception"));
     }
     return onFinishUpload(ctx, request, response, serv, method, fileNames, files, me);
 }

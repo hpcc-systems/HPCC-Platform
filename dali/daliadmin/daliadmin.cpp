@@ -249,7 +249,7 @@ static void import(const char *path,const char *src,bool add)
             toXML(broot, *fstream);         // formatted (default)
         }
     }
-    Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),0, daliConnectTimeoutMs);
+    Owned<IRemoteConnection> conn = querySDS().connect(head, myProcessSession(), RTM_LOCK_WRITE, daliConnectTimeoutMs);
     if (!conn) {
         UERRLOG("Could not connect to %s",path);
         return;
