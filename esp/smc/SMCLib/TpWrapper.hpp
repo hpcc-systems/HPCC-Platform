@@ -39,6 +39,7 @@
 #include "danqs.hpp"
 #include "environment.hpp"
 #include "ws_topology.hpp"
+#include "ws_resources.hpp"
 #include <string>
 #include <set>
 #include "sacmd.hpp"
@@ -189,6 +190,7 @@ public:
     void queryTargetClusters(double version, const char* clusterType, const char* clusterName, IArrayOf<IEspTpTargetCluster>& clusterList);
     void getTargetClusterList(IArrayOf<IEspTpLogicalCluster>& clusters, const char* clusterType = NULL, const char* clusterName = NULL);
     void queryTargetClusterProcess(double version, const char* processName, const char* clusterType, IArrayOf<IConstTpCluster>& list);
+    void getServices(double version, const char* serviceType, const char* serviceName, IArrayOf<IConstHPCCService>& list);
 
     IPropertyTree* getEnvironment(const char* xpath);
 };

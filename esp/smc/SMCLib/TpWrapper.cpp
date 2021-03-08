@@ -1970,6 +1970,36 @@ void CTpWrapper::getAttPath(const char* Path,StringBuffer& returnStr)
     JBASE64_Decode(Path, returnStr);
 }
 
+void CTpWrapper::getServices(double version, const char* serviceType, const char* serviceName, IArrayOf<IConstHPCCService>& services)
+{
+    Owned<IPropertyTreeIterator> itr = queryComponentConfig().getElements("services");
+    ForEach(*itr)
+    {
+        IPropertyTree& service = itr->query();
+        //Only show the public services for now
+        if (!service.getPropBool("@public"))
+            continue;
+
+        const char* type = service.queryProp("@type");
+        if (isEmptyString(type) || (!isEmptyString(serviceType) && !strieq(serviceType, type)))
+            continue;
+
+        const char* name = service.queryProp("@name");
+        if (isEmptyString(name) || (!isEmptyString(serviceName) && !strieq(serviceName, name)))
+            continue;
+
+        Owned<IEspHPCCService> svc = createHPCCService();
+        svc->setName(name);
+        svc->setType(type);
+        svc->setPort(service.getPropInt("@port"));
+        if (service.getPropBool("@tls"))
+            svc->setTLSSecure(true);
+        services.append(*svc.getLink());
+        if (!isEmptyString(serviceName))
+            break;
+    }
+}
+
 extern TPWRAPPER_API ISashaCommand* archiveOrRestoreWorkunits(StringArray& wuids, IProperties* params, bool archive, bool dfu)
 {
     StringBuffer sashaAddress;

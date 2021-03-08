@@ -49,6 +49,7 @@ set ( ESPSCM_SRCS
       ws_codesign.ecm
       ws_decoupledlogging.ecm
       ws_dali.ecm
+      ws_resources.ecm
     )
 
 foreach ( loop_var ${ESPSCM_SRCS} )
