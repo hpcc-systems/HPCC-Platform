@@ -10064,7 +10064,7 @@ public:
             }
             else
             {
-                VStringBuffer msg("Active cluster '%s' group layout does not match stroageplane definition", name);
+                VStringBuffer msg("Active cluster '%s' group layout does not match storageplane definition", name);
                 UWARNLOG("%s", msg.str());                                                                        \
                 messages.append(msg).newline();
             }
