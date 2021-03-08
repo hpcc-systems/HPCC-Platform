@@ -639,7 +639,9 @@ int main( int argc, const char *argv[]  )
 #endif
     const char *thorname = NULL;
     StringBuffer nodeGroup, logUrl;
+#ifndef _CONTAINERIZED
     unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
+#endif
     unsigned channelsPerWorker;
     if (globals->hasProp("@channelsPerWorker"))
         channelsPerWorker = globals->getPropInt("@channelsPerWorker", 1);
@@ -741,44 +743,55 @@ int main( int argc, const char *argv[]  )
         unsigned gmemSize = globals->getPropInt("@globalMemorySize"); // in MB
         if (0 == gmemSize)
         {
-            unsigned maxMem = hdwInfo.totalMemory;
-#ifdef _WIN32
-            if (maxMem > 2048)
-                maxMem = 2048;
-#else
-#ifndef __64BIT__
-            if (maxMem > 2048)
+            const char *workerResourcedMemory = globals->queryProp("workerResources/@memory");
+            if (!isEmptyString(workerResourcedMemory))
             {
-                // 32 bit OS doesn't handle whole physically installed RAM
-                maxMem = 2048;
-            }
-#ifdef __ARM_ARCH_7A__
-            // For ChromeBook with 2GB RAM
-            if (maxMem <= 2048)
-            {
-                // Decrease max memory to 2/3 
-                maxMem = maxMem * 2 / 3; 
-            }
-#endif            
-#endif
-#endif
-            if (globals->getPropBool("@localThor") && 0 == mmemSize)
-            {
-                gmemSize = maxMem / 2; // 50% of total for slaves
-                mmemSize = maxMem / 4; // 25% of total for master
+                offset_t sizeBytes = friendlyStringToSize(workerResourcedMemory);
+                gmemSize = (unsigned)(sizeBytes / 0x100000);
             }
             else
             {
-                gmemSize = maxMem * 3 / 4; // 75% of total for slaves
-                if (0 == mmemSize)
-                    mmemSize = gmemSize; // default to same as slaves
+                unsigned maxMem = hdwInfo.totalMemory;
+#ifdef _WIN32
+                if (maxMem > 2048)
+                    maxMem = 2048;
+#else
+#ifndef __64BIT__
+                if (maxMem > 2048)
+                {
+                    // 32 bit OS doesn't handle whole physically installed RAM
+                    maxMem = 2048;
+                }
+#ifdef __ARM_ARCH_7A__
+                // For ChromeBook with 2GB RAM
+                if (maxMem <= 2048)
+                {
+                    // Decrease max memory to 2/3 
+                    maxMem = maxMem * 2 / 3; 
+                }
+#endif            
+#endif
+#endif
+#ifndef _CONTAINERIZED
+                if (globals->getPropBool("@localThor") && 0 == mmemSize)
+                {
+                    gmemSize = maxMem / 2; // 50% of total for slaves
+                    mmemSize = maxMem / 4; // 25% of total for master
+                }
+                else
+#endif
+                {
+                    gmemSize = maxMem * 3 / 4; // 75% of total for slaves
+                }
             }
             unsigned perSlaveSize = gmemSize;
+#ifndef _CONTAINERIZED
             if (slavesPerNode>1)
             {
                 PROGLOG("Sharing globalMemorySize(%d MB), between %d slave processes. %d MB each", perSlaveSize, slavesPerNode, perSlaveSize / slavesPerNode);
                 perSlaveSize /= slavesPerNode;
             }
+#endif
             globals->setPropInt("@globalMemorySize", perSlaveSize);
         }
         else
@@ -787,9 +800,19 @@ int main( int argc, const char *argv[]  )
             {
                 // should prob. error here
             }
-            if (0 == mmemSize)
-                mmemSize = gmemSize;
         }
+        if (0 == mmemSize)
+        {
+            const char *managerResourcedMemory = globals->queryProp("managerResources/@memory");
+            if (!isEmptyString(managerResourcedMemory))
+            {
+                offset_t sizeBytes = friendlyStringToSize(managerResourcedMemory);
+                mmemSize = (unsigned)(sizeBytes / 0x100000);
+            }
+            else
+                mmemSize = gmemSize; // default to same as slaves
+        }
+
         bool gmemAllowHugePages = globals->getPropBool("@heapUseHugePages", false);
         gmemAllowHugePages = globals->getPropBool("@heapMasterUseHugePages", gmemAllowHugePages);
         bool gmemAllowTransparentHugePages = globals->getPropBool("@heapUseTransparentHugePages", true);
