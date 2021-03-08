@@ -1913,6 +1913,8 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
         // info.setSnapshot(cw->getSnapshot(s).str());
         info->setStateID(cw.getState());
         info->setState(cw.queryStateDesc());
+        info->setAction(cw.getAction());
+        info->setActionEx(cw.queryActionDesc());
         unsigned totalThorTimeMS = cw.getTotalThorTime();
         StringBuffer totalThorTimeStr;
         formatDuration(totalThorTimeStr, totalThorTimeMS);
