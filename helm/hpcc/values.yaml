@@ -38,6 +38,15 @@ global:
     moneyLocale: "en_US.UTF-8"
     perCpu: 0.126
 
+  # postJobCommand will execute at the end of a dynamically lauched K8s job,
+  # when the main entrypoint process finishes, or if the readiness probes trigger a preStop event.
+  # This can be useful if injected sidecars are installed that need to be told to stop.
+  # If they are not stopped, the pod continues running with the side car container only, in a "NotReady" state.
+  # An example of this is the Istio envoy side car. It can be stopped with the command below.
+
+  # misc:
+  #   postJobCommand: "curl -sf -XPOST http://127.0.0.1:15020/quitquitquit"
+
 security:
   eclSecurity:
     # Possible values:
