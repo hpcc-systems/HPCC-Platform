@@ -29,6 +29,7 @@ export const DojoAdapter: React.FunctionComponent<DojoAdapterProps> = ({
 
     const myRef = React.useRef<HTMLDivElement>();
     const uid = useId("");
+    const [widget, setWidget] = React.useState<any>();
 
     React.useEffect(() => {
 
@@ -68,6 +69,7 @@ export const DojoAdapter: React.FunctionComponent<DojoAdapterProps> = ({
                 if (onWidgetMount) {
                     onWidgetMount(widget);
                 }
+                setWidget(widget);
             }
         }
 
@@ -86,8 +88,10 @@ export const DojoAdapter: React.FunctionComponent<DojoAdapterProps> = ({
             }
             widget = null;  //  Avoid race condition  ---
         };
-    }, [onWidgetMount, params, delayProps, uid, widgetClass, widgetClassID]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
+    widget?.resize();
     return <div ref={myRef} style={{ width: "100%", height: "100%" }}>{nlsHPCC.Loading} {widgetClassID}...</div>;
 };
 

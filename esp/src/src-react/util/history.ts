@@ -112,6 +112,12 @@ export function pushSearch(_: object, state?: any) {
     }, state);
 }
 
+export function pushUrl(_: string, state?: any) {
+    hashHistory.push({
+        pathname: _
+    }, state);
+}
+
 export function updateSearch(_: object, state?: any) {
     const search = stringify(_ as any);
     hashHistory.replace({
