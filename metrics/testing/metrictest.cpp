@@ -54,13 +54,13 @@ const char *testConfigYml = R"!!(component:
     name: config_name
     prefix: component_prefix.
     sinks:
-      - sink: placeholder
-        type: filesink
-        name: default
-        settings:
-          filename: testout.txt
-          clear: true
-          period: 5
+        sink:
+          - type: filesink
+            name: default
+            settings:
+              filename: testout.txt
+              clear: true
+              period: 5
 )!!";
 
 
@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 
     //
     // Get singleton
-    MetricsReporter &myReporter = getMetricsReporter();
+    MetricsReporter &myReporter = queryMetricsReporter();
 
     //
     // Init reporter with config
@@ -114,9 +114,9 @@ int main(int argc, char *argv[])
     first.join();
     second.join();
 
+    printf("Stopping the collection...");
     myReporter.stopCollecting();
-
-    printf("Test complete\n");
+    printf("Stopped. Test complete\n");
 }
 
 
@@ -127,7 +127,7 @@ void processThread(int numLoops, unsigned delay, bool addDynamic, const std::str
     {
         if (addDynamic && i == addAfter)
         {
-            MetricsReporter &myReporter = getMetricsReporter();
+            MetricsReporter &myReporter = queryMetricsReporter();
             pDynamicMetric = std::make_shared<GaugeMetric>(name.c_str(), "The dynamic number of requests");
             myReporter.addMetric(pDynamicMetric);
         }

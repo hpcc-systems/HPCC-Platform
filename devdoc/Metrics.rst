@@ -157,15 +157,14 @@ Framework Design
 This section covers the design and architecture of the framework. It discusses the main areas of the
 design, the interactions between each area, and an overall process model of how the framework operates.
 
-The framework consists of three major areas: metrics, sinks, and the glue logic. These area work
+The framework consists of three major areas: metrics, sinks, and the glue logic. These areas work
 together with the platform and the component to provide a reusable metrics collection function.
 
 Metrics represent the quantifiable component state measurements used to track and assess the status
-of the component and the overall cluster. Metrics are typically scalar values that are easily
-aggregated by a collection system. Aggregated values provide the necessary input to take component
-and cluster actions such as scaling up and down. The component is responsible for creating metrics
-and instrumenting the code. The framework provides the support for collecting and reporting the
-values. Metrics provide the following:
+of the component. Metrics are typically scalar values that are easily aggregated by a collection system.
+Aggregated values provide the necessary input to take component and cluster actions such as scaling
+up and down. The component is responsible for creating metrics and instrumenting the code. The
+framework provides the support for collecting and reporting the values. Metrics provide the following:
 
 * Simple methods for the component to update the metric
 * Simple methods for the framework to retrieve metric value(s)
@@ -174,7 +173,7 @@ values. Metrics provide the following:
 In addition, the framework provides the support for retrieving values so that the component does not
 participate in metric reporting. The component simply creates the metrics it needs, then instruments
 the component to update the metric whenever its state changes. For example, the component may create
-a metric that counts the total number of requests it has received. Then, wherever the component
+a metric that counts the total number of requests received. Then, wherever the component
 receives a request, a corresponding update to the count is added. Nowhere in the component is any
 code added to retrieve the count as that is handled by the framework.
 
@@ -212,15 +211,15 @@ metrics designed to cover the majority of component measurement requirements. Al
 common interface to allow the framework to manage them in a common way.
 
 To meet the requirement to manage metrics independent of the underlying metric state, all metrics
-inherit from a common interface. All metrics implement the interface and add their specific methods
-to update and retrieve internal state. Generally the component uses the update method(s) to change
-metric state whenever an event or other process dictates. The sink, described later, is generally
-the consumer of the retrieval methods. Components create and update metrics and sinks retrieve and
-consume the values. The metric is responsible for synchronizing access between update and retrieval.
+implement a common interface. All metrics then add their specific methods to update and retrieve
+internal state. Generally the component uses the update method(s) to change metric state whenever
+an event or other process dictates. The sink, described later, is generally the consumer of the
+retrieval methods. Components create and update metrics and sinks retrieve and consume the values.
+The metric is responsible for synchronizing access between update and retrieval.
 
 Sinks
-===============
-The framework defines a sink interface to support the different requirements of a collection systems.
+=====
+The framework defines a sink interface to support the different requirements of collection systems.
 Examples of collection systems are Prometheus, Datadog, and Elasticsearch. Each has different
 requirements for how and when measurements are ingested. The following are examples of different
 collection system requirements:
@@ -260,6 +259,12 @@ Metrics Implementations
 
 The sections that follow discuss metric implementations.
 
+Counter Metric
+--------------
+A counter metric is a monotonically increasing value that "counts" the total occurrences of some event.
+Examples include the number of requests received, or the number of cache misses. Once created, the
+component instruments the code with updates to the count whenever appropriate.
+
 Gauge Metric
 ------------
 A gauge metric is a continuously updated value representing the current state of an interesting value
@@ -285,13 +290,14 @@ form as shown below. Note that as the design progresses it is expected that ther
   component:
     metrics:
       sinks:
-        - name: <sink name>
-          type: <sink_type>
-          settings:
-            sink_setting1: sink_setting_value1
-            sink_setting2: sink_setting_value2
-          metrics:
-            - name: <metric_name>
+        sinK:
+          - type: <sink_type>
+            name: <sink name>
+            settings:
+              sink_setting1: sink_setting_value1
+              sink_setting2: sink_setting_value2
+            metrics:
+              - name: <metric_name>
 
 Where (based on being a child of the current *component*):
 
@@ -301,20 +307,23 @@ metrics
 metrics.sinks
     List of sinks defined for the component (may have been combined with global config)
 
-metrics.sinks.name
+metrics.sinks.sink
+    The repeating element
+
+metrics.sinks.sind.type
+    The type for the sink. The type is substituted into the following pattern to determine the lib to load:
+    libhpccmetrics<type><shared_object_extension>
+
+metrics.sinks.sink.name
     A name for the sink. Note this may not be needed, but can provide a way to combine global and
     component config based on value
 
-metrics.sinks.type
-    The type for the sink. The type is subsituted into the following pattern to determine the lib to load:
-    libhpccmetrics<type><shared_object_extension>
-
-metrics.sinks.settings
+metrics.sinks.sink.settings
     A set of key/value pairs that passed to the sink when initialized. It should contain information
     necessary for the operation of the sink. Nested YML is supported. Example settings are the
     prometheus server name, or the collection period for a periodic sink.
 
-metrics.sinks.metrics
+metrics.sinks.sink.metrics
     Optional list of component-defined metrics reported by the sink to the backend during collection
     and reporting. If no list if given, all component metrics are reported by default.
 

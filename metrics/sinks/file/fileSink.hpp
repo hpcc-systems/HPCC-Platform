@@ -17,7 +17,10 @@
 #include "jmetrics.hpp"
 #include "jptree.hpp"
 #include "jstring.hpp"
+#include "jfile.ipp"
+#include "jisem.hpp"
 #include <thread>
+#include <condition_variable>
 
 
 #ifdef _METRICS_FILESINK_LIB_EXPORTS
@@ -34,19 +37,25 @@ class FILESINK_API FileMetricSink : public MetricSink
     public:
 
         explicit FileMetricSink(const char *name, const IPropertyTree *pSettingsTree);
-        ~FileMetricSink();
+        ~FileMetricSink() override;
         void startCollection(MetricsReporter *pReporter) override;
         void stopCollection() override;
 
     protected:
         void writeMeasurementsToFile(const MeasurementVector &values) const;
-        void collectionThread() const;
+        void collectionThread() ;
+        void doStopCollecting();
 
     protected:
 
         StringBuffer fileName;
         std::chrono::seconds periodSeconds;
+        unsigned uPeriodSeconds;
         std::thread collectThread;
         bool stopCollectionFlag = false;
         bool isCollecting = false;
+        bool clearFileOnStartCollecting = false;
+        _IO_FILE *fhandle;
+        std::condition_variable cv;
+        std::mutex m;
 };

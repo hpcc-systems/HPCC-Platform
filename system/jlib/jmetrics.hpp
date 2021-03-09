@@ -29,17 +29,13 @@
 namespace hpccMetrics {
 
 class MetricsReporter;
-class MetricsRegistry;
 
-bool jlib_decl isMetricsInitialized();
-bool jlib_decl isMetricsInitialized(const char *);
-MetricsReporter jlib_decl &getMetricsReporter();
-MetricsReporter jlib_decl &getMetricsReporter(const char *);
-MetricsRegistry jlib_decl &getMetricsRegistry();
+MetricsReporter jlib_decl &queryMetricsReporter();
 bool jlib_decl initializeMetrics();
 
 /*
- * Enumerates the type of the value in a measurement
+ * Enumerates the type of the value in a Measurement object (see
+ * queryValueType() in MeasurementBase)
  */
 enum ValueType
 {
@@ -47,6 +43,7 @@ enum ValueType
     METRICS_STRING,
     METRICS_LONG,
     METRICS_INTEGER,
+    METRICS_UNSIGNED,
     METRICS_DOUBLE,
     METRICS_FLOAT,
     METRICS_DATE,
@@ -72,9 +69,9 @@ enum MetricType
 class MeasurementBase
 {
     public:
-        const std::string &getName() const { return name; }
-        const std::string &getDescription() const { return description; }
-        ValueType getValueType() { return(valueType); }
+        const std::string &queryName() const { return name; }
+        const std::string &queryDescription() const { return description; }
+        ValueType queryValueType() { return(valueType); }
         virtual std::string valueToString() const = 0;
 
     protected:
@@ -100,7 +97,7 @@ class Measurement : public MeasurementBase
                 MeasurementBase(name, valueType, description),
                 value{val}  { }
         std::string valueToString() const override { return std::to_string(value); }
-        T getValue() const;
+        T queryValue() const;
 
     protected:
         T value;
@@ -110,7 +107,7 @@ class Measurement : public MeasurementBase
  * Templated method of Measurement class giving the caller direct access to the raw measurement value
  */
 template <typename T>
-T Measurement<T>::getValue() const { return value; }
+T Measurement<T>::queryValue() const { return value; }
 
 
 /*
@@ -129,22 +126,22 @@ interface IMetric
     /*
      * Returns the metric name
      */
-    virtual const std::string &getName() const = 0;
+    virtual const std::string &queryName() const = 0;
 
     /*
      * Returns metric description
      */
-    virtual const std::string &getDescription() const = 0;
+    virtual const std::string &queryDescription() const = 0;
 
     /*
      * Returns the metric type.
      */
-    virtual MetricType getMetricType() const = 0;
+    virtual MetricType queryMetricType() const = 0;
 
     /*
      * Get report values
      */
-    virtual void getReportValues(MeasurementVector &mv) const = 0;
+    virtual void collect(MeasurementVector &mv) const = 0;
 };
 
 
@@ -156,9 +153,9 @@ class jlib_decl Metric : public IMetric
 {
     public:
         virtual ~Metric() = default;
-        const std::string &getName() const override { return name; }
-        const std::string &getDescription() const override { return description; }
-        MetricType getMetricType() const override { return metricType; }
+        const std::string &queryName() const override { return name; }
+        const std::string &queryDescription() const override { return description; }
+        MetricType queryMetricType() const override { return metricType; }
 
     protected:
         // No one should be able to create one of these
@@ -186,7 +183,7 @@ class jlib_decl CounterMetric : public Metric
             count.fetch_add(val);
         }
 
-        void getReportValues(MeasurementVector &mv) const override;
+        void collect(MeasurementVector &mv) const override;
 
     protected:
         std::atomic<uint32_t> count{0};
@@ -199,7 +196,7 @@ class jlib_decl CounterMetric : public Metric
 class jlib_decl GaugeMetric : public Metric {
     public:
         GaugeMetric(const char *name, const char *description) :
-                Metric{name, description, MetricType::METRICS_GAUGE}  { }
+            Metric{name, description, MetricType::METRICS_GAUGE}  { }
 
         /*
          * Update the value as indicated
@@ -217,12 +214,12 @@ class jlib_decl GaugeMetric : public Metric {
         /*
          * Read the current value
          */
-        int32_t getValue() const { return gaugeValue; }
+        int32_t queryValue() const { return gaugeValue; }
 
         /*
          * Get current gauge value
          */
-        void getReportValues(MeasurementVector &mv) const override;
+        void collect(MeasurementVector &mv) const override;
 
     protected:
         std::atomic<int32_t> gaugeValue{0};
@@ -236,8 +233,8 @@ class jlib_decl MetricSink
         virtual ~MetricSink() = default;
         virtual void startCollection(MetricsReporter *pReporter) = 0;
         virtual void stopCollection() = 0;
-        const std::string &getName() const { return name; }
-        const std::string &getType() const { return type; }
+        const std::string &queryName() const { return name; }
+        const std::string &queryType() const { return type; }
 
     protected:
         MetricSink(std::string _name, std::string _type) :
@@ -270,7 +267,7 @@ class jlib_decl MetricsReporter
         void removeMetric(const std::string &metricName);
         void startCollecting();
         void stopCollecting();
-        std::vector<std::shared_ptr<IMetric>> getReportMetrics(const std::string &sinkName);
+        std::vector<std::shared_ptr<IMetric>> queryMetricsForReport(const std::string &sinkName);
 
     protected:
         bool initializeSinks(IPropertyTreeIterator *pSinkIt);
@@ -285,24 +282,14 @@ class jlib_decl MetricsReporter
 };
 
 
-class jlib_decl MetricsRegistry
+//
+// Convenience function template to create a metric and add it to the reporter
+template <typename T>
+std::shared_ptr<T> createMetric(const char *name, const char* desc)
 {
-    public:
-        MetricsRegistry() = default;
-        ~MetricsRegistry() = default;
-        void addMetric(const std::shared_ptr<IMetric> &pMetric);
-        void removeMetric(const std::string &name);
-        template<class T> std::shared_ptr<T> getMetric(const std::string &name) const;
-
-    private:
-        std::map<std::string, std::shared_ptr<IMetric>> metrics;
-};
-
-
-template <class T>
-std::shared_ptr<T> MetricsRegistry::getMetric(const std::string &name) const
-{
-    return std::dynamic_pointer_cast<T>(metrics.find(name)->second);
+    std::shared_ptr<T> pMetric = std::make_shared<T>(name, desc);
+    queryMetricsReporter().addMetric(pMetric);
+    return pMetric;
 }
 
 }

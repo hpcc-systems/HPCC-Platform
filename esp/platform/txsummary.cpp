@@ -31,9 +31,13 @@ std::shared_ptr<hpccMetrics::CounterMetric> CTxSummary::pRequestCount;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    CTxSummary::pRequestCount = std::make_shared<hpccMetrics::CounterMetric>("requests", "Number of requests");
-    hpccMetrics::getMetricsReporter().addMetric(CTxSummary::pRequestCount);
+    CTxSummary::pRequestCount = hpccMetrics::createMetric<hpccMetrics::CounterMetric>("requests", "Number of Requests");
     return true;
+}
+
+MODULE_EXIT()
+{
+    CTxSummary::pRequestCount = nullptr;
 }
 
 

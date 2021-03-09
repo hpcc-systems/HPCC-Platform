@@ -18,45 +18,32 @@
 using namespace hpccMetrics;
 
 static Singleton<MetricsReporter> metricsReporter;
-static Singleton<MetricsRegistry> metricsRegistry;
-MODULE_INIT(INIT_PRIORITY_JLOG)
+MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     return true;
 }
+
 MODULE_EXIT()
 {
     delete metricsReporter.queryExisting();
-    delete metricsRegistry.queryExisting();
 }
 
 
-MetricsReporter &hpccMetrics::getMetricsReporter()
+MetricsReporter &hpccMetrics::queryMetricsReporter()
 {
     return *metricsReporter.query([] { return new MetricsReporter; });
 }
 
 
-bool jlib_decl hpccMetrics::isMetricsInitialized()
+void CounterMetric::collect(MeasurementVector &mv) const
 {
-    return metricsReporter.queryExisting() != nullptr;
+    mv.emplace_back((std::make_shared<Measurement<uint32_t>>(name, description, ValueType::METRICS_UNSIGNED, count.load())));
 }
 
 
-MetricsRegistry &hpccMetrics::getMetricsRegistry()
+void GaugeMetric::collect(MeasurementVector &mv) const
 {
-    return *metricsRegistry.query([] { return new MetricsRegistry; });
-}
-
-
-void CounterMetric::getReportValues(MeasurementVector &mv) const
-{
-    mv.emplace_back((std::make_shared<Measurement<uint32_t>>(name, description, ValueType::METRICS_INTEGER, count.load())));
-}
-
-
-void GaugeMetric::getReportValues(MeasurementVector &mv) const
-{
-    mv.emplace_back((std::make_shared<Measurement<float>>(name, description, ValueType::METRICS_FLOAT, gaugeValue.load())));
+    mv.emplace_back((std::make_shared<Measurement<float>>(name, description, ValueType::METRICS_INTEGER, gaugeValue.load())));
 }
 
 
@@ -80,12 +67,12 @@ void MetricsReporter::init(IPropertyTree *pMetricsTree)
 void MetricsReporter::addMetric(const std::shared_ptr<IMetric> &pMetric)
 {
     std::unique_lock<std::mutex> lock(metricVectorMutex);
-    auto it = metrics.find(pMetric->getName());
+    auto it = metrics.find(pMetric->queryName());
     if (it == metrics.end())
     {
-        metrics.insert({pMetric->getName(), pMetric});
+        metrics.insert({pMetric->queryName(), pMetric});
     }
-    // note that
+    // todo - need to decide how to handle duplicate named metrics
 }
 
 
@@ -118,7 +105,7 @@ void MetricsReporter::stopCollecting()
 }
 
 
-std::vector<std::shared_ptr<IMetric>> MetricsReporter::getReportMetrics(const std::string &sinkName)
+std::vector<std::shared_ptr<IMetric>> MetricsReporter::queryMetricsForReport(const std::string &sinkName)
 {
     std::vector<std::shared_ptr<IMetric>> reportMetrics;
 
@@ -126,7 +113,7 @@ std::vector<std::shared_ptr<IMetric>> MetricsReporter::getReportMetrics(const st
     if (it != sinks.end())
     {
         //
-        // This is where metric names are matched against patterns, however for now, just return all the metrics
+        // Lock the list of metrics while it's in use
         std::unique_lock<std::mutex> lock(metricVectorMutex);   // no one else can mess with it for a bit
         auto metricIt=metrics.begin();
         while (metricIt != metrics.end())
@@ -134,8 +121,11 @@ std::vector<std::shared_ptr<IMetric>> MetricsReporter::getReportMetrics(const st
             auto pMetric = metricIt->second.lock();
             if (pMetric)
             {
+                // This is where the metric would be compared against the list of metrics to be reported
+                // by the sink (probably a regex). This allows limiting the metrics reported to the sink.
+                // for now, only the default is supported which is reporting all metrics.
                 reportMetrics.emplace_back(pMetric);
-                metricIt++;
+                ++metricIt;
             }
             else
             {
@@ -143,8 +133,6 @@ std::vector<std::shared_ptr<IMetric>> MetricsReporter::getReportMetrics(const st
             }
         }
     }
-    // else throw? Detect that the sink Name is no longer valid?
-
 
     return reportMetrics;  // All metrics
 }
@@ -178,7 +166,7 @@ bool MetricsReporter::initializeSinks(IPropertyTreeIterator *pSinkIt)
             MetricSink *pSink = getSinkFromLib(cfgSinkType.str(), (const char *)sinkName.c_str(), pSinkSettings);
             if (pSink != nullptr)
             {
-                auto insertRc = sinks.insert({pSink->getName(), SinkInfo{pSink}});
+                auto insertRc = sinks.insert({pSink->queryName(), SinkInfo{pSink}});
                 pSinkInfo = &insertRc.first->second;
             }
         }
@@ -228,16 +216,4 @@ MetricSink *MetricsReporter::getSinkFromLib(const char *type, const char *sinkNa
         }
     }
     return pSink;
-}
-
-
-void MetricsRegistry::addMetric(const std::shared_ptr<IMetric> &pMetric)
-{
-    metrics.insert({pMetric->getName(), pMetric});
-}
-
-
-void MetricsRegistry::removeMetric(const std::string &name)
-{
-    metrics.erase(name);
 }

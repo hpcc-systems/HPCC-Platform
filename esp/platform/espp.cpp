@@ -363,7 +363,7 @@ void initializeMetrics(CEspConfig* config)
     IPropertyTree *pMetricsTree = config->queryConfigPTree()->getPropTree("metrics");
     if (pMetricsTree != nullptr)
     {
-        MetricsReporter &metricsReporter = getMetricsReporter();
+        MetricsReporter &metricsReporter = queryMetricsReporter();
         metricsReporter.init(pMetricsTree);
         metricsReporter.startCollecting();
     }
@@ -584,6 +584,7 @@ int init_main(int argc, const char* argv[])
 int main(int argc, const char* argv[])
 {
     start_init_main(argc, argv, init_main);
+    queryMetricsReporter().stopCollecting();
     stopPerformanceMonitor();
     UseSysLogForOperatorMessages(false);
     releaseAtoms();
