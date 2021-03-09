@@ -47,19 +47,21 @@ export const HpccJSComponent: React.FunctionComponent<HpccJSComponentProps> = ({
 export interface AutosizeHpccJSComponentProps {
     widget: Widget;
     fixedHeight?: string;
+    padding?: number;
     debounce?: boolean;
 }
 
 export const AutosizeHpccJSComponent: React.FunctionComponent<AutosizeHpccJSComponentProps> = ({
     widget,
     fixedHeight = "100%",
+    padding = 0,
     debounce = true
 }) => {
 
     return <SizeMe monitorHeight>{({ size }) =>
         <div style={{ width: "100%", height: fixedHeight, position: "relative" }}>
-            <div style={{ position: "absolute" }}>
-                <HpccJSComponent widget={widget} debounce={debounce} width={size.width} height={size.height} />
+            <div style={{ position: "absolute", padding: `${padding}px` }}>
+                <HpccJSComponent widget={widget} debounce={debounce} width={size.width - padding * 2} height={size.height - padding * 2} />
             </div>
         </div>
     }
