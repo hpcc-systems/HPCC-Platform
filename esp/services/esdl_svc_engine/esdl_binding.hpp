@@ -89,6 +89,7 @@ private:
     using MethodAccessMaps = MapStringTo<Owned<MethodAccessMap> >;
     MethodAccessMaps            m_methodAccessMaps;
     StringBuffer                m_defaultFeatureAuth;
+    MapStringTo<Owned<String> > m_explicitNamespaces;
 
 #ifndef LINK_STATICALLY
     Owned<ILoadedDllEntry> javaPluginDll;
@@ -173,6 +174,7 @@ public:
     void configureJavaMethod(const char *method, IPropertyTree &entry, const char *classPath);
     void configureCppMethod(const char *method, IPropertyTree &entry, IEspPlugin*& plugin);
     void configureUrlMethod(const char *method, IPropertyTree &entry);
+    String* getExplicitNamespace(const char* method) const;
 
     void handleTransformError(StringAttr &serviceError, TransformErrorMap &methodErrors, IException *e, const char *service, const char *method);
     void addTransforms(IPropertyTree *cfgParent, const char *service, const char *method, bool removeCfgIEntries);
@@ -228,7 +230,6 @@ private:
     CriticalSection                         configurationLoadCritSec;
     CriticalSection                         detachCritSec;
     StringBuffer                            m_esdlStateFilesLocation;
-    StringBuffer                            m_staticNamespace;
     bool                                    m_isAttached;
     StringAttr                              m_bindingId;
 

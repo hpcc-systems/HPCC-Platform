@@ -1027,7 +1027,10 @@ public:
         }
     }
 
-
+    virtual const char * queryMethodNamespace() override
+    {
+        return props->queryProp("method-namespace");
+    }
 };
 
 class EsdlDefService : public EsdlDefObject, implements IEsdlDefService
@@ -1057,9 +1060,17 @@ public:
         }
     }
 
-    const char * queryStaticNamespace()
+    virtual const char * queryServiceNamespace() override
     {
-        return props->queryProp("staticnamespace");
+        const char* ns = props->queryProp("service-namespace");
+        if (!ns)
+            ns = props->queryProp("staticnamespace");
+        return ns;
+    }
+
+    virtual const char* queryMethodsNamespace() override
+    {
+        return props->queryProp("methods-namespace");
     }
 
     virtual EsdlDefTypeId getEsdlType(){return EsdlTypeService;}
