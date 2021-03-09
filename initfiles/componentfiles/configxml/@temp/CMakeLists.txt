@@ -27,6 +27,7 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wslogging.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/decoupled_logging.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/logging_agent.xsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/modularlogagent.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/wslogserviceespagent.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wssql.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wsstore.xsl

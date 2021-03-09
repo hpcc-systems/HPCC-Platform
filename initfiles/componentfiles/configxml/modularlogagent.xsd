@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2021 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
+-->
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:include schemaLocation="environment.xsd"/>
+  <xs:element name="ModularLogAgent">
+    <xs:complexType>
+      <xs:annotation>
+        <xs:appinfo>
+            <title>Modular Log Agent</title>
+        </xs:appinfo>
+      </xs:annotation>
+      <xs:sequence>
+        <xs:element name="Variant" minOccurs="0" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:appinfo>
+              <title>Identity Variant</title>
+            </xs:appinfo>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:attribute name="type" type="xs:string" use="optional" default="">
+              <xs:annotation>
+                <xs:appinfo>
+                  <colIndex>1</colIndex>
+                  <tooltip>Specifies the nature of the logged content (e.g., billing info). Needed only when agent filtering by type will be used.</tooltip>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="group" type="xs:string" use="optional" default="">
+              <xs:annotation>
+                <xs:appinfo>
+                  <colIndex>2</colIndex>
+                  <tooltip>Identifies a set of agents used to log a transaction. Needed only when agent filtering by transaction kind will be used.</tooltip>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Filter" minOccurs="0" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:appinfo>
+              <title>Filters</title>
+            </xs:appinfo>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:attribute name="filter" type="relativePath" use="required">
+              <xs:annotation>
+                <xs:appinfo>
+                  <colIndex>1</colIndex>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="type" use="optional">
+              <xs:annotation>
+                <xs:appinfo>
+                  <colIndex>2</colIndex>
+                </xs:appinfo>
+              </xs:annotation>
+              <xs:simpleType>
+                <xs:restriction base="xs:string">
+                  <xs:enumeration value="ESPContext"/>
+                  <xs:enumeration value="UserContext"/>
+                  <xs:enumeration value="UserRequest"/>
+                  <xs:enumeration value="UserResponse"/>
+                  <xs:enumeration value="BackEndResponse"/>
+                 </xs:restriction>
+               </xs:simpleType>
+            </xs:attribute>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <!-- All Log Agent Plugins must define the type="DefaultLoggingAgent" attribute -->
+      <xs:attribute name="type" type="DefaultLoggingAgent" use="required" default="DefaultLoggingAgent">
+        <xs:annotation>
+          <xs:appinfo>
+            <viewType>hidden</viewType>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="build" type="buildType" use="required">
+        <xs:annotation>
+          <xs:appinfo>
+            <viewType>hidden</viewType>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="buildSet" type="buildSetType" use="required">
+        <xs:annotation>
+          <xs:appinfo>
+            <viewType>hidden</viewType>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Name of this log agent</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="description" type="xs:string" use="optional" default="Bare-metal Modular Log Agent">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Description for this log agent</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="plugin" type="xs:string" use="optional" default="modularlogagent">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Name of shared library to load</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="configuration" type="xs:string" use="optional">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Path to file containing all other configuration data for the log agent</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="trace-priority-limit" type="xs:integer" use="optional">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Highest trace log priority to be included in trace log output; omit or -1 to use ESP log level; ignored unless @configuration is empty</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attributeGroup ref="QueueControl"/>
+      <xs:attributeGroup ref="FailSafe"/>
+      <xs:attributeGroup ref="DecoupledLogging"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="QueueControl">
+      <xs:attribute name="MaxLogQueueLength" type="xs:nonNegativeInteger" use="optional" default="500000">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>maximum queue length for log update requests.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="QueueSizeSignal" type="xs:nonNegativeInteger" use="optional" default="10000">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Add warning to esp log when the queue length of log update requests reaches this value.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="MaxTriesRS" type="xs:nonNegativeInteger" use="optional" default="3">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Maximum retries of sending LogUpdate requests when failed to get a response.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="FailSafe">
+      <xs:attribute name="FailSafe" type="xs:boolean" use="optional" default="false">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Enable FailSafe functionality.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="FailSafeLogsDir" type="xs:string" use="optional" default="">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Log directory where Failsafe files are stored.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="SafeRolloverThreshold" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>The threshold at which a new tank file will be started: n for number of requests, nK, nM, nG, or nT for file size.</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="DecoupledLogging">
+    <xs:attribute name="AckedFiles" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>A file listing the tank file names which have been acked in a Logging Agent.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="AckedLogRequests" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>A file listing the Log Request GUIDs which have been acked in a Logging Agent.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="ReadRequestWaitingSeconds" type="xs:nonNegativeInteger" use="optional">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Define how often a Logging thread checks logging requests from tank files.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="PendingLogBufferSize" type="xs:nonNegativeInteger" use="optional">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Buffer size of Pending Logging requests. The buffer will be flushed when reaching the size.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+</xs:schema>

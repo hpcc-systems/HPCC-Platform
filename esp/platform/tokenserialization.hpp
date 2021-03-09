@@ -424,9 +424,7 @@ private:
         default:                            resultStr = "unexpected"; break;
         }
 
-        if (success)
-            DBGLOG("Result of deserializing '%s' to type '%s': %s", buffer, typeStr, resultStr);
-        else
+        if (!success)
             OERRLOG("Result of deserializing '%s' to type '%s': %s", buffer, typeStr, resultStr);
     }
     bool isEmptyOrWhitespace(const char* buffer) const

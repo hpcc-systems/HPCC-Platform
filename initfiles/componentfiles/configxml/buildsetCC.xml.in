@@ -406,6 +406,12 @@
                 schema="esploggingagent.xsd"/>
             <BuildSet deployable="no"
                 installSet="deploy_map.xml"
+                name="modularlogagent"
+                path="componentfiles/modularlogagent"
+                processName="ModularLogAgent"
+                schema="modularlogagent.xsd"/>
+            <BuildSet deployable="no"
+                installSet="deploy_map.xml"
                 name="loggingmanager"
                 path="componentfiles/loggingmanager"
                 processName="LoggingManager"

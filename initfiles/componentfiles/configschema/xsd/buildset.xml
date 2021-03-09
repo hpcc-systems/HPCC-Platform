@@ -128,6 +128,7 @@
       </BuildSet>
       <BuildSet deployable="no" installSet="deploy_map.xml" name="cassandraloggingagent" path="componentfiles/cassandraloggingagent" processName="CassandraLoggingAgent" schema="cassandraloggingagent.xsd"/>
       <BuildSet deployable="no" installSet="deploy_map.xml" name="esploggingagent" path="componentfiles/esploggingagent" processName="ESPLoggingAgent" schema="esploggingagent.xsd"/>
+      <BuildSet deployable="no" installSet="deploy_map.xml" name="modularlogagent" path="componentfiles/modularlogagent" processName="ModularLogAgent" schema="modularlogagent.xsd"/>
       <BuildSet deployable="no" installSet="deploy_map.xml" name="loggingmanager" path="componentfiles/loggingmanager" processName="LoggingManager" schema="loggingmanager.xsd"/>
       <BuildSet deployable="no" installSet="deploy_map.xml" name="wslogging" path="componentfiles/wslogging" processName="EspService" schema="wslogging.xsd">
         <Properties bindingType="loggingservice_binding" defaultPort="8146" defaultResourcesBasedn="ou=EspServices,ou=ecl" defaultSecurePort="18146" plugin="wslogging" type="wslogging">
