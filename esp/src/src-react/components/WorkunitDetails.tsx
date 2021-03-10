@@ -14,6 +14,7 @@ import { Results } from "./Results";
 import { Variables } from "./Variables";
 import { SourceFiles } from "./SourceFiles";
 import { Details } from "./Details";
+import { InfoGrid } from "./InfoGrid";
 import { WUXMLSourceEditor } from "./SourceEditor";
 import { Workflows } from "./Workflows";
 
@@ -55,20 +56,6 @@ const pivotItemStyle = (size, padding: number = 4) => {
         return { position: "absolute", padding: `${padding}px`, overflow: "auto", zIndex: 0 } as React.CSSProperties;
     }
     return { position: "absolute", padding: `${padding}px`, overflow: "auto", zIndex: 0, width: size.width - padding * 2, height: size.height - 45 - padding * 2 } as React.CSSProperties;
-};
-
-interface InfoGridProps {
-    wuid: string;
-    dimensions?: any;
-}
-
-const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
-    wuid,
-    dimensions
-}) => {
-    return <div className="pane-content" style={{ height: dimensions.height }}>
-        <DojoAdapter widgetClassID="InfoGridWidget" params={{ Wuid: wuid }} delayProps={{ showToolbar: true }} />
-    </div>;
 };
 
 interface WorkunitDetailsProps {
@@ -186,8 +173,8 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                         <ReflexSplitter style={{ position: "relative", height: "5px", backgroundColor: "transparent", borderStyle: "none" }}>
                             <div className={classNames.reflexSplitterDiv}></div>
                         </ReflexSplitter>
-                        <ReflexElement propagateDimensions={true} className={classNames.reflexPane}>
-                            <InfoGrid wuid={wuid} />
+                        <ReflexElement propagateDimensions={true} className={classNames.reflexPane} style={{ overflow: "hidden" }}>
+                            <InfoGrid wuid={wuid}></InfoGrid>
                         </ReflexElement>
                     </ReflexContainer>
                 </div>
