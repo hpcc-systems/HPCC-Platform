@@ -12695,7 +12695,8 @@ public:
         attrs->setPropInt64("@size", compressedFileSize);
         attrs->setPropInt64("@recordCount", reccount);
         attrs->setPropInt64("@offsetBranches", offsetBranches);
-
+        attrs->setPropInt("@fileCrc", fileCrc);
+        
         CDateTime createTime, modifiedTime, accessedTime;
         writer->queryFile()->getTime(&createTime, &modifiedTime, &accessedTime);
         // round file time down to nearest sec. Nanosec accurancy is not preserved elsewhere and can lead to mismatch later.
