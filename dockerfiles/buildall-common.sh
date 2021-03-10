@@ -29,7 +29,6 @@ BUILD_USER=hpcc-systems                         # The github repo owner
 BUILD_TYPE=                                     # Set to Debug for a debug build, leave blank for default (RelWithDebInfo)
 DOCKER_REPO=hpccsystems
 USE_CPPUNIT=1
-DOCKER_LABEL=${BASE_VER}
 
 #BUILD_ML=all #ml,gnn,gnn-gpu
 ml_features=(
@@ -43,7 +42,6 @@ ml_features=(
 [[ -n ${INPUT_BUILD_USER} ]] && BUILD_USER=${INPUT_BUILD_USER}
 [[ -n ${INPUT_BUILD_VER} ]] && BUILD_TAG=${INPUT_BUILD_VER}
 [[ -n ${INPUT_DOCKER_REPO} ]] && DOCKER_REPO=${INPUT_DOCKER_REPO}
-[[ -n ${INPUT_DOCKER_LABEL} ]] && DOCKER_LABEL=${INPUT_DOCKER_LABEL}
 
 if [[ -n ${INPUT_BUILD_THREADS} ]] ; then
   BUILD_THREADS=$INPUT_BUILD_THREADS
@@ -57,15 +55,19 @@ fi
 
 set -e
 
-. ${SCRIPT_DIR}/../cmake_modules/parse_cmake.sh
-parse_cmake
-set_tag
-
-if [[ -n ${INPUT_BUILDTYPE} ]] ; then
-  BUILD_TYPE=$INPUT_BUILDTYPE
-  BUILD_LABEL=${HPCC_SHORT_TAG}-$INPUT_BUILDTYPE
-else
+if [[ -z ${INPUT_BUILD_LABEL} ]]; then
+  . ${SCRIPT_DIR}/../cmake_modules/parse_cmake.sh
+  parse_cmake
+  set_tag
   BUILD_LABEL=${HPCC_SHORT_TAG}
+else
+  BUILD_LABEL=${INPUT_BUILD_LABEL}
+fi
+
+if [[ -n ${INPUT_BUILD_TYPE} ]] ; then
+  BUILD_LABEL=${BUILD_LABEL}-$INPUT_BUILD_TYPE
+  BUILD_TYPE=$INPUT_BUILD_TYPE
+else
   BUILD_TYPE=RelWithDebInfo
   USE_CPPUNIT=0
 fi
@@ -114,6 +116,7 @@ push_image() {
 }
 
 build_ml_image() {
+  label=$1
   [ -z "$BUILD_ML" ] && return
   features=()
   if [ "$BUILD_ML" = "all" ]
@@ -142,7 +145,7 @@ build_ml_image() {
   for feature in ${features[@]}
   do
      echo "build_ml $feature"
-     build_ml $feature
+     build_ml $feature $label
   done
 
 }

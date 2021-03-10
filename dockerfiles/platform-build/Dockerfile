@@ -34,12 +34,12 @@ USER hpcc
 
 ARG BUILD_USER=hpcc-systems
 RUN echo BUILD_USER is ${BUILD_USER}
-ARG BUILD_TAG=none
 RUN git clone https://github.com/${BUILD_USER}/HPCC-Platform.git && \
     cd HPCC-Platform && \
     git submodule update --init --recursive
 
 WORKDIR /hpcc-dev/HPCC-Platform
+ARG BUILD_TAG=none
 RUN git fetch origin && \
     git checkout ${BUILD_TAG} && \
     git submodule update --init --recursive
