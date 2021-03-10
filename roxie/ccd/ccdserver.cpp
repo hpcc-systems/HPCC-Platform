@@ -12297,6 +12297,7 @@ public:
         }
         attrs->setPropInt64("@size", indexFileSize);
         attrs->setPropInt64("@recordCount", reccount);
+        attrs->setPropInt("@fileCrc", fileCrc);
 
         CDateTime createTime, modifiedTime, accessedTime;
         writer->queryFile()->getTime(&createTime, &modifiedTime, &accessedTime);
