@@ -47,6 +47,7 @@ public:
     }
 
     virtual void init(IPropertyTree* cfg, const char* process, const char* service) override;
+    virtual bool onGetValue(IEspContext& context, IEspGetValueRequest& req, IEspGetValueResponse& resp) override;
 };
 
 class CWSDaliSoapBindingEx : public CWSDaliSoapBinding

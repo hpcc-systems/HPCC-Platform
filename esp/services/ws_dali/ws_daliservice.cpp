@@ -23,6 +23,7 @@
 #include "jlib.hpp"
 #include "dautils.hpp"
 #include "dasds.hpp"
+#include "daadmin.hpp"
 
 #define REQPATH_EXPORTSDSDATA "/WSDali/Export"
 
@@ -32,6 +33,31 @@ const unsigned daliFolderLength = strlen(daliFolder);
 void CWSDaliEx::init(IPropertyTree* cfg, const char* process, const char* service)
 {
     espProcess.set(process);
+}
+
+bool CWSDaliEx::onGetValue(IEspContext& context, IEspGetValueRequest& req, IEspGetValueResponse& resp)
+{
+    try
+    {
+#ifdef _USE_OPENLDAP
+        context.ensureSuperUser(ECLWATCH_SUPER_USER_ACCESS_DENIED, "Access denied, administrators only.");
+#endif
+        if (isDaliDetached())
+            throw makeStringException(ECLWATCH_CANNOT_CONNECT_DALI, "Dali detached.");
+
+        const char* path = req.getPath();
+        if (isEmptyString(path))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Data path not specified.");
+
+        StringBuffer result;
+        getValue(path, &result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
 }
 
 int CWSDaliSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* response)

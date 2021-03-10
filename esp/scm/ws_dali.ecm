@@ -17,9 +17,20 @@
 
 EspInclude(common);
 
-ESPservice [auth_feature("NONE"), //This declares that the method logic handles feature level authorization
-    version("1.00"), default_client_version("1.00"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSDali
+ESPrequest [nil_remove] GetValueRequest //Have to use GetValue because the base class already has a Get method.
 {
+    string Path;
+};
+
+ESPresponse [exceptions_inline, nil_remove] GetValueResponse
+{
+    string Result;
+};
+
+ESPservice [auth_feature("NONE"), //This declares that the method logic handles feature level authorization
+    version("1.01"), default_client_version("1.01"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSDali
+{
+    ESPmethod [min_ver("1.01")] GetValue(GetValueRequest, GetValueResponse);
 };
 
 SCMexportdef(WSDali);
