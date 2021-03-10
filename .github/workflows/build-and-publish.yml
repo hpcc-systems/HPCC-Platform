@@ -12,11 +12,12 @@ on:
     - '!community_7.0.*'
     - '!community_6.*'
 
+  workflow_dispatch:
+
 jobs:
   build:
     name: "Build and publish release container"
     runs-on: ubuntu-latest
-    if: github.repository == 'hpcc-systems/HPCC-Platform'
     steps:
       - name: Checkout
         uses: actions/checkout@v2
