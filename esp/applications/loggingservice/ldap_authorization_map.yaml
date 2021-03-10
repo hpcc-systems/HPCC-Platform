@@ -1,0 +1,5 @@
+ldap:
+   root_access:
+      resource: WsLoggingAccess
+      required: Read
+      description: Base access to Logging Services
