@@ -34,9 +34,9 @@ set -e
 
 
 build_image platform-build-base ${BASE_VER}
-build_image platform-build
-build_image platform-core
-build_ml_image
+build_image platform-build ${INPUT_DOCKER_LABEL}
+build_image platform-core ${INPUT_DOCKER_LABEL}
+build_ml_image ${INPUT_DOCKER_LABEL}
 
 if [[ -n ${INPUT_PASSWORD} ]] ; then
   echo "::set-output name=${BUILD_LABEL}"

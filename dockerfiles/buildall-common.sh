@@ -114,6 +114,7 @@ push_image() {
 }
 
 build_ml_image() {
+  label=$1
   [ -z "$BUILD_ML" ] && return
   features=()
   if [ "$BUILD_ML" = "all" ]
@@ -142,7 +143,7 @@ build_ml_image() {
   for feature in ${features[@]}
   do
      echo "build_ml $feature"
-     build_ml $feature
+     build_ml $feature $label
   done
 
 }
