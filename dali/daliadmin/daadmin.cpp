@@ -275,18 +275,28 @@ void set(const char *path,const char *val)
 
 void get(const char *path)
 {
+    getValue(path, nullptr);
+}
+
+void getValue(const char *path, StringBuffer *value)
+{
     StringBuffer head;
     StringBuffer tmp;
     const char *tail=splitpath(path,head,tmp);
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
     if (!conn) {
+        if (value) //called by esp service
+            throw makeStringExceptionV(-1,"Could not connect to %s",path);
         UERRLOG("Could not connect to %s",path);
         return;
     }
     Owned<IPropertyTree> root = conn->getRoot();
     StringBuffer val;
     root->getProp(tail,val);
-    OUTLOG("Value of %s is: '%s'",path,val.str());
+    if (value)
+        value->appendf("Value of %s is: '%s'",path,val.str());
+    else
+        OUTLOG("Value of %s is: '%s'",path,val.str());
     conn->close();
 }
 
