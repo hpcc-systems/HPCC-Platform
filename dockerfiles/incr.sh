@@ -26,7 +26,7 @@
 
 # NB: INPUT_* may be pre-set as environment variables.
 
-while getopts “d:fhlptn:u:b:” opt; do
+while getopts “d:fhlpt:n:u:b:” opt; do
   case $opt in
     l) TAGLATEST=1 ;;
     n) CUSTOM_TAG_NAME=$OPTARG ;;
