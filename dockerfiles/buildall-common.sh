@@ -25,9 +25,9 @@ SCRIPT_DIR=$(dirname $BASH_SOURCE)
 BASE_VER=7.12                                   # The docker hub label for the platform-build-base image. Changes rarely.
 BUILD_TAG=$(git describe --exact-match --tags)  # The git tag for the images we are building
 BUILD_LABEL=${BUILD_TAG}                        # The docker hub label for all other components
-BUILD_USER=hpcc-systems                         # The github repo owner
+BUILD_USER=Michael-Gardner                         # The github repo owner
 BUILD_TYPE=                                     # Set to Debug for a debug build, leave blank for default (RelWithDebInfo)
-DOCKER_REPO=hpccsystems
+DOCKER_REPO=memeoru
 USE_CPPUNIT=1
 DOCKER_LABEL=${BASE_VER}
 

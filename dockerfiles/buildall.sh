@@ -25,6 +25,8 @@ pushd $DIR 2>&1 > /dev/null
 
 . ./buildall-common.sh
 
+echo "here we are"
+
 if [[ -n ${INPUT_USERNAME} ]] ; then
   echo ${INPUT_PASSWORD} | docker login -u ${INPUT_USERNAME} --password-stdin ${INPUT_REGISTRY}
   PUSH=1
