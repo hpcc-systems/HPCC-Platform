@@ -3,6 +3,7 @@ EclccServer configmap
 Pass in dict with root and me
 */}}
 {{- define "hpcc.eclccServerConfigMap" -}}
+{{- $compileJobName := printf "compile-%%jobname" }}
 apiVersion: v1
 metadata:
   name: {{ .me.name }}-configmap
@@ -23,7 +24,7 @@ data:
     apiVersion: batch/v1
     kind: Job
     metadata:
-      name: compile-%jobname
+      name: {{ $compileJobName }}
     spec:
       ttlSecondsAfterFinished: 100
       template:
@@ -32,9 +33,10 @@ data:
             accessDali: "yes"
             accessEsp: "yes"
         spec:
+          {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $compileJobName "target" .me.name "type" "eclccserver") | indent 10 }}
           serviceAccountName: "hpcc-default"
           containers:
-          - name: compile-%jobname
+          - name: {{ $compileJobName }}
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" .me.resources) | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
@@ -96,6 +98,7 @@ spec:
       annotations:
         checksum/config: {{ $configSHA }}
     spec:
+      {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" .name "target" .name "type" "eclccserver") | indent 6 }}
       serviceAccountName: {{ .useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
       terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
       initContainers:

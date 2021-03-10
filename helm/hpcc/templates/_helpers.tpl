@@ -837,3 +837,52 @@ spec:
 {{- end }}
 {{- end }}
 {{- end -}}
+
+{{/*
+Create placement related settings
+Pass in dict with placement
+*/}}
+{{- define "hpcc.doPlacement" -}}
+{{- if .me.placement }}
+{{ toYaml .me.placement }}
+{{- end -}}
+{{- end -}}
+
+{{/*                                                                                                                            Check if there is any placement configuration
+Pass in dict with root, job, target and type
+*/}}
+{{- define "hpcc.placementsByJobTargetType" -}}
+{{- if .root.Values.placements }}
+{{- $job := .job -}}
+{{- $target := (printf "target:%s" .target | default "") -}}
+{{- $type := printf "type:%s" .type -}}
+{{- range $placement := .root.Values.placements -}}
+{{- if or (has $target $placement.pods) (has $type $placement.pods) -}}
+{{ include "hpcc.doPlacement" (dict "me" $placement) -}}
+{{- else -}}
+{{- range $jobPattern := $placement.pods -}}
+{{- if mustRegexMatch $jobPattern $job -}}
+{{ include "hpcc.doPlacement" (dict "me" $placement) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Check if there is any placement configuration
+Pass in dict with root, pod, target and type
+*/}}
+{{- define "hpcc.placementsByPodTargetType" -}}
+{{- if .root.Values.placements }}
+{{- $pod := .pod -}}
+{{- $target := (printf "target:%s" .target | default "") -}}
+{{- $type := printf "type:%s" .type -}}
+{{- range $placement := .root.Values.placements -}}
+{{- if or (has $pod $placement.pods) (has $target $placement.pods) (has $type $placement.pods) -}}
+{{ include "hpcc.doPlacement" (dict "me" $placement) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}

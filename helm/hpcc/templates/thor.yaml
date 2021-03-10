@@ -11,6 +11,9 @@ Pass in dict with root and me
 {{- $thorScope := omit .me "eclagent" "thoragent" "hthor" "logging" "eclAgentResources" "eclAgentUseChildProcesses" "eclAgentReplicas" "thorAgentReplicas" "eclAgentType" }}
 {{- $misc := .root.Values.global.misc | default dict }}
 {{- $postJobCommand := $misc.postJobCommand | default "" }}
+{{- $eclAgentJobName := printf "%s-%%jobname" $eclAgentType }}
+{{- $thorManagerJobName := printf "thormanager-%%jobname" }}
+{{- $thorWorkerJobName := printf "thorworker-%%jobname" }}
 apiVersion: v1 
 metadata:
   name: {{ $thorScope.name }}-configmap
@@ -43,7 +46,7 @@ data:
     apiVersion: batch/v1
     kind: Job
     metadata:
-      name: {{ $eclAgentType }}-%jobname
+      name: {{ $eclAgentJobName }}
     spec:
       ttlSecondsAfterFinished: 100
       template:
@@ -52,11 +55,12 @@ data:
             accessDali: "yes"
             accessEsp: "yes"
         spec:
+          {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $eclAgentJobName "target" .me.name "type" "thor") | indent 10 }}
           serviceAccountName: "hpcc-agent"
           initContainers: 
             {{- include "hpcc.checkDataMount" . | indent 10 }}
           containers:
-          - name: {{ $eclAgentType }}-%jobname
+          - name: {{ $eclAgentJobName }}
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" .eclAgentResources) | indent 12 }}
@@ -96,7 +100,7 @@ data:
     apiVersion: batch/v1
     kind: Job
     metadata:
-      name: thormanager-%jobname
+      name: {{ $thorManagerJobName }}
     spec:
       ttlSecondsAfterFinished: 100
       template:
@@ -107,11 +111,12 @@ data:
             accessEsp: "yes"
             job: %jobname
         spec:
+          {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $thorManagerJobName "target" .me.name "type" "thor") | indent 10 }}
           serviceAccountName: hpcc-agent
           initContainers:
             {{- include "hpcc.checkDataMount" . | indent 10 }}
           containers:
-          - name: thormanager-%jobname
+          - name: {{ $thorManagerJobName }}
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" $thorScope.managerResources) | indent 12 }}
@@ -150,7 +155,7 @@ data:
     apiVersion: batch/v1
     kind: Job
     metadata:
-      name: thorworker-%jobname
+      name: {{ $thorWorkerJobName }}
     spec:
       parallelism: %numWorkers
       ttlSecondsAfterFinished: 100
@@ -161,9 +166,10 @@ data:
             accessEsp: "true"
             job: %jobname
         spec:
+          {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $thorWorkerJobName "target" .me.name "type" "thor") | indent 10 }}
           serviceAccountName: hpcc-default
           containers:
-          - name: thorworker-%jobname
+          - name: {{ $thorWorkerJobName }}
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" $thorScope.workerResources) | indent 12 }}
@@ -202,7 +208,7 @@ data:
     apiVersion: networking.k8s.io/v1
     kind: NetworkPolicy
     metadata:
-      name: thormanager-%jobname
+      name: {{ $thorManagerJobName }}
     spec:
       podSelector:
         matchLabels:
@@ -250,6 +256,7 @@ spec:
       annotations:
         checksum/config: {{ $configSHA }}
     spec:
+      {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $commonCtx.eclAgentName "target" .name "type" "thor") | indent 6 }}
       serviceAccountName: {{ $commonCtx.eclAgentUseChildProcesses | ternary "hpcc-default" "hpcc-agent" }}
       containers:
       - name: {{ $commonCtx.eclAgentName | quote }}
@@ -296,6 +303,7 @@ spec:
       annotations:
         checksum/config: {{ $configSHA }}
     spec:
+      {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $commonCtx.thorAgentName "target" .name "type" "thor") | indent 6 }}
       serviceAccountName: "hpcc-thoragent"
       containers:
       - name: {{ $commonCtx.thorAgentName | quote }}
