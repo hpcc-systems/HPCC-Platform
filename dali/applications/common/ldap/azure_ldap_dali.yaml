@@ -1,0 +1,23 @@
+ldap:
+  authMethod: LDAP
+  objname: ldapserver
+  description: LDAP server process
+  ldapProtocol: ldaps
+  localDomain: localdomain
+  ldapPort: 389
+  ldapSecurePort: 636
+  serverType: AzureActiveDirectory
+  systemCommonName: hpcc_admin2
+  systemPassword: ""
+  systemUser: hpcc_admin2
+  filesDefaultUser: "DenyMissingUsernames"
+  filesDefaultPassword: ""
+  adminGroupName: HPCCAdmin
+  filesBasedn: ou=files,ou=ecl
+  groupsBasedn: ou=AADDC Users
+  sudoersBasedn: ou=SUDOers
+  systemBasedn: ou=AADDC Users
+  usersBasedn: ou=AADDC Users
+  resourcesBasedn: ou=WsEcl,ou=EspServices,ou=ecl
+  workunitsBasedn: ou=workunits,ou=ecl
+

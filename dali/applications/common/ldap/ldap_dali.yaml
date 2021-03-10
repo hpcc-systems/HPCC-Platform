@@ -1,0 +1,22 @@
+ldap:
+   authMethod: LDAP
+   objname: ldapserver
+   description: LDAP server process
+   ldapProtocol: ldaps
+   localDomain: localdomain
+   ldapPort: 389
+   ldapSecurePort: 636
+   serverType: ActiveDirectory
+   systemCommonName: hpcc_admin2
+   systemPassword: ""
+   systemUser: hpcc_admin2
+   filesDefaultUser: "DenyMissingUsernames"
+   filesDefaultPassword: ""
+   adminGroupName: HPCCAdmin
+   systemBasedn: cn=Users
+   filesBasedn: ou=files,ou=ecl
+   groupsBasedn: ou=groups,ou=ecl
+   modulesBasedn: ou=modules,ou=ecl
+   sudoersBasedn: ou=SUDOers
+   usersBasedn: ou=users,ou=ecl
+   workunitsBasedn: ou=workunits,ou=ecl
