@@ -61,7 +61,7 @@ Pass in root as .
 {{- $spillStoragePlane := ($spillStorage.plane | default "hpcc-spill-plane") -}}
 {{- $daliStoragePlane := ($daliStorage.plane | default "hpcc-dali-plane") -}}
 {{- $dllStoragePlane := ($dllStorage.plane | default "hpcc-dlls-plane") -}}
-imageVersion: {{ required "Please specify .global.image.version" .Values.global.image.version | quote }}
+imageVersion: {{ .Values.global.image.version | default .Chart.Version }}
 singleNode: {{ .Values.global.singleNode | default false }}
 {{ if .Values.global.defaultEsp -}}
 defaultEsp: {{ .Values.global.defaultEsp | quote }}
@@ -442,9 +442,9 @@ Get image name
 {{- define "hpcc.imageName" -}}
 {{- /* Pass in a dictionary with root and me defined */ -}}
 {{- if .me.image -}}
-{{ .me.image.root | default .root.Values.global.image.root | default "hpccsystems" }}/{{ .me.image.name | default .root.Values.global.image.name | default "platform-core" }}:{{ .me.image.version | default .root.Values.global.image.version }}
+{{ .me.image.root | default .root.Values.global.image.root | default "hpccsystems" }}/{{ .me.image.name | default .root.Values.global.image.name | default "platform-core" }}:{{ .me.image.version | default .root.Values.global.image.version | default .root.Chart.Version }}
 {{- else -}}
-{{ .root.Values.global.image.root | default "hpccsystems" }}/{{ .root.Values.global.image.name | default "platform-core" }}:{{ .root.Values.global.image.version }}
+{{ .root.Values.global.image.root | default "hpccsystems" }}/{{ .root.Values.global.image.name | default "platform-core" }}:{{ .root.Values.global.image.version | default .root.Chart.Version }}
 {{- end -}}
 {{- end -}}
 
