@@ -1,11 +1,16 @@
 import * as React from "react";
 
-import { FontSizes, FontWeights, IStackItemStyles, IStackStyles, ITooltipProps, Stack, TooltipHost } from "@fluentui/react";
+import { FontSizes, FontWeights, IStackItemStyles, IStackStyles, ITooltipProps, Label, Stack, TooltipHost } from "@fluentui/react";
 import { useId } from "@fluentui/react-hooks";
+
+export interface ICellObject {
+    styles?: IStackItemStyles;
+    text: string | number;
+}
 
 interface StackTableProps {
     label?: string;
-    data: [string | number, string | number][];
+    data: [string | number | ICellObject, string | number | ICellObject][];
     rowCount?: number;
     overflowLabel?: string;
     overflowValue?: string;
@@ -61,7 +66,7 @@ export const StackTable: React.FunctionComponent<StackTableProps> = ({
             <Stack style={{ margin: 10, padding: 0 }}>
                 {
                     data
-                        .filter((n, i) => i >= rowCount)
+                        .filter((n, i) => i <= rowCount)
                         .map((row, rowIdx) => {
                             return <Stack.Item key={rowIdx}>
                                     <Stack horizontal styles={tableRowStyles}>
@@ -85,12 +90,17 @@ export const StackTable: React.FunctionComponent<StackTableProps> = ({
             </Stack>
         ),
     };
+    const headerLabelStyles = {
+        root: {
+            fontWeight: FontWeights.bold
+        }
+    };
     const labelStackItem = label === "" ? undefined : <Stack.Item
             key="label"
             grow={0}
             styles={headerStyles}
         >
-            {label}
+            <Label styles={headerLabelStyles}>{label}</Label>
         </Stack.Item>
         ;
 
@@ -103,12 +113,18 @@ export const StackTable: React.FunctionComponent<StackTableProps> = ({
                         <Stack horizontal styles={tableRowStyles}>
                             {
                                 row.map((n, i) => {
+                                    let text = n;
+                                    let styles = i === 0 ? labelStyles : valueStyles;
+                                    if(typeof n === "object" && n.styles) {
+                                        styles = n.styles;
+                                        text = n.text;
+                                    }
                                     return <Stack.Item
                                         key={i}
                                         grow={i === 0 ? 1 : 0}
-                                        styles={i === 0 ? labelStyles : valueStyles}
+                                        styles={styles}
                                     >
-                                        {n}
+                                        {text}
                                     </Stack.Item>
                                         ;
                                 })
