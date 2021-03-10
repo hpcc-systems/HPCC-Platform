@@ -25,39 +25,77 @@
 
 typedef IEspLogAgent* (*newLogAgent_t_)();
 
+void CWsLoggingServiceEx::initLogAgent(IPropertyTree &ptree, const char *process, const char *service)
+{
+    const char* agentName = ptree.queryProp("@name");
+    const char* agentType = ptree.queryProp("@type");
+    const char* agentPlugin = ptree.queryProp("@plugin");
+    if (!agentName || !*agentName || !agentPlugin || !*agentPlugin)
+        return;
+
+    IEspLogAgent* logAgent = loadLoggingAgent(agentName, agentPlugin);
+    if (!logAgent)
+    {
+        OERRLOG(-1, "Failed to create logging agent for %s", agentName);
+        return;
+    }
+    logAgent->init(agentName, agentType, &ptree, process);
+    logAgent->initVariants(&ptree);
+    IUpdateLogThread* logThread = createUpdateLogThread(&ptree, service, agentName, nullptr, logAgent);
+    if(!logThread)
+        throw MakeStringException(-1, "Failed to create update log thread for %s", agentName);
+
+    loggingAgentThreads.push_back(logThread);
+}
+
+void CWsLoggingServiceEx::initLogAgentSet(IPropertyTree &ptree, const char *process, const char *service)
+{
+    Owned<IPropertyTreeIterator> logAgents = ptree.getElements("LogAgent");
+    ForEach(*logAgents)
+    {
+        IPropertyTree& child = logAgents->query();
+        initLogAgent(child, process, service);
+    }
+}
+void CWsLoggingServiceEx::initLogAgentDirectory(const char *agentdir, const char *mask, const char *process, const char *service)
+{
+    if (!isEmptyString(agentdir))
+    {
+        Owned<IDirectoryIterator> lafiles = createDirectoryIterator(agentdir, mask, false, false);
+        ForEach(*lafiles)
+        {
+            const char *filename = lafiles->query().queryFilename();
+            Owned<IPropertyTree> ptree = createPTreeFromXMLFile(filename);
+            if (ptree)
+            {
+                if (streq(ptree->queryName(), "LogAgents"))
+                    initLogAgentSet(*ptree, process, service);
+                else
+                    initLogAgent(*ptree, process, service);
+            }
+        }
+    }
+}
+
 bool CWsLoggingServiceEx::init(const char* service, const char* type, IPropertyTree* cfg, const char* process)
 {
-    VStringBuffer xpath("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]", process, service);
-    Owned<IPropertyTree> pServiceNode = cfg->getPropTree(xpath.str());
+    VStringBuffer xpath("Software/EspProcess[@name='%s']", process);
+    Owned<IPropertyTree> pProcessNode = cfg->getPropTree(xpath.str());
+    if (!pProcessNode)
+        throw MakeStringException(-1, "No settings found for process %s", process);
+
+    xpath.setf("EspService[@name=\"%s\"]", service);
+    Owned<IPropertyTree> pServiceNode = pProcessNode->getPropTree(xpath.str());
     if (!pServiceNode)
         throw MakeStringException(-1, "No settings found for service %s", service);
 
-    Owned<IPropertyTreeIterator> logAgents = pServiceNode->getElements("LogAgent");
-    if (!logAgents)
+    const char *agentdir = pProcessNode->queryProp("@agentdir");
+    initLogAgentDirectory(agentdir, "*.xml", process, service);
+
+    initLogAgentSet(*pServiceNode, process, service);
+
+    if (!loggingAgentThreads.size())
         throw MakeStringException(-1, "No logAgent is defined for service %s", service);
-
-    ForEach(*logAgents)
-    {
-        IPropertyTree& ptree = logAgents->query();
-        const char* agentName = ptree.queryProp("@name");
-        const char* agentType = ptree.queryProp("@type");
-        const char* agentPlugin = ptree.queryProp("@plugin");
-        if (!agentName || !*agentName || !agentPlugin || !*agentPlugin)
-            continue;
-
-        IEspLogAgent* logAgent = loadLoggingAgent(agentName, agentPlugin);
-        if (!logAgent)
-        {
-            OERRLOG(-1, "Failed to create logging agent for %s", agentName);
-            continue;
-        }
-        logAgent->init(agentName, agentType, &ptree, process);
-        IUpdateLogThread* logThread = createUpdateLogThread(&ptree, service, agentName, nullptr, logAgent);
-        if(!logThread)
-            throw MakeStringException(-1, "Failed to create update log thread for %s", agentName);
-
-        loggingAgentThreads.push_back(logThread);
-    }
 
     return true;
 }
