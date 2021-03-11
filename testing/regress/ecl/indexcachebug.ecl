@@ -18,6 +18,8 @@
 IMPORT STD;
 import $.setup;
 
+#option('disableLocalOptimizations', false);  // Temporarily disable until we can work out a weird caching bug when remote slaves involved
+
 #onwarning (4523, ignore);
 
 prefix := setup.Files(false, false).QueryFilePrefix;
