@@ -80,10 +80,31 @@ ESPresponse RoxieEchoPersonInfoResponse
      ESParray<ESPstruct AddressInfo, Address> Addresses;
 };
 
+ESPrequest MySqlEchoAddressInfoRequest
+{
+     ESParray<ESPstruct AddressInfo, Address> Addresses;
+};
+
+ESPresponse MySqlEchoAddressInfoResponse
+{
+     ESParray<ESPstruct AddressInfo, Address> Addresses;
+};
+
+ESPrequest MySqlEchoAddressResetRequest
+{
+};
+
+ESPresponse MySqlEchoAddressResetResponse
+{
+};
+
+
 ESPservice [version("0.01")] EsdlExample
 {
     ESPmethod CppEchoPersonInfo(CppEchoPersonInfoRequest, CppEchoPersonInfoResponse);
     ESPmethod JavaEchoPersonInfo(JavaEchoPersonInfoRequest, JavaEchoPersonInfoResponse);
     ESPmethod RoxieEchoPersonInfo(RoxieEchoPersonInfoRequest, RoxieEchoPersonInfoResponse);
+    ESPmethod MySqlEchoAddressInfo(MySqlEchoAddressInfoRequest, MySqlEchoAddressInfoResponse);
+    ESPmethod MySqlEchoAddressReset(MySqlEchoAddressResetRequest, MySqlEchoAddressResetResponse);
 };
 

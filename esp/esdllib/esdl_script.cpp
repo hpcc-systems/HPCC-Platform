@@ -19,6 +19,12 @@
 #include "esdl_script.hpp"
 #include "wsexcept.hpp"
 #include "httpclient.hpp"
+#include "dllserver.hpp"
+#include "thorplugin.hpp"
+#include "eclrtl.hpp"
+#include "rtlformat.hpp"
+#include "jsecrets.hpp"
+#include "esdl_script.hpp"
 
 #include <xpp/XmlPullParser.h>
 using namespace xpp;
@@ -52,10 +58,9 @@ inline void esdlOperationError(int code, const char *op, const char *msg, const 
     if (!isEmptyString(op))
         s.append(" ").append(op).append(" ");
     s.append(msg);
+    IERRLOG("%s", s.str());
     if(exception)
         throw MakeStringException(code, "%s", s.str());
-
-    IERRLOG("%s", s.str());
 }
 
 inline void esdlOperationError(int code, const char *op, const char *msg, bool exception)
@@ -234,6 +239,410 @@ interface IEsdlTransformOperationHttpHeader : public IInterface
     virtual bool processHeader(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext, IProperties *headers) = 0;
 };
 
+static Owned<ILoadedDllEntry> mysqlPluginDll;
+static Owned<IEmbedContext> mysqlplugin;
+
+IEmbedContext &ensureMysqlEmbed()
+{
+    if (!mysqlplugin)
+    {
+        mysqlPluginDll.setown(createDllEntry("mysqlembed", false, NULL, false));
+        if (!mysqlPluginDll)
+            throw makeStringException(0, "Failed to load mysqlembed plugin");
+        GetEmbedContextFunction pf = (GetEmbedContextFunction) mysqlPluginDll->getEntry("getEmbedContextDynamic");
+        if (!pf)
+            throw makeStringException(0, "Failed to load mysqlembed plugin");
+        mysqlplugin.setown(pf());
+    }
+    return *mysqlplugin;
+}
+
+class CEsdlTransformOperationMySqlBindParmeter : public CEsdlTransformOperationWithoutChildren
+{
+protected:
+    StringAttr m_name;
+    StringAttr m_mysql_type;
+    Owned<ICompiledXpath> m_value;
+    bool m_bitfield = false;
+
+public:
+    IMPLEMENT_IINTERFACE_USING(CEsdlTransformOperationWithoutChildren)
+
+    CEsdlTransformOperationMySqlBindParmeter(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
+    {
+        m_name.set(stag.getValue("name"));
+        if (m_name.isEmpty())
+            esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname, "without name or xpath_name", m_traceName, !m_ignoreCodingErrors);
+
+        const char *value = stag.getValue("value");
+        if (isEmptyString(value))
+            esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname, "without value", m_traceName, !m_ignoreCodingErrors);
+        m_value.setown(compileXpath(value));
+
+        //optional, conversions normally work well, ONLY WHEN NEEDED we may need to have special handling for mysql types
+        m_mysql_type.set(stag.getValue("type"));
+        if (m_mysql_type.length() && 0==strnicmp(m_mysql_type.str(), "BIT", 3))
+            m_bitfield = true;
+    }
+
+    virtual ~CEsdlTransformOperationMySqlBindParmeter(){}
+
+    bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    {
+        return false;
+    }
+
+    void bindParameter(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext, IEmbedFunctionContext *functionContext)
+    {
+        if (!functionContext)
+            return;
+        StringBuffer value;
+        if (m_value)
+            sourceContext->evaluateAsString(m_value, value);
+        if (value.isEmpty())
+            functionContext->bindUTF8Param(m_name, 0, "");
+        else
+        {
+            if (m_bitfield)
+                functionContext->bindSignedParam(m_name, atoi64(value.str()));
+            else
+                functionContext->bindUTF8Param(m_name, rtlUtf8Length(value.length(), value), value);
+        }
+    }
+
+    virtual void toDBGLog () override
+    {
+    #if defined(_DEBUG)
+        DBGLOG ("> %s (%s, value(%s)) >>>>>>>>>>", m_tagname.str(), m_name.str(), m_value ? m_value->getXpath() : "");
+    #endif
+    }
+};
+
+static inline void buildMissingMySqlParameterMessage(StringBuffer &msg, const char *name)
+{
+    msg .append(msg.isEmpty() ? "without " : ", ").append(name);
+}
+
+static inline void addExceptionsToXpathContext(IXpathContext *targetContext, IMultiException *me)
+{
+    if (!targetContext || !me)
+        return;
+    StringBuffer xml;
+    me->serialize(xml);
+    CXpathContextLocation content_location(targetContext);
+    targetContext->ensureSetValue("@status", "error", true);
+    targetContext->addXmlContent(xml.str());
+}
+
+static inline void addExceptionsToXpathContext(IXpathContext *targetContext, IException *E)
+{
+    if (!targetContext || !E)
+        return;
+    Owned<IMultiException> me = makeMultiException("ESDLScript");
+    me->append(*LINK(E));
+    addExceptionsToXpathContext(targetContext, me);
+}
+
+class CEsdlTransformOperationMySqlCall : public CEsdlTransformOperationBase
+{
+protected:
+    StringAttr m_name;
+
+    Owned<ICompiledXpath> m_vaultName;
+    Owned<ICompiledXpath> m_secretName;
+    Owned<ICompiledXpath> m_section;
+    Owned<ICompiledXpath> m_resultsetTag;
+    Owned<ICompiledXpath> m_server;
+    Owned<ICompiledXpath> m_user;
+    Owned<ICompiledXpath> m_password;
+    Owned<ICompiledXpath> m_database;
+
+    StringArray m_mysqlOptionNames;
+    IArrayOf<ICompiledXpath> m_mysqlOptionXpaths;
+
+    StringBuffer m_sql;
+
+    Owned<ICompiledXpath> m_select;
+
+    IArrayOf<CEsdlTransformOperationMySqlBindParmeter> m_parameters;
+
+public:
+    CEsdlTransformOperationMySqlCall(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationBase(xpp, stag, prefix)
+    {
+        ensureMysqlEmbed();
+
+        m_name.set(stag.getValue("name"));
+        if (m_traceName.isEmpty())
+            m_traceName.set(m_name.str());
+
+        //select is optional, with select, a mysql call behaves like a for-each, binding and executing each iteration of the selected content
+        //without select, it executes once in the current context
+        m_select.setown(compileOptionalXpath(stag.getValue("select")));
+
+        m_vaultName.setown(compileOptionalXpath(stag.getValue("vault")));
+        m_secretName.setown(compileOptionalXpath(stag.getValue("secret")));
+        m_section.setown(compileOptionalXpath(stag.getValue("section")));
+        m_resultsetTag.setown(compileOptionalXpath(stag.getValue("resultset-tag")));
+
+        m_server.setown(compileOptionalXpath(stag.getValue("server")));
+        m_user.setown(compileOptionalXpath(stag.getValue("user")));
+        m_password.setown(compileOptionalXpath(stag.getValue("password")));
+        m_database.setown(compileOptionalXpath(stag.getValue("database")));
+
+        //script can set any MYSQL options using an attribute with the same name as the option enum, for example
+        //    MYSQL_SET_CHARSET_NAME="'latin1'" or MYSQL_SET_CHARSET_NAME="$charset"
+        //
+        int attCount = stag.getLength();
+        for (int i=0; i<attCount; i++)
+        {
+            const char *attName = stag.getLocalName(i);
+            if (attName && hasPrefix(attName, "MYSQL_", false))
+            {
+                Owned<ICompiledXpath> attXpath = compileOptionalXpath(stag.getValue(i));
+                if (attXpath)
+                {
+                    m_mysqlOptionNames.append(attName);
+                    m_mysqlOptionXpaths.append(*attXpath.getClear());
+                }
+            }
+        }
+
+        int type = 0;
+        while((type = xpp.next()) != XmlPullParser::END_DOCUMENT)
+        {
+            switch(type)
+            {
+                case XmlPullParser::START_TAG:
+                {
+                    StartTag stag;
+                    xpp.readStartTag(stag);
+                    const char *op = stag.getLocalName();
+                    if (isEmptyString(op))
+                        esdlOperationError(ESDL_SCRIPT_Error, m_tagname, "unknown error", m_traceName, !m_ignoreCodingErrors);
+                    if (streq(op, "bind"))
+                        m_parameters.append(*new CEsdlTransformOperationMySqlBindParmeter(xpp, stag, prefix));
+                    else if (streq(op, "sql"))
+                        readFullContent(xpp, m_sql);
+                    else
+                        xpp.skipSubTreeEx();
+                    break;
+                }
+                case XmlPullParser::END_TAG:
+                case XmlPullParser::END_DOCUMENT:
+                    return;
+            }
+        }
+
+        if (!m_section)
+            m_section.setown(compileXpath("'temporaries'"));
+        StringBuffer errmsg;
+        if (m_name.isEmpty())
+            buildMissingMySqlParameterMessage(errmsg, "name");
+        if (!m_server)
+            buildMissingMySqlParameterMessage(errmsg, "server");
+        if (!m_user)
+            buildMissingMySqlParameterMessage(errmsg, "user");
+        if (!m_database)
+            buildMissingMySqlParameterMessage(errmsg, "database");
+        if (m_sql.isEmpty())
+            buildMissingMySqlParameterMessage(errmsg, "sql");
+        if (errmsg.length())
+            esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname, errmsg, m_traceName, !m_ignoreCodingErrors);
+    }
+
+    virtual ~CEsdlTransformOperationMySqlCall()
+    {
+    }
+
+    void bindParameters(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext, IEmbedFunctionContext *functionContext)
+    {
+        if (!m_parameters.length())
+            return;
+        CXpathContextLocation location(targetContext);
+        ForEachItemIn(i, m_parameters)
+            m_parameters.item(i).bindParameter(scriptContext, targetContext, sourceContext, functionContext);
+    }
+
+    void missingMySqlOptionError(const char *name, bool required)
+    {
+        if (required)
+        {
+            StringBuffer msg("empty or missing ");
+            esdlOperationError(ESDL_SCRIPT_MissingOperationAttr, m_tagname, msg.append(name), m_traceName, true);
+        }
+    }
+    IPropertyTree *getSecretInfo(IXpathContext * sourceContext)
+    {
+        //leaving flexibility for the secret to be configured multiple ways
+        //  the most secure option in my opinion is to at least have the server, name, and password all in the secret
+        //  with the server included the credentials can't be hijacked and sent somewhere else for capture.
+        //
+        if (!m_secretName)
+            return nullptr;
+        StringBuffer name;
+        sourceContext->evaluateAsString(m_secretName, name);
+        if (name.isEmpty())
+        {
+            missingMySqlOptionError(name, true);
+            return nullptr;
+        }
+        StringBuffer vault;
+        if (m_vaultName)
+            sourceContext->evaluateAsString(m_vaultName, vault);
+        if (vault.isEmpty())
+            return getSecret("esp", name);
+        return getVaultSecret("esp", vault, name);
+    }
+    void appendOption(StringBuffer &options, const char *name, const char *value, bool required)
+    {
+        if (isEmptyString(value))
+        {
+            missingMySqlOptionError(name, required);
+            return;
+        }
+        if (options.length())
+            options.append(',');
+        options.append(name).append('=').append(value);
+
+    }
+    void appendOption(StringBuffer &options, const char *name, IXpathContext * sourceContext, ICompiledXpath *cx, IPropertyTree *secret, bool required)
+    {
+        if (secret && secret->hasProp(name))
+        {
+            StringBuffer value;
+            getSecretKeyValue(value, secret, name);
+            appendOption(options, name, value, required);
+            return;
+        }
+
+        if (!cx)
+        {
+            missingMySqlOptionError(name, required);
+            return;
+        }
+        StringBuffer value;
+        sourceContext->evaluateAsString(cx, value);
+        if (!value.length())
+        {
+            missingMySqlOptionError(name, required);
+            return;
+        }
+        if (options.length())
+            options.append(',');
+        options.append(name).append('=').append(value);
+    }
+    IEmbedFunctionContext *createFunctionContext(IXpathContext * sourceContext)
+    {
+        Owned<IPropertyTree> secret = getSecretInfo(sourceContext);
+        StringBuffer options;
+        appendOption(options, "server", sourceContext, m_server, secret, true);
+        appendOption(options, "user", sourceContext, m_user, secret, true);
+        appendOption(options, "database", sourceContext, m_database, secret, true);
+        appendOption(options, "password", sourceContext, m_password, secret, true);
+
+        aindex_t count = m_mysqlOptionNames.length();
+        for (aindex_t i=0; i<count; i++)
+            appendOption(options, m_mysqlOptionNames.item(i), sourceContext, &m_mysqlOptionXpaths.item(i), nullptr, true);
+
+        Owned<IEmbedFunctionContext> fc = ensureMysqlEmbed().createFunctionContext(EFembed, options.str());
+        fc->compileEmbeddedScript(m_sql.length(), m_sql);
+        return fc.getClear();
+    }
+
+    void processCurrent(IEmbedFunctionContext *fc, IXmlWriter *writer, const char *tag, IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext)
+    {
+        bindParameters(scriptContext, targetContext, sourceContext, fc);
+        fc->callFunction();
+        if (!isEmptyString(tag))
+            writer->outputBeginNested(tag, true);
+        fc->writeResult(nullptr, nullptr, nullptr, writer);
+        if (!isEmptyString(tag))
+            writer->outputEndNested(tag);
+    }
+
+    IXpathContextIterator *select(IXpathContext * xpathContext)
+    {
+        IXpathContextIterator *xpathset = nullptr;
+        try
+        {
+            xpathset = xpathContext->evaluateAsNodeSet(m_select);
+        }
+        catch (IException* e)
+        {
+            int code = e->errorCode();
+            StringBuffer msg;
+            e->errorMessage(msg);
+            e->Release();
+            esdlOperationError(code, m_tagname, msg, !m_ignoreCodingErrors);
+        }
+        catch (...)
+        {
+            VStringBuffer msg("unknown exception evaluating select '%s'", m_select.get() ? m_select->getXpath() : "undefined!");
+            esdlOperationError(ESDL_SCRIPT_Error, m_tagname, msg, !m_ignoreCodingErrors);
+        }
+        return xpathset;
+    }
+
+    void getXpathStringValue(StringBuffer &s, IXpathContext * sourceContext, ICompiledXpath *cx, const char *defaultValue)
+    {
+        if (cx)
+            sourceContext->evaluateAsString(cx, s);
+        if (defaultValue && s.isEmpty())
+            s.set(defaultValue);
+    }
+    virtual bool process(IEsdlScriptContext * scriptContext, IXpathContext * targetContext, IXpathContext * sourceContext) override
+    {
+        StringBuffer section;
+        getXpathStringValue(section, sourceContext, m_section, "temporaries");
+
+        VStringBuffer xpath("/esdl_script_context/%s/%s", section.str(), m_name.str());
+        CXpathContextLocation location(targetContext);
+        targetContext->ensureLocation(xpath, true);
+
+        Owned<IXpathContextIterator> selected;
+        if (m_select)
+        {
+            selected.setown(select(sourceContext));
+            if (!selected || !selected->first())
+                return false;
+        }
+
+        try
+        {
+            Owned<IEmbedFunctionContext> fc = createFunctionContext(sourceContext);
+            Owned<IXmlWriter> writer = targetContext->createXmlWriter();
+            StringBuffer rstag;
+            getXpathStringValue(rstag, sourceContext, m_resultsetTag, nullptr);
+            if (!selected)
+                processCurrent(fc, writer, rstag, scriptContext, targetContext, sourceContext);
+            else
+            {
+                ForEach(*selected)
+                    processCurrent(fc, writer, rstag, scriptContext, targetContext, &selected->query());
+            }
+        }
+        catch(IMultiException *me)
+        {
+            addExceptionsToXpathContext(targetContext, me);
+            me->Release();
+        }
+        catch(IException *E)
+        {
+            addExceptionsToXpathContext(targetContext, E);
+            E->Release();
+        }
+
+        sourceContext->addXpathVariable(m_name, xpath);
+        return true;
+    }
+
+    virtual void toDBGLog() override
+    {
+#if defined(_DEBUG)
+        DBGLOG(">%s> %s with name(%s) server(%s) database(%s)", m_name.str(), m_tagname.str(), m_name.str(), m_server->getXpath(), m_database->getXpath());
+#endif
+    }
+};
 
 class CEsdlTransformOperationHttpHeader : public CEsdlTransformOperationWithoutChildren, implements IEsdlTransformOperationHttpHeader
 {
@@ -297,8 +706,6 @@ public:
     #endif
     }
 };
-
-
 
 class CEsdlTransformOperationHttpPostXml : public CEsdlTransformOperationBase
 {
@@ -1488,6 +1895,8 @@ IEsdlTransformOperation *createEsdlTransformOperation(XmlPullParser &xpp, const 
         return new CEsdlTransformOperationNamespace(xpp, stag, prefix);
     if (streq(op, "http-post-xml"))
         return new CEsdlTransformOperationHttpPostXml(xpp, stag, prefix);
+    if (streq(op, "mysql"))
+        return new CEsdlTransformOperationMySqlCall(xpp, stag, prefix);
     return nullptr;
 }
 

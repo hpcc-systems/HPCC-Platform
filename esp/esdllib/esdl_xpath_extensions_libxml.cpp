@@ -223,6 +223,70 @@ static void getStoredStringValueFunction (xmlXPathParserContextPtr ctxt, int nar
 }
 
 /**
+ * scriptGetDataSectionFunctionImpl
+ * @ctxt:  an XPath parser context
+ * @nargs:  the number of arguments
+ *
+ */
+static void scriptGetDataSectionFunctionImpl (xmlXPathParserContextPtr ctxt, int nargs, bool ensure)
+{
+    IEsdlScriptContext *scriptContext = getEsdlScriptContext(ctxt);
+    if (!scriptContext)
+    {
+        xmlXPathSetError((ctxt), XPATH_INVALID_CTXT);
+        return;
+    }
+
+    if (nargs != 1)
+    {
+        xmlXPathSetArityError(ctxt);
+        return;
+    }
+
+    xmlChar *namestring = xmlXPathPopString(ctxt);
+    if (xmlXPathCheckError(ctxt)) //includes null check
+        return;
+    const char *sectionName = isEmptyString((const char *) namestring) ? "temporaries" : (const char *) namestring;
+
+    if (ensure)
+        scriptContext->appendContent(sectionName, nullptr, nullptr);
+
+    StringBuffer xpath("/esdl_script_context/");
+    xpath.append((const char *) sectionName);
+
+    xmlFree(namestring);
+
+    xmlXPathObjectPtr ret = xmlXPathEval((const xmlChar *) xpath.str(), ctxt->context);
+    if (ret)
+        valuePush(ctxt, ret);
+    else
+        xmlXPathReturnEmptyNodeSet(ctxt);
+}
+
+
+/**
+ * scriptEnsureDataSectionFunction
+ * @ctxt:  an XPath parser context
+ * @nargs:  the number of arguments
+ *
+ */
+static void scriptEnsureDataSectionFunction (xmlXPathParserContextPtr ctxt, int nargs)
+{
+    scriptGetDataSectionFunctionImpl (ctxt, nargs, true);
+}
+
+/**
+ * scriptGetDataSectionFunction
+ * @ctxt:  an XPath parser context
+ * @nargs:  the number of arguments
+ *
+ */
+static void scriptGetDataSectionFunction (xmlXPathParserContextPtr ctxt, int nargs)
+{
+    scriptGetDataSectionFunctionImpl (ctxt, nargs, false);
+}
+
+/**
  * getLogOptionFunction
  * @ctxt:  an XPath parser context
  * @nargs:  the number of arguments
@@ -414,6 +478,8 @@ void registerEsdlXPathExtensionsForURI(IXpathContext *xpathContext, const char *
     xpathContext->registerFunction(uri, "secureAccessFlags", (void *)secureAccessFlagsFunction);
     xpathContext->registerFunction(uri, "getFeatureSecAccessFlags", (void *)getFeatureSecAccessFlagsFunction);
     xpathContext->registerFunction(uri, "getStoredStringValue", (void *)getStoredStringValueFunction);
+    xpathContext->registerFunction(uri, "getDataSection", (void *)scriptGetDataSectionFunction);
+    xpathContext->registerFunction(uri, "ensureDataSection", (void *)scriptEnsureDataSectionFunction);
     xpathContext->registerFunction(uri, "storedValueExists", (void *)storedValueExistsFunction);
     xpathContext->registerFunction(uri, "getLogProfile", (void *)getLogProfileFunction);
     xpathContext->registerFunction(uri, "getLogOption", (void *)getLogOptionFunction);

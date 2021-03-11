@@ -566,7 +566,7 @@ static IPropertyTree *loadLocalSecret(const char *category, const char * name)
         if (!validateXMLTag(name))
             continue;
         MemoryBuffer content;
-        Owned<IFileIO> io = entries->get().open(IFOread);
+        Owned<IFileIO> io = entries->query().open(IFOread);
         read(io, 0, (size32_t)-1, content);
         if (!content.length())
             continue;

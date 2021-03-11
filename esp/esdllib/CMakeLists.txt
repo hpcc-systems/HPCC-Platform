@@ -31,6 +31,7 @@ include_directories (
     ${HPCC_SOURCE_DIR}/rtl/eclrtl
     ${HPCC_SOURCE_DIR}/rtl/include #IXMLWriter
     ${HPCC_SOURCE_DIR}/common/thorhelper #JSONWRITER
+    ${HPCC_SOURCE_DIR}/common/dllserver #loading plugins
     ${HPCC_SOURCE_DIR}/tools/hidl #TAccessMapGenerator
 )
 

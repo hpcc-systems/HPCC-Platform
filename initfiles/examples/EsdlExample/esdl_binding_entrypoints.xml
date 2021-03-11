@@ -21,6 +21,11 @@
               </es:target>
             </es:target>
          </es:BackendResponse>
+         <es:EsdlResponse xmlns:ns1="urn:hpccsystems:ws:esdlexample:roxieechopersoninfo@ver=0.01">
+             <es:target xpath="ns1:Name">
+               <es:append-to-value target="ns1:Last" value="'-post-esdl-fix'" />
+             </es:target>
+         </es:EsdlResponse>
          <es:BackendResponse>
             <es:set-value target="BRESPSRV2" value="'s22'" />
          </es:BackendResponse>

@@ -1,0 +1,51 @@
+<Methods>
+   <Method name="MySqlEchoAddressReset" querytype="script">
+      <Scripts><![CDATA[
+         <Transforms xmlns:es='urn:hpcc:esdl:script'>
+           <es:Service>
+            <es:variable name="secret" select="'mydb'"/>
+            <es:variable name="database" select="'classicmodels'"/>
+            <es:variable name="section" select="'sql'"/>
+            <es:mysql secret="$secret" database="$database" section="$section" name="drop">
+              <es:sql>DROP TABLE IF EXISTS esdlecho;</es:sql>
+            </es:mysql>
+           </es:Service>
+         </Transforms>
+      ]]>
+      </Scripts>
+   </Method>
+   <Method name="MySqlEchoAddressInfo" querytype="script">
+      <Scripts><![CDATA[
+         <Transforms xmlns:es='urn:hpcc:esdl:script'>
+           <es:Service>
+            <es:variable name="secret" select="'mydb'"/>
+            <es:variable name="database" select="'classicmodels'"/>
+            <es:variable name="section" select="'sql'"/>
+            <es:mysql secret="$secret" database="$database" section="$section" name="create">
+              <es:sql>CREATE TABLE IF NOT EXISTS esdlecho ( type VARCHAR(5), Line1 VARCHAR(30), Line2 VARCHAR(30), City VARCHAR(30),  State VARCHAR(30), Zip INT );</es:sql>
+            </es:mysql>
+            <es:mysql select="Addresses/Address" secret="$secret" database="$database" section="$section" name="insert_request">
+              <es:bind name="type" value="type"/>
+              <es:bind name="Line1" value="Line1"/>
+              <es:bind name="Line2" value="Line2"/>
+              <es:bind name="City" value="City"/>
+              <es:bind name="State" value="State"/>
+              <es:bind name="Zip" value="Zip"/>
+              <es:sql>INSERT INTO esdlecho (type, Line1, Line2, City, State, Zip) values (?, ?, ?, ?, ?, ?);</es:sql>
+            </es:mysql>
+            <es:mysql secret="$secret" database="$database" section="$section" name="select_all">
+              <es:sql>SELECT * FROM esdlecho;</es:sql>
+            </es:mysql>
+            <es:ensure-target xpath="Addresses">
+             <es:for-each select="$select_all/Row">
+              <es:element name="Address">
+                <es:copy-of select="*"/>
+              </es:element>
+             </es:for-each>
+            </es:ensure-target>
+           </es:Service>
+         </Transforms>
+      ]]>
+      </Scripts>
+   </Method>
+</Methods>

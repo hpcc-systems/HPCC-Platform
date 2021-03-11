@@ -20,6 +20,8 @@
 #include "jptree.hpp"
 #include "jexcept.hpp"
 #include "jlog.hpp"
+#include "eclhelper.hpp" //IXmlWriter
+#include "eclrtl.hpp" //IXmlWriter
 
 #include <libxml/xmlmemory.h>
 #include <libxml/parserInternals.h>
@@ -192,6 +194,133 @@ public:
         ctx->proximityPosition = proximityPosition;
     }
 };
+
+class XpathContextXmlWriter : public CInterfaceOf<IXmlWriter>
+{
+public:
+    XpathContextXmlWriter(xmlNodePtr _location) : location(_location)
+    {
+    }
+    void addNameValue(const char *name, const char *value)
+    {
+        if (isEmptyString(name))
+            return;
+        if (*name=='@')
+            xmlSetProp(location, (const xmlChar *)name+1, (const xmlChar *)value);
+        else
+            xmlNewTextChild(location, nullptr, (const xmlChar *) name, (const xmlChar *) value);
+    }
+    virtual void outputQuoted(const char *text) override
+    {
+
+    }
+    virtual void outputString(unsigned len, const char *field, const char *fieldname) override
+    {
+        StringAttr out(field, len);
+        addNameValue(fieldname, out.str());
+    }
+    virtual void outputBool(bool field, const char *fieldname) override
+    {
+        addNameValue(fieldname, field ? "true" : "false");
+    }
+
+    virtual void outputData(unsigned len, const void *field, const char *fieldname) override
+    {
+        StringBuffer out;
+        outputXmlData(len, field, nullptr, out);
+        addNameValue(fieldname, out.str());
+    }
+    virtual void outputInt(__int64 field, unsigned size, const char *fieldname) override
+    {
+        StringBuffer out;
+        outputXmlInt(field, nullptr, out);
+        addNameValue(fieldname, out.str());
+    }
+    virtual void outputUInt(unsigned __int64 field, unsigned size, const char *fieldname) override
+    {
+        StringBuffer out;
+        outputXmlUInt(field, nullptr, out);
+        addNameValue(fieldname, out.str());
+    }
+    virtual void outputReal(double field, const char *fieldname) override
+    {
+        StringBuffer out;
+        outputXmlReal(field, nullptr, out);
+        addNameValue(fieldname, out.str());
+    }
+    virtual void outputDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname) override
+    {
+        StringBuffer out;
+        outputXmlDecimal(field, size, precision, fieldname, out);
+        addNameValue(fieldname, out.str());
+    }
+    virtual void outputUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname) override
+    {
+        StringBuffer out;
+        outputXmlUDecimal(field, size, precision, fieldname, out);
+        addNameValue(fieldname, out.str());
+    }
+    virtual void outputUnicode(unsigned len, const UChar *field, const char *fieldname) override
+    {
+        StringBuffer out;
+        outputXmlUnicode(len, field, nullptr, out);
+        addNameValue(fieldname, out.str());
+    }
+    virtual void outputQString(unsigned len, const char *field, const char *fieldname) override
+    {
+        MemoryAttr tempBuffer;
+        char * temp;
+        if (len <= 100)
+            temp = (char *)alloca(len);
+        else
+            temp = (char *)tempBuffer.allocate(len);
+        rtlQStrToStr(len, temp, len, field);
+        outputString(len, temp, fieldname);
+    }
+    virtual void outputBeginDataset(const char *dsname, bool nestChildren) override
+    {
+        outputBeginNested("Dataset", nestChildren); //indent row, not dataset for backward compatibility
+        if (!isEmptyString(dsname))
+            outputUtf8(rtlUtf8Length(strlen(dsname), dsname), dsname, "@name");
+    }
+    virtual void outputEndDataset(const char *dsname) override
+    {
+        outputEndNested("Dataset");
+    }
+    virtual void outputBeginNested(const char *fieldname, bool nestChildren) override
+    {
+        location = xmlNewChild(location, nullptr, (const xmlChar *)fieldname, nullptr);
+    }
+    virtual void outputEndNested(const char *fieldname) override
+    {
+        if (location->parent)
+            location = location->parent;
+    }
+    virtual void outputSetAll() override
+    {
+        StringBuffer out;
+        outputXmlSetAll(out);
+        xmlNodeAddContent(location, (const xmlChar *)out.str());
+    }
+    virtual void outputUtf8(unsigned len, const char *field, const char *fieldname) override
+    {
+        StringBuffer out;
+        outputXmlUtf8(len, field, nullptr, out);
+        addNameValue(fieldname, out.str());
+    }
+    virtual void outputBeginArray(const char *fieldname){} //no op for libxml structure
+    virtual void outputEndArray(const char *fieldname){}
+
+    virtual void outputInlineXml(const char *text){} //um no
+    virtual void outputXmlns(const char *name, const char *uri)
+    {
+        xmlNewNs(location, (const xmlChar *) uri, (const xmlChar *) name);
+    }
+    virtual void flushContent(bool close){}
+private:
+    xmlNodePtr location;
+};
+
 
 typedef std::vector<XpathContextState> XPathContextStateVector;
 
@@ -478,8 +607,12 @@ public:
         xmlFreeParserCtxt(parserCtx);
         if (!wellFormed)
             throw MakeStringException(-1, "XpathContext:addXmlContent: Unable to parse %s XML content", xml);
-
     }
+    virtual IXmlWriter *createXmlWriter() override
+    {
+        return new XpathContextXmlWriter(m_xpathContext->node);
+    }
+
     virtual bool ensureLocation(const char *xpath, bool required) override
     {
         if (isEmptyString(xpath))
@@ -1286,6 +1419,13 @@ extern ICompiledXpath* compileXpath(const char * xpath)
     return new CLibCompiledXpath(xpath);
 }
 
+extern ICompiledXpath* compileOptionalXpath(const char * xpath)
+{
+    if (isEmptyString(xpath))
+        return nullptr;
+    return compileXpath(xpath);
+}
+
 void addChildFromPtree(xmlNodePtr parent, IPropertyTree &tree, const char *name)
 {
     if (isEmptyString(name))
@@ -1584,10 +1724,10 @@ private:
     }
     virtual void appendContent(const char *section, const char *name, const char *xml) override
     {
+        xmlNodePtr sect = ensureSection(section);
+
         if (xml==nullptr)
             return;
-
-        xmlNodePtr sect = ensureSection(section);
         xmlNodePtr sectNode = getSectionNode(section, name);
 
         xmlDocPtr doc = xmlParseDoc((const xmlChar *)xml);
@@ -1605,7 +1745,7 @@ private:
             if (!isEmptyString(name))
                 xmlNodeSetName(content, (const xmlChar *) name);
             xmlAddChild(sect, content);
-            xmlFree(doc);
+            xmlFreeDoc(doc);
             return;
         }
         xmlAttrPtr prop = content->properties;

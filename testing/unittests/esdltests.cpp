@@ -23,6 +23,10 @@
 #include "wsexcept.hpp"
 
 #include <stdio.h>
+#include "dllserver.hpp"
+#include "thorplugin.hpp"
+#include "eclrtl.hpp"
+#include "rtlformat.hpp"
 
 // =============================================================== URI parser
 
@@ -292,6 +296,8 @@ class ESDLTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testEsdlTransformRequestNamespaces);
         CPPUNIT_TEST(testScriptContext);
         CPPUNIT_TEST(testTargetElement);
+      //The following require setup, uncomment for development testing for now:
+      //CPPUNIT_TEST(testMysql);
       //CPPUNIT_TEST(testScriptMap); //requires a particular roxie query
       //CPPUNIT_TEST(testHTTPPostXml); //requires a particular roxie query
     CPPUNIT_TEST_SUITE_END();
@@ -1843,6 +1849,172 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
             E->Release();
             CPPUNIT_ASSERT(false);
         }
+    }
+    void testMysql()
+    {
+        constexpr const char *config1 = R"!!(<config>
+          <Transform>
+            <Param name='testcase' value="new features"/>
+          </Transform>
+        </config>)!!";
+
+        static constexpr const char * data = R"!!(<?xml version="1.0" encoding="UTF-8"?>
+        <root>
+          <insert>
+            <common_value>178</common_value>
+            <common_r8>1.2</common_r8>
+            <Row>
+              <name>selected1</name>
+              <bval>65</bval>
+              <boolval>1</boolval>
+              <r4>3.4</r4>
+              <d>aa55aa55</d>
+              <ddd>1234567.89</ddd>
+              <u1>Straße1</u1>
+              <u2>ᚠᛇᚻ᛫ᛒᛦᚦ᛫ᚠᚱᚩᚠᚢᚱ᛫ᚠᛁᚱᚪ᛫ᚷᛖᚻᚹᛦᛚᚳᚢᛗ</u2>
+              <dt>2019-02-01 12:59:59</dt>
+            </Row>
+            <Row>
+              <name>selected2</name>
+              <bval>65</bval>
+              <boolval>1</boolval>
+              <r4>4.5</r4>
+              <d>bb66bb66</d>
+              <ddd>1234567.89</ddd>
+              <u1>Straße3</u1>
+              <u2>Straße4</u2>
+              <dt>2019-02-01 13:59:59</dt>
+            </Row>
+            <Row>
+              <name>selected3</name>
+              <bval>65</bval>
+              <boolval>1</boolval>
+              <r4>5.6</r4>
+              <d>cc77cc77</d>
+              <ddd>1234567.89</ddd>
+              <u1>Straße5</u1>
+              <u2>色は匂へど 散りぬるを</u2>
+              <dt>2019-02-01 14:59:59</dt>
+            </Row>
+          </insert>
+          <cities>
+            <name>aeiou</name>
+            <name>aeou</name>
+            <name>aoui</name>
+            <name>ei</name>
+            <name>aaa</name>
+            <name>bbb</name>
+          </cities>
+          <read>
+            <name>selected1</name>
+            <name>selected3</name>
+          </read>
+        </root>
+        )!!";
+
+        static constexpr const char * input = R"!!(<?xml version="1.0" encoding="UTF-8"?>
+        <root>
+          <Person>
+            <FullName>
+              <First>Joe</First>
+            </FullName>
+          </Person>
+        </root>
+        )!!";
+
+        static constexpr const char * script = R"!!(<es:CustomRequestTransform xmlns:es="urn:hpcc:esdl:script" target="Person">
+          <es:variable name="secret" select="'mydb'"/>
+          <es:variable name="database" select="'classicmodels'"/>
+          <es:variable name="section" select="'sql'"/>
+          <es:mysql secret="$secret" database="$database" section="$section" name="drop">
+            <es:sql>DROP TABLE IF EXISTS tbl1;</es:sql>
+          </es:mysql>
+          <es:mysql secret="$secret" database="$database" section="$section" name="create">
+            <es:sql>CREATE TABLE tbl1 ( name VARCHAR(20), bval BIT(15), value INT, boolval TINYINT, r8 DOUBLE, r4 FLOAT, d BLOB, ddd DECIMAL(10,2), u1 VARCHAR(10), u2 VARCHAR(10), dt DATETIME );</es:sql>
+          </es:mysql>
+          <es:mysql select="getDataSection('whatever')/this/insert/Row" secret="$secret" database="$database" section="$section" name="insert_each_row" resultset-tag="'inserted'">
+            <es:bind name="name" value="name"/>
+            <es:bind name="bval" value="bval" type="BIT(15)"/>
+            <es:bind name="value" value="../common_value"/>
+            <es:bind name="boolval" value="boolval"/>
+            <es:bind name="r8" value="../common_r8"/>
+            <es:bind name="r4" value="r4"/>
+            <es:bind name="d" value="d"/>
+            <es:bind name="ddd" value="ddd"/>
+            <es:bind name="u1" value="u1"/>
+            <es:bind name="u2" value="u2"/>
+            <es:bind name="dt" value="dt"/>
+            <es:sql>INSERT INTO tbl1 values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);</es:sql>
+          </es:mysql>
+          <es:mysql secret="$secret" database="$database" section="$section" name="drop">
+            <es:sql>DROP TABLE IF EXISTS tblcities;</es:sql>
+          </es:mysql>
+          <es:mysql secret="$secret" database="$database" section="$section" name="createcites">
+            <es:sql>CREATE TABLE tblcities ( city VARCHAR(20) );</es:sql>
+          </es:mysql>
+          <es:mysql select="getDataSection('whatever')/this/cities/name" secret="$secret" database="$database" section="$section" name="insert_each_row" resultset-tag="'inserted'">
+            <es:bind name="city" value="."/>
+            <es:sql>INSERT INTO tblcities values (?);</es:sql>
+          </es:mysql>
+          <es:mysql select="getDataSection('whatever')/this/read/name" secret="$secret" database="$database" section="$section" name="select_each_name" resultset-tag="'selected'">
+            <es:bind name="name" value="."/>
+            <es:sql>SELECT * FROM tbl1 where name = ?;</es:sql>
+          </es:mysql>
+          <es:mysql secret="$secret" database="$database" section="$section" name="mysql_session_info" MYSQL_SET_CHARSET_NAME="'latin1'">
+            <es:sql>
+            SELECT * FROM performance_schema.session_variables
+            WHERE VARIABLE_NAME IN (
+            'character_set_client', 'character_set_connection',
+            'character_set_results', 'collation_connection'
+            ) ORDER BY VARIABLE_NAME;
+            </es:sql>
+          </es:mysql>
+          <es:mysql secret="$secret" database="$database" section="$section" name="select_all" resultset-tag="'onecall'">
+            <es:sql>SELECT * FROM tbl1;</es:sql>
+          </es:mysql>
+          <es:for-each select="$select_all/onecall/Row">
+            <es:element name="r">
+              <es:copy-of select="*"/>
+            </es:element>
+          </es:for-each>
+            <es:mysql secret="$secret" database="$database" section="$section" name="mysqlresult">
+              <es:sql>SELECT * FROM tblcities;</es:sql>
+            </es:mysql>
+            <es:variable name="i" select="$mysqlresult/Row/city[contains(.,'i')]" />
+            <es:variable name="e" select="$mysqlresult/Row/city[contains(.,'e')]" />
+            <es:ensure-target xpath="iii">
+                <es:copy-of select="$i" />
+            </es:ensure-target>
+            <es:ensure-target xpath="eee">
+                <es:copy-of select="$e" />
+            </es:ensure-target>
+            <es:ensure-target xpath="cities">
+              <es:for-each select="set:intersection($i, $e)">
+                <es:copy-of select="." />
+              </es:for-each>
+            </es:ensure-target>
+        </es:CustomRequestTransform>
+        )!!";
+
+        Owned<IEspContext> ctx = createEspContext(nullptr);
+        Owned<IEsdlScriptContext> scriptContext = createTestScriptContext(ctx, input, config1);
+        scriptContext->appendContent("whatever", "this", data);
+
+        try
+        {
+            runTransform(scriptContext, script, ESDLScriptCtxSection_ESDLRequest, "MyResult", "http post xml", 0);
+        }
+        catch (IException *E)
+        {
+            StringBuffer m;
+            fprintf(stdout, "\nTest(%s) Exception %d - %s\n", "mysql", E->errorCode(), E->errorMessage(m).str());
+            E->Release();
+        }
+
+        StringBuffer output;
+        scriptContext->toXML(output);
+        fputs(output.str(), stdout);
+        fflush(stdout);
     }
 
     void testScriptMap()
