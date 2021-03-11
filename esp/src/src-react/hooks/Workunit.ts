@@ -2,6 +2,13 @@ import * as React from "react";
 import { Workunit, Result, WUStateID, WUInfo } from "@hpcc-js/comms";
 import nlsHPCC from "src/nlsHPCC";
 
+export function useCounter(): [number, () => void] {
+
+    const [counter, setCounter] = React.useState(0);
+
+    return [counter, () => setCounter(counter + 1)];
+}
+
 export function useWorkunit(wuid: string, full: boolean = false): [Workunit, WUStateID, number] {
 
     const [workunit, setWorkunit] = React.useState<Workunit>();
@@ -11,15 +18,17 @@ export function useWorkunit(wuid: string, full: boolean = false): [Workunit, WUS
     React.useEffect(() => {
         const wu = Workunit.attach({ baseUrl: "" }, wuid);
         const handle = wu.watch(() => {
-            if (full) {
-                wu.refresh(true).then(() => {
-                    setWorkunit(wu);
+            if (wu.StateID !== 999) {
+                if (full) {
+                    wu.refresh(true).then(() => {
+                        setWorkunit(wu);
+                        setState(wu.StateID);
+                    });
+                } else {
                     setState(wu.StateID);
-                });
-            } else {
-                setState(wu.StateID);
+                }
+                setLastUpdate(Date.now());
             }
-            setLastUpdate(Date.now());
         });
         setWorkunit(wu);
         setLastUpdate(Date.now());
@@ -121,4 +130,21 @@ export function useWorkunitSourceFiles(wuid: string): [SourceFile[], Workunit, W
     }, [workunit, state]);
 
     return [sourceFiles, workunit, state];
+}
+
+export function useWorkunitWorkflows(wuid: string): [WUInfo.ECLWorkflow[], Workunit, () => void] {
+
+    const [workunit, state] = useWorkunit(wuid);
+    const [workflows, setWorkflows] = React.useState<WUInfo.ECLWorkflow[]>([]);
+    const [count, increment] = useCounter();
+
+    React.useEffect(() => {
+        workunit?.fetchInfo({
+            IncludeWorkflows: true
+        }).then(response => {
+            setWorkflows(response?.Workunit?.Workflows?.ECLWorkflow || []);
+        });
+    }, [workunit, state, count]);
+
+    return [workflows, workunit, increment];
 }

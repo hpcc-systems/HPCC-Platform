@@ -14,6 +14,7 @@ import { Results } from "./Results";
 import { Variables } from "./Variables";
 import { SourceFiles } from "./SourceFiles";
 import { Details } from "./Details";
+import { Workflows } from "./Workflows";
 
 import "react-reflex/styles.css";
 
@@ -206,7 +207,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 <DojoAdapter widgetClassID="GraphsWUWidget" params={{ Wuid: wuid }} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Workflows} itemKey="workflows" itemCount={workunit?.WorkflowCount} style={pivotItemStyle(size, 0)}>
-                <DojoAdapter widgetClassID="WorkflowsWidget" params={{ Wuid: wuid }} />
+                <Workflows wuid={wuid} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Queries} itemIcon="Search" itemKey="queries" style={pivotItemStyle(size, 0)}>
                 <DojoAdapter widgetClassID="QuerySetQueryWidget" params={{ Wuid: wuid }} />

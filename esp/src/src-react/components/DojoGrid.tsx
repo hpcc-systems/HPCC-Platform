@@ -12,10 +12,11 @@ import "srcReact/components/DojoGrid.css";
 
 export { selector, tree };
 
+const SimpleGrid = declare([ESPUtil.Grid(false, false, undefined, false, "SimpleGrid")]);
 const PageSelGrid = declare([ESPUtil.Grid(true, true, undefined, false, "PageSelGrid")]);
 const SelGrid = declare([ESPUtil.Grid(false, true, undefined, false, "SelGrid")]);
 
-type GridType = "PageSel" | "Sel";
+type GridType = "PageSel" | "Sel" | "SimpleGrid";
 
 interface DojoGridProps {
     type?: GridType;
@@ -43,6 +44,8 @@ export const DojoGrid: React.FunctionComponent<DojoGridProps> = ({
 
     const Grid = useConst(() => {
         switch (type) {
+            case "SimpleGrid":
+                return SimpleGrid;
             case "Sel":
                 return SelGrid;
             case "PageSel":
