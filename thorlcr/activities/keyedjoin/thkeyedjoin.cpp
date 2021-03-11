@@ -39,12 +39,15 @@ class CKeyedJoinMaster : public CMasterActivity
     bool local = false;
     bool remoteKeyedLookup = false;
     bool remoteKeyedFetch = false;
+    bool assumePrimary = false;
     unsigned totalIndexParts = 0;
 
     // CMap contains mappings and lists of parts for each slave
     class CMap
     {
+        CKeyedJoinMaster &activity;
     public:
+        CMap(CKeyedJoinMaster &_activity) : activity(_activity) {}
         std::vector<unsigned> allParts;
         std::vector<std::vector<unsigned>> slavePartMap; // vector of slave parts (IPartDescriptor's slavePartMap[<slave>] serialized to each slave)
         std::vector<unsigned> partToSlave; // vector mapping part index to slave (sent to all slaves)
@@ -146,21 +149,37 @@ class CKeyedJoinMaster : public CMasterActivity
                          * Add them to local parts list if found.
                          */
                         unsigned mappedPos = NotFound;
-                        for (unsigned c=0; c<part->numCopies(); c++)
+                        unsigned copies = part->numCopies();
+                        bool filePartExists = false;
+                        if (activity.assumePrimary)
+                        {
+                            /* If the index is big (e.g. large super-index), then it can be expensive
+                             * to walk over all part copies, checking their existence.
+                             * This option provides a workaround in those cases, to avoid that check,
+                             * by assuming the primary copy will exist and be used.
+                             */
+                            copies = 1;
+                            filePartExists = true;
+                        }
+                        for (unsigned c = 0; c < copies; c++)
                         {
                             INode *partNode = part->queryNode(c);
                             unsigned partCopy = p | (c << partBits);
                             unsigned start=nextGroupStartPos;
                             unsigned gn=start;
-                            do
+                            if (!activity.assumePrimary)
                             {
-                                INode &groupNode = dfsGroup.queryNode(gn);
-                                if ((partNode->equals(&groupNode)))
+                                RemoteFilename rfn;
+                                part->getFilename(c, rfn);
+                                Owned<IFile> file = createIFile(rfn);
+                                filePartExists = file->exists(); // skip if copy doesn't exist
+                            }
+                            if (filePartExists)
+                            {
+                                do
                                 {
-                                    RemoteFilename rfn;
-                                    part->getFilename(c, rfn);
-                                    Owned<IFile> file = createIFile(rfn);
-                                    if (file->exists()) // skip if copy doesn't exist
+                                    INode &groupNode = dfsGroup.queryNode(gn);
+                                    if (partNode->equals(&groupNode))
                                     {
                                         /* NB: If there's >1 slave per node (e.g. slavesPerNode>1) then there are multiple matching node's in the dfsGroup
                                         * Which means a copy of a part may already be assigned to a cluster slave map. This check avoid handling it again if it has.
@@ -195,12 +214,12 @@ class CKeyedJoinMaster : public CMasterActivity
                                                 slaveParts.push_back(partCopy);
                                         }
                                     }
+                                    gn++;
+                                    if (gn == groupSize)
+                                        gn = 0;
                                 }
-                                gn++;
-                                if (gn == groupSize)
-                                    gn = 0;
+                                while (gn != start);
                             }
-                            while (gn != start);
                         }
                         if (NotFound == mappedPos)
                         {
@@ -247,7 +266,7 @@ class CKeyedJoinMaster : public CMasterActivity
 
 
 public:
-    CKeyedJoinMaster(CMasterGraphElement *info) : CMasterActivity(info, keyedJoinActivityStatistics)
+    CKeyedJoinMaster(CMasterGraphElement *info) : CMasterActivity(info, keyedJoinActivityStatistics), indexMap(*this), dataMap(*this)
     {
         helper = (IHThorKeyedJoinArg *) queryHelper();
         reInit = 0 != (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) || (helper->getJoinFlags() & JFvarindexfilename);
@@ -258,6 +277,8 @@ public:
         remoteKeyedFetch = getOptBool(THOROPT_REMOTE_KEYED_FETCH, true);
         if (getOptBool(THOROPT_FORCE_REMOTE_KEYED_FETCH))
             remoteKeyedFetch = true;
+
+        assumePrimary = getOptBool(THOROPT_KJ_ASSUME_PRIMARY);
 
         if (helper->diskAccessRequired())
             numTags += 2;

@@ -3421,6 +3421,10 @@ protected:
             minSkew = (unsigned)(10000.0 * ((avgPartSz-(double)minPartSz)/avgPartSz));
         }
 
+        // +1 because published part number references are 1 based.
+        maxSkewPart++;
+        minSkewPart++;
+
         return true;
     }
 
