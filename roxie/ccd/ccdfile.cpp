@@ -2680,6 +2680,11 @@ public:
                 DBGLOG("Roxie server adding information for file %s", lfn.get());
             bool tsSet = dFile->getModificationTime(fileTimeStamp);
             dFile->getFileCheckSum(fileCheckSum);
+            if (doTrace(traceRoxieFiles))
+            {
+                StringBuffer d;
+                DBGLOG("Roxie server adding information for file %s time %s checksum %u", lfn.get(), fileTimeStamp.getTimeString(d, true).str(), fileCheckSum);
+            }
             assertex(tsSet); // per Nigel, is always set
             IDistributedSuperFile *superFile = dFile->querySuperFile();
             if (superFile)
@@ -3456,10 +3461,11 @@ public:
 
     virtual IResolvedFile *lookupDynamicFile(const IRoxieContextLogger &logctx, const char *lfn, CDateTime &cacheDate, unsigned checksum, RoxiePacketHeader *header, bool isOpt, bool isLocal) override
     {
-        if (logctx.queryTraceLevel() > 5)
+        if (doTrace(traceRoxieFiles))
         {
-            StringBuffer s;
-            logctx.CTXLOG("lookupDynamicFile %s for packet %s", lfn, header->toString(s).str());
+            StringBuffer s,d;
+            cacheDate.getTimeString(d, true);
+            logctx.CTXLOG("lookupDynamicFile %s for packet %s cacheDate %s checksum %u", lfn, header->toString(s).str(), d.str(), checksum);
         }
         // we use a fixed-size array with linear lookup for ease of initial coding - but unless we start making heavy use of the feature this may be adequate.
         CriticalBlock b(crit);
@@ -3471,8 +3477,16 @@ public:
                 CAgentDynamicFile &f = files.item(idx);
                 if (f.channel==header->channel && f.serverId==header->serverId && stricmp(f.queryFileName(), lfn)==0)
                 {
+                   if (doTrace(traceRoxieFiles))
+                    {
+                        StringBuffer d;
+                        f.queryTimeStamp().getTimeString(d, true);
+                        logctx.CTXLOG("lookupDynamicFile: Possible match with date %s checksum %u", d.str(), f.queryCheckSum());
+                    }
                     if (!cacheDate.equals(f.queryTimeStamp()) || checksum != f.queryCheckSum())
                     {
+                        if (doTrace(traceRoxieFiles))
+                            logctx.CTXLOG("lookupDynamicFile: removing mismatch");
                         if (f.isKey())
                             clearKeyStoreCacheEntry(f.queryFileName());
                         files.remove(idx);
@@ -3480,6 +3494,8 @@ public:
                     }
                     else if ((!f.isLocal || isLocal) && f.isOpt==isOpt)
                     {
+                        if (doTrace(traceRoxieFiles))
+                            logctx.CTXLOG("lookupDynamicFile: using cache");
                         files.swap(idx, 0);
                         return LINK(&f);
                     }
