@@ -13,7 +13,7 @@ inputs:
   password:
     description: 'The login password for docker hub'
     required: true
-  buildtype:
+  build_type:
     description: 'The build type - Debug, RelWithDebInfo, or Release'
     required: false
   latest:
