@@ -27,8 +27,7 @@ extern da_decl void _export_(const char *path, const char *dst, bool safe = fals
 extern da_decl void import(const char *path, const char *src, bool add);
 extern da_decl void _delete_(const char *path, bool backup);
 extern da_decl void set(const char *path, const char *val);
-extern da_decl void get(const char *path);
-extern da_decl void getValue(const char *path, StringBuffer *value);
+extern da_decl void get(const char *path, StringBuffer *value);
 extern da_decl void bget(const char *path, const char *outfn);
 extern da_decl void wget(const char *path);
 extern da_decl void add(const char *path, const char *val);

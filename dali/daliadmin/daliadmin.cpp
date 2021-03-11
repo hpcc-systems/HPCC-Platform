@@ -273,7 +273,7 @@ int main(int argc, const char* argv[])
                     }
                     else if (strieq(cmd,"get")) {
                         CHECKPARAMS(1,1);
-                        get(params.item(1));
+                        get(params.item(1), nullptr);
                     }
                     else if (strieq(cmd,"bget")) {
                         CHECKPARAMS(2,2);

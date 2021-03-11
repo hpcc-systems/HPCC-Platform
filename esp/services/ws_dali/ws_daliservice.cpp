@@ -50,7 +50,7 @@ bool CWSDaliEx::onGetValue(IEspContext& context, IEspGetValueRequest& req, IEspG
             throw makeStringException(ECLWATCH_INVALID_INPUT, "Data path not specified.");
 
         StringBuffer result;
-        getValue(path, &result);
+        get(path, &result);
         resp.setResult(result);
     }
     catch(IException* e)

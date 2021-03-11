@@ -273,12 +273,7 @@ void set(const char *path,const char *val)
 
 //=============================================================================
 
-void get(const char *path)
-{
-    getValue(path, nullptr);
-}
-
-void getValue(const char *path, StringBuffer *value)
+void get(const char *path, StringBuffer *value)
 {
     StringBuffer head;
     StringBuffer tmp;
