@@ -46,6 +46,7 @@ spec:
       annotations:
         checksum/config: {{ $configSHA }}
     spec:
+      {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" .name "type" "esp") | indent 6 }}
       serviceAccountName: "hpcc-default"
       containers:
       - name: {{ .name | quote }}

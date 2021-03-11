@@ -11,6 +11,21 @@
     "hostgroups": {
       "$ref": "#/definitions/hostgroups"
     },
+    "placements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pods": {
+            "type": "array",
+            "items": { "type": "string" }
+           },
+          "placement": {
+            "$ref": "#/definitions/placement"
+          }
+        }
+      }
+    },
     "storage": {
       "type": "object",
       "properties": {
@@ -1010,6 +1025,53 @@
           "type": "null"
         }
       ]
+    },
+    "placement": {
+      "type": "object",
+      "properties": {
+        "nodeSelector": {
+          "$ref": "#/definitions/nodeSelector"
+        },
+        "tolerations": {
+          "$ref": "#/definitions/tolerations"
+        },
+        "affinity": {
+          "type": "object"
+        },
+        "schedulerName": {
+          "type": "string"
+        }
+      }
+    },
+    "nodeSelector": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "tolerations": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/toleration" }
+    },
+    "toleration": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "operator": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "effect": {
+          "type": "string"
+        },
+        "tolerationSeconds": {
+          "type": "integer"
+        }
+      }
     }
   }
 }

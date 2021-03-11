@@ -49,6 +49,7 @@ spec:
       annotations:
         checksum/config: {{ $configSHA }}
     spec:
+      {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $commonCtx.toponame "target" $roxie.name "type" "roxie") | indent 6 }}
       serviceAccountName: "hpcc-default"
       containers:
       - name: {{ $commonCtx.toponame | quote }}
@@ -150,6 +151,7 @@ spec:
       annotations:
         checksum/config: {{ $configSHA }}
     spec:
+      {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $servername "target" $roxie.name "type" "roxie") | indent 6 }}
       serviceAccountName: "hpcc-default"
       initContainers:
         {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
@@ -216,6 +218,7 @@ spec:
       annotations:
         checksum/config: {{ $configSHA }}
     spec:
+      {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $name "target" $roxie.name "type" "roxie") | indent 6 }}
       serviceAccountName: "hpcc-default"
       initContainers:
         {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}

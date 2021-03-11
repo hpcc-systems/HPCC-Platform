@@ -4,6 +4,7 @@ Pass in dict with root and me
 */}}
 {{- define "hpcc.agentConfigMap" }}
 {{- $apptype := .me.type | default "hthor" -}}
+{{- $appJobName := printf "%s-%%jobname" $apptype }}
 apiVersion: v1
 metadata:
   name: {{ .me.name }}-configmap
@@ -24,7 +25,7 @@ data:
     apiVersion: batch/v1
     kind: Job
     metadata:
-      name: {{ $apptype }}-%jobname
+      name: {{ $appJobName }}
     spec:
       ttlSecondsAfterFinished: 100
       template:
@@ -33,9 +34,10 @@ data:
             accessDali: "yes"
             accessEsp: "yes"
         spec:
+          {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $appJobName "target" .me.name "type" "eclagent") | indent 10 }}
           serviceAccountName: "hpcc-default"
           containers:
-          - name: {{ $apptype }}-%jobname
+          - name: {{ $appJobName }}
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" .me.resources) | indent 12 }}
@@ -97,6 +99,7 @@ spec:
       annotations:
         checksum/config: {{ $configSHA }}
     spec:
+      {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" .name "target" .name "type" "eclagent") | indent 6 }}
       serviceAccountName: {{ .useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
       initContainers:
         {{- include "hpcc.checkDataMount" $commonCtx | indent 6 }}

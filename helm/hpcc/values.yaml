@@ -49,6 +49,8 @@ global:
   # misc:
   #   postJobCommand: "curl -sf -XPOST http://127.0.0.1:15020/quitquitquit"
 
+  # For pod placement instruction and examples please reference docs/placements.md
+
 security:
   eclSecurity:
     # Possible values:
