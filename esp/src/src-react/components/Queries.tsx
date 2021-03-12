@@ -23,14 +23,20 @@ const FilterFields: Fields = {
     "Activated": { type: "queries-active-state", label: nlsHPCC.Activated }
 };
 
-function formatQuery(filter) {
+function formatQuery(filter: any, wuid?: string) {
+    if (wuid !== undefined) {
+        return {
+            WUID: wuid
+        };
+    }
+    const retVal = { ...filter };
     if (filter.StartDate) {
-        filter.StartDate = new Date(filter.StartDate).toISOString();
+        retVal.StartDate = new Date(filter.StartDate).toISOString();
     }
     if (filter.EndDate) {
-        filter.EndDate = new Date(filter.StartDate).toISOString();
+        retVal.EndDate = new Date(filter.StartDate).toISOString();
     }
-    return filter;
+    return retVal;
 }
 
 const defaultUIState = {
@@ -42,6 +48,7 @@ const defaultUIState = {
 };
 
 interface QueriesProps {
+    wuid?: string;
     filter?: object;
     store?: any;
 }
@@ -49,6 +56,7 @@ interface QueriesProps {
 const emptyFilter = {};
 
 export const Queries: React.FunctionComponent<QueriesProps> = ({
+    wuid,
     filter = emptyFilter,
     store
 }) => {
@@ -106,7 +114,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
         },
         { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "filter", text: nlsHPCC.Filter, disabled: !!store, iconProps: { iconName: "Filter" },
+            key: "filter", text: nlsHPCC.Filter, disabled: store !== undefined || wuid !== undefined, iconProps: { iconName: "Filter" },
             onClick: () => {
                 setShowFilter(true);
             }
@@ -137,7 +145,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
 
     //  Grid ---
     const gridStore = useConst(store || ESPQuery.CreateQueryStore({}));
-    const gridQuery = useConst(formatQuery(filter));
+    const gridQuery = useConst(formatQuery(filter, wuid));
     const gridSort = useConst([{ attribute: "Id" }]);
     const gridColumns = useConst({
         col1: selector({
@@ -235,7 +243,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
     });
 
     const refreshTable = (clearSelection = false) => {
-        grid?.set("query", formatQuery(filter));
+        grid?.set("query", formatQuery(filter, wuid));
         if (clearSelection) {
             grid?.clearSelection();
         }
