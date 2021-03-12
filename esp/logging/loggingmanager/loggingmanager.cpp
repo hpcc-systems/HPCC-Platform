@@ -276,20 +276,19 @@ bool CLoggingManager::updateLog(IEspContext* espContext, IEspUpdateLogRequestWra
             if (!saveToTankFile(req, reqInFile))
                 throw MakeStringException(-1, "LoggingManager: failed in saveToTankFile().");
 
-            //Build new log request for logging agents
-            StringBuffer logContent, v;
-            appendXMLOpenTag(logContent, LOGCONTENTINFILE);
-            appendXMLTag(logContent, LOGCONTENTINFILE_FILENAME, reqInFile->getFileName());
-            appendXMLTag(logContent, LOGCONTENTINFILE_FILEPOS, v.append(reqInFile->getPos()));
-            appendXMLTag(logContent, LOGCONTENTINFILE_FILESIZE, v.clear().append(reqInFile->getSize()));
-            appendXMLTag(logContent, LOGREQUEST_GUID, reqInFile->getGUID());
-            appendXMLCloseTag(logContent, LOGCONTENTINFILE);
-
-            Owned<IEspUpdateLogRequest> logRequest = new CUpdateLogRequest("", "");
-            logRequest->setOption(reqInFile->getOption());
-            logRequest->setLogContent(logContent);
             if (!decoupledLogging)
             {
+                //Build new log request for logging agents
+                StringBuffer logContent, v;
+                appendXMLTag(logContent, LOGCONTENTINFILE_FILENAME, reqInFile->getFileName());
+                appendXMLTag(logContent, LOGCONTENTINFILE_FILEPOS, v.append(reqInFile->getPos()));
+                appendXMLTag(logContent, LOGCONTENTINFILE_FILESIZE, v.clear().append(reqInFile->getSize()));
+                appendXMLTag(logContent, LOGREQUEST_GUID, reqInFile->getGUID());
+
+                Owned<IEspUpdateLogRequest> logRequest = new CUpdateLogRequest("", "");
+                logRequest->setOption(reqInFile->getOption());
+                logRequest->setLogContent(logContent);
+
                 for (unsigned int x = 0; x < loggingAgentThreads.size(); x++)
                 {
                     IUpdateLogThread* loggingThread = loggingAgentThreads[x];
