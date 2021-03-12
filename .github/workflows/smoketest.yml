@@ -449,3 +449,47 @@ jobs:
         sudo update-locale
         tar --zstd -xf install.tgz
         install/opt/HPCCSystems/bin/unittests
+
+  # NB: this doesn't really need the post-setup data files included in install.tgz
+  # but as this is relatively quick and in parallel with others, it probably doesn't matter
+  eclwatchuitests:
+    needs: build-and-setup
+    if: needs.build-and-setup.outputs.cache-hit != 'true' && github.event_name == 'pull_request'
+    timeout-minutes: 10
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/download-artifact@v2
+      with:
+        name: installsetup-artifact
+
+    - name: Prerequisites
+      run: |
+        sudo apt-get update
+	sudo apt-get install -y git wget
+	sudo apt-get install -y tzdata unzip xvfb libxi6
+	sudo apt-get install -y default-jdk
+	wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+	sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
+	wget https://chromedriver.storage.googleapis.com/2.41/chromedriver_linux64.zip
+	unzip chromedriver_linux64.zip
+	mv chromedriver /usr/bin/chromedriver
+	chown root:root /usr/bin/chromedriver
+	chmod +x /usr/bin/chromedriver
+	mkdir eclwatch
+	cd eclwatch
+	wget https://selenium-release.storage.googleapis.com/3.141/selenium-server-standalone-3.141.59.jar
+	wget http://www.java2s.com/Code/JarDownload/testng/testng-6.8.7.jar.zip
+	unzip testng-6.8.7.jar.zip
+	export CLASSPATH=".:../selenium-server-standalone-3.141.59.jar:../testng-6.8.7.jar"
+
+    - name: run
+      run: |	
+	tar --zstd -xf install.tgz
+	mkdir tests	
+	# Copy testfiles into tests
+	cd tests
+	javac *.java
+	# get local IP
+	# copy run.sh into ./eclwatch
+	./run.sh http://$LOCAL_IP4:8010 >eclWatchUiTest.log 2>&1
+
