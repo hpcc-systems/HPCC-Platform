@@ -45,9 +45,7 @@ class CKeyedJoinMaster : public CMasterActivity
     // CMap contains mappings and lists of parts for each slave
     class CMap
     {
-        CKeyedJoinMaster &activity;
     public:
-        CMap(CKeyedJoinMaster &_activity) : activity(_activity) {}
         std::vector<unsigned> allParts;
         std::vector<std::vector<unsigned>> slavePartMap; // vector of slave parts (IPartDescriptor's slavePartMap[<slave>] serialized to each slave)
         std::vector<unsigned> partToSlave; // vector mapping part index to slave (sent to all slaves)
@@ -266,7 +264,7 @@ class CKeyedJoinMaster : public CMasterActivity
 
 
 public:
-    CKeyedJoinMaster(CMasterGraphElement *info) : CMasterActivity(info, keyedJoinActivityStatistics), indexMap(*this), dataMap(*this)
+    CKeyedJoinMaster(CMasterGraphElement *info) : CMasterActivity(info, keyedJoinActivityStatistics)
     {
         helper = (IHThorKeyedJoinArg *) queryHelper();
         reInit = 0 != (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) || (helper->getJoinFlags() & JFvarindexfilename);
