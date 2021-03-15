@@ -49,11 +49,7 @@ class jlib_decl ChildMap : protected SuperHashTableOf<IPropertyTree, constcharpt
 protected:
 // SuperHashTable definitions
     virtual void onAdd(void *) override {}
-    virtual void onRemove(void *e) override
-    {
-        IPropertyTree &elem = *(IPropertyTree *)e;
-        elem.Release();
-    }
+    virtual void onRemove(void *e) override;
     virtual const void *getFindParam(const void *e) const override
     {
         const IPropertyTree &elem = *(const IPropertyTree *)e;
