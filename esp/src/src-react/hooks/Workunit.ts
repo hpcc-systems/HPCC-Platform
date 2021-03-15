@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Workunit, Result, WUStateID, WUInfo } from "@hpcc-js/comms";
+import { useConst } from "@fluentui/react-hooks";
+import { Workunit, Result, WUStateID, WUInfo, WorkunitsService } from "@hpcc-js/comms";
 import nlsHPCC from "src/nlsHPCC";
 
 export function useCounter(): [number, () => void] {
@@ -147,4 +148,22 @@ export function useWorkunitWorkflows(wuid: string): [WUInfo.ECLWorkflow[], Worku
     }, [workunit, state, count]);
 
     return [workflows, workunit, increment];
+}
+
+export function useWorkunitXML(wuid: string): [string] {
+
+    const service = useConst(new WorkunitsService({ baseUrl: "" }));
+
+    const [xml, setXML] = React.useState("");
+
+    React.useEffect(() => {
+        service.WUFile({
+            Wuid: wuid,
+            Type: "XML"
+        }).then(response => {
+            setXML(response);
+        });
+    }, [wuid, service]);
+
+    return [xml];
 }

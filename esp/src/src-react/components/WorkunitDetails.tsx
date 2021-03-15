@@ -14,6 +14,7 @@ import { Results } from "./Results";
 import { Variables } from "./Variables";
 import { SourceFiles } from "./SourceFiles";
 import { Details } from "./Details";
+import { WUXMLSourceEditor } from "./SourceEditor";
 import { Workflows } from "./Workflows";
 
 import "react-reflex/styles.css";
@@ -222,7 +223,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 <DojoAdapter widgetClassID="ECLArchiveWidget" params={{ Wuid: wuid }} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.XML} itemKey="xml" style={pivotItemStyle(size, 0)}>
-                <DojoAdapter widgetClassID="ECLSourceWidget" params={{ Wuid: wuid }} delayProps={{ WUXml: true }} />
+                <WUXMLSourceEditor wuid={wuid} />
             </PivotItem>
         </Pivot>
     }</SizeMe>;
