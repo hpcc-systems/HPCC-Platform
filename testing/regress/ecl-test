@@ -418,8 +418,13 @@ class RegressMain:
             self.args.setupExtraX = []
             self.args.setupExtraX.append('OriginalTextFilesOsPath='+self.regressionSuiteHpccMainOsDir)
             self.args.setupExtraX.append('OriginalTextFilesEclPath='+self.regressionSuiteHpccMainEclDir)
-            self.args.setupExtraX.append('OriginalTextFilesIp=' +self.config.setupExtraParams['OriginalTextFilesIp'] )
-            self.args.setupExtraD = self.config.setupExtraDParams
+            if 'OriginalTextFilesIp' in self.config.setupExtraParams:
+                self.args.setupExtraX.append('OriginalTextFilesIp=' +self.config.setupExtraParams['OriginalTextFilesIp'] )
+            
+            try:
+                self.args.setupExtraD = self.config.setupExtraDParams
+            except AttributeError:
+                pass
 
             self.args.setupExtraX.append('dropzoneIp=' + self.config.dropzoneIp )
             self.args.setupExtraX.append('dropzonePath=' + self.config.dropzonePath )
