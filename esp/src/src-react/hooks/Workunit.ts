@@ -184,3 +184,19 @@ export function useWorkunitExceptions(wuid: string): [WUInfo.ECLException[], Wor
 
     return [exceptions, workunit, increment];
 }
+
+export function useWorkunitResources(wuid: string): [string[], Workunit, WUStateID] {
+
+    const [workunit, state] = useWorkunit(wuid);
+    const [resources, setResources] = React.useState<string[]>([]);
+
+    React.useEffect(() => {
+        workunit?.fetchInfo({
+            IncludeResourceURLs: true
+        }).then(response => {
+            setResources(response?.Workunit?.ResourceURLs?.URL || []);
+        });
+    }, [workunit, state]);
+
+    return [resources, workunit, state];
+}
