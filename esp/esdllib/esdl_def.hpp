@@ -160,6 +160,7 @@ interface IEsdlDefMethod : extends IEsdlDefObject
     virtual int queryVariableLengthRecordProcessing()=0;
     virtual int queryAllowMultipleEntryPerUnitNumber()=0;
     virtual const MapStringTo<SecAccessFlags> & queryAccessMap()=0;
+    virtual const char* queryMethodNamespace()=0;
 };
 
 interface IEsdlDefMethodIterator : extends IInterface
@@ -176,7 +177,8 @@ interface IEsdlDefService : extends IEsdlDefObject
     virtual IEsdlDefMethod *queryMethodByName(const char *name)=0;
     virtual IEsdlDefMethod *queryMethodByRequest(const char *reqname)=0;
     virtual void methodsNamesToXML(StringBuffer& xml, const char* ver, IProperties* opts)=0;
-    virtual const char * queryStaticNamespace()=0;
+    virtual const char * queryServiceNamespace()=0;
+    virtual const char * queryMethodsNamespace()=0;
 };
 
 interface IEsdlDefFile : extends IInterface

@@ -241,7 +241,7 @@ void EsdlServiceImpl::init(const IPropertyTree *cfg,
         else
             m_serviceNameSpaceBase.set(DEFAULT_ESDLBINDING_URN_BASE);
 
-        m_usesURLNameSpace = startsWith(m_serviceNameSpaceBase.str(), "http://") ? true : false;
+        m_usesURLNameSpace = strstr(m_serviceNameSpaceBase, "://") != nullptr;
 
         const char* defaultFeatureAuth = srvcfg->queryProp("@defaultFeatureAuth");
         if (isEmptyString(defaultFeatureAuth))
@@ -538,11 +538,47 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
         DBGLOG("ESDL Binding: While configuring method targets: service definition not found for %s", service);
         return;
     }
+
+    IEsdlDefService* svcDef = m_esdl->queryService(service);
+    if (!svcDef)
+        throw MakeStringException(-1, "ESDL binding - service '%s' not in definition!", service);
+
+    // The static configuration defines a default namespace generator.
+    // The ESDL definition may override the default with an explicit pattern.
+    // The ESDL binding may override the ESDL definition with an explicit pattern.
+    // The ESDL binding may override the ESDL definition by reverting to the default generator.
+    bool bindingNamespaces = false;
+    bool definitionNamespaces = false;
+    Owned<String> serviceNS;
+    const char* ns = nullptr;
+    m_explicitNamespaces.kill();
+    if (!isEmptyString(ns = definition_cfg->queryProp("@namespace")))
+    {
+        if (!strieq(ns, "default"))
+        {
+            serviceNS.setown(new String(ns));
+            m_explicitNamespaces.setValue("", serviceNS.getLink());
+            bindingNamespaces = true;
+        }
+    }
+    else if (!isEmptyString(ns = svcDef->queryServiceNamespace()))
+    {
+        serviceNS.setown(new String(ns));
+        m_explicitNamespaces.setValue("", serviceNS.getLink());
+        definitionNamespaces = true;
+    }
+
     IPropertyTree *target_cfg = definition_cfg->queryPropTree("Methods");
     DBGLOG("ESDL Binding: configuring method targets for esdl service %s", service);
 
     if (target_cfg)
     {
+        Owned<String> methodsNS;
+        if (bindingNamespaces && !isEmptyString(ns = target_cfg->queryProp("@namespace")))
+            methodsNS.setown(new String(ns));
+        else if (definitionNamespaces && !isEmptyString(ns = svcDef->queryMethodsNamespace()))
+            methodsNS.setown(new String(ns));
+
         addTransforms(target_cfg, service, nullptr, true);
 
         m_pServiceMethodTargets.setown(createPTree(ipt_caseInsensitive));
@@ -560,9 +596,6 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
 
         MapStringToMyClass<IEspPlugin> localCppPluginMap;
 
-        IEsdlDefService* svcDef = m_esdl->queryService(service);
-        if (!svcDef)
-            throw MakeStringException(-1, "ESDL binding - service '%s' not in definition!", service);
         const char*      svcAuthDef  = svcDef->queryProp(ANNOTATION_AUTH_FEATURE);
         const char*      svcAuthBnd  = definition_cfg->queryProp("@" ANNOTATION_AUTH_FEATURE);
         m_methodAccessMaps.kill();
@@ -577,6 +610,15 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
             IEsdlDefMethod* mthDef = svcDef->queryMethodByName(method);
             if (!mthDef)
                 throw MakeStringException(-1, "ESDL binding - found %s target method entry '%s' not in definition!", service, method);
+
+            StringBuffer key(method);
+            key.toLowerCase();
+            if ((bindingNamespaces && !isEmptyString(ns = methodCfg.queryProp("@namespace"))) || (definitionNamespaces && !isEmptyString(ns = mthDef->queryMethodNamespace())))
+                m_explicitNamespaces.setValue(key, new String(ns));
+            else if (methodsNS)
+                m_explicitNamespaces.setValue(key, methodsNS.getLink());
+            else
+                m_explicitNamespaces.setValue(key, serviceNS.getLink());
 
             Owned<MethodAccessMap> authMap(new MethodAccessMap());
             EsdlAccessMapReporter  reporter(*authMap.get(), g_reporterHelper.getLink());
@@ -628,6 +670,13 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
 void EsdlServiceImpl::configureLogging(IPropertyTree* cfg)
 {
     loadLoggingManager(m_oDynamicLoggingManager, cfg);
+}
+
+String* EsdlServiceImpl::getExplicitNamespace(const char* method) const
+{
+    StringBuffer tmp(method);
+    Owned<String>* ns = m_explicitNamespaces.getValue(tmp.toLowerCase());
+    return (ns ? ns->getLink() : nullptr);
 }
 
 #define ROXIEREQ_FLAGS (ESDL_TRANS_START_AT_ROOT | ESDL_TRANS_ROW_OUT | ESDL_TRANS_TRIM | ESDL_TRANS_OUTPUT_XMLTAG)
@@ -2085,8 +2134,6 @@ void EsdlBindingImpl::initEsdlServiceInfo(IEsdlDefService &srvdef)
     if(m_defaultSvcVersion.length() > 0)
         setWsdlVersion(atof(m_defaultSvcVersion.str()));
 
-    m_staticNamespace.set(srvdef.queryStaticNamespace());
-
     //superclass binding sets up wsdladdress
     //setWsdlAddress(bndcfg->queryProp("@wsdlServiceAddress"));
 
@@ -2565,10 +2612,90 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
     return 0;
 }
 
+class CNSVariableSubstitutionHelper : public CInterfaceOf<IVariableSubstitutionHelper>
+{
+    IEspContext&      m_context;
+    IEsdlDefinition&  m_esdl;
+    StringBuffer      m_service;
+    StringBuffer      m_method;
+public:
+    CNSVariableSubstitutionHelper(IEspContext& context, IEsdlDefinition& esdl, const char* service, const char* method)
+        : m_context(context)
+        , m_esdl(esdl)
+        , m_service(service)
+        , m_method(method)
+    {
+        m_service.toLowerCase();
+        m_method.toLowerCase();
+    }
+    virtual bool findVariable(const char* name, StringBuffer &value) override
+    {
+        StringBuffer tmp;
+        bool         required = true;
+        if (!isEmptyString(name))
+        {
+            if (streq(name, "service"))
+            {   // service name, lowercase
+                tmp.append(m_service);
+            }
+            else if (streq(name, "esdl-service"))
+            {   // service name, possible mixed case
+                IEsdlDefService* esdlService = m_esdl.queryService(m_service);
+                if (esdlService)
+                    tmp.append(esdlService->queryName());
+            }
+            else if (streq(name, "method"))
+            {   // method name, lowercase
+                if (!m_method.isEmpty())
+                    tmp.append(m_method);
+            }
+            else if (streq(name, "esdl-method"))
+            {   // methodname, possible mixed case
+                IEsdlDefService* esdlService = m_esdl.queryService(m_service);
+                IEsdlDefMethod* esdlMethod = (esdlService ? esdlService->queryMethodByName(m_method) : nullptr);
+                if (esdlMethod)
+                    tmp.append(esdlMethod->queryName());
+            }
+            else if (streq(name, "optionals"))
+            {   // optional esdl optionals (e.g., "internal"), lowercase
+                IProperties* params = m_context.queryRequestParameters();
+                Owned<IPropertyIterator> esdlOptionals = m_esdl.queryOptionals()->getIterator();
+                ForEach(*esdlOptionals)
+                {
+                    const char* key = esdlOptionals->getPropKey();
+                    if (params->hasProp(key))
+                    {
+                        if (!tmp.isEmpty())
+                            tmp.append(',');
+                        else
+                            tmp.append('(');
+                        tmp.append(key);
+                    }
+                }
+                if (!tmp.isEmpty())
+                    tmp.toLowerCase().append(')');
+                required = false;
+            }
+            else if (streq(name, "version"))
+            {   // client version number
+                tmp.appendf("%g", m_context.getClientVersion());
+            }
+        }
+        if (required && tmp.isEmpty())
+            throw makeStringExceptionV(ERR_ESDL_BINDING_INTERNERR, "Could not generate namespace with {$%s}, ensure ESDL definition is correctly configured", name);
+        value.append(tmp);
+        return true;
+    }
+};
+
 StringBuffer & EsdlBindingImpl::generateNamespace(IEspContext &context, CHttpRequest* request, const char *serv, const char * method, StringBuffer & ns)
 {
-    if (!m_staticNamespace.isEmpty())
-        return ns.set(m_staticNamespace);
+    Owned<String> explicitNS(m_pESDLService->getExplicitNamespace(method));
+    if (explicitNS)
+    {
+        CNSVariableSubstitutionHelper helper(context, *m_esdl, serv, method);
+        return replaceVariables(ns.clear(), explicitNS->str(), false, &helper, "{$", "}");
+    }
 
     if (m_pESDLService->m_serviceNameSpaceBase.isEmpty())
         throw MakeStringExceptionDirect(ERR_ESDL_BINDING_INTERNERR, "Could not generate namespace, ensure namespace base is correctly configured.");
