@@ -323,8 +323,13 @@ void CLogThread::sendLog()
 //IEspUpdateLogRequestWrap which contains original log Request.
 IEspUpdateLogRequestWrap* CLogThread::checkAndReadLogRequestFromSharedTankFile(IEspUpdateLogRequestWrap* logRequest)
 {
+    StringBuffer logRequestInFile;
+    appendXMLOpenTag(logRequestInFile, LOGCONTENTINFILE);
+    logRequestInFile.append(logRequest->getUpdateLogRequest());
+    appendXMLCloseTag(logRequestInFile, LOGCONTENTINFILE);
+
     //Read LogRequestInFile info if exists.
-    Owned<IPropertyTree> logInFle = createPTreeFromXMLString(logRequest->getUpdateLogRequest());
+    Owned<IPropertyTree> logInFle = createPTreeFromXMLString(logRequestInFile);
     if (!logInFle)
         return nullptr;
 
