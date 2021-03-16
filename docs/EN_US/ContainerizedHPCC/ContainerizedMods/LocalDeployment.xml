@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="LocalDeployment">
+  <title>Local Deployment (Development and Testing)</title>
+
+  <para>While there are many ways to install a local single node HPCC Systems
+  Platform, this section focuses on using Docker Desktop with WSL 2 or
+  Hyper-V.</para>
+
+  <sect1 id="prereq">
+    <title>Prerequisites</title>
+
+    <itemizedlist>
+      <listitem>
+        <para>Install Docker Desktop and <emphasis role="bold">WSL
+        2</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <para>Enable WSL integration in Docker</para>
+      </listitem>
+
+      <listitem>
+        <para>Enable Kubernetes in Docker Desktop</para>
+      </listitem>
+
+      <listitem>
+        <para>Install Helm</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>OR</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Install Docker Desktop and <emphasis
+        role="bold">Hyper-V</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <para>Enable Kubernetes in Docker Desktop</para>
+      </listitem>
+
+      <listitem>
+        <para>Install Helm</para>
+      </listitem>
+    </itemizedlist>
+  </sect1>
+
+  <sect1 id="addrepo">
+    <title>Add a repository</title>
+
+    <para>To use the HPCC Systems helm chart, you must add it to the helm
+    repository list, as shown below:</para>
+
+    <para><programlisting>&gt;helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting></para>
+
+    <para>Expected response:</para>
+
+    <para><programlisting>"hpcc" has been added to your repositories</programlisting></para>
+  </sect1>
+
+  <sect1 id="startdefault">
+    <title>Start a default system</title>
+
+    <para>The default helm chart starts a simple test system with Dali, ESP,
+    eclccserver, two eclagent queues (ROXIE and hThor mode), and one Thor
+    queue.</para>
+
+    <para><emphasis role="bold">To start this simple system:</emphasis></para>
+
+    <para><programlisting>&gt;helm install mycluster hpcc/hpcc --set global.image.version=latest </programlisting></para>
+
+    <para>Expected response:</para>
+
+    <para><programlisting>NAME: mycluster
+LAST DEPLOYED: Wed Jan 20 11:50:56 2021
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None</programlisting></para>
+
+    <para><emphasis role="bold">To check status:</emphasis></para>
+
+    <para><programlisting>&gt;kubectl get pods</programlisting></para>
+
+    <para>Expected response:</para>
+
+    <para><programlisting>NAME                            READY STATUS   RESTARTS AGE
+hthor-56bd86f4b9-h5746          1/1   Running  0        30s
+mydali-7f669fd7d6-frjbh         1/1   Running  0        30s
+myeclccserver-8665655fc8-krh8r  1/1   Running  0        30s
+myesp-77f4c69ddf-chjrn          1/1   Running  0        30s
+roxie-bb8dcdcd9-6gmlj           1/1   Running  0        30s
+thor-agent-797fdf698f-lmlzw     1/1   Running  0        30s
+thor-thoragent-974c58fbb-c5cd4  1/1   Running  0        30s</programlisting></para>
+
+    <para><variablelist>
+        <varlistentry>
+          <term>Note:</term>
+
+          <listitem>
+            <para>It may take a while before all components are running,
+            especially the first time as the container images need to be
+            downloaded from Docker Hub.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist></para>
+  </sect1>
+
+  <sect1 id="usedefault">
+    <title>Use the default system</title>
+
+    <para>Your system is now ready to use. The usual first step is to open ECL
+    Watch.</para>
+
+    <variablelist>
+      <varlistentry>
+        <term>Note:</term>
+
+        <listitem>
+          <para>Some pages in ECL Watch, such as those displaying topology
+          information, are not yet fully functional in containerized
+          mode.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+
+    <para>Use this command to get a list running services and IP
+    addresses:</para>
+
+    <para><programlisting>&gt;kubectl get svc</programlisting></para>
+
+    <para>Expected response:</para>
+
+    <para><programlisting>NAME             TYPE         CLUSTER-IP      EXTERNAL-IP  PORT(S) AGE
+eclqueries       LoadBalancer 10.108.171.35   localhost    8002:31615/TCP 3m40s
+eclservices      ClusterIP    10.107.121.158  &lt;none&gt;       8010/TCP 3m40s
+eclwatch         LoadBalancer 10.100.81.69    localhost    8010:30173/TCP 3m40s
+esdl-sandbox     LoadBalancer 10.100.194.33   localhost    8899:30705/TCP 3m40s
+kubernetes       ClusterIP    10.96.0.1       &lt;none&gt;       443/TCP 20h
+mydali           ClusterIP    10.102.80.158   &lt;none&gt;       7070/TCP 3m40s
+roxie            LoadBalancer 10.100.134.125  localhost    9876:30480/TCP 3m40s
+roxie-toposerver ClusterIP    None            &lt;none&gt;       9004/TCP 3m40s
+sql2ecl          LoadBalancer 10.107.177.180  localhost    8510:30054/TCP 3m40s</programlisting></para>
+
+    <para>Notice the <emphasis role="strong">eclwatch</emphasis> service is
+    running on <emphasis role="strong">localhost:8010</emphasis>. Use that
+    address in your browser to access ECL Watch.</para>
+
+    <para>Inside ECL Watch, press the ECL button and go to the Playground
+    tab.</para>
+
+    <para>From here you can use the example ECL or enter other test queries
+    and pick from the available clusters available to submit your
+    workunits.</para>
+  </sect1>
+
+  <sect1 id="terminatedefault">
+    <title>Terminate (Decommission) the system</title>
+
+    <para>To check which Helm charts are currently installed, run this
+    command:</para>
+
+    <para><programlisting>&gt;helm list</programlisting></para>
+
+    <para>To stop the HPCC Systems pods, use helm to uninstall:</para>
+
+    <para><programlisting>&gt;helm uninstall mycluster</programlisting></para>
+
+    <para>This stops the cluster, deletes the pods, and with the default
+    settings and persistent volumes, it also deletes the storage used.</para>
+  </sect1>
+</chapter>
