@@ -420,7 +420,16 @@ public:
 #endif
                 if (encrypted)
                 {
-                    aesEncrypt(key, sizeof(key), buffer->data, length, encryptBuffer.clear());
+                    encryptBuffer.clear();
+                    encryptBuffer.append(sizeof(UdpPacketHeader), header);    // We don't encrypt the header
+                    length -= sizeof(UdpPacketHeader);
+                    const char *data = buffer->data + sizeof(UdpPacketHeader);
+                    aesEncrypt(key, sizeof(key), data, length, encryptBuffer);
+                    header->length = encryptBuffer.length();
+                    encryptBuffer.writeDirect(0, sizeof(UdpPacketHeader), header);   // Only really need length updating
+                    assert(length <= DATA_PAYLOAD);
+                    if (udpTraceLevel > 5)
+                        DBGLOG("ENCRYPT: Writing %u bytes to data socket", encryptBuffer.length());
                     data_socket->write(encryptBuffer.toByteArray(), encryptBuffer.length());
                 }
                 else
@@ -945,6 +954,7 @@ class CSendManager : implements ISendManager, public CInterface
     send_receive_flow *receive_flow;
     send_data         *data;
     Linked<TokenBucket> bucket;
+    bool encrypted;
     
     std::atomic<unsigned> msgSeq{0};
 
@@ -961,10 +971,11 @@ class CSendManager : implements ISendManager, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CSendManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int q_size, int _numQueues, const IpAddress &_myIP, TokenBucket *_bucket, bool encrypted)
+    CSendManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int q_size, int _numQueues, const IpAddress &_myIP, TokenBucket *_bucket, bool _encrypted)
         : bucket(_bucket),
           myIP(_myIP),
-          receiversTable([_numQueues, q_size, server_flow_port, data_port, encrypted](const ServerIdentifier ip) { return new UdpReceiverEntry(ip.getIpAddress(), _numQueues, q_size, server_flow_port, data_port, encrypted);})
+          receiversTable([_numQueues, q_size, server_flow_port, data_port, _encrypted](const ServerIdentifier ip) { return new UdpReceiverEntry(ip.getIpAddress(), _numQueues, q_size, server_flow_port, data_port, _encrypted);}),
+          encrypted(_encrypted)
     {
 #ifndef _WIN32
         setpriority(PRIO_PROCESS, 0, -3);
@@ -995,7 +1006,7 @@ public:
 
     virtual IMessagePacker *createMessagePacker(ruid_t ruid, unsigned sequence, const void *messageHeader, unsigned headerSize, const ServerIdentifier &destNode, int queue) override
     {
-        return ::createMessagePacker(ruid, sequence, messageHeader, headerSize, *this, receiversTable[destNode], myIP, getNextMessageSequence(), queue);
+        return ::createMessagePacker(ruid, sequence, messageHeader, headerSize, *this, receiversTable[destNode], myIP, getNextMessageSequence(), queue, encrypted);
     }
 
     virtual bool dataQueued(ruid_t ruid, unsigned msgId, const ServerIdentifier &destNode) override
@@ -1039,7 +1050,7 @@ class CMessagePacker : implements IMessagePacker, public CInterface
     IUdpReceiverEntry &receiver;
     UdpPacketHeader package_header;
     DataBuffer     *part_buffer;
-    unsigned data_buffer_size;
+    const unsigned data_buffer_size;
     unsigned data_used;
     void *mem_buffer;
     unsigned mem_buffer_size;
@@ -1052,8 +1063,9 @@ class CMessagePacker : implements IMessagePacker, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CMessagePacker(ruid_t ruid, unsigned msgId, const void *messageHeader, unsigned headerSize, ISendManager &_parent, IUdpReceiverEntry &_receiver, const IpAddress & _sourceNode, unsigned _msgSeq, unsigned _queue)
-        : parent(_parent), receiver(_receiver)
+    CMessagePacker(ruid_t ruid, unsigned msgId, const void *messageHeader, unsigned headerSize, ISendManager &_parent, IUdpReceiverEntry &_receiver, const IpAddress & _sourceNode, unsigned _msgSeq, unsigned _queue, bool _encrypted)
+        : parent(_parent), receiver(_receiver), data_buffer_size(DATA_PAYLOAD - sizeof(UdpPacketHeader) - (_encrypted ? 16 : 0))
+
     {
         queue_number = _queue;
 
@@ -1067,7 +1079,6 @@ public:
 
         packed_request = false;
         part_buffer = bufferManager->allocate();
-        data_buffer_size = DATA_PAYLOAD - sizeof(UdpPacketHeader);
         assertex(data_buffer_size >= headerSize + sizeof(unsigned short));
         *(unsigned short *) (&part_buffer->data[sizeof(UdpPacketHeader)]) = headerSize;
         memcpy(&part_buffer->data[sizeof(UdpPacketHeader)+sizeof(unsigned short)], messageHeader, headerSize);
@@ -1089,7 +1100,7 @@ public:
     {
         if (variable)
             len += sizeof(RecordLengthType);
-        if (DATA_PAYLOAD - sizeof(UdpPacketHeader) < len)
+        if (data_buffer_size < len)
         {
             // Won't fit in one, so allocate temp location
             if (mem_buffer_size < len)
@@ -1111,7 +1122,6 @@ public:
         if (!part_buffer)
         {
             part_buffer = bufferManager->allocate();
-            data_buffer_size = DATA_PAYLOAD - sizeof(UdpPacketHeader);
         }
         packed_request = true;
         if (variable)
@@ -1142,7 +1152,6 @@ public:
                 if (!part_buffer)
                 {
                     part_buffer = bufferManager->allocate();
-                    data_buffer_size = DATA_PAYLOAD - sizeof(UdpPacketHeader);
                     data_used = 0;
                 }
                 unsigned chunkLen = data_buffer_size - data_used;
@@ -1179,7 +1188,7 @@ private:
                 part_buffer = bufferManager->allocate();
             const char *metaData = metaInfo.toByteArray();
             unsigned metaLength = metaInfo.length();
-            unsigned maxMetaLength = DATA_PAYLOAD - (sizeof(UdpPacketHeader) + data_used);
+            unsigned maxMetaLength = data_buffer_size + data_used;
             while (metaLength > maxMetaLength)
             {
                 memcpy(&part_buffer->data[sizeof(UdpPacketHeader)+data_used], metaData, maxMetaLength);
@@ -1187,7 +1196,7 @@ private:
                 metaLength -= maxMetaLength;
                 metaData += maxMetaLength;
                 data_used = 0;
-                maxMetaLength = DATA_PAYLOAD - sizeof(UdpPacketHeader);
+                maxMetaLength = data_buffer_size;
                 part_buffer = bufferManager->allocate();
             }
             if (metaLength)
@@ -1204,7 +1213,6 @@ private:
                 part_buffer->Release(); // If NO data in buffer, release buffer back to pool
         }
         part_buffer = 0;
-        data_buffer_size = 0;
         data_used = 0;
     }
 
@@ -1221,7 +1229,7 @@ private:
 };
 
 
-extern UDPLIB_API IMessagePacker *createMessagePacker(ruid_t ruid, unsigned msgId, const void *messageHeader, unsigned headerSize, ISendManager &_parent, IUdpReceiverEntry &_receiver, const IpAddress & _sourceNode, unsigned _msgSeq, unsigned _queue)
+extern UDPLIB_API IMessagePacker *createMessagePacker(ruid_t ruid, unsigned msgId, const void *messageHeader, unsigned headerSize, ISendManager &_parent, IUdpReceiverEntry &_receiver, const IpAddress & _sourceNode, unsigned _msgSeq, unsigned _queue, bool _encrypted)
 {
-    return new CMessagePacker(ruid, msgId, messageHeader, headerSize, _parent, _receiver, _sourceNode, _msgSeq, _queue);
+    return new CMessagePacker(ruid, msgId, messageHeader, headerSize, _parent, _receiver, _sourceNode, _msgSeq, _queue, _encrypted);
 }

@@ -153,8 +153,8 @@ extern UDPLIB_API IReceiveManager *createReceiveManager(int server_flow_port, in
 extern UDPLIB_API ISendManager *createSendManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int queue_size_pr_server, int queues_pr_server, TokenBucket *rateLimiter, bool encryptionInTransit);
 
 extern UDPLIB_API void setAeronProperties(const IPropertyTree *config);
-extern UDPLIB_API IReceiveManager *createAeronReceiveManager(const SocketEndpoint &ep);
-extern UDPLIB_API ISendManager *createAeronSendManager(unsigned dataPort, unsigned numQueues, const IpAddress &myIP);
+extern UDPLIB_API IReceiveManager *createAeronReceiveManager(const SocketEndpoint &ep, bool encrypted);
+extern UDPLIB_API ISendManager *createAeronSendManager(unsigned dataPort, unsigned numQueues, const IpAddress &myIP, bool encrypted);
 
 extern UDPLIB_API RelaxedAtomic<unsigned> unwantedDiscarded;
 
