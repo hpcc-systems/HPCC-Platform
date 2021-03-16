@@ -713,3 +713,8 @@ extern IXpathContext *createChildXpathContext(IXpathContext *parent, IEsdlScript
 {
     UNIMPLEMENTED;
 }
+
+extern IEsdlScriptContext *createEsdlScriptContext(void* espCtx)
+{
+    UNIMPLEMENTED;
+}
