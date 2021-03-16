@@ -38,6 +38,7 @@ set (    SRCS
          cryptotests.cpp
          hqltests.cpp
          esdltests.cpp
+         loggingtests.cpp
          txSummarytests.cpp
     )
 
@@ -72,7 +73,11 @@ include_directories (
          ${HPCC_SOURCE_DIR}/ecl/hql
          ${HPCC_SOURCE_DIR}/configuration/configmgr/RapidJSON/include
          ${HPCC_SOURCE_DIR}/esp/bindings
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
          ${HPCC_SOURCE_DIR}/esp/esdllib
+         ${HPCC_SOURCE_DIR}/esp/logging
+         ${HPCC_SOURCE_DIR}/esp/logging/logginglib
+         ${HPCC_SOURCE_DIR}/esp/logging/loggingmanager
          ${HPCC_SOURCE_DIR}/esp/platform
          ${HPCC_SOURCE_DIR}/esp/services/common
          ${CMAKE_BINARY_DIR}/generated
@@ -94,6 +99,7 @@ target_link_libraries ( unittests
          thorhelper
          esphttp
          esdllib
+         logginglib
          ${CPPUNIT_LIBRARIES}
     )
 

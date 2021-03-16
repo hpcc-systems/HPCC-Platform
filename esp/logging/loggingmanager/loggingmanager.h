@@ -22,9 +22,12 @@
 #include "esp.hpp"
 #include "loggingagentbase.hpp"
 #include "pluginloader.hpp"
+#include <functional>
 
 #define LOGGINGMANAGERLIB "loggingmanager"
 #define LOGGINGDBSINGLEINSERT "SingleInsert"
+
+using EspLogAgentIdFilter = std::function<bool(const IEspLogAgentVariant& variant)>;
 
 interface IEspLogEntry  : implements IInterface
 {
@@ -65,6 +68,10 @@ interface ILoggingManager : implements IInterface
     virtual bool getTransactionSeed(StringBuffer& transactionSeed, StringBuffer& status) = 0;
     virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp) = 0;
     virtual bool getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID, StringBuffer& status) = 0;
+    virtual bool hasFilteredService(LOGServiceType service, EspLogAgentIdFilter agentIdFilter) const = 0;
+    virtual bool getFilteredTransactionSeed(StringBuffer& transactionSeed, StringBuffer& status, EspLogAgentIdFilter agentIdFilter) = 0;
+    virtual bool getFilteredTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp, EspLogAgentIdFilter agentIdFilter) = 0;
+    virtual bool getFilteredTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID, StringBuffer& status, EspLogAgentIdFilter agentIdFilter) = 0;
 };
 
 typedef ILoggingManager* (*newLoggingManager_t_)();

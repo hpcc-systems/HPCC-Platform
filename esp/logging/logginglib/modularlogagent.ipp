@@ -146,6 +146,26 @@ namespace ModularLogAgent
         }
     };
 
+    class LOGGINGCOMMON_API CMockAgent : extends CSimpleInterfaceOf<IAgent>, extends TModule<CEspLogAgent>
+    {
+    public:
+        using Base = TModule<CEspLogAgent>;
+        IMPLEMENT_ITRACELOGGINGCOMPONENT_WITH(Base);
+        virtual bool configure(const IPTree& configuration, const CModuleFactory& factory) override;
+        virtual bool isEnabled() const override { return true; }
+        virtual StringBuffer& toString(StringBuffer& str) const override { return Base::toString(str); }
+        virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& request, IEspGetTransactionSeedResponse& response) override;
+        virtual void getTransactionID(StringAttrMapping* fields, StringBuffer& id) override;
+        virtual void updateLog(IEspUpdateLogRequestWrap& request, IEspUpdateLogResponse& response) override;
+        virtual bool hasService(LOGServiceType type) const override;
+    protected:
+        Owned<IEspGetTransactionSeedResponse> m_gtsResponse;
+        Owned<String> m_gtiResponse;
+        Owned<IEspUpdateLogResponse> m_ulResponse;
+    public:
+        using Base::Base;
+    };
+
     class LOGGINGCOMMON_API CDelegatingAgent : extends CSimpleInterfaceOf<IDelegatingAgent>, extends TModule<CEspLogAgent>
     {
     public:
