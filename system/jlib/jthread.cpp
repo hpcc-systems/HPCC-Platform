@@ -405,6 +405,12 @@ void Thread::startRelease()
                 pthread_attr_setstacksize(&attr, LINUX_STACKSIZE_CAP);
 #endif
         }
+        sched_param param;
+        pthread_attr_getschedparam(&attr, &param);
+        param.sched_priority = 0;
+        pthread_attr_setschedparam(&attr, &param);
+        pthread_attr_setschedpolicy(&attr, SCHED_OTHER);
+        pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
         status = pthread_create(&threadid, &attr, Thread::_threadmain, this);
         if ((status==EAGAIN)||(status==EINTR)) {
             if (numretrys--==0)
