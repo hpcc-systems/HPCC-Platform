@@ -282,6 +282,7 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
     virtual bool lookupSkip(const void *seek, size32_t seekGEOffset, size32_t seeklen) = 0;
     virtual unsigned getPartition() = 0;  // Use PARTITION() to retrieve partno, if possible, or zero to mean read all
 
+    virtual unsigned numActiveKeys() const = 0;
 };
 
 inline offset_t extractFpos(IKeyManager * manager)

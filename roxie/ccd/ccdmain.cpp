@@ -137,6 +137,8 @@ bool defaultNoSeekBuildIndex = false;
 unsigned parallelLoadQueries = 8;
 bool alwaysFailOnLeaks = false;
 
+unsigned continuationCompressThreshold = 1024;
+
 bool useOldTopology = false;
 
 int backgroundCopyClass = 0;
@@ -1002,6 +1004,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         defaultWarnTimeLimit[1] = (unsigned) topology->getPropInt64("@defaultHighPriorityTimeWarning", 0);
         defaultWarnTimeLimit[2] = (unsigned) topology->getPropInt64("@defaultSLAPriorityTimeWarning", 0);
         defaultThorConnectTimeout = (unsigned) topology->getPropInt64("@defaultThorConnectTimeout", 60);
+        continuationCompressThreshold = (unsigned) topology->getPropInt64("@continuationCompressThreshold", 1024);
 
         defaultXmlReadFlags = topology->getPropBool("@defaultStripLeadingWhitespace", true) ? ptr_ignoreWhiteSpace : ptr_none;
         defaultParallelJoinPreload = topology->getPropInt("@defaultParallelJoinPreload", 0);
