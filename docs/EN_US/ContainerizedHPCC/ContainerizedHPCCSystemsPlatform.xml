@@ -84,7 +84,7 @@
     <para>This book focuses on containerized deployments. The first section is
     about using Docker containers and Helm charts locally. Docker and Helm do
     a lot of the work for you. The second part uses the same techniques in the
-    cloud..</para>
+    cloud.</para>
 
     <para>For local small deployments (for development and testing), we
     suggest using Docker Desktop and Helm. For Cloud deployments, you can use

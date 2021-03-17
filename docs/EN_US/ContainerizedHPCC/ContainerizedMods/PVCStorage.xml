@@ -56,8 +56,7 @@ mkdir c:\hpccdata\dali</programlisting></para>
         <para>This chart creates persistent volumes based on host directories
         you created earlier.<programlisting># for a WSL2 deployment:
 helm install localfile examples/local/hpcc-localfile 
-           --set common.hostpath=/run/desktop/m
-nt/host/c/hpccdata
+           --set common.hostpath=/run/desktop/mnt/host/c/hpccdata
 
 # for a Hyper-V deployment:
 helm install localfile examples/local/hpcc-localfile --set common.hostpath=/c/hpccdata</programlisting></para>
