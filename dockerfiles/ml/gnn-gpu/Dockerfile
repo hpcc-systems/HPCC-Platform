@@ -20,7 +20,8 @@
 # Others may not be wanted at all in container mode - tensoflow and nvidia  example??
 
 ARG BUILD_LABEL
-FROM hpccsystems/platform-core:${BUILD_LABEL}
+ARG DOCKER_REPO
+FROM ${DOCKER_REPO}/platform-core:${BUILD_LABEL}
 USER root
 
 
