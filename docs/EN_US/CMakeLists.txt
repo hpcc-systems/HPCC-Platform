@@ -85,7 +85,7 @@ add_subdirectory(ECLWatch)
 add_subdirectory(VisualizingECL)
 add_subdirectory(WsSQLUG)
 add_subdirectory(PortalHTML)
-
+add_subdirectory(ContainerizedHPCC)
 
 
 

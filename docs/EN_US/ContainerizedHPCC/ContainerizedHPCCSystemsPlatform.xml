@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book xml:base="../">
+  <bookinfo>
+    <title>Containerized HPCC Systems® Platform</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Boca Raton Documentation Team</surname>
+    </author>
+
+    <legalnotice>
+      <para>We welcome your comments and feedback about this document via
+      email to <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Please include <emphasis role="bold">Documentation
+      Feedback</emphasis> in the subject line and reference the document name,
+      page numbers, and current Version Number in the text of the
+      message.</para>
+
+      <para>LexisNexis and the Knowledge Burst logo are registered trademarks
+      of Reed Elsevier Properties Inc., used under license.</para>
+
+      <para>HPCC Systems<superscript>®</superscript> is a registered trademark
+      of LexisNexis Risk Data Management Inc.</para>
+
+      <para>Other products, logos, and services may be trademarks or
+      registered trademarks of their respective companies.</para>
+
+      <para>All names and example data used in this manual are fictitious. Any
+      similarity to actual persons, living or dead, is purely
+      coincidental.</para>
+
+      <para></para>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="ContainerizedHPCCOverview">
+    <title>Containerized HPCC Overview</title>
+
+    <para>Starting with version 8.0, the HPCC
+    Systems<superscript>®</superscript> Platform is focusing on containerized
+    deployments. This is useful for cloud-based deployments (large or small)
+    or local testing/development deployments.</para>
+
+    <para>Docker containers managed by Kubernetes (k8s) is a new target
+    operating environment, alongside continued support for traditional “bare
+    metal” installations using .deb or .rpm installer files. Support for
+    traditional installers continues and that type of deployment is viable for
+    bare metal deployments or manual setups in the Cloud.</para>
+
+    <para>This is not a <emphasis>lift and shift</emphasis> type change, where
+    the platform runs its legacy structure unchanged and treat the containers
+    as just a way of providing <emphasis>virtual machines</emphasis> on which
+    to run, but a significant change in how components are configured, how and
+    when they start up, and where they store their data.</para>
+
+    <para>This book focuses on containerized deployments. The first section is
+    about using Docker containers and Helm charts locally. Docker and Helm do
+    a lot of the work for you. The second part uses the same techniques in the
+    cloud..</para>
+
+    <para>For local small deployments (for development and testing), we
+    suggest using Docker Desktop and Helm. For Cloud deployments, you can use
+    any flavor of Cloud services, if it supports Docker, Kubernetes, and Helm.
+    This book, however, will focus on Microsoft Azure for Cloud Services.
+    Future versions may include specifics for other Cloud providers.</para>
+
+    <para>If you want to manually manage your local or Cloud deployment, you
+    can still use the traditional installers and Configuration Manager, but
+    that removes many of the benefits that Docker, Kubernetes, and Helm
+    provide, such as, instrumentation, monitoring, scaling, and cost
+    control.</para>
+
+    <para>HPCC Systems adheres to standard conventions regarding how
+    Kubernetes deployments are normally configured and managed, so it should
+    be easy for someone familiar with Kubernetes and Helm to install and
+    manage the HPCC Systems platform.</para>
+
+    <variablelist>
+      <varlistentry>
+        <term>Note:</term>
+
+        <listitem>
+          <para>The traditional bare-metal version of the HPCC Systems
+          platform is mature and has been heavily used in commercial
+          applications for almost two decades and is fully intended for
+          production use. The containerized version is new and is not yet 100%
+          ready for production. In addition, aspects of that version could
+          change without notice. We encourage you to use it and provide
+          feedback so we can make this version as robust as a bare-metal
+          installation.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+
+    <sect1 id="barevscontainer">
+      <title>Bare-metal vs Containers</title>
+
+      <para>If you are familiar with the HPCC Systems platform, there are a
+      few fundamental changes to note.</para>
+
+      <sect2 id="processesandpods">
+        <title>Processes and pods, not machines</title>
+
+        <para>Anyone familiar with the existing configuration system will know
+        that part of the configuration involves creating instances of each
+        process and specifying on which physical machines they should
+        run.</para>
+
+        <para>In a Kubernetes (k8s) world, this is managed dynamically by the
+        K8s system itself (and can be changed dynamically as the system
+        runs).</para>
+
+        <para>Additionally, a containerized system is much simpler to manage
+        if you stick to a one process per container paradigm, where the
+        decisions about which containers need grouping into a pod and which
+        pods can run on which physical nodes, can be made
+        automatically.</para>
+      </sect2>
+
+      <sect2 id="helmcharts001">
+        <title>Helm charts</title>
+
+        <para>In the containerized world, the information that the operator
+        needs to supply to configure an HPCC Systems environment is greatly
+        reduced. There is no need to specify any information about what
+        machines are in use by what process, as mentioned above, but there is
+        also no need to change a lot of options that might be dependent on the
+        operating environment, since much of that was standardized at the time
+        the container images were built.</para>
+
+        <para>Therefore, in most cases, most settings should be left to use
+        the default. As such, the new configuration paradigm requires only the
+        bare minimum of information be specified and any parameters not
+        specified use the appropriate defaults.</para>
+
+        <para>The default <emphasis role="strong">environment.xml</emphasis>
+        that we include in our bare-metal packages to describe the default
+        single-node system contains approximately 1300 lines and it is complex
+        enough that we recommend using a special tool for editing it.</para>
+
+        <para>The <emphasis role="strong">values.yaml</emphasis> from the
+        default helm chart is under 100 lines and can be edited in any editor,
+        and/or modified via helm’s command-line overrides. It also is
+        self-documented with extensive comments.</para>
+      </sect2>
+
+      <sect2 id="staticvsondemand">
+        <title>Static vs On-Demand Services</title>
+
+        <para>In order to realize the potential cost savings of a cloud
+        environment while at the same time taking advantage of the ability to
+        scale up when needed, some services which are always-on in traditional
+        bare-metal installations are launched on-demand in containerized
+        installations.</para>
+
+        <para>For example, an eclccserver component launches a stub requiring
+        minimal resources, where the sole task is to watch for workunits
+        submitted for compilation and launch an independent k8s job to perform
+        the actual compile.</para>
+
+        <para>Similarly, the eclagent component is also a stub that launches a
+        k8s job when a workunit is submitted and the Thor stub starts up a
+        Thor cluster only when required. Using this design, not only does the
+        capacity of the system automatically scale up to use as many pods as
+        needed to handle the submitted load, it scales down to use minimal
+        resources (as little as a fraction of a single node) during idle times
+        when waiting for jobs to be submitted.</para>
+
+        <para>ESP and Dali components are always-on as long as the k8s cluster
+        is started--it isn’t feasible to start and stop them on demand without
+        excessive latency. However, ESP can be scaled up and down dynamically
+        to run as many instances needed to handle the current load.</para>
+      </sect2>
+
+      <sect2 id="topoclustersvsqueues">
+        <title>Topology settings – Clusters vs queues</title>
+
+        <para>In bare-metal deployments, there is a section called <emphasis
+        role="strong">Topology</emphasis> where the various queues that
+        workunits can be submitted to are set up. It is the responsibility of
+        the person editing the environment to ensure that each named target
+        has the appropriate eclccserver, hThor (or ROXIE) and Thor (if
+        desired) instances set up, to handle workunits submitted to that
+        target queue.</para>
+
+        <para>This setup has been greatly simplified when using Helm charts to
+        set up a containerized system. Each named Thor or eclagent component
+        creates a corresponding queue (with the same name) and each
+        eclccserver listens on all queues by default (but you can restrict to
+        certain queues only if you really want to). Defining a Thor component
+        automatically ensures that the required agent components are
+        provisioned.</para>
+
+        <para></para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <xi:include href="ContainerizedHPCC/ContainerizedMods/LocalDeployment.xml"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+  <xi:include href="ContainerizedHPCC/ContainerizedMods/PVCStorage.xml"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+</book>
