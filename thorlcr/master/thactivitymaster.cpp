@@ -141,6 +141,7 @@ public:
             case TAKapply:
             case TAKfunnel:
             case TAKcombine:
+            case TAKcombinegroup:
             case TAKregroup:
             case TAKsorted:
             case TAKnwayinput:

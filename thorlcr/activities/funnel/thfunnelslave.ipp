@@ -31,6 +31,7 @@
 
 activityslaves_decl CActivityBase *createFunnelSlave(CGraphElementBase *container);
 activityslaves_decl CActivityBase *createCombineSlave(CGraphElementBase *container);
+activityslaves_decl CActivityBase *createCombineGroupSlave(CGraphElementBase *container);
 activityslaves_decl CActivityBase *createRegroupSlave(CGraphElementBase *container);
 activityslaves_decl CActivityBase *createNonEmptySlave(CGraphElementBase *container);
 activityslaves_decl CActivityBase *createNWaySelectSlave(CGraphElementBase *container);

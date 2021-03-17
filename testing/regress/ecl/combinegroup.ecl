@@ -15,8 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-//nothor
-
 inrec := record
 unsigned6 did;
     end;
