@@ -1687,7 +1687,14 @@ bool CWsSMCEx::onClearQueue(IEspContext &context, IEspSMCQueueRequest &req, IEsp
             for(unsigned i=0;i<queue->ordinality();i++)
             {
                 Owned<IJobQueueItem> item = queue->getItem(i);
-                abortWorkUnit(item->queryWUID(), context.querySecManager(), context.queryUser());
+                StringAttr wuid;
+                const char *wuidGraph = item->queryWUID();
+                const char *sep = strchr(wuidGraph, '/');
+                if (sep)
+                    wuid.set(wuidGraph, sep-wuidGraph);
+                else
+                    wuid.set(wuidGraph);
+                abortWorkUnit(wuid, context.querySecManager(), context.queryUser());
             }
             queue->clear();
         }

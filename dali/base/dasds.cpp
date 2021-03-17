@@ -1764,15 +1764,6 @@ void buildNotifyData(MemoryBuffer &notifyData, PDState state, CPTStack *stack, M
                 PTree &child = stack->item(s);
                 const char *str = child.queryName();
                 notifyData.append(strlen(str), str);
-                unsigned pos = child.querySiblingPosition();
-                if (0 == pos) // common case
-                    notifyData.append(3, "[1]");
-                else
-                {
-                    char temp[12];
-                    unsigned written = numtostr(temp, pos+1);
-                    notifyData.append('[').append(written, temp).append(']');
-                }
                 parent = &child;
                 s++;
                 if (s<n)
