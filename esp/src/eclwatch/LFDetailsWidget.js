@@ -296,7 +296,8 @@ define([
                 } else if (currSel.id === this.dataPatternsWidget.id) {
                     this.dataPatternsWidget.init({
                         NodeGroup: this.logicalFile.NodeGroup,
-                        LogicalName: this.logicalFile.Name
+                        LogicalName: this.logicalFile.Name,
+                        Modified: this.logicalFile.Modified
                     });
                 } else if (currSel.id === this.sourceWidget.id) {
                     this.sourceWidget.init({
