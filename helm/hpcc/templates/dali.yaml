@@ -2,6 +2,8 @@
 {{- if not $dali.disabled -}}
 {{- $commonCtx := dict "root" $ "me" $dali }}
 {{- $sashaServices := $dali.services | default dict -}}
+{{- $daliSecretsCategories := list "system" }}
+{{- $tmpDaliScope := dict "aggregateSashaSecretsCategories" list "aggregateSashaAccess" list -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -36,43 +38,44 @@ spec:
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" $dali | indent 8 }}
 {{ include "hpcc.addDaliVolumeMount" $commonCtx | indent 8 }}
-{{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "categories" (list "system" ) ) | indent 8 }}
+{{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "secretsCategories" $daliSecretsCategories) | indent 8 }}
 {{- if not $sashaServices.disabled -}}
-{{- range $sashaName, $_sasha := $sashaServices -}}
+{{- range $sashaName, $_sasha := $dali.services -}}
 {{- $sasha := ($_sasha | default dict) -}}
 {{- if not $sasha.disabled -}}
 {{- $_ := set $sasha "name" $sashaName -}}
-{{- with ($sasha | merge (dict "access" (splitList " " (include "hpcc.getSashaServiceAccess" $sasha)))) }}
+{{- $sashaAccess := splitList " " (include "hpcc.getSashaServiceAccess" $sasha) -}}
+{{- $sashaServiceSecretsCategories := append ((or (has "data" $sashaAccess) (has "dalidata" $sashaAccess)) | ternary (list "storage") list) "system" -}}
+{{- $_ := set $tmpDaliScope "aggregateSashaAccess" ((concat $tmpDaliScope.aggregateSashaAccess $sashaAccess) | uniq) -}}
+{{- $_ := set $tmpDaliScope "aggregateSashaSecretsCategories" ((concat $tmpDaliScope.aggregateSashaSecretsCategories $sashaServiceSecretsCategories) | uniq) -}}
+{{- with ($sasha | merge (dict "access" $sashaAccess)) -}}
 {{ include "hpcc.addSashaContainer" (dict "root" $ "me" .) | indent 6 }}
         volumeMounts:
 {{- include "hpcc.addSashaVolumeMounts" (dict "root" $ "me" .) | indent 8 }}
+{{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "secretsCategories" $sashaServiceSecretsCategories) | indent 8 }}
 {{- end }}
 {{- end }}
 {{- end }}
 {{- end }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" $dali | indent 6 }}
-{{- $tmpDaliScope := dict -}}
-{{- $_ := set $tmpDaliScope "sashaAccess" list -}}
 {{- if not $sashaServices.disabled -}}
 {{- range $sashaName, $_sasha := $sashaServices -}}
 {{- $sasha := ($_sasha | default dict) -}}
 {{- if not $sasha.disabled -}}
 {{- $_ := set $sasha "name" $sashaName -}}
-{{- $_ := set $tmpDaliScope "sashaAccess" (concat $tmpDaliScope.sashaAccess (splitList " " (include "hpcc.getSashaServiceAccess" $sasha))) -}}
 {{- include "hpcc.addSashaVolumes" (dict "root" $ "me" $sasha) | indent 6 }}
 {{- end }}
 {{- end }}
 {{- end }}
 {{ include "hpcc.addDaliVolume" $commonCtx | indent 6 }}
-{{- if has "data" $tmpDaliScope.sashaAccess }}
+{{- if has "data" $tmpDaliScope.aggregateSashaAccess }}
 {{ include "hpcc.addDataVolume" $commonCtx | indent 6}}
-{{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "storage" ) ) | indent 6 }}
 {{- end }}
-{{- if has "dll" $tmpDaliScope.sashaAccess }}
+{{- if has "dll" $tmpDaliScope.aggregateSashaAccess }}
 {{ include "hpcc.addDllVolume" $commonCtx | indent 6 -}}
-{{- end }}
-{{ include "hpcc.addSecretVolumes" (dict "root" $ "categories" (list "system" ) ) | indent 6 }}
+{{- end -}}
+{{- include "hpcc.addSecretVolumes" (dict "root" $ "secretsCategories" $tmpDaliScope.aggregateSashaSecretsCategories) | indent 6 }}
 ---
 kind: ConfigMap 
 apiVersion: v1 
@@ -84,7 +87,7 @@ data:
     dali:
 {{ toYaml (omit $dali "logging" "services") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" $commonCtx | indent 6 }}
-{{ include "hpcc.generateVaultConfig" (dict "root" $ "categories" (list "system" ) ) | indent 6 }}
+{{ include "hpcc.generateVaultConfig" (dict "root" $ "secretsCategories" $daliSecretsCategories ) | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
 ---
@@ -95,7 +98,8 @@ data:
 {{- $_ := set $sasha "name" $sashaName -}}
 kind: ConfigMap
 {{- with ($sasha | merge (pick $dali "logging") | merge (dict "inDaliPod" true "access" (splitList " " (include "hpcc.getSashaServiceAccess" $sasha)))) }}
-{{ include "hpcc.sashaConfigMap" (dict "root" $ "me" .) }}
+{{- $sashaSecretsCategories := append ((or (has "data" .access) (has "dalidata" .access)) | ternary (list "storage") list) "system" }}
+{{ include "hpcc.sashaConfigMap" (dict "root" $ "me" . "secretsCategories" $sashaSecretsCategories ) }}
 {{- end }}
 ---
 {{- if $sasha.servicePort -}}
