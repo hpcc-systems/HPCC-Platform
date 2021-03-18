@@ -323,8 +323,8 @@ public:
         return nullptr;
     }
 
-    UdpReceiverEntry(const IpAddress &_ip, const IpAddress &_sourceIP, unsigned _numQueues, unsigned _queueSize, unsigned _sendFlowPort, unsigned _dataPort, bool _encrypted)
-    : ip (_ip), sourceIP(_sourceIP), numQueues(_numQueues), isLocal(_ip.isLocal()), encrypted(_encrypted)
+    UdpReceiverEntry(const IpAddress _ip, unsigned _numQueues, unsigned _queueSize, unsigned _sendFlowPort, unsigned _dataPort, bool _encrypted)
+    : ip (_ip), sourceIP(myNode.getIpAddress()), numQueues(_numQueues), isLocal(_ip.isLocal()), encrypted(_encrypted)
     {
         assert(!initialized);
         assert(numQueues > 0);
@@ -707,7 +707,7 @@ public:
     CSendManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int q_size, int _numQueues, const IpAddress &_myIP, TokenBucket *_bucket, bool encrypted)
         : bucket(_bucket),
           myIP(_myIP),
-          receiversTable([_myIP, _numQueues, q_size, server_flow_port, data_port, encrypted](const ServerIdentifier &ip) { return new UdpReceiverEntry(ip.getIpAddress(), _myIP, _numQueues, q_size, server_flow_port, data_port, encrypted);})
+          receiversTable([_myIP, _numQueues, q_size, server_flow_port, data_port](const ServerIdentifier &ip) { return new UdpReceiverEntry(ip.getIpAddress(), _myIP, _numQueues, q_size, server_flow_port, data_port);})
     {
 #ifndef _WIN32
         setpriority(PRIO_PROCESS, 0, -3);

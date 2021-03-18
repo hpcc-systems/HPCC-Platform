@@ -282,6 +282,23 @@ IPropertyTreeIterator *ChildMap::getIterator(bool sort)
     return createSortedIterator(*baseIter);
 }
 
+void ChildMap::onRemove(void *e)
+{
+    PTree &elem = static_cast<PTree &>(*(IPropertyTree *)e);
+    IPTArrayValue *value = elem.queryValue();
+    if (value && value->isArray())
+    {
+        IPropertyTree **elems = value->getRawArray();
+        IPropertyTree **elemsEnd = elems+value->elements();
+        while (elems != elemsEnd)
+        {
+            PTree *pElem = static_cast<PTree *>(*elems++);
+            pElem->setOwner(nullptr);
+        }
+    }
+    elem.Release();
+}
+
 ///////////
 
 bool validateXMLTag(const char *name)
@@ -1203,11 +1220,10 @@ void CPTArray::setElement(unsigned idx, IPropertyTree *tree)
 void CPTArray::removeElement(unsigned idx)
 {
     CQualifierMap *map = queryMap();
+    IPropertyTree *existing = &((IPropertyTree &)item(idx));
     if (map)
-    {
-        IPropertyTree *existing = &((IPropertyTree &)item(idx));
         map->removeMatchingValues(existing);
-    }
+    ((PTree *)existing)->setOwner(nullptr);
     remove(idx);
 }
 

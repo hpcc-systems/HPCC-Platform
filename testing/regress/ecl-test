@@ -193,8 +193,7 @@ class RegressMain:
         helperParser.add_argument('--config', help="Config file to use. Default: ecl-test.json",
                             nargs='?', default=defaultConfigFile)
         helperParser.add_argument('--loglevel', help="Set the log level. Use debug for more detailed logfile.",
-                            nargs='?', default="info",
-                            choices=['info', 'debug'])
+                            nargs='?', default="info", choices=['info', 'debug'])
 
         commonParser=argparse.ArgumentParser(add_help=False)
         commonParser.add_argument('--suiteDir', '-s', help="SuiteDir to use. Default value is the current directory and it can handle relative path.",
@@ -237,6 +236,8 @@ class RegressMain:
                                 action = 'store_true')
         executionParser.add_argument('--createEclRunArg', help="Generate ECL tool command line.",
                                 action='store_true')
+        executionParser.add_argument('--preAbort', help="Execute an arbitrary command/script before aborting	.",
+                                default=None,  metavar='preAbortscriptName')
 
 
         parser = argparse.ArgumentParser(prog=prog, description=description,  parents=[helperParser, commonParser,  executionParser])
@@ -363,6 +364,8 @@ class RegressMain:
                 exit(err.getErrorCode())
         else:
             self.config.set('generateStackTrace', False)
+    
+        self.config.set('preAbort', self.args.preAbort)
 
         self.config.set('log',  self.log)
         setConfig(self.config)

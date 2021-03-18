@@ -1272,6 +1272,7 @@ class JlibIPTTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testRootArrayMarkup);
         CPPUNIT_TEST(testArrayMarkup);
         CPPUNIT_TEST(testMergeConfig);
+        CPPUNIT_TEST(testRemoveReuse);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -1974,6 +1975,23 @@ subX:
             CPPUNIT_ASSERT(match == xIter->query().getPropInt(nullptr));
             ++match;
         }
+    }
+    void testRemoveReuse()
+    {
+        Owned<IPropertyTree> t = createPTree();
+        t->addPropInt("a", 1);
+        t->addPropInt("a", 2);
+        Owned<IPropertyTree> a1 = t->getPropTree("a[1]");
+        Owned<IPropertyTree> a2 = t->getPropTree("a[2]");
+        CPPUNIT_ASSERT(t->removeProp("a[2]"));
+        CPPUNIT_ASSERT(t->removeProp("a"));
+        CPPUNIT_ASSERT(!a1->isArray(nullptr));
+        CPPUNIT_ASSERT(!a2->isArray(nullptr));
+        IPropertyTree *na2 = t->addPropTree("na", a2.getClear());
+        CPPUNIT_ASSERT(!na2->isArray(nullptr));
+        IPropertyTree *na1 = t->addPropTree("na", a1.getClear());
+        CPPUNIT_ASSERT(na1->isArray(nullptr));
+        CPPUNIT_ASSERT(na2->isArray(nullptr));
     }
 };
 
