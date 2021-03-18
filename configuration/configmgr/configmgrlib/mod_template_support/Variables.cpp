@@ -98,8 +98,8 @@ std::string Variables::doValueSubstitution(const std::string &value) const
 
         //
         // If there is an index defined, evaluate it and update the index to be used for the final value
-        std::size_t bracketStartPos = result.find('[');
-        std::size_t sizePos = result.find(".size");
+        std::size_t bracketStartPos = varName.find('[');
+        std::size_t sizePos = varName.find(".size");
 
         if (bracketStartPos != std::string::npos && sizePos != std::string::npos)
         {
@@ -116,11 +116,13 @@ std::string Variables::doValueSubstitution(const std::string &value) const
             } catch (...) {
                 throw TemplateException("Non-numeric count found for index value", false);
             }
+            sizePos = varName.find(".size");  // reset
         }
 
         if (sizePos != std::string::npos)
         {
-            result = std::to_string(getVariable(varName, true)->getNumValues());
+            std::string baseVarName = varName.substr(0, sizePos);
+            result = std::to_string(getVariable(baseVarName, true)->getNumValues());
         }
         else
         {

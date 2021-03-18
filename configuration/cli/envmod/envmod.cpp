@@ -48,8 +48,8 @@ std::vector<std::string> splitString(const std::string &input, const std::string
 // Default configuration directories
 EnvironmentType envType = XML;
 std::string masterSchemaFile = "environment.xsd";
-std::string configSchemaDir = "";
-std::string configSchemaRelativeDir = COMPONENTFILES_DIR PATHSEPSTR "configschema" PATHSEPSTR "xsd" PATHSEPSTR;
+//std::string configSchemaDir = "";
+std::string configSchemaDir = COMPONENTFILES_DIR PATHSEPSTR "configschema" PATHSEPSTR "xsd" PATHSEPSTR;
 std::string modTemplateFile;
 std::string modTemplateSchemaFile = COMPONENTFILES_DIR PATHSEPSTR "configschema" PATHSEPSTR "templates" PATHSEPSTR "schema" PATHSEPSTR "ModTemplateSchema.json";
 std::string configSchemaPluginsDir = "";
@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
     //
     // Build the default directory for the schema files
     std::string processPath(queryCurrentProcessPath());
-    configSchemaDir = processPath.substr(0, processPath.find_last_of(PATHSEPSTR)) + PATHSEPSTR + configSchemaRelativeDir;
+    //configSchemaDir = processPath.substr(0, processPath.find_last_of(PATHSEPSTR)) + PATHSEPSTR + configSchemaRelativeDir;
 
     if (argc == 1)
     {

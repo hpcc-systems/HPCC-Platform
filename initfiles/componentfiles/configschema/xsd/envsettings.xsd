@@ -53,14 +53,14 @@
         <xs:element name="Keys" hpcc:displayName="Keys" type="xs:string" minOccurs="0" hpcc:class="component">
             <xs:complexType>
                 <xs:sequence>
-                    <xs:element name="KeyPair" hpcc:displayName="Key Pair" hpcc:itemType="keypair" hpcc:class="valueSet">
+                    <xs:element name="KeyPair" hpcc:displayName="Key Pair" minOccurs="0" maxOccurs="unbounded" hpcc:itemType="keypair" hpcc:class="valueSet">
                         <xs:complexType>
                             <xs:attribute name="name" type="xs:string" hpcc:displayName="Key Name" use="required" hpcc:uniqueKey="keypair_name" hpcc:tooltip=""/>
                             <xs:attribute name="publicKey" type="absolutePath" hpcc:displayName="Public Key Filepath" use="required" hpcc:tooltip=""/>
                             <xs:attribute name="privateKey" type="absolutePath" hpcc:displayName="Private Key Filepath" use="required" hpcc:tooltip=""/>
                         </xs:complexType>
                     </xs:element>
-                    <xs:element name="ClusterGroup" hpcc:displayName="Cluster Group" hpcc:itemType="keypair_clustergroup" hpcc:class="valueSet">
+                    <xs:element name="ClusterGroup" hpcc:displayName="Cluster Group" minOccurs="0" maxOccurs="unbounded" hpcc:itemType="keypair_clustergroup" hpcc:class="valueSet">
                         <xs:complexType>
                             <xs:attribute name="name" type="xs:string" hpcc:displayName="Cluster Group Name" use="required" hpcc:sourceKey="topology_name" hpcc:tooltip=""/>
                             <xs:attribute name="keyPairName" type="xs:string" hpcc:displayName="Key Pair name" use="required" hpcc:sourceKey="keypair_name" hpcc:tooltip=""/>
