@@ -485,6 +485,51 @@ A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop
 {{- end }}
 
 {{/*
+Container to watch for a file on a shared mount and execute a command
+Pass in dict with me and command
+NB: an alternative to sleep loop would be to install and make use of inotifywait
+*/}}
+{{- define "hpcc.addWaitAndRunContainer" -}}
+- name: wait-and-run
+  image: busybox
+  command:
+    - sh
+    - "-c"
+    - |
+      /bin/sh <<'EOSCRIPT'
+      set -e
+      while true; do
+        if [ -f /wait-and-run/{{ .me.name }}.jobdone ]; then break; fi
+        echo waiting for /wait-and-run/{{ .me.name }}.jobdone
+        sleep 5
+      done
+      echo "Running: {{ .command }}"
+      if {{ .command }}; then
+        echo "Command succeeded"
+      fi
+      EOSCRIPT
+  volumeMounts:
+  - name: wait-and-run
+    mountPath: "/wait-and-run"
+{{- end }}
+
+{{/*
+Add wait-and-run shared inter container mount
+*/}}
+{{- define "hpcc.addWaitAndRunVolumeMount" -}}
+- name: wait-and-run
+  mountPath: "/wait-and-run"
+{{- end }}
+
+{{/*
+Add wait-and-run shared inter container volume
+*/}}
+{{- define "hpcc.addWaitAndRunVolume" -}}
+- name: wait-and-run
+  emptyDir: {}
+{{- end }}
+
+{{/*
 Check dll mount point, using hpcc.changeMountPerms
 */}}
 {{- define "hpcc.checkDllMount" -}}
@@ -878,4 +923,31 @@ Pass in dict with root, pod, target and type
 {{- end -}}
 {{- end -}}
 {{- end -}}
+{{- end -}}
+
+{{/*
+Generate lifecycle, command and args
+Pass in root, me and command
+*/}}
+{{- define "hpcc.addCommandAndLifecycle" -}}
+{{- $misc := .root.Values.global.misc | default dict }}
+{{- $postJobCommand := $misc.postJobCommand | default "" }}
+{{- if and (not $misc.postJobCommandViaSidecar) $postJobCommand }}
+lifecycle:
+  preStop:
+    exec:
+      command:
+      - >-
+          {{ $postJobCommand }}
+{{- end }}
+command: ["/bin/bash"]
+args:
+- -c
+- >-
+    {{ .command }}
+{{- if $misc.postJobCommandViaSidecar -}} ;
+    touch /wait-and-run/{{ .me.name }}.jobdone
+{{- else if $postJobCommand -}} ;
+    {{ $postJobCommand }}
+{{- end }}
 {{- end -}}
