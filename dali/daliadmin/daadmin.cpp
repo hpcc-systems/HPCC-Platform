@@ -36,12 +36,10 @@
 #include "mpbase.hpp"
 #include "mpcomm.hpp"
 
-#include "daclient.hpp"
 #include "dadiags.hpp"
 #include "danqs.hpp"
 #include "dadfs.hpp"
 #include "dasds.hpp"
-#include "dautils.hpp"
 #include "daaudit.hpp"
 #include "daft.hpp"
 #include "dameta.hpp"
@@ -59,95 +57,11 @@
 #define _putch putchar
 #endif
 
-#define DEFAULT_DALICONNECT_TIMEOUT 5 // seconds
+#include "daadmin.hpp"
+
 static unsigned daliConnectTimeoutMs = 5000;
 
 static bool noninteractive=false;
-
-void usage(const char *exe)
-{
-  printf("Usage:\n");
-  printf("  %s [<daliserver-ip>] <command> { <option> }\n", exe);              
-  printf("\n");
-  printf("Data store commands:\n");
-  printf("  export <branchxpath> <destfile>\n");
-  printf("  import <branchxpath> <srcfile>\n");
-  printf("  importadd <branchxpath> <srcfile>\n");
-  printf("  delete <branchxpath> [nobackup] -- delete branch, 'nobackup' option suppresses writing copy of existing branch\n");
-  printf("  set <xpath> <value>        -- set single value\n");
-  printf("  get <xpath>                -- get single value\n");
-  printf("  bget <xpath> <dest-file>   -- binary property\n");
-  printf("  xget <xpath>               -- (multi-value tail can have commas)\n");
-  printf("  wget <xpath>               -- (gets all matching xpath)\n");
-  printf("  add <xpath> [<value>]      -- adds new xpath node with optional value\n");
-  printf("  delv <xpath>               -- deletes value\n");
-  printf("  count <xpath>              -- counts xpath matches\n");
-  printf("\n");
-  printf("Logical File meta information commands:\n");
-  printf("  dfsfile <logicalname>          -- get meta information for file\n");
-  printf("  dfsmeta <logicalname> <storage> -- get new meta information for file\n");
-  printf("  setdfspartattr <logicalname> <part> <attribute> [<value>] -- set attribute of a file part to value, or delete the attribute if not provided\n");
-  printf("  dfspart <logicalname> <part>   -- get meta information for part num\n");
-  printf("  dfscheck                       -- verify dfs file information is valid\n");
-  printf("  dfscsv <logicalnamemask>       -- get csv info. for files matching mask\n");
-  printf("  dfsgroup <logicalgroupname> [filename] -- get IPs for logical group (aka cluster). Written to optional filename if provided\n");
-  printf("  clusternodes <clustername> [filename] -- get IPs for cluster group. Written to optional filename if provided\n");
-  printf("  dfsls [<logicalname>] [options]-- get list of files within a scope (options=lrs)\n");
-  printf("  dfsmap <logicalname>           -- get part files (primary and replicates)\n");
-  printf("  dfsexists <logicalname>        -- sets return value to 0 if file exists\n");
-  printf("  dfsparents <logicalname>       -- list superfiles containing file\n");
-  printf("  dfsunlink <logicalname>        -- unlinks file from all super parents\n");
-  printf("  dfsverify <logicalname>        -- verifies parts exist, returns 0 if ok\n");
-  printf("  setprotect <logicalname> <id>  -- overwrite protects logical file\n");
-  printf("  unprotect <logicalname> <id>   -- unprotect (if id=* then clear all)\n");
-  printf("  listprotect <logicalnamemask>  <id-mask> -- list protected files\n");
-  printf("  checksuperfile <superfilename> [fix=true|false] -- check superfile links consistent and optionally fix\n");
-  printf("  checksubfile <subfilename>     -- check subfile links to parent consistent\n");
-  printf("  listexpires <logicalnamemask>  -- lists logical files with expiry value\n");
-  printf("  listrelationships <primary> <secondary>\n");
-  printf("  dfsperm <logicalname>           -- returns LDAP permission for file\n");
-  printf("  dfscompratio <logicalname>      -- returns compression ratio of file\n");
-  printf("  dfsscopes <mask>                -- lists logical scopes (mask = * for all)\n");
-  printf("  cleanscopes                     -- remove empty scopes\n");
-  printf("  normalizefilenames [<logicalnamemask>] -- normalize existing logical filenames that match, e.g. .::.::scope::.::name -> scope::name\n");
-  printf("  dfsreplication <clustermask> <logicalnamemask> <redundancy-count> [dryrun] -- set redundancy for files matching mask, on specified clusters only\n");
-  printf("  holdlock <logicalfile> <read|write> -- hold a lock to the logical-file until a key is pressed");
-  printf("\n");
-  printf("Workunit commands:\n");
-  printf("  listworkunits [<prop>=<val> [<lower> [<upper>]]] -- list workunits that match prop=val in workunit name range lower to upper\n");
-  printf("  listmatches <connection xpath> [<match xpath>=<val> [<property xpaths>]] -- <property xpaths> is comma separated list of xpaths\n");
-  printf("  workunittimings <WUID>\n");
-  printf("\n");
-  printf("Other dali server and misc commands:\n");
-  printf("  serverlist <mask>               -- list server IPs (mask optional)\n");
-  printf("  clusterlist <mask>              -- list clusters   (mask optional)\n");
-  printf("  auditlog <fromdate> <todate> <match>\n");
-  printf("  coalesce                        -- force transaction coalesce\n");
-  printf("  mpping <server-ip>              -- time MP connect\n");
-  printf("  daliping [ <num> ]              -- time dali server connect\n");
-  printf("  getxref <destxmlfile>           -- get all XREF information\n");
-  printf("  dalilocks [ <ip-pattern> ] [ files ] -- get all locked files/xpaths\n");
-  printf("  unlock <xpath or logicalfile> <[path|file]> --  unlocks either matching xpath(s) or matching logical file(s), can contain wildcards\n");
-  printf("  validatestore [fix=<true|false>]\n"
-         "                [verbose=<true|false>]\n"
-         "                [deletefiles=<true|false>]-- perform some checks on dali meta data an optionally fix or remove redundant info \n");
-  printf("  workunit <workunit> [true]      -- dump workunit xml, if 2nd parameter equals true, will also include progress data\n");
-  printf("  wuidcompress <wildcard> <type>  --  scan workunits that match <wildcard> and compress resources of <type>\n");
-  printf("  wuiddecompress <wildcard> <type> --  scan workunits that match <wildcard> and decompress resources of <type>\n");
-  printf("  xmlsize <filename> [<percentage>] --  analyse size usage in xml file, display individual items above 'percentage' \n");
-  printf("  migratefiles <src-group> <target-group> [<filemask>] [dryrun] [createmaps] [listonly] [verbose]\n");
-  printf("  translatetoxpath logicalfile [File|SuperFile|Scope]\n");
-  printf("  cleanglobalwuid [dryrun] [noreconstruct]\n");
-  printf("\n");
-  printf("Common options\n");
-  printf("  server=<dali-server-ip>         -- server ip\n");
-  printf("                                  -- can be 1st param if numeric ip (or '.')\n");
-  printf("  user=<username>                 -- for file operations\n");
-  printf("  password=<password>             -- for file operations\n");
-  printf("  logfile=<filename>              -- filename blank for no log\n");
-  printf("  rawlog=0|1                      -- if raw omits timestamps etc\n");
-  printf("  timeout=<seconds>               -- set dali connect timeout\n");
-}
 
 #define SDS_LOCK_TIMEOUT  60000
 
@@ -157,7 +71,6 @@ static void outln(const char *ln)
 }
 
 #define OUTLOG PROGLOG
-
 
 static const char *remLeading(const char *s)
 {
@@ -172,7 +85,6 @@ static bool isWild(const char *path)
         return true;
     return false;
 }
-
 
 static const char *splitpath(const char *path,StringBuffer &head,StringBuffer &tmp)
 {
@@ -220,9 +132,14 @@ static unsigned __int64 hextoll(const char *str, bool &error)
     return rolling;
 }
 
+void setDaliConnectTimeoutMs(unsigned timeoutMs)
+{
+    daliConnectTimeoutMs = timeoutMs;
+}
+
 //=============================================================================
 
-static void _export_(const char *path,const char *dst,bool safe=false)
+void _export_(const char *path,const char *dst,bool safe)
 {
     StringBuffer xpath;
     Owned<IRemoteConnection> conn = connectXPathOrFile(path,safe,xpath);
@@ -241,7 +158,7 @@ static void _export_(const char *path,const char *dst,bool safe=false)
 
 //==========================================================================================================
 
-static void import(const char *path,const char *src,bool add)
+void import(const char *path,const char *src,bool add)
 {
     Owned<IFile> iFile = createIFile(src);
     Owned<IFileIO> iFileIO = iFile->open(IFOread);
@@ -309,7 +226,7 @@ static void import(const char *path,const char *src,bool add)
 //=============================================================================
 
 
-static void _delete_(const char *path,bool backup)
+void _delete_(const char *path,bool backup)
 {
     StringBuffer head;
     StringBuffer tmp;
@@ -341,7 +258,7 @@ static void _delete_(const char *path,bool backup)
 
 //=============================================================================
 
-static void set(const char *path,const char *val)
+void set(const char *path,const char *val)
 {
     StringBuffer head;
     StringBuffer tmp;
@@ -364,7 +281,7 @@ static void set(const char *path,const char *val)
 
 //=============================================================================
 
-static void get(const char *path)
+void get(const char *path)
 {
     StringBuffer head;
     StringBuffer tmp;
@@ -384,7 +301,7 @@ static void get(const char *path)
 //=============================================================================
 
 
-static void bget(const char *path,const char *outfn)
+void bget(const char *path,const char *outfn)
 {
     StringBuffer head;
     StringBuffer tmp;
@@ -451,7 +368,7 @@ static void xget(const char *path)
 
 //=============================================================================
 
-static void wget(const char *path)
+void wget(const char *path)
 {
     StringBuffer head;
     StringBuffer tmp;
@@ -473,7 +390,7 @@ static void wget(const char *path)
 
 //=============================================================================
 
-static void add(const char *path, const char *val)
+void add(const char *path, const char *val)
 {
     if (!path || !*path)
         throw makeStringException(0, "Invalid xpath (empty)");
@@ -496,7 +413,7 @@ static void add(const char *path, const char *val)
 
 //=============================================================================
 
-static void delv(const char *path)
+void delv(const char *path)
 {
     StringBuffer head;
     StringBuffer tmp;
@@ -516,7 +433,7 @@ static void delv(const char *path)
 
 //=============================================================================
 
-static void count(const char *path)
+void count(const char *path)
 {
     unsigned result = querySDS().queryCount(path);
     OUTLOG("Count of %s is: %d", path, result);
@@ -524,7 +441,7 @@ static void count(const char *path)
 
 //=============================================================================
 
-static void dfsfile(const char *lname,IUserDescriptor *userDesc, UnsignedArray *partslist=NULL)
+void dfsfile(const char *lname,IUserDescriptor *userDesc, UnsignedArray *partslist)
 {
     StringBuffer str;
     CDfsLogicalFileName lfn;
@@ -555,7 +472,7 @@ static void dfsfile(const char *lname,IUserDescriptor *userDesc, UnsignedArray *
 
 //=============================================================================
 
-static void dfspart(const char *lname,IUserDescriptor *userDesc, unsigned partnum)
+void dfspart(const char *lname,IUserDescriptor *userDesc, unsigned partnum)
 {
     UnsignedArray partslist;
     partslist.append(partnum);
@@ -564,7 +481,7 @@ static void dfspart(const char *lname,IUserDescriptor *userDesc, unsigned partnu
 
 //=============================================================================
 
-static void dfsmeta(const char *filename,IUserDescriptor *userDesc, bool includeStorage)
+void dfsmeta(const char *filename,IUserDescriptor *userDesc, bool includeStorage)
 {
     //This function isn't going to work on a container system because it won't have access to the storage planes
     initializeStorageGroups(true);
@@ -577,7 +494,7 @@ static void dfsmeta(const char *filename,IUserDescriptor *userDesc, bool include
 
 //=============================================================================
 
-static void setdfspartattr(const char *lname, unsigned partNum, const char *attr, const char *value, IUserDescriptor *userDesc)
+void setdfspartattr(const char *lname, unsigned partNum, const char *attr, const char *value, IUserDescriptor *userDesc)
 {
     StringBuffer str;
     CDfsLogicalFileName lfn;
@@ -731,7 +648,7 @@ void dfsCheck()
 }
 
 
-static void dfsGroup(const char *name, const char *outputFilename)
+void dfsGroup(const char *name, const char *outputFilename)
 {
     Owned<IGroup> group = queryNamedGroupStore().lookup(name);
     if (!group)
@@ -742,7 +659,7 @@ static void dfsGroup(const char *name, const char *outputFilename)
     writeGroup(group, name, outputFilename);
 }
 
-static int clusterGroup(const char *name, const char *outputFilename)
+int clusterGroup(const char *name, const char *outputFilename)
 {
     StringBuffer errStr;
     try
@@ -844,7 +761,7 @@ static void displayDirectory(IPropertyTree * directory, const char * options, un
     }
 }
 
-static void dfsLs(const char *name, const char *options, bool safe = false)
+void dfsLs(const char *name, const char *options, bool safe)
 {
     StringBuffer xpath;
     Owned<IRemoteConnection> conn = querySDS().connect("Files",myProcessSession(),0, daliConnectTimeoutMs);
@@ -863,7 +780,7 @@ static void dfsLs(const char *name, const char *options, bool safe = false)
 
 //=============================================================================
 
-static void dfsmap(const char *lname, IUserDescriptor *user)
+void dfsmap(const char *lname, IUserDescriptor *user)
 {
     Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,false,false,false,nullptr,defaultPrivilegedUser);
     if (!file) {
@@ -890,13 +807,13 @@ static void dfsmap(const char *lname, IUserDescriptor *user)
 
 //=============================================================================
 
-static int dfsexists(const char *lname,IUserDescriptor *user)
+int dfsexists(const char *lname,IUserDescriptor *user)
 {
     return queryDistributedFileDirectory().exists(lname,user)?0:1;
 }
 //=============================================================================
 
-static void dfsparents(const char *lname, IUserDescriptor *user)
+void dfsparents(const char *lname, IUserDescriptor *user)
 {
     Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,false,false,true,nullptr,defaultPrivilegedUser);
     if (file) {
@@ -908,7 +825,7 @@ static void dfsparents(const char *lname, IUserDescriptor *user)
 
 //=============================================================================
 
-static void dfsunlink(const char *lname, IUserDescriptor *user)
+void dfsunlink(const char *lname, IUserDescriptor *user)
 {
     for (;;)
     {
@@ -1036,7 +953,7 @@ public:
 };
 
 
-static int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user)
+int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user)
 {
     static CIpTable dafilesrvips;
     Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(name,user,false,false,false,nullptr,defaultPrivilegedUser);
@@ -1156,7 +1073,7 @@ static int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user)
 
 //=============================================================================
 
-static void setprotect(const char *filename, const char *callerid, IUserDescriptor *user)
+void setprotect(const char *filename, const char *callerid, IUserDescriptor *user)
 {
     Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(filename,user,false,false,false,nullptr,defaultPrivilegedUser);
     file->setProtect(callerid,true);
@@ -1164,14 +1081,14 @@ static void setprotect(const char *filename, const char *callerid, IUserDescript
 
 //=============================================================================
 
-static void unprotect(const char *filename, const char *callerid, IUserDescriptor *user)
+void unprotect(const char *filename, const char *callerid, IUserDescriptor *user)
 {
     Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(filename,user,false,false,false,nullptr,defaultPrivilegedUser);
     file->setProtect((strcmp(callerid,"*")==0)?NULL:callerid,false);
 }
 //=============================================================================
 
-static void listprotect(const char *filename, const char *callerid)
+void listprotect(const char *filename, const char *callerid)
 {
     Owned<IDFProtectedIterator> piter = queryDistributedFileDirectory().lookupProtectedFiles((strcmp(callerid,"*")==0)?NULL:callerid); 
     ForEach(*piter) {
@@ -1211,7 +1128,7 @@ static bool doFix()
     return getResponse();
 }
 
-static void checksuperfile(const char *lfn,bool fix=false)
+void checksuperfile(const char *lfn,bool fix=false)
 {
     if (strcmp(lfn,"*")==0) {
         class csuperfilescan: public CSDSFileScanner
@@ -1404,7 +1321,7 @@ static void checksuperfile(const char *lfn,bool fix=false)
 
 //=============================================================================
 
-static void checksubfile(const char *lfn)
+void checksubfile(const char *lfn)
 {
     if (strcmp(lfn,"*")==0) {
         class csubfilescan: public CSDSFileScanner
@@ -1502,7 +1419,7 @@ static void checksubfile(const char *lfn)
 
 //=============================================================================
 
-static void listexpires(const char * lfnmask, IUserDescriptor *user)
+void listexpires(const char * lfnmask, IUserDescriptor *user)
 {
     IDFAttributesIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator(lfnmask,user,true,false);
     ForEach(*iter) {
@@ -1533,7 +1450,7 @@ static void listexpires(const char * lfnmask, IUserDescriptor *user)
 
 //=============================================================================
 
-static void listrelationships(const char *primary,const char *secondary)
+void listrelationships(const char *primary,const char *secondary)
 {
     Owned<IFileRelationshipIterator> iter = queryDistributedFileDirectory().lookupFileRelationships(primary,secondary,NULL,NULL,S_LINK_RELATIONSHIP_KIND,NULL,NULL,NULL);
     ForEach(*iter) {
@@ -1617,7 +1534,7 @@ static offset_t getCompressedSize(IDistributedFile *file)
     return ret;
 }
 
-static void dfscompratio (const char *lname, IUserDescriptor *user)
+void dfscompratio (const char *lname, IUserDescriptor *user)
 {
     Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,false,false,false,nullptr,defaultPrivilegedUser);
     StringBuffer out;
@@ -1697,7 +1614,7 @@ static bool countScopeChildren(IPropertyTree *t,unsigned &files, unsigned &sfile
     return (other!=0)||(files!=0)||(sfiles!=0)||(scopes!=0)||(!onlyNamePtree(t));
 }
 
-static void dfsscopes(const char *name, IUserDescriptor *user)
+void dfsscopes(const char *name, IUserDescriptor *user)
 {
     bool wild = isWild(name);
     Owned<IDFScopeIterator> iter = queryDistributedFileDirectory().getScopeIterator(user,wild?NULL:name,true,true);
@@ -1751,7 +1668,7 @@ static bool recursiveCheckEmptyScope(IPropertyTree &ct)
 }
 
 
-static void cleanscopes(IUserDescriptor *user)
+void cleanscopes(IUserDescriptor *user)
 {
     Owned<IDFScopeIterator> iter = queryDistributedFileDirectory().getScopeIterator(user, NULL,true,true);
     CDfsLogicalFileName dlfn;
@@ -1786,7 +1703,7 @@ static void cleanscopes(IUserDescriptor *user)
     }
 }
 
-static void normalizeFileNames(IUserDescriptor *user, const char *name)
+void normalizeFileNames(IUserDescriptor *user, const char *name)
 {
     if (!name)
         name = "*";
@@ -1838,7 +1755,7 @@ static void normalizeFileNames(IUserDescriptor *user, const char *name)
 
 //=============================================================================
 
-static void listworkunits(const char *test, const char *min, const char *max)
+void listworkunits(const char *test, const char *min, const char *max)
 {
     Owned<IRemoteConnection> conn = querySDS().connect("/", myProcessSession(), 0, daliConnectTimeoutMs);
     Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements("WorkUnits/*");
@@ -1871,7 +1788,7 @@ static void listworkunits(const char *test, const char *min, const char *max)
 
 //=============================================================================
 
-static void listmatches(const char *path, const char *match, const char *pval)
+void listmatches(const char *path, const char *match, const char *pval)
 {
     Owned<IRemoteConnection> conn = querySDS().connect(path, myProcessSession(), 0, daliConnectTimeoutMs);
     if (!conn)
@@ -1918,7 +1835,7 @@ static void listmatches(const char *path, const char *match, const char *pval)
 //=============================================================================
 
 
-static void dfsreplication(const char *clusterMask, const char *lfnMask, unsigned redundancy, bool dryRun)
+void dfsreplication(const char *clusterMask, const char *lfnMask, unsigned redundancy, bool dryRun)
 {
     StringBuffer findXPath("//File");
     if (clusterMask && !streq("*", clusterMask))
@@ -1966,7 +1883,7 @@ static void dfsreplication(const char *clusterMask, const char *lfnMask, unsigne
     }
 }
 
-static void holdlock(const char *logicalFile, const char *mode, IUserDescriptor *userDesc)
+void holdlock(const char *logicalFile, const char *mode, IUserDescriptor *userDesc)
 {
     bool write;
     if (strieq(mode, "read"))
@@ -2018,7 +1935,7 @@ static void displayGraphTiming(const char * name, unsigned time)
     }
 }
 
-static void workunittimings(const char *wuid)
+void workunittimings(const char *wuid)
 {
     StringBuffer path;
     path.append("/WorkUnits/").append(wuid);
@@ -2064,9 +1981,7 @@ static void workunittimings(const char *wuid)
 
 //=============================================================================
 
-
-
-static void serverlist(const char *mask)
+void serverlist(const char *mask)
 {
     Owned<IRemoteConnection> conn = querySDS().connect( "/Environment/Software", myProcessSession(),  RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
     if (!conn)
@@ -2093,7 +2008,7 @@ static void serverlist(const char *mask)
 
 //=============================================================================
 
-static void clusterlist(const char *mask)
+void clusterlist(const char *mask)
 {
     Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
     if (!conn)
@@ -2148,7 +2063,7 @@ static unsigned clustersToGroups(IPropertyTree *envroot,const StringArray &cmpls
     return groups.ordinality();
 }
 
-static void clusterlist()
+void clusterlist()
 {
     Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, daliConnectTimeoutMs);
     if (!conn) {
@@ -2169,7 +2084,7 @@ static void clusterlist()
 
 //=============================================================================
 
-static void auditlog(const char *froms, const char *tos, const char *matchs)
+void auditlog(const char *froms, const char *tos, const char *matchs)
 {
     CDateTime from;
     try {
@@ -2195,7 +2110,7 @@ static void auditlog(const char *froms, const char *tos, const char *matchs)
 
 //=============================================================================
 
-static void coalesce()
+void coalesce()
 {
     const char *daliDataPath = NULL;
     const char *remoteBackupLocation = NULL;
@@ -2222,7 +2137,7 @@ static void coalesce()
 //=============================================================================
 
 
-static void mpping(const char *eps)
+void mpping(const char *eps)
 {
     SocketEndpoint ep(eps);
     Owned<INode> node = createINode(ep);
@@ -2237,7 +2152,7 @@ static void mpping(const char *eps)
 
 //=============================================================================
 
-static void daliping(const char *dalis,unsigned connecttime,unsigned n)
+void daliping(const char *dalis,unsigned connecttime,unsigned n)
 {
     OUTLOG("Dali(%s) connect time: %d ms",dalis,connecttime);
     if (!n)
@@ -2295,7 +2210,7 @@ static void convertBinBranch(IPropertyTree &cluster,const char *branch)
     }
 }
 
-static void getxref(const char *dst)
+void getxref(const char *dst)
 {
     Owned<IRemoteConnection> conn = querySDS().connect("DFU/XREF",myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
     Owned<IPropertyTree> root = createPTreeFromIPT(conn->getRoot());
@@ -2502,7 +2417,7 @@ public:
     }
 };
 
-static void xmlSize(const char *filename, double pc)
+void xmlSize(const char *filename, double pc)
 {
 
     try
@@ -2525,7 +2440,7 @@ static void xmlSize(const char *filename, double pc)
     }
 }
 
-static void translateToXpath(const char *logicalfile, DfsXmlBranchKind tailType=DXB_File)
+void translateToXpath(const char *logicalfile, DfsXmlBranchKind tailType)
 {
     CDfsLogicalFileName lfn;
     lfn.set(logicalfile);
@@ -2545,7 +2460,7 @@ static bool begins(const char *&ln,const char *pat)
     return false;
 }
 
-static void dalilocks(const char *ipPattern, bool files)
+void dalilocks(const char *ipPattern, bool files)
 {
     Owned<ILockInfoCollection> lockInfoCollection = querySDS().getLocks(ipPattern, files ? "/Files/*" : NULL);
     bool headers = true;
@@ -2574,7 +2489,7 @@ static void dalilocks(const char *ipPattern, bool files)
 
 //=============================================================================
 
-static void unlock(const char *pattern, bool files)
+void unlock(const char *pattern, bool files)
 {
     Owned<ILockInfoCollection> lockInfoCollection = querySDS().getLocks(NULL, files ? "/Files/*" : pattern);
     for (unsigned l=0; l<lockInfoCollection->queryLocks(); l++)
@@ -2614,14 +2529,14 @@ static void unlock(const char *pattern, bool files)
     }
 }
 
-static void dumpWorkunit(const char *wuid, bool includeProgress)
+void dumpWorkunit(const char *wuid, bool includeProgress)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
     exportWorkUnitToXMLFile(workunit, "stdout:", 0, true, includeProgress, true, false);
 }
 
-static void dumpProgress(const char *wuid, const char * graph)
+void dumpProgress(const char *wuid, const char * graph)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
     Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid);
@@ -2728,7 +2643,7 @@ static void dumpWorkunitAttr(IConstWorkUnit * workunit, const WuScopeFilter & fi
     printf("</Workunit>\n");
 }
 
-static void dumpWorkunitAttr(const char *wuid, const char * userFilter)
+void dumpWorkunitAttr(const char *wuid, const char * userFilter)
 {
     WuScopeFilter filter(userFilter);
 
@@ -2759,7 +2674,7 @@ static void dumpWorkunitAttr(const char *wuid, const char * userFilter)
     }
 }
 
-static void wuidCompress(const char *match, const char *type, bool compress)
+void wuidCompress(const char *match, const char *type, bool compress)
 {
     if (0 != stricmp("graph", type))
     {
@@ -2790,7 +2705,7 @@ static void wuidCompress(const char *match, const char *type, bool compress)
     }
 }
 
-static void validateStore(bool fix, bool deleteFiles, bool verbose)
+void validateStore(bool fix, bool deleteFiles, bool verbose)
 {
     /*
      * Place holder for client-side dali store verification/validation. Currently performs:
@@ -2903,7 +2818,7 @@ static void validateStore(bool fix, bool deleteFiles, bool verbose)
 
 //=============================================================================
 
-static void migrateFiles(const char *srcGroup, const char *tgtGroup, const char *filemask, const char *_options)
+void migrateFiles(const char *srcGroup, const char *tgtGroup, const char *filemask, const char *_options)
 {
     if (strieq(srcGroup, tgtGroup))
         throw makeStringExceptionV(0, "source and target cluster groups cannot be the same! cluster = %s", srcGroup);
@@ -3342,470 +3257,3 @@ void removeOrphanedGlobalVariables(bool dryrun, bool reconstruct)
         PROGLOG("%sChecked: [%u / %u] - deletes: %u, auxDeletes: %u, persists: %u. [Avg ms: %2.2f]", dryrun?"DRYRUN:":"", checked, total, deletes, auxDeletes, existingPersists, static_cast<unsigned>(cycle_to_microsec(avgCycles))/1000.0);
     }
 }
-
-
-
-
-
-#define CHECKPARAMS(mn,mx) { if ((np<mn)||(np>mx)) throw MakeStringException(-1,"%s: incorrect number of parameters",cmd); }
-
-
-static constexpr const char * defaultYaml = R"!!(
-version: "1.0"
-daliadmin:
-  name: daliadmin
-)!!";
-
-
-
-
-
-int main(int argc, const char* argv[])
-{
-    int ret = 0;
-    InitModuleObjects();
-    EnableSEHtoExceptionMapping();
-    setDaliServixSocketCaching(true);
-    if (argc<2) {
-        usage(argv[0]);
-        return -1;
-    }
-
-    Owned<IPropertyTree> globals = loadConfiguration(defaultYaml, argv, "daliadmin", "DALIADMIN", "daliadmin.xml", nullptr);
-    Owned<IProperties> props = createProperties("daliadmin.ini");
-    StringArray params;
-    SocketEndpoint ep;
-    StringBuffer tmps;
-    for (int i=1;i<argc;i++) {
-        const char *param = argv[i];
-        if ((memcmp(param,"server=",7)==0)||
-            (memcmp(param,"logfile=",8)==0)||
-            (memcmp(param,"rawlog=",7)==0)||
-            (memcmp(param,"user=",5)==0)||
-            (memcmp(param,"password=",9)==0) ||
-            (memcmp(param,"fix=",4)==0) ||
-            (memcmp(param,"verbose=",8)==0) ||
-            (memcmp(param,"deletefiles=",12)==0) ||
-            (memcmp(param,"timeout=",8)==0))
-            props->loadProp(param);
-        else if ((i==1)&&(isdigit(*param)||(*param=='.'))&&ep.set(((*param=='.')&&param[1])?(param+1):param,DALI_SERVER_PORT))
-            props->setProp("server",ep.getUrlStr(tmps.clear()).str());
-        else {
-            if ((strieq(param,"help")) || (strieq(param,"-help")) || (strieq(param,"--help"))) {
-                usage(argv[0]);
-                return -1;
-            }
-            params.append(param);
-        }
-    }
-    if (!params.ordinality()) {
-        usage(argv[0]);
-        return -1;
-    }
-
-    try {
-        StringBuffer logname;
-        StringBuffer aliasname;
-        bool rawlog = props->getPropBool("rawlog");
-        Owned<ILogMsgHandler> fileMsgHandler;
-        if (props->getProp("logfile",logname)) {
-            if (logname.length()) {
-                fileMsgHandler.setown(getFileLogMsgHandler(logname.str(), NULL, rawlog?MSGFIELD_prefix:MSGFIELD_STANDARD, false, false, true));
-                queryLogMsgManager()->addMonitorOwn(fileMsgHandler.getClear(), getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
-            }
-        }
-        // set stdout 
-        attachStandardHandleLogMsgMonitor(stdout,0,MSGAUD_all,MSGCLS_all&~(MSGCLS_disaster|MSGCLS_error|MSGCLS_warning));
-        Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_user, MSGCLS_error|MSGCLS_warning);
-        queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
-        queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_prefix);
-    }
-    catch (IException *e) {
-        pexception("daliadmin",e);
-        e->Release();
-        ret = 255;
-    }
-    unsigned daliconnectelapsed;
-    StringBuffer daliserv;
-    if (!ret) {
-        const char *cmd = params.item(0);
-        unsigned np = params.ordinality()-1;
-
-        if (!props->getProp("server",daliserv.clear()))
-        {
-            // external commands
-            try
-            {
-                if (strieq(cmd,"xmlsize"))
-                {
-                    CHECKPARAMS(1,2);
-                    xmlSize(params.item(1), np>1?atof(params.item(2)):1.0);
-                }
-                else if (strieq(cmd,"translatetoxpath"))
-                {
-                    CHECKPARAMS(1,2);
-                    DfsXmlBranchKind branchType;
-                    if (np>1)
-                    {
-                        const char *typeStr = params.item(2);
-                        branchType = queryDfsXmlBranchType(typeStr);
-                    }
-                    else
-                        branchType = DXB_File;
-                    translateToXpath(params.item(1), branchType);
-                }
-                else
-                {
-                    UERRLOG("Unknown command %s",cmd);
-                    ret = 255;
-                }
-            }
-            catch (IException *e)
-            {
-                EXCLOG(e,"daliadmin");
-                e->Release();
-                ret = 255;
-            }
-            return ret;
-        }
-        else
-        {
-            try {
-                SocketEndpoint ep(daliserv.str(),DALI_SERVER_PORT);
-                SocketEndpointArray epa;
-                epa.append(ep);
-                Owned<IGroup> group = createIGroup(epa);
-                unsigned start = msTick();
-                initClientProcess(group, DCR_DaliAdmin);
-                daliconnectelapsed = msTick()-start;
-            }
-            catch (IException *e) {
-                EXCLOG(e,"daliadmin initClientProcess");
-                e->Release();
-                ret = 254;
-            }
-            if (!ret) {
-                try {
-                    Owned<IUserDescriptor> userDesc;
-                    if (props->getProp("user",tmps.clear())) {
-                        userDesc.setown(createUserDescriptor());
-                        StringBuffer ps;
-                        props->getProp("password",ps);
-                        userDesc->set(tmps.str(),ps.str());
-                        queryDistributedFileDirectory().setDefaultUser(userDesc);
-                    }
-                    daliConnectTimeoutMs = 1000 * props->getPropInt("timeout", DEFAULT_DALICONNECT_TIMEOUT);
-                    if (strieq(cmd,"export")) {
-                        CHECKPARAMS(2,2);
-                        _export_(params.item(1),params.item(2));
-                    }
-                    else if (strieq(cmd,"import")) {
-                        CHECKPARAMS(2,2);
-                        import(params.item(1),params.item(2),false);
-                    }
-                    else if (strieq(cmd,"importadd")) {
-                        CHECKPARAMS(2,2);
-                        import(params.item(1),params.item(2),true);
-                    }
-                    else if (strieq(cmd,"delete")) {
-                        CHECKPARAMS(1,2);
-                        bool backup = np<2 || !strieq("nobackup", params.item(2));
-                        _delete_(params.item(1),backup);
-                    }
-                    else if (strieq(cmd,"set")) {
-                        CHECKPARAMS(2,2);
-                        set(params.item(1),params.item(2));
-                    }
-                    else if (strieq(cmd,"get")) {
-                        CHECKPARAMS(1,1);
-                        get(params.item(1));
-                    }
-                    else if (strieq(cmd,"bget")) {
-                        CHECKPARAMS(2,2);
-                        bget(params.item(1),params.item(2));
-                    }
-                    else if (strieq(cmd,"wget")) {
-                        CHECKPARAMS(1,1);
-                        wget(params.item(1));
-                    }
-                    else if (strieq(cmd,"xget")) {
-                        CHECKPARAMS(1,1);
-                        wget(params.item(1));
-                    }
-                    else if (strieq(cmd,"add")) {
-                        CHECKPARAMS(1,2);
-                        add(params.item(1), (np>1) ? params.item(2) : nullptr);
-                    }
-                    else if (strieq(cmd,"delv")) {
-                        CHECKPARAMS(1,1);
-                        delv(params.item(1));
-                    }
-                    else if (strieq(cmd,"count")) {
-                        CHECKPARAMS(1,1);
-                        count(params.item(1));
-                    }
-                    else if (strieq(cmd,"dfsfile")) {
-                        CHECKPARAMS(1,1);
-                        dfsfile(params.item(1),userDesc);
-                    }
-                    else if (strieq(cmd,"dfsmeta")) {
-                        CHECKPARAMS(1,3);
-                        bool includeStorage = (np < 2) || strToBool(params.item(2));
-                        dfsmeta(params.item(1),userDesc,includeStorage);
-                    }
-                    else if (strieq(cmd,"dfspart")) {
-                        CHECKPARAMS(2,2);
-                        dfspart(params.item(1),userDesc,atoi(params.item(2)));
-                    }
-                    else if (strieq(cmd,"setdfspartattr")) {
-                        CHECKPARAMS(3,4);
-                        setdfspartattr(params.item(1), atoi(params.item(2)), params.item(3), np>3 ? params.item(4) : nullptr, userDesc);
-                    }
-                    else if (strieq(cmd,"dfscheck")) {
-                        CHECKPARAMS(0,0);
-                        dfsCheck();
-                    }
-                    else if (strieq(cmd,"dfscsv")) {
-                        CHECKPARAMS(1,1);
-                        dfscsv(params.item(1),userDesc);
-                    }
-                    else if (strieq(cmd,"dfsgroup")) {
-                        CHECKPARAMS(1,2);
-                        dfsGroup(params.item(1),(np>1)?params.item(2):NULL);
-                    }
-                    else if (strieq(cmd,"clusternodes")) {
-                        CHECKPARAMS(1,2);
-                        ret = clusterGroup(params.item(1),(np>1)?params.item(2):NULL);
-                    }
-                    else if (strieq(cmd,"dfsls")) {
-                        CHECKPARAMS(0,2);
-                        dfsLs((np>0)?params.item(1):NULL,(np>1)?params.item(2):NULL);
-                    }
-                    else if (strieq(cmd,"dfsmap")) {
-                        CHECKPARAMS(1,1);
-                        dfsmap(params.item(1), userDesc);
-                    }
-                    else if (strieq(cmd,"dfsexists") || strieq(cmd,"dfsexist")) {
-                        // NB: "dfsexist" typo', kept for backward compatibility only (<7.12)
-                        CHECKPARAMS(1,1);
-                        ret = dfsexists(params.item(1),userDesc);
-                    }
-                    else if (strieq(cmd,"dfsparents")) {
-                        CHECKPARAMS(1,1);
-                        dfsparents(params.item(1),userDesc);
-                    }
-                    else if (strieq(cmd,"dfsunlink")) {
-                        CHECKPARAMS(1,1);
-                        dfsunlink(params.item(1),userDesc);
-                    }
-                    else if (strieq(cmd,"dfsverify")) {
-                        CHECKPARAMS(1,1);
-                        ret = dfsverify(params.item(1),NULL,userDesc);
-                    }
-                    else if (strieq(cmd,"setprotect")) {
-                        CHECKPARAMS(2,2);
-                        setprotect(params.item(1),params.item(2),userDesc);
-                    }
-                    else if (strieq(cmd,"unprotect")) {
-                        CHECKPARAMS(2,2);
-                        unprotect(params.item(1),params.item(2),userDesc);
-                    }
-                    else if (strieq(cmd,"listprotect")) {
-                        CHECKPARAMS(0,2);
-                        listprotect((np>1)?params.item(1):"*",(np>2)?params.item(2):"*");
-
-                    }
-                    else if (strieq(cmd,"checksuperfile")) {
-                        CHECKPARAMS(1,1);
-                        bool fix = props->getPropBool("fix");
-                        checksuperfile(params.item(1),fix);
-                    }
-                    else if (strieq(cmd,"checksubfile")) {
-                        CHECKPARAMS(1,1);
-                        checksubfile(params.item(1));
-                    }
-                    else if (strieq(cmd,"listexpires")) {
-                        CHECKPARAMS(0,1);
-                        listexpires((np>1)?params.item(1):"*",userDesc);
-                    }
-                    else if (strieq(cmd,"listrelationships")) {
-                        CHECKPARAMS(2,2);
-                        listrelationships(params.item(1),params.item(2));
-                    }
-                    else if (strieq(cmd,"dfsperm")) {
-                        if (!userDesc.get())
-                            throw MakeStringException(-1,"dfsperm requires username to be set (user=)");
-                        CHECKPARAMS(1,1);
-                        ret = dfsperm(params.item(1),userDesc);
-                    }
-                    else if (strieq(cmd,"dfscompratio")) {
-                        CHECKPARAMS(1,1);
-                        dfscompratio(params.item(1),userDesc);
-                    }
-                    else if (strieq(cmd,"dfsscopes")) {
-                        CHECKPARAMS(0,1);
-                        dfsscopes((np>0)?params.item(1):"*",userDesc);
-                    }
-                    else if (strieq(cmd,"cleanscopes")) {
-                        CHECKPARAMS(0,0);
-                        cleanscopes(userDesc);
-                    }
-                    else if (strieq(cmd,"normalizefilenames")) {
-                        CHECKPARAMS(0,1);
-                        normalizeFileNames(userDesc, np>0 ? params.item(1) : nullptr);
-                    }
-                    else if (strieq(cmd,"listworkunits")) {
-                        CHECKPARAMS(0,3);
-                        listworkunits((np>0)?params.item(1):NULL,(np>1)?params.item(2):NULL,(np>2)?params.item(3):NULL);
-                    }
-                    else if (strieq(cmd,"listmatches")) {
-                        CHECKPARAMS(0,3);
-                        listmatches((np>0)?params.item(1):NULL,(np>1)?params.item(2):NULL,(np>2)?params.item(3):NULL);
-                    }
-                    else if (strieq(cmd,"workunittimings")) {
-                        CHECKPARAMS(1,1);
-                        workunittimings(params.item(1));
-                    }
-                    else if (strieq(cmd,"serverlist")) {
-                        CHECKPARAMS(1,1);
-                        serverlist(params.item(1));
-                    }
-                    else if (strieq(cmd,"clusterlist")) {
-                        CHECKPARAMS(1,1);
-                        clusterlist(params.item(1));
-                    }
-                    else if (strieq(cmd,"auditlog")) {
-                        CHECKPARAMS(2,3);
-                        auditlog(params.item(1),params.item(2),(np>2)?params.item(3):NULL);
-                    }
-                    else if (strieq(cmd,"coalesce")) {
-                        CHECKPARAMS(0,0);
-                        coalesce();
-                    }
-                    else if (strieq(cmd,"mpping")) {
-                        CHECKPARAMS(1,1);
-                        mpping(params.item(1));
-                    }
-                    else if (strieq(cmd,"daliping")) {
-                        CHECKPARAMS(0,1);
-                        daliping(daliserv.str(),daliconnectelapsed,(np>0)?atoi(params.item(1)):1);
-                    }
-                    else if (strieq(cmd,"getxref")) {
-                        CHECKPARAMS(1,1);
-                        getxref(params.item(1));
-                    }
-                    else if (strieq(cmd,"dalilocks")) {
-                        CHECKPARAMS(0,2);
-                        bool filesonly = false;
-                        if (np&&(strieq(params.item(np),"files"))) {
-                            filesonly = true;
-                            np--;
-                        }
-                        dalilocks(np>0?params.item(1):NULL,filesonly);
-                    }
-                    else if (strieq(cmd,"unlock")) {
-                        CHECKPARAMS(2,2);
-                        const char *fileOrPath = params.item(2);
-                        if (strieq("file", fileOrPath))
-                            unlock(params.item(1), true);
-                        else if (strieq("path", fileOrPath))
-                            unlock(params.item(1), false);
-                        else
-                            throw MakeStringException(0, "unknown type [ %s ], must be 'file' or 'path'", fileOrPath);
-                    }
-                    else if (strieq(cmd,"validateStore")) {
-                        CHECKPARAMS(0,2);
-                        bool fix = props->getPropBool("fix");
-                        bool verbose = props->getPropBool("verbose");
-                        bool deleteFiles = props->getPropBool("deletefiles");
-                        validateStore(fix, deleteFiles, verbose);
-                    }
-                    else if (strieq(cmd, "workunit")) {
-                        CHECKPARAMS(1,2);
-                        bool includeProgress=false;
-                        if (np>1)
-                            includeProgress = strToBool(params.item(2));
-                        dumpWorkunit(params.item(1), includeProgress);
-                    }
-                    else if (strieq(cmd,"wuidCompress")) {
-                        CHECKPARAMS(2,2);
-                        wuidCompress(params.item(1), params.item(2), true);
-                    }
-                    else if (strieq(cmd,"wuidDecompress")) {
-                        CHECKPARAMS(2,2);
-                        wuidCompress(params.item(1), params.item(2), false);
-                    }
-                    else if (strieq(cmd,"dfsreplication")) {
-                        CHECKPARAMS(3,4);
-                        bool dryRun = np>3 && strieq("dryrun", params.item(4));
-                        dfsreplication(params.item(1), params.item(2), atoi(params.item(3)), dryRun);
-                    }
-                    else if (strieq(cmd,"holdlock")) {
-                        CHECKPARAMS(2,2);
-                        holdlock(params.item(1), params.item(2), userDesc);
-                    }
-                    else if (strieq(cmd, "progress")) {
-                        CHECKPARAMS(2,2);
-                        dumpProgress(params.item(1), params.item(2));
-                    }
-                    else if (strieq(cmd, "migratefiles"))
-                    {
-                        CHECKPARAMS(2, 7);
-                        const char *srcGroup = params.item(1);
-                        const char *dstGroup = params.item(2);
-                        const char *filemask = "*";
-                        StringBuffer options;
-                        if (params.isItem(3))
-                        {
-                            filemask = params.item(3);
-                            unsigned arg=4;
-                            StringArray optArray;
-                            while (arg<params.ordinality())
-                                optArray.append(params.item(arg++));
-                            optArray.getString(options, ",");
-                        }
-                        migrateFiles(srcGroup, dstGroup, filemask, options);
-                    }
-                    else if (stricmp(cmd, "wuattr") == 0) {
-                        CHECKPARAMS(1, 2);
-                        if (params.ordinality() > 2)
-                            dumpWorkunitAttr(params.item(1), params.item(2));
-                        else
-                            dumpWorkunitAttr(params.item(1), nullptr);
-                    }
-                    else if (strieq(cmd, "cleanglobalwuid"))
-                    {
-                        CHECKPARAMS(0, 2);
-                        bool dryrun = false;
-                        bool reconstruct = true;
-                        for (unsigned i=1; i<params.ordinality(); i++)
-                        {
-                            const char *param = params.item(i);
-                            if (strieq("dryrun", param))
-                                dryrun = true;
-                            else if (strieq("noreconstruct", param))
-                                reconstruct = false;
-                        }
-                        removeOrphanedGlobalVariables(dryrun, reconstruct);
-                    }
-                    else
-                        UERRLOG("Unknown command %s",cmd);
-                }
-                catch (IException *e)
-                {
-                    EXCLOG(e,"daliadmin");
-                    e->Release();
-                    ret = 255;
-                }
-                closedownClientProcess();
-            }
-        }
-    }
-    setDaliServixSocketCaching(false);
-    setNodeCaching(false);
-    releaseAtoms();
-    fflush(stdout);
-    fflush(stderr);
-    return ret;
-}
-
