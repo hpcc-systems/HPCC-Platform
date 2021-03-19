@@ -30,13 +30,61 @@ if [[ -n ${INPUT_USERNAME} ]] ; then
   PUSH=1
 fi
 
+[[ -n ${INPUT_BUILD_ML} ]] && BUILD_ML=${INPUT_BUILD_ML}
+
 set -e
 
+BUILD_ML=    # all or ml,gnn,gnn-gpu
+ml_features=(
+  'ml'
+  'gnn'
+  'gnn-gpu'
+)
 
-build_image platform-build-base ${BASE_VER}
-build_image platform-build
-build_image platform-core
-build_ml_images
+build_ml_images() {
+  [ -z "$BUILD_ML" ] && return
+
+  local label=$1
+  [[ -z ${label} ]] && label=$BUILD_LABEL
+  features=()
+  if [ "$BUILD_ML" = "all" ]
+  then
+    features=(${ml_features[@]})
+  else
+    for feature in $(echo ${BUILD_ML} | sed 's/,/ /g')
+    do
+      found=false
+      for ml_feature in ${ml_features[@]}
+      do
+        if [[ $ml_feature == $feature ]]
+	then
+	  features+=(${feature})
+	  found=true
+	  break
+        fi
+      done
+      if [ "$found" = "false" ]
+      then
+	      printf "\nUnknown ML feature %s\n" "$feature"
+      fi
+    done
+  fi
+
+  for feature in ${features[@]}
+  do
+     echo "build_ml $feature"
+     build_image "platform-$feature"
+  done
+}
+
+if [[ -z "$BUILD_ML" ]]; then
+  build_image platform-build-base ${BASE_VER}
+  build_image platform-build
+  build_image platform-core
+else
+  build_image platform-core # NB: if building ML images and core has already been built, this will only pull it
+  build_ml_images
+fi
 
 if [[ -n ${INPUT_PASSWORD} ]] ; then
   echo "::set-output name=${BUILD_LABEL}"
