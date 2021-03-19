@@ -27,16 +27,3 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
           latest: 1   # this should only be set on the current minor branch
 
-      - name: Notify on failure
-        uses: hpcc-systems/action-send-mail@v2
-        if: ${{ failure() }}
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          username: ${{secrets.GMAIL_USER}}
-          password: ${{secrets.GMAIL_PW}}
-          subject: Github Actions job result
-          body: Build job of ${{github.repository}} failed!
-          to: ${{secrets.GMAIL_RECIPIENTS}}
-          from: Github Actions
-
