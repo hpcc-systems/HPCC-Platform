@@ -48,9 +48,14 @@ jobs:
       - name: Install Dependencies
         working-directory: ./esp/src
         run: npm ci
-      - name: Build
+      - name: Lint
         working-directory: ./esp/src
-        run: npm run build
-      - name: Test
+        run: npm run lint-report
+        continue-on-error: true
+      - name: Annotate Code Linting Results
         working-directory: ./esp/src
-        run: npm run test
+        uses: ataylorme/eslint-annotate-action@1.1.2
+        if: always()
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          report-json: "eslint_report.json"
