@@ -23,16 +23,4 @@ jobs:
           build_ver: "master"
           build_label: "master-${{ steps.vars.outputs.date }}"
 
-      - name: Notify on failure
-        uses: hpcc-systems/action-send-mail@v2
-        if: ${{ failure() }}
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          username: ${{secrets.GMAIL_USER}}
-          password: ${{secrets.GMAIL_PW}}
-          subject: Github Actions job result
-          body: Build job of ${{github.repository}} failed!
-          to: ${{secrets.GMAIL_RECIPIENTS}}
-          from: Github Actions
 
