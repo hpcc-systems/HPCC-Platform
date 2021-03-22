@@ -54,10 +54,8 @@ jobs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
     steps:
       - id: skip_check
-        uses: hpcc-systems/skip-duplicate-actions@master
-        with:
-          github_token: ${{ github.token }}
-          paths_ignore: '["clienttools/**", "devdoc/**", "dockerfiles/**", "docs/**", "helm/**" ]'
+        run: |
+          echo ::set-output name=should_skip::false
 
   build-and-setup:
     name: Build platform and regress setup
