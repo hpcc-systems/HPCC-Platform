@@ -30,19 +30,11 @@ BUILD_TYPE=                                     # Set to Debug for a debug build
 DOCKER_REPO=hpccsystems
 USE_CPPUNIT=1
 
-BUILD_ML=    # all or ml,gnn,gnn-gpu
-ml_features=(
-  'ml'
-  'gnn'
-  'gnn-gpu'
-)
-
 # These values are set in a GitHub workflow build
 
 [[ -n ${INPUT_BUILD_USER} ]] && BUILD_USER=${INPUT_BUILD_USER}
 [[ -n ${INPUT_BUILD_VER} ]] && BUILD_TAG=${INPUT_BUILD_VER}
 [[ -n ${INPUT_DOCKER_REPO} ]] && DOCKER_REPO=${INPUT_DOCKER_REPO}
-[[ -n ${INPUT_BUILD_ML} ]] && BUILD_ML=${INPUT_BUILD_ML}
 
 if [[ -n ${INPUT_BUILD_THREADS} ]] ; then
   BUILD_THREADS=$INPUT_BUILD_THREADS
@@ -116,50 +108,3 @@ push_image() {
   fi
 }
 
-build_ml_images() {
-  [ -z "$BUILD_ML" ] && return
-
-  local label=$1
-  [[ -z ${label} ]] && label=$BUILD_LABEL
-  features=()
-  if [ "$BUILD_ML" = "all" ]
-  then
-    features=(${ml_features[@]})
-  else
-    for feature in $(echo ${BUILD_ML} | sed 's/,/ /g')
-    do
-      found=false
-      for ml_feature in ${ml_features[@]}
-      do
-        if [[ $ml_feature == $feature ]]
-	then
-	  features+=(${feature})
-	  found=true
-	  break
-        fi
-      done
-      if [ "$found" = "false" ]
-      then
-	printf "\nUnknown ML feature %s\n" "$feature"
-      fi
-    done
-  fi
-
-  for feature in ${features[@]}
-  do
-     echo "build_ml $feature"
-     build_ml $feature $label
-  done
-
-}
-
-build_ml() {
-  local name=$1
-  local label=$2
-  [[ -z ${label} ]] && label=$BUILD_LABEL
-  docker image build -t ${DOCKER_REPO}/platform-${name}:${label} \
-     --build-arg DOCKER_REPO=${DOCKER_REPO} \
-     --build-arg BUILD_LABEL=${label} \
-     ml/${name}/
-  push_image platform-${name} ${label}
-}
