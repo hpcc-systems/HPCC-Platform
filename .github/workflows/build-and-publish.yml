@@ -26,18 +26,22 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           latest: 1   # this should only be set on the current minor branch
-          build_ml: all  # build ml,gnn and gnn-gpu
 
-      - name: Notify on failure
-        uses: hpcc-systems/action-send-mail@v2
-        if: ${{ failure() }}
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          username: ${{secrets.GMAIL_USER}}
-          password: ${{secrets.GMAIL_PW}}
-          subject: Github Actions job result
-          body: Build job of ${{github.repository}} failed!
-          to: ${{secrets.GMAIL_RECIPIENTS}}
-          from: Github Actions
+  ml-builds:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.repository == 'hpcc-systems/HPCC-Platform'
+    strategy:
+      matrix:
+        engine: ['ml', 'gnn', 'gnn-gpu']
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Build
+      uses: ./dockerfiles
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        latest: 1   # this should only be set on the current minor branch
+        build_ml: ${{ matrix.engine }}
 
