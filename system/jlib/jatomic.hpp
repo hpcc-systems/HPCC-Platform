@@ -79,6 +79,12 @@ public:
     inline T sub_fetch(T _value, std::memory_order order = std::memory_order_relaxed) noexcept { return ::sub_fetch(*this, _value, order); }
     inline void store_max(T _value) noexcept { while (_value > load()) _value = BASE::exchange(_value, std::memory_order_acq_rel); }
     inline void store_min(T _value) noexcept { while (_value < load()) _value = BASE::exchange(_value, std::memory_order_acq_rel); }
+
+//extra functions
+    // avoid a locked increment if the value is zero
+    inline void add(T _value, std::memory_order order = std::memory_order_relaxed) { if (_value) add_fetch(_value, order); }
+    // add() that avoids the inter-thread lock - can be used if value is only updated from a single thread
+    inline void fastAdd(T _value) { store(load()+_value); }
 };
 
 // Class to accumulate values locally and only add atomically once
