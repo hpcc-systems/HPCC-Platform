@@ -284,6 +284,7 @@ jobs:
         # configure environment.xml to slavesPerNode=2, channelsPerNode=1
         xmlstarlet ed -L -u 'Environment/Software/ThorCluster/@slavesPerNode' -v 2 -u 'Environment/Software/ThorCluster/@channelsPerSlave' -v 1 install/etc/HPCCSystems/environment.xml
         cp ${{ github.workspace }}/src/.github/workflows/timeoutcmd install/opt/HPCCSystems/bin/
+        cp ${{ github.workspace }}/src/.github/workflows/smoketest-preabort.sh install/opt/HPCCSystems/bin/
         mkdir copy
         cp -rp install copy/
         rm -rf copy/install/var/lib/HPCCSystems/hpcc-data
@@ -407,7 +408,7 @@ jobs:
 
         # force regression suite to timeout after 28 minutes, so it captures ZAP report of any inflight hung queries
         timeoutcmd $((28 * 60)) \
-          ./ecl-test query --pq 2 --target ${{ matrix.engine }} --excludeclass python2,embedded-r,embedded-js,3rdpartyservice,spray --generateStackTrace ${queries}
+          ./ecl-test query --preAbort 'smoketest-preabort.sh' --pq 2 --target ${{ matrix.engine }} --excludeclass python2,embedded-r,embedded-js,3rdpartyservice,spray --generateStackTrace ${queries}
         grep Failure: ${{ github.workspace }}/regress/log/${{ matrix.engine }}.*.log
         if [[ "$(grep -oP '(?<=^Failure: )[0-9]+$' ${{ github.workspace }}/regress/log/${{ matrix.engine }}.*.log)" -gt 0 ]]; then exit 1; fi
 
