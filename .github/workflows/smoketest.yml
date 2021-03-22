@@ -342,7 +342,7 @@ jobs:
   # TODO: needs to process results, capture report, to be assembled by workflow when all jobs done
   regression-jobs:
     needs: build-and-setup
-    if: needs.build-and-setup.outputs.cache-hit != 'true' && github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request'
     timeout-minutes: 30
     runs-on: ubuntu-20.04
     strategy:
@@ -423,30 +423,3 @@ jobs:
         if-no-files-found: error
 
 
-  # NB: this doesn't really need the post-setup data files included in install.tgz
-  # but as this is relatively quick and in parallel with others, it probably doesn't matter
-  unittests:
-    needs: build-and-setup
-    if: needs.build-and-setup.outputs.cache-hit != 'true' && github.event_name == 'pull_request'
-    timeout-minutes: 10
-    runs-on: ubuntu-20.04
-    steps:
-    - uses: actions/download-artifact@v2
-      with:
-        name: installsetup-artifact
-
-    - name: Prerequisites
-      run: |
-        sudo apt-get update
-        sudo apt-get -yq install bison flex build-essential binutils-dev libldap2-dev libcppunit-dev libicu-dev libxslt1-dev \
-          zlib1g-dev libboost-regex-dev libarchive-dev libv8-dev default-jdk libapr1-dev libaprutil1-dev libiberty-dev \
-          libhiredis-dev libtbb-dev libxalan-c-dev libnuma-dev nodejs libevent-dev libatlas-base-dev libblas-dev python3-dev \
-          default-libmysqlclient-dev libsqlite3-dev libmemcached-dev libcurl4-openssl-dev pkg-config libtool autotools-dev automake \
-          libssl-dev gdb
-
-    - name: run
-      run: |
-        export LANG="en_US.UTF-8"
-        sudo update-locale
-        tar --zstd -xf install.tgz
-        install/opt/HPCCSystems/bin/unittests
