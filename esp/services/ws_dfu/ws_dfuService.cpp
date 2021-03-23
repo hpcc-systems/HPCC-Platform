@@ -6553,6 +6553,7 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
             df->detach(req.getLockTimeoutMs());
         }
 
+        setPublishFileSize(newFileName, fileDesc);
         newFile.setown(queryDistributedFileDirectory().createNew(fileDesc));
         newFile->validate();
         newFile->setAccessed();
@@ -6590,5 +6591,47 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
     return true;
 }
 
+void CWsDfuEx::setPublishFileSize(const char *lfn, IFileDescriptor *fileDesc)
+{
+    auto funcFilePartSize = [lfn, fileDesc](unsigned partNum)
+    {
+        bool compressed = fileDesc->isCompressed();
+        IPartDescriptor *partDesc = fileDesc->queryPart(partNum);
+        IPropertyTree &props = partDesc->queryProperties();
+        unsigned numCopies = partDesc->numCopies();
+        for (unsigned c = 0; c < numCopies; c++)
+        {
+            RemoteFilename rfn;
+            partDesc->getFilename(c, rfn);
+            try
+            {
+                Owned<IFile> file = createIFile(rfn);
+                if (compressed)
+                {
+                    props.setPropInt64("@compressedSize", file->size());
+                    Owned<IFileIO> io = createCompressedFileReader(file);
+                    if (io)
+                        props.setPropInt64("@size", io->size());
+                }
+                else
+                {
+                    props.setPropInt64("@size", file->size());
+                }
+                break;
+            }
+            catch (IException *e)
+            {
+                VStringBuffer tmp("%s: ", lfn);
+                rfn.getPath(tmp);
+                EXCLOG(e, tmp.str());
+                e->Release();
+            }
+        }
+    };
+
+    //collect and set the sizes for file parts
+    CAsyncForFunc<decltype(funcFilePartSize)> async(funcFilePartSize);
+    async.For(fileDesc->numParts(), 100);
+}
 
 //////////////////////HPCC Browser//////////////////////////
