@@ -447,6 +447,10 @@ extern jlib_decl bool queryHPCCPKIKeyFiles(const char * *  _certificate,//HPCCCe
                                            const char * *  _privateKey, //HPCCPrivateKeyFile
                                            const char * *  _passPhrase);//HPCCPassPhrase, encrypted
 
+#ifndef _CONTAINERIZED
+extern jlib_decl bool queryMtlsBareMetalConfig();
+#endif
+
 extern jlib_decl const char * matchConfigurationDirectoryEntry(const char *path,const char *mask,StringBuffer &name, StringBuffer &component, StringBuffer &instance);
 extern jlib_decl bool replaceConfigurationDirectoryEntry(const char *path,const char *frommask,const char *tomask,StringBuffer &out);
 

@@ -23,6 +23,7 @@
 #include <mpcomm.hpp>
 #include "thorport.hpp"
 #include "jsocket.hpp"
+#include "jsecrets.hpp"
 #include "jthread.hpp"
 #include "thormisc.hpp"
 #include "jisem.hpp"
@@ -600,6 +601,8 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
     size32_t transferblocksize, midkeybufsize;
     CRuntimeStatisticCollection spillStats;
     rowcount_t globalCount = 0;
+    bool useTLS = false;
+    unsigned traceLevel = 0;
 
     class CRowToKeySerializer : public CSimpleInterfaceOf<IOutputRowSerializer>
     {
@@ -787,6 +790,30 @@ public:
         transferblocksize = TRANSFERBLOCKSIZE;
         isstable = true;
         stopping = false;
+        useTLS = queryMtls();
+#ifdef _CONTAINERIZED
+        traceLevel = getComponentConfigSP()->getPropInt("logging/@detail", InfoMsgThreshold);
+#else
+        if (globals)
+        {
+            traceLevel = globals->getPropInt("@traceLevel", 0);
+            switch (traceLevel)
+            {
+                case 0:
+                    traceLevel = InfoMsgThreshold;
+                    break;
+                case 1:
+                    traceLevel = DebugMsgThreshold;
+                    break;
+                case 2:
+                    traceLevel = ExtraneousMsgThreshold;
+                    break;
+                default:
+                    traceLevel = ExtraneousMsgThreshold + 10;
+                    break;
+            }
+        }
+#endif
         threaded.start();
     }
     ~CThorSorter()
@@ -1321,6 +1348,14 @@ public:
         return spillStats.getStatisticValue(kind);
     }
     virtual rowcount_t getGlobalCount() const { return globalCount; }
+    virtual bool queryTLS() const override
+    {
+        return useTLS;
+    }
+    virtual bool queryTraceLevel() const override
+    {
+        return traceLevel;
+    }
 };
 
 

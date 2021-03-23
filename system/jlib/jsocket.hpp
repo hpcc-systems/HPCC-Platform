@@ -70,6 +70,12 @@ enum JSOCKET_ERROR_CODES {
 #define SHUTDOWN_WRITE      1
 #define SHUTDOWN_READWRITE  2
 
+#ifndef _WIN32
+#define BLOCK_POLLED_SINGLE_CONNECTS  // NB this is much slower in windows
+#define CENTRAL_NODE_RANDOM_DELAY
+#else
+#define USERECVSEM      // to singlethread BF_SYNC_TRANSFER_PUSH
+#endif
 
 //
 // Abstract socket interface
@@ -448,7 +454,35 @@ extern jlib_decl IJSOCK_Exception *IPv6NotImplementedException(const char *filen
 #define IPV6_NOT_IMPLEMENTED() throw IPv6NotImplementedException(sanitizeSourceFile(__FILE__), __LINE__)
 
 
-
+#ifdef USERECVSEM
+class CSemProtect
+{
+    Semaphore *sem;
+    bool *owned;
+public:
+    CSemProtect() { clear(); }
+    ~CSemProtect()
+    {
+        if (sem&&*owned) {
+            *owned = false;
+            sem->signal();
+        }
+    }
+    void set(Semaphore *_sem,bool *_owned)
+    {
+        sem = _sem;
+        owned = _owned;
+    }
+    bool wait(Semaphore *_sem,bool *_owned,unsigned timeout) {
+        if (!*_owned&&!_sem->wait(timeout))
+            return false;
+        *_owned = true;
+        set(_sem,_owned);
+        return true;
+    }
+    void clear() { sem = NULL; owned = NULL; }
+};
+#endif
 
 
 //---------------------------------------------------------------------------
@@ -514,6 +548,7 @@ struct JSocketStatistics
     unsigned longestblocksize; 
 };
 
+extern jlib_decl JSocketStatistics *getSocketStatPtr();
 extern jlib_decl void getSocketStatistics(JSocketStatistics &stats);
 extern jlib_decl void resetSocketStatistics();
 extern jlib_decl StringBuffer &getSocketStatisticsString(JSocketStatistics &stats,StringBuffer &buf);
@@ -665,6 +700,32 @@ interface IAllowListWriter : extends IInterface
 typedef std::function<bool(IAllowListWriter &)> AllowListPopulateFunction;
 typedef std::function<StringBuffer &(StringBuffer &, unsigned __int64)> AllowListFormatFunction;
 extern jlib_decl IAllowListHandler *createAllowListHandler(AllowListPopulateFunction populateFunc, AllowListFormatFunction roleFormatFunc = {}); // format function optional
+
+// utility interface for simple conversations
+// conversation is always between two ends,
+// at any given time one end must be receiving and other sending (though these may swap during the conversation)
+class jlib_decl CSingletonSocketConnection: implements IConversation, public CInterface
+{
+public:
+    Owned<ISocket> sock;
+    Owned<ISocket> listensock;
+    enum { Snone, Saccept, Sconnect, Srecv, Ssend, Scancelled } state;
+    bool cancelling;
+    SocketEndpoint ep;
+    CriticalSection crit;
+    IMPLEMENT_IINTERFACE;
+
+    CSingletonSocketConnection() {}
+    CSingletonSocketConnection(SocketEndpoint &_ep);
+    virtual ~CSingletonSocketConnection();
+    void set_keep_alive(bool keepalive);
+    virtual bool connect(unsigned timeoutms);
+    bool send(MemoryBuffer &mb);
+    unsigned short setRandomPort(unsigned short base, unsigned num);
+    virtual bool accept(unsigned timeoutms);
+    bool recv(MemoryBuffer &mb, unsigned timeoutms);
+    virtual void cancel();
+};
 
 #endif
 

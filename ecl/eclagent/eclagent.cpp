@@ -231,6 +231,7 @@ public:
         while (running)
         {
             ISocket *client = socket->accept(true);
+            // TLS TODO: secure_accept() on hThor debug socket if globally configured for mtls ...
             if (client)
             {
                 client->set_linger(-1);

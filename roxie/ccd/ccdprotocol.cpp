@@ -314,9 +314,9 @@ public:
                         if (!secureContext)
                             secureContext.setown(createSecureSocketContextEx(certFile.get(), keyFile.get(), passPhrase.get(), ServerSocket));
                         ssock.setown(secureContext->createSecureSocket(client.getClear()));
-                        int loglevel = 0;
+                        int loglevel = SSLogMin;
                         if (traceLevel > 1)
-                            loglevel = traceLevel;
+                            loglevel = SSLogMax;
                         int status = ssock->secure_accept(loglevel);
                         if (status < 0)
                         {

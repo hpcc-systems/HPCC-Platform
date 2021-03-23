@@ -55,6 +55,7 @@ include_directories (
          ./../../system/jlib
          ./../../system/security/shared 
          ./../../system/security/cryptohelper
+         ./../../system/security/securesocket
          ./../../common/thorhelper 
          ./../../rtl/eclrtl 
          ./../../rtl/nbcd
@@ -82,6 +83,9 @@ if(NOT PLUGIN)
         eclrtl 
         deftype
         )
+    if (USE_OPENSSL)
+        target_link_libraries(workunit securesocket)
+    endif()
     if (NOT CONTAINERIZED)
         target_link_libraries(workunit environment)
     endif()

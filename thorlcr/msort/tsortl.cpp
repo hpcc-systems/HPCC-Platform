@@ -25,6 +25,7 @@
 #include <process.h>
 #endif
 
+#include "mpcomm.hpp"
 #include "jfile.hpp"
 #include "jio.hpp"
 #include "jsocket.hpp"
@@ -33,17 +34,15 @@
 #include "thbuf.hpp"
 #include "thmem.hpp"
 
+#include "securesocket.hpp"
+
 #ifdef _DEBUG
 //#define _FULL_TRACE
 #endif
 
-#define DEFAULTTIMEOUT 3600 // 60 minutes 
-#define CONNECTTIMEOUT 300  // seconds
-
 #ifdef _MSC_VER
 #pragma warning( disable : 4355 )
 #endif
-
 
 class CREcheck { 
     bool &busy;
@@ -83,11 +82,6 @@ struct TransferStreamHeader
     }
 };
 
-
-static ISocket *DoConnect(SocketEndpoint &nodeaddr)
-{
-    return ISocket::connect_wait(nodeaddr,CONNECTTIMEOUT*1000);
-}
 
 class CSocketRowStream: public CSimpleInterface, implements IRowStream
 {
@@ -286,9 +280,8 @@ public:
 };
 
 
-IRowStream *ConnectMergeRead(unsigned id, IThorRowInterfaces *rowif,SocketEndpoint &nodeaddr,rowcount_t startrec,rowcount_t numrecs)
+IRowStream *ConnectMergeRead(unsigned id, IThorRowInterfaces *rowif,SocketEndpoint &nodeaddr,rowcount_t startrec,rowcount_t numrecs, ISocket *socket)
 {
-    Owned<ISocket> socket = DoConnect(nodeaddr);
     TransferStreamHeader hdr(startrec, numrecs, id);
 #ifdef _FULL_TRACE
     StringBuffer s;

@@ -20,6 +20,7 @@
 #include "jfile.hpp"
 #include "jmutex.hpp"
 #include "jlog.hpp"
+#include "jsecrets.hpp"
 #include "rmtfile.hpp"
 
 #include "portlist.h"
@@ -45,6 +46,7 @@
 #include "thdemonserver.hpp"
 #include "thgraphmanager.hpp"
 #include "roxiehelper.hpp"
+#include "securesocket.hpp"
 #include "environment.hpp"
 
 class CJobManager : public CSimpleInterface, implements IJobManager, implements IExceptionHandler
@@ -175,6 +177,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
                 try
                 {
                     Owned<ISocket> client = sock->accept(true);
+                    // TLS TODO: secure_accept() on Thor debug socket if globally configured for mtls ...
                     if (client)
                     {
                         client->set_linger(-1);
@@ -651,7 +654,13 @@ void CJobManager::run()
                                 {
                                     SocketEndpoint ep = _item->queryEndpoint();
                                     ep.port = _item->getPort();
-                                    Owned<IConversation> acceptconv = createSingletonSocketConnection(ep.port,&ep);
+                                    Owned<IConversation> acceptconv;
+#if defined(_USE_OPENSSL)
+                                    if (queryMtls())
+                                        acceptconv.setown(createSingletonSecureSocketConnection(ep.port,&ep));
+                                    else
+#endif
+                                        acceptconv.setown(createSingletonSocketConnection(ep.port,&ep));
                                     if (acceptconv->connect(60*1000)) // shouldn't need that long
                                     {
                                         acceptconv->set_keep_alive(true);

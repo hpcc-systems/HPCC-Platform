@@ -2466,6 +2466,9 @@ jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
     if (_port)
         *_port = DAFILESRV_PORT;//default
 
+    // TLS TODO: could share mtls setting and cert/config for secure dafilesrv
+    //           but note remote cluster configs should then match this one
+
     const IProperties & conf = queryEnvironmentConf();
     StringAttr sslMethod;
     sslMethod.set(conf.queryProp("dfsUseSSL"));
@@ -2581,6 +2584,21 @@ jlib_decl bool queryHPCCPKIKeyFiles(const char * *  _certificate,//HPCCCertifica
         *_passPhrase = conf.queryProp("HPCCPassPhrase"); //return encrypted
     return true;
 }
+
+#ifndef _CONTAINERIZED
+jlib_decl bool queryMtlsBareMetalConfig()
+{
+    const IProperties &conf = queryEnvironmentConf();
+    if (conf.queryProp("mtls"))
+        return conf.getPropBool("mtls", false);
+    // not in conf, check xml, since all other mp settings are checked there
+    Owned<IPropertyTree> env = getHPCCEnvironment();
+    if (env)
+        return env->getPropBool("EnvSettings/mtls", false);
+
+    return false;
+}
+#endif
 
 static IPropertyTree *getOSSdirTree()
 {

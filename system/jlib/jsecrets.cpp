@@ -768,8 +768,8 @@ IPropertyTree *queryMtlsSecretInfo(const char *name)
 {
     if (isEmptyString(name))
         return nullptr;
-   CriticalBlock block(mtlsInfoCacheCS);
-   IPropertyTree *info = mtlsInfoCache->queryPropTree(name);
+    CriticalBlock block(mtlsInfoCacheCS);
+    IPropertyTree *info = mtlsInfoCache->queryPropTree(name);
     if (info)
         return info;
 
@@ -797,10 +797,70 @@ IPropertyTree *queryMtlsSecretInfo(const char *name)
             if (ca)
                 ca->setProp("@path", filepath.str());
         }
+        // TLS TODO: do we want to always require verify, even if no ca ?
         verify->setPropBool("@enable", true);
         verify->setPropBool("@address_match", false);
         verify->setPropBool("@accept_selfsigned", false);
         verify->setProp("trusted_peers", "anyone");
     }
     return info;
+}
+
+enum UseMTLS { UNINIT, DISABLED, ENABLED };
+static UseMTLS useMtls = UNINIT;
+
+static CriticalSection queryMtlsCS;
+
+jlib_decl bool queryMtls()
+{
+    CriticalBlock block(queryMtlsCS);
+    if (useMtls == UNINIT)
+    {
+        useMtls = DISABLED;
+#if defined(_USE_OPENSSL)
+# ifdef _CONTAINERIZED
+        // check component setting first, but default to global
+        if (getComponentConfigSP()->getPropBool("@mtls", getGlobalConfigSP()->getPropBool("@mtls")))
+            useMtls = ENABLED;
+# else
+        if (queryMtlsBareMetalConfig())
+        {
+            useMtls = ENABLED;
+            const char *cert = nullptr;
+            const char *pubKey = nullptr;
+            const char *privKey = nullptr;
+            const char *passPhrase = nullptr;
+            if (queryHPCCPKIKeyFiles(&cert, &pubKey, &privKey, &passPhrase))
+            {
+                if ( (!isEmptyString(cert)) && (!isEmptyString(privKey)) )
+                {
+                    if (checkFileExists(cert) && checkFileExists(privKey))
+                    {
+                        CriticalBlock block(mtlsInfoCacheCS);
+                        if (mtlsInfoCache)
+                        {
+                            IPropertyTree *info = mtlsInfoCache->queryPropTree("local");
+                            if (!info)
+                                info = mtlsInfoCache->setPropTree("local");
+                            if (info)
+                            {   // always update
+                                info->setProp("certificate", cert);
+                                info->setProp("privatekey", privKey);
+                                if ( (!isEmptyString(pubKey)) && (checkFileExists(pubKey)) )
+                                    info->setProp("publickey", pubKey);
+                                if (!isEmptyString(passPhrase))
+                                    info->setProp("passphrase", passPhrase); // encrypted
+                            }
+                        }
+                    }
+                }
+            }
+        }
+# endif
+#endif
+    }
+    if (useMtls == ENABLED)
+        return true;
+    else
+        return false;
 }
