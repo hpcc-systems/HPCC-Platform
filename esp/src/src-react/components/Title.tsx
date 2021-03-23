@@ -57,7 +57,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             { key: "divider_4", itemType: ContextualMenuItemType.Divider },
             { key: "legacy", text: nlsHPCC.OpenLegacyECLWatch, href: "/esp/files/stub.htm" },
             { key: "divider_5", itemType: ContextualMenuItemType.Divider },
-            { key: "config", text: nlsHPCC.Configuration },
+            { key: "config", href: "#/config", text: nlsHPCC.Configuration },
             { key: "about", text: nlsHPCC.About, onClick: () => setShowAbout(true) }
         ],
         directionalHintFixed: true
@@ -83,7 +83,13 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                             label="Change themes"
                             onText="Dark Mode"
                             offText="Light Mode"
-                            onChange={() => setUseDarkMode(!useDarkMode)}
+                            onChange={() => {
+                                setUseDarkMode(!useDarkMode);
+                                const themeChangeEvent = new CustomEvent("eclwatch-theme-toggle", {
+                                    detail: { dark: !useDarkMode }
+                                });
+                                document.dispatchEvent(themeChangeEvent);
+                            }}
                         />
                     </Stack.Item>
                     <Stack.Item align="center">
