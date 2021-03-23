@@ -125,6 +125,8 @@ interface IMessageCollator : extends IInterface
     virtual void interrupt(IException *E = NULL) = 0;
     virtual ruid_t queryRUID() const = 0;
     virtual unsigned queryBytesReceived() const = 0;
+    virtual unsigned queryDuplicates() const = 0;
+    virtual unsigned queryResends() const = 0;
 };
 
 interface IReceiveManager : extends IInterface 
@@ -147,7 +149,7 @@ interface ISendManager : extends IInterface
     virtual bool allDone() = 0;
 };
 
-extern UDPLIB_API IReceiveManager *createReceiveManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int queue_size, unsigned maxSlotsPerSender, bool encryptionInTransit);
+extern UDPLIB_API IReceiveManager *createReceiveManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int queue_size, unsigned maxSlotsPerSender, bool encrypted);
 extern UDPLIB_API ISendManager *createSendManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int queue_size_pr_server, int queues_pr_server, TokenBucket *rateLimiter, bool encryptionInTransit);
 
 extern UDPLIB_API void setAeronProperties(const IPropertyTree *config);
@@ -156,8 +158,9 @@ extern UDPLIB_API ISendManager *createAeronSendManager(unsigned dataPort, unsign
 
 extern UDPLIB_API RelaxedAtomic<unsigned> unwantedDiscarded;
 
+extern UDPLIB_API bool udpTraceFlow;
+extern UDPLIB_API bool udpTraceTimeouts;
 extern UDPLIB_API unsigned udpTraceLevel;
-extern UDPLIB_API unsigned udpTraceCategories;
 extern UDPLIB_API unsigned udpOutQsPriority;
 extern UDPLIB_API void queryMemoryPoolStats(StringBuffer &memStats);
 
@@ -180,4 +183,11 @@ extern UDPLIB_API unsigned udpSnifferSendThreadPriority;
 
 extern UDPLIB_API void stopAeronDriver();
 
+extern UDPLIB_API bool udpResendEnabled;
+extern UDPLIB_API unsigned udpResendTimeout;  // in millseconds
+extern UDPLIB_API unsigned udpMaxPendingPermits;
+extern UDPLIB_API bool udpAssumeSequential;
+extern UDPLIB_API unsigned udpStatsReportInterval;
+extern UDPLIB_API RelaxedAtomic<unsigned> packetsResent;
+extern UDPLIB_API RelaxedAtomic<unsigned> packetsOOO;
 #endif

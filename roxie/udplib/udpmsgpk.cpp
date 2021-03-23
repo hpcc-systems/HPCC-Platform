@@ -64,9 +64,9 @@ class PackageSequencer : public CInterface, implements IInterface
     unsigned metaSize;
     unsigned headerSize;
     const void *header;
-#ifdef _DEBUG
-    unsigned numPackets = 0;
     unsigned maxSeqSeen = 0;
+    unsigned numPackets = 0;
+#ifdef _DEBUG
     unsigned scans = 0;
     unsigned overscans = 0;
 #endif
@@ -125,21 +125,26 @@ public:
         return ret;
     }
 
-    bool insert(DataBuffer *dataBuff)  // returns true if message is complete.
+    bool insert(DataBuffer *dataBuff, std::atomic<unsigned> &duplicates, std::atomic<unsigned> &resends)  // returns true if message is complete.
     {
         bool res = false;
         assert(dataBuff->msgNext == NULL);
         UdpPacketHeader *pktHdr = (UdpPacketHeader*) dataBuff->data;
         unsigned pktseq = pktHdr->pktSeq;
-#ifdef _DEBUG
         if ((pktseq & UDP_PACKET_SEQUENCE_MASK) > maxSeqSeen)
             maxSeqSeen = pktseq & UDP_PACKET_SEQUENCE_MASK;
-#endif
+        if (pktseq & UDP_PACKET_RESENT)
+        {
+            pktseq &= ~UDP_PACKET_RESENT;
+            pktHdr->pktSeq = pktseq;
+            resends++;
+        }
+
         if (checkTraceLevel(TRACE_MSGPACK, 5))
         {
             StringBuffer s;
-            DBGLOG("UdpCollator: PackageSequencer::insert ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%s dataBuffer=%p this=%p",
-                    pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->node.getTraceText(s).str(), dataBuff, this);
+            DBGLOG("UdpCollator: PackageSequencer::insert ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X sendSeq=%" SEQF "u node=%s dataBuffer=%p this=%p",
+                    pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->sendSeq, pktHdr->node.getTraceText(s).str(), dataBuff, this);
         }
 
         // Optimize the (very) common case where I need to add to the end
@@ -162,8 +167,9 @@ public:
                 {
                     // discard duplicated incoming packet - should be uncommon unless we requested a resend for a packet already in flight
                     if (checkTraceLevel(TRACE_MSGPACK, 5))
-                        DBGLOG("UdpCollator: Discarding duplicate incoming packet");
+                        DBGLOG("UdpCollator: Discarding duplicate incoming packet %u (we have all up to %u)", pktHdr->pktSeq, oldHdr->pktSeq);
                     dataBuff->Release();
+                    duplicates++;
                     return false;
                 }
                 finger = lastContiguousPacket->msgNext;
@@ -176,7 +182,7 @@ public:
             }
             while (finger)
             {
-    #ifdef _DEBUG
+#ifdef _DEBUG
                 scans++;
                 if (scans==1000000)
                 {
@@ -191,13 +197,13 @@ public:
                         DBGLOG("lastContiguousPacket is NULL , last packet seen is %u", pktHdr->pktSeq & UDP_PACKET_SEQUENCE_MASK);
                     scans = 0;
                 }
-    #endif
+#endif
                 UdpPacketHeader *oldHdr = (UdpPacketHeader*) finger->data;
                 if (pktHdr->pktSeq == oldHdr->pktSeq)
                 {
                     // discard duplicated incoming packet - should be uncommon unless we requested a resend for a packet already in flight
                     if (checkTraceLevel(TRACE_MSGPACK, 5))
-                        DBGLOG("UdpCollator: Discarding duplicate incoming packet");
+                        DBGLOG("UdpCollator: Discarding duplicate incoming packet %u", pktHdr->pktSeq);
                     dataBuff->Release();
                     return false;
                 }
@@ -297,12 +303,16 @@ public:
         return headerSize;
     }
 
-#ifdef _DEBUG
     void dump()
     {
         DBGLOG("Contains %u packets, lastSeq = %u", numPackets, maxSeqSeen);
+        if (lastContiguousPacket)
+        {
+            UdpPacketHeader *hdr = (UdpPacketHeader*) lastContiguousPacket->data;
+            DBGLOG("lastContiguousPacket is %u %" SEQF "u", hdr->pktSeq, hdr->sendSeq);
+        }
     }
-#endif
+
 };
 
 // MessageResult ====================================================================================
@@ -513,9 +523,27 @@ CMessageCollator::~CMessageCollator()
     }
 }
 
+void CMessageCollator::noteDuplicate(bool isResend)
+{
+    totalDuplicates++;
+    if (isResend)
+        totalResends++;
+}
+
+
 unsigned CMessageCollator::queryBytesReceived() const
 {
-    return totalBytesReceived; // Arguably should lock, but can't be bothered. Never going to cause an issue in practice.
+    return totalBytesReceived;
+}
+
+unsigned CMessageCollator::queryDuplicates() const
+{
+    return totalDuplicates;
+}
+
+unsigned CMessageCollator::queryResends() const
+{
+    return totalResends;
 }
 
 bool CMessageCollator::attach_databuffer(DataBuffer *dataBuff)
@@ -566,7 +594,7 @@ bool CMessageCollator::attach_data(const void *data, unsigned len)
 void CMessageCollator::collate(DataBuffer *dataBuff)
 {
     PUID puid = GETPUID(dataBuff);
-    // MORE - I think we leak a PackageSequencer for messages that we only receive parts of - maybe only an issue for "catchall" case
+    // MORE - we leak (at least until query terminates) a PackageSequencer for messages that we only receive parts of - maybe only an issue for "catchall" case
     PackageSequencer *pkSqncr = mapping.getValue(puid);
     if (!pkSqncr)
     {
@@ -574,7 +602,7 @@ void CMessageCollator::collate(DataBuffer *dataBuff)
         mapping.setValue(puid, pkSqncr);
         pkSqncr->Release();
     }
-    bool isComplete = pkSqncr->insert(dataBuff);
+    bool isComplete = pkSqncr->insert(dataBuff, totalDuplicates, totalResends);
     if (isComplete)
     {
         pkSqncr->Link();

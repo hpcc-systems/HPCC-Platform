@@ -1184,7 +1184,9 @@ protected:
     Owned<IPropertyTree> probeQuery;
     unsigned lastWuAbortCheck;
     unsigned startTime;
-    unsigned totAgentsReplyLen;
+    std::atomic<unsigned> totAgentsReplyLen = {0};
+    std::atomic<unsigned> totAgentsDuplicates = {0};
+    std::atomic<unsigned> totAgentsResends = {0};
     CCycleTimer elapsedTimer;
 
     QueryOptions options;
@@ -1264,6 +1266,8 @@ public:
         aborted = false;
         exceptionLogged = false;
         totAgentsReplyLen = 0;
+        totAgentsDuplicates = 0;
+        totAgentsResends = 0;
 
         allocatorMetaCache.setown(createRowAllocatorCache(this));
         rowManager.setown(roxiemem::createRowManager(options.memoryLimit, this, logctx, allocatorMetaCache, false));
@@ -1676,10 +1680,13 @@ public:
         return *rowManager;
     }
 
-    virtual void addAgentsReplyLen(unsigned len)
+    virtual void addAgentsReplyLen(unsigned len, unsigned duplicates, unsigned resends)
     {
-        CriticalBlock b(statsCrit); // MORE: change to atomic_add, or may not need it at all?
         totAgentsReplyLen += len;
+        if (duplicates)
+            totAgentsDuplicates += duplicates;
+        if (resends)
+            totAgentsResends += resends;
     }
 
     virtual const char *loadResource(unsigned id)
@@ -2582,6 +2589,8 @@ protected:
     void init()
     {
         totAgentsReplyLen = 0;
+        totAgentsDuplicates = 0;
+        totAgentsResends = 0;
         isRaw = false;
         isBlocked = false;
         isNative = true;
@@ -2792,9 +2801,19 @@ public:
         return rowManager->getMemoryUsage();
     }
 
-    virtual unsigned getAgentsReplyLen()
+    virtual unsigned getAgentsReplyLen() const
     {
         return totAgentsReplyLen;
+    }
+
+    virtual unsigned getAgentsDuplicates() const
+    {
+        return totAgentsDuplicates;
+    }
+
+    virtual unsigned getAgentsResends() const
+    {
+        return totAgentsResends;
     }
 
     virtual void process()

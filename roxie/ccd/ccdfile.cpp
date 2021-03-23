@@ -837,7 +837,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                 cidtSleep.wait(cacheReportPeriodSeconds * 1000);
                 if (closing)
                     break;
-                if (traceLevel)
+                if (traceLevel>8)
                     DBGLOG("Cache info dump");
                 // Note - cache info is stored in the DLLSERVER persistent area - which we should perhaps consider renaming
                 const char* dllserver_root = getenv("HPCC_DLLSERVER_PATH");

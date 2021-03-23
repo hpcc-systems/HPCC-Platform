@@ -769,6 +769,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             traceLevel = MAXTRACELEVEL;
         if (traceLevel && topology->hasProp("logging/@disabled"))
             topology->setPropBool("logging/@disabled", false);
+        udpStatsReportInterval = topology->getPropInt("@udpStatsReportInterval", traceLevel ? 60000 : 0);
+        udpTraceFlow = topology->getPropBool("@udpTraceFlow", false);
+        udpTraceTimeouts = topology->getPropBool("@udpTraceTimeouts", false);
         udpTraceLevel = topology->getPropInt("@udpTraceLevel", runOnce ? 0 : 1);
         roxiemem::setMemTraceLevel(topology->getPropInt("@memTraceLevel", runOnce ? 0 : 1));
         soapTraceLevel = topology->getPropInt("@soapTraceLevel", runOnce ? 0 : 1);
@@ -971,6 +974,12 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             udpSnifferEnabled = false;
         }
 #endif
+
+        udpResendEnabled = topology->getPropBool("@udpResendEnabled", true);
+        udpResendTimeout = topology->getPropInt("@udpResendTimeout", 10);  // milliseconds
+        udpAssumeSequential = topology->getPropBool("@udpAssumeSequential", false);
+        udpMaxPendingPermits = topology->getPropInt("@udpMaxPendingPermits", 1);
+
         int ttlTmp = topology->getPropInt("@multicastTTL", 1);
         if (ttlTmp < 0)
         {
