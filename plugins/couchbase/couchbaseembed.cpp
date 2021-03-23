@@ -181,6 +181,8 @@ namespace couchbaseembed
             auto status = pQcmd->named_param(cbPlaceholder.str(), utf8);
             if (!status.success())
                 failx("Could not bind Param: %s val: %s", cbPlaceholder.str(), utf8);
+            if (utf8)
+                rtlFree(utf8);
         }
         else
             failx("Internal error: detected invalid CouchbaseQueryCommand while attempting to bind to field: %s", cbPlaceholder.str());
@@ -215,6 +217,8 @@ namespace couchbaseembed
             auto status = pQcmd->named_param(cbPlaceholder.str(), (char *)data);
             if (!status.success())
                 failx("Could not bind Param: %s val: %s", cbPlaceholder.str(), (char *)data);
+            if (data)
+                rtlFree(data);
         }
         else
             failx("Internal error: detected invalid CouchbaseQueryCommand while attempting to bind to field: %s", cbPlaceholder.str());
@@ -912,31 +916,32 @@ namespace couchbaseembed
 
     IPropertyTree * CouchbaseEmbedFunctionContext::nextResultRowTree()
     {
-        for (auto cbrow : *m_pQuery)
+        if (m_pQuery)
         {
-            auto json = cbrow.json().to_string();
+            reportIfQueryFailure(m_pQuery);
+
+            // Only the first callback query is processed
+            auto json = m_pQuery->begin()->json().to_string();
             Owned<IPropertyTree> contentTree = createPTreeFromJSONString(json.c_str());
             return contentTree.getLink();
         }
-
-        reportIfQueryFailure(m_pQuery);
 
         return nullptr;
     }
 
     IPropertyTreeIterator * CouchbaseEmbedFunctionContext::nextResultRowIterator()
     {
-        for (auto cbrow : *m_pQuery)
+        if (m_pQuery)
         {
-            auto json = cbrow.json().to_string();
+            reportIfQueryFailure(m_pQuery);
+
+            // Only the first callback query is processed
+            auto json = m_pQuery->begin()->json().to_string();
             Owned<IPropertyTree> contentTree = createPTreeFromJSONString(json.c_str());
             if (contentTree)
                 return contentTree->getElements("./*");
             failx("Could not fetch next result row.");
-            break;
         }
-
-        reportIfQueryFailure(m_pQuery);
 
         return nullptr;
     }
@@ -1126,6 +1131,8 @@ namespace couchbaseembed
         auto status = m_pQcmd->named_param(cbPlaceholder.str(), (char *)data);
         if (!status.success())
             failx("Could not bind Param: %s val: %s", cbPlaceholder.str(), (char *)data);
+        if (data)
+            rtlFree(data);
     }
 
     void CouchbaseEmbedFunctionContext::bindFloatParam(const char *name, float val)
@@ -1198,6 +1205,8 @@ namespace couchbaseembed
         auto status = m_pQcmd->named_param(cbPlaceholder.str(), utf8);
         if (!status.success())
             failx("Could not bind Param: %s val: %s", cbPlaceholder.str(), utf8);
+        if (utf8)
+            rtlFree(utf8);
     }
 
     void CouchbaseEmbedFunctionContext::bindVStringParam(const char *name, const char *val)
@@ -1404,11 +1413,8 @@ namespace couchbaseembed
         size32_t chars;
         rtlDataAttr result;
         value.setString(strlen(dvalue), dvalue);
-        if (field)
-        {
-            RtlDecimalTypeInfo *dtype = (RtlDecimalTypeInfo *) field->type;
-            value.setPrecision(dtype->getDecimalDigits(), dtype->getDecimalPrecision());
-        }
+        RtlDecimalTypeInfo *dtype = (RtlDecimalTypeInfo *) field->type;
+        value.setPrecision(dtype->getDecimalDigits(), dtype->getDecimalPrecision());
     }
 
     void CouchbaseRowBuilder::processBeginSet(const RtlFieldInfo * field, bool &isAll)
