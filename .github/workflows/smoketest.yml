@@ -354,14 +354,10 @@ jobs:
       matrix:
         engine: ['hthor', 'roxie']
         match:
-        - pattern: 'dfse2.ecl'
-        - pattern: 'dfse2.ecl'
-        - pattern: 'dfse2.ecl'
-        - pattern: 'dfse2.ecl'
-        - pattern: 'dfse2.ecl'
-        - pattern: 'dfse2.ecl'
-        - pattern: 'dfse2.ecl'
-        - pattern: 'dfse2.ecl'
+        - pattern: '[a-d]*.ecl'
+        - pattern: '[a-d]*.ecl'
+        - pattern: '[a-d]*.ecl'
+        - pattern: '[a-d]*.ecl'
 
     steps:
     - uses: actions/download-artifact@v2
