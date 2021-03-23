@@ -93,12 +93,11 @@ jobs:
         else \
           echo ::set-output name=repository::$(echo -n ${{ github.event.pull_request.head.repo.owner.login }}/ ; echo -n ${{ github.repository }} | sed -E -n 's@^[^/]+/(.+)$@\1@p'); \
         fi
-        echo ::set-output name=cache-hit::false
 
     - name: fakecache
       id: cache
       run: |
-        echo ::set-output name=cache-hit::true
+        echo ::set-output name=cache-hit::false
         
     # NB: restore-keys set to e.g. hpccbuild-1-7.12.10, hpccbuild-1-7.12, hpccbuild-1-7, hpccbuild-1-
     - name: Fetch cache
