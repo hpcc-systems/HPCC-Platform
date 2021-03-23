@@ -352,25 +352,16 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        engine: ['hthor', 'thor', 'roxie']
+        engine: ['hthor', 'roxie']
         match:
-        - pattern: '[a-d]*.ecl'
-        - pattern: '[e-h]*.ecl'
-        - pattern: '[i-l]*.ecl'
-        - pattern: '[m-q]*.ecl'
-        - pattern: '[r-u]*.ecl'
-          exclude: teststdlibrary.ecl
-        - pattern: '[v-z]*.ecl'
-        include:
-        - engine: 'hthor'
-          match:
-            pattern: teststdlibrary.ecl
-        - engine: 'thor'
-          match:
-            pattern: teststdlibrary.ecl
-        - engine: 'roxie'
-          match:
-            pattern: teststdlibrary.ecl
+        - pattern: 'dfse2.ecl'
+        - pattern: 'dfse2.ecl'
+        - pattern: 'dfse2.ecl'
+        - pattern: 'dfse2.ecl'
+        - pattern: 'dfse2.ecl'
+        - pattern: 'dfse2.ecl'
+        - pattern: 'dfse2.ecl'
+        - pattern: 'dfse2.ecl'
 
     steps:
     - uses: actions/download-artifact@v2
