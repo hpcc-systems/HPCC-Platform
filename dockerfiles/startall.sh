@@ -91,9 +91,9 @@ fi
 if [[ -n ${PERSIST} ]] ; then
   PERSIST=$(realpath -q $PERSIST || echo $PERSIST)
   PERSIST_PATH=$(echo $PERSIST | sed 's/\\//g')
-  mkdir -p ${PERSIST_PATH}/dlls
-  mkdir -p ${PERSIST_PATH}/dali
-  mkdir -p ${PERSIST_PATH}/data
+  mkdir -p ${PERSIST_PATH}/queries
+  mkdir -p ${PERSIST_PATH}/dalistorage
+  mkdir -p ${PERSIST_PATH}/hpcc-data
   helm ${CMD} localfile $scriptdir/../helm/examples/local/hpcc-localfile --set common.hostpath=${PERSIST} | grep -A100 storage > localstorage.yaml && \
   helm ${CMD} mycluster $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL --set global.privileged=true -f localstorage.yaml $DEP_UPDATE_ARG ${restArgs[@]}
 else
