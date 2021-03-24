@@ -2077,6 +2077,7 @@ class CContainerWUClusterInfo : public CSimpleInterfaceOf<IConstWUClusterInfo>
     StringAttr thorQueue;
     ClusterType platform;
     unsigned clusterWidth;
+    StringArray thorProcesses;
 
 public:
     CContainerWUClusterInfo(const char* _name, const char* type, unsigned _clusterWidth)
@@ -2087,6 +2088,7 @@ public:
         {
             thorQueue.set(getClusterThorQueueName(queue.clear(), name));
             platform = ThorLCRCluster;
+            thorProcesses.append(name);
         }
         else if (strieq(type, "roxie"))
         {
@@ -2156,11 +2158,12 @@ public:
     }
     virtual IStringVal & getRoxieProcess(IStringVal & str) const override
     {
-        UNIMPLEMENTED;
+        str.set(name.get());
+        return str;
     }
     virtual const StringArray & getThorProcesses() const override
     {
-        UNIMPLEMENTED;
+        return thorProcesses;
     }
     virtual const StringArray & getPrimaryThorProcesses() const override
     {
@@ -2180,15 +2183,15 @@ public:
     }
     virtual unsigned getRoxieRedundancy() const override
     {
-        UNIMPLEMENTED;
+        return 1;
     }
     virtual unsigned getChannelsPerNode() const override
     {
-        UNIMPLEMENTED;
+        return 1;
     }
     virtual int getRoxieReplicateOffset() const override
     {
-        UNIMPLEMENTED;
+        return 0;
     }
     virtual const char *getAlias() const override
     {
@@ -2208,6 +2211,15 @@ extern TPWRAPPER_API unsigned getContainerWUClusterInfo(CConstWUClusterInfoArray
     }
 
     return clusters.ordinality();
+}
+
+extern TPWRAPPER_API unsigned getWUClusterInfo(CConstWUClusterInfoArray& clusters)
+{
+#ifndef _CONTAINERIZED
+    return getEnvironmentClusterInfo(clusters);
+#else
+    return getContainerWUClusterInfo(clusters);
+#endif
 }
 
 extern TPWRAPPER_API IConstWUClusterInfo* getWUClusterInfoByName(const char* clusterName)
