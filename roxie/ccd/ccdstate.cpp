@@ -2450,13 +2450,7 @@ private:
             break;
 
         case 'N':
-            if (stricmp(queryName, "control:nodeCachePreload")==0)
-            {
-                nodeCachePreload = control->getPropBool("@val", true);
-                topology->setPropBool("@nodeCachePreload", nodeCachePreload);
-                setNodeCachePreload(nodeCachePreload);
-            }
-            else if (stricmp(queryName, "control:nodeCacheMem")==0)
+            if (stricmp(queryName, "control:nodeCacheMem")==0)
             {
                 nodeCacheMB = control->getPropInt("@val", 100);
                 topology->setPropInt("@nodeCacheMem", nodeCacheMB);
