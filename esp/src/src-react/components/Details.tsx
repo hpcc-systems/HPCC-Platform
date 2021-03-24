@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, Dropdown, TextField, IDropdownProps, IDropdownOption, Label } from "@fluentui/react";
+import { Checkbox, Dropdown, TextField, IDropdownProps, IDropdownOption, Label, Link } from "@fluentui/react";
 import { TextField as MaterialUITextField } from "@material-ui/core";
 import { Topology, TpLogicalClusterQuery } from "@hpcc-js/comms";
 import { TpGroupQuery } from "src/WsTopology";
@@ -7,7 +7,7 @@ import { States } from "src/WsWorkunits";
 import { States as DFUStates } from "src/FileSpray";
 import nlsHPCC from "src/nlsHPCC";
 
-type FieldType = "string" | "checkbox" | "datetime" |
+type FieldType = "string" | "checkbox" | "datetime" | "link" |
     "workunit-state" |
     "file-type" | "file-sortby" |
     "queries-suspend-state" | "queries-active-state" |
@@ -34,6 +34,11 @@ interface StringField extends BaseField {
 interface DateTimeField extends BaseField {
     type: "datetime";
     value?: string;
+}
+
+interface LinkField extends BaseField {
+    type: "link";
+    href: string;
 }
 
 interface CheckboxField extends BaseField {
@@ -86,7 +91,7 @@ interface DFUWorkunitStateField extends BaseField {
     value?: string;
 }
 
-type Field = StringField | CheckboxField | DateTimeField |
+type Field = StringField | CheckboxField | DateTimeField | LinkField |
     WorkunitStateField |
     FileTypeField | FileSortByField |
     QueriesSuspendStateField | QueriesActiveStateField |
@@ -148,12 +153,12 @@ const TargetGroupTextField: React.FunctionComponent<IDropdownProps> = (props) =>
 
 interface DetailsProps {
     fields: Fields;
-    onChange: (id: string, newValue: any) => void;
+    onChange?: (id: string, newValue: any) => void;
 }
 
 export const Details: React.FunctionComponent<DetailsProps> = ({
     fields,
-    onChange
+    onChange = (id: string, newValue: any) => { }
 }) => {
 
     const formFields: { id: string, label: string, field: any }[] = [];
@@ -211,6 +216,18 @@ export const Details: React.FunctionComponent<DetailsProps> = ({
                         InputLabelProps={{ shrink: true }
                         }
                     />
+                });
+                break;
+            case "link":
+                field.href = field.href;
+                formFields.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: <Link
+                        key={fieldID}
+                        href={field.href}
+                        target="_blank"
+                        style={{ paddingLeft: 8 }}>{field.href}</Link>
                 });
                 break;
             case "workunit-state":

@@ -332,6 +332,7 @@ export = {
         HideSpills: "Hide Spills",
         High: "High",
         History: "History",
+        Homepage: "Homepage",
         HPCCSystems: "HPCC Systems®",
         Icon: "Icon",
         ID: "ID",
