@@ -13,19 +13,24 @@
     typically removed when the cluster is stopped. This is fine for testing
     but for any real application, you want persistent storage.</para>
 
-    <para>To persist data on a Windows machine with Docker Desktop, the first
-    step is to make sure the relevant directories exist:</para>
-
-    <para></para>
+    <para>To persist data with Docker Desktop, the first step is to make sure
+    the relevant directories exist:</para>
 
     <orderedlist>
       <listitem>
-        <para>Create data directories using a Windows command prompt:</para>
+        <para>Create data directories using a terminal interface: </para>
+
+        <para>For Windows, use this command:</para>
 
         <para><programlisting>mkdir c:\hpccdata
 mkdir c:\hpccdata\dlls
 mkdir c:\hpccdata\data
-mkdir c:\hpccdata\dali</programlisting></para>
+mkdir c:\hpccdata\dali
+</programlisting></para>
+
+        <para>For macOS, use this command:</para>
+
+        <para><programlisting>mkdir -p /Users/myUser/hpccdata/{dlls,data,dali} </programlisting></para>
       </listitem>
 
       <listitem>
@@ -38,8 +43,6 @@ mkdir c:\hpccdata\dali</programlisting></para>
         <para>If you want only the helm charts, the use the <emphasis
         role="strong">helm-chart</emphasis> repository
         (https://github.com/hpcc-systems/helm-chart).</para>
-
-        <para></para>
       </listitem>
 
       <listitem>
@@ -59,7 +62,11 @@ helm install localfile examples/local/hpcc-localfile
            --set common.hostpath=/run/desktop/mnt/host/c/hpccdata
 
 # for a Hyper-V deployment:
-helm install localfile examples/local/hpcc-localfile --set common.hostpath=/c/hpccdata</programlisting></para>
+helm install localfile examples/local/hpcc-localfile --set common.hostpath=/c/hpccdata
+
+# for a macOS deployment:
+helm install localfile examples/local/hpcc-localfile --set common.hostpath=/Users/myUser/hpccdata
+</programlisting></para>
 
         <para>The <emphasis role="bold">--set</emphasis> option specifies the
         base directory:</para>
@@ -69,12 +76,26 @@ helm install localfile examples/local/hpcc-localfile --set common.hostpath=/c/hp
         access to the host file system for WSL2.</para>
 
         <para>The path <emphasis role="bold">/c/hpccdata</emphasis> provides
-        access to the host file system for Hyper-V</para>
+        access to the host file system for Hyper-V.</para>
+
+        <para>The path <emphasis role="bold">/Users/myUser/hpccdata</emphasis>
+        provides access to the host file system for Mac OSX.</para>
       </listitem>
 
       <listitem>
-        <para>Finally, install the hpcc chart, and provide a yaml file that
-        provides storage information that uses the PVCs created by the
+        <para>If you are using Docker Desktop with Hyper-V, add the shared
+        data folder (in this example, C:\hpccdata) in the Docker Desktop
+        settings. </para>
+
+        <para>This is <emphasis role="bold">not</emphasis> needed in a macOS
+        or WSL 2 environment. </para>
+
+        <graphic fileref="../../images/dockerFileShare.jpg" />
+      </listitem>
+
+      <listitem>
+        <para>Finally, install the hpcc Helm chart, and provide a yaml file
+        that provides storage information that uses the PVCs created by the
         previous step.</para>
 
         <para>The example directory contains a sample yaml file that can be
