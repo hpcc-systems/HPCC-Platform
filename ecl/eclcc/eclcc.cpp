@@ -2309,6 +2309,7 @@ bool EclCC::checkDaliConnected() const
 {
     if (!daliConnected)
     {
+        PROGLOG("Connecting to Dali!");
         try
         {
             Owned<IGroup> serverGroup = createIGroup(optDFS.str(), DALI_SERVER_PORT);

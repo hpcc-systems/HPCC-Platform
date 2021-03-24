@@ -543,7 +543,7 @@ class CDaliPublisherClient: public Thread, public CDaliPublisher
     CIArrayOf<CDaliSubscriptionManagerStub> managers;
     UnsignedArray tags;
     CheckedCriticalSection tagsect;
-    bool stopped;
+    bool stopped = true;
 
 
 public:
@@ -551,7 +551,7 @@ public:
     CDaliPublisherClient()
         :   Thread("CDaliPublisherClient")
     {
-        stopped = true;
+        stopped = false;
         start();
     }
 
@@ -576,9 +576,7 @@ public:
     {
         ICoven &coven=queryCoven();
         CMessageHandler<CDaliPublisherClient> handler("CDaliPublisherClientMessages",this,&CDaliPublisherClient::processMessage);
-        stopped = false;
         CMessageBuffer mb;
-        stopped = false;
         while (!stopped) {
             mb.clear();
             try {
