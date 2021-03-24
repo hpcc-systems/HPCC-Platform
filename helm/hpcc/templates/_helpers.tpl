@@ -690,6 +690,7 @@ data:
 
 {{/*
 A template to generate Sasha service containers
+Pass in dict with root, me and dali if container in dali pod
 */}}
 {{- define "hpcc.addSashaContainer" }}
 {{- $serviceName := printf "sasha-%s" .me.name }}
@@ -704,11 +705,11 @@ A template to generate Sasha service containers
 {{ include "hpcc.daliArg" .root | indent 10 }}
         ]
 {{- include "hpcc.addResources" (dict "me" .me.resources) | indent 2 }}
-{{- include "hpcc.addSecurityContext" .  | indent 2 }}
+{{- include "hpcc.addSecurityContext" . | indent 2 }}
 {{- with (dict "name" $serviceName) }}
-{{ include "hpcc.addSentinelProbes" .  | indent 2 }}
+{{ include "hpcc.addSentinelProbes" . | indent 2 }}
 {{- end }}
-{{ include "hpcc.addImageAttrs" .  | indent 2 }}
+{{ include "hpcc.addImageAttrs" (dict "root" .root "me" (.dali | default .me)) | indent 2 }}
 {{- end -}}
 
 {{/*
