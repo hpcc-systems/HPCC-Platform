@@ -23,7 +23,6 @@
 #include "jlog.hpp"
 #include "jisem.hpp"
 #include "jsocket.hpp"
-#include "jencrypt.hpp"
 #include "udplib.hpp"
 #include "udptrr.hpp"
 #include "udptrs.hpp"
@@ -55,11 +54,6 @@ RelaxedAtomic<unsigned> dataPacketsReceived = {0};
 static unsigned lastFlowPermitsSent = 0;
 static unsigned lastFlowRequestsReceived = 0;
 static unsigned lastDataPacketsReceived = 0;
-
-static byte key[32] = {
-    0xf7, 0xe8, 0x79, 0x40, 0x44, 0x16, 0x66, 0x18, 0x52, 0xb8, 0x18, 0x6e, 0x76, 0xd1, 0x68, 0xd3,
-    0x87, 0x47, 0x01, 0xe6, 0x66, 0x62, 0x2f, 0xbe, 0xc1, 0xd5, 0x9f, 0x4a, 0x53, 0x27, 0xae, 0xa1,
-};
 
 class CReceiveManager : implements IReceiveManager, public CInterface
 {
@@ -622,14 +616,6 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         #endif
             DataBuffer *b = NULL;
             started.signal();
-            MemoryBuffer encryptData;
-            size32_t max_payload = DATA_PAYLOAD;
-            void *encryptedBuffer = nullptr;
-            if (parent.encrypted)
-            {
-                max_payload = DATA_PAYLOAD+16;  // AES function may add up to 16 bytes of padding
-                encryptedBuffer = encryptData.reserveTruncate(max_payload);
-            }
             unsigned lastOOOReport = 0;
             unsigned lastPacketsOOO = 0;
             while (running) 
@@ -638,13 +624,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 {
                     unsigned int res;
                     b = bufferManager->allocate();
-                    if (parent.encrypted)
-                    {
-                        receive_socket->read(encryptedBuffer, 1, max_payload, res, 5);
-                        res = aesDecrypt(key, sizeof(key), encryptedBuffer, res, b->data, DATA_PAYLOAD);
-                    }
-                    else
-                        receive_socket->read(b->data, 1, DATA_PAYLOAD, res, 5);
+                    receive_socket->read(b->data, 1, DATA_PAYLOAD, res, 5);
                     dataPacketsReceived++;
                     UdpPacketHeader &hdr = *(UdpPacketHeader *) b->data;
                     assert(hdr.length == res && hdr.length > sizeof(hdr));
@@ -884,7 +864,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
 
     virtual IMessageCollator *createMessageCollator(IRowManager *rowManager, ruid_t ruid)
     {
-        CMessageCollator *msgColl = new CMessageCollator(rowManager, ruid);
+        CMessageCollator *msgColl = new CMessageCollator(rowManager, ruid, encrypted);
         if (udpTraceLevel > 2)
             DBGLOG("UdpReceiver: createMessageCollator %p %u", msgColl, ruid);
         {

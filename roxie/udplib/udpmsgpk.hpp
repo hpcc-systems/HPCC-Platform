@@ -30,6 +30,7 @@ private:
     msg_map             mapping;  // Note - only accessed from collator thread
     RelaxedAtomic<bool> activity;
     bool                memLimitExceeded;
+    bool                encrypted;
     CriticalSection     queueCrit;
     InterruptableSemaphore sem;
     Linked<roxiemem::IRowManager> rowMgr;
@@ -40,7 +41,7 @@ private:
 
     void collate(roxiemem::DataBuffer *dataBuff);
 public:
-    CMessageCollator(roxiemem::IRowManager *_rowMgr, unsigned _ruid);
+    CMessageCollator(roxiemem::IRowManager *_rowMgr, unsigned _ruid, bool encrypted);
     virtual ~CMessageCollator();
 
     virtual ruid_t queryRUID() const override

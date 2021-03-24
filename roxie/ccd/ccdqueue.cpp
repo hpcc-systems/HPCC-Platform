@@ -2863,13 +2863,13 @@ public:
 class RoxieAeronSocketQueueManager : public RoxieSocketQueueManager
 {
 public:
-    RoxieAeronSocketQueueManager(unsigned _numWorkers) : RoxieSocketQueueManager(_numWorkers)
+    RoxieAeronSocketQueueManager(unsigned _numWorkers, bool encryptionInTransit) : RoxieSocketQueueManager(_numWorkers)
     {
         unsigned dataPort = topology->getPropInt("@dataPort", CCD_DATA_PORT);
         SocketEndpoint ep(dataPort, myNode.getIpAddress());
-        receiveManager.setown(createAeronReceiveManager(ep));
+        receiveManager.setown(createAeronReceiveManager(ep, encryptionInTransit));
         assertex(!myNode.getIpAddress().isNull());
-        sendManager.setown(createAeronSendManager(dataPort, fastLaneQueue ? 3 : 2, myNode.getIpAddress()));
+        sendManager.setown(createAeronSendManager(dataPort, fastLaneQueue ? 3 : 2, myNode.getIpAddress(), encryptionInTransit));
     }
 
 };
@@ -3274,7 +3274,7 @@ extern IRoxieOutputQueueManager *createOutputQueueManager(unsigned snifferChanne
     if (localAgent)
         return new RoxieLocalQueueManager(numWorkers);
     else if (useAeron)
-        return new RoxieAeronSocketQueueManager(numWorkers);
+        return new RoxieAeronSocketQueueManager(numWorkers, encrypted);
     else
         return new RoxieUdpSocketQueueManager(snifferChannel, numWorkers, encrypted);
 

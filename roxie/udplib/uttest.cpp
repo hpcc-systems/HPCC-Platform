@@ -180,7 +180,7 @@ public:
         if (useAeron)
         {
             SocketEndpoint myEP(7000, myNode.getIpAddress());
-            rcvMgr.setown(createAeronReceiveManager(myEP));
+            rcvMgr.setown(createAeronReceiveManager(myEP, false));
         }
         else
             rcvMgr.setown(createReceiveManager(7000, 7001, 7002, 7003, multicastIP, udpQueueSize, maxPacketsPerSender, false));
@@ -291,7 +291,7 @@ void testNxN()
         maxPacketsPerSender = udpQueueSize;
     Owned <ISendManager> sendMgr;
     if (useAeron)
-        sendMgr.setown(createAeronSendManager(7000, udpNumQs, myNode.getIpAddress()));
+        sendMgr.setown(createAeronSendManager(7000, udpNumQs, myNode.getIpAddress(), false));
     else
         sendMgr.setown(createSendManager(7000, 7001, 7002, 7003, multicastIP, 100, udpNumQs, NULL, false));
     Receiver receiver;
