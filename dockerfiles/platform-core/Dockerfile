@@ -38,6 +38,7 @@ RUN apt-get install -y \
   libpython3.8 \
   libmemcached11 \
   libmemcachedutil2 \
+  libmysqlclient21 \
   libxslt1.1 \
   locales \
   python \ 
