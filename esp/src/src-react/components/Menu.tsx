@@ -30,6 +30,7 @@ const navLinkGroups: INavLinkGroup[] = [
             { url: "#/workunits/dashboard", name: `${nlsHPCC.Workunits} (D)` },
             { url: "#/workunits/legacy", name: `${nlsHPCC.Workunits} (L)` },
             { url: "#/play", name: nlsHPCC.Playground },
+            { url: "#/play/legacy", name: `${nlsHPCC.Playground} (L)` },
         ]
     },
     {

@@ -38,7 +38,7 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
         Name: {
             label: nlsHPCC.Name, width: 180, sortable: true,
             formatter: function (Name, row) {
-                return `<a href='#/workunits/${wuid}/outputs/${Name}' class='dgrid-row-url'>${Name}</a>`;
+                return `<a href='#/workunits/${row.Wuid}/outputs/${Name}' class='dgrid-row-url'>${Name}</a>`;
             }
         },
         FileName: {
@@ -121,14 +121,16 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
 
     React.useEffect(() => {
         gridStore.setData(results.map(row => {
+            const result: any = row.ResultName;
             const tmp: any = row.ResultViews;
             return {
-                __hpcc_id: row.Name,
-                Name: row.Name,
-                FileName: row.FileName,
-                Value: row.Value,
+                __hpcc_id: result.Name,
+                Name: result.Name,
+                Wuid: row.Wuid,
+                FileName: result.FileName,
+                Value: result.Value,
                 ResultViews: tmp?.View,
-                Sequence: row.Sequence
+                Sequence: result.Sequence
             };
         }));
         refreshTable();
