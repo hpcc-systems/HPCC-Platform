@@ -149,9 +149,10 @@ private:
     std::thread receiveThread;
     std::atomic<bool> running = { true };
     const std::chrono::duration<long, std::milli> idleSleepMs;
+    bool encrypted;
 public:
-    CRoxieAeronReceiveManager(const SocketEndpoint &myEndpoint)
-    : idleSleepMs(aeronIdleSleepMs)
+    CRoxieAeronReceiveManager(const SocketEndpoint &myEndpoint, bool _encrypted)
+    : idleSleepMs(aeronIdleSleepMs), encrypted(_encrypted)
     {
         if (useEmbeddedAeronDriver && !is_running())
         {
@@ -256,7 +257,7 @@ public:
     // Note - some of this code could be in a common base class with udpreceivemanager, but hope to kill that at some point
     virtual IMessageCollator *createMessageCollator(roxiemem::IRowManager *rowManager, ruid_t ruid) override
     {
-        CMessageCollator *msgColl = new CMessageCollator(rowManager, ruid);
+        CMessageCollator *msgColl = new CMessageCollator(rowManager, ruid, encrypted);
         if (udpTraceLevel >= 2)
             DBGLOG("AeronReceiver: createMessageCollator %p %u", msgColl, ruid);
         {
@@ -377,6 +378,7 @@ class CRoxieAeronSendManager : public CInterfaceOf<ISendManager>
     const unsigned numQueues = 0;
     IpMapOf<UdpAeronReceiverEntry> receiversTable;
     const IpAddress myIP;
+    bool encrypted;
 
     std::atomic<unsigned> msgSeq{0};
 
@@ -390,11 +392,12 @@ class CRoxieAeronSendManager : public CInterfaceOf<ISendManager>
         return res;
     }
 public:
-    CRoxieAeronSendManager(unsigned _dataPort, unsigned _numQueues, const IpAddress &_myIP)
+    CRoxieAeronSendManager(unsigned _dataPort, unsigned _numQueues, const IpAddress &_myIP, bool _encrypted)
     : dataPort(_dataPort),
       numQueues(_numQueues),
-      receiversTable([this](const ServerIdentifier &ip) { return new UdpAeronReceiverEntry(ip.getIpAddress(), dataPort, aeron, numQueues);}),
-      myIP(_myIP)
+      receiversTable([this](const ServerIdentifier ip) { return new UdpAeronReceiverEntry(ip.getIpAddress(), dataPort, aeron, numQueues);}),
+      myIP(_myIP),
+      encrypted(_encrypted)
     {
         if (useEmbeddedAeronDriver && !is_running())
         {
@@ -426,17 +429,17 @@ public:
 IMessagePacker *CRoxieAeronSendManager::createMessagePacker(ruid_t ruid, unsigned sequence, const void *messageHeader, unsigned headerSize, const ServerIdentifier &destNode, int queue)
 {
     const IpAddress dest = destNode.getIpAddress();
-    return ::createMessagePacker(ruid, sequence, messageHeader, headerSize, *this, receiversTable[dest], myIP, getNextMessageSequence(), queue);
+    return ::createMessagePacker(ruid, sequence, messageHeader, headerSize, *this, receiversTable[dest], myIP, getNextMessageSequence(), queue, encrypted);
 }
 
-extern UDPLIB_API IReceiveManager *createAeronReceiveManager(const SocketEndpoint &ep)
+extern UDPLIB_API IReceiveManager *createAeronReceiveManager(const SocketEndpoint &ep, bool encrypted)
 {
-    return new CRoxieAeronReceiveManager(ep);
+    return new CRoxieAeronReceiveManager(ep, encrypted);
 }
 
-extern UDPLIB_API ISendManager *createAeronSendManager(unsigned dataPort, unsigned numQueues, const IpAddress &myIP)
+extern UDPLIB_API ISendManager *createAeronSendManager(unsigned dataPort, unsigned numQueues, const IpAddress &myIP, bool encrypted)
 {
-    return new CRoxieAeronSendManager(dataPort, numQueues, myIP);
+    return new CRoxieAeronSendManager(dataPort, numQueues, myIP, encrypted);
 }
 
 #else
@@ -445,12 +448,12 @@ extern UDPLIB_API void setAeronProperties(const IPropertyTree *config)
 {
 }
 
-extern UDPLIB_API IReceiveManager *createAeronReceiveManager(const SocketEndpoint &ep)
+extern UDPLIB_API IReceiveManager *createAeronReceiveManager(const SocketEndpoint &ep, bool encrypted)
 {
     UNIMPLEMENTED;
 }
 
-extern UDPLIB_API ISendManager *createAeronSendManager(unsigned dataPort, unsigned numQueues, const IpAddress &myIP)
+extern UDPLIB_API ISendManager *createAeronSendManager(unsigned dataPort, unsigned numQueues, const IpAddress &myIP, bool encrypted)
 {
     UNIMPLEMENTED;
 }

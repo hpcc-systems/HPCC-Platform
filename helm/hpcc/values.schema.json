@@ -362,6 +362,11 @@
           "description": "which planes (if any) the data is replicated onto (primarily bare metal)",
           "type": "array",
           "items": { "type": "string" }
+        },
+        "labels": {
+          "description": "a list of labels associated with this plane, e.g. lz, data. NB: if blank/unset, treated as if 'data'",
+          "type": "array",
+          "items": { "type": "string" }
         }
       },
       "required": [ "name", "prefix" ],
@@ -635,6 +640,9 @@
         "image": {
           "$ref": "#/definitions/image"
         },
+        "topoServer": {
+          "$ref": "#/definitions/toposerver"
+        },
         "logging": {
           "$ref": "#/definitions/logging"
         },
@@ -656,6 +664,23 @@
         },
         "channelResources": {
           "$ref": "#/definitions/resources"
+        }
+      }
+    },
+    "toposerver": {
+      "type": "object",
+      "properties": {
+        "port": {
+          "type": "integer"
+        },
+        "traceLevel": {
+          "type": "integer"
+        },
+        "replicas": {
+          "type": "integer"
+        },
+        "logging": {
+          "$ref": "#/definitions/logging"
         }
       }
     },

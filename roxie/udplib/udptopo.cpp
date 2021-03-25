@@ -85,7 +85,7 @@ bool ChannelInfo::otherAgentHasPriority(unsigned priorityHash, unsigned otherAge
     return false;
 }
 
-static unsigned *createNewNodeHealthScore(const ServerIdentifier &)
+static unsigned *createNewNodeHealthScore(const ServerIdentifier)
 {
     return new unsigned(initIbytiDelay);
 }

@@ -30,15 +30,18 @@ private:
     msg_map             mapping;  // Note - only accessed from collator thread
     RelaxedAtomic<bool> activity;
     bool                memLimitExceeded;
+    bool                encrypted;
     CriticalSection     queueCrit;
     InterruptableSemaphore sem;
     Linked<roxiemem::IRowManager> rowMgr;
     ruid_t ruid;
-    unsigned totalBytesReceived; // technically should be atomic
+    std::atomic<unsigned> totalBytesReceived = {0};
+    std::atomic<unsigned> totalDuplicates = {0};
+    std::atomic<unsigned> totalResends = {0};
 
     void collate(roxiemem::DataBuffer *dataBuff);
 public:
-    CMessageCollator(roxiemem::IRowManager *_rowMgr, unsigned _ruid);
+    CMessageCollator(roxiemem::IRowManager *_rowMgr, unsigned _ruid, bool encrypted);
     virtual ~CMessageCollator();
 
     virtual ruid_t queryRUID() const override
@@ -47,9 +50,12 @@ public:
     }
 
     virtual unsigned queryBytesReceived() const override;
+    virtual unsigned queryDuplicates() const override;
+    virtual unsigned queryResends() const override;
     virtual IMessageResult *getNextResult(unsigned time_out, bool &anyActivity) override;
     virtual void interrupt(IException *E) override;
 
     bool attach_databuffer(roxiemem::DataBuffer *dataBuff);
     bool attach_data(const void *data, unsigned len);
+    void noteDuplicate(bool isResend);
 };

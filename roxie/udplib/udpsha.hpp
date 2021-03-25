@@ -21,6 +21,10 @@
 #include "jmutex.hpp"
 #include "roxiemem.hpp"
 #include "jcrc.hpp"
+#include <limits>
+
+typedef unsigned sequence_t;
+#define SEQF
 
 extern roxiemem::IDataBufferManager *bufferManager;
 
@@ -29,61 +33,82 @@ typedef bool (*PKT_CMP_FUN) (const void *pkData, const void *key);
 
 // Flag bits in pktSeq field
 #define UDP_PACKET_COMPLETE           0x80000000  // Packet completes a single agent request
-#define UDP_PACKET_RESERVED           0x40000000  // Not used - could move UDP_SEQUENCE_COMPLETE here?
+#define UDP_PACKET_RESENT             0x40000000  // Packet is a repeat of one that the server may have missed
 #define UDP_PACKET_SEQUENCE_MASK      0x3fffffff
 
-struct UdpPacketHeader 
+struct UdpPacketHeader
 {
     unsigned short length;      // total length of packet including the header, data, and meta
     unsigned short metalength;  // length of metadata (comes after header and data)
     ServerIdentifier  node;        // Node this message came from
     unsigned       msgSeq;      // sequence number of messages ever sent from given node, used with ruid to tell which packets are from same message
     unsigned       pktSeq;      // sequence number of this packet within the message (top bit signifies final packet)
+    sequence_t     sendSeq;     // sequence number of this packet among all those send from this node to this target
     // information below is duplicated in the Roxie packet header - we could remove? However, would make aborts harder, and at least ruid is needed at receive end
     ruid_t         ruid;        // The uid allocated by the server to this agent transaction
     unsigned       msgId;       // sub-id allocated by the server to this request within the transaction
 };
 
+constexpr unsigned TRACKER_BITS=1024;      // Power of two recommended
+constexpr unsigned TRACKER_DWORDS=(TRACKER_BITS+63)/64;
+
+// Some more things we can consider:
+// 1. sendSeq gives us some insight into lost packets that might help is get inflight calcuation right (if it is still needed)
+// 2. If we can definitively declare that a packet is lost, we can fail that messageCollator earlier (and thus get the resend going earlier)
+// 3. Worth seeing why resend doesn't use same collator. We could skip sending (though would still need to calculate) the bit we already had...
+
+class PacketTracker
+{
+    // This uses a circular buffer indexed by seq to store information about which packets we have seen
+private:
+    sequence_t base = 0;                           // Sequence number of first packet represented in the array
+    sequence_t hwm = (sequence_t) -1;              // Sequence number of highest sequence number ever seen
+    unsigned __int64 seen[TRACKER_DWORDS] = {0};  // bitmask representing whether we have seen (base+n)
+    void dump() const;
+
+public:
+    // Note that we have seen this packet, and return indicating whether we had already seen it
+    bool noteSeen(UdpPacketHeader &hdr);
+    const PacketTracker copy() const;
+    inline sequence_t lastSeen() const { return hwm; }
+    bool hasSeen(sequence_t seq) const;
+    bool canRecord(sequence_t seq) const;
+    bool hasGaps() const;
+};
+
+using roxiemem::DataBuffer;
+
+// queue_t is used to hold a fifo queue of DataBuffer elements to be sent or collated.
+// Originally implemented as a circular buffer, but we don't want to block adding even if full (we do however want to avoid requesting more if full)
+// so now reimplemented as a single-linked list. There is a field in the DataBuffers that can be used for chaining them together that is used
+// in a few other places, e.g. collator
+
 class queue_t 
 {
+    DataBuffer *head = nullptr;      // We add at tail and remove from head
+    DataBuffer *tail = nullptr;
 
-    class queue_element 
-    {
-    public:
-        roxiemem::DataBuffer  *data;
-        queue_element() 
-        {
-            data = NULL;
-        }
-    };
-
-    queue_element   *elements;
-    unsigned int    element_count;
+    unsigned count = 0;
+    unsigned limit = 0;
     
-    unsigned        first;
-    unsigned        last;
     CriticalSection c_region;
-    int             active_buffers;
-    int             queue_size;
     InterruptableSemaphore data_avail;
-    Semaphore       free_space;
-    Semaphore       free_sl;
-    unsigned        signal_free_sl;
-
-    void removeElement(int ix);
+    Semaphore       free_sl;              // Signalled when (a) someone is waiting for it and (b) count changes from >= limit to < limit
+    unsigned        signal_free_sl = 0;   // Number of people waiting in free_sl. Only updated within critical section
     
 public: 
     void interrupt();
-    void pushOwn(roxiemem::DataBuffer *buffer);
-    roxiemem::DataBuffer *pop(bool block);
+    void pushOwn(DataBuffer *buffer);
+    DataBuffer *pop(bool block);
     bool dataQueued(const void *key, PKT_CMP_FUN pkCmpFn);
     unsigned removeData(const void *key, PKT_CMP_FUN pkCmpFn);
-    int  free_slots(); //block if no free slots
-    void set_queue_size(unsigned int queue_size); //must be called immediately after constructor if default constructor is used
+    unsigned available();                // non-blocking
+    int  free_slots();                   // block if no free slots
+    void set_queue_size(unsigned limit); //must be called immediately after constructor if default constructor is used
     queue_t(unsigned int queue_size);
-    queue_t();
+    queue_t() {};
     ~queue_t();
-    inline int capacity() const { return queue_size; }
+    inline int capacity() const { return limit; }
 };
 
 
@@ -203,13 +228,17 @@ struct UdpPermitToSendMsg
 {
     flowType::flowCmd cmd;
     unsigned short max_data;
+    sequence_t flowSeq;
     ServerIdentifier destNode;
+    PacketTracker seen;
 };
 
 struct UdpRequestToSendMsg
 {
     flowType::flowCmd cmd;
     unsigned short packets;
+    sequence_t sendSeq;
+    sequence_t flowSeq;
     ServerIdentifier sourceNode;
 };
 
@@ -232,4 +261,6 @@ inline bool checkTraceLevel(unsigned category, unsigned level)
 {
     return (udpTraceLevel >= level);
 }
+
+
 #endif

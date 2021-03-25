@@ -130,20 +130,21 @@ public:
 
 static class CDaliPublisher
 {
+protected:
+    std::atomic<bool> running{false};
 public:
     virtual ISubscriptionManager *queryManager(unsigned tag) = 0;
     virtual void stop() = 0;
     virtual ~CDaliPublisher() {}
 } *DaliPublisher;
 
-class CDaliPublisherServer: public IDaliServer, public Thread, implements CDaliPublisher, implements IConnectionMonitor
+class CDaliPublisherServer: public IDaliServer, public Thread, public CDaliPublisher, implements IConnectionMonitor
 {
     ICopyArrayOf<CSubscriptionStub> stubs;
     IArrayOf<ISubscriptionManager> managers;
     UnsignedArray tags;
     CheckedCriticalSection tagsect;
     CheckedCriticalSection stubsect;
-    bool stopped;
     ReadWriteLock processlock;
 public:
     IMPLEMENT_IINTERFACE;
@@ -151,17 +152,17 @@ public:
     CDaliPublisherServer()
         : Thread("CDaliPublisherServer")
     {
-        stopped = true;
     }
 
     ~CDaliPublisherServer()
     {
-        stopped = true;
+        running = false;
         managers.kill();
     }
 
     void start()
     {
+        running = true;
         Thread::start();
     }
     void ready()
@@ -179,8 +180,9 @@ public:
 
     void stop()
     {
-        if (!stopped) {
-            stopped = true;
+        if (running)
+        {
+            running = false;
             queryCoven().cancel(RANK_ALL,MPTAG_DALI_SUBSCRIPTION_REQUEST);
         }
         processlock.unlockWrite();
@@ -192,9 +194,10 @@ public:
         ICoven &coven=queryCoven();
         CMessageHandler<CDaliPublisherServer> handler("CDaliPublisherServer",this,&CDaliPublisherServer::processMessage,NULL, 100);
         CMessageBuffer mb;
-        stopped = false;
-        while (!stopped) {
-            try {
+        while (running)
+        {
+            try
+            {
                 mb.clear();
 #ifdef TRACE_QWAITING
                 unsigned waiting = coven.probe(RANK_ALL,MPTAG_DALI_SUBSCRIPTION_REQUEST,NULL);
@@ -204,7 +207,7 @@ public:
                 if (coven.recv(mb,RANK_ALL,MPTAG_DALI_SUBSCRIPTION_REQUEST,NULL))
                     handler.handleMessage(mb);
                 else
-                    stopped = true;
+                    running = false;
             }
             catch (IException *e)
             {
@@ -218,7 +221,7 @@ public:
     void processMessage(CMessageBuffer &mb)
     {
         ReadLockBlock block(processlock);
-        if (stopped)
+        if (!running)
             return;
         ICoven &coven=queryCoven();
         int fn;
@@ -543,15 +546,13 @@ class CDaliPublisherClient: public Thread, public CDaliPublisher
     CIArrayOf<CDaliSubscriptionManagerStub> managers;
     UnsignedArray tags;
     CheckedCriticalSection tagsect;
-    bool stopped;
-
 
 public:
 
     CDaliPublisherClient()
         :   Thread("CDaliPublisherClient")
     {
-        stopped = true;
+        running = true;
         start();
     }
 
@@ -576,12 +577,12 @@ public:
     {
         ICoven &coven=queryCoven();
         CMessageHandler<CDaliPublisherClient> handler("CDaliPublisherClientMessages",this,&CDaliPublisherClient::processMessage);
-        stopped = false;
         CMessageBuffer mb;
-        stopped = false;
-        while (!stopped) {
+        while (running)
+        {
             mb.clear();
-            try {
+            try
+            {
 #ifdef TRACE_QWAITING
                 unsigned waiting = coven.probe(RANK_ALL,MPTAG_DALI_SUBSCRIPTION_FULFILL,NULL);
                 if ((waiting!=0)&&(waiting%10==0))
@@ -590,12 +591,13 @@ public:
                 if (coven.recv(mb,RANK_ALL,MPTAG_DALI_SUBSCRIPTION_FULFILL,NULL))
                     handler.handleMessage(mb);
                 else
-                    stopped = true;
+                    running = false;
             }
-            catch (IException *e) {
+            catch (IException *e)
+            {
                 EXCLOG(e,"CDaliPublisherClient::run");
                 e->Release();
-                stopped = true;
+                running = false;
             }
         }
         return 0;
@@ -623,16 +625,15 @@ public:
     {
     }
 
-
     void stop()
     {
-        if (!stopped) {
-            stopped = true;
+        if (running)
+        {
+            running = false;
             queryCoven().cancel(RANK_ALL,MPTAG_DALI_SUBSCRIPTION_FULFILL);
         }
         join();
     }
-
 };
 
 

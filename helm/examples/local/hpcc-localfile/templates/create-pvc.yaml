@@ -2,10 +2,10 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ printf "%s-%s-pvc" $plane.name $.Release.Name }}
+  name: {{ printf "%s-%s-pvc" $plane.name (include "hpcc-localfile.fullname" $) }}
 spec:
   storageClassName: "manual"
-  volumeName: {{ printf "%s-%s-pv" $plane.name $.Release.Name }}
+  volumeName: {{ printf "%s-%s-pv" $plane.name (include "hpcc-localfile.fullname" $) }}
   accessModes:
     - {{ $plane.rwmany | default false | ternary "ReadWriteMany" "ReadWriteOnce" }}
   resources:
@@ -13,6 +13,6 @@ spec:
       storage: {{ $plane.size }}
   selector:
     matchLabels:
-      store: {{ printf "%s-%s-pv" $plane.name $.Release.Name }}
+      store: {{ printf "%s-%s-pv" $plane.name (include "hpcc-localfile.fullname" $) }}
 ---
 {{ end }}

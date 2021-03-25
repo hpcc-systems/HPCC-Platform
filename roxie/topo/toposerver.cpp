@@ -269,7 +269,7 @@ void doServer(ISocket *socket)
                 // Completely ignore an exception here - someone that did not want a reply may have already closed the socket
                 e->Release();
             }
-            if (traceLevel)
+            if (traceLevel>1)
                 reportTopology();
         }
         catch(IException * e)
@@ -283,9 +283,9 @@ void doServer(ISocket *socket)
 
 static constexpr const char * defaultYaml = R"!!(
   version: "1.0"
-  roxie:
+  toposerver:
     logdir: ""
-    topoport: 9004
+    port: 9004
     stdlog: true
     traceLevel: 1
 )!!";
@@ -329,9 +329,9 @@ int main(int argc, const char *argv[])
         }
 
         // locate settings xml file in runtime dir
-        Owned<IPropertyTree> topology = loadConfiguration(defaultYaml, argv, "roxie", "ROXIE", nullptr, nullptr);
+        Owned<IPropertyTree> topology = loadConfiguration(defaultYaml, argv, "toposerver", "TOPOSERVER", nullptr, nullptr);
         traceLevel = topology->getPropInt("@traceLevel", 1);
-        topoPort = topology->getPropInt("@topoport", TOPO_SERVER_PORT);
+        topoPort = topology->getPropInt("@port", TOPO_SERVER_PORT);
 #ifndef _CONTAINERIZED
         if (topology->getPropBool("@stdlog", traceLevel != 0))
             queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_thread | MSGFIELD_prefix);
@@ -351,7 +351,7 @@ int main(int argc, const char *argv[])
 #endif
         Owned<ISocket> socket = ISocket::create(topoPort);
         if (traceLevel)
-            DBGLOG("Topology server starting");
+            DBGLOG("Topology server starting on port %u", topoPort);
 
         writeSentinelFile(sentinelFile);
         doServer(socket);
