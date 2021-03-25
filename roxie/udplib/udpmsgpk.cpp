@@ -28,6 +28,8 @@
 #include "jthread.hpp"
 #include "jlog.hpp"
 #include "jisem.hpp"
+#include "jencrypt.hpp"
+
 #include "udplib.hpp"
 #include "udptrr.hpp"
 #include "udptrs.hpp"
@@ -55,6 +57,10 @@ int g_sequence_compare(const void *arg1, const void *arg2 )
     return 0;
 }
 
+static byte key[32] = {
+    0xf7, 0xe8, 0x79, 0x40, 0x44, 0x16, 0x66, 0x18, 0x52, 0xb8, 0x18, 0x6e, 0x76, 0xd1, 0x68, 0xd3,
+    0x87, 0x47, 0x01, 0xe6, 0x66, 0x62, 0x2f, 0xbe, 0xc1, 0xd5, 0x9f, 0x4a, 0x53, 0x27, 0xae, 0xa1,
+};
 
 class PackageSequencer : public CInterface, implements IInterface
 {
@@ -64,21 +70,21 @@ class PackageSequencer : public CInterface, implements IInterface
     unsigned metaSize;
     unsigned headerSize;
     const void *header;
-#ifdef _DEBUG
-    unsigned numPackets = 0;
     unsigned maxSeqSeen = 0;
+    unsigned numPackets = 0;
+#ifdef _DEBUG
     unsigned scans = 0;
     unsigned overscans = 0;
 #endif
 
     MemoryBuffer metadata;
     InterruptableSemaphore dataAvailable; // MORE - need to work out when to interrupt it!
-
+    bool encrypted = false;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    PackageSequencer() 
+    PackageSequencer(bool _encrypted) : encrypted(_encrypted)
     {
         if (checkTraceLevel(TRACE_MSGPACK, 3))
             DBGLOG("UdpCollator: PackageSequencer::PackageSequencer this=%p", this);
@@ -125,21 +131,26 @@ public:
         return ret;
     }
 
-    bool insert(DataBuffer *dataBuff)  // returns true if message is complete.
+    bool insert(DataBuffer *dataBuff, std::atomic<unsigned> &duplicates, std::atomic<unsigned> &resends)  // returns true if message is complete.
     {
         bool res = false;
         assert(dataBuff->msgNext == NULL);
         UdpPacketHeader *pktHdr = (UdpPacketHeader*) dataBuff->data;
         unsigned pktseq = pktHdr->pktSeq;
-#ifdef _DEBUG
         if ((pktseq & UDP_PACKET_SEQUENCE_MASK) > maxSeqSeen)
             maxSeqSeen = pktseq & UDP_PACKET_SEQUENCE_MASK;
-#endif
+        if (pktseq & UDP_PACKET_RESENT)
+        {
+            pktseq &= ~UDP_PACKET_RESENT;
+            pktHdr->pktSeq = pktseq;
+            resends++;
+        }
+
         if (checkTraceLevel(TRACE_MSGPACK, 5))
         {
             StringBuffer s;
-            DBGLOG("UdpCollator: PackageSequencer::insert ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%s dataBuffer=%p this=%p",
-                    pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->node.getTraceText(s).str(), dataBuff, this);
+            DBGLOG("UdpCollator: PackageSequencer::insert ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X sendSeq=%" SEQF "u node=%s dataBuffer=%p this=%p",
+                    pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->sendSeq, pktHdr->node.getTraceText(s).str(), dataBuff, this);
         }
 
         // Optimize the (very) common case where I need to add to the end
@@ -162,8 +173,9 @@ public:
                 {
                     // discard duplicated incoming packet - should be uncommon unless we requested a resend for a packet already in flight
                     if (checkTraceLevel(TRACE_MSGPACK, 5))
-                        DBGLOG("UdpCollator: Discarding duplicate incoming packet");
+                        DBGLOG("UdpCollator: Discarding duplicate incoming packet %u (we have all up to %u)", pktHdr->pktSeq, oldHdr->pktSeq);
                     dataBuff->Release();
+                    duplicates++;
                     return false;
                 }
                 finger = lastContiguousPacket->msgNext;
@@ -176,7 +188,7 @@ public:
             }
             while (finger)
             {
-    #ifdef _DEBUG
+#ifdef _DEBUG
                 scans++;
                 if (scans==1000000)
                 {
@@ -191,13 +203,13 @@ public:
                         DBGLOG("lastContiguousPacket is NULL , last packet seen is %u", pktHdr->pktSeq & UDP_PACKET_SEQUENCE_MASK);
                     scans = 0;
                 }
-    #endif
+#endif
                 UdpPacketHeader *oldHdr = (UdpPacketHeader*) finger->data;
                 if (pktHdr->pktSeq == oldHdr->pktSeq)
                 {
                     // discard duplicated incoming packet - should be uncommon unless we requested a resend for a packet already in flight
                     if (checkTraceLevel(TRACE_MSGPACK, 5))
-                        DBGLOG("UdpCollator: Discarding duplicate incoming packet");
+                        DBGLOG("UdpCollator: Discarding duplicate incoming packet %u", pktHdr->pktSeq);
                     dataBuff->Release();
                     return false;
                 }
@@ -227,6 +239,16 @@ public:
 #ifdef _DEBUG
         numPackets++;
 #endif
+        // Now that we know we are keeping it, decrypt it
+        // MORE - could argue that we would prefer to wait even longer - until we know consumer wants it - but that might be complex
+        if (encrypted)
+        {
+            // MORE - This is decrypting in-place. Is that ok?? Seems to be with the code we currently use, but if that changed
+            // might need to rethink this
+            size_t decryptedSize = aesDecrypt(key, sizeof(key), pktHdr+1, pktHdr->length-sizeof(UdpPacketHeader), pktHdr+1, DATA_PAYLOAD-sizeof(UdpPacketHeader));
+            pktHdr->length = decryptedSize + sizeof(UdpPacketHeader);
+        }
+
         if (prev == lastContiguousPacket)
         {
             unsigned prevseq;
@@ -297,12 +319,16 @@ public:
         return headerSize;
     }
 
-#ifdef _DEBUG
     void dump()
     {
         DBGLOG("Contains %u packets, lastSeq = %u", numPackets, maxSeqSeen);
+        if (lastContiguousPacket)
+        {
+            UdpPacketHeader *hdr = (UdpPacketHeader*) lastContiguousPacket->data;
+            DBGLOG("lastContiguousPacket is %u %" SEQF "u", hdr->pktSeq, hdr->sendSeq);
+        }
     }
-#endif
+
 };
 
 // MessageResult ====================================================================================
@@ -492,7 +518,7 @@ PUID GETPUID(DataBuffer *dataBuff)
     return (((PUID) ip4) << 32) | (PUID) pktHdr->msgSeq;
 }
 
-CMessageCollator::CMessageCollator(IRowManager *_rowMgr, unsigned _ruid) : rowMgr(_rowMgr), ruid(_ruid)
+CMessageCollator::CMessageCollator(IRowManager *_rowMgr, unsigned _ruid, bool _encrypted) : rowMgr(_rowMgr), ruid(_ruid), encrypted(_encrypted)
 {
     if (checkTraceLevel(TRACE_MSGPACK, 3))
         DBGLOG("UdpCollator: CMessageCollator::CMessageCollator rowMgr=%p this=%p ruid=" RUIDF "", _rowMgr, this, ruid);
@@ -513,9 +539,27 @@ CMessageCollator::~CMessageCollator()
     }
 }
 
+void CMessageCollator::noteDuplicate(bool isResend)
+{
+    totalDuplicates++;
+    if (isResend)
+        totalResends++;
+}
+
+
 unsigned CMessageCollator::queryBytesReceived() const
 {
-    return totalBytesReceived; // Arguably should lock, but can't be bothered. Never going to cause an issue in practice.
+    return totalBytesReceived;
+}
+
+unsigned CMessageCollator::queryDuplicates() const
+{
+    return totalDuplicates;
+}
+
+unsigned CMessageCollator::queryResends() const
+{
+    return totalResends;
 }
 
 bool CMessageCollator::attach_databuffer(DataBuffer *dataBuff)
@@ -566,15 +610,15 @@ bool CMessageCollator::attach_data(const void *data, unsigned len)
 void CMessageCollator::collate(DataBuffer *dataBuff)
 {
     PUID puid = GETPUID(dataBuff);
-    // MORE - I think we leak a PackageSequencer for messages that we only receive parts of - maybe only an issue for "catchall" case
+    // MORE - we leak (at least until query terminates) a PackageSequencer for messages that we only receive parts of - maybe only an issue for "catchall" case
     PackageSequencer *pkSqncr = mapping.getValue(puid);
     if (!pkSqncr)
     {
-        pkSqncr = new PackageSequencer;
+        pkSqncr = new PackageSequencer(encrypted);
         mapping.setValue(puid, pkSqncr);
         pkSqncr->Release();
     }
-    bool isComplete = pkSqncr->insert(dataBuff);
+    bool isComplete = pkSqncr->insert(dataBuff, totalDuplicates, totalResends);
     if (isComplete)
     {
         pkSqncr->Link();
@@ -640,7 +684,3 @@ void CMessageCollator::interrupt(IException *E)
 // ====================================================================================
 //
 
-extern CMessageCollator *createCMessageCollator(IRowManager *rowManager, ruid_t ruid)
-{
-    return new CMessageCollator(rowManager, ruid);
-}
