@@ -53,15 +53,14 @@ define([
                         Id: { label: this.i18n.Part, width: 40 },
                         Copy: { label: this.i18n.Copy, width: 40 },
                         Ip: { label: this.i18n.IP },
-                        Cluster: { label: this.i18n.Cluster, width: 108 },
+                        Cluster: { label: this.i18n.Cluster, width: 120 },
                         PartsizeInt64: {
                             label: this.i18n.Size,
-                            width: 120,
+                            width: 180,
                             formatter: function (intsize, row) {
                                 return row.Partsize;
                             }
-                        },
-                        ActualSize: { label: this.i18n.ActualSize, width: 120 }
+                        }
                     },
                     store: this.filePartsStore
                 }, this.id + "FilePartsGrid");
