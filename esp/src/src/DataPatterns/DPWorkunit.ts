@@ -41,11 +41,11 @@ export class DPWorkunit {
     private _wu: Workunit;
     private _resultPromise;
 
-    constructor(nodeGroup: string, name: string) {
+    constructor(nodeGroup: string, name: string, modified: string) {
         this._lf = LogicalFile.attach({ baseUrl: "" }, nodeGroup, name);
         this._store = globalKeyValStore();
         this._storeID = `dp-${nodeGroup}-${name}`;
-        this._storeWuidID = `${this._storeID}-wuid`;
+        this._storeWuidID = `${this._storeID}-${modified}-wuid`.split(" ").join("_");
     }
 
     clearCache() {
@@ -58,6 +58,8 @@ export class DPWorkunit {
             if (this._wu && this._wu.Wuid === wuid) {
                 return this._wu;
             }
+            //  Clean out old key (HPCC-25544)  ---
+            this._store.delete(`${this._storeID}-wuid`);
             this.clearCache();
             return wuid && Workunit.attach({ baseUrl: "" }, wuid);
         }).then(wu => {

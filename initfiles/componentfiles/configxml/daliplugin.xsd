@@ -82,14 +82,6 @@
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="entrypoint" type="xs:string" use="optional" default="createWorkUnitFactory">
-              <xs:annotation>
-                <xs:appinfo>
-                  <tooltip>Name for this dali server plugin</tooltip>
-                  <required>true</required>
-                </xs:appinfo>
-              </xs:annotation>
-            </xs:attribute>
             <xs:sequence>
                 <xs:element name="Option" maxOccurs="unbounded">
                     <xs:annotation>

@@ -52,6 +52,8 @@ For example:
 
 ##N1QL Query Examples
 
+Note that only a single N1QL statement embedded function is supported at this time.
+
                 //Creates a primary index on 'mybucket' bucket
                 createprimeindex() := EMBED(couchbase : server(server), port(port), bucket('mybucket'))
                     CREATE PRIMARY INDEX ON iot;

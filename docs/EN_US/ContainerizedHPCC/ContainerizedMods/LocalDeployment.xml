@@ -5,8 +5,7 @@
   <title>Local Deployment (Development and Testing)</title>
 
   <para>While there are many ways to install a local single node HPCC Systems
-  Platform, this section focuses on using Docker Desktop with WSL 2 or
-  Hyper-V.</para>
+  Platform, this section focuses on using Docker Desktop.</para>
 
   <sect1 id="prereq">
     <title>Prerequisites</title>
@@ -46,6 +45,22 @@
         <para>Install Helm</para>
       </listitem>
     </itemizedlist>
+
+    <para>OR</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Install Docker Desktop on macOS</para>
+      </listitem>
+
+      <listitem>
+        <para>Enable Kubernetes in Docker Desktop</para>
+      </listitem>
+
+      <listitem>
+        <para>Install Helm </para>
+      </listitem>
+    </itemizedlist>
   </sect1>
 
   <sect1 id="addrepo">
@@ -75,11 +90,26 @@
     <para>Expected response:</para>
 
     <para><programlisting>NAME: mycluster
-LAST DEPLOYED: Wed Jan 20 11:50:56 2021
+LAST DEPLOYED: Tue Mar 23 13:26:55 2021
 NAMESPACE: default
 STATUS: deployed
 REVISION: 1
-TEST SUITE: None</programlisting></para>
+TEST SUITE: None
+NOTES:
+Thank you for installing the HPCC chart.
+
+This chart has defined the following HPCC components:
+  dali.mydali
+  eclagent.hthor
+  eclagent.roxie-workunit
+  eclccserver.myeclccserver
+  esp.eclwatch
+  esp.eclservices
+  esp.eclqueries
+  esp.esdl-sandbox
+  esp.sql2ecl
+  roxie.roxie
+  thor.thor</programlisting></para>
 
     <para><emphasis role="bold">To check status:</emphasis></para>
 
@@ -87,14 +117,27 @@ TEST SUITE: None</programlisting></para>
 
     <para>Expected response:</para>
 
-    <para><programlisting>NAME                            READY STATUS   RESTARTS AGE
-hthor-56bd86f4b9-h5746          1/1   Running  0        30s
-mydali-7f669fd7d6-frjbh         1/1   Running  0        30s
-myeclccserver-8665655fc8-krh8r  1/1   Running  0        30s
-myesp-77f4c69ddf-chjrn          1/1   Running  0        30s
-roxie-bb8dcdcd9-6gmlj           1/1   Running  0        30s
-thor-agent-797fdf698f-lmlzw     1/1   Running  0        30s
-thor-thoragent-974c58fbb-c5cd4  1/1   Running  0        30s</programlisting></para>
+    <para><programlisting>NAME                                          READY   STATUS    RESTARTS   AGE
+eclqueries-7fd94d77cb-m7lmb                   1/1     Running   0          2m6s
+eclservices-b57f9b7cc-bhwtm                   1/1     Running   0          2m6s
+eclwatch-599fb7845-2hq54                      1/1     Running   0          2m6s
+esdl-sandbox-848b865d46-9bv9r                 1/1     Running   0          2m6s
+hthor-745f598795-ql9dl                        1/1     Running   0          2m6s
+mydali-6b844bfcfb-jv7f6                       2/2     Running   0          2m6s
+myeclccserver-75bcc4d4d-gflfs                 1/1     Running   0          2m6s
+roxie-agent-1-77f696466f-tl7bb                1/1     Running   0          2m6s
+roxie-agent-1-77f696466f-xzrtf                1/1     Running   0          2m6s
+roxie-agent-2-6dd45b7f9d-m22wl                1/1     Running   0          2m6s
+roxie-agent-2-6dd45b7f9d-xmlmk                1/1     Running   0          2m6s
+roxie-toposerver-695fb9c5c7-9lnp5             1/1     Running   0          2m6s
+roxie-workunit-d7446699f-rvf2z                1/1     Running   0          2m6s
+sasha-dfurecovery-archiver-78c47c4db7-k9mdz   1/1     Running   0          2m6s
+sasha-dfuwu-archiver-576b978cc7-b47v7         1/1     Running   0          2m6s
+sasha-file-expiry-8496d87879-xct7f            1/1     Running   0          2m6s
+sasha-wu-archiver-5f64594948-xjblh            1/1     Running   0          2m6s
+sql2ecl-5c8c94d55-tj4td                       1/1     Running   0          2m6s
+thor-eclagent-6b8f564f9c-qnczz                1/1     Running   0          2m6s
+thor-thoragent-56d788869f-7trxk               1/1     Running   0          2m6s</programlisting></para>
 
     <para><variablelist>
         <varlistentry>
@@ -134,16 +177,18 @@ thor-thoragent-974c58fbb-c5cd4  1/1   Running  0        30s</programlisting></pa
 
     <para>Expected response:</para>
 
-    <para><programlisting>NAME             TYPE         CLUSTER-IP      EXTERNAL-IP  PORT(S) AGE
-eclqueries       LoadBalancer 10.108.171.35   localhost    8002:31615/TCP 3m40s
-eclservices      ClusterIP    10.107.121.158  &lt;none&gt;       8010/TCP 3m40s
-eclwatch         LoadBalancer 10.100.81.69    localhost    8010:30173/TCP 3m40s
-esdl-sandbox     LoadBalancer 10.100.194.33   localhost    8899:30705/TCP 3m40s
-kubernetes       ClusterIP    10.96.0.1       &lt;none&gt;       443/TCP 20h
-mydali           ClusterIP    10.102.80.158   &lt;none&gt;       7070/TCP 3m40s
-roxie            LoadBalancer 10.100.134.125  localhost    9876:30480/TCP 3m40s
-roxie-toposerver ClusterIP    None            &lt;none&gt;       9004/TCP 3m40s
-sql2ecl          LoadBalancer 10.107.177.180  localhost    8510:30054/TCP 3m40s</programlisting></para>
+    <para><programlisting>NAME                  TYPE         CLUSTER-IP      EXTERNAL-IP  PORT(S)           AGE
+eclqueries            LoadBalancer 10.108.171.35   localhost    8002:31615/TCP    2m6s
+eclservices           ClusterIP    10.107.121.158  &lt;none&gt;       8010/TCP          2m6s
+eclwatch              LoadBalancer 10.100.81.69    localhost    8010:30173/TCP    2m6s
+esdl-sandbox          LoadBalancer 10.100.194.33   localhost    8899:30705/TCP    2m6s
+kubernetes            ClusterIP    10.96.0.1       &lt;none&gt;       443/TCP           2m6s
+mydali                ClusterIP    10.102.80.158   &lt;none&gt;       7070/TCP          2m6s
+roxie                 LoadBalancer 10.100.134.125  localhost    9876:30480/TCP    2m6s
+roxie-toposerver      ClusterIP    None            &lt;none&gt;       9004/TCP          2m6s
+sasha-dfuwu-archiver  ClusterIP    10.110.200.110  &lt;none&gt;       8877/TCP          2m6s
+sasha-wu-archiver     ClusterIP    10.111.34.240   &lt;none&gt;       8877/TCP          2m6s
+sql2ecl               LoadBalancer 10.107.177.180  localhost    8510:30054/TCP    2m6s</programlisting></para>
 
     <para>Notice the <emphasis role="strong">eclwatch</emphasis> service is
     running on <emphasis role="strong">localhost:8010</emphasis>. Use that

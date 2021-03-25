@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Breadcrumb, DefaultPalette, FontSizes, IBreadcrumbItem, IBreadcrumbStyleProps, IBreadcrumbStyles, Image, IStyleFunctionOrObject, Link, SearchBox, Stack, Toggle } from "@fluentui/react";
+import { Breadcrumb, ContextualMenuItemType, DefaultPalette, FontSizes, IBreadcrumbItem, IBreadcrumbStyleProps, IBreadcrumbStyles, IconButton, IContextualMenuProps, IIconProps, Image, IStyleFunctionOrObject, Link, SearchBox, Stack, Toggle } from "@fluentui/react";
 
 import nlsHPCC from "src/nlsHPCC";
 
@@ -27,6 +27,35 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
         return retVal;
     })];
 
+    const advMenuProps: IContextualMenuProps = {
+        items: [
+            { key: "errors", href: "#/errors", text: nlsHPCC.ErrorWarnings, },
+            { key: "divider_1", itemType: ContextualMenuItemType.Divider },
+            { key: "banner", text: nlsHPCC.SetBanner },
+            { key: "toolbar", text: nlsHPCC.SetToolbar },
+            { key: "divider_2", itemType: ContextualMenuItemType.Divider },
+            { key: "docs", href: "https://hpccsystems.com/training/documentation/", text: nlsHPCC.Documentation, target: "_blank" },
+            { key: "downloads", href: "https://hpccsystems.com/download", text: nlsHPCC.Downloads, target: "_blank" },
+            { key: "releaseNotes", href: "https://hpccsystems.com/download/release-notes", text: nlsHPCC.ReleaseNotes, target: "_blank" },
+            { key: "additionalResources", text: nlsHPCC.AdditionalResources, subMenuProps: {
+                items: [
+                    { key: "redBook", href: "https://wiki.hpccsystems.com/display/hpcc/HPCC+Systems+Red+Book", text: nlsHPCC.RedBook, target: "_blank" },
+                    { key: "forums", href: "https://hpccsystems.com/bb/", text: nlsHPCC.Forums, target: "_blank" },
+                    { key: "issues", href: "https://track.hpccsystems.com/issues/", text: nlsHPCC.IssueReporting, target: "_blank" },
+                ]
+            }},
+            { key: "divider_3", itemType: ContextualMenuItemType.Divider },
+            { key: "lock", text: nlsHPCC.Lock },
+            { key: "logout", text: nlsHPCC.Logout },
+            { key: "divider_4", itemType: ContextualMenuItemType.Divider },
+            { key: "config", text: nlsHPCC.Configuration },
+            { key: "about", text: nlsHPCC.About },
+        ],
+        directionalHintFixed: true
+    };
+
+    const advMenuIconProps: IIconProps = { iconName: "ContextMenu" };
+
     return <>
         <Stack tokens={{ padding: 9, childrenGap: 9 }} >
             <Stack horizontal disableShrink horizontalAlign="space-between">
@@ -50,6 +79,9 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                             offText="Light Mode"
                             onChange={() => setUseDarkMode(!useDarkMode)}
                         />
+                    </Stack.Item>
+                    <Stack.Item>
+                        <IconButton title="Advanced" ariaLabel="Advanced" menuProps={ advMenuProps } iconProps={ advMenuIconProps } />
                     </Stack.Item>
                 </Stack>
             </Stack>

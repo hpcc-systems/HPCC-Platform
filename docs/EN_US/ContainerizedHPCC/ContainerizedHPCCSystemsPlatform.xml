@@ -69,7 +69,7 @@
     deployments. This is useful for cloud-based deployments (large or small)
     or local testing/development deployments.</para>
 
-    <para>Docker containers managed by Kubernetes (k8s) is a new target
+    <para>Docker containers managed by Kubernetes (K8s) is a new target
     operating environment, alongside continued support for traditional “bare
     metal” installations using .deb or .rpm installer files. Support for
     traditional installers continues and that type of deployment is viable for
@@ -134,8 +134,8 @@
         process and specifying on which physical machines they should
         run.</para>
 
-        <para>In a Kubernetes (k8s) world, this is managed dynamically by the
-        K8s system itself (and can be changed dynamically as the system
+        <para>In a Kubernetes world, this is managed dynamically by the K8s
+        system itself (and can be changed dynamically as the system
         runs).</para>
 
         <para>Additionally, a containerized system is much simpler to manage
@@ -151,7 +151,7 @@
         <para>In the containerized world, the information that the operator
         needs to supply to configure an HPCC Systems environment is greatly
         reduced. There is no need to specify any information about what
-        machines are in use by what process, as mentioned above, but there is
+        machines are in use by what process, as mentioned above, and there is
         also no need to change a lot of options that might be dependent on the
         operating environment, since much of that was standardized at the time
         the container images were built.</para>
@@ -183,18 +183,18 @@
 
         <para>For example, an eclccserver component launches a stub requiring
         minimal resources, where the sole task is to watch for workunits
-        submitted for compilation and launch an independent k8s job to perform
+        submitted for compilation and launch an independent K8s job to perform
         the actual compile.</para>
 
         <para>Similarly, the eclagent component is also a stub that launches a
-        k8s job when a workunit is submitted and the Thor stub starts up a
+        K8s job when a workunit is submitted and the Thor stub starts up a
         Thor cluster only when required. Using this design, not only does the
         capacity of the system automatically scale up to use as many pods as
         needed to handle the submitted load, it scales down to use minimal
         resources (as little as a fraction of a single node) during idle times
         when waiting for jobs to be submitted.</para>
 
-        <para>ESP and Dali components are always-on as long as the k8s cluster
+        <para>ESP and Dali components are always-on as long as the K8s cluster
         is started--it isn’t feasible to start and stop them on demand without
         excessive latency. However, ESP can be scaled up and down dynamically
         to run as many instances needed to handle the current load.</para>
