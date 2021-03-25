@@ -20,6 +20,7 @@
 #include "build-config.h"
 
 #include "jisem.hpp"
+#include "jhash.hpp"
 #include "jsort.hpp"
 #include "jregexp.hpp"
 
@@ -423,6 +424,7 @@ class CRoxiePackageNode : extends CPackageNode, implements IRoxiePackage
 {
 protected:
     static CResolvedFileCache daliFiles;
+    static CriticalSection daliLookupCrits[NUM_DALI_CRITS];
     mutable CResolvedFileCache fileCache;
     IArrayOf<IResolvedFile> files;  // Used when preload set
     IArrayOf<IKeyArray> keyArrays;  // Used when preload set
@@ -453,6 +455,8 @@ protected:
     // Use dali to resolve subfile into physical file info
     static IResolvedFile *resolveLFNusingDaliOrLocal(const char *fileName, bool useCache, bool cacheResult, bool writeAccess, bool alwaysCreate, bool resolveLocal, bool isPrivilegedUser)
     {
+        unsigned hash = hashc((const unsigned char *) fileName, strlen(fileName), 0x811C9DC5);
+        CriticalBlock b(daliLookupCrits[hash % NUM_DALI_CRITS]);
         // MORE - look at alwaysCreate... This may be useful to implement earlier locking semantics.
         if (traceLevel > 9)
             DBGLOG("resolveLFNusingDaliOrLocal %s %d %d %d %d", fileName, useCache, cacheResult, writeAccess, alwaysCreate);
@@ -777,6 +781,7 @@ public:
 };
 
 CResolvedFileCache CRoxiePackageNode::daliFiles;
+CriticalSection CRoxiePackageNode::daliLookupCrits[NUM_DALI_CRITS];
 
 typedef CResolvedPackage<CRoxiePackageNode> CRoxiePackage;
 

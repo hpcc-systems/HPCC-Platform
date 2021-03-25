@@ -113,18 +113,22 @@ define([
         },
 
         _onDataPatterns: function (args) {
+            this.updateDataPatterns();
+        },
+
+        //  Implementation  ---
+        updateDataPatterns() {
             var context = this;
             if (this._logicalFile) {
                 var wuPromise = this.dataPatternsButton.get("checked") ? this._logicalFile.fetchDataPatternsWU() : Promise.resolve(null);
                 wuPromise.then(function (wu) {
-                    return context.gridDPHook.render(wu);
+                    return context.gridDPHook && context.gridDPHook.render(wu);
                 }).then(function () {
                     context.grid.resize();
                 });
             }
         },
 
-        //  Implementation  ---
         onErrorClick: function (line, col) {
         },
 
@@ -275,6 +279,7 @@ define([
                             context.refreshActionState();
                         }
                     }
+                    context.updateDataPatterns();
                 });
             }
         },
