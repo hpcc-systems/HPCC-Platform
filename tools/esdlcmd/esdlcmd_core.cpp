@@ -19,7 +19,6 @@
 #include "jlog.hpp"
 #include "jfile.hpp"
 #include "jargv.hpp"
-#include "build-config.h"
 
 #include "esdlcmd_common.hpp"
 #include "esdlcmd_core.hpp"

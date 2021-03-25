@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-#include "build-config.h"
 #include "jliball.hpp"
 #include "jmisc.hpp"
 #include "jstream.hpp"
@@ -847,7 +846,7 @@ extern HQLCPP_API unsigned getLibraryCRC(IHqlExpression * library)
 void setWorkunitHash(IWorkUnit * wu, IHqlExpression * expr)
 {
     //Assuming builds come from different branches this will change the crc for each one.
-    unsigned cacheCRC = crc32(BUILD_TAG, strlen(BUILD_TAG), ACTIVITY_INTERFACE_VERSION);
+    unsigned cacheCRC = crc32(hpccBuildTag, strlen(hpccBuildTag), ACTIVITY_INTERFACE_VERSION);
     cacheCRC += getExpressionCRC(expr);
 #ifdef _WIN32
     cacheCRC++; // make sure CRC is different in windows/linux

@@ -23,6 +23,12 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd $DIR 2>&1 > /dev/null
 
+if [[ -z ${INPUT_BUILD_LABEL} ]]; then
+  . ${SCRIPT_DIR}/../cmake_modules/parse_cmake.sh
+  parse_cmake
+  set_tag $HPCC_PROJECT
+fi
+
 . ./buildall-common.sh
 
 if [[ -n ${INPUT_USERNAME} ]] ; then

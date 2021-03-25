@@ -17,7 +17,6 @@
 
 
 #include "platform.h"
-#include "build-config.h"
 
 #include <algorithm>
 #include "stdio.h"

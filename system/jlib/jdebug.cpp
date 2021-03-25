@@ -55,7 +55,6 @@
  #include <mach/mach_host.h>
  #include <mach/vm_statistics.h>
 #endif
-#include "build-config.h"
 
 //===========================================================================
 #ifdef _DEBUG

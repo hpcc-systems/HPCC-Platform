@@ -857,14 +857,14 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         if (restarts)
         {
             if (traceLevel)
-                DBGLOG("Roxie restarting: restarts = %d build = %s", restarts.load(), BUILD_TAG);
+                DBGLOG("Roxie restarting: restarts = %d build = %s", restarts.load(), hpccBuildTag);
             setStartRuid(restarts);
         }
         else
         {
             if (traceLevel)
             {
-                DBGLOG("Roxie starting, build = %s", BUILD_TAG);
+                DBGLOG("Roxie starting, build = %s", hpccBuildTag);
             }
         }
 

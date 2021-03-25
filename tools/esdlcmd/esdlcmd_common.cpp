@@ -20,7 +20,6 @@
 #include "jfile.hpp"
 #include "jargv.hpp"
 #include "junicode.hpp"
-#include "build-config.h"
 #include "esdlcmdutils.hpp"
 
 #include "esdlcmd_common.hpp"
@@ -82,7 +81,7 @@ esdlCmdOptionMatchIndicator EsdlCmdCommon::matchCommandLineOption(ArgvIterator &
     }
     if (iter.matchFlag(boolValue, ESDLOPT_VERSION))
     {
-        fprintf(stdout, "%s\n", BUILD_TAG);
+        fprintf(stdout, "%s\n", hpccBuildTag);
         return EsdlCmdOptionCompletion;
     }
 

@@ -24,7 +24,6 @@
 #include "jdebug.hpp"
 #include "rtldynfield.hpp"
 
-#include "build-config.h"
 #include "hql.hpp"
 #include "hqlthql.hpp"
 #include "hqlmeta.hpp"
@@ -6067,7 +6066,7 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
 
     try
     {
-        wu()->setCodeVersion(ACTIVITY_INTERFACE_VERSION,BUILD_TAG,LANGUAGE_VERSION);
+        wu()->setCodeVersion(ACTIVITY_INTERFACE_VERSION,hpccBuildTag,LANGUAGE_VERSION);
         cacheOptions();
 
         if (options.obfuscateOutput)

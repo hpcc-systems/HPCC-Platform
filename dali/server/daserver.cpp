@@ -18,7 +18,6 @@
 #include <unordered_map>
 #include <string>
 
-#include "build-config.h"
 #include "platform.h"
 #include "thirdparty.h"
 #include "jlib.hpp"
@@ -458,7 +457,7 @@ int main(int argc, const char* argv[])
 #else
         setupContainerizedLogMsgHandler();
 #endif
-        PROGLOG("Build %s", BUILD_TAG);
+        PROGLOG("Build %s", hpccBuildTag);
 
         StringBuffer dataPath;
         StringBuffer mirrorPath;

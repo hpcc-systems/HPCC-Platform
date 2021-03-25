@@ -19,7 +19,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include "build-config.h"
 #include "platform.h"
 #include <exception>
 #include <sys/types.h>

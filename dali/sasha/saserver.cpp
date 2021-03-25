@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-#include "build-config.h"
 #include "platform.h"
 #include "thirdparty.h"
 #include "portlist.h"
@@ -369,7 +368,7 @@ int main(int argc, const char* argv[])
     #else
         setupContainerizedLogMsgHandler();
     #endif
-        DBGLOG("Build %s", BUILD_TAG);
+        DBGLOG("Build %s", hpccBuildTag);
 
         unsigned short port = serverConfig->getPropInt("@port");
         if (!port)

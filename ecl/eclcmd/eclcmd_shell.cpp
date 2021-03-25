@@ -184,7 +184,7 @@ bool EclCMDShell::parseCommandLineOptions(ArgvIterator &iter)
         }
         if (iter.matchFlag(boolValue, "--version"))
         {
-            fprintf(stdout, "%s\n", BUILD_TAG);
+            fprintf(stdout, "%s\n", hpccBuildTag);
             return false;
         }
         StringAttr tempArg;

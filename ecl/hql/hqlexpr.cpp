@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 #include "platform.h"
-#include "build-config.h"
 
 #include "jlib.hpp"
 #include "jmisc.hpp"
@@ -1299,7 +1298,7 @@ void HqlParseContext::getCacheBaseFilename(StringBuffer & fullName, StringBuffer
 extern HQL_API IPropertyTree * createAttributeArchive()
 {
     Owned<IPropertyTree> archive = createPTree("Archive");
-    archive->setProp("@build", BUILD_TAG);
+    archive->setProp("@build", hpccBuildTag);
     archive->setProp("@eclVersion", LANGUAGE_VERSION);
     return archive.getClear();
 }
