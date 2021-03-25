@@ -64,8 +64,14 @@ const routes: Routes = [
             { path: "/:Wuid/outputs/:Name", action: (ctx, params) => import("./components/Result").then(_ => <_.Result wuid={params.Wuid as string} resultName={params.Name as string} filter={parseSearch(ctx.search) as any} />) },
         ]
     },
-    { path: "/play", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="ECLPlaygroundWidget" />) },
-    { path: "/playground", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="ECLPlaygroundWidget" />) },
+    { 
+        path: ["/play", "/playground"], 
+        children: [
+            { path: "", action: () => import("./components/ECLPlayground").then(_ => <_.ECLPlayground />) },
+            { path: "/legacy", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="ECLPlaygroundWidget" />) },
+            { path: "/:Wuid", action: (ctx, params) => import("./components/ECLPlayground").then(_ => <_.ECLPlayground wuid={params.Wuid as string} />) },
+        ]
+    },
     //  Files  ---
     {
         path: "/files",

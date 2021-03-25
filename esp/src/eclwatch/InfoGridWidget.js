@@ -273,8 +273,12 @@ define([
                     this.onErrorClick = params.onErrorClick;
                 }
 
-                if (params.Wuid) {
-                    this.wu = ESPWorkunit.Get(params.Wuid);
+                this.doInit(params.Wuid);
+            },
+
+            doInit: function (wuid) {
+                if (wuid) {
+                    this.wu = ESPWorkunit.Get(wuid);
 
                     var context = this;
                     this.wu.monitor(function () {
