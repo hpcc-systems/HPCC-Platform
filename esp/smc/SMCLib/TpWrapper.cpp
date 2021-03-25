@@ -157,7 +157,7 @@ void CTpWrapper::fetchInstances(const char* ServiceType, IPropertyTree& service,
 
             IEspTpMachine* machine = createTpMachine("", "");
             getMachineInfo(*machine, instanceNode, "/Environment/Software", ServiceType, "@computer");
-         machine->setPort( instanceNode.getPropInt("@port") );
+            machine->setPort( instanceNode.getPropInt("@port") );
             const char* directory = instanceNode.queryProp("@directory");
             if (directory && *directory)
                 machine->setDirectory( directory );
@@ -464,8 +464,48 @@ void CTpWrapper::getTpEspServers(IArrayOf<IConstTpEspServer>& list)
     }
 }
 
+static IEspTpMachine * createLocalHostTpMachine(const char *path)
+{
+    Owned<IEspTpMachine> machine = createTpMachine();
+    IpAddress ipAddr;
+    ipAddr.ipset("localhost");
+    StringBuffer localHost;
+    ipAddr.getIpText(localHost);
+    machine->setName(localHost.str());
+    machine->setNetaddress(localHost.str());
+    machine->setConfigNetaddress("localhost");
+    machine->setDirectory(path);
+    machine->setOS(getPathSepChar(path) == '/' ? MachineOsLinux : MachineOsW2K);
+    return machine.getClear();
+}
+
 void CTpWrapper::getTpDfuServers(IArrayOf<IConstTpDfuServer>& list)
 {
+#ifdef _CONTAINERIZED
+    Owned<IPropertyTreeIterator> dfuQueues = queryComponentConfig().getElements("dfuQueues");
+    ForEach(*dfuQueues)
+    {
+        IPropertyTree & dfuQueue = dfuQueues->query();
+        const char * dfuName = dfuQueue.queryProp("@name");
+        StringBuffer queue;
+        getDfuQueueName(queue, dfuName);
+        Owned<IEspTpDfuServer> pService = createTpDfuServer("","");
+        pService->setName(dfuName);
+        pService->setDescription(dfuName);
+        pService->setBuild("");
+        pService->setQueue(queue);
+        pService->setType(eqDfu);
+        IArrayOf<IEspTpMachine> tpMachines;
+        Owned<IPropertyTreeIterator> planes = getDropZonePlanesIterator();
+        ForEach(*planes)
+        {
+            IPropertyTree & plane = planes->query();
+            tpMachines.append(*createLocalHostTpMachine(plane.queryProp("@prefix")));
+        }
+        pService->setTpMachines(tpMachines);
+        list.append(*pService.getClear());
+    }
+#else
     Owned<IPropertyTree> root = getEnvironment("Software");
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
@@ -497,8 +537,9 @@ void CTpWrapper::getTpDfuServers(IArrayOf<IConstTpDfuServer>& list)
         fetchInstances(eqDfu, serviceTree, tpMachines);
         pService->setTpMachines(tpMachines);
 
-        list.append(*pService.getLink());
+        list.append(*pService.getClear());
     }
+#endif
 }
 
 
@@ -1681,27 +1722,17 @@ void CTpWrapper::getTpDropZones(double clientVersion, const char* name, bool ECL
     {
         IPropertyTree & plane = planes->query();
         const char * dropzonename = plane.queryProp("@name");
-        const char * prefix = plane.queryProp("@prefix");
-        StringBuffer path(prefix);
+        const char * path = plane.queryProp("@prefix");
         Owned<IEspTpDropZone> dropZone = createTpDropZone();
         dropZone->setName(dropzonename);
-        dropZone->setDescription(""); //TODO
+        dropZone->setDescription("");
         dropZone->setPath(path);
         dropZone->setBuild("");
-        dropZone->setECLWatchVisible(plane.getPropBool("@eclWatchVisible", true));
-        StringBuffer localHost;
+        dropZone->setECLWatchVisible(true);
         IArrayOf<IEspTpMachine> tpMachines;
-        Owned<IEspTpMachine> machine = createTpMachine();
-        IpAddress ipAddr;
-        ipAddr.ipset("localhost");
-        ipAddr.getIpText(localHost);
-        machine->setNetaddress(localHost.str());
-        machine->setConfigNetaddress("localhost");
-        machine->setDirectory(path);
-        machine->setOS(getPathSepChar(path) == '/' ? MachineOsLinux : MachineOsW2K);
-        tpMachines.append(*machine.getLink());
+        tpMachines.append(*createLocalHostTpMachine(path));
         dropZone->setTpMachines(tpMachines);
-        list.append(*dropZone.getLink());
+        list.append(*dropZone.getClear());
     }
 #else
     Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
