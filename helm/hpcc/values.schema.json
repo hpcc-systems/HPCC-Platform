@@ -220,6 +220,10 @@
                 "postJobCommand": {
                   "description": "Execute this command when a K8s Job launched by a deployment ends, either gracefully or when terminated externally causing a preStop event",
                   "type": "string"
+                },
+                "postJobCommandViaSidecar": {
+                  "description": "Causes shareProcessNamespace to be enabled, and the postJobCommand to execute via a sidecar",
+                  "type": "boolean"
                 }
               }
             },

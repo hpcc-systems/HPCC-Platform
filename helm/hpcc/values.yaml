@@ -45,9 +45,16 @@ global:
   # This can be useful if injected sidecars are installed that need to be told to stop.
   # If they are not stopped, the pod continues running with the side car container only, in a "NotReady" state.
   # An example of this is the Istio envoy side car. It can be stopped with the command below.
+  # Set postJobCommandViaSidecar to true, if the command needs to run with priviledge, this will enable the command
+  # to run as root in a sidecar in same process space as other containers, allowing it to for example send signals
+  # to processes in sidecars
 
   # misc:
   #   postJobCommand: "curl -sf -XPOST http://127.0.0.1:15020/quitquitquit"
+  # Or example for linkerd
+  #   postJobCommand: "kill $(pgrep linkerd2-proxy)"
+  #   postJobCommandViaSidecar: true
+
 
   # For pod placement instruction and examples please reference docs/placements.md
 
