@@ -195,8 +195,7 @@ const TreeStore = declare(null, {
     }
 });
 
-const LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
-    _dpWU: DPWorkunit,
+const LogicalFile = declare([ESPUtil.Singleton], {
 
     _FileDetailSetter(FileDetail) {
         this.FileDetail = FileDetail;
@@ -244,7 +243,6 @@ const LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
             declare.safeMixin(this, args);
         }
         this.logicalFile = this;
-        this._dpWU = new DPWorkunit(this.Cluster, this.Name);
     },
     save(request, args) {
         // WsDfu/DFUInfo?FileName=progguide%3A%3Aexampledata%3A%3Akeys%3A%3Apeople.lastname.firstname&UpdateDescription=true&FileDesc=%C2%A0123&Save+Description=Save+Description
@@ -419,7 +417,8 @@ const LogicalFile = declare([ESPUtil.Singleton], {    // jshint ignore:line
         return this.StateID === 999;
     },
     fetchDataPatternsWU() {
-        return this._dpWU.resolveWU();
+        const dpWU = new DPWorkunit(this.Cluster, this.Name, this.Modified);
+        return dpWU.resolveWU();
     }
 });
 

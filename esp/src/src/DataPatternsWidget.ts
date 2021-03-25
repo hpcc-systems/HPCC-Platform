@@ -169,7 +169,7 @@ export class DataPatternsWidget {
         this.optimizeTargetSelect.init({});
         this.optimizeTarget.set("value", params.LogicalName + "::optimized");
 
-        this._dpWu = new DPWorkunit(params.NodeGroup, params.LogicalName);
+        this._dpWu = new DPWorkunit(params.NodeGroup, params.LogicalName, params.Modified);
 
         this.wuStatus.target(this.id + "WUStatus");
         this.dpReport.target(this.id + "DPReport");
