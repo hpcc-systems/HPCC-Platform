@@ -5,6 +5,7 @@ esp:
    loadDaliBindings: false
    auth: ldap
    tls: true
+   wuTokens: true
    port: 8880
    enableSEHMapping: true
    httpConfigAccess: true
