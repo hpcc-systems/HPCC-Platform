@@ -631,6 +631,9 @@
         "image": {
           "$ref": "#/definitions/image"
         },
+        "topoServer": {
+          "$ref": "#/definitions/toposerver"
+        },
         "logging": {
           "$ref": "#/definitions/logging"
         },
@@ -652,6 +655,23 @@
         },
         "channelResources": {
           "$ref": "#/definitions/resources"
+        }
+      }
+    },
+    "toposerver": {
+      "type": "object",
+      "properties": {
+        "port": {
+          "type": "integer"
+        },
+        "traceLevel": {
+          "type": "integer"
+        },
+        "replicas": {
+          "type": "integer"
+        },
+        "logging": {
+          "$ref": "#/definitions/logging"
         }
       }
     },

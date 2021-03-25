@@ -366,7 +366,6 @@ roxie:
   numChannels: 2
   ## Set serverReplicas to indicate a separate replicaSet of roxie servers, with agent nodes not acting as servers
   serverReplicas: 0
-  topoReplicas: 1
   ## Set localAgent to true for a scalable cluster of "single-node" roxie servers, each implementing all channels locally
   localAgent: false
   useAeron: false
@@ -378,6 +377,9 @@ roxie:
   #serverResources:
   #  cpu: "1"
   #  memory: "1G"
+  topoServer:
+    replicas: 1
+    #traceLevel: 1
 
 thor:
 - name: thor
