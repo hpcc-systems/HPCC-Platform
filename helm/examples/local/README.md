@@ -9,7 +9,7 @@ Once installed the generated PVC names should be used when installing the HPCC h
 The values-localfile.yaml is an example of the HPCC storage settings that should be applied, after the "hpcc-localfile" helm chart is installed.
 NB: The output of installing this chart, will contain a generated example with the correct PVC names.
 
-The chart assumes that the dll, data and dali subdirectories already exist.
+The chart assumes that the dalistorage, queries, sasha, and hpcc-data subdirectories already exist.
 
 Examples of use:
 
@@ -17,15 +17,23 @@ Examples of use:
 
   With a host directory of c:\hpccdata
 
-  helm install hpcc-localfile examples/local/hpcc-localfile --set common.hostpath=/run/desktop/mnt/host/c/hpccdata
-  helm install mycluster hpcc/ --set global.image.version=latest -f examples/local/values-localfile.yaml
+    helm install hpcc-localfile examples/local/hpcc-localfile --set common.hostpath=/run/desktop/mnt/host/c/hpccdata
+    helm install mycluster hpcc/ --set global.image.version=latest -f examples/local/values-localfile.yaml
 
 #### Docker desktop (using osx):
 
-  With a host directory of /User/myuser/hpccdata
+  With a host directory of /Users/myuser/hpccdata
 
-  helm install hpcc-localfile examples/local/hpcc-localfile --set common.hostpath=/User/myuser/hpccdata
-  helm install mycluster hpcc/ --set global.image.version=latest -f examples/local/values-localfile.yaml
+    helm install localfile examples/local/hpcc-localfile --set common.hostpath=/Users/myuser/hpccdata
+    helm install mycluster hpcc/ --set global.image.version=latest -f examples/local/values-localfile.yaml
+
+#### Docker desktop (using hyper-v):
+
+  With a host directory of c:\hpccdata<br/>
+  In addition, you must add the folder in Docker Desktop's settings for Resources>File Sharing.
+
+    helm install hpcc-localfile examples/local/hpcc-localfile --set common.hostpath=/c/hpccdata
+    helm install mycluster hpcc/ --set global.image.version=latest -f examples/local/values-localfile.yaml
 
 #### Minikube:
 
@@ -43,7 +51,6 @@ Examples of use:
 
     helm install hpcc-localfile examples/local/hpcc-localfile --set common.hostpath=/mnt/hpccdata
     helm install mycluster hpcc/ --set global.image.version=latest -f examples/local/values-localfile.yaml
-
 
 ### values-localfile.yaml
 
