@@ -65,9 +65,12 @@ enum request { LTE, GTE };
 // INodeLoader impl.
 interface INodeLoader
 {
-    virtual CJHTreeNode *loadNode(offset_t offset) = 0;
+    virtual CJHTreeNode * createNode(NodeType type) = 0;
+    virtual CJHTreeNode *loadNode(CJHTreeNode * optNode, offset_t offset) = 0;
     virtual CJHTreeNode *locateFirstNode(KeyStatsCollector &stats) = 0;
     virtual CJHTreeNode *locateLastNode(KeyStatsCollector &stats) = 0;
+
+    inline CJHTreeNode *loadNode(offset_t offset) { return loadNode(nullptr, offset); }
 };
 
 class jhtree_decl CKeyIndex : implements IKeyIndex, implements INodeLoader, public CInterface
@@ -93,6 +96,8 @@ protected:
     RelaxedAtomic<unsigned> keyScans;
     offset_t latestGetNodeOffset;
 
+    using INodeLoader::loadNode;
+    CJHTreeNode *loadNode(CJHTreeNode * ret, char *nodeData, offset_t pos, bool needsCopy);
     CJHTreeNode *loadNode(char *nodeData, offset_t pos, bool needsCopy);
     CJHTreeNode *getNode(offset_t offset, NodeType type, IContextLogger *ctx);
     CJHTreeBlobNode *getBlobNode(offset_t nodepos);
@@ -141,7 +146,8 @@ public:
     virtual bool prewarmPage(offset_t page, NodeType type);
  
  // INodeLoader impl.
-    virtual CJHTreeNode *loadNode(offset_t offset) = 0;
+    virtual CJHTreeNode * createNode(NodeType type) final;
+    virtual CJHTreeNode * loadNode(CJHTreeNode * optNode, offset_t offset) = 0;
     CJHTreeNode *locateFirstNode(KeyStatsCollector &stats);
     CJHTreeNode *locateLastNode(KeyStatsCollector &stats);
 };
@@ -156,7 +162,7 @@ public:
     virtual const char *queryFileName() { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return nullptr; }
 // INodeLoader impl.
-    virtual CJHTreeNode *loadNode(offset_t offset);
+    virtual CJHTreeNode *loadNode(CJHTreeNode * optNode, offset_t offset);
 };
 
 class jhtree_decl CDiskKeyIndex : public CKeyIndex
@@ -171,7 +177,7 @@ public:
     virtual const char *queryFileName() { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return io; }
 // INodeLoader impl.
-    virtual CJHTreeNode *loadNode(offset_t offset);
+    virtual CJHTreeNode *loadNode(CJHTreeNode * optNode, offset_t offset);
 };
 
 class jhtree_decl CKeyCursor : public CInterfaceOf<IKeyCursor>

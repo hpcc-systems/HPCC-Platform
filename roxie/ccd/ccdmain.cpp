@@ -1114,6 +1114,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         setLeafCacheMem(leafCacheMB * 0x100000);
         blobCacheMB = topology->getPropInt("@blobCacheMem", 0);
         setBlobCacheMem(blobCacheMB * 0x100000);
+        setLegacyNodeCache(topology->getPropBool("@legacyNodeCache", false));
 
         unsigned __int64 affinity = topology->getPropInt64("@affinity", 0);
         updateAffinity(affinity);

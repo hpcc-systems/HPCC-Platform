@@ -384,12 +384,17 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     addMetric(nodesLoaded, 1000);
     addMetric(cacheHits, 1000);
     addMetric(cacheAdds, 1000);
+
+    addMetric(blobCacheHits, 1000);
+    addMetric(blobCacheAdds, 1000);
+    addMetric(blobCacheDups, 1000);
     addMetric(leafCacheHits, 1000);
     addMetric(leafCacheAdds, 1000);
+    addMetric(leafCacheDups, 1000);
     addMetric(nodeCacheHits, 1000);
     addMetric(nodeCacheAdds, 1000);
-    addMetric(preloadCacheHits, 0);
-    addMetric(preloadCacheAdds, 0);
+    addMetric(nodeCacheDups, 1000);
+
     addMetric(unwantedDiscarded, 1000);
 
     addMetric(getHeapAllocated, 0);

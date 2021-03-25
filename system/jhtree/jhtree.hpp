@@ -150,6 +150,7 @@ extern jhtree_decl void clearNodeCache();
 extern jhtree_decl size32_t setNodeCacheMem(size32_t cacheSize);
 extern jhtree_decl size32_t setLeafCacheMem(size32_t cacheSize);
 extern jhtree_decl size32_t setBlobCacheMem(size32_t cacheSize);
+extern jhtree_decl void setLegacyNodeCache(bool _value);
 
 extern jhtree_decl void getNodeCacheInfo(ICacheInfoRecorder &cacheInfo);
 
@@ -170,12 +171,13 @@ extern jhtree_decl RelaxedAtomic<unsigned> cacheHits;
 extern jhtree_decl RelaxedAtomic<unsigned> cacheAdds;
 extern jhtree_decl RelaxedAtomic<unsigned> blobCacheHits;
 extern jhtree_decl RelaxedAtomic<unsigned> blobCacheAdds;
+extern jhtree_decl RelaxedAtomic<unsigned> blobCacheDups;
 extern jhtree_decl RelaxedAtomic<unsigned> leafCacheHits;
 extern jhtree_decl RelaxedAtomic<unsigned> leafCacheAdds;
+extern jhtree_decl RelaxedAtomic<unsigned> leafCacheDups;
 extern jhtree_decl RelaxedAtomic<unsigned> nodeCacheHits;
 extern jhtree_decl RelaxedAtomic<unsigned> nodeCacheAdds;
-extern jhtree_decl RelaxedAtomic<unsigned> preloadCacheHits;
-extern jhtree_decl RelaxedAtomic<unsigned> preloadCacheAdds;
+extern jhtree_decl RelaxedAtomic<unsigned> nodeCacheDups;
 extern jhtree_decl bool linuxYield;
 extern jhtree_decl bool traceSmartStepping;
 extern jhtree_decl bool flushJHtreeCacheOnOOM;
