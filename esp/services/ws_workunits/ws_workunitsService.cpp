@@ -4609,6 +4609,8 @@ void deployEclOrArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req,
         wu->setSnapshot(req.getSnapshot());
     if (!req.getResultLimit_isNull())
         wu->setResultLimit(req.getResultLimit());
+    if(req.getProtect())
+        wu->protect(true);
 
     wu->commit();
     wu.clear();
@@ -4701,7 +4703,7 @@ void writeSharedObject(const char *srcpath, const MemoryBuffer &obj, const char 
     throw MakeStringException(ECLWATCH_CANNOT_COPY_DLL, "Failed copying shared object %s", srcpath);
 }
 
-void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml)
+void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml, bool protect)
 {
     StringBuffer dllpath, dllname;
     StringBuffer srcname(filename);
@@ -4764,6 +4766,8 @@ void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *fi
     }
 
     wu->setState(WUStateCompiled);
+    if (protect)
+        wu->protect(true);
     wu->commit();
     wu.clear();
 
@@ -4788,10 +4792,11 @@ void CWsWorkunitsEx::deploySharedObjectReq(IEspContext &context, IEspWUDeployWor
     }
 
     StringBuffer wuid;
-    deploySharedObject(context, wuid, req.getFileName(), cluster, req.getName(), *uncompressed, dir, xml);
+    deploySharedObject(context, wuid, req.getFileName(), cluster, req.getName(), *uncompressed, dir, xml, req.getProtect());
 
     WsWuInfo winfo(context, wuid.str());
     winfo.getCommon(resp.updateWorkunit(), WUINFO_All);
+
 
     PROGLOG("WUDeploy generates: %s", wuid.str());
     AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid.str());
