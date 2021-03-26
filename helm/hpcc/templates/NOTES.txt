@@ -19,14 +19,17 @@ This chart has defined the following HPCC components:
 {{-   end -}}
 {{-  end -}}
 {{- end }}
-{{- range $serviceName, $_service := .Values.sasha }}
-{{-  $service := ($_service | default dict) -}}
-{{-  if not $service.disabled -}}
-{{-   if hasKey $names $serviceName -}}
-{{-    required ( printf "Component name %s in section sasha was already seen in section %s" $serviceName (get $names $serviceName)) nil -}}
-{{-   else }}
+{{- $sashaServices := $.Values.sasha | default dict -}}
+{{- if not $sashaServices.disabled -}}
+{{-  range $serviceName, $_service := $sashaServices }}
+{{-   $service := ($_service | default dict) -}}
+{{-   if not $service.disabled -}}
+{{-    if hasKey $names $serviceName -}}
+{{-     required ( printf "Component name %s in section sasha was already seen in section %s" $serviceName (get $names $serviceName)) nil -}}
+{{-    else }}
   sasha.{{ $serviceName }}
+{{-    end -}}
 {{-   end -}}
-{{-  end -}}
+{{-  end }}
 {{- end }}
 
