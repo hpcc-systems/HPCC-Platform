@@ -2042,6 +2042,7 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char *clusterR
     IDistributedFile *df, IEspDFUFileDetail &fileDetails)
 {
     double version = context.getClientVersion();
+    bool compressedFile = isFileKey(df) || df->isCompressed();
     IArrayOf<IConstDFUFilePartsOnCluster>& partsOnClusters = fileDetails.getDFUFilePartsOnClusters();
     ForEachItemIn(i, clusters)
     {
@@ -2062,6 +2063,7 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char *clusterR
             unsigned partIndex = part.queryPartIndex();
 
             __int64 size = -1;
+            __int64 compressedSize = -1;
             StringBuffer partSizeStr;
             IPropertyTree *partPropertyTree = &part.queryProperties();
             if (!partPropertyTree)
@@ -2071,6 +2073,8 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char *clusterR
                 size = partPropertyTree->getPropInt64("@size", -1);
                 comma c4(size);
                 partSizeStr<<c4;
+                if (compressedFile && (version >= 1.58))
+                    compressedSize = partPropertyTree->getPropInt64("@compressedSize", -1);
             }
 
             for (unsigned i=0; i<part.numCopies(); i++)
@@ -2083,6 +2087,13 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char *clusterR
                 FilePart->setPartsize(partSizeStr.str());
                 if (version >= 1.38)
                     FilePart->setPartSizeInt64(size);
+                if (compressedFile && (version >= 1.58))
+                {
+                    if (compressedSize != -1)
+                        FilePart->setCompressedSize(compressedSize);
+                    else
+                        FilePart->setCompressedSize(size);
+                }
                 FilePart->setIp(url.str());
                 FilePart->setCopy(i+1);
 
