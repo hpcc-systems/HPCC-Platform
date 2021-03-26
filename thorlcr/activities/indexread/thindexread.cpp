@@ -162,7 +162,7 @@ protected:
                         rfn.getPath(remotePath);
                         unsigned crc = 0;
                         part->getCrc(crc);
-                        keyIndex.setown(createKeyIndex(remotePath.str(), crc, false, false));
+                        keyIndex.setown(createKeyIndex(remotePath.str(), crc, false));
                         break;
                     }
                 }

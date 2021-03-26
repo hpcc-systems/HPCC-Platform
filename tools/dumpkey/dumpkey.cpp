@@ -144,7 +144,7 @@ int main(int argc, const char **argv)
         {
             Owned <IKeyIndex> index;
             const char * keyName = files.item(idx);
-            index.setown(createKeyIndex(keyName, 0, false, false));
+            index.setown(createKeyIndex(keyName, 0, false));
             size32_t key_size = index->keySize();  // NOTE - in variable size case, this is 32767
             size32_t keyedSize = index->keyedSize();
             unsigned nodeSize = index->getNodeSize();

@@ -221,7 +221,7 @@ public:
         keyFileIO.setown(keyFile->open(IFOread));
         if(!keyFileIO)
             throw MakeStringException(0, "Could not read index file %s", filename);
-        keyIndex.setown(createKeyIndex(filename, 0, *keyFileIO, (unsigned) -1, false, false)); // MORE - should we care about crc?
+        keyIndex.setown(createKeyIndex(filename, 0, *keyFileIO, (unsigned) -1, false)); // MORE - should we care about crc?
         unsigned flags = keyIndex->getFlags();
         variableWidth = ((flags & HTREE_VARSIZE) == HTREE_VARSIZE);
         if((flags & HTREE_QUICK_COMPRESSED_KEY) == HTREE_QUICK_COMPRESSED_KEY)

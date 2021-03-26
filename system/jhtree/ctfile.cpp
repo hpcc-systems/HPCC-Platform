@@ -281,7 +281,7 @@ void CWriteNodeBase::write(IFileIOStream *out, CRC32 *crc)
 
 CWriteNode::CWriteNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeaf) : CWriteNodeBase(_fpos, _keyHdr)
 {
-    hdr.leafFlag = isLeaf ? 1 : 0;
+    hdr.leafFlag = isLeaf ? NodeLeaf : NodeBranch;
     if (!isLeaf)
     {
         keyLen = keyHdr->getNodeKeyLength();
@@ -393,7 +393,7 @@ size32_t CWriteNode::compressValue(const char *keyData, size32_t size, char *res
 
 CBlobWriteNode::CBlobWriteNode(offset_t _fpos, CKeyHdr *_keyHdr) : CWriteNodeBase(_fpos, _keyHdr)
 {
-    hdr.leafFlag = 2;
+    hdr.leafFlag = NodeBlob;
     lzwcomp.openBlob(keyPtr, maxBytes);
 }
 
@@ -427,7 +427,7 @@ unsigned __int64 CBlobWriteNode::add(const char * &data, size32_t &size)
 
 CMetadataWriteNode::CMetadataWriteNode(offset_t _fpos, CKeyHdr *_keyHdr) : CWriteNodeBase(_fpos, _keyHdr)
 {
-    hdr.leafFlag = 3;
+    hdr.leafFlag = NodeMeta;
 }
 
 size32_t CMetadataWriteNode::set(const char * &data, size32_t &size)
@@ -444,7 +444,7 @@ size32_t CMetadataWriteNode::set(const char * &data, size32_t &size)
 
 CBloomFilterWriteNode::CBloomFilterWriteNode(offset_t _fpos, CKeyHdr *_keyHdr) : CWriteNodeBase(_fpos, _keyHdr)
 {
-    hdr.leafFlag = 4;
+    hdr.leafFlag = NodeBloom;
 }
 
 size32_t CBloomFilterWriteNode::set(const byte * &data, size32_t &size)
@@ -565,7 +565,7 @@ void CJHTreeNode::unpack(const void *node, bool needCopy)
         PrintStackReport();
         throw MakeStringException(0, "Htree: Corrupt key node detected");
     }
-    if (!hdr.leafFlag)
+    if (hdr.leafFlag == NodeBranch)
         keyLen = keyHdr->getNodeKeyLength();
     keyRecLen = keyLen + sizeof(offset_t);
     char *keys = ((char *) node) + sizeof(hdr);
@@ -575,7 +575,7 @@ void CJHTreeNode::unpack(const void *node, bool needCopy)
         if (hdr.crc32 != crc)
             throw MakeStringException(0, "CRC error on key node");
     }
-    if (hdr.leafFlag==1)
+    if (hdr.leafFlag==NodeLeaf)
     {
         firstSequence = *(unsigned __int64 *) keys;
         keys += sizeof(unsigned __int64);
@@ -944,7 +944,7 @@ offset_t CJHVarTreeNode::getFPosAt(unsigned int num) const
 void CJHRowCompressedNode::load(CKeyHdr *_keyHdr, const void *rawData, offset_t _fpos, bool needCopy)
 {
     CJHTreeNode::load(_keyHdr, rawData, _fpos, needCopy);
-    assertex(hdr.leafFlag==1);
+    assertex(hdr.leafFlag==NodeLeaf);
     char *keys = ((char *) rawData) + sizeof(hdr)+sizeof(firstSequence);
     assertex(IRandRowExpander::isRand(keys));
     rowexp.setown(createRandRDiffExpander());

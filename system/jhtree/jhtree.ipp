@@ -44,13 +44,13 @@ private:
             return useId;
         return ++nextId;
     }
-    IKeyIndex *doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK, bool allowPreload);
+    IKeyIndex *doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, unsigned fileIdx, IMemoryMappedFile *iMappedFile, bool isTLK);
 public:
     CKeyStore();
     ~CKeyStore();
-    IKeyIndex *load(const char *fileName, unsigned crc, bool isTLK, bool allowPreload);
-    IKeyIndex *load(const char *fileName, unsigned crc, IFileIO *iFileIO, unsigned fileIdx, bool isTLK, bool allowPreload);
-    IKeyIndex *load(const char *fileName, unsigned crc, IMemoryMappedFile *iMappedFile, bool isTLK, bool allowPreload);
+    IKeyIndex *load(const char *fileName, unsigned crc, bool isTLK);
+    IKeyIndex *load(const char *fileName, unsigned crc, IFileIO *iFileIO, unsigned fileIdx, bool isTLK);
+    IKeyIndex *load(const char *fileName, unsigned crc, IMemoryMappedFile *iMappedFile, bool isTLK);
     void clearCache(bool killAll);
     void clearCacheEntry(const char *name);
     void clearCacheEntry(const IFileIO *io);
@@ -94,14 +94,13 @@ protected:
     offset_t latestGetNodeOffset;
 
     CJHTreeNode *loadNode(char *nodeData, offset_t pos, bool needsCopy);
-    CJHTreeNode *getNode(offset_t offset, IContextLogger *ctx);
+    CJHTreeNode *getNode(offset_t offset, NodeType type, IContextLogger *ctx);
     CJHTreeBlobNode *getBlobNode(offset_t nodepos);
 
 
     CKeyIndex(unsigned _iD, const char *_name);
     ~CKeyIndex();
-    void init(KeyHdr &hdr, bool isTLK, bool allowPreload);
-    void cacheNodes(CNodeCache *cache, offset_t nodePos, bool isTLK);
+    void init(KeyHdr &hdr, bool isTLK);
     void loadBloomFilters();
     
 public:
@@ -133,12 +132,13 @@ public:
     virtual offset_t queryMetadataHead();
     virtual IPropertyTree * getMetadata();
 
+    unsigned getBranchDepth() const { return keyHdr->getHdrStruct()->hdrseq; }
     bool bloomFilterReject(const IIndexFilterList &segs) const;
 
     virtual unsigned getNodeSize() { return keyHdr->getNodeSize(); }
     virtual bool hasSpecialFileposition() const;
     virtual bool needsRowBuffer() const;
-    virtual bool prewarmPage(offset_t page);
+    virtual bool prewarmPage(offset_t page, NodeType type);
  
  // INodeLoader impl.
     virtual CJHTreeNode *loadNode(offset_t offset) = 0;
@@ -166,7 +166,7 @@ private:
     void cacheNodes(CNodeCache *cache, offset_t firstnode, bool isTLK);
     
 public:
-    CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool _isTLK, bool _allowPreload);
+    CDiskKeyIndex(unsigned _iD, IFileIO *_io, const char *_name, bool _isTLK);
 
     virtual const char *queryFileName() { return name.get(); }
     virtual const IFileIO *queryFileIO() const override { return io; }
@@ -276,7 +276,7 @@ protected:
 
     const RtlRecord &recInfo;
     unsigned lastReal = 0;
-    unsigned lastFull = 0;
+    unsigned lastFull = -1;
     unsigned keyedSize = 0;
     unsigned keySegCount = 0;
 

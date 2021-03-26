@@ -48,7 +48,7 @@ static IKeyIndex *openKeyFile(IDistributedFilePart *keyFile)
                 rfn.getPath(remotePath);
                 unsigned crc = 0;
                 keyFile->getCrc(crc);
-                return createKeyIndex(remotePath.str(), crc, false, false);
+                return createKeyIndex(remotePath.str(), crc, false);
             }
         }
         catch (IException *E)

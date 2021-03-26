@@ -2184,7 +2184,6 @@ class CRemoteIndexBaseActivity : public CRemoteDiskBaseActivity
 
 protected:
     bool isTlk = false;
-    bool allowPreload = false;
     unsigned fileCrc = 0;
     Owned<IKeyIndex> keyIndex;
     Owned<IKeyManager> keyManager;
@@ -2201,7 +2200,7 @@ protected:
         crc32.tally(sizeof(time_t), &modTimeTT);
         unsigned crc = crc32.get();
 
-        keyIndex.setown(createKeyIndex(fileName, crc, isTlk, allowPreload));
+        keyIndex.setown(createKeyIndex(fileName, crc, isTlk));
         keyManager.setown(createLocalKeyManager(*record, keyIndex, nullptr, true, false));
         filters.createSegmentMonitors(keyManager);
         keyManager->finishSegmentMonitors();
@@ -2222,7 +2221,6 @@ public:
         setupInputMeta(config, getTypeInfoOutputMetaData(config, "input", false));
 
         isTlk = config.getPropBool("isTlk");
-        allowPreload = config.getPropBool("allowPreload");
         fileCrc = config.getPropInt("crc");
     }
     virtual void flushStatistics(CClientStats &stats) override
