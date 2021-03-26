@@ -320,6 +320,7 @@ jobs:
       run: |
         mv install/var/lib/HPCCSystems/hpcc-data copy/install/var/lib/HPCCSystems/
         mv install/var/lib/HPCCSystems/queries copy/install/var/lib/HPCCSystems/
+        [[ -d ${{ github.workspace }}/src/esp/src/test-ui ]] && cp -r ${{ github.workspace }}/src/esp/src/test-ui copy/install/
         cd copy
         tar --zstd -cf ../install.tgz install
 
@@ -449,3 +450,85 @@ jobs:
         sudo update-locale
         tar --zstd -xf install.tgz
         install/opt/HPCCSystems/bin/unittests
+
+  # NB: this doesn't really need the post-setup data files included in install.tgz
+  # but as this is relatively quick and in parallel with others, it probably doesn't matter
+  eclwatch-ui-tests:
+    needs: build-and-setup
+    if: needs.build-and-setup.outputs.cache-hit != 'true' && github.event_name == 'pull_request'
+    timeout-minutes: 10
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/download-artifact@v2
+      with:
+        name: installsetup-artifact
+
+    - name: Check-ECLWatch-UI-Test-Directory
+      id: check
+      run: |
+        tar --zstd -xf install.tgz
+        if [[ ! -d install/test-ui/tests ]]
+        then
+          echo "ECLWatch UI test-ui/tests directory missing."
+        else
+          javaFilesCount=$(find install/test-ui/tests/ -iname '*.java' -type f -print | wc -l )
+          echo "Number of test java files is $javaFilesCount"
+          if [[ ${javaFilesCount} -eq 0 ]]
+          then
+            echo "No java files, do nothing."
+          else
+            echo ::set-output name=runtests::true
+          fi
+        fi
+
+
+    - name: Prerequisites
+      if: steps.check.outputs.runtests
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git wget net-tools
+        sudo apt-get install -y tzdata unzip xvfb libxi6
+        sudo apt-get install -y default-jdk
+        sudo apt-get -yq install bison flex build-essential binutils-dev libldap2-dev libcppunit-dev libicu-dev libxslt1-dev \
+          zlib1g-dev libboost-regex-dev libarchive-dev libv8-dev default-jdk libapr1-dev libaprutil1-dev libiberty-dev \
+          libhiredis-dev libtbb-dev libxalan-c-dev libnuma-dev nodejs libevent-dev libatlas-base-dev libblas-dev python3-dev \
+          default-libmysqlclient-dev libsqlite3-dev libmemcached-dev libcurl4-openssl-dev pkg-config libtool autotools-dev automake \
+          libssl-dev gdb
+
+    - name: UI-Test-Prerequisites
+      if: steps.check.outputs.runtests
+      run: |
+        wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
+        wget https://chromedriver.storage.googleapis.com/2.41/chromedriver_linux64.zip
+        unzip chromedriver_linux64.zip
+        sudo mv chromedriver /usr/bin/chromedriver
+        sudo chown root:root /usr/bin/chromedriver
+        sudo chmod +x /usr/bin/chromedriver
+        wget https://selenium-release.storage.googleapis.com/3.141/selenium-server-standalone-3.141.59.jar
+        wget http://www.java2s.com/Code/JarDownload/testng/testng-6.8.7.jar.zip
+        unzip testng-6.8.7.jar.zip
+
+    - name: run
+      if: steps.check.outputs.runtests
+      run: |
+        export LANG="en_US.UTF-8"
+        sudo update-locale
+        source install/opt/HPCCSystems/sbin/hpcc_setenv
+        install/opt/HPCCSystems/etc/init.d/hpcc-init start
+        export CLASSPATH=".:$(realpath selenium-server-standalone-3.141.59.jar):$(realpath testng-6.8.7.jar)"
+        pushd install/test-ui
+        ./run.sh tests http://localhost:8010 > eclWatchUiTest.log 2>&1
+        retCode=$?
+        echo "UI test done"
+        [[ $retCode -ne 0 ]] && exit 1
+        popd
+
+    - name: eclwatch-ui-test-logs-artifact
+      if: ${{ failure() || cancelled() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: ECLWatchUiTest
+        path: install/test-ui/eclWatchUiTest.log
+        if-no-files-found: error
+
