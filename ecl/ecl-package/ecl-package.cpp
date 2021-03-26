@@ -20,8 +20,6 @@
 #include "jfile.hpp"
 #include "jargv.hpp"
 
-#include "build-config.h"
-
 #include "ws_packageprocess_esp.ipp"
 
 #include "eclcmd.hpp"
@@ -1644,7 +1642,7 @@ public:
 
 static int doMain(int argc, const char *argv[])
 {
-    PackageCMDShell processor(argc, argv, createPackageSubCommand, BUILD_TAG);
+    PackageCMDShell processor(argc, argv, createPackageSubCommand, hpccBuildTag);
     return processor.run();
 }
 

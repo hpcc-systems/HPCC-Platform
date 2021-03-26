@@ -18,7 +18,6 @@
 #include "platform.h"
 #include "portlist.h"
 
-#include "build-config.h"
 #include "jlib.hpp"
 #include "jiface.hpp"
 #include "jutil.hpp"
@@ -800,7 +799,7 @@ int main(int argc,char **argv)
 #endif
 
     write_pidfile(componentName.str());
-    PROGLOG("Dafilesrv starting - Build %s", BUILD_TAG);
+    PROGLOG("Dafilesrv starting - Build %s", hpccBuildTag);
     PROGLOG("Parallel request limit = %d, throttleDelayMs = %d, throttleCPULimit = %d", parallelRequestLimit, throttleDelayMs, throttleCPULimit);
 
     const char * verstring = remoteServerVersionString();

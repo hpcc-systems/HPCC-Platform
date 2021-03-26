@@ -585,5 +585,7 @@ public:
     }
 };
 
+extern jlib_decl const char *hpccBuildTag;
+
 #endif
 

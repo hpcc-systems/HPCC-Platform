@@ -21,7 +21,6 @@
 
 
 #include "EnvironmentMgr.hpp"
-#include "build-config.h"
 #include <iterator>
 #include <algorithm>
 #include <map>

@@ -999,22 +999,6 @@ const char* getBuildVersion()
 {
     return g_buildVersion.str();
 }
-static StringBuffer g_buildLevel;
-
-void setBuildLevel(const char* buildLevel)
-{
-    g_buildLevel.clear();
-    if(buildLevel&&*buildLevel)
-        g_buildLevel.append(buildLevel);
-
-    g_buildLevel.trim();
-}
-
-const char* getBuildLevel()
-{
-    return g_buildLevel.str();
-}
-
 IEspServer* queryEspServer()
 {
     return dynamic_cast<IEspServer*>(getESPContainer());

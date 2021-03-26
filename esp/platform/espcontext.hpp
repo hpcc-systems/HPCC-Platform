@@ -145,7 +145,6 @@ esp_http_decl const char* getCFD();
 esp_http_decl void setBuildVersion(const char* buildVersion);
 esp_http_decl const char* getBuildVersion();
 esp_http_decl void setBuildLevel(const char* buildLevel);
-esp_http_decl const char* getBuildLevel();
 esp_http_decl IEspServer* queryEspServer();
 
 #define SDSSESSION_CONNECT_TIMEOUTMS (180*1000)

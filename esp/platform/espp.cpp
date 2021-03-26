@@ -462,18 +462,15 @@ int init_main(int argc, const char* argv[])
         procpt->setProp("@daliServers", queryComponentConfig().queryProp("@daliServers"));
 #endif
 
-        const char* build_ver = BUILD_TAG;
+        const char* build_ver = hpccBuildTag;
         setBuildVersion(build_ver);
-
-        const char* build_level = BUILD_LEVEL;
-        setBuildLevel(build_level);
 
         const char * processName = procpt->queryProp("@name");
         setStatisticsComponentName(SCTesp, processName, true);
 
         openEspLogFile(envpt.get(), procpt.get());
 
-        DBGLOG("Esp starting %s", BUILD_TAG);
+        DBGLOG("Esp starting %s", hpccBuildTag);
 
         StringBuffer componentfilesDir;
         if(procpt->hasProp("@componentfilesDir"))

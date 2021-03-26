@@ -19,8 +19,6 @@
 #include "jfile.hpp"
 #include "jargv.hpp"
 
-#include "build-config.h"
-
 #include "ws_smc.hpp"
 
 #include "eclcmd.hpp"
@@ -565,7 +563,7 @@ public:
 
 static int doMain(int argc, const char *argv[])
 {
-    EclRoxieCMDShell processor(argc, argv, createEclRoxieCommand, BUILD_TAG);
+    EclRoxieCMDShell processor(argc, argv, createEclRoxieCommand, hpccBuildTag);
     return processor.run();
 }
 

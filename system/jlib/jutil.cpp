@@ -68,6 +68,8 @@ static CriticalSection * protectedGeneratorCs;
 mach_timebase_info_data_t timebase_info  = { 1,1 };
 #endif
 
+const char *hpccBuildTag = nullptr;
+
 MODULE_INIT(INIT_PRIORITY_SYSTEM)
 {
     cvtLock = new NonReentrantSpinLock;
@@ -79,6 +81,10 @@ MODULE_INIT(INIT_PRIORITY_SYSTEM)
     if (mach_timebase_info(&timebase_info) != KERN_SUCCESS)
         return false;
 #endif
+    hpccBuildTag = getenv("HPCC_BUILD_TAG");
+    if (isEmptyString(hpccBuildTag))
+        hpccBuildTag = BUILD_TAG;
+
     return true;
 }
 

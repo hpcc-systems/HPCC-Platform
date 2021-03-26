@@ -23,8 +23,6 @@
 
 #include "rmtfile.hpp"
 
-#include "build-config.h"
-
 #include "eclcmd.hpp"
 #include "eclcmd_common.hpp"
 #include "eclcmd_core.hpp"
@@ -1839,7 +1837,7 @@ public:
 
 static int doMain(int argc, const char *argv[])
 {
-    BundleCMDShell processor(argc, argv, createBundleSubCommand, BUILD_TAG);
+    BundleCMDShell processor(argc, argv, createBundleSubCommand, hpccBuildTag);
     return processor.run();
 }
 

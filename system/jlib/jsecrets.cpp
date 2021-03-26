@@ -25,8 +25,6 @@
 #include "jerror.hpp"
 #include "jsecrets.hpp"
 
-#include "build-config.h"
-
 //including cpp-httplib single header file REST client
 //  doesn't work with format-nonliteral as an error
 //

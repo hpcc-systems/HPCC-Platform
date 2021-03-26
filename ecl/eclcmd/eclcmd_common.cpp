@@ -20,7 +20,6 @@
 #include "jfile.hpp"
 #include "jargv.hpp"
 #include "junicode.hpp"
-#include "build-config.h"
 #include "workunit.hpp"
 #include "eclwatch_errorlist.hpp"
 
@@ -332,7 +331,7 @@ eclCmdOptionMatchIndicator EclCmdCommon::matchCommandLineOption(ArgvIterator &it
     }
     if (iter.matchFlag(boolValue, ECLOPT_VERSION))
     {
-        fprintf(stdout, "%s\n", BUILD_TAG);
+        fprintf(stdout, "%s\n", hpccBuildTag);
         return EclCmdOptionCompletion;
     }
     if (iter.matchOption(optServer, ECLOPT_SERVER)||iter.matchOption(optServer, ECLOPT_SERVER_S))
