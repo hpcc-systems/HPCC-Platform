@@ -2638,7 +2638,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
 
 bool CWsDfuEx::getQueryFile(const char *logicalName, const char *querySet, const char *queryID, IEspDFUFileDetail &fileDetails)
 {
-    Owned<IConstWUClusterInfo> info = getTargetClusterInfo(querySet);
+    Owned<IConstWUClusterInfo> info = getWUClusterInfoByName(querySet);
     if (!info || (info->getPlatform()!=RoxieCluster))
         return false;
 
