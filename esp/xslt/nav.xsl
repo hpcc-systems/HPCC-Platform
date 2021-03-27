@@ -62,7 +62,14 @@
                         <tr>
                             <td>
                                 <table border="0" cellspacing="0" cellpadding="0" id="table2">
-                                    <xsl:apply-templates select="*"/>
+                                  <xsl:choose>
+                                    <xsl:when test="*">
+                                        <xsl:apply-templates select="*"/>
+                                    </xsl:when>
+                                    <xsl:otherwise>
+                                        <xsl:text disable-output-escaping="yes">&amp;nbsp;&amp;nbsp;no service found</xsl:text>
+                                    </xsl:otherwise>
+                                  </xsl:choose>
                                 </table>
                             </td>
                         </tr>
