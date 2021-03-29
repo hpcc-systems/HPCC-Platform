@@ -39,6 +39,7 @@ spec:
 {{ include "hpcc.addConfigMapVolumeMount" $dali | indent 8 }}
 {{ include "hpcc.addDaliVolumeMount" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" (dict "root" $ "secretsCategories" $daliSecretsCategories) | indent 8 }}
+{{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" .name "component" "dali" "external" false) | indent 8 }}
 {{- if not $sashaServices.disabled -}}
 {{- range $sashaName, $_sasha := $dali.services -}}
 {{- $sasha := ($_sasha | default dict) -}}
@@ -76,6 +77,7 @@ spec:
 {{ include "hpcc.addDllVolume" $commonCtx | indent 6 -}}
 {{- end -}}
 {{- include "hpcc.addSecretVolumes" (dict "root" $ "secretsCategories" $tmpDaliScope.aggregateSashaSecretsCategories) | indent 6 }}
+{{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" "dali" "external" false) | indent 6 }}
 ---
 {{- $storage := ($.Values.storage | default dict) -}}
 {{- $daliStorage := ($storage.daliStorage | default dict) }}
@@ -132,6 +134,8 @@ spec:
     run: {{ .name | quote }}
   type: ClusterIP
 ---
+{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "service" . "component" "dali" "external" false) }}
+
 {{- $storage := ($.Values.storage | default dict) -}}
 {{- $daliStorage := ($storage.daliStorage | default dict) -}}
 {{- if (and (not $daliStorage.existingClaim) (not $daliStorage.plane)) }}

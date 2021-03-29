@@ -271,6 +271,8 @@ void CSoapRequestBinding::post(const char *proxy, const char* url, IRpcResponseB
         soapclient.setConnectTimeoutMs(connectTimeoutMs_);
     if (readTimeoutSecs_)
         soapclient.setReadTimeoutSecs(readTimeoutSecs_);
+    if (mtls_secret_.length())
+        soapclient.setMtlsSecretName(mtls_secret_);
 
     soapclient.setUsernameToken(soap_getUserId(), soap_getPassword(), soap_getRealm());
 

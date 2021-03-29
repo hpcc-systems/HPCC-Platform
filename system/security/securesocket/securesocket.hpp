@@ -80,12 +80,14 @@ interface ICertificate : implements IInterface
 typedef ISecureSocketContext* (*createSecureSocketContext_t)(SecureSocketType);
 typedef ISecureSocketContext* (*createSecureSocketContextEx_t)(const char* certfile, const char* privkeyfile, const char* passphrase, SecureSocketType);
 typedef ISecureSocketContext* (*createSecureSocketContextEx2_t)(IPropertyTree* config, SecureSocketType);
+typedef ISecureSocketContext* (*createSecureSocketContextSecret_t)(const char *mtlsSecretName, SecureSocketType);
 
 extern "C" {
 
 SECURESOCKET_API ISecureSocketContext* createSecureSocketContext(SecureSocketType);
 SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx(const char* certfile, const char* privkeyfile, const char* passphrase, SecureSocketType);
 SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx2(IPropertyTree* config, SecureSocketType);
+SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecret(const char *mtlsSecretName, SecureSocketType);
 SECURESOCKET_API ICertificate *createCertificate();
 SECURESOCKET_API int signCertificate(const char* csr, const char* ca_certificate, const char* ca_privkey, const char* ca_passphrase, int days, StringBuffer& certificate);
 };

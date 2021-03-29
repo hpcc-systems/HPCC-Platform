@@ -28,6 +28,7 @@
 #include <jfile.hpp>
 #include <jencrypt.hpp>
 #include "jutil.hpp"
+#include "jsecrets.hpp"
 #include <build-config.h>
 #include <udptopo.hpp>
 
