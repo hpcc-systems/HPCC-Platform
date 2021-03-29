@@ -140,7 +140,12 @@ ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoin
         LOG(MCdetailDebugInfo, unknownJob, "Action aborted before connecting to slave (%3d)", replyTag);
         return NULL;
     }
-
+#ifdef _CONTAINERIZED
+    // TODO: replace with K8s job
+    DWORD runcode;
+    if (!invoke_program(cmd.str(), runcode, false))
+        throw makeStringExceptionV(-1,"Error spawning %s", exe);
+#else
     if (SSHusername.isEmpty())
     {
 #if defined(_WIN32)
@@ -162,6 +167,7 @@ ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoin
         runssh->init(cmd.str(),SSHidentfilename,SSHusername,SSHpasswordenc,SSHtimeout,SSHretries);
         runssh->exec(childEP,NULL,true); // need workdir? TBD
     }
+#endif
 
     //Have to now try and connect to the child and get back the port it is listening on
     unsigned attempts = 20;

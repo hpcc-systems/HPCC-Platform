@@ -79,7 +79,7 @@ storage:
   planes:
 {{- /*Generate entries for each data plane (removing the pvc).  Exclude the planes used for dlls and dali.*/ -}}
 {{- range $plane := $planes -}}
- {{- if or (not $plane.labels) (has "data" $plane.labels) }}
+ {{- if or (not $plane.labels) (or (has "data" $plane.labels) (has "lz" $plane.labels)) }}
   - name: {{ $plane.name | quote }}
 {{ toYaml (unset (unset (deepCopy $plane) "name") "pvc")| indent 4 }}
  {{- end }}
@@ -97,6 +97,18 @@ storage:
 cost:
 {{ toYaml .Values.global.cost | indent 2 }}
 {{- end }}
+{{- end -}}
+
+{{/*
+Generate dfuserver queues
+Pass in root
+*/}}
+{{- define "hpcc.generateConfigDfuQueues" -}}
+{{- range $queue := .root.Values.dfuserver }}
+{{- if not $queue.disabled }}
+- name: {{ .name }}
+{{- end -}}
+{{- end -}}
 {{- end -}}
 
 {{/*
@@ -138,17 +150,39 @@ Add ConfigMap volume for a component
 {{- end -}}
 
 {{/*
-Add data volume mount
-If any storage planes are defined that name pvcs they will be mounted
+Returns a non empty string if any labels in the list includeLabels is in the plane.labels
+Note: the list includeLabels may contain an empty string (""), which matches planes that do not have a label
+Pass in plane and includeLabels
+Return: If there is any matching labels, there will be a non-empty string returned.  If there is no matching labels,
+        an empty string will be returned.
 */}}
-{{- define "hpcc.addDataVolumeMount" -}}
+{{- define "hpcc.doesStorageLabelsMatch" -}}
+{{- $plane := .plane -}}
+  {{- range $label := .includeLabels -}}
+    {{- if and (eq $label "") (not $plane.labels) -}}
+      {{- print "T" -}}
+    {{- else if has $label $plane.labels -}}
+      {{- print "T" -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+Add volume mounts
+Pass in root and includeLabels (optional)
+Note: if there are multiple planes (other than dll, dali and spill planes), they should be all called with a single call
+to addVolumeMounts so that if a plane can be used for multiple purposes then duplicate volume mounts are not created.
+*/}}
+{{- define "hpcc.addVolumeMounts" -}}
 {{- /*Create local variables which always exist to avoid having to check if intermediate key values exist*/ -}}
 {{- $storage := (.root.Values.storage | default dict) -}}
-{{- $planes := ($storage.planes | default list) -}}
 {{- $dataStorage := ($storage.dataStorage | default dict) -}}
+{{- $planes := ($storage.planes | default list) -}}
+{{- $includeLabels := .includeLabels | default list -}}
 {{- range $plane := $planes -}}
  {{- if $plane.pvc -}}
-  {{- if or (not $plane.labels) (has "data" $plane.labels) }}
+  {{- $matchedLabels := include "hpcc.doesStorageLabelsMatch" (dict "plane" $plane "includeLabels" $includeLabels) -}}
+  {{- if ne $matchedLabels "" }}
    {{- $num := int ( $plane.numDevices | default 1 ) -}}
    {{- if le $num 1 }}
 - name: {{ lower $plane.name }}-pv
@@ -162,26 +196,39 @@ If any storage planes are defined that name pvcs they will be mounted
   {{- end }}
  {{- end }}
 {{- end }}
-{{- if (not $dataStorage.plane) }}
+{{- /*
+Create a data volume mount if data plane have not been specified in storage.planes
+Note: Some services used addVolumeMounts to add data planes and other types of plane using addVolumeMounts, so this code has
+to be located here rather than in addDataVolumeMount.
+*/ -}}
+{{- if and (has "data" $includeLabels) (not $dataStorage.plane) }}
 - name: datastorage
   mountPath: "/var/lib/HPCCSystems/hpcc-data"
 {{- end }}
 {{- end -}}
 
 {{/*
-Add data volume
-Pass in dict with root
+Add data volume mount
+Pass in root
 */}}
-{{- define "hpcc.addDataVolume" -}}
+{{- define "hpcc.addDataVolumeMount" -}}
+{{- include "hpcc.addVolumeMounts" (dict "root" .root "includeLabels" (list "data" "")) -}}
+{{- end -}}
+
+{{/*
+Add volumes
+Pass in root and includeLabels (optional)
+*/}}
+{{- define "hpcc.addVolumes" -}}
 {{- /*Create local variables which always exist to avoid having to check if intermediate key values exist*/ -}}
 {{- $storage := (.root.Values.storage | default dict) -}}
-{{- $planes := ($storage.planes | default list) -}}
 {{- $dataStorage := ($storage.dataStorage | default dict) -}}
-{{- $daliStorage := ($storage.daliStorage | default dict) -}}
-{{- $dllStorage := ($storage.dllStorage | default dict) -}}
+{{- $planes := ($storage.planes | default list) -}}
+{{- $includeLabels := .includeLabels | default list -}}
 {{- range $plane := $planes -}}
  {{- if $plane.pvc -}}
-  {{- if or (not $plane.labels) (has "data" $plane.labels) }}
+  {{- $matchedLabels := include "hpcc.doesStorageLabelsMatch" (dict "plane" $plane "includeLabels" $includeLabels) -}}
+  {{- if ne $matchedLabels "" }}
    {{- $num := int ( $plane.numDevices | default 1 ) -}}
    {{- $pvc := $plane.pvc | required (printf "pvc for %s not supplied" $plane.name) }}
    {{- if le $num 1 }}
@@ -198,11 +245,24 @@ Pass in dict with root
   {{- end }}
  {{- end }}
 {{- end -}}
-{{- if (not $dataStorage.plane) }}
+{{- /*
+Create a data volume if data plane have not been specified in storage.planes
+Note: Some services used addVolumes to add data planes and other types of plane using addVolumes, so this code has
+to be located here rather than in addDataVolumes.
+*/ -}}
+{{- if and (has "data" $includeLabels) (not $dataStorage.plane) }}
 - name: datastorage
   persistentVolumeClaim:
     claimName: {{ $dataStorage.existingClaim | default (printf "%s-datastorage" (include "hpcc.fullname" . )) }}
 {{- end }}
+{{- end -}}
+
+{{/*
+Add data volume
+Pass in dict with root
+*/}}
+{{- define "hpcc.addDataVolume" -}}
+{{- include "hpcc.addVolumes" (dict "root" .root "includeLabels" (list "data" "") ) -}}
 {{- end -}}
 
 {{/*

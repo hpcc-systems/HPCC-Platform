@@ -26,6 +26,7 @@
 #include "exception_util.hpp"
 #include "portlist.h"
 #include "daqueue.hpp"
+#include "dautils.hpp"
 
 const char* MSG_FAILED_GET_ENVIRONMENT_INFO = "Failed to get environment information.";
 
@@ -1664,7 +1665,6 @@ void CTpWrapper::getDropZoneMachineList(double clientVersion, bool ECLWatchVisib
     {
         IWARNLOG("Unknown Exception caught within CTpWrapper::getDropZoneMachineList");
     }
-    
 }
 
 //For a given dropzone or every dropzones (check ECLWatchVisible if needed), read: "@name",
@@ -1674,6 +1674,36 @@ void CTpWrapper::getDropZoneMachineList(double clientVersion, bool ECLWatchVisib
 
 void CTpWrapper::getTpDropZones(double clientVersion, const char* name, bool ECLWatchVisibleOnly, IArrayOf<IConstTpDropZone>& list)
 {
+
+#ifdef _CONTAINERIZED
+    Owned<IPropertyTreeIterator> planes = getDropZonePlanesIterator(name);
+    ForEach(*planes)
+    {
+        IPropertyTree & plane = planes->query();
+        const char * dropzonename = plane.queryProp("@name");
+        const char * prefix = plane.queryProp("@prefix");
+        StringBuffer path(prefix);
+        Owned<IEspTpDropZone> dropZone = createTpDropZone();
+        dropZone->setName(dropzonename);
+        dropZone->setDescription(""); //TODO
+        dropZone->setPath(path);
+        dropZone->setBuild("");
+        dropZone->setECLWatchVisible(plane.getPropBool("@eclWatchVisible", true));
+        StringBuffer localHost;
+        IArrayOf<IEspTpMachine> tpMachines;
+        Owned<IEspTpMachine> machine = createTpMachine();
+        IpAddress ipAddr;
+        ipAddr.ipset("localhost");
+        ipAddr.getIpText(localHost);
+        machine->setNetaddress(localHost.str());
+        machine->setConfigNetaddress("localhost");
+        machine->setDirectory(path);
+        machine->setOS(getPathSepChar(path) == '/' ? MachineOsLinux : MachineOsW2K);
+        tpMachines.append(*machine.getLink());
+        dropZone->setTpMachines(tpMachines);
+        list.append(*dropZone.getLink());
+    }
+#else
     Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
     if (!isEmptyString(name))
@@ -1692,6 +1722,7 @@ void CTpWrapper::getTpDropZones(double clientVersion, const char* name, bool ECL
                 appendTpDropZone(clientVersion, constEnv, dropZoneInfo, list);
         }
     }
+#endif
 }
 
 
