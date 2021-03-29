@@ -96,7 +96,7 @@ if [[ -n ${PERSIST} ]] ; then
   mkdir -p ${PERSIST_PATH}/queries
   mkdir -p ${PERSIST_PATH}/sasha
   helm ${CMD} localfile $scriptdir/../helm/examples/local/hpcc-localfile --set common.hostpath=${PERSIST} | grep -A100 storage > localstorage.yaml && \
-  helm ${CMD} mycluster $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL --set global.privileged=true -f localstorage.yaml $DEP_UPDATE_ARG ${restArgs[@]}
+  helm ${CMD} mycluster $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL --set global.privileged=true $DEP_UPDATE_ARG ${restArgs[@]} -f localstorage.yaml
 else
   helm ${CMD} mycluster $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL --set global.privileged=true $DEP_UPDATE_ARG ${restArgs[@]}
 fi

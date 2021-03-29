@@ -225,6 +225,14 @@ static void addConfiguredWsFSUrl(const char * url)
     availableWsFS.appendUniq(url);
 }
 
+static void setContainerLocalCertificate(IEspClientRpcSettings &rpc)
+{
+#ifdef _CONTAINERIZED
+    //will only affect HTTPS
+    rpc.setMtlsSecretName("local");
+#endif
+}
+
 static bool contactWsFS(const char * espurl, IConstWorkUnit * wu)
 {
     CClientFileSpray server;
@@ -234,6 +242,7 @@ static bool contactWsFS(const char * espurl, IConstWorkUnit * wu)
     try
     {
         Owned<IClientEchoDateTime> req = server.createEchoDateTimeRequest();
+        setContainerLocalCertificate(req->rpc());
         Owned<IClientEchoDateTimeResponse> result = server.EchoDateTime(req);
 
         if (result->getResult())
@@ -658,6 +667,7 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
     {
 
         Owned<IClientGetDFUWorkunit> req = server.createGetDFUWorkunitRequest();
+        setContainerLocalCertificate(req->rpc());
         req->setWuid(wuid);
         Owned<IClientGetDFUWorkunitResponse> result = server.GetDFUWorkunit(req);
 
@@ -721,6 +731,7 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
         if (aborting)
         {
             Owned<IClientAbortDFUWorkunit> abortReq = server.createAbortDFUWorkunitRequest();
+            setContainerLocalCertificate(abortReq->rpc());
             abortReq->setWuid(wuid);
             Linked<IClientAbortDFUWorkunitResponse> abortResp = server.AbortDFUWorkunit(abortReq);
 
@@ -765,6 +776,7 @@ FILESERVICES_API char * FILESERVICES_CALL implementSprayFixed(ICodeContext *ctx,
     setServerAccess(server, wu);
 
     Owned<IClientSprayFixed> req = server.createSprayFixedRequest();
+    setContainerLocalCertificate(req->rpc());
     StringBuffer logicalName;
     constructLogicalName(wu, destinationLogicalName, logicalName);
 
@@ -866,6 +878,7 @@ static char * implementSprayVariable(ICodeContext *ctx, const char * sourceIP, c
     setServerAccess(server, wu);
 
     Owned<IClientSprayVariable> req = server.createSprayVariableRequest();
+    setContainerLocalCertificate(req->rpc());
     StringBuffer logicalName;
     constructLogicalName(wu, destinationLogicalName, logicalName);
 
@@ -1017,6 +1030,7 @@ FILESERVICES_API char * FILESERVICES_CALL implementSprayXml(ICodeContext *ctx, c
     setServerAccess(server, wu);
 
     Owned<IClientSprayVariable> req = server.createSprayVariableRequest();
+    setContainerLocalCertificate(req->rpc());
     StringBuffer logicalName;
     constructLogicalName(wu, destinationLogicalName, logicalName);
 
@@ -1126,6 +1140,7 @@ FILESERVICES_API char * FILESERVICES_CALL implementSprayJson(ICodeContext *ctx, 
     setServerAccess(server, wu);
 
     Owned<IClientSprayVariable> req = server.createSprayVariableRequest();
+    setContainerLocalCertificate(req->rpc());
     StringBuffer logicalName;
     constructLogicalName(wu, destinationLogicalName, logicalName);
 
@@ -1220,6 +1235,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfDespray(ICodeContext *ctx, const ch
         setServerAccess(server, wu);
 
     Owned<IClientDespray> req = server.createDesprayRequest();
+    setContainerLocalCertificate(req->rpc());
     StringBuffer logicalName;
     constructLogicalName(wu, sourceLogicalName, logicalName);
 
@@ -1265,6 +1281,7 @@ FILESERVICES_API char * FILESERVICES_CALL implementCopy(ICodeContext *ctx, const
     setServerAccess(server, wu);
 
     Owned<IClientCopy> req = server.createCopyRequest();
+    setContainerLocalCertificate(req->rpc());
     if (asSuperfile)
         req->setSuperCopy(true);
 
@@ -1363,6 +1380,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfReplicate(ICodeContext *ctx, const 
     setServerAccess(server, wu);
 
     Owned<IClientReplicate> req = server.createReplicateRequest();
+    setContainerLocalCertificate(req->rpc());
     StringBuffer logicalName;
     constructLogicalName(wu, sourceLogicalName, logicalName);
 
@@ -1894,6 +1912,7 @@ FILESERVICES_API void FILESERVICES_CALL fslAbortDfuWorkunit(ICodeContext *ctx, c
     server.addServiceUrl(getAccessibleEspServerURL(espServerIpPort,wu));
     setServerAccess(server, wu);
     Owned<IClientAbortDFUWorkunit> abortReq = server.createAbortDFUWorkunitRequest();
+    setContainerLocalCertificate(abortReq->rpc());
     abortReq->setWuid(wuid);
     Linked<IClientAbortDFUWorkunitResponse> abortResp = server.AbortDFUWorkunit(abortReq);
     StringBuffer s("DFU Workunit Abort Requested for ");
@@ -1917,6 +1936,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsfMonitorLogicalFileName(ICodeContex
     if (shotcount == 0)
         shotcount = -1;
     Owned<IClientDfuMonitorRequest> req = server.createDfuMonitorRequest();
+    setContainerLocalCertificate(req->rpc());
     req->setEventName(eventname);
     req->setLogicalName(lfn);
     req->setShotLimit(shotcount);
@@ -1946,6 +1966,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsfMonitorFile(ICodeContext *ctx, con
         shotcount = -1;
 
     Owned<IClientDfuMonitorRequest> req = server.createDfuMonitorRequest();
+    setContainerLocalCertificate(req->rpc());
     req->setEventName(eventname);
     req->setIp(ip);
     req->setFilename(filename);
@@ -2233,6 +2254,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfRemotePull_impl(ICodeContext *ctx,
     setServerAccess(server, wu);
 
     Owned<IClientCopy> req = server.createCopyRequest();
+    setContainerLocalCertificate(req->rpc());
     if (asSuperfile)
         req->setSuperCopy(true);
 
@@ -2916,7 +2938,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, cons
         }
         // MORE - if not found, we could generate a warning - it implies something misconfigured!
 
-        VStringBuffer espURL("%s://%s%s:%u", protocol, credentials.str(), defaultEsp, port);
+        VStringBuffer espURL("mtls:%s://%s%s:%u", protocol, credentials.str(), defaultEsp, port);
         return espURL.detach();
     }
 #else

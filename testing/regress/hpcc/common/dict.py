@@ -33,3 +33,12 @@ class _dict(object):
             self.__d[attr] = val
         except KeyError:
              raise AttributeError
+
+    def has(self, attr, section=None ):
+        if section:
+            if section in self.__d:
+                return attr in self.__d[section]
+            else:
+                raise AttributeError
+        else:
+            return attr in self.__d

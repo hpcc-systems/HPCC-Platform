@@ -36,6 +36,9 @@ interface IHttpClient : extends ITransportClient
     virtual void setUserID(const char* userid) = 0;
     virtual void setPassword(const char* password) = 0;
     virtual void setRealm(const char* realm) = 0;
+    virtual void setMtlsSecretName(const char *name) = 0;
+    virtual const char *getMtlsSecretName() = 0;
+
     virtual void setConnectTimeOutMs(unsigned timeout) = 0;
     virtual void setTimeOut(unsigned int timeout) = 0;
     virtual void disableKeepAlive() = 0;
@@ -59,5 +62,6 @@ interface IHttpClientContext : extends IInterface
 
 esp_http_decl IHttpClientContext* getHttpClientContext();
 esp_http_decl IHttpClientContext* createHttpClientContext(IPropertyTree* config);
+esp_http_decl IHttpClientContext* getHttpClientSecretContext(const char *secret);
 
 #endif

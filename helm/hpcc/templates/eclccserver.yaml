@@ -57,6 +57,7 @@ data:
 {{ include "hpcc.addDataVolumeMount" . | indent 12 }}
 {{ include "hpcc.addDllVolumeMount" . | indent 12 }}
 {{ include "hpcc.addSecretVolumeMounts" . | indent 12 }}
+{{ include "hpcc.addCertificateVolumeMount" (dict "root" .root "name" .me.name "component" "compile") | indent 12 }}
 {{- if $misc.postJobCommandViaSidecar }}
 {{ include "hpcc.addWaitAndRunVolumeMount" . | indent 12 }}
 {{- end }}
@@ -65,6 +66,7 @@ data:
 {{ include "hpcc.addDataVolume" . | indent 10 }}
 {{ include "hpcc.addDllVolume" . | indent 10 }}
 {{ include "hpcc.addSecretVolumes" . | indent 10 }}
+{{ include "hpcc.addCertificateVolume" (dict "root" .root "name" .me.name "component" "compile") | indent 10 }}
 {{- if $misc.postJobCommandViaSidecar }}
 {{ include "hpcc.addWaitAndRunVolume" . | indent 10 }}
 {{- end }}
@@ -124,6 +126,7 @@ spec:
 {{ include "hpcc.addDataVolumeMount" $commonCtx | indent 8 }}
 {{ include "hpcc.addDllVolumeMount" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
+{{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" .name "component" "eclccserver") | indent 8 }}
         - name: "hpccbundles"
           mountPath: "/home/hpcc/.HPCCSystems"
       volumes:
@@ -131,6 +134,7 @@ spec:
 {{ include "hpcc.addDataVolume" $commonCtx | indent 6 }}
 {{ include "hpcc.addDllVolume" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
+{{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" "eclccserver") | indent 6 }}
       - name: hpccbundles
         emptyDir: {}
 ---
@@ -138,5 +142,8 @@ kind: ConfigMap
 {{ include "hpcc.eclccServerConfigMap" $commonCtx }}
 
 ---
+{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "eclccserver") }}
+{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "compile") }}
+
 {{- end }}
 {{- end }}

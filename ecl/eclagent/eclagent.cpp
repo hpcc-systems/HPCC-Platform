@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-#include "build-config.h"
 #include "jlib.hpp"
 #include "jmisc.hpp"
 #include "jdebug.hpp"
@@ -1858,7 +1857,7 @@ void EclAgent::doProcess()
             LOG(MCrunlock, unknownJob, "Obtained workunit lock");
             if (w->hasDebugValue("traceLevel"))
                 traceLevel = w->getDebugValueInt("traceLevel", 10);
-            w->setTracingValue("EclAgentBuild", BUILD_TAG);
+            w->setTracingValue("EclAgentBuild", hpccBuildTag);
             if (agentTopology->hasProp("@name"))
                 w->addProcess("EclAgent", agentTopology->queryProp("@name"), GetCurrentProcessId(), 0, nullptr, false, logname.str());
 
@@ -3474,7 +3473,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     if (traceLevel)
     {
         printStart(argc, argv);
-        DBGLOG("Build %s", BUILD_TAG);
+        DBGLOG("Build %s", hpccBuildTag);
     }
 
     // Extract any params into stored - primarily for standalone case but handy for debugging eclagent sometimes too
@@ -3662,7 +3661,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             wuid.set(uid);
         }
         setDefaultJobId(wuid.str());
-        LOG(MCoperatorInfo, "hthor build %s", BUILD_TAG);
+        LOG(MCoperatorInfo, "hthor build %s", hpccBuildTag);
 
 #ifdef MONITOR_ECLAGENT_STATUS
         if (serverstatus)

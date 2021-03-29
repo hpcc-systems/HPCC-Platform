@@ -24,7 +24,6 @@
 #include "jregexp.hpp"
 #include "jlzw.hpp"
 #include "eclrtl.hpp"
-#include "build-config.h"
 #if defined(__APPLE__)
 #include <mach-o/getsect.h>
 #include <sys/mman.h>

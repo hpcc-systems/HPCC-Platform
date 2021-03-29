@@ -23,7 +23,7 @@
 
 void printVersion()
 {
-    printf("DFU Version: %d %s\n", DAFT_VERSION, BUILD_TAG);
+    printf("DFU Version: %d %s\n", DAFT_VERSION, hpccBuildTag);
 }
 
 void handleSyntax()

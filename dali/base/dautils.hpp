@@ -534,6 +534,8 @@ interface ILockInfoCollection : extends IInterface
 extern da_decl ILockInfoCollection *createLockInfoCollection();
 extern da_decl ILockInfoCollection *deserializeLockInfoCollection(MemoryBuffer &mb);
 
+extern da_decl IPropertyTreeIterator * getDropZonePlanesIterator(const char * name=nullptr);
+extern da_decl IPropertyTree * getDropZonePlane(const char * name);
 extern da_decl void setPageCacheTimeoutMilliSeconds(unsigned timeoutSeconds);
 extern da_decl void setMaxPageCacheItems(unsigned _maxPageCacheItems);
 extern da_decl IRemoteConnection* connectXPathOrFile(const char* path, bool safe, StringBuffer& xpath);

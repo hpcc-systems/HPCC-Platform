@@ -47,6 +47,25 @@
 #define SDS_CONNECT_TIMEOUT  (1000*60*60*2)     // better than infinite
 #define MIN_REDIRECTION_LOAD_INTERVAL 1000
 
+
+constexpr char * lz_plane_path = "storage/planes[labels='lz']";
+
+IPropertyTreeIterator * getDropZonePlanesIterator(const char * name)
+{
+    VStringBuffer xpath(lz_plane_path);
+    if (!isEmptyString(name))
+        xpath.appendf("[@name='%s']", name);
+    return queryGlobalConfig().getElements(xpath);
+}
+IPropertyTree * getDropZonePlane(const char * name)
+{
+    if (isEmptyString(name))
+        throw makeStringException(-1, "Drop zone name required");
+    VStringBuffer xpath(lz_plane_path);
+    xpath.appendf("[@name='%s']", name);
+    return queryGlobalConfig().getPropTree(xpath);
+}
+
 extern da_decl const char *queryDfsXmlBranchName(DfsXmlBranchKind kind)
 {
     switch (kind) {

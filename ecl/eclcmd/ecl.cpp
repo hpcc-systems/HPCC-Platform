@@ -19,8 +19,6 @@
 #include "jfile.hpp"
 #include "jargv.hpp"
 
-#include "build-config.h"
-
 #include "ws_workunits.hpp"
 
 #include "eclcmd.hpp"
@@ -37,7 +35,7 @@
 
 static int doMain(int argc, const char *argv[])
 {
-    EclCMDShell processor(argc, argv, createCoreEclCommand, BUILD_TAG, true);
+    EclCMDShell processor(argc, argv, createCoreEclCommand, hpccBuildTag, true);
     return processor.run();
 }
 

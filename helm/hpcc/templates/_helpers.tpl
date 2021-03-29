@@ -79,7 +79,7 @@ storage:
   planes:
 {{- /*Generate entries for each data plane (removing the pvc).  Exclude the planes used for dlls and dali.*/ -}}
 {{- range $plane := $planes -}}
- {{- if or (not $plane.labels) (has "data" $plane.labels) }}
+ {{- if or (not $plane.labels) (or (has "data" $plane.labels) (has "lz" $plane.labels)) }}
   - name: {{ $plane.name | quote }}
 {{ toYaml (unset (unset (deepCopy $plane) "name") "pvc")| indent 4 }}
  {{- end }}
@@ -100,11 +100,23 @@ cost:
 {{- end -}}
 
 {{/*
+Generate dfuserver queues
+Pass in root
+*/}}
+{{- define "hpcc.generateConfigDfuQueues" -}}
+{{- range $queue := .root.Values.dfuserver }}
+{{- if not $queue.disabled }}
+- name: {{ .name }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Generate local logging info, merged with global
 Pass in dict with root and me
 */}}
 {{- define "hpcc.generateLoggingConfig" -}}
-{{- $logging := deepCopy (.me.logging | default dict) | mergeOverwrite (.root.Values.global.logging | default dict) -}}
+{{- $logging := deepCopy (.me.logging | default dict) | mergeOverwrite dict (.root.Values.global.logging | default dict) -}}
 {{- if not (empty $logging) }}
 logging:
 {{ toYaml $logging | indent 2 }}
@@ -138,17 +150,39 @@ Add ConfigMap volume for a component
 {{- end -}}
 
 {{/*
-Add data volume mount
-If any storage planes are defined that name pvcs they will be mounted
+Returns a non empty string if any labels in the list includeLabels is in the plane.labels
+Note: the list includeLabels may contain an empty string (""), which matches planes that do not have a label
+Pass in plane and includeLabels
+Return: If there is any matching labels, there will be a non-empty string returned.  If there is no matching labels,
+        an empty string will be returned.
 */}}
-{{- define "hpcc.addDataVolumeMount" -}}
+{{- define "hpcc.doesStorageLabelsMatch" -}}
+{{- $plane := .plane -}}
+  {{- range $label := .includeLabels -}}
+    {{- if and (eq $label "") (not $plane.labels) -}}
+      {{- print "T" -}}
+    {{- else if has $label $plane.labels -}}
+      {{- print "T" -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+Add volume mounts
+Pass in root and includeLabels (optional)
+Note: if there are multiple planes (other than dll, dali and spill planes), they should be all called with a single call
+to addVolumeMounts so that if a plane can be used for multiple purposes then duplicate volume mounts are not created.
+*/}}
+{{- define "hpcc.addVolumeMounts" -}}
 {{- /*Create local variables which always exist to avoid having to check if intermediate key values exist*/ -}}
 {{- $storage := (.root.Values.storage | default dict) -}}
-{{- $planes := ($storage.planes | default list) -}}
 {{- $dataStorage := ($storage.dataStorage | default dict) -}}
+{{- $planes := ($storage.planes | default list) -}}
+{{- $includeLabels := .includeLabels | default list -}}
 {{- range $plane := $planes -}}
  {{- if $plane.pvc -}}
-  {{- if or (not $plane.labels) (has "data" $plane.labels) }}
+  {{- $matchedLabels := include "hpcc.doesStorageLabelsMatch" (dict "plane" $plane "includeLabels" $includeLabels) -}}
+  {{- if ne $matchedLabels "" }}
    {{- $num := int ( $plane.numDevices | default 1 ) -}}
    {{- if le $num 1 }}
 - name: {{ lower $plane.name }}-pv
@@ -162,26 +196,39 @@ If any storage planes are defined that name pvcs they will be mounted
   {{- end }}
  {{- end }}
 {{- end }}
-{{- if (not $dataStorage.plane) }}
+{{- /*
+Create a data volume mount if data plane have not been specified in storage.planes
+Note: Some services used addVolumeMounts to add data planes and other types of plane using addVolumeMounts, so this code has
+to be located here rather than in addDataVolumeMount.
+*/ -}}
+{{- if and (has "data" $includeLabels) (not $dataStorage.plane) }}
 - name: datastorage
   mountPath: "/var/lib/HPCCSystems/hpcc-data"
 {{- end }}
 {{- end -}}
 
 {{/*
-Add data volume
-Pass in dict with root
+Add data volume mount
+Pass in root
 */}}
-{{- define "hpcc.addDataVolume" -}}
+{{- define "hpcc.addDataVolumeMount" -}}
+{{- include "hpcc.addVolumeMounts" (dict "root" .root "includeLabels" (list "data" "")) -}}
+{{- end -}}
+
+{{/*
+Add volumes
+Pass in root and includeLabels (optional)
+*/}}
+{{- define "hpcc.addVolumes" -}}
 {{- /*Create local variables which always exist to avoid having to check if intermediate key values exist*/ -}}
 {{- $storage := (.root.Values.storage | default dict) -}}
-{{- $planes := ($storage.planes | default list) -}}
 {{- $dataStorage := ($storage.dataStorage | default dict) -}}
-{{- $daliStorage := ($storage.daliStorage | default dict) -}}
-{{- $dllStorage := ($storage.dllStorage | default dict) -}}
+{{- $planes := ($storage.planes | default list) -}}
+{{- $includeLabels := .includeLabels | default list -}}
 {{- range $plane := $planes -}}
  {{- if $plane.pvc -}}
-  {{- if or (not $plane.labels) (has "data" $plane.labels) }}
+  {{- $matchedLabels := include "hpcc.doesStorageLabelsMatch" (dict "plane" $plane "includeLabels" $includeLabels) -}}
+  {{- if ne $matchedLabels "" }}
    {{- $num := int ( $plane.numDevices | default 1 ) -}}
    {{- $pvc := $plane.pvc | required (printf "pvc for %s not supplied" $plane.name) }}
    {{- if le $num 1 }}
@@ -198,11 +245,24 @@ Pass in dict with root
   {{- end }}
  {{- end }}
 {{- end -}}
-{{- if (not $dataStorage.plane) }}
+{{- /*
+Create a data volume if data plane have not been specified in storage.planes
+Note: Some services used addVolumes to add data planes and other types of plane using addVolumes, so this code has
+to be located here rather than in addDataVolumes.
+*/ -}}
+{{- if and (has "data" $includeLabels) (not $dataStorage.plane) }}
 - name: datastorage
   persistentVolumeClaim:
     claimName: {{ $dataStorage.existingClaim | default (printf "%s-datastorage" (include "hpcc.fullname" . )) }}
 {{- end }}
+{{- end -}}
+
+{{/*
+Add data volume
+Pass in dict with root
+*/}}
+{{- define "hpcc.addDataVolume" -}}
+{{- include "hpcc.addVolumes" (dict "root" .root "includeLabels" (list "data" "") ) -}}
 {{- end -}}
 
 {{/*
@@ -648,7 +708,11 @@ Generate list of available services
 - name: {{ $esp.name }}
   type: {{ $esp.application }}
   port: {{ $esp.servicePort }}
+  {{- if hasKey $esp "tls" }}
   tls: {{ $esp.tls }}
+  {{- else }}
+  tls: {{ ($.Values.certificates | default dict).enabled }}
+  {{- end }}
   public: {{ $esp.public }}
 {{ end -}}
 {{- range $dali := $.Values.dali -}}
@@ -947,4 +1011,198 @@ args:
 {{- else if $postJobCommand -}} ;
     {{ $postJobCommand }}
 {{- end }}
+{{- end -}}
+
+{{/*
+Use cert-manager to create a public certificate and private key for use with TLS
+There are separate certificate issuers for local and public certificates
+by default public certificates are self-signed and local certificates are signed
+by our own certificate authority.  A CA certificate is also provided to the pod
+so that we can recognize the signature of our own CA.
+*/}}
+{{- define "hpcc.addCertificate" }}
+{{- if (.root.Values.certificates | default dict).enabled -}}
+{{- $externalCert := and (hasKey . "external") .external -}}
+{{- $issuer := ternary .root.Values.certificates.issuers.public .root.Values.certificates.issuers.local $externalCert -}}
+{{- if $issuer -}}
+{{- $namespace := .root.Release.Namespace -}}
+{{- $service := (.service | default dict) -}}
+{{- $domain := ( $service.domain | default $issuer.domain | default $namespace | default "default" ) -}}
+{{- $exposure := ternary "public" "local" $externalCert -}}
+{{- $name := .name }}
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ .component }}-{{ $exposure }}-{{ $name }}-cert
+  namespace: {{ $namespace }}
+spec:
+  # Secret names are always required.
+  secretName: {{ .component }}-{{ $exposure }}-{{ $name }}-tls
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  subject:
+    organizations:
+    - HPCC Systems
+  commonName: {{ $name }}.{{ $domain }}
+  isCA: false
+  privateKey:
+    algorithm: RSA
+    encoding: PKCS1
+    size: 2048
+  usages:
+    - server auth
+    - client auth
+  dnsNames:
+ {{- /* if servicename is passed we simply create a service entry of that name */ -}}
+ {{- if .servicename }}
+  - {{ .servicename }}.{{ $domain }}
+ {{- /* if service parameter is passed in we are using the component config as a service config entry */ -}}
+ {{- else if .service -}}
+   {{- $public := and (hasKey .service "public") .service.public -}}
+   {{- if eq $public $externalCert }}
+  - {{ .service.name }}.{{ $domain }}
+   {{- end }}
+ {{- /* if services parameter is passed the component has an array of services to configure */ -}}
+ {{- else if .services -}}
+  {{- range $service := .services }}
+   {{- $external := and (hasKey $service "external") $service.external -}}
+   {{- if eq $external $externalCert }}
+  - {{ $service.name }}.{{ $domain }}
+   {{- end }}
+  {{- end }}
+ {{- else if not $externalCert }}
+  - "{{ $name }}.{{ $domain }}"
+ {{- end }}
+  uris:
+  - spiffe://hpcc.{{ $domain }}/{{ .component }}/{{ $name }}
+  # Issuer references are always required.
+  issuerRef:
+    name: {{ $issuer.name }}
+    # We can reference ClusterIssuers by changing the kind here.
+    kind: {{ $issuer.kind }}
+    group: cert-manager.io
+---
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
+Experimental: Use certmanager to generate a key for roxie udp encryption.
+A public certificate and private key are generated under /opt/HPCCSystems/secrets/certificates/udp.
+Current udp encryption design would only use the private key.
+Key is in pem format and the private key would need to be extracted.
+*/}}
+{{- define "hpcc.addUDPCertificate" }}
+{{- if (.root.Values.certificates | default dict).enabled -}}
+{{- $issuer := .root.Values.certificates.issuers.local -}}
+{{- $namespace := .root.Release.Namespace -}}
+{{- $name := .name -}}
+{{- if $issuer }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ .component }}-udp-{{ $name }}-cert
+  namespace: {{ $namespace }}
+spec:
+  # Secret names are always required.
+  secretName: {{ .component }}-udp-{{ $name }}-dtls
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  subject:
+    organizations:
+    - HPCC Systems
+  commonName: {{ $name }}.{{ $namespace }}
+  isCA: false
+  privateKey:
+    algorithm: ECDSA
+    encoding: PKCS1
+    size: 256
+  usages:
+    - server auth
+    - client auth
+  # At least one of a DNS Name, URI, or IP address is required.
+  uris:
+  - spiffe://hpcc.{{ $namespace }}/{{ .component }}/{{ $name }}
+  # Issuer references are always required.
+  issuerRef:
+    name: {{ $issuer.name }}
+    # We can reference ClusterIssuers by changing the kind here.
+    # The default value is Issuer (i.e. a locally namespaced Issuer)
+    kind: {{ $issuer.kind }}
+    group: cert-manager.io
+---
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
+Add a certficate volume mount for a component
+*/}}
+{{- define "hpcc.addCertificateVolumeMount" -}}
+{{- $externalCert := and (hasKey . "external") .external -}}
+{{- $exposure := ternary "public" "local" $externalCert }}
+{{- /*
+    A .certificate parameter means the user explictly configured a certificate to use
+    otherwise check if certificate generation is enabled
+*/ -}}
+{{- if .certificate -}}
+- name: certificate-{{ .component }}-{{ $exposure }}-{{ .name }}
+  mountPath: /opt/HPCCSystems/secrets/certificates/{{ $exposure }}
+{{- else if (.root.Values.certificates | default dict).enabled -}}
+{{- $issuer := ternary .root.Values.certificates.issuers.public .root.Values.certificates.issuers.local $externalCert -}}
+{{- if $issuer -}}
+- name: certificate-{{ .component }}-{{ $exposure }}-{{ .name }}
+  mountPath: /opt/HPCCSystems/secrets/certificates/{{ $exposure }}
+{{- end }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Add a secret volume for a certificate
+*/}}
+{{- define "hpcc.addCertificateVolume" -}}
+{{- $externalCert := and (hasKey . "external") .external -}}
+{{- $exposure := ternary "public" "local" $externalCert -}}
+{{- /*
+    A .certificate parameter means the user explictly configured a certificate to use
+    otherwise check if certificate generation is enabled
+*/ -}}
+{{- if .certificate -}}
+- name: certificate-{{ .component }}-{{ $exposure }}-{{ .name }}
+  secret:
+    secretName: {{ .certificate }}
+{{- else if (.root.Values.certificates | default dict).enabled -}}
+{{- $issuer := ternary .root.Values.certificates.issuers.public .root.Values.certificates.issuers.local $externalCert -}}
+{{- if $issuer -}}
+- name: certificate-{{ .component }}-{{ $exposure }}-{{ .name }}
+  secret:
+    secretName: {{ .component }}-{{ $exposure }}-{{ .name }}-tls
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Add the certficate volume mount for a roxie udp key
+*/}}
+{{- define "hpcc.addUDPCertificateVolumeMount" }}
+{{- if (.root.Values.certificates | default dict).enabled -}}
+{{- if .root.Values.certificates.issuers.local -}}
+- name: certificate-{{ .component }}-udp-{{ .name }}
+  mountPath: /opt/HPCCSystems/secrets/certificates/udp
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Add a secret volume for a roxie udp key
+*/}}
+{{- define "hpcc.addUDPCertificateVolume" }}
+{{- if (.root.Values.certificates | default dict).enabled -}}
+{{- if .root.Values.certificates.issuers.local -}}
+- name: certificate-{{ .component }}-udp-{{ .name }}
+  secret:
+    secretName: {{ .component }}-udp-{{ .name }}-dtls
+{{ end -}}
+{{- end -}}
 {{- end -}}

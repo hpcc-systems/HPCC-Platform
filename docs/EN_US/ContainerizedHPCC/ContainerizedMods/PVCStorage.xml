@@ -18,19 +18,19 @@
 
     <orderedlist>
       <listitem>
-        <para>Create data directories using a terminal interface: </para>
+        <para>Create data directories using a terminal interface:</para>
 
         <para>For Windows, use this command:</para>
 
         <para><programlisting>mkdir c:\hpccdata
-mkdir c:\hpccdata\dlls
-mkdir c:\hpccdata\data
-mkdir c:\hpccdata\dali
-</programlisting></para>
+mkdir c:\hpccdata\dalistorage
+mkdir c:\hpccdata\queries
+mkdir c:\hpccdata\sasha
+mkdir c:\hpccdata\hpcc-data</programlisting></para>
 
         <para>For macOS, use this command:</para>
 
-        <para><programlisting>mkdir -p /Users/myUser/hpccdata/{dlls,data,dali} </programlisting></para>
+        <para><programlisting>mkdir -p /Users/myUser/hpccdata/{dalistorage,queries,sasha,hpcc-data}</programlisting></para>
       </listitem>
 
       <listitem>
@@ -68,8 +68,8 @@ helm install localfile examples/local/hpcc-localfile --set common.hostpath=/c/hp
 helm install localfile examples/local/hpcc-localfile --set common.hostpath=/Users/myUser/hpccdata
 </programlisting></para>
 
-        <para>The <emphasis role="bold">--set</emphasis> option specifies the
-        base directory:</para>
+        <para>The <emphasis role="bold">--set common.hostpath=
+        </emphasis>option specifies the base directory:</para>
 
         <para>The path <emphasis
         role="bold">/run/desktop/mnt/host/c/hpccdata</emphasis> provides
@@ -80,15 +80,18 @@ helm install localfile examples/local/hpcc-localfile --set common.hostpath=/User
 
         <para>The path <emphasis role="bold">/Users/myUser/hpccdata</emphasis>
         provides access to the host file system for Mac OSX.</para>
+
+        <para><emphasis role="bold">Note: </emphasis>The value passed to --set
+        common-hostpath is case sensitive. </para>
       </listitem>
 
       <listitem>
         <para>If you are using Docker Desktop with Hyper-V, add the shared
         data folder (in this example, C:\hpccdata) in the Docker Desktop
-        settings. </para>
+        settings.</para>
 
         <para>This is <emphasis role="bold">not</emphasis> needed in a macOS
-        or WSL 2 environment. </para>
+        or WSL 2 environment.</para>
 
         <graphic fileref="../../images/dockerFileShare.jpg" />
       </listitem>

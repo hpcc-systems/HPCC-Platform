@@ -1,0 +1,9 @@
+esp:
+- name: loggingservice
+  application: loggingservice
+  agentdir: /opt/HPCCSystems/loggingagents  # change this to where the logging agent xml config files are placed in the image being used.  The default location is shown.
+  auth: none
+  tls: off
+  replicas: 1
+  servicePort: 8123 # This is the service port your logging service will be accessible on.
+  public: false # generally an ESP logging service would be used by internal components, not accessed by external public

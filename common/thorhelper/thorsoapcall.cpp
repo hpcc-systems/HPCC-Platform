@@ -826,6 +826,7 @@ private:
     CTimeMon timeLimitMon;
     bool complete, timeLimitExceeded;
     bool customClientCert = false;
+    bool localClientCert = false;
     IRoxieAbortMonitor * roxieAbortMonitor;
 
 protected:
@@ -954,12 +955,19 @@ public:
         StringBuffer proxyAddress;
         proxyAddress.set(s.setown(helper->getProxyAddress()));
 
-        OwnedRoxieString hosts(helper->getHosts());
+        OwnedRoxieString hostsString(helper->getHosts());
+        const char *hosts = hostsString.get();
+
         if (isEmptyString(hosts))
             throw MakeStringException(0, "%sCALL specified no URLs",wscType == STsoap ? "SOAP" : "HTTP");
+        if (0==strncmp(hosts, "mtls:", 5))
+        {
+            localClientCert = true;
+            hosts += 5;
+        }
         if (0==strncmp(hosts, "secret:", 7))
         {
-            const char *finger = hosts.get()+7;
+            const char *finger = hosts+7;
             if (isEmptyString(finger))
                 throw MakeStringException(0, "%sCALL HTTP-CONNECT SECRET specified with no name", wscType == STsoap ? "SOAP" : "HTTP");
             if (!proxyAddress.isEmpty())
@@ -1117,6 +1125,8 @@ public:
         {
             if (clientCert != NULL)
                 ownedSC.setown(createSecureSocketContextEx(clientCert->certificate, clientCert->privateKey, clientCert->passphrase, ClientSocket));
+            else if (localClientCert)
+                ownedSC.setown(createSecureSocketContextSecret("local", ClientSocket));
             else
                 ownedSC.setown(createSecureSocketContext(ClientSocket));
         }

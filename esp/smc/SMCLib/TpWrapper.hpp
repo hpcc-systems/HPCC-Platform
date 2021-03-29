@@ -215,6 +215,7 @@ private:
 extern TPWRAPPER_API ISashaCommand* archiveOrRestoreWorkunits(StringArray& wuids, IProperties* params, bool archive, bool dfu);
 
 extern TPWRAPPER_API unsigned getContainerWUClusterInfo(CConstWUClusterInfoArray& clusters);
+extern TPWRAPPER_API unsigned getWUClusterInfo(CConstWUClusterInfoArray& clusters);
 extern TPWRAPPER_API IConstWUClusterInfo* getWUClusterInfoByName(const char* clustName);
 
 extern TPWRAPPER_API IStringIterator *getContainerTargetClusters(const char* processType, const char* processName);

@@ -20,7 +20,6 @@
 #include "jfile.hpp"
 #include "jargv.hpp"
 #include "jflz.hpp"
-#include "build-config.h"
 #include "httpclient.hpp"
 
 #include "workunit.hpp"

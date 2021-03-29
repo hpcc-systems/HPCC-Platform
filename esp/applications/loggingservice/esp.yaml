@@ -1,0 +1,27 @@
+esp:
+   instance: logging
+   description: logging service
+   daliServers: mydali
+   auth: ldap
+   tls: true
+   port: 8880
+   agentdir: /opt/HPCCSystems/loggingagents
+   loadDaliBindings: false
+   enableSEHMapping: true
+   httpConfigAccess: true
+   logLevel: 1
+   maxBacklogQueueSize: 200
+   logDir: "-"
+
+   tls_config:
+     certificate: /etc/HPCCSystems/certificates/{$instance}/server.crt
+     privatekey: /etc/HPCCSystems/certificates/{$instance}/private.key
+     cipherList:
+       verify:
+          enable: false
+          address_match: false
+          accept_selfsigned: true
+          ca_certificates:
+            - path: "ca.pem"
+          trusted_peers:
+            - anyone

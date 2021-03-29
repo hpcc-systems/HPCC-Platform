@@ -32,6 +32,8 @@
 #define ECLSERVER_QUEUE_EXT ECLCCSERVER_QUEUE_EXT
 #define ECLSCHEDULER_QUEUE_EXT ".eclscheduler"
 #define ECLAGENT_QUEUE_EXT ".agent"
+#define DFU_QUEUE_EXT ".dfuserver"
+#define DFU_MONITOR_QUEUE_EXT ".monitor.dfuserver"
 
 #ifndef _CONTAINERIZED
 inline StringBuffer &getClusterRoxieQueueName(StringBuffer &ret, const char *cluster)
@@ -58,6 +60,16 @@ inline StringBuffer &getClusterEclAgentQueueName(StringBuffer &ret, const char *
 inline StringBuffer &getClusterThorQueueName(StringBuffer &ret, const char *cluster)
 {
     return ret.append(cluster).append(THOR_QUEUE_EXT);
+}
+
+inline StringBuffer &getDfuQueueName(StringBuffer &ret, const char *name)
+{
+    return ret.append(name).append(DFU_QUEUE_EXT);
+}
+
+inline StringBuffer &getDfuMonitorQueueName(StringBuffer &ret, const char *name)
+{
+    return ret.append(name).append(DFU_MONITOR_QUEUE_EXT);
 }
 
 #endif

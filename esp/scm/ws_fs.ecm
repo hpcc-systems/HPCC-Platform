@@ -414,6 +414,7 @@ ReplicateResponse
 
 ESPrequest Despray
 {
+    string destGroup;
     string sourceLogicalName;
 
     string destIP;
