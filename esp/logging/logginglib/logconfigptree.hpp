@@ -60,7 +60,7 @@ namespace LogConfigPTree
                 if (defaultValue > std::numeric_limits<value_t>::max())
                     report(true);
             }
-            else
+            else if (!std::is_same<value_t, bool>()) // ignore boolean
             {
                 if (defaultValue < 0 || defaultValue > std::numeric_limits<value_t>::max())
                     report(false);
