@@ -1,0 +1,9 @@
+protocol_plugins:
+  http_protocol: esphttp
+  secure_http_protocol: esphttp
+
+service_plugins:
+  ws_loggingservice: ws_loggingservice
+
+binding_plugins:
+  ws_loggingservice: ws_loggingservice

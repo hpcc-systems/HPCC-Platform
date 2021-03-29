@@ -65,6 +65,10 @@ public:
     };
 
     virtual bool init(const char* name, const char* type, IPropertyTree* cfg, const char* process);
+    void initLogAgent(IPropertyTree &ptree, const char *process, const char *service);
+    void initLogAgentSet(IPropertyTree &ptree, const char *process, const char *service);
+    void initLogAgentDirectory(const char *agentdir, const char *mask, const char *process, const char *service);
+
 
     //interface IEspLoggingService
     bool onGetTransactionSeed(IEspContext& context, IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp);
