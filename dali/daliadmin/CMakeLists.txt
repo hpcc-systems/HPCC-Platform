@@ -24,7 +24,9 @@
 
 project( daliadmin ) 
 
-set (    SRCS 
+include ( daliadminlib.cmake)
+
+set (    SRCS
          daliadmin.cpp 
     )
 
@@ -48,10 +50,6 @@ HPCC_ADD_EXECUTABLE ( daliadmin ${SRCS} )
 install ( TARGETS daliadmin RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( daliadmin  
          jlib
-         mp 
-         dafsclient 
-         dalibase 
-         workunit
-         dllserver
+         daliadminlib
     )
 
