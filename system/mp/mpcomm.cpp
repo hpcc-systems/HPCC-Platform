@@ -86,7 +86,11 @@
 #define _TRACING
 
 static  CriticalSection childprocesssect;
+#ifdef _WIN32
+static  Unsigned64Array childprocesslist;
+#else
 static  UnsignedArray childprocesslist;
+#endif
 
 // IPv6 TBD
 
