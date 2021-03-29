@@ -127,6 +127,7 @@ def queryWuid(jobname,  taskId):
     args.append('status')
     args.append('-v')
     args.append('-n=' + jobname)
+    args.append('--wait-read='+ gConfig.wuStatusTimeout )  # Timeout while reading from socket (in seconds)
     addCommonEclArgs(args)
 
     res, stderr = shell.command(cmd, *defaults)(*args)
@@ -226,35 +227,36 @@ def abortWorkunit(wuid, taskId = -1, engine = None):
                 logger.error(traceback.format_exc())
                 raise Error(err)
                 pass
-        
+
         if gConfig.preAbort != None:
             try:
                 logger.error("%3d. Execute pre abort script '%s'", taskId, str(gConfig.preAbort))
                 outFile = os.path.expanduser(gConfig.logDir) + '/' + wuid +'-preAbort.log'
-                
+
                 command=gConfig.preAbort + " > " + outFile + " 2>&1"
                 myProc = subprocess.Popen([ command ],  shell=True,  bufsize=8192,  stdout=subprocess.PIPE,  stderr=subprocess.PIPE)
                 result = myProc.stdout.read() + myProc.stderr.read()
-                
+
                 logger.debug("%3d. Pre abort script result '%s'", taskId, wuid, str(result))
                 logger.error("%3d. Pre abort script result stored into '%s'", taskId, outFile)
             except Exception as e:
                 printException("preAbort scrip:" + repr(e),  True)
                 logger.error("%3d. Exception in executing pre abort script: '%s'", taskId, repr(e))
             pass
-            
+
         shell = Shell()
         cmd = 'ecl'
         defaults=[]
         args = []
         args.append('abort')
         args.append('-wu=' + wuid)
+        args.append('--wait-read=' + gConfig.wuAbortTimeout )  # Timeout while reading from socket (in seconds)
         addCommonEclArgs(args)
 
         state=shell.command(cmd, *defaults)(*args)
     else:
         logger.error("%3d. abortWorkunit(wuid:'%s', engine:'%s') invalid WUID.", taskId, wuid, str(engine))
-        
+
     return state
 
 def createZAP(wuid, taskId,  reason=''):
