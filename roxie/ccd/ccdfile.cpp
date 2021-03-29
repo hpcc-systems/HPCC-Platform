@@ -618,13 +618,20 @@ struct CacheInfoEntry
     {
         struct
         {
+#ifndef _WIN32
             unsigned type: 2;    // disk or the kind of index node
             __uint64 page: 38;   // Support file sizes up to 2^51 i.e. 2PB
             unsigned file: 24;   // Up to 4 million files
+#else
+//Windows does not like packing bitfields with different base types - fails the statck assert
+            __uint64 type: 2;    // disk or the kind of index node
+            __uint64 page: 38;   // Support file sizes up to 2^51 i.e. 2PB
+            __uint64 file: 24;   // Up to 4 million files
+#endif
         } b;
         __uint64 u;
     };
-    static_assert(sizeof(b) == sizeof(u), "Unexpected packing issue");
+    static_assert(sizeof(b) == sizeof(u), "Unexpected packing issue in CacheInfoEntry");
 
     inline CacheInfoEntry() { u = 0; }
     inline CacheInfoEntry(unsigned _file, offset_t _pos, PageType pageType)

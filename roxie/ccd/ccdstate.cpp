@@ -2371,6 +2371,12 @@ private:
                 topology->setPropInt("@leafCacheMem", leafCacheMB);
                 setLeafCacheMem(leafCacheMB * 0x100000);
             }
+            else if (stricmp(queryName, "control:legacyNodeCache")==0)
+            {
+                bool legacyNodeCache = control->getPropBool("@val", true);
+                topology->setPropInt("@legacyNodeCache", legacyNodeCache);
+                setLegacyNodeCache(legacyNodeCache);
+            }
             else if (stricmp(queryName, "control:listFileOpenErrors")==0)
             {
                 // this just creates a delta state file to remove references to Keys / Files we now longer have interest in

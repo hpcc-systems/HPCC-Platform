@@ -193,11 +193,12 @@ class jhtree_decl CNodeBase : public CWritableKeyNode
 {
 protected:
     NodeHdr hdr;
-    byte keyType;
     size32_t keyLen;
     size32_t keyCompareLen;
     CKeyHdr *keyHdr;
+    byte keyType;
     bool isVariable;
+    std::atomic<bool> ready{false}; // is this node read for use?  Can be checked outside a critsec, but only set within one.
 
 private:
     offset_t fpos;
@@ -213,6 +214,8 @@ public:
     inline bool isLeaf() const { return hdr.leafFlag != NodeBranch; }       // actually is-non-branch.  Use should be reviewed.
     inline NodeType getNodeType() const { return (NodeType)hdr.leafFlag; }
 
+    inline bool isReady() const { return ready; }
+    inline void noteReady() { ready = true; }
 public:
     CNodeBase();
     void load(CKeyHdr *keyHdr, offset_t fpos);

@@ -2811,12 +2811,14 @@ void CJobBase::startJob()
     unsigned keyNodeCacheMB = getWorkUnitValueInt("keyNodeCacheMB", DEFAULT_KEYNODECACHEMB * queryJobChannels());
     unsigned keyLeafCacheMB = getWorkUnitValueInt("keyLeafCacheMB", DEFAULT_KEYLEAFCACHEMB * queryJobChannels());
     unsigned keyBlobCacheMB = getWorkUnitValueInt("keyBlobCacheMB", DEFAULT_KEYBLOBCACHEMB * queryJobChannels());
+    bool legacyNodeCache = getWorkUnitValueBool("legacyNodeCache", false);
     keyNodeCacheBytes = ((memsize_t)0x100000) * keyNodeCacheMB;
     keyLeafCacheBytes = ((memsize_t)0x100000) * keyLeafCacheMB;
     keyBlobCacheBytes = ((memsize_t)0x100000) * keyBlobCacheMB;
     setNodeCacheMem(keyNodeCacheBytes);
     setLeafCacheMem(keyLeafCacheBytes);
     setBlobCacheMem(keyBlobCacheBytes);
+    setLegacyNodeCache(legacyNodeCache);
     PROGLOG("Key node caching setting: node=%u MB, leaf=%u MB, blob=%u MB", keyNodeCacheMB, keyLeafCacheMB, keyBlobCacheMB);
 
     unsigned keyFileCacheLimit = (unsigned)getWorkUnitValueInt("keyFileCacheLimit", 0);
