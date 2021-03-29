@@ -1,0 +1,31 @@
+{{- define "hpcc.issuers" -}}
+apiVersion: cert-manager.io/v1
+kind: {{ .me.kind | default "Issuer" }}
+metadata:
+  name: {{ .me.name }}
+  namespace: {{ .root.Release.Namespace | default "default" }}
+   {{- if .me.spec }}
+spec:
+  {{- if .me.spec.ca }}
+   {{- if .me.spec.ca.secretName }}
+    {{- if not (lookup "v1" "Secret" .root.Release.Namespace .me.spec.ca.secretName) }}
+      {{- $_ := fail (printf "Using a local certificate authority requires a CA certificate stored in the secret named '%s'. You can disable mTLS security by setting certificates.enabled=false" .me.spec.ca.secretName ) -}}
+    {{- end }}
+   {{- end }}
+  {{- end }}
+{{ toYaml .me.spec | indent 2 }}
+
+ {{- end }}
+{{- end }}
+
+{{- if $.Values.certificates -}}
+ {{- if $.Values.certificates.enabled -}}
+   {{- if not (.Capabilities.APIVersions.Has "cert-manager.io/v1") }}
+    {{- $_ := fail (printf "Enabling certificate generation requires cert-manager resources. Please intall cert-manager. You can disable mTLS security by setting certificates.enabled=false" ) -}}
+   {{- end -}}
+  {{- range $k, $v := .Values.certificates.issuers }}
+{{- include "hpcc.issuers" (dict "root" $ "me" $v ) }}
+---
+  {{- end }}
+ {{- end }}
+{{- end }}

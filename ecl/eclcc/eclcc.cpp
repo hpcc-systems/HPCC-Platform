@@ -52,7 +52,6 @@
 #include "hqlstmt.hpp"
 #include "hqlcache.hpp"
 
-#include "build-config.h"
 #include "rmtfile.hpp"
 #include "deffield.hpp"
 
@@ -2870,7 +2869,7 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         }
         else if (strcmp(arg, "--version")==0)
         {
-            fprintf(stdout,"%s %s\n", LANGUAGE_VERSION, BUILD_TAG);
+            fprintf(stdout,"%s %s\n", LANGUAGE_VERSION, hpccBuildTag);
             return 1;
         }
         else if (startsWith(arg, "-Wc,"))

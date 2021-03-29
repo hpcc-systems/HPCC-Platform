@@ -131,6 +131,7 @@ private:
     StringBuffer userid_;
     StringBuffer password_;
     StringBuffer realm_;
+    StringBuffer mtls_secret_;
     unsigned connectTimeoutMs_ = 0;
     unsigned readTimeoutSecs_ = 0;
 
@@ -171,6 +172,9 @@ public:
     //unorthodox naming to avoid name collisions with generated code
     void soap_setRealm(const char *realm){realm_.clear().append(realm);}
     const char * soap_getRealm(){return realm_.str();}
+
+    void setMtlsSecretName(const char *name){mtls_secret_.set(name);}
+    const char *getMtlsSecretName(){return mtls_secret_.str();}
 
     void post(const char *proxy, const char* url, IRpcResponseBinding& response, const char *action=NULL);
 

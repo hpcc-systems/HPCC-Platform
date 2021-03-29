@@ -25,8 +25,6 @@
 #include "jerror.hpp"
 #include "jsecrets.hpp"
 
-#include "build-config.h"
-
 //including cpp-httplib single header file REST client
 //  doesn't work with format-nonliteral as an error
 //
@@ -44,6 +42,10 @@
 
 #if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic pop
+#endif
+
+#ifdef _USE_OPENSSL
+#include <openssl/x509v3.h>
 #endif
 
 #include <vector>
@@ -68,11 +70,14 @@ interface IVaultManager : extends IInterface
 
 static CriticalSection secretCacheCS;
 static Owned<IPropertyTree> secretCache;
+static CriticalSection mtlsInfoCacheCS;
+static Owned<IPropertyTree> mtlsInfoCache;
 static Owned<IVaultManager> vaultManager;
 
 MODULE_INIT(INIT_PRIORITY_SYSTEM)
 {
     secretCache.setown(createPTree());
+    mtlsInfoCache.setown(createPTree());
     return true;
 }
 
@@ -80,6 +85,7 @@ MODULE_EXIT()
 {
     vaultManager.clear();
     secretCache.clear();
+    mtlsInfoCache.clear();
 }
 
 static void splitUrlAddress(const char *address, size_t len, StringBuffer &host, StringBuffer *port)
@@ -713,3 +719,70 @@ extern jlib_decl bool getSecretValue(StringBuffer & result, const char *category
     return true;
 }
 
+bool getSecretUdpKey(MemoryAttr &updkey)
+{
+    bool ret = false;
+    updkey.clear();
+#if defined(_CONTAINERIZED) && defined(_USE_OPENSSL)
+    BIO *in = BIO_new_file("/opt/HPCCSystems/secrets/certificates/udp/tls.key", "r");
+    if (in == nullptr)
+        return false;
+    EC_KEY *eckey = PEM_read_bio_ECPrivateKey(in, nullptr, nullptr, nullptr);
+    if (eckey)
+    {
+        unsigned char *priv = NULL;
+        size_t privlen = EC_KEY_priv2buf(eckey, &priv);
+        if (privlen != 0)
+        {
+            updkey.set(privlen, priv);
+            OPENSSL_clear_free(priv, privlen);
+            ret = true;
+        }
+        EC_KEY_free(eckey);
+    }
+    BIO_free(in);
+#endif
+    return ret;
+}
+
+IPropertyTree *queryMtlsSecretInfo(const char *name)
+{
+    if (isEmptyString(name))
+        return nullptr;
+   CriticalBlock block(mtlsInfoCacheCS);
+   IPropertyTree *info = mtlsInfoCache->queryPropTree(name);
+    if (info)
+        return info;
+
+    StringBuffer filepath;
+    StringBuffer secretpath;
+
+    addPathSepChar(secretpath.append(ensureSecretDirectory())).append("certificates").append(PATHSEPCHAR).append(name).append(PATHSEPCHAR);
+
+    filepath.set(secretpath).append("tls.crt");
+    if (!checkFileExists(filepath))
+        return nullptr;
+
+    info = mtlsInfoCache->setPropTree(name);
+    info->setProp("certificate", filepath.str());
+    filepath.set(secretpath).append("tls.key");
+    if (checkFileExists(filepath))
+        info->setProp("privatekey", filepath.str());
+    IPropertyTree *verify = ensurePTree(info, "verify");
+    if (verify)
+    {
+        filepath.set(secretpath).append("ca.crt");
+        if (checkFileExists(filepath))
+        {
+            IPropertyTree *ca = ensurePTree(verify, "ca_certificates");
+            if (ca)
+                ca->setProp("@path", filepath.str());
+        }
+        verify->setPropBool("@enable", true);
+        verify->setPropBool("@address_match", false);
+        verify->setPropBool("@accept_selfsigned", false);
+        verify->setProp("trusted_peers", "anyone");
+
+    }
+    return info;
+}

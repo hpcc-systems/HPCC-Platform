@@ -7611,6 +7611,10 @@ bool extractFromWorkunitDAToken(const char * distributedAccessToken, StringBuffe
 //   Throws if unable to open workunit
 wuTokenStates verifyWorkunitDAToken(const char * ctxUser, const char * daToken)
 {
+    #ifdef _CONTAINERIZED
+    if (!queryComponentConfig().getPropBool("@wuTokens", false))
+        return wuTokenInvalid;
+    #endif
     if (isEmptyString(daToken))
     {
         ERRLOG("verifyWorkunitDAToken : Token must be provided");

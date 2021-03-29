@@ -60,7 +60,6 @@
 #include "jregexp.hpp"
 #include "portlist.h"
 
-#include "build-config.h"
 #include "jprop.hpp"
 
 // #define REMOTE_DISCONNECT_ON_DESTRUCTOR  // enable to disconnect on IFile destructor

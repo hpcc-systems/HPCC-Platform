@@ -67,7 +67,6 @@
 #include "jprop.hpp"
 #include "jregexp.hpp"
 #include "jdebug.hpp"
-#include "build-config.h"
 
 // epoll only with linux
 

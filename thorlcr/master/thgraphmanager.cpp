@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-#include "build-config.h"
 #include "platform.h"
 #include "jarray.hpp"
 #include "jfile.hpp"
@@ -907,7 +906,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     timestamp_type startTs = getTimeStampNowValue();
     {
         Owned<IWorkUnit> wu = &workunit.lock();
-        wu->setTracingValue("ThorBuild", BUILD_TAG);
+        wu->setTracingValue("ThorBuild", hpccBuildTag);
 #ifndef _CONTAINERIZED
         updateWorkUnitLog(*wu);
 #endif

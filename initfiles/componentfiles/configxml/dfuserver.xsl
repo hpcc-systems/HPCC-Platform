@@ -47,7 +47,7 @@
                <xsl:value-of select="@name"/>
             </xsl:attribute> 
 
-            <xsl:attribute name="daliservers"> <xsl:call-template name="getDaliServers">
+            <xsl:attribute name="daliServers"> <xsl:call-template name="getDaliServers">
                     <xsl:with-param name="daliServer" select="@daliServers"/>
                 </xsl:call-template>            
             </xsl:attribute>
@@ -68,11 +68,11 @@
                <xsl:value-of select="@queue"/>
             </xsl:attribute> 
             
-            <xsl:attribute name="monitorqueue">
+            <xsl:attribute name="monitorQueue">
                <xsl:value-of select="@monitorqueue"/>
             </xsl:attribute> 
             
-            <xsl:attribute name="monitorinterval">
+            <xsl:attribute name="monitorInterval">
                <xsl:value-of select="@monitorinterval"/>
             </xsl:attribute> 
             

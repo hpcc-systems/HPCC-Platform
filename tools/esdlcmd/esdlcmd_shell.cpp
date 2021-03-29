@@ -21,8 +21,6 @@
 #include "jargv.hpp"
 #include "jprop.hpp"
 
-#include "build-config.h"
-
 #include "esdlcmd.hpp"
 #include "esdlcmd_core.hpp"
 
@@ -157,7 +155,7 @@ bool EsdlCMDShell::parseCommandLineOptions(ArgvIterator &iter)
         }
         if (iter.matchFlag(boolValue, ESDLOPT_VERSION))
         {
-            fprintf(stdout, "%s\n", BUILD_TAG);
+            fprintf(stdout, "%s\n", hpccBuildTag);
             return false;
         }
         StringAttr tempArg;

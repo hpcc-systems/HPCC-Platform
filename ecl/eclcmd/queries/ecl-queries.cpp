@@ -20,8 +20,6 @@
 #include "jargv.hpp"
 #include "jflz.hpp"
 
-#include "build-config.h"
-
 #include "ws_workunits.hpp"
 
 #include "eclcmd.hpp"
@@ -1561,7 +1559,7 @@ public:
 
 static int doMain(int argc, const char *argv[])
 {
-    EclQueriesCMDShell processor(argc, argv, createEclQueriesCommand, BUILD_TAG);
+    EclQueriesCMDShell processor(argc, argv, createEclQueriesCommand, hpccBuildTag);
     return processor.run();
 }
 

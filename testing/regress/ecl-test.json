@@ -35,6 +35,8 @@
         },
         "timeout":"720",
         "maxAttemptCount":"3",
+        "wuStatusTimeout":"30",
+        "wuAbortTimeout":"30",
         "defaultSetupTargets": [
             "thor",
             "roxie"

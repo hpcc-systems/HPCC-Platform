@@ -29,7 +29,6 @@
 #include <direct.h> 
 #endif
 
-#include "build-config.h"
 #include "jlib.hpp"
 #include "jdebug.hpp"
 #include "jfile.hpp"
@@ -605,7 +604,7 @@ int main( int argc, const char *argv[]  )
 #endif
     setStatisticsComponentName(SCTthor, globals->queryProp("@name"), true);
 
-    globals->setProp("@masterBuildTag", BUILD_TAG);
+    globals->setProp("@masterBuildTag", hpccBuildTag);
 
     setIORetryCount(globals->getPropInt("Debug/@ioRetries")); // default == 0 == off
     StringBuffer daliServer;
@@ -674,7 +673,7 @@ int main( int argc, const char *argv[]  )
         logHandler = queryStderrLogMsgHandler();
         logUrl.set("stderr");
 #endif
-        LOG(MCdebugProgress, thorJob, "Build %s", BUILD_TAG);
+        LOG(MCdebugProgress, thorJob, "Build %s", hpccBuildTag);
 
         Owned<IGroup> serverGroup = createIGroupRetry(daliServer.str(), DALI_SERVER_PORT);
 

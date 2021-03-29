@@ -49,9 +49,6 @@ fi
 set -e
 
 if [[ -z ${INPUT_BUILD_LABEL} ]]; then
-  . ${SCRIPT_DIR}/../cmake_modules/parse_cmake.sh
-  parse_cmake
-  set_tag
   BUILD_LABEL=${HPCC_SHORT_TAG}
 else
   BUILD_LABEL=${INPUT_BUILD_LABEL}
@@ -73,6 +70,7 @@ build_image() {
   local name=$1
   local label=$2
   local buildTag=$3
+  local rest=${@:4}
   [[ -z ${label} ]] && label=$BUILD_LABEL
   [[ -z ${buildTag} ]] && buildTag=$BUILD_TAG
 
@@ -87,7 +85,7 @@ build_image() {
        --build-arg USE_CPPUNIT=${USE_CPPUNIT} \
        --build-arg BUILD_THREADS=${BUILD_THREADS} \
        --build-arg GITHUB_TOKEN=${GITHUB_TOKEN} \
-       ${name}/
+       ${rest} ${name}/
   fi
   push_image $name $label
 }

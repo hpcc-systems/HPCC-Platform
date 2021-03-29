@@ -54,6 +54,26 @@
       },
       "additionalProperties": false
     },
+    "certificates": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "issuers": {
+          "type": "object",
+          "properties": {
+            "local": {
+              "$ref": "#/definitions/issuer"
+            },
+            "public": {
+              "$ref": "#/definitions/issuer"
+            }
+          }
+        }
+      }
+    },
     "secrets": {
       "description": "configuration for secrets accessed by the components",
       "type": "object",
@@ -149,6 +169,27 @@
             "spillPlane": {
               "description": "The storage plane to write spill files to",
               "type": "string"
+            },
+            "required": [ "name" ]
+          }
+        ]
+      }
+    },
+    "dfuserver": {
+      "description": "dfuserver process",
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "name": {
+              "type": "string",
+              "description": "The name of the dfuserver process"
+            },
+            "disabled": {
+              "type": "boolean"
+            },
+            "maxJobs": {
+              "type": "integer"
             },
             "required": [ "name" ]
           }
@@ -367,6 +408,10 @@
           "description": "a list of labels associated with this plane, e.g. lz, data. NB: if blank/unset, treated as if 'data'",
           "type": "array",
           "items": { "type": "string" }
+        },
+        "umask" : {
+          "description": "file creation mask (used by despray)",
+          "type" : "string"
         }
       },
       "required": [ "name", "prefix" ],
@@ -1099,6 +1144,27 @@
         },
         "tolerationSeconds": {
           "type": "integer"
+        }
+      }
+    },
+    "issuer": {
+      "type": "object",
+      "required": [ "name" ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the issuer which will be referenced in certificate objects"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+              "Issuer",
+              "ClusterIssuer"
+          ]
+        },
+        "spec": {
+          "description": "The cert-manager spec for the issuer. Should match issuer spec(s) defined by https://cert-manager.io/docs/configuration/",
+          "type": "object"
         }
       }
     }

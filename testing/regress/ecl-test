@@ -236,7 +236,7 @@ class RegressMain:
                                 action = 'store_true')
         executionParser.add_argument('--createEclRunArg', help="Generate ECL tool command line.",
                                 action='store_true')
-        executionParser.add_argument('--preAbort', help="Execute an arbitrary command/script before aborting	.",
+        executionParser.add_argument('--preAbort', help="Execute an arbitrary command/script before aborting.",
                                 default=None,  metavar='preAbortscriptName')
 
 
@@ -364,8 +364,14 @@ class RegressMain:
                 exit(err.getErrorCode())
         else:
             self.config.set('generateStackTrace', False)
-    
+
         self.config.set('preAbort', self.args.preAbort)
+
+        if not self.config.has('wuStatusTimeout'):
+            self.config.set('wuStatusTimeout', 30)
+
+        if not self.config.has('wuAbortTimeout'):
+            self.config.set('wuAbortTimeout', 30)
 
         self.config.set('log',  self.log)
         setConfig(self.config)

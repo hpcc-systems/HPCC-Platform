@@ -17,7 +17,6 @@
 
 #include <platform.h>
 #include <jlib.hpp>
-#include "build-config.h"
 
 #include "jisem.hpp"
 #include "jhash.hpp"
@@ -2344,7 +2343,7 @@ private:
             }
             else if (stricmp(queryName, "control:getBuildVersion")==0)
             {
-                reply.appendf("<version id='%s'/>", BUILD_TAG);
+                reply.appendf("<version id='%s'/>", hpccBuildTag);
             }
             else
                 unknown = true;

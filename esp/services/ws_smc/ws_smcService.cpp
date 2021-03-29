@@ -17,7 +17,6 @@
 
 #pragma warning (disable : 4786)
 
-#include "build-config.h"
 
 #ifdef _USE_OPENLDAP
 #include "ldapsecurity.ipp"

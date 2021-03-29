@@ -56,6 +56,7 @@ data:
 {{ include "hpcc.addDataVolumeMount" . | indent 12 }}
 {{ include "hpcc.addDllVolumeMount" . | indent 12 }}
 {{ include "hpcc.addSecretVolumeMounts" . | indent 12 }}
+{{ include "hpcc.addCertificateVolumeMount" (dict "root" .root "name" .me.name "component" .me.type) | indent 12 }}
 {{- if $misc.postJobCommandViaSidecar }}
 {{ include "hpcc.addWaitAndRunVolumeMount" . | indent 12 }}
 {{- end }}
@@ -64,6 +65,7 @@ data:
 {{ include "hpcc.addDataVolume" . | indent 10 }}
 {{ include "hpcc.addDllVolume" . | indent 10 }}
 {{ include "hpcc.addSecretVolumes" . | indent 10 }}
+{{ include "hpcc.addCertificateVolume" (dict "root" .root "name" .me.name "component" .me.type) | indent 10 }}
 {{- if $misc.postJobCommandViaSidecar }}
 {{ include "hpcc.addWaitAndRunVolume" . | indent 10 }}
 {{- end }}
@@ -121,14 +123,19 @@ spec:
 {{ include "hpcc.addDataVolumeMount" $commonCtx | indent 8 }}
 {{ include "hpcc.addDllVolumeMount" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
+{{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" .name "component" "eclagent") | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
 {{ include "hpcc.addDataVolume" $commonCtx | indent 6 }}
 {{ include "hpcc.addDllVolume" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
+{{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" "eclagent") | indent 6 }}
 ---
 kind: ConfigMap 
 {{ include "hpcc.agentConfigMap" $commonCtx }}
 ---
+{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "eclagent") }}
+{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" .type) }}
+
 {{- end }}
 {{- end }}
