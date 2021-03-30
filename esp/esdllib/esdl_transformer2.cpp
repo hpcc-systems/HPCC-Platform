@@ -1718,7 +1718,7 @@ int Esdl2Transformer::process(IEspContext &ctx, EsdlProcessMode mode, const char
         tctx.skip_root = false;
         tctx.root_type.set(root->queryName());
 
-        root->process(tctx, &in, root_type);
+        root->process(tctx, &in, root_type, nullptr, true);
         rc = tctx.counter;
     }
     catch (...)

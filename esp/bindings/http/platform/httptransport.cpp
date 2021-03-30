@@ -601,7 +601,7 @@ int CHttpMessage::receive(bool alwaysReadContent, IMultiException *me)
 {
     //Set the auth to AUTH_STATUS_NA as default. Later on, it may be changed to
     //other value (AUTH_STATUS_OK, AUTH_STATUS_FAIL, etc) when applicable.
-    m_context->addTraceSummaryValue(LogMin, "auth", AUTH_STATUS_NA);
+    m_context->addTraceSummaryValue(LogMin, "auth", AUTH_STATUS_NA, TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
     if (processHeaders(me)==-1)
         return -1;
 
@@ -618,7 +618,7 @@ int CHttpMessage::receive(bool alwaysReadContent, IMultiException *me)
     if (isUpload())
         return 0;
 
-    m_context->addTraceSummaryValue(LogMin, "contLen", m_content_length);
+    m_context->addTraceSummaryValue(LogMin, "contLen", m_content_length, TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
     if(m_content_length > 0)
     {
         readContent();
@@ -632,6 +632,8 @@ int CHttpMessage::receive(bool alwaysReadContent, IMultiException *me)
         if (getEspLogLevel()>LogNormal)
             DBGLOG("length of content read = %d", m_content.length());
     }
+    if(m_content_length != m_content.length())
+        m_context->addTraceSummaryValue(LogMin, "custom_fields.contRead", m_content.length(), TXSUMMARY_GRP_ENTERPRISE);
 
     bool decompressed = false;
     int compressType = 0;
@@ -1801,7 +1803,7 @@ int CHttpRequest::receive(IMultiException *me)
         }
     }
 
-    m_context->addTraceSummaryTimeStamp(LogMin, "rcv");
+    m_context->addTraceSummaryTimeStamp(LogMin, "rcv", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
     return 0;
 }
 
@@ -1872,6 +1874,13 @@ void CHttpRequest::updateContext()
         m_context->setUseragent(useragent.str());
         getHeader("Accept-Language", acceptLanguage);
         m_context->setAcceptLanguage(acceptLanguage.str());
+        StringBuffer callerId, globalId;
+        getHeader(HTTP_HEADER_HPCC_GLOBAL_ID, globalId);
+        if(globalId.length())
+            m_context->setGlobalId(globalId);
+        getHeader(HTTP_HEADER_HPCC_CALLER_ID, callerId);
+        if(callerId.length())
+            m_context->setCallerId(callerId);
     }
 }
 

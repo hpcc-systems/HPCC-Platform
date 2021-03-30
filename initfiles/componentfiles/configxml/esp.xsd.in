@@ -995,7 +995,21 @@
             <xs:attribute name="txSummaryLevel" type="xs:nonNegativeInteger" use="optional" default="1">
                 <xs:annotation>
                     <xs:appinfo>
-                        <tooltip>Sets the TxSummary level [0: none, 1: min, 5: noraml, 10: max]</tooltip>
+                        <tooltip>Sets the TxSummary level [0: none, 1: min, 5: normal, 10: max]</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="txSummaryStyle" type="xs:text" use="optional" default="text">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Sets the style of TxSummary: [text|json|all]</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="txSummaryGroup" type="xs:text" use="optional" default="core">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Selects which groups of entries are output in the TxSummary: [core|enterprise|all]</tooltip>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>

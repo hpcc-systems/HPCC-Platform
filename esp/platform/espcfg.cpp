@@ -297,6 +297,8 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
     m_options.logReq = readLogRequest(m_cfg->queryProp("@logRequests"));
     m_options.logResp = m_cfg->getPropBool("@logResponses", false);
     m_options.txSummaryLevel = m_cfg->getPropInt("@txSummaryLevel", LogMin);
+    m_options.txSummaryStyle = readTxSummaryStyle(m_cfg->queryProp("@txSummaryStyle"));
+    m_options.txSummaryGroup = readTxSummaryGroup(m_cfg->queryProp("@txSummaryGroup"));
     m_options.txSummaryResourceReq = m_cfg->getPropBool("@txSummaryResourceReq", false);
     m_options.frameTitle.set(m_cfg->queryProp("@name"));
     m_options.slowProcessingTime = m_cfg->getPropInt("@slowProcessingTime", 30) * 1000; //in msec

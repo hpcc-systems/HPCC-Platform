@@ -32,6 +32,7 @@
 #include "esdl_store.hpp"
 #include "esdl_monitor.hpp"
 #include "espplugin.ipp"
+#include "txsummary.hpp"
 
 static const char* ESDL_METHOD_DESCRIPTION="description";
 static const char* ESDL_METHOD_HELP="help";
@@ -90,6 +91,7 @@ private:
     MethodAccessMaps            m_methodAccessMaps;
     StringBuffer                m_defaultFeatureAuth;
     MapStringTo<Owned<String> > m_explicitNamespaces;
+    Owned<ITxSummaryProfile>    m_txSummaryProfile;
 
 #ifndef LINK_STATICALLY
     Owned<ILoadedDllEntry> javaPluginDll;
