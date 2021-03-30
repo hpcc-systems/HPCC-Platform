@@ -631,7 +631,13 @@ struct CacheInfoEntry
         } b;
         __uint64 u;
     };
+
+#ifndef _WIN32
     static_assert(sizeof(b) == sizeof(u), "Unexpected packing issue in CacheInfoEntry");
+#elif _MSC_VER >= 1900
+    //Older versions of the windows compiler complain CacheInfoEntry::b is not a type name
+    static_assert(sizeof(b) == sizeof(u), "Unexpected packing issue in CacheInfoEntry");
+#endif
 
     inline CacheInfoEntry() { u = 0; }
     inline CacheInfoEntry(unsigned _file, offset_t _pos, PageType pageType)
