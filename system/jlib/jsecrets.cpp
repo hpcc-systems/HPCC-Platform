@@ -73,6 +73,8 @@ static Owned<IPropertyTree> secretCache;
 static CriticalSection mtlsInfoCacheCS;
 static Owned<IPropertyTree> mtlsInfoCache;
 static Owned<IVaultManager> vaultManager;
+static MemoryAttr udpKey;
+static bool udpKeyInitialized = false;
 
 MODULE_INIT(INIT_PRIORITY_SYSTEM)
 {
@@ -86,6 +88,7 @@ MODULE_EXIT()
     vaultManager.clear();
     secretCache.clear();
     mtlsInfoCache.clear();
+    udpKey.clear();
 }
 
 static void splitUrlAddress(const char *address, size_t len, StringBuffer &host, StringBuffer *port)
@@ -719,14 +722,15 @@ extern jlib_decl bool getSecretValue(StringBuffer & result, const char *category
     return true;
 }
 
-bool getSecretUdpKey(MemoryAttr &updkey)
+void initSecretUdpKey()
 {
-    bool ret = false;
-    updkey.clear();
+    if (udpKeyInitialized)
+        return;
+
 #if defined(_CONTAINERIZED) && defined(_USE_OPENSSL)
     BIO *in = BIO_new_file("/opt/HPCCSystems/secrets/certificates/udp/tls.key", "r");
     if (in == nullptr)
-        return false;
+        return;
     EC_KEY *eckey = PEM_read_bio_ECPrivateKey(in, nullptr, nullptr, nullptr);
     if (eckey)
     {
@@ -734,15 +738,23 @@ bool getSecretUdpKey(MemoryAttr &updkey)
         size_t privlen = EC_KEY_priv2buf(eckey, &priv);
         if (privlen != 0)
         {
-            updkey.set(privlen, priv);
+            udpKey.set(privlen, priv);
             OPENSSL_clear_free(priv, privlen);
-            ret = true;
         }
         EC_KEY_free(eckey);
     }
     BIO_free(in);
 #endif
-    return ret;
+    udpKeyInitialized = true;
+}
+
+const MemoryAttr &getSecretUdpKey(bool required)
+{
+    if (!udpKeyInitialized)
+        throw makeStringException(-1, "UDP Key not initialized.");
+    if (required && !udpKey.length())
+        throw makeStringException(-1, "UDP Key not found, cert-manager integration/configuration required.");
+    return udpKey;
 }
 
 IPropertyTree *queryMtlsSecretInfo(const char *name)
@@ -782,7 +794,6 @@ IPropertyTree *queryMtlsSecretInfo(const char *name)
         verify->setPropBool("@address_match", false);
         verify->setPropBool("@accept_selfsigned", false);
         verify->setProp("trusted_peers", "anyone");
-
     }
     return info;
 }

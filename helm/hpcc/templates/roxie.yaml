@@ -10,10 +10,22 @@ data:
   {{ .me.name }}.yaml: |
     version: 1.0
     roxie:
-{{ toYaml ( omit .me "logging" "topoServer") | indent 6 }}
+{{ toYaml ( omit .me "logging" "topoServer" "encryptInTransit") | indent 6 }}
       numChannels: {{ .numChannels }}
       topologyServers: "{{ .toponame }}:{{ .topoport }}"
       resolveLocally: false
+{{- $certificates := (.root.Values.certificates | default dict) -}}
+{{- $issuers := ($certificates.issuers | default dict) -}}
+{{- $mtlsEnabled := (and ($certificates.enabled) (hasKey $issuers "local")) -}}
+{{/* By default use encryption if local certificates are enabled, but allow it to be turned off via roxie .encryptInTransit value */}}
+{{- if (hasKey .me "encryptInTransit") -}}
+  {{- if and (.me.encryptInTransit) (not $mtlsEnabled) -}}
+    {{- $_ := fail (printf "Roxie %s encryptInTransit requires local cert-manager configuration." .me.name ) }}
+  {{- end }}
+      encryptInTransit: {{ .me.encryptInTransit }}
+{{ else }}
+      encryptInTransit: {{ $mtlsEnabled }}
+{{ end -}}
 {{- include "hpcc.generateLoggingConfig" (dict "root" .root "me" .me) | indent 6 }}
 {{ include "hpcc.generateVaultConfig" . | indent 6 }}
     global:
@@ -89,9 +101,9 @@ spec:
 {{ include "hpcc.addConfigMapVolume" $toposerver | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "component" "topo" "name" $commonCtx.toponame "external" false) | indent 6 }}
 
+---
 {{ include "hpcc.addCertificate" (dict "root" $ "name" $commonCtx.toponame "servicename" $commonCtx.toponame "component" "topo" "external" false) }}
 {{ include "hpcc.addUDPCertificate" (dict "root" $ "name" $udpkeyname "component" "udpkey") }}
----
 
 ---
 {{- range $service := $roxie.services }}
