@@ -15,3 +15,4 @@
 ################################################################################
 
 HPCC_ADD_SUBDIRECTORY (file)
+HPCC_ADD_SUBDIRECTORY (log)

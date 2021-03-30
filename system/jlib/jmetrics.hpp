@@ -21,9 +21,11 @@
 #include <chrono>
 #include <mutex>
 #include <memory>
+#include <thread>
 #include <unordered_set>
 #include "jiface.hpp"
 #include "jptree.hpp"
+#include "platform.h"
 
 
 namespace hpccMetrics {
@@ -67,7 +69,7 @@ interface IMetric
     /*
      * Get current measurement
      */
-    virtual uint64_t queryValue() const = 0;
+    virtual __uint64 queryValue() const = 0;
 };
 
 
@@ -79,23 +81,23 @@ class jlib_decl Metric : public IMetric
 {
 public:
     virtual ~Metric() = default;
-    const std::string &queryName() const override { return name; }
-    const std::string &queryDescription() const override { return description; }
-    MetricType queryMetricType() const override { return metricType; }
-    uint64_t queryValue() const override { return value; }
+    virtual const std::string &queryName() const override { return name; }
+    virtual const std::string &queryDescription() const override { return description; }
+    virtual MetricType queryMetricType() const override { return metricType; }
+    virtual __uint64 queryValue() const override { return value; }
 
 protected:
     // No one should be able to create one of these
     Metric(const char *_name, const char *_desc, MetricType _metricType) :
-            name{_name},
-            description{_desc},
-            metricType{_metricType} { }
+        name{_name},
+        description{_desc},
+        metricType{_metricType} { }
 
 protected:
     std::string name;
     std::string description;
     MetricType metricType;
-    std::atomic<uint64_t> value{0};
+    std::atomic<__uint64> value{0};
 };
 
 /*
@@ -152,14 +154,39 @@ public:
 
 protected:
     MetricSink(const char *_name, const char *_type) :
-            name{_name},
-            type{_type} { }
+        name{_name},
+        type{_type} { }
 
 protected:
     std::string name;
     std::string type;
     MetricsReporter *pReporter = nullptr;
 };
+
+
+class jlib_decl PeriodicMetricSink : public MetricSink
+{
+public:
+    virtual ~PeriodicMetricSink() override;
+    virtual void startCollection(MetricsReporter *pReporter) override;
+    virtual void stopCollection() override;
+
+protected:
+    explicit PeriodicMetricSink(const char *name, const char *type, const IPropertyTree *pSettingsTree);
+    virtual void prepareToStartCollecting() = 0;
+    virtual void collectingHasStopped() = 0;
+    virtual void doCollection() = 0;
+    void collectionThread();
+    void doStopCollecting();
+
+protected:
+    unsigned collectionPeriodSeconds;
+    std::thread collectThread;
+    std::atomic<bool> stopCollectionFlag{false};
+    bool isCollecting = false;
+    Semaphore waitSem;
+};
+
 
 extern "C" { typedef hpccMetrics::MetricSink* (*getSinkInstance)(const char *, const IPropertyTree *pSettingsTree); }
 
@@ -192,7 +219,7 @@ protected:
 //
 // Convenience function template to create a metric and add it to the reporter
 template <typename T>
-std::shared_ptr<T> createMetric(const char *name, const char* desc)
+std::shared_ptr<T> createMetricAndAddToReporter(const char *name, const char* desc)
 {
     std::shared_ptr<T> pMetric = std::make_shared<T>(name, desc);
     queryMetricsReporter().addMetric(pMetric);

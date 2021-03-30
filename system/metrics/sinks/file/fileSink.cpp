@@ -13,7 +13,7 @@
 
 #include "fileSink.hpp"
 #include <cstdio>
-#include <thread>
+#include "platform.h"
 
 using namespace hpccMetrics;
 
@@ -25,82 +25,38 @@ extern "C" MetricSink* getSinkInstance(const char *name, const IPropertyTree *pS
 
 
 FileMetricSink::FileMetricSink(const char *name, const IPropertyTree *pSettingsTree) :
-        MetricSink(name, "file"),
-        collectionPeriodSeconds{60}
+    PeriodicMetricSink(name, "file", pSettingsTree)
 {
-    if (pSettingsTree->hasProp("@period"))
-    {
-        collectionPeriodSeconds = pSettingsTree->getPropInt("@period");
-    }
-
     pSettingsTree->getProp("@filename", fileName);
     clearFileOnStartCollecting = pSettingsTree->getPropBool("@clear", false);
 }
 
 
-FileMetricSink::~FileMetricSink()
-{
-    if (isCollecting)
-    {
-        doStopCollecting();
-    }
-}
-
-
-void FileMetricSink::startCollection(MetricsReporter *_pReporter)
+void FileMetricSink::prepareToStartCollecting()
 {
     fhandle = fopen(fileName.str(), clearFileOnStartCollecting ? "w" : "a");
-    pReporter = _pReporter;
-    isCollecting = true;
-    collectThread = std::thread(&FileMetricSink::collectionThread, this);
 }
 
-
-void FileMetricSink::collectionThread()
+void FileMetricSink::doCollection()
 {
-    //
-    // The initial wait for the first report
-    waitSem.wait(collectionPeriodSeconds * 1000);
-    while (!stopCollectionFlag)
+    auto reportMetrics = pReporter->queryMetricsForReport(name);
+    writeReportHeaderToFile();
+    for (auto &pMetric: reportMetrics)
     {
-        auto reportMetrics = pReporter->queryMetricsForReport(name);
-        writeReportHeaderToFile();
-        for (auto &pMetric: reportMetrics)
-        {
-            writeMeasurementToFile(pMetric->queryName(), pMetric->queryValue(), pMetric->queryDescription());
-        }
-
-        // Wait again
-        waitSem.wait(collectionPeriodSeconds * 1000);
+        writeMeasurementToFile(pMetric->queryName(), pMetric->queryValue(), pMetric->queryDescription());
     }
 }
 
 
-void FileMetricSink::stopCollection()
+void FileMetricSink::collectingHasStopped()
 {
-    if (isCollecting)
-    {
-        doStopCollecting();
-    }
-}
-
-
-void FileMetricSink::doStopCollecting()
-{
-    //
-    // Set the stop collecting flag, then signal the wait semaphore
-    // to wake up and stop the collection thread
-    stopCollectionFlag = true;
-    waitSem.signal();
-    isCollecting = false;
-    collectThread.join();
     fclose(fhandle);
 }
 
 
-void FileMetricSink::writeMeasurementToFile(const std::string &metricName, uint32_t value, const std::string &metricDescription) const
+void FileMetricSink::writeMeasurementToFile(const std::string &metricName, __uint64 value, const std::string &metricDescription) const
 {
-    fprintf(fhandle, "  %s -> %d, %s\n", metricName.c_str(), value, metricDescription.c_str());
+    fprintf(fhandle, "  %s -> %" I64F "d, %s\n", metricName.c_str(), value, metricDescription.c_str());
     fflush(fhandle);
 }
 
