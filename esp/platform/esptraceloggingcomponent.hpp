@@ -120,7 +120,7 @@ interface ITraceLoggingComponent : extends IInterface
 #define IMPLEMENT_ITRACELOGGINGCOMPONENT_WITH(C) \
     inline  LogMsgDetail tracePriorityLimit(LogMsgAudience audience, LogMsgClass classification) const { return tracePriorityLimit(LogMsgCategory(audience, classification, 1)); } \
     virtual LogMsgDetail tracePriorityLimit(const LogMsgCategory& category) const override { return C::tracePriorityLimit(category); } \
-    virtual void         traceOutput(const LogMsgCategory& category, const char* format, va_list& arguments) const override { return C::traceOutput(category, format, arguments); } \
+    virtual void         traceOutput(const LogMsgCategory& category, const char* format, va_list& arguments) const override  __attribute__((format(printf, 3, 0))) { return C::traceOutput(category, format, arguments); } \
     virtual const char*  traceId() const override { return C::traceId(); }
 
 /**
