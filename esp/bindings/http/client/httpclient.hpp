@@ -41,6 +41,7 @@ interface IHttpClient : extends ITransportClient
 
     virtual void setConnectTimeOutMs(unsigned timeout) = 0;
     virtual void setTimeOut(unsigned int timeout) = 0;
+    virtual void setTxSummary(CTxSummary* txSummary) = 0;
     virtual void disableKeepAlive() = 0;
     virtual IMultiException* queryExceptions() = 0;
 

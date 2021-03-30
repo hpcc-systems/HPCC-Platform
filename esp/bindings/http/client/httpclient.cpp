@@ -28,6 +28,7 @@
 #include "bindutil.hpp"
 #include "espplugin.ipp"
 #include "SOAP/Platform/soapmessage.hpp"
+#include "txsummary.hpp"
 
 static Owned<CHttpClientContext> theHttpClientContext;
 static MapStringToMyClass<CHttpClientContext> httpClientContextsUsingSecrets;
@@ -1038,6 +1039,11 @@ HttpClientErrCode CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp
         response.set_err(errmsg);
 
     return HttpClientErrCode::OK;
+}
+
+void CHttpClient::setTxSummary(CTxSummary* txSummary)
+{
+    m_txSummary.set(txSummary);
 }
 
 IHttpClientContext* getHttpClientContext()
