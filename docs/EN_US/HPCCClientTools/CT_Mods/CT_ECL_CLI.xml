@@ -1748,6 +1748,18 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 </row>
 
                 <row>
+                  <entry>-sp, --suspend-prev</entry>
+
+                  <entry>Suspend previously active query</entry>
+                </row>
+
+                <row>
+                  <entry>-dp, --delete-prev</entry>
+
+                  <entry>Delete previously active query</entry>
+                </row>
+
+                <row>
                   <entry>--no-reload</entry>
 
                   <entry>Specifies to not request a reload of the Roxie
@@ -4789,7 +4801,7 @@ ecl bundle install mybundle --keepprior</programlisting>
 
             <programlisting>ecl bundle install &lt;bundle URL&gt;.git </programlisting>
 
-            <para>For example: </para>
+            <para>For example:</para>
 
             <para><programlisting>ecl bundle install https://github.com/hpcc-systems/Visualizer.git</programlisting></para>
           </listitem>

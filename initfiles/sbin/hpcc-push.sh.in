@@ -126,7 +126,7 @@ fi
 SCRIPT_FILE=~/hpcc-push_$$
 createScriptFile
 
-python_expected_version=2.6
+python_expected_version=3.4
 is_python_installed ${python_expected_version}
 if [ $? -eq 0 ]
 then
