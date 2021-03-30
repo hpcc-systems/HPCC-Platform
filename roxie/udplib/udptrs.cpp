@@ -257,6 +257,11 @@ public:
 
     void sendDone(unsigned packets)
     {
+        //This function has a potential race condition with requestToSendNew:
+        //packetsQueued must be checked within the critical section to ensure that requestToSend hasn't been called
+        //between retrieving the count and entering the critical section, otherwise this function will set
+        //requestExpiryTime to 0 (and indicate the operation is done)even though there packetsQueued is non-zero.
+        CriticalBlock b(activeCrit);
         bool dataRemaining;
         if (resendList)
             dataRemaining = (packetsQueued.load(std::memory_order_relaxed) && resendList->canRecord(nextSendSequence)) || resendList->numActive();
@@ -264,7 +269,6 @@ public:
             dataRemaining = packetsQueued.load(std::memory_order_relaxed);
         // If dataRemaining says 0, but someone adds a row in this window, the request_to_send will be sent BEFORE the send_completed
         // So long as receiver handles that, are we good?
-        CriticalBlock b(activeCrit);
         UdpRequestToSendMsg msg;
         msg.packets = packets;                      // Note this is how many we sent
         msg.sendSeq = nextSendSequence;
@@ -287,6 +291,7 @@ public:
 
     void requestToSendNew()
     {
+        //See comment in sendDone() on a potential race condition.
         CriticalBlock b(activeCrit);
         // This is called from data thread when new data added to a previously-empty list
         if (!requestExpiryTime)
