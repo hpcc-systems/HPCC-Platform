@@ -33,7 +33,7 @@ namespace ModularLogAgent
     public:
         virtual LogMsgDetail tracePriorityLimit(const LogMsgCategory& category) const;
         virtual const char* traceId() const;
-        virtual void traceOutput(const LogMsgCategory& category, const char* format, va_list& arguments) const;
+        virtual void traceOutput(const LogMsgCategory& category, const char* format, va_list& arguments) const  __attribute__((format(printf, 3, 0)));;
         virtual bool configure(const IPTree& configuration, const CModuleFactory& factory);
         virtual bool isEnabled() const;
         virtual StringBuffer& toString(StringBuffer& str) const;

@@ -100,8 +100,8 @@ public:
 
     void testTypes()
     {
-        VStringBuffer resultJSON("{\"emptystr\":\"\",\"nullstr\":\"\",\"int\":%i,\"uint\":%u,\"uint64\":%" I64F "u,\"querytimer\":42,\"updatetimernew\":23,\"bool\":1}", INT_MAX, UINT_MAX, ULONG_LONG_MAX );
-        VStringBuffer resultText("emptystr;nullstr;int=%i;uint=%u;uint64=%" I64F "u;querytimer=42ms;updatetimernew=23ms;bool=1;", INT_MAX, UINT_MAX, ULONG_LONG_MAX );
+        VStringBuffer resultJSON("{\"emptystr\":\"\",\"nullstr\":\"\",\"int\":%i,\"uint\":%u,\"uint64\":%" I64F "u,\"querytimer\":42,\"updatetimernew\":23,\"bool\":1}", INT_MAX, UINT_MAX, ULLONG_MAX );
+        VStringBuffer resultText("emptystr;nullstr;int=%i;uint=%u;uint64=%" I64F "u;querytimer=42ms;updatetimernew=23ms;bool=1;", INT_MAX, UINT_MAX, ULLONG_MAX );
         const char* testName="testTypes";
         Owned<CTxSummary> tx = new CTxSummary();
 
@@ -119,7 +119,7 @@ public:
         tx->append("uint", val2, LogMin, TXSUMMARY_GRP_ENTERPRISE);
 
         // Unsigned Int64
-        unsigned __int64 val3 = ULONG_LONG_MAX;
+        unsigned __int64 val3 = ULLONG_MAX;
         tx->append("uint64", val3, LogMin, TXSUMMARY_GRP_ENTERPRISE);
 
         // Cumulative Timer
