@@ -205,7 +205,6 @@ HardwareInfo hdwInfo;
 unsigned parallelAggregate;
 bool inMemoryKeysEnabled = true;
 
-bool nodeCachePreload = false;
 unsigned nodeCacheMB = 100;
 unsigned leafCacheMB = 50;
 unsigned blobCacheMB = 0;
@@ -1110,14 +1109,13 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         inMemoryKeysEnabled = topology->getPropBool("@inMemoryKeysEnabled", true);
 
         setKeyIndexCacheSize((unsigned)-1); // unbound
-        nodeCachePreload = topology->getPropBool("@nodeCachePreload", false);
-        setNodeCachePreload(nodeCachePreload);
         nodeCacheMB = topology->getPropInt("@nodeCacheMem", 100); 
         setNodeCacheMem(nodeCacheMB * 0x100000);
         leafCacheMB = topology->getPropInt("@leafCacheMem", 50);
         setLeafCacheMem(leafCacheMB * 0x100000);
         blobCacheMB = topology->getPropInt("@blobCacheMem", 0);
         setBlobCacheMem(blobCacheMB * 0x100000);
+        setLegacyNodeCache(topology->getPropBool("@legacyNodeCache", false));
 
         unsigned __int64 affinity = topology->getPropInt64("@affinity", 0);
         updateAffinity(affinity);
@@ -1400,9 +1398,10 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     time(&startupTime);
                     roxieServer->start();
                 }
-#ifdef _CONTAINERIZED
+
                 queryFileCache().loadSavedOsCacheInfo();
                 queryFileCache().startCacheReporter();
+#ifdef _CONTAINERIZED
                 publishTopology(traceLevel);
 #endif
                 writeSentinelFile(sentinelFile);

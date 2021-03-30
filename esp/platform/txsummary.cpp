@@ -19,8 +19,22 @@
 #include "jlog.hpp"
 #include "jutil.hpp"
 #include <algorithm>
+#include "espcontext.hpp"
 
 #define MATCH_ENTRY [&](const EntryValue& e) {return strieq(e.get()->name, pathPart);}
+std::shared_ptr<hpccMetrics::CounterMetric> CTxSummary::pRequestCount;
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    CTxSummary::pRequestCount = hpccMetrics::createMetric<hpccMetrics::CounterMetric>("requests", "Number of Requests");
+    return true;
+}
+
+MODULE_EXIT()
+{
+    CTxSummary::pRequestCount = nullptr;
+}
+
 
 
 inline bool validate(const char* k)
@@ -328,7 +342,9 @@ StringBuffer& CTxSummary::TxEntryObject::serialize(StringBuffer& buf, const LogL
 
 CTxSummary::CTxSummary(unsigned creationTime)
 : m_creationTime(creationTime ? creationTime : msTick())
-{}
+{
+    pRequestCount->inc(1);
+}
 
 CTxSummary::~CTxSummary()
 {

@@ -39,4 +39,4 @@ USER hpcc
 WORKDIR /var/lib/HPCCSystems
 ARG BUILD_TAG_OVERRIDE
 ENV HPCC_BUILD_TAG=${BUILD_TAG_OVERRIDE}
-RUN eclcc -pch && rm eclcc.log
+RUN eclcc -pch

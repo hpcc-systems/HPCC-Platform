@@ -377,7 +377,6 @@ extern unsigned roxiePort;     // If listening on multiple, this is the first. U
 extern unsigned udpMulticastBufferSize;
 extern size32_t diskReadBufferSize;
 
-extern bool nodeCachePreload;
 extern unsigned nodeCacheMB;
 extern unsigned leafCacheMB;
 extern unsigned blobCacheMB;

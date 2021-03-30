@@ -398,6 +398,7 @@ protected:
     bool optWorkUnit = false;
     bool optNoCompile = false;
     bool optNoLogFile = false;
+    bool optLogToStdOut = false;
     bool optNoStdInc = false;
     bool optNoBundles = false;
     bool optBatchMode = false;
@@ -672,21 +673,33 @@ void EclCC::loadOptions()
     }
     extractOption(stdIncludeLibraryPath, globals, "ECLCC_ECLINCLUDE_PATH", "eclIncludePath", ".", NULL);
 
-    if (!optLogfile.length() && !optBatchMode && !optNoLogFile)
-        extractOption(optLogfile, globals, "ECLCC_LOGFILE", "logfile", "eclcc.log", NULL);
-
-    if ((logVerbose || optLogfile) && !optNoLogFile)
+    if (optLogToStdOut)
     {
-        if (optLogfile.length())
-        {
-            StringBuffer lf;
-            openLogFile(lf, optLogfile, optLogDetail, false);
-            if (logVerbose)
-                fprintf(stdout, "Logging to '%s'\n",lf.str());
-        }
-        if (optMonitorInterval)
-            startPerformanceMonitor(optMonitorInterval*1000, PerfMonStandard, nullptr);
+        Owned<ILogMsgHandler> handler = getHandleLogMsgHandler(stdout);
+        handler->setMessageFields(MSGFIELD_STANDARD);
+        Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, optLogDetail ? optLogDetail : DefaultDetail, true);
+        queryLogMsgManager()->addMonitor(handler, filter);
     }
+#ifndef _CONTAINERIZED
+    else
+    {
+        if (!optLogfile.length() && !optBatchMode && !optNoLogFile)
+            extractOption(optLogfile, globals, "ECLCC_LOGFILE", "logfile", "eclcc.log", NULL);
+
+        if ((logVerbose || optLogfile) && !optNoLogFile)
+        {
+            if (optLogfile.length())
+            {
+                StringBuffer lf;
+                openLogFile(lf, optLogfile, optLogDetail, false);
+                if (logVerbose)
+                    fprintf(stdout, "Logging to '%s'\n",lf.str());
+            }
+            if (optMonitorInterval)
+                startPerformanceMonitor(optMonitorInterval*1000, PerfMonStandard, nullptr);
+        }
+    }
+#endif
 
     if (hooksPath.length())
         installFileHooks(hooksPath.str());
@@ -2705,6 +2718,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
         }
         else if (iter.matchFlag(optNoLogFile, "--nologfile"))
+        {
+        }
+        else if (iter.matchFlag(optLogToStdOut, "--logtostdout"))
         {
         }
         else if (iter.matchFlag(optIgnoreSignatures, "--nogpg"))
