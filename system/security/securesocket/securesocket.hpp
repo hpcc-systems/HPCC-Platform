@@ -50,6 +50,7 @@ interface ISecureSocket : implements ISocket
 {
     virtual int secure_accept(int logLevel=1) = 0;
     virtual int secure_connect(int logLevel=1) = 0;
+    virtual StringBuffer& get_ssl_version(StringBuffer& ver) = 0;
 };
 
 // One instance per program running
