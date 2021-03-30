@@ -36,11 +36,11 @@ if [[ -n ${INPUT_USERNAME} ]] ; then
   PUSH=1
 fi
 
+BUILD_ML=    # all or ml,gnn,gnn-gpu
 [[ -n ${INPUT_BUILD_ML} ]] && BUILD_ML=${INPUT_BUILD_ML}
 
 set -e
 
-BUILD_ML=    # all or ml,gnn,gnn-gpu
 ml_features=(
   'ml'
   'gnn'
