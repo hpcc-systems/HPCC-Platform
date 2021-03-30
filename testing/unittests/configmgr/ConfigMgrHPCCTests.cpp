@@ -30,7 +30,6 @@
 #include "mod_template_support/TemplateException.hpp"
 #include "mod_template_support/TemplateExecutionException.hpp"
 #include "EnvironmentMgr.hpp"
-#include "build-config.h"
 #include <string>
 #include <iterator>
 #include <algorithm>
@@ -40,6 +39,13 @@
 class ConfigMgrHPCCTests : public CppUnit::TestFixture
 {
     public:
+        ConfigMgrHPCCTests()
+        {
+            m_templateDir = std::string(hpccBuildInfo.installDir) + PATHSEPSTR + "testing/configmgr/templates/";
+            CFG2_CONFIG_DIR = std::string(hpccBuildInfo.componentDir) + PATHSEPSTR + "configschema" + PATHSEPSTR + "xsd" + PATHSEPSTR;
+            CFG2_SOURCE_DIR = hpccBuildInfo.configDir;
+            m_xmlEnvDir = std::string(hpccBuildInfo.installDir) + PATHSEPSTR + "testing/configmgr/schema/environments/";
+        }
 
         CPPUNIT_TEST_SUITE(ConfigMgrHPCCTests);
             CPPUNIT_TEST(duplicatePortSameService);
@@ -47,9 +53,7 @@ class ConfigMgrHPCCTests : public CppUnit::TestFixture
             CPPUNIT_TEST(portConflictAccrossProcesses);
         CPPUNIT_TEST_SUITE_END();
 
-
     protected:
-
         bool loadEnvironment(const std::string &envFile)
         {
             bool rc;
@@ -123,11 +127,11 @@ class ConfigMgrHPCCTests : public CppUnit::TestFixture
     private:
 
         EnvironmentMgr  *m_pEnvMgr = nullptr;
-        std::string m_templateDir = INSTALL_DIR PATHSEPSTR "testing/configmgr/templates/";
+        std::string m_templateDir;
         std::string CFG2_MASTER_CONFIG_FILE = "environment.xsd";
-        std::string CFG2_CONFIG_DIR = COMPONENTFILES_DIR  PATHSEPSTR "configschema" PATHSEPSTR "xsd" PATHSEPSTR;
-        std::string CFG2_SOURCE_DIR = CONFIG_SOURCE_DIR;
-        std::string m_xmlEnvDir = INSTALL_DIR PATHSEPSTR "testing/configmgr/schema/environments/";
+        std::string CFG2_CONFIG_DIR;
+        std::string CFG2_SOURCE_DIR;
+        std::string m_xmlEnvDir;
 
 };
 

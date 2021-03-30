@@ -29,7 +29,6 @@
 #include <jencrypt.hpp>
 #include "jutil.hpp"
 #include "jsecrets.hpp"
-#include <build-config.h>
 #include <udptopo.hpp>
 
 #include "rtlformat.hpp"
@@ -857,14 +856,14 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         if (restarts)
         {
             if (traceLevel)
-                DBGLOG("Roxie restarting: restarts = %d build = %s", restarts.load(), hpccBuildTag);
+                DBGLOG("Roxie restarting: restarts = %d build = %s", restarts.load(), hpccBuildInfo.buildTag);
             setStartRuid(restarts);
         }
         else
         {
             if (traceLevel)
             {
-                DBGLOG("Roxie starting, build = %s", hpccBuildTag);
+                DBGLOG("Roxie starting, build = %s", hpccBuildInfo.buildTag);
             }
         }
 

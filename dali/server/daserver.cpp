@@ -457,7 +457,7 @@ int main(int argc, const char* argv[])
 #else
         setupContainerizedLogMsgHandler();
 #endif
-        PROGLOG("Build %s", hpccBuildTag);
+        PROGLOG("Build %s", hpccBuildInfo.buildTag);
 
         StringBuffer dataPath;
         StringBuffer mirrorPath;

@@ -26,15 +26,11 @@
 #include "xslprocessor.hpp"
 #include "jwrapper.hpp"
 #include "wizardInputs.hpp"
-#include "build-config.h"
 #include "confighelper.hpp"
 
 #define TRACE_SCHEMA_NODE(msg, schemaNode)
 
 #define CONFIGMGR_JSPATH "./"
-#define STANDARD_COMPFILESDIR INSTALL_DIR
-
-#define STANDARD_CONFIGXMLDIR COMPONENTFILES_DIR"/configxml"
 
 bool schemaNodeHasAttributes(IPropertyTree* pNode)
 {
@@ -125,7 +121,7 @@ void getInstalledComponents(const char* pszInstallDir, StringBuffer& sbOutComps,
   if (pszInstallDir && *pszInstallDir)
     sbDir.append(pszInstallDir);
   else
-    sbDir.append(COMPONENTFILES_DIR"/configxml");
+    sbDir.append(hpccBuildInfo.componentDir).append("/configxml");
 
   bool getFromDirs = false;
   if (getFromDirs)
@@ -1575,7 +1571,7 @@ public:
              tempPath.clear().append("EnvSettings/path");
              wizDefVal.clear().append(m_pEnv->queryProp(tempPath.str()));
              if(!wizDefVal.length())
-                wizDefVal.append(STANDARD_COMPFILESDIR);
+                wizDefVal.append(hpccBuildInfo.installDir);
 
              wizDefVal.append(PATHSEPSTR"componentfiles");
            }
@@ -1909,7 +1905,7 @@ IPropertyTree* generateTreeFromXsd(const IPropertyTree* pEnv, IPropertyTree* pSc
       const char* cfgpath = pEnvParams->queryProp("configs");
 
       if (!cfgpath || !*cfgpath)
-        cfgpath = CONFIG_DIR;
+        cfgpath = hpccBuildInfo.configDir;
 
       genEnvConf.clear().append(cfgpath);
 
@@ -3367,7 +3363,7 @@ void addInstanceToCompTree(const IPropertyTree* pEnvRoot,const IPropertyTree* pI
         {
           StringBuffer rundir;
           if (!getConfigurationDirectory(pEnvRoot->queryPropTree("Software/Directories"), "run", processName, compName, rundir))
-            sb.clear().appendf(RUNTIME_DIR"/%s", compName);
+            sb.clear().append(hpccBuildInfo.runtimeDir).appendf("/%s", compName);
           else
             sb.clear().append(rundir);
 
@@ -3945,10 +3941,13 @@ bool validateEnv(IConstEnvironment* pConstEnv, bool abortOnException)
     CConfigEngCallback callback(false, abortOnException);
     Owned<IEnvDeploymentEngine> configGenMgr;
     Owned<IPropertyTree> pEnvRoot = &pConstEnv->getPTree();
+    StringBuffer sb;
     const char* inDir = pEnvRoot->queryProp(XML_TAG_ENVSETTINGS"/path");
-    StringBuffer sb(inDir);
-    sb.append("/componentfiles/configxml");
-    configGenMgr.setown(createConfigGenMgr(*pConstEnv, callback, NULL, inDir?sb.str():STANDARD_CONFIGXMLDIR, tempdir, NULL, NULL, NULL));
+    if (inDir)
+      sb.append("/componentfiles/configxml");
+    else
+      sb.append(hpccBuildInfo.componentDir).append("/configxml");
+    configGenMgr.setown(createConfigGenMgr(*pConstEnv, callback, NULL, sb.str(), tempdir, NULL, NULL, NULL));
     configGenMgr->deploy(DEFLAGS_CONFIGFILES, DEBACKUP_NONE, false, false);
     deleteRecursive(tempdir);
     const char* msg = callback.getErrorMsg();

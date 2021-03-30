@@ -17,12 +17,6 @@
 #ifndef _COMPONENTFROMXSD_HPP_
 #define _COMPONENTFROMXSD_HPP_
 
-//#define TRACE_SCHEMA_NODE(msg, schemaNode)
-
-//#define CONFIGMGR_JSPATH "./"
-//#define STANDARD_COMPFILESDIR INSTALL_DIR
-
-//#define STANDARD_CONFIGXMLDIR COMPONENTFILES_DIR"/configxml"
 
 namespace ech
 {

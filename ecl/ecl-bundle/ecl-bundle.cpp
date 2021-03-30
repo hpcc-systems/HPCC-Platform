@@ -1837,7 +1837,7 @@ public:
 
 static int doMain(int argc, const char *argv[])
 {
-    BundleCMDShell processor(argc, argv, createBundleSubCommand, hpccBuildTag);
+    BundleCMDShell processor(argc, argv, createBundleSubCommand, hpccBuildInfo.buildTag);
     return processor.run();
 }
 

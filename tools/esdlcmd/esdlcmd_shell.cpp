@@ -155,7 +155,7 @@ bool EsdlCMDShell::parseCommandLineOptions(ArgvIterator &iter)
         }
         if (iter.matchFlag(boolValue, ESDLOPT_VERSION))
         {
-            fprintf(stdout, "%s\n", hpccBuildTag);
+            fprintf(stdout, "%s\n", hpccBuildInfo.buildTag);
             return false;
         }
         StringAttr tempArg;

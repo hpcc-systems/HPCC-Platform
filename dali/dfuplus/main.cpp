@@ -16,14 +16,13 @@
 ############################################################################## */
 
 #pragma warning (disable : 4786)
-#include <build-config.h>
 #include "daftcfg.hpp"
 #include "dfuerror.hpp"
 #include "dfuplus.hpp"
 
 void printVersion()
 {
-    printf("DFU Version: %d %s\n", DAFT_VERSION, hpccBuildTag);
+    printf("DFU Version: %d %s\n", DAFT_VERSION, hpccBuildInfo.buildTag);
 }
 
 void handleSyntax()

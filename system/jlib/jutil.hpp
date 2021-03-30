@@ -585,7 +585,38 @@ public:
     }
 };
 
-extern jlib_decl const char *hpccBuildTag;
+struct HPCCBuildInfo
+{
+    const char *buildTag;
+
+    const char *dirName;
+    const char *prefix;
+    const char *execPrefix;
+    const char *configPrefix;
+    const char *installDir;
+    const char *libDir;
+    const char *execDir;
+    const char *componentDir;
+    const char *configDir;
+    const char *configSourceDir;
+    const char *adminDir;
+    const char *pluginsDir;
+    const char *runtimeDir;
+    const char *lockDir;
+    const char *pidDir;
+    const char *logDir;
+
+    const char *envXmlFile;
+    const char *envConfFile;
+
+    unsigned buildVersionMajor;
+    unsigned buildVersionMinor;
+    unsigned buildVersionPoint;
+    const char *buildVersion;
+};
+
+extern jlib_decl HPCCBuildInfo hpccBuildInfo;
+
 
 #endif
 

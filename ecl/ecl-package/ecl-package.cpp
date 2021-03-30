@@ -1642,7 +1642,7 @@ public:
 
 static int doMain(int argc, const char *argv[])
 {
-    PackageCMDShell processor(argc, argv, createPackageSubCommand, hpccBuildTag);
+    PackageCMDShell processor(argc, argv, createPackageSubCommand, hpccBuildInfo.buildTag);
     return processor.run();
 }
 

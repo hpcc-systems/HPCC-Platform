@@ -68,7 +68,45 @@ static CriticalSection * protectedGeneratorCs;
 mach_timebase_info_data_t timebase_info  = { 1,1 };
 #endif
 
-const char *hpccBuildTag = nullptr;
+HPCCBuildInfo hpccBuildInfo;
+
+#define stringify(x) # x
+#define estringify(x) stringify(x)
+
+static void initBuildVars()
+{
+    /* NB: picking up HPCC_BUILD_TAG from an environment variable is mainly so variants (like internal)
+     * can customize the buildtag, which is shown in Eclwatch and logging.
+     */
+    hpccBuildInfo.buildTag = getenv("HPCC_BUILD_TAG");
+    if (isEmptyString(hpccBuildInfo.buildTag))
+        hpccBuildInfo.buildTag = BUILD_TAG;
+
+    hpccBuildInfo.buildVersionMajor = BUILD_VERSION_MAJOR;
+    hpccBuildInfo.buildVersionMinor = BUILD_VERSION_MINOR;
+    hpccBuildInfo.buildVersionPoint = BUILD_VERSION_POINT;
+    hpccBuildInfo.buildVersion = estringify(LANGUAGE_VERSION_MAJOR) "." estringify(LANGUAGE_VERSION_MINOR) "." estringify(LANGUAGE_VERSION_SUB);
+
+    hpccBuildInfo.dirName = DIR_NAME;
+    hpccBuildInfo.prefix = PREFIX;
+    hpccBuildInfo.execPrefix = EXEC_PREFIX;
+    hpccBuildInfo.configPrefix = CONFIG_PREFIX;
+    hpccBuildInfo.installDir = INSTALL_DIR;
+    hpccBuildInfo.libDir = LIB_DIR;
+    hpccBuildInfo.execDir = EXEC_DIR;
+    hpccBuildInfo.componentDir = COMPONENTFILES_DIR;
+    hpccBuildInfo.configDir = CONFIG_DIR;
+    hpccBuildInfo.configSourceDir = CONFIG_SOURCE_DIR;
+    hpccBuildInfo.adminDir = ADMIN_DIR;
+    hpccBuildInfo.pluginsDir = PLUGINS_DIR;
+    hpccBuildInfo.runtimeDir = RUNTIME_DIR;
+    hpccBuildInfo.lockDir = LOCK_DIR;
+    hpccBuildInfo.pidDir = PID_DIR;
+    hpccBuildInfo.logDir = LOG_DIR;
+
+    hpccBuildInfo.envXmlFile = ENV_XML_FILE;
+    hpccBuildInfo.envConfFile = ENV_CONF_FILE;
+}
 
 MODULE_INIT(INIT_PRIORITY_SYSTEM)
 {
@@ -81,9 +119,8 @@ MODULE_INIT(INIT_PRIORITY_SYSTEM)
     if (mach_timebase_info(&timebase_info) != KERN_SUCCESS)
         return false;
 #endif
-    hpccBuildTag = getenv("HPCC_BUILD_TAG");
-    if (isEmptyString(hpccBuildTag))
-        hpccBuildTag = BUILD_TAG;
+
+    initBuildVars();
 
     return true;
 }

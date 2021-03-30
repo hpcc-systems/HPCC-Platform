@@ -613,7 +613,7 @@ void SetLogName(const char *prefix, const char *logdir, const char *thorname, bo
     StringBuffer lf;
     openLogFile(lf, logname.str());
     PROGLOG("Opened log file %s", lf.str());
-    PROGLOG("Build %s", hpccBuildTag);
+    PROGLOG("Build %s", hpccBuildInfo.buildTag);
 }
 #endif
 

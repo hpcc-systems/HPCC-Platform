@@ -42,11 +42,6 @@ interface IConfigComp : public IInterface
   virtual void remove(IPropertyTree *params) = 0;
 };
 
-#define DEFAULT_ENV_XML CONFIG_DIR"/environment.xml"
-#define DEFAULT_ENV_OPTIONS CONFIG_DIR"/environment.conf"
-#define DEFAULT_GEN_ENV_RULES CONFIG_DIR"/genenvrules.conf"
-#define DEFAULT_BUILDSET COMPONENTFILES_DIR"/configxml/buildset.xml"
-#define ESP_CONFIG_PATH INSTALL_DIR "" CONFIG_DIR "/configmgr/esp.xml"
 
 #define USE_WIZARD 1
 
