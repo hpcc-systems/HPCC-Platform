@@ -20,14 +20,14 @@
 # Build script to create and publish Docker containers corresponding to a GitHub tag
 # This script is normally invoked via GitHub actions, whenever a new tag is pushed 
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-pushd $DIR 2>&1 > /dev/null
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+pushd $SCRIPT_DIR 2>&1 > /dev/null
 
-if [[ -z ${INPUT_BUILD_LABEL} ]]; then
-  . ${SCRIPT_DIR}/../cmake_modules/parse_cmake.sh
-  parse_cmake
-  set_tag $HPCC_PROJECT
-fi
+set -e
+
+. ${SCRIPT_DIR}/../cmake_modules/parse_cmake.sh
+parse_cmake
+set_tag $HPCC_PROJECT
 
 . ./buildall-common.sh
 
@@ -36,11 +36,11 @@ if [[ -n ${INPUT_USERNAME} ]] ; then
   PUSH=1
 fi
 
+BUILD_ML=    # all or ml,gnn,gnn-gpu
 [[ -n ${INPUT_BUILD_ML} ]] && BUILD_ML=${INPUT_BUILD_ML}
 
 set -e
 
-BUILD_ML=    # all or ml,gnn,gnn-gpu
 ml_features=(
   'ml'
   'gnn'

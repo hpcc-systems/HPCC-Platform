@@ -898,12 +898,12 @@ is_user(){
 is_python_installed () {
    _expected_version=$1
 
-   which python > /dev/null 2>&1
+   which python3 > /dev/null 2>&1
    [ $? -ne 0 ] && return 1
 
    if [ -n "$_expected_version" ]
    then
-      _actual_version=$(python -V 2>&1 | cut -d' ' -f 2 | cut -d '.' -f -2)
+      _actual_version=$(python3 -V 2>&1 | cut -d' ' -f 2 | cut -d '.' -f -2)
       echo $_actual_version | grep -q -e "^[0-9]\.[0-9]$"
       [ $? -ne 0 ] && return 1
 

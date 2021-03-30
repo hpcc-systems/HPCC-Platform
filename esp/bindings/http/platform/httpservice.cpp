@@ -184,6 +184,8 @@ void checkSetCORSAllowOrigin(CHttpRequest *req, CHttpResponse *resp)
 
 int CEspHttpServer::processRequest()
 {
+    IEspContext* ctx = m_request->queryContext();
+    StringBuffer errMessage;
     m_request->setPersistentEnabled(m_apport->queryProtocol()->persistentEnabled() && !shouldClose);
     m_response->setPersistentEnabled(m_apport->queryProtocol()->persistentEnabled() && !shouldClose);
     m_response->enableCompression();
@@ -195,18 +197,21 @@ int CEspHttpServer::processRequest()
     catch(IEspHttpException* e)
     {
         m_response->sendException(e);
+        ctx->addTraceSummaryValue(LogMin, "msg", e->errorMessage(errMessage).str(), TXSUMMARY_GRP_ENTERPRISE);
         e->Release();
         return 0;
     }
     catch (IException *e)
     {
         DBGLOG(e);
+        ctx->addTraceSummaryValue(LogMin, "msg", e->errorMessage(errMessage).str(), TXSUMMARY_GRP_ENTERPRISE);
         e->Release();
         return 0;
     }
     catch (...)
     {
         IERRLOG("Unknown Exception - reading request [CEspHttpServer::processRequest()]");
+        ctx->addTraceSummaryValue(LogMin, "msg", "Unknown Exception - reading request [CEspHttpServer::processRequest()]", TXSUMMARY_GRP_ENTERPRISE);
         return 0;
     }
 
@@ -230,10 +235,27 @@ int CEspHttpServer::processRequest()
         ESPLOG(LogNormal,"sub service type: %s. parm: %s", getSubServiceDesc(stype), m_request->queryParamStr());
 
         m_request->updateContext();
-        IEspContext* ctx = m_request->queryContext();
         ctx->setServiceName(serviceName.str());
         ctx->setHTTPMethod(method.str());
         ctx->setServiceMethod(methodName.str());
+        ctx->addTraceSummaryValue(LogMin, "app.protocol", method.str(), TXSUMMARY_GRP_ENTERPRISE);
+        ctx->addTraceSummaryValue(LogMin, "app.service", serviceName.str(), TXSUMMARY_GRP_ENTERPRISE);
+        StringBuffer contentType;
+        m_request->getContentType(contentType);
+        ctx->addTraceSummaryValue(LogMin, "custom_fields.conttype", contentType.str(), TXSUMMARY_GRP_ENTERPRISE);
+        StringBuffer userAgent;
+        m_request->getHeader("User-Agent", userAgent);
+        ctx->addTraceSummaryValue(LogMin, "custom_fields.agent", userAgent.str(), TXSUMMARY_GRP_ENTERPRISE);
+        StringBuffer url;
+        if(m_request->queryPath())
+        {
+            url.append(m_request->queryPath());
+            if(m_request->queryParamStr())
+                url.appendf("?%s", m_request->queryParamStr());
+        }
+        ctx->addTraceSummaryValue(LogMin, "custom_fields.URL", url.str(), TXSUMMARY_GRP_ENTERPRISE);
+
+        m_response->setHeader(HTTP_HEADER_HPCC_GLOBAL_ID, ctx->getGlobalId());
 
         if(strieq(method.str(), OPTIONS_METHOD))
             return onOptions();
@@ -397,12 +419,18 @@ int CEspHttpServer::processRequest()
     catch(IEspHttpException* e)
     {
         m_response->sendException(e);
+        ctx->addTraceSummaryValue(LogMin, "msg", e->errorMessage(errMessage).str(), TXSUMMARY_GRP_ENTERPRISE);
+        VStringBuffer fault("F%d", e->errorCode());
+        ctx->addTraceSummaryValue(LogMin, "custom_fields.soapFaultCode", fault.str(), TXSUMMARY_GRP_ENTERPRISE);
         e->Release();
         return 0;
     }
     catch (IException *e)
     {
         DBGLOG(e);
+        ctx->addTraceSummaryValue(LogMin, "msg", e->errorMessage(errMessage).str(), TXSUMMARY_GRP_ENTERPRISE);
+        VStringBuffer fault("F%d", e->errorCode());
+        ctx->addTraceSummaryValue(LogMin, "custom_fields.soapFaultCode", fault.str(), TXSUMMARY_GRP_ENTERPRISE);
         e->Release();
         return 0;
     }
@@ -414,6 +442,7 @@ int CEspHttpServer::processRequest()
         UWARNLOG("METHOD: %s, PATH: %s, TYPE: %s, CONTENT-LENGTH: %" I64F "d", m_request->queryMethod(), m_request->queryPath(), m_request->getContentType(content_type).str(), len);
         if (len > 0)
             m_request->logMessage(LOGCONTENT, "HTTP request content received:\n");
+        ctx->addTraceSummaryValue(LogMin, "msg", "Unknown exception caught in CEspHttpServer::processRequest", TXSUMMARY_GRP_ENTERPRISE);
         return 0;
     }
 

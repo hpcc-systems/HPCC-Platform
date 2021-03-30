@@ -57,6 +57,8 @@ private:
     LogRequest m_logReq;
     bool m_logResp;
     LogLevel txSummaryLevel;
+    unsigned int txSummaryStyle;
+    unsigned int txSummaryGroup;
     bool txSummaryResourceReq;
     unsigned m_slowProcessingTime;
     StringAttr m_frameTitle;
@@ -83,6 +85,8 @@ public:
         m_logReq = config->m_options.logReq;
         m_logResp = config->m_options.logResp;
         txSummaryLevel = config->m_options.txSummaryLevel;
+        txSummaryStyle = config->m_options.txSummaryStyle;
+        txSummaryGroup = config->m_options.txSummaryGroup;
         txSummaryResourceReq = config->m_options.txSummaryResourceReq;
         m_slowProcessingTime = config->m_options.slowProcessingTime;
         m_frameTitle.set(config->m_options.frameTitle);
@@ -155,12 +159,16 @@ public:
     void setLogRequests(LogRequest logReq) { m_logReq = logReq; }
     void setLogResponses(bool logResp) { m_logResp = logResp; }
     void setTxSummaryLevel(LogLevel level) { txSummaryLevel = level; }
+    void setTxSummaryStyle(unsigned int style) { txSummaryStyle = style; }
+    void setTxSummaryGroup(unsigned int group) { txSummaryGroup = group; }
     void setTxSummaryResourceReq(bool logReq) { txSummaryResourceReq = logReq; }
 
     LogLevel getLogLevel() { return m_logLevel; }
     LogRequest getLogRequests() { return m_logReq; }
     bool getLogResponses() { return m_logResp; }
     LogLevel getTxSummaryLevel() { return txSummaryLevel; }
+    unsigned int getTxSummaryStyle() { return txSummaryStyle; }
+    unsigned int getTxSummaryGroup() { return txSummaryGroup; }
     bool getTxSummaryResourceReq() { return txSummaryResourceReq; }
     void setFrameTitle(const char* title)  { m_frameTitle.set(title); }
     const char* getFrameTitle()  { return m_frameTitle.get(); }

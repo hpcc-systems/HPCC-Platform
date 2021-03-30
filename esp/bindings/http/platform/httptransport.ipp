@@ -53,6 +53,8 @@ enum MessageLogFlag
 #define HTTP_HEADER_CONTENT_ENCODING  "Content-Encoding"
 #define HTTP_HEADER_TRANSFER_ENCODING "Transfer-Encoding"
 #define HTTP_HEADER_ACCEPT_ENCODING   "Accept-Encoding"
+#define HTTP_HEADER_HPCC_GLOBAL_ID    "Global-Id"
+#define HTTP_HEADER_HPCC_CALLER_ID    "Caller-Id"
 
 class esp_http_decl CHttpMessage : implements IHttpMessage, public CInterface
 {

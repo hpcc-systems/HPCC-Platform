@@ -71,6 +71,7 @@ private:
     BoolHash  m_optGroups;
 
     Owned<CTxSummary> m_txSummary;
+
     unsigned    m_active;
     unsigned    m_creationTime;
     unsigned    m_processingTime;
@@ -88,6 +89,9 @@ private:
     Owned<IEspSecureContext> m_secureContext;
 
     StringAttr   m_transactionID;
+    StringBuffer   m_globalId;
+    StringBuffer   m_localId;
+    StringBuffer   m_callerId;
     IHttpMessage* m_request;
 
 public:
@@ -112,13 +116,19 @@ public:
         updateTraceSummaryHeader();
         m_secureContext.setown(secureContext);
         m_SecurityHandler.setSecureContext(secureContext);
+        appendGloballyUniqueId(m_localId);
+        // use localId as globalId unless we receive another
+        m_globalId.set(m_localId);
     }
 
     ~CEspContext()
     {
         flushTraceSummary();
         if (m_txSummary)
-            m_txSummary->log(getTxSummaryLevel());
+        {
+            m_txSummary->tailor(this);
+            m_txSummary->log(getTxSummaryLevel(), getTxSummaryGroup(), getTxSummaryStyle());
+        }
     }
     virtual void addOptions(unsigned opts){options|=opts;}
     virtual void removeOptions(unsigned opts){opts&=~opts;}
@@ -503,40 +513,48 @@ public:
         return m_txSummary.get();
     }
 
-    virtual void addTraceSummaryValue(LogLevel logLevel, const char *name, const char *value)
+    virtual void addTraceSummaryValue(LogLevel logLevel, const char *name, const char *value, const unsigned int group = TXSUMMARY_GRP_CORE)
     {
         if (m_txSummary && !isEmptyString(name))
-            m_txSummary->append(name, value, logLevel);
+            m_txSummary->append(name, value, logLevel, group);
     }
 
-    virtual void addTraceSummaryValue(LogLevel logLevel, const char *name, __int64 value)
+    virtual void addTraceSummaryValue(LogLevel logLevel, const char *name, __int64 value, const unsigned int group = TXSUMMARY_GRP_CORE)
     {
         if (m_txSummary && !isEmptyString(name))
-            m_txSummary->append(name, value, logLevel);
+            m_txSummary->append(name, value, logLevel, group);
     }
 
-    virtual void addTraceSummaryTimeStamp(LogLevel logLevel, const char *name)
+    virtual void addTraceSummaryDoubleValue(LogLevel logLevel, const char *name, double value, const unsigned int group = TXSUMMARY_GRP_CORE)
     {
         if (m_txSummary && !isEmptyString(name))
-            m_txSummary->append(name, m_txSummary->getElapsedTime(), logLevel, "ms");
+            m_txSummary->append(name, value, logLevel, group);
+    }
+
+    virtual void addTraceSummaryTimeStamp(LogLevel logLevel, const char *name, const unsigned int group = TXSUMMARY_GRP_CORE)
+    {
+        if (m_txSummary && !isEmptyString(name))
+            m_txSummary->append(name, m_txSummary->getElapsedTime(), logLevel, group, "ms");
     }
     virtual void flushTraceSummary()
     {
         updateTraceSummaryHeader();
         if (m_txSummary)
         {
-            m_txSummary->set("auth", authStatus.get(), LogMin);
-            m_txSummary->append("total", m_processingTime, LogMin, "ms");
+            m_txSummary->set("auth", authStatus.get(), LogMin, TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
+            m_txSummary->append("total", m_processingTime, LogMin, TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE, "ms");
         }
     }
-    virtual void addTraceSummaryCumulativeTime(LogLevel logLevel, const char* name, unsigned __int64 time)
+
+    virtual void addTraceSummaryCumulativeTime(LogLevel logLevel, const char* name, unsigned __int64 time, const unsigned int group = TXSUMMARY_GRP_CORE)
     {
         if (m_txSummary && !isEmptyString(name))
-            m_txSummary->updateTimer(name, time, logLevel);
+            m_txSummary->updateTimer(name, time, logLevel, group);
     }
-    virtual CumulativeTimer* queryTraceSummaryCumulativeTimer(const char* name)
+
+    virtual CumulativeTimer* queryTraceSummaryCumulativeTimer(LogLevel logLevel, const char *name, const unsigned int group = TXSUMMARY_GRP_CORE)
     {
-        return (m_txSummary ? m_txSummary->queryTimer(name) : NULL);
+        return (m_txSummary ? m_txSummary->queryTimer(name, logLevel, group) : NULL);
     }
     virtual void cancelTxSummary()
     {
@@ -550,6 +568,11 @@ public:
     virtual void setAuthStatus(const char* status)
     {
         authStatus.set(status);
+    }
+
+    virtual const char* queryAuthStatus()
+    {
+        return authStatus.str();
     }
 
     virtual void setAuthenticationMethod(const char* method)
@@ -600,6 +623,28 @@ public:
     virtual IHttpMessage* queryRequest()
     {
         return m_request;
+    }
+
+    virtual void setGlobalId(const char* id)
+    {
+        m_globalId.set(id);
+    }
+    virtual const char* getGlobalId()
+    {
+        return m_globalId.str();
+    }
+    virtual void setCallerId(const char* id)
+    {
+        m_callerId.set(id);
+    }
+    virtual const char* getCallerId()
+    {
+        return m_callerId.str();
+    }
+    // No setLocalId() - it should be set once only when constructed
+    virtual const char* getLocalId()
+    {
+        return m_localId.str();
     }
 };
 
@@ -686,7 +731,7 @@ void CEspContext::updateTraceSummaryHeader()
 {
     if (m_txSummary)
     {
-        m_txSummary->set("activeReqs", m_active, LogMin);
+        m_txSummary->set("activeReqs", m_active, LogMin, TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
         VStringBuffer user("%s%s%s", (queryUserId() ? queryUserId() : ""), (m_peer.length() ? "@" : ""), m_peer.str());
         if (!user.isEmpty())
             m_txSummary->set("user", user.str(), LogMin);
@@ -708,11 +753,11 @@ void CEspContext::updateTraceSummaryHeader()
             reqSummary.append("v").append(m_clientVer);
         }
         if (!reqSummary.isEmpty())
-            m_txSummary->set("req", reqSummary.str(), LogMin);
+            m_txSummary->set("req", reqSummary.str(), LogMin, TXSUMMARY_GRP_CORE);
         if (m_hasException)
         {
-            m_txSummary->set("excepttime", m_exceptionTime, LogMin);
-            m_txSummary->set("exceptcode", m_exceptionCode, LogMin);
+            m_txSummary->set("excepttime", m_exceptionTime, LogMin, TXSUMMARY_GRP_CORE);
+            m_txSummary->set("exceptcode", m_exceptionCode, LogMin, TXSUMMARY_GRP_CORE);
         }
     }
 }
@@ -899,6 +944,50 @@ LogLevel getTxSummaryLevel()
     if (getContainer())
         return getContainer()->getTxSummaryLevel();
     return LogMin;
+}
+
+const unsigned int readTxSummaryStyle(char const* style)
+{
+    if (isEmptyString(style))
+        return TXSUMMARY_OUT_TEXT;
+
+    if (strieq(style, "text"))
+        return TXSUMMARY_OUT_TEXT;
+    if (strieq(style, "json"))
+        return TXSUMMARY_OUT_JSON;
+    if (strieq(style, "all"))
+        return TXSUMMARY_OUT_TEXT | TXSUMMARY_OUT_JSON;
+
+    return TXSUMMARY_OUT_TEXT;
+}
+
+const unsigned int readTxSummaryGroup(char const* group)
+{
+    if (isEmptyString(group))
+        return TXSUMMARY_GRP_CORE;
+
+    if (strieq(group, "core"))
+        return TXSUMMARY_GRP_CORE;
+    if (strieq(group, "enterprise"))
+        return TXSUMMARY_GRP_ENTERPRISE;
+    if (strieq(group, "all"))
+        return TXSUMMARY_GRP_CORE | TXSUMMARY_GRP_ENTERPRISE;
+
+    return TXSUMMARY_GRP_CORE;
+}
+
+const unsigned int getTxSummaryStyle()
+{
+    if (getContainer())
+        return getContainer()->getTxSummaryStyle();
+    return TXSUMMARY_OUT_TEXT;
+}
+
+const unsigned int getTxSummaryGroup()
+{
+    if (getContainer())
+        return getContainer()->getTxSummaryGroup();
+    return TXSUMMARY_GRP_CORE;
 }
 
 bool getTxSummaryResourceReq()

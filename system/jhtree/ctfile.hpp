@@ -99,6 +99,17 @@ struct __declspec(novtable) jhtree_decl KeyHdr
     __uint64 partitionFieldMask; /* Bitmap indicating partition keyed fields */
 };
 
+enum NodeType : char
+{
+    NodeBranch = 0,
+    NodeLeaf = 1,
+    NodeBlob = 2,
+    NodeMeta = 3,
+    NodeBloom = 4,
+//The following is never stored and only used in code as a value that does not match any of the above.
+    NodeNone = 127,
+};
+
 //#pragma pack(1)
 #pragma pack(push,1)
 struct jhtree_decl NodeHdr
@@ -182,11 +193,12 @@ class jhtree_decl CNodeBase : public CWritableKeyNode
 {
 protected:
     NodeHdr hdr;
-    byte keyType;
     size32_t keyLen;
     size32_t keyCompareLen;
     CKeyHdr *keyHdr;
+    byte keyType;
     bool isVariable;
+    std::atomic<bool> ready{false}; // is this node read for use?  Can be checked outside a critsec, but only set within one.
 
 private:
     offset_t fpos;
@@ -196,11 +208,14 @@ public:
     inline offset_t getFpos() const { assertex(fpos); return fpos; }
     inline size32_t getKeyLen() const { return keyLen; }
     inline size32_t getNumKeys() const { return hdr.numKeys; }
-    inline bool isBlob() const { return hdr.leafFlag == 2; }
-    inline bool isMetadata() const { return hdr.leafFlag == 3; }
-    inline bool isBloom() const { return hdr.leafFlag == 4; }
-    inline bool isLeaf() const { return hdr.leafFlag != 0; }
+    inline bool isBlob() const { return hdr.leafFlag == NodeBlob; }
+    inline bool isMetadata() const { return hdr.leafFlag == NodeMeta; }
+    inline bool isBloom() const { return hdr.leafFlag == NodeBloom; }
+    inline bool isLeaf() const { return hdr.leafFlag != NodeBranch; }       // actually is-non-branch.  Use should be reviewed.
+    inline NodeType getNodeType() const { return (NodeType)hdr.leafFlag; }
 
+    inline bool isReady() const { return ready; }
+    inline void noteReady() { ready = true; }
 public:
     CNodeBase();
     void load(CKeyHdr *keyHdr, offset_t fpos);

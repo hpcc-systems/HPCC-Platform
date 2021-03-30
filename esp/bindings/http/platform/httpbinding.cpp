@@ -45,6 +45,7 @@
 #include "dasds.hpp"
 #include "daclient.hpp"
 #include "workunit.hpp"
+#include "cumulativetimer.hpp"
 
 #define FILE_UPLOAD     "FileUploadAccess"
 #define DEFAULT_HTTP_PORT 80
@@ -685,7 +686,13 @@ bool EspHttpBinding::doAuth(IEspContext* ctx)
 {
     if(m_authtype.length() == 0 || stricmp(m_authtype.str(), "Basic") == 0)
     {
-        return basicAuth(ctx);
+        CumulativeTimer* timer = ctx->queryTraceSummaryCumulativeTimer(LogNormal, "custom_fields.basicAuthTime", TXSUMMARY_GRP_ENTERPRISE);
+        CumulativeTimer::Scope authScope(timer);
+
+        ctx->addTraceSummaryTimeStamp(LogMin, "custom_fields.authStart", TXSUMMARY_GRP_ENTERPRISE);
+        bool result = basicAuth(ctx);
+        ctx->addTraceSummaryTimeStamp(LogMin, "custom_fields.authEnd", TXSUMMARY_GRP_ENTERPRISE);
+        return result;
     }
 
     return false;
@@ -809,7 +816,7 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
 
     m_secmgr->updateSettings(*user,securitySettings, ctx->querySecureContext());
 
-    ctx->addTraceSummaryTimeStamp(LogMin, "basicAuth");
+    ctx->addTraceSummaryTimeStamp(LogMin, "basicAuth", TXSUMMARY_GRP_CORE);
     return authorized;
 }
 

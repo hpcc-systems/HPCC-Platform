@@ -30,6 +30,7 @@ set (   SRCS
         esdl_svc_engine.cpp
         esdl_store.cpp
         esdl_monitor.cpp
+        esdl_summary_profile.cpp
     )
 
 include_directories (

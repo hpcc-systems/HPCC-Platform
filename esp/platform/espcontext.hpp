@@ -130,6 +130,10 @@ esp_http_decl LogLevel getEspLogLevel();
 esp_http_decl LogRequest getEspLogRequests();
 esp_http_decl bool getEspLogResponses();
 esp_http_decl LogLevel getTxSummaryLevel();
+esp_http_decl const unsigned int getTxSummaryStyle();
+esp_http_decl const unsigned int readTxSummaryStyle(const char* style);
+esp_http_decl const unsigned int getTxSummaryGroup();
+esp_http_decl const unsigned int readTxSummaryGroup(const char* group);
 esp_http_decl bool getTxSummaryResourceReq();
 esp_http_decl unsigned getSlowProcessingTime();
 

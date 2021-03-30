@@ -449,6 +449,13 @@ bool CHttpThread::onRequest()
         ESPLOG(LogMax, "Request from secure socket");
         m_socket.set(secure_sock);
         httpserver.setown(new CEspHttpServer(*secure_sock.get(), m_apport, m_viewConfig, getMaxRequestEntityLength()));
+        IEspContext* ctx = httpserver->queryContext();
+        if(ctx)
+        {
+            StringBuffer version;
+            secure_sock->get_ssl_version(version);
+            ctx->addTraceSummaryValue(LogMin, "custom_fields.sslProtocol", version.str(), TXSUMMARY_GRP_ENTERPRISE);
+        }
     }
     else
     {
@@ -549,6 +556,13 @@ void CPooledHttpThread::threadmain()
         }
         m_socket.set(secure_sock);
         httpserver.setown(new CEspHttpServer(*m_socket, m_apport, false, getMaxRequestEntityLength()));
+        IEspContext* ctx = httpserver->queryContext();
+        if(ctx)
+        {
+            StringBuffer version;
+            secure_sock->get_ssl_version(version);
+            ctx->addTraceSummaryValue(LogMin, "custom_fields.sslProtocol", version.str(), TXSUMMARY_GRP_ENTERPRISE);
+        }
     }
     else
     {

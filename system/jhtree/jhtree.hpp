@@ -29,6 +29,8 @@
 #include "jlog.hpp"
 #include "errorlist.h"
 
+enum NodeType : char;
+
 class BloomFilter;
 interface IIndexFilterList;
 
@@ -113,7 +115,7 @@ interface jhtree_decl IKeyIndex : public IKeyIndexBase
     virtual const IFileIO *queryFileIO() const = 0;
     virtual bool hasSpecialFileposition() const = 0;
     virtual bool needsRowBuffer() const = 0;
-    virtual bool prewarmPage(offset_t offset) = 0;
+    virtual bool prewarmPage(offset_t offset, NodeType type) = 0;
 };
 
 interface IKeyArray : extends IInterface
@@ -135,7 +137,7 @@ interface jhtree_decl IKeyIndexSet : public IKeyIndexBase
 
 interface ICacheInfoRecorder
 {
-    virtual void noteWarm(unsigned fileIdx, offset_t page, size32_t len) = 0;
+    virtual void noteWarm(unsigned fileIdx, offset_t page, size32_t len, NodeType type) = 0;
 };
 
 
@@ -145,16 +147,16 @@ extern jhtree_decl void clearKeyStoreCacheEntry(const IFileIO *io);
 extern jhtree_decl unsigned setKeyIndexCacheSize(unsigned limit);
 extern jhtree_decl void clearNodeCache();
 // these methods return previous values
-extern jhtree_decl bool setNodeCachePreload(bool preload);
 extern jhtree_decl size32_t setNodeCacheMem(size32_t cacheSize);
 extern jhtree_decl size32_t setLeafCacheMem(size32_t cacheSize);
 extern jhtree_decl size32_t setBlobCacheMem(size32_t cacheSize);
+extern jhtree_decl void setLegacyNodeCache(bool _value);
 
 extern jhtree_decl void getNodeCacheInfo(ICacheInfoRecorder &cacheInfo);
 
-extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, bool isTLK, bool preloadAllowed);
-extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, IFileIO &ifile, unsigned fileIdx, bool isTLK, bool preloadAllowed);
-extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, IDelayedFile &ifile, unsigned fileIdx, bool isTLK, bool preloadAllowed);
+extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, bool isTLK);
+extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, IFileIO &ifile, unsigned fileIdx, bool isTLK);
+extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, IDelayedFile &ifile, unsigned fileIdx, bool isTLK);
 
 extern jhtree_decl bool isIndexFile(const char *fileName);
 extern jhtree_decl bool isIndexFile(IFile *file);
@@ -169,12 +171,13 @@ extern jhtree_decl RelaxedAtomic<unsigned> cacheHits;
 extern jhtree_decl RelaxedAtomic<unsigned> cacheAdds;
 extern jhtree_decl RelaxedAtomic<unsigned> blobCacheHits;
 extern jhtree_decl RelaxedAtomic<unsigned> blobCacheAdds;
+extern jhtree_decl RelaxedAtomic<unsigned> blobCacheDups;
 extern jhtree_decl RelaxedAtomic<unsigned> leafCacheHits;
 extern jhtree_decl RelaxedAtomic<unsigned> leafCacheAdds;
+extern jhtree_decl RelaxedAtomic<unsigned> leafCacheDups;
 extern jhtree_decl RelaxedAtomic<unsigned> nodeCacheHits;
 extern jhtree_decl RelaxedAtomic<unsigned> nodeCacheAdds;
-extern jhtree_decl RelaxedAtomic<unsigned> preloadCacheHits;
-extern jhtree_decl RelaxedAtomic<unsigned> preloadCacheAdds;
+extern jhtree_decl RelaxedAtomic<unsigned> nodeCacheDups;
 extern jhtree_decl bool linuxYield;
 extern jhtree_decl bool traceSmartStepping;
 extern jhtree_decl bool flushJHtreeCacheOnOOM;

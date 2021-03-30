@@ -420,7 +420,7 @@ public:
         {
             // Use default locale if the specified moneyLocale is invalid
             // (avoids difficult to track down crashes)
-            OERRLOG("Locale '%s' is not installed", localestr.str());
+            OERRLOG("Locale '%s' is not installed [%s]", localestr.str(), e.what());
             loc = new std::locale("");
         }
         return loc;

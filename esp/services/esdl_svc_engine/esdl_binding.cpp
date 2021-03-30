@@ -42,6 +42,7 @@
 
 #include "loggingagentbase.hpp"
 #include "httpclient.ipp"
+#include "esdl_summary_profile.hpp"
 
 class EsdlSvcReporter : public EsdlDefReporter
 {
@@ -251,6 +252,12 @@ void EsdlServiceImpl::init(const IPropertyTree *cfg,
 
         xpath.setf("EspBinding[@service=\"%s\"]", service); //get this service's binding cfg
         m_oEspBindingCfg.set(espcfg->queryPropTree(xpath.str()));
+
+        xpath.setf("CustomBindingParameters/CustomBindingParameter[@key=\"UseDefaultEnterpriseTxSummaryProfile\"]/@value");
+        bool useDefaultSummaryProfile = m_oEspBindingCfg->getPropBool(xpath.str());
+        // Possible future update is to read profile settings from configuration
+        if(useDefaultSummaryProfile)
+            m_txSummaryProfile.setown(new CTxSummaryProfileEsdl);
     }
     else
         throw MakeStringException(-1, "Could not access ESDL service configuration: esp process '%s' service name '%s'", process, service);
@@ -820,7 +827,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
                                            unsigned int flags)
 {
     const char *mthName = mthdef.queryName();
-    context.addTraceSummaryValue(LogMin, "method", mthName);
+    context.addTraceSummaryValue(LogMin, "method", mthName, TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
     const char* srvName = srvdef.queryName();
 
     if (m_serviceScriptError.length()) //checked further along in shared code, but might as well avoid extra overhead
@@ -885,6 +892,12 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
         context.setTransactionID(trxid.str());
     else
         ESPLOG(LogMin,"DESDL: Transaction ID could not be generated!");
+
+    // In the future we could instantiate a profile from the service configuration.
+    // For now use a profile created on service initialization.
+    CTxSummary* txSummary = context.queryTxSummary();
+    if(txSummary)
+        txSummary->setProfile(m_txSummaryProfile);
 
     EsdlMethodImplType implType = EsdlMethodImplUnknown;
 
@@ -966,9 +979,9 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
              }
 
              writer.setown(dynamic_cast<IXmlWriterExt *>(javactx->bindParamWriter(m_esdl, javaPackage, mthdef.queryRequestType(), "request")));
-             context.addTraceSummaryTimeStamp(LogNormal, "srt-reqproc");
+             context.addTraceSummaryTimeStamp(LogNormal, "srt-reqproc", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
              m_pEsdlTransformer->process(context, EsdlRequestMode, srvdef.queryName(), mthdef.queryName(), *req, writer, 0, NULL);
-             context.addTraceSummaryTimeStamp(LogNormal, "end-reqproc");
+             context.addTraceSummaryTimeStamp(LogNormal, "end-reqproc", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
 
              javactx->paramWriterCommit(writer);
              javactx->callFunction();
@@ -979,7 +992,7 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
 
              Owned<IXmlWriterExt> finalRespWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSONRootless : WTStandard);
              m_pEsdlTransformer->processHPCCResult(context, mthdef, origResp.str(), finalRespWriter, logdata, txResultFlags, ns, schema_location);
-
+             // TODO: Modify processHPCCResult to return record count
              out.append(finalRespWriter->str());
         }
         else if (implType==EsdlMethodImplCpp)
@@ -989,9 +1002,9 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
             //Preprocess Request
             StringBuffer reqcontent;
             unsigned xflags = (isPublishedQuery(implType)) ? ROXIEREQ_FLAGS : ESDLREQ_FLAGS;
-            context.addTraceSummaryTimeStamp(LogNormal, "srt-reqproc");
+            context.addTraceSummaryTimeStamp(LogNormal, "srt-reqproc", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
             m_pEsdlTransformer->process(context, EsdlRequestMode, srvdef.queryName(), mthdef.queryName(), *req, reqWriter.get(), xflags, NULL);
-            context.addTraceSummaryTimeStamp(LogNormal, "end-reqproc");
+            context.addTraceSummaryTimeStamp(LogNormal, "end-reqproc", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
 
             reqcontent.set(reqWriter->str());
             context.addTraceSummaryTimeStamp(LogNormal, "serialized-xmlreq");
@@ -1013,10 +1026,11 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
             xproc(ctxbuf.str(), reqcontent.str(), origResp);
             context.addTraceSummaryTimeStamp(LogNormal, "end-cppcall");
 
-            context.addTraceSummaryTimeStamp(LogNormal, "srt-procres");
+            context.addTraceSummaryTimeStamp(LogNormal, "srt-procres", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
             Owned<IXmlWriterExt> finalRespWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSONRootless : WTStandard);
             m_pEsdlTransformer->processHPCCResult(context, mthdef, origResp.str(), finalRespWriter, logdata, txResultFlags, ns, schema_location);
-            context.addTraceSummaryTimeStamp(LogNormal, "end-procres");
+            // TODO: Modify processHPCCResult to return record count
+            context.addTraceSummaryTimeStamp(LogNormal, "end-procres", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
 
             out.append(finalRespWriter->str());
         }
@@ -1030,9 +1044,10 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
             //Preprocess Request
             StringBuffer reqcontent;
             unsigned xflags = (isPublishedQuery(implType)) ? ROXIEREQ_FLAGS : ESDLREQ_FLAGS;
-            context.addTraceSummaryTimeStamp(LogNormal, "srt-reqproc");
-            m_pEsdlTransformer->process(context, EsdlRequestMode, srvdef.queryName(), mthdef.queryName(), *req, reqWriter.get(), xflags, NULL);
-            context.addTraceSummaryTimeStamp(LogNormal, "end-reqproc");
+            context.addTraceSummaryTimeStamp(LogNormal, "srt-reqproc", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
+            int recordCount = m_pEsdlTransformer->process(context, EsdlRequestMode, srvdef.queryName(), mthdef.queryName(), *req, reqWriter.get(), xflags, NULL);
+            context.addTraceSummaryTimeStamp(LogNormal, "end-reqproc", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
+            context.addTraceSummaryValue(LogNormal, "custom_fields.recCount", recordCount, TXSUMMARY_GRP_ENTERPRISE);
 
             if(isPublishedQuery(implType))
                 tgtctx.setown(createTargetContext(context, tgtcfg.get(), srvdef, mthdef, req));
@@ -1044,14 +1059,14 @@ void EsdlServiceImpl::handleServiceRequest(IEspContext &context,
                 runServiceScript(context, scriptContext, srvdef, mthdef, reqcontent, origResp, txResultFlags, ns, schema_location);
             else
                 handleFinalRequest(context, scriptContext, tgtcfg, tgtctx, srvdef, mthdef, ns, reqcontent, origResp, isPublishedQuery(implType), implType==EsdlMethodImplProxy, soapmsg);
-            context.addTraceSummaryTimeStamp(LogNormal, "end-HFReq");
+            context.addTraceSummaryTimeStamp(LogNormal, "end-HFReq", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
 
             if (isPublishedQuery(implType))
             {
-                context.addTraceSummaryTimeStamp(LogNormal, "srt-procres");
+                context.addTraceSummaryTimeStamp(LogNormal, "srt-procres", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
                 Owned<IXmlWriterExt> respWriter = createIXmlWriterExt(0, 0, NULL, (flags & ESDL_BINDING_RESPONSE_JSON) ? WTJSONRootless : WTStandard);
                 m_pEsdlTransformer->processHPCCResult(context, mthdef, origResp.str(), respWriter.get(), logdata, txResultFlags, ns, schema_location);
-                context.addTraceSummaryTimeStamp(LogNormal, "end-procres");
+                context.addTraceSummaryTimeStamp(LogNormal, "end-procres", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
                 out.append(respWriter->str());
                 runPostEsdlScript(context, scriptContext, srvdef, mthdef, out, txResultFlags, ns, schema_location);
             }
@@ -1073,6 +1088,7 @@ bool EsdlServiceImpl::handleResultLogging(IEspContext &espcontext, IEsdlScriptCo
     StringBuffer temp;
     if (scriptContext)
     {
+        espcontext.addTraceSummaryTimeStamp(LogNormal, "custom_fields.srt-preLogScripts", TXSUMMARY_GRP_ENTERPRISE);
         IEsdlTransformSet *servicePLTs = m_transforms->queryMethodEntryPoint("", ESDLScriptEntryPoint_PreLogging);
         IEsdlTransformSet *methodPLTs = m_transforms->queryMethodEntryPoint(mthdef.queryName(), ESDLScriptEntryPoint_PreLogging);
 
@@ -1084,10 +1100,11 @@ bool EsdlServiceImpl::handleResultLogging(IEspContext &espcontext, IEsdlScriptCo
             scriptContext->toXML(temp, ESDLScriptCtxSection_LogData);
             logdata = temp.str();
         }
+        espcontext.addTraceSummaryTimeStamp(LogNormal, "custom_fields.end-preLogScripts", TXSUMMARY_GRP_ENTERPRISE);
     }
 
     bool success = true;
-    espcontext.addTraceSummaryTimeStamp(LogNormal, "srt-resLogging");
+    espcontext.addTraceSummaryTimeStamp(LogNormal, "srt-resLogging", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
     if (loggingManager())
     {
         Owned<IEspLogEntry> entry = loggingManager()->createLogEntry();
@@ -1105,7 +1122,7 @@ bool EsdlServiceImpl::handleResultLogging(IEspContext &espcontext, IEsdlScriptCo
         success = loggingManager()->updateLog(entry, logresp);
         ESPLOG(LogMin,"ESDLService: Attempted to log ESP transaction: %s", logresp.str());
     }
-    espcontext.addTraceSummaryTimeStamp(LogNormal, "end-resLogging");
+    espcontext.addTraceSummaryTimeStamp(LogNormal, "end-resLogging", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
     return success;
 }
 
@@ -1476,6 +1493,9 @@ void EsdlServiceImpl::sendTargetSOAP(IEspContext & context,
         httpclient->setPassword(password.str());
     }
 
+    Owned<IProperties> headers = createProperties();
+    headers->setProp(HTTP_HEADER_HPCC_GLOBAL_ID, context.getGlobalId());
+    headers->setProp(HTTP_HEADER_HPCC_CALLER_ID, context.getLocalId());
     StringBuffer status;
     StringBuffer clreq(req);
 
@@ -1483,10 +1503,12 @@ void EsdlServiceImpl::sendTargetSOAP(IEspContext & context,
     ESPLOG(LogMax,"OUTGOING Request: %s", clreq.str());
     {
         EspTimeSection timing("Calling out to query");
-        context.addTraceSummaryTimeStamp(LogMin, "startcall");
-        httpclient->sendRequest("POST", "text/xml", clreq, resp, status,true);
-        context.addTraceSummaryTimeStamp(LogMin, "endcall");
+        context.addTraceSummaryTimeStamp(LogMin, "startcall", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
+        httpclient->sendRequest(headers, "POST", "text/xml", clreq, resp, status, true);
+        context.addTraceSummaryTimeStamp(LogMin, "endcall", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
     }
+
+    context.addTraceSummaryValue(LogMin, "custom_fields.ext_resp_len", resp.length(), TXSUMMARY_GRP_ENTERPRISE);
 
     if (status.length()==0)
     {
@@ -2205,7 +2227,7 @@ int EsdlBindingImpl::onGetInstantQuery(IEspContext &context,
     StringBuffer source;
     StringBuffer orderstatus;
 
-    context.addTraceSummaryTimeStamp(LogMin, "reqRecvd");
+    context.addTraceSummaryTimeStamp(LogMin, "reqRecvd", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
     Owned<IMultiException> me = MakeMultiException(source.appendf("EsdlBindingImpl::%s()", methodName).str());
 
     IEsdlDefMethod *mthdef = NULL;
@@ -2256,11 +2278,12 @@ int EsdlBindingImpl::onGetInstantQuery(IEspContext &context,
                     else
                       response->setContentType(HTTP_TYPE_TEXT_XML_UTF8);
                     response->setStatus(HTTP_STATUS_OK);
+                    context.addTraceSummaryTimeStamp(LogMin, "custom_fields.RspSndSt", TXSUMMARY_GRP_ENTERPRISE);
                     response->send();
                     returnSocket(response);
 
                     unsigned timetaken = msTick() - context.queryCreationTime();
-                    context.addTraceSummaryTimeStamp(LogMin, "respSent");
+                    context.addTraceSummaryTimeStamp(LogMin, "respSent", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
 
                     ESPLOG(LogMax,"EsdlBindingImpl:onGetInstantQuery response: %s", out.str());
 
@@ -2455,6 +2478,10 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
 
     try
     {
+        ctx->addTraceSummaryTimeStamp(LogMin, "custom_fields.soapRequestStart", TXSUMMARY_GRP_ENTERPRISE);
+        ctx->addTraceSummaryValue(LogMin, "app.name", m_processName.get(), TXSUMMARY_GRP_ENTERPRISE);
+        ctx->addTraceSummaryValue(LogMin, "custom_fields.esp_service_type", "desdl", TXSUMMARY_GRP_ENTERPRISE);
+
         in = request->queryContent();
         if (!in || !*in)
             throw makeWsException( ERR_ESDL_BINDING_BADREQUEST, WSERR_CLIENT,  "ESP", "SOAP content not found" );
@@ -2466,6 +2493,7 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
         IEsdlDefMethod *mthdef=NULL;
         if (getSoapMethodInfo(in, reqname, ns))
         {
+            ctx->addTraceSummaryValue(LogMin, "custom_fields.soap", reqname.str(), TXSUMMARY_GRP_ENTERPRISE);
             if (m_proxyInfo)
             {
                 StringBuffer proxyMethod(reqname);
@@ -2475,7 +2503,10 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
                 StringBuffer proxyAddress;
                 bool resetForwardedFor = false;
                 if (checkForMethodProxy(request->queryServiceName(), proxyMethod, proxyAddress, resetForwardedFor))
+                {
+                    ctx->addTraceSummaryTimeStamp(LogMin, "custom_fields.soapRequestEnd", TXSUMMARY_GRP_ENTERPRISE);
                     return forwardProxyMessage(proxyAddress, request, response, resetForwardedFor);
+                }
             }
 
             StringBuffer nssrv;
@@ -2575,11 +2606,12 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
             response->setContent(out.str());
             response->setContentType(HTTP_TYPE_TEXT_XML_UTF8);
             response->setStatus(HTTP_STATUS_OK);
+            ctx->addTraceSummaryTimeStamp(LogMin, "custom_fields.RspSndSt", TXSUMMARY_GRP_ENTERPRISE);
             response->send();
             returnSocket(response);
 
             unsigned timetaken = msTick() - ctx->queryCreationTime();
-            ctx->addTraceSummaryTimeStamp(LogMin, "respSent");
+            ctx->addTraceSummaryTimeStamp(LogMin, "respSent", TXSUMMARY_GRP_CORE|TXSUMMARY_GRP_ENTERPRISE);
 
             m_pESDLService->handleResultLogging(*ctx, scriptContext, *srvdef, *mthdef, tgtctx.get(), pt, soapmsg.str(), origResp.str(), out.str(), logdata.str());
 
@@ -2593,12 +2625,15 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
         StringBuffer text;
         text.appendf("Parsing xml error: %s.", exml.getMessage().c_str());
         ESPLOG(LogMax, "%s\n", text.str());
-
+        ctx->addTraceSummaryTimeStamp(LogMin, "custom_fields.soapRequestEnd", TXSUMMARY_GRP_ENTERPRISE);
         throw makeWsException(  ERR_ESDL_BINDING_BADREQUEST, WSERR_SERVER, "Esp", "%s", text.str() );
     }
     catch (IException *e)
     {
         const char * source = request->queryServiceName();
+        StringBuffer msg;
+        ctx->addTraceSummaryTimeStamp(LogMin, "custom_fields.soapRequestEnd", TXSUMMARY_GRP_ENTERPRISE);
+        ctx->addTraceSummaryValue(LogMin, "custom_fields._soap_call_error_msg", e->errorMessage(msg).str(), TXSUMMARY_GRP_ENTERPRISE);
         handleSoapRequestException(e, source);
     }
     catch(...)
@@ -2606,9 +2641,11 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
         StringBuffer text;
         text.append( "EsdlBindingImpl could not process SOAP request" );
         ESPLOG(LogMax,"%s", text.str());
+        ctx->addTraceSummaryTimeStamp(LogMin, "custom_fields.soapRequestEnd", TXSUMMARY_GRP_ENTERPRISE);
         throw makeWsException( ERR_ESDL_BINDING_INTERNERR, WSERR_SERVER, "ESP", "%s", text.str() );
     }
 
+    ctx->addTraceSummaryTimeStamp(LogMin, "custom_fields.soapRequestEnd", TXSUMMARY_GRP_ENTERPRISE);
     return 0;
 }
 
@@ -3449,6 +3486,7 @@ void EsdlBindingImpl::handleHttpPost(CHttpRequest *request, CHttpResponse *respo
         }
     }
 
+    request->queryContext()->addTraceSummaryTimeStamp(LogMin, "custom_fields.HttpPostStart", TXSUMMARY_GRP_ENTERPRISE);
     switch (sstype)
     {
         case sub_serv_roxie_builder:
@@ -3478,6 +3516,7 @@ void EsdlBindingImpl::handleHttpPost(CHttpRequest *request, CHttpResponse *respo
             break;
         }
     }
+    request->queryContext()->addTraceSummaryTimeStamp(LogMin, "custom_fields.HttpPostEnd", TXSUMMARY_GRP_ENTERPRISE);
 }
 
 int EsdlBindingImpl::onRoxieRequest(CHttpRequest* request, CHttpResponse* response, const char * method)

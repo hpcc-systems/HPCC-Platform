@@ -351,6 +351,12 @@
                 <xs:attribute name="txSummaryLevel" type="xs:nonNegativeInteger" hpcc:presetValue="1"
                               hpcc:displayName="Tx Summary Level"
                               hpcc:tooltip="Sets the TxSummary level [0: none, 1: min, 5: noraml, 10: max]"/>
+                <xs:attribute name="txSummaryStyle" type="xs:string" hpcc:presetValue="text"
+                              hpcc:displayName="Tx Summary Output Style"
+                              hpcc:tooltip="Sets the style of TxSummary: [text|json|all]"/>
+                <xs:attribute name="txSummaryGroup" type="xs:string" hpcc:presetValue="text"
+                              hpcc:displayName="Tx Summary Output Groups"
+                              hpcc:tooltip="Selects which groups of entries are output in the TxSummary: [core|enterprise|all]"/>
                 <xs:attribute name="txSummaryResourceReq" type="xs:boolean" hpcc:presetValue="false"
                               hpcc:displayName="Tx Summary Resource Req"
                               hpcc:tooltip="Log TxSummary for Resource Requests"/>

@@ -94,11 +94,13 @@ struct esp_option
     LogRequest logReq;
     bool logResp;
     LogLevel txSummaryLevel;
+    unsigned int txSummaryStyle;
+    unsigned int txSummaryGroup;
     bool txSummaryResourceReq;
     StringAttr frameTitle;
     unsigned slowProcessingTime; //default 30 seconds
 
-    esp_option() : logReq(LogRequestsNever), logResp(false), logLevel(LogMin), txSummaryLevel(LogMin), txSummaryResourceReq(false), slowProcessingTime(30000)
+    esp_option() : logReq(LogRequestsNever), logResp(false), logLevel(LogMin), txSummaryLevel(LogMin), txSummaryStyle(TXSUMMARY_OUT_TEXT), txSummaryGroup(TXSUMMARY_GRP_CORE), txSummaryResourceReq(false), slowProcessingTime(30000)
     { }
 };
 
