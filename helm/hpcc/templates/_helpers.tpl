@@ -61,6 +61,9 @@ Pass in root as .
 {{- $spillStoragePlane := ($spillStorage.plane | default "hpcc-spill-plane") -}}
 {{- $daliStoragePlane := ($daliStorage.plane | default "hpcc-dali-plane") -}}
 {{- $dllStoragePlane := ($dllStorage.plane | default "hpcc-dlls-plane") -}}
+{{- $certificates := (.Values.certificates | default dict) -}}
+{{- $issuers := ($certificates.issuers | default dict) -}}
+mtls: {{ and ($certificates.enabled) (hasKey $issuers "local") }}
 imageVersion: {{ .Values.global.image.version | default .Chart.Version }}
 singleNode: {{ .Values.global.singleNode | default false }}
 {{ if .Values.global.defaultEsp -}}

@@ -10,10 +10,22 @@ data:
   {{ .me.name }}.yaml: |
     version: 1.0
     roxie:
-{{ toYaml ( omit .me "logging" "topoServer") | indent 6 }}
+{{ toYaml ( omit .me "logging" "topoServer" "encryptInTransit") | indent 6 }}
       numChannels: {{ .numChannels }}
       topologyServers: "{{ .toponame }}:{{ .topoport }}"
       resolveLocally: false
+{{- $certificates := (.root.Values.certificates | default dict) -}}
+{{- $issuers := ($certificates.issuers | default dict) -}}
+{{- $mtlsEnabled := (and ($certificates.enabled) (hasKey $issuers "local")) -}}
+{{/* By default use encryption if local certificates are enabled, but allow it to be turned off via roxie .encryptInTransit value */}}
+{{- if (hasKey . "encryptInTransit") -}}
+  {{- if and (.encryptInTransit) (not $mtlsEnabled) -}}
+    {{- $_ := fail (printf "Roxie %s encryptInTransit requires local cert-manager configuration." .me.name ) }}
+  {{- end }}
+      encryptInTransit: {{ .encryptInTransit }}
+{{ else }}
+      encryptInTransit: {{ $mtlsEnabled }}
+{{ end -}}
 {{- include "hpcc.generateLoggingConfig" (dict "root" .root "me" .me) | indent 6 }}
 {{ include "hpcc.generateVaultConfig" . | indent 6 }}
     global:

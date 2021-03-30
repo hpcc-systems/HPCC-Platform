@@ -23,6 +23,7 @@
 #include "jsocket.hpp"
 #include "jlog.hpp"
 #include "jencrypt.hpp"
+#include "jsecrets.hpp"
 #include "roxie.hpp"
 #ifdef _WIN32
 #include <winsock.h>
@@ -189,11 +190,6 @@ public:
         return (count==0 || seq - first < TRACKER_BITS);
     }
 
-};
-
-static byte key[32] = {
-    0xf7, 0xe8, 0x79, 0x40, 0x44, 0x16, 0x66, 0x18, 0x52, 0xb8, 0x18, 0x6e, 0x76, 0xd1, 0x68, 0xd3,
-    0x87, 0x47, 0x01, 0xe6, 0x66, 0x62, 0x2f, 0xbe, 0xc1, 0xd5, 0x9f, 0x4a, 0x53, 0x27, 0xae, 0xa1,
 };
 
 class UdpReceiverEntry : public IUdpReceiverEntry
@@ -424,7 +420,8 @@ public:
                     encryptBuffer.append(sizeof(UdpPacketHeader), header);    // We don't encrypt the header
                     length -= sizeof(UdpPacketHeader);
                     const char *data = buffer->data + sizeof(UdpPacketHeader);
-                    aesEncrypt(key, sizeof(key), data, length, encryptBuffer);
+                    const MemoryAttr &udpkey = getSecretUdpKey(true);
+                    aesEncrypt(udpkey.get(), udpkey.length(), data, length, encryptBuffer);
                     header->length = encryptBuffer.length();
                     encryptBuffer.writeDirect(0, sizeof(UdpPacketHeader), header);   // Only really need length updating
                     assert(length <= DATA_PAYLOAD);

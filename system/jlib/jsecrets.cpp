@@ -68,16 +68,45 @@ interface IVaultManager : extends IInterface
     virtual bool requestSecretByCategory(const char *category, CVaultKind &kind, StringBuffer &content, const char *secret, const char *version) = 0;
 };
 
+static bool getSecretUdpKey(MemoryAttr &updkey)
+{
+    bool ret = false;
+    updkey.clear();
+#if defined(_CONTAINERIZED) && defined(_USE_OPENSSL)
+    BIO *in = BIO_new_file("/opt/HPCCSystems/secrets/certificates/udp/tls.key", "r");
+    if (in == nullptr)
+        return false;
+    EC_KEY *eckey = PEM_read_bio_ECPrivateKey(in, nullptr, nullptr, nullptr);
+    if (eckey)
+    {
+        unsigned char *priv = NULL;
+        size_t privlen = EC_KEY_priv2buf(eckey, &priv);
+        if (privlen != 0)
+        {
+            updkey.set(privlen, priv);
+            OPENSSL_clear_free(priv, privlen);
+            ret = true;
+        }
+        EC_KEY_free(eckey);
+    }
+    BIO_free(in);
+#endif
+    return ret;
+}
+
 static CriticalSection secretCacheCS;
 static Owned<IPropertyTree> secretCache;
 static CriticalSection mtlsInfoCacheCS;
 static Owned<IPropertyTree> mtlsInfoCache;
 static Owned<IVaultManager> vaultManager;
+static MemoryAttr udpKey;
 
 MODULE_INIT(INIT_PRIORITY_SYSTEM)
 {
     secretCache.setown(createPTree());
     mtlsInfoCache.setown(createPTree());
+    //TODO: Only do this for roxie with encryptInTransit enabled:
+    getSecretUdpKey(udpKey);
     return true;
 }
 
@@ -86,6 +115,7 @@ MODULE_EXIT()
     vaultManager.clear();
     secretCache.clear();
     mtlsInfoCache.clear();
+    udpKey.clear();
 }
 
 static void splitUrlAddress(const char *address, size_t len, StringBuffer &host, StringBuffer *port)
@@ -719,30 +749,11 @@ extern jlib_decl bool getSecretValue(StringBuffer & result, const char *category
     return true;
 }
 
-bool getSecretUdpKey(MemoryAttr &updkey)
+const MemoryAttr &getSecretUdpKey(bool required)
 {
-    bool ret = false;
-    updkey.clear();
-#if defined(_CONTAINERIZED) && defined(_USE_OPENSSL)
-    BIO *in = BIO_new_file("/opt/HPCCSystems/secrets/certificates/udp/tls.key", "r");
-    if (in == nullptr)
-        return false;
-    EC_KEY *eckey = PEM_read_bio_ECPrivateKey(in, nullptr, nullptr, nullptr);
-    if (eckey)
-    {
-        unsigned char *priv = NULL;
-        size_t privlen = EC_KEY_priv2buf(eckey, &priv);
-        if (privlen != 0)
-        {
-            updkey.set(privlen, priv);
-            OPENSSL_clear_free(priv, privlen);
-            ret = true;
-        }
-        EC_KEY_free(eckey);
-    }
-    BIO_free(in);
-#endif
-    return ret;
+    if (required && !udpKey.length())
+        throw makeStringException(-1, "UPD Key not found, cert-manager integration/configuration required.");
+    return udpKey;
 }
 
 IPropertyTree *queryMtlsSecretInfo(const char *name)

@@ -23,6 +23,7 @@
 #include <jlog.hpp>
 #include "jisem.hpp"
 #include "jencrypt.hpp"
+#include "jsecrets.hpp"
 
 #include "udplib.hpp"
 #include "udptopo.hpp"
@@ -493,14 +494,6 @@ public:
 
 };
 
-// MORE - this is for TESTING ONLY - do not release with this key here like this!
-
-static byte key[32] = {
-    0xf7, 0xe8, 0x79, 0x40, 0x44, 0x16, 0x66, 0x18, 0x52, 0xb8, 0x18, 0x6e, 0x76, 0xd1, 0x68, 0xd3,
-    0x87, 0x47, 0x01, 0xe6, 0x66, 0x62, 0x2f, 0xbe, 0xc1, 0xd5, 0x9f, 0x4a, 0x53, 0x27, 0xae, 0xa1,
-};
-
-
 class CRoxieQueryPacket : public CRoxieQueryPacketBase, implements IRoxieQueryPacket
 {
 protected:
@@ -632,7 +625,8 @@ public:
             plainData += traceLength;
             unsigned plainLen = length - sizeof(RoxiePacketHeader) - traceLength;
             mb.append(sizeof(RoxiePacketHeader)+traceLength, data);  // Header and traceInfo are unencrypted
-            aesEncrypt(key, sizeof(key), plainData, plainLen, mb);   // Encrypt everything else
+            const MemoryAttr &udpkey = getSecretUdpKey(true);
+            aesEncrypt(udpkey.get(), udpkey.length(), plainData, plainLen, mb);   // Encrypt everything else
             RoxiePacketHeader *newHeader = (RoxiePacketHeader *) mb.toByteArray();
             newHeader->packetlength = mb.length();
         }
@@ -734,7 +728,8 @@ public:
             encryptedData += traceLength;
             unsigned encryptedLen = length - sizeof(RoxiePacketHeader) - traceLength;
             mb.append(sizeof(RoxiePacketHeader)+traceLength, data);         // Header and traceInfo are unencrypted
-            aesDecrypt(key, sizeof(key), encryptedData, encryptedLen, mb);  // Decrypt everything else
+            const MemoryAttr &udpkey = getSecretUdpKey(true);
+            aesDecrypt(udpkey.get(), udpkey.length(), encryptedData, encryptedLen, mb);  // Decrypt everything else
             RoxiePacketHeader *newHeader = (RoxiePacketHeader *) mb.toByteArray();
             newHeader->packetlength = mb.length();
         }
@@ -782,7 +777,8 @@ extern IRoxieQueryPacket *deserializeCallbackPacket(MemoryBuffer &m)
         MemoryBuffer decrypted;
         decrypted.append(sizeof(RoxiePacketHeader), header);
         decrypted.ensureCapacity(encryptedLen);  // May be up to 16 bytes smaller...
-        aesDecrypt(key, sizeof(key), encryptedData, encryptedLen, decrypted);
+        const MemoryAttr &udpkey = getSecretUdpKey(true);
+        aesDecrypt(udpkey.get(), udpkey.length(), encryptedData, encryptedLen, decrypted);
         unsigned length = decrypted.length();
         RoxiePacketHeader *newHeader = (RoxiePacketHeader *) decrypted.detachOwn();
         newHeader->packetlength = length;
