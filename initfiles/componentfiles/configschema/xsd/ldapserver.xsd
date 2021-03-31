@@ -42,6 +42,10 @@
                               hpcc:tooltip="Time in minutes after which the cached security information should expire"/>
                 <xs:attribute name="sharedCache" type="xs:boolean" hpcc:displayName="Shared Cache" hpcc:presetValue="true"
                               hpcc:tooltip="Use a single, shared LDAP cache"/>
+                <xs:attribute name="systemUserVaultID" type="xs:string" hpcc:displayName="System User Vault ID"
+                              hpcc:tooltip="Optional ID of secrets vault containing the secret LDAP AD systemuser username/password."/>
+                <xs:attribute name="systemUserSecretKey" type="xs:string" hpcc:displayName="System User Secret Key"
+                              hpcc:tooltip="Optional secrets repo key name of secret containing LDAP AD systemuser username/password. Specify this instead of systemUser/systemPassword if available."/>
                 <xs:attribute name="systemUser" type="xs:string" hpcc:displayName="System User"
                               hpcc:tooltip="An LDAP administrator account id to be used by HPCC to create and manage HPCC-specific LDAP branches"/>
                 <xs:attribute name="systemPassword" type="xs:string" hpcc:displayName="System User Password" hpcc:modifers="mask,verify"

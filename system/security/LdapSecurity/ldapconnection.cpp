@@ -30,6 +30,7 @@
 #include "dautils.hpp"
 #include "dasds.hpp"
 #include "workunit.hpp"
+#include "jsecrets.hpp"
 
 #include <map>
 #include <string>
@@ -351,6 +352,67 @@ public:
 
         m_timeout = cfg->getPropInt(".//@ldapTimeoutSecs", LDAPTIMEOUT);
 
+        //------------------------------------------------
+        //Get LDAP Admin account username and password
+        // m_sysuser_commonname
+        // m_sysuser_password
+        //------------------------------------------------
+//@@
+        StringBuffer xml;//@@
+        toXML(cfg, xml);//@@
+        DBGLOG("@@%s",xml.str());//@@
+//@@
+        StringBuffer systemUserSecretKey;
+        cfg->getProp(".//@systemUserSecretKey", systemUserSecretKey);//secrets repo key
+        if (!systemUserSecretKey.isEmpty())
+        {
+            StringBuffer sb;
+            cfg->getProp(".//@systemCommonName", sb);
+            if (!sb.isEmpty())
+                WARNLOG("Please specify either systemCommonName or systemUserSecretKey in configuration");
+
+            StringBuffer vaultId;
+            cfg->getProp(".//@systemUserVaultID", vaultId);//optional HashiCorp vault ID
+
+            DBGLOG("Retrieving LDAP Admin username/password from secrets repo: %s %s", !vaultId.isEmpty() ? vaultId.str() : "", systemUserSecretKey.str());
+            Owned<IPropertyTree> secretTree;
+            if (!isEmptyString(vaultId.str()))
+                secretTree.setown(getVaultSecret("esp", vaultId, systemUserSecretKey.str(), nullptr));
+            else
+                secretTree.setown(getSecret("esp", systemUserSecretKey.str()));
+            if (!secretTree)
+                throw MakeStringException(-1, "Error retrieving LDAP Admin username/password from secrets repo");
+
+            getSecretKeyValue(m_sysuser_commonname, secretTree, "username");
+            getSecretKeyValue(m_sysuser_password, secretTree, "password");
+
+            if (m_sysuser_commonname.isEmpty() || m_sysuser_password.isEmpty())
+            {
+                throw MakeStringException(-1, "Error retrieving LDAP Admin username/password from secrets repo");
+            }
+        }
+        else
+        {
+            StringBuffer pwd;
+            cfg->getProp(".//@systemPassword", pwd);
+            if (pwd.isEmpty())
+                throw MakeStringException(-1, "systemPassword is empty");
+            decrypt(m_sysuser_password, pwd.str());
+
+            cfg->getProp(".//@systemCommonName", m_sysuser_commonname);
+            if (m_sysuser_commonname.isEmpty())
+                throw MakeStringException(-1, "systemCommonName is empty");
+        }
+
+        StringBuffer sysBasedn;
+        cfg->getProp(".//@systemBasedn", sysBasedn);
+        if (sysBasedn.isEmpty())
+            throw MakeStringException(-1, "systemBasedn is empty");
+
+        //----------------------------------------------------
+        //Ensure at least one specified LDAP host is available
+        //----------------------------------------------------
+
         int rc = LDAP_OTHER;
         StringBuffer hostbuf, dcbuf;
         const char * ldapDomain = cfg->queryProp(".//@ldapDomain");
@@ -358,32 +420,14 @@ public:
         {
             getLdapHost(hostbuf);
             unsigned port = strieq("ldaps",m_protocol) ? m_ldap_secure_port : m_ldapport;
-            StringBuffer sysUserDN, decPwd;
 
-            {
-                StringBuffer pwd;
-                cfg->getProp(".//@systemPassword", pwd);
-                if (pwd.isEmpty())
-                    throw MakeStringException(-1, "systemPassword is empty");
-                decrypt(decPwd, pwd.str());
-
-                StringBuffer sysUserCN;
-                cfg->getProp(".//@systemCommonName", sysUserCN);
-                if (sysUserCN.isEmpty())
-                    throw MakeStringException(-1, "systemCommonName is empty");
-
-                StringBuffer sysBasedn;
-                cfg->getProp(".//@systemBasedn", sysBasedn);
-                if (sysBasedn.isEmpty())
-                    throw MakeStringException(-1, "systemBasedn is empty");
-
-                //Guesstimate system user baseDN based on config settings. It will be used if anonymous bind fails
-                sysUserDN.append("cn=").append(sysUserCN.str()).append(",").append(sysBasedn.str());
-            }
+            //Guesstimate system user baseDN based on config settings. It will be used if anonymous bind fails
+            StringBuffer sysUserDN;
+            sysUserDN.append("cn=").append(m_sysuser_commonname.str()).append(",").append(sysBasedn.str());
 
             for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
             {
-                rc = LdapUtils::getServerInfo(hostbuf.str(), sysUserDN.str(), decPwd.str(), m_protocol, port, dcbuf, m_serverType, ldapDomain, m_timeout);
+                rc = LdapUtils::getServerInfo(hostbuf.str(), sysUserDN.str(), m_sysuser_password.str(), m_protocol, port, dcbuf, m_serverType, ldapDomain, m_timeout);
                 if(!LdapServerDown(rc) || retries >= LDAPSEC_MAX_RETRIES)
                     break;
                 sleep(LDAPSEC_RETRY_WAIT);
@@ -516,16 +560,6 @@ public:
         {
             m_sysuser_specified = false;
         }
-
-        cfg->getProp(".//@systemCommonName", m_sysuser_commonname);
-        if(m_sysuser_specified && (m_sysuser_commonname.length() == 0))
-        {
-            throw MakeStringException(-1, "SystemUser commonname is empty");
-        }
-
-        StringBuffer passbuf;
-        cfg->getProp(".//@systemPassword", passbuf);
-        decrypt(m_sysuser_password, passbuf.str());
 
         StringBuffer sysuser_basedn;
         cfg->getProp(".//@systemBasedn", sysuser_basedn);

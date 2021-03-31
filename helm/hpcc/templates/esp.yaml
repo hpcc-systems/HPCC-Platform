@@ -49,7 +49,7 @@ data:
 {{ range $.Values.esp -}}
 {{- if not .disabled -}}
 {{- $application := .application | default "eclwatch" -}}
-{{- $secretsCategories := ternary (list "storage" "esp" "codeSign" "codeVerify")  (list "storage" "esp") (eq $application "eclwatch") -}}
+{{- $secretsCategories := ternary (list "storage" "esp" "codeSign" "codeVerify" "authn")  (list "storage" "esp") (eq $application "eclwatch") -}}
 {{- $includeStorageLabels := ternary (list "lz" "data" "") (list "data" "") (eq $application "eclwatch") -}}
 {{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories  "includeLabels" $includeStorageLabels -}}
 {{- $configSHA := include "hpcc.espConfigMap" $commonCtx | sha256sum }}

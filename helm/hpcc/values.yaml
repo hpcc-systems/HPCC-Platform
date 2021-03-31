@@ -188,6 +188,10 @@ secrets:
     ## For example, to set the secret associated with the azure storage account "mystorageaccount" use
     ##azure-mystorageaccount: storage-myazuresecret
 
+  authn: {}
+    ## Category for LDAP Admin username/password
+    MyLDAPServerKey: MyLDAPServerValue
+
   ecl: {}
     ## Category for secrets published to all components that run ecl
 
@@ -216,6 +220,8 @@ secrets:
 
 vaults:
   storage:
+
+  authn:
 
   ecl:
 

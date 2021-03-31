@@ -321,7 +321,7 @@
             </xsl:attribute>
 
             <xsl:for-each select="$ldapServerNode">
-              <xsl:copy-of select="@ldapPort | @ldapSecurePort | @ldapTimeoutSecs | @cacheTimeout | @workunitsBasedn | @modulesBasedn | @systemBasedn | @systemCommonName | @systemUser | @systemPassword | @usersBasedn | @groupsBasedn| @viewsBasedn | @serverType"/>
+              <xsl:copy-of select="@ldapPort | @ldapSecurePort | @ldapTimeoutSecs | @cacheTimeout | @workunitsBasedn | @modulesBasedn | @systemBasedn | @systemCommonName | @systemUser  | @systemUserVaultID | @systemUserSecretKey | @systemPassword | @usersBasedn | @groupsBasedn| @viewsBasedn | @serverType"/>
             </xsl:for-each>
           </xsl:element>
         </xsl:if>

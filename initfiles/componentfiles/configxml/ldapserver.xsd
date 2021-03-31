@@ -191,6 +191,20 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="systemUserVaultID" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Optional secrets vault ID containing the LDAP AD admin user username/password.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="systemUserSecretKey" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Optional secrets repo key name of LDAP AD admin user username/password.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="systemUser" type="xs:string" use="optional">
                 <xs:annotation>
                     <xs:appinfo>
