@@ -1146,13 +1146,6 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="udpRetryBusySenders" type="xs:nonNegativeInteger" use="optional" default="0">
-      <xs:annotation>
-        <xs:appinfo>
-          <tooltip>Controls the number of times Roxie server will repeat search for an idle sender when requesting new data</tooltip>
-        </xs:appinfo>
-      </xs:annotation>
-    </xs:attribute>
     <xs:attribute name="udpSendQueueSize" type="xs:nonNegativeInteger" use="optional" default="50">
       <xs:annotation>
         <xs:appinfo>
@@ -1160,28 +1153,6 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-        <xs:attribute name="udpSnifferEnabled" type="xs:boolean" use="optional" default="true">
-            <xs:annotation>
-                <xs:appinfo>
-                    <tooltip>Enable the UDP multicast sniffer for tracking which senders are busy</tooltip>
-                </xs:appinfo>
-            </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="udpSnifferReadThreadPriority" type="nonNegativeInteger" use="optional" default="3">
-            <xs:annotation>
-                <xs:appinfo>
-                    <tooltip>If non-zero, run the sniffer read thread at elevated priority level</tooltip>
-                </xs:appinfo>
-            </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="udpSnifferSendThreadPriority" type="nonNegativeInteger" use="optional" default="3">
-            <xs:annotation>
-                <xs:appinfo>
-                    <tooltip>If non-zero, run the sniffer send thread at elevated priority level</tooltip>
-                </xs:appinfo>
-            </xs:annotation>
-        </xs:attribute>
-    </xs:attributeGroup>
   <xs:attributeGroup name="Cache">
     <xs:attribute name="blobCacheMem" type="xs:nonNegativeInteger" use="optional" default="0">
       <xs:annotation>

@@ -38,8 +38,6 @@ bool udpTraceTimeouts = false;
 unsigned udpTraceLevel = 0;
 unsigned udpFlowSocketsSize = 131072;
 unsigned udpLocalWriteSocketSize = 1024000;
-unsigned udpSnifferReadThreadPriority = 3;
-unsigned udpSnifferSendThreadPriority = 3;
 unsigned udpStatsReportInterval = 60000;
 
 unsigned multicastTTL = 1;
