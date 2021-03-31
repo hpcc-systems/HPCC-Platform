@@ -14,3 +14,13 @@ storage:
   dataStorage:
     storageSize: 1Gi
     storageClass: "azurefile"
+
+sasha:
+  wu-archiver:
+    storage:
+      storageSize: 1Gi
+      storageClass: "azurefile"
+  dfuwu-archiver:
+    storage:
+      storageSize: 1Gi
+      storageClass: "azurefile"

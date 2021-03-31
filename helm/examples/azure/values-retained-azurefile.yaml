@@ -5,12 +5,52 @@
 # The pvc names are dynamic based on the install name.
 # In this example the install name was "azstorage"
 
+#The following is a generated values yaml that you can capture and feed to the hpcc helm chart when installing.
+#it will configure the hpcc storage to use the planes and pvcs installed by this chart.
+#e.g.:
+#helm install myhpcc hpcc/hpcc --set global.image.version=latest --values values-retained-azurefile.yaml
+
 storage:
-  dllStorage:
-    existingClaim: "dll-azstorage-hpcc-azurefile-pvc"
+  planes:
+  - name: dali
+    pvc: dali-azstorage-hpcc-azurefile-pvc
+    prefix: "/var/lib/HPCCSystems/dalistorage"
+    labels:
+    - dali
+
+  - name: dll
+    pvc: dll-azstorage-hpcc-azurefile-pvc
+    prefix: "/var/lib/HPCCSystems/queries"
+    labels:
+    - dll
+
+  - name: sasha
+    pvc: sasha-azstorage-hpcc-azurefile-pvc
+    prefix: "/var/lib/HPCCSystems/sasha"
+    labels:
+    - sasha
+
+  - name: data
+    pvc: data-azstorage-hpcc-azurefile-pvc
+    prefix: "/var/lib/HPCCSystems/hpcc-data"
+    labels:
+    - data # NB: if not set, this would be the default
+
+
 
   daliStorage:
-    existingClaim: "dali-azstorage-hpcc-azurefile-pvc"
+    plane: dali
+
+  dllStorage:
+    plane: dll
 
   dataStorage:
-    existingClaim: "data-azstorage-hpcc-azurefile-pvc"
+    plane: data
+
+sasha:
+  wu-archiver:
+    storage:
+      plane: sasha
+  dfuwu-archiver:
+    storage:
+      plane: sasha
