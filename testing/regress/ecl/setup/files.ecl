@@ -201,8 +201,10 @@ EXPORT SET OF STRING3 DG_MONTHS := ['JAN','FEB','MAR','APR','MAY','JUN','JUL','A
 
 EXPORT NameWordIndex() := indexPrefix + 'wordIndex' + IF(useLocal, '_Local', '') + IF(useTranslation, '_Trans', '') ;
 EXPORT NameSearchIndex := indexPrefix + 'searchIndex';
+EXPORT NameSearchSource := indexPrefix + 'searchSource';
 EXPORT getWordIndex() := INDEX(TS.textSearchIndex, NameWordIndex());
 EXPORT getSearchIndex() := INDEX(TS.textSearchIndex, NameSearchIndex);
 EXPORT getSearchSuperIndex() := INDEX(TS.textSearchIndex, '{' + NameSearchIndex + ',' + NameWordIndex() + '}');
+EXPORT getSearchSource() := DATASET(NameSearchSource, TS.textSourceRecord, THOR);
 
 END;

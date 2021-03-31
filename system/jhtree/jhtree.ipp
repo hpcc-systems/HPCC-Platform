@@ -26,7 +26,17 @@
 #include "jhtree.hpp"
 #include "bloom.hpp"
 
-typedef OwningStringHTMapping<IKeyIndex> CKeyIndexMapping;
+class CKeyIndexMapping : public OwningStringHTMapping<IKeyIndex>
+{
+public:
+    CKeyIndexMapping(const char *fp, IKeyIndex &et) : OwningStringHTMapping<IKeyIndex>(fp, et) { }
+
+//The following pointers are used to maintain the position in the LRU cache
+    CKeyIndexMapping * prev = nullptr;
+    CKeyIndexMapping * next = nullptr;
+};
+
+
 typedef OwningStringSuperHashTableOf<CKeyIndexMapping> CKeyIndexTable;
 typedef CMRUCacheMaxCountOf<const char *, IKeyIndex, CKeyIndexMapping, CKeyIndexTable> CKeyIndexMRUCache;
 

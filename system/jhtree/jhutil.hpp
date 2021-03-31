@@ -22,6 +22,105 @@
 #include "jqueue.tpp"
 #include "jhtree.hpp"
 
+//Implementation of a queue using a doubly linked list.  Should possibly move to jlib if it would be generally useful.
+//Currently assumes next and prev fields in the element can be used to maintain the list
+template <class ELEMENT>
+class DListOf
+{
+    typedef DListOf<ELEMENT> SELF;
+    ELEMENT * pHead = nullptr;
+    ELEMENT * pTail = nullptr;
+    unsigned numEntries = 0;
+
+public:
+    void enqueueHead(ELEMENT * element)
+    {
+        assertex(!element->next && !element->prev);
+        if (pHead)
+        {
+            pHead->prev = element;
+            element->next = pHead;
+            pHead = element;
+        }
+        else
+        {
+            pHead = pTail = element;
+        }
+        numEntries++;
+    }
+    void enqueue(ELEMENT * element)
+    {
+        assertex(!element->next && !element->prev);
+        if (pTail)
+        {
+            pTail->next = element;
+            element->prev = pTail;
+            pTail = element;
+        }
+        else
+        {
+            pHead = pTail = element;
+        }
+        numEntries++;
+    }
+    ELEMENT *head() const { return pHead; }
+    ELEMENT *tail() const { return pTail; }
+    void remove(ELEMENT *element)
+    {
+        ELEMENT * next = element->next;
+        ELEMENT * prev = element->prev;
+        assertex(prev || next || element == pHead);
+        if (element == pHead)
+            pHead = next;
+        if (element == pTail)
+            pTail = prev;
+        if (next)
+            next->prev = prev;
+        if (prev)
+            prev->next = next;
+        element->next = nullptr;
+        element->prev = nullptr;
+        numEntries--;
+    }
+    ELEMENT *dequeue()
+    {
+        if (!pHead)
+            return nullptr;
+        ELEMENT * element = pHead;
+        ELEMENT * next = element->next;
+        pHead = next;
+        if (element == pTail)
+            pTail = nullptr;
+        if (next)
+            next->prev = nullptr;
+        element->next = nullptr;
+        numEntries--;
+        return element;
+    }
+    ELEMENT *dequeueTail()
+    {
+        if (!pTail)
+            return nullptr;
+        ELEMENT * element = pTail;
+        ELEMENT * prev = element->prev;
+        pTail = prev;
+        if (element == pHead)
+            pHead = nullptr;
+        if (prev)
+            prev->next = nullptr;
+        element->prev = nullptr;
+        numEntries--;
+        return element;
+    }
+    void dequeue(ELEMENT *element)
+    {
+        remove(element);
+    }
+    inline unsigned ordinality() const { return numEntries; }
+};
+
+
+
 // TABLE should be SuperHashTable derivative to contain MAPPING's
 // MAPPING should be something that constructs with (KEY, ENTRY) and impl. query returning ref. to ENTRY
 template <class KEY, class ENTRY, class MAPPING, class TABLE>
@@ -36,7 +135,7 @@ protected:
         virtual void onAdd(void *mapping) { owner.elementAdded((MAPPING *)mapping); TABLE::onAdd(mapping); }
         virtual void onRemove(void *mapping) { owner.elementRemoved((MAPPING *)mapping); TABLE::onRemove(mapping); }
     } table;
-    QueueOf<MAPPING, false> mruList;
+    DListOf<MAPPING> mruList;
 
     void clear(int count)
     {
@@ -105,8 +204,11 @@ public:
     void kill() { clear(-1); }
     void promote(MAPPING *mapping)
     {
-        mruList.dequeue(mapping); // will still be linked in table
-        mruList.enqueueHead(mapping);
+        if (mruList.head() != mapping)
+        {
+            mruList.dequeue(mapping); // will still be linked in table
+            mruList.enqueueHead(mapping);
+        }
     }
     CMRUIterator *getIterator()
     {
