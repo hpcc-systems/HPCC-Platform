@@ -408,7 +408,13 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     addMetric(lastQueryDate, 0);
     addMetric(lastQueryTime, 0);
 
-    addMetric(packetsResent, 0);
+    addMetric(packetsResent, 1000);
+    addMetric(flowPermitsSent, 1000);
+    addMetric(flowRequestsReceived, 1000);
+    addMetric(dataPacketsReceived, 1000);
+    addMetric(flowRequestsSent, 1000);
+    addMetric(flowPermitsReceived, 1000);
+    addMetric(dataPacketsSent, 1000);
 
 #ifdef TIME_PACKETS
     addMetric(packetWaitMax, 0);

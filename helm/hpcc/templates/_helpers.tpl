@@ -81,12 +81,18 @@ storage:
 {{- range $plane := $planes -}}
  {{- if or (not $plane.labels) (or (has "data" $plane.labels) (has "lz" $plane.labels)) }}
   - name: {{ $plane.name | quote }}
+  {{- if not $plane.labels }}
+    labels:
+    - data
+  {{- end }}
 {{ toYaml (unset (unset (deepCopy $plane) "name") "pvc")| indent 4 }}
  {{- end }}
 {{- end }}
 {{- /* Add implicit planes if data or spill storage plane not specified*/ -}}
 {{- if not $dataStorage.plane }}
   - name: hpcc-data-plane
+    labels:
+    - data
     prefix: {{ .Values.global.defaultDataPath | default "/var/lib/HPCCSystems/hpcc-data" | quote }}
 {{- end }}
 {{- if not $spillStorage.plane }}

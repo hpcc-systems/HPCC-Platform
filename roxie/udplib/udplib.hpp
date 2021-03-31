@@ -149,8 +149,8 @@ interface ISendManager : extends IInterface
     virtual bool allDone() = 0;
 };
 
-extern UDPLIB_API IReceiveManager *createReceiveManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int queue_size, unsigned maxSlotsPerSender, bool encrypted);
-extern UDPLIB_API ISendManager *createSendManager(int server_flow_port, int data_port, int client_flow_port, int sniffer_port, const IpAddress &sniffer_multicast_ip, int queue_size_pr_server, int queues_pr_server, TokenBucket *rateLimiter, bool encryptionInTransit);
+extern UDPLIB_API IReceiveManager *createReceiveManager(int server_flow_port, int data_port, int client_flow_port, int queue_size, unsigned maxSlotsPerSender, bool encrypted);
+extern UDPLIB_API ISendManager *createSendManager(int server_flow_port, int data_port, int client_flow_port, int queue_size_pr_server, int queues_pr_server, TokenBucket *rateLimiter, bool encryptionInTransit);
 
 extern UDPLIB_API void setAeronProperties(const IPropertyTree *config);
 extern UDPLIB_API IReceiveManager *createAeronReceiveManager(const SocketEndpoint &ep, bool encrypted);
@@ -176,18 +176,21 @@ extern UDPLIB_API unsigned udpMaxRetryTimedoutReqs;
 extern UDPLIB_API unsigned udpRequestToSendTimeout;
 extern UDPLIB_API unsigned udpRequestToSendAckTimeout;
 
-extern UDPLIB_API unsigned udpRetryBusySenders;
-extern UDPLIB_API bool udpSnifferEnabled;
-extern UDPLIB_API unsigned udpSnifferReadThreadPriority;
-extern UDPLIB_API unsigned udpSnifferSendThreadPriority;
-
 extern UDPLIB_API void stopAeronDriver();
 
-extern UDPLIB_API bool udpResendEnabled;
+extern UDPLIB_API bool udpResendLostPackets;
 extern UDPLIB_API unsigned udpResendTimeout;  // in millseconds
 extern UDPLIB_API unsigned udpMaxPendingPermits;
 extern UDPLIB_API bool udpAssumeSequential;
 extern UDPLIB_API unsigned udpStatsReportInterval;
 extern UDPLIB_API RelaxedAtomic<unsigned> packetsResent;
 extern UDPLIB_API RelaxedAtomic<unsigned> packetsOOO;
+extern UDPLIB_API RelaxedAtomic<unsigned> flowPermitsSent;
+extern UDPLIB_API RelaxedAtomic<unsigned> flowRequestsReceived;
+extern UDPLIB_API RelaxedAtomic<unsigned> dataPacketsReceived;
+extern UDPLIB_API RelaxedAtomic<unsigned> flowRequestsSent;
+extern UDPLIB_API RelaxedAtomic<unsigned> flowPermitsReceived;
+extern UDPLIB_API RelaxedAtomic<unsigned> dataPacketsSent;
+
+
 #endif

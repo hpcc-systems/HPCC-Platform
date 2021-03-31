@@ -593,7 +593,12 @@ public:
     CNodeMapping(CKeyIdAndPos &fp, CJHTreeNode &et) : HTMapping<CJHTreeNode, CKeyIdAndPos>(et, fp) { }
     ~CNodeMapping() { this->et.Release(); }
     CJHTreeNode &query() { return queryElement(); }
+
+//The following pointers are used to maintain the position in the LRU cache
+    CNodeMapping * prev = nullptr;
+    CNodeMapping * next = nullptr;
 };
+
 typedef OwningSimpleHashTableOf<CNodeMapping, CKeyIdAndPos> CNodeTable;
 #define FIXED_NODE_OVERHEAD (sizeof(CJHTreeNode))
 class CNodeMRUCache : public CMRUCacheOf<CKeyIdAndPos, CJHTreeNode, CNodeMapping, CNodeTable>

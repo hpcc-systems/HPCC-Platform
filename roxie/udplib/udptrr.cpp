@@ -45,7 +45,6 @@
 using roxiemem::DataBuffer;
 using roxiemem::IRowManager;
 
-unsigned udpRetryBusySenders = 0; // seems faster with 0 than 1 in my testing on small clusters and sustained throughput
 unsigned udpMaxPendingPermits;
 
 RelaxedAtomic<unsigned> flowPermitsSent = {0};
@@ -63,20 +62,14 @@ class CReceiveManager : implements IReceiveManager, public CInterface
      *     - waits for packets on flow port
      *     - maintains list of nodes that have pending requests
      *     - sends ok_to_send to one sender (or more) at a time
-     * 2. receive_sniffer (default priority 3, configurable)
-     *     - waits for packets on sniffer port
-     *     - updates information about what other node are currently up to
-     *     - idea is to preferentially send "ok_to_send" to nodes that are not currently sending to someone else
-     *     - doesn't run if no multicast
-     *     - can I instead say "If I get a request to send and I'm sending to someone else, send a "later"?
-     * 3. receive_data (priority 4)
+     * 2. receive_data (priority 4)
      *     - reads data packets off data socket
      *     - runs at v. high priority
      *     - used to have an option to perform collation on this thread but a bad idea:
      *        - can block (ends up in memory manager via attachDataBuffer).
      *        - Does not apply back pressure
      *     - Just enqueues them. We don't give permission to send more than the queue can hold, but it's a soft limit
-     * 4. PacketCollator (standard priority)
+     * 3. PacketCollator (standard priority)
      *     - dequeues packets
      *     - collates packets
      *
@@ -96,7 +89,6 @@ class CReceiveManager : implements IReceiveManager, public CInterface
      *    The requestToSend retry mechanism would then make sure retried.
      *    MORE - if I don't get a response from OkToSend I should assume lost and requeue it.
      * 4. complete - covered by same timeout as okToSend. A lost complete will mean incoming data to that node stalls for the duration of this timeout,
-     * 4. Sniffers - expire anyway
      *
      */
     class UdpSenderEntry  // one per node in the system
@@ -121,7 +113,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         flowType::flowCmd state = flowType::send_completed;    // Meaning I'm not on any queue
         sequence_t flowSeq = 0;                // the sender's most recent flow sequence number
         sequence_t sendSeq = 0;                // the sender's most recent sequence number from request-to-send, representing sequence number of next packet it will send
-        unsigned timeouts = 0;
+        unsigned timeouts = 0;                 // How many consecutive timeouts have happened on the current request
         unsigned requestTime = 0;              // When we received the active requestToSend
         unsigned timeStamp = 0;                // When we last sent okToSend
 
@@ -148,7 +140,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         }
         bool noteSeen(UdpPacketHeader &hdr)
         {
-            if (udpResendEnabled)
+            if (udpResendLostPackets)
             {
                 CriticalBlock b(psCrit);
                 return packetsSeen.noteSeen(hdr);
@@ -157,17 +149,12 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 return false;
         }
 
-        inline void noteDone()
-        {
-            timeouts = 0;
-        }
-
         bool canSendAny() const
         {
             // We can send some if (a) the first available new packet is less than TRACKER_BITS above the first unreceived packet or
             // (b) we are assuming arrival in order, and there are some marked seen that are > first unseen OR
             // (c) the oldest in-flight packet has expired
-            if (!udpResendEnabled)
+            if (!udpResendLostPackets)
                 return true;
             {
                 CriticalBlock b(psCrit);
@@ -196,6 +183,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             flowSeq = _flowSeq;
             sendSeq = _sendSeq;
             requestTime = msTick();
+            timeouts = 0;
             try
             {
                 UdpPermitToSendMsg msg;
@@ -203,7 +191,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 msg.flowSeq = _flowSeq;
                 msg.destNode = returnAddress;
                 msg.max_data = 0;
-                if (udpResendEnabled)
+                if (udpResendLostPackets)
                 {
                     CriticalBlock b(psCrit);
                     msg.seen = packetsSeen.copy();
@@ -214,7 +202,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     StringBuffer ipStr;
                     DBGLOG("UdpReceiver: sending request_received msg seq %" SEQF "u to node=%s", _flowSeq, dest.getIpText(ipStr).str());
                 }
-                flowSocket->write(&msg, udpResendEnabled ? sizeof(UdpPermitToSendMsg) : offsetof(UdpPermitToSendMsg, seen));
+                flowSocket->write(&msg, udpResendLostPackets ? sizeof(UdpPermitToSendMsg) : offsetof(UdpPermitToSendMsg, seen));
                 flowPermitsSent++;
 
             }
@@ -235,7 +223,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 msg.flowSeq = flowSeq;
                 msg.destNode = returnAddress;
                 msg.max_data = maxTransfer;
-                if (udpResendEnabled)
+                if (udpResendLostPackets)
                 {
                     CriticalBlock b(psCrit);
                     msg.seen = packetsSeen.copy();
@@ -245,7 +233,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     StringBuffer ipStr;
                     DBGLOG("UdpReceiver: sending ok_to_send %u msg seq %" SEQF "u to node=%s", maxTransfer, flowSeq, dest.getIpText(ipStr).str());
                 }
-                flowSocket->write(&msg, udpResendEnabled ? sizeof(UdpPermitToSendMsg) : offsetof(UdpPermitToSendMsg, seen));
+                flowSocket->write(&msg, udpResendLostPackets ? sizeof(UdpPermitToSendMsg) : offsetof(UdpPermitToSendMsg, seen));
                 flowPermitsSent++;
             }
             catch(IException *e)
@@ -496,8 +484,21 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                                 }
                                 UdpSenderEntry *next = finger->nextSender;
                                 pendingPermits.remove(finger);
-                                pendingRequests.append(finger);
-                                finger->state = flowType::request_to_send;  // Go to the back of the queue  - MORE - lets have some code to eventually give up! Or just give up here?
+                                if (++finger->timeouts > udpMaxRetryTimedoutReqs && udpMaxRetryTimedoutReqs != 0)
+                                {
+                                    if (udpTraceLevel || udpTraceFlow || udpTraceTimeouts)
+                                    {
+                                        StringBuffer s;
+                                        DBGLOG("permit to send %" SEQF "u to node %s timed out %u times - abandoning", finger->flowSeq, finger->dest.getIpText(s).str(), finger->timeouts);
+                                    }
+                                }
+                                else
+                                {
+                                    // Put it back on the queue (at the back)
+                                    finger->timeStamp = now;
+                                    pendingRequests.append(finger);
+                                    finger->state = flowType::request_to_send;
+                                }
                                 finger = next;
                             }
                             else
@@ -722,7 +723,6 @@ class CReceiveManager : implements IReceiveManager, public CInterface
     friend class receive_send_flow;
     friend class receive_data;
     friend class ReceiveFlowManager;
-    friend class receive_sniffer;
     
     queue_t              *input_queue;
     int                  input_queue_size;
@@ -741,8 +741,8 @@ class CReceiveManager : implements IReceiveManager, public CInterface
 
   public:
     IMPLEMENT_IINTERFACE;
-    CReceiveManager(int server_flow_port, int d_port, int client_flow_port, int snif_port, const IpAddress &multicast_ip, int queue_size, int m_slot_pr_client, bool _encrypted)
-        : collatorThread(*this), sendersTable([client_flow_port](const ServerIdentifier ip) { return new UdpSenderEntry(ip.getIpAddress(), client_flow_port);})
+    CReceiveManager(int server_flow_port, int d_port, int client_flow_port, int queue_size, int m_slot_pr_client, bool _encrypted)
+        : collatorThread(*this), encrypted(_encrypted), sendersTable([client_flow_port](const ServerIdentifier ip) { return new UdpSenderEntry(ip.getIpAddress(), client_flow_port);})
     {
 #ifndef _WIN32
         setpriority(PRIO_PROCESS, 0, -15);
@@ -877,13 +877,12 @@ class CReceiveManager : implements IReceiveManager, public CInterface
 };
 
 IReceiveManager *createReceiveManager(int server_flow_port, int data_port, int client_flow_port,
-                                      int sniffer_port, const IpAddress &sniffer_multicast_ip,
                                       int udpQueueSize, unsigned maxSlotsPerSender,
                                       bool encrypted)
 {
     assertex (maxSlotsPerSender <= (unsigned) udpQueueSize);
     assertex (maxSlotsPerSender <= (unsigned) TRACKER_BITS);
-    return new CReceiveManager(server_flow_port, data_port, client_flow_port, sniffer_port, sniffer_multicast_ip, udpQueueSize, maxSlotsPerSender, encrypted);
+    return new CReceiveManager(server_flow_port, data_port, client_flow_port, udpQueueSize, maxSlotsPerSender, encrypted);
 }
 
 /*

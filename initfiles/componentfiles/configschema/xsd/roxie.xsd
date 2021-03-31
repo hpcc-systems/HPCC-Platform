@@ -305,12 +305,6 @@
                     <xs:attribute name="udpFlowSocketsSize" type="xs:nonNegativeInteger"
                                   hpcc:displayName="UDP Flow Socket Size (bytes)" hpcc:presetValue="131071"
                                   hpcc:tooltip="Controls the read socket buffer size of the UDP layer flow control sockets"/>
-                    <xs:attribute name="udpInlineCollation" type="xs:boolean" hpcc:displayName="UDP Inline Collation"
-                                  hpcc:presetValue="false"
-                                  hpcc:tooltip="Controls whether UDP packets are collated on the reading thread or queued up for collation on a separate thread"/>
-                    <xs:attribute name="udpInlineCollationPacketLimit" type="xs:nonNegativeInteger"
-                                  hpcc:displayName="UDP Inline Colation Packet Limit" hpcc:presetValue="50"
-                                  hpcc:tooltip="Controls how many UDP packets requested at once when inline collation selected"/>
                     <xs:attribute name="udpLocalWriteSocketSize" type="xs:nonNegativeInteger"
                                   hpcc:displayName="UDP Local Write Socket Size (bytes)" hpcc:presetValue="131071"
                                   hpcc:tooltip="Controls the write socket buffer size of the local UDP sockets (Agent to Server on same node)"/>
@@ -334,23 +328,16 @@
                     <xs:attribute name="udpRequestToSendAckTimeout" type="xs:nonNegativeInteger"
                                   hpcc:displayName="UDP Request To Send Ack Timeout (ms)" hpcc:presetValue="100"
                                   hpcc:tooltip="Controls the timeout value agent udp will wait for acknowledgement of a request to send from a Roxie server, in milliseconds"/>
-                    <xs:attribute name="udpResendEnabled" type="xs:boolean" hpcc:displayName="Enable UDP Resend"
-                                  hpcc:presetValue="false" hpcc:tooltip="UDP transport layer packet resend ability"/>
-                    <xs:attribute name="udpRetryBusySenders" type="xs:nonNegativeInteger"
-                                  hpcc:displayName="UDP Retry Busy Senders" hpcc:presetValue="0"
-                                  hpcc:tooltip="Controls the number of times Roxie server will repeat search for an idle sender when requesting new data"/>
+                    <xs:attribute name="udpResendLostPackets" type="xs:boolean" hpcc:displayName="Enable UDP Resend"
+                                  hpcc:presetValue="true" hpcc:tooltip="UDP transport layer resend lost packets"/>
+                    <xs:attribute name="udpResendTimeout" type="xs:nonNegativeInteger" hpcc:displayName="UDP resend timeout"
+                                  hpcc:presetValue="10" hpcc:tooltip="Time in milliseconds to assume a packet is in transit before assuming lost"/>
                     <xs:attribute name="udpSendQueueSize" type="xs:nonNegativeInteger"
                                   hpcc:displayName="UDP Send Queue Size" hpcc:presetValue="50"
                                   hpcc:tooltip="UDP transport layer send queue size"/>
-                    <xs:attribute name="udpSnifferEnabled" type="xs:boolean" hpcc:displayName="Enable UDP Sniffer"
-                                  hpcc:presetValue="true"
-                                  hpcc:tooltip="Enable the UDP multicast sniffer for tracking which senders are busy"/>
-                    <xs:attribute name="udpSnifferReadThreadPriority" type="xs:nonNegativeInteger"
-                                  hpcc:displayName="UDP Sniffer Read Thread Priority" hpcc:presetValue="3"
-                                  hpcc:tooltip="If non-zero, run the sniffer read thread at elevated priority level"/>
-                    <xs:attribute name="udpSnifferSendThreadPriority" type="xs:nonNegativeInteger"
-                                  hpcc:displayName="UDP Sniffer Send Thread Priority" hpcc:presetValue="3"
-                                  hpcc:tooltip="If non-zero, run the sniffer send thread at elevated priority level"/>
+                    <xs:attribute name="udpStatsReportInterval" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="UDP transport layer stats reporting interval" hpcc:presetValue="60000"
+                                  hpcc:tooltip="UDP transport layer send queue size"/>
                     <xs:attribute name="useAeron" type="xs:boolean" hpcc:displayName="Use Aeron"
                                   hpcc:presetValue="false"
                                   hpcc:tooltip="Use Aeron for slave->server communication"/>
@@ -360,9 +347,6 @@
                     <xs:attribute name="blobCacheMem" type="xs:nonNegativeInteger"
                                   hpcc:displayName="Blob Cache Memory Size (Mb)" hpcc:presetValue="0"
                                   hpcc:tooltip="Size (in Mb) of blob index page cache"/>
-                    <xs:attribute name="serverSideCacheSize" type="xs:nonNegativeInteger"
-                                  hpcc:displayName="Server Side Cache Size" hpcc:presetValue="0"
-                                  hpcc:tooltip="Number of agent results to cache on Roxie server"/>
                     <xs:attribute name="leafCacheMem" type="xs:nonNegativeInteger"
                                   hpcc:displayName="Leaf Cache Memory Size (Mb)" hpcc:presetValue="50"
                                   hpcc:tooltip="Size (in Mb) of leaf index page cache"/>
