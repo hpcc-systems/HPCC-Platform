@@ -57,5 +57,12 @@ EXPORT wordIdType       := unsigned4;
 EXPORT textSearchIndex  := index({ kindType kind, wordType word, documentId doc, segmentType segment, wordPosType wpos, indexWipType wip } , { wordFlags flags, wordType original, docPosType dpos}, '~DoesNotExist');
 EXPORT wordIndexRecord := recordof(textSearchIndex);
 
+EXPORT textSourceRecord := record
+    kindType     kind;
+    wordType     word;
+    documentId   doc;
+    segmentType  segment;
+    wordPosType  wpos;
+END;
 
 END;

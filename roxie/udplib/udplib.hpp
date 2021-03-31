@@ -185,4 +185,12 @@ extern UDPLIB_API bool udpAssumeSequential;
 extern UDPLIB_API unsigned udpStatsReportInterval;
 extern UDPLIB_API RelaxedAtomic<unsigned> packetsResent;
 extern UDPLIB_API RelaxedAtomic<unsigned> packetsOOO;
+extern UDPLIB_API RelaxedAtomic<unsigned> flowPermitsSent;
+extern UDPLIB_API RelaxedAtomic<unsigned> flowRequestsReceived;
+extern UDPLIB_API RelaxedAtomic<unsigned> dataPacketsReceived;
+extern UDPLIB_API RelaxedAtomic<unsigned> flowRequestsSent;
+extern UDPLIB_API RelaxedAtomic<unsigned> flowPermitsReceived;
+extern UDPLIB_API RelaxedAtomic<unsigned> dataPacketsSent;
+
+
 #endif

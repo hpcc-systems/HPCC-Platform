@@ -33,5 +33,6 @@ string OriginalTextFilesPath := '' : STORED('OriginalTextFilesEclPath');
 rebuildSearchIndex := OriginalTextFilesIp <> '' AND OriginalTextFilesPath <> '';
 
 IF(rebuildSearchIndex,
-    SetupText.createSearchIndex(),
+    parallel(SetupText.createSearchIndex(),
+    SetupText.createSearchSource()),
     File.DeleteLogicalFile(Files.NameSearchIndex, true));

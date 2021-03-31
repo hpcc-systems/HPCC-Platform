@@ -508,23 +508,32 @@ donQuixoteStream := normalizeWordFormat(convertTextFileToInversion(3, DirectoryP
 shakespeareStream := normalizeWordFormat(convertTextFileToInversion(4, DirectoryPath+'shaks12.txt', splitShakespeare));         // not convinced we can use this
 
 
-//Build on bible and encyclopedia for the moment.
-//have different characteristics.  Bible has ~74 "documents", encyclopedia has
-doCreateSearchIndex() := FUNCTION
     boolean useLocal := false;
     Files := $.Files(createMultiPart, useLocal);
-    RETURN sequential(
-        BUILD(bibleStream+encyclopediaStream, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameSearchIndex, OVERWRITE,
-    #if (useLocal=true)
-            NOROOT,
-    #end
-              COMPRESSED(ROW)),
-        fileServices.setColumnMapping(Files.NameSearchIndex, 'word{set(unicodelib.UnicodeToLowerCase)}')       // unicode just to be perverse
-    );
-END;
+
+//Build on bible and encyclopedia for the moment.
+//have different characteristics.  Bible has ~74 "documents", encyclopedia has
+    inputStream := bibleStream & encyclopediaStream;
+
+    doCreateSearchIndex() := FUNCTION
+        RETURN ORDERED(
+            BUILD(inputStream, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameSearchIndex, OVERWRITE,
+        #if (useLocal=true)
+                NOROOT,
+        #end
+                COMPRESSED(ROW)),
+            fileServices.setColumnMapping(Files.NameSearchIndex, 'word{set(unicodelib.UnicodeToLowerCase)}')       // unicode just to be perverse
+        );
+    END;
+
+    doCreateSearchDocument() := FUNCTION
+        projected := TABLE(inputStream, { kind, word, doc, segment, wpos });
+        RETURN OUTPUT(projected,, Files.NameSearchSource, THOR, OVERWRITE, COMPRESSED);
+    END;
 
     exports := MODULE
         EXPORT createSearchIndex() := doCreateSearchIndex();
+        EXPORT createSearchSource() := doCreateSearchDocument();
     
         EXPORT createSimpleIndex(boolean useLocal, boolean useTranslation = FALSE) :=
                     doCreateSimpleIndex(useLocal, useTranslation);
