@@ -176,13 +176,11 @@ namespace couchbaseembed
         if (pQcmd)
         {
             size32_t utf8chars;
-            char *utf8;
-            rtlStrToUtf8X(utf8chars, utf8, len, value);
-            auto status = pQcmd->named_param(cbPlaceholder.str(), utf8);
+            rtlDataAttr utf8;
+            rtlStrToUtf8X(utf8chars, utf8.refstr(), len, value);
+            auto status = pQcmd->named_param(cbPlaceholder.str(), utf8.getstr());
             if (!status.success())
-                failx("Could not bind Param: %s val: %s", cbPlaceholder.str(), utf8);
-            if (utf8)
-                rtlFree(utf8);
+                failx("Could not bind Param: %s val: %s", cbPlaceholder.str(), utf8.getstr());
         }
         else
             failx("Internal error: detected invalid CouchbaseQueryCommand while attempting to bind to field: %s", cbPlaceholder.str());
@@ -211,14 +209,12 @@ namespace couchbaseembed
         if (pQcmd)
         {
             size32_t bytes;
-            void *data;
-            rtlStrToDataX(bytes, data, len, value);
+            rtlDataAttr data;
+            rtlStrToDataX(bytes, data.refdata(), len, value);
 
-            auto status = pQcmd->named_param(cbPlaceholder.str(), (char *)data);
+            auto status = pQcmd->named_param(cbPlaceholder.str(), data.getstr());
             if (!status.success())
-                failx("Could not bind Param: %s val: %s", cbPlaceholder.str(), (char *)data);
-            if (data)
-                rtlFree(data);
+                failx("Could not bind Param: %s val: %s", cbPlaceholder.str(), data.getstr());
         }
         else
             failx("Internal error: detected invalid CouchbaseQueryCommand while attempting to bind to field: %s", cbPlaceholder.str());
@@ -1126,13 +1122,11 @@ namespace couchbaseembed
         checkNextParam(name);
         VStringBuffer cbPlaceholder("$%s", name);
         size32_t bytes;
-        void *data;
-        rtlStrToDataX(bytes, data, len, val);
-        auto status = m_pQcmd->named_param(cbPlaceholder.str(), (char *)data);
+        rtlDataAttr data;
+        rtlStrToDataX(bytes, data.refdata(), len, val);
+        auto status = m_pQcmd->named_param(cbPlaceholder.str(), data.getstr());
         if (!status.success())
-            failx("Could not bind Param: %s val: %s", cbPlaceholder.str(), (char *)data);
-        if (data)
-            rtlFree(data);
+            failx("Could not bind Param: %s val: %s", cbPlaceholder.str(), data.getstr());
     }
 
     void CouchbaseEmbedFunctionContext::bindFloatParam(const char *name, float val)
@@ -1200,13 +1194,11 @@ namespace couchbaseembed
         checkNextParam(name);
         VStringBuffer cbPlaceholder("$%s", name);
         size32_t utf8chars;
-        char *utf8;
-        rtlStrToUtf8X(utf8chars, utf8, len, val);
-        auto status = m_pQcmd->named_param(cbPlaceholder.str(), utf8);
+        rtlDataAttr utf8;
+        rtlStrToUtf8X(utf8chars, utf8.refstr(), len, val);
+        auto status = m_pQcmd->named_param(cbPlaceholder.str(), utf8.getstr());
         if (!status.success())
-            failx("Could not bind Param: %s val: %s", cbPlaceholder.str(), utf8);
-        if (utf8)
-            rtlFree(utf8);
+            failx("Could not bind Param: %s val: %s", cbPlaceholder.str(), utf8.getstr());
     }
 
     void CouchbaseEmbedFunctionContext::bindVStringParam(const char *name, const char *val)
