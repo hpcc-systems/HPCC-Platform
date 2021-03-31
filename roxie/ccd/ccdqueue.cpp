@@ -2846,7 +2846,7 @@ public:
 
         if (udpMaxSlotsPerClient > udpQueueSize)
             udpMaxSlotsPerClient = udpQueueSize;
-        if (udpResendEnabled && udpMaxSlotsPerClient > TRACKER_BITS)
+        if (udpResendLostPackets && udpMaxSlotsPerClient > TRACKER_BITS)
             udpMaxSlotsPerClient = TRACKER_BITS;
         unsigned serverFlowPort = topology->getPropInt("@serverFlowPort", CCD_SERVER_FLOW_PORT);
         unsigned dataPort = topology->getPropInt("@dataPort", CCD_DATA_PORT);

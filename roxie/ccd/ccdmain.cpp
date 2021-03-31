@@ -979,7 +979,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         roxieMulticastEnabled = topology->getPropBool("@roxieMulticastEnabled", true) && !useAeron;   // enable use of multicast for sending requests to agents
 #endif
 
-        udpResendEnabled = topology->getPropBool("@udpResendEnabled", true);
+        udpResendLostPackets = topology->getPropBool("@udpResendLostPackets", true);
         udpResendTimeout = topology->getPropInt("@udpResendTimeout", 10);  // milliseconds
         udpAssumeSequential = topology->getPropBool("@udpAssumeSequential", false);
         udpMaxPendingPermits = topology->getPropInt("@udpMaxPendingPermits", 1);

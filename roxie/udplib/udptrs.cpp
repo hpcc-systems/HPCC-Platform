@@ -86,7 +86,7 @@ RelaxedAtomic<unsigned> flowPermitsReceived;
 RelaxedAtomic<unsigned> dataPacketsSent;
 
 unsigned udpResendTimeout;  // in millseconds
-bool udpResendEnabled;
+bool udpResendLostPackets;
 bool udpAssumeSequential;
 
 static unsigned lastResentReport = 0;
@@ -609,7 +609,7 @@ public:
                 DBGLOG("UdpSender: added entry for ip=%s to receivers table - send_flow_port=%d", ip.getIpText(ipStr).str(), _sendFlowPort);
             }
         }
-        if (udpResendEnabled)
+        if (udpResendLostPackets)
             resendList = new UdpResendList;
     }
 
@@ -782,7 +782,7 @@ class CSendManager : implements ISendManager, public CInterface
             while(running) 
             {
                 UdpPermitToSendMsg f = { flowType::ok_to_send, 0, { } };
-                unsigned readsize = udpResendEnabled ? sizeof(UdpPermitToSendMsg) : offsetof(UdpPermitToSendMsg, seen);
+                unsigned readsize = udpResendLostPackets ? sizeof(UdpPermitToSendMsg) : offsetof(UdpPermitToSendMsg, seen);
                 while (running) 
                 {
                     try 
