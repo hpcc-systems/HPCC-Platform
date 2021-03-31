@@ -364,6 +364,11 @@ public:
         releaseBlobs();
     }
 
+    virtual unsigned numActiveKeys() const override
+    {
+        return keyCursor ? 1 : 0;
+    }
+
     virtual unsigned querySeeks() const
     {
         return stats.seeks;
@@ -2602,6 +2607,11 @@ public:
         activekeys = 0;
         resetPending = true;
         sortFromSeg = 0;
+    }
+
+    virtual unsigned numActiveKeys() const override
+    {
+        return activekeys;
     }
 
     virtual unsigned getPartition() override

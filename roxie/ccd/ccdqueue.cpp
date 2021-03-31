@@ -446,7 +446,7 @@ protected:
     unsigned contextLength;
     const byte *traceInfo;
     unsigned traceLength;
-    
+
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -467,32 +467,6 @@ public:
         }
         else
         {
-            if (data->continueSequence & ~CONTINUE_SEQUENCE_SKIPTO)
-            {
-                assertex(lengthRemaining >= (int) sizeof(unsigned short));
-                continuationLength = *(unsigned short *) finger;
-                continuationData = finger + sizeof(unsigned short);
-                finger = continuationData + continuationLength;
-                lengthRemaining -= continuationLength + sizeof(unsigned short);
-            }
-            else
-            {
-                continuationData = NULL;
-                continuationLength = 0;
-            }
-            if (data->continueSequence & CONTINUE_SEQUENCE_SKIPTO)
-            {
-                assertex(lengthRemaining >= (int) sizeof(unsigned short));
-                smartStepInfoLength = *(unsigned short *) finger;
-                smartStepInfoData = finger + sizeof(unsigned short);
-                finger = smartStepInfoData + smartStepInfoLength;
-                lengthRemaining -= smartStepInfoLength + sizeof(unsigned short);
-            }
-            else
-            {
-                smartStepInfoData = NULL;
-                smartStepInfoLength = 0;
-            }
             assertex(lengthRemaining > 1);
             traceInfo = finger;
             lengthRemaining--;
@@ -516,6 +490,32 @@ public:
                 finger++;
             }
             traceLength = finger - traceInfo;
+            if (data->continueSequence & ~CONTINUE_SEQUENCE_SKIPTO)
+            {
+                assertex(lengthRemaining >= (int) sizeof(unsigned));
+                continuationLength = *(unsigned *) finger;
+                continuationData = finger + sizeof(unsigned);
+                finger = continuationData + continuationLength;
+                lengthRemaining -= continuationLength + sizeof(unsigned);
+            }
+            else
+            {
+                continuationData = NULL;
+                continuationLength = 0;
+            }
+            if (data->continueSequence & CONTINUE_SEQUENCE_SKIPTO)
+            {
+                assertex(lengthRemaining >= (int) sizeof(unsigned));
+                smartStepInfoLength = *(unsigned *) finger;
+                smartStepInfoData = finger + sizeof(unsigned);
+                finger = smartStepInfoData + smartStepInfoLength;
+                lengthRemaining -= smartStepInfoLength + sizeof(unsigned);
+            }
+            else
+            {
+                smartStepInfoData = NULL;
+                smartStepInfoLength = 0;
+            }
         }
         assertex(lengthRemaining >= 0);
         contextData = finger;
@@ -586,16 +586,18 @@ public:
     {
         assertex((data->continueSequence & CONTINUE_SEQUENCE_SKIPTO) == 0); // Should not already be any skipto info in the source packet
 
-        unsigned newDataSize = data->packetlength + sizeof(unsigned short) + skipDataLen;
+        unsigned newDataSize = data->packetlength + sizeof(unsigned) + skipDataLen;
         char *newdata = (char *) malloc(newDataSize);
         unsigned headSize = sizeof(RoxiePacketHeader);
+        if (traceLength)
+            headSize += traceLength;
         if (data->continueSequence & ~CONTINUE_SEQUENCE_SKIPTO)
-            headSize += sizeof(unsigned short) + continuationLength;
+            headSize += sizeof(unsigned) + continuationLength;
         memcpy(newdata, data, headSize); // copy in leading part of old data
         ((RoxiePacketHeader *) newdata)->continueSequence |= CONTINUE_SEQUENCE_SKIPTO; // set flag indicating new data is present
-        *(unsigned short *) (newdata + headSize) = skipDataLen; // add length field for new data
-        memcpy(newdata + headSize + sizeof(unsigned short), skipData, skipDataLen); // copy in new data
-        memcpy(newdata + headSize + sizeof(unsigned short) + skipDataLen, ((char *) data) + headSize, data->packetlength - headSize); // copy in remaining old data
+        *(unsigned *) (newdata + headSize) = skipDataLen; // add length field for new data
+        memcpy(newdata + headSize + sizeof(unsigned), skipData, skipDataLen); // copy in new data
+        memcpy(newdata + headSize + sizeof(unsigned) + skipDataLen, ((char *) data) + headSize, data->packetlength - headSize); // copy in remaining old data
         return createRoxiePacket(newdata, newDataSize);
     }
 

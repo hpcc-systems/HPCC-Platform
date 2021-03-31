@@ -2999,10 +2999,6 @@ public:
     {
         return result != NULL;
     }
-    virtual bool hasContinuation() const 
-    {
-        return continuation != NULL;
-    }
     virtual void setDelayed(bool _delayed)
     {
         delayed = _delayed;
@@ -3592,11 +3588,11 @@ class CRemoteResultAdaptor : implements IEngineRowStream, implements IFinalRoxie
             const byte *metaInfo = (const byte *) result->getMessageMetadata(metaLen);
             if (metaLen)
             {
-                unsigned short continuationLen = *(unsigned short *) metaInfo;
-                if (continuationLen >= sizeof(bool))
+                unsigned continuationLen = *(unsigned *) metaInfo;
+                if (continuationLen >= sizeof(bool)*2)
                 {
-                    metaInfo += sizeof(unsigned short);
-                    return *(bool *) metaInfo;
+                    metaInfo += sizeof(unsigned)+sizeof(bool);
+                    return *(bool *) metaInfo;                     // The field we want is the second bool field in the continuation data, and is always stored uncompressed
                 }
             }
             return true; // if no continuation info, last row was complete.
@@ -5028,7 +5024,7 @@ public:
                                 StringBuffer s;
                                 activity.queryLogCtx().CTXLOG("Additional data size %d on query %s mergeOrder %p", metaLen, header.toString(s).str(), mergeOrder);
                             }
-                            if (*((unsigned short *) metaData) + sizeof(unsigned short) != metaLen)
+                            if (*((unsigned *) metaData) + sizeof(unsigned) != metaLen)
                             {
                                 StringBuffer s;
                                 activity.queryLogCtx().CTXLOG("Additional data size %d on query %s mergeOrder %p", metaLen, header.toString(s).str(), mergeOrder);
@@ -5038,8 +5034,8 @@ public:
 
                             MemoryBuffer nextQuery;
                             nextQuery.append(sizeof(RoxiePacketHeader), &header);
-                            nextQuery.append(metaLen, metaData);
                             nextQuery.append(op->getTraceLength(), op->queryTraceInfo());
+                            nextQuery.append(metaLen, metaData);
                             nextQuery.append(op->getContextLength(), op->queryContextData());
                             if (resendSequence == CONTINUESEQUENCE_MAX)
                             {
