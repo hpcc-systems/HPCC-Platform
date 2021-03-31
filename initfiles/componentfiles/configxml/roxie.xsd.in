@@ -1076,20 +1076,6 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="udpInlineCollation" type="xs:boolean" use="optional" default="false">
-      <xs:annotation>
-        <xs:appinfo>
-          <tooltip>Controls whether UDP packets are collated on the reading thread or queued up for collation on a separate thread</tooltip>
-        </xs:appinfo>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="udpInlineCollationPacketLimit" type="xs:nonNegativeInteger" use="optional" default="50">
-      <xs:annotation>
-        <xs:appinfo>
-          <tooltip>Controls how many UDP packets requested at once when inline collation selected</tooltip>
-        </xs:appinfo>
-      </xs:annotation>
-    </xs:attribute>
     <xs:attribute name="udpLocalWriteSocketSize" type="xs:nonNegativeInteger" use="optional" default="131071">
       <xs:annotation>
         <xs:appinfo>
@@ -1100,7 +1086,7 @@
     <xs:attribute name="udpMaxRetryTimedoutReqs" type="xs:nonNegativeInteger" use="optional" default="0">
       <xs:annotation>
         <xs:appinfo>
-          <tooltip>Controls the Max number of agent "request to send" to be retried. 0 means keep retrying forever</tooltip>
+          <tooltip>Controls the Max number of agent "request to send" or "permission to send" to be retried. 0 means keep retrying forever</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
@@ -1132,17 +1118,24 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-        <xs:attribute name="udpRequestToSendTimeout" type="xs:nonNegativeInteger" use="optional" default="0">
-            <xs:annotation>
-                <xs:appinfo>
-                    <tooltip>Controls the timeout value agent udp will wait for permission to send from a Roxie server, in milliseconds. Specify 0 to calcuate automatically.</tooltip>
-                </xs:appinfo>
-            </xs:annotation>
-        </xs:attribute>
-    <xs:attribute name="udpResendEnabled" type="xs:boolean" use="optional" default="false">
+    <xs:attribute name="udpRequestToSendTimeout" type="xs:nonNegativeInteger" use="optional" default="0">
+        <xs:annotation>
+            <xs:appinfo>
+                <tooltip>Controls the timeout value agent udp will wait for permission to send from a Roxie server, in milliseconds. Specify 0 to calcuate automatically.</tooltip>
+            </xs:appinfo>
+        </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="udpResendLostPackets" type="xs:boolean" use="optional" default="true">
       <xs:annotation>
         <xs:appinfo>
-          <tooltip>UDP transport layer packet resend ability</tooltip>
+          <tooltip>UDP transport layer resend lost packets</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="udpResendTimeout" type="xs:nonNegativeInteger" use="optional" default="10">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Time in milliseconds to assume a packet is in transit before assuming lost</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
@@ -1153,18 +1146,18 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="udpStatsReportInterval" type="xs:nonNegativeInteger" use="optional" default="60000">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>UDP transport layer stats reporting interval</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
   <xs:attributeGroup name="Cache">
     <xs:attribute name="blobCacheMem" type="xs:nonNegativeInteger" use="optional" default="0">
       <xs:annotation>
         <xs:appinfo>
           <tooltip>Size (in Mb) of blob index page cache</tooltip>
-        </xs:appinfo>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="serverSideCacheSize" type="xs:nonNegativeInteger" use="optional" default="0">
-      <xs:annotation>
-        <xs:appinfo>
-          <tooltip>Number of agent results to cache on Roxie server</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>

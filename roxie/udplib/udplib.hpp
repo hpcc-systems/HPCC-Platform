@@ -178,7 +178,7 @@ extern UDPLIB_API unsigned udpRequestToSendAckTimeout;
 
 extern UDPLIB_API void stopAeronDriver();
 
-extern UDPLIB_API bool udpResendEnabled;
+extern UDPLIB_API bool udpResendLostPackets;
 extern UDPLIB_API unsigned udpResendTimeout;  // in millseconds
 extern UDPLIB_API unsigned udpMaxPendingPermits;
 extern UDPLIB_API bool udpAssumeSequential;

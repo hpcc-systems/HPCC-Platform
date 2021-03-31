@@ -140,7 +140,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         }
         bool noteSeen(UdpPacketHeader &hdr)
         {
-            if (udpResendEnabled)
+            if (udpResendLostPackets)
             {
                 CriticalBlock b(psCrit);
                 return packetsSeen.noteSeen(hdr);
@@ -154,7 +154,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             // We can send some if (a) the first available new packet is less than TRACKER_BITS above the first unreceived packet or
             // (b) we are assuming arrival in order, and there are some marked seen that are > first unseen OR
             // (c) the oldest in-flight packet has expired
-            if (!udpResendEnabled)
+            if (!udpResendLostPackets)
                 return true;
             {
                 CriticalBlock b(psCrit);
@@ -191,7 +191,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 msg.flowSeq = _flowSeq;
                 msg.destNode = returnAddress;
                 msg.max_data = 0;
-                if (udpResendEnabled)
+                if (udpResendLostPackets)
                 {
                     CriticalBlock b(psCrit);
                     msg.seen = packetsSeen.copy();
@@ -202,7 +202,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     StringBuffer ipStr;
                     DBGLOG("UdpReceiver: sending request_received msg seq %" SEQF "u to node=%s", _flowSeq, dest.getIpText(ipStr).str());
                 }
-                flowSocket->write(&msg, udpResendEnabled ? sizeof(UdpPermitToSendMsg) : offsetof(UdpPermitToSendMsg, seen));
+                flowSocket->write(&msg, udpResendLostPackets ? sizeof(UdpPermitToSendMsg) : offsetof(UdpPermitToSendMsg, seen));
                 flowPermitsSent++;
 
             }
@@ -223,7 +223,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 msg.flowSeq = flowSeq;
                 msg.destNode = returnAddress;
                 msg.max_data = maxTransfer;
-                if (udpResendEnabled)
+                if (udpResendLostPackets)
                 {
                     CriticalBlock b(psCrit);
                     msg.seen = packetsSeen.copy();
@@ -233,7 +233,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     StringBuffer ipStr;
                     DBGLOG("UdpReceiver: sending ok_to_send %u msg seq %" SEQF "u to node=%s", maxTransfer, flowSeq, dest.getIpText(ipStr).str());
                 }
-                flowSocket->write(&msg, udpResendEnabled ? sizeof(UdpPermitToSendMsg) : offsetof(UdpPermitToSendMsg, seen));
+                flowSocket->write(&msg, udpResendLostPackets ? sizeof(UdpPermitToSendMsg) : offsetof(UdpPermitToSendMsg, seen));
                 flowPermitsSent++;
             }
             catch(IException *e)

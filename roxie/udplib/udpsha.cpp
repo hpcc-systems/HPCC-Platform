@@ -371,7 +371,7 @@ bool PacketTracker::noteSeen(UdpPacketHeader &hdr)
         // We have taken steps to try to avoid the former...
         // In theory could try to preserve SOME information in the former case, but as it shouldn't happen, can we be bothered?
 #ifdef _DEBUG
-        if (udpResendEnabled)
+        if (udpResendLostPackets)
         {
             DBGLOG("Received packet %" SEQF "u will cause loss of information in PacketTracker", seq);
             dump();
