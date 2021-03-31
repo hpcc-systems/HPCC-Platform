@@ -45,7 +45,6 @@
 using roxiemem::DataBuffer;
 using roxiemem::IRowManager;
 
-unsigned udpRetryBusySenders = 0; // seems faster with 0 than 1 in my testing on small clusters and sustained throughput
 unsigned udpMaxPendingPermits;
 
 RelaxedAtomic<unsigned> flowPermitsSent = {0};
@@ -63,20 +62,14 @@ class CReceiveManager : implements IReceiveManager, public CInterface
      *     - waits for packets on flow port
      *     - maintains list of nodes that have pending requests
      *     - sends ok_to_send to one sender (or more) at a time
-     * 2. receive_sniffer (default priority 3, configurable)
-     *     - waits for packets on sniffer port
-     *     - updates information about what other node are currently up to
-     *     - idea is to preferentially send "ok_to_send" to nodes that are not currently sending to someone else
-     *     - doesn't run if no multicast
-     *     - can I instead say "If I get a request to send and I'm sending to someone else, send a "later"?
-     * 3. receive_data (priority 4)
+     * 2. receive_data (priority 4)
      *     - reads data packets off data socket
      *     - runs at v. high priority
      *     - used to have an option to perform collation on this thread but a bad idea:
      *        - can block (ends up in memory manager via attachDataBuffer).
      *        - Does not apply back pressure
      *     - Just enqueues them. We don't give permission to send more than the queue can hold, but it's a soft limit
-     * 4. PacketCollator (standard priority)
+     * 3. PacketCollator (standard priority)
      *     - dequeues packets
      *     - collates packets
      *
@@ -96,7 +89,6 @@ class CReceiveManager : implements IReceiveManager, public CInterface
      *    The requestToSend retry mechanism would then make sure retried.
      *    MORE - if I don't get a response from OkToSend I should assume lost and requeue it.
      * 4. complete - covered by same timeout as okToSend. A lost complete will mean incoming data to that node stalls for the duration of this timeout,
-     * 4. Sniffers - expire anyway
      *
      */
     class UdpSenderEntry  // one per node in the system
@@ -731,7 +723,6 @@ class CReceiveManager : implements IReceiveManager, public CInterface
     friend class receive_send_flow;
     friend class receive_data;
     friend class ReceiveFlowManager;
-    friend class receive_sniffer;
     
     queue_t              *input_queue;
     int                  input_queue_size;
@@ -750,7 +741,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
 
   public:
     IMPLEMENT_IINTERFACE;
-    CReceiveManager(int server_flow_port, int d_port, int client_flow_port, int snif_port, const IpAddress &multicast_ip, int queue_size, int m_slot_pr_client, bool _encrypted)
+    CReceiveManager(int server_flow_port, int d_port, int client_flow_port, int queue_size, int m_slot_pr_client, bool _encrypted)
         : collatorThread(*this), sendersTable([client_flow_port](const ServerIdentifier ip) { return new UdpSenderEntry(ip.getIpAddress(), client_flow_port);})
     {
 #ifndef _WIN32
@@ -886,13 +877,12 @@ class CReceiveManager : implements IReceiveManager, public CInterface
 };
 
 IReceiveManager *createReceiveManager(int server_flow_port, int data_port, int client_flow_port,
-                                      int sniffer_port, const IpAddress &sniffer_multicast_ip,
                                       int udpQueueSize, unsigned maxSlotsPerSender,
                                       bool encrypted)
 {
     assertex (maxSlotsPerSender <= (unsigned) udpQueueSize);
     assertex (maxSlotsPerSender <= (unsigned) TRACKER_BITS);
-    return new CReceiveManager(server_flow_port, data_port, client_flow_port, sniffer_port, sniffer_multicast_ip, udpQueueSize, maxSlotsPerSender, encrypted);
+    return new CReceiveManager(server_flow_port, data_port, client_flow_port, udpQueueSize, maxSlotsPerSender, encrypted);
 }
 
 /*

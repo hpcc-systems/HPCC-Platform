@@ -2831,7 +2831,7 @@ public:
 class RoxieUdpSocketQueueManager : public RoxieSocketQueueManager
 {
 public:
-    RoxieUdpSocketQueueManager(unsigned snifferChannel, unsigned _numWorkers, bool encryptionInTransit) : RoxieSocketQueueManager(_numWorkers)
+    RoxieUdpSocketQueueManager(unsigned _numWorkers, bool encryptionInTransit) : RoxieSocketQueueManager(_numWorkers)
     {
         unsigned udpQueueSize = topology->getPropInt("@udpQueueSize", UDP_QUEUE_SIZE);
         unsigned udpSendQueueSize = topology->getPropInt("@udpSendQueueSize", UDP_SEND_QUEUE_SIZE);
@@ -2844,8 +2844,6 @@ public:
             throttledPacketSendManager.setown(new RoxieThrottledPacketSender(*bucket, maxPacketSize));
         }
 
-        IpAddress snifferIp;
-        getChannelIp(snifferIp, snifferChannel);
         if (udpMaxSlotsPerClient > udpQueueSize)
             udpMaxSlotsPerClient = udpQueueSize;
         if (udpResendEnabled && udpMaxSlotsPerClient > TRACKER_BITS)
@@ -2853,9 +2851,8 @@ public:
         unsigned serverFlowPort = topology->getPropInt("@serverFlowPort", CCD_SERVER_FLOW_PORT);
         unsigned dataPort = topology->getPropInt("@dataPort", CCD_DATA_PORT);
         unsigned clientFlowPort = topology->getPropInt("@clientFlowPort", CCD_CLIENT_FLOW_PORT);
-        unsigned snifferPort = topology->getPropInt("@snifferPort", CCD_SNIFFER_PORT);
-        receiveManager.setown(createReceiveManager(serverFlowPort, dataPort, clientFlowPort, snifferPort, snifferIp, udpQueueSize, udpMaxSlotsPerClient, encryptionInTransit));
-        sendManager.setown(createSendManager(serverFlowPort, dataPort, clientFlowPort, snifferPort, snifferIp, udpSendQueueSize, fastLaneQueue ? 3 : 2, bucket, encryptionInTransit));
+        receiveManager.setown(createReceiveManager(serverFlowPort, dataPort, clientFlowPort, udpQueueSize, udpMaxSlotsPerClient, encryptionInTransit));
+        sendManager.setown(createSendManager(serverFlowPort, dataPort, clientFlowPort, udpSendQueueSize, fastLaneQueue ? 3 : 2, bucket, encryptionInTransit));
     }
 
 };
@@ -3269,14 +3266,14 @@ public:
 
 IRoxieOutputQueueManager *ROQ;
 
-extern IRoxieOutputQueueManager *createOutputQueueManager(unsigned snifferChannel, unsigned numWorkers, bool encrypted)
+extern IRoxieOutputQueueManager *createOutputQueueManager(unsigned numWorkers, bool encrypted)
 {
     if (localAgent)
         return new RoxieLocalQueueManager(numWorkers);
     else if (useAeron)
         return new RoxieAeronSocketQueueManager(numWorkers, encrypted);
     else
-        return new RoxieUdpSocketQueueManager(snifferChannel, numWorkers, encrypted);
+        return new RoxieUdpSocketQueueManager(numWorkers, encrypted);
 
 }
 

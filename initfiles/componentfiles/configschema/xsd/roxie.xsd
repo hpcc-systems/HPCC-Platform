@@ -336,21 +336,9 @@
                                   hpcc:tooltip="Controls the timeout value agent udp will wait for acknowledgement of a request to send from a Roxie server, in milliseconds"/>
                     <xs:attribute name="udpResendEnabled" type="xs:boolean" hpcc:displayName="Enable UDP Resend"
                                   hpcc:presetValue="false" hpcc:tooltip="UDP transport layer packet resend ability"/>
-                    <xs:attribute name="udpRetryBusySenders" type="xs:nonNegativeInteger"
-                                  hpcc:displayName="UDP Retry Busy Senders" hpcc:presetValue="0"
-                                  hpcc:tooltip="Controls the number of times Roxie server will repeat search for an idle sender when requesting new data"/>
                     <xs:attribute name="udpSendQueueSize" type="xs:nonNegativeInteger"
                                   hpcc:displayName="UDP Send Queue Size" hpcc:presetValue="50"
                                   hpcc:tooltip="UDP transport layer send queue size"/>
-                    <xs:attribute name="udpSnifferEnabled" type="xs:boolean" hpcc:displayName="Enable UDP Sniffer"
-                                  hpcc:presetValue="true"
-                                  hpcc:tooltip="Enable the UDP multicast sniffer for tracking which senders are busy"/>
-                    <xs:attribute name="udpSnifferReadThreadPriority" type="xs:nonNegativeInteger"
-                                  hpcc:displayName="UDP Sniffer Read Thread Priority" hpcc:presetValue="3"
-                                  hpcc:tooltip="If non-zero, run the sniffer read thread at elevated priority level"/>
-                    <xs:attribute name="udpSnifferSendThreadPriority" type="xs:nonNegativeInteger"
-                                  hpcc:displayName="UDP Sniffer Send Thread Priority" hpcc:presetValue="3"
-                                  hpcc:tooltip="If non-zero, run the sniffer send thread at elevated priority level"/>
                     <xs:attribute name="useAeron" type="xs:boolean" hpcc:displayName="Use Aeron"
                                   hpcc:presetValue="false"
                                   hpcc:tooltip="Use Aeron for slave->server communication"/>
