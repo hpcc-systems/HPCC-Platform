@@ -121,7 +121,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         flowType::flowCmd state = flowType::send_completed;    // Meaning I'm not on any queue
         sequence_t flowSeq = 0;                // the sender's most recent flow sequence number
         sequence_t sendSeq = 0;                // the sender's most recent sequence number from request-to-send, representing sequence number of next packet it will send
-        unsigned timeouts = 0;
+        unsigned timeouts = 0;                 // How many consecutive timeouts have happened on the current request
         unsigned requestTime = 0;              // When we received the active requestToSend
         unsigned timeStamp = 0;                // When we last sent okToSend
 
@@ -155,11 +155,6 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             }
             else
                 return false;
-        }
-
-        inline void noteDone()
-        {
-            timeouts = 0;
         }
 
         bool canSendAny() const
@@ -196,6 +191,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             flowSeq = _flowSeq;
             sendSeq = _sendSeq;
             requestTime = msTick();
+            timeouts = 0;
             try
             {
                 UdpPermitToSendMsg msg;
@@ -496,8 +492,21 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                                 }
                                 UdpSenderEntry *next = finger->nextSender;
                                 pendingPermits.remove(finger);
-                                pendingRequests.append(finger);
-                                finger->state = flowType::request_to_send;  // Go to the back of the queue  - MORE - lets have some code to eventually give up! Or just give up here?
+                                if (++finger->timeouts > udpMaxRetryTimedoutReqs && udpMaxRetryTimedoutReqs != 0)
+                                {
+                                    if (udpTraceLevel || udpTraceFlow || udpTraceTimeouts)
+                                    {
+                                        StringBuffer s;
+                                        DBGLOG("permit to send %" SEQF "u to node %s timed out %u times - abandoning", finger->flowSeq, finger->dest.getIpText(s).str(), finger->timeouts);
+                                    }
+                                }
+                                else
+                                {
+                                    // Put it back on the queue (at the back)
+                                    finger->timeStamp = now;
+                                    pendingRequests.append(finger);
+                                    finger->state = flowType::request_to_send;
+                                }
                                 finger = next;
                             }
                             else
