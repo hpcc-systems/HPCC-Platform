@@ -246,6 +246,8 @@ public:
             // MORE - This is decrypting in-place. Is that ok?? Seems to be with the code we currently use, but if that changed
             // might need to rethink this
             size_t decryptedSize = aesDecrypt(key, sizeof(key), pktHdr+1, pktHdr->length-sizeof(UdpPacketHeader), pktHdr+1, DATA_PAYLOAD-sizeof(UdpPacketHeader));
+            if (checkTraceLevel(TRACE_MSGPACK, 5))
+                DBGLOG("Decrypted %u bytes at %p resulting in %u bytes", (unsigned) (pktHdr->length-sizeof(UdpPacketHeader)), pktHdr+1, (unsigned) decryptedSize);
             pktHdr->length = decryptedSize + sizeof(UdpPacketHeader);
         }
 

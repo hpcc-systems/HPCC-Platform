@@ -939,10 +939,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         flushJHtreeCacheOnOOM = topology->getPropBool("@flushJHtreeCacheOnOOM", true);
         fastLaneQueue = topology->getPropBool("@fastLaneQueue", true);
         udpOutQsPriority = topology->getPropInt("@udpOutQsPriority", 0);
-        udpRetryBusySenders = topology->getPropInt("@udpRetryBusySenders", 0);
 
         // Historically, this was specified in seconds. Assume any value <= 10 is a legacy value specified in seconds!
-        udpMaxRetryTimedoutReqs = topology->getPropInt("@udpMaxRetryTimedoutReqs", 0);
         udpRequestToSendTimeout = topology->getPropInt("@udpRequestToSendTimeout", 0);
         if (udpRequestToSendTimeout<=10)
             udpRequestToSendTimeout *= 1000;
@@ -957,25 +955,31 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             else
                 udpRequestToSendTimeout = 5000;
         }
+
         udpRequestToSendAckTimeout = topology->getPropInt("@udpRequestToSendAckTimeout", 100);
+        if (!udpRequestToSendAckTimeout)
+        {
+            udpRequestToSendAckTimeout = 100;
+            DBGLOG("Bad or missing value for udpRequestToSendAckTimeout - using %u", udpRequestToSendAckTimeout);
+        }
+        udpMaxRetryTimedoutReqs = topology->getPropInt("@udpMaxRetryTimedoutReqs", 0);
+#ifdef _CONTAINERIZED
+        if (!udpMaxRetryTimedoutReqs)   // 0 traditionally means retry forever - which is a really bad idea in cloud world where replacement node may have different IP
+        {
+            udpMaxRetryTimedoutReqs = 60000/udpRequestToSendAckTimeout;  // Give up after 1 minute
+            DBGLOG("Bad or missing value for udpMaxRetryTimedoutReqs - using %u", udpMaxRetryTimedoutReqs);
+        }
+#endif
         // MORE: might want to check socket buffer sizes against sys max here instead of udp threads ?
-        udpSnifferReadThreadPriority = topology->getPropInt("@udpSnifferReadThreadPriority", 3);
-        udpSnifferSendThreadPriority = topology->getPropInt("@udpSnifferSendThreadPriority", 3);
 
         udpMulticastBufferSize = topology->getPropInt("@udpMulticastBufferSize", 262142);
         udpFlowSocketsSize = topology->getPropInt("@udpFlowSocketsSize", 131072);
         udpLocalWriteSocketSize = topology->getPropInt("@udpLocalWriteSocketSize", 1024000);
 #ifndef _CONTAINERIZED
         roxieMulticastEnabled = topology->getPropBool("@roxieMulticastEnabled", true) && !useAeron;   // enable use of multicast for sending requests to agents
-        udpSnifferEnabled = topology->getPropBool("@udpSnifferEnabled", roxieMulticastEnabled);
-        if (udpSnifferEnabled && !roxieMulticastEnabled)
-        {
-            DBGLOG("WARNING: ignoring udpSnifferEnabled setting as multicast not enabled");
-            udpSnifferEnabled = false;
-        }
 #endif
 
-        udpResendEnabled = topology->getPropBool("@udpResendEnabled", true);
+        udpResendLostPackets = topology->getPropBool("@udpResendLostPackets", true);
         udpResendTimeout = topology->getPropInt("@udpResendTimeout", 10);  // milliseconds
         udpAssumeSequential = topology->getPropBool("@udpAssumeSequential", false);
         udpMaxPendingPermits = topology->getPropInt("@udpMaxPendingPermits", 1);
@@ -1183,6 +1187,11 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #ifdef _CONTAINERIZED
         IpAddress myIP(".");
         myNode.setIp(myIP);
+        if (traceLevel)
+        {
+            StringBuffer s;
+            DBGLOG("My node ip=%s", myIP.getIpText(s).str());
+        }
         if (topology->getPropBool("@server", true))
         {
             Owned<IPropertyTreeIterator> roxieFarms = topology->getElements("./services");
@@ -1230,14 +1239,13 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             queryFileCache().start();
             loadPlugins();
         }
-        unsigned snifferChannel = numChannels+2; // MORE - why +2 not +1??
 #ifdef _CONTAINERIZED
         initializeTopology(topoValues, myRoles);
 #endif
         createDelayedReleaser();
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
         globalPackageSetManager->load();
-        ROQ = createOutputQueueManager(snifferChannel, numAgentThreads, encryptInTransit);
+        ROQ = createOutputQueueManager(numAgentThreads, encryptInTransit);
         ROQ->setHeadRegionSize(headRegionSize);
         ROQ->start();
         Owned<IPacketDiscarder> packetDiscarder = createPacketDiscarder();
@@ -1364,7 +1372,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                         }
                         const char *soname =  roxieFarm.queryProp("@so");
                         const char *config  = roxieFarm.queryProp("@config");
-                        Owned<IHpccProtocolPlugin> protocolPlugin = ensureProtocolPlugin(*protocolCtx, soname);
+                        IHpccProtocolPlugin *protocolPlugin = ensureProtocolPlugin(*protocolCtx, soname);
                         roxieServer.setown(protocolPlugin->createListener(protocol ? protocol : "native", createRoxieProtocolMsgSink(ip, port, numThreads, suspended), port, listenQueue, config, certFileName.str(), keyFileName.str(), passPhraseStr.str()));
                     }
                     else

@@ -38,8 +38,6 @@ bool udpTraceTimeouts = false;
 unsigned udpTraceLevel = 0;
 unsigned udpFlowSocketsSize = 131072;
 unsigned udpLocalWriteSocketSize = 1024000;
-unsigned udpSnifferReadThreadPriority = 3;
-unsigned udpSnifferSendThreadPriority = 3;
 unsigned udpStatsReportInterval = 60000;
 
 unsigned multicastTTL = 1;
@@ -373,7 +371,7 @@ bool PacketTracker::noteSeen(UdpPacketHeader &hdr)
         // We have taken steps to try to avoid the former...
         // In theory could try to preserve SOME information in the former case, but as it shouldn't happen, can we be bothered?
 #ifdef _DEBUG
-        if (udpResendEnabled)
+        if (udpResendLostPackets)
         {
             DBGLOG("Received packet %" SEQF "u will cause loss of information in PacketTracker", seq);
             dump();
