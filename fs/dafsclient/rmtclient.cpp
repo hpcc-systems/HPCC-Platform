@@ -1495,13 +1495,11 @@ CriticalSection CDafsOsCache::crit;
 
 DAFS_OS getDaliServixOs(const SocketEndpoint &ep,ISocket *socket)
 {
-#ifdef _DEBUG
     if (ep.isLocal())
 #ifdef _WIN32
         return DAFS_OSwindows;
 #else
         return DAFS_OSlinux;
-#endif
 #endif
     static CDafsOsCache cache;
     return cache.lookup(ep,socket);
