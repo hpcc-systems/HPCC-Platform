@@ -513,7 +513,7 @@ shakespeareStream := normalizeWordFormat(convertTextFileToInversion(4, Directory
 
 //Build on bible and encyclopedia for the moment.
 //have different characteristics.  Bible has ~74 "documents", encyclopedia has
-    inputStream := bibleStream & encyclopediaStream;
+    inputStream := bibleStream + encyclopediaStream;
 
     doCreateSearchIndex() := FUNCTION
         RETURN ORDERED(
@@ -528,6 +528,7 @@ shakespeareStream := normalizeWordFormat(convertTextFileToInversion(4, Directory
 
     doCreateSearchDocument() := FUNCTION
         projected := TABLE(inputStream, { kind, word, doc, segment, wpos });
+        resorted := SORT(projected, kind, word, doc, segment, wpos, LOCAL); // Ensure the ordering is consistent
         RETURN OUTPUT(projected,, Files.NameSearchSource, THOR, OVERWRITE, COMPRESSED);
     END;
 
