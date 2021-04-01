@@ -103,13 +103,13 @@ jobs:
         then
           cd src
           git remote add upstream https://github.com/${{ github.repository }}
-          git fetch upstream ${{ github.base_ref}}
-          base_ref_sha=$(git rev-parse upstream/${{ github.base_ref }})
-          echo git log ${base_ref_sha}
-          git log ${base_ref_sha}
-          echo =======================
           git fetch upstream +${{ github.ref }}
           fetch_sha=$(git rev-parse --verify FETCH_HEAD)
+          git fetch upstream ${{ github.base_ref}}
+          base_ref_sha=$(git rev-parse upstream/${{ github.base_ref }})
+          echo git log -n 2 ${base_ref_sha}
+          git log ${base_ref_sha}
+          echo =======================
           echo ::set-output name=base_ref_sha::${base_ref_sha}
           echo ::set-output name=sha::${fetch_sha}
           echo "base_ref_sha = ${base_ref_sha}"
