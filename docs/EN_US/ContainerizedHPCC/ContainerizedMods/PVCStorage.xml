@@ -82,7 +82,7 @@ helm install localfile examples/local/hpcc-localfile --set common.hostpath=/User
         provides access to the host file system for Mac OSX.</para>
 
         <para><emphasis role="bold">Note: </emphasis>The value passed to --set
-        common-hostpath is case sensitive. </para>
+        common-hostpath is case sensitive.</para>
       </listitem>
 
       <listitem>
@@ -150,7 +150,8 @@ OUTPUT(allPeople,,'MyData::allPeople',THOR,OVERWRITE);
 
     <itemizedlist>
       <listitem>
-        <para>Upload to a Landing Zone and Spray (not yet implemented)</para>
+        <para>Upload to a Landing Zone and Spray (not yet implemented in the
+        containerized version)</para>
       </listitem>
 
       <listitem>
@@ -174,10 +175,10 @@ OUTPUT(allPeople,,'MyData::allPeople',THOR,OVERWRITE);
 
     <para>If you have storage plane configured as in the previous section, and
     you copy the <emphasis role="strong">originalperson</emphasis> file to
-    <emphasis role="strong">C:\hpccdata\data\tutorial</emphasis>, you can then
-    reference the file using this syntax:</para>
+    <emphasis role="strong">C:\hpccdata\hpcc-data\tutorial</emphasis>, you can
+    then reference the file using this syntax:</para>
 
-    <para><programlisting>'~plane::hpcc-data-plane::tutorial::originalperson'</programlisting></para>
+    <para><programlisting>'~plane::data::tutorial::originalperson'</programlisting></para>
 
     <para>Note: The <emphasis role="strong">originalperson</emphasis> file is
     available from the HPCC Systems Web site
