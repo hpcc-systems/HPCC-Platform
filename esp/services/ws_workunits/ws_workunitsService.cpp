@@ -4467,7 +4467,7 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
                 request->getParameter("Cluster", cluster);
                 request->getParameter("Process",defaultProcess);
                 request->getParameter("Range",range);
-                Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
+                Owned<IConstWUClusterInfo> clusterInfo = getWUClusterInfoByName(cluster);
                 xml.append("<WUJobList>");
 
                 SecAccessFlags accessOwn;
