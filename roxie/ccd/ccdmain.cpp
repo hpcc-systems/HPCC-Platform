@@ -1243,8 +1243,14 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         initializeTopology(topoValues, myRoles);
 #endif
         createDelayedReleaser();
-        globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
-        globalPackageSetManager->load();
+        Owned<IRoxieDaliHelper> daliHelper;
+        if (oneShotRoxie)
+            daliHelper.setown(connectToDali(ROXIE_DALI_CONNECT_TIMEOUT));
+        else
+        {
+            globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
+            globalPackageSetManager->load();
+        }
         ROQ = createOutputQueueManager(numAgentThreads, encryptInTransit);
         ROQ->setHeadRegionSize(headRegionSize);
         ROQ->start();
