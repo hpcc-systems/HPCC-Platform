@@ -1146,7 +1146,7 @@ private:
                 part_buffer = bufferManager->allocate();
             const char *metaData = metaInfo.toByteArray();
             unsigned metaLength = metaInfo.length();
-            unsigned maxMetaLength = data_buffer_size + data_used;
+            unsigned maxMetaLength = data_buffer_size - data_used;
             while (metaLength > maxMetaLength)
             {
                 memcpy(&part_buffer->data[sizeof(UdpPacketHeader)+data_used], metaData, maxMetaLength);
