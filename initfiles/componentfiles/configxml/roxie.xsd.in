@@ -1153,6 +1153,7 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+  </xs:attributeGroup>
   <xs:attributeGroup name="Cache">
     <xs:attribute name="blobCacheMem" type="xs:nonNegativeInteger" use="optional" default="0">
       <xs:annotation>
