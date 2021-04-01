@@ -288,7 +288,7 @@ void QueryFilesInUse::loadTarget(IPropertyTree *t, const char *target, unsigned 
     if (!target || !*target)
         return;
 
-    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
+    Owned<IConstWUClusterInfo> clusterInfo = getWUClusterInfoByName(target);
     if (!clusterInfo || !(clusterInfo->getPlatform() == RoxieCluster))
         return;
 
@@ -476,7 +476,7 @@ bool CWsWorkunitsEx::onWUCopyLogicalFiles(IEspContext &context, IEspWUCopyLogica
         cluster.set(cw->queryClusterName());
     validateTargetName(cluster);
 
-    Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster.str());
+    Owned<IConstWUClusterInfo> clusterInfo = getWUClusterInfoByName(cluster);
 
     IArrayOf<IConstWUCopyLogicalClusterFileSections> clusterfiles;
     PROGLOG("WUCopyLogicalFiles: %s", wuid.str());
@@ -2363,7 +2363,7 @@ bool CWsWorkunitsEx::getQueryFiles(IEspContext &context, const char* wuid, const
 {
     try
     {
-        Owned<IConstWUClusterInfo> info = getTargetClusterInfo(target);
+        Owned<IConstWUClusterInfo> info = getWUClusterInfoByName(target);
         if (!info || (info->getPlatform()!=RoxieCluster))
             return false;
 
@@ -2946,7 +2946,7 @@ public:
         {
             wufiles->resolveFiles(process, dfsIP, srcPrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM)), true, false, true);
             Owned<IDFUhelper> helper = createIDFUhelper();
-            Owned <IConstWUClusterInfo> cl = getTargetClusterInfo(target);
+            Owned <IConstWUClusterInfo> cl = getWUClusterInfoByName(target);
             if (cl)
             {
                 SCMStringBuffer process;
@@ -3009,7 +3009,7 @@ bool CWsWorkunitsEx::onWUCopyQuerySet(IEspContext &context, IEspWUCopyQuerySetRe
     SCMStringBuffer process;
     if (req.getCopyFiles())
     {
-        Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
+        Owned <IConstWUClusterInfo> clusterInfo = getWUClusterInfoByName(target);
         if (clusterInfo && clusterInfo->getPlatform()==RoxieCluster)
         {
             clusterInfo->getRoxieProcess(process);
@@ -3180,7 +3180,7 @@ bool CWsWorkunitsEx::onWUQuerysetImport(IEspContext &context, IEspWUQuerysetImpo
         if (!target || !*target)
             throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Target not specified");
 
-        Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
+        Owned <IConstWUClusterInfo> clusterInfo = getWUClusterInfoByName(target);
         if (!clusterInfo)
             throw MakeStringException(ECLWATCH_CANNOT_RESOLVE_CLUSTER_NAME, "Target not found");
 
