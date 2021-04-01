@@ -103,12 +103,17 @@ jobs:
         then
           cd src
           git remote add upstream https://github.com/${{ github.repository }}
+          git fetch upstream ${{ github.base_ref}}
+          base_ref_sha=$(git rev-parse upstream/${{ github.base_ref }})
           git fetch upstream +${{ github.ref }}
-          fetchSHA=$(git rev-parse --verify FETCH_HEAD)
-          echo "fetchSHA = ${fetchSHA}"
-          echo ::set-output name=sha::${fetchSHA}
+          fetch_sha=$(git rev-parse --verify FETCH_HEAD)
+          echo ::set-output name=base_ref_sha::${base_ref_sha}
+          echo ::set-output name=sha::${fetch_sha}
+          echo "base_ref_sha = ${base_ref_sha}"
+          echo "fetch_sha = ${fetch_sha}"
         else
           echo ::set-output name=sha::${{ github.sha }}
+          echo ::set-output name=base_ref_sha::${{ github.sha }}
         fi
 
     # NB: restore-keys set to e.g. hpccbuild-1-7.12.10, hpccbuild-1-7.12, hpccbuild-1-7, hpccbuild-1-
@@ -232,13 +237,13 @@ jobs:
           find . -type f | cpio -p -dum ../src
           cd ../src
           find . -type f -exec touch -r ../build/cache-timestamp {} +
-          git checkout -f ${{ steps.vars.outputs.sha }}
+          git checkout -m ${{ steps.vars.outputs.sha }}
           git submodule update --init --recursive --jobs 4
           echo "Changed files (from SHA: $(cat ../build/cache-sha)):"
           find -name '.git*' -prune -o -newer ../build/cache-timestamp -type f -print
         else
           cd ..
-          echo "Cashed SHA $(cat build-cache/cache-sha) could not be found). Skipping cache."
+          echo "Cached SHA $(cat build-cache/cache-sha) could not be found). Skipping cache."
           rm -rf build-cache merge-patch src-cache
           mkdir build
           mkdir src-cache
@@ -292,15 +297,13 @@ jobs:
     - name: Prepare cache
       if: steps.cache.outputs.cache-hit != 'true'
       run: |
+        echo ${{ steps.vars.outputs.base_ref_sha }} > build/cache-sha
         mv build build-cache
         cd src
-        base_ref_sha=$(git rev-parse upstream/${{ github.base_ref }})
-        echo "base_ref_sha=${base_ref_sha}"
-        echo ${base_ref_sha} > ../build-cache/cache-sha
         find -name '.git*' -prune -o -newer ../cmake-timestamp -type f -print | cpio -p -dum ../src-cache
-        echo git diff ${base_ref_sha} ${{ steps.vars.outputs.sha }}
-        git diff --name-only ${base_ref_sha} ${{ steps.vars.outputs.sha }}
-        git diff ${base_ref_sha} ${{ steps.vars.outputs.sha }} > ../merge-patch
+        echo "Merge patch files:"
+        git diff --name-only ${{ steps.vars.outputs.base_ref_sha }} ${{ steps.vars.outputs.sha }}
+        git diff ${{ steps.vars.outputs.base_ref_sha }} ${{ steps.vars.outputs.sha }} > ../merge-patch
 
     # - alter stock ecl-test.json, to point to install dir (using jq)
     # - create a clean copy of the install directory (for later reuse)
