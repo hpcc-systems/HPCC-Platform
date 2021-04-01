@@ -692,6 +692,72 @@
       process by calling <emphasis>DFUCreateFile</emphasis> and publishing the
       file once it has been written by calling
       <emphasis>DFUPublishFile</emphasis>.</para>
+
+      <sect2 role="brk">
+        <title>Using the Spark Datasource API to Read and Write</title>
+
+        <para>Example Python code:</para>
+
+        <para><programlisting># Connect to HPCC and read a file
+df = spark.read.load(format="hpcc",
+                     host="127.0.0.1:8010",
+                     password="",
+                     username="",
+                     limitPerFilePart=100,        
+                                      # Limit the number of rows to read from each file part
+                     projectList="field1, field2, field3.childField1",     
+                                      # Comma separated list of columns to read
+                     fileAccessTimeout=240,
+                     path="example::file")
+# Write the file back to HPCC
+df.write.save(format="hpcc",
+              mode="overwrite",        
+                   # Left blank or not specified results in an error if the file exists
+              host="127.0.0.1:8010",
+              password="",
+              username="",
+              cluster="mythor",
+              path="example::file")</programlisting></para>
+
+        <para>Example Scala code:</para>
+
+        <para><programlisting>// Read a file from HPCC
+val dataframe = spark.read.format("hpcc")
+                .option("host","127.0.0.1:8010")
+                .option("password", "")
+                .option("username", "")
+                .option("limitPerFilePart",100)
+                .option("fileAccessTimeout",240)
+                .option("projectList","field1, field2, field3.childField")
+                .load("example::file")
+// Write the dataset back
+   dataframe.write.mode("overwrite")
+                   .format("hpcc")
+                   .option("host","127.0.0.1:8010")
+                   .option("password", "")
+                   .option("username", "")
+                   .option("cluster","mythor")
+                   .save("example::file")</programlisting></para>
+
+        <para>Example R code:</para>
+
+        <para><programlisting>df &lt;- read.df(source = "hpcc",
+              host = "127.0.0.1:8010",
+              path = "example::file",
+              password = "",
+              username = "",
+              limitPerFilePart = 100,
+              fileAccessTimeout = 240,
+              projectList = "field1, field2, field3.childField")
+write.df(df, source = "hpcc",
+             host = "127.0.0.1:8010",
+             cluster = "mythor",
+             path = "example::file",
+             mode = "overwrite",
+             password = "",
+             username = "",
+             fileAccessTimeout = 240)</programlisting></para>
+      </sect2>
     </sect1>
 
     <sect1 id="additional-classes-of-interest">
