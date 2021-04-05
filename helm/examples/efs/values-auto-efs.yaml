@@ -1,0 +1,26 @@
+# Overrides for efs storage in hpcc.
+# NB: Using the default "aws-efs" storage class results in automatically
+# provisioned Persistent Volume's with a reclaimPolicy of "Delete"
+
+storage:
+  dllStorage:
+    storageSize: 3Gi
+    storageClass: "aws-efs"
+
+  daliStorage:
+    storageSize: 1Gi
+    storageClass: "aws-efs"
+
+  dataStorage:
+    storageSize: 1Gi
+    storageClass: "aws-efs"
+
+sasha:
+  wu-archiver:
+    storage:
+      storageSize: 1Gi
+      storageClass: "aws-efs"
+  dfuwu-archiver:
+    storage:
+      storageSize: 1Gi
+      storageClass: "aws-efs"

@@ -2,53 +2,66 @@
   "$schema": "https://json-schema.org/draft-07/schema#",
   "additionalProperties": false,
   "properties": {
-    "efs": {
-      "$ref": "#/definitions/efs"
+    "common": {
+      "type": "object",
+      "properties": {
+        "commonPrefix": {
+          "type": "string"
+        }
+      }
     },
-    "dllStorage": {
-      "$ref": "#/definitions/storage"
-    },
-    "dataStorage": {
-      "$ref": "#/definitions/storage"
-    },
-    "daliStorage": {
-      "$ref": "#/definitions/storage"
+    "planes": {
+      "description": "List of planes to mount locally",
+      "oneOf": [
+        {
+          "type": "array",
+          "items": { "$ref": "#/definitions/plane" }
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
+  "title": "Values",
+  "type": "object",
   "definitions": {
-    "efs": {
+    "plane": {
       "type": "object",
-      "required": [ "id", "region", "image" ],
       "properties": {
-        "namespace": {
+        "name": {
+          "description": "Prefix for the pvc name",
           "type": "string"
         },
-        "serviceaccount": {
+        "subPath": {
+          "description": "sub path from common.hostpath on host where the pvc is created",
           "type": "string"
         },
-        "region": {
-          "type": "string"
-	},
-        "id": {
-          "type": "string"
-	},
-        "image": {
-          "type": "string"
-	}
-      },
-      "additionalProperties": false
-    },
-    "storage": {
-      "type": "object",
-      "required": [ "size" ],
-      "properties": {
         "size": {
-          "type": "string"
+          "description": "Size that is required for the volume",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "rwmany": {
+          "description": "Does the pvc require rw many access (data/dll currently)",
+          "type": "boolean"
         },
         "sku": {
           "type": "string"
+        },
+        "labels": {
+          "description": "a list of labels associated with this plane, e.g. lz, data",
+          "type": "array",
+          "items": { "type": "string" }
         }
       },
+      "required": [ "name", "subPath", "size" ],
       "additionalProperties": false
     }
   }
