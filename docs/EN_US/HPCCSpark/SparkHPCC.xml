@@ -37,7 +37,7 @@
       similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -547,6 +547,29 @@
 
       <para>The Spark-HPCCSystems Distributed Connector also supports PySpark.
       It uses the same classes/API as Java does.</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><graphic fileref="images/tip.jpg" /></entry>
+
+                <entry><para>As is common in Java client communication over
+                TLS, Spark-HPCC connectors targeting an HPCC cluster over TLS
+                will need to import the appropriate certificates to local Java
+                keystore.</para><para> </para><para>*One way to accomplish
+                this is to use the keytool packaged with Java installations.
+                Refer to the keytool documentation for usage. </para></entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
 
       <sect2 role="brk">
         <title>Special considerations</title>
