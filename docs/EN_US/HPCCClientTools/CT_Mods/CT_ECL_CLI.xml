@@ -343,7 +343,7 @@ ecl deploy roxie - --name=FindPersonService
                 <row>
                   <entry>--protect</entry>
 
-                  <entry>Protect the workunit from deletion </entry>
+                  <entry>Protect the workunit from deletion</entry>
                 </row>
 
                 <row>
@@ -1025,7 +1025,7 @@ ecl run thor findperson.ecl -I C:\MyECL\
                 </row>
 
                 <row>
-                  <entry>-X&lt;name&gt;</entry>
+                  <entry>-X&lt;name&gt;=&lt;value&gt;</entry>
 
                   <entry>Sets the stored input value (stored('name'))</entry>
                 </row>
