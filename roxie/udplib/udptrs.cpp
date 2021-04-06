@@ -610,7 +610,12 @@ public:
             }
         }
         if (udpResendLostPackets)
+        {
+            DBGLOG("UdpSender: created resend list with %u entries", TRACKER_BITS);
             resendList = new UdpResendList;
+        }
+        else
+            DBGLOG("UdpSender: resend list disabled");
     }
 
     ~UdpReceiverEntry()
