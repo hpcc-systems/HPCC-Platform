@@ -341,6 +341,12 @@ ecl deploy roxie - --name=FindPersonService
                 </row>
 
                 <row>
+                  <entry>--protect</entry>
+
+                  <entry>Protect the workunit from deletion </entry>
+                </row>
+
+                <row>
                   <entry>-v, --verbose</entry>
 
                   <entry>Output additional tracing information</entry>
