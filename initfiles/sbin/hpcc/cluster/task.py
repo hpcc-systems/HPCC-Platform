@@ -98,6 +98,7 @@ class ScriptTask(Task):
         self.script_file = script_file
         self.logger = logging.getLogger("hpcc.cluster.ScriptTask." + str(id))
         self._checksum = None
+        self._ip = None
 
     @property
     def checksum(self):
@@ -129,7 +130,11 @@ class ScriptTask(Task):
         option. Also user should ensure the script permission to
         protect the script from malicious modification.
         '''
-        cmd = self.script_file + " " + host.ip
+        try:
+            self._ip = host.ip.decode('utf-8')
+        except AttributeError as e:
+            self._ip = host.ip
+        cmd = self.script_file + " " + self._ip
         self.logger.info(cmd)
         if not self.validateScriptFile():
             self.logger.error("Script file check sum does not match")
@@ -137,8 +142,6 @@ class ScriptTask(Task):
             return
 
         try:
-            # subprocess.check_output is more convenvient but only available
-            # on Python 2.7+
             process = subprocess.Popen(cmd, shell=True,
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT)
