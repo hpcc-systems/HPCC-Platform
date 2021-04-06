@@ -59,6 +59,9 @@
 
 #include "daadmin.hpp"
 
+namespace daadmin
+{
+
 static unsigned daliConnectTimeoutMs = 5000;
 
 static bool noninteractive=false;
@@ -139,7 +142,7 @@ void setDaliConnectTimeoutMs(unsigned timeoutMs)
 
 //=============================================================================
 
-void _export_(const char *path,const char *dst,bool safe)
+void exportToFile(const char *path,const char *filename,bool safe)
 {
     StringBuffer xpath;
     Owned<IRemoteConnection> conn = connectXPathOrFile(path,safe,xpath);
@@ -148,52 +151,48 @@ void _export_(const char *path,const char *dst,bool safe)
         return;
     }
     Owned<IPropertyTree> root = conn->getRoot();
-    Owned<IFile> f = createIFile(dst);
+    Owned<IFile> f = createIFile(filename);
     Owned<IFileIO> io = f->open(IFOcreate);
     Owned<IFileIOStream> fstream = createBufferedIOStream(io);
     toXML(root, *fstream);          // formatted (default)
-    OUTLOG("Branch %s saved in '%s'",xpath.str(),dst);
+    OUTLOG("Branch %s saved in '%s'",xpath.str(),filename);
     conn->close();
+}
+
+//=============================================================================
+
+bool exportToXML(const char *path,StringBuffer &out,bool safe)
+{
+    StringBuffer xpath;
+    Owned<IRemoteConnection> conn = connectXPathOrFile(path,safe,xpath);
+    if (!conn) {
+        out.appendf("Could not connect to %s",path);
+        return false;
+    }
+    Owned<IPropertyTree> root = conn->getRoot();
+    toXML(root, out);
+    conn->close();
+    return true;
 }
 
 //==========================================================================================================
 
-void import(const char *path,const char *src,bool add)
+bool doImport(const char *path,const char *head,const char *tail,const char *xml,bool add,StringBuffer &out)
 {
-    Owned<IFile> iFile = createIFile(src);
-    Owned<IFileIO> iFileIO = iFile->open(IFOread);
-    if (!iFileIO)
-    {
-        UERRLOG("Could not open to %s",src);
-        return;
-    }
-    size32_t sz = (size32_t)iFile->size();
-    StringBuffer xml;
-    iFileIO->read(0, sz, xml.reserve(sz));
-    Owned<IPropertyTree> branch = createPTreeFromXMLString(xml.str());
-    StringBuffer head;
-    StringBuffer tmp;
-    const char *tail=splitpath(path,head,tmp);
-    if (!add) {
-        Owned<IRemoteConnection> bconn = querySDS().connect(remLeading(path),myProcessSession(),RTM_LOCK_READ|RTM_SUB, daliConnectTimeoutMs);
-        if (bconn) {
-            Owned<IPropertyTree> broot = bconn->getRoot();
-            StringBuffer bakname;
-            Owned<IFileIO> io = createUniqueFile(NULL, tail, "bak", bakname);
-            OUTLOG("Saving backup of %s to %s",path,bakname.str());
-            Owned<IFileIOStream> fstream = createBufferedIOStream(io);
-            toXML(broot, *fstream);         // formatted (default)
-        }
-    }
-    Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),0, daliConnectTimeoutMs);
+    Owned<IPropertyTree> branch = createPTreeFromXMLString(xml);
+    Owned<IRemoteConnection> conn = querySDS().connect(head,myProcessSession(),0, daliConnectTimeoutMs);
     if (!conn) {
-        UERRLOG("Could not connect to %s",path);
-        return;
+        out.appendf("Could not connect to %s",path);
+        return false;
     }
     StringAttr newtail; // must be declared outside the following if
     Owned<IPropertyTree> root = conn->getRoot();
     if (!add) {
         Owned<IPropertyTree> child = root->getPropTree(tail);
+        if (!child) {
+            out.appendf("Invalid path: %s",path);
+            return false;
+        }
         root->removeTree(child);
 
         //If replacing a qualified branch then remove the qualifiers before calling addProp
@@ -210,42 +209,82 @@ void import(const char *path,const char *src,bool add)
         oldEnvironment.setown(createPTreeFromIPT(conn->queryRoot()));
     root->addPropTree(tail,LINK(branch));
     conn->commit();
-    OUTLOG("Branch %s loaded from '%s'",path,src);
     conn->close();
     if (*path=='/')
         path++;
     if (strcmp(path,"Environment")==0) {
-        OUTLOG("Refreshing cluster groups from Environment");
+        out.appendf("Refreshing cluster groups from Environment.");
         StringBuffer response;
         initClusterGroups(false, response, oldEnvironment);
         if (response.length())
-            PROGLOG("updating Environment via import path=%s : %s", path, response.str());
+            out.appendf(" Updating Environment via import path=%s : %s.", path, response.str());
     }
+    return true;
+}
+
+bool importFromXML(const char *path,const char *xml,bool add,StringBuffer &out)
+{
+    StringBuffer head,tmp;
+    const char *tail=splitpath(path,head,tmp);
+    return doImport(path,head,tail,xml,add,out);
+}
+
+bool importFromFile(const char *path,const char *filename,bool add,StringBuffer &out)
+{
+    Owned<IFile> iFile = createIFile(filename);
+    Owned<IFileIO> iFileIO = iFile->open(IFOread);
+    if (!iFileIO)
+    {
+        out.appendf("Could not open to %s",filename);
+        return false;
+    }
+    size32_t sz = (size32_t)iFile->size();
+    StringBuffer xml;
+    iFileIO->read(0, sz, xml.reserve(sz));
+    StringBuffer head;
+    StringBuffer tmp;
+    const char *tail=splitpath(path,head,tmp);
+    if (!add) {
+        Owned<IRemoteConnection> bconn = querySDS().connect(remLeading(path),myProcessSession(),RTM_LOCK_READ|RTM_SUB, daliConnectTimeoutMs);
+        if (bconn) {
+            Owned<IPropertyTree> broot = bconn->getRoot();
+            StringBuffer bakname;
+            Owned<IFileIO> io = createUniqueFile(NULL, tail, "bak", bakname);
+            out.appendf("Saving backup of %s to %s",path,bakname.str());
+            Owned<IFileIOStream> fstream = createBufferedIOStream(io);
+            toXML(broot, *fstream);         // formatted (default)
+        }
+    }
+
+    bool ret = doImport(path, head, tail, xml, add, out);
+    if (ret)
+        out.appendf(" Branch %s loaded from '%s'",path,filename);
+    return ret;
 }
 
 //=============================================================================
 
 
-void _delete_(const char *path,bool backup)
+bool erase(const char *path,bool backup,StringBuffer &out)
 {
     StringBuffer head;
     StringBuffer tmp;
     const char *tail=splitpath(path,head,tmp);
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, daliConnectTimeoutMs);
     if (!conn) {
-        UERRLOG("Could not connect to %s",path);
-        return;
+        out.appendf("Could not connect to %s",path);
+        return false;
     }
     Owned<IPropertyTree> root = conn->getRoot();
     Owned<IPropertyTree> child = root->getPropTree(tail);
     if (!child) {
-        UERRLOG("Couldn't find %s/%s",head.str(),tail);
-        return;
+        out.appendf("Couldn't find %s/%s",head.str(),tail);
+        return false;
     }
     if (backup) {
         StringBuffer bakname;
         Owned<IFileIO> io = createUniqueFile(NULL,"daliadmin", "bak", bakname);
-        OUTLOG("Saving backup of %s/%s to %s",head.str(),tail,bakname.str());
+        out.appendf("Saving backup of %s/%s to %s",head.str(),tail,bakname.str());
         Owned<IFileIOStream> fstream = createBufferedIOStream(io);
         toXML(child, *fstream);         // formatted (default)
     }
@@ -254,6 +293,7 @@ void _delete_(const char *path,bool backup)
     root.clear();
     conn->commit();
     conn->close();
+    return true;
 }
 
 //=============================================================================
@@ -3252,3 +3292,5 @@ void removeOrphanedGlobalVariables(bool dryrun, bool reconstruct)
         PROGLOG("%sChecked: [%u / %u] - deletes: %u, auxDeletes: %u, persists: %u. [Avg ms: %2.2f]", dryrun?"DRYRUN:":"", checked, total, deletes, auxDeletes, existingPersists, static_cast<unsigned>(cycle_to_microsec(avgCycles))/1000.0);
     }
 }
+
+} // namespace daadmin
