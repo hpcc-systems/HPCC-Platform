@@ -249,6 +249,7 @@ int main(int argc, const char* argv[])
                         userDesc->set(tmps.str(),ps.str());
                         queryDistributedFileDirectory().setDefaultUser(userDesc);
                     }
+                    StringBuffer out;
                     setDaliConnectTimeoutMs(1000 * props->getPropInt("timeout", DEFAULT_DALICONNECT_TIMEOUT));
                     if (strieq(cmd,"export")) {
                         CHECKPARAMS(2,2);
@@ -269,11 +270,13 @@ int main(int argc, const char* argv[])
                     }
                     else if (strieq(cmd,"set")) {
                         CHECKPARAMS(2,2);
-                        set(params.item(1),params.item(2));
+                        setValue(params.item(1),params.item(2),out);
+                        PROGLOG("Changed %s from '%s' to '%s'",params.item(1),out.str(),params.item(2));
                     }
                     else if (strieq(cmd,"get")) {
                         CHECKPARAMS(1,1);
-                        get(params.item(1));
+                        getValue(params.item(1),out);
+                        PROGLOG("Value of %s is: '%s'",params.item(1),out.str());
                     }
                     else if (strieq(cmd,"bget")) {
                         CHECKPARAMS(2,2);

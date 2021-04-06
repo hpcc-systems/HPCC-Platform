@@ -30,8 +30,8 @@ extern DALIADMIN_API void translateToXpath(const char *logicalfile, DfsXmlBranch
 extern DALIADMIN_API void _export_(const char *path, const char *dst, bool safe = false);
 extern DALIADMIN_API void import(const char *path, const char *src, bool add);
 extern DALIADMIN_API void _delete_(const char *path, bool backup);
-extern DALIADMIN_API void set(const char *path, const char *val);
-extern DALIADMIN_API void get(const char *path);
+extern DALIADMIN_API StringBuffer &setValue(const char *path, const char *val, StringBuffer &oldVal);
+extern DALIADMIN_API void getValue(const char *path, StringBuffer& out);
 extern DALIADMIN_API void bget(const char *path, const char *outfn);
 extern DALIADMIN_API void wget(const char *path);
 extern DALIADMIN_API void add(const char *path, const char *val);

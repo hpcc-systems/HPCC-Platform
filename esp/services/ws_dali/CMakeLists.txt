@@ -46,6 +46,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/mp 
          ${HPCC_SOURCE_DIR}/common/thorhelper
          ${HPCC_SOURCE_DIR}/dali/base
+         ${HPCC_SOURCE_DIR}/dali/daliadmin
     )
 
 ADD_DEFINITIONS( -D_USRDLL )
@@ -55,6 +56,7 @@ install ( TARGETS ws_dali RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${
 target_link_libraries ( ws_dali
          jlib
          xmllib
+         daliadminlib
          esphttp
     )
     

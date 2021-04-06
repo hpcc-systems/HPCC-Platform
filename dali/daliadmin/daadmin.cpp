@@ -258,7 +258,7 @@ void _delete_(const char *path,bool backup)
 
 //=============================================================================
 
-void set(const char *path,const char *val)
+StringBuffer &setValue(const char *path,const char *val,StringBuffer &oldVal)
 {
     StringBuffer head;
     StringBuffer tmp;
@@ -266,22 +266,19 @@ void set(const char *path,const char *val)
     Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, daliConnectTimeoutMs);
     if (!conn) {
         UERRLOG("Could not connect to %s",path);
-        return;
+        return oldVal;
     }
     Owned<IPropertyTree> root = conn->getRoot();
-    StringBuffer oldv;
-    StringBuffer newv;
-    root->getProp(tail,oldv);
+    root->getProp(tail,oldVal);
     root->setProp(tail,val);
     conn->commit();
-    root->getProp(tail,newv);
-    OUTLOG("Changed %s from '%s' to '%s'",path,oldv.str(),newv.str());
     conn->close();
+    return oldVal;
 }
 
 //=============================================================================
 
-void get(const char *path)
+void getValue(const char *path,StringBuffer &val)
 {
     StringBuffer head;
     StringBuffer tmp;
@@ -292,9 +289,7 @@ void get(const char *path)
         return;
     }
     Owned<IPropertyTree> root = conn->getRoot();
-    StringBuffer val;
     root->getProp(tail,val);
-    OUTLOG("Value of %s is: '%s'",path,val.str());
     conn->close();
 }
 
