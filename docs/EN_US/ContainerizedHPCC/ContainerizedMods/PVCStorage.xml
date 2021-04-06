@@ -4,7 +4,7 @@
 <chapter id="PVCStorage">
   <title>Storage</title>
 
-  <sect1 id="PVCs">
+  <sect1 id="PVCs" role="nobrk">
     <title>Persistent Storage for a Local Deployment</title>
 
     <para>When running on a single-node test system such as Docker Desktop,
@@ -161,7 +161,7 @@ OUTPUT(allPeople,,'MyData::allPeople',THOR,OVERWRITE);
 
     <para>Beginning with version 7.12.0, new ECL syntax was added to access
     files directly from a storage plane. This is similar to the <emphasis
-    role="bold">file::</emphasis> syntax used to directly reading files from a
+    role="bold">file::</emphasis> syntax used to directly read files from a
     physical machine, typically a landing zone.</para>
 
     <para>The new syntax is:</para>
