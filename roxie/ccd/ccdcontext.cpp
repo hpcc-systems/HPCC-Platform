@@ -2764,7 +2764,10 @@ public:
                 {
                     CriticalBlock b(abortLock);
                     if (!protocol->checkConnection())
+                    {
+                        DBGLOG("Client socket close detected");
                         throw MakeStringException(ROXIE_CLIENT_CLOSED, "Client socket closed");
+                    }
                     lastSocketCheckTime = ticksNow;
                 }
             }

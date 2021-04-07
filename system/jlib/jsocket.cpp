@@ -2125,7 +2125,15 @@ EintrRetry:
         rc = sendto(sock, NULL, 0, 0, &u.sa, ul);
     }
     else {
+#ifdef _WIN32
         rc = send(sock, NULL, 0, SEND_FLAGS);
+
+#else
+        char buffer;
+        rc = recv(sock, &buffer, sizeof(buffer), MSG_PEEK | MSG_DONTWAIT);
+        if (!rc)
+            return false;
+#endif
     }
     if (rc < 0) {
         int err=ERRNO();
@@ -2133,7 +2141,11 @@ EintrRetry:
             LOGERR2(err,7,"EINTR retrying");
             goto EintrRetry;
         }
+#ifdef _WIN32
         else
+#else
+        else if (err!=JSE_WOULDBLOCK)
+#endif
             return false;
     }   
     return true;
