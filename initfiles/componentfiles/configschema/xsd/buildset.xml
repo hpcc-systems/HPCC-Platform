@@ -67,6 +67,7 @@
           <AuthenticateFeature description="Access to cluster topology" path="ClusterTopologyAccess" resource="ClusterTopologyAccess" service="ws_topology"/>
           <AuthenticateFeature description="Access to own workunits" path="OwnWorkunitsAccess" resource="OwnWorkunitsAccess" service="ws_workunits"/>
           <AuthenticateFeature description="Access to others&apos; workunits" path="OthersWorkunitsAccess" resource="OthersWorkunitsAccess" service="ws_workunits"/>
+          <AuthenticateFeature description="Access to deploy workunits" path="DeployWorkunitsAccess" resource="DeployWorkunitsAccess" service="ws_workunits"/>
           <AuthenticateFeature description="Access to ECL direct service" path="EclDirectAccess" resource="EclDirectAccess" service="ecldirect"/>
           <AuthenticateFeature description="Access to ESDL configuration service" path="ESDLConfigAccess" resource="ESDLConfigAccess" service="ws_esdlconfig"/>
           <AuthenticateFeature description="Access to ELK integration service" path="WsELKAccess" resource="WsELKAccess" service="ws_elk"/>

@@ -394,6 +394,11 @@
                          resource="OthersWorkunitsAccess"
                          service="ws_workunits"/>
     <AuthenticateFeature authenticate="Yes"
+                         description="Access to deploy workunits"
+                         path="DeployWorkunitsAccess"
+                         resource="DeployWorkunitsAccess"
+                         service="ws_workunits"/>
+    <AuthenticateFeature authenticate="Yes"
                          description="Access to ESDL configuration service"
                          path="ESDLConfigAccess"
                          resource="ESDLConfigAccess"
@@ -475,6 +480,11 @@
                          description="Access to others&apos; workunits"
                          path="OthersWorkunitsAccess"
                          resource="OthersWorkunitsAccess"
+                         service="ws_sql"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to deploy workunits"
+                         path="DeployWorkunitsAccess"
+                         resource="DeployWorkunitsAccess"
                          service="ws_sql"/>
    </EspBinding>
    @WSSQL_SERVICE_BLOCK_E@
@@ -729,6 +739,10 @@
                          path="OthersWorkunitsAccess"
                          resource="OthersWorkunitsAccess"
                          service="ws_workunits"/>
+    <AuthenticateFeature description="Access to deploy workunits"
+                         path="DeployWorkunitsAccess"
+                         resource="DeployWorkunitsAccess"
+                         service="ws_workunits"/>
     <AuthenticateFeature description="Access to ESDL configuration service"
                          path="ESDLConfigAccess"
                          resource="ESDLConfigAccess"
@@ -833,6 +847,10 @@
     <AuthenticateFeature description="Access to others&apos; workunits"
                          path="OthersWorkunitsAccess"
                          resource="OthersWorkunitsAccess"
+                         service="ws_sql"/>
+    <AuthenticateFeature description="Access to deploy workunits"
+                         path="DeployWorkunitsAccess"
+                         resource="DeployWorkunitsAccess"
                          service="ws_sql"/>
    </Properties>
   </EspService>
@@ -1120,6 +1138,10 @@
      <AuthenticateFeature description="Access to workunits owned by others"
                           path="OthersWorkunitsAccess"
                           resource="OthersWorkunitsAccess"
+                          service="ws_workunits"/>
+     <AuthenticateFeature description="Access to deploy workunits"
+                          path="DeployWorkunitsAccess"
+                          resource="DeployWorkunitsAccess"
                           service="ws_workunits"/>
      <AuthenticateFeature description="Access to ESDL configuration service"
                           path="ESDLConfigAccess"
