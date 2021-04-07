@@ -137,8 +137,18 @@ c) If attributes have different forms in different places then using different m
 
 */
 
+ITypeInfo * defaultIntegralType;
+ITypeInfo * uint4Type;
+ITypeInfo * defaultRealType;
+ITypeInfo * boolType;
+
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
+    boolType = makeBoolType();
+    defaultIntegralType = makeIntType(8, true);
+    uint4Type = makeIntType(4, false);
+    defaultRealType = makeRealType(DEFAULT_REAL_SIZE);
+
     for (unsigned i=0; i < YY_LAST_TOKEN; i++)
         defaultTokenMap[i] = i;
 
@@ -158,6 +168,11 @@ MODULE_EXIT()
     ::Release(alreadyAssignedNestedTag);
     for (unsigned i=0; i < YY_LAST_TOKEN; i++)
         delete [] nestedAttributeMap[i];
+
+    boolType->Release();
+    defaultIntegralType->Release();
+    uint4Type->Release();
+    defaultRealType->Release();
 }
 
 // An experiment in programming style.
@@ -328,7 +343,6 @@ void HqlGram::gatherActiveParameters(HqlExprCopyArray & target)
 HqlGram::HqlGram(IHqlScope * _globalScope, IHqlScope * _containerScope, IFileContents * _text, HqlLookupContext & _ctx, IXmlScope *xmlScope, bool _hasFieldMap, bool loadImplicit)
 : lookupCtx(_ctx)
 {
-    parseConstantText = false;
     init(_globalScope, _containerScope);
     fieldMapUsed = _hasFieldMap;
     if (!lookupCtx.functionCache)
@@ -350,7 +364,30 @@ HqlGram::HqlGram(IHqlScope * _globalScope, IHqlScope * _containerScope, IFileCon
         getImplicitScopes(implicitScopes, lookupCtx.queryRepository(), _containerScope, lookupCtx);
 }
 
-HqlGram::HqlGram(HqlGramCtx & parent, IHqlScope * _containerScope, IFileContents * _text, IXmlScope *xmlScope, bool _parseConstantText)
+
+// Used for parsing a constant expression inside the preprocessor.
+HqlGram::HqlGram(HqlGram & container, IHqlScope * _containerScope, IFileContents * _text, IXmlScope *xmlScope)
+: lookupCtx(container.lookupCtx)
+{
+    containerParser = &container;
+
+    init(container.globalScope, _containerScope);
+    sourcePath.set(container.sourcePath);
+    inSignedModule = container.inSignedModule || _text->isImplicitlySigned();
+    errorHandler = lookupCtx.errs;
+    moduleName = containerScope->queryId();
+
+    lexObject = new HqlLex(this, _text, xmlScope, NULL);
+    lexObject->setLegacyImport(container.getLexer()->hasLegacyImportSemantics());
+    lexObject->setLegacyWhen(container.getLexer()->hasLegacyWhenSemantics());
+    forceResult = true;
+    parsingTemplateAttribute = false;
+    parseConstantText = true;
+    globalImportPending = false;
+}
+
+//Used for parsing members of a forward module
+HqlGram::HqlGram(HqlGramCtx & parent, IHqlScope * _containerScope, IFileContents * _text, IXmlScope *xmlScope)
 : lookupCtx(parent.lookupCtx)
 {
     //This is used for parsing a constant expression inside the preprocessor
@@ -376,7 +413,6 @@ HqlGram::HqlGram(HqlGramCtx & parent, IHqlScope * _containerScope, IFileContents
     lexObject->setLegacyWhen(parent.legacyWhen);
     forceResult = true;
     parsingTemplateAttribute = false;
-    parseConstantText = _parseConstantText;
 }
 
 void HqlGram::saveContext(HqlGramCtx & ctx, bool cloneScopes)
@@ -455,11 +491,6 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
     parseScope.setown(createPrivateScope(_containerScope));
     transformScope = NULL;
 
-    boolType = makeBoolType();
-    defaultIntegralType = makeIntType(8, true);
-    uint4Type = makeIntType(4, false);
-    defaultRealType = makeRealType(DEFAULT_REAL_SIZE);
-
     current_type = NULL;
     curTransform = NULL;
     insideEvaluate = false;
@@ -484,10 +515,6 @@ HqlGram::~HqlGram()
 {
     errorHandler = NULL;
     delete lexObject;
-    boolType->Release();
-    defaultIntegralType->Release();
-    uint4Type->Release();
-    defaultRealType->Release();
 
     cleanCurTransform();
 }                        
@@ -3828,92 +3855,7 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
                 outerScopeAccessDepth--;
         }
 
-        //Slightly strange... The parameters for the current nested object are stored in the previous ActiveScopeInfo record.
-        //This means outerScopeDepth is decremented after looking at the parameters.  It also means we need to increment by
-        //one before we start.
-        //It does mean
-        //export anotherFunction(integer SomeValue2) := SomeValue2 * ^.SomeValue2; Doesn't quite work as expected, but 
-        //it serves the user right for choosing a parameter name that clashes.  Otherwise you'd generally need one more ^ than you'd expect.
-        if (outerScopeAccessDepth)
-            outerScopeAccessDepth++;
-
-        //Also note, if we're inside a template function then we need to record all access to symbols that occur at an outer level
-        IHqlScope * templateScope = NULL;
-        ForEachItemInRev(scopeIdx, defineScopes)
-        {
-            ActiveScopeInfo & cur = defineScopes.item(scopeIdx);
-            if (cur.legacyOnly && !lexObject->hasLegacyImportSemantics())
-                continue;
-
-            if (cur.templateAttrContext)
-                templateScope = cur.templateAttrContext;
-            if (outerScopeAccessDepth == 0)
-            {
-                IHqlExpression * match = cur.queryParameter(searchName);
-                if (match)
-                {
-    //                  DBGLOG("Lookup %s got parameter %s", searchName->getAtomNamePtr(), searchName->getAtomNamePtr());
-                    return LINK(match);
-                }
-            }
-            else
-                outerScopeAccessDepth--;
-
-            if (outerScopeAccessDepth == 0)
-            {
-                IHqlExpression *ret = cur.privateScope->lookupSymbol(searchName, LSFsharedOK, lookupCtx);
-                if (ret)
-                    return recordLookupInTemplateContext(searchName, ret, templateScope);
-
-                if (cur.localScope)
-                {
-                    ret = cur.localScope->lookupSymbol(searchName, LSFsharedOK, lookupCtx);
-                    if (ret)
-                    {
-                        return recordLookupInTemplateContext(searchName, ret, templateScope);
-                    }
-                    if ((cur.localScope == parseScope) && lexObject->hasLegacyImportSemantics())
-                    {
-                        if (searchName->queryLower() == globalScope->queryName())
-                            return recordLookupInTemplateContext(searchName, LINK(globalScope->queryExpression()), templateScope);
-                    }
-                }
-            }
-        }
-
-        //Now look up imports
-        IHqlExpression *ret = lookupParseSymbol(searchName);
-        if (ret)
-            return recordLookupInTemplateContext(searchName, ret, templateScope);
-
-        // finally comes the local scope
-        if (lexObject->hasLegacyImportSemantics() && lower(searchName)==globalScope->queryName())
-            return LINK(recordLookupInTemplateContext(searchName, queryExpression(globalScope), templateScope));
-
-        if (lexObject->hasLegacyImportSemantics())
-        {
-            ForEachItemIn(idx3, implicitScopes)
-            {
-                IHqlScope &plugin = implicitScopes.item(idx3);
-                IHqlExpression *ret = plugin.lookupSymbol(searchName, LSFpublic | getExtraLookupFlags(&plugin), lookupCtx);
-                if (ret)
-                {
-                    recordLookupInTemplateContext(searchName, ret, templateScope);
-                    return ret;
-                }
-            }
-        }
-        ForEachItemIn(idx2, defaultScopes)
-        {
-            IHqlScope &plugin = defaultScopes.item(idx2);
-            IHqlExpression *ret = plugin.lookupSymbol(searchName, LSFpublic|getExtraLookupFlags(&plugin), lookupCtx);
-            if (ret)
-            {
-                recordLookupInTemplateContext(searchName, ret, templateScope);
-                return ret;
-            }
-        }
-        return NULL;
+        return lookupContextSymbol(searchName, errpos, outerScopeAccessDepth);
     }
     catch(IError* error)
     {
@@ -3934,6 +3876,101 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
         reportError(code, errpos, "%s", msg.str());
         return nullptr;
     }
+    return NULL;
+}
+
+
+IHqlExpression *HqlGram::lookupContextSymbol(IIdAtom * searchName, const attribute& errpos, unsigned & scopeAccessDepth)
+{
+    //Slightly strange... The parameters for the current nested object are stored in the previous ActiveScopeInfo record.
+    //This means outerScopeDepth is decremented after looking at the parameters.  It also means we need to increment by
+    //one before we start.
+    //It does mean
+    //export anotherFunction(integer SomeValue2) := SomeValue2 * ^.SomeValue2; Doesn't quite work as expected, but
+    //it serves the user right for choosing a parameter name that clashes.  Otherwise you'd generally need one more ^ than you'd expect.
+    if (scopeAccessDepth)
+        scopeAccessDepth++;
+
+    //Also note, if we're inside a template function then we need to record all access to symbols that occur at an outer level
+    IHqlScope * templateScope = NULL;
+    ForEachItemInRev(scopeIdx, defineScopes)
+    {
+        ActiveScopeInfo & cur = defineScopes.item(scopeIdx);
+        if (cur.legacyOnly && !lexObject->hasLegacyImportSemantics())
+            continue;
+
+        if (cur.templateAttrContext)
+            templateScope = cur.templateAttrContext;
+        if (scopeAccessDepth == 0)
+        {
+            IHqlExpression * match = cur.queryParameter(searchName);
+            if (match)
+            {
+//                  DBGLOG("Lookup %s got parameter %s", searchName->getAtomNamePtr(), searchName->getAtomNamePtr());
+                return LINK(match);
+            }
+        }
+        else
+            scopeAccessDepth--;
+
+        if (scopeAccessDepth == 0)
+        {
+            IHqlExpression *ret = cur.privateScope->lookupSymbol(searchName, LSFsharedOK, lookupCtx);
+            if (ret)
+                return recordLookupInTemplateContext(searchName, ret, templateScope);
+
+            if (cur.localScope)
+            {
+                ret = cur.localScope->lookupSymbol(searchName, LSFsharedOK, lookupCtx);
+                if (ret)
+                {
+                    return recordLookupInTemplateContext(searchName, ret, templateScope);
+                }
+                if ((cur.localScope == parseScope) && lexObject->hasLegacyImportSemantics())
+                {
+                    if (searchName->queryLower() == globalScope->queryName())
+                        return recordLookupInTemplateContext(searchName, LINK(globalScope->queryExpression()), templateScope);
+                }
+            }
+        }
+    }
+
+    //Now look up imports
+    IHqlExpression *ret = lookupParseSymbol(searchName);
+    if (ret)
+        return recordLookupInTemplateContext(searchName, ret, templateScope);
+
+    // finally comes the local scope
+    if (lexObject->hasLegacyImportSemantics() && lower(searchName)==globalScope->queryName())
+        return LINK(recordLookupInTemplateContext(searchName, queryExpression(globalScope), templateScope));
+
+    if (lexObject->hasLegacyImportSemantics())
+    {
+        ForEachItemIn(idx3, implicitScopes)
+        {
+            IHqlScope &plugin = implicitScopes.item(idx3);
+            IHqlExpression *ret = plugin.lookupSymbol(searchName, LSFpublic | getExtraLookupFlags(&plugin), lookupCtx);
+            if (ret)
+            {
+                recordLookupInTemplateContext(searchName, ret, templateScope);
+                return ret;
+            }
+        }
+    }
+    ForEachItemIn(idx2, defaultScopes)
+    {
+        IHqlScope &plugin = defaultScopes.item(idx2);
+        IHqlExpression *ret = plugin.lookupSymbol(searchName, LSFpublic|getExtraLookupFlags(&plugin), lookupCtx);
+        if (ret)
+        {
+            recordLookupInTemplateContext(searchName, ret, templateScope);
+            return ret;
+        }
+    }
+
+    if (containerParser)
+        return containerParser->lookupContextSymbol(searchName, errpos, scopeAccessDepth);
+
     return NULL;
 }
 
@@ -12648,7 +12685,7 @@ bool parseForwardModuleMember(HqlGramCtx & _parent, IHqlScope *scope, IHqlExpres
 {
     //The attribute will be added to the current scope as a side-effect of parsing the attribute.
     IFileContents * contents = forwardSymbol->queryDefinitionText();
-    HqlGram parser(_parent, scope, contents, NULL, false);
+    HqlGram parser(_parent, scope, contents, NULL);
     parser.setExpectedAttribute(forwardSymbol->queryId());
     parser.setAssociateWarnings(true);
     parser.getLexer()->set_yyLineNo(forwardSymbol->getStartLine());
