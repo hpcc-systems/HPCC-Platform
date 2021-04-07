@@ -557,10 +557,15 @@ static const char *ensureSecretDirectory()
     return secretDirectory;
 }
 
+static StringBuffer &buildSecretPath(StringBuffer &path, const char *category, const char * name)
+{
+    return addPathSepChar(path.append(ensureSecretDirectory())).append(category).append(PATHSEPCHAR).append(name).append(PATHSEPCHAR);
+}
+
 static IPropertyTree *loadLocalSecret(const char *category, const char * name)
 {
     StringBuffer path;
-    addPathSepChar(path.append(ensureSecretDirectory())).append(category).append(PATHSEPCHAR).append(name).append(PATHSEPCHAR);
+    buildSecretPath(path, category, name);
     Owned<IDirectoryIterator> entries = createDirectoryIterator(path);
     if (!entries || !entries->first())
         return nullptr;
@@ -727,8 +732,10 @@ void initSecretUdpKey()
     if (udpKeyInitialized)
         return;
 
-#if defined(_CONTAINERIZED) && defined(_USE_OPENSSL)
-    BIO *in = BIO_new_file("/opt/HPCCSystems/secrets/certificates/udp/tls.key", "r");
+//can find alternatives for old openssl in the future if necessary
+#if defined(_USE_OPENSSL) && (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+    StringBuffer path;
+    BIO *in = BIO_new_file(buildSecretPath(path, "certificates", "udp").append("tls.key"), "r");
     if (in == nullptr)
         return;
     EC_KEY *eckey = PEM_read_bio_ECPrivateKey(in, nullptr, nullptr, nullptr);
@@ -769,7 +776,7 @@ IPropertyTree *queryMtlsSecretInfo(const char *name)
     StringBuffer filepath;
     StringBuffer secretpath;
 
-    addPathSepChar(secretpath.append(ensureSecretDirectory())).append("certificates").append(PATHSEPCHAR).append(name).append(PATHSEPCHAR);
+    buildSecretPath(secretpath, "certificates", name);
 
     filepath.set(secretpath).append("tls.crt");
     if (!checkFileExists(filepath))
