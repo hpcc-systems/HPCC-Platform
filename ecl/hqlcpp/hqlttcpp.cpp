@@ -11310,6 +11310,24 @@ IHqlExpression * AnnotationNormalizerTransformer::createTransformed(IHqlExpressi
     return queryLocationIndependentExtra(body)->cloneAnnotations(transformed);
 }
 
+void AnnotationNormalizerTransformer::setTransformed(IHqlExpression * expr, IHqlExpression * transformed)
+{
+    NewHqlTransformer::setTransformed(expr, transformed);
+
+    //All derived expressions map to the same transformed expressions => override the default behaviour in
+    //NewHqlTransformer::transform which uses transformed->queryBody(true) for body
+    IHqlExpression * body = expr->queryBody(true);
+    while (body != expr)
+    {
+        //If child body is already mapped then don't remap it, otherwise tree can become inconsistent
+        if (queryAlreadyTransformed(body))
+            break;
+        NewHqlTransformer::setTransformed(body, transformed);
+        expr = body;
+        body = body->queryBody(true);
+    }
+}
+
 AnnotationTransformInfo * AnnotationNormalizerTransformer::queryLocationIndependentExtra(IHqlExpression * expr)
 {
     return static_cast<AnnotationTransformInfo *>(queryTransformExtra(queryLocationIndependent(expr)));
