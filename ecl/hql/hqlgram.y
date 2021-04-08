@@ -4183,7 +4183,7 @@ paramDefinition
                         {
                            $$.clear();
                            parser->addListElement(createAttribute(noTypeAtom));
-                           parser->addParameter($1, $1.getId(), LINK(parser->defaultIntegralType), $2.getExpr());
+                           parser->addParameter($1, $1.getId(), LINK(defaultIntegralType), $2.getExpr());
                         }
     | anyFunction defvalue
                         {
@@ -4191,7 +4191,7 @@ paramDefinition
                            $$.clear();
                            parser->addListElement(createAttribute(noTypeAtom));
                            OwnedHqlExpr func = $1.getExpr();
-                           parser->addParameter($1, func->queryId(), LINK(parser->defaultIntegralType), $2.getExpr());
+                           parser->addParameter($1, func->queryId(), LINK(defaultIntegralType), $2.getExpr());
                         }
     | ANY DATASET knownOrUnknownId
                         {
@@ -5098,7 +5098,7 @@ defaultValue
 setType
     : SET                   
                         {
-                            $$.setType(makeSetType(LINK(parser->defaultIntegralType)));
+                            $$.setType(makeSetType(LINK(defaultIntegralType)));
                         }
     | SET OF ANY            
                         {
@@ -5225,7 +5225,7 @@ simpleType
                             if (!type)
                             {
                                 parser->reportError(ERR_TYPEOF_ILLOPERAND, $3, "Illegal operand for TYPEOF");
-                                type = LINK(parser->defaultIntegralType);
+                                type = LINK(defaultIntegralType);
                             }
                             else
                             {
@@ -5843,7 +5843,7 @@ expr
                             parser->normalizeExpression($1);
                             parser->normalizeExpression($3);
                             if (!isDecimalType($1.queryExprType()) && !isDecimalType($3.queryExprType()))
-                                parser->ensureType($1, parser->defaultRealType);
+                                parser->ensureType($1, defaultRealType);
                             $$.setExpr(parser->createArithmeticOp(no_div, $1, $3), $1);
                         }
     | expr '%' expr     {
@@ -6059,11 +6059,11 @@ primexpr1
                         {   $$.inherit($2); }
     | COUNT '(' startTopFilter aggregateFlags ')' endTopFilter
                         {
-                            $$.setExpr(createValue(no_count, LINK(parser->defaultIntegralType), { $3.getExpr(), $4.getExpr() }, true));
+                            $$.setExpr(createValue(no_count, LINK(defaultIntegralType), { $3.getExpr(), $4.getExpr() }, true));
                         }
     | COUNT '(' GROUP optExtraFilter ')'
                         {
-                            $$.setExpr(createValue(no_countgroup, LINK(parser->defaultIntegralType), $4.getExpr()));
+                            $$.setExpr(createValue(no_countgroup, LINK(defaultIntegralType), $4.getExpr()));
                         }
     | COUNT '(' SORTLIST_ID ')'
                         {
@@ -6074,7 +6074,7 @@ primexpr1
                         }
     | COUNT '(' dictionary ')'
                         {
-                            $$.setExpr(createValue(no_countdict, LINK(parser->defaultIntegralType), $3.getExpr()));
+                            $$.setExpr(createValue(no_countdict, LINK(defaultIntegralType), $3.getExpr()));
                         }
     | CHOOSE '(' expression ',' chooseList ')'
                         {
@@ -6154,7 +6154,7 @@ primexpr1
                             HqlExprArray sortItems;
                             parser->endList(sortItems);
                             IHqlExpression * hash = parser->processSortList($4, no_hash, NULL, sortItems, NULL, NULL);
-                            $$.setExpr(createValue(no_hash, LINK(parser->uint4Type), hash));
+                            $$.setExpr(createValue(no_hash, LINK(uint4Type), hash));
                         }
     | HASH32 '(' beginList sortList ')'
                         {
@@ -6182,11 +6182,11 @@ primexpr1
                             HqlExprArray sortItems;
                             parser->endList(sortItems);
                             IHqlExpression * hash = parser->processSortList($4, no_hash, NULL, sortItems, NULL, NULL);
-                            $$.setExpr(createValue(no_crc, LINK(parser->uint4Type), hash), $1);
+                            $$.setExpr(createValue(no_crc, LINK(uint4Type), hash), $1);
                         }
     | ECLCRC '(' goodObject ')'
                         {
-                            $$.setExpr(createValue(no_eclcrc, LINK(parser->uint4Type), createAttribute(_original_Atom, $3.getExpr())), $1);
+                            $$.setExpr(createValue(no_eclcrc, LINK(uint4Type), createAttribute(_original_Atom, $3.getExpr())), $1);
                         }
     | ECLCRC '(' goodObject ',' PARSE ')'
                         {
@@ -6269,7 +6269,7 @@ primexpr1
                         }
     | RANDOM '(' ')'
                         {
-                            $$.setExpr(createValue(no_random, LINK(parser->uint4Type), parser->createVolatileId()));
+                            $$.setExpr(createValue(no_random, LINK(uint4Type), parser->createVolatileId()));
                         }
     | ROUND '(' expression ')'
                         {
@@ -6303,7 +6303,7 @@ primexpr1
     | LENGTH '(' expression ')'
                         {
                             parser->normalizeExpression($3, type_stringorunicode, false);
-                            $$.setExpr(createValue(no_charlen, LINK(parser->uint4Type), $3.getExpr()));
+                            $$.setExpr(createValue(no_charlen, LINK(uint4Type), $3.getExpr()));
                         }
     | TRIM '(' expression optTrimFlags ')'
                         {
@@ -6566,11 +6566,11 @@ primexpr1
                         }
     | WHICH '(' optCondList ')'
                         {
-                            $$.setExpr(createValue(no_which, LINK(parser->uint4Type), { $3.getExpr() }, true), $1);
+                            $$.setExpr(createValue(no_which, LINK(uint4Type), { $3.getExpr() }, true), $1);
                         }
     | REJECTED '(' optCondList ')'
                         {
-                            $$.setExpr(createValue(no_rejected, LINK(parser->uint4Type), { $3.getExpr() }, true), $1);
+                            $$.setExpr(createValue(no_rejected, LINK(uint4Type), { $3.getExpr() }, true), $1);
                         }
     | SIZEOF '(' sizeof_type_target optMaxMin ')'
                         {
@@ -6580,7 +6580,7 @@ primexpr1
                                 parser->checkSizeof(type,$1);
 
                             //rather easier to create a dummy argument with the correct type.
-                            $$.setExpr(createValue(no_sizeof, LINK(parser->uint4Type), createValue(no_none, type), max.getClear()));
+                            $$.setExpr(createValue(no_sizeof, LINK(uint4Type), createValue(no_none, type), max.getClear()));
                         }
     | SIZEOF '(' sizeof_expr_target optMaxMin ')'
                         {
@@ -6588,7 +6588,7 @@ primexpr1
                             OwnedHqlExpr max = $4.getExpr();
                             if (!max)
                                 parser->checkSizeof(arg,$1);
-                            $$.setExpr(createValue(no_sizeof, LINK(parser->uint4Type), arg.getClear(), max.getClear()));
+                            $$.setExpr(createValue(no_sizeof, LINK(uint4Type), arg.getClear(), max.getClear()));
                         }
     | SIZEOF '(' error ')'
                         {
@@ -6599,13 +6599,13 @@ primexpr1
                         {
                             parser->normalizeExpression($3);
                             parser->normalizeExpression($5, type_set, false);
-                            $$.setExpr(createValue(no_rank, LINK(parser->uint4Type), $3.getExpr(), $5.getExpr(), $6.getExpr()));
+                            $$.setExpr(createValue(no_rank, LINK(uint4Type), $3.getExpr(), $5.getExpr(), $6.getExpr()));
                         }
     | RANKED '(' expression ',' expression optAscDesc')'
                         {
                             parser->normalizeExpression($3);
                             parser->normalizeExpression($5, type_set, false);
-                            $$.setExpr(createValue(no_ranked, LINK(parser->uint4Type), $3.getExpr(), $5.getExpr(), $6.getExpr()));
+                            $$.setExpr(createValue(no_ranked, LINK(uint4Type), $3.getExpr(), $5.getExpr(), $6.getExpr()));
                         }
     | COUNT             {
                             $$.setExpr(parser->getActiveCounter($1));
@@ -6763,11 +6763,11 @@ primexpr1
                         }
     | MATCHLENGTH '(' patternReference ')'
                         {
-                            $$.setExpr(createValue(no_matchlength, LINK(parser->uint4Type), $3.getExpr())); //, parser->createUniqueId()));
+                            $$.setExpr(createValue(no_matchlength, LINK(uint4Type), $3.getExpr())); //, parser->createUniqueId()));
                         }
     | MATCHPOSITION '(' patternReference ')'
                         {
-                            $$.setExpr(createValue(no_matchposition, LINK(parser->uint4Type), $3.getExpr())); //, parser->createUniqueId()));
+                            $$.setExpr(createValue(no_matchposition, LINK(uint4Type), $3.getExpr())); //, parser->createUniqueId()));
                         }
     | MATCHED
                         {
@@ -6787,11 +6787,11 @@ primexpr1
                         }
     | MATCHLENGTH
                         {
-                            $$.setExpr(createValue(no_matchlength, LINK(parser->uint4Type))); //, parser->createUniqueId()));
+                            $$.setExpr(createValue(no_matchlength, LINK(uint4Type))); //, parser->createUniqueId()));
                         }
     | MATCHPOSITION
                         {
-                            $$.setExpr(createValue(no_matchposition, LINK(parser->uint4Type))); //, parser->createUniqueId()));
+                            $$.setExpr(createValue(no_matchposition, LINK(uint4Type))); //, parser->createUniqueId()));
                         }
     | MATCHED '(' ')'
                         {
@@ -6811,11 +6811,11 @@ primexpr1
                         }
     | MATCHLENGTH '(' ')'
                         {
-                            $$.setExpr(createValue(no_matchlength, LINK(parser->uint4Type))); //, parser->createUniqueId()));
+                            $$.setExpr(createValue(no_matchlength, LINK(uint4Type))); //, parser->createUniqueId()));
                         }
     | MATCHPOSITION '(' ')'
                         {
-                            $$.setExpr(createValue(no_matchposition, LINK(parser->uint4Type))); //, parser->createUniqueId()));
+                            $$.setExpr(createValue(no_matchposition, LINK(uint4Type))); //, parser->createUniqueId()));
                         }
     | MATCHTEXT '(' expression ')'
                         {
@@ -6984,7 +6984,7 @@ primexpr1
     | COUNT '(' expressionList ')'
                         {
                             OwnedHqlExpr list = parser->createListFromExpressionList($3);
-                            $$.setExpr(createValue(no_countlist, LINK(parser->defaultIntegralType), LINK(list)));
+                            $$.setExpr(createValue(no_countlist, LINK(defaultIntegralType), LINK(list)));
                             $$.setPosition($1);
                         }
     | EXISTS '(' expressionList ')'
@@ -7666,7 +7666,7 @@ simpleDataRow
                                 OwnedHqlExpr selSeq = parser->getSelectorSequence();
                                 OwnedHqlExpr selector = createSelector(no_right, right, selSeq);
                                 OwnedHqlExpr rows = parser->resolveRows($1, selector);
-                                OwnedHqlExpr index = createConstant(createIntValue($1.getInt(), LINK(parser->defaultIntegralType)));
+                                OwnedHqlExpr index = createConstant(createIntValue($1.getInt(), LINK(defaultIntegralType)));
                                 $$.setExpr(createRow(no_selectnth, rows.getClear(), index.getClear()), $1);
                             }
                             else
@@ -8420,7 +8420,7 @@ simpleDataSet
                             OwnedHqlExpr fields = parser->processSortList($9, no_distribute, NULL, sortItems, NULL, NULL);
                             HqlExprArray args;
                             unwindChildren(args, fields);
-                            OwnedHqlExpr value = createValue(no_sortpartition, LINK(parser->defaultIntegralType), args);
+                            OwnedHqlExpr value = createValue(no_sortpartition, LINK(defaultIntegralType), args);
                             $$.setExpr(createDataset(no_distribute, { $3.getExpr(), value.getClear(), $11.getExpr() }));
                             $$.setPosition($1);
                         }
@@ -8483,7 +8483,7 @@ simpleDataSet
                             OwnedHqlExpr fields = parser->processSortList($7, no_distribute, NULL, sortItems, NULL, NULL);
                             HqlExprArray args;
                             unwindChildren(args, fields);
-                            OwnedHqlExpr value = createValue(no_sortpartition, LINK(parser->defaultIntegralType), args);
+                            OwnedHqlExpr value = createValue(no_sortpartition, LINK(defaultIntegralType), args);
                             $$.setExpr(createDataset(no_distribute, $3.getExpr(), value.getClear()));
                             $$.setPosition($1);
                         }

@@ -32,7 +32,10 @@ extern jlib_decl IPropertyTree *getSecret(const char *category, const char * nam
 extern jlib_decl bool getSecretKeyValue(MemoryBuffer & result, IPropertyTree *secret, const char * key);
 extern jlib_decl bool getSecretKeyValue(StringBuffer & result, IPropertyTree *secret, const char * key);
 extern jlib_decl bool getSecretValue(StringBuffer & result, const char *category, const char * name, const char * key, bool required);
-extern jlib_decl bool getSecretUdpKey(MemoryAttr &updkey);
+
+extern jlib_decl void initSecretUdpKey();
+extern jlib_decl const MemoryAttr &getSecretUdpKey(bool required);
+
 extern jlib_decl IPropertyTree *queryMtlsSecretInfo(const char *name);
 
 extern jlib_decl  void splitFullUrl(const char *url, bool &https, StringBuffer &user, StringBuffer &password, StringBuffer &host, StringBuffer &port, StringBuffer &fullpath);

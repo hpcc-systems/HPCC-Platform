@@ -76,7 +76,8 @@
 #define VERIFY_EXPR_INTEGRITY
 #endif
 
-//#define TRACK_EXPRESSION        // define this and update isTrackingExpression() to monitor expressions through transforms
+//#define TRACK_EXPRESSION          // define this and update isTrackingExpression() to monitor expressions through transforms
+//#define TRACK_MAX_ANNOTATIONS     // define this to investigate very heavily nested annotations
 
 #if defined(SEARCH_NAME1) || defined(SEARCH_NAME2)
 static void debugMatchedName() {}
@@ -7065,6 +7066,22 @@ StringBuffer &CHqlRecord::getECLType(StringBuffer & out)
     return out.append(queryTypeName());
 }
 
+#ifdef TRACK_MAX_ANNOTATIONS
+static unsigned numAnnotations(IHqlExpression * expr)
+{
+    unsigned depth = 0;
+    for (;;)
+    {
+        IHqlExpression * body = expr->queryBody(true);
+        if (body == expr)
+            return depth;
+        expr = body;
+        depth++;
+    }
+}
+static unsigned maxAnnotations = 5;
+#endif
+
 //==============================================================================================================
 CHqlAnnotation::CHqlAnnotation(IHqlExpression * _body)
 : CHqlExpression(_body ? _body->getOperator() : no_nobody)
@@ -7072,6 +7089,14 @@ CHqlAnnotation::CHqlAnnotation(IHqlExpression * _body)
     body = _body;
     if (!body)
         body = LINK(cachedNoBody);
+#ifdef TRACK_MAX_ANNOTATIONS
+    if (numAnnotations(body) > maxAnnotations)
+    {
+        maxAnnotations = numAnnotations(body);
+        printf("---------------- depth %u --------------\n", maxAnnotations);
+        EclIR::dump_ir(body);
+    }
+#endif
 }
 
 CHqlAnnotation::~CHqlAnnotation()
@@ -11652,9 +11677,13 @@ inline IHqlExpression * createCallExpression(IHqlExpression * funcdef, HqlExprAr
     IHqlExpression * body = funcdef->queryBody(true);
     if (funcdef != body)
     {
-        if (funcdef->getAnnotationKind() != annotate_symbol)
+        annotate_kind annotationKind = funcdef->getAnnotationKind();
+        if (annotationKind != annotate_symbol)
         {
             OwnedHqlExpr call = createCallExpression(body, resolvedActuals);
+            //MORE: Probably only interested in warnings, possibly locations
+            if (annotationKind == annotate_javadoc)
+                return call.getClear();
             return funcdef->cloneAnnotation(call);
         }
 
@@ -11870,7 +11899,11 @@ protected:
                     HqlDummyLookupContext dummyctx(ctx.errors);
                     IHqlScope * newScope = newModule->queryScope();
                     if (newScope)
-                        return newScope->lookupSymbol(selectedName, makeLookupFlags(true, expr->hasAttribute(ignoreBaseAtom), false), dummyctx);
+                    {
+                        OwnedHqlExpr match = newScope->lookupSymbol(selectedName, makeLookupFlags(true, expr->hasAttribute(ignoreBaseAtom), false), dummyctx);
+                        //This will return a named symbol and be wrapped in a named symbol.  Return body to avoid duplication.
+                        return LINK(match->queryBody(true));
+                    }
                     return ::replaceChild(expr, 1, newModule);
                 }
                 break;

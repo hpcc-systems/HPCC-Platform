@@ -76,7 +76,7 @@ else
     if echo "${line}" | egrep -q 'missing$'; then
       let "missingDeps++"
     fi
-  done < <(helm dependency list ${scriptdir}/../helm/hpcc)
+  done < <(helm dependency list ${scriptdir}/../helm/hpcc | grep -v WARNING)
   if [[ ${missingDeps} -gt 0 ]]; then
     echo "Some of the chart dependencies are missing."
     echo "Either issue a 'helm dependency update ${scriptdir}/../helm/hpcc' to fetch them,"

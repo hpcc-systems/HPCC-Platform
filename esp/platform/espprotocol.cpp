@@ -476,6 +476,8 @@ IPropertyTree *CEspBinding::addNavException(IPropertyTree &folder, const char *m
 
 void CEspBinding::getNavigationData(IEspContext &context, IPropertyTree & data)
 {
+    if (isDynamicBinding() && !isBound())
+        return;
     IEspWsdlSections *wsdl = dynamic_cast<IEspWsdlSections *>(this);
     if (wsdl)
     {

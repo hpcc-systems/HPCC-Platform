@@ -519,9 +519,7 @@ public:
                 if (condLoopCounter)
                     boundGraph->prepareCounterResult(*this, results, condLoopCounter, 0);
                 sendLoopingCount(loopCounter, 0);
-                size32_t parentExtractSz;
-                const byte *parentExtract = queryGraph().queryParentExtract(parentExtractSz);
-                boundGraph->queryGraph()->executeChild(parentExtractSz, parentExtract, results, loopResults);
+                boundGraph->queryGraph()->executeChild(extractBuilder.size(), extractBuilder.getbytes(), results, loopResults);
             }
             int iNumResults = loopResults->count();
             Owned<IThorResult> finalResult = loopResults->getResult(iNumResults-1); //Get the last result, which isnt necessarily 'maxIterations'

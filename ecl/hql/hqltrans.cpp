@@ -582,15 +582,6 @@ bool HqlTransformerBase::transformScope(HqlExprArray & newSymbols, IHqlScope * s
 }
 
 
-bool HqlTransformerBase::transformScope(IHqlScope * newScope, IHqlScope * oldScope)
-{
-    HqlExprArray newSymbols;
-    bool same = transformScope(newSymbols, oldScope);
-    insertScopeSymbols(newScope, newSymbols);
-    return same;
-}
-
-
 IHqlExpression * HqlTransformerBase::transformScope(IHqlExpression * expr)
 {
     IHqlScope * scope = expr->queryScope();
@@ -1011,7 +1002,11 @@ IHqlExpression * QuickHqlTransformer::createTransformedBody(IHqlExpression * exp
                 HqlDummyLookupContext dummyctx(errors);
                 IHqlScope * newScope = newModule->queryScope();
                 if (newScope)
-                    return newScope->lookupSymbol(selectedName, makeLookupFlags(true, expr->hasAttribute(ignoreBaseAtom), false), dummyctx);
+                {
+                    OwnedHqlExpr match = newScope->lookupSymbol(selectedName, makeLookupFlags(true, expr->hasAttribute(ignoreBaseAtom), false), dummyctx);
+                    //This will return a named symbol and be wrapped in a named symbol.  Return body to avoid duplication.
+                    return LINK(match->queryBody(true));
+                }
             }
             break;
         }

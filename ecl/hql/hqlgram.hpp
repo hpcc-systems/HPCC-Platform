@@ -38,6 +38,12 @@
 #define REC_FLD_ERR_STR "Need to supply a value for field '%s'"
 #define ERR_WRONGSCOPING_ERR_STR "Value for field '%s' cannot be computed in this scope"
 
+//Not exported from hql.so
+extern ITypeInfo * defaultIntegralType;
+extern ITypeInfo * uint4Type;
+extern ITypeInfo * defaultRealType;
+extern ITypeInfo * boolType;
+
 //The following flags control what processing is applied when the lexer matches a particular token.  Should
 //it set up the associated type/expression, or should it only return the token type.
 //Macro gathering and other processing only care about the span of the matched token, not the the meaning.
@@ -425,7 +431,8 @@ class HqlGram : implements IErrorReceiver, public CInterface
     friend int eclyyparse(HqlGram * parser);
 
 public:
-    HqlGram(HqlGramCtx &parent, IHqlScope * containerScope, IFileContents * text, IXmlScope *xmlScope, bool _parseConstantText);
+    HqlGram(HqlGram & container, IHqlScope * containerScope, IFileContents * text, IXmlScope *xmlScope); // parse a constant expression
+    HqlGram(HqlGramCtx &parent, IHqlScope * containerScope, IFileContents * text, IXmlScope *xmlScope);  // parse a forward declaration
     HqlGram(IHqlScope * _globalScope, IHqlScope * _containerScope, IFileContents * text, HqlLookupContext & _ctx, IXmlScope *xmlScope, bool _hasFieldMap, bool loadImplicit);
     virtual ~HqlGram();
     IMPLEMENT_IINTERFACE
@@ -852,6 +859,7 @@ protected:
     IHqlExpression * mapAlienArg(IHqlSimpleScope * scope, IHqlExpression * expr);
     ITypeInfo * mapAlienType(IHqlSimpleScope * scope, ITypeInfo * type, const attribute & errpos);
     IHqlExpression * lookupParseSymbol(IIdAtom * searchName);
+    IHqlExpression * lookupContextSymbol(IIdAtom * searchName, const attribute& errpos, unsigned & scopeAccessDepth);
 
     void disableError() { errorDisabled = true; }
     void enableError() { errorDisabled = false; }
@@ -940,13 +948,14 @@ protected:
     bool forceResult;
     bool associateWarnings;
     bool isQuery;
-    bool parseConstantText;
+    bool parseConstantText = false;
     bool expandingMacroPosition;
     bool inSignedModule;
     bool globalImportPending = false;
     OwnedHqlExpr gpgSignature;
 
     IErrorArray pendingWarnings;
+    HqlGram * containerParser = nullptr;
     Linked<ISourcePath> sourcePath;
     IIdAtom * moduleName;
     IIdAtom * current_id;
@@ -982,10 +991,6 @@ protected:
     IHqlExpression *curTransform;
     OwnedHqlExpr curTransformRecord;
     Owned<SelfReferenceReplacer> curSelfReplacer;
-    ITypeInfo * defaultIntegralType;
-    ITypeInfo * uint4Type;
-    ITypeInfo * defaultRealType;
-    ITypeInfo * boolType;
     HqlScopeArray defaultScopes;
     HqlScopeArray implicitScopes;
     PointerArray savedType;

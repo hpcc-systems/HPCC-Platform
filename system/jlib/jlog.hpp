@@ -63,7 +63,7 @@ typedef enum
     MSGCLS_warning     = 0x04, // Warnings
     MSGCLS_information = 0x08, // Config, environmental and internal status  info
     MSGCLS_progress    = 0x10, // Progress of workunits. Status of file operations
-    MSGCLS_legacy      = 0x20, // Depreciated, TODO: remove
+    MSGCLS_metric      = 0x20, // A metric line
     MSGCLS_addid       = 0x40, // Internal use within log system
     MSGCLS_removeid    = 0x80, // Internal use within log system
     MSGCLS_all         = 0xFF  // Use as a filter to select all messages
@@ -191,8 +191,8 @@ inline const char * LogMsgClassToVarString(LogMsgClass msgClass)
         return("Information");
     case MSGCLS_progress:
         return("Progress");
-    case MSGCLS_legacy:
-        return("Legacy");
+    case MSGCLS_metric:
+        return("Metric");
     default:
         return("UNKNOWN");
     }
@@ -212,6 +212,8 @@ inline const char * LogMsgClassToFixString(LogMsgClass msgClass)
         return("INF ");
     case MSGCLS_progress:
         return("PRO ");
+    case MSGCLS_metric:
+        return("MET ");
     default:
         return("UNK ");
     }
@@ -229,6 +231,8 @@ inline unsigned LogMsgClassFromAbbrev(char const * abbrev)
         return MSGCLS_information;
     if(strnicmp(abbrev, "PRO", 3)==0)
         return MSGCLS_progress;
+    if(strnicmp(abbrev, "MET", 3)==0)
+        return MSGCLS_metric;
     if(strnicmp(abbrev, "ALL", 3)==0)
         return MSGCLS_all;
     return 0;

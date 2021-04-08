@@ -386,7 +386,7 @@ protected:
 //amount of memory.
 //
 //The nodes with significant number of instances are (no_assign, no_select and annotations).  
-//One further possibilitiy is to add a CHqlAssignExpression which could also remove the tables and type. 
+//One further possibility is to add a CHqlAssignExpression which could also remove the tables and type.
 //If any more class splitting is contemplated it would be worth revisiting in terms of policies.
 
 //This class calculates which tables the expression references to ensure it is evaluated in the correct conext.

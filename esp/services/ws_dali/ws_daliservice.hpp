@@ -26,6 +26,7 @@ class CWSDaliEx : public CWSDali
     StringAttr espProcess;
     std::atomic<bool> daliDetached{false};
 
+    void checkAccess(IEspContext& context);
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -47,6 +48,8 @@ public:
     }
 
     virtual void init(IPropertyTree* cfg, const char* process, const char* service) override;
+    virtual bool onSetValue(IEspContext& context, IEspSetValueRequest& req, IEspValueResponse& resp) override;
+    virtual bool onGetValue(IEspContext& context, IEspGetValueRequest& req, IEspValueResponse& resp) override;
 };
 
 class CWSDaliSoapBindingEx : public CWSDaliSoapBinding

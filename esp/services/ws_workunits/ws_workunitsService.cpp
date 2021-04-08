@@ -61,6 +61,7 @@
 
 #define ESP_WORKUNIT_DIR "workunits/"
 static constexpr const char* zipFolder = "tempzipfiles" PATHSEPSTR;
+static const char* deployWorkunitsAccess = "DeployWorkunitsAccess";
 
 #define WU_SDS_LOCK_TIMEOUT (5*60*1000) // 5 mins
 const unsigned CHECK_QUERY_STATUS_THREAD_POOL_SIZE = 25;
@@ -4802,7 +4803,7 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
     const char *type = skipCompressedTypeQualifier(req.getObjType());
     try
     {
-        ensureWsCreateWorkunitAccess(context);
+        context.ensureFeatureAccess(deployWorkunitsAccess, SecAccess_Full, ECLWATCH_ECL_WU_ACCESS_DENIED, "WsWorkunits::WUDeployWorkunit: Permission denied.");
 
         if (!isEmptyString(req.getCluster()))
             validateTargetName(req.getCluster());

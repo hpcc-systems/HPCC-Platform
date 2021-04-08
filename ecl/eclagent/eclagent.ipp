@@ -37,7 +37,6 @@
 
 #define MAX_EDGEDATA_LENGTH 30000
 #define MAX_HEX_SIZE 500
-#define DEFAULT_PERSIST_COPIES (-1)
 
 class EclGraph;
 typedef unsigned __int64 graphid_t;
@@ -262,17 +261,6 @@ class EclAgent;
 
 class EclAgentWorkflowMachine : public WorkflowMachine
 {
-private:
-    class PersistVersion : public CInterface
-    {
-    public:
-        PersistVersion(char const * _logicalName, unsigned _eclCRC, unsigned __int64 _allCRC, bool _isFile) : logicalName(_logicalName), eclCRC(_eclCRC), allCRC(_allCRC), isFile(_isFile) {}
-        StringAttr logicalName;
-        unsigned eclCRC;
-        unsigned __int64 allCRC;
-        bool isFile;
-    };
-
 public:
     EclAgentWorkflowMachine(EclAgent & _agent);
     void returnPersistVersion(char const * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile)
@@ -281,21 +269,28 @@ public:
     }
 
 protected:
-    virtual void begin();
+    virtual void begin() override;
+    virtual IRemoteConnection *startPersist(const char * logicalName) override;
+    virtual void finishPersist(const char * persistName, IRemoteConnection *persistLock) override;
+    virtual void deleteLRUPersists(const char * logicalName, unsigned keep) override;
+    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC) override;
+    virtual bool checkFreezePersists(const char *logicalName, unsigned eclCRC) override;
+    virtual bool isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntimeWorkflowItem & item, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile) override;
+    virtual void checkPersistSupported() override;
+    virtual bool isPersistAlreadyLocked(const char * logicalName) override;
+    virtual bool getParallelFlag() const override;
+    virtual unsigned getThreadNumFlag() const override;
 
-    virtual bool getParallelFlag() const;
-    virtual unsigned getThreadNumFlag() const;
-
-    virtual void end();
-    virtual void schedulingStart();
-    virtual bool schedulingPull();
-    virtual bool schedulingPullStop();
-    virtual void reportContingencyFailure(char const * type, IException * e);
-    virtual void checkForAbort(unsigned wfid, IException * handling);
-    virtual void doExecutePersistItem(IRuntimeWorkflowItem & item);
-    virtual void doExecuteCriticalItem(IRuntimeWorkflowItem & item);
-    virtual bool getPersistTime(time_t & when, IRuntimeWorkflowItem & item);
-    virtual void noteTiming(unsigned wfid, timestamp_type startTime, stat_type elapsedNs);
+    virtual void end() override;
+    virtual void schedulingStart() override;
+    virtual bool schedulingPull() override;
+    virtual bool schedulingPullStop() override;
+    virtual void reportContingencyFailure(char const * type, IException * e) override;
+    virtual void checkForAbort(unsigned wfid, IException * handling) override;
+    virtual void doExecutePersistItem(IRuntimeWorkflowItem & item) override;
+    virtual void doExecuteCriticalItem(IRuntimeWorkflowItem & item) override;
+    virtual bool getPersistTime(time_t & when, IRuntimeWorkflowItem & item) override;
+    virtual void noteTiming(unsigned wfid, timestamp_type startTime, stat_type elapsedNs) override;
 
 private:
     void prelockPersists();
@@ -309,7 +304,6 @@ private:
     IRemoteConnection * obtainCriticalLock(const char *name);
     void releaseCriticalLock(IRemoteConnection *r);
     Owned<IWorkflowScheduleConnection> wfconn;
-    Owned<PersistVersion> persist;
     bool persistsPrelocked;
     MapStringToMyClass<IRemoteConnection> persistCache;
 };

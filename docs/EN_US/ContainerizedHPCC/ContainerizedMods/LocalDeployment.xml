@@ -7,7 +7,7 @@
   <para>While there are many ways to install a local single node HPCC Systems
   Platform, this section focuses on using Docker Desktop.</para>
 
-  <sect1 id="prereq">
+  <sect1 id="prereq" role="nobrk">
     <title>Prerequisites</title>
 
     <itemizedlist>
@@ -58,12 +58,12 @@
       </listitem>
 
       <listitem>
-        <para>Install Helm </para>
+        <para>Install Helm</para>
       </listitem>
     </itemizedlist>
   </sect1>
 
-  <sect1 id="addrepo">
+  <sect1 id="addrepo" role="nobrk">
     <title>Add a repository</title>
 
     <para>To use the HPCC Systems helm chart, you must add it to the helm
@@ -99,17 +99,22 @@ NOTES:
 Thank you for installing the HPCC chart.
 
 This chart has defined the following HPCC components:
-  dali.mydali
-  eclagent.hthor
-  eclagent.roxie-workunit
-  eclccserver.myeclccserver
-  esp.eclwatch
-  esp.eclservices
-  esp.eclqueries
-  esp.esdl-sandbox
-  esp.sql2ecl
-  roxie.roxie
-  thor.thor</programlisting></para>
+dali.mydali
+dfuserver.dfuserver
+eclagent.hthor
+eclagent.roxie-workunit
+eclccserver.myeclccserver
+esp.eclwatch
+esp.eclservices
+esp.eclqueries
+esp.esdl-sandbox
+esp.sql2ecl
+roxie.roxie
+thor.thor
+sasha.dfurecovery-archiver
+sasha.dfuwu-archiver
+sasha.file-expiry
+sasha.wu-archiver</programlisting></para>
 
     <para><emphasis role="bold">To check status:</emphasis></para>
 
