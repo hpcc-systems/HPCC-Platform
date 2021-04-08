@@ -659,7 +659,8 @@ public:
         SecAccessFlags perms = SecAccess_None;
         if(m_acilist.length() == 0)
         {
-            perm = SecAccess_Unavailable;
+            resource.setAccessFlags(SecAccess_Unavailable);
+            return true;
         }
         else
         {
