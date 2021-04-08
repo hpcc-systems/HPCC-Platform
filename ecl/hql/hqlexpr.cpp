@@ -11677,9 +11677,13 @@ inline IHqlExpression * createCallExpression(IHqlExpression * funcdef, HqlExprAr
     IHqlExpression * body = funcdef->queryBody(true);
     if (funcdef != body)
     {
-        if (funcdef->getAnnotationKind() != annotate_symbol)
+        annotate_kind annotationKind = funcdef->getAnnotationKind();
+        if (annotationKind != annotate_symbol)
         {
             OwnedHqlExpr call = createCallExpression(body, resolvedActuals);
+            //MORE: Probably only interested in warnings, possibly locations
+            if (annotationKind == annotate_javadoc)
+                return call.getClear();
             return funcdef->cloneAnnotation(call);
         }
 
