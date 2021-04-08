@@ -230,11 +230,15 @@ static void doSetCompilerPath(const char * path, const char * includes, const ch
 class CCompilerThreadParam : public CInterface
 {
 public:
-    CCompilerThreadParam(const StringBuffer & _cmdline, Semaphore & _finishedCompiling, const StringBuffer & _logfile) : cmdline(_cmdline), logfile(_logfile), finishedCompiling(_finishedCompiling) {};
+    CCompilerThreadParam(const StringBuffer & _cmdline, Semaphore & _finishedCompiling, const StringBuffer & _logfile, StringBuffer &_batchOutText, bool _describeOnly)
+    : cmdline(_cmdline), logfile(_logfile), finishedCompiling(_finishedCompiling), batchOutText(_batchOutText), describeOnly(_describeOnly)
+    {};
 
     StringBuffer        cmdline;
     StringBuffer        logfile;
-    Semaphore       &   finishedCompiling;
+    Semaphore          &finishedCompiling;
+    StringBuffer       &batchOutText;
+    bool                describeOnly;
 };
 
 //===========================================================================
@@ -248,9 +252,10 @@ static void setDirectoryPrefix(StringAttr & target, const char * source)
     }
 }
 
-CppCompiler::CppCompiler(const char * _coreName, const char * _sourceDir, const char * _targetDir, unsigned _targetCompiler, bool _verbose)
+CppCompiler::CppCompiler(const char * _coreName, const char * _sourceDir, const char * _targetDir, unsigned _targetCompiler, bool _verbose, const char *_compileBatchOut)
 {
     coreName.set(_coreName);
+    compileBatchOut.set(_compileBatchOut);
     targetCompiler = _targetCompiler;
     createDLL = true;
 #ifdef _DEBUG
@@ -397,7 +402,7 @@ bool CppCompiler::compile()
 
     TIME_SECTION(!verbose ? NULL : onlyCompile ? "compile" : "compile/link");
 
-    Owned<IThreadPool> pool = createThreadPool("CCompilerWorker", this, this, maxCompileThreads?maxCompileThreads:1, INFINITE);
+    Owned<IThreadPool> pool = createThreadPool("CCompilerWorker", this, this, maxCompileThreads && !reportOnly() ? maxCompileThreads : 1, INFINITE);
     addCompileOption(COMPILE_ONLY[targetCompiler]);
 
     bool ret = false;
@@ -405,6 +410,8 @@ bool CppCompiler::compile()
     int numSubmitted = 0;
     numFailed.store(0);
 
+    if (reportOnly())
+        batchOutText.append("#compile").newline();
     ForEachItemIn(i0, allSources)
     {
         ret = compileFile(pool, allSources.item(i0), allFlags.item(i0), finishedCompiling);
@@ -438,40 +445,52 @@ bool CppCompiler::compile()
     else if (!onlyCompile && !precompileHeader)
         ret = doLink();
 
+    if (reportOnly())
+        batchOutText.append("#cleanup").newline();
     if (!saveTemps && !onlyCompile)
     {
         removeTemporaries();
         StringBuffer temp;
         ForEachItemIn(i2, allSources)
-            remove(getObjectName(temp.clear(), allSources.item(i2)).str());
+            removeTemporary(getObjectName(temp.clear(), allSources.item(i2)).str());
     }
 
-    //Combine logfiles
-    const char* cclog = ccLogPath.get();
-    if(!cclog||!*cclog)
-        cclog = queryCcLogName();
-    Owned <IFile> dstfile = createIFile(cclog);
-    dstfile->remove();
-
-    Owned<IFileIO> dstIO = dstfile->open(IFOwrite);
-    ForEachItemIn(i2, logFiles)
+    if (!reportOnly())
     {
-        Owned <IFile> srcfile = createIFile(logFiles.item(i2));
-        if (srcfile->exists())
-        {
-            dstIO->appendFile(srcfile);
-            srcfile->remove();
-        }
-    }
-
-    //Don't leave lots of blank log files around if the compile was successful
-    bool logIsEmpty = (dstIO->size() == 0);
-    dstIO.clear();
-    if (ret && logIsEmpty)
+        //Combine logfiles
+        const char* cclog = ccLogPath.get();
+        if(!cclog||!*cclog)
+            cclog = queryCcLogName();
+        Owned <IFile> dstfile = createIFile(cclog);
         dstfile->remove();
 
+        Owned<IFileIO> dstIO = dstfile->open(IFOwrite);
+        ForEachItemIn(i2, logFiles)
+        {
+            Owned <IFile> srcfile = createIFile(logFiles.item(i2));
+            if (srcfile->exists())
+            {
+                dstIO->appendFile(srcfile);
+                srcfile->remove();
+            }
+        }
+
+        //Don't leave lots of blank log files around if the compile was successful
+        bool logIsEmpty = (dstIO->size() == 0);
+        dstIO.clear();
+        if (ret && logIsEmpty)
+            dstfile->remove();
+    }
     pool->joinAll(true, 1000);
     return ret;
+}
+
+void CppCompiler::finish()
+{
+    if (reportOnly())
+    {
+        writeLogFile(compileBatchOut, batchOutText);
+    }
 }
 
 bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, const char *flags, Semaphore & finishedCompiling)
@@ -532,7 +551,7 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, const c
     Owned<CCompilerThreadParam> parm;
     if (verbose)
         DBGLOG("%s", expanded.str());
-    parm.setown(new CCompilerThreadParam(expanded, finishedCompiling, logFile));
+    parm.setown(new CCompilerThreadParam(expanded, finishedCompiling, logFile, batchOutText, reportOnly()));
     pool->start(parm.get());
 
     return true;
@@ -701,8 +720,11 @@ bool CppCompiler::doLink()
     outName.append(createDLL ? SharedObjectPrefix : NULL).append(coreName).append(createDLL ? SharedObjectExtension : ProcessExtension);
     cmdline.append(LINK_TARGET[targetCompiler]).append("\"").append(targetDir).append(outName).append("\"");
 
+    if (reportOnly())
+        batchOutText.append("#link").newline();
+
     StringBuffer temp;
-    remove(temp.clear().append(targetDir).append(outName).str());
+    removeTemporary(temp.clear().append(targetDir).append(outName).str());
 
     StringBuffer expanded;
     expandRootDirectory(expanded, cmdline);
@@ -717,7 +739,13 @@ bool CppCompiler::doLink()
     bool ret;
     try
     {
-        ret = invoke_program(expanded.str(), runcode, true, logFile, nullptr, true) && (runcode == 0);
+        if (reportOnly())
+        {
+            batchOutText.append(expanded.str()).newline();
+            ret = true;
+        }
+        else
+            ret = invoke_program(expanded.str(), runcode, true, logFile, nullptr, true) && (runcode == 0);
     }
     catch (IException * e)
     {
@@ -758,10 +786,33 @@ StringBuffer & CppCompiler::getObjectName(StringBuffer & out, const char * filen
     return out.append(".").append(OBJECT_FILE_EXT[targetCompiler]);
 }
 
+bool CppCompiler::reportOnly() const
+{
+    return !compileBatchOut.isEmpty();
+}
+
+void CppCompiler::removeTemporary(const char *fname)
+{
+    if (reportOnly())
+        batchOutText.append("rm ").append(fname).newline();   // MORE - spaces in filenames?
+    else
+        removeFileTraceIfFail(fname);
+}
+
+void CppCompiler::removeTempDir(const char *dirname)
+{
+    if (reportOnly())
+        batchOutText.append("rmdir ").append(dirname).newline();   // MORE - spaces in filenames? It's not REALLY a batch file even though it looks like one...
+    else
+    {
+        Owned<IFile> tempDir = createIFile(dirname);
+        if (tempDir)
+            recursiveRemoveDirectory(tempDir);
+    }
+}
+
 void CppCompiler::removeTemporaries()
 {
-    DBGLOG("Remove temporaries");
-
     StringBuffer temp;
     switch (targetCompiler)
     {
@@ -774,12 +825,14 @@ void CppCompiler::removeTemporaries()
         }
     case GccCppCompiler:
         {
-            temp.clear().append(coreName).append(".res.s*");
-            DBGLOG("Remove %s%s",targetDir.str(), temp.str());
+            temp.clear().append(coreName).append(".res.s");
+            if (checkFileExists(temp.str()))
+                removeTemporary(temp.str());
+            temp.clear().append(coreName).append(".res.s_*");
             Owned<IDirectoryIterator> resTemps = createDirectoryIterator(targetDir, temp.str());
             ForEach(*resTemps)
             {
-                removeFileTraceIfFail(resTemps->getName(temp.clear().append(targetDir)).str());
+                removeTemporary(resTemps->getName(temp.clear().append(targetDir)).str());
             }
             break;
         }
@@ -902,15 +955,9 @@ void setCompilerPath(const char * path, const char * includes, const char * libs
     doSetCompilerPath(path, includes, libs, tmpdir, targetCompiler, verbose);
 }
 
-
-ICppCompiler * createCompiler(const char * coreName, const char * sourceDir, const char * targetDir, bool verbose)
+ICppCompiler * createCompiler(const char * coreName, const char * sourceDir, const char * targetDir, CompilerType targetCompiler, bool verbose, const char *compileBatchOut)
 {
-    return new CppCompiler(coreName, sourceDir, targetDir, DEFAULT_COMPILER, verbose);
-}
-
-ICppCompiler * createCompiler(const char * coreName, const char * sourceDir, const char * targetDir, CompilerType targetCompiler, bool verbose)
-{
-    return new CppCompiler(coreName, sourceDir, targetDir, targetCompiler, verbose);
+    return new CppCompiler(coreName, sourceDir, targetDir, targetCompiler, verbose, compileBatchOut);
 }
 
 //===========================================================================
@@ -944,9 +991,17 @@ public:
         Owned<IException> error;
         try
         {
-            success = invoke_program(params->cmdline, runcode, false, params->logfile, &handle, true, okToAbort);
-            if (success)
-                wait_program(handle, runcode, true);
+            if (params->describeOnly)
+            {
+                params->batchOutText.append(params->cmdline).newline();
+                success = true;
+            }
+            else
+            {
+                success = invoke_program(params->cmdline, runcode, false, params->logfile, &handle, true, okToAbort);
+                if (success)
+                    wait_program(handle, runcode, true);
+            }
         }
         catch(IException* e)
         {

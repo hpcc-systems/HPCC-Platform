@@ -184,6 +184,8 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
     Owned<IWorkUnit> workunit;
     StringBuffer idxStr;
     StringArray filesSeen;
+    unsigned defaultMaxCompileThreads = 1;
+    bool saveTemps = false;
 
     virtual void reportError(IException *e)
     {
@@ -290,8 +292,132 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             pipe.setenv(envVar, value);
         }
         else
+        {
+            if (strieq(option, "maxCompileThreads"))
+                defaultMaxCompileThreads = atoi(value);
+            else if (strieq(option, "saveEclTempFiles"))
+                saveTemps = strToBool(value);
             eclccCmd.appendf(" -f%s=%s", option, value);
+        }
     }
+
+    unsigned executeLine(const char *line, StringBuffer &output)
+    {
+        if (isEmptyString(line))
+            return 0;
+        if (line[0] == '#')
+        {
+            return 0;
+        }
+        else if (startsWith(line, "rmdir "))
+        {
+            DBGLOG("Removing directory %s", line+6);
+            Owned<IFile> tempDir = createIFile(line+6);
+            if (tempDir)
+                recursiveRemoveDirectory(tempDir);
+            return 0;
+        }
+        else if (startsWith(line , "rm "))
+        {
+            DBGLOG("Removing file %s", line+3);
+            remove(line + 3);
+            return 0;
+        }
+        else
+        {
+            DBGLOG("Executing %s", line);
+            unsigned retcode = runExternalCommand(nullptr, output, output, line, nullptr);
+            if (retcode)
+                DBGLOG("Error: retcode=%u executing %s", retcode, line);
+            return retcode;
+        }
+    }
+    unsigned doCompileCpp(const char *wuid, unsigned maxThreads)
+    {
+        RelaxedAtomic<unsigned> numFailed = { 0 };
+        if (!maxThreads)
+            maxThreads = 1;
+        VStringBuffer ccfileName("%s.cc", wuid);
+        char dir[_MAX_PATH];
+        if (!GetCurrentDirectory(sizeof(dir), dir))
+            strcpy(dir, "unknown");
+        DBGLOG("Compiling generated file list from %s, current directory %s", ccfileName.str(), dir);
+        {
+            Owned<IWUQuery> query = workunit->updateQuery();
+            associateLocalFile(query, FileTypeLog, ccfileName, "CPP log", 0);
+        }
+        StringBuffer ccfileContents;
+        ccfileContents.loadFile(ccfileName, false);
+        StringArray lines;
+        lines.appendList(ccfileContents, "\n", false);
+        // We expect #compile, then a bunch of compiles that we may do in parallel, followed by #link and/or #cleanup, after which we go back to sequential again
+        if (!lines.length())
+        {
+            DBGLOG("Invalid compiler batch file %s - 0 lines found", ccfileName.str());
+            return 1;
+        }
+        unsigned lineIdx = 0;
+        StringBuffer output;
+        if (streq(lines.item(lineIdx), "#compile"))
+        {
+            lineIdx++;
+            unsigned firstCompile = lineIdx;
+            while (lines.isItem(lineIdx) && lines.item(lineIdx)[0] != '#')
+                lineIdx++;
+            CriticalSection crit;
+            DBGLOG("Compiling %u files, %u at once", lineIdx-firstCompile, maxThreads);
+            asyncFor(lineIdx-firstCompile, maxThreads, [this, firstCompile, &lines, &numFailed, &crit, &output](unsigned i)
+            {
+                try
+                {
+                    StringBuffer loutput;
+                    if (executeLine(lines.item(i+firstCompile), loutput))
+                        numFailed++;
+                    CriticalBlock b(crit);
+                    output.append(loutput);
+                }
+                catch (...)
+                {
+                    numFailed++;
+                    throw;
+                }
+            });
+        }
+        while (lines.isItem(lineIdx))
+        {
+            const char *line = lines.item(lineIdx);
+            unsigned retcode = executeLine(line, output);
+            if (retcode)
+                numFailed++;
+            lineIdx++;
+        }
+        if (!saveTemps)
+            removeFileTraceIfFail(ccfileName);
+
+        ccfileName.append(".log");
+        Owned <IFile> dstfile = createIFile(ccfileName);
+        dstfile->remove();
+        if (output.length())
+        {
+            Owned<IFileIO> dstIO = dstfile->open(IFOwrite);
+            dstIO->write(0, output.length(), output.str());
+        }
+        return numFailed;
+    }
+
+#ifdef _CONTAINERIZED
+    void removeGeneratedFiles(const char *wuid)
+    {
+        // Remove the files we generated into /tmp - any we want to retain will have been moved to dllserver dir when registered with workunit
+        VStringBuffer temp("*%s.*", wuid);
+        Owned<IDirectoryIterator> tempfiles = createDirectoryIterator(".", temp.str());
+        ForEach(*tempfiles)
+        {
+            removeFileTraceIfFail(tempfiles->getName(temp.clear()).str());
+        }
+
+    }
+#endif
 
     bool compile(const char *wuid, const char *target, const char *targetCluster)
     {
@@ -392,6 +518,12 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             workunit->getDebugValue(debugStr.str(), valueStr);
             processOption(debugStr.str(), valueStr.str(), eclccCmd, eclccProgName, *pipe, true);
         }
+        bool compileCppSeparately = globals->getPropBool("@compileCppSeparately", true);
+        if (compileCppSeparately)
+        {
+            workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, "compile", StWhenStarted, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
+            eclccCmd.appendf(" -Sx %s.cc", wuid);
+        }
         if (workunit->getResultLimit())
         {
             eclccCmd.appendf(" -fapplyInstantEclTransformations=1 -fapplyInstantEclTransformationsLimit=%u", workunit->getResultLimit());
@@ -401,6 +533,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             Owned<ErrorReader> errorReader = new ErrorReader(pipe, this);
             Owned<AbortWaiter> abortWaiter = new AbortWaiter(pipe, workunit);
             eclccCmd.insert(0, eclccProgName);
+            cycle_t startCompile = get_cycles_now();
             if (!pipe->run(eclccProgName, eclccCmd, ".", true, false, true, 0, true))
                 throw makeStringExceptionV(999, "Failed to run eclcc command %s", eclccCmd.str());
             errorReader->start();
@@ -418,6 +551,19 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             unsigned retcode = pipe->wait();
             errorReader->join();
             abortWaiter->stop();
+            if (retcode == 0 && compileCppSeparately)
+            {
+                cycle_t startCompileCpp = get_cycles_now();
+                workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, "compile:compile c++", StWhenStarted, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
+                retcode = doCompileCpp(wuid, workunit->getDebugValueInt("maxCompileThreads", defaultMaxCompileThreads));
+                unsigned __int64 elapsed_compilecpp = cycle_to_nanosec(get_cycles_now() - startCompileCpp);
+                workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, "compile:compile c++", StTimeElapsed, NULL, elapsed_compilecpp, 1, 0, StatsMergeReplace);
+            }
+            if (compileCppSeparately)
+            {
+                unsigned __int64 elapsed_compile = cycle_to_nanosec(get_cycles_now() - startCompile);
+                workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, "compile", StTimeElapsed, NULL, elapsed_compile, 1, 0, StatsMergeReplace);
+            }
             if (retcode == 0)
             {
                 StringBuffer realdllname, dllurl;
@@ -452,6 +598,9 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 associateLocalFile(query, FileTypeLog, logfile, "Compiler log", 0);
 #endif
                 associateLocalFile(query, FileTypeDll, realdllfilename, "Workunit DLL", crc);
+#ifdef _CONTAINERIZED
+                removeGeneratedFiles(wuid);
+#endif
                 queryDllServer().registerDll(realdllname.str(), "Workunit DLL", dllurl.str());
                 workunit->commit();
                 return true;

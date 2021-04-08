@@ -293,7 +293,7 @@ protected:
     void applyDebugOptions(IWorkUnit * wu);
     bool checkWithinRepository(StringBuffer & attributePath, const char * sourcePathname);
     IFileIO * createArchiveOutputFile(EclCompileInstance & instance);
-    ICppCompiler *createCompiler(const char * coreName, const char * sourceDir = NULL, const char * targetDir = NULL);
+    ICppCompiler *createCompiler(const char * coreName, const char * sourceDir, const char * targetDir, const char *compileBatchOut);
     void evaluateResult(EclCompileInstance & instance);
     bool generatePrecompiledHeader();
     void generateOutput(EclCompileInstance & instance);
@@ -348,6 +348,7 @@ protected:
     StringAttr optUser;
     StringAttr optPassword;
     StringAttr optWUID;
+    StringAttr optCompileBatchOut;
     StringArray clusters;
     mutable int prevClusterSize = -1;  // i.e. not cached
     StringAttr optExpandPath;
@@ -762,9 +763,9 @@ void EclCC::applyApplicationOptions(IWorkUnit * wu)
 
 //=========================================================================================
 
-ICppCompiler * EclCC::createCompiler(const char * coreName, const char * sourceDir, const char * targetDir)
+ICppCompiler * EclCC::createCompiler(const char * coreName, const char * sourceDir, const char * targetDir, const char *compileBatchOut)
 {
-    Owned<ICppCompiler> compiler = ::createCompiler(coreName, sourceDir, targetDir, optTargetCompiler, logVerbose);
+    Owned<ICppCompiler> compiler = ::createCompiler(coreName, sourceDir, targetDir, optTargetCompiler, logVerbose, compileBatchOut);
     compiler->setOnlyCompile(optOnlyCompile);
     compiler->setCCLogPath(cclogFilename);
 
@@ -853,7 +854,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
         try
         {
             bool optSaveTemps = wu->getDebugValueBool("saveEclTempFiles", false);
-            bool optSaveCpp = optSaveTemps || optNoCompile || wu->getDebugValueBool("saveCppTempFiles", false) || wu->getDebugValueBool("saveCpp", false);
+            bool optSaveCpp = optSaveTemps || optNoCompile || !optCompileBatchOut.isEmpty() || wu->getDebugValueBool("saveCppTempFiles", false) || wu->getDebugValueBool("saveCpp", false);
             //New scope - testing things are linked correctly
             {
                 Owned<IHqlExprDllGenerator> generator = createDllGenerator(&errorProcessor, processName.str(), NULL, wu, optTargetClusterType, &instance, false, false);
@@ -893,7 +894,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                 instance.stats.cppSize = generator->getGeneratedSize();
                 if (generateOk && !optNoCompile)
                 {
-                    Owned<ICppCompiler> compiler = createCompiler(processName.str());
+                    Owned<ICppCompiler> compiler = createCompiler(processName.str(), nullptr, nullptr, optCompileBatchOut);
                     compiler->setSaveTemps(optSaveTemps);
 
                     bool compileOk = true;
@@ -914,6 +915,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
 
                     if (!compileOk)
                         reportCompileErrors(errorProcessor, processName);
+                    compiler->finish();
                 }
                 else
                     wu->setState(generateOk ? WUStateCompleted : WUStateFailed);
@@ -1234,7 +1236,8 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     if (optGatherDiskStats)
         systemIoStartInfo.setown(new OsDiskStats(true));
 
-    addTimeStamp(instance.wu, SSTcompilestage, "compile", StWhenStarted);
+    if (optCompileBatchOut.isEmpty())
+        addTimeStamp(instance.wu, SSTcompilestage, "compile", StWhenStarted);
     const char * sourcePathname = queryContents ? str(queryContents->querySourcePath()) : NULL;
     const char * defaultErrorPathname = sourcePathname ? sourcePathname : queryAttributePath;
 
@@ -1517,31 +1520,33 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     if (optGatherDiskStats)
         systemIoFinishInfo.setown(new OsDiskStats(true));
     instance.stats.generateTime = (unsigned)nanoToMilli(totalTimeNs) - instance.stats.parseTime;
-    updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeElapsed, NULL, totalTimeNs);
+    const char *scopeName = optCompileBatchOut.isEmpty() ? "compile" : "compile:generate";
+    if (optCompileBatchOut.isEmpty())
+        updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StTimeElapsed, NULL, totalTimeNs);
 
     const cost_type cost = money2cost_type(calcCost(getMachineCostRate(), nanoToMilli(totalTimeNs)));
     if (cost)
-        instance.wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, "compile", StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
+        instance.wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, scopeName, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
 
     if (systemFinishTime.getTotal())
     {
         CpuInfo systemElapsed = systemFinishTime - systemStartTime;
         CpuInfo processElapsed = processFinishTime - processStartTime;
-        updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StNumSysContextSwitches, NULL, systemElapsed.getNumContextSwitches());
-        updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeOsUser, NULL, systemElapsed.getUserNs());
-        updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeOsSystem, NULL, systemElapsed.getSystemNs());
-        updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeOsTotal, NULL, systemElapsed.getTotalNs());
-        updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeUser, NULL, processElapsed.getUserNs());
-        updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StTimeSystem, NULL, processElapsed.getSystemNs());
+        updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StNumSysContextSwitches, NULL, systemElapsed.getNumContextSwitches());
+        updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StTimeOsUser, NULL, systemElapsed.getUserNs());
+        updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StTimeOsSystem, NULL, systemElapsed.getSystemNs());
+        updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StTimeOsTotal, NULL, systemElapsed.getTotalNs());
+        updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StTimeUser, NULL, processElapsed.getUserNs());
+        updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StTimeSystem, NULL, processElapsed.getSystemNs());
     }
 
     if (optGatherDiskStats)
     {
         const BlockIoStats summaryIo = systemIoFinishInfo->querySummaryStats() - systemIoStartInfo->querySummaryStats();
         if (summaryIo.rd_sectors)
-            updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StSizeOsDiskRead, NULL, summaryIo.rd_sectors * summaryIo.getSectorSize());
+            updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StSizeOsDiskRead, NULL, summaryIo.rd_sectors * summaryIo.getSectorSize());
         if (summaryIo.wr_sectors)
-            updateWorkunitStat(instance.wu, SSTcompilestage, "compile", StSizeOsDiskWrite, NULL, summaryIo.wr_sectors * summaryIo.getSectorSize());
+            updateWorkunitStat(instance.wu, SSTcompilestage, scopeName, StSizeOsDiskWrite, NULL, summaryIo.wr_sectors * summaryIo.getSectorSize());
     }
 }
 
@@ -2034,7 +2039,7 @@ bool EclCC::generatePrecompiledHeader()
         UERRLOG("Cannot find eclinclude4.hpp");
         return false;
     }
-    Owned<ICppCompiler> compiler = createCompiler("precompile", foundPath, NULL);
+    Owned<ICppCompiler> compiler = createCompiler("precompile", foundPath, nullptr, nullptr);
     compiler->setDebug(true);  // a precompiled header with debug can be used for no-debug, but not vice versa
     compiler->addSourceFile("eclinclude4.hpp", nullptr);
     compiler->setPrecompileHeader(true);
@@ -2789,6 +2794,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
         }
         else if (iter.matchFlag(optNoCompile, "-S"))
+        {
+        }
+        else if (iter.matchOption(optCompileBatchOut, "-Sx"))
         {
         }
         else if (iter.matchFlag(optShared, "-shared"))

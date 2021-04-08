@@ -700,43 +700,47 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
     if (okToAbort)
         compiler->setAbortChecker(this);
 
-    LOG(MCuserInfo,"Compiling %s", wuname);
+    if (!compiler->reportOnly())
+        LOG(MCuserInfo,"Compiling %s", wuname);
     bool ok = compiler->compile();
-    if(ok)
-        LOG(MCuserInfo,"Compiled %s", wuname);
+    if (compiler->reportOnly())
+        LOG(MCuserInfo,"Generated compilation info for %s", wuname);
     else
-        UERRLOG("Failed to compile %s", wuname);
-
-    bool reportCppWarnings = wu->getDebugValueBool("reportCppWarnings", false);
-    IArrayOf<IError> errors;
-    compiler->extractErrors(errors);
-    ForEachItemIn(iErr, errors)
     {
-        IError & cur = errors.item(iErr);
-        if (isError(&cur) || reportCppWarnings)
-            errs->report(&cur);
+        if(ok)
+            LOG(MCuserInfo,"Compiled %s", wuname);
+        else
+            UERRLOG("Failed to compile %s", wuname);
+
+        bool reportCppWarnings = wu->getDebugValueBool("reportCppWarnings", false);
+        IArrayOf<IError> errors;
+        compiler->extractErrors(errors);
+        ForEachItemIn(iErr, errors)
+        {
+            IError & cur = errors.item(iErr);
+            if (isError(&cur) || reportCppWarnings)
+                errs->report(&cur);
+        }
+
+        unsigned __int64 elapsed = cycle_to_nanosec(get_cycles_now() - startCycles);
+        updateWorkunitStat(wu, SSTcompilestage, "compile:compile c++", StTimeElapsed, NULL, elapsed);
     }
-
-    unsigned __int64 elapsed = cycle_to_nanosec(get_cycles_now() - startCycles);
-    updateWorkunitStat(wu, SSTcompilestage, "compile:compile c++", StTimeElapsed, NULL, elapsed);
-
     //Keep the files if there was a compile error.
     if (ok && deleteGenerated)
     {
         StringBuffer temp;
-        removeFileTraceIfFail(temp.clear().append(wuname).append(".hpp").str());
+        compiler->removeTemporary(temp.clear().append(wuname).append(".hpp").str());
         ForEachItemIn(i, sourceFiles)
         {
             if (sourceIsTemp.item(i))
-                removeFileTraceIfFail(sourceFiles.item(i));
+                compiler->removeTemporary(sourceFiles.item(i));
         }
     }
     ForEachItemIn(j, temporaryDirectories)
     {
-        Owned<IFile> tempDir = createIFile(temporaryDirectories.item(j));
-        if (tempDir)
-            recursiveRemoveDirectory(tempDir);
+        compiler->removeTempDir(temporaryDirectories.item(j));
     }
+
     return ok;
 }
 
