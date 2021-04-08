@@ -198,22 +198,11 @@ public:
 };
 
 //=======================================================================================================================
-#define DEFAULT_PERSIST_COPIES (-1)
 #define PERSIST_LOCK_TIMEOUT 10000
 #define PERSIST_LOCK_SLEEP 5000
 
 class CRoxieWorkflowMachine : public WorkflowMachine
 {
-    class PersistVersion : public CInterface
-    {
-    public:
-        PersistVersion(char const * _logicalName, unsigned _eclCRC, unsigned __int64 _allCRC, bool _isFile) : logicalName(_logicalName), eclCRC(_eclCRC), allCRC(_allCRC), isFile(_isFile) {}
-        StringAttr logicalName;
-        unsigned eclCRC;
-        unsigned __int64 allCRC;
-        bool isFile;
-    };
-
 public:
     CRoxieWorkflowMachine(IPropertyTree *_workflowInfo, IConstWorkUnit *_wu, bool _doOnce, bool _parallelWorkflow, unsigned _numWorkflowThreads, const IRoxieContextLogger &_logctx)
     : WorkflowMachine(_logctx)
@@ -647,7 +636,7 @@ private:
         return false;
     }
 
-    void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC)
+    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC)
     {
         StringBuffer lfn, crcName, eclName, whenName;
         expandLogicalFilename(lfn, logicalName, workunit, false, false);
@@ -663,7 +652,7 @@ private:
         changePersistLockMode(persistLock, RTM_LOCK_READ, logicalName, true);
     }
 
-    IRemoteConnection *startPersist(const char * logicalName)
+    virtual IRemoteConnection *startPersist(const char * logicalName)
     {
         setBlockedOnPersist(logicalName);
         IRemoteConnection *persistLock = getPersistReadLock(logicalName);
@@ -671,7 +660,32 @@ private:
         w->setState(WUStateRunning);
         return persistLock;
     }
-
+    virtual void finishPersist(const char * persistName, IRemoteConnection *persistLock)
+    {
+        //this protects lock array from race conditions
+        CriticalBlock block(finishPersistCritSec);
+        logctx.CTXLOG("Finished persists - add to read lock list");
+        persistReadLocks.append(*persistLock);
+    }
+    virtual bool checkFreezePersists(const char *logicalName, unsigned eclCRC)
+    {
+        bool freeze = (workunit->getDebugValueInt("freezepersists", 0) != 0);
+        if (freeze)
+            checkPersistMatches(logicalName, eclCRC);
+        return freeze;
+    }
+    virtual void checkPersistSupported()
+    {
+        if (!workunit)
+        {
+            throw MakeStringException(0, "PERSIST not supported when running predeployed queries");
+        }
+    }
+    virtual bool isPersistAlreadyLocked(const char * logicalName)
+    {
+        //Note: if workunits are restarted, then the engine should check to verify that the persist has not already been calculated
+        return false;
+    }
     void checkPersistMatches(const char * logicalName, unsigned eclCRC)
     {
         StringBuffer lfn, eclName;
@@ -782,7 +796,6 @@ private:
     IConstWorkUnit *workunit;
     IPropertyTree *workflowInfo;
     Owned<IWorkflowScheduleConnection> wfconn;
-    Owned<PersistVersion> persist;
     IArray persistReadLocks;
     bool doOnce;
     bool parallelWorkflow;
