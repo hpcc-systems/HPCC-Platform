@@ -960,14 +960,16 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         if (!udpRequestToSendAckTimeout)
         {
             udpRequestToSendAckTimeout = 100;
-            DBGLOG("Bad or missing value for udpRequestToSendAckTimeout - using %u", udpRequestToSendAckTimeout);
+            if (!localAgent)
+                DBGLOG("Bad or missing value for udpRequestToSendAckTimeout - using %u", udpRequestToSendAckTimeout);
         }
         udpMaxRetryTimedoutReqs = topology->getPropInt("@udpMaxRetryTimedoutReqs", 0);
 #ifdef _CONTAINERIZED
         if (!udpMaxRetryTimedoutReqs)   // 0 traditionally means retry forever - which is a really bad idea in cloud world where replacement node may have different IP
         {
             udpMaxRetryTimedoutReqs = 60000/udpRequestToSendAckTimeout;  // Give up after 1 minute
-            DBGLOG("Bad or missing value for udpMaxRetryTimedoutReqs - using %u", udpMaxRetryTimedoutReqs);
+            if (!localAgent)
+                DBGLOG("Bad or missing value for udpMaxRetryTimedoutReqs - using %u", udpMaxRetryTimedoutReqs);
         }
 #endif
         // MORE: might want to check socket buffer sizes against sys max here instead of udp threads ?
