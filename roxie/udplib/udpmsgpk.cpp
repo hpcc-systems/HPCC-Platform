@@ -29,6 +29,7 @@
 #include "jlog.hpp"
 #include "jisem.hpp"
 #include "jencrypt.hpp"
+#include "jsecrets.hpp"
 
 #include "udplib.hpp"
 #include "udptrr.hpp"
@@ -56,11 +57,6 @@ int g_sequence_compare(const void *arg1, const void *arg2 )
     if (pktHdr1->pktSeq > pktHdr2->pktSeq) return 1;
     return 0;
 }
-
-static byte key[32] = {
-    0xf7, 0xe8, 0x79, 0x40, 0x44, 0x16, 0x66, 0x18, 0x52, 0xb8, 0x18, 0x6e, 0x76, 0xd1, 0x68, 0xd3,
-    0x87, 0x47, 0x01, 0xe6, 0x66, 0x62, 0x2f, 0xbe, 0xc1, 0xd5, 0x9f, 0x4a, 0x53, 0x27, 0xae, 0xa1,
-};
 
 class PackageSequencer : public CInterface, implements IInterface
 {
@@ -245,7 +241,8 @@ public:
         {
             // MORE - This is decrypting in-place. Is that ok?? Seems to be with the code we currently use, but if that changed
             // might need to rethink this
-            size_t decryptedSize = aesDecrypt(key, sizeof(key), pktHdr+1, pktHdr->length-sizeof(UdpPacketHeader), pktHdr+1, DATA_PAYLOAD-sizeof(UdpPacketHeader));
+            const MemoryAttr &udpkey = getSecretUdpKey(true);
+            size_t decryptedSize = aesDecrypt(udpkey.get(), udpkey.length(), pktHdr+1, pktHdr->length-sizeof(UdpPacketHeader), pktHdr+1, DATA_PAYLOAD-sizeof(UdpPacketHeader));
             if (checkTraceLevel(TRACE_MSGPACK, 5))
                 DBGLOG("Decrypted %u bytes at %p resulting in %u bytes", (unsigned) (pktHdr->length-sizeof(UdpPacketHeader)), pktHdr+1, (unsigned) decryptedSize);
             pktHdr->length = decryptedSize + sizeof(UdpPacketHeader);

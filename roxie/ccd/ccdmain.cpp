@@ -657,6 +657,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         saveTopology();
         localAgent = topology->getPropBool("@localAgent", topology->getPropBool("@localSlave", false));  // legacy name
         encryptInTransit = topology->getPropBool("@encryptInTransit", false) && !localAgent;
+        if (encryptInTransit)
+            initSecretUdpKey();
         numChannels = topology->getPropInt("@numChannels", 0);
 #ifdef _CONTAINERIZED
         if (!numChannels)
