@@ -206,7 +206,6 @@ protected:
     IHqlExpression * transformAlienType(IHqlExpression * expr);
     IHqlExpression * transformField(IHqlExpression * expr);
     bool transformChildren(IHqlExpression * expr, HqlExprArray & children);
-    bool transformScope(IHqlScope * newScope, IHqlScope * oldScope);
     bool transformScope(HqlExprArray & newSymbols, IHqlScope * scope);
     IHqlExpression * transformScope(IHqlExpression * expr);
 
