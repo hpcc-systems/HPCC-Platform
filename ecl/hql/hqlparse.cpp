@@ -1789,9 +1789,7 @@ IHqlExpression *HqlLex::parseECL(IFileContents * contents, IXmlScope *xmlScope, 
 #endif
     Owned<IHqlScope> scope = createScope();
 
-    HqlGramCtx parentContext(yyParser->lookupCtx, yyParser->inSignedModule);
-    yyParser->saveContext(parentContext, false);
-    HqlGram parser(parentContext, scope, contents, xmlScope, true);
+    HqlGram parser(*yyParser, scope, contents, xmlScope);
     parser.getLexer()->set_yyLineNo(startLine);
     parser.getLexer()->set_yyColumn(startCol);
     return parser.yyParse(false, false);
