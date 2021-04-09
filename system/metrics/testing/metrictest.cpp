@@ -49,17 +49,30 @@ const char *localConfigYml = R"!!(roxie:
 )!!";
 
 
-const char *testConfigYml = R"!!(component:
+const char *testFileSinkConfigYml = R"!!(component:
   metrics:
     name: config_name
     prefix: component_prefix.
     sinks:
         sink:
-          - type: filesink
+          - type: file
             name: default
             settings:
               filename: testout.txt
               clear: true
+              period: 5
+)!!";
+
+
+const char *testLogSinkConfigYml = R"!!(component:
+  metrics:
+    name: config_name
+    prefix: component_prefix.
+    sinks:
+        sink:
+          - type: log
+            name: default
+            settings:
               period: 5
 )!!";
 
@@ -70,7 +83,7 @@ int main(int argc, char *argv[])
 
     //
     // Simulate retrieving the component and global config
-    Owned<IPropertyTree> pSettings = createPTreeFromYAMLString(testConfigYml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+    Owned<IPropertyTree> pSettings = createPTreeFromYAMLString(testLogSinkConfigYml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
 
     //
     // Retrieve the global and component metrics config
@@ -98,8 +111,7 @@ int main(int argc, char *argv[])
     pEventCountMetric = std::make_shared<CounterMetric>("requests", "The number of requests");
     myReporter.addMetric(pEventCountMetric);
 
-    pQueueSizeMetric = std::make_shared<GaugeMetric>("queuesize", "request queue size");
-    myReporter.addMetric(pQueueSizeMetric);
+    pQueueSizeMetric = createMetricAndAddToReporter<GaugeMetric>("queuesize", "request queue size");
 
     myReporter.startCollecting();
 

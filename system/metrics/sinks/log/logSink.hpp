@@ -17,31 +17,25 @@
 #include "jmetrics.hpp"
 #include "jptree.hpp"
 #include "jstring.hpp"
-#include "jfile.ipp"
+
 
 using namespace hpccMetrics;
 
-#ifdef FILESINK_EXPORTS
-#define FILESINK_API DECL_EXPORT
+#ifdef LOGSINK_EXPORTS
+#define LOGSINK_API DECL_EXPORT
 #else
-#define FILESINK_API DECL_IMPORT
+#define LOGSINK_API DECL_IMPORT
 #endif
 
-class FILESINK_API FileMetricSink : public PeriodicMetricSink
+class LOGSINK_API LogMetricSink : public PeriodicMetricSink
 {
 public:
-    explicit FileMetricSink(const char *name, const IPropertyTree *pSettingsTree);
-    ~FileMetricSink() override = default;
+    explicit LogMetricSink(const char *name, const IPropertyTree *pSettingsTree);
+    ~LogMetricSink() override = default;
 
 protected:
-    virtual void prepareToStartCollecting() override;
-    virtual void collectingHasStopped() override;
-    void doCollection() override;
-    virtual void writeReportHeaderToFile() const;
-    void writeMeasurementToFile(const std::string &metricName, __uint64 value, const std::string &metricDescription) const;
-
-protected:
-    StringBuffer fileName;
-    bool clearFileOnStartCollecting = false;
-    FILE *fhandle = nullptr;
+    virtual void prepareToStartCollecting() override {}
+    virtual void collectingHasStopped() override {}
+    virtual void doCollection() override;
+    void writeLogEntry(const std::shared_ptr<IMetric> &pMetric);
 };
