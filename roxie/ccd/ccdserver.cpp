@@ -11713,9 +11713,7 @@ public:
         {
             // caller has already set @size from file size...
             fileProps.setPropBool("@blockCompressed", true);
-            fileProps.setPropInt64("@compressedSize", partProps.getPropInt64("@size", 0));
             partProps.setPropInt64("@compressedSize", partProps.getPropInt64("@size", 0));
-            fileProps.setPropInt64("@size", uncompressedBytesWritten);
             partProps.setPropInt64("@size", uncompressedBytesWritten);
         }
         else if (tallycrc && crc.get())

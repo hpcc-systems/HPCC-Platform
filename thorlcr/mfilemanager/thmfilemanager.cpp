@@ -583,17 +583,9 @@ public:
             return;
         }
         file->setAccessed();
+        offset_t fs = file->getDiskSize(false, false);
         if (publishedFile)
             publishedFile->set(file);
-        __int64 fs = file->getFileSize(false,false);
-        if (fs!=-1)
-            file->queryAttributes().setPropInt64("@size",fs);
-        if (file->isCompressed())
-        {
-            fs = file->getDiskSize(false,false);
-            if (fs!=-1)
-                file->queryAttributes().setPropInt64("@compressedSize",fs);
-        }
         file->attach(logicalName, job.queryUserDescriptor());
         unsigned c=0;
         for (; c<fileDesc.numClusters(); c++)
