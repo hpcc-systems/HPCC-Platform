@@ -48,12 +48,12 @@ public:
 
    int run()
    {
-      //temporarily only exucute 1 service
+      //temporarily only execute 1 service
          return (!m_services[0]) ? -1 : m_services[0]->run();
    }
    int stop()
    {
-      //temporarily only exucute 1 service
+      //temporarily only execute 1 service
          return (!m_services[0]) ? -1 : m_services[0]->stop();
    }
 };
@@ -90,12 +90,12 @@ public:
 
    int run()
    {
-      //temporarily only exucute 1 binding   
+      //temporarily only execute 1 binding
       return (!m_bindings[0]) ? -1 : m_bindings[0]->run();
    }
    int stop()
    {
-      //temporarily only exucute 1 binding   
+      //temporarily only execute 1 binding
       return (!m_bindings[0]) ? -1 : m_bindings[0]->stop();
    }
 
