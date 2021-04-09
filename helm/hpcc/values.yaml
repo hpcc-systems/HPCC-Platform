@@ -446,3 +446,6 @@ thor:
   #eclAgentResources:
   #  cpu: "1"
   #  memory: "2G"
+
+eclscheduler:
+- name: eclscheduler

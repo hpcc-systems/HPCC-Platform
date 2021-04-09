@@ -805,6 +805,8 @@ void openLogFile()
     envGetConfigurationDirectory("log","eclccserver",globals->queryProp("@name"),logname);
     Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logname.str(), "eclccserver");
     lf->beginLogging();
+#else
+    setupContainerizedLogMsgHandler();
 #endif
 }
 
