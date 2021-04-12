@@ -414,33 +414,40 @@ void CDiskWriteSlaveActivityBase::close()
 {
     try
     {
-        if (out) {
-            uncompressedBytesWritten = out->getPosition();
-            if (calcFileCrc) {
-                if (diskHelperBase->getFlags() & TDWextend) {
-                    assertex(!"TBD need to merge CRC");
-                }   
-                else
-                    out->flush(&fileCRC);
-            }
-            else if (!abortSoon)
-                out->flush();
-            out.clear();
-        }
-        else if (outraw) {
-            outraw->flush();
-            uncompressedBytesWritten = outraw->tell();
-            outraw.clear();
-        }
-
-        Owned<IFileIO> tmpFileIO;
+        if (outputIO)
         {
-            CriticalBlock block(outputCs);
-            // ensure it is released/destroyed after releasing crit, since the IFileIO might involve a final copy and take considerable time.
-            tmpFileIO.setown(outputIO.getClear());
+            if (out)
+            {
+                uncompressedBytesWritten = out->getPosition();
+                if (calcFileCrc)
+                {
+                    if (diskHelperBase->getFlags() & TDWextend)
+                    {
+                        assertex(!"TBD need to merge CRC");
+                    }
+                    else
+                        out->flush(&fileCRC);
+                }
+                else if (!abortSoon)
+                    out->flush();
+                out.clear();
+            }
+            else if (outraw)
+            {
+                outraw->flush();
+                uncompressedBytesWritten = outraw->tell();
+                outraw.clear();
+            }
+
+            Owned<IFileIO> tmpFileIO;
+            {
+                CriticalBlock block(outputCs);
+                // ensure it is released/destroyed after releasing crit, since the IFileIO might involve a final copy and take considerable time.
+                tmpFileIO.setown(outputIO.getClear());
+            }
+            mergeStats(stats, tmpFileIO, diskWriteRemoteStatistics);
+            tmpFileIO->close(); // NB: close now, do not rely on close in dtor
         }
-        mergeStats(stats, tmpFileIO, diskWriteRemoteStatistics);
-        tmpFileIO->close(); // NB: close now, do not rely on close in dtor
 
         if (!rfsQueryParallel && dlfn.isExternal() && !lastNode())
         {
