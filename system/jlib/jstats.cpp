@@ -32,6 +32,8 @@
 
 #ifdef _WIN32
 #include <sys/timeb.h>
+#else
+#include <time.h>
 #endif
 
 static CriticalSection statsNameCs;
@@ -170,52 +172,13 @@ extern jlib_decl unsigned __int64 getTimeStampNowValue()
 #ifdef _WIN32
     struct _timeb now;
     _ftime(&now);
-    return (unsigned __int64)now.time * I64C(1000000) + now.millitm * 1000;
+    return (unsigned __int64)now.time * I64C(1000000000) + now.millitm * 1000000;
 #else
-    struct timeval tm;
-    gettimeofday(&tm,NULL);
-    return (unsigned __int64)tm.tv_sec * I64C(1000000) + tm.tv_usec;
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    return (unsigned __int64)ts.tv_sec * I64C(1000000000) + ts.tv_nsec;
 #endif
 }
-
-const static unsigned __int64 msUntilResync = 1000; // resync every second ~= 1ms accuracy
-static cycle_t cyclesUntilResync;
-
-MODULE_INIT(INIT_PRIORITY_STANDARD)
-{
-    cyclesUntilResync = nanosec_to_cycle(msUntilResync * 1000000);
-    return true;
-}
-
-OptimizedTimestamp::OptimizedTimestamp()
-{
-    lastCycles = get_cycles_now();
-    lastTimestamp = ::getTimeStampNowValue();
-}
-
-#if 0
-//This version almost certainly has problems if the computer is suspended and cycles->nanoseconds is only accurate to
-//about 0.1% - so should only be used for relatively short periods
-unsigned __int64 OptimizedTimestamp::getTimeStampNowValue()
-{
-    cycle_t nowCycles = get_cycles_now();
-    return lastTimestamp + cycle_to_microsec(nowCycles - lastCycles);
-}
-#else
-//This version will resync every minute, but is not thread safe.  Adding a critical section makes it less efficient than recalculating
-unsigned __int64 OptimizedTimestamp::getTimeStampNowValue()
-{
-    cycle_t nowCycles = get_cycles_now();
-    if (nowCycles - lastCycles > cyclesUntilResync)
-    {
-        lastCycles = nowCycles;
-        lastTimestamp = ::getTimeStampNowValue();
-    }
-    return lastTimestamp + cycle_to_microsec(nowCycles - lastCycles);
-}
-#endif
-
-
 
 unsigned __int64 getIPV4StatsValue(const IpAddress & ip)
 {
@@ -295,29 +258,30 @@ extern void formatTimeCollatable(StringBuffer & out, unsigned __int64 value, boo
     // More than 999 days, I don't care that it goes wrong.
 }
 
-extern unsigned __int64 extractTimeCollatable(const char *s, bool nano)
+extern unsigned __int64 extractTimeCollatable(const char *s, const char * * end)
 {
     if (!s)
         return 0;
-    unsigned days,hours,mins,secs,fracs;
-    if (sscanf(s, " %ud %u:%u:%u.%u", &days, &hours, &mins, &secs, &fracs)!=5)
+    unsigned days,hours,mins;
+    double secs;
+    unsigned numRead = 0;
+    if (sscanf(s, " %ud %u:%u:%lf%n", &days, &hours, &mins, &secs, &numRead)!=5)
     {
         days = 0;
-        if (sscanf(s, " %u:%u:%u.%u", &hours, &mins, &secs, &fracs) != 4)
+        if (sscanf(s, " %u:%u:%lf%n", &hours, &mins, &secs, &numRead) != 4)
             return 0;
     }
-    unsigned __int64 ret = days*oneDay + hours*oneHour + mins*oneMinute + secs*oneSecond;
-    if (nano)
-        ret += fracs;
-    else
-        ret += milliToNano(fracs);
-    return ret;
+    if (end)
+        *end = s + numRead;
+    return days*oneDay + hours*oneHour + mins*oneMinute + secs*oneSecond;
 }
 
 static void formatTimeStamp(StringBuffer & out, unsigned __int64 value)
 {
-    time_t seconds = value / 1000000;
-    unsigned us = value % 1000000;
+    if (value < legacyTimestampThreshold)
+        value *= 1000;
+    time_t seconds = value / 1000000000;
+    unsigned ns = value % 1000000000;
     char timeStamp[64];
     time_t tNow = seconds;
 #ifdef _WIN32
@@ -329,13 +293,15 @@ static void formatTimeStamp(StringBuffer & out, unsigned __int64 value)
     gmtime_r(&tNow, &gmtNow);
     strftime(timeStamp, 64, "%Y-%m-%dT%H:%M:%S", &gmtNow);
 #endif //_WIN32
-    out.append(timeStamp).appendf(".%03uZ", us / 1000);
+    out.append(timeStamp).appendf(".%09uZ", ns);
 }
 
 void formatTimeStampAsLocalTime(StringBuffer & out, unsigned __int64 value)
 {
-    time_t seconds = value / 1000000;
-    unsigned us = value % 1000000;
+    if (value < legacyTimestampThreshold)
+        value *= 1000;
+    time_t seconds = value / 1000000000;
+    unsigned ns = value % 1000000000;
     char timeStamp[64];
     time_t tNow = seconds;
 #ifdef _WIN32
@@ -347,7 +313,7 @@ void formatTimeStampAsLocalTime(StringBuffer & out, unsigned __int64 value)
     localtime_r(&tNow, &gmtNow);
     strftime(timeStamp, 64, "%H:%M:%S", &gmtNow);
 #endif //_WIN32
-    out.append(timeStamp).appendf(".%03u", us / 1000);
+    out.append(timeStamp).appendf(".%03u", ns / 1000000);
 }
 
 
@@ -458,7 +424,7 @@ StringBuffer & formatStatistic(StringBuffer & out, unsigned __int64 value, Stati
     case SMeasureTimeNs:
         formatTime(out, value);
         return out;
-    case SMeasureTimestampUs:
+    case SMeasureTimestampNs:
         formatTimeStamp(out, value);
         return out;
     case SMeasureCount:
@@ -501,7 +467,10 @@ StringBuffer & formatStatistic(StringBuffer & out, unsigned __int64 value, Stati
 
 stat_type readStatisticValue(const char * cur, const char * * end, StatisticMeasure measure)
 {
-    char * next;
+    if (measure == SMeasureTimestampNs)
+        return extractTimeCollatable(cur, end);
+
+    char * next = nullptr;
     stat_type value = strtoll(cur, &next, 10);
 
     switch (measure)
@@ -668,7 +637,7 @@ const char * queryMeasurePrefix(StatisticMeasure measure)
     {
     case SMeasureAll:           return nullptr;
     case SMeasureTimeNs:        return "Time";
-    case SMeasureTimestampUs:   return "When";
+    case SMeasureTimestampNs:   return "When";
     case SMeasureCount:         return "Num";
     case SMeasureSize:          return "Size";
     case SMeasureLoad:          return "Load";
@@ -720,7 +689,7 @@ StatsMergeAction queryMergeMode(StatisticMeasure measure)
     switch (measure)
     {
     case SMeasureTimeNs:        return StatsMergeSum;
-    case SMeasureTimestampUs:   return StatsMergeKeepNonZero;
+    case SMeasureTimestampNs:   return StatsMergeKeepNonZero;
     case SMeasureCount:         return StatsMergeSum;
     case SMeasureSize:          return StatsMergeSum;
     case SMeasureLoad:          return StatsMergeMax;
@@ -806,7 +775,7 @@ extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
 //These are the macros to use to define the different entries in the stats meta table
 //#define TIMESTAT(y) STAT(Time, y, SMeasureTimeNs)
 #define TIMESTAT(y) St##Time##y, SMeasureTimeNs, St##Time##y, St##Cycle##y##Cycles, { NAMES(Time, y) }, { TAGS(Time, y) }
-#define WHENSTAT(y) St##When##y, SMeasureTimestampUs, St##When##y, St##When##y, { WHENNAMES(When, y) }, { WHENTAGS(When, y) }
+#define WHENSTAT(y) St##When##y, SMeasureTimestampNs, St##When##y, St##When##y, { WHENNAMES(When, y) }, { WHENTAGS(When, y) }
 #define NUMSTAT(y) STAT(Num, y, SMeasureCount)
 #define SIZESTAT(y) STAT(Size, y, SMeasureSize)
 #define LOADSTAT(y) STAT(Load, y, SMeasureLoad)
@@ -988,7 +957,7 @@ StatisticMeasure queryMeasure(StatisticKind kind)
             StatisticMeasure measure = queryMeasure((StatisticKind)(kind & StKindMask));
             switch (measure)
             {
-            case SMeasureTimestampUs:
+            case SMeasureTimestampNs:
                 return SMeasureTimeNs;
             default:
                 return measure;
@@ -1022,9 +991,9 @@ unsigned __int64 convertMeasure(StatisticMeasure from, StatisticMeasure to, unsi
         return cycle_to_nanosec(value);
     if ((from == SMeasureTimeNs) && (to == SMeasureCycle))
         return nanosec_to_cycle(value);
-    if ((from == SMeasureTimestampUs) && (to == SMeasureTimeNs))
+    if ((from == SMeasureTimestampNs) && (to == SMeasureTimeNs))
         return value * 1000;
-    if ((from == SMeasureTimeNs) && (to == SMeasureTimestampUs))
+    if ((from == SMeasureTimeNs) && (to == SMeasureTimestampNs))
         return value / 1000;
 
 #ifdef _DEBUG
@@ -1179,7 +1148,7 @@ inline void mergeUpdate(StatisticMeasure measure, unsigned __int64 & value, cons
     case SMeasureCycle:
         value += otherValue;
         break;
-    case SMeasureTimestampUs:
+    case SMeasureTimestampNs:
         if (otherValue && otherValue < value)
             value = otherValue;
         break;
@@ -2545,7 +2514,7 @@ static bool isSignificantRange(StatisticKind kind, unsigned __int64 range, unsig
     unsigned insignificantDiff = 1;
     switch (queryMeasure(kind))
     {
-    case SMeasureTimestampUs:
+    case SMeasureTimestampNs:
         insignificantDiff = 1000;       // Ignore 1ms timestamp difference between nodes
         break;
     case SMeasureTimeNs:

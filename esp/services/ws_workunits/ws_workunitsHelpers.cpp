@@ -383,7 +383,7 @@ void WsWuInfo::addTimerToList(SCMStringBuffer& name, const char * scope, IConstW
     {
         StringBuffer tsText;
         unsigned __int64 ts = stat.getTimestamp();
-        formatStatistic(tsText, ts,  SMeasureTimestampUs);
+        formatStatistic(tsText, ts,  SMeasureTimestampNs);
         t->setTimestamp(ts);
         t->setWhen(tsText.str());
     }
@@ -787,13 +787,13 @@ void WsWuInfo::doGetGraphs(IArrayOf<IEspECLGraph>& graphs)
             if (cw->getStatistic(timeStamp, scope.str(), StWhenStarted) ||
                 cw->getStatistic(timeStamp, name.str(), StWhenGraphStarted))
             {
-                g->setWhenStarted(formatStatistic(s.clear(), timeStamp, SMeasureTimestampUs));
+                g->setWhenStarted(formatStatistic(s.clear(), timeStamp, SMeasureTimestampNs));
             }
 
             if (cw->getStatistic(timeStamp, scope.str(), StWhenFinished) ||
                cw->getStatistic(timeStamp, name.str(), StWhenGraphFinished))
             {
-                g->setWhenFinished(formatStatistic(s.clear(), timeStamp, SMeasureTimestampUs));
+                g->setWhenFinished(formatStatistic(s.clear(), timeStamp, SMeasureTimestampNs));
             }
         }
         graphs.append(*g.getLink());
@@ -993,7 +993,7 @@ void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned long flags)
 void WsWuInfo::setWUAbortTime(IEspECLWorkunit &info, unsigned __int64 abortTS)
 {
     StringBuffer abortTimeStr;
-    formatStatistic(abortTimeStr, abortTS, SMeasureTimestampUs);
+    formatStatistic(abortTimeStr, abortTS, SMeasureTimestampNs);
     if ((abortTimeStr.length() > 19) && (abortTimeStr.charAt(10) == 'T') && (abortTimeStr.charAt(19) == '.'))
     {
         abortTimeStr.setCharAt(10, ' ');
@@ -1638,7 +1638,7 @@ public:
             wuStatistic->setMax(max);
         if (ts)
         {
-            formatStatistic(tsValue, ts, SMeasureTimestampUs);
+            formatStatistic(tsValue, ts, SMeasureTimestampNs);
             wuStatistic->setTimeStamp(tsValue.str());
         }
         if (curDescription.length())

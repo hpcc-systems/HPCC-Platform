@@ -433,6 +433,8 @@ public:
     }
     virtual unsigned __int64 getValue() const
     {
+        if (measure == SMeasureTimestampNs)
+            return getNormalizedTimestamp(value);
         return value;
     }
     virtual unsigned __int64 getCount() const
@@ -445,7 +447,7 @@ public:
     }
     virtual unsigned __int64 getTimestamp() const
     {
-        return timeStamp;
+        return getNormalizedTimestamp(timeStamp);
     }
 
 public:
@@ -978,6 +980,8 @@ private:
         }
         virtual unsigned __int64 getValue() const override
         {
+            if (queryMeasure(kind) == SMeasureTimestampNs)
+                return getNormalizedTimestamp(value);
             return value;
         }
         virtual unsigned __int64 getCount() const override
@@ -990,7 +994,7 @@ private:
         }
         virtual unsigned __int64 getTimestamp() const override
         {
-            return timeStamp;
+            return getNormalizedTimestamp(timeStamp);
         }
 
         void play(IWuScopeVisitor & visitor)
@@ -3597,7 +3601,7 @@ public:
         priorityLevel = calcPriorityValue(&p);
         wuscope.set(p.queryProp("@scope"));
         appvalues.loadBranch(&p,"Application");
-        totalThorTime = (unsigned)nanoToMilli(extractTimeCollatable(p.queryProp("@totalThorTime"), false));
+        totalThorTime = (unsigned)nanoToMilli(extractTimeCollatable(p.queryProp("@totalThorTime"), nullptr));
         _isProtected = p.getPropBool("@protected", false);
     }
     virtual const char *queryWuid() const { return wuid.str(); }
@@ -7025,7 +7029,7 @@ unsigned CLocalWorkUnit::getTotalThorTime() const
 {
     CriticalBlock block(crit);
     if (p->hasProp("@totalThorTime"))
-        return (unsigned)nanoToMilli(extractTimeCollatable(p->queryProp("@totalThorTime"), false));
+        return (unsigned)nanoToMilli(extractTimeCollatable(p->queryProp("@totalThorTime"), nullptr));
 
     const WuScopeFilter filter("stype[graph],nested[0],stat[TimeElapsed]");
     StatsAggregation summary;
@@ -11652,7 +11656,10 @@ StatisticMeasure CLocalWUStatistic::getMeasure() const
 
 unsigned __int64 CLocalWUStatistic::getValue() const
 {
-    return p->getPropInt64("@value", 0);
+    unsigned __int64 value = p->getPropInt64("@value", 0);
+    if (getMeasure() == SMeasureTimestampNs)
+        return getNormalizedTimestamp(value);
+    return value;
 }
 
 unsigned __int64 CLocalWUStatistic::getCount() const
@@ -11667,7 +11674,7 @@ unsigned __int64 CLocalWUStatistic::getMax() const
 
 unsigned __int64 CLocalWUStatistic::getTimestamp() const
 {
-    return p->getPropInt64("@ts", 0);
+    return getNormalizedTimestamp(p->getPropInt64("@ts", 0));
 }
 
 

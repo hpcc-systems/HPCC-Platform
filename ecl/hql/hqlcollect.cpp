@@ -733,6 +733,7 @@ IFileContents * CXmlEclElement::queryFileContents()
                 sourcePath.setown(createSourcePath(defaultName));
             }
             timestamp_type ts = elemTree->getPropInt64("@ts");
+            ts = getNormalizedTimestamp(ts);
             fileContents.setown(createFileContentsFromText(text, sourcePath, false, NULL, ts));
         }
     }

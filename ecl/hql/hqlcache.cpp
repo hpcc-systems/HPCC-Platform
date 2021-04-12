@@ -142,7 +142,7 @@ timestamp_type EclXmlCachedDefinition::getTimeStamp() const
 {
     if (!cacheTree)
         return 0;
-    return cacheTree->getPropInt64("@ts");
+    return getNormalizedTimestamp(cacheTree->getPropInt64("@ts"));
 }
 
 void EclXmlCachedDefinition::queryDependencies(StringArray & values) const

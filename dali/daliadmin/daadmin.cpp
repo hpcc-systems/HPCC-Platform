@@ -2583,7 +2583,7 @@ public:
         if (ts)
         {
             xml.append(" ts='");
-            formatStatistic(xml, ts, SMeasureTimestampUs);
+            formatStatistic(xml, ts, SMeasureTimestampNs);
             xml.append("'");
         }
         if (curDescription.length())

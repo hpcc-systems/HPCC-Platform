@@ -78,7 +78,7 @@ enum StatisticMeasure
     SMeasureNone,
     SMeasureAll,
     SMeasureTimeNs,                     // Elapsed time in nanoseconds
-    SMeasureTimestampUs,                // timestamp/when - a point in time (to the microsecond)
+    SMeasureTimestampNs,                // timestamp/when - a point in time (to the nanosecond)
     SMeasureCount,                      // a count of the number of occurrences
     SMeasureSize,                       // a quantity of memory (or disk) measured in bytes
     SMeasureLoad,                       // measure of cpu activity (stored as 1/1000000 core)

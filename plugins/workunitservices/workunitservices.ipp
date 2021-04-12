@@ -80,7 +80,7 @@ inline void varAppendMax(MemoryBuffer &mb,unsigned w,const char *str, size32_t l
 
 inline void convertTimestampToStr(unsigned __int64 timestamp, StringBuffer& timeStr, bool formatTZ)
 {
-    formatStatistic(timeStr, timestamp, SMeasureTimestampUs);
+    formatStatistic(timeStr, timestamp, SMeasureTimestampNs);
     if (formatTZ)
     {
         timeStr.setCharAt(19, 'Z'); //Match with old timestamp

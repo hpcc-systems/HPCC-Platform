@@ -736,9 +736,15 @@ class JlibTimingTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testMsTick);
         CPPUNIT_TEST(testGetCyclesNow);
         CPPUNIT_TEST(testStdChrono);
+        CPPUNIT_TEST(testGetTimeOfDay);
+        CPPUNIT_TEST(testClockGetTimeReal);
+        CPPUNIT_TEST(testClockGetTimeMono);
+        CPPUNIT_TEST(testTimestampNow);
     CPPUNIT_TEST_SUITE_END();
 
 public:
+    static constexpr unsigned scale = 10;
+    static constexpr unsigned iters = 1000000 * scale;
     JlibTimingTest()
     {
     }
@@ -747,25 +753,72 @@ public:
     {
         unsigned startTime = msTick();
         unsigned value = 0;
-        for (unsigned i=0; i < 1000000; i++)
+        for (unsigned i=0; i < iters; i++)
             value += msTick();
-        printf("msTick() %uns = %u\n", msTick()-startTime, value);
+        printf("msTick() %uns = %u\n", (msTick()-startTime)/scale, value);
     }
     void testGetCyclesNow()
     {
         unsigned startTime = msTick();
         unsigned value = 0;
-        for (unsigned i=0; i < 1000000; i++)
+        for (unsigned i=0; i < iters; i++)
             value += get_cycles_now();
-        printf("get_cycles_now() %uns = %u\n", msTick()-startTime, value);
+        printf("get_cycles_now() %uns = %u\n", (msTick()-startTime)/scale, value);
     }
     void testStdChrono()
     {
         unsigned startTime = msTick();
         unsigned value = 0;
-        for (unsigned i=0; i < 1000000; i++)
+        for (unsigned i=0; i < iters; i++)
             value += std::chrono::high_resolution_clock::now().time_since_epoch().count();
-        printf("std::chrono::high_resolution_clock::now() %uns = %u\n", msTick()-startTime, value);
+        printf("std::chrono::high_resolution_clock::now() %uns = %u\n", (msTick()-startTime)/scale, value);
+    }
+    void testGetTimeOfDay()
+    {
+        unsigned startTime = msTick();
+        struct timeval tv;
+        unsigned value = 0;
+        for (unsigned i=0; i < iters; i++)
+        {
+            gettimeofday(&tv, NULL);
+            value += tv.tv_sec;
+        }
+        printf("gettimeofday() %uns = %u\n", (msTick()-startTime)/scale, value);
+    }
+    void testClockGetTimeReal()
+    {
+        unsigned startTime = msTick();
+        struct timespec ts;
+        unsigned value = 0;
+        for (unsigned i=0; i < iters; i++)
+        {
+            clock_gettime(CLOCK_REALTIME, &ts);
+            value += ts.tv_sec;
+        }
+        printf("clock_gettime(REALTIME) %uns = %u\n", (msTick()-startTime)/scale, value);
+    }
+    void testClockGetTimeMono()
+    {
+        unsigned startTime = msTick();
+        struct timespec ts;
+        unsigned value = 0;
+        for (unsigned i=0; i < iters; i++)
+        {
+            clock_gettime(CLOCK_MONOTONIC, &ts);
+            value += ts.tv_sec;
+        }
+        printf("clock_gettime(MONOTONIC) %uns = %u\n", (msTick()-startTime)/scale, value);
+    }
+    void testTimestampNow()
+    {
+        unsigned startTime = msTick();
+        struct timespec ts;
+        unsigned value = 0;
+        for (unsigned i=0; i < iters; i++)
+        {
+            value += getTimeStampNowValue();
+        }
+        printf("getTimeStampNowValue() %uns = %u\n", (msTick()-startTime)/scale, value);
     }
 };
 

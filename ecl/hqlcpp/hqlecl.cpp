@@ -624,7 +624,7 @@ void HqlDllGenerator::insertStandAloneCode()
 void HqlDllGenerator::doExpand(HqlCppTranslator & translator)
 {
     CCycleTimer elapsedTimer;
-    addTimeStamp(wu, SSTcompilestage, "compile:write c++", StWhenStarted);
+    addTimeStamp(wu, SSTcompilestage, "compile:generate:write c++", StWhenStarted);
 
     bool isMultiFile = translator.spanMultipleCppFiles();
     CompilerType targetCompiler = translator.queryOptions().targetCompiler;
@@ -646,7 +646,7 @@ void HqlDllGenerator::doExpand(HqlCppTranslator & translator)
         }
     }
 
-    updateWorkunitStat(wu, SSTcompilestage, "compile:write c++", StTimeElapsed, NULL, elapsedTimer.elapsedNs());
+    updateWorkunitStat(wu, SSTcompilestage, "compile:generate:write c++", StTimeElapsed, NULL, elapsedTimer.elapsedNs());
 }
 
 bool HqlDllGenerator::abortRequested()
