@@ -6983,6 +6983,8 @@ primexpr1
                         }
     | COUNT '(' expressionList ')'
                         {
+                            if (parser->isSingleValuedExpressionList($3))
+                                parser->reportWarning(CategoryMistake, WRN_SILLY_COUNT,$1.pos,"COUNT() on a scalar expression is always 1, was this intended?");
                             OwnedHqlExpr list = parser->createListFromExpressionList($3);
                             $$.setExpr(createValue(no_countlist, LINK(defaultIntegralType), LINK(list)));
                             $$.setPosition($1);
@@ -6998,6 +7000,9 @@ primexpr1
                         }
     | SUM '(' expressionList ')'
                         {
+                            if (parser->isSingleValuedExpressionList($3))
+                                parser->reportWarning(CategoryUnexpected, WRN_UNUSUAL_AGGREGATE,$1.pos,"Unusual SUM(scalar) - was SUM(dataset, scalar) intended?");
+
                             OwnedHqlExpr list = parser->createListFromExpressionList($3);
                             ITypeInfo * elemType = parser->queryElementType($3, list);
                             Owned<ITypeInfo> sumType = getSumAggType(elemType);
@@ -7006,6 +7011,9 @@ primexpr1
                         }
     | MAX '(' expressionList ')'
                         {
+                            if (parser->isSingleValuedExpressionList($3))
+                                parser->reportWarning(CategoryUnexpected, WRN_UNUSUAL_AGGREGATE,$1.pos,"Unusual MAX(scalar) - was MAX(dataset, scalar) intended?");
+
                             OwnedHqlExpr list = parser->createListFromExpressionList($3);
                             ITypeInfo * elemType = parser->queryElementType($3, list);
                             $$.setExpr(createValue(no_maxlist, LINK(elemType), LINK(list)));
@@ -7013,6 +7021,9 @@ primexpr1
                         }
     | MIN '(' expressionList ')'
                         {
+                            if (parser->isSingleValuedExpressionList($3))
+                                parser->reportWarning(CategoryUnexpected, WRN_UNUSUAL_AGGREGATE,$1.pos,"Unusual MIN(scalar) - was MIN(dataset, scalar) intended?");
+
                             OwnedHqlExpr list = parser->createListFromExpressionList($3);
                             ITypeInfo * elemType = parser->queryElementType($3, list);
                             $$.setExpr(createValue(no_minlist, LINK(elemType), LINK(list)));
@@ -7020,6 +7031,9 @@ primexpr1
                         }
     | AVE '(' expressionList ')'
                         {
+                            if (parser->isSingleValuedExpressionList($3))
+                                parser->reportWarning(CategoryUnexpected, WRN_UNUSUAL_AGGREGATE,$1.pos,"Unusual AVE(scalar) - was AVE(dataset, scalar) intended?");
+
                             OwnedHqlExpr list = parser->createListFromExpressionList($3);
                             $$.setExpr(parser->createAveList($3, list));
                             $$.setPosition($1);
