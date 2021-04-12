@@ -4,12 +4,12 @@ Pass in dict with root and me
 */}}
 {{- define "hpcc.agentConfigMap" }}
 {{- $apptype := .me.type | default "hthor" -}}
-{{- $appJobName := printf "%s-%%jobname" $apptype }}
+{{- $appJobName := printf "%s-_HPCC_JOBNAME_" $apptype }}
 apiVersion: v1
 metadata:
   name: {{ .me.name }}-configmap
 data:
-  {{ .me.name }}.yaml: |
+  {{ .me.name }}.yaml:
     version: 1.0
     eclagent:
 {{ toYaml (omit .me "logging") | indent 6 }}
@@ -22,7 +22,7 @@ data:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
 {{- if not .me.useChildProcesses }}
 {{- $misc := .root.Values.global.misc | default dict }}
-  {{ $apptype }}-jobspec.yaml: |
+  {{ $apptype }}-jobspec.yaml:
     apiVersion: batch/v1
     kind: Job
     metadata:
@@ -48,7 +48,7 @@ data:
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" .me.resources) | indent 12 }}
-{{- $appCmd := printf "%s %s %s %%args" $apptype (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
+{{- $appCmd := printf "%s %s %s _HPCC_ARGS_" $apptype (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $appCmd)) | indent 12 }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
@@ -56,7 +56,7 @@ data:
 {{ include "hpcc.addDataVolumeMount" . | indent 12 }}
 {{ include "hpcc.addDllVolumeMount" . | indent 12 }}
 {{ include "hpcc.addSecretVolumeMounts" . | indent 12 }}
-{{ include "hpcc.addCertificateVolumeMount" (dict "root" .root "name" .me.name "component" .me.type) | indent 12 }}
+{{ include "hpcc.addCertificateVolumeMount" (dict "root" .root "name" .me.name "component" $apptype) | indent 12 }}
 {{- if $misc.postJobCommandViaSidecar }}
 {{ include "hpcc.addWaitAndRunVolumeMount" . | indent 12 }}
 {{- end }}
@@ -65,7 +65,7 @@ data:
 {{ include "hpcc.addDataVolume" . | indent 10 }}
 {{ include "hpcc.addDllVolume" . | indent 10 }}
 {{ include "hpcc.addSecretVolumes" . | indent 10 }}
-{{ include "hpcc.addCertificateVolume" (dict "root" .root "name" .me.name "component" .me.type) | indent 10 }}
+{{ include "hpcc.addCertificateVolume" (dict "root" .root "name" .me.name "component" $apptype) | indent 10 }}
 {{- if $misc.postJobCommandViaSidecar }}
 {{ include "hpcc.addWaitAndRunVolume" . | indent 10 }}
 {{- end }}
@@ -76,9 +76,10 @@ data:
 
 {{ range $.Values.eclagent -}}
 {{- if not .disabled -}}
+{{- $apptype := .type | default "hthor" -}}
 {{- $secretsCategories := list "system" "ecl-user" "ecl" "storage" }}
 {{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories }}
-{{- $configSHA := include "hpcc.agentConfigMap" $commonCtx | sha256sum }}
+{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.agentConfigMap" "component" "eclagent" "excludeKeys" (print "global," $apptype ".replicas"))) }}
 {{- include "hpcc.checkDefaultStoragePlane" $commonCtx }}
 apiVersion: apps/v1
 kind: Deployment
@@ -132,10 +133,10 @@ spec:
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" "eclagent") | indent 6 }}
 ---
 kind: ConfigMap 
-{{ include "hpcc.agentConfigMap" $commonCtx }}
+{{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.agentConfigMap")) }}
 ---
 {{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "eclagent") }}
-{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" .type) }}
+{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" $apptype) }}
 
 {{- end }}
 {{- end }}

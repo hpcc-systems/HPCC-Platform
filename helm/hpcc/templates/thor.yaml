@@ -11,14 +11,15 @@ Pass in dict with root and me
 {{- $thorScope := omit .me "eclagent" "thoragent" "hthor" "logging" "eclAgentResources" "eclAgentUseChildProcesses" "eclAgentReplicas" "thorAgentReplicas" "eclAgentType" }}
 {{- $misc := .root.Values.global.misc | default dict }}
 {{- $postJobCommand := $misc.postJobCommand | default "" }}
-{{- $eclAgentJobName := printf "%s-%%jobname" $eclAgentType }}
-{{- $thorManagerJobName := printf "thormanager-%%jobname" }}
-{{- $thorWorkerJobName := printf "thorworker-%%jobname" }}
+{{- $eclAgentJobName := printf "%s-_HPCC_JOBNAME_" $eclAgentType }}
+{{- $thorManagerJobName := printf "thormanager-_HPCC_JOBNAME_" }}
+{{- $thorWorkerJobName := printf "thorworker-_HPCC_JOBNAME_" }}
+{{- $thorNetworkPolicyName := printf "thornetworkpolicy-_HPCC_JOBNAME_" }}
 apiVersion: v1 
 metadata:
   name: {{ $thorScope.name }}-configmap
 data:
-  {{ $thorScope.name }}.yaml: |
+  {{ $thorScope.name }}.yaml:
     version: 1.0
     thor:
 {{ toYaml $thorScope | indent 6 }}
@@ -42,7 +43,7 @@ data:
 {{ include "hpcc.generateGlobalConfigMap" .root| indent 6 }}
 
 {{- if not .eclAgentUseChildProcesses }}
-  {{ $eclAgentType }}-jobspec.yaml: |
+  {{ $eclAgentType }}-jobspec.yaml:
     apiVersion: batch/v1
     kind: Job
     metadata:
@@ -70,7 +71,7 @@ data:
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" .eclAgentResources) | indent 12 }}
-{{- $agentCmd := printf "%s %s %s %%args" $eclAgentType (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
+{{- $agentCmd := printf "%s %s %s _HPCC_ARGS_" $eclAgentType (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $agentCmd)) | indent 12 }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
@@ -95,7 +96,7 @@ data:
       backoffLimit: 0
 {{- end }}
 
-  thormanager-jobspec.yaml: |
+  thormanager-jobspec.yaml:
     apiVersion: batch/v1
     kind: Job
     metadata:
@@ -108,7 +109,7 @@ data:
             app: thor
             accessDali: "yes"
             accessEsp: "yes"
-            job: %jobname
+            job: "_HPCC_JOBNAME_"
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $thorManagerJobName "target" .me.name "type" "thor") | indent 10 }}
           serviceAccountName: hpcc-agent
@@ -125,7 +126,7 @@ data:
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" $thorScope.managerResources) | indent 12 }}
-{{- $thorManagerCmd := printf "thormaster_lcr %s %s %%args" (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
+{{- $thorManagerCmd := printf "thormaster_lcr %s %s _HPCC_ARGS_" (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $thorManagerCmd)) | indent 12 }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
@@ -149,20 +150,20 @@ data:
           restartPolicy: Never
       backoffLimit: 0
 
-  thorworker-jobspec.yaml: |
+  thorworker-jobspec.yaml:
     apiVersion: batch/v1
     kind: Job
     metadata:
       name: {{ $thorWorkerJobName }}
     spec:
-      parallelism: %numWorkers
+      parallelism: _HPCC_NUM_WORKERS_
       ttlSecondsAfterFinished: 100
       template:
         metadata:
           labels:
             app: thor
             accessEsp: "true"
-            job: %jobname
+            job: "_HPCC_JOBNAME_"
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $thorWorkerJobName "target" .me.name "type" "thor") | indent 10 }}
           serviceAccountName: hpcc-default
@@ -177,7 +178,7 @@ data:
 {{- include "hpcc.addSecurityContext" . | indent 12 }}
 {{ include "hpcc.addImageAttrs" . | indent 12 }}
 {{- include "hpcc.addResources" (dict "me" $thorScope.workerResources) | indent 12 }}
-{{- $thorWorkerCmd := printf "thorslave_lcr %s %s %%args" (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
+{{- $thorWorkerCmd := printf "thorslave_lcr %s %s _HPCC_ARGS_" (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $thorWorkerCmd)) | indent 12 }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
@@ -201,28 +202,28 @@ data:
           restartPolicy: Never
       backoffLimit: 0
 
-  thormanager-networkspec.yaml: |
+  thor-networkspec.yaml:
     apiVersion: networking.k8s.io/v1
     kind: NetworkPolicy
     metadata:
-      name: {{ $thorManagerJobName }}
+      name: {{ $thorNetworkPolicyName }}
     spec:
       podSelector:
         matchLabels:
           app: thor
-          job: %jobname
+          job: "_HPCC_JOBNAME_"
       ingress:
       - from:
         - podSelector:
             matchLabels:
               app: thor
-              job: %jobname
+              job: "_HPCC_JOBNAME_"
       egress:
       - to:
         - podSelector:
             matchLabels:
               app: thor
-              job: %jobname
+              job: "_HPCC_JOBNAME_"
 {{- end -}}
 
 {{- $local := dict "first" true }}
@@ -235,7 +236,7 @@ data:
 {{- $_ := set $commonCtx "eclAgentUseChildProcesses" (hasKey . "eclAgentUseChildProcesses" | ternary .eclAgentUseChildProcesses true) }}
 {{- $_ := set $commonCtx "eclAgentReplicas" (.eclAgentReplicas | default 1) }}
 {{- $_ := set $commonCtx "thorAgentReplicas" (.thorAgentReplicas | default 1) }}
-{{- $configSHA := include "hpcc.thorConfigMap" $commonCtx | sha256sum }}
+{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.thorConfigMap" "component" "thor" "excludeKeys" "global")) }}
 {{- include "hpcc.checkDefaultStoragePlane" $commonCtx }}
 apiVersion: apps/v1
 kind: Deployment
@@ -335,7 +336,7 @@ spec:
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" $commonCtx.thorAgentName "component" "thoragent") | indent 6 }}
 ---
 kind: ConfigMap
-{{ include "hpcc.thorConfigMap" $commonCtx }}
+{{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.thorConfigMap")) }}
 ---
 {{ include "hpcc.addCertificate" (dict "root" $ "name" $commonCtx.eclAgentName "component" "eclagent") }}
 {{ include "hpcc.addCertificate" (dict "root" $ "name" $commonCtx.thorAgentName "component" "thoragent") }}

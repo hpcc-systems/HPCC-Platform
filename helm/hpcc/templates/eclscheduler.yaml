@@ -7,7 +7,7 @@ apiVersion: v1
 metadata:
   name: {{ .me.name }}-configmap
 data:
-  {{ .me.name }}.yaml: |
+  {{ .me.name }}.yaml:
     version: 1.0
     eclscheduler:
 {{ toYaml (omit .me "logging") | indent 6 }}
@@ -24,7 +24,7 @@ data:
 {{- if not .disabled -}}
 {{- $secretsCategories := list "system" }}
 {{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories }}
-{{- $configSHA := include "hpcc.eclSchedulerConfigMap" $commonCtx | sha256sum }}
+{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.eclSchedulerConfigMap" "component" "eclscheduler" "excludeKeys" "global")) -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -76,8 +76,7 @@ spec:
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" "eclscheduler") | indent 6 }}
 ---
 kind: ConfigMap
-{{ include "hpcc.eclSchedulerConfigMap" $commonCtx }}
-
+{{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.eclSchedulerConfigMap")) }}
 ---
 
 {{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "eclscheduler") }}

@@ -7,7 +7,7 @@
 {{- $_ := set $sasha "access" (splitList " " (include "hpcc.getSashaServiceAccess" $sasha)) -}}
 {{- $secretsCategories := append ((or (has "data" $sasha.access) (has "dalidata" $sasha.access)) | ternary (list "storage") list) "system" -}}
 {{- $commonCtx := dict "root" $ "me" $sasha "secretsCategories" $secretsCategories -}}
-{{- $configSHA := include "hpcc.sashaConfigMap" $commonCtx | sha256sum -}}
+{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.sashaConfigMap" "component" "sasha" "excludeKeys" "global")) -}}
 {{- $serviceName := printf "sasha-%s" $sashaName -}}
 apiVersion: apps/v1
 kind: Deployment
@@ -42,7 +42,7 @@ spec:
 ---
 {{- end }}
 kind: ConfigMap 
-{{ include "hpcc.sashaConfigMap" $commonCtx }}
+{{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.sashaConfigMap")) }}
 ---
 {{- if $sasha.storage }}
 {{- if and (not $sasha.storage.existingClaim) (not $sasha.storage.plane) }}
