@@ -14240,17 +14240,17 @@ bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, 
         E->Release();
         return false;
     }
-    jobYaml.replaceString("%jobname", jobname.str());
+    jobYaml.replaceString("_HPCC_JOBNAME_", jobname.str());
 
     VStringBuffer args("\"--workunit=%s\"", wuid);
     for (const auto &p: extraParams)
     {
-        if ('%' == p.first[0]) // jobspec substituion
+        if (hasPrefix(p.first.c_str(), "_HPCC_", false)) // jobspec substituion
             jobYaml.replaceString(p.first.c_str(), p.second.c_str());
         else
             args.append(" \"--").append(p.first.c_str()).append('=').append(p.second.c_str()).append("\"");
     }
-    jobYaml.replaceString("%args", args.str());
+    jobYaml.replaceString("_HPCC_ARGS_", args.str());
 
 // Disable ability change resources from within workunit
 // - all values are unquoted by toYAML.  This caused problems when previous string values are

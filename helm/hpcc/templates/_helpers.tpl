@@ -793,7 +793,7 @@ apiVersion: v1
 metadata:
   name: {{ printf "%s-configmap" $configMapName }}
 data:
-  {{ $configMapName }}.yaml: |
+  {{ $configMapName }}.yaml:
     version: 1.0
     sasha:
 {{ toYaml (omit .me "logging") | indent 6 }}
@@ -1214,4 +1214,64 @@ Add a secret volume for a roxie udp key
     secretName: {{ .component }}-udp-{{ .name }}-dtls
 {{ end -}}
 {{- end -}}
+{{- end -}}
+
+{{/*
+A template to filter out a set of keys from a generated config yaml.
+Used to regenerate a configmap without the exclusions, so that it can be
+used for form an SHA as an annotation in a pod.
+This means only if the non-excluded parts change, does the pod auto-restart on a config change.
+
+Pass in root, me, configMapHelper, component, excludeYamlRegex and excludeKeys
+excludeYamlRegex is list or regular expressions that filter out top-level sections, e.g. .*-jobspec.yaml sections
+excludeKeys is a comma seperated list of key values to exclude from each secion, e.g. "global,esp.services,esp.queues"
+The configMap data section is reconstructed based on filtering out matches.
+
+universalExcludeList is a hard-coded list of universal exclusions.
+Use to exclude parts of the config which are always allowed to change without causing a pod restart.
+e.g. vault secrets which are reloaded automatically when configmap change is detected.
+*/}}
+{{- define "hpcc.filterConfig" }}
+{{- $universalExcludeList := list (printf "%s.vaults" .component) (printf "%s.replicas" .component) -}}{{/* is there a better place for this than here?*/}}
+{{- $config := fromYaml (include .configMapHelper .) -}}
+{{- $excludeKeyList := concat (splitList "," (.excludeKeys | default "")) $universalExcludeList -}}
+{{- $excludeYamlRegex := .excludeYamlRegex | default "" -}}
+{{- $configCtx := . -}}
+{{- range $configElementName, $configElementDict := $config.data -}}
+  {{- if or (not $excludeYamlRegex) (not (regexMatch $excludeYamlRegex $configElementName)) -}}
+    {{- $configDictCtx := dict -}}
+    {{- range $key := $excludeKeyList -}}
+      {{- $_ := set $configDictCtx "keyDictStr" (regexReplaceAll "(.*)\\..*$" $key "${1}") -}}
+      {{- if eq $configDictCtx.keyDictStr $key -}}{{/* single component key, e.g. "global"*/}}
+        {{- $configElementDict := (unset $configElementDict $key) -}}
+      {{- else -}}{{/* scopes component key, e.g. "eclccserver.queue"*/}}
+        {{- $_ := set $configDictCtx "keyKeyStr" (regexReplaceAll ".*\\.(.*)$" $key "${1}") -}}
+        {{- $subDict := get $configElementDict $configDictCtx.keyDictStr -}}
+        {{- if $subDict -}}
+          {{- $_ := set $configElementDict $configDictCtx.keyDictStr (unset $subDict $configDictCtx.keyKeyStr) -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}{{/*range $key*/}}
+    {{- $configYaml := toYaml $configElementDict -}}
+    {{- $_ := set $config.data $configElementName $configYaml -}}
+  {{- else -}}
+    {{- $configData := (unset $config.data $configElementName) -}}
+    {{- $_ := set $config "data" $configData -}}
+  {{- end -}}
+{{- end -}}{{/*range $configElementName*/}}
+{{ toYaml $config }}
+{{- end -}}
+
+{{/*
+A template to generate a component config, uses filterConfig with no filters.
+NB: filterConfig could be used, but generateConfig explicitly implies no filtering
+Pass in root, me, configMapHelper
+*/}}
+{{- define "hpcc.generateConfig" }}
+{{- $config := fromYaml (include .configMapHelper .) -}}
+{{- range $configElementName, $configElementDict := $config.data -}}
+  {{- $configYaml := toYaml $configElementDict -}}
+  {{- $_ := set $config.data $configElementName $configYaml -}}
+{{- end }}
+{{ toYaml $config }}
 {{- end -}}
