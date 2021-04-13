@@ -347,6 +347,12 @@ ecl deploy roxie - --name=FindPersonService
                 </row>
 
                 <row>
+                  <entry>--protect</entry>
+
+                  <entry>Protege a workunit da exclusão</entry>
+                </row>
+
+                <row>
                   <entry>-v, --verbose</entry>
 
                   <entry>Saída de informações adicionais de
@@ -1740,6 +1746,18 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                   <entry>-A, --activate</entry>
 
                   <entry>Ativa a consulta quando copiada</entry>
+                </row>
+
+                <row>
+                  <entry>-sp, --suspend-prev</entry>
+
+                  <entry>Suspende a consulta previamente ativa</entry>
+                </row>
+
+                <row>
+                  <entry>-dp, --delete-prev</entry>
+
+                  <entry>Exclui a consulta previamente ativa</entry>
                 </row>
 
                 <row>

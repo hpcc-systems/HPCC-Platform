@@ -1318,6 +1318,15 @@
                     <entry>Marque essa caixa para usar uma conexão de rede
                     única para despray.</entry>
                   </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Preservar partes do arquivo
+                    </emphasis></entry>
+
+                    <entry>Marque esta caixa para preservar as partes do
+                    arquivo original e gravar vários arquivos na landing
+                    zone.</entry>
+                  </row>
                 </tbody>
               </tgroup>
             </informaltable></para>

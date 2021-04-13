@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SetExpireDays">
+  <title>SetExpireDays</title>
+
+  <para><emphasis role="bold">STD.File.SetExpireDays<indexterm>
+      <primary>STD.File.SetExpireDays</primary>
+    </indexterm><indexterm>
+      <primary>File.SetExpireDays</primary>
+    </indexterm><indexterm>
+      <primary>SetExpireDays</primary>
+    </indexterm>(</emphasis><emphasis>lfn</emphasis><emphasis role="bold">,
+  </emphasis><emphasis>expireDays </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry><emphasis>lfn</emphasis></entry>
+
+          <entry>Uma string contendo o nome lógico do arquivo.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>expireDays</emphasis></entry>
+
+          <entry>Número de dias antes que o arquivo expire. Definir como 0
+          especifica o uso do valor de expiração padrão do sistema
+          (especificado no <emphasis>ExpiryDefault</emphasis> do servidor
+          Sasha)</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>A função <emphasis role="bold">SetExpireDays </emphasis>configura o
+  critério de expiração (o atributo <emphasis>expireDays</emphasis>). O
+  arquivo é excluído pelo servidor Sasha quando não é acessado pelo número de
+  dias especificado.</para>
+
+  <para>Exemplo:</para>
+
+  <programlisting format="linespecific">A := STD.File.SetExpireDays('~samples::myscope::myfile',30);
+ //file expires and is deleted after 30 days w/o access
+</programlisting>
+
+  <para>Veja também: <link linkend="GetExpireDays">GetExpireDays</link>, <link
+  linkend="ClearExpireDays">ClearExpireDays</link></para>
+</sect1>

@@ -235,6 +235,15 @@
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/WaitDfuWorkunit.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/SetExpireDays.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/GetExpireDays.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ClearExpireDays.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
   </chapter>
 
   <chapter id="String_Handling">

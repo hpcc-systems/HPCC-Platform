@@ -75,10 +75,10 @@
       você deve ter um cluster HPCC executando a versão 7.0.0 ou posterior. O
       Java 8 também é necessário. Você precisará configurar o componente
       Sparkthor. O componente Sparkthor precisa estar associado a um cluster
-      Thor existente válido. Os nós escravos Spark serão criados ao lado de
-      cada escravo Thor. O nó do Integrated Spark Master será designado
-      durante a configuração, junto com quaisquer outros recursos do nó do
-      Spark. Em seguida, o componente Sparkthor gerará um cluster Spark
+      Thor existente válido. Os nós de trabalho do Spark serão criados ao lado
+      de cada nós de trabalho Thor. O nó do Integrated Spark Mananger será
+      designado durante a configuração, junto com quaisquer outros recursos do
+      nó do Spark. Em seguida, o componente Sparkthor gerará um cluster Spark
       Integrado na inicialização. Você também terá um conector jar SPARK-HPCC
       disponível.</para>
 
@@ -155,8 +155,7 @@
                       xpointer="element(/1)"
                       xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
-          <para>
-            <informaltable colsep="1" frame="all" rowsep="1">
+          <para><informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
 
               <tgroup cols="2">
@@ -166,19 +165,17 @@
 
                 <tbody>
                   <row>
-                    <entry>
-                      <inlinegraphic fileref="images/OSSgr3.png"/>
-                    </entry>
+                    <entry><inlinegraphic
+                    fileref="images/OSSgr3.png"/></entry>
 
                     <entry>Este comando pode ser usado para confirmar que os
                     processos do HPCC foram interrompidos:<para>
-                        <programlisting>sudo systemctl status hpccsystems-platform.target</programlisting>
-                      </para></entry>
+                    <programlisting>sudo systemctl status hpccsystems-platform.target</programlisting>
+                    </para></entry>
                   </row>
                 </tbody>
               </tgroup>
-            </informaltable>
-          </para>
+            </informaltable></para>
         </listitem>
 
         <listitem>
@@ -186,9 +183,7 @@
           Configurações.<programlisting>sudo /opt/HPCCSystems/sbin/configmgr
 </programlisting></para>
 
-          <para>
-            <graphic fileref="images/gs_img_configmgrStart.jpg"/>
-          </para>
+          <para><graphic fileref="images/gs_img_configmgrStart.jpg"/></para>
         </listitem>
 
         <listitem>
@@ -227,8 +222,7 @@
 
           <para>Configure os atributos da sua instância do Spark:</para>
 
-          <para>
-            <informaltable colsep="1" id="Th.t1" rowsep="1">
+          <para><informaltable colsep="1" id="Th.t1" rowsep="1">
               <tgroup align="left" cols="4">
                 <colspec colwidth="155pt"/>
 
@@ -305,7 +299,7 @@
                   <row>
                     <entry>SPARK_MASTER_PORT</entry>
 
-                    <entry>Porta base a ser usada para a master</entry>
+                    <entry>Porta base a ser usada pela principal</entry>
 
                     <entry>7077</entry>
 
@@ -343,15 +337,13 @@
                   </row>
                 </tbody>
               </tgroup>
-            </informaltable>
-          </para>
+            </informaltable></para>
 
           <para>*ThorClusterName segmenta um cluster Thor existente. Ao
           configurar, você deve escolher um cluster Thor válido existente para
           o cluster Spark Integrado espelhar.</para>
 
-          <para>
-            <informaltable colsep="1" frame="all" rowsep="1">
+          <para><informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
 
               <tgroup cols="2">
@@ -361,9 +353,8 @@
 
                 <tbody>
                   <row>
-                    <entry>
-                      <inlinegraphic fileref="images/caution.png"/>
-                    </entry>
+                    <entry><inlinegraphic
+                    fileref="images/caution.png"/></entry>
 
                     <entry>OBSERVAÇÃO: Você deve deixar pelo menos dois
                     núcleos abertos para o HPCC fornecer o Spark com dados. O
@@ -374,19 +365,17 @@
                   </row>
                 </tbody>
               </tgroup>
-            </informaltable>
-          </para>
+            </informaltable></para>
         </listitem>
 
         <listitem>
-          <para>Especifique um Nó Mestre do Spark; Selecione a aba Instances.
-          Clique com o botão direito do mouse na tabela Instances e escolha
-          <emphasis role="bold">Add Instances </emphasis></para>
+          <para>Especifique um Nó Principal do Spark; Selecione a aba
+          Instances. Clique com o botão direito do mouse na tabela Instances e
+          escolha <emphasis role="bold">Add Instances </emphasis></para>
 
-          <para>Adicione a instância do seu nó mestre do Spark.</para>
+          <para>Adicione a instância do nó principal do Spark.</para>
 
-          <para>
-            <informaltable colsep="1" frame="all" rowsep="1">
+          <para><informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
 
               <tgroup cols="2">
@@ -396,17 +385,15 @@
 
                 <tbody>
                   <row>
-                    <entry>
-                      <inlinegraphic fileref="images/caution.png"/>
-                    </entry>
+                    <entry><inlinegraphic
+                    fileref="images/caution.png"/></entry>
 
-                    <entry>OBSERVAÇÃO: Você só pode ter uma instância Master
-                    do Spark</entry>
+                    <entry>OBSERVAÇÃO: Você só pode ter uma instância
+                    principal do Spark</entry>
                   </row>
                 </tbody>
               </tgroup>
-            </informaltable>
-          </para>
+            </informaltable></para>
         </listitem>
 
         <listitem>
@@ -414,8 +401,7 @@
           o arquivo de ambiente do diretório de origem para o diretório
           /etc/HPCCSystems.</para>
 
-          <para>
-            <informaltable colsep="1" frame="all" rowsep="1">
+          <para><informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
 
               <tgroup cols="2">
@@ -425,9 +411,8 @@
 
                 <tbody>
                   <row>
-                    <entry>
-                      <inlinegraphic fileref="images/caution.png"/>
-                    </entry>
+                    <entry><inlinegraphic
+                    fileref="images/caution.png"/></entry>
 
                     <entry>Certifique-se de que o sistema não esteja em
                     execução antes de tentar mover o arquivo
@@ -435,8 +420,7 @@
                   </row>
                 </tbody>
               </tgroup>
-            </informaltable>
-          </para>
+            </informaltable></para>
 
           <para><programlisting>sudo cp /etc/HPCCSystems/source/&lt;new environment file.xml&gt; 
 /etc/HPCCSystems/environment.xml</programlisting> e distribua o arquivo do
@@ -449,8 +433,8 @@
         </listitem>
       </orderedlist>
 
-      <para>Agora você pode iniciar seu cluster do Sistema HPCC e verificar se
-      o Sparkthor está ativo.</para>
+      <para>Agora você pode iniciar seu cluster HPCC Systems e verificar se o
+      Sparkthor está ativo.</para>
 
       <?hard-pagebreak ?>
 
@@ -460,12 +444,12 @@
                   xpointer="element(/1)"
                   xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
-      <para>Usando um navegador, navegue para a sua instância do Integrated
-      Master Spark (a instância que você adicionou acima) em execução na porta
-      8080 do seu Sistema HPCC.</para>
+      <para>Usando um navegador, navegue para a sua instância do Spark's
+      Manager (a instância que você adicionou acima) em execução na porta 8080
+      do seu HPCC Systems.</para>
 
       <para>Por exemplo, http: //nnn.nnn.nnn.nnn: 8080, em que nnn.nnn.nnn.nnn
-      é o endereço IP do nó do Integrated Spark Master.</para>
+      é o endereço IP do nó do Integrated Spark Manager.</para>
 
       <programlisting>https://192.168.56.101:8080</programlisting>
 
@@ -486,17 +470,13 @@
 
         <itemizedlist>
           <listitem>
-            <para>
-              <ulink
-              url="https://spark.apache.org/docs/latest/spark-standalone.html#cluster-launch-scripts ">https://spark.apache.org/docs/latest/spark-standalone.html#cluster-launch-scripts</ulink>
-            </para>
+            <para><ulink
+            url="https://spark.apache.org/docs/latest/spark-standalone.html#cluster-launch-scripts ">https://spark.apache.org/docs/latest/spark-standalone.html#cluster-launch-scripts</ulink></para>
           </listitem>
 
           <listitem>
-            <para>
-              <ulink
-              url="https://spark.apache.org/docs/latest/configuration.html#environment-variables ">https://spark.apache.org/docs/latest/configuration.html#environment-variables</ulink>
-            </para>
+            <para><ulink
+            url="https://spark.apache.org/docs/latest/configuration.html#environment-variables ">https://spark.apache.org/docs/latest/configuration.html#environment-variables</ulink></para>
           </listitem>
         </itemizedlist>
 
@@ -573,7 +553,7 @@
       da Iris. O dataset pode ser obtido de uma variedade de fontes, incluindo
       o repositório HPCC-Systems/ecl-ml. IrisDs.ecl (pode ser encontrado na
       pasta ML/Tests/Explanatory: <ulink
-      url="https://github.com/hpcc-systems/ecl-ml/blob/master/ML/Tests/Explanatory/IrisDS.ecl">https://github.com/hpcc-systems/ecl-ml/blob/master/ML/Tests/Explanatory/IrisDS.ecl</ulink>)
+      url="https://github.com/hpcc-systems/Spark-HPCC/blob/master/Examples/src/main/ecl/IrisDS.ecl">https://github.com/hpcc-systems/Spark-HPCC/blob/master/Examples/src/main/ecl/IrisDS.ecl</ulink>)
       pode ser executado para gerar o dataset Iris no HPCC. Um passo a passo
       dos exemplos é fornecido na seção Exemplos.</para>
 
@@ -783,10 +763,10 @@ throws Exception { </programlisting>
       na mesma LAN. Nesse caso, a classe
       <emphasis>org.hpccsystems.spark.RemapInfo</emphasis> é usada para
       definir as informações necessárias para alterar o endereçamento. Existem
-      duas opções que podem ser usadas. A primeira opção é que cada nó escravo
-      do Thor pode receber um IP visível para o cluster do Spark. Esses
-      endereços devem ser um intervalo contíguo. A segunda opção é atribuir um
-      IP e um intervalo contíguo de números de porta. O objeto
+      duas opções que podem ser usadas. A primeira opção é que cada nó de
+      trabalho do Thor pode receber um IP visível para o cluster do Spark.
+      Esses endereços devem ser um intervalo contíguo. A segunda opção é
+      atribuir um IP e um intervalo contíguo de números de porta. O objeto
       <emphasis>RemapInfo</emphasis> é fornecido como um parâmetro.</para>
     </sect1>
 

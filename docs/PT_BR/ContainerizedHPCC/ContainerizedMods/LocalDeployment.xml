@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="LocalDeployment">
+  <title>Deploy Local (Desenvolvimento e Teste)</title>
+
+  <para>Embora haja muitas maneiras de instalar uma plataforma HPCC Systems de
+  nó único local, esta seção se concentra no uso do Docker Desktop.</para>
+
+  <sect1 id="prereq" role="nobrk">
+    <title>Pré-requisitos</title>
+
+    <itemizedlist>
+      <listitem>
+        <para>Instalar Docker Desktop e <emphasis role="bold">WSL
+        2</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <para>Habilitar integração Enable WSL no Docker</para>
+      </listitem>
+
+      <listitem>
+        <para>Habilitar Kubernetes no Docker Desktop</para>
+      </listitem>
+
+      <listitem>
+        <para>Instalar Helm</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>OU</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Instalar Docker Desktop e <emphasis
+        role="bold">Hyper-V</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <para>Habilitar Kubernetes no Docker Desktop</para>
+      </listitem>
+
+      <listitem>
+        <para>Instalar Helm</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>OU</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Instalar Docker Desktop no macOS</para>
+      </listitem>
+
+      <listitem>
+        <para>Habilitar Kubernetes no Docker Desktop</para>
+      </listitem>
+
+      <listitem>
+        <para>Instalar Helm</para>
+      </listitem>
+    </itemizedlist>
+  </sect1>
+
+  <sect1 id="addrepo" role="nobrk">
+    <title>Adicionar repositório</title>
+
+    <para>Para usar o helm charts do HPCC Systems, você deve adicioná-lo à
+    lista de repositório do helm, conforme mostrado abaixo:</para>
+
+    <para><programlisting>&gt;helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting></para>
+
+    <para>Reposta esperada:</para>
+
+    <para><programlisting>"hpcc" has been added to your repositories</programlisting></para>
+  </sect1>
+
+  <sect1 id="startdefault">
+    <title>Iniciar um sistema padrão</title>
+
+    <para>O helm chart padrão inicia um sistema de teste simples com Dali,
+    ESP, eclccserver, duas filas eclagent (modo ROXIE e hThor) e uma fila
+    Thor.</para>
+
+    <para><emphasis role="bold">Para iniciar este sistema
+    simples:</emphasis></para>
+
+    <para><programlisting>&gt;helm install mycluster hpcc/hpcc --set global.image.version=latest </programlisting></para>
+
+    <para>Resposta esperada:</para>
+
+    <para><programlisting>NAME: mycluster
+LAST DEPLOYED: Tue Mar 23 13:26:55 2021
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+Thank you for installing the HPCC chart.
+
+This chart has defined the following HPCC components:
+dali.mydali
+dfuserver.dfuserver
+eclagent.hthor
+eclagent.roxie-workunit
+eclccserver.myeclccserver
+esp.eclwatch
+esp.eclservices
+esp.eclqueries
+esp.esdl-sandbox
+esp.sql2ecl
+roxie.roxie
+thor.thor
+sasha.dfurecovery-archiver
+sasha.dfuwu-archiver
+sasha.file-expiry
+sasha.wu-archiver</programlisting></para>
+
+    <para><emphasis role="bold">Para verificar o status:</emphasis></para>
+
+    <para><programlisting>&gt;kubectl get pods</programlisting></para>
+
+    <para>Resposta esperada:</para>
+
+    <para><programlisting>NAME                                          READY   STATUS    RESTARTS   AGE
+eclqueries-7fd94d77cb-m7lmb                   1/1     Running   0          2m6s
+eclservices-b57f9b7cc-bhwtm                   1/1     Running   0          2m6s
+eclwatch-599fb7845-2hq54                      1/1     Running   0          2m6s
+esdl-sandbox-848b865d46-9bv9r                 1/1     Running   0          2m6s
+hthor-745f598795-ql9dl                        1/1     Running   0          2m6s
+mydali-6b844bfcfb-jv7f6                       2/2     Running   0          2m6s
+myeclccserver-75bcc4d4d-gflfs                 1/1     Running   0          2m6s
+roxie-agent-1-77f696466f-tl7bb                1/1     Running   0          2m6s
+roxie-agent-1-77f696466f-xzrtf                1/1     Running   0          2m6s
+roxie-agent-2-6dd45b7f9d-m22wl                1/1     Running   0          2m6s
+roxie-agent-2-6dd45b7f9d-xmlmk                1/1     Running   0          2m6s
+roxie-toposerver-695fb9c5c7-9lnp5             1/1     Running   0          2m6s
+roxie-workunit-d7446699f-rvf2z                1/1     Running   0          2m6s
+sasha-dfurecovery-archiver-78c47c4db7-k9mdz   1/1     Running   0          2m6s
+sasha-dfuwu-archiver-576b978cc7-b47v7         1/1     Running   0          2m6s
+sasha-file-expiry-8496d87879-xct7f            1/1     Running   0          2m6s
+sasha-wu-archiver-5f64594948-xjblh            1/1     Running   0          2m6s
+sql2ecl-5c8c94d55-tj4td                       1/1     Running   0          2m6s
+thor-eclagent-6b8f564f9c-qnczz                1/1     Running   0          2m6s
+thor-thoragent-56d788869f-7trxk               1/1     Running   0          2m6s</programlisting></para>
+
+    <para><variablelist>
+        <varlistentry>
+          <term>Observação:</term>
+
+          <listitem>
+            <para>Pode demorar um pouco antes de todos os componentes estarem
+            em execução, especialmente na primeira vez, pois as imagens do
+            contêiner precisam ser baixadas do Docker Hub.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist></para>
+  </sect1>
+
+  <sect1 id="usedefault">
+    <title>Uso padrão do sistema</title>
+
+    <para>Seu sistema agora está pronto para uso. O primeiro passo usual é
+    abrir o ECL Watch.</para>
+
+    <variablelist>
+      <varlistentry>
+        <term>Observação:</term>
+
+        <listitem>
+          <para>Algumas páginas no ECL Watch, como aquelas que exibem
+          informações de topologia, ainda não estão totalmente funcionais no
+          modo em contêiner.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+
+    <para>Use este comando para obter uma lista de serviços em execução e
+    endereços IP:</para>
+
+    <para><programlisting>&gt;kubectl get svc</programlisting></para>
+
+    <para>Resposta esperada:</para>
+
+    <para><programlisting>NAME                  TYPE         CLUSTER-IP      EXTERNAL-IP  PORT(S)           AGE
+eclqueries            LoadBalancer 10.108.171.35   localhost    8002:31615/TCP    2m6s
+eclservices           ClusterIP    10.107.121.158  &lt;none&gt;       8010/TCP          2m6s
+eclwatch              LoadBalancer 10.100.81.69    localhost    8010:30173/TCP    2m6s
+esdl-sandbox          LoadBalancer 10.100.194.33   localhost    8899:30705/TCP    2m6s
+kubernetes            ClusterIP    10.96.0.1       &lt;none&gt;       443/TCP           2m6s
+mydali                ClusterIP    10.102.80.158   &lt;none&gt;       7070/TCP          2m6s
+roxie                 LoadBalancer 10.100.134.125  localhost    9876:30480/TCP    2m6s
+roxie-toposerver      ClusterIP    None            &lt;none&gt;       9004/TCP          2m6s
+sasha-dfuwu-archiver  ClusterIP    10.110.200.110  &lt;none&gt;       8877/TCP          2m6s
+sasha-wu-archiver     ClusterIP    10.111.34.240   &lt;none&gt;       8877/TCP          2m6s
+sql2ecl               LoadBalancer 10.107.177.180  localhost    8510:30054/TCP    2m6s</programlisting></para>
+
+    <para>Observe que o serviço <emphasis role="strong">eclwatch</emphasis>
+    está sendo executado em <emphasis role="strong">localhost:8010</emphasis>.
+    Use esse endereço em seu navegador para acessar o ECL Watch.</para>
+
+    <para>Dentro do ECL Watch, pressione o botão ECL e em seguida vá para a
+    aba Playground.</para>
+
+    <para>A partir daqui, você pode usar o ECL de exemplo ou inserir outras
+    consultas de teste e escolher entre os clusters disponíveis para enviar
+    suas workunit.</para>
+  </sect1>
+
+  <sect1 id="terminatedefault">
+    <title>Terminar (Descomissionar) o sistema</title>
+
+    <para>Para verificar quais helm charts estão instalados atualmente,
+    execute este comando:</para>
+
+    <para><programlisting>&gt;helm list</programlisting></para>
+
+    <para>Para interromper os pods do HPCC Systems, use o helm para
+    desinstalar:</para>
+
+    <para><programlisting>&gt;helm uninstall mycluster</programlisting></para>
+
+    <para>Isso interrompe o cluster, exclui os pods e, com as configurações
+    padrão e os volumes persistentes, também exclui o armazenamento
+    usado.</para>
+  </sect1>
+</chapter>

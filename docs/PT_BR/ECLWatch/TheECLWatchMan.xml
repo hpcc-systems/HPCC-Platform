@@ -685,6 +685,48 @@
       do ECL Watch localizada no topo de qualquer página como mostrado
       acima.</para>
 
+      <sect2 id="ClusterDiskUsageGraphs">
+        <title>Gráficos de uso do disco do cluster</title>
+
+        <para>A página Atividade de cluster exibe gráficos na parte superior,
+        mostrando o uso do disco do cluster. Esses gráficos podem fornecer uma
+        visão rápida da capacidade de seus clusters. Clicar em cada uma das
+        imagens exibe mais informações sobre a atividade de uso de disco do
+        cluster individual.</para>
+
+        <para><figure>
+            <title>Página de gráficos de Atividade do Cluster</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWaGage01.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure>Os gráficos mostram a quantidade de armazenamento
+        disponível, a quantidade média de armazenamento em uso e a quantidade
+        máxima de armazenamento em uso em todos os nós. A linha indicadora
+        escura exibe a média em uso nos discos desse cluster. A porção de
+        rosquinha colorida mostra a quantidade máxima de armazenamento em uso
+        por qualquer nó único. Se isso for muito diferente, pode afetar o
+        desempenho.</para>
+
+        <para>A cor dos gráficos muda conforme a capacidade de armazenamento
+        muda. Verde indica baixa utilização, amarelo indica maior utilização,
+        e vermelho indica utilização muito alta.</para>
+
+        <para><figure>
+            <title>Detalhes do Gráfico do Cluster</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWaGage02.jpg"/>
+              </imageobject>
+            </mediaobject>
+          </figure>Os gráficos fornecem uma indicação da capacidade disponível
+        em seus nós. Isso pode ajudar a identificar quaisquer problemas
+        potenciais de espaço em disco.</para>
+      </sect2>
+
       <sect2 id="ECLWatch_ClusterActivity">
         <title>Atividade de Cluster</title>
 
