@@ -49,6 +49,14 @@ global:
   # to run as root in a sidecar in same process space as other containers, allowing it to for example send signals
   # to processes in sidecars
 
+  # Define global default metrics configuration for all components
+  metrics:
+    sinks:
+      - type: log
+        name: logging
+        settings:
+          period: 60
+
   # misc:
   #   postJobCommand: "curl -sf -XPOST http://127.0.0.1:15020/quitquitquit"
   # Or example for linkerd
