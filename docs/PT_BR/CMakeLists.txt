@@ -1,5 +1,5 @@
-﻿################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2019 HPCC Systems®.
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2018 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 #  This CMakeLists intended to be used in docs/PT_BR
 #    Refactored for internationalization
 ###
-#    Last Mod GP 5/2019
+# Last Mod GP 4/2021
 #  Removed ECL Plugin For Eclipse
 ####################
 #
@@ -83,15 +83,13 @@ add_subdirectory(RunningHPCCinaVirtualMachine)
 add_subdirectory(ECLScheduler)
 add_subdirectory(ECLWatch)
 add_subdirectory(VisualizingECL)
-#9/16
 add_subdirectory(WsSQLUG)
-#add_subdirectory(PortalHTML)
-
+##add_subdirectory(PortalHTML)
+add_subdirectory(ContainerizedHPCC)
 
 
 
 # Docs automation
-##CommentedOut4PT_BR_TESTING
 ##if (DOCS_AUTO)
 #   add_subdirectory(XMLGeneration)
 ##   add_subdirectory(ConfiguringHPCC)

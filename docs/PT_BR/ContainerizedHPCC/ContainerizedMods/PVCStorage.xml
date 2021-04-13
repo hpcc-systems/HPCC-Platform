@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="PVCStorage">
+  <title>Storage</title>
+
+  <sect1 id="PVCs" role="nobrk">
+    <title>Persistent Storage para um Deploy Local</title>
+
+    <para>Ao executar em um sistema de teste de nó único, como Docker Desktop,
+    a classe de armazenamento padrão normalmente significa que todas as
+    declarações de volume persistente (PVCs) são mapeadas para diretórios
+    locais temporários na máquina host. Normalmente, eles são removidos quando
+    o cluster é interrompido. Isso é bom para teste, mas para qualquer
+    aplicativo real, você deseja o persistent storage.</para>
+
+    <para>Para persistir os dados com o Docker Desktop, a primeira etapa é
+    garantir que os diretórios relevantes existam:</para>
+
+    <orderedlist>
+      <listitem>
+        <para>Crie diretórios de dados usando uma interface de
+        terminal:</para>
+
+        <para>Para Windows, use o seguinte comando:</para>
+
+        <para><programlisting>mkdir c:\hpccdata
+mkdir c:\hpccdata\dalistorage
+mkdir c:\hpccdata\queries
+mkdir c:\hpccdata\sasha
+mkdir c:\hpccdata\hpcc-data</programlisting></para>
+
+        <para>Para macOS, use este comando:</para>
+
+        <para><programlisting>mkdir -p /Users/myUser/hpccdata/{dalistorage,queries,sasha,hpcc-data}</programlisting></para>
+      </listitem>
+
+      <listitem>
+        <para>Faça o download do HPCC Platform Helm charts.</para>
+
+        <para>Eles estão disponíveis no repositório do <emphasis
+        role="strong">HPCC-Platform</emphasis> do HPCC Systems no GitHub
+        (https://github.com/hpcc-systems/HPCC-Platform).</para>
+
+        <para>Se você quiser somente o helm charts, use o repositório
+        <emphasis role="strong">helm-chart</emphasis>
+        (https://github.com/hpcc-systems/helm-chart).</para>
+      </listitem>
+
+      <listitem>
+        <para>Abra uma janela de prompt e navegue até diretório <emphasis
+        role="bold">helm</emphasis> do reposítório que você acabou de fazer o
+        download.</para>
+      </listitem>
+
+      <listitem>
+        <para>Instalar o Helm chart do diretório <emphasis
+        role="bold">examples/local</emphasis> no seu repositório local.</para>
+
+        <para>Este chart cria volumes persistents baseada nos diretórios host
+        que você criou anteriormente.<programlisting># for a WSL2 deployment:
+helm install localfile examples/local/hpcc-localfile 
+           --set common.hostpath=/run/desktop/mnt/host/c/hpccdata
+
+# for a Hyper-V deployment:
+helm install localfile examples/local/hpcc-localfile --set common.hostpath=/c/hpccdata
+
+# for a macOS deployment:
+helm install localfile examples/local/hpcc-localfile --set common.hostpath=/Users/myUser/hpccdata
+</programlisting></para>
+
+        <para>A opção <emphasis role="bold">--set common.hostpath=
+        </emphasis>especifica o diretório base:</para>
+
+        <para>O caminho <emphasis
+        role="bold">/run/desktop/mnt/host/c/hpccdata</emphasis> fornece acesso
+        ao arquivo de host do sistema para WSL2.</para>
+
+        <para>O caminho <emphasis role="bold">/c/hpccdata</emphasis> fornece
+        acesso ao arquivo de host do sistema para Hyper-V.</para>
+
+        <para>O caminho <emphasis
+        role="bold">/Users/myUser/hpccdata</emphasis> fornece acesso ao
+        arquivo de host do sistema para Mac OSX.</para>
+
+        <para><emphasis role="bold">Observação: </emphasis>O valor passado
+        para --set common-hostpath diferencia maiúsculas de minúsculas.</para>
+      </listitem>
+
+      <listitem>
+        <para>Se você estiver usando o Docker Desktop com Hyper-V, adicione o
+        diretório dados compartilhado (no exemplo, C:\hpccdata) nas
+        configurações do Docker Desktop.</para>
+
+        <para>Isto <emphasis role="bold">não</emphasis> é necessário em
+        ambientes macOS ou WSL 2.</para>
+
+        <graphic fileref="../../images/dockerFileShare.jpg"/>
+      </listitem>
+
+      <listitem>
+        <para>Por fim, instale o hpcc Helm chart e forneça um arquivo yaml que
+        fornece informações de armazenamento que usa os PVCs criados na etapa
+        anterior.</para>
+
+        <para>O diretório de exemplo contém um arquivo yaml de amostra que
+        pode ser usado neste caso:</para>
+
+        <programlisting>helm install mycluster hpcc/ --set global.image.version=latest 
+             -f examples/local/values-localfile.yaml</programlisting>
+      </listitem>
+
+      <listitem>
+        <para>Para testar, crie alguns arquivos de dados e workunitso enviando
+        ao Thor algum código ECL como o seguinte:</para>
+
+        <programlisting>LayoutPerson := RECORD
+  UNSIGNED1 ID;
+  STRING15  FirstName;
+  STRING25  LastName;
+END;
+allPeople := DATASET([ {1,'Fred','Smith'},
+                       {2,'Joe','Jones'},
+                       {3,'Jane','Smith'}],LayoutPerson);
+OUTPUT(allPeople,,'MyData::allPeople',THOR,OVERWRITE);
+</programlisting>
+      </listitem>
+
+      <listitem>
+        <para>Use o comando helm uninstall para encerrar seus clusters e, em
+        seguida, reinicie.</para>
+      </listitem>
+
+      <listitem>
+        <para>Abra o ECL Watch e observe que suas workunits e os arquivos
+        lógicos ainda estão lá.</para>
+      </listitem>
+    </orderedlist>
+
+    <para/>
+  </sect1>
+
+  <sect1 id="StoragePlanes">
+    <title>Importar: Storage Plans e como usá-los</title>
+
+    <para>Os Storage Plans fornecem a flexibilidade para configurar onde os
+    dados são armazenados em uma plataforma HPCC Systems, mas não aborda
+    diretamente a questão de como obter dados para a plataforma em primeiro
+    lugar.</para>
+
+    <para>As plataformas em contêiner oferecem suporte à importação de dados
+    de duas maneiras:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Fazendo o upload para uma Landing Zone e o Spray (não
+        implementado na versão em contêiner)</para>
+      </listitem>
+
+      <listitem>
+        <para>Copiando o Storage Plane e acessando diretamente</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>A partir da versão 7.12.0, uma nova sintaxe ECL foi adicionada para
+    acessar arquivos diretamente de um plano de armazenamento. Isso é
+    semelhante a sintax <emphasis role="bold">file::</emphasis> sintaxe usada
+    para ler arquivos diretamente de uma máquina física, normalmente uma
+    landing zone.</para>
+
+    <para>A nova sintaxe é:</para>
+
+    <para><programlisting>~plane::&lt;storage-plane-name&gt;::&lt;path&gt;::&lt;filename&gt;</programlisting>Onde
+    a sintaxe do caminho e do nome do arquivo são as mesmas usadas com a
+    sintex <emphasis role="strong">file::</emphasis>. Isso inclui exigir que
+    letras maiúsculas sejam citadas com um símbolo ^. Para maiores detalhes,
+    veja a seção Arquivos de Landing Zone Files no documento <emphasis>ECL
+    Language Reference.</emphasis></para>
+
+    <para>Se você o plano de armazenamento configurado conforme a seção
+    anterior e você copiou o arquivo <emphasis
+    role="strong">originalperson</emphasis> para <emphasis
+    role="strong">C:\hpccdata\hpcc-data\tutorial</emphasis>, então
+    referenciaro arquivo utilizando o sintax</para>
+
+    <para><programlisting>'~plane::data::tutorial::originalperson'</programlisting></para>
+
+    <para>Observação: O arquivo <emphasis
+    role="strong">originalperson</emphasis> está disponível na página do HPCC
+    Systems
+    (https://cdn.hpccsystems.com/install/docs/3_8_0_8rc_CE/OriginalPerson)</para>
+
+    <para/>
+
+    <para/>
+
+    <para/>
+
+    <para/>
+  </sect1>
+</chapter>

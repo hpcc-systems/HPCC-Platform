@@ -26,15 +26,17 @@
           <row>
             <entry>Return:</entry>
 
-            <entry>TOXML retorna uma STRING.</entry>
+            <entry>TOXML retorna uma STRING UTF8.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
+  <para/>
+
   <para>A função <emphasis role="bold">TOXML </emphasis>retorna uma única
-  string com os dados no <emphasis>registro</emphasis> reformatados como XML.
-  Se a estrutura RECORD do <emphasis>registro</emphasis> tiver XPATHs
+  string UTF-8 com os dados no <emphasis>registro</emphasis> reformatados como
+  XML. Se a estrutura RECORD do <emphasis>registro</emphasis> tiver XPATHs
   definidos, eles serão usados, caso contrário, os nomes de campo com menos
   letras maiúsculas serão usados como nomes de tag XML.</para>
 
