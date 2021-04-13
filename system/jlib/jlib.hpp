@@ -394,6 +394,7 @@ typedef CIArrayOf<StringBufferItem> StringBufferArray;
 //These could be template definitions, but that would potentially affect too many classes.
 #define BITMASK_ENUM(X) \
 inline constexpr X operator | (X l, X r) { return (X)((unsigned)l | (unsigned)r); } \
+inline constexpr X operator & (X l, X r) { return (X)((unsigned)l & (unsigned)r); } \
 inline constexpr X operator ~ (X l) { return (X)(~(unsigned)l); } \
 inline X & operator |= (X & l, X r) { l = l | r; return l; } \
 inline X & operator &= (X & l, X r) { l = (X)(l & r); return l; }
