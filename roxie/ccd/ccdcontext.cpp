@@ -3511,6 +3511,9 @@ public:
                 fileCache.setValue(expandedName, add);
             }
         }
+        else if (traceLevel > 5)
+            DBGLOG("Found entry for %s in filecache", fileName);
+
         return ret.getClear();
     }
 
@@ -3521,6 +3524,8 @@ public:
 
     virtual void endGraph(unsigned __int64 startTimeStamp, cycle_t startCycles, bool aborting) override
     {
+        if (traceLevel > 5)
+            DBGLOG("Killing filecache");
         fileCache.kill();
         CRoxieContextBase::endGraph(startTimeStamp, startCycles, aborting);
     }
