@@ -19,6 +19,9 @@
 #ifdef _WIN32
 #include <errno.h>
 //#include <winsock.h>  // for TransmitFile
+#else
+#include <poll.h>
+#include <sys/inotify.h>
 #endif
 
 #include <sys/types.h>
@@ -7106,3 +7109,220 @@ const FileSystemProperties & queryFileSystemProperties(const char * filename)
     else
         return linuxFileSystemProperties;
 }
+
+
+#ifndef _WIN32
+class CFileEventWatcher : public CInterfaceOf<IFileEventWatcher>, implements IThreaded
+{
+    class CMonitorItem : public CInterface
+    {
+    public:
+        CMonitorItem(const char *_filename, int _watchFd, FileWatchEvents _events) : filename(_filename), watchFd(_watchFd), events(_events)
+        {
+        }
+        std::string filename;
+        int watchFd = -1;
+        FileWatchEvents events = FileWatchEvents::none;
+        bool pendingRemoval = false;
+    };
+    int inotifyFd = -1;
+    int pipefd[2];
+    pollfd toPoll[2];
+    std::vector<Owned<CMonitorItem>> monitoredFiles;
+    CriticalSection crit;
+    std::function<void (const char *, FileWatchEvents)> callback;
+    CThreaded threaded;
+    bool stopped = true;
+
+    void handle_events(int fd)
+    {
+        char buf[4096] __attribute__ ((aligned(__alignof__(struct inotify_event))));
+        const struct inotify_event *event;
+
+        while (true)
+        {
+            ssize_t len = read(fd, buf, sizeof(buf));
+            if (len == -1 && errno != EAGAIN)
+                throw makeErrnoException("read");
+
+            if (len <= 0)
+                break;
+
+            /* Loop over all events in the buffer */
+            for (char *ptr = buf; ptr < buf + len; ptr += sizeof(struct inotify_event) + event->len)
+            {
+                event = (const struct inotify_event *) ptr;
+
+                std::string filename;
+                if (event->len) // if watching directory event->name is populated with file within that dir.
+                    filename = event->name;
+                else
+                {
+                    CriticalBlock b(crit);
+                    for (const auto &item: monitoredFiles)
+                    {
+                        if (event->wd == item->watchFd)
+                            filename = item->filename;
+                    }
+                }
+                /* NB: in this impl. inotify_event flags are same as FileWatchEvents bit masks
+                 * If other implementations differ, they will need mapping to FileWatchEvents
+                 */
+                FileWatchEvents events = static_cast<FileWatchEvents>(event->mask);
+                callback(filename.c_str(), events);
+            }
+        }
+    }
+public:
+    CFileEventWatcher(std::function<void (const char *, FileWatchEvents)> _callback) : callback(_callback), threaded("CSomething", this)
+    {
+        inotifyFd = inotify_init1(IN_NONBLOCK);
+        if (inotifyFd == -1)
+            throw makeStringException(-1, "inotify_init1");
+        if (pipe(pipefd))
+            throw makeErrnoException(-1, "create pipe failed");
+        for (unsigned i=0; i<2; i++)
+        {
+            int flags = fcntl(pipefd[i], F_GETFL, 0);
+            if (flags != -1)
+            {
+                flags |= O_NONBLOCK;
+                fcntl(pipefd[i], F_SETFL, flags);
+            }
+            flags = fcntl(pipefd[i], F_GETFD, 0);
+            if (flags != -1)
+            {
+                flags |= FD_CLOEXEC;
+                fcntl(pipefd[i], F_SETFD, flags);
+            }
+        }
+
+        toPoll[0].fd = pipefd[0];
+        toPoll[0].events = POLLIN;
+        toPoll[1].fd = inotifyFd;
+        toPoll[1].events = POLLIN;
+    }
+    ~CFileEventWatcher()
+    {
+        stop();
+        close(inotifyFd);
+        close(pipefd[0]);
+        close(pipefd[1]);
+    }
+    virtual void start() override
+    {
+        if (stopped)
+        {
+            stopped = false;
+            threaded.start();
+        }
+    }
+    virtual void stop() override
+    {
+        if (stopped)
+            return;
+        stopped = true;
+
+        char c = 0;
+        if (write(pipefd[1], &c, 1) != 1)
+        {
+            Owned<IException> e = makeErrnoException("stop() write -> pipefd[1]");
+            EXCLOG(e, nullptr);
+        }
+        threaded.join();
+    }
+    virtual bool add(const char *filename, FileWatchEvents events) override
+    {
+        CriticalBlock b(crit);
+        for (const auto &item: monitoredFiles)
+        {
+            if (streq(filename, item->filename.c_str()))
+                return false;
+        }
+
+        /* NB: in this impl. inotify_event flags are same as FileWatchEvents bit masks
+         * If other implementations differ, events will need mapping to the underlying impl.
+         */
+        int iNotifyEvents = static_cast<int>(events);
+        int wd = inotify_add_watch(inotifyFd, filename, iNotifyEvents);
+        if (-1 == wd)
+            throw makeErrnoExceptionV(-1, "Cannot watch '%s'", filename);
+        Owned<CMonitorItem> item = new CMonitorItem(filename, wd, events);
+        monitoredFiles.push_back(item.getClear());
+        return true;
+    }
+    virtual bool remove(const char *filename) override
+    {
+        CriticalBlock b(crit);
+        for (const auto &item: monitoredFiles)
+        {
+            if (streq(filename, item->filename.c_str()))
+            {
+                if (-1 == inotify_rm_watch(inotifyFd, item->watchFd))
+                    throw makeErrnoException("inotify_rm_watch()");
+                item->pendingRemoval = true;
+                return true;
+            }
+        }
+        
+        return false;
+    }
+// IThreaded impl.    
+    virtual void threadmain() override
+    {
+        try
+        {
+            while (true)
+            {
+                int poll_num = poll(toPoll, 2, -1);
+                if (poll_num == -1)
+                {
+                    if (errno == EINTR)
+                        continue;
+                    throw makeErrnoException("poll error");
+                }
+
+                if (poll_num)
+                {
+                    if (toPoll[0].revents & POLLIN)
+                    {
+                        if (stopped)
+                            break;
+                    }
+                    else if (toPoll[1].revents & POLLIN)
+                    {
+                        handle_events(inotifyFd);
+                        // clear any pending deletes
+                        auto iter = monitoredFiles.begin();
+                        while (iter != monitoredFiles.end())
+                        {
+                            CMonitorItem *item = *iter;
+                            if (item->pendingRemoval)
+                                iter = monitoredFiles.erase(iter);
+                            else
+                                iter++;
+                        }
+                    }
+                }
+            }
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, nullptr);
+            e->Release();
+        }
+    }
+};
+
+IFileEventWatcher *createFileEventWatcher(std::function<void (const char *, FileWatchEvents)> callback)
+{
+    return new CFileEventWatcher(callback);
+}
+#else
+IFileEventWatcher *createFileEventWatcher(std::function<void (const char *, FileWatchEvents)> callback)
+{
+    UNIMPLEMENTED_X("createFileEventWatcher not supported on this platform");
+    return nullptr;
+}
+#endif
+
