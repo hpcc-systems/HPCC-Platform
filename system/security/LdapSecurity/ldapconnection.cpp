@@ -557,8 +557,8 @@ public:
                 m_sysuser_dn.append("cn=").append(m_sysuser_commonname.str()).append(",").append(m_sysuser_basedn.str());
             else if(m_serverType == OPEN_LDAP)
             {
-                if (0==strcmp("Directory Manager",m_sysuser_commonname.str()))
-                    m_sysuser_dn.append("cn=").append(m_sysuser_commonname.str()).append(",").append(m_sysuser_basedn.str());
+                if (strstr(m_sysuser_commonname.str(), "Directory Manager"))
+                    m_sysuser_dn.append("cn=Directory Manager");
                 else
                     m_sysuser_dn.append("uid=").append(m_sysuser_commonname.str()).append(",").append(m_sysuser_basedn.str()).append(",").append(m_basedn.str());
             }

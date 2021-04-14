@@ -6894,7 +6894,11 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
         // fallthrough
     default:
         if (formalTC == type_row)
+        {
+            if (actualTC == type_record)
+                reportError(ERR_EXPECTED_ROW, *errpos, "Expected a row instead of a record");
             formalType = formalType->queryChildType();
+        }
         if (!formalType->assignableFrom(actualType->queryPromotedType()))
         {
             if (errpos)

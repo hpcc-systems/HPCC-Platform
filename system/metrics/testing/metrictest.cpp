@@ -49,13 +49,13 @@ const char *localConfigYml = R"!!(roxie:
 )!!";
 
 
-const char *testConfigYml = R"!!(component:
+const char *testFileSinkConfigYml = R"!!(component:
   metrics:
     name: config_name
     prefix: component_prefix.
     sinks:
         sink:
-          - type: filesink
+          - type: file
             name: default
             settings:
               filename: testout.txt
@@ -64,56 +64,78 @@ const char *testConfigYml = R"!!(component:
 )!!";
 
 
+const char *testLogSinkConfigYml = R"!!(component:
+  metrics:
+    name: config_name
+    prefix: component_prefix.
+    sinks:
+        sink:
+          - type: log
+            name: default
+            settings:
+              period: 5
+)!!";
+
+
 int main(int argc, char *argv[])
 {
-    InitModuleObjects();
 
-    //
-    // Simulate retrieving the component and global config
-    Owned<IPropertyTree> pSettings = createPTreeFromYAMLString(testConfigYml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
-
-    //
-    // Retrieve the global and component metrics config
-    Owned<IPropertyTree> pMetricsTree = pSettings->getPropTree("component/metrics");
-
-    //
-    // Allow override of output file for the file sink
-    if (argc > 1)
+    try
     {
-        auto pSinkTree = pMetricsTree->getPropTree("component/metrics/sinks[1]/settings");
-        pSinkTree->setProp("@filename", argv[1]);
+        InitModuleObjects();
+
+        //
+        // Simulate retrieving the component and global config
+        Owned<IPropertyTree> pSettings = createPTreeFromYAMLString(testLogSinkConfigYml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+
+        //
+        // Retrieve the global and component metrics config
+        Owned<IPropertyTree> pMetricsTree = pSettings->getPropTree("component/metrics");
+
+        //
+        // Allow override of output file for the file sink
+        if (argc > 1)
+        {
+            auto pSinkTree = pMetricsTree->getPropTree("component/metrics/sinks[1]/settings");
+            pSinkTree->setProp("@filename", argv[1]);
+        }
+
+
+        //
+        // Get singleton
+        MetricsReporter &myReporter = queryMetricsReporter();
+
+        //
+        // Init reporter with config
+        myReporter.init(pMetricsTree);
+
+        //
+        // Now create the metrics and add them to the reporter
+        pEventCountMetric = std::make_shared<CounterMetric>("requests", "The number of requests");
+        myReporter.addMetric(pEventCountMetric);
+
+        pQueueSizeMetric = createMetricAndAddToReporter<GaugeMetric>("queuesize", "request queue size");
+
+        myReporter.startCollecting();
+
+        //
+        // Starts some threads, each updating metrics
+        std::thread first (processThread, 20, 2, true, "requests_dynamic", 4, 10);
+        std::thread second (processThread, 15, 3, false, "", 0, 0);
+
+        first.join();
+        second.join();
+
+        printf("Stopping the collection...");
+        myReporter.stopCollecting();
+        printf("Stopped. Test complete\n");
     }
 
+    catch (...)
+    {
+        printf("Exception detected, test stopped");
+    }
 
-    //
-    // Get singleton
-    MetricsReporter &myReporter = queryMetricsReporter();
-
-    //
-    // Init reporter with config
-    myReporter.init(pMetricsTree);
-
-    //
-    // Now create the metrics and add them to the reporter
-    pEventCountMetric = std::make_shared<CounterMetric>("requests", "The number of requests");
-    myReporter.addMetric(pEventCountMetric);
-
-    pQueueSizeMetric = std::make_shared<GaugeMetric>("queuesize", "request queue size");
-    myReporter.addMetric(pQueueSizeMetric);
-
-    myReporter.startCollecting();
-
-    //
-    // Starts some threads, each updating metrics
-    std::thread first (processThread, 20, 2, true, "requests_dynamic", 4, 10);
-    std::thread second (processThread, 15, 3, false, "", 0, 0);
-
-    first.join();
-    second.join();
-
-    printf("Stopping the collection...");
-    myReporter.stopCollecting();
-    printf("Stopped. Test complete\n");
 }
 
 

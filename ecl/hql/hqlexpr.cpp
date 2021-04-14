@@ -560,16 +560,14 @@ MODULE_EXIT()
         }
     }
 
-    printf("op,cnt,clash");
+    printf("op,cnt,clash\n");
     for (unsigned i=0; i < no_last_pseudoop; i++)
     {
-        if (commonUpCount[i])
-            printf("%s,%d,%d\n", getOpString((node_operator)i), commonUpCount[i], commonUpClash[i]);
+        printf("\"%s\",%d,%d\n", getOpString((node_operator)i), commonUpCount[i], commonUpClash[i]);
     }
     for (unsigned j=0; j < annotate_max; j++)
     {
-        if (commonUpAnnCount[j])
-            printf("%d,%d,%d\n", j, commonUpAnnCount[j], commonUpAnnClash[j]);
+        printf("%d,%d,%d\n", j, commonUpAnnCount[j], commonUpAnnClash[j]);
     }
     fflush(stdout);
 }

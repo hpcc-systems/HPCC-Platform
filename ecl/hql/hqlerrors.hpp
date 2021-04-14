@@ -73,6 +73,8 @@
 #define WRN_EMBEDWARNING            1056
 #define WRN_EMBEDFOLD               1057
 #define WRN_FORMAT_IGNORED          1058
+#define WRN_SILLY_COUNT             1059
+#define WRN_UNUSUAL_AGGREGATE       1060
 
 //Do not define any warnings > 1099 - use the range below instead
 

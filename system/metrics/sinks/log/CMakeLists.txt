@@ -1,4 +1,4 @@
-###############################################################################
+################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2021 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,18 @@
 #    limitations under the License.
 ################################################################################
 
-HPCC_ADD_SUBDIRECTORY (sinks)
-if ("${CMAKE_BUILD_TYPE}" MATCHES "Debug")
-    HPCC_ADD_SUBDIRECTORY (testing)
-endif()
+project(hpccmetrics_log)
+
+set ( srcs
+        logSink.cpp
+        )
+
+include_directories(
+        ${HPCC_SOURCE_DIR}/system/include
+        ${HPCC_SOURCE_DIR}/system/jlib
+)
+
+ADD_DEFINITIONS(  -DLOGSINK_EXPORTS )
+HPCC_ADD_LIBRARY( hpccmetrics_logsink SHARED ${srcs} )
+TARGET_LINK_LIBRARIES( hpccmetrics_logsink jlib)
+INSTALL ( TARGETS hpccmetrics_logsink RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )

@@ -12,8 +12,6 @@
 ############################################################################## */
 
 #include "jmetrics.hpp"
-#include "jmutex.hpp"
-#include "jlog.hpp"
 
 using namespace hpccMetrics;
 
@@ -130,7 +128,6 @@ std::vector<std::shared_ptr<IMetric>> MetricsReporter::queryMetricsForReport(con
 }
 
 
-
 void MetricsReporter::initializeSinks(IPropertyTreeIterator *pSinkIt)
 {
     for (pSinkIt->first(); pSinkIt->isValid(); pSinkIt->next())
@@ -165,7 +162,7 @@ MetricSink *MetricsReporter::getSinkFromLib(const char *type, const char *sinkNa
 {
     std::string libName;
 
-    libName.append("libhpccmetrics_").append(type).append(SharedObjectExtension);
+    libName.append("libhpccmetrics_").append(type).append("sink").append(SharedObjectExtension);
 
     HINSTANCE libHandle = LoadSharedObject(libName.c_str(), true, false);
 
@@ -193,4 +190,70 @@ MetricSink *MetricsReporter::getSinkFromLib(const char *type, const char *sinkNa
         throw MakeStringException(MSGAUD_operator, "getSinkFromLib - Unable to load sink lib (%s)", libName.c_str());
     }
     return pSink;
+}
+
+
+PeriodicMetricSink::PeriodicMetricSink(const char *name, const char *type, const IPropertyTree *pSettingsTree) :
+    MetricSink(name, type),
+    collectionPeriodSeconds{60}
+{
+    if (pSettingsTree->hasProp("@period"))
+    {
+        collectionPeriodSeconds = pSettingsTree->getPropInt("@period");
+    }
+}
+
+
+PeriodicMetricSink::~PeriodicMetricSink()
+{
+    if (isCollecting)
+    {
+        doStopCollecting();
+    }
+}
+
+
+void PeriodicMetricSink::startCollection(MetricsReporter *_pReporter)
+{
+    pReporter = _pReporter;
+    prepareToStartCollecting();
+    isCollecting = true;
+    collectThread = std::thread(&PeriodicMetricSink::collectionThread, this);
+}
+
+
+void PeriodicMetricSink::collectionThread()
+{
+    //
+    // The initial wait for the first report
+    waitSem.wait(collectionPeriodSeconds * 1000);
+    while (!stopCollectionFlag)
+    {
+        doCollection();
+
+        // Wait again
+        waitSem.wait(collectionPeriodSeconds * 1000);
+    }
+}
+
+
+void PeriodicMetricSink::stopCollection()
+{
+    if (isCollecting)
+    {
+        doStopCollecting();
+    }
+}
+
+
+void PeriodicMetricSink::doStopCollecting()
+{
+    //
+    // Set the stop collecting flag, then signal the wait semaphore
+    // to wake up and stop the collection thread
+    stopCollectionFlag = true;
+    waitSem.signal();
+    isCollecting = false;
+    collectThread.join();
+    collectingHasStopped();
 }

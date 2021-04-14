@@ -147,6 +147,7 @@ class CWsDfuEx : public CWsDfu
     static const unsigned defaultMaxFileAccessExpirySeconds=86400; // 24 hours
 
     void dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileName &lfn, SessionId clientSessionId, const char *requestId, unsigned expirySecs, bool returnTextResponse, unsigned lockTimeoutMs, IEspDFUFileAccessResponse &resp);
+    void setPublishFileSize(const char *logicalName, IFileDescriptor *fileDesc);
     void clearFileProtections(IDistributedFile *df);
     bool changeFileProtections(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp);
     bool changeFileRestrictions(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp);
