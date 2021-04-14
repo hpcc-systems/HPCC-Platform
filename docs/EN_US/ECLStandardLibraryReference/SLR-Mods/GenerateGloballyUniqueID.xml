@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="generateGloballyUniqueID">
+  <title>generateGloballyUniqueID</title>
+
+  <para><emphasis
+  role="bold">STD.System.Log.generateGloballyUniqueID<indexterm>
+      <primary>STD.System.Log.generateGloballyUniqueID</primary>
+    </indexterm> <indexterm>
+      <primary>System.Log.generateGloballyUniqueID</primary>
+    </indexterm> <indexterm>
+      <primary>Log.generateGloballyUniqueID</primary>
+    </indexterm> <indexterm>
+      <primary>generateGloballyUniqueID</primary>
+    </indexterm></emphasis><emphasis role="bold">()</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry>Return:</entry>
+
+          <entry>generateGloballyUniqueID returns a globally unique
+          identifier.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">generateGloballyUniqueID </emphasis>returns
+  a globally unique identifier (GUID<indexterm>
+      <primary>GUID</primary>
+    </indexterm><indexterm>
+      <primary>UUID</primary>
+    </indexterm>) with base58 encoding. Base58 encoding is similar to base64
+  encoding but avoids both non-alphanumeric characters and visually ambiguous
+  letters. It is designed to avoid errors by human users who manually enter
+  the data by copying from some visual source. It allows easy copy/paste
+  because a double-click will usually select the entire string.</para>
+
+  <para></para>
+
+  <programlisting format="linespecific">IMPORT STD;
+
+value1 := std.system.log.generateGloballyUniqueId() : INDEPENDENT;
+value2 := NOFOLD(std.system.log.generateGloballyUniqueId()) : INDEPENDENT;
+
+OUTPUT(value1);
+OUTPUT(value2);
+OUTPUT(IF (value1 = value2, 'Values are not unique', 'Values are unique'));</programlisting>
+
+  <para></para>
+</sect1>
