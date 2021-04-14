@@ -231,6 +231,7 @@ jobs:
           git submodule update --init --recursive --jobs 4
           echo "Applying merge patch"
           git apply ../merge-patch
+          git commit -a -m 'merge-patch'
           cd ../src-cache
           echo "Cached source tree files:"
           find . -type f
@@ -238,7 +239,7 @@ jobs:
           find . -type f | cpio -p -dum ../src
           cd ../src
           find . -type f -exec touch -r ../build/cache-timestamp {} +
-          git checkout -m ${{ steps.vars.outputs.sha }}
+          git checkout ${{ steps.vars.outputs.sha }}
           git submodule update --init --recursive --jobs 4
           echo "Changed files (from SHA: $(cat ../build/cache-sha)):"
           find -name '.git*' -prune -o -newer ../build/cache-timestamp -type f -print
