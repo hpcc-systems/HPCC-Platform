@@ -231,7 +231,7 @@ jobs:
           git submodule update --init --recursive --jobs 4
           echo "Applying merge patch"
           git apply ../merge-patch
-          git commit -a -m 'merge-patch'
+          git -c user.name='Smoketest' -c user.email='smoke@test.com' commit -a -m 'merge-patch'
           cd ../src-cache
           echo "Cached source tree files:"
           find . -type f
