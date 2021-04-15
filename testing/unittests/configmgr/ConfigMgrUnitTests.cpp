@@ -31,7 +31,6 @@
 #include "jexcept.hpp"
 #include "Exceptions.hpp"
 #include "EnvironmentMgr.hpp"
-#include "build-config.h"
 #include <iterator>
 #include <algorithm>
 
@@ -54,8 +53,8 @@ class ConfigMgr2ValidateXSDs : public CppUnit::TestFixture
             //
             // Standard configuration for HPCC
             std::string CFG2_MASTER_CONFIG_FILE = "environment.xsd";
-            std::string CFG2_CONFIG_DIR = COMPONENTFILES_DIR  PATHSEPSTR "configschema" PATHSEPSTR "xsd" PATHSEPSTR;
-            std::string CFG2_SOURCE_DIR = CONFIG_SOURCE_DIR;
+            std::string CFG2_CONFIG_DIR = std::string(hpccBuildInfo.componentDir) + PATHSEPSTR + "configschema" + PATHSEPSTR + "xsd" + PATHSEPSTR;
+            std::string CFG2_SOURCE_DIR = hpccBuildInfo.configSourceDir;
 
             //
             // Create the environment

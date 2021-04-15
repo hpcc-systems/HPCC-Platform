@@ -1450,28 +1450,29 @@ bool CWsTopologyEx::onTpServiceQuery(IEspContext &context, IEspTpServiceQueryReq
         if (!type || !*type || (strcmp(eqAllServices,type) == 0))
         {
             IEspTpServices& ServiceList = resp.updateServiceList();
-
+            m_TpWrapper.getTpDfuServers( ServiceList.getTpDfuServers() );
+            m_TpWrapper.getTpDropZones(version, nullptr, true, ServiceList.getTpDropZones() );
+#ifndef _CONTAINERIZED
             m_TpWrapper.getTpDaliServers( version, ServiceList.getTpDalis() );
             m_TpWrapper.getTpEclServers( ServiceList.getTpEclServers() );
             m_TpWrapper.getTpEclCCServers( ServiceList.getTpEclCCServers() );
             m_TpWrapper.getTpEclAgents( ServiceList.getTpEclAgents() );
             m_TpWrapper.getTpEspServers( ServiceList.getTpEspServers() );
-            m_TpWrapper.getTpDfuServers( ServiceList.getTpDfuServers() );   
-            m_TpWrapper.getTpSashaServers( ServiceList.getTpSashaServers() );   
+            m_TpWrapper.getTpSashaServers( ServiceList.getTpSashaServers() );
             m_TpWrapper.getTpGenesisServers( ServiceList.getTpGenesisServers() );
             m_TpWrapper.getTpLdapServers( ServiceList.getTpLdapServers() );
-            m_TpWrapper.getTpDropZones(version, nullptr, true, ServiceList.getTpDropZones() );
             m_TpWrapper.getTpFTSlaves( ServiceList.getTpFTSlaves() );
             m_TpWrapper.getTpDkcSlaves( ServiceList.getTpDkcSlaves() );
 
             if (version > 1.15)
-            {       
+            {
                 m_TpWrapper.getTpEclSchedulers( ServiceList.getTpEclSchedulers() );
             }
             if (version >= 1.28)
-            {       
+            {
                 m_TpWrapper.getTpSparkThors(version, nullptr, ServiceList.getTpSparkThors() );
             }
+#endif
         }
 
         resp.setMemThreshold( m_memThreshold );
@@ -1481,15 +1482,15 @@ bool CWsTopologyEx::onTpServiceQuery(IEspContext &context, IEspTpServiceQueryReq
         resp.setDiskThresholdType( m_bDiskThresholdIsPercentage ? "0" : "1");
 
         if (version > 1.06 && m_bEncapsulatedSystem)
-        {       
+        {
             resp.setEncapsulatedSystem( m_bEncapsulatedSystem );
         }
         if (version > 1.07)
-        {       
+        {
             resp.setEnableSNMP(m_enableSNMP);
         }
         if ((version > 1.12) && (m_preflightProcessFilter.length() > 0))
-        {       
+        {
             resp.setPreflightProcessFilter(m_preflightProcessFilter);
         }
         if (version >= 1.20)

@@ -22,7 +22,6 @@
 #include "jargv.hpp"
 #include "junicode.hpp"
 
-#include "build-config.h"
 #include "workunit.hpp"
 #include "thorplugin.hpp"
 #ifndef _WIN32
@@ -75,9 +74,7 @@
 //#define TEST_LEGACY_DEPENDENCY_CODE
 
 #define INIFILE "eclcc.ini"
-#define SYSTEMCONFDIR CONFIG_DIR
 #define DEFAULTINIFILE "eclcc.ini"
-#define SYSTEMCONFFILE ENV_CONF_FILE
 #define DEFAULT_OUTPUTNAME  "a.out"
 
 //=========================================================================================
@@ -177,7 +174,7 @@ static bool getHomeFolder(StringBuffer & homepath)
 #ifndef WIN32
     homepath.append('.');
 #endif
-    homepath.append(DIR_NAME);
+    homepath.append(hpccBuildInfo.dirName);
     return true;
 }
 
@@ -637,7 +634,7 @@ void EclCC::loadOptions()
             optIniFilename.set(INIFILE);
         else
         {
-            StringBuffer fn(SYSTEMCONFDIR);
+            StringBuffer fn(hpccBuildInfo.configDir);
             fn.append(PATHSEPSTR).append(DEFAULTINIFILE);
             if (checkFileExists(fn))
                 optIniFilename.set(fn);
@@ -2869,7 +2866,7 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         }
         else if (strcmp(arg, "--version")==0)
         {
-            fprintf(stdout,"%s %s\n", LANGUAGE_VERSION, hpccBuildTag);
+            fprintf(stdout,"%s %s\n", LANGUAGE_VERSION, hpccBuildInfo.buildTag);
             return 1;
         }
         else if (startsWith(arg, "-Wc,"))

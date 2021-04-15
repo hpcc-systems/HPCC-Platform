@@ -19,7 +19,6 @@
 #include "XMLTags.h"
 #include "configenvhelper.hpp"
 #include "deployutils.hpp"
-#include "build-config.h"
 #include "confighelper.hpp"
 
 bool CConfigEnvHelper::handleRoxieOperation(const char* cmd, const char* xmlStr)

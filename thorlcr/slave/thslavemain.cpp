@@ -169,10 +169,10 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         const char *_masterBuildTag = globals->queryProp("@masterBuildTag");
         const char *masterBuildTag = _masterBuildTag?_masterBuildTag:"no build tag";
         PROGLOG("Master build: %s", masterBuildTag);
-        if (!_masterBuildTag || 0 != strcmp(hpccBuildTag, _masterBuildTag))
+        if (!_masterBuildTag || 0 != strcmp(hpccBuildInfo.buildTag, _masterBuildTag))
         {
             StringBuffer errStr("Thor master/slave build mismatch, master = ");
-            errStr.append(masterBuildTag).append(", slave = ").append(hpccBuildTag);
+            errStr.append(masterBuildTag).append(", slave = ").append(hpccBuildInfo.buildTag);
             OERRLOG("%s", errStr.str());
 #ifndef _DEBUG
             replyError(TE_FailedToRegisterSlave, errStr.str());
@@ -299,7 +299,7 @@ ILogMsgHandler *startSlaveLog()
     logHandler = queryStderrLogMsgHandler();
 #endif
     //setupContainerizedStorageLocations();
-    LOG(MCdebugProgress, thorJob, "Build %s", hpccBuildTag);
+    LOG(MCdebugProgress, thorJob, "Build %s", hpccBuildInfo.buildTag);
     return logHandler;
 }
 

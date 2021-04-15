@@ -846,7 +846,7 @@ extern HQLCPP_API unsigned getLibraryCRC(IHqlExpression * library)
 void setWorkunitHash(IWorkUnit * wu, IHqlExpression * expr)
 {
     //Assuming builds come from different branches this will change the crc for each one.
-    unsigned cacheCRC = crc32(hpccBuildTag, strlen(hpccBuildTag), ACTIVITY_INTERFACE_VERSION);
+    unsigned cacheCRC = crc32(hpccBuildInfo.buildTag, strlen(hpccBuildInfo.buildTag), ACTIVITY_INTERFACE_VERSION);
     cacheCRC += getExpressionCRC(expr);
 #ifdef _WIN32
     cacheCRC++; // make sure CRC is different in windows/linux

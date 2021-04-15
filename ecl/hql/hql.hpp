@@ -49,11 +49,11 @@ Relevant changes include
 
 */
 
-#define LANGUAGE_VERSION_MAJOR      BUILD_VERSION_MAJOR
-#define LANGUAGE_VERSION_MINOR      BUILD_VERSION_MINOR
-#define LANGUAGE_VERSION_SUB        BUILD_VERSION_POINT
+#define LANGUAGE_VERSION_MAJOR      hpccBuildInfo.buildVersionMajor
+#define LANGUAGE_VERSION_MINOR      hpccBuildInfo.buildVersionMinor
+#define LANGUAGE_VERSION_SUB        hpccBuildInfo.buildVersionPoint
 
-#define LANGUAGE_VERSION   estringify(LANGUAGE_VERSION_MAJOR) "." estringify(LANGUAGE_VERSION_MINOR) "." estringify(LANGUAGE_VERSION_SUB)
+#define LANGUAGE_VERSION  hpccBuildInfo.buildVersion
 
 
 #define DEFAULT_INT_SIZE 8

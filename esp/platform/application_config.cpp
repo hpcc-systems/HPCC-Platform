@@ -27,7 +27,6 @@
 #include "espcfg.ipp"
 #include "esplog.hpp"
 #include "espcontext.hpp"
-#include "build-config.h"
 
 enum class LdapType { LegacyAD, AzureAD };
 
@@ -45,9 +44,9 @@ IPropertyTree *loadApplicationConfig(const char *application, const char* argv[]
     Owned<IPropertyTree> applicationConfig = createPTree(application);
     IPropertyTree *defaultConfig = applicationConfig->addPropTree("esp");
 
-    char sepchar = getPathSepChar(COMPONENTFILES_DIR);
+    char sepchar = getPathSepChar(hpccBuildInfo.componentDir);
 
-    StringBuffer path(COMPONENTFILES_DIR);
+    StringBuffer path(hpccBuildInfo.componentDir);
     addPathSepChar(path, sepchar).append("applications").append(sepchar).append("common").append(sepchar);
     if (checkDirExists(path))
     {
@@ -56,7 +55,7 @@ IPropertyTree *loadApplicationConfig(const char *application, const char* argv[]
             appendPTreeFromYamlFile(defaultConfig, common_dir->query().queryFilename(), true);
     }
 
-    path.set(COMPONENTFILES_DIR);
+    path.set(hpccBuildInfo.componentDir);
     addPathSepChar(path, sepchar).append("applications").append(sepchar).append(application).append(sepchar);
     if (!checkDirExists(path))
         throw MakeStringException(-1, "Can't find esp application %s (dir %s)", application, path.str());
@@ -96,8 +95,8 @@ bool addLdapSecurity(IPropertyTree *legacyEsp, IPropertyTree *appEsp, StringBuff
     if (isEmptyString(ldapAddress))
         throw MakeStringException(-1, "LDAP not configured.  To run without security set auth=none");
 
-    StringBuffer path(COMPONENTFILES_DIR);
-    char sepchar = getPathSepChar(COMPONENTFILES_DIR);
+    StringBuffer path(hpccBuildInfo.componentDir);
+    char sepchar = getPathSepChar(hpccBuildInfo.componentDir);
     addPathSepChar(path, sepchar).append("applications").append(sepchar).append("common").append(sepchar).append("ldap").append(sepchar);
     if (ldapType == LdapType::LegacyAD)
         path.append("ldap.yaml");
@@ -364,11 +363,11 @@ IPropertyTree *buildApplicationLegacyConfig(const char *application, const char*
     if (!legacyEsp->hasProp("@directory"))
     {
         const char *componentName = legacyEsp->queryProp("@name");
-        VStringBuffer s("%s/%s", RUNTIME_DIR, isEmptyString(componentName) ? application : componentName);
+        VStringBuffer s("%s/%s", hpccBuildInfo.runtimeDir, isEmptyString(componentName) ? application : componentName);
         legacyEsp->setProp("@directory", s.str());
     }
     if (!legacyEsp->hasProp("@componentfilesDir"))
-        legacyEsp->setProp("@componentfilesDir", COMPONENTFILES_DIR);
+        legacyEsp->setProp("@componentfilesDir", hpccBuildInfo.componentDir);
 
     bool tls = addProtocol(legacyEsp, appEspConfig);
 

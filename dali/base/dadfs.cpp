@@ -3498,29 +3498,42 @@ public:
 #ifdef EXTRA_LOGGING
         LOGPTREE("CDistributedFile.b root.1",root);
 #endif
-        offset_t totalsize=0;
+        offset_t totalsize = 0;
+        offset_t totalCompressedSize = 0;
         unsigned checkSum = ~0;
         bool useableCheckSum = true;
         MemoryBuffer pmb;
         unsigned n = fdesc->numParts();
-        for (unsigned i=0;i<n;i++) {
+        bool compressed = isCompressed(nullptr);
+        for (unsigned i=0;i<n;i++)
+        {
             IPropertyTree *partattr = &fdesc->queryPart(i)->queryProperties();
             if (!partattr)
             {
-                totalsize = (unsigned)-1;
+                totalsize = (offset_t)-1;
+                totalCompressedSize = (offset_t)-1;
                 useableCheckSum = false;
             }
             else
             {
-                offset_t psz;
-                if (totalsize!=(offset_t)-1) {
-                    psz = (offset_t)partattr->getPropInt64("@size", -1);
+                if (totalsize!=(offset_t)-1)
+                {
+                    offset_t psz = (offset_t)partattr->getPropInt64("@size", -1);
                     if (psz==(offset_t)-1)
                         totalsize = psz;
                     else
                         totalsize += psz;
+                    if (compressed)
+                    {
+                        psz = (offset_t)partattr->getPropInt64("@compressedSize", -1);
+                        if (psz==(offset_t)-1)
+                            totalCompressedSize = psz;
+                        else
+                            totalCompressedSize += psz;
+                    }
                 }
-                if (useableCheckSum) {
+                if (useableCheckSum)
+                {
                     unsigned crc;
                     if (fdesc->queryPart(i)->getCrc(crc))
                         checkSum ^= crc;
@@ -3532,6 +3545,8 @@ public:
         shrinkFileTree(root);
         if (totalsize!=(offset_t)-1)
             queryAttributes().setPropInt64("@size", totalsize);
+        if (totalCompressedSize!=(offset_t)-1)
+            queryAttributes().setPropInt64("@compressedSize", totalCompressedSize);
         if (useableCheckSum)
             queryAttributes().setPropInt64("@checkSum", checkSum);
         setModified();

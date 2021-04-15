@@ -604,7 +604,7 @@ int main( int argc, const char *argv[]  )
 #endif
     setStatisticsComponentName(SCTthor, globals->queryProp("@name"), true);
 
-    globals->setProp("@masterBuildTag", hpccBuildTag);
+    globals->setProp("@masterBuildTag", hpccBuildInfo.buildTag);
 
     setIORetryCount(globals->getPropInt("Debug/@ioRetries")); // default == 0 == off
     StringBuffer daliServer;
@@ -673,7 +673,7 @@ int main( int argc, const char *argv[]  )
         logHandler = queryStderrLogMsgHandler();
         logUrl.set("stderr");
 #endif
-        LOG(MCdebugProgress, thorJob, "Build %s", hpccBuildTag);
+        LOG(MCdebugProgress, thorJob, "Build %s", hpccBuildInfo.buildTag);
 
         Owned<IGroup> serverGroup = createIGroupRetry(daliServer.str(), DALI_SERVER_PORT);
 

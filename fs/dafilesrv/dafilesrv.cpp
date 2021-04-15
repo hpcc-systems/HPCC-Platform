@@ -799,7 +799,7 @@ int main(int argc,char **argv)
 #endif
 
     write_pidfile(componentName.str());
-    PROGLOG("Dafilesrv starting - Build %s", hpccBuildTag);
+    PROGLOG("Dafilesrv starting - Build %s", hpccBuildInfo.buildTag);
     PROGLOG("Parallel request limit = %d, throttleDelayMs = %d, throttleCPULimit = %d", parallelRequestLimit, throttleDelayMs, throttleCPULimit);
 
     const char * verstring = remoteServerVersionString();

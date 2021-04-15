@@ -417,7 +417,11 @@
         "umask" : {
           "description": "file creation mask (used by despray)",
           "type" : "string"
-        }
+        },
+        "defaultSprayParts" : {
+            "description": "Number of parts sprayed by default",
+            "type" : "integer"
+          }
       },
       "required": [ "name", "prefix" ],
       "additionalProperties": false

@@ -1314,6 +1314,16 @@ public:
                                 };
                             }
                         }
+#ifdef _CONTAINERIZED
+                        StringBuffer clusterName;
+                        destination->getGroupName(0, clusterName);
+                        Owned<IPropertyTree> plane = getDropZonePlane(clusterName);
+                        if (plane)
+                        {
+                            if (plane->hasProp("@defaultSprayParts"))
+                                destination->setNumPartsOverride(plane->getPropInt("@defaultSprayParts"));
+                        }
+#endif
                         if (destination->getWrap())
                         {
                             Owned<IFileDescriptor> fdesc = source?source->getFileDescriptor():NULL;

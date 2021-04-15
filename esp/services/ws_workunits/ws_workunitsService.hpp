@@ -489,7 +489,7 @@ private:
     size32_t wuResultDownloadFlushThreshold = defaultWUResultDownloadFlushThreshold;
 };
 
-void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml=NULL);
+void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml=NULL, bool protect=false);
 
 class CClusterQueryStateParam : public CInterface
 {

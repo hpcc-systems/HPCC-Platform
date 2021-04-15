@@ -17,11 +17,7 @@
 #include "jliball.hpp"
 #include "XMLTags.h"
 #include "deployutils.hpp"
-#include "build-config.h"
 
-#define ENVGEN_PATH_TO_ESP_CONFIG INSTALL_DIR "" CONFIG_DIR "/configmgr/esp.xml"
-#define STANDARD_CONFIGXMLDIR COMPONENTFILES_DIR"/configxml/"
-#define STANDARD_CONFIG_BUILDSETFILE "buildset.xml"
 
 bool validateInteger(const char *str,int &out)
 {
@@ -320,7 +316,9 @@ int main(int argc, char** argv)
 
     StringBuffer optionsXml, envXml;
     const char* pServiceName = "WsDeploy_wsdeploy_esp";
-    Owned<IPropertyTree> pCfg = createPTreeFromXMLFile(ENVGEN_PATH_TO_ESP_CONFIG);
+    StringBuffer envGenPathToEspConfig(hpccBuildInfo.configDir);
+    envGenPathToEspConfig.append("/configmgr/esp.xml");
+    Owned<IPropertyTree> pCfg = createPTreeFromXMLFile(envGenPathToEspConfig);
 
     optionsXml.appendf("<XmlArgs supportNodes=\"%d\" roxieNodes=\"%d\" thorNodes=\"%d\" espNodes=\"%d\" slavesPerNode=\"%d\" thorChannelsPerSlave=\"%d\" roxieChannelsPerSlave=\"%d\" roxieOnDemand=\"%s\" ipList=\"%s\"/>", supportNodes, roxieNodes,
       thorNodes, espNodes, slavesPerNode, thorChannelsPerSlave, roxieChannelsPerSlave, roxieOnDemand?"true":"false", ipAddrs.str());

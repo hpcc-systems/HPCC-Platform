@@ -44,7 +44,6 @@
 #include "espcfg.ipp"
 #include "esplog.hpp"
 #include "espcontext.hpp"
-#include "build-config.h"
 #include "rmtfile.hpp"
 #include "dafdesc.hpp"
 
@@ -479,7 +478,7 @@ int init_main(int argc, const char* argv[])
         procpt->setProp("@daliServers", queryComponentConfig().queryProp("@daliServers"));
 #endif
 
-        const char* build_ver = hpccBuildTag;
+        const char* build_ver = hpccBuildInfo.buildTag;
         setBuildVersion(build_ver);
 
         const char * processName = procpt->queryProp("@name");
@@ -487,7 +486,7 @@ int init_main(int argc, const char* argv[])
 
         openEspLogFile(envpt.get(), procpt.get());
 
-        DBGLOG("Esp starting %s", hpccBuildTag);
+        DBGLOG("Esp starting %s", hpccBuildInfo.buildTag);
 
         StringBuffer componentfilesDir;
         if(procpt->hasProp("@componentfilesDir"))
