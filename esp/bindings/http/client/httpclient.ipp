@@ -112,6 +112,7 @@ private:
     int m_numRequests = 0;
     SocketEndpoint m_ep;
     Owned<IMultiException> m_exceptions;
+    Linked<CTxSummary> m_txSummary;
 
     virtual int connect(StringBuffer& errmsg, bool forceNewConnection);
     void close();
@@ -150,6 +151,7 @@ public:
     virtual void setTimeOut(unsigned int timeout);
     virtual void setPersistentHandler(IPersistentHandler* handler) { m_persistentHandler = handler; }
     virtual IMultiException* queryExceptions();
+    virtual void setTxSummary(CTxSummary* txSummary) override;
 };
 
 #endif
