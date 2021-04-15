@@ -55,7 +55,8 @@ typedef enum _SQLLogicType
     Unicode_LogicType,
     Numeric_LogicType,
     Integer_LogicType,
-    Decimal_LogicType
+    Decimal_LogicType,
+    NestedDS_LogicType
 } SQLLogicType;
 
 interface ISQLExpression : public CInterface, public IInterface
@@ -178,6 +179,36 @@ public:
     * Get this placeholder's generated name
     */
     virtual const char * getPlaceHolderName(){UNIMPLEMENTED; return nullptr;}
+
+    static SQLLogicType getLogicTypeFromName(const char * type)
+    {
+        if (!type || !*type)
+            return Unknown_LogicType;
+
+        if (strnicmp(type,"STRING",6)==0)
+            return String_LogicType;
+        else if (strnicmp(type,"QSTRING",7)==0)
+            return QSstring_LogicType;
+        else if (strnicmp(type,"UNICODE",7)==0)
+            return Unicode_LogicType;
+        else if (strnicmp(type,"VARUNICODE",10)==0)
+            return Unicode_LogicType;
+        else if (strnicmp(type,"VARSTRING",9)==0)
+            return String_LogicType;
+        else if (strnicmp(type,"BOOLEAN",7)==0)
+            return Bool_LogicType;
+        else if (strnicmp(type,"UNSIGNED",8)==0)
+            return Integer_LogicType;
+        else if (strnicmp(type,"REAL",4)==0)
+            return Decimal_LogicType;
+        else if (strnicmp(type,"DECIMAL",7)==0)
+            return Decimal_LogicType;
+        else if (strnicmp(type,"DATASET",7)==0)
+            return NestedDS_LogicType;
+        else
+            return Unknown_LogicType;
+    }
+
 };
 
 /*************************************************************************************************/
@@ -471,28 +502,7 @@ public:
 
     virtual SQLLogicType getLogicType()
     {
-        const char * type = field.getColumnType();
-
-        if (strnicmp(type,"STRING",6)==0)
-            return String_LogicType;
-        else if (strnicmp(type,"QSTRING",7)==0)
-            return QSstring_LogicType;
-        else if (strnicmp(type,"UNICODE",7)==0)
-            return Unicode_LogicType;
-        else if (strnicmp(type,"VARUNICODE",10)==0)
-            return Unicode_LogicType;
-        else if (strnicmp(type,"VARSTRING",9)==0)
-            return String_LogicType;
-        else if (strnicmp(type,"BOOLEAN",7)==0)
-            return Bool_LogicType;
-        else if (strnicmp(type,"UNSIGNED",8)==0)
-            return Integer_LogicType;
-        else if (strnicmp(type,"REAL",4)==0)
-            return Decimal_LogicType;
-        else if (strnicmp(type,"DECIMAL",7)==0)
-            return Decimal_LogicType;
-        else
-            return Unknown_LogicType;
+        return ISQLExpression::getLogicTypeFromName(field.getColumnType());
     }
 
     virtual int setParameterizedNames(int currentindex);

@@ -25,6 +25,7 @@ ESPStruct HPCCColumn
 {
    string Name;
    string Type;
+   ESParray<ESPstruct HPCCColumn, Column> Columns;
 };
 
 ESPStruct HPCCTable

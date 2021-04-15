@@ -52,28 +52,7 @@ SQLFieldsExpression::~SQLFieldsExpression()
 
  SQLLogicType SQLFieldValueExpression::getLogicType()
  {
-     const char * type = field.getColumnType();
-
-     if (strnicmp(type,"STRING",6)==0)
-         return String_LogicType;
-     else if (strnicmp(type,"QSTRING",7)==0)
-         return QSstring_LogicType;
-     else if (strnicmp(type,"UNICODE",7)==0)
-         return Unicode_LogicType;
-     else if (strnicmp(type,"VARUNICODE",10)==0)
-         return Unicode_LogicType;
-     else if (strnicmp(type,"VARSTRING",9)==0)
-         return String_LogicType;
-     else if (strnicmp(type,"BOOLEAN",7)==0)
-         return Bool_LogicType;
-     else if (strnicmp(type,"UNSIGNED",8)==0)
-         return Integer_LogicType;
-     else if (strnicmp(type,"REAL",4)==0)
-         return Decimal_LogicType;
-     else if (strnicmp(type,"DECIMAL",7)==0)
-         return Decimal_LogicType;
-     else
-         return Unknown_LogicType;
+	 return ISQLExpression::getLogicTypeFromName(field.getColumnType());
  }
 
  void SQLFieldValueExpression::toECLStringTranslateSource(
