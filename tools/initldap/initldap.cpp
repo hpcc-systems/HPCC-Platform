@@ -16,7 +16,6 @@
 ############################################################################## */
 #include "ldapsecurity.ipp"
 #include "ldapsecurity.hpp"
-#include "build-config.h"
 
 #ifndef _WIN32
 #include <unistd.h>
@@ -179,7 +178,7 @@ int main(int argc, char* argv[])
 
     //execute configgen to query the LDAP Server configuration(s)
     StringBuffer cmd;
-    cmd.appendf("%s%cconfiggen -env %s%c%s -listldapservers", ADMIN_DIR,PATHSEPCHAR,CONFIG_DIR, PATHSEPCHAR, ENV_XML_FILE);
+    cmd.appendf("%s%cconfiggen -env %s%c%s -listldapservers", hpccBuildInfo.adminDir,PATHSEPCHAR,hpccBuildInfo.configDir, PATHSEPCHAR, hpccBuildInfo.envXmlFile);
 
     char * configBuffer = NULL;
 

@@ -28,7 +28,6 @@
 #include "XMLTags.h"
 #include "httpclient.hpp"
 #include "jqueue.tpp"
-#include "build-config.h"
 
 typedef enum EnvAction_
 {
@@ -240,7 +239,7 @@ private:
 
       virtual void threadmain() override
       {
-        Owned<IFile> configFiles = createIFile(CONFIG_SOURCE_DIR);
+        Owned<IFile> configFiles = createIFile(hpccBuildInfo.configSourceDir);
 
         while ( m_quitThread == false )
         {

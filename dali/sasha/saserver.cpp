@@ -368,7 +368,7 @@ int main(int argc, const char* argv[])
     #else
         setupContainerizedLogMsgHandler();
     #endif
-        DBGLOG("Build %s", hpccBuildTag);
+        DBGLOG("Build %s", hpccBuildInfo.buildTag);
 
         unsigned short port = serverConfig->getPropInt("@port");
         if (!port)

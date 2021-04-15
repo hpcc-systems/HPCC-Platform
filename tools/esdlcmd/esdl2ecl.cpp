@@ -19,7 +19,6 @@
 #include "xslprocessor.hpp"
 
 #include "esdlcmd_core.hpp"
-#include "build-config.h"
 
 typedef IPropertyTree * IPTreePtr;
 
@@ -192,7 +191,7 @@ public:
         if (getComponentFilesRelPathFromBin(componentsfolder))
             optHPCCCompFilesDir.set(componentsfolder.str());
         else
-            optHPCCCompFilesDir.set(COMPONENTFILES_DIR);
+            optHPCCCompFilesDir.set(hpccBuildInfo.componentDir);
     }
 
     virtual bool parseCommandLineOptions(ArgvIterator &iter)

@@ -30,7 +30,6 @@
 #include "mod_template_support/TemplateException.hpp"
 #include "mod_template_support/TemplateExecutionException.hpp"
 #include "EnvironmentMgr.hpp"
-#include "build-config.h"
 #include <string>
 #include <iterator>
 #include <algorithm>
@@ -72,7 +71,7 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
         {
             bool rc = true;
             CPPUNIT_ASSERT_MESSAGE("No envionrment manager loaded", m_pEnvMgr != nullptr);
-            std::string xmlEnvDir = INSTALL_DIR PATHSEPSTR "testing/configmgr/schema/environments/";
+            std::string xmlEnvDir = std::string(hpccBuildInfo.installDir) + PATHSEPSTR + "testing/configmgr/schema/environments/";
             m_pEnvMgr->discardEnvironment();   // in case one is currently loaded
 
             if (!m_pEnvMgr->loadEnvironment(xmlEnvDir + envFilename))
@@ -89,7 +88,7 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
         {
             //
             // Standard configuration for HPCC
-            std::string schemaXSDDir = INSTALL_DIR PATHSEPSTR "testing/configmgr/schema/xsd/";
+            std::string schemaXSDDir = std::string(hpccBuildInfo.installDir) + PATHSEPSTR + "testing/configmgr/schema/xsd/";
 
             //
             // Create an environment manager and load a schema and environment
@@ -113,7 +112,7 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
         {
             CPPUNIT_ASSERT_MESSAGE("No envionrment manager loaded", m_pEnvMgr != nullptr);
             printf("\n  Instantiating template %s ...", templateFilename.c_str());
-            std::string templateSchema = INSTALL_DIR PATHSEPSTR "componentfiles/configschema/templates/schema/ModTemplateSchema.json";
+            std::string templateSchema = std::string(hpccBuildInfo.installDir) + PATHSEPSTR + "componentfiles/configschema/templates/schema/ModTemplateSchema.json";
             if (m_pTemplate != nullptr)
                 delete m_pTemplate;
             m_pTemplate = new EnvModTemplate(m_pEnvMgr, templateSchema);
@@ -134,7 +133,7 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
             {
                 if (info.json.find(".json") != std::string::npos)
                 {
-                    std::string templateDir = INSTALL_DIR PATHSEPSTR "testing/configmgr/templates/";
+                    std::string templateDir = std::string(hpccBuildInfo.installDir) + PATHSEPSTR + "testing/configmgr/templates/";
                     m_pTemplate->loadTemplateFromFile(templateDir + info.json);
                 }
                 else
@@ -197,7 +196,7 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
             //
             // Simple template create
             printf("\n  Instantiating a template...");
-            std::string templateSchema = INSTALL_DIR PATHSEPSTR "componentfiles/configschema/templates/schema/ModTemplateSchema.json";
+            std::string templateSchema = std::string(hpccBuildInfo.installDir) + PATHSEPSTR + "componentfiles/configschema/templates/schema/ModTemplateSchema.json";
             auto *pTemplate = new EnvModTemplate(m_pEnvMgr, templateSchema);
             printf("complete.");
 
@@ -546,7 +545,7 @@ class ConfigMgrTemplateTests : public CppUnit::TestFixture
     private:
 
         EnvironmentMgr  *m_pEnvMgr;
-        std::string m_templateDir = INSTALL_DIR PATHSEPSTR "testing/configmgr/templates/";
+        std::string m_templateDir = std::string(hpccBuildInfo.installDir) + PATHSEPSTR + "testing/configmgr/templates/";
         EnvModTemplate *m_pTemplate;
 };
 

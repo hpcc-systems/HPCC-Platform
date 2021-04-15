@@ -30,26 +30,12 @@
 #define strlwr _strlwr
 #endif
 
-#define STANDARD_CONFIG_BACKUPDIR CONFIG_DIR"/backup"
-#define STANDARD_CONFIG_SOURCEDIR CONFIG_DIR
-#define STANDARD_CONFIG_STAGED_PATH CONFIG_DIR "/" ENV_XML_FILE
-
-#define DEFAULT_DIRECTORIES "<Directories name=\"" DIR_NAME "\">\
-      <Category dir=\"" EXEC_PREFIX "/log/[NAME]/[INST]\" name=\"log\"/>\
-      <Category dir=\"" EXEC_PREFIX "/lib/[NAME]/[INST]\" name=\"run\"/>\
-      <Category dir=\"" CONFIG_PREFIX "/[NAME]/[INST]\" name=\"conf\"/>\
-      <Category dir=\"" EXEC_PREFIX "/lib/[NAME]/[INST]/temp\" name=\"temp\"/> \
-      <Category dir=\"" EXEC_PREFIX "/lib/[NAME]/hpcc-data/[COMPONENT]\" name=\"data\"/> \
-      <Category dir=\"" EXEC_PREFIX "/lib/[NAME]/hpcc-data2/[COMPONENT]\" name=\"data2\"/> \
-      <Category dir=\"" EXEC_PREFIX "/lib/[NAME]/hpcc-data3/[COMPONENT]\" name=\"data3\"/> \
-      <Category dir=\"" EXEC_PREFIX "/lib/[NAME]/hpcc-mirror/[COMPONENT]\" name=\"mirror\"/> \
-      <Category dir=\"" EXEC_PREFIX "/lib/[NAME]/queries/[INST]\" name=\"query\"/> \
-      <Category dir=\"" EXEC_PREFIX "/lock/[NAME]/[INST]\" name=\"lock\"/> \
-      </Directories>"
 #include <vector>
 
 using namespace std;
 typedef vector<IPropertyTree*> IPropertyTreePtrArray;
+
+static std::string defaultDirectories;
 
 bool CCloudTaskThread::s_abort = false;
 
@@ -232,6 +218,19 @@ void CWsDeployFileInfo::activeUserNotResponding()
 
 void CWsDeployExCE::init(IPropertyTree *cfg, const char *process, const char *service)
 {
+  defaultDirectories = "<Directories name=\"" + std::string(hpccBuildInfo.dirName) + "\"> \
+      <Category dir=\"" + std::string(hpccBuildInfo.execPrefix) + "/log/[NAME]/[INST]\" name=\"log\"/> \
+      <Category dir=\"" + std::string(hpccBuildInfo.execPrefix) + "/lib/[NAME]/[INST]\" name=\"run\"/> \
+      <Category dir=\"" + std::string(hpccBuildInfo.configPrefix) + "/[NAME]/[INST]\" name=\"conf\"/> \
+      <Category dir=\"" + std::string(hpccBuildInfo.execPrefix) + "/lib/[NAME]/[INST]/temp\" name=\"temp\"/> \
+      <Category dir=\"" + std::string(hpccBuildInfo.execPrefix) + "/lib/[NAME]/hpcc-data/[COMPONENT]\" name=\"data\"/> \
+      <Category dir=\"" + std::string(hpccBuildInfo.execPrefix) + "/lib/[NAME]/hpcc-data2/[COMPONENT]\" name=\"data2\"/> \
+      <Category dir=\"" + std::string(hpccBuildInfo.execPrefix) + "/lib/[NAME]/hpcc-data3/[COMPONENT]\" name=\"data3\"/> \
+      <Category dir=\"" + std::string(hpccBuildInfo.execPrefix) + "/lib/[NAME]/hpcc-mirror/[COMPONENT]\" name=\"mirror\"/> \
+      <Category dir=\"" + std::string(hpccBuildInfo.execPrefix) + "/lib/[NAME]/queries/[INST]\" name=\"query\"/> \
+      <Category dir=\"" + std::string(hpccBuildInfo.execPrefix) + "/lock/[NAME]/[INST]\" name=\"lock\"/> \
+      </Directories>";
+
   if (m_lastStarted.isNull())
     m_lastStarted.setNow();
 
@@ -259,16 +258,16 @@ void CWsDeployExCE::init(IPropertyTree *cfg, const char *process, const char *se
     Owned<IProperties> pParams = createProperties(tmp);
     m_sourceDir.clear().append(pParams->queryProp("sourcedir"));
     if (!m_sourceDir.length())
-      m_sourceDir.clear().append(STANDARD_CONFIG_SOURCEDIR);
+      m_sourceDir.clear().append(hpccBuildInfo.configDir);
 
     m_backupDir.clear().append(m_sourceDir).append(PATHSEPSTR"backup");
   }
 
   if (m_backupDir.length() == 0)
-    m_backupDir.clear().append(STANDARD_CONFIG_BACKUPDIR);
+    m_backupDir.clear().append(hpccBuildInfo.configDir).append("/backup");
 
   if (!m_sourceDir.length())
-    m_sourceDir.clear().append(STANDARD_CONFIG_SOURCEDIR);
+    m_sourceDir.clear().append(hpccBuildInfo.configDir);
 
   xpath.clear().appendf("Software/EspProcess/EspService[@name='%s']/LocalEnvFile", service);
   const char* pEnvFile = cfg->queryProp(xpath.str());
@@ -1378,7 +1377,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
             StringBuffer rundir;
 
             if (!getConfigurationDirectory(pEnvRoot->queryPropTree("Software/Directories"), "run", pszCompType, pszNewValue, rundir))
-              rundir.clear().appendf(RUNTIME_DIR"/%s", pszNewValue);
+              rundir.clear().append(hpccBuildInfo.runtimeDir).appendf("/%s", pszNewValue);
 
             Owned<IPropertyTreeIterator> iterInsts = pComp->getElements(XML_TAG_INSTANCE);
 
@@ -1485,7 +1484,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
               StringBuffer sb;
               StringBuffer rundir;
               if (!getConfigurationDirectory(pEnvRoot->queryPropTree("Software/Directories"), "run", pszCompType, pszCompName, rundir))
-                sb.clear().appendf(RUNTIME_DIR"/%s", pszCompName);
+                sb.clear().append(hpccBuildInfo.runtimeDir).appendf("/%s", pszCompName);
               else
                 sb.clear().append(rundir);
 
@@ -4405,7 +4404,7 @@ bool CWsDeployFileInfo::handleInstance(IEspContext &context, IEspHandleInstanceR
           {
             StringBuffer rundir;
             if (!getConfigurationDirectory(pEnvRoot->queryPropTree("Software/Directories"),"run",buildSet,compName,rundir))
-              sb.clear().appendf(RUNTIME_DIR"/%s", compName);
+              sb.clear().append(hpccBuildInfo.runtimeDir).appendf("/%s", compName);
             else
               sb.clear().append(rundir);
 
@@ -5613,7 +5612,7 @@ const char* CWsDeployFileInfo::GetDisplayProcessName(const char* processName, ch
 
 void CWsDeployFileInfo::setFilePath(StringBuffer &filePath, const char* targetName)
 {
-  filePath.clear().append(CONFIG_SOURCE_DIR);
+  filePath.clear().append(hpccBuildInfo.configSourceDir);
 
   if (filePath.charAt(filePath.length() - 1) != PATHSEPCHAR)
     filePath.append(PATHSEPCHAR);
@@ -6344,7 +6343,7 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite, bool bClearEnv)
     if(!pNewTree->queryPropTree(XML_TAG_SOFTWARE))
     {
       pNewTree->addPropTree(XML_TAG_SOFTWARE, createPTree());
-      pNewTree->addPropTree("./Software/Directories", createPTreeFromXMLString(DEFAULT_DIRECTORIES));
+      pNewTree->addPropTree("./Software/Directories", createPTreeFromXMLString(defaultDirectories.c_str()));
     }
     pNewTree->addPropTree(XML_TAG_HARDWARE, createPTree());
 
@@ -6698,7 +6697,8 @@ bool CWsDeployExCE::onGetValue(IEspContext &context, IEspGetValueRequest &req, I
     Owned<IFile> pDir = createIFile(getSourceDir());
 
     StringBuffer activeConfig_md5sum, config_md5sum;
-    md5_filesum(STANDARD_CONFIG_STAGED_PATH, activeConfig_md5sum);
+    std::string standardConfigStagedPath = std::string(hpccBuildInfo.configDir) + "/" + hpccBuildInfo.envXmlFile;
+    md5_filesum(standardConfigStagedPath.c_str(), activeConfig_md5sum);
 
     if (pDir->exists())
     {
@@ -7319,7 +7319,7 @@ bool CWsDeployFileInfo::checkForRequiredComponents(IPropertyTree* pEnvRoot, cons
       const char* cfgpath = pEnvParams->queryProp("configs");
 
       if (!cfgpath || !*cfgpath)
-        cfgpath = CONFIG_DIR;
+        cfgpath = hpccBuildInfo.configDir;
 
       genEnvConf.clear().append(cfgpath);
 

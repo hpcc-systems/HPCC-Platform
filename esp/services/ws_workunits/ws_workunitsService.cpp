@@ -53,7 +53,6 @@
 #include "rtlformat.hpp"
 
 #include "package.h"
-#include "build-config.h"
 
 #ifdef _USE_ZLIB
 #include "zcrypt.hpp"
@@ -4973,9 +4972,9 @@ bool CWsWorkunitsEx::onWUGetZAPInfo(IEspContext &context, IEspWUGetZAPInfoReques
 
 bool CWsWorkunitsEx::onWUCheckFeatures(IEspContext &context, IEspWUCheckFeaturesRequest &req, IEspWUCheckFeaturesResponse &resp)
 {
-    resp.setBuildVersionMajor(BUILD_VERSION_MAJOR);
-    resp.setBuildVersionMinor(BUILD_VERSION_MINOR);
-    resp.setBuildVersionPoint(BUILD_VERSION_POINT);
+    resp.setBuildVersionMajor(hpccBuildInfo.buildVersionMajor);
+    resp.setBuildVersionMinor(hpccBuildInfo.buildVersionMinor);
+    resp.setBuildVersionPoint(hpccBuildInfo.buildVersionPoint);
     resp.setMaxRequestEntityLength(maxRequestEntityLength);
     resp.updateDeployment().setUseCompression(true);
     return true;

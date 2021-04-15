@@ -1857,7 +1857,7 @@ void EclAgent::doProcess()
             LOG(MCrunlock, unknownJob, "Obtained workunit lock");
             if (w->hasDebugValue("traceLevel"))
                 traceLevel = w->getDebugValueInt("traceLevel", 10);
-            w->setTracingValue("EclAgentBuild", hpccBuildTag);
+            w->setTracingValue("EclAgentBuild", hpccBuildInfo.buildTag);
             if (agentTopology->hasProp("@name"))
                 w->addProcess("EclAgent", agentTopology->queryProp("@name"), GetCurrentProcessId(), 0, nullptr, false, logname.str());
 
@@ -3535,7 +3535,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     if (traceLevel)
     {
         printStart(argc, argv);
-        DBGLOG("Build %s", hpccBuildTag);
+        DBGLOG("Build %s", hpccBuildInfo.buildTag);
     }
 
     // Extract any params into stored - primarily for standalone case but handy for debugging eclagent sometimes too
@@ -3723,7 +3723,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             wuid.set(uid);
         }
         setDefaultJobId(wuid.str());
-        LOG(MCoperatorInfo, "hthor build %s", hpccBuildTag);
+        LOG(MCoperatorInfo, "hthor build %s", hpccBuildInfo.buildTag);
 
 #ifdef MONITOR_ECLAGENT_STATUS
         if (serverstatus)

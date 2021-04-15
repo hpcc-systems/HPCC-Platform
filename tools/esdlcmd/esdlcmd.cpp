@@ -23,15 +23,12 @@
 #include "esdlcmd_common.hpp"
 #include "esdlcmd_core.hpp"
 
-#define SYSTEMCONFDIR CONFIG_DIR
-#define SYSTEMCONFFILE ENV_CONF_FILE
-
 
 //=========================================================================================
 
 static int doMain(int argc, const char *argv[])
 {
-    EsdlCMDShell processor(argc, argv, createCoreEsdlCommand, hpccBuildTag, true);
+    EsdlCMDShell processor(argc, argv, createCoreEsdlCommand, hpccBuildInfo.buildTag, true);
     return processor.run();
 }
 

@@ -18,8 +18,6 @@ limitations under the License.
 #ifndef _ESPWIZ_WS_SQL_HPP__
 #define _ESPWIZ_WS_SQL_HPP__
 
-#include <build-config.h>
-
 #include "ws_sql.hpp"
 #include "ws_sql_esp.ipp"
 

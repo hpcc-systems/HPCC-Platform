@@ -20,15 +20,11 @@
 #include "jargv.hpp"
 #include "jprop.hpp"
 
-#include "build-config.h"
-
 #include "eclcmd.hpp"
 #include "eclcmd_core.hpp"
 
 #define INIFILE "ecl.ini"
-#define SYSTEMCONFDIR CONFIG_DIR
 #define DEFAULTINIFILE "ecl.ini"
-#define SYSTEMCONFFILE ENV_CONF_FILE
 
 //=========================================================================================
 
@@ -134,7 +130,7 @@ int EclCMDShell::run()
                 optIniFilename.set(INIFILE);
             else if (getHomeDir(fn) && checkFileExists(addPathSepChar(fn).append(INIFILE)))
                 optIniFilename.set(fn);
-            else if (fn.set(SYSTEMCONFDIR).append(PATHSEPSTR).append(DEFAULTINIFILE))
+            else if (fn.set(hpccBuildInfo.configDir).append(PATHSEPSTR).append(DEFAULTINIFILE))
                 optIniFilename.set(fn);
         }
 
@@ -184,7 +180,7 @@ bool EclCMDShell::parseCommandLineOptions(ArgvIterator &iter)
         }
         if (iter.matchFlag(boolValue, "--version"))
         {
-            fprintf(stdout, "%s\n", hpccBuildTag);
+            fprintf(stdout, "%s\n", hpccBuildInfo.buildTag);
             return false;
         }
         StringAttr tempArg;

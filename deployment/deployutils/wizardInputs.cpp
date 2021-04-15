@@ -25,10 +25,7 @@
 #include "jencrypt.hpp"
 #include "buildset.hpp"
 #include "confighelper.hpp"
-#include "build-config.h"
 
-#define STANDARD_CONFIGXMLDIR COMPONENTFILES_DIR"/configxml/"
-#define STANDARD_CONFIG_DIR CONFIG_DIR
 
 CInstDetails::CInstDetails(const char * compName, const StringArray &ipAssigned) : m_compName(compName)
 {
@@ -175,7 +172,7 @@ void CWizardInputs::setEnvironment()
 
      m_buildSetTree.setown(pBuildSet);
      
-     fileName.clear().append((pEnvParams->queryProp("configs") != NULL ? (sb.clear().append(pEnvParams->queryProp("configs")).append("/")): STANDARD_CONFIG_DIR));
+     fileName.clear().append((pEnvParams->queryProp("configs") != NULL ? (sb.clear().append(pEnvParams->queryProp("configs")).append("/")): hpccBuildInfo.configDir));
      fileName.append((pParams->queryProp("wizardalgorithm") != NULL ? (sb.clear().append(pParams->queryProp("wizardalgorithm"))) : STANDARD_CONFIG_ALGORITHMFILE));
      
      if(fileName.length() && checkFileExists(fileName.str()))

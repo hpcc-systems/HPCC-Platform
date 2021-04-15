@@ -35,7 +35,6 @@
 #include "thorxmlwrite.hpp" //JSON WRITER
 #include "workunit.hpp"
 #include "wuwebview.hpp"
-#include "build-config.h"
 #include "jsmartsock.ipp"
 #include "esdl_monitor.hpp"
 #include "EsdlAccessMapGenerator.hpp"
@@ -599,7 +598,7 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
         if (envConf.hasProp("classpath"))
             envConf.getProp("classpath", classPath);
         else
-            classPath.append(INSTALL_DIR).append(PATHSEPCHAR).append("classes");
+            classPath.append(hpccBuildInfo.installDir).append(PATHSEPCHAR).append("classes");
 
         MapStringToMyClass<IEspPlugin> localCppPluginMap;
 

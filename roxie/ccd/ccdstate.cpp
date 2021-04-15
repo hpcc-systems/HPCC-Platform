@@ -2343,7 +2343,7 @@ private:
             }
             else if (stricmp(queryName, "control:getBuildVersion")==0)
             {
-                reply.appendf("<version id='%s'/>", hpccBuildTag);
+                reply.appendf("<version id='%s'/>", hpccBuildInfo.buildTag);
             }
             else
                 unknown = true;

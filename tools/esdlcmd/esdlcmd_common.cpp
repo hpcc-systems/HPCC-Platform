@@ -81,7 +81,7 @@ esdlCmdOptionMatchIndicator EsdlCmdCommon::matchCommandLineOption(ArgvIterator &
     }
     if (iter.matchFlag(boolValue, ESDLOPT_VERSION))
     {
-        fprintf(stdout, "%s\n", hpccBuildTag);
+        fprintf(stdout, "%s\n", hpccBuildInfo.buildTag);
         return EsdlCmdOptionCompletion;
     }
 

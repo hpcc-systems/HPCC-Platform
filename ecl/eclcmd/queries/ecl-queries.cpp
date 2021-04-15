@@ -28,9 +28,7 @@
 #include "workunit.hpp"
 
 #define INIFILE "ecl.ini"
-#define SYSTEMCONFDIR CONFIG_DIR
 #define DEFAULTINIFILE "ecl.ini"
-#define SYSTEMCONFFILE ENV_CONF_FILE
 
 //=========================================================================================
 
@@ -1583,7 +1581,7 @@ public:
 
 static int doMain(int argc, const char *argv[])
 {
-    EclQueriesCMDShell processor(argc, argv, createEclQueriesCommand, hpccBuildTag);
+    EclQueriesCMDShell processor(argc, argv, createEclQueriesCommand, hpccBuildInfo.buildTag);
     return processor.run();
 }
 

@@ -906,7 +906,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     timestamp_type startTs = getTimeStampNowValue();
     {
         Owned<IWorkUnit> wu = &workunit.lock();
-        wu->setTracingValue("ThorBuild", hpccBuildTag);
+        wu->setTracingValue("ThorBuild", hpccBuildInfo.buildTag);
 #ifndef _CONTAINERIZED
         updateWorkUnitLog(*wu);
 #endif

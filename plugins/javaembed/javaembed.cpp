@@ -28,7 +28,6 @@
 #include "rtlfield.hpp"
 #include "rtlds_imp.hpp"
 #include "jprop.hpp"
-#include "build-config.h"
 #include "roxiemem.hpp"
 #include "nbcd.hpp"
 #include "rtlformat.hpp"
@@ -907,7 +906,7 @@ static StringBuffer &appendClassPath(StringBuffer &classPath)
     }
     else
     {
-        classPath.append(INSTALL_DIR).append(PATHSEPCHAR).append("classes").append(ENVSEPCHAR);
+        classPath.append(hpccBuildInfo.installDir).append(PATHSEPCHAR).append("classes").append(ENVSEPCHAR);
     }
     return classPath;
 }

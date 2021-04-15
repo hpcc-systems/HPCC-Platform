@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-#include "build-config.h"
 #include "EnvHelper.hpp"
 #include "Hardware.hpp"
 #include "Programs.hpp"
@@ -23,11 +22,16 @@
 #include "Software.hpp"
 #include "ComponentBase.hpp"
 #include "deployutils.hpp"
-#include "build-config.h"
 #include "confighelper.hpp"
 
 namespace ech
 {
+
+static std::string defaultEnvXml;
+static std::string defaultEnvOptions;
+static std::string defaultGenEnvRules;
+static std::string defaultBuildSet;
+
 EnvHelper::EnvHelper(IPropertyTree *config)
 {
    init(config);
@@ -100,7 +104,7 @@ void EnvHelper::init(IPropertyTree *config)
    if (optionsFileName && *optionsFileName)
       fileName.clear().append(optionsFileName);
    else
-      fileName.clear().append(DEFAULT_ENV_OPTIONS);
+      fileName.clear().append(defaultEnvOptions.c_str());
 
    m_envCfgOptions = new EnvConfigOptions(fileName.str());
 
@@ -108,7 +112,7 @@ void EnvHelper::init(IPropertyTree *config)
    if (genEnvRulesFileName && *genEnvRulesFileName)
       fileName.clear().append(genEnvRulesFileName);
    else
-      fileName.clear().append(DEFAULT_GEN_ENV_RULES);
+      fileName.clear().append(defaultGenEnvRules.c_str());
 
    m_genEnvRules = new GenEnvRules(fileName.str());
 
@@ -117,7 +121,7 @@ void EnvHelper::init(IPropertyTree *config)
    if (buildSetFileName && * buildSetFileName)
       fileName.clear().append(buildSetFileName);
    else
-      fileName.clear().append(DEFAULT_BUILDSET);
+      fileName.clear().append(defaultBuildSet.c_str());
    m_buildSetTree.setown(createPTreeFromXMLFile(fileName.str()));
 
    const char* envXmlFileName = m_config->queryProp("@env-in");
@@ -128,8 +132,11 @@ void EnvHelper::init(IPropertyTree *config)
       m_envTree.setown(createPTreeFromXMLString("<" XML_HEADER "><" XML_TAG_ENVIRONMENT "></" XML_TAG_ENVIRONMENT ">"));
 
       //Initialize CConfigHelper
-      const char* espConfigPath =  (m_config->hasProp("@esp-config"))?
-         m_config->queryProp("@esp-config") : ESP_CONFIG_PATH;
+      StringBuffer espConfigPath;
+      if (m_config->hasProp("@esp-config"))
+         m_config->getProp("@esp-config", espConfigPath);
+      else
+         espConfigPath.append(hpccBuildInfo.configDir).append("/configmgr/esp.xml");
       Owned<IPropertyTree> espCfg = createPTreeFromXMLFile(espConfigPath);
 
       const char* espServiceName =  (m_config->hasProp("@esp-service"))?
@@ -373,4 +380,13 @@ IPropertyTree * EnvHelper::clonePTree(IPropertyTree *src)
    return createPTreeFromXMLString(xml.str());
 }
 
+}
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+   ech::defaultEnvXml = std::string(hpccBuildInfo.configDir) + "/environment.xml";
+   ech::defaultEnvOptions = std::string(hpccBuildInfo.configDir) + "/environment.conf";
+   ech::defaultGenEnvRules = std::string(hpccBuildInfo.configDir) + "/genenvrules.conf";
+   ech::defaultBuildSet = std::string(hpccBuildInfo.componentDir) + "/configxml/buildset.xml";
+   return true;
 }

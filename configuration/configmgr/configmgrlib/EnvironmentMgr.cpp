@@ -21,7 +21,6 @@
 #include "InsertableItem.hpp"
 #include "Utils.hpp"
 #include "jfile.hpp"
-#include "build-config.h"
 
 #ifndef WIN32
 #include <dlfcn.h>
@@ -74,7 +73,7 @@ bool EnvironmentMgr::loadSchema(const std::string &configPath, const std::string
         //
         // Load support libs based on the schema type which is read from the itemType property of the schema root node.
         std::string envType = m_pSchema->getItemType();
-        std::string libPath = LIB_DIR;
+        std::string libPath = hpccBuildInfo.libDir;
         std::string libMask = "libcfg" + envType + "_*";
         Owned<IFile> pDir = createIFile(libPath.c_str());
         if (pDir->exists())

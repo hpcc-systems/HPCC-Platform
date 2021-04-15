@@ -88,7 +88,7 @@ StringBuffer &getEsdlCmdComponentFilesPath(StringBuffer & path)
 {
     if (getComponentFilesRelPathFromBin(path))
         return path;
-    return path.set(COMPONENTFILES_DIR);
+    return path.set(hpccBuildInfo.componentDir);
 }
 
 class EsdlMonitorTemplateCmd : public EsdlConvertCmd

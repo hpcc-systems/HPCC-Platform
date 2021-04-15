@@ -1297,7 +1297,7 @@ void HqlParseContext::getCacheBaseFilename(StringBuffer & fullName, StringBuffer
 extern HQL_API IPropertyTree * createAttributeArchive()
 {
     Owned<IPropertyTree> archive = createPTree("Archive");
-    archive->setProp("@build", hpccBuildTag);
+    archive->setProp("@build", hpccBuildInfo.buildTag);
     archive->setProp("@eclVersion", LANGUAGE_VERSION);
     return archive.getClear();
 }

@@ -6066,7 +6066,7 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
 
     try
     {
-        wu()->setCodeVersion(ACTIVITY_INTERFACE_VERSION,hpccBuildTag,LANGUAGE_VERSION);
+        wu()->setCodeVersion(ACTIVITY_INTERFACE_VERSION,hpccBuildInfo.buildTag,LANGUAGE_VERSION);
         cacheOptions();
 
         if (options.obfuscateOutput)

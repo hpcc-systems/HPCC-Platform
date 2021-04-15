@@ -25,10 +25,19 @@
 #include "Exceptions.hpp"
 
 static const std::string CFGMGR_MASTER_CONFIG_FILE = "environment.xsd";
-static const std::string CFGMGR_CONFIG_DIR = COMPONENTFILES_DIR PATHSEPSTR "configschema" PATHSEPSTR "xsd" PATHSEPSTR;
-static const std::string CFGMGR_PLUGINS_DIR = COMPONENTFILES_DIR PATHSEPSTR "configschema" PATHSEPSTR "xsd" PATHSEPSTR "plugins" PATHSEPSTR;
-static const std::string CFGMGR_SOURCE_DIR = CONFIG_SOURCE_DIR;
-static const std::string ACTIVE_ENVIRONMENT_FILE = CONFIG_DIR PATHSEPSTR ENV_XML_FILE;
+static const std::string CFGMGR_CONFIG_DIR;
+static const std::string CFGMGR_PLUGINS_DIR;
+static const std::string CFGMGR_SOURCE_DIR;
+static const std::string ACTIVE_ENVIRONMENT_FILE;
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+   CFGMGR_CONFIG_DIR = std::string(hpccBuildInfo.componentDir) + PATHSEPSTR + "configschema" + PATHSEPSTR + "xsd" + PATHSEPSTR;
+   CFGMGR_PLUGINS_DIR = CFGMGR_CONFIG_DIR + "plugins" PATHSEPSTR;
+   CFGMGR_SOURCE_DIR = std::string(hpccBuildInfo.configSourceDir);
+   ACTIVE_ENVIRONMENT_FILE = std::string(hpccBuildInfo.configDir) + PATHSEPSTR + hpccBuildInfo.envXmlFile;
+   return true;
+}
 
 Cws_configMgrEx::Cws_configMgrEx()
 {

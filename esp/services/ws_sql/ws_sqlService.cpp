@@ -30,7 +30,7 @@ void CwssqlEx::init(IPropertyTree *_cfg, const char *_process, const char *_serv
         throw MakeStringException(-1, "ws_sqlEx: Problem initiating ECLFunctions structure");
     }
 
-    setWsSqlBuildVersion(hpccBuildTag);
+    setWsSqlBuildVersion(hpccBuildInfo.buildTag);
 }
 
 bool CwssqlEx::onEcho(IEspContext &context, IEspEchoRequest &req, IEspEchoResponse &resp)

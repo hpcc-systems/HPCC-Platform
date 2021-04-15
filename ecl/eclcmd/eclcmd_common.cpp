@@ -331,7 +331,7 @@ eclCmdOptionMatchIndicator EclCmdCommon::matchCommandLineOption(ArgvIterator &it
     }
     if (iter.matchFlag(boolValue, ECLOPT_VERSION))
     {
-        fprintf(stdout, "%s\n", hpccBuildTag);
+        fprintf(stdout, "%s\n", hpccBuildInfo.buildTag);
         return EclCmdOptionCompletion;
     }
     if (iter.matchOption(optServer, ECLOPT_SERVER)||iter.matchOption(optServer, ECLOPT_SERVER_S))
