@@ -1214,9 +1214,10 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 }
                 catch (IException *e)
                 {
-                    EXCLOG(e, nullptr);
-                    activity.fireException(e);
+                    Owned<IException> te = ThorWrapException(e, "%s", "Lookup handler process");
                     e->Release();
+                    EXCLOG(te, nullptr);
+                    activity.fireException(te);
                 }
                 processing.clearRows();
             }
