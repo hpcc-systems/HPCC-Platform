@@ -800,11 +800,19 @@ public:
                     serverStatus->queryProperties()->setProp("@cluster", roxieName.str());
                     serverStatus->commitProperties();
                     isConnected = true; // Make sure this is set before the onReconnect calls, so that they refresh with info from Dali rather than from cache
-                    CriticalBlock b(watchersCrit);
-                    ForEachItemIn(idx, watchers)
+                    IArrayOf<IDaliPackageWatcher> watchersToReconnect;
                     {
-                        watchers.item(idx).onReconnect();
+                        CriticalBlock b(watchersCrit);
+                        ForEachItemIn(idx, watchers)
+                        {
+                            watchersToReconnect.append(OLINK(watchers.item(idx)));
+                        }
                     }
+                    ForEachItemIn(idx, watchersToReconnect)
+                    {
+                        watchersToReconnect.item(idx).onReconnect();
+                    }
+
                 }
                 catch(IException *e)
                 {
