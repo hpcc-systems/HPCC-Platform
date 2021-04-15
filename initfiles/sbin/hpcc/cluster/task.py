@@ -131,7 +131,7 @@ class ScriptTask(Task):
         protect the script from malicious modification.
         '''
         try:
-            self._ip = host.ip.decode('utf-8')
+            self._ip = host.ip
         except AttributeError as e:
             self._ip = host.ip
         cmd = self.script_file + " " + self._ip
