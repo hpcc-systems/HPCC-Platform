@@ -23,7 +23,7 @@ ESPrequest [nil_remove] SetValueRequest
     string Value;
 };
 
-ESPresponse [exceptions_inline, nil_remove] ValueResponse
+ESPresponse [exceptions_inline, nil_remove] ResultResponse
 {
     string Result;
 };
@@ -33,11 +33,25 @@ ESPrequest [nil_remove] GetValueRequest
     string Path;
 };
 
-ESPservice [auth_feature("NONE"), //This declares that the method logic handles feature level authorization
-    version("1.01"), default_client_version("1.01"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSDali
+ESPrequest [nil_remove] ImportRequest
 {
-    ESPmethod [min_ver("1.01")] SetValue(SetValueRequest, ValueResponse);
-    ESPmethod [min_ver("1.01")] GetValue(GetValueRequest, ValueResponse);
+    string XML;
+    string Path;
+    bool Add;
+};
+
+ESPrequest [nil_remove] DeleteRequest
+{
+    string Path;
+};
+
+ESPservice [auth_feature("NONE"), //This declares that the method logic handles feature level authorization
+    version("1.02"), default_client_version("1.02"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSDali
+{
+    ESPmethod [min_ver("1.01")] SetValue(SetValueRequest, ResultResponse);
+    ESPmethod [min_ver("1.01")] GetValue(GetValueRequest, ResultResponse);
+    ESPmethod [min_ver("1.02")] Import(ImportRequest, ResultResponse);
+    ESPmethod [min_ver("1.02")] Delete(DeleteRequest, ResultResponse);
 };
 
 SCMexportdef(WSDali);

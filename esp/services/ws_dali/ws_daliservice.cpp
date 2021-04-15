@@ -25,6 +25,8 @@
 #include "dasds.hpp"
 #include "daadmin.hpp"
 
+using namespace daadmin;
+
 #define REQPATH_EXPORTSDSDATA "/WSDali/Export"
 
 const char* daliFolder = "tempdalifiles" PATHSEPSTR;
@@ -107,7 +109,7 @@ void CWSDaliEx::checkAccess(IEspContext& context)
         throw makeStringException(ECLWATCH_CANNOT_CONNECT_DALI, "Dali detached.");
 }
 
-bool CWSDaliEx::onSetValue(IEspContext& context, IEspSetValueRequest& req, IEspValueResponse& resp)
+bool CWSDaliEx::onSetValue(IEspContext& context, IEspSetValueRequest& req, IEspResultResponse& resp)
 {
     try
     {
@@ -135,7 +137,7 @@ bool CWSDaliEx::onSetValue(IEspContext& context, IEspSetValueRequest& req, IEspV
     return true;
 }
 
-bool CWSDaliEx::onGetValue(IEspContext& context, IEspGetValueRequest& req, IEspValueResponse& resp)
+bool CWSDaliEx::onGetValue(IEspContext& context, IEspGetValueRequest& req, IEspResultResponse& resp)
 {
     try
     {
@@ -148,6 +150,52 @@ bool CWSDaliEx::onGetValue(IEspContext& context, IEspGetValueRequest& req, IEspV
         StringBuffer value;
         getValue(path, value);
         resp.setResult(value);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onImport(IEspContext& context, IEspImportRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        const char* xml = req.getXML();
+        const char* path = req.getPath();
+        if (isEmptyString(xml))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Data XML not specified.");
+        if (isEmptyString(path))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Data path not specified.");
+
+        StringBuffer result;
+        if (importFromXML(path, xml, req.getAdd(), result))
+            result.appendf(" Branch %s loaded.", path);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onDelete(IEspContext& context, IEspDeleteRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        const char* path = req.getPath();
+        if (isEmptyString(path))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Data path not specified.");
+
+        StringBuffer result;
+        erase(path, false, result);
+        resp.setResult(result);
     }
     catch(IException* e)
     {

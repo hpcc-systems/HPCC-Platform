@@ -20,7 +20,17 @@
 #include "rmtfile.hpp"
 #include "daadmin.hpp"
 
+using namespace daadmin;
+
 #define DEFAULT_DALICONNECT_TIMEOUT 5 // seconds
+
+void doLog(bool noError, StringBuffer &out)
+{
+    if (noError)
+        PROGLOG("%s", out.str());
+    else
+        UERRLOG("%s", out.str());
+}
 
 void usage(const char *exe)
 {
@@ -253,20 +263,20 @@ int main(int argc, const char* argv[])
                     setDaliConnectTimeoutMs(1000 * props->getPropInt("timeout", DEFAULT_DALICONNECT_TIMEOUT));
                     if (strieq(cmd,"export")) {
                         CHECKPARAMS(2,2);
-                        _export_(params.item(1),params.item(2));
+                        exportToFile(params.item(1),params.item(2));
                     }
                     else if (strieq(cmd,"import")) {
                         CHECKPARAMS(2,2);
-                        import(params.item(1),params.item(2),false);
+                        doLog(importFromFile(params.item(1),params.item(2),false,out),out);
                     }
                     else if (strieq(cmd,"importadd")) {
                         CHECKPARAMS(2,2);
-                        import(params.item(1),params.item(2),true);
+                        doLog(importFromFile(params.item(1),params.item(2),true,out),out);
                     }
                     else if (strieq(cmd,"delete")) {
                         CHECKPARAMS(1,2);
                         bool backup = np<2 || !strieq("nobackup", params.item(2));
-                        _delete_(params.item(1),backup);
+                        doLog(erase(params.item(1),backup,out),out);
                     }
                     else if (strieq(cmd,"set")) {
                         CHECKPARAMS(2,2);
