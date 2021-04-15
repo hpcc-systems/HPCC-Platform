@@ -560,7 +560,12 @@ public:
                 if (strstr(m_sysuser_commonname.str(), "Directory Manager"))
                     m_sysuser_dn.append("cn=Directory Manager");
                 else
-                    m_sysuser_dn.append("uid=").append(m_sysuser_commonname.str()).append(",").append(m_sysuser_basedn.str()).append(",").append(m_basedn.str());
+                {
+                    if (nullptr == strchr(m_sysuser_commonname.str(), '='))
+                        m_sysuser_dn.append("uid=").append(m_sysuser_commonname.str()).append(",").append(m_sysuser_basedn.str()).append(",").append(m_basedn.str());
+                    else
+                        m_sysuser_dn.append(m_sysuser_commonname.str());//includes FQDN prefix, use as is (likely from initldap)
+                }
             }
         }
 
