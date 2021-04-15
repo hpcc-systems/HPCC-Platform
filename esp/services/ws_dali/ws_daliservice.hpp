@@ -48,8 +48,10 @@ public:
     }
 
     virtual void init(IPropertyTree* cfg, const char* process, const char* service) override;
-    virtual bool onSetValue(IEspContext& context, IEspSetValueRequest& req, IEspValueResponse& resp) override;
-    virtual bool onGetValue(IEspContext& context, IEspGetValueRequest& req, IEspValueResponse& resp) override;
+    virtual bool onSetValue(IEspContext& context, IEspSetValueRequest& req, IEspResultResponse& resp) override;
+    virtual bool onGetValue(IEspContext& context, IEspGetValueRequest& req, IEspResultResponse& resp) override;
+    virtual bool onImport(IEspContext& context, IEspImportRequest& req, IEspResultResponse& resp) override;
+    virtual bool onDelete(IEspContext& context, IEspDeleteRequest& req, IEspResultResponse& resp) override;
 };
 
 class CWSDaliSoapBindingEx : public CWSDaliSoapBinding

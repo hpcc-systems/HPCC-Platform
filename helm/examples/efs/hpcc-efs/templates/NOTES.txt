@@ -5,7 +5,7 @@ storage:
   planes:
 {{- range $plane := .Values.planes }}
   - name: {{ $plane.name }}
-    pvc: {{ printf "%s-%s-pvc" $plane.name (include "hpcc-azurefile.fullname" $) }}
+    pvc: {{ printf "%s-%s-pvc" $plane.name (include "hpcc-efs.fullname" $) }}
     prefix: {{ printf "%s%s%s" $.Values.common.mountPrefix (regexMatch ".*/$" $.Values.common.mountPrefix | ternary "" "/") $plane.subPath | quote }}
 {{- if hasKey $plane "labels" }}
     labels:

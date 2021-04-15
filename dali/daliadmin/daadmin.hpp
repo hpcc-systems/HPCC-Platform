@@ -23,13 +23,18 @@
 
 #include "dautils.hpp"
 
+namespace daadmin
+{
+
 extern DALIADMIN_API void setDaliConnectTimeoutMs(unsigned timeoutMs);
 extern DALIADMIN_API void xmlSize(const char *filename, double pc);
 extern DALIADMIN_API void translateToXpath(const char *logicalfile, DfsXmlBranchKind tailType = DXB_File);
 
-extern DALIADMIN_API void _export_(const char *path, const char *dst, bool safe = false);
-extern DALIADMIN_API void import(const char *path, const char *src, bool add);
-extern DALIADMIN_API void _delete_(const char *path, bool backup);
+extern DALIADMIN_API void exportToFile(const char *path, const char *filename, bool safe = false);
+extern DALIADMIN_API bool exportToXML(const char *path, StringBuffer &out, bool safe = false);
+extern DALIADMIN_API bool importFromFile(const char *path, const char *filename, bool add, StringBuffer &out);
+extern DALIADMIN_API bool importFromXML(const char *path, const char *xml, bool add, StringBuffer &out);
+extern DALIADMIN_API bool erase(const char *path, bool backup,StringBuffer &out);
 extern DALIADMIN_API StringBuffer &setValue(const char *path, const char *val, StringBuffer &oldVal);
 extern DALIADMIN_API void getValue(const char *path, StringBuffer& out);
 extern DALIADMIN_API void bget(const char *path, const char *outfn);
@@ -89,3 +94,5 @@ extern DALIADMIN_API void daliping(const char *dalis, unsigned connecttime, unsi
 
 extern DALIADMIN_API void validateStore(bool fix, bool deleteFiles, bool verbose);
 extern DALIADMIN_API void removeOrphanedGlobalVariables(bool dryrun, bool reconstruct);
+
+} // namespace daadmin

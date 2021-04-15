@@ -123,7 +123,7 @@ bool CAuthMap::shareWithManager(ISecManager& manager, IEspSecureContext* secureC
         ISecResourceList* curlist = (ISecResourceList*)m_resourcelists.item(x).list();
         if(curlist == NULL)
             continue;
-        ISecUser* usr = NULL;
+        Owned<ISecUser> usr = manager.createUser(nullptr, secureContext);
         bool ret = manager.addResources(*usr, curlist, secureContext);
         ok = ok && ret;
     }
@@ -142,7 +142,7 @@ bool CAuthMap::removeFromManager(ISecManager& manager, IEspSecureContext* secure
         ISecResourceList* curlist = (ISecResourceList*)m_resourcelists.item(x).list();
         if(curlist == NULL)
             continue;
-        ISecUser* usr = NULL;
+        Owned<ISecUser> usr = manager.createUser(nullptr, secureContext);
         bool ret = manager.removeResources(*usr, curlist, secureContext);
         ok = ok && ret;
     }

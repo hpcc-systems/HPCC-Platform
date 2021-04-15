@@ -23,6 +23,26 @@ HPCCFileCache * HPCCFileCache::createFileCache(const char * username, const char
     ESPLOG(LogMax, "WsSQL: Creating new HPCC FILE CACHE");
     return new HPCCFileCache(username,passwd);
 }
+void populateColums(IArrayOf<HPCCColumnMetaData> * cols, IArrayOf<IEspHPCCColumn> & pColumns)
+{
+    for (int i = 0; i < cols->length(); i++)
+    {
+       Owned<IEspHPCCColumn> pCol = createHPCCColumn();
+       HPCCColumnMetaData& currcol = cols->item(i);
+
+       IArrayOf<HPCCColumnMetaData> * ccols = currcol.getChildColumns();
+       if (ccols != nullptr && ccols->length() !=  0)
+       {
+           IArrayOf<IEspHPCCColumn> pCColumns;
+           populateColums(ccols, pCColumns);
+           pCol->setColumns(pCColumns);
+       }
+
+       pCol->setName(currcol.getColumnName());
+       pCol->setType(currcol.getColumnType());
+       pColumns.append(*pCol.getLink());
+    }
+}
 
 bool HPCCFileCache::populateTablesResponse(IEspGetDBMetaDataResponse & tablesrespstruct, const char * filterby)
 {
@@ -58,7 +78,15 @@ bool HPCCFileCache::populateTablesResponse(IEspGetDBMetaDataResponse & tablesres
                for (int i = 0; i < cols->length(); i++)
                {
                    Owned<IEspHPCCColumn> pCol = createHPCCColumn();
-                   HPCCColumnMetaData currcol = cols->item(i);
+                   HPCCColumnMetaData& currcol = cols->item(i);
+
+                   IArrayOf<HPCCColumnMetaData> * ccols = currcol.getChildColumns();
+                   if (ccols->length() != 0)
+                   {
+                       IArrayOf<IEspHPCCColumn> pCColumns;
+                       populateColums(ccols, pCColumns);
+                       pCol->setColumns(pCColumns);
+                   }
                    pCol->setName(currcol.getColumnName());
                    pCol->setType(currcol.getColumnType());
                    pColumns.append(*pCol.getLink());
@@ -114,7 +142,6 @@ bool HPCCFileCache::cacheAllHpccFiles(const char * filterby)
        StringBuffer name(attr.queryProp("@name"));
 
        if (name.length()>0 && HPCCFile::validateFileName(name.str()))
-       //if (name.length()>0)
        {
            const char * cachedKey = cacheHpccFileByName(name.str(), true);
            success &= (cachedKey && *cachedKey);
@@ -284,7 +311,7 @@ HPCCFile * HPCCFileCache::fetchHpccFileByName(const char * filename, const char 
             file->setFormat(format);
         }
 
-        if (file && ( file->containsNestedColumns() || strncmp(file->getFormat(), "XML", 3)==0))
+        if (file && (strncmp(file->getFormat(), "XML", 3)==0))
             throw MakeStringException(-1,"Nested data files not supported: %s.",filename);
     }
 

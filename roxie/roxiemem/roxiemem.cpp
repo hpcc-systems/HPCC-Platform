@@ -604,16 +604,16 @@ static StringBuffer &memmap(StringBuffer &stats)
     return stats.appendf("\nHeap size %u pages, %u free, largest block %u", heapTotalPages, freePages, maxBlock);
 }
 
-static void throwGlobalHeapExhausted(unsigned allocatorId, unsigned pages)
+static void throwGlobalHeapExhausted(unsigned pages)
 {
-    VStringBuffer msg("Global memory exhausted: pool id %u (%u pages) exhausted, requested %u active(%u) heap(%u/%u)", allocatorId, heapTotalPages, pages, activeRowManagers.load(), heapAllocated, heapTotalPages);
+    VStringBuffer msg("Global memory exhausted: (%u pages) exhausted, requested %u active(%u) heap(%u/%u)", heapTotalPages, pages, activeRowManagers.load(), heapAllocated, heapTotalPages);
     DBGLOG("%s", msg.str());
     throw MakeStringExceptionDirect(ROXIEMM_MEMORY_POOL_EXHAUSTED, msg.str());
 }
 
-static void throwGlobalHeapExhausted(unsigned allocatorId, unsigned newPages, unsigned oldPages)
+static void throwGlobalHeapExhausted(unsigned activityId, unsigned newPages, unsigned oldPages)
 {
-    VStringBuffer msg("Global memory exhausted: pool id %u (%u pages) exhausted, requested %u, had %u active(%u) heap(%u/%u)", allocatorId, heapTotalPages, newPages, oldPages, activeRowManagers.load(), heapAllocated, heapTotalPages);
+    VStringBuffer msg("Global memory exhausted: activity id %u (%u pages) exhausted, requested %u, had %u active(%u) heap(%u/%u)", activityId, heapTotalPages, newPages, oldPages, activeRowManagers.load(), heapAllocated, heapTotalPages);
     DBGLOG("%s", msg.str());
     throw MakeStringExceptionDirect(ROXIEMM_MEMORY_POOL_EXHAUSTED, msg.str());
 }
@@ -643,7 +643,7 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
     if (heapAllocated + pages > heapTotalPages) {
         if (returnNullWhenExhausted)
             return NULL;
-        throwGlobalHeapExhausted(0, pages);
+        throwGlobalHeapExhausted(pages);
     }
     if (heapLargeBlockGranularity)
     {
@@ -771,7 +771,7 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
     }
     if (returnNullWhenExhausted)
         return NULL;
-    throwGlobalHeapExhausted(0, pages);
+    throwGlobalHeapExhausted(pages);
     return NULL;
 }
 
@@ -4358,7 +4358,6 @@ private:
     Owned<IActivityMemoryUsageMap> peakUsageMap;
     CIArrayOf<CHeap> fixedHeaps;
     CICopyArrayOf<CRoxieFixedRowHeapBase> fixedRowHeaps;  // These are observed, NOT linked
-    const IRowAllocatorCache *allocatorCache;
     unsigned __int64 cyclesChecked;       // When we last checked timelimit
     unsigned __int64 cyclesCheckInterval; // How often we need to check timelimit
     bool outputOOMReports;
@@ -4367,6 +4366,7 @@ private:
     bool minimizeFootprintCritical;
 
 protected:
+    const IRowAllocatorCache *allocatorCache;
     const IContextLogger &logctx;
     unsigned maxPageLimit;
     unsigned spillPageLimit;
@@ -4996,7 +4996,8 @@ public:
 
     virtual void throwHeapExhausted(unsigned allocatorId, unsigned pages)
     {
-        VStringBuffer msg("Pool memory exhausted: pool id %u exhausted, requested %u heap(%u/%u) global(%u/%u) WM(%u..%u)", allocatorId, pages, getActiveHeapPages(), getPageLimit(), heapAllocated, heapTotalPages, heapLWM, heapHWM);
+        unsigned activityId = getRealActivityId(allocatorId, allocatorCache);
+        VStringBuffer msg("Pool memory exhausted: pool id %u{@%u} exhausted, requested %u heap(%u/%u) global(%u/%u) WM(%u..%u)", allocatorId, activityId, pages, getActiveHeapPages(), getPageLimit(), heapAllocated, heapTotalPages, heapLWM, heapHWM);
         DBGLOG("%s", msg.str());
         throw MakeStringExceptionDirect(ROXIEMM_MEMORY_POOL_EXHAUSTED, msg.str());
     }
@@ -5557,7 +5558,8 @@ public:
 
     void throwHeapExhausted(unsigned allocatorId, unsigned pages)
     {
-        VStringBuffer msg("Shared global memory exhausted: pool id %u exhausted, requested %u heap(%u/%u/%u/%u)) global(%u/%u) WM(%u..%u)", allocatorId, pages, getActiveHeapPages(), getPageLimit(), globalPageLimit, maxPageLimit, heapAllocated, heapTotalPages, heapLWM, heapHWM);
+        unsigned activityId = getRealActivityId(allocatorId, allocatorCache);
+        VStringBuffer msg("Shared global memory exhausted: pool id %u{@%u} exhausted, requested %u heap(%u/%u/%u/%u)) global(%u/%u) WM(%u..%u)", allocatorId, activityId, pages, getActiveHeapPages(), getPageLimit(), globalPageLimit, maxPageLimit, heapAllocated, heapTotalPages, heapLWM, heapHWM);
         DBGLOG("%s", msg.str());
         throw MakeStringExceptionDirect(ROXIEMM_MEMORY_POOL_EXHAUSTED, msg.str());
     }
@@ -5615,7 +5617,8 @@ void CSlaveRowManager::reportMemoryUsage(bool peak) const
 
 void CSlaveRowManager::throwHeapExhausted(unsigned allocatorId, unsigned pages)
 {
-    VStringBuffer msg("Channel memory exhausted: pool id %u exhausted, requested %u heap(%u/%u/%u)) global(%u/%u)", allocatorId, pages, getActiveHeapPages(), getPageLimit(), maxPageLimit, heapAllocated, heapTotalPages);
+    unsigned activityId = getRealActivityId(allocatorId, allocatorCache);
+    VStringBuffer msg("Channel memory exhausted: pool id %u{@%u} exhausted, requested %u heap(%u/%u/%u)) global(%u/%u)", allocatorId, activityId, pages, getActiveHeapPages(), getPageLimit(), maxPageLimit, heapAllocated, heapTotalPages);
     DBGLOG("%s", msg.str());
     throw MakeStringExceptionDirect(ROXIEMM_MEMORY_POOL_EXHAUSTED, msg.str());
 }

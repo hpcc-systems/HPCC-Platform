@@ -1,13 +1,28 @@
-# Default values for hpcc-azurefile
+# Default values for hpcc-azurelfile.
+common:
+  mountPrefix: "/var/lib/HPCCSystems"
 
-dllStorage:
-  size: 256Mi
-  #sku: "Standard_LRS"
-
-dataStorage:
+planes:
+- name: dali
+  subPath: dalistorage
   size: 1Gi
+  labels: [ "dali" ]
   #sku: "Standard_LRS"
-
-daliStorage:
-  size: 256Mi
-  #sku: "Standard_ZRS"
+- name: dll
+  subPath: queries # cannot currently be changed
+  size: 1Gi
+  labels: [ "dll" ]
+  rwmany: true
+  #sku: "Standard_LRS"
+- name: sasha
+  subPath: sasha
+  size: 1Gi
+  rwmany: true
+  labels: [ "sasha" ]
+  #sku: "Standard_LRS"
+- name: data
+  subPath: hpcc-data # cannot currently be changed
+  size: 3Gi
+  labels: [ "data" ] # NB: all "data" planes will be auto mounted by engine components and others that require access to data
+  rwmany: true
+  #sku: "Standard_LRS"

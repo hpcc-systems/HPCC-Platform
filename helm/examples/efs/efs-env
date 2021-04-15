@@ -1,0 +1,11 @@
+EFS_ID=fs-aa45a1d1
+EFS_REGION=us-east-2
+EFS_SECURITY_GROUPS="sg-d19891b0"
+#EFS_SECURITY_GROUPS="sg-d19891b0 sg-d19891b2 "
+#
+EFS_NAME=efs-provisioner
+EFS_CSI_DRIVER=true
+EKS_NAME=eks-test-us-east-2
+
+# efs-provisioner
+RECLAIM_POLICY=Retain
