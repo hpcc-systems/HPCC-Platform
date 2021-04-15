@@ -95,6 +95,7 @@ storage:
   #   includeDeviceInPath: false            # Is the device number appended to the mount for the physical path for a file?  (Only required in unusual situations)
   #   hosts: <name>                         # Name of the host group for bare metal - must match the name of the storage plane..
   #   secret: <secret-id>                   # what secret is required to access the files.  This could optionally become a list if required (or add secrets:).
+  #   defaultSprayParts: 4                  # The number of partitions created when spraying (default: 1)
   #   options:                              # not sure if it is needed
 
   dllStorage:

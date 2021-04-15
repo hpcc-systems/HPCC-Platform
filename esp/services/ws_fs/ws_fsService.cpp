@@ -1870,6 +1870,7 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
 
         wu->setJobName(destTitle.str());
         const char * dfuQueue = req.getDFUServerQueue();
+#ifndef _CONTAINERIZED
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         if (!isEmptyString(dfuQueue))
@@ -1877,6 +1878,24 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
             if (!constEnv->isValidDfuQueueName(dfuQueue))
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "invalid DFU server queue name:'%s'", dfuQueue);
         }
+#else
+        bool isValidDfuQueueName = false;
+        Owned<IPropertyTreeIterator> dfuServers = queryComponentConfig().getElements("dfuQueues");
+        ForEach(*dfuServers)
+        {
+            IPropertyTree & dfuServer = dfuServers->query();
+            const char * dfuServerName = dfuServer.queryProp("@name");
+            StringBuffer knownDfuQueueName;
+            getDfuQueueName(knownDfuQueueName, dfuServerName);
+            if (streq(dfuQueue, knownDfuQueueName))
+            {
+                isValidDfuQueueName = true;
+                break;
+            }
+        }
+        if (!isValidDfuQueueName)
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid DFU server queue name: '%s'", dfuQueue);
+#endif
         setDFUServerQueueReq(dfuQueue, wu);
         setUserAuth(context, wu);
         wu->setCommand(DFUcmd_import);
@@ -3434,7 +3453,17 @@ bool CFileSprayEx::onGetSprayTargets(IEspContext &context, IEspGetSprayTargetsRe
     try
     {
         context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
-
+#ifdef _CONTAINERIZED
+        IArrayOf<IEspGroupNode> sprayTargets;
+        Owned<IPropertyTreeIterator> dataPlanes = queryGlobalConfig().getElements("storage/planes[labels='data']");
+        ForEach(*dataPlanes)
+        {
+            IPropertyTree & plane = dataPlanes->query();
+            const char * name = plane.queryProp("@name");
+            appendGroupNode(sprayTargets, name, "storage plane", false /*replicate outputs*/);
+        }
+        resp.setGroupNodes(sprayTargets);
+#else
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> environment = factory->openEnvironment();
         Owned<IPropertyTree> root = &environment->getPTree();
@@ -3488,6 +3517,7 @@ bool CFileSprayEx::onGetSprayTargets(IEspContext &context, IEspGetSprayTargetsRe
         }
 
         resp.setGroupNodes(sprayTargets);
+#endif
     }
     catch(IException* e)
     {
