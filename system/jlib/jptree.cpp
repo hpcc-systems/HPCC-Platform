@@ -18,6 +18,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <string>
+#include <tuple>
 
 #include "platform.h"
 #include "jarray.hpp"
@@ -8554,12 +8555,115 @@ static void holdLoop()
 }
 #endif
 
-jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute)
-{
-    if (componentConfiguration)
-        throw makeStringExceptionV(99, "Configuration for component %s has already been initialised", componentTag);
+#ifndef _WIN32
+std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfiguration(IPropertyTree *componentDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute);
 
-    Linked<IPropertyTree> config(componentDefault);
+class CConfigUpdater : public CInterface
+{
+    StringAttr absoluteConfigFilename;
+    StringAttr configFilename;
+    Linked<IPropertyTree> componentDefault;
+    StringArray args;
+    StringAttr componentTag, envPrefix, legacyFilename;
+    IPropertyTree * (*mapper)(IPropertyTree *);
+    StringAttr altNameAttribute;
+    Owned<IFileEventWatcher> fileWatcher;
+    CriticalSection notifyFuncCS;
+    unsigned notifyFuncId = 0;
+    std::vector<std::tuple<unsigned, std::function<void ()>>> notifyConfigUpdates;
+
+public:
+    CConfigUpdater(const char *_absoluteConfigFilename, IPropertyTree *_componentDefault, const char * * argv, const char * _componentTag, const char * _envPrefix, const char *_legacyFilename, IPropertyTree * (_mapper)(IPropertyTree *), const char *_altNameAttribute)
+        : absoluteConfigFilename(_absoluteConfigFilename), componentDefault(_componentDefault), componentTag(_componentTag), envPrefix(_envPrefix), legacyFilename(_legacyFilename), mapper(_mapper), altNameAttribute(_altNameAttribute)
+    {
+        while (const char *arg = *argv++)
+            args.append(arg);
+        args.append(nullptr);
+
+        auto updateFunc = [&](const char *filename, FileWatchEvents events)
+        {
+            bool changed = containsFileWatchEvents(events, FileWatchEvents::closedWrite) && streq(filename, configFilename);
+#ifdef _CONTAINERIZED
+            changed = changed | containsFileWatchEvents(events, FileWatchEvents::movedTo) && streq(filename, "..data");
+#endif
+            if (changed)
+            {
+                auto result = doLoadConfiguration(componentDefault, args.getArray(), componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
+
+                {
+                    CriticalBlock b(configCS);
+                    componentConfiguration.setown(std::get<1>(result));
+                    globalConfiguration.setown(std::get<2>(result));
+                    absoluteConfigFilename.set(std::get<0>(result).c_str());
+                }
+                for (const auto &item: notifyConfigUpdates)
+                    std::get<1>(item)();
+            }
+        };
+
+        fileWatcher.setown(createFileEventWatcher(updateFunc));
+
+        // watch the path, not the filename, because the filename might not be seen if directories are moved, softlinks are changed..
+        StringBuffer path, filename;
+        splitFilename(absoluteConfigFilename, nullptr, &path, &filename, &filename);
+        configFilename.set(filename);
+        fileWatcher->add(path, FileWatchEvents::anyChange);
+        fileWatcher->start();
+    }
+    unsigned addNotifyFunc(std::function<void ()> notifyFunc)
+    {
+        CriticalBlock b(notifyFuncCS);
+        notifyFuncId++;
+        notifyConfigUpdates.push_back(std::make_tuple(notifyFuncId, notifyFunc));
+        return notifyFuncId;
+    }
+    void removeNotifyFunc(unsigned funcId)
+    {
+        CriticalBlock b(notifyFuncCS);
+        for (auto iter = notifyConfigUpdates.begin(); iter != notifyConfigUpdates.end(); iter++)
+        {
+            if (std::get<0>(*iter) == funcId)
+            {
+                notifyConfigUpdates.erase(iter);
+                return;
+            }
+        }
+    }
+};
+
+static Owned<CConfigUpdater> configFileUpdater;
+
+unsigned installConfigUpdateHook(std::function<void ()> notifyFunc)
+{
+    if (!configFileUpdater)
+        throw makeStringException(-1, "installConfigUpdateHook(): configuration updater not installed");
+    return configFileUpdater->addNotifyFunc(notifyFunc);
+}
+
+void removeConfigUpdateHook(unsigned notifyFuncId)
+{
+    if (!configFileUpdater)
+        throw makeStringException(-1, "removeConfigUpdateHook(): configuration updater not installed");
+    configFileUpdater->removeNotifyFunc(notifyFuncId);
+}
+#else
+unsigned installConfigUpdateHook(std::function<void ()> notifyFunc)
+{
+    UNIMPLEMENTED_X("installConfigUpdateHook not supported on this platform");
+}
+
+void removeConfigUpdateHook(unsigned notifyFuncId)
+{
+    UNIMPLEMENTED_X("removeConfigUpdateHook not supported on this platform");
+}
+#endif
+
+
+std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfiguration(IPropertyTree *componentDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute)
+{
+    Linked<IPropertyTree> newComponentConfig = createPTreeFromIPT(componentDefault);
+    Owned<IPropertyTree> newGlobalConfig;
+    StringBuffer absConfigFilename;
     const char * optConfig = nullptr;
     bool outputConfig = false;
 #ifdef _DEBUG
@@ -8613,6 +8717,14 @@ jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, con
         }
     }
 
+    const char *config = optConfig ? optConfig : legacyFilename;
+    if (!isEmptyString(config) && !isAbsolutePath(config))
+    {
+        appendCurrentDirectory(absConfigFilename, false);
+        addNonEmptyPathSepChar(absConfigFilename);
+    }
+    absConfigFilename.append(config);
+
     Owned<IPropertyTree> delta;
     if (optConfig)
     {
@@ -8622,15 +8734,8 @@ jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, con
         //--config= with no filename can be used to ignore the legacy configuration file
         if (!isEmptyString(optConfig))
         {
-            StringBuffer fullpath;
-            if (!isAbsolutePath(optConfig))
-            {
-                appendCurrentDirectory(fullpath, false);
-                addNonEmptyPathSepChar(fullpath);
-            }
-            fullpath.append(optConfig);
-            delta.setown(loadConfiguration(fullpath, componentTag, true, altNameAttribute));
-            globalConfiguration.setown(loadConfiguration(fullpath, "global", false, altNameAttribute));
+            delta.setown(loadConfiguration(absConfigFilename, componentTag, true, altNameAttribute));
+            newGlobalConfig.setown(loadConfiguration(absConfigFilename, "global", false, altNameAttribute));
         }
     }
     else
@@ -8643,46 +8748,61 @@ jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, con
     }
 
     if (delta)
-        mergeConfiguration(*config, *delta, altNameAttribute);
+        mergeConfiguration(*newComponentConfig, *delta, altNameAttribute);
 
     const char * * environment = const_cast<const char * *>(getSystemEnv());
     for (const char * * cur = environment; *cur; cur++)
     {
-        applyEnvironmentConfig(*config, envPrefix, *cur);
+        applyEnvironmentConfig(*newComponentConfig, envPrefix, *cur);
     }
 
     if (outputConfig)
     {
-        loadArgsIntoConfiguration(config, argv, { "config", "outputconfig" });
+        loadArgsIntoConfiguration(newComponentConfig, argv, { "config", "outputconfig" });
 
         Owned<IPropertyTree> recreated = createPTree();
         recreated->setProp("@version", currentVersion);
-        recreated->addPropTree(componentTag, LINK(config));
-        if (globalConfiguration)
-            recreated->addPropTree("global", globalConfiguration.getLink());
+        recreated->addPropTree(componentTag, LINK(newComponentConfig));
+        if (newGlobalConfig)
+            recreated->addPropTree("global", newGlobalConfig.getLink());
         StringBuffer yamlText;
         toYAML(recreated, yamlText, 0, YAML_SortTags);
         printf("%s\n", yamlText.str());
         exit(0);
     }
     else
-        loadArgsIntoConfiguration(config, argv);
+        loadArgsIntoConfiguration(newComponentConfig, argv);
 
     //For legacy (and other weird cases) ensure there is a global section
-    if (!globalConfiguration)
-        globalConfiguration.setown(createPTree("global"));
+    if (!newGlobalConfig)
+        newGlobalConfig.setown(createPTree("global"));
 
 #ifdef _DEBUG
     // NB: don't re-hold, if CLI --hold already held.
-    if (!held && config->getPropBool("@hold"))
+    if (!held && newComponentConfig->getPropBool("@hold"))
         holdLoop();
 #endif
 
-    unsigned ptreeMappingThreshold = globalConfiguration->getPropInt("@ptreeMappingThreshold", defaultSiblingMapThreshold);
+    unsigned ptreeMappingThreshold = newGlobalConfig->getPropInt("@ptreeMappingThreshold", defaultSiblingMapThreshold);
     setPTreeMappingThreshold(ptreeMappingThreshold);
 
-    componentConfiguration.set(config);
-    return config.getClear();
+    return std::make_tuple(std::string(absConfigFilename.str()), newComponentConfig.getClear(), newGlobalConfig.getClear());
+}
+
+jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute)
+{
+    if (componentConfiguration)
+        throw makeStringExceptionV(99, "Configuration for component %s has already been initialised", componentTag);
+    auto result = doLoadConfiguration(componentDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);
+
+    componentConfiguration.setown(std::get<1>(result));
+    globalConfiguration.setown(std::get<2>(result));
+#ifndef _WIN32
+    // If modern generated config, track and monitor updates
+    if (std::get<0>(result).length())
+        configFileUpdater.setown(new CConfigUpdater(std::get<0>(result).c_str(), componentDefault, argv, componentTag, envPrefix, legacyFilename, mapper, altNameAttribute));
+#endif
+    return componentConfiguration.getLink();
 }
 
 jlib_decl IPropertyTree * loadConfiguration(const char * defaultYaml, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute)

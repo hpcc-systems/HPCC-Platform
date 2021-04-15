@@ -19,6 +19,9 @@
 #ifndef _PTREE_HPP
 #define _PTREE_HPP
 
+#include <vector>
+#include <functional>
+
 #include "jlib.hpp"
 #include "jexcept.hpp"
 #include "jiter.hpp"
@@ -312,6 +315,8 @@ jlib_decl IPropertyTree * getGlobalConfig();
 jlib_decl IPropertyTree * getComponentConfig();
 jlib_decl Owned<IPropertyTree> getGlobalConfigSP(); // get smart pointer
 jlib_decl Owned<IPropertyTree> getComponentConfigSP(); // get smart pointer
+jlib_decl unsigned installConfigUpdateHook(std::function<void ()> notifyFunc);
+jlib_decl void removeConfigUpdateHook(unsigned notifyFuncId);
 
 /*
  YAML to PTree support

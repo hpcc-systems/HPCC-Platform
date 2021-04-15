@@ -7322,7 +7322,6 @@ IFileEventWatcher *createFileEventWatcher(std::function<void (const char *, File
 IFileEventWatcher *createFileEventWatcher(std::function<void (const char *, FileWatchEvents)> callback)
 {
     UNIMPLEMENTED_X("createFileEventWatcher not supported on this platform");
-    return nullptr;
 }
 #endif
 
