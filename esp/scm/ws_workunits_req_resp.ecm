@@ -42,6 +42,7 @@ ESPrequest [nil_remove] WUDeployWorkunitRequest
     string QueryMainDefinition;
     string Snapshot;
     ESParray<ESPstruct NamedValue> DebugValues;
+    bool Protect(false);
 };
 
 ESPresponse [exceptions_inline] WUDeployWorkunitResponse
