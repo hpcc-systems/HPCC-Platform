@@ -64,7 +64,7 @@ jobs:
     needs: check-skip
     if: ${{ needs.check-skip.outputs.should_skip != 'true' }}
     runs-on: ubuntu-20.04
-    timeout-minutes: 120 # Generous, typical build time from clean is < 60
+    timeout-minutes: 150 # the build step has its own timeout, however the job can sometimes take time to download dependencies
     outputs:
       cache-hit: ${{ steps.cache.outputs.cache-hit }}
 
@@ -263,6 +263,7 @@ jobs:
     # NB: BUILD_TAG is overridden to a constant "smoketest", this is to prevent the auto-generated build tag being
     # used, which would cause it to change per PR (per SHA), and because it's in a common header, cause a lot of undesirable rebuilding.
     - name: Build
+      timeout-minutes: 120 # Generous, typical build time from clean is < 60
       if: steps.cache.outputs.cache-hit != 'true'
       run: |
         cd build
@@ -370,7 +371,7 @@ jobs:
   regression-jobs:
     needs: build-and-setup
     if: needs.build-and-setup.outputs.cache-hit != 'true' && github.event_name == 'pull_request'
-    timeout-minutes: 30
+    timeout-minutes: 60 # each matrix step has its own timeout, however the job can sometimes take time to download dependencies
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: true
@@ -415,6 +416,7 @@ jobs:
           libssl-dev gdb
 
     - name: run
+      timeout-minutes: 30 # generous, each matrix step shouldn't take more than 10 mins
       run: |
         export LANG="en_US.UTF-8"
         sudo update-locale
@@ -456,7 +458,7 @@ jobs:
   unittests:
     needs: build-and-setup
     if: needs.build-and-setup.outputs.cache-hit != 'true' && github.event_name == 'pull_request'
-    timeout-minutes: 10
+    timeout-minutes: 30 # the unittests run step has its own timeout, however the job can sometimes take time to download dependencies
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/download-artifact@v2
@@ -473,6 +475,7 @@ jobs:
           libssl-dev gdb
 
     - name: run
+      timeout-minutes: 10 # generous, expected time is approx 1 min.
       run: |
         export LANG="en_US.UTF-8"
         sudo update-locale
@@ -484,7 +487,7 @@ jobs:
   eclwatch-ui-tests:
     needs: build-and-setup
     if: needs.build-and-setup.outputs.cache-hit != 'true' && github.event_name == 'pull_request'
-    timeout-minutes: 10
+    timeout-minutes: 30 # the ui-tests run step has its own timeout, however the job can sometimes take time to download dependencies
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/download-artifact@v2
@@ -537,6 +540,7 @@ jobs:
         unzip testng-6.8.7.jar.zip
 
     - name: run
+      timeout-minutes: 10 # generous, current runtime is ~1min, this should be increased if new tests are added
       if: steps.check.outputs.runtests
       run: |
         export LANG="en_US.UTF-8"
