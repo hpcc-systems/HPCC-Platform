@@ -1995,7 +1995,7 @@ bool Cws_accessEx::onResourceAdd(IEspContext &context, IEspResourceAddRequest &r
         SecResourceType rtype = str2type(basednReq->getRtype());
         try
         {
-            ISecUser* usr = NULL;
+            Owned<ISecUser> usr = secmgr->createUser(context.queryUserId(), context.querySecureContext());
             Owned<ISecResourceList> rlist = secmgr->createResourceList("ws_access", context.querySecureContext());
             const char* name = req.getName();
             if(name == NULL || *name == '\0')
