@@ -167,3 +167,20 @@ export function useWorkunitXML(wuid: string): [string] {
 
     return [xml];
 }
+
+export function useWorkunitExceptions(wuid: string): [WUInfo.ECLException[], Workunit, () => void] {
+
+    const [workunit, state] = useWorkunit(wuid);
+    const [exceptions, setExceptions] = React.useState<WUInfo.ECLException[]>([]);
+    const [count, increment] = useCounter();
+
+    React.useEffect(() => {
+        workunit?.fetchInfo({
+            IncludeExceptions: true
+        }).then(response => {
+            setExceptions(response?.Workunit?.Exceptions?.ECLException || []);
+        });
+    }, [workunit, state, count]);
+
+    return [exceptions, workunit, increment];
+}
