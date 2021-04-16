@@ -463,6 +463,8 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
             if (clusterName)
                 dest.setDestGroupName(clusterName);
         }
+        if (version >= 1.21)
+            dest.setPreserveFileParts(file->getWrap());
 
         StringBuffer socket, dir, title;
         unsigned np = file->getNumParts(0);                 // should handle multiple clusters?
