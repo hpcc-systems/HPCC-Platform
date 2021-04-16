@@ -231,7 +231,10 @@ jobs:
           git submodule update --init --recursive --jobs 4
           echo "Applying merge patch"
           git apply ../merge-patch
-          git -c user.name='Smoketest' -c user.email='smoke@test.com' commit -a -m 'merge-patch'
+          # Add all mods that came from merge-patch into a commit,
+          # so that the final git checkout will not clash with working tree files
+          git add -A
+          git -c user.name='Smoketest' -c user.email='smoke@test.com' commit -m 'merge-patch'
           cd ../src-cache
           echo "Cached source tree files:"
           find . -type f
