@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, Dropdown, TextField, IDropdownProps, IDropdownOption, Label, Link } from "@fluentui/react";
+import { Checkbox, Dropdown as DropdownBase, TextField, IDropdownOption, Link } from "@fluentui/react";
 import { TextField as MaterialUITextField } from "@material-ui/core";
 import { Topology, TpLogicalClusterQuery } from "@hpcc-js/comms";
 import { TpGroupQuery } from "src/WsTopology";
@@ -7,21 +7,112 @@ import { States } from "src/WsWorkunits";
 import { States as DFUStates } from "src/FileSpray";
 import nlsHPCC from "src/nlsHPCC";
 
-type FieldType = "string" | "checkbox" | "datetime" | "link" |
+interface DropdownProps {
+    key?: string;
+    label?: string;
+    options?: IDropdownOption[];
+    selectedKey?: string;
+    optional?: boolean;
+    onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
+    placeholder?: string;
+    className?: string;
+}
+
+const Dropdown: React.FunctionComponent<DropdownProps> = ({
+    key,
+    label,
+    options = [],
+    selectedKey,
+    optional = false,
+    onChange,
+    placeholder,
+    className
+}) => {
+
+    const [selOptions, setSelOptions] = React.useState<IDropdownOption[]>([]);
+
+    React.useEffect(() => {
+        setSelOptions(optional ? [{ key: "", text: "" }, ...options] : [...options]);
+    }, [optional, options, selectedKey]);
+
+    return <DropdownBase key={key} label={label} className={className} defaultSelectedKey={selectedKey} onChange={onChange} placeholder={placeholder} options={selOptions} />;
+};
+
+export type FieldType = "string" | "checkbox" | "datetime" | "link" |
     "workunit-state" |
     "file-type" | "file-sortby" |
     "queries-suspend-state" | "queries-active-state" |
     "target-cluster" | "target-group" |
     "logicalfile-type" | "dfuworkunit-state";
 
-const states = Object.keys(States).map(s => States[s]);
-const dfustates = Object.keys(DFUStates).map(s => DFUStates[s]);
+export type Values = { [name: string]: string | number | boolean | (string | number | boolean)[] };
 
 interface BaseField {
     type: FieldType;
     label: string;
     disabled?: (params) => boolean;
     placeholder?: string;
+    readonly?: boolean;
+}
+
+interface StringField extends BaseField {
+    type: "string";
+    value?: string;
+}
+
+interface DateTimeField extends BaseField {
+    type: "datetime";
+    value?: string;
+}
+
+interface CheckboxField extends BaseField {
+    type: "checkbox";
+    value?: boolean;
+}
+
+interface WorkunitStateField extends BaseField {
+    type: "workunit-state";
+    value?: string;
+}
+
+interface FileTypeField extends BaseField {
+    type: "file-type";
+    value?: string;
+}
+
+interface FileSortByField extends BaseField {
+    type: "file-sortby";
+    value?: string;
+}
+
+interface QueriesSuspendStateField extends BaseField {
+    type: "queries-suspend-state";
+    value?: string;
+}
+
+interface QueriesActiveStateField extends BaseField {
+    type: "queries-active-state";
+    value?: string;
+}
+
+interface TargetClusterField extends BaseField {
+    type: "target-cluster";
+    value?: string;
+}
+
+interface TargetGroupField extends BaseField {
+    type: "target-group";
+    value?: string;
+}
+
+interface LogicalFileType extends BaseField {
+    type: "logicalfile-type";
+    value?: string;
+}
+
+interface DFUWorkunitStateField extends BaseField {
+    type: "dfuworkunit-state";
+    value?: string;
 }
 
 interface StringField extends BaseField {
@@ -39,6 +130,7 @@ interface DateTimeField extends BaseField {
 interface LinkField extends BaseField {
     type: "link";
     href: string;
+    value?: undefined;
 }
 
 interface CheckboxField extends BaseField {
@@ -100,35 +192,61 @@ type Field = StringField | CheckboxField | DateTimeField | LinkField |
 
 export type Fields = { [id: string]: Field };
 
-const TargetClusterTextField: React.FunctionComponent<IDropdownProps> = (props) => {
+export interface TargetClusterTextFieldProps extends DropdownProps {
+    key: string;
+    label?: string;
+    selectedKey?: string;
+    className?: string;
+    onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
+    placeholder?: string;
+}
+
+export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFieldProps> = ({
+    key,
+    label,
+    selectedKey,
+    className,
+    onChange,
+    placeholder
+}) => {
 
     const [targetClusters, setTargetClusters] = React.useState<IDropdownOption[]>([]);
 
     React.useEffect(() => {
         const topology = new Topology({ baseUrl: "" });
         topology.fetchLogicalClusters().then((response: TpLogicalClusterQuery.TpLogicalCluster[]) => {
-            setTargetClusters(
-                [
-                    { Name: "", Type: "", LanguageVersion: "", Process: "", Queue: "" },
-                    ...response
-                ]
-                    .map(n => {
-                        return {
-                            key: n.Name,
-                            text: n.Name + (n.Name !== n.Type ? ` (${n.Type})` : "")
-                        };
-                    })
+            setTargetClusters(response
+                .map((n, i) => {
+                    return {
+                        key: n.Name || "unknown",
+                        text: n.Name + (n.Name !== n.Type ? ` (${n.Type})` : ""),
+                    };
+                })
             );
         });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    return <Dropdown
-        {...props}
-        options={targetClusters}
-    />;
+    return <Dropdown key={key} label={label} selectedKey={selectedKey} optional className={className} onChange={onChange} placeholder={placeholder} options={targetClusters} />;
 };
 
-const TargetGroupTextField: React.FunctionComponent<IDropdownProps> = (props) => {
+export interface TargetGroupTextFieldProps {
+    key: string;
+    label?: string;
+    selectedKey?: string;
+    className?: string;
+    onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
+    placeholder?: string;
+}
+
+export const TargetGroupTextField: React.FunctionComponent<TargetGroupTextFieldProps> = ({
+    key,
+    label,
+    selectedKey,
+    className,
+    onChange,
+    placeholder
+}) => {
 
     const [targetGroups, setTargetGroups] = React.useState<IDropdownOption[]>([]);
 
@@ -145,23 +263,14 @@ const TargetGroupTextField: React.FunctionComponent<IDropdownProps> = (props) =>
         });
     }, []);
 
-    return <Dropdown
-        {...props}
-        options={targetGroups}
-    />;
+    return <Dropdown key={key} label={label} selectedKey={selectedKey} className={className} onChange={onChange} placeholder={placeholder} options={targetGroups} />;
 };
 
-interface DetailsProps {
-    fields: Fields;
-    onChange?: (id: string, newValue: any) => void;
-}
+const states = Object.keys(States).map(s => States[s]);
+const dfustates = Object.keys(DFUStates).map(s => DFUStates[s]);
 
-export const Details: React.FunctionComponent<DetailsProps> = ({
-    fields,
-    onChange = (id: string, newValue: any) => { }
-}) => {
-
-    const formFields: { id: string, label: string, field: any }[] = [];
+export function createInputs(fields: Fields, onChange?: (id: string, newValue: any) => void) {
+    const retVal: { id: string, label: string, field: any }[] = [];
     for (const fieldID in fields) {
         const field = fields[fieldID];
         if (!field.disabled) {
@@ -170,7 +279,7 @@ export const Details: React.FunctionComponent<DetailsProps> = ({
         switch (field.type) {
             case "string":
                 field.value = field.value || "";
-                formFields.push({
+                retVal.push({
                     id: fieldID,
                     label: field.label,
                     field: <TextField
@@ -188,7 +297,7 @@ export const Details: React.FunctionComponent<DetailsProps> = ({
                 break;
             case "checkbox":
                 field.value = field.value || false;
-                formFields.push({
+                retVal.push({
                     id: fieldID,
                     label: field.label,
                     field: <Checkbox
@@ -201,7 +310,7 @@ export const Details: React.FunctionComponent<DetailsProps> = ({
                 break;
             case "datetime":
                 field.value = field.value || "";
-                formFields.push({
+                retVal.push({
                     id: fieldID,
                     label: field.label,
                     field: <MaterialUITextField
@@ -220,7 +329,7 @@ export const Details: React.FunctionComponent<DetailsProps> = ({
                 break;
             case "link":
                 field.href = field.href;
-                formFields.push({
+                retVal.push({
                     id: fieldID,
                     label: field.label,
                     field: <Link
@@ -232,12 +341,13 @@ export const Details: React.FunctionComponent<DetailsProps> = ({
                 break;
             case "workunit-state":
                 field.value = field.value || "";
-                formFields.push({
+                retVal.push({
                     id: fieldID,
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
+                        optional
                         options={states.map(state => {
                             return {
                                 key: state,
@@ -251,12 +361,12 @@ export const Details: React.FunctionComponent<DetailsProps> = ({
                 break;
             case "file-type":
                 field.value = field.value || "";
-                formFields.push({
+                retVal.push({
                     id: fieldID,
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
                         options={[
                             { key: "", text: nlsHPCC.LogicalFilesAndSuperfiles },
                             { key: "Logical Files Only", text: nlsHPCC.LogicalFilesOnly },
@@ -270,14 +380,14 @@ export const Details: React.FunctionComponent<DetailsProps> = ({
                 break;
             case "file-sortby":
                 field.value = field.value || "";
-                formFields.push({
+                retVal.push({
                     id: fieldID,
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
+                        optional
                         options={[
-                            { key: "", text: "" },
                             { key: "Newest", text: nlsHPCC.Newest },
                             { key: "Oldest", text: nlsHPCC.Oldest },
                             { key: "Smallest", text: nlsHPCC.Smallest },
@@ -290,14 +400,14 @@ export const Details: React.FunctionComponent<DetailsProps> = ({
                 break;
             case "queries-suspend-state":
                 field.value = field.value || "";
-                formFields.push({
+                retVal.push({
                     id: fieldID,
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
+                        optional
                         options={[
-                            { key: "", text: "" },
                             { key: "Not suspended", text: nlsHPCC.NotSuspended },
                             { key: "Suspended", text: nlsHPCC.Suspended },
                             { key: "Suspended by user", text: nlsHPCC.SuspendedByUser },
@@ -311,14 +421,14 @@ export const Details: React.FunctionComponent<DetailsProps> = ({
                 break;
             case "queries-active-state":
                 field.value = field.value || "";
-                formFields.push({
+                retVal.push({
                     id: fieldID,
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
+                        optional
                         options={[
-                            { key: "", text: "" },
                             { key: "1", text: nlsHPCC.Active },
                             { key: "0", text: nlsHPCC.NotActive }
                         ]}
@@ -329,40 +439,38 @@ export const Details: React.FunctionComponent<DetailsProps> = ({
                 break;
             case "target-cluster":
                 field.value = field.value || "";
-                formFields.push({
+                retVal.push({
                     id: fieldID,
                     label: field.label,
                     field: <TargetClusterTextField
                         key={fieldID}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
-                        options={[]}
                     />
                 });
                 break;
             case "target-group":
                 field.value = field.value || "";
-                formFields.push({
+                retVal.push({
                     id: fieldID,
                     label: field.label,
                     field: <TargetGroupTextField
                         key={fieldID}
-                        defaultSelectedKey=""
+                        selectedKey={field.value}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
-                        options={[]}
                     />
                 });
                 break;
             case "dfuworkunit-state":
                 field.value = field.value || "";
-                formFields.push({
+                retVal.push({
                     id: fieldID,
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        defaultSelectedKey=""
+                        optional
                         options={dfustates.map(state => {
                             return {
                                 key: state,
@@ -376,12 +484,12 @@ export const Details: React.FunctionComponent<DetailsProps> = ({
                 break;
             case "logicalfile-type":
                 field.value = field.value || "Created";
-                formFields.push({
+                retVal.push({
                     id: fieldID,
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        defaultSelectedKey=""
+                        optional
                         options={[
                             { key: "Created", text: nlsHPCC.CreatedByWorkunit },
                             { key: "Used", text: nlsHPCC.UsedByWorkunit }
@@ -393,15 +501,5 @@ export const Details: React.FunctionComponent<DetailsProps> = ({
                 break;
         }
     }
-
-    return <table style={{ padding: 4 }}>
-        <tbody>
-            {formFields.map((ff) => {
-                return <tr key={ff.id}>
-                    <td style={{ whiteSpace: "nowrap" }}><Label>{ff.label}</Label></td>
-                    <td style={{ width: "80%", paddingLeft: 8 }}>{ff.field}</td>
-                </tr>;
-            })}
-        </tbody>
-    </table>;
-};
+    return retVal;
+}

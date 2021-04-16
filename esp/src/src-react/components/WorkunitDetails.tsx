@@ -13,7 +13,7 @@ import { ShortVerticalDivider } from "./Common";
 import { Results } from "./Results";
 import { Variables } from "./Variables";
 import { SourceFiles } from "./SourceFiles";
-import { Details } from "./Details";
+import { TableGroup } from "./forms/Groups";
 import { InfoGrid } from "./InfoGrid";
 import { WUXMLSourceEditor } from "./SourceEditor";
 import { Workflows } from "./Workflows";
@@ -139,7 +139,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                                             <WUStatus wuid={wuid}></WUStatus>
                                         </div>
                                     </Sticky>
-                                    <Details fields={{
+                                    <TableGroup fields={{
                                         "wuid": { label: nlsHPCC.WUID, type: "string", value: wuid, readonly: true },
                                         "action": { label: nlsHPCC.Action, type: "string", value: workunit?.ActionEx, readonly: true },
                                         "state": { label: nlsHPCC.State, type: "string", value: workunit?.State, readonly: true },

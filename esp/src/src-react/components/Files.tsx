@@ -9,7 +9,8 @@ import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
-import { Fields, Filter } from "./Filter";
+import { Fields } from "./forms/Fields";
+import { Filter } from "./forms/Filter";
 import { ShortVerticalDivider } from "./Common";
 import { DojoGrid, selector, tree } from "./DojoGrid";
 
@@ -18,7 +19,7 @@ const FilterFields: Fields = {
     "Description": { type: "string", label: nlsHPCC.Description, placeholder: nlsHPCC.SomeDescription },
     "Owner": { type: "string", label: nlsHPCC.Owner, placeholder: nlsHPCC.jsmi },
     "Index": { type: "checkbox", label: nlsHPCC.Index },
-    "NodeGroup": { type: "target-group", label: nlsHPCC.Cluster, placeholder: nlsHPCC.Owner },
+    "NodeGroup": { type: "target-group", label: nlsHPCC.Group, placeholder: nlsHPCC.Cluster },
     "FileSizeFrom": { type: "string", label: nlsHPCC.FromSizes, placeholder: "4096" },
     "FileSizeTo": { type: "string", label: nlsHPCC.ToSizes, placeholder: "16777216" },
     "FileType": { type: "file-type", label: nlsHPCC.FileType },

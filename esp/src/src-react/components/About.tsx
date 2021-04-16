@@ -6,7 +6,7 @@ import { fetchStats } from "src/KeyValStore";
 import nlsHPCC from "src/nlsHPCC";
 import { TpGetServerVersion } from "src/WsTopology";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
-import { Details } from "./Details";
+import { TableGroup } from "./forms/Groups";
 
 interface AboutProps {
     show?: boolean;
@@ -50,11 +50,11 @@ export const About: React.FunctionComponent<AboutProps> = ({
         <Pivot>
             <PivotItem itemKey="about" headerText={nlsHPCC.About}>
                 <div style={{ minHeight: "208px", paddingTop: "32px" }}>
-                    <Details fields={{
+                    <TableGroup fields={{
                         version: { label: nlsHPCC.Version, type: "string", value: version || "???", readonly: true },
                         homepage: { label: nlsHPCC.Homepage, type: "link", href: "https://hpccsystems.com" },
                     }}>
-                    </Details>
+                    </TableGroup>
                 </div>
             </PivotItem>
             <PivotItem itemKey="browser" headerText={nlsHPCC.BrowserStats} alwaysRender>
