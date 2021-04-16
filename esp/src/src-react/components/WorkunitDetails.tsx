@@ -15,6 +15,7 @@ import { Variables } from "./Variables";
 import { SourceFiles } from "./SourceFiles";
 import { Details } from "./Details";
 import { InfoGrid } from "./InfoGrid";
+import { Queries } from "./Queries";
 import { WUXMLSourceEditor } from "./SourceEditor";
 import { Workflows } from "./Workflows";
 
@@ -119,7 +120,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     const serviceNames = workunit?.ServiceNames?.Item?.join("\n") || "";
 
     return <SizeMe monitorHeight>{({ size }) =>
-        <Pivot overflowBehavior="menu" style={{ height: "100%" }} defaultSelectedKey={tab} onLinkClick={evt => pushUrl(`/workunits/${wuid}/${evt.props.itemKey}`)}>
+        <Pivot overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab} onLinkClick={evt => pushUrl(`/workunits/${wuid}/${evt.props.itemKey}`)}>
             <PivotItem headerText={wuid} itemKey="summary" style={pivotItemStyle(size)}>
                 <div style={{ height: "100%", position: "relative" }}>
                     <ReflexContainer orientation="horizontal">
@@ -198,7 +199,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 <Workflows wuid={wuid} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Queries} itemIcon="Search" itemKey="queries" style={pivotItemStyle(size, 0)}>
-                <DojoAdapter widgetClassID="QuerySetQueryWidget" params={{ Wuid: wuid }} />
+                <Queries wuid={wuid} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Resources} itemKey="resources" style={pivotItemStyle(size, 0)}>
                 <DojoAdapter widgetClassID="ResourcesWidget" params={{ Wuid: wuid }} />
