@@ -107,7 +107,7 @@ spec:
         {{- include "hpcc.addBundles" $commonCtx | indent 6 }}
       containers:
       - name: {{ .name | quote }}
-        workingDir: /var/lib/HPCCSystems
+        workingDir: /tmp
         command: [ eclccserver ] 
         args: [
                 {{ include "hpcc.configArg" . }},
