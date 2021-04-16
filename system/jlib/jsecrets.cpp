@@ -73,6 +73,7 @@ static Owned<IPropertyTree> secretCache;
 static CriticalSection mtlsInfoCacheCS;
 static Owned<IPropertyTree> mtlsInfoCache;
 static Owned<IVaultManager> vaultManager;
+static unsigned reloadVaultManagerFuncId = 0;
 static MemoryAttr udpKey;
 static bool udpKeyInitialized = false;
 
@@ -85,6 +86,8 @@ MODULE_INIT(INIT_PRIORITY_SYSTEM)
 
 MODULE_EXIT()
 {
+    if (reloadVaultManagerFuncId)
+        removeConfigUpdateHook(reloadVaultManagerFuncId);
     vaultManager.clear();
     secretCache.clear();
     mtlsInfoCache.clear();
@@ -505,12 +508,21 @@ public:
     }
 };
 
-IVaultManager *ensureVaultManager()
+static IVaultManager *ensureVaultManager()
 {
     CriticalBlock block(secretCS);
     if (!vaultManager)
+    {
         vaultManager.setown(new CVaultManager());
-    return vaultManager;
+        auto reloadVaultManager = []()
+        {
+            PROGLOG("Reloading Vault Manager");
+            CriticalBlock block(secretCS);
+            vaultManager.setown(new CVaultManager());
+        };
+        reloadVaultManagerFuncId = installConfigUpdateHook(reloadVaultManager);
+    }
+    return vaultManager.getLink();
 }
 
 static IPropertyTree *getCachedLocalSecret(const char *category, const char *name)
@@ -622,7 +634,7 @@ static IPropertyTree *getCachedVaultSecret(const char *category, const char *vau
 {
     CVaultKind kind;
     StringBuffer json;
-    IVaultManager *vaultmgr = ensureVaultManager();
+    Owned<IVaultManager> vaultmgr = ensureVaultManager();
     if (isEmptyString(vaultId))
     {
         if (!vaultmgr->getCachedSecretByCategory(category, kind, json, name, version))
@@ -640,7 +652,7 @@ static IPropertyTree *requestVaultSecret(const char *category, const char *vault
 {
     CVaultKind kind;
     StringBuffer json;
-    IVaultManager *vaultmgr = ensureVaultManager();
+    Owned<IVaultManager> vaultmgr = ensureVaultManager();
     if (isEmptyString(vaultId))
     {
         if (!vaultmgr->requestSecretByCategory(category, kind, json, name, version))
@@ -658,7 +670,7 @@ extern jlib_decl IPropertyTree *getVaultSecret(const char *category, const char 
 {
     CVaultKind kind;
     StringBuffer json;
-    IVaultManager *vaultmgr = ensureVaultManager();
+    Owned<IVaultManager> vaultmgr = ensureVaultManager();
     if (isEmptyString(vaultId))
     {
         if (!vaultmgr->getCachedSecretByCategory(category, kind, json, name, version))
