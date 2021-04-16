@@ -11,6 +11,8 @@ define([
 
     "hpcc/_Widget",
 
+    "@hpcc-js/common",
+
     "dojo/text!../templates/FilePartsWidget.html",
 
     "dijit/layout/ContentPane"
@@ -18,9 +20,13 @@ define([
     function (declare, nlsHPCCMod, MemoryMod, Observable,
         OnDemandGrid, Keyboard, ColumnResizer, DijitRegistry,
         _Widget,
+        hpccCommon,
         template) {
 
+        var formatNum = hpccCommon.format(",");
+
         var nlsHPCC = nlsHPCCMod.default;
+
         return declare("FilePartsWidget", [_Widget], {
             templateString: template,
             baseClass: "FilePartsWidget",
@@ -51,14 +57,18 @@ define([
                         Copy: { label: this.i18n.Copy, width: 40 },
                         Ip: { label: this.i18n.IP },
                         Cluster: { label: this.i18n.Cluster, width: 108 },
-                        PartsizeInt64: {
-                            label: this.i18n.Size,
-                            width: 120,
-                            formatter: function (intsize, row) {
-                                return row.Partsize;
+                        PartSizeInt64: {
+                            label: this.i18n.Size, width: 120,
+                            formatter: function (intsize) {
+                                return formatNum(intsize);
                             }
                         },
-                        ActualSize: { label: this.i18n.ActualSize, width: 120 }
+                        CompressedSize: {
+                            label: this.i18n.CompressedSize, width: 120,
+                            formatter: function (intsize) {
+                                return formatNum(intsize);
+                            }
+                        }
                     },
                     store: this.filePartsStore
                 }, this.id + "FilePartsGrid");
