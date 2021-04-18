@@ -1,0 +1,41 @@
+#The following is a generated values yaml that you can capture and feed to the hpcc helm chart when installing.
+#it will configure the hpcc storage to use the planes and pvcs installed by this chart.
+
+storage:
+  planes:
+{{- range $plane := .Values.planes }}
+  - name: {{ $plane.name }}
+    pvc: {{ printf "%s-%s-pvc" $plane.name (include "hpcc-filestore.fullname" $) }}
+    prefix: {{ printf "%s%s%s" $.Values.common.mountPrefix (regexMatch ".*/$" $.Values.common.mountPrefix | ternary "" "/") $plane.subPath | quote }}
+{{- if hasKey $plane "labels" }}
+    labels:
+{{ toYaml $plane.labels | indent 4 }}
+{{ end -}}
+{{- end }}
+
+{{ range $plane := .Values.planes -}}
+{{- if eq "dali" $plane.name }}
+  daliStorage:
+    plane: {{ $plane.name }}
+{{ end -}}
+{{- if eq "dll" $plane.name }}
+  dllStorage:
+    plane: {{ $plane.name }}
+{{ end -}}
+{{- if eq "data" $plane.name }}
+  dataStorage:
+    plane: {{ $plane.name }}
+{{ end -}}
+{{ end -}}
+
+{{ range $plane := .Values.planes -}}
+{{ if eq "sasha" $plane.name }}
+sasha:
+  wu-archiver:
+    storage:
+      plane: {{ $plane.name }}
+  dfuwu-archiver:
+    storage:
+      plane: {{ $plane.name }}
+{{ end -}}
+{{- end }}
