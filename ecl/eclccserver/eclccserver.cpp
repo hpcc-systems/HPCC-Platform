@@ -870,6 +870,43 @@ static void removePrecompiledHeader()
 // Class EclccServer manages a pool of compile threads
 //------------------------------------------------------------------------------------------------------------------
 
+static StringBuffer &getQueues(StringBuffer &queueNames)
+{
+    Owned<IPropertyTree> config = getComponentConfig();
+#ifdef _CONTAINERIZED
+    bool filtered = false;
+    std::unordered_map<std::string, bool> listenQueues;
+    Owned<IPTreeIterator> listening = config->getElements("listen");
+    ForEach (*listening)
+    {
+        const char *lq = listening->query().queryProp(".");
+        if (lq)
+        {
+            listenQueues[lq] = true;
+            filtered = true;
+        }
+    }
+    Owned<IPTreeIterator> queues = config->getElements("queues");
+    ForEach(*queues)
+    {
+        IPTree &queue = queues->query();
+        const char *qname = queue.queryProp("@name");
+        if (!filtered || listenQueues.count(qname))
+        {
+            if (queueNames.length())
+                queueNames.append(",");
+            getClusterEclCCServerQueueName(queueNames, qname);
+        }
+    }
+#else
+    const char * processName = config->queryProp("@name");
+    SCMStringBuffer scmQueueNames;
+    getEclCCServerQueueNames(scmQueueNames, processName);
+    queueNames.append(scmQueueNames.str());
+#endif
+    return queueNames;
+}
+
 class EclccServer : public CInterface, implements IThreadFactory, implements IAbortHandler
 {
     StringAttr queueNames;
@@ -881,36 +918,79 @@ class EclccServer : public CInterface, implements IThreadFactory, implements IAb
     bool running;
     CSDSServerStatus serverstatus;
     Owned<IJobQueue> queue;
+    CriticalSection queueUpdateCS;
+    StringAttr updatedQueueNames;
+    unsigned reloadConfigCBId = 0;
 
+
+    void configUpdate()
+    {
+        StringBuffer newQueueNames;
+        getQueues(newQueueNames);
+        if (!newQueueNames.length())
+            ERRLOG("No queues found to listen on");
+        Linked<IJobQueue> currentQueue;
+        {
+            CriticalBlock b(queueUpdateCS);
+            if (strsame(queueNames, newQueueNames))
+                return;
+            updatedQueueNames.set(newQueueNames);
+            currentQueue.set(queue);
+            PROGLOG("Updating queue due to queue names change from '%s' to '%s'", queueNames.str(), newQueueNames.str());
+        }
+        if (currentQueue)
+            currentQueue->cancelAcceptConversation();
+    }
 public:
     IMPLEMENT_IINTERFACE;
     EclccServer(const char *_queueName, unsigned _poolSize)
-        : queueNames(_queueName), poolSize(_poolSize), serverstatus("ECLCCserver")
+        : updatedQueueNames(_queueName), poolSize(_poolSize), serverstatus("ECLCCserver")
     {
         threadsActive = 0;
         running = false;
         pool.setown(createThreadPool("eclccServerPool", this, NULL, poolSize, INFINITE));
         serverstatus.queryProperties()->setProp("@cluster", getComponentConfigSP()->queryProp("@name"));
-        serverstatus.queryProperties()->setProp("@queue", queueNames.get());
         serverstatus.commitProperties();
+        reloadConfigCBId = installConfigUpdateHook(std::bind(&EclccServer::configUpdate, this));
     }
 
     ~EclccServer()
     {
+        if (reloadConfigCBId)
+            removeConfigUpdateHook(reloadConfigCBId);
         pool->joinAll(false, INFINITE);
     }
 
     void run()
     {
-        DBGLOG("eclccServer (%d threads) waiting for requests on queue(s) %s", poolSize, queueNames.get());
-        queue.setown(createJobQueue(queueNames.get()));
-        queue->connect(false);
         running = true;
         LocalIAbortHandler abortHandler(*this);
         while (running)
         {
             try
             {
+                bool newQueues = false;
+                {
+                    CriticalBlock b(queueUpdateCS);
+                    if (updatedQueueNames)
+                    {
+                        queueNames.set(updatedQueueNames);
+                        updatedQueueNames.clear();
+                        queue.clear();
+                        queue.setown(createJobQueue(queueNames.get()));
+                        newQueues = true;
+                    }
+                    // onAbort could have triggered before or during the above switch, if so, we do no want to connect/block on new queue
+                    if (!running)
+                        break;
+                }
+                if (newQueues)
+                {
+                    queue->connect(false);
+                    serverstatus.queryProperties()->setProp("@queue", queueNames.get());
+                    serverstatus.commitProperties();
+                    DBGLOG("eclccServer (%d threads) waiting for requests on queue(s) %s", poolSize, queueNames.get());
+                }
                 if (!pool->waitAvailable(10000))
                 {
                     if (getComponentConfigSP()->getPropInt("@traceLevel", 0) > 2)
@@ -963,8 +1043,14 @@ public:
     virtual bool onAbort() 
     {
         running = false;
-        if (queue)
-            queue->cancelAcceptConversation();
+        Linked<IJobQueue> currentQueue;
+        {
+            CriticalBlock b(queueUpdateCS);
+            if (queue)
+                currentQueue.set(queue);
+        }
+        if (currentQueue)
+            currentQueue->cancelAcceptConversation();
         return false;
     }
 };
@@ -1092,42 +1178,14 @@ int main(int argc, const char *argv[])
                 startPerformanceMonitor(optMonitorInterval*1000, PerfMonStandard, nullptr);
 #endif
 
+            StringBuffer queueNames;
+            getQueues(queueNames);
+            if (!queueNames.length())
+                throw MakeStringException(0, "No queues found to listen on");
+
 #ifdef _CONTAINERIZED
             queryCodeSigner().initForContainer();
 
-            bool filtered = false;
-            std::unordered_map<std::string, bool> listenQueues;
-            Owned<IPTreeIterator> listening = globals->getElements("listen");
-            ForEach (*listening)
-            {
-                const char *lq = listening->query().queryProp(".");
-                if (lq)
-                {
-                    listenQueues[lq] = true;
-                    filtered = true;
-                }
-            }
-
-            StringBuffer queueNames;
-            Owned<IPTreeIterator> queues = globals->getElements("queues");
-            ForEach(*queues)
-            {
-                IPTree &queue = queues->query();
-                const char *qname = queue.queryProp("@name");
-                if (!filtered || listenQueues.count(qname))
-                {
-                    if (queueNames.length())
-                        queueNames.append(",");
-                    getClusterEclCCServerQueueName(queueNames, qname);
-                }
-            }
-#else
-            SCMStringBuffer queueNames;
-            getEclCCServerQueueNames(queueNames, processName);
-#endif
-            if (!queueNames.length())
-                throw MakeStringException(0, "No queues found to listen on");
-#ifdef _CONTAINERIZED
             bool useChildProcesses = globals->getPropInt("@useChildProcesses", false);
             unsigned maxThreads = globals->getPropInt("@maxActive", 4);
 #else
