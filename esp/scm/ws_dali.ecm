@@ -45,13 +45,31 @@ ESPrequest [nil_remove] DeleteRequest
     string Path;
 };
 
+ESPrequest [nil_remove] AddRequest
+{
+    string Path;
+    string Value;
+};
+
+ESPrequest [nil_remove] CountRequest
+{
+    string Path;
+};
+
+ESPresponse [exceptions_inline, nil_remove] CountResponse
+{
+    unsigned Result;
+};
+
 ESPservice [auth_feature("NONE"), //This declares that the method logic handles feature level authorization
-    version("1.02"), default_client_version("1.02"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSDali
+    version("1.03"), default_client_version("1.03"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSDali
 {
     ESPmethod [min_ver("1.01")] SetValue(SetValueRequest, ResultResponse);
     ESPmethod [min_ver("1.01")] GetValue(GetValueRequest, ResultResponse);
     ESPmethod [min_ver("1.02")] Import(ImportRequest, ResultResponse);
     ESPmethod [min_ver("1.02")] Delete(DeleteRequest, ResultResponse);
+    ESPmethod [min_ver("1.03")] Add(AddRequest, ResultResponse);
+    ESPmethod [min_ver("1.03")] Count(CountRequest, CountResponse);
 };
 
 SCMexportdef(WSDali);

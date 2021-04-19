@@ -302,7 +302,7 @@ int main(int argc, const char* argv[])
                     }
                     else if (strieq(cmd,"add")) {
                         CHECKPARAMS(1,2);
-                        add(params.item(1), (np>1) ? params.item(2) : nullptr);
+                        doLog(add(params.item(1),(np>1) ? params.item(2) : nullptr,out),out);
                     }
                     else if (strieq(cmd,"delv")) {
                         CHECKPARAMS(1,1);
@@ -310,7 +310,7 @@ int main(int argc, const char* argv[])
                     }
                     else if (strieq(cmd,"count")) {
                         CHECKPARAMS(1,1);
-                        count(params.item(1));
+                        PROGLOG("Count of %s is: %d",params.item(1),count(params.item(1)));
                     }
                     else if (strieq(cmd,"dfsfile")) {
                         CHECKPARAMS(1,1);
