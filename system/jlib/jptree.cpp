@@ -8586,6 +8586,7 @@ public:
 #ifdef _CONTAINERIZED
             changed = changed | containsFileWatchEvents(events, FileWatchEvents::movedTo) && streq(filename, "..data");
 #endif
+            PROGLOG("events = %u", static_cast<unsigned>(events));
             if (changed)
             {
                 auto result = doLoadConfiguration(componentDefault, args.getArray(), componentTag, envPrefix, legacyFilename, mapper, altNameAttribute);

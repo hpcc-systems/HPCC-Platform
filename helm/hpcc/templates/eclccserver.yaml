@@ -80,7 +80,7 @@ data:
 {{- if not .disabled -}}
 {{- $secretsCategories := list "system" "codeVerify" }}
 {{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories }}
-{{- $configSHA := include "hpcc.filterConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.eclccServerConfigMap" "component" "eclccserver" "excludeKeys" "global" "excludeYamlRegex" "jobspec")) | sha256sum }}
+{{- $configSHA := include "hpcc.filterConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.eclccServerConfigMap" "component" "eclccserver" "excludeKeys" "global,eclccserver.queues" "excludeYamlRegex" "jobspec")) | sha256sum }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
