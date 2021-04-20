@@ -251,7 +251,7 @@ public:
         IConstWorkUnit & wu =  graph->queryJob().queryWorkUnit();
         workunitCost = aggregateCost(&wu);
 
-        const IPropertyTree *costs = queryCostsConfiguration();
+        Owned<const IPropertyTree> costs = getCostsConfiguration();
         double softLimit = 0.0, hardLimit = 0.0;
         if (costs)
         {

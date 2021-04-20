@@ -7612,7 +7612,7 @@ bool extractFromWorkunitDAToken(const char * distributedAccessToken, StringBuffe
 wuTokenStates verifyWorkunitDAToken(const char * ctxUser, const char * daToken)
 {
     #ifdef _CONTAINERIZED
-    if (!queryComponentConfig().getPropBool("@wuTokens", false))
+    if (!getComponentConfigSP()->getPropBool("@wuTokens", false))
         return wuTokenInvalid;
     #endif
     if (isEmptyString(daToken))
@@ -13425,7 +13425,8 @@ extern WORKUNIT_API void addTimeStamp(IWorkUnit * wu, StatisticScopeType scopeTy
 
 static double getCpuSize(const char *resourceName)
 {
-    const char * cpuRequestedStr = queryComponentConfig().queryProp(resourceName);
+    Owned<IPropertyTree> compConfig = getComponentConfig();
+    const char * cpuRequestedStr = compConfig->queryProp(resourceName);
     if (!cpuRequestedStr)
         return 0.0;
     char * endptr;
@@ -13439,7 +13440,7 @@ static double getCpuSize(const char *resourceName)
 
 static double getCostCpuHour()
 {
-    double costCpuHour = queryGlobalConfig().getPropReal("cost/@perCpu");
+    double costCpuHour = getGlobalConfigSP()->getPropReal("cost/@perCpu");
     if (costCpuHour < 0.0)
         return 0.0;
     return costCpuHour;
@@ -14240,17 +14241,17 @@ bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, 
         E->Release();
         return false;
     }
-    jobYaml.replaceString("%jobname", jobname.str());
+    jobYaml.replaceString("_HPCC_JOBNAME_", jobname.str());
 
     VStringBuffer args("\"--workunit=%s\"", wuid);
     for (const auto &p: extraParams)
     {
-        if ('%' == p.first[0]) // jobspec substituion
+        if (hasPrefix(p.first.c_str(), "_HPCC_", false)) // jobspec substituion
             jobYaml.replaceString(p.first.c_str(), p.second.c_str());
         else
             args.append(" \"--").append(p.first.c_str()).append('=').append(p.second.c_str()).append("\"");
     }
-    jobYaml.replaceString("%args", args.str());
+    jobYaml.replaceString("_HPCC_ARGS_", args.str());
 
 // Disable ability change resources from within workunit
 // - all values are unquoted by toYAML.  This caused problems when previous string values are
@@ -14286,8 +14287,9 @@ bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, 
 static constexpr unsigned defaultPendingTimeSecs = 600;
 void runK8sJob(const char *componentName, const char *wuid, const char *job, const std::list<std::pair<std::string, std::string>> &extraParams)
 {
-    KeepK8sJobs keepJob = translateKeepJobs(queryComponentConfig().queryProp("@keepJobs"));
-    unsigned pendingTimeoutSecs = queryComponentConfig().getPropInt("@pendingTimeoutSecs", defaultPendingTimeSecs);
+    Owned<IPropertyTree> compConfig = getComponentConfig();
+    KeepK8sJobs keepJob = translateKeepJobs(compConfig->queryProp("@keepJobs"));
+    unsigned pendingTimeoutSecs = compConfig->getPropInt("@pendingTimeoutSecs", defaultPendingTimeSecs);
 
     bool removeNetwork = applyK8sYaml(componentName, wuid, job, "networkspec", extraParams, true);
     applyK8sYaml(componentName, wuid, job, "jobspec", extraParams, false);

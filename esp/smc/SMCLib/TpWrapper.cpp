@@ -482,7 +482,7 @@ static IEspTpMachine * createLocalHostTpMachine(const char *path)
 void CTpWrapper::getTpDfuServers(IArrayOf<IConstTpDfuServer>& list)
 {
 #ifdef _CONTAINERIZED
-    Owned<IPropertyTreeIterator> dfuQueues = queryComponentConfig().getElements("dfuQueues");
+    Owned<IPropertyTreeIterator> dfuQueues = getComponentConfigSP()->getElements("dfuQueues");
     ForEach(*dfuQueues)
     {
         IPropertyTree & dfuQueue = dfuQueues->query();
@@ -2034,7 +2034,7 @@ void CTpWrapper::getAttPath(const char* Path,StringBuffer& returnStr)
 
 void CTpWrapper::getServices(double version, const char* serviceType, const char* serviceName, IArrayOf<IConstHPCCService>& services)
 {
-    Owned<IPropertyTreeIterator> itr = queryComponentConfig().getElements("services");
+    Owned<IPropertyTreeIterator> itr = getGlobalConfigSP()->getElements("services");
     ForEach(*itr)
     {
         IPropertyTree& service = itr->query();
@@ -2093,7 +2093,7 @@ extern TPWRAPPER_API ISashaCommand* archiveOrRestoreWorkunits(StringArray& wuids
 extern TPWRAPPER_API IStringIterator* getContainerTargetClusters(const char* processType, const char* processName)
 {
     Owned<CStringArrayIterator> ret = new CStringArrayIterator;
-    Owned<IPropertyTreeIterator> queues = queryComponentConfig().getElements("queues");
+    Owned<IPropertyTreeIterator> queues = getComponentConfigSP()->getElements("queues");
     ForEach(*queues)
     {
         IPropertyTree& queue = queues->query();
@@ -2115,7 +2115,7 @@ extern TPWRAPPER_API IStringIterator* getContainerTargetClusters(const char* pro
     if (!isEmptyString(processType) && !strieq("roxie", processType))
         return ret.getClear();
 
-    Owned<IPropertyTreeIterator> services = queryComponentConfig().getElements("services[@type='roxie']");
+    Owned<IPropertyTreeIterator> services = getComponentConfigSP()->getElements("services[@type='roxie']");
     ForEach(*services)
     {
         IPropertyTree& service = services->query();
@@ -2263,7 +2263,7 @@ public:
 
 extern TPWRAPPER_API unsigned getContainerWUClusterInfo(CConstWUClusterInfoArray& clusters)
 {
-    Owned<IPropertyTreeIterator> queues = queryComponentConfig().getElements("queues");
+    Owned<IPropertyTreeIterator> queues = getComponentConfigSP()->getElements("queues");
     ForEach(*queues)
     {
         IPropertyTree& queue = queues->query();
@@ -2290,7 +2290,7 @@ extern TPWRAPPER_API IConstWUClusterInfo* getWUClusterInfoByName(const char* clu
     return getTargetClusterInfo(clusterName);
 #else
     VStringBuffer xpath("queues[@name='%s']", clusterName);
-    IPropertyTree* queue = queryComponentConfig().queryPropTree(xpath);
+    Owned<IPropertyTree> queue = getComponentConfigSP()->getPropTree(xpath);
     if (!queue)
         return nullptr;
 
@@ -2301,7 +2301,7 @@ extern TPWRAPPER_API IConstWUClusterInfo* getWUClusterInfoByName(const char* clu
 
 extern TPWRAPPER_API void initContainerRoxieTargets(MapStringToMyClass<ISmartSocketFactory>& connMap)
 {
-    Owned<IPropertyTreeIterator> services = queryComponentConfig().getElements("services[@type='roxie']");
+    Owned<IPropertyTreeIterator> services = getComponentConfigSP()->getElements("services[@type='roxie']");
     ForEach(*services)
     {
         IPropertyTree& service = services->query();
@@ -2396,7 +2396,7 @@ bool getSashaService(StringBuffer &serviceAddress, const char *serviceName, bool
     {
 #ifdef _CONTAINERIZED
         VStringBuffer serviceQualifier("services[@type='sasha'][@name='%s']", serviceName);
-        IPropertyTree *serviceTree = queryComponentConfig().queryPropTree(serviceQualifier);
+        Owned<IPropertyTree> serviceTree = getComponentConfigSP()->getPropTree(serviceQualifier);
         if (serviceTree)
         {
             serviceAddress.append(serviceName).append(':').append(serviceTree->queryProp("@port"));

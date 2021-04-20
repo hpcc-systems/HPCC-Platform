@@ -176,7 +176,7 @@ public:
 
     void setupSubscription()
     {
-        if (false == queryComponentConfig().getPropBool("@loadDaliBindings", true))
+        if (false == getComponentConfigSP()->getPropBool("@loadDaliBindings", true))
             return;
         m_isSubscribed = true;
         m_pSubscription.setown(createEsdlSubscription(this));
@@ -255,14 +255,15 @@ public:
 
     void loadLocalBindings()
     {
-        const char *paths = queryComponentConfig().queryProp("@bindings");
+        Owned<IPropertyTree> compConfig = getComponentConfig();
+        const char *paths = compConfig->queryProp("@bindings");
         if (isEmptyString(paths))
             return;
         StringArray entries;
         entries.appendList(paths, ";");
 
-        const char *process = queryComponentConfig().queryProp("@instance");
-        unsigned int port  = queryComponentConfig().getPropInt("@port");
+        const char *process = compConfig->queryProp("@instance");
+        unsigned int port  = compConfig->getPropInt("@port");
         ForEachItemIn(i, entries)
         {
             const char *path = entries.item(i);
@@ -274,7 +275,7 @@ public:
 
     void loadDynamicBindings()
     {
-        if (false == queryComponentConfig().getPropBool("@loadDaliBindings", true))
+        if (false == getComponentConfigSP()->getPropBool("@loadDaliBindings", true))
             return;
         Owned<IPropertyTree> esdlBindings = m_pCentralStore->getBindings();
         if (!esdlBindings)

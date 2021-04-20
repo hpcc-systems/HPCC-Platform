@@ -3116,7 +3116,7 @@ static void setupContainerizedStorageLocations()
 {
     try
     {
-        IPropertyTree * storage = queryGlobalConfig().queryPropTree("storage");
+        Owned<IPropertyTree> storage = getGlobalConfigSP()->getPropTree("storage");
         if (storage)
         {
             IPropertyTree * defaults = storage->queryPropTree("default");
@@ -3310,9 +3310,10 @@ static CriticalSection storageCS;
 void initializeStorageGroups(bool createPlanesFromGroups)
 {
     CriticalBlock block(storageCS);
-    IPropertyTree * storage = queryGlobalConfig().queryPropTree("storage");
+    Owned<IPropertyTree> globalConfig = getGlobalConfig();
+    Owned<IPropertyTree> storage = globalConfig->getPropTree("storage");
     if (!storage)
-        storage = queryGlobalConfig().addPropTree("storage");
+        storage.set(globalConfig->addPropTree("storage"));
 
 #ifndef _CONTAINERIZED
     if (createPlanesFromGroups && !storage->hasProp("planes"))
@@ -3412,23 +3413,20 @@ void initializeStorageGroups(bool createPlanesFromGroups)
     setupContainerizedStorageLocations();
 }
 
-const char * queryDefaultStoragePlane()
+bool getDefaultStoragePlane(StringBuffer &ret)
 {
     // If the plane is specified for the component, then use that
-    IPropertyTree & config = queryComponentConfig();
-    const char * plane = config.queryProp("storagePlane");
-    if (plane)
-        return plane;
+    if (getComponentConfigSP()->getProp("storagePlane", ret))
+        return true;
 
     //Otherwise check what the default plane for data storage is configured to be
-    plane = queryGlobalConfig().queryProp("storage/@dataPlane");
-    if (plane)
-        return plane;
+    if (getGlobalConfigSP()->getProp("storage/@dataPlane", ret))
+        return true;
 
 #ifdef _CONTAINERIZED
     throwUnexpectedX("Default data plane not specified"); // The default should always have been configured by the helm charts
 #else
-    return nullptr;
+    return false;
 #endif
 }
 
@@ -3456,7 +3454,7 @@ IStoragePlane * getStoragePlane(const char * name, bool required)
     group.append(name).toLowerCase();
 
     VStringBuffer xpath("storage/planes[@group='%s']", group.str());
-    IPropertyTree * match = queryGlobalConfig().queryPropTree(xpath);
+    Owned<IPropertyTree> match = getGlobalConfig()->getPropTree(xpath);
     if (!match)
     {
         if (required)

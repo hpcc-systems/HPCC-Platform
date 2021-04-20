@@ -286,7 +286,7 @@ public:
     virtual ~CWsSMCSoapBindingEx(){}
     virtual const char* getRootPage(IEspContext* ctx)
     {
-        if (queryComponentConfig().getPropBool("@api_only"))
+        if (getComponentConfigSP()->getPropBool("@api_only"))
             return nullptr;
         if (ctx->queryRequestParameters()->hasProp("legacy"))
             return NULL;
@@ -299,21 +299,21 @@ public:
 
     virtual int onGetRoot(IEspContext &context, CHttpRequest* request,  CHttpResponse* response)
     {
-        if (queryComponentConfig().getPropBool("@api_only"))
+        if (getComponentConfigSP()->getPropBool("@api_only"))
             return CWsSMCSoapBinding::onGetRoot(context, request,  response);
         return  onGetInstantQuery(context, request, response, "WsSMC", "Activity");
     }
 
     virtual int onGetIndex(IEspContext &context, CHttpRequest* request,  CHttpResponse* response, const char *service)
     {
-        if (queryComponentConfig().getPropBool("@api_only"))
+        if (getComponentConfigSP()->getPropBool("@api_only"))
             return CWsSMCSoapBinding::onGetIndex(context, request, response, service);
         return  onGetInstantQuery(context, request, response, "WsSMC", "Activity");
     }
 
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
     {
-        if (queryComponentConfig().getPropBool("@api_only"))
+        if (getComponentConfigSP()->getPropBool("@api_only"))
         {
             CHttpSoapBinding::getNavigationData(context, data);
             return;

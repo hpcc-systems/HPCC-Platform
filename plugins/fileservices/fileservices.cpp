@@ -2897,12 +2897,14 @@ FILESERVICES_API void FILESERVICES_CALL fsDfuPlusExec(ICodeContext * ctx,const c
 FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, const char *userPW)
 {
 #ifdef _CONTAINERIZED
-    const char *defaultEsp = queryComponentConfig().queryProp("@defaultEsp");
+    Owned<IPropertyTree> compConfig = getComponentConfig();
+    const char *defaultEsp = compConfig->queryProp("@defaultEsp");
+    Owned<IPropertyTree> globalConfig = getGlobalConfig();
     if (isEmptyString(defaultEsp))
-        defaultEsp = queryGlobalConfig().queryProp("@defaultEsp");
+        defaultEsp = globalConfig->queryProp("@defaultEsp");
     if (isEmptyString(defaultEsp))
     {
-        Owned<IPropertyTreeIterator> esps = queryGlobalConfig().getElements("esp");
+        Owned<IPropertyTreeIterator> esps = globalConfig->getElements("esp");
         ForEach(*esps)
         {
             const char *application = esps->query().queryProp("@application");
@@ -2929,7 +2931,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, cons
         VStringBuffer espInfo("esp[@name='%s']", defaultEsp);
         const char *protocol = "https";
         unsigned port = 8010;
-        const IPropertyTree *espconfig = queryGlobalConfig().queryPropTree(espInfo);
+        const IPropertyTree *espconfig = globalConfig->queryPropTree(espInfo);
         if (espconfig)
         {
             if (!espconfig->getPropBool("@tls", true))

@@ -1327,7 +1327,7 @@ bool CWsTopologyEx::onTpLogicalClusterQuery(IEspContext &context, IEspTpLogicalC
         if (roxieQueueFilter == RoxieQueueFilter_Undefined)
             roxieQueueFilter = CRoxieQueueFilter_All;
 
-        Owned<IPropertyTreeIterator> iter = queryComponentConfig().getElements("queues");
+        Owned<IPropertyTreeIterator> iter = getComponentConfigSP()->getElements("queues");
         ForEach(*iter)
         {
             IPropertyTree &queue = iter->query();

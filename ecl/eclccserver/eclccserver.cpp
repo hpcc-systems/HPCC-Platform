@@ -37,7 +37,6 @@
 #include <string>
 #include "codesigner.hpp"
 
-static Owned<IPropertyTree> globals;
 static const char * * globalArgv = nullptr;
 
 //------------------------------------------------------------------------------------------------------------------
@@ -479,9 +478,10 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         if (syntaxCheck)
             eclccCmd.appendf(" -syntax");
 
-        if (globals->getPropBool("@enableEclccDali", true))
+        Owned<IPropertyTree> config = getComponentConfig();
+        if (config->getPropBool("@enableEclccDali", true))
         {
-            const char *daliServers = globals->queryProp("@daliServers");
+            const char *daliServers = config->queryProp("@daliServers");
             if (!daliServers)
                 daliServers = ".";
             eclccCmd.appendf(" -dfs=%s", daliServers);
@@ -496,7 +496,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         }
         Owned<IPipeProcess> pipe = createPipeProcess();
         pipe->setenv("ECLCCSERVER_THREAD_INDEX", idxStr.str());
-        Owned<IPropertyTreeIterator> options = globals->getElements("./Option");
+        Owned<IPropertyTreeIterator> options = config->getElements("./Option");
         ForEach(*options)
         {
             IPropertyTree &option = options->query();
@@ -518,7 +518,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             workunit->getDebugValue(debugStr.str(), valueStr);
             processOption(debugStr.str(), valueStr.str(), eclccCmd, eclccProgName, *pipe, true);
         }
-        bool compileCppSeparately = globals->getPropBool("@compileCppSeparately", true);
+        bool compileCppSeparately = config->getPropBool("@compileCppSeparately", true);
         if (compileCppSeparately)
         {
             workunit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTcompilestage, "compile", StWhenStarted, NULL, getTimeStampNowValue(), 1, 0, StatsMergeAppend);
@@ -646,8 +646,9 @@ public:
     virtual void threadmain() override
     {
         DBGLOG("Compile request processing for workunit %s", wuid.get());
+        Owned<IPropertyTree> config = getComponentConfig();
 #ifdef _CONTAINERIZED
-        if (!globals->getPropBool("@useChildProcesses", false) && !globals->hasProp("@workunit"))
+        if (!config->getPropBool("@useChildProcesses", false) && !config->hasProp("@workunit"))
         {
             Owned<IException> error;
             try
@@ -696,15 +697,15 @@ public:
             return;
         }
         CSDSServerStatus serverstatus("ECLCCserverThread");
-        serverstatus.queryProperties()->setProp("@cluster",globals->queryProp("@name"));
+        serverstatus.queryProperties()->setProp("@cluster", config->queryProp("@name"));
         serverstatus.queryProperties()->setProp("@thread", idxStr.str());
-        serverstatus.queryProperties()->setProp("WorkUnit",wuid.get());
+        serverstatus.queryProperties()->setProp("WorkUnit", wuid.get());
         serverstatus.commitProperties();
         workunit->setAgentSession(myProcessSession());
         StringAttr clusterName(workunit->queryClusterName());
 #ifdef _CONTAINERIZED
         VStringBuffer xpath("queues[@name='%s']", clusterName.str());
-        Owned<IPropertyTree> queueInfo = globals->getBranch(xpath);
+        Owned<IPropertyTree> queueInfo = config->getBranch(xpath);
         assertex(queueInfo);
         const char *platformName = queueInfo->queryProp("@type");
 #else
@@ -848,6 +849,43 @@ static void removePrecompiledHeader()
 // Class EclccServer manages a pool of compile threads
 //------------------------------------------------------------------------------------------------------------------
 
+static StringBuffer &getQueues(StringBuffer &queueNames)
+{
+    Owned<IPropertyTree> config = getComponentConfig();
+#ifdef _CONTAINERIZED
+    bool filtered = false;
+    std::unordered_map<std::string, bool> listenQueues;
+    Owned<IPTreeIterator> listening = config->getElements("listen");
+    ForEach (*listening)
+    {
+        const char *lq = listening->query().queryProp(".");
+        if (lq)
+        {
+            listenQueues[lq] = true;
+            filtered = true;
+        }
+    }
+    Owned<IPTreeIterator> queues = config->getElements("queues");
+    ForEach(*queues)
+    {
+        IPTree &queue = queues->query();
+        const char *qname = queue.queryProp("@name");
+        if (!filtered || listenQueues.count(qname))
+        {
+            if (queueNames.length())
+                queueNames.append(",");
+            getClusterEclCCServerQueueName(queueNames, qname);
+        }
+    }
+#else
+    const char * processName = config->queryProp("@name");
+    SCMStringBuffer scmQueueNames;
+    getEclCCServerQueueNames(scmQueueNames, processName);
+    queueNames.append(scmQueueNames.str());
+#endif
+    return queueNames;
+}
+
 class EclccServer : public CInterface, implements IThreadFactory, implements IAbortHandler
 {
     StringAttr queueNames;
@@ -859,7 +897,22 @@ class EclccServer : public CInterface, implements IThreadFactory, implements IAb
     bool running;
     CSDSServerStatus serverstatus;
     Owned<IJobQueue> queue;
+    StringAttr updatedQueueNames;
+    unsigned reloadConifgCBId = 0;
 
+
+    void configUpdate()
+    {
+        StringBuffer newQueueNames;
+        getQueues(newQueueNames);
+        if (!newQueueNames.length())
+            ERRLOG("No queues found to listen on");
+        if (!strsame(queueNames, newQueueNames))
+        {
+            updatedQueueNames.set(newQueueNames);
+            queue->cancelAcceptConversation();
+        }
+    }
 public:
     IMPLEMENT_IINTERFACE;
     EclccServer(const char *_queueName, unsigned _poolSize)
@@ -868,20 +921,23 @@ public:
         threadsActive = 0;
         running = false;
         pool.setown(createThreadPool("eclccServerPool", this, NULL, poolSize, INFINITE));
-        serverstatus.queryProperties()->setProp("@cluster", globals->queryProp("@name"));
+        serverstatus.queryProperties()->setProp("@cluster", getComponentConfigSP()->queryProp("@name"));
         serverstatus.queryProperties()->setProp("@queue", queueNames.get());
         serverstatus.commitProperties();
+        queue.setown(createJobQueue(queueNames.get()));
+        reloadConifgCBId = installConfigUpdateHook(std::bind(&EclccServer::configUpdate, this));
     }
 
     ~EclccServer()
     {
+        if (reloadConifgCBId)
+            removeConfigUpdateHook(reloadConifgCBId);
         pool->joinAll(false, INFINITE);
     }
 
     void run()
     {
         DBGLOG("eclccServer (%d threads) waiting for requests on queue(s) %s", poolSize, queueNames.get());
-        queue.setown(createJobQueue(queueNames.get()));
         queue->connect(false);
         running = true;
         LocalIAbortHandler abortHandler(*this);
@@ -889,9 +945,20 @@ public:
         {
             try
             {
+                if (updatedQueueNames)
+                {
+                    PROGLOG("Updating queue due to queue names change from '%s' to '%s'", queueNames.str(), updatedQueueNames.str());
+                    queueNames.set(updatedQueueNames);
+                    updatedQueueNames.clear();
+                    serverstatus.queryProperties()->setProp("@queue", queueNames.get());
+                    queue.clear();
+                    queue.setown(createJobQueue(queueNames.get()));
+                    queue->connect(false);
+                    DBGLOG("eclccServer (%d threads) waiting for requests on queue(s) %s", poolSize, queueNames.get());
+                }
                 if (!pool->waitAvailable(10000))
                 {
-                    if (globals->getPropInt("@traceLevel", 0) > 2)
+                    if (getComponentConfigSP()->getPropInt("@traceLevel", 0) > 2)
                         DBGLOG("Blocked for 10 seconds waiting for an available compiler thread");
                     continue;
                 }
@@ -951,7 +1018,7 @@ void openLogFile()
 {
 #ifndef _CONTAINERIZED
     StringBuffer logname;
-    envGetConfigurationDirectory("log","eclccserver",globals->queryProp("@name"),logname);
+    envGetConfigurationDirectory("log","eclccserver", getComponentConfigSP()->queryProp("@name"),logname);
     Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logname.str(), "eclccserver");
     lf->beginLogging();
 #else
@@ -1021,6 +1088,7 @@ int main(int argc, const char *argv[])
     // We remove any existing sentinel until we have validated that we can successfully start (i.e. all options are valid...)
     removeSentinelFile(sentinelFile);
 
+    Owned<IPropertyTree> globals;
     try
     {
         globalArgv = argv;
@@ -1077,42 +1145,14 @@ int main(int argc, const char *argv[])
                 startPerformanceMonitor(optMonitorInterval*1000, PerfMonStandard, nullptr);
 #endif
 
+            StringBuffer queueNames;
+            getQueues(queueNames);
+            if (!queueNames.length())
+                throw MakeStringException(0, "No queues found to listen on");
+
 #ifdef _CONTAINERIZED
             queryCodeSigner().initForContainer();
 
-            bool filtered = false;
-            std::unordered_map<std::string, bool> listenQueues;
-            Owned<IPTreeIterator> listening = globals->getElements("listen");
-            ForEach (*listening)
-            {
-                const char *lq = listening->query().queryProp(".");
-                if (lq)
-                {
-                    listenQueues[lq] = true;
-                    filtered = true;
-                }
-            }
-
-            StringBuffer queueNames;
-            Owned<IPTreeIterator> queues = globals->getElements("queues");
-            ForEach(*queues)
-            {
-                IPTree &queue = queues->query();
-                const char *qname = queue.queryProp("@name");
-                if (!filtered || listenQueues.count(qname))
-                {
-                    if (queueNames.length())
-                        queueNames.append(",");
-                    getClusterEclCCServerQueueName(queueNames, qname);
-                }
-            }
-#else
-            SCMStringBuffer queueNames;
-            getEclCCServerQueueNames(queueNames, processName);
-#endif
-            if (!queueNames.length())
-                throw MakeStringException(0, "No queues found to listen on");
-#ifdef _CONTAINERIZED
             bool useChildProcesses = globals->getPropInt("@useChildProcesses", false);
             unsigned maxThreads = globals->getPropInt("@maxActive", 4);
 #else
@@ -1139,7 +1179,6 @@ int main(int argc, const char *argv[])
 #ifndef _CONTAINERIZED
     stopPerformanceMonitor();
 #endif
-    globals.clear();
     UseSysLogForOperatorMessages(false);
     ::closedownClientProcess(); // dali client closedown
     releaseAtoms();

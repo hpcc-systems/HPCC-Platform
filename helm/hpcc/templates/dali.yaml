@@ -87,7 +87,7 @@ metadata:
   name: {{ $dali.name }}-configmap 
 data:
   {{ $dali.name }}.yaml: |
-    version: 1.0
+    version: "1.0"
     dali:
 {{ toYaml (omit $dali "logging" "services") | indent 6 }}
       dataPath: {{ include "hpcc.getVolumeMountPrefix" (dict "root" $ "me" $daliStorage "path" "dalistorage") }}
@@ -102,9 +102,9 @@ data:
 {{- if not $sasha.disabled -}}
 {{- $_ := set $sasha "name" $sashaName -}}
 kind: ConfigMap
-{{- with ($sasha | merge (pick $dali "logging") | merge (dict "inDaliPod" true "access" (splitList " " (include "hpcc.getSashaServiceAccess" $sasha)))) }}
-{{- $sashaSecretsCategories := append ((or (has "data" .access) (has "dalidata" .access)) | ternary (list "storage") list) "system" }}
-{{ include "hpcc.sashaConfigMap" (dict "root" $ "me" . "secretsCategories" $sashaSecretsCategories ) }}
+{{- with ($sasha | merge (pick $dali "logging") | merge (dict "inDaliPod" true "access" (splitList " " (include "hpcc.getSashaServiceAccess" $sasha)))) -}}
+{{- $sashaSecretsCategories := append ((or (has "data" .access) (has "dalidata" .access)) | ternary (list "storage") list) "system" -}}
+{{ include "hpcc.generateConfig" (dict "root" $ "me" . "secretsCategories" $sashaSecretsCategories "configMapHelper" "hpcc.sashaConfigMap") }}
 {{- end }}
 ---
 {{- if $sasha.servicePort -}}

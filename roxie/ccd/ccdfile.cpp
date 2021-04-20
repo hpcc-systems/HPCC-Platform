@@ -1221,12 +1221,13 @@ public:
         started = false;
         if (!selfTestMode && !allFilesDynamic)
         {
-            offset_t cacheTrackSize = queryComponentConfig().getPropInt64("@cacheTrackSize", (offset_t) -1);
+            Owned<IPropertyTree> compConfig = getComponentConfig();
+            offset_t cacheTrackSize = compConfig->getPropInt64("@cacheTrackSize", (offset_t) -1);
             if (cacheTrackSize == (offset_t) -1)
             {
-                const char *memLimit = queryComponentConfig().queryProp("resources/limits/@memory");
+                const char *memLimit = compConfig->queryProp("resources/limits/@memory");
                 if (!memLimit)
-                    memLimit = queryComponentConfig().queryProp("resources/requests/@memory");
+                    memLimit = compConfig->queryProp("resources/requests/@memory");
                 if (memLimit)
                 {
                     try

@@ -560,7 +560,7 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
     agentMachineCost = getMachineCostRate();
     if (agentMachineCost > 0.0)
     {
-        IPropertyTree *costs = queryCostsConfiguration();
+        Owned<const IPropertyTree> costs = getCostsConfiguration();
         if (costs)
         {
             double softCostLimit = costs->getPropReal("@limit");
