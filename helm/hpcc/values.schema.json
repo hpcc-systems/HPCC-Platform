@@ -424,9 +424,20 @@
           "type" : "string"
         },
         "defaultSprayParts" : {
-            "description": "Number of parts sprayed by default",
-            "type" : "integer"
+          "description": "Number of parts sprayed by default",
+          "type" : "integer"
+        },
+        "cost" : {
+          "description": "Costs associated with the storage and use of the plane",
+          "type" : "object",
+          "properties": {
+            "storageAtRest" : {
+              "description": "Storage cost (GiB/month)",
+              "type": "number"
+            }
           }
+        }
+
       },
       "required": [ "name", "prefix" ],
       "additionalProperties": false

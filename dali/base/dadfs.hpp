@@ -415,6 +415,7 @@ interface IDistributedFile: extends IInterface
     virtual bool getSkewInfo(unsigned &maxSkew, unsigned &minSkew, unsigned &maxSkewPart, unsigned &minSkewPart, bool calculateIfMissing) = 0;
     virtual int  getExpire() = 0;
     virtual void setExpire(int expireDays) = 0;
+    virtual double getCost(const char * cluster) = 0;
 };
 
 

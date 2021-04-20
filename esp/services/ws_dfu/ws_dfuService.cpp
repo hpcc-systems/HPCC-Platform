@@ -45,6 +45,7 @@
 #include "fverror.hpp"
 #include "nbcd.hpp"
 #include "thorcommon.hpp"
+#include "jstats.h"
 
 #include "jstring.hpp"
 #include "exception_util.hpp"
@@ -2643,6 +2644,13 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
             if (includeJsonTypeInfo)
                 FileDetails.setJsonInfo(jsonLayout);
         }
+    }
+    if (version >= 1.59)
+    {
+        double totalCost = df->getCost(cluster);
+        StringBuffer s;
+        formatMoney(s, money2cost_type(totalCost));
+        FileDetails.setCost(s);
     }
     PROGLOG("doGetFileDetails: %s done", name);
 }
