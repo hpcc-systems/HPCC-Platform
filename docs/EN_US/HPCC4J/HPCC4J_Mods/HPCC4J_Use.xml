@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="HPCC4J_Use">
+  <title>Use Cases</title>
+
+  <para>This section provides examples that illustrate typical Java client and
+  HPCC Systems<superscript>®</superscript> interaction.</para>
+
+  <sect2>
+    <title>wsclient</title>
+
+    <para>Example: User wants to submit and execute an ECL query from a Java
+    client:</para>
+
+    <para>Use the <emphasis role="bold">wsclient </emphasis>package to connect
+    to the target HPCC system.</para>
+
+    <para><programlisting> //Fetch platform object based on connection settings
+ //Provide the connection type, http|https, the ecl watch ip, and port, 
+ //your ESP username and password (if required)
+ 
+ Platform platform = Platform.get("http", "ip", 8010, "username", "password");
+ HPCCWSClient connector = platform.getHPCCWSClient();
+</programlisting></para>
+
+    <para>Create a <emphasis>WorkunitInfo</emphasis> object with the ECL code
+    and submit that object to the WECL workunit web service.</para>
+
+    <para>The <emphasis>WorkunitInfo</emphasis> object contains all the
+    information needed by HPCC to compile and execute an ECL query
+    correctly.</para>
+
+    <programlisting> WorkunitInfo wu=new WorkunitInfo();!
+ wu.setECL("output('Hello World');"); // The ECL to execute.
+ wu.setCluster("mythor");             // This can be hardcoded to a known cluster, 
+                                      // or can be selected from 
+                                      // valid cluster names clusterGroups[0] (above)</programlisting>
+
+    <para>This is just one way to submit ECL, you can also submit ECL, and
+    receive the WUID, which can later be used to fetch results. The results
+    (if successful) are returned as a List of Object Lists.</para>
+
+    <programlisting> List&lt;List&lt;Object&gt;&gt; results = connector.submitECLandGetResultsList(wu);
+
+ //logic to analyze results would need to be implemented.
+ int currentrs = 1;
+
+ for (List&lt;Object&gt; list : results)
+ {
+   Utils.print(System.out, "Resultset " + currentrs +":", false, true);
+   for (Object object : list)
+   {
+     System.out.print("[ " + object.toString() +" ]");
+   }
+   currentrs++;
+   System.out.println("");
+ }
+</programlisting>
+
+    <para>The preceding example shows how simple it is to code for this
+    interface. This template can be expanded to interact with most of the ESP
+    web services and their methods.</para>
+
+    <para>This connector can be used to actuate various HPCC WebService
+    methods. For example, the client can request a list of available Target
+    cluster names.</para>
+
+    <programlisting>List&lt;String&gt; clusters = connector.getAvailableTargetClusterNames(); </programlisting>
+
+    <para>or cluster groups</para>
+
+    <programlisting>String[] clusterGroups = connector.getAvailableClusterGroups(); </programlisting>
+
+    <para>Which can then be used as one of the required parameters for other
+    WS actions, such as spraying a file:</para>
+
+    <programlisting>connector.sprayFlatHPCCFile("persons", "mythor::persons", 155, clusters.get(0), true); </programlisting>
+  </sect2>
+
+  <sect2>
+    <title>DFSClient</title>
+
+    <para>Example: User wants to read file "example::dataset" in a parallel
+    fashion from HPCC Systems into a Java client.</para>
+
+    <sect3>
+      <title>Reading Example:</title>
+
+      <para>The following example is for reading in parallel from</para>
+
+      <programlisting>HPCCFile file = new HPCCFile("example::dataset", "http://127.0.0.1:8010" , "user", "pass");
+DataPartition[] fileParts = file.getFileParts(); 
+ArrayList&lt;HPCCRecord&gt; records = new ArrayList&lt;HPCCRecord&gt;(); 
+for (int i = 0; i &lt; fileParts.length; i++) 
+{ 
+    HpccRemoteFileReader&lt;HPCCRecord&gt; fileReader = null; 
+    try 
+    { 
+       HPCCRecordBuilder recordBuilder = new 
+                         HPCCRecordBuilder(file.getProjectedRecordDefinition());
+       fileReader = new HpccRemoteFileReader&lt;HPCCRecord&gt;(fileParts[i], 
+                    file.getRecordDefinition(), recordBuilder);
+    } 
+    catch (Exception e) { }  
+    while (fileReader.hasNext()) 
+    { 
+       HPCCRecord record = fileReader.next(); 
+       records.add(record); 
+    } 
+    fileReader.close(); 
+}  </programlisting>
+    </sect3>
+
+    <sect3>
+      <title>Writing Example:</title>
+
+      <para>Example: User wants to spray their dataset into an HPCC Systems
+      logical file named "example::dataset.</para>
+
+      <programlisting>FieldDef[] fieldDefs = new FieldDef[2]; 
+fieldDefs[0] = new FieldDef("key", FieldType.INTEGER, "lNTEGER4", 4, true, false, 
+                            HpccSrcType.LITTLE_ENDIAN, new FieldDef[0]); 
+fieldDefs[1] = new FieldDef("value", FieldType.STRING, "STRING", 0, false, false, 
+                            HpccSrcType.UTF8, new FieldDef[0]); 
+FieldDef recordDef = new FieldDef("RootRecord", FieldType.RECORD, "rec", 4, false, false, 
+                                  HpccSrcType.LITTLE_ENDIAN, fieldDefs); 
+
+String eclRecordDefn = RecordDefinitionTranslator.toECLRecord(recordDef); 
+
+// See WSClient documentation on connection / construction of WSClient 
+Platform platform; 
+HPCCWsClient wsclient; 
+
+HPCCWsDFUClient dfuClient = wsclient.getWsDFUClient(); 
+DFUCreateFileWrapper createResult = dfuClient.createFile("example::dataset", "mythor", 
+                                    eclRecordDefn, 300, false, DFUFileTypeWrapper.Flat, ""); 
+DFUFilePartWrapper[] dfuFileParts = createResult.getFileParts(); 
+DataPartition[] hpccPartitions = DataPartition.createPartitions(dfuFileParts, 
+         new NullRemapper(new RemapInfo(), createResult.getFileAccessInfo()), 
+dfuFileParts.length, createResult.getFileAccessInfoBlob()); 
+
+//------------------------------------------------------------------------------ 
+// Write partitions to file parts 
+//------------------------------------------------------------------------------ 
+
+ArrayList&lt;HPCCRecord&gt; records = new ArrayList&lt;HPCCRecord&gt;(); 
+
+int recordsPerPartition = records.size() / dfuFileParts.length; 
+int residualRecords = records.size() % dfuFileParts.length; 
+
+int recordCount = 0; 
+int bytesWritten = 0; 
+for (int partitionIndex = 0; partitionIndex &lt; hpccPartitions.length; partitionIndex++) 
+{ 
+   int numRecordsInPartition = recordsPerPartition; 
+   if (partitionIndex == dfuFileParts.length - 1) 
+   { 
+      numRecordsInPartition += residualRecords; 
+   } 
+
+   HPCCRecordAccessor recordAccessor = new HPCCRecordAccessor(recordDef); 
+   HPCCRemoteFileWriter&lt;HPCCRecord&gt; fileWriter = new 
+   HPCCRemoteFileWriter&lt;HPCCRecord&gt;(hpccPartitions[partitionIndex], recordDef, 
+         recordAccessor, CompressionAlgorithm.NONE); 
+   try 
+   { 
+         for (int j = 0; j &lt; numRecordsInPartition; j++, recordCount++) 
+         {  
+             fileWriter.writeRecord(records.get(recordCount)); 
+         } 
+         fileWriter.close(); 
+         bytesWritten += fileWriter.getBytesWritten(); 
+   } 
+   catch (Exception e) 
+   { 
+   } 
+} 
+
+//------------------------------------------------------------------------------ 
+// Publish and finalize the file 
+//------------------------------------------------------------------------------ 
+
+dfuClient.publishFile(createResult.getFileID(), eclRecordDefn, recordCount, bytesWritten, true);</programlisting>
+    </sect3>
+  </sect2>
+</sect1>
