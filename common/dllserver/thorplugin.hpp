@@ -91,6 +91,8 @@ public:
     bool addPlugin(const char *path, const char *dllname);
     void loadFromList(const char * pluginsList);
     void loadFromDirectory(const char * pluginDirectory);
+    bool loadNamed(const char * pluginDirectories, const char * plugin);
+
 };
 
 #endif // THORPLUGIN_HPP
