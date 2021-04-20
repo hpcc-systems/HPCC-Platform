@@ -453,7 +453,7 @@ public:
         if (!validateFeatureAccess(pszFeatureUrl, required, false))
         {
             setAuthStatus(AUTH_STATUS_NOACCESS);
-            throw MakeStringException(excCode, "%s", excMsg);
+            throw MakeStringException(excCode, "Resource %s : %s", pszFeatureUrl, excMsg);
         }
     }
 
