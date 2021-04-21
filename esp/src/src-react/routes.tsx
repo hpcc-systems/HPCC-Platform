@@ -112,7 +112,11 @@ export const routes: RoutesEx = [
     {
         mainNav: ["files"],
         path: "/landingzone",
-        action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="LZBrowseWidget" />)
+        children: [
+            { path: "", action: (context) => import("./components/LandingZone").then(_ => <_.LandingZone filter={parseSearch(context.search) as any} />) },
+            { path: "/legacy", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="LZBrowseWidget" />) },
+            { path: "/preview/:logicalFile", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="HexViewWidget" params={params} />) },
+        ],
     },
     {
         mainNav: ["files"],
