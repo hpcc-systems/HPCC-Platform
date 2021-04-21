@@ -3,16 +3,11 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluen
 import { useConst } from "@fluentui/react-hooks";
 import * as Observable from "dojo/store/Observable";
 import { AlphaNumSortMemory } from "src/Memory";
-import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useWorkunitVariables } from "../hooks/Workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { ShortVerticalDivider } from "./Common";
+import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
 import { DojoGrid } from "./DojoGrid";
-
-const defaultUIState = {
-    hasSelection: false
-};
 
 interface VariablesProps {
     wuid: string;
@@ -24,7 +19,6 @@ export const Variables: React.FunctionComponent<VariablesProps> = ({
 
     const [grid, setGrid] = React.useState<any>(undefined);
     const [selection, setSelection] = React.useState([]);
-    const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [variables] = useWorkunitVariables(wuid);
 
     //  Command Bar  ---
@@ -37,19 +31,7 @@ export const Variables: React.FunctionComponent<VariablesProps> = ({
     ];
 
     const rightButtons: ICommandBarItemProps[] = [
-        {
-            key: "copy", text: nlsHPCC.CopyWUIDs, disabled: !uiState.hasSelection || !navigator?.clipboard?.writeText, iconOnly: true, iconProps: { iconName: "Copy" },
-            onClick: () => {
-                const wuids = selection.map(s => s.Wuid);
-                navigator?.clipboard?.writeText(wuids.join("\n"));
-            }
-        },
-        {
-            key: "download", text: nlsHPCC.DownloadToCSV, disabled: !uiState.hasSelection, iconOnly: true, iconProps: { iconName: "Download" },
-            onClick: () => {
-                Utility.downloadToCSV(grid, selection.map(row => ([row.Protected, row.Wuid, row.Owner, row.Jobname, row.Cluster, row.RoxieCluster, row.State, row.TotalClusterTime])), "workunits.csv");
-            }
-        }
+        ...createCopyDownloadSelection(grid, selection, "variables.csv")
     ];
 
     //  Grid ---
@@ -67,17 +49,6 @@ export const Variables: React.FunctionComponent<VariablesProps> = ({
             grid?.clearSelection();
         }
     };
-
-    //  Selection  ---
-    React.useEffect(() => {
-        const state = { ...defaultUIState };
-
-        for (let i = 0; i < selection.length; ++i) {
-            state.hasSelection = true;
-            break;
-        }
-        setUIState(state);
-    }, [selection]);
 
     React.useEffect(() => {
         gridStore.setData(variables.map((row, idx) => {

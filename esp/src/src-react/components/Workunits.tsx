@@ -10,7 +10,7 @@ import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
-import { ShortVerticalDivider } from "./Common";
+import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
 import { DojoGrid, selector } from "./DojoGrid";
 
 const FilterFields: Fields = {
@@ -138,19 +138,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     ];
 
     const rightButtons: ICommandBarItemProps[] = [
-        {
-            key: "copy", text: nlsHPCC.CopyWUIDs, disabled: !uiState.hasSelection || !navigator?.clipboard?.writeText, iconOnly: true, iconProps: { iconName: "Copy" },
-            onClick: () => {
-                const wuids = selection.map(s => s.Wuid);
-                navigator?.clipboard?.writeText(wuids.join("\n"));
-            }
-        },
-        {
-            key: "download", text: nlsHPCC.DownloadToCSV, disabled: !uiState.hasSelection, iconOnly: true, iconProps: { iconName: "Download" },
-            onClick: () => {
-                Utility.downloadToCSV(grid, selection.map(row => ([row.Protected, row.Wuid, row.Owner, row.Jobname, row.Cluster, row.RoxieCluster, row.State, row.TotalClusterTime])), "workunits.csv");
-            }
-        }
+        ...createCopyDownloadSelection(grid, selection, "workunits.csv")
     ];
 
     //  Grid ---

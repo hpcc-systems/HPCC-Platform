@@ -6,7 +6,7 @@ import * as Observable from "dojo/store/Observable";
 import nlsHPCC from "src/nlsHPCC";
 import { useWorkunitWorkflows } from "../hooks/Workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { ShortVerticalDivider } from "./Common";
+import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
 import { DojoGrid } from "./DojoGrid";
 
 interface WorkflowsProps {
@@ -18,7 +18,7 @@ export const Workflows: React.FunctionComponent<WorkflowsProps> = ({
 }) => {
 
     const [grid, setGrid] = React.useState<any>(undefined);
-    const [, setSelection] = React.useState([]);
+    const [selection, setSelection] = React.useState([]);
     const [workflows, , refreshWorkflow] = useWorkunitWorkflows(wuid);
 
     //  Command Bar  ---
@@ -33,18 +33,7 @@ export const Workflows: React.FunctionComponent<WorkflowsProps> = ({
     ];
 
     const rightButtons: ICommandBarItemProps[] = [
-        {
-            key: "copy", text: nlsHPCC.Copy, disabled: true, iconOnly: true, iconProps: { iconName: "Copy" },
-            onClick: () => {
-                //  TODO: See HPCC-25473 
-            }
-        },
-        {
-            key: "download", text: nlsHPCC.DownloadToCSV, disabled: true, iconOnly: true, iconProps: { iconName: "Download" },
-            onClick: () => {
-                //  TODO: See HPCC-25473 
-            }
-        }
+        ...createCopyDownloadSelection(grid, selection, "workflows.csv")
     ];
 
     //  Grid ---

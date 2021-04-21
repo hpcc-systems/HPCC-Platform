@@ -9,7 +9,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { useWorkunitExceptions } from "../hooks/Workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { DojoGrid } from "./DojoGrid";
-import { WUInfo } from "@hpcc-js/comms";
+import { createCopyDownloadSelection } from "./Common";
 
 function extractGraphInfo(msg) {
     const retVal: { graphID?: string, subgraphID?: string, activityID?: string, activityName?: string } = {};
@@ -48,9 +48,8 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     const [otherChecked, setOtherChecked] = React.useState(true);
     const [filterCounts, setFilterCounts] = React.useState<any>({});
     const [grid, setGrid] = React.useState<any>(undefined);
-    const [visibleExceptions, setvisibleExceptions] = React.useState<WUInfo.ECLException[]>([]);
     const [exceptions] = useWorkunitExceptions(wuid);
-    const [, setSelection] = React.useState([]);
+    const [selection, setSelection] = React.useState([]);
 
     //  Command Bar  ---
     const buttons: ICommandBarItemProps[] = [
@@ -61,18 +60,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     ];
 
     const rightButtons: ICommandBarItemProps[] = [
-        {
-            key: "copy", text: nlsHPCC.CopyWUIDs, disabled: !navigator?.clipboard?.writeText, iconOnly: true, iconProps: { iconName: "Copy" },
-            onClick: () => {
-                navigator?.clipboard?.writeText(Utility.toCSV(visibleExceptions, "\t"));
-            }
-        },
-        {
-            key: "download", text: nlsHPCC.DownloadToCSV, disabled: false, iconOnly: true, iconProps: { iconName: "Download" },
-            onClick: () => {
-                Utility.downloadText(Utility.toCSV(visibleExceptions, ","), "ErrWarn.csv");
-            }
-        }
+        ...createCopyDownloadSelection(grid, selection, "errorwarnings.csv")
     ];
 
     //  Grid ---
@@ -181,7 +169,6 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
             }
             return l.Severity.localeCompare(r.Severity);
         });
-        setvisibleExceptions(filteredExceptions);
         gridStore.setData(filteredExceptions);
         refreshTable();
         setFilterCounts(filterCounts);
