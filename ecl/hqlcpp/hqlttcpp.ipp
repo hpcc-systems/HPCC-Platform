@@ -533,6 +533,7 @@ protected:
 
     void analyseExpr(IHqlExpression * expr);
     void addWorkflowItem(WorkflowItem & item);
+    unsigned querySingleRootWfid(const HqlExprArray & transformed);
 
 protected:
     IWorkUnit *               wu;
