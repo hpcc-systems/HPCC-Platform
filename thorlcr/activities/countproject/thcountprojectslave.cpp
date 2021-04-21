@@ -177,6 +177,7 @@ public:
     {
         if (first) // nextRow, therefore getPrevCount()/sendCount() never called
         {
+            first = false;
             prevRecCount = count = getPrevCount();
             signalNext();
         }
