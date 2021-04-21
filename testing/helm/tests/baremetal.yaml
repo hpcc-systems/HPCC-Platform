@@ -1,37 +1,38 @@
-hostgroups:
-  thor400: [ node1, node2, node3, node4, node5, node6, node400 ]
-  thor400m:
-    group: thor400
-    delta: 1
-  thor20_1:
-    group: thor400
-    count: 20
-    offset: 0
-  thor20_2:
-    group: thor400
-    count: 20
-    offset: 20
-  thor100_4:
-    group: thor400
-    count: 100
-    offset: 300
-
 storage:
+  hostGroups:
+    - name: thor400
+      hosts: [ node1, node2, node3, node4, node5, node6, node400 ]
+    - name: thor400m
+      hostGroup: thor400
+      delta: 1
+    - name: thor20_1
+      hostGroup: thor400
+      count: 20
+      offset: 0
+    - name: thor20_2
+      hostGroup: thor400
+      count: 20
+      offset: 20
+    - name: thor100_4
+      hostGroup: thor400
+      count: 100
+      offset: 300
+
   planes:
   #Bare metal system with attached storage
   - name: thor400
     prefix: /var/lib/hpccsystems/hpcc-data       # only used if the local host matches the host for the device
-    hosts: thor400
+    hostGroup: thor400
     replication: [ attachedThor400MirrorPlane ]
     #numDevices: count(hosts)
   - name: thor400mirror
     prefix: /var/lib/hpccsystems/hpcc-mirror       # only used if the local host matches the host for the device
-    hosts: thor400mirror
+    hostGroup: thor400mirror
     #Does any other information about the replication policy need to be included?  I don't think it does....
 
   - name: thor100_4
     prefix: /var/lib/hpccsystems/hpcc-data       # only used if the local host matches the host for the device
-    hosts: thor100_4
+    hostGroup: thor100_4
     replication: [ azureBlobPlane ]
 
   - name: azureBlobPlane

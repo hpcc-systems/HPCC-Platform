@@ -11,20 +11,21 @@ storage:
   hostGroups:
   - name: <required>
     hosts: [ .... ]
+  - name: <required>
+    hostGroup: <name>
+    count: <unsigned:#hosts>    # how many hosts within the host group are used ?(default is number of hosts)
+    offset: <unsigned:0>        # index of first host included in the derived group
+    delta: <unsigned:0>         # first host within the range[offset..offset+count-1] in the derived group
 
   planes:
     name: <required>
     prefix: <path>              # Root directory for accessing the plane (if pvc defined), or url to access plane.
     numDevices: 1               # number of devices that are part of the plane
-    hosts: <name>               # Name of the host group for bare metal
+    hostGroup: <name>           # Name of the host group for bare metal
+    hosts: [ host-names ]       # A list of host names for bare metal
     secret: <secret-id>         # what secret is required to access the files.
     options:                    # not sure if it is needed
 
-The following options are only used for replication on bare metal systems:
-
-    start: <unsigned:0>         # first offset within hosts that is unsigned
-    size: <unsigned:#hosts>     # how many hosts within the host group are used ?(default is number of hosts). numDevices = size of hostGroup
-    offset: <unsigned:0>        # number added to the part number before mapping to a host/device
 
 Changes:
 * The replication information has been removed from the storage plane.  It will now be specified on the thor instance indicating where (if anywhere) files are replicated.
