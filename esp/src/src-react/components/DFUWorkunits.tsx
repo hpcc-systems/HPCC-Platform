@@ -8,7 +8,8 @@ import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
-import { Fields, Filter } from "./Filter";
+import { Filter } from "./forms/Filter";
+import { Fields } from "./forms/Fields";
 import { ShortVerticalDivider } from "./Common";
 import { DojoGrid, selector } from "./DojoGrid";
 
@@ -198,7 +199,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
 
     React.useEffect(() => {
         refreshTable();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filter]);
 
     //  Selection  ---

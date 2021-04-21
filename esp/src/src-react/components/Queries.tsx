@@ -7,7 +7,8 @@ import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
-import { Fields, Filter } from "./Filter";
+import { Fields } from "./forms/Fields";
+import { Filter } from "./forms/Filter";
 import { ShortVerticalDivider } from "./Common";
 import { DojoGrid, selector } from "./DojoGrid";
 
