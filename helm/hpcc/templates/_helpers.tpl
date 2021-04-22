@@ -599,7 +599,9 @@ Check dll mount point, using hpcc.changeMountPerms
 */}}
 {{- define "hpcc.checkDllMount" -}}
 {{- if .root.Values.storage.dllStorage.forcePermissions | default false }}
-{{ include "hpcc.changeMountPerms" (dict "root" .root "volumeName" "dllstorage" "volumePath" "/var/lib/HPCCSystems/queries") }}
+{{- $volumeName := (.root.Values.storage.dllStorage.plane | default "dll") -}}
+{{- $volumePath :=  include "hpcc.getVolumeMountPrefix" (dict "root" .root "me" .root.Values.storage.dllStorage "name" "dll" "path" "queries") }}
+{{ include "hpcc.changeMountPerms" (dict "root" .root "volumeName" $volumeName "volumePath" $volumePath) }}
 {{- end }}
 {{- end }}
 
@@ -609,7 +611,9 @@ Pass in a dictionary with root
 */}}
 {{- define "hpcc.checkDataMount" -}}
 {{- if .root.Values.storage.dataStorage.forcePermissions | default false }}
-{{ include "hpcc.changeMountPerms" (dict "root" .root "volumeName" "datastorage" "volumePath" "/var/lib/HPCCSystems/hpcc-data") }}
+{{- $volumeName := printf "%s-pv" .root.Values.storage.dataStorage.plane -}}
+{{- $volumePath :=  include "hpcc.getVolumeMountPrefix" (dict "root" .root "me" .root.Values.storage.dataStorage "name" "data" "path" "hpcc-data") }}
+{{ include "hpcc.changeMountPerms" (dict "root" .root "volumeName" $volumeName "volumePath" $volumePath) }}
 {{- end }}
 {{- end }}
 
@@ -618,7 +622,21 @@ Check dalistorage mount point, using hpcc.changeMountPerms
 */}}
 {{- define "hpcc.checkDaliMount" -}}
 {{- if .root.Values.storage.daliStorage.forcePermissions | default false }}
-{{ include "hpcc.changeMountPerms" (dict "root" .root "volumeName" "dalistorage" "volumePath" "/var/lib/HPCCSystems/dalistorage") }}
+{{- $volumeName := (.root.Values.storage.daliStorage.plane | default "dalistorage") -}}
+{{- $volumePath :=  include "hpcc.getVolumeMountPrefix" (dict "root" .root "me" .root.Values.storage.daliStorage "name" "dali" "path" "dalistorage") }}
+{{ include "hpcc.changeMountPerms" (dict "root" .root "volumeName" $volumeName "volumePath" $volumePath) }}
+{{- end }}
+{{- end }}
+
+{{/*
+Check sashastorage mount point, using hpcc.changeMountPerms
+Pass in sashaName
+*/}}
+{{- define "hpcc.checkSashaMount" -}}
+{{- if .me.storage.forcePermissions | default false }}
+{{- $volumeName := (.me.storage.plane | default "sashastorage") -}}
+{{- $volumePath :=  include "hpcc.getVolumeMountPrefix" (dict "root" .root "me" .me.storage "name" "sasha" "path" "sasha") }}
+{{ include "hpcc.changeMountPerms" (dict "root" .root "volumeName" $volumeName "volumePath" $volumePath) }}
 {{- end }}
 {{- end }}
 
