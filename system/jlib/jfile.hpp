@@ -20,6 +20,10 @@
 #ifndef JFILE_HPP
 #define JFILE_HPP
 
+#if defined (__linux__)
+#include <sys/inotify.h>
+#endif
+
 #include "jiface.hpp"
 #include "jio.hpp"
 #include "jtime.hpp"
@@ -666,5 +670,55 @@ extern jlib_decl const FileSystemProperties & queryFileSystemProperties(const ch
 inline bool canRename(const char * filename) { return queryFileSystemProperties(filename).canRename; }
 inline bool canSeekWrite(const char * filename) { return queryFileSystemProperties(filename).canSeekWrite; }
 inline bool hasDirectories(const char * filename) { return queryFileSystemProperties(filename).hasDirectories; }
+
+
+enum class FileWatchEvents
+{
+    none          = 0,
+#ifdef __linux__
+    // mapped directly for convenience, any other impl. will need to map to FileWatchEvents values
+    acessed       = IN_ACCESS,
+    modified      = IN_MODIFY,
+    metaModified  = IN_ATTRIB,
+    closed        = IN_CLOSE_NOWRITE,
+    closedWrite   = IN_CLOSE_WRITE,
+    opened        = IN_OPEN,
+    movedFrom     = IN_MOVED_FROM,
+    movedTo       = IN_MOVED_TO,
+    created       = IN_CREATE,
+    deleted       = IN_DELETE,
+#else
+    acessed       = 0x001,
+    modified      = 0x002,
+    closed        = 0x004,
+    closedWrite   = 0x008,
+    metaModified  = 0x010,
+    opened        = 0x020,
+    movedFrom     = 0x040,
+    movedTo       = 0x080,
+    created       = 0x100,
+    deleted       = 0x200,
+#endif
+    anyChange     = created | deleted | movedTo | movedFrom | closedWrite | modified | metaModified
+};
+BITMASK_ENUM(FileWatchEvents);
+
+inline bool containsFileWatchEvents(FileWatchEvents src, FileWatchEvents find)
+{
+    return FileWatchEvents::none != (src & find);
+}
+
+
+
+interface IFileEventWatcher : extends IInterface
+{
+    virtual void start() = 0;
+    virtual void stop() = 0;
+    virtual bool add(const char *filename, FileWatchEvents event) = 0; // returns false if file already monitored
+    virtual bool remove(const char *filename) = 0;                // returns false if file not being monitored
+};
+
+typedef std::function<void (const char *, FileWatchEvents)> FileWatchFunc;
+jlib_decl IFileEventWatcher *createFileEventWatcher(FileWatchFunc callback);
 
 #endif

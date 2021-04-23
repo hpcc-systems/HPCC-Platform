@@ -16,6 +16,10 @@
 ############################################################################## */
 #include "platform.h"
 
+#include <atomic>
+#include <unordered_set>
+#include <unordered_map>
+
 #ifdef _WIN32
 #include <errno.h>
 //#include <winsock.h>  // for TransmitFile
@@ -34,8 +38,10 @@
 #endif
 
 #if defined (__linux__)
+#include <poll.h>
 #include <sys/vfs.h>
 #include <sys/sendfile.h>
+#include <sys/inotify.h>
 #endif
 #if defined (__APPLE__)
 #include <sys/mount.h>
@@ -7106,3 +7112,236 @@ const FileSystemProperties & queryFileSystemProperties(const char * filename)
     else
         return linuxFileSystemProperties;
 }
+
+
+#if defined(__linux__)
+class CFileEventWatcher : public CInterfaceOf<IFileEventWatcher>, implements IThreaded
+{
+    class CMonitoredItem : public CInterface
+    {
+    public:
+        CMonitoredItem(const char *_filename, int _watchFd, FileWatchEvents _events) : filename(_filename), watchFd(_watchFd), events(_events)
+        {
+        }
+        std::string filename;
+        int watchFd = -1;
+        FileWatchEvents events = FileWatchEvents::none;
+        bool pendingRemoval = false;
+    };
+    int inotifyFd = -1;
+    int pipefd[2] = {-1, -1};
+    pollfd toPoll[2];
+    std::unordered_map<int, Linked<CMonitoredItem>> monitoredFilesByFd;
+    std::unordered_map<std::string, Linked<CMonitoredItem>> monitoredFiles;
+    std::unordered_set<int> pendingRemovals;
+    CriticalSection crit;
+    FileWatchFunc callback;
+    CThreaded threaded;
+    std::atomic<bool> stopped{true};
+
+    void handleEvents(int fd)
+    {
+        byte buf[4096] __attribute__ ((aligned(__alignof__(struct inotify_event))));
+
+        while (true)
+        {
+            ssize_t len = read(fd, buf, sizeof(buf));
+            if (len == -1 && errno != EAGAIN)
+                throw makeErrnoException("CFileEventWatcher::handleEvents - read");
+
+            if (len <= 0)
+                break;
+
+            const byte *ptr = buf;
+
+            do
+            {
+                const struct inotify_event *event = (const struct inotify_event *) ptr;
+                std::string filename;
+                if (event->len) // if watching directory event->name is populated with file within that dir.
+                    filename = event->name;
+                else
+                {
+                    // if watching a file, lookup filename from event handle
+                    CriticalBlock b(crit);
+                    auto iter = monitoredFilesByFd.find(event->wd);
+                    if (iter != monitoredFilesByFd.end())
+                    {
+                        filename = iter->second->filename;
+                        break;
+                    }
+                }
+                /* NB: in this impl. inotify_event flags are same as FileWatchEvents bit masks
+                 * If other implementations differ, they will need mapping to FileWatchEvents
+                 */
+                FileWatchEvents events = static_cast<FileWatchEvents>(event->mask);
+
+                callback(filename.c_str(), events);
+
+                ptr += sizeof(struct inotify_event) + event->len;
+            }
+            while (ptr < (buf + len));
+        }
+    }
+    void checkClose(int h)
+    {
+        if (-1 != h)
+            close(h);
+    }
+public:
+    CFileEventWatcher(FileWatchFunc _callback) : callback(_callback), threaded("CFileEventWatcher", this)
+    {
+        inotifyFd = inotify_init1(IN_NONBLOCK|IN_CLOEXEC);
+        if (-1 == inotifyFd)
+            throw makeStringException(-1, "CFileEventWatcher - inotify_init1");
+
+        if (pipe2(pipefd, O_NONBLOCK|O_CLOEXEC))
+            throw makeErrnoException(-1, "CFileEventWatcher - create pipe failed");
+
+        /*
+         * Setup an array of file handles to use with poll.
+         * Add the inotify fd that will receive event info on
+         * Add the pipe input fd created above, this is used to write to, to "wake up" the poll loop when watcher is stopped.
+         */
+        toPoll[0].fd = pipefd[0];
+        toPoll[0].events = POLLIN;
+        toPoll[1].fd = inotifyFd;
+        toPoll[1].events = POLLIN;
+    }
+    ~CFileEventWatcher()
+    {
+        stop();
+        checkClose(inotifyFd);
+        checkClose(pipefd[0]);
+        checkClose(pipefd[1]);
+    }
+    virtual void start() override
+    {
+        if (stopped)
+        {
+            stopped = false;
+            threaded.start();
+        }
+    }
+    virtual void stop() override
+    {
+        if (stopped)
+            return;
+        stopped = true;
+
+        const byte c = 0;
+        if (write(pipefd[1], &c, 1) != 1)
+        {
+            Owned<IException> e = makeErrnoException("CFileEventWatcher::stop() - write -> pipefd[1]");
+            EXCLOG(e);
+        }
+        threaded.join();
+    }
+    virtual bool add(const char *filename, FileWatchEvents events) override
+    {
+        if (isEmptyString(filename))
+            throw makeStringException(-1, "CFileEventWatcher::add() - invalid empty filename");
+        CriticalBlock b(crit);
+        auto iter = monitoredFiles.find(filename);
+        if (iter != monitoredFiles.end()) // filename already monitored
+            return false;
+
+        /* NB: in this impl. inotify_event flags are same as FileWatchEvents bit masks
+         * If other implementations differ, events will need mapping to the underlying impl.
+         */
+        int iNotifyEvents = static_cast<int>(events);
+        int wd = inotify_add_watch(inotifyFd, filename, iNotifyEvents);
+        if (-1 == wd)
+            throw makeErrnoExceptionV(-1, "CFileEventWatcher::add() - Cannot watch '%s'", filename);
+        Owned<CMonitoredItem> item = new CMonitoredItem(filename, wd, events);
+        monitoredFiles.emplace(filename, item);
+        monitoredFilesByFd.emplace(wd, item);
+
+        return true;
+    }
+    virtual bool remove(const char *filename) override
+    {
+        if (isEmptyString(filename))
+            return false;
+
+        CriticalBlock b(crit);
+        auto iter = monitoredFiles.find(filename);
+        if (iter == monitoredFiles.end()) // filename is not being monitored
+            return false;
+        CMonitoredItem *item = iter->second;
+        if (item->pendingRemoval) // already flagged for removal
+            return false;
+
+        item->pendingRemoval = true;
+        pendingRemovals.emplace(item->watchFd);
+
+        if (-1 == inotify_rm_watch(inotifyFd, item->watchFd))
+            throw makeErrnoException("CFileEventWatcher::remove() - inotify_rm_watch()");
+        return true;
+    }
+// IThreaded impl.    
+    virtual void threadmain() override
+    {
+        try
+        {
+            while (true)
+            {
+                int poll_num = poll(toPoll, 2, -1);
+                if (-1 == poll_num)
+                {
+                    if (EINTR == errno)
+                        continue;
+                    throw makeErrnoException("CFileEventWatcher - poll error");
+                }
+
+                if (poll_num)
+                {
+                    if (toPoll[0].revents & POLLIN)
+                    {
+                        if (stopped)
+                            break;
+                    }
+                    else if (toPoll[1].revents & POLLIN)
+                    {
+                        handleEvents(inotifyFd);
+
+                        // clear any pending deletes
+                        CriticalBlock b(crit);
+                        for (const auto fd: pendingRemovals)
+                        {
+                            auto iter = monitoredFilesByFd.find(fd);
+                            if (iter != monitoredFilesByFd.end())
+                            {
+                                CMonitoredItem *item = iter->second;
+                                if (item->pendingRemoval) // if false, it implies the handle was removed, but has been reused and re-added since removal.
+                                {
+                                    monitoredFiles.erase(item->filename);
+                                    monitoredFilesByFd.erase(iter);
+                                }
+                            }
+                        }
+                        pendingRemovals.clear();
+                    }
+                }
+            }
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e);
+            e->Release();
+        }
+    }
+};
+
+IFileEventWatcher *createFileEventWatcher(FileWatchFunc callback)
+{
+    return new CFileEventWatcher(callback);
+}
+#else
+IFileEventWatcher *createFileEventWatcher(FileWatchFunc callback)
+{
+    UNIMPLEMENTED_X("createFileEventWatcher() not supported on this platform");
+}
+#endif // __linux__
+
+
