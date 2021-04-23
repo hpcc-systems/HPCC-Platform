@@ -15,6 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
+#include <string>
 #include "EnvHelper.hpp"
 #include "ConfigEnv.hpp"
 #include "environment.hpp"
