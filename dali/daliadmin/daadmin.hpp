@@ -43,18 +43,18 @@ extern DALIADMIN_API bool add(const char *path, const char *val, StringBuffer &o
 extern DALIADMIN_API void delv(const char *path);
 extern DALIADMIN_API unsigned count(const char *path);
 
-extern DALIADMIN_API void dfsfile(const char *lname, IUserDescriptor *userDesc, UnsignedArray *partslist = nullptr);
-extern DALIADMIN_API void dfspart(const char *lname,IUserDescriptor *userDesc, unsigned partnum);
+extern DALIADMIN_API bool dfsfile(const char *lname, IUserDescriptor *userDesc, StringBuffer &out, UnsignedArray *partslist = nullptr);
+extern DALIADMIN_API bool dfspart(const char *lname,IUserDescriptor *userDesc, unsigned partnum, StringBuffer &out);
 extern DALIADMIN_API void dfsmeta(const char *filename,IUserDescriptor *userDesc, bool includeStorage);
-extern DALIADMIN_API void setdfspartattr(const char *lname, unsigned partNum, const char *attr, const char *value, IUserDescriptor *userDesc);
-extern DALIADMIN_API void dfscsv(const char *dali, IUserDescriptor *udesc);
-extern DALIADMIN_API void dfsCheck();
+extern DALIADMIN_API void setdfspartattr(const char *lname, unsigned partNum, const char *attr, const char *value, IUserDescriptor *userDesc, StringBuffer &out);
+extern DALIADMIN_API void dfscsv(const char *dali, IUserDescriptor *udesc, StringBuffer &out);
+extern DALIADMIN_API bool dfsCheck(StringBuffer &out);
 extern DALIADMIN_API void dfsGroup(const char *name, const char *outputFilename);
 extern DALIADMIN_API int clusterGroup(const char *name, const char *outputFilename);
-extern DALIADMIN_API void dfsLs(const char *name, const char *options, bool safe = false);
-extern DALIADMIN_API void dfsmap(const char *lname, IUserDescriptor *user);
+extern DALIADMIN_API bool dfsLs(const char *name, const char *options, StringBuffer &out);
+extern DALIADMIN_API bool dfsmap(const char *lname, IUserDescriptor *user, StringBuffer &out);
 extern DALIADMIN_API int dfsexists(const char *lname, IUserDescriptor *user);
-extern DALIADMIN_API void dfsparents(const char *lname, IUserDescriptor *user);
+extern DALIADMIN_API void dfsparents(const char *lname, IUserDescriptor *user, StringBuffer &out);
 extern DALIADMIN_API void dfsunlink(const char *lname, IUserDescriptor *user);
 extern DALIADMIN_API int dfsverify(const char *name, CDateTime *cutoff, IUserDescriptor *user);
 extern DALIADMIN_API int dfsperm(const char *obj, IUserDescriptor *user);

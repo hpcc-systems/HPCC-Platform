@@ -17,6 +17,11 @@
 
 EspInclude(common);
 
+ESPresponse [exceptions_inline, nil_remove] BooleanResponse
+{
+    bool Result;
+};
+
 ESPrequest [nil_remove] SetValueRequest
 {
     string Path;
@@ -61,8 +66,59 @@ ESPresponse [exceptions_inline, nil_remove] CountResponse
     unsigned Result;
 };
 
+ESPrequest [nil_remove] GetLogicalFileRequest
+{
+    string FileName;
+};
+
+ESPrequest [nil_remove] GetLogicalFilePartRequest
+{
+    string FileName;
+    unsigned PartNumber;
+};
+
+ESPrequest [nil_remove] SetLogicalFilePartAttrRequest
+{
+    string FileName;
+    unsigned PartNumber;
+    string Attr;
+    string Value;
+};
+
+ESPrequest [nil_remove]  GetDFSCSVRequest
+{
+    string LogicalNameMask;
+};
+
+ESPrequest [nil_remove]  GetDFSMapRequest
+{
+    string FileName;
+};
+
+ESPrequest [nil_remove]  GetDFSParentsRequest
+{
+    string FileName;
+};
+
+ESPrequest [nil_remove]  DFSCheckRequest
+{
+};
+
+ESPrequest [nil_remove]  DFSLSRequest
+{
+    string Name;
+    bool PathAndNameOnly(true);
+    bool IncludeSubFileInfo(false);
+    bool Recursively(false);
+};
+
+ESPrequest [nil_remove]  DFSExistsRequest
+{
+    string FileName;
+};
+
 ESPservice [auth_feature("NONE"), //This declares that the method logic handles feature level authorization
-    version("1.03"), default_client_version("1.03"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSDali
+    version("1.04"), default_client_version("1.04"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSDali
 {
     ESPmethod [min_ver("1.01")] SetValue(SetValueRequest, ResultResponse);
     ESPmethod [min_ver("1.01")] GetValue(GetValueRequest, ResultResponse);
@@ -70,6 +126,15 @@ ESPservice [auth_feature("NONE"), //This declares that the method logic handles 
     ESPmethod [min_ver("1.02")] Delete(DeleteRequest, ResultResponse);
     ESPmethod [min_ver("1.03")] Add(AddRequest, ResultResponse);
     ESPmethod [min_ver("1.03")] Count(CountRequest, CountResponse);
+    ESPmethod [min_ver("1.04")] GetLogicalFile(GetLogicalFileRequest, ResultResponse);
+    ESPmethod [min_ver("1.04")] GetLogicalFilePart(GetLogicalFilePartRequest, ResultResponse);
+    ESPmethod [min_ver("1.04")] SetLogicalFilePartAttr(SetLogicalFilePartAttrRequest, ResultResponse);
+    ESPmethod [min_ver("1.04")] GetDFSCSV(GetDFSCSVRequest, ResultResponse);
+    ESPmethod [min_ver("1.04")] GetDFSMap(GetDFSMapRequest, ResultResponse);
+    ESPmethod [min_ver("1.04")] GetDFSParents(GetDFSParentsRequest, ResultResponse);
+    ESPmethod [min_ver("1.04")] DFSCheck(DFSCheckRequest, ResultResponse);
+    ESPmethod [min_ver("1.04")] DFSLS(DFSLSRequest, ResultResponse);
+    ESPmethod [min_ver("1.04")] DFSExists(DFSExistsRequest, BooleanResponse);
 };
 
 SCMexportdef(WSDali);

@@ -22,7 +22,6 @@
 #include "ws_daliservice.hpp"
 #include "jlib.hpp"
 #include "dautils.hpp"
-#include "dasds.hpp"
 #include "daadmin.hpp"
 
 using namespace daadmin;
@@ -237,6 +236,223 @@ bool CWSDaliEx::onCount(IEspContext& context, IEspCountRequest& req, IEspCountRe
             throw makeStringException(ECLWATCH_INVALID_INPUT, "Data path not specified.");
 
         resp.setResult(count(path));
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+IUserDescriptor* CWSDaliEx::createUserDesc(IEspContext& context)
+{
+    StringBuffer username;
+    context.getUserID(username);
+    if (username.isEmpty())
+        return nullptr;
+
+    Owned<IUserDescriptor> userdesc = createUserDescriptor();
+    userdesc->set(username.str(), context.queryPassword(), context.querySignature());
+    return userdesc.getClear();
+}
+
+bool CWSDaliEx::onDFSLS(IEspContext& context, IEspDFSLSRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        StringBuffer options;
+        if (req.getRecursively())
+            options.append("r");
+        if (!req.getPathAndNameOnly())
+            options.append("l");
+        if (req.getIncludeSubFileInfo())
+            options.append("s");
+
+        StringBuffer result;
+        dfsLs(req.getName(), options, result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onGetDFSCSV(IEspContext& context, IEspGetDFSCSVRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        Owned<IUserDescriptor> userDesc = createUserDesc(context);
+
+        StringBuffer result;
+        dfscsv(req.getLogicalNameMask(), userDesc, result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onDFSExists(IEspContext& context, IEspDFSExistsRequest& req, IEspBooleanResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        const char* fileName = req.getFileName();
+        if (isEmptyString(fileName))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "File name not specified.");
+
+        Owned<IUserDescriptor> userDesc = createUserDesc(context);
+        resp.setResult(dfsexists(fileName, userDesc) == 0 ? true : false);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onGetLogicalFile(IEspContext& context, IEspGetLogicalFileRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        const char* fileName = req.getFileName();
+        if (isEmptyString(fileName))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "File name not specified.");
+
+        Owned<IUserDescriptor> userDesc = createUserDesc(context);
+
+        StringBuffer result;
+        dfsfile(fileName, userDesc, result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onGetLogicalFilePart(IEspContext& context, IEspGetLogicalFilePartRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        const char* fileName = req.getFileName();
+        if (isEmptyString(fileName))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "File name not specified.");
+        if (req.getPartNumber_isNull())
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Part number not specified.");
+
+        Owned<IUserDescriptor> userDesc = createUserDesc(context);
+
+        StringBuffer result;
+        dfspart(fileName, userDesc, req.getPartNumber(), result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onSetLogicalFilePartAttr(IEspContext& context, IEspSetLogicalFilePartAttrRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        const char* fileName = req.getFileName();
+        if (isEmptyString(fileName))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "File name not specified.");
+        const char* attr = req.getAttr();
+        if (isEmptyString(attr))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Part attribute name not specified.");
+        if (req.getPartNumber_isNull())
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Part number not specified.");
+
+        Owned<IUserDescriptor> userDesc = createUserDesc(context);
+
+        StringBuffer result;
+        setdfspartattr(fileName, req.getPartNumber(), attr, req.getValue(), userDesc, result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onGetDFSMap(IEspContext& context, IEspGetDFSMapRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        const char* fileName = req.getFileName();
+        if (isEmptyString(fileName))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "File name not specified.");
+
+        Owned<IUserDescriptor> userDesc = createUserDesc(context);
+
+        StringBuffer result;
+        dfsmap(fileName, userDesc, result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onGetDFSParents(IEspContext& context, IEspGetDFSParentsRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        const char* fileName = req.getFileName();
+        if (isEmptyString(fileName))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "File name not specified.");
+
+        Owned<IUserDescriptor> userDesc = createUserDesc(context);
+
+        StringBuffer result;
+        dfsparents(fileName, userDesc, result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onDFSCheck(IEspContext& context, IEspDFSCheckRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        Owned<IUserDescriptor> userDesc = createUserDesc(context);
+
+        StringBuffer result;
+        dfsCheck(result);
+        resp.setResult(result);
     }
     catch(IException* e)
     {

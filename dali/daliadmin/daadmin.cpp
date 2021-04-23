@@ -476,9 +476,8 @@ unsigned count(const char *path)
 
 //=============================================================================
 
-void dfsfile(const char *lname,IUserDescriptor *userDesc, UnsignedArray *partslist)
+bool dfsfile(const char *lname, IUserDescriptor *userDesc, StringBuffer &out, UnsignedArray *partslist)
 {
-    StringBuffer str;
     CDfsLogicalFileName lfn;
     lfn.set(lname);
     if (!lfn.isExternal()) {
@@ -486,11 +485,10 @@ void dfsfile(const char *lname,IUserDescriptor *userDesc, UnsignedArray *partsli
         if (partslist)
             filterParts(tree,*partslist);
         if (!tree) {
-            UERRLOG("%s not found",lname);
-            return;
+            out.appendf("%s not found",lname);
+            return false;
         }
-        toXML(tree, str);
-        outln(str.str());
+        toXML(tree,out);
     }
     else {
         Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,userDesc,false,false,false,nullptr,defaultPrivilegedUser);
@@ -499,19 +497,19 @@ void dfsfile(const char *lname,IUserDescriptor *userDesc, UnsignedArray *partsli
             Owned<IPropertyTree> t = createPTree("File");
             fdesc->serializeTree(*t);
             filterParts(t,*partslist);
-            toXML(t, str.clear());
-            outln(str.str());
+            toXML(t,out);
         }
     }
+    return true;
 }
 
 //=============================================================================
 
-void dfspart(const char *lname,IUserDescriptor *userDesc, unsigned partnum)
+bool dfspart(const char *lname, IUserDescriptor *userDesc, unsigned partnum, StringBuffer &out)
 {
     UnsignedArray partslist;
     partslist.append(partnum);
-    dfsfile(lname,userDesc,&partslist);
+    return dfsfile(lname,userDesc,out,&partslist);
 }
 
 //=============================================================================
@@ -529,7 +527,7 @@ void dfsmeta(const char *filename,IUserDescriptor *userDesc, bool includeStorage
 
 //=============================================================================
 
-void setdfspartattr(const char *lname, unsigned partNum, const char *attr, const char *value, IUserDescriptor *userDesc)
+void setdfspartattr(const char *lname, unsigned partNum, const char *attr, const char *value, IUserDescriptor *userDesc, StringBuffer &out)
 {
     StringBuffer str;
     CDfsLogicalFileName lfn;
@@ -559,35 +557,31 @@ void setdfspartattr(const char *lname, unsigned partNum, const char *attr, const
     if (value)
     {
         part.queryAttributes().setProp(attrProp.str(), value);
-        PROGLOG("Set property '%s' to '%s' for file %s, part# %u", attrProp.str(), value, lname, partNum);
+        out.appendf("Set property '%s' to '%s' for file %s, part# %u", attrProp.str(), value, lname, partNum);
     }
     else
     {
         part.queryAttributes().removeProp(attrProp.str());
-        PROGLOG("Removed property '%s' from file %s, part# %u", attrProp.str(), lname, partNum);
+        out.appendf("Removed property '%s' from file %s, part# %u", attrProp.str(), lname, partNum);
     }
     part.unlockProperties();
 
     if (oldValue)
-        PROGLOG("Prev. value = '%s'", oldValue);
+        out.appendf("\nPrev. value = '%s'", oldValue);
 }
 
 //=============================================================================
 
-void dfscsv(const char *dali,IUserDescriptor *udesc)
+void dfscsv(const char *logicalNameMask,IUserDescriptor *udesc,StringBuffer &out)
 {
 
     const char *fields[] = {
         "name","group","directory","partmask","modified","job","owner","workunit","numparts","size","recordCount","recordSize","compressedSize",NULL
     };
+    const char *mask = isEmptyString(logicalNameMask) ? "*" : logicalNameMask;
 
-    Owned<INode> foreigndali;
-    if (dali&&*dali&&(*dali!='*')) {
-        SocketEndpoint ep(dali,DALI_SERVER_PORT);
-        foreigndali.setown(createINode(ep));
-    }
     unsigned start = msTick();
-    IDFAttributesIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator("*",udesc,true,false,foreigndali);
+    IDFAttributesIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator(mask,udesc,true,false,nullptr);
     StringBuffer ln;
     unsigned i;
     for (i=0;fields[i];i++) {
@@ -595,7 +589,7 @@ void dfscsv(const char *dali,IUserDescriptor *udesc)
             ln.append(',');
         ln.append('"').append(fields[i]).append('"');
     }
-    outln(ln.str());
+    out.append(ln);
     if (iter) {
         StringBuffer aname;
         StringBuffer vals;
@@ -614,7 +608,7 @@ void dfscsv(const char *dali,IUserDescriptor *udesc)
                         val++;
                     }
             }
-            outln(ln.str());
+            out.append("\n").append(ln);
         }
     }
 }
@@ -645,41 +639,40 @@ static void writeGroup(IGroup *group, const char *name, const char *outputFilena
     }
 }
 
-unsigned dfsCheck(StringBuffer & path, IPropertyTree * tree)
+void dfsCheck(StringBuffer & path, IPropertyTree * tree, StringBuffer &out)
 {
     const char * name = tree->queryProp("@name");
     //MORE: What other consistency checks can be added here?
     if (tree->hasProp("Attr[2]"))
     {
-        printf("%s%s - duplicate Attr tag\n", path.str(), name ? name : "");
-        return 1;
+        out.appendf("%s%s - duplicate Attr tag\n", path.str(), name ? name : "");
+        return;
     }
 
-    unsigned issues = 0;
     unsigned prevLength = path.length();
     if (name)
         path.append(name).append("::");
     Owned<IPropertyTreeIterator> elems = tree->getElements("*");
     ForEach(*elems)
     {
-        issues += dfsCheck(path, &elems->query());
+        dfsCheck(path, &elems->query(), out);
     }
     path.setLength(prevLength);
-    return issues;
 }
 
-void dfsCheck()
+bool dfsCheck(StringBuffer &out)
 {
     StringBuffer xpath;
     Owned<IRemoteConnection> conn = querySDS().connect("Files",myProcessSession(),0, daliConnectTimeoutMs);
     if (!conn)
     {
-        UERRLOG("Could not connect to %s","/Files");
-        return;
+        out.append("Could not connect to /Files");
+        return false;
     }
 
     StringBuffer path;
-    dfsCheck(path, conn->queryRoot());
+    dfsCheck(path, conn->queryRoot(), out);
+    return true;
 }
 
 
@@ -748,7 +741,7 @@ static IPropertyTree * selectPath(IPropertyTree * root, const char * path)
     return selectLevel(root, path);
 }
 
-static void displayDirectory(IPropertyTree * directory, const char * options, unsigned depth)
+static void displayDirectory(IPropertyTree * directory, const char * options, unsigned depth, StringBuffer &out)
 {
     Owned<IPropertyTreeIterator> elems = directory->getElements("*");
     ForEach(*elems)
@@ -761,66 +754,67 @@ static void displayDirectory(IPropertyTree * directory, const char * options, un
         {
             if (strieq(tag, "Scope"))
             {
-                OUTLOG("%*sD %s", depth, "", name);
+                out.appendf("%*sD %s\n", depth, "", name);
                 if (options && strchr(options, 'r'))
-                    displayDirectory(&cur, options, depth+1);
+                    displayDirectory(&cur, options, depth+1, out);
             }
             else if (strieq(tag, "File"))
             {
                 const char * group = cur.queryProp("@group");
                 const char * size = cur.queryProp("Attr[1]/@size");
                 if (options && strchr(options, 'l'))
-                    OUTLOG("%*s  %-30s %12s %s %s", depth, "", name, size ? size : "", group ? group : "?", modified ? modified : "");
+                    out.appendf("%*s  %-30s %12s %s %s\n", depth, "", name, size ? size : "", group ? group : "?", modified ? modified : "");
                 else
-                    OUTLOG("%*s  %s", depth, "", name);
+                    out.appendf("%*s  %s\n", depth, "", name);
             }
             else if (strieq(tag, "SuperFile"))
             {
                 if (options && strchr(options, 'l'))
-                    OUTLOG("%*sS %s %s (%d)", depth, "", name, modified ? modified : "", cur.getPropInt("@numsubfiles"));
+                    out.appendf("%*sS %s %s (%d)\n", depth, "", name, modified ? modified : "", cur.getPropInt("@numsubfiles"));
                 else
-                    OUTLOG("%*sS %s", depth, "", name);
+                    out.appendf("%*sS %s\n", depth, "", name);
 
                 if (options && strchr(options, 's'))
                 {
                     Owned<IPropertyTreeIterator> subs = cur.getElements("SubFile");
                     ForEach(*subs)
                     {
-                        OUTLOG("%*s->%s", depth, "", subs->query().queryProp("@name"));
+                        out.appendf("%*s->%s\n", depth, "", subs->query().queryProp("@name"));
                     }
                 }
             }
             else
-                OUTLOG("? %s %s", name, tag);
+                out.appendf("? %s %s\n", name, tag);
         }
     }
 }
 
-void dfsLs(const char *name, const char *options, bool safe)
+bool dfsLs(const char *name, const char *options, StringBuffer &out)
 {
     StringBuffer xpath;
     Owned<IRemoteConnection> conn = querySDS().connect("Files",myProcessSession(),0, daliConnectTimeoutMs);
     if (!conn)
     {
-        UERRLOG("Could not connect to %s","/Files");
-        return;
+        out.append("Could not connect to /Files");
+        return false;
     }
 
     {
         Owned<IPropertyTree> directory = selectPath(conn->queryRoot(), name);
         if (directory)
-            displayDirectory(directory, options, 0);
+            displayDirectory(directory, options, 0, out);
     }
+    return true;
 }
 
 //=============================================================================
 
-void dfsmap(const char *lname, IUserDescriptor *user)
+bool dfsmap(const char *lname, IUserDescriptor *user, StringBuffer &out)
 {
     Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,false,false,false,nullptr,defaultPrivilegedUser);
     if (!file) {
-        UERRLOG("File %s not found",lname);
-        return;
+        out.appendf("File %s not found",lname);
+        return false;
     }
     Owned<IDistributedFilePartIterator> pi = file->getIterator();
     unsigned pn=1;
@@ -835,9 +829,10 @@ void dfsmap(const char *lname, IUserDescriptor *user)
                 ln.append(", ");
             rfn.getRemotePath(ln);
         }
-        outln(ln.str());
+        out.append(ln).append("\n");
         pn++;
     }
+    return true;
 }
 
 //=============================================================================
@@ -848,13 +843,13 @@ int dfsexists(const char *lname,IUserDescriptor *user)
 }
 //=============================================================================
 
-void dfsparents(const char *lname, IUserDescriptor *user)
+void dfsparents(const char *lname, IUserDescriptor *user, StringBuffer &out)
 {
     Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,false,false,true,nullptr,defaultPrivilegedUser);
     if (file) {
         Owned<IDistributedSuperFileIterator> iter = file->getOwningSuperFiles();
         ForEach(*iter) 
-            OUTLOG("%s,%s",iter->query().queryLogicalName(),lname);
+            out.appendf("%s,%s\n",iter->query().queryLogicalName(),lname);
     }
 }
 
