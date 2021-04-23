@@ -6030,6 +6030,10 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
     unsigned port;
     bool secure;
     getFileDafilesrvConfiguration(keyPairName, port, secure, fileName, groups);
+#ifdef _USE_OPENSSL
+    if (secure && keyPairName.isEmpty())
+        throw makeStringExceptionV(-1, "No keyPairName is found for '%s' in environment settings: /EnvSettings/Keys/ClusterGroup.", cluster.str());
+#endif
 
     IEspDFUFileAccessInfo &accessInfo = resp.updateAccessInfo();
 
