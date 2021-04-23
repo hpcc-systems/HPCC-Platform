@@ -425,7 +425,7 @@ void wget(const char *path)
 
 //=============================================================================
 
-void add(const char *path, const char *val)
+bool add(const char *path, const char *val, StringBuffer &out)
 {
     if (!path || !*path)
         throw makeStringException(0, "Invalid xpath (empty)");
@@ -434,8 +434,8 @@ void add(const char *path, const char *val)
     Owned<IRemoteConnection> conn = querySDS().connect(path, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, daliConnectTimeoutMs);
     if (!conn)
     {
-        UERRLOG("Could not connect to %s", path);
-        return;
+        out.appendf("Could not connect to %s", path);
+        return false;
     }
     VStringBuffer msg("Added %s", path);
     if (val)
@@ -443,7 +443,8 @@ void add(const char *path, const char *val)
         conn->queryRoot()->setProp(NULL, val);
         msg.appendf(" (with value = '%s')", val);
     }
-    OUTLOG("%s", msg.str());
+    out.appendf("%s", msg.str());
+    return true;
 }
 
 //=============================================================================
@@ -468,10 +469,9 @@ void delv(const char *path)
 
 //=============================================================================
 
-void count(const char *path)
+unsigned count(const char *path)
 {
-    unsigned result = querySDS().queryCount(path);
-    OUTLOG("Count of %s is: %d", path, result);
+    return querySDS().queryCount(path);
 }
 
 //=============================================================================

@@ -203,3 +203,44 @@ bool CWSDaliEx::onDelete(IEspContext& context, IEspDeleteRequest& req, IEspResul
     }
     return true;
 }
+
+bool CWSDaliEx::onAdd(IEspContext& context, IEspAddRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        const char* path = req.getPath();
+        if (isEmptyString(path))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Data path not specified.");
+        const char* value = req.getValue();
+
+        StringBuffer result;
+        add(path, isEmptyString(value) ? nullptr : value, result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onCount(IEspContext& context, IEspCountRequest& req, IEspCountResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        const char* path = req.getPath();
+        if (isEmptyString(path))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Data path not specified.");
+
+        resp.setResult(count(path));
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}

@@ -39,9 +39,9 @@ extern DALIADMIN_API StringBuffer &setValue(const char *path, const char *val, S
 extern DALIADMIN_API void getValue(const char *path, StringBuffer& out);
 extern DALIADMIN_API void bget(const char *path, const char *outfn);
 extern DALIADMIN_API void wget(const char *path);
-extern DALIADMIN_API void add(const char *path, const char *val);
+extern DALIADMIN_API bool add(const char *path, const char *val, StringBuffer &out);
 extern DALIADMIN_API void delv(const char *path);
-extern DALIADMIN_API void count(const char *path);
+extern DALIADMIN_API unsigned count(const char *path);
 
 extern DALIADMIN_API void dfsfile(const char *lname, IUserDescriptor *userDesc, UnsignedArray *partslist = nullptr);
 extern DALIADMIN_API void dfspart(const char *lname,IUserDescriptor *userDesc, unsigned partnum);
