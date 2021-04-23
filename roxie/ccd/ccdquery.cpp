@@ -334,6 +334,7 @@ QueryOptions::QueryOptions()
     failOnLeaks = alwaysFailOnLeaks;
     collectFactoryStatistics = defaultCollectFactoryStatistics;
     parallelWorkflow = false;
+    sinkMode = defaultSinkMode;
     numWorkflowThreads = 1;
 }
 
@@ -369,6 +370,7 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     collectFactoryStatistics = other.collectFactoryStatistics;
 
     parallelWorkflow = other.parallelWorkflow;
+    sinkMode = other.sinkMode;
     numWorkflowThreads = other.numWorkflowThreads;
 }
 
@@ -414,6 +416,7 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(collectFactoryStatistics, wu, "collectFactoryStatistics");
 
     updateFromWorkUnit(parallelWorkflow, wu, "parallelWorkflow");
+    updateFromWorkUnit(sinkMode, wu, "sinkMode");
     updateFromWorkUnit(numWorkflowThreads, wu, "numWorkflowthreads");
 }
 
@@ -443,6 +446,14 @@ void QueryOptions::updateFromWorkUnit(RecordTranslationMode &value, IConstWorkUn
     wu.getDebugValue(name, val);
     if (val.length())
         value = getTranslationMode(val.str(), false);
+}
+
+void QueryOptions::updateFromWorkUnit(SinkMode &value, IConstWorkUnit &wu, const char *name)
+{
+    SCMStringBuffer val;
+    wu.getDebugValue(name, val);
+    if (val.length())
+        value = ::getSinkMode(val.str());
 }
 
 void QueryOptions::setFromContext(const IPropertyTree *ctx)

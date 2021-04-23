@@ -260,6 +260,18 @@ interface IRoxieQueryPacket : extends IInterface
 
 interface IQueryDll;
 
+//----------------------------------------------------------------------------------------------
+// SinkMode determines how parallel sinks are executed
+//----------------------------------------------------------------------------------------------
+
+enum class SinkMode : byte
+{
+    Parallel = 0,           // Execute sinks in parallel - this is the default
+    ParallelPersistent = 1, // Execute sinks in parallel using persistent threads. May be faster for a heavily-reused child query, but lead to higher thread usage
+    Sequential = 2          // Execute sinks sequentially - sometimes faster if sinks not doing much work
+};
+
+
 // Global configuration info
 extern bool shuttingDown;
 extern unsigned numChannels;
@@ -352,6 +364,7 @@ extern bool defaultNoSeekBuildIndex;
 extern unsigned parallelLoadQueries;
 extern bool adhocRoxie;
 extern bool alwaysFailOnLeaks;
+extern SinkMode defaultSinkMode;
 
 #ifdef _CONTAINERIZED
 static constexpr bool roxieMulticastEnabled = false;

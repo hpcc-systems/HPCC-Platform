@@ -136,7 +136,7 @@ bool defaultCollectFactoryStatistics = true;
 bool defaultNoSeekBuildIndex = false;
 unsigned parallelLoadQueries = 8;
 bool alwaysFailOnLeaks = false;
-
+SinkMode defaultSinkMode = SinkMode::ParallelPersistent;
 unsigned continuationCompressThreshold = 1024;
 
 bool useOldTopology = false;
@@ -1072,6 +1072,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         if (!parallelLoadQueries)
             parallelLoadQueries = 1;
         alwaysFailOnLeaks = topology->getPropBool("@alwaysFailOnLeaks", false);
+        const char *sinkModeText = topology->queryProp("@sinkMode");
+        if (sinkModeText)
+            defaultSinkMode = getSinkMode(sinkModeText);
 
         enableKeyDiff = topology->getPropBool("@enableKeyDiff", true);
         cacheReportPeriodSeconds = topology->getPropInt("@cacheReportPeriodSeconds", 5*60);
