@@ -1,5 +1,4 @@
 :root {
-    --grid-font-family: "Segoe WPC", "Segoe UI", sans-serif;
     --header-font-size: 14px;
     --row-font-size: 13px;
     --grid-background: transparent;
@@ -10,7 +9,6 @@
 }
 
 .flat .dojo-component.dgrid.dgrid-grid {
-    font-family: var(--grid-font-family);
     border-style: hidden;
 }
 
@@ -33,7 +31,6 @@
 }
 
 .flat .dojo-component.dgrid .dgrid-row {
-    font-family: var(--grid-font-family);
     font-size: var(--row-font-size);
     line-height: 22px;
 }
@@ -63,4 +60,39 @@
 .flat .dojo-component.dgrid .dgrid-fakeline {
     border: 0px;
     margin: 2px;
+}
+
+.flat .dgrid-footer {
+    background-color: var(--grid-background);
+}
+
+.flat .dgrid-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+    line-height: 14px;
+    padding: 4px 8px;
+}
+
+.flat .dgrid-pagination .dgrid-status {
+    flex-grow: 1;
+    padding: 0;
+}
+
+.flat .dgrid-pagination .dgrid-page-size {
+    margin: 0 10px 0 0;
+    padding: 2px;
+    width: 46px;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+}
+
+.flat .dgrid-pagination .dgrid-navigation .dgrid-page-input {
+    padding: 0;
+    margin: 0;
+    background: var(--grid-background);
+    border-style: solid;
+    border-width: 1px;
+    color: inherit;
 }
