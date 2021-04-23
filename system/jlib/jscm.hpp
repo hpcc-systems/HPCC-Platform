@@ -60,6 +60,7 @@ public:
     inline Shared(const Shared & other)          { ptr = other.getLink(); }
 #if defined(__cplusplus) && __cplusplus >= 201100
     inline Shared(Shared && other)               { ptr = other.getClear(); }
+    explicit operator bool() const               { return ptr != nullptr; }
 #endif
     inline ~Shared()                             { ::Release(ptr); }
     inline Shared<CLASS> & operator = (const Shared<CLASS> & other) { this->set(other.get()); return *this;  }

@@ -133,8 +133,8 @@ interface IDynamicTransform : public IInterface
 {
     virtual void describe() const = 0;
     virtual size32_t translate(ARowBuilder &builder, IVirtualFieldCallback & callback, const byte *sourceRec) const = 0;
-    virtual size32_t translate(ARowBuilder &builder, IVirtualFieldCallback & callback, const RtlRow &sourceRow) const = 0;
-    virtual size32_t translate(ARowBuilder &builder, IVirtualFieldCallback & callback, const IDynamicFieldValueFetcher & fetcher) const = 0;
+    virtual size32_t translate(ARowBuilder &builder, IVirtualFieldCallback & callback, const RtlRow &sourceRow) const = 0;  // allows offsets to be reused if already calculated
+    virtual size32_t translate(ARowBuilder &builder, IVirtualFieldCallback & callback, const IDynamicFieldValueFetcher & fetcher) const = 0; // called when reading from non binary e.g. xml/csv
     virtual bool canTranslate() const = 0;
     virtual bool needsTranslate() const = 0;
     virtual bool keyedTranslated() const = 0;
@@ -181,6 +181,7 @@ interface IDynamicTransformViaCallback : public IInterface
 };
 
 extern ECLRTL_API const IDynamicTransform *createRecordTranslator(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo);
+extern ECLRTL_API const IDynamicTransform *createCloneVirtualRecordTranslator(const RtlRecord &_destRecInfo, IOutputMetaData & _source);
 extern ECLRTL_API const IDynamicTransform *createRecordTranslatorViaCallback(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo, type_vals rawType);
 extern ECLRTL_API void throwTranslationError(const RtlRecord &_destRecInfo, const RtlRecord &_srcRecInfo, const char * filename);
 

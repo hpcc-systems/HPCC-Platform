@@ -3434,10 +3434,10 @@ const char * queryDefaultStoragePlane()
 
 //---------------------------------------------------------------------------------------------------------------------
 
-class CStoragePlane : public CInterfaceOf<IStoragePlane>
+class CStoragePlaneInfo : public CInterfaceOf<IStoragePlane>
 {
 public:
-    CStoragePlane(IPropertyTree * _xml) : xml(_xml) {}
+    CStoragePlaneInfo(IPropertyTree * _xml) : xml(_xml) {}
 
     virtual const char * queryPrefix() const override { return xml->queryProp("@prefix"); }
     virtual unsigned numDevices() const override { return xml->getPropInt("@numDevices", 1); }
@@ -3464,5 +3464,5 @@ IStoragePlane * getStoragePlane(const char * name, bool required)
         return nullptr;
     }
 
-    return new CStoragePlane(match);
+    return new CStoragePlaneInfo(match);
 }

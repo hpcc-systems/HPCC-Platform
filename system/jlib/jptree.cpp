@@ -9244,3 +9244,18 @@ jlib_decl IPropertyTree * queryCostsConfiguration()
 {
     return queryComponentConfig().queryPropTree("costs");
 }
+
+void copyPropIfMissing(IPropertyTree & target, const char * targetName, IPropertyTree & source, const char * sourceName)
+{
+    if (source.hasProp(sourceName) && !target.hasProp(targetName))
+    {
+        if (source.isBinary(sourceName))
+        {
+            MemoryBuffer value;
+            source.getPropBin(sourceName, value);
+            target.setPropBin(targetName, value.length(), value.toByteArray());
+        }
+        else
+            target.setProp(targetName, source.queryProp(sourceName));
+    }
+}

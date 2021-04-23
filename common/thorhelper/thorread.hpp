@@ -27,6 +27,7 @@
 #include "jrowstream.hpp"
 #include "rtlkey.hpp"
 
+//--- Classes and interfaces for reading instances of files
 //The following is constant for the life of a disk read activity
 interface IDiskReadOutputMapping : public IInterface
 {
@@ -51,7 +52,7 @@ public:
     virtual IOutputMetaData * queryActualMeta() const = 0;
     virtual IOutputMetaData * queryExpectedMeta() const = 0;
     virtual IOutputMetaData * queryProjectedMeta() const = 0;
-    virtual const IPropertyTree * queryOptions() const = 0;
+    virtual const IPropertyTree * queryFileOptions() const = 0;
     virtual RecordTranslationMode queryTranslationMode() const = 0;
 
     virtual bool matches(const IDiskReadMapping * other) const = 0;
@@ -61,7 +62,7 @@ public:
     virtual const IKeyTranslator *queryKeyedTranslator() const = 0; // translates from expected to actual
 };
 
-THORHELPER_API IDiskReadMapping * createDiskReadMapping(RecordTranslationMode mode, const char * format, unsigned actualCrc, IOutputMetaData & actual, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, const IPropertyTree * options);
+THORHELPER_API IDiskReadMapping * createDiskReadMapping(RecordTranslationMode mode, const char * format, unsigned actualCrc, IOutputMetaData & actual, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, const IPropertyTree * fileOptions);
 
 
 typedef IConstArrayOf<IFieldFilter> FieldFilterArray;
@@ -73,6 +74,7 @@ public:
 };
 
 interface ITranslator;
+class CLogicalFileSlice;
 interface IDiskRowReader : extends IRowReader
 {
 public:
@@ -82,8 +84,9 @@ public:
     //Does this make sense, or should it be passed a filename?  an actual format?
     //Needs to specify a filename rather than a ISerialStream so that the interface is consistent for local and remote
     virtual void clearInput() = 0;
-    virtual bool setInputFile(const char * localFilename, const char * logicalFilename, unsigned partNumber, offset_t baseOffset, const IPropertyTree * meta, const FieldFilterArray & expectedFilter) = 0;
-    virtual bool setInputFile(const RemoteFilename & filename, const char * logicalFilename, unsigned partNumber, offset_t baseOffset, const IPropertyTree * meta, const FieldFilterArray & expectedFilter) = 0;
+    virtual bool setInputFile(const char * localFilename, const char * logicalFilename, unsigned partNumber, offset_t baseOffset, const IPropertyTree * inputOptions, const FieldFilterArray & expectedFilter) = 0;
+    virtual bool setInputFile(const RemoteFilename & filename, const char * logicalFilename, unsigned partNumber, offset_t baseOffset, const IPropertyTree * inputOptions, const FieldFilterArray & expectedFilter) = 0;
+    virtual bool setInputFile(const CLogicalFileSlice & slice, const FieldFilterArray & expectedFilter, unsigned copy) = 0;
 };
 
 //Create a row reader for a thor binary file.  The expected, projected, actual and options never change.  The file providing the data can change.

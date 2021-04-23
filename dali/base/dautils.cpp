@@ -323,6 +323,24 @@ bool CDfsLogicalFileName::getExternalPlane(StringBuffer & plane) const
 }
 
 
+bool CDfsLogicalFileName::isExternalFile() const
+{
+    return external && startsWithIgnoreCase(lfn, EXTERNAL_SCOPE "::");
+}
+
+bool CDfsLogicalFileName::getExternalHost(StringBuffer & host) const
+{
+    if (!isExternalFile())
+        return false;
+
+    const char * start = lfn.str() + strlen(EXTERNAL_SCOPE "::");
+    const char * end = strstr(start,"::");
+    assertex(end);
+    host.append(end-start, start);
+    return true;
+}
+
+
 void CDfsLogicalFileName::set(const CDfsLogicalFileName &other)
 {
     lfn.set(other.lfn);
@@ -433,6 +451,94 @@ void normalizeNodeName(const char *node, unsigned len, SocketEndpoint &ep, bool 
     if (!strict)
         nodename.clip();
     ep.set(nodename.str());
+}
+
+
+//s points to the second "::" in the external filename (file::ip or plane::<plane>::)
+bool expandExternalPath(StringBuffer &dir, StringBuffer &tail, const char * filename, const char * s, bool iswin, IException **e)
+{
+    if (e)
+        *e = NULL;
+    if (!s) {
+        if (e)
+            *e = MakeStringException(-1,"Invalid format for external file (%s)",filename);
+        return false;
+    }
+    if (s[2]=='>') {
+        dir.append('/');
+        tail.append(s+2);
+        return true;
+    }
+
+    // check for ::c$/
+    if (iswin&&(s[3]=='$'))
+        s += 2;                 // no leading '\'
+    const char *s1=s;
+    const char *t1=NULL;
+    for (;;) {
+        s1 = strstr(s1,"::");
+        if (!s1)
+            break;
+        t1 = s1;
+        s1 = s1+2;
+    }
+    //The following code is never actually executed, since s always points at the leading '::'
+    if (!t1||!*t1) {
+        if (e)
+            *e = MakeStringException(-1,"No directory specified in external file name (%s)",filename);
+        return false;
+    }
+    size32_t odl = dir.length();
+    bool start=true;
+    while (s!=t1) {
+        char c=*(s++);
+        if (isPathSepChar(c)) {
+            if (e)
+                *e = MakeStringException(-1,"Path cannot contain separators, use '::' to separate directories: (%s)",filename);
+            return false;
+        }
+        if ((c==':')&&(s!=t1)&&(*s==':')) {
+            dir.append(iswin?'\\':'/');
+            s++;
+            //Disallow ::..:: to gain access to parent subdirectories
+            if (strncmp(s, "..::", 4) == 0)
+            {
+                if (e)
+                    *e = MakeStringException(-1,"External filename cannot contain relative path '..' (%s)", filename);
+                return false;
+            }
+        }
+        else if (c==':') {
+            if (e)
+                *e = MakeStringException(-1,"Path cannot contain single ':', use 'c$' to indicate 'c:' (%s)",filename);
+            return false;
+        }
+        else if (iswin&&start&&(s!=t1)&&(*s=='$')) {
+            dir.append(c).append(':');
+            s++;
+        }
+        else {
+            if ((c=='^')&&(s!=t1)) {
+                c = toupper(*s);
+                s++;
+            }
+            dir.append(c);
+        }
+        start = false;
+    }
+    t1+=2; // skip ::
+    //Always ensure there is a // - if not directory is provided it will be in the root
+    if ((dir.length()==0)||(!isPathSepChar(dir.charAt(dir.length()-1))))
+        dir.append(iswin?'\\':'/');
+    while (*t1) {
+        char c = *(t1++);
+        if ((c=='^')&&*t1) {
+            c = toupper(*t1);
+            t1++;
+        }
+        tail.append(c);
+    }
+    return true;
 }
 
 void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool strict)
@@ -1197,7 +1303,6 @@ bool CDfsLogicalFileName::getExternalPath(StringBuffer &dir, StringBuffer &tail,
     if (multi)
         DBGLOG("CDfsLogicalFileName::makeFullnameQuery called on multi-lfn %s",get());
 
-    size32_t odl = dir.length();
     const char *s = skipScope(lfn,EXTERNAL_SCOPE);
     if (s)
     {
@@ -1231,83 +1336,7 @@ bool CDfsLogicalFileName::getExternalPath(StringBuffer &dir, StringBuffer &tail,
             }
         }
     }
-    if (!s) {
-        if (e)
-            *e = MakeStringException(-1,"Invalid format for external file (%s)",get());
-        return false;
-    }
-    if (s[2]=='>') {
-        dir.append('/');
-        tail.append(s+2);
-        return true;
-    }
-
-    // check for ::c$/
-    if (iswin&&(s[3]=='$'))
-        s += 2;                 // no leading '\'
-    const char *s1=s;
-    const char *t1=NULL;
-    for (;;) {
-        s1 = strstr(s1,"::");
-        if (!s1)
-            break;
-        t1 = s1;
-        s1 = s1+2;
-    }
-    if (!t1||!*t1) {
-        if (e)
-            *e = MakeStringException(-1,"No directory specified in external file name (%s)",get());
-        return false;
-    }
-    bool start=true;
-    while (s!=t1) {
-        char c=*(s++);
-        if (isPathSepChar(c)) {
-            if (e)
-                *e = MakeStringException(-1,"Path cannot contain separators, use '::' to separate directories: (%s)",get());
-            return false;
-        }
-        if ((c==':')&&(s!=t1)&&(*s==':')) {
-            dir.append(iswin?'\\':'/');
-            s++;
-            //Disallow ::..:: to gain access to parent subdirectories
-            if (strncmp(s, "..::", 4) == 0)
-            {
-                if (e)
-                    *e = MakeStringException(-1,"External filename cannot contain relative path '..' (%s)", get());
-                return false;
-            }
-        }
-        else if (c==':') {
-            if (e)
-                *e = MakeStringException(-1,"Path cannot contain single ':', use 'c$' to indicate 'c:' (%s)",get());
-            return false;
-        }
-        else if (iswin&&start&&(s!=t1)&&(*s=='$')) {
-            dir.append(c).append(':');
-            s++;
-        }
-        else {
-            if ((c=='^')&&(s!=t1)) {
-                c = toupper(*s);
-                s++;
-            }
-            dir.append(c);
-        }
-        start = false;
-    }
-    t1+=2; // skip ::
-    if ((dir.length()!=odl)&&(!isPathSepChar(dir.charAt(dir.length()-1))))
-        dir.append(iswin?'\\':'/');
-    while (*t1) {
-        char c = *(t1++);
-        if ((c=='^')&&*t1) {
-            c = toupper(*t1);
-            t1++;
-        }
-        tail.append(c);
-    }
-    return true;
+    return expandExternalPath(dir, tail, get(), s, iswin, e);
 }
 
 bool CDfsLogicalFileName::getExternalFilename(RemoteFilename &rfn) const

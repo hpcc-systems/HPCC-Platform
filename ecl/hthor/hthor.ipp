@@ -43,6 +43,8 @@
 #include "rtlrecord.hpp"
 #include "roxiemem.hpp"
 #include "roxierowbuff.hpp"
+
+#include "thormeta.hpp"
 #include "thorread.hpp"
 
 roxiemem::IRowManager * queryRowManager();
@@ -2927,7 +2929,6 @@ protected:
     {
         IDistributedFile * file;
         Owned<IOutputMetaData> actualMeta;
-        Owned<const IPropertyTree> formatOptions;
         Owned<const IPropertyTree> meta;
         unsigned actualCrc;
     };
@@ -3043,6 +3044,169 @@ protected:
 };
 
 
+//---------------------------------------------------------------------------------------------------------------------
+
+//Could be a useful general class for caching workunit debug and tree values
+template <class T>
+class CachedValue
+{
+public:
+    T getValue(const T dft = false) { return hasValue ? value : dft; }
+
+protected:
+    bool hasValue = false;
+    T value = false;
+};
+
+class CachedBoolValue : public CachedValue<bool>
+{
+public:
+    CachedBoolValue(IConstWorkUnit * wu, const char * name)
+    {
+        hasValue = wu->hasDebugValue(name);
+        if (hasValue)
+            value = wu->getDebugValueBool(name, false);
+    }
+
+    CachedBoolValue(IPropertyTree * tree, const char * name)
+    {
+        hasValue = tree->queryProp(name) != nullptr;
+        if (hasValue)
+            value = tree->getPropBool(name);
+    }
+};
+
+class RemoteReadChecker
+{
+public:
+    RemoteReadChecker(IConstWorkUnit * wu)
+    : forceRemoteDisabled(wu, "forceRemoteDisabled"), forceRemoteRead(wu, "forceRemoteRead")
+    {
+    }
+
+    bool onlyReadLocally(const CLogicalFileSlice & nextSlice, unsigned copy);
+
+protected:
+    CachedBoolValue forceRemoteDisabled;
+    CachedBoolValue forceRemoteRead;
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class CHThorGenericDiskReadBaseActivity : public CHThorActivityBase, implements IThorDiskCallback, implements IIndexReadContext, public IFileCollectionContext
+{
+protected:
+    IHThorNewDiskReadBaseArg &helper;
+    IHThorCompoundBaseArg & segHelper;
+    IDiskRowReader * activeReader = nullptr;
+    CLogicalFileCollection files;
+    Owned<IPropertyTree> spillPlane;
+    std::vector<CLogicalFileSlice> slices;
+    IArrayOf<IDiskRowReader> readers;
+    IDiskRowStream * inputRowStream = nullptr;
+    RemoteReadChecker remoteReadChecker;
+    IOutputMetaData *expectedDiskMeta = nullptr;
+    IOutputMetaData *projectedDiskMeta = nullptr;
+    IConstArrayOf<IFieldFilter> fieldFilters;  // These refer to the expected layout
+    Owned<IPropertyTree> inputOptions;
+    Owned<IPropertyTree> curInputOptions;
+    CLogicalFileSlice * activeSlice = nullptr;
+    unsigned curSlice = 0;
+    RecordTranslationMode recordTranslationModeHint = RecordTranslationMode::Unspecified;
+    bool useRawStream = false; // Constant for the lifetime of the activity
+    bool grouped = false;
+    bool outputGrouped = false;
+    bool opened = false;
+    bool finishedParts = false;
+    bool isCodeSigned = false;
+    bool resolved = false;
+    unsigned __int64 stopAfter = 0;
+
+protected:
+    void close();
+    void resolveFile();
+    StringBuffer &translateLFNtoLocal(const char *filename, StringBuffer &localName);
+
+    inline void queryUpdateProgress()
+    {
+        agent.reportProgress(NULL);
+    }
+
+    RecordTranslationMode getLayoutTranslationMode()
+    {
+        if (recordTranslationModeHint != RecordTranslationMode::Unspecified)
+            return recordTranslationModeHint;
+        return agent.getLayoutTranslationMode();
+    }
+
+public:
+    CHThorGenericDiskReadBaseActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorNewDiskReadBaseArg &_arg, IHThorCompoundBaseArg & _segHelper, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *node);
+    ~CHThorGenericDiskReadBaseActivity();
+    IMPLEMENT_IINTERFACE_USING(CHThorActivityBase)
+
+    virtual void ready();
+    virtual void stop();
+
+    IHThorInput *queryOutput(unsigned index)                { return this; }
+
+//interface IHThorInput
+    virtual bool isGrouped()                                { return outputGrouped; }
+    virtual IOutputMetaData * queryOutputMeta() const       { return outputMeta; }
+
+//interface IFilePositionProvider
+    virtual unsigned __int64 getFilePosition(const void * row);
+    virtual unsigned __int64 getLocalFilePosition(const void * row);
+    virtual const char * queryLogicalFilename(const void * row);
+    virtual const byte * lookupBlob(unsigned __int64 id) { UNIMPLEMENTED; }
+
+//interface IIndexReadContext
+    virtual void append(IKeySegmentMonitor *segment) override { throwUnexpected(); }
+    virtual void append(FFoption option, const IFieldFilter * filter) override;
+
+//interface IFileCollectionContext
+    virtual void noteException(unsigned severity, unsigned code, const char * text) override;
+
+protected:
+    bool openFirstPart();
+    void initStream(CLogicalFileSlice * slice, IDiskRowReader * reader);
+    bool openFilePart(unsigned whichSlice);
+    bool openFilePart(CLogicalFileSlice * nextSlice);
+    void setEmptyStream();
+
+    virtual void open();
+    virtual bool openNext();
+    virtual void closepart();
+
+    bool openNextPart();
+    IDiskRowReader * ensureRowReader(const char * format, bool streamRemote, unsigned expectedCrc, IOutputMetaData & expected, unsigned projectedCrc, IOutputMetaData & projected, unsigned actualCrc, IOutputMetaData & actual, CLogicalFileSlice * slice);
+};
+
+
+class CHThorGenericDiskReadActivity : public CHThorGenericDiskReadBaseActivity
+{
+    typedef CHThorGenericDiskReadBaseActivity PARENT;
+protected:
+    IHThorNewDiskReadArg &helper;
+    bool needTransform = false;
+    bool hasMatchFilter = false;
+    unsigned __int64 lastGroupProcessed = 0;
+    RtlDynamicRowBuilder outBuilder;
+    unsigned __int64 limit = 0;
+    unsigned __int64 remoteLimit = 0;
+
+public:
+    CHThorGenericDiskReadActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorNewDiskReadArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *node);
+
+    virtual void ready();
+    virtual void stop();
+    virtual bool needsAllocator() const { return true; }
+
+    //interface IHThorInput
+    virtual const void *nextRow();
+
+protected:
+    void onLimitExceeded();
+};
 
 
 #define MAKEFACTORY(NAME) \

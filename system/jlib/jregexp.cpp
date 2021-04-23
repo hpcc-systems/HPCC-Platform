@@ -1557,6 +1557,8 @@ bool StringMatcher::queryAddEntry(unsigned len, const char * text, unsigned acti
         entry & curElement = curTable[c];
         if (--len == 0)
         {
+            if (curElement.value == action)
+                return true;
             if (curElement.value != 0)
                 return false;
             curElement.value = action;

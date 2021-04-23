@@ -2023,14 +2023,28 @@ static IOutputMetaData *_getDaliLayoutInfo(MemoryBuffer &layoutBin, IPropertyTre
                 error.setown(E); // Save to throw later if we can't recover via ECL
             }
         }
-        if (props.hasProp("ECL"))
+        if (props.hasProp("meta"))
+        {
+            props.getPropBin("meta", layoutBin);
+            try
+            {
+                return createTypeInfoOutputMetaData(layoutBin, isGrouped);
+            }
+            catch (IException *E)
+            {
+                EXCLOG(E);
+                error.setown(E); // Save to throw later if we can't recover via ECL
+            }
+        }
+        const char * layoutECL = props.queryProp("ECL");
+        if (!layoutECL)
+            layoutECL = props.queryProp("@ecl");
+        if (layoutECL)
         {
             const char *kind = props.queryProp("@kind");
             bool isIndex = (kind && streq(kind, "key"));
-            StringBuffer layoutECL;
-            props.getProp("ECL", layoutECL);
             MultiErrorReceiver errs;
-            Owned<IHqlExpression> expr = parseQuery(layoutECL.str(), &errs);
+            Owned<IHqlExpression> expr = parseQuery(layoutECL, &errs);
             if (expr && (errs.errCount() == 0))
             {
                 if (props.hasProp("_record_layout"))  // Some old indexes need the payload count patched in from here

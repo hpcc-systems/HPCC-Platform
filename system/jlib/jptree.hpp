@@ -362,4 +362,6 @@ jlib_decl void dbglogYAML(const IPropertyTree *tree, unsigned indent = 0, unsign
 // Defines the threshold where attribute value maps are created for sibling ptrees for fast lookups
 jlib_decl void setPTreeMappingThreshold(unsigned threshold);
 
+jlib_decl void copyPropIfMissing(IPropertyTree & target, const char * targetName, IPropertyTree & source, const char * sourceName);
+
 #endif

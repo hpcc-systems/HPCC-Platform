@@ -1902,6 +1902,146 @@ extern ECLRTL_API const IDynamicTransform *createRecordTranslatorViaCallback(con
     return new GeneralRecordTranslator(destRecInfo, srcRecInfo, false, rawType);
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+
+class CloneVirtualRecordTranslator : public CInterfaceOf<IDynamicTransform>
+{
+public:
+    CloneVirtualRecordTranslator(const RtlRecord &_destRecInfo, IOutputMetaData & _sourceMeta)
+        : destRecInfo(_destRecInfo), sourceMeta(_sourceMeta)
+    {
+        init();
+    }
+// IDynamicTransform impl.
+    virtual void describe() const override
+    {
+        doDescribe(0);
+    }
+    virtual size32_t translate(ARowBuilder &builder, IVirtualFieldCallback & callback, const byte *sourceRec) const override
+    {
+        size32_t sourceSize = sourceMeta.getRecordSize(sourceRec);
+        return doAppendVirtuals(builder, callback, 0, sourceSize, sourceRec);
+    }
+    virtual size32_t translate(ARowBuilder &builder, IVirtualFieldCallback & callback, const RtlRow &sourceRow) const override
+    {
+        const byte * source = sourceRow.queryRow();
+        size32_t sourceSize = sourceMeta.getRecordSize(source);
+        return doAppendVirtuals(builder, callback, 0, sourceSize, source);
+    }
+    virtual size32_t translate(ARowBuilder &builder, IVirtualFieldCallback & callback, const IDynamicFieldValueFetcher & fetcher) const override
+    {
+        throwUnexpected();
+    }
+    virtual bool canTranslate() const override
+    {
+        return true;
+    }
+    virtual bool needsTranslate() const override
+    {
+        return true;
+    }
+    virtual bool needsNonVirtualTranslate() const override
+    {
+        return false;
+    }
+    virtual bool keyedTranslated() const override
+    {
+        return false;
+    }
+private:
+    void doDescribe(unsigned indent) const
+    {
+        for (unsigned idx = firstVirtual; idx < destRecInfo.getNumFields(); idx++)
+        {
+            const RtlFieldInfo *field = destRecInfo.queryField(idx);
+            const char * dest = destRecInfo.queryName(idx);
+            const char * result = "";
+            switch (getVirtualInitializer(field->initializer))
+            {
+            case FVirtualFilePosition:
+                result = "FILEPOSITION";
+                break;
+            case FVirtualLocalFilePosition:
+                result = "LOCALFILEPOSITION";
+                break;
+            case FVirtualFilename:
+                result = "LOGICALFILENAME";
+                break;
+            }
+            DBGLOG("Use virtual(%s) for field %s", result, dest);
+        }
+    }
+    size32_t doAppendVirtuals(ARowBuilder &builder, IVirtualFieldCallback & callback, size32_t offset, size32_t sourceSize, const void *sourceRow) const
+    {
+        size32_t estimate = sourceSize + fixedVirtualSize;
+        builder.ensureCapacity(offset+estimate, "record");
+        memcpy(builder.getSelf() + offset, sourceRow, sourceSize);
+
+        unsigned destOffset = offset + sourceSize;
+        for (unsigned idx = firstVirtual; idx < destRecInfo.getNumFields(); idx++)
+        {
+            const RtlFieldInfo *field = destRecInfo.queryField(idx);
+            const RtlTypeInfo *type = field->type;
+            switch (getVirtualInitializer(field->initializer))
+            {
+            case FVirtualFilePosition:
+                destOffset = type->buildInt(builder, destOffset, field, callback.getFilePosition(sourceRow));
+                break;
+            case FVirtualLocalFilePosition:
+                destOffset = type->buildInt(builder, destOffset, field, callback.getLocalFilePosition(sourceRow));
+                break;
+            case FVirtualFilename:
+                {
+                    const char * filename = callback.queryLogicalFilename(sourceRow);
+                    destOffset = type->buildString(builder, destOffset, field, strlen(filename), filename);
+                    break;
+                }
+            default:
+                throwUnexpected();
+            }
+        }
+        return destOffset;
+    }
+
+    void init()
+    {
+        unsigned idx = 0;
+        for (; idx < destRecInfo.getNumFields(); idx++)
+        {
+            const RtlFieldInfo *field = destRecInfo.queryField(idx);
+            const byte * initializer = (const byte *) field->initializer;
+            if (isVirtualInitializer(initializer))
+                break;
+        }
+        firstVirtual = idx;
+
+        size32_t size = 0;
+        for (; idx < destRecInfo.getNumFields(); idx++)
+        {
+            const RtlFieldInfo *field = destRecInfo.queryField(idx);
+            const RtlTypeInfo *type = field->type;
+            const byte * initializer = (const byte *) field->initializer;
+            assertex(isVirtualInitializer(initializer));
+            size += type->getMinSize();
+        }
+
+        fixedVirtualSize = size;
+    }
+
+protected:
+    const RtlRecord &destRecInfo;
+    IOutputMetaData & sourceMeta;
+    unsigned firstVirtual = 0;
+    size32_t fixedVirtualSize = 0;
+};
+
+
+extern ECLRTL_API const IDynamicTransform *createCloneVirtualRecordTranslator(const RtlRecord &_destRecInfo, IOutputMetaData & _source)
+{
+    return new CloneVirtualRecordTranslator(_destRecInfo, _source);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 extern ECLRTL_API void throwTranslationError(const RtlRecord & destRecInfo, const RtlRecord & srcRecInfo, const char * filename)
 {
     Owned<const IDynamicTransform> translator = createRecordTranslator(destRecInfo, srcRecInfo);
