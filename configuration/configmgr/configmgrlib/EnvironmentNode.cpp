@@ -319,7 +319,7 @@ void EnvironmentNode::getInsertableItems(std::vector<InsertableItem> &insertable
         }
         else
         {
-            childCounts.insert({ itemType, 1 });
+            childCounts.insert({ itemType, 0 });
         }
     }
 

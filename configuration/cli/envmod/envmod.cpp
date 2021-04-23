@@ -112,14 +112,11 @@ void usage()
 
 int main(int argc, char *argv[])
 {
-    std::string configSchemaRelativeDir = std::string(hpccBuildInfo.componentDir) + PATHSEPSTR + "configschema" + PATHSEPSTR + "xsd" + PATHSEPSTR;
     std::string modTemplateSchemaFile = std::string(hpccBuildInfo.componentDir) + PATHSEPSTR + "configschema" + PATHSEPSTR + "templates" + PATHSEPSTR + "schema" + PATHSEPSTR + "ModTemplateSchema.json";
     
-    //
-    // Build the default directory for the schema files
     std::string processPath(queryCurrentProcessPath());
 
-    configSchemaDir = processPath.substr(0, processPath.find_last_of(PATHSEPSTR)) + PATHSEPSTR + configSchemaRelativeDir;
+    configSchemaDir = std::string(hpccBuildInfo.componentDir) + PATHSEPSTR + "configschema" + PATHSEPSTR + "xsd" + PATHSEPSTR;
 
     if (argc == 1)
     {

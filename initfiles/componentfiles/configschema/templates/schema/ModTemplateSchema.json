@@ -156,7 +156,8 @@
                             },
                             "required": [
                                 "action",
-                                "target_path"
+                                "target_path",
+                                "data"
                             ]
                         },
                         {

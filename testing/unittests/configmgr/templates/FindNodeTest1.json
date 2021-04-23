@@ -25,11 +25,13 @@
         },
         {
             "action" : "find",
-            "target_path" : "/Root/Child1/SubChild1[@attr1='child1_subchild1_2']"
+            "target_path" : "/Root/Child1/SubChild1[@attr1='child1_subchild1_2']",
+            "data" : { }
         },
         {
             "action" : "find",
-            "target_path" : "/Root/Child2"
+            "target_path" : "/Root/Child2",
+            "data" : { }
         },
         {
             "action" : "find",
@@ -52,13 +54,14 @@
         },
         {
             "action" : "find",
-            "target_path" : "/Root/Child1/SubChild1[@attr2='4']"
+            "target_path" : "/Root/Child1/SubChild1[@attr2='4']",
+            "data" : { }
         },
         {
             "action" : "find",
             "target_path" : "/Root/Child1/SubChild1",
             "data" : {
-                "attribute_refs`" : [
+                "attributes`" : [
                     {
                         "first_of" : ["attr2", "attr1"],
                         "save" : {
