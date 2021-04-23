@@ -1,0 +1,42 @@
+storage:
+  hostGroups:
+    - name: demoOne
+      hosts: ['one', 'two', 'three']
+    - name: demoTwo
+      hosts: [ '127.0.0.1', '127.0.0.2', '127.0.0.3', '127.0.0.4', '127.0.0.5', '127.0.0.6', '127.0.0.7', '127.0.0.8', '127.0.0.9', '127.0.0.10' ]
+    - name: demoThree
+      hostGroup: demoTwo
+      delta: 1
+    - name: demoTwoA
+      hostGroup: demoTwo
+      count: 5
+      delta: 1
+    - name: demoTwoB
+      hostGroup: demoTwo
+      count: 5
+      offset: 5
+      delta: 1
+
+  planes:
+  - name: demoOne
+    prefix: /home/gavin/temp
+    hostGroup: demoOne
+  - name: myDropZone
+    prefix: /home/gavin/temp
+    hosts: [ '192.168.86.202']
+    labels: ['lz']
+  - name: demoTwo
+    prefix: /home/gavin/temp/demoTwo
+    hostGroup: demoTwo
+  - name: demoTwoReplica
+    prefix: /home/gavin/temp/demoTwo
+    hostGroup: demoThree
+  - name: demoTwoA
+    prefix: /home/gavin/temp/demoTwoA
+    hostGroup: demoTwoA
+  - name: demoTwoB
+    prefix: /home/gavin/temp/demoTwoB
+    hostGroup: demoTwoB
+  - name: myInlinePlane
+    prefix: /home/gavin/temp
+    hosts: [ 'here', 'there', 'everywhere']

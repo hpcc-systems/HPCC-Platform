@@ -75,6 +75,10 @@ esp:
 {{ end -}}
 secretTimeout: {{ .Values.secrets.timeout | default 300 }}
 storage:
+{{- if hasKey $storage "hostGroups" }}
+  hostGroups:
+{{ toYaml $storage.hostGroups | indent 2 }}
+{{- end }}
   daliPlane: {{ $daliStoragePlane }}
   dllsPlane: {{ $dllStoragePlane }}
   dataPlane: {{ $dataStoragePlane }}
