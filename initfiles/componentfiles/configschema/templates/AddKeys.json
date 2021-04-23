@@ -1,72 +1,124 @@
 {
     "name" : "Add Key",
     "type" : "modification",
-    "inputs" : [
+    "variables" : [
         {
             "name" : "keypair_name",
             "type" : "string",
-            "value" : "mythor"
+            "values" : ["mythor"]
         },
         {
             "name" : "public_key",
             "type" : "string",
-            "value" : "/home/jsmith/.ssh/id_rsa.pub.pem"
+            "values" : ["Change to path to your public key file such as /home/jsmith/.ssh/id_rsa.pub.pem"]
         },
         {
             "name" : "private_key",
             "type" : "string",
-            "value" : "/home/jsmith/.ssh/id_rsa"
-        },
-        {
-            "name" : "key_pair_name",
-            "type" : "string",
-            "value" : "mythor"
+            "values" : ["Change to path to your private key file such as /home/jsmith/.ssh/id_rsa"]
         }
     ],
     "operations" : [
         {
-            "action" : "find_node",
-            "target_type" : "path",
-            "target" : "/Environment/EnvSettings/Keys",
-            "node_type" : "keys",
-            "save_nodeid" : "keys_node",
-            "create" : true
+            "action" : "delete",
+            "target_path" : "/Environment/EnvSettings/Keys",
+            "data" : {
+                "error_if_not_found" : false
+            }
         },
         {
-            "action" : "create_node",
-            "target_type" : "nodeid",
-            "target" : "{{keys_node}}",
-            "node_type" : "KeyPair",
-            "attributes" : [
-                {
-                    "name" : "name",
-                    "value" : "{{keypair_name}}"
-                },
-                {
-                    "name" : "publicKey",
-                    "value" : "{{public_key}}"
-                },
-                {
-                    "name" : "privakeKey",
-                    "value" : "{{private_key}}"
+            "action" : "create",
+            "target_path" : "/Environment/EnvSettings",
+            "data" : {
+                "node_type" : "Keys",
+                "save" : {
+                    "name" : "keys_node"
                 }
-            ]
+            }
         },
         {
-            "action" : "create_node",
-            "target_type" : "nodeid",
-            "target" : "{{keys_node}}",
-            "node_type" : "Cluster",
-            "attributes" : [
-                {
-                    "name" : "name",
-                    "value" : "{{keypair_name}}"
-                },
-                {
-                    "name" : "keyPairName",
-                    "value" : "{{keypair_name}}"
-                }
-            ]
+            "action" : "create",
+            "target_nodeid" : "{{keys_node}}",
+            "data" : {
+                "node_type" : "keypair",
+                "attributes" : [
+                    {
+                        "name" : "name",
+                        "value" : "{{keypair_name}}"
+                    },
+                    {
+                        "name" : "publicKey",
+                        "value" : "{{public_key}}"
+                    },
+                    {
+                        "name" : "privateKey",
+                        "value" : "{{private_key}}"
+                    }
+                ]
+            }
+        },
+        {
+            "action" : "find",
+            "target_path" : "/Environment/Software/ThorCluster",
+            "data" : {
+                "attributes" : [
+                    {
+                        "name" : "name",
+                        "save" : {
+                            "name" : "cluster_names",
+                            "duplicate_ok" : true
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "action" : "find",
+            "target_path" : "/Environment/Software/RoxieCluster",
+            "data" : {
+                "attributes" : [
+                    {
+                        "name" : "name",
+                        "save" : {
+                            "name" : "cluster_names",
+                            "duplicate_ok" : true
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "action" : "find",
+            "target_path" : "/Environment/Software/EclAgentProcess",
+            "data" : {
+                "attributes" : [
+                    {
+                        "name" : "name",
+                        "save" : {
+                            "name" : "cluster_names",
+                            "duplicate_ok" : true
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "action" : "create",
+            "target_nodeid" : "{{keys_node}}",
+            "data" : {
+                "node_type" : "keypair_clustergroup",
+                "count" : "{{cluster_names.size}}",
+                "attributes" : [
+                    {
+                        "name" : "name",
+                        "value" : "{{cluster_names}}"
+                    },
+                    {
+                        "name" : "keyPairName",
+                        "value" : "{{keypair_name}}"
+                    }
+                ]
+            }
         }
     ]
 }
