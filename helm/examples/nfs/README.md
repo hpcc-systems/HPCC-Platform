@@ -11,9 +11,10 @@ For example, under GKE(Google Kubernetes Engine), ReadWriteMany volumes can be p
 
 
 Example use:
-
-helm install nfsstorage hpcc-nfs/
+```code
+helm install nfsstorage examples/nfs/hpcc-nfs/
 helm install myhpcc hpcc/ --set global.image.version=latest -f examples/nfs/values-nfs.yaml
+```
 
 ### values-nfs.yaml
 
@@ -23,3 +24,5 @@ NB: Either use the output auto-generated when installing the "hpcc-nfs" helm cha
 ### Notes
 
 The main use case for this example is with GKE (Google Kubernetes Engine).
+
+"forcePermissions: true" is required for each storage plane. Only supports one device per data plane (If defined, numDevices should be 1)
