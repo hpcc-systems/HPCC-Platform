@@ -16,9 +16,38 @@
 ############################################################################## */
 
 // In slowest systems where Regression Test Engine executed with --PQ <n> on Thor
-//timeout 900
+//timeout 36000
 
-import teststd;
+//version tmod='Date.TestDate.TestDynamic',nothor,noroxie
+//version tmod='Date.TestFormat'
+//version tmod='BLAS'
+//version tmod='File'
+//version tmod='system'
+//version tmod='uni'
+//version tmod='Metaphone'
+//version tmod='Crypto'
+//version tmod='str'
+//version tmod='Math'
 
-evaluate(teststd);
+//version tmod='DataPatterns'
+// /version tmod='DataPatterns.TestDataPatterns'
+// /version tmod='DataPatterns.TestBenford'
+
+import ^ as root;
+
+unsigned VERBOSE := 0;
+
+string myMod := #IFDEFINED(root.tmod, 'Full');
+#if (VERBOSE = 1)
+    output(myMod, named('myMod'));
+#end
+
+#IF (myMod = 'Full' )
+    // The old way, full test without versioning
+    import teststd as testMod;
+#ELSE
+    import #expand('teststd.' + myMod) as testMod;
+#END
+
+evaluate(testMod);
 output('Test std completed');

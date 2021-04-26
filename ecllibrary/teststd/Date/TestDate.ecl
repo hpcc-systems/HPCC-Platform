@@ -435,8 +435,10 @@ EXPORT TestDate := MODULE
     END;
 
     x := LOOP(firstDate, 1000000, processNextDate(ROWS(LEFT)));
-
-    EXPORT Test01 := OUTPUT(x);
+    isDayOk := x[1].day = 1000001;
+    isGregorianOK := x[1].gregorian.year = 2738 AND x[1].gregorian.month = 11 AND x[1].gregorian.day = 29;
+    isJulianOK := x[1].julian.year = 2738 AND x[1].julian.month = 11 AND x[1].julian.day = 8;
+    EXPORT Test01 := ASSERT( isDayOK AND isGregorianOK AND isJulianOK, 'Failed') ;
   END;
 
 END;
