@@ -525,6 +525,8 @@ StringBuffer &encodeDFUFileMeta(StringBuffer &metaInfoBlob, IPropertyTree *metaI
 
         const char *keyPairName = metaInfo->queryProp("keyPairName");
         const char *privateKeyFName = environment->getPrivateKeyPath(keyPairName);
+        if (isEmptyString(privateKeyFName))
+            throw makeStringExceptionV(-1, "Key name '%s' is not found in environment settings: /EnvSettings/Keys/KeyPair.", keyPairName);
         Owned<CLoadedKey> privateKey = loadPrivateKeyFromFile(privateKeyFName, nullptr);
         StringBuffer metaInfoSignature;
         digiSign(metaInfoSignature, metaInfoBlob.length(), metaInfoBlob.bytes(), *privateKey);
