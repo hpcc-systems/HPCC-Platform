@@ -540,9 +540,26 @@ void CMasterActivity::getEdgeStats(IStatisticGatherer & stats, unsigned idx)
 void CMasterActivity::done()
 {
     CActivityBase::done();
+
+    StatsScopeId rootScope(SSTfile, 0U);
+    Owned<IStatisticGatherer> fileStats;
     ForEachItemIn(s, readFiles)
     {
         IDistributedFile &file = readFiles.item(s);
+        StringBuffer fileName;
+        file.getLogicalName(fileName);
+        rootScope.setFileId(fileName.str());
+        fileStats.setown(createStatisticsGatherer(SCTall, "", rootScope));
+        statsCollection.getStats(*fileStats);
+        Owned<IStatisticCollection> stats = fileStats->getResult();
+        Owned<IStatisticCollectionIterator> iter = &stats->getScopes(nullptr, false);
+        ForEach(*iter)
+        {
+            IStatisticCollection & cur = iter->query();
+            unsigned __int64 numDiskReads = file.queryAttributes().getPropInt("@numDiskReads", 0);
+            numDiskReads += cur.queryStatistic(StNumDiskReads);
+            file.queryAttributes().setPropInt("@numDiskReads", numDiskReads);
+        }
         file.setAccessed();
     }
 }

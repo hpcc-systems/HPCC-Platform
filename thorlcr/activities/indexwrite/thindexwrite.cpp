@@ -279,6 +279,22 @@ public:
                 VStringBuffer pval("%f", info->getBloomProbability());
                 bloom->setProp("@bloomProbability", pval.str());
             }
+            // Update numDiskWrites
+            StatsScopeId rootScope(SSTfile, 0U);
+            Owned<IStatisticGatherer> fileStats;
+            rootScope.setFileId(fileName);
+            fileStats.setown(createStatisticsGatherer(SCTall, "", rootScope));
+            statsCollection.getStats(*fileStats);
+            Owned<IStatisticCollection> stats = fileStats->getResult();
+            Owned<IStatisticCollectionIterator> iter = &stats->getScopes(nullptr, false);
+            __int64 numDiskWrites = 0;
+            ForEach(*iter)
+            {
+                IStatisticCollection & cur = iter->query();
+                numDiskWrites += cur.queryStatistic(StNumDiskWrites);
+            }
+            props.setPropInt64("@numDiskWrites", numDiskWrites);
+
             container.queryTempHandler()->registerFile(fileName, container.queryOwner().queryGraphId(), 0, false, WUFileStandard, &clusters);
             if (!dlfn.isExternal())
                 queryThorFileManager().publish(container.queryJob(), fileName, *fileDesc);

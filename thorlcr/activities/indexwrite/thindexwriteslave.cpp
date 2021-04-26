@@ -51,6 +51,7 @@ class IndexWriteSlaveActivity : public ProcessSlaveActivity, public ILookAheadSt
     bool isLocal, singlePartKey, reportOverflow, fewcapwarned, refactor;
     bool defaultNoSeek = false;
     unsigned __int64 totalCount;
+    unsigned __int64 numDiskWrites;
 
     size32_t maxDiskRecordSize, lastRowSize, firstRowSize;
     unsigned __int64 duplicateKeyCount;
@@ -91,6 +92,7 @@ public:
         defaultNoSeek = (0 != container.queryJob().getWorkUnitValueInt("noSeekBuildIndex", globals->getPropBool("@noSeekBuildIndex", isContainerized())));
         reInit = (0 != (TIWvarfilename & helper->getFlags()));
         duplicateKeyCount = 0;
+        numDiskWrites = 0;
     }
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData) override
     {
@@ -243,6 +245,7 @@ public:
             builder.clear();
             if (builderIFileIO)
             {
+                numDiskWrites = builderIFileIO->getStatistic(StNumDiskWrites);
                 builderIFileIO->close();
                 builderIFileIO.clear();
             }
@@ -663,6 +666,9 @@ public:
     }
     virtual void serializeStats(MemoryBuffer &mb) override
     {
+        StatsScopeId scope(SSTfile, logicalFilename.str());
+        CRuntimeStatisticCollection & nested = stats.registerNested(scope, nestedFileStatistics);
+        nested.sumStatistic(StNumDiskWrites, numDiskWrites);
         stats.setStatistic(StPerReplicated, replicateDone);
         PARENT::serializeStats(mb);
     }

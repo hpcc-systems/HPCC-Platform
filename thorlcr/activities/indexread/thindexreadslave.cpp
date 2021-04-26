@@ -339,7 +339,7 @@ public:
             if (translator)
                 keyMergerManager->setLayoutTranslator(&translator->queryTranslator());
             if (useMerger)
-                keyManager = keyMergerManager;
+            keyManager = keyMergerManager;
             else
                 keyManager = &keyManagers.item(partNum);
         }

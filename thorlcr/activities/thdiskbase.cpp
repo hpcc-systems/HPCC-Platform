@@ -192,6 +192,7 @@ void CWriteMasterBase::init()
         if (blockCompressed)
             props.setPropBool("@blockCompressed", true);
         props.setProp("@kind", "flat");
+        props.setPropInt64("@numDiskWrites", 0);
         if (((TAKdiskwrite == container.getKind()) || (TAKspillwrite == container.getKind())) &&
                 (0 != (diskHelperBase->getFlags() & TDXtemporary)) && container.queryOwner().queryOwner() && (!container.queryOwner().isGlobal())) // I am in a child query
         { // do early, because this will be local act. and will not come back to master until end of owning graph.
@@ -204,11 +205,28 @@ void CWriteMasterBase::publish()
 {
     if (published) return;
     published = true;
+
+    const char *logicalFileName = dlfn.get();
+    StatsScopeId rootScope(SSTfile, 0U);
+    Owned<IStatisticGatherer> fileStats;
+    rootScope.setFileId(logicalFileName);
+    fileStats.setown(createStatisticsGatherer(SCTall, "", rootScope));
+    statsCollection.getStats(*fileStats);
+    Owned<IStatisticCollection> stats = fileStats->getResult();
+    Owned<IStatisticCollectionIterator> iter = &stats->getScopes(nullptr, false);
+    __int64 numDiskWrites = 0;
+    ForEach(*iter)
+    {
+        IStatisticCollection & cur = iter->query();
+        numDiskWrites += cur.queryStatistic(StNumDiskWrites);
+    }
+
     if (!(diskHelperBase->getFlags() & (TDXtemporary|TDXjobtemp)))
         updateActivityResult(container.queryJob().queryWorkUnit(), diskHelperBase->getFlags(), diskHelperBase->getSequence(), fileName, recordsProcessed);
 
     IPropertyTree &props = fileDesc->queryProperties();
     props.setPropInt64("@recordCount", recordsProcessed);
+    props.setPropInt64("@numDiskWrites", numDiskWrites);
     if (0 == (diskHelperBase->getFlags() & TDXtemporary) || container.queryJob().queryUseCheckpoints())
     {
         if (0 != (diskHelperBase->getFlags() & TDWexpires))
@@ -304,6 +322,7 @@ void CWriteMasterBase::publish()
                     modifiedTime.getString(timeStr);
                     props.setProp("@modified", timeStr.str());
                     props.setPropInt64("@recordCount", 0);
+                    props.setPropInt64("@numDiskWrites", 0);
                     props.setPropInt64("@size", 0);
                     if (compressed)
                         props.setPropInt64("@compressedSize", 0);
@@ -378,6 +397,7 @@ void CWriteMasterBase::slaveDone(size32_t slaveIdx, MemoryBuffer &mb)
         rowcount_t slaveProcessed;
         mb.read(slaveProcessed);
         recordsProcessed += slaveProcessed;
+
         if (dlfn.isExternal())
             return;
 

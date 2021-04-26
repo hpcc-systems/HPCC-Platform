@@ -299,6 +299,13 @@ void CDiskReadSlaveActivityBase::serializeStats(MemoryBuffer &mb)
         stats.merge(activeStats);
     }
     stats.setStatistic(StNumDiskRowsRead, diskProgress);
+    if (!isEmptyString(logicalFilename))
+    {
+        unsigned __int64 numDiskReads = activeStats.getStatisticValue(StNumDiskReads);
+        StatsScopeId scope(SSTfile, logicalFilename);
+        CRuntimeStatisticCollection & nested = stats.registerNested(scope, nestedFileStatistics);
+        nested.sumStatistic(StNumDiskReads, numDiskReads);
+    }
     PARENT::serializeStats(mb);
 }
 
@@ -526,6 +533,13 @@ void CDiskWriteSlaveActivityBase::serializeStats(MemoryBuffer &mb)
         mergeStats(stats, outputIO, diskWriteRemoteStatistics);
     }
     stats.setStatistic(StPerReplicated, replicateDone);
+
+    const char * logicalFilename = dlfn.get();
+    unsigned __int64 numDiskWrites = stats.getStatisticValue(StNumDiskWrites);
+    StatsScopeId scope(SSTfile, logicalFilename);
+    CRuntimeStatisticCollection & nested = stats.registerNested(scope, nestedFileStatistics);
+    nested.sumStatistic(StNumDiskWrites, numDiskWrites);
+
     PARENT::serializeStats(mb);
 }
 
