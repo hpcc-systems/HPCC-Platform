@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="HPCC4J_Build">
+  <title>Buids</title>
+
+  <para>To build the projects using Maven, navigate to the base directory of
+  the project and issue the following command:</para>
+
+  <programlisting>mvn install</programlisting>
+
+  <para><variablelist>
+      <varlistentry>
+        <term>NOTE:</term>
+
+        <listitem>
+          <para>hpcccommons, wsclient, and dfsclient are controlled via the
+          top-level maven pom file and can be built with a single command. All
+          sub-projects can be built individually using the pom file in each
+          sub-project directory.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist></para>
+
+  <para>For more information on how to use Maven see <ulink
+  url="http://maven.apache.org">http://maven.apache.org</ulink></para>
+
+  <sect2>
+    <title>HPCC4J Source Code</title>
+
+    <para>The source can be found under the HPCC Platform github account in
+    the hpcc4j repo.</para>
+
+    <para><ulink
+    url="https://github.com/hpcc-systems/hpcc4j">https://github.com/hpcc-systems/hpcc4j</ulink></para>
+
+    <para>To utilize this library as a dependency in your own maven project,
+    add the following definition to your pom.xml.</para>
+
+    <programlisting>
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.hpccsystems&lt;/groupId&gt;
+        &lt;artifactId&gt;wsclient&lt;/artifactId&gt;
+        &lt;version&gt;7.8.2-1&lt;/version&gt;
+    &lt;/dependency&gt;
+    </programlisting>
+
+    <para>Contributions to source are accepted and encouraged. All
+    contributions must follow the JAVA source format described in the
+    HPCC-JAVA-Formatter.xml file which can be found in hpcc4j/eclipse.
+    This formatter can be used by the Eclipse IDE to automatically format JAVA
+    source code.</para>
+
+    <para><itemizedlist>
+        <listitem>
+          <para>From eclipse, choose Window-&gt;Preferences-&gt;Java-&gt;Code
+          Stype-&gt;Formatter.</para>
+
+          <para>Import the HPCC-JAVA-Formatter.xml file and set it as the
+          Active profile.</para>
+        </listitem>
+
+        <listitem>
+          <para>From the JAVA editor, choose Source-&gt;Format</para>
+        </listitem>
+      </itemizedlist></para>
+  </sect2>
+</sect1>
