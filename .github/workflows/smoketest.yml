@@ -54,6 +54,7 @@ jobs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
     steps:
       - id: skip_check
+        if: ${{ ! contains(github.event.pull_request.labels.*.name, 'smoketest-force-rerun') }}
         uses: hpcc-systems/skip-duplicate-actions@master
         with:
           github_token: ${{ github.token }}
@@ -66,7 +67,7 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 150 # the build step has its own timeout, however the job can sometimes take time to download dependencies
     outputs:
-      cache-hit: ${{ steps.cache.outputs.cache-hit }}
+      cache-state: ${{ steps.check-cache.outputs.state }}
 
     steps:
     - name: Setup and git clone
@@ -161,27 +162,71 @@ jobs:
         echo "restore-key4: hpccbuild-${{ env.cacheversion }}-"
 
     # NB: actions/cache does not set cache-hit to true if restore-keys used.
-    # So here we check if a cache was restored, and set a separate variable 'cache-exists' if it does.
+    # So here we:
+    # 1) check if a cache was restored
+    # 2) check that the SHA stored in the cache can be found in git
+    # 3) mv cache into place (build-cache->build)
+    # 4) checkout source @ base_ref 
+    # 5) get submodules
+    # 6) apply git merge-patch from cache, bringing source up-to-date with the source used in the cached binary build
+    # 7) copy src-cache files into place
+    # 8) touch all files so that 'old' [before original make timestamp], i.e. so behind objects in cache
+    # 9) checkout pr branch - ensuring only pr files that differ are updated (and hence will rebuild)
+    # 10) list updated files (for tracing only)
+    # 11) set 'state' output variable to 'miss' if not absolute match,
+    #     and set to 'hit' if cache is usable. i.e. if set at all, run build and tests.
     - name: Check cache
       id: check-cache
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: ${{ (steps.cache.outputs.cache-hit != 'true') || contains(github.event.pull_request.labels.*.name, 'smoketest-force-rerun') }}
       run: |
-        if [[ -n "${{ secrets.SMOKETEST_SKIP_CACHE }}" ]]
+        if [[ ("${{ steps.cache.outputs.cache-hit }}" == 'true') && ("${{ contains(github.event.pull_request.labels.*.name, 'smoketest-force-rerun') }}" == 'true') ]]
         then
-          echo "Cache found, but ignored because SMOKETEST_SKIP_CACHE set"
+          echo "Exact cache match, but 'smoketest-force-rerun' label forced rerun"
+        fi
+        echo ::set-output name=state::miss
+        if [[ "${{ contains(github.event.pull_request.labels.*.name, 'smoketest-ignore-cache') }}" == 'true' ]]
+        then
+          echo "Cache found, but ignored because 'smoketest-ignore-cache' label set"
           rm -rf build-cache merge-patch src-cache
         else
           if [[ -d build-cache ]]
           then
-            echo "Cache exists"
-            echo ::set-output name=cache-exists::true
+            echo "Attempting to use existing cache"
             stat build-cache merge-patch src-cache
             du -sh build-cache merge-patch src-cache
+            cd src
+            if [[ "commit" == "$(git cat-file -t $(cat ../build-cache/cache-sha))" ]]
+            then
+              mv ../build-cache ../build
+              echo "Checking out cache SHA (cached github.base_ref SHA): $(cat ../build/cache-sha)"
+              git checkout $(cat ../build/cache-sha)
+              git submodule update --init --recursive --jobs 4
+              echo "Applying merge patch"
+              git apply ../merge-patch
+              # Add all mods that came from merge-patch into a commit,
+              # so that the final git checkout will not clash with working tree files
+              git add -A
+              git -c user.name='Smoketest' -c user.email='smoke@test.com' commit -m 'merge-patch'
+              cd ../src-cache
+              echo "Cached source tree files:"
+              find . -type f
+              echo "================"
+              find . -type f | cpio -p -dum ../src
+              cd ../src
+              find . -type f -exec touch -r ../build/cache-timestamp {} +
+              git checkout ${{ steps.vars.outputs.sha }}
+              git submodule update --init --recursive --jobs 4
+              echo "Changed files (from SHA: $(cat ../build/cache-sha)):"
+              find -name '.git*' -prune -o -newer ../build/cache-timestamp -type f -print
+              echo ::set-output name=state::hit
+            else
+              echo "Cached SHA $(cat ../build-cache/cache-sha) could not be found). Skipping cache."
+            fi
           fi
         fi
 
     - name: Dependencies20.04
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: ${{ steps.check-cache.outputs.state != '' }} # if 'state' set then step needed
       run: |
         sudo apt-get update
         sudo apt-get -yq install bison flex build-essential binutils-dev libldap2-dev libcppunit-dev libicu-dev libxslt1-dev \
@@ -192,6 +237,7 @@ jobs:
 
     # See: https://discourse.cmake.org/t/error-when-installing-targets-and-exports-in-3-19-1/2245/6
     - name: cmake-3.19.1-workaround
+      if: ${{ steps.check-cache.outputs.state != '' }} # if 'state' set then step needed
       run: |
         mkdir cmake
         cd cmake
@@ -207,49 +253,8 @@ jobs:
           ln -s `which cmake` ./cmake
         fi
 
-    # On a cache hit (NB: whether exact via key or via a restore-key),
-    # if SHA of cache can be found:
-    # 1) mv cache into place (build-cache->build)
-    # 2) checkout source @ base_ref 
-    # 3) get submodules
-    # 4) apply git merge-patch from cache, bringing source up-to-date with the sourced used in the cached binary build
-    # 5) copy src-cache files into place
-    # 6) touch all files so that 'old' [before original make timestamp], i.e. so behind objects in cache
-    # 7) checkout pr branch - ensuring only pr files that differ are updated (and hence will rebuild)
-    # 8) list updated files (for tracing only)
-    - name: Cache hit prep
-      id: cache-hit-prep
-      if: steps.cache.outputs.cache-hit != 'true' && steps.check-cache.outputs.cache-exists == 'true'
-      run: |
-        echo "Attempting to use existing cache"
-        cd src
-        if [[ "commit" == "$(git cat-file -t $(cat ../build-cache/cache-sha))" ]]
-        then
-          mv ../build-cache ../build
-          echo "Checking out cache SHA (cached github.base_ref SHA): $(cat ../build/cache-sha)"
-          git checkout $(cat ../build/cache-sha)
-          git submodule update --init --recursive --jobs 4
-          echo "Applying merge patch"
-          git apply ../merge-patch
-          git -c user.name='Smoketest' -c user.email='smoke@test.com' commit -a -m 'merge-patch'
-          cd ../src-cache
-          echo "Cached source tree files:"
-          find . -type f
-          echo "================"
-          find . -type f | cpio -p -dum ../src
-          cd ../src
-          find . -type f -exec touch -r ../build/cache-timestamp {} +
-          git checkout ${{ steps.vars.outputs.sha }}
-          git submodule update --init --recursive --jobs 4
-          echo "Changed files (from SHA: $(cat ../build/cache-sha)):"
-          find -name '.git*' -prune -o -newer ../build/cache-timestamp -type f -print
-          echo ::set-output name=hit-success::true
-        else
-          echo "Cached SHA $(cat ../build-cache/cache-sha) could not be found). Skipping cache."
-        fi
-
     - name: Cache miss prep
-      if: steps.cache.outputs.cache-hit != 'true' && (steps.check-cache.outputs.cache-exists != 'true' || steps.cache-hit-prep.outputs.hit-success != 'true')
+      if: ${{ steps.check-cache.outputs.state == 'miss' }}
       run: |
         rm -rf build merge-patch src-cache
         mkdir build
@@ -264,7 +269,7 @@ jobs:
     # used, which would cause it to change per PR (per SHA), and because it's in a common header, cause a lot of undesirable rebuilding.
     - name: Build
       timeout-minutes: 120 # Generous, typical build time from clean is < 60
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: ${{ steps.check-cache.outputs.state != '' }} # if 'state' set to anything, then step needed
       run: |
         cd build
         if [[ ! -f cache-timestamp ]]; then touch cache-timestamp; fi
@@ -286,9 +291,10 @@ jobs:
     # - make binaries (build-cache)
     # - Any sources written since cache-timestamp within the source dir (src-cache) (e.g. AWS writes a config header)
     # - cache-timestamp, timestamp of cache-miss build. All files except diffs set to this time, ensuring no existing binaries are rebuilt
-    # - cache-sha, the SHA of the commit built. On a cache-hit, used to find changed files and ensure they are only ones rebuilt.
+    # - cache-sha, the SHA of the base_ref used to build. On a cache hit, used to find changed files and ensure they are only ones rebuilt.
+    # - merge-path, the diffs between the base_ref and the PR commit at the time of PR/cache build.
     - name: Prepare cache
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: ${{ steps.check-cache.outputs.state != '' }} # if 'state' set to anything, then step needed
       run: |
         echo ${{ steps.vars.outputs.base_ref_sha }} > build/cache-sha
         mv build build-cache
@@ -302,7 +308,7 @@ jobs:
     # - create a clean copy of the install directory (for later reuse)
     # - rm hpcc-data from copy (the post-setup hpcc-data will be moved in when done)
     - name: Prepare install artifact
-      if: steps.cache.outputs.cache-hit != 'true' && github.event_name == 'pull_request'
+      if: ${{ steps.check-cache.outputs.state != '' && github.event_name == 'pull_request' }}
       run: |
         # configure ecl-test.json with correct paths
         jq --arg rootdir "${{ github.workspace }}" \
@@ -312,14 +318,13 @@ jobs:
         # configure environment.xml to slavesPerNode=2, channelsPerNode=1
         xmlstarlet ed -L -u 'Environment/Software/ThorCluster/@slavesPerNode' -v 2 -u 'Environment/Software/ThorCluster/@channelsPerSlave' -v 1 install/etc/HPCCSystems/environment.xml
         cp ${{ github.workspace }}/src/.github/workflows/timeoutcmd install/opt/HPCCSystems/bin/
-        cp ${{ github.workspace }}/src/.github/workflows/smoketest-preabort.sh install/opt/HPCCSystems/bin/
         mkdir copy
         cp -rp install copy/
         rm -rf copy/install/var/lib/HPCCSystems/hpcc-data
         rm -rf copy/install/var/lib/HPCCSystems/queries
 
     - name: Run regression suite setup
-      if: steps.cache.outputs.cache-hit != 'true' && github.event_name == 'pull_request'
+      if: ${{ steps.check-cache.outputs.state != '' && github.event_name == 'pull_request' }}
       timeout-minutes: 10
       run: |
         export LANG="en_US.UTF-8"
@@ -330,7 +335,7 @@ jobs:
         cd install/opt/HPCCSystems/testing/regress
         # force regression suite to timeout after 8 minutes, so it captures ZAP report of any inflight hung queries
         timeoutcmd $((8 * 60)) \
-          ./ecl-test setup --preAbort 'smoketest-preabort.sh' --pq 2 --generateStackTrace
+          ./ecl-test setup --pq 2 --generateStackTrace
         ${{ github.workspace }}/install/opt/HPCCSystems/etc/init.d/hpcc-init stop
 
     - name: regression-setup-logs-artifact
@@ -345,7 +350,7 @@ jobs:
     # - mv regression suite setup created data from hpcc-data and queries into copy of install
     # - create tarball of install for artifact uploading
     - name: Finalize install artifact
-      if: steps.cache.outputs.cache-hit != 'true' && github.event_name == 'pull_request'
+      if: ${{ steps.check-cache.outputs.state != '' && github.event_name == 'pull_request' }}
       run: |
         mv install/var/lib/HPCCSystems/hpcc-data copy/install/var/lib/HPCCSystems/
         mv install/var/lib/HPCCSystems/queries copy/install/var/lib/HPCCSystems/
@@ -354,7 +359,7 @@ jobs:
         tar --zstd -cf ../install.tgz install
 
     - name: Upload install artifact
-      if: steps.cache.outputs.cache-hit != 'true' && github.event_name == 'pull_request'
+      if: ${{ steps.check-cache.outputs.state != '' && github.event_name == 'pull_request' }}
       uses: actions/upload-artifact@v2
       with:
         name: installsetup-artifact
@@ -371,7 +376,7 @@ jobs:
   # TODO: needs to process results, capture report, to be assembled by workflow when all jobs done
   regression-jobs:
     needs: build-and-setup
-    if: needs.build-and-setup.outputs.cache-hit != 'true' && github.event_name == 'pull_request'
+    if: ${{ needs.build-and-setup.outputs.cache-state != '' && github.event_name == 'pull_request' }}
     timeout-minutes: 60 # each matrix step has its own timeout, however the job can sometimes take time to download dependencies
     runs-on: ubuntu-20.04
     strategy:
@@ -439,7 +444,7 @@ jobs:
 
         # force regression suite to timeout after 28 minutes, so it captures ZAP report of any inflight hung queries
         timeoutcmd $((28 * 60)) \
-          ./ecl-test query --preAbort 'smoketest-preabort.sh' --pq 2 --target ${{ matrix.engine }} --excludeclass python2,embedded-r,embedded-js,3rdpartyservice,spray --generateStackTrace ${queries}
+          ./ecl-test query --pq 2 --target ${{ matrix.engine }} --excludeclass python2,embedded-r,embedded-js,3rdpartyservice,spray --generateStackTrace ${queries}
         grep Failure: ${{ github.workspace }}/regress/log/${{ matrix.engine }}.*.log
         if [[ "$(grep -oP '(?<=^Failure: )[0-9]+$' ${{ github.workspace }}/regress/log/${{ matrix.engine }}.*.log)" -gt 0 ]]; then exit 1; fi
 
@@ -458,7 +463,7 @@ jobs:
   # but as this is relatively quick and in parallel with others, it probably doesn't matter
   unittests:
     needs: build-and-setup
-    if: needs.build-and-setup.outputs.cache-hit != 'true' && github.event_name == 'pull_request'
+    if: ${{ needs.build-and-setup.outputs.cache-state != '' && github.event_name == 'pull_request' }}
     timeout-minutes: 30 # the unittests run step has its own timeout, however the job can sometimes take time to download dependencies
     runs-on: ubuntu-20.04
     steps:
@@ -487,7 +492,7 @@ jobs:
   # but as this is relatively quick and in parallel with others, it probably doesn't matter
   eclwatch-ui-tests:
     needs: build-and-setup
-    if: needs.build-and-setup.outputs.cache-hit != 'true' && github.event_name == 'pull_request'
+    if: ${{ needs.build-and-setup.outputs.cache-state != '' && github.event_name == 'pull_request' }}
     timeout-minutes: 30 # the ui-tests run step has its own timeout, however the job can sometimes take time to download dependencies
     runs-on: ubuntu-20.04
     steps:
