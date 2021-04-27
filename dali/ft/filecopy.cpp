@@ -2912,7 +2912,7 @@ const char * FileSprayer::querySplitPrefix()
 const char * FileSprayer::querySlaveExecutable(const IpAddress &ip, StringBuffer &ret) const
 {
 #ifdef _CONTAINERIZED
-    return ret.append("run_ftslave").str();
+    return ret.append("ftslave").str();
 #else
     const char * slave = queryFixedSlave();
     try {

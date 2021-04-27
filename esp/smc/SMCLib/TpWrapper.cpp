@@ -1315,6 +1315,22 @@ void CTpWrapper::getGroupList(double espVersion, const char* kindReq, IArrayOf<I
 {
     try
     {
+#ifdef _CONTAINERIZED
+        Owned<IPropertyTreeIterator> dataPlanes = queryGlobalConfig().getElements("storage/planes[labels='data']");
+        ForEach(*dataPlanes)
+        {
+            IPropertyTree & plane = dataPlanes->query();
+            const char * name = plane.queryProp("@name");
+            IEspTpGroup* pGroup = createTpGroup("","");
+            pGroup->setName(name);
+            if (espVersion >= 1.21)
+            {
+                pGroup->setKind("Plane");
+                pGroup->setReplicateOutputs(false);
+            }
+            GroupList.append(*pGroup);
+        }
+#else
         Owned<IRemoteConnection> conn = querySDS().connect("/Groups", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
         Owned<IPropertyTreeIterator> groups= conn->queryRoot()->getElements("Group");
         if (groups->first())
@@ -1322,7 +1338,11 @@ void CTpWrapper::getGroupList(double espVersion, const char* kindReq, IArrayOf<I
             do
             {
                 IPropertyTree &group = groups->query();
+#ifdef _CONTAINERIZED
+                const char * kind = "Plane";
+#else
                 const char* kind = group.queryProp("@kind");
+#endif
                 if (kindReq && *kindReq && !strieq(kindReq, kind))
                     continue;
 
@@ -1337,6 +1357,7 @@ void CTpWrapper::getGroupList(double espVersion, const char* kindReq, IArrayOf<I
                 GroupList.append(*pGroup);
             } while (groups->next());
         }
+#endif
     }
     catch(IException* e)
     {

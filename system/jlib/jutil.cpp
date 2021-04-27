@@ -1737,15 +1737,6 @@ void doStackProbe()
 #pragma GCC diagnostic pop
 #endif
 
-extern jlib_decl bool isContainerized()
-{
-#ifdef _CONTAINERIZED
-    return true;
-#else
-    return false;
-#endif
-}
-
 #ifdef _WIN32
 
 DWORD dwTlsIndex = -1;

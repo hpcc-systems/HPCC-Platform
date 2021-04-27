@@ -31,6 +31,7 @@
 #ifdef _WIN32
 #include "windows.h"
 #endif
+#include "jlog.hpp"
 
 #include "dalienv.hpp"
 
@@ -532,6 +533,11 @@ bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, const char* group
 
     if(groupName != NULL && *groupName != '\0')
     {
+#ifdef _CONTAINERIZED
+        IPropertyTree * plane = queryStoragePlane(groupName);
+        if (plane)
+            defaultFolder.append(plane->queryProp("@prefix"));
+#else
         StringBuffer basedir;
         GroupType groupType;
         Owned<IGroup> group = queryNamedGroupStore().lookup(groupName, basedir, groupType);
@@ -566,6 +572,7 @@ bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, const char* group
         {
             // Error here?
         }
+#endif
     }
 
     makePhysicalPartName(pLogicalPath,0,0,folder,false,os,defaultFolder.str());

@@ -140,11 +140,16 @@ ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoin
         LOG(MCdetailDebugInfo, unknownJob, "Action aborted before connecting to slave (%3d)", replyTag);
         return NULL;
     }
+
+    SocketEndpoint connectEP(childEP);
 #ifdef _CONTAINERIZED
-    // TODO: replace with K8s job
+    // TODO: call a service within dafilesrv instead of starting a child process
     DWORD runcode;
     if (!invoke_program(cmd.str(), runcode, false))
         throw makeStringExceptionV(-1,"Error spawning %s", exe);
+
+    //In containerized world all processes are executed locally, so make sure we try and connect to a local instance
+    connectEP.set("localhost");
 #else
     if (SSHusername.isEmpty())
     {
@@ -171,7 +176,6 @@ ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoin
 
     //Have to now try and connect to the child and get back the port it is listening on
     unsigned attempts = 20;
-    SocketEndpoint connectEP(childEP);
     connectEP.port = port;
     LOG(MCdetailDebugInfo, unknownJob, "Start connect to correct slave (%3d)", replyTag);
     IException * error = NULL;

@@ -577,7 +577,7 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
 {
     SocketEndpoint ep;
     ep.deserialize(msg);
-    if (!ep.isLocal())
+    if (!isContainerized() && !ep.isLocal())
     {
         StringBuffer host, expected;
         queryHostIP().getIpText(host);
