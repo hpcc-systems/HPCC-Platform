@@ -33,44 +33,13 @@
 }</Result_1></Row>
 </Dataset>
 <Dataset name='Result 2'>
- <Row><Result_2>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;0=[4]&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty1&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 8,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 257
-  },
-  {
-   &quot;type&quot;: &quot;ty2&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
-}</Result_2></Row>
+ <Row><Result_2>This type structure cannot be serialized</Result_2></Row>
 </Dataset>
 <Dataset name='Result 3'>
- <Row><Result_3>true</Result_3></Row>
+ <Row><Result_3>false</Result_3></Row>
 </Dataset>
 <Dataset name='Result 4'>
- <Row><Result_4>true</Result_4></Row>
+ <Row><Result_4>false</Result_4></Row>
 </Dataset>
 <Dataset name='Result 5'>
  <Row><Result_5>{
@@ -107,44 +76,13 @@
 }</Result_5></Row>
 </Dataset>
 <Dataset name='Result 6'>
- <Row><Result_6>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;0=(4,10),[200,250]&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty1&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 8,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 257
-  },
-  {
-   &quot;type&quot;: &quot;ty2&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
-}</Result_6></Row>
+ <Row><Result_6>This type structure cannot be serialized</Result_6></Row>
 </Dataset>
 <Dataset name='Result 7'>
- <Row><Result_7>true</Result_7></Row>
+ <Row><Result_7>false</Result_7></Row>
 </Dataset>
 <Dataset name='Result 8'>
- <Row><Result_8>true</Result_8></Row>
+ <Row><Result_8>false</Result_8></Row>
 </Dataset>
 <Dataset name='Result 9'>
  <Row><Result_9>{
@@ -181,44 +119,13 @@
 }</Result_9></Row>
 </Dataset>
 <Dataset name='Result 10'>
- <Row><Result_10>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;0=[200,1000)&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty1&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 8,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 257
-  },
-  {
-   &quot;type&quot;: &quot;ty2&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
-}</Result_10></Row>
+ <Row><Result_10>This type structure cannot be serialized</Result_10></Row>
 </Dataset>
 <Dataset name='Result 11'>
- <Row><Result_11>true</Result_11></Row>
+ <Row><Result_11>false</Result_11></Row>
 </Dataset>
 <Dataset name='Result 12'>
- <Row><Result_12>true</Result_12></Row>
+ <Row><Result_12>false</Result_12></Row>
 </Dataset>
 <Dataset name='Result 13'>
  <Row><Result_13>{
@@ -255,44 +162,13 @@
 }</Result_13></Row>
 </Dataset>
 <Dataset name='Result 14'>
- <Row><Result_14>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;0=[1],[2],[3],[99],[1000]&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty1&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 8,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 257
-  },
-  {
-   &quot;type&quot;: &quot;ty2&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
-}</Result_14></Row>
+ <Row><Result_14>This type structure cannot be serialized</Result_14></Row>
 </Dataset>
 <Dataset name='Result 15'>
- <Row><Result_15>true</Result_15></Row>
+ <Row><Result_15>false</Result_15></Row>
 </Dataset>
 <Dataset name='Result 16'>
- <Row><Result_16>true</Result_16></Row>
+ <Row><Result_16>false</Result_16></Row>
 </Dataset>
 <Dataset name='Result 17'>
  <Row><Result_17>{
@@ -333,48 +209,13 @@
 }</Result_17></Row>
 </Dataset>
 <Dataset name='Result 18'>
- <Row><Result_18>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 4,
-  &quot;length&quot;: 2
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty3&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;0=[&apos;a &apos;],[&apos;b &apos;],[&apos;c &apos;],[&apos;f &apos;,&apos;k &apos;),[&apos;xx&apos;]&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty2&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 2,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 4
-  },
-  {
-   &quot;type&quot;: &quot;ty3&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
-}</Result_18></Row>
+ <Row><Result_18>This type structure cannot be serialized</Result_18></Row>
 </Dataset>
 <Dataset name='Result 19'>
- <Row><Result_19>true</Result_19></Row>
+ <Row><Result_19>false</Result_19></Row>
 </Dataset>
 <Dataset name='Result 20'>
- <Row><Result_20>true</Result_20></Row>
+ <Row><Result_20>false</Result_20></Row>
 </Dataset>
 <Dataset name='Result 21'>
  <Row><Result_21>{
@@ -415,48 +256,13 @@
 }</Result_21></Row>
 </Dataset>
 <Dataset name='Result 22'>
- <Row><Result_22>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 1028,
-  &quot;length&quot;: 0
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty3&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;0=[&apos;\\&apos;&apos;],[&apos;a&apos;],[&apos;b &apos;],[&apos;bxx&apos;],[&apos;faa&apos;,&apos;kaa&apos;],(&apos;xxa&apos;,&apos;xyz&apos;)&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty2&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 4,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 1028
-  },
-  {
-   &quot;type&quot;: &quot;ty3&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
-}</Result_22></Row>
+ <Row><Result_22>This type structure cannot be serialized</Result_22></Row>
 </Dataset>
 <Dataset name='Result 23'>
- <Row><Result_23>true</Result_23></Row>
+ <Row><Result_23>false</Result_23></Row>
 </Dataset>
 <Dataset name='Result 24'>
- <Row><Result_24>true</Result_24></Row>
+ <Row><Result_24>false</Result_24></Row>
 </Dataset>
 <Dataset name='Result 25'>
  <Row><Result_25>{
@@ -497,48 +303,13 @@
 }</Result_25></Row>
 </Dataset>
 <Dataset name='Result 26'>
- <Row><Result_26>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 4,
-  &quot;length&quot;: 2
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty3&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;0=[&apos;a &apos;],[&apos;b &apos;],(&apos;fa&apos;,&apos;ka&apos;],(&apos;xx&apos;,&apos;xy&apos;]&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty2&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 2,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 4
-  },
-  {
-   &quot;type&quot;: &quot;ty3&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
-}</Result_26></Row>
+ <Row><Result_26>This type structure cannot be serialized</Result_26></Row>
 </Dataset>
 <Dataset name='Result 27'>
- <Row><Result_27>true</Result_27></Row>
+ <Row><Result_27>false</Result_27></Row>
 </Dataset>
 <Dataset name='Result 28'>
- <Row><Result_28>true</Result_28></Row>
+ <Row><Result_28>false</Result_28></Row>
 </Dataset>
 <Dataset name='Result 29'>
  <Row><Result_29>{
@@ -579,48 +350,13 @@
 }</Result_29></Row>
 </Dataset>
 <Dataset name='Result 30'>
- <Row><Result_30>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 4,
-  &quot;length&quot;: 2
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty3&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;0=(&apos;fa&apos;,&apos;ka&apos;]&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty2&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 2,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 4
-  },
-  {
-   &quot;type&quot;: &quot;ty3&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
-}</Result_30></Row>
+ <Row><Result_30>This type structure cannot be serialized</Result_30></Row>
 </Dataset>
 <Dataset name='Result 31'>
- <Row><Result_31>true</Result_31></Row>
+ <Row><Result_31>false</Result_31></Row>
 </Dataset>
 <Dataset name='Result 32'>
- <Row><Result_32>true</Result_32></Row>
+ <Row><Result_32>false</Result_32></Row>
 </Dataset>
 <Dataset name='Result 33'>
  <Row><Result_33>{
@@ -661,48 +397,13 @@
 }</Result_33></Row>
 </Dataset>
 <Dataset name='Result 34'>
- <Row><Result_34>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 4,
-  &quot;length&quot;: 2
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty3&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;0=[&apos;a &apos;],[&apos;b &apos;]&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty2&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 2,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 4
-  },
-  {
-   &quot;type&quot;: &quot;ty3&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
-}</Result_34></Row>
+ <Row><Result_34>This type structure cannot be serialized</Result_34></Row>
 </Dataset>
 <Dataset name='Result 35'>
- <Row><Result_35>true</Result_35></Row>
+ <Row><Result_35>false</Result_35></Row>
 </Dataset>
 <Dataset name='Result 36'>
- <Row><Result_36>true</Result_36></Row>
+ <Row><Result_36>false</Result_36></Row>
 </Dataset>
 <Dataset name='Result 37'>
  <Row><Result_37>{
@@ -743,48 +444,13 @@
 }</Result_37></Row>
 </Dataset>
 <Dataset name='Result 38'>
- <Row><Result_38>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 4,
-  &quot;length&quot;: 2
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty3&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;0=(&apos;ax&apos;,&apos;bx&apos;],(&apos;dx&apos;,&apos;ex&apos;]&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty2&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 2,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 4
-  },
-  {
-   &quot;type&quot;: &quot;ty3&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
-}</Result_38></Row>
+ <Row><Result_38>This type structure cannot be serialized</Result_38></Row>
 </Dataset>
 <Dataset name='Result 39'>
- <Row><Result_39>true</Result_39></Row>
+ <Row><Result_39>false</Result_39></Row>
 </Dataset>
 <Dataset name='Result 40'>
- <Row><Result_40>true</Result_40></Row>
+ <Row><Result_40>false</Result_40></Row>
 </Dataset>
 <Dataset name='Result 41'>
  <Row><Result_41>{
@@ -825,48 +491,13 @@
 }</Result_41></Row>
 </Dataset>
 <Dataset name='Result 42'>
- <Row><Result_42>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 4,
-  &quot;length&quot;: 2
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty3&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;0=[&apos;a &apos;],[&apos;b &apos;]&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty2&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 2,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 4
-  },
-  {
-   &quot;type&quot;: &quot;ty3&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
-}</Result_42></Row>
+ <Row><Result_42>This type structure cannot be serialized</Result_42></Row>
 </Dataset>
 <Dataset name='Result 43'>
- <Row><Result_43>true</Result_43></Row>
+ <Row><Result_43>false</Result_43></Row>
 </Dataset>
 <Dataset name='Result 44'>
- <Row><Result_44>true</Result_44></Row>
+ <Row><Result_44>false</Result_44></Row>
 </Dataset>
 <Dataset name='Result 45'>
  <Row><Result_45>{
@@ -903,44 +534,13 @@
 }</Result_45></Row>
 </Dataset>
 <Dataset name='Result 46'>
- <Row><Result_46>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;0=[4]&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty1&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 8,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 257
-  },
-  {
-   &quot;type&quot;: &quot;ty2&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
-}</Result_46></Row>
+ <Row><Result_46>This type structure cannot be serialized</Result_46></Row>
 </Dataset>
 <Dataset name='Result 47'>
- <Row><Result_47>true</Result_47></Row>
+ <Row><Result_47>false</Result_47></Row>
 </Dataset>
 <Dataset name='Result 48'>
- <Row><Result_48>true</Result_48></Row>
+ <Row><Result_48>false</Result_48></Row>
 </Dataset>
 <Dataset name='Result 49'>
  <Row><Result_49>{
@@ -977,42 +577,11 @@
 }</Result_49></Row>
 </Dataset>
 <Dataset name='Result 50'>
- <Row><Result_50>{
- &quot;ty1&quot;: {
-  &quot;fieldType&quot;: 257,
-  &quot;length&quot;: 8
- },
- &quot;ty2&quot;: {
-  &quot;fieldType&quot;: 1067,
-  &quot;length&quot;: 0,
-  &quot;filterType&quot;: &quot;ty1&quot;,
-  &quot;filter&quot;: &quot;0=(4,10),[200,250]&quot;,
-  &quot;fields&quot;: [
-   {
-    &quot;name&quot;: &quot;extra&quot;,
-    &quot;type&quot;: &quot;ty1&quot;,
-    &quot;flags&quot;: 257
-   }
-  ]
- },
- &quot;fieldType&quot;: 1037,
- &quot;length&quot;: 8,
- &quot;fields&quot;: [
-  {
-   &quot;name&quot;: &quot;id&quot;,
-   &quot;type&quot;: &quot;ty1&quot;,
-   &quot;flags&quot;: 257
-  },
-  {
-   &quot;type&quot;: &quot;ty2&quot;,
-   &quot;flags&quot;: 1067
-  }
- ]
-}</Result_50></Row>
+ <Row><Result_50>This type structure cannot be serialized</Result_50></Row>
 </Dataset>
 <Dataset name='Result 51'>
- <Row><Result_51>true</Result_51></Row>
+ <Row><Result_51>false</Result_51></Row>
 </Dataset>
 <Dataset name='Result 52'>
- <Row><Result_52>true</Result_52></Row>
+ <Row><Result_52>false</Result_52></Row>
 </Dataset>
