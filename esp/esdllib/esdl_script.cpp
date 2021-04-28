@@ -1730,7 +1730,7 @@ protected:
     bool m_required = true;
 
 public:
-    CEsdlTransformOperationSource(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, false, nullptr)
+    CEsdlTransformOperationSource(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
     {
         const char *xpath = stag.getValue("xpath");
         if (isEmptyString(xpath))
