@@ -53,8 +53,7 @@ MetricsReporter::~MetricsReporter()
 
 void MetricsReporter::init(IPropertyTree *pMetricsTree)
 {
-    Owned<IPropertyTree> pSinkTree = pMetricsTree->getPropTree("sinks");
-    Owned<IPropertyTreeIterator> sinkElementsIt = pSinkTree->getElements("sink");
+    Owned<IPropertyTreeIterator> sinkElementsIt = pMetricsTree->getElements("sinks");
     initializeSinks(sinkElementsIt);
 }
 

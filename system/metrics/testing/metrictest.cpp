@@ -14,13 +14,12 @@ std::shared_ptr<GaugeMetric> pQueueSizeMetric;
 
 MetricsReporter *pReporter;
 
-
-const char *globalConfigYml = R"!!(config:
+const char *testFileSinkConfigYml = R"!!(component:
   metrics:
-    name: cluster config
-    prefix: global_prefix.
+    name: config_name
+    prefix: component_prefix.
     sinks:
-      - type: filesink
+      - type: file
         name: default
         settings:
           filename: testout.txt
@@ -28,58 +27,20 @@ const char *globalConfigYml = R"!!(config:
           period: 5
 )!!";
 
-
-const char *localConfigYml = R"!!(roxie:
-  metrics:
-    name: config_name
-    prefix: component_prefix.
-    sinks:
-      - name: default
-        metrics:
-          - name: requests
-            measurement_type: count
-          - name: requests
-            measurement_type: resetting_count
-          - name: requests
-            measurement_type: rate
-            description: Number of request arriving per second
-          - name: queuesize
-          - name: requests_dynamic
-            measurement_type: count
-)!!";
-
-
-const char *testFileSinkConfigYml = R"!!(component:
-  metrics:
-    name: config_name
-    prefix: component_prefix.
-    sinks:
-        sink:
-          - type: file
-            name: default
-            settings:
-              filename: testout.txt
-              clear: true
-              period: 5
-)!!";
-
-
 const char *testLogSinkConfigYml = R"!!(component:
   metrics:
     name: config_name
     prefix: component_prefix.
     sinks:
-        sink:
-          - type: log
-            name: default
-            settings:
-              period: 5
+      - type: log
+        name: default
+        settings:
+          period: 5
 )!!";
 
 
 int main(int argc, char *argv[])
 {
-
     try
     {
         InitModuleObjects();
@@ -99,7 +60,6 @@ int main(int argc, char *argv[])
             auto pSinkTree = pMetricsTree->getPropTree("component/metrics/sinks[1]/settings");
             pSinkTree->setProp("@filename", argv[1]);
         }
-
 
         //
         // Get singleton

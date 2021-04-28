@@ -10,8 +10,9 @@ data:
   {{ .me.name }}.yaml: |
     version: 1.0
     esp:
-{{ toYaml (omit .me "logging") | indent 6 }}
+{{ toYaml (omit .me "logging" "metrics") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" . | indent 6 }}
+{{- include "hpcc.generateMetricsConfig" . | indent 6 }}
 {{- if and .root.Values.certificates .root.Values.certificates.enabled }}
  {{- if not (hasKey .me "tls" )}}
       tls: true

@@ -360,8 +360,14 @@ void initializeMetrics(CEspConfig* config)
     //
     // Initialize metrics
     Owned<IPropertyTree> pMetricsTree = config->queryConfigPTree()->getPropTree("metrics");
+    if (pMetricsTree == nullptr)
+    {
+        pMetricsTree.setown(queryComponentConfig().getPropTree("metrics"));
+    }
+
     if (pMetricsTree != nullptr)
     {
+        PROGLOG("Metrics initializing...");
         MetricsReporter &metricsReporter = queryMetricsReporter();
         metricsReporter.init(pMetricsTree);
         metricsReporter.startCollecting();

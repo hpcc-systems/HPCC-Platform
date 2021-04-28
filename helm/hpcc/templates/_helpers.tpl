@@ -136,6 +136,17 @@ logging:
 {{- end -}}
 {{- end -}}
 
+{{/*
+Generate local metrics configuration, merged with global
+Pass in dict with root and me
+*/}}
+{{- define "hpcc.generateMetricsConfig" -}}
+{{- $metrics := deepCopy (.me.metrics | default dict) | mergeOverwrite dict (.root.Values.global.metrics | default dict) -}}
+{{- if not (empty $metrics) }}
+metrics:
+{{ toYaml $metrics | indent 2 }}
+{{- end -}}
+{{- end -}}
 
 {{/*
 Add ConfigMap volume mount for a component

@@ -277,6 +277,15 @@
               "type": "null"
             }
           ]
+        },
+        "metrics": {
+          "type" : "object",
+          "description" : "Global metrics configuration",
+          "properties" : {
+            "sinks" : {
+              "$ref" : "#/definitions/sinks"
+            }
+          }
         }
       },
       "additionalProperties": false
@@ -1205,6 +1214,34 @@
           "type": "object"
         }
       }
+    },
+    "sinks": {
+      "type": "array",
+      "items" : {
+        "$ref" : "#/definitions/sink"
+      }
+    },
+    "sink": {
+      "type" : "object",
+      "description" : "Definition of a metric sink",
+      "properties" : {
+        "type": {
+          "type" : "string",
+          "description" : "The defined metric sink type"
+        },
+        "name" : {
+          "type" : "string",
+          "description" : "Name for the sink, must be unique for the component"
+        },
+        "settings": {
+          "type" : "object",
+          "description" : "Settings specific to the sink"
+        }
+      },
+      "required" : [
+        "type",
+        "name"
+      ]
     }
   }
 }
