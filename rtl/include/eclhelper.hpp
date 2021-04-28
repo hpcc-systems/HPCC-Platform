@@ -435,6 +435,7 @@ struct RtlTypeInfo : public RtlITypeInfo
     inline bool isSigned() const { return (fieldType & RFTMunsigned) == 0; }
     inline bool isUnsigned() const { return (fieldType & RFTMunsigned) != 0; }
     inline bool isBlob() const { return getType() == type_blob; }
+    inline bool hasIfBlocks() const { return fieldType & RFTMinifblock; }
     inline bool canInterpret() const { return (fieldType & RFTMcannotinterpret) == 0; }
     inline unsigned getDecimalDigits() const { return (length & 0xffff); }
     inline unsigned getDecimalPrecision() const { return (length >> 16); }

@@ -267,8 +267,10 @@ void CDiskRecordPartHandler::open()
     IOutputMetaData *expectedFormat = activity.helper->queryDiskRecordSize();
     Owned<ITranslator> translator = activity.getTranslators(*partDesc);
     IOutputMetaData *actualFormat = translator ? &translator->queryActualFormat() : expectedFormat;
-    bool tryRemoteStream = actualFormat->queryTypeInfo()->canInterpret() && actualFormat->queryTypeInfo()->canSerialize() &&
-                           projectedFormat->queryTypeInfo()->canInterpret() && projectedFormat->queryTypeInfo()->canSerialize();
+    const RtlTypeInfo *actualTypeInfo = actualFormat->queryTypeInfo();
+    const RtlTypeInfo *projectedTypeInfo = projectedFormat->queryTypeInfo();
+    bool tryRemoteStream = actualTypeInfo->canInterpret() && actualTypeInfo->canSerialize() && !actualTypeInfo->hasIfBlocks() &&
+                           projectedTypeInfo->canInterpret() && projectedTypeInfo->canSerialize() && !projectedTypeInfo->hasIfBlocks();
 
     /* If part can potentially be remotely streamed, 1st check if any part is local,
      * then try to remote stream, and otherwise failover to legacy remote access
