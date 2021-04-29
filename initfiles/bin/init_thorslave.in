@@ -66,6 +66,19 @@ stop_slaves()
 
 start_slaves()
 {
+    
+    # insuring parent directory structure is setup properly
+    mkdir -p $instancedir
+    mkdir -p $(dirname $logfile)
+
+    cd $instancedir
+
+    log "checking killall dependency"
+    if ! killall -V > /dev/null 2>&1 ; then
+        log "killall dependency not met. Cannot start thorslaves"
+        exit 1
+    fi
+
     killall -0 dafilesrv > /dev/null 2>&1
     if [[ $? -ne 0 ]];then
         # insuring dafilesrv is running on the machine as it is a prerequisite
@@ -78,12 +91,6 @@ start_slaves()
             exit 1
         fi
     fi
-
-    # insuring parent directory structure is setup properly
-    mkdir -p $instancedir
-    mkdir -p $(dirname $logfile)
-
-    cd $instancedir
 
     log "dependency dafilesrv started"
 
