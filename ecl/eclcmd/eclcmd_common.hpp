@@ -159,6 +159,8 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_TARGET_S "-t"
 #define ECLOPT_NAME "--name"
 #define ECLOPT_NAME_S "-n"
+#define ECLOPT_JOB_NAME "--job-name"
+#define ECLOPT_QUERY_NAME "--query-name"
 #define ECLOPT_QUERYSET "--queryset"
 #define ECLOPT_QUERYSET_S "-qs"
 #define ECLOPT_VERSION "--version"

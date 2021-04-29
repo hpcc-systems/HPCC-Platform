@@ -101,12 +101,15 @@ ESPrequest [nil_remove] WUPublishWorkunitRequest
 {
     string Wuid;
     string Cluster;
+    [min_ver("1.81")] string QueryName; //if set always used for the query name
+    [min_ver("1.81")] string WorkUnitJobName;  //if set always used for the workunit job name field
     string JobName;
     int Activate;
     bool NotifyCluster(false);
     int Wait(10000);
     bool NoReload(0);
-    bool UpdateWorkUnitName(0);
+    bool UpdateWorkUnitName(0);     //Update Workunit JobName field from JobName if WorkUnitJobName is blank (for backward compatibility)
+
     string memoryLimit;
     nonNegativeInteger TimeLimit(0);
     nonNegativeInteger WarnTimeLimit(0);

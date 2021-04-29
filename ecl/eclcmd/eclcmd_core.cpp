@@ -246,7 +246,7 @@ public:
         for (; !iter.done(); iter.next())
         {
             const char *arg = iter.query();
-            if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
+            if (iter.matchOption(optName, ECLOPT_JOB_NAME)||iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
                 continue;
             if (iter.matchFlag(optProtect, ECLOPT_PROTECT))
                 continue;
@@ -292,7 +292,7 @@ public:
             "   <archive>              ecl archive to deploy\n"
             "   <so|dll>               workunit dll or shared object to deploy\n"
             " Options:\n"
-            "   -n, --name=<val>       workunit job name\n"
+            "   --job-name=<val>       workunit job name\n"
             "   --protect              protect workunit from deletion\n",
             stdout);
         EclCmdWithEclTarget::usage();
@@ -322,7 +322,12 @@ public:
         {
             if (iter.matchOption(optObj.value, ECLOPT_WUID)||iter.matchOption(optObj.value, ECLOPT_WUID_S))
                 continue;
-            if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
+            //no longer documented but support "--name, -n" for backward compatibility
+            if (iter.matchOption(optQueryName, ECLOPT_NAME)||iter.matchOption(optQueryName, ECLOPT_NAME_S))
+                continue;
+            if (iter.matchOption(optQueryName, ECLOPT_QUERY_NAME))
+                continue;
+            if (iter.matchOption(optJobName, ECLOPT_JOB_NAME))
                 continue;
             if (iter.matchOption(optDaliIP, ECLOPT_DALIIP))
                 continue;
@@ -423,7 +428,7 @@ public:
         StringBuffer wuid;
         if (optObj.type==eclObjWuid)
             wuid.set(optObj.value.get());
-        else if (!doDeploy(*this, client, optMsToWait, optTargetCluster.get(), optName.get(), &wuid, NULL, optNoArchive, true, true, optProtect))
+        else if (!doDeploy(*this, client, optMsToWait, optTargetCluster.get(), optJobName.length() ? optJobName.get() : optQueryName.get(), &wuid, NULL, optNoArchive, true, true, optProtect))
             return 1;
 
         unsigned remaining = 0;
@@ -448,8 +453,15 @@ public:
         else
             req->setActivate(optNoActivate ? CWUQueryActivationMode_NoActivate : CWUQueryActivationMode_Activate);
 
-        if (optName.length())
-            req->setJobName(optName.get());
+        if (optJobName.length())
+            req->setWorkUnitJobName(optJobName);
+        if (optQueryName.length())
+        {
+            //very confusing parameter name, but set for backward compatability
+            //  for old servers... will not override WorkUnit JobName from call to doDeploy above, so that job name will still win
+            req->setJobName(optQueryName);
+            req->setQueryName(optQueryName);
+        }
         if (optTargetCluster.length())
             req->setCluster(optTargetCluster.get());
         req->setRemoteDali(optDaliIP.get());
@@ -512,7 +524,8 @@ public:
             "   <file>                 ECL text file to publish\n"
             "   <so|dll>               workunit dll or shared object to publish\n"
             " Options:\n"
-            "   -n, --name=<val>       query name to use for published workunit\n"
+            "   --query-name=<val>     query name to use for published workunit\n"
+            "   --job-name=<val>       job name to use for the workunit\n"
             "   -A, --activate         Activate query when published (default)\n"
             "   -sp, --suspend-prev    Suspend previously active query\n"
             "   -dp, --delete-prev     Delete previously active query\n"
@@ -539,7 +552,8 @@ public:
         EclCmdWithEclTarget::usage();
     }
 private:
-    StringAttr optName;
+    StringAttr optQueryName;
+    StringAttr optJobName;
     StringAttr optDaliIP;
     StringAttr optSourceProcess;
     StringAttr optMemoryLimit;
@@ -593,7 +607,8 @@ public:
                 continue;
             if (iter.matchOption(optObj.value, ECLOPT_WUID)||iter.matchOption(optObj.value, ECLOPT_WUID_S))
                 continue;
-            if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
+            //backward compatable, but "--name, -n" no longer documented in favor of explicit/consistent --job-name parameter
+            if (iter.matchOption(optName, ECLOPT_JOB_NAME)||iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
                 continue;
             if (iter.matchOption(optInput, ECLOPT_INPUT)||iter.matchOption(optInput, ECLOPT_INPUT_S))
                 continue;
@@ -1058,7 +1073,7 @@ public:
             "   <eclfile>              ECL text file to publish\n"
             "   <so|dll>               workunit dll or shared object to publish\n"
             " Options:\n"
-            "   -n, --name=<val>          job name\n"
+            "   --job-name=<val>          job name\n"
             "   -in,--input=<file|xml>    file or xml content to use as query input\n"
             "   -X<name>=<value>          sets the stored input value (stored('name'))\n"
             "   --wait=<ms>               time to wait for completion\n"
