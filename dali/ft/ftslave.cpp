@@ -136,12 +136,34 @@ public:
     }
 };
 
+static constexpr const char * defaultYaml = R"!!(
+version: "1.0"
+ftslave:
+  name: ftslave
+  logging:
+    detail: 50
+)!!";
 
-int main(int argc, char * argv[])
+int main(int argc, const char * * argv)
 {
     InitModuleObjects();
     setDaliServixSocketCaching(true);
     installDefaultFileHooks(nullptr);
+    try
+    {
+        loadConfiguration(defaultYaml, argv, "ftslave", "FTSLAVE", nullptr, nullptr);
+    }
+    catch (IException * e)
+    {
+        OERRLOG(e);
+        e->Release();
+        return 1;
+    }
+    catch(...)
+    {
+        OERRLOG("Failed to load configuration");
+        return 1;
+    }
     FtSlave slave;
     slave.run(argc, argv);
     return 0;
