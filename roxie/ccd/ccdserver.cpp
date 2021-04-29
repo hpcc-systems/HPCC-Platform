@@ -408,6 +408,21 @@ static const StatisticsMapping indexWriteStatistics({ StNumDuplicateKeys }, actS
 
 //=================================================================================
 
+extern SinkMode getSinkMode(const char *val)
+{
+    if (strieq(val, "parallelpersistent"))
+        return SinkMode::ParallelPersistent;
+    else if (strieq(val, "sequential"))
+        return SinkMode::Sequential;
+    else
+    {
+        if (!strieq(val, "parallel"))
+            WARNLOG("Unsupported sinkmode %s - assuming parallel", val);
+        return SinkMode::Parallel;
+    }
+}
+
+
 const static unsigned minus1U = (0U-1U);
 class CRoxieServerActivityFactoryBase : public CActivityFactory, implements IRoxieServerActivityFactory
 {
@@ -422,6 +437,7 @@ protected:
     bool optUnstableInput = false;  // is the input forced to unordered?
     bool optUnordered = false; // is the output specified as unordered?
     bool isCodeSigned = false;
+    SinkMode sinkMode = SinkMode::Parallel;
     unsigned heapFlags;
     mutable RelaxedAtomic<__int64> processed = {0};
     mutable RelaxedAtomic<__int64> started = {0};
@@ -436,6 +452,11 @@ public:
         optParallel = _graphNode.getPropInt("att[@name='parallel']/@value", 0);
         optUnordered = !_graphNode.getPropBool("att[@name='ordered']/@value", true);
         heapFlags = _graphNode.getPropInt("hint[@name='heapflags']/@value", _queryFactory.queryOptions().heapFlags);
+        const char *sinkModeText  = _graphNode.queryProp("hint[@name='sinkmode']/@value");
+        if (sinkModeText)
+            sinkMode = ::getSinkMode(sinkModeText);
+        else
+            sinkMode = _queryFactory.queryOptions().sinkMode;
         isCodeSigned = ::isActivityCodeSigned(_graphNode);
     }
     
@@ -618,6 +639,10 @@ public:
     virtual RecordTranslationMode getEnableFieldTranslation() const
     {
         return CActivityFactory::getEnableFieldTranslation();
+    }
+    virtual SinkMode getSinkMode() const override
+    {
+        return sinkMode;
     }
 };
 
@@ -27389,6 +27414,7 @@ protected:
     IRoxieServerActivity *parentActivity;
     unsigned id;
     unsigned loopCounter;
+    SinkMode sinkMode = SinkMode::Parallel;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -27402,6 +27428,10 @@ public:
         loopCounter = 0;
         graphAgentContext.setCodeContext(&graphCodeContext);
         graphCodeContext.setContainer(&graphAgentContext, this);
+        if (parentActivity)
+            sinkMode = parentActivity->queryFactory()->getSinkMode();
+        else
+            sinkMode = _ctx->queryOptions().sinkMode;
     }
 
     ~CActivityGraph()
@@ -27581,68 +27611,73 @@ public:
         if (sinks.ordinality()==1)
             sinks.item(0).execute(parentExtractSize, parentExtract);
 #ifdef PARALLEL_EXECUTE
-        else if (!probeManager && !graphDefinition.isSequential())
+        else if (!probeManager && !graphDefinition.isSequential() && sinkMode != SinkMode::Sequential)
         {
-#ifdef PARALLEL_PERSISTANT_THREADS
-            if (!threads.ordinality())
+            if (sinkMode == SinkMode::ParallelPersistent)
             {
-                for (unsigned i = 0; i < sinks.ordinality()-1; i++)
+                if (!threads.ordinality())
                 {
-                    threads.append(*new SinkThread(*this, sinks.item(i)));
+                    for (unsigned i = 0; i < sinks.ordinality()-1; i++)
+                    {
+                        threads.append(*new SinkThread(*this, sinks.item(i)));
+                    }
                 }
-            }
-            for (unsigned i = 0; i < sinks.ordinality()-1; i++)
-                threads.item(i).start(parentExtractSize, parentExtract);
-            try
-            {
-                sinks.item(sinks.ordinality()-1).execute(parentExtractSize, parentExtract);
-            }
-            catch (IException *E)
-            {
-                noteException(E);
-                E->Release();
-            }
-            for (unsigned i = 0; i < sinks.ordinality()-1; i++)
-            {
+                for (unsigned i = 0; i < sinks.ordinality()-1; i++)
+                    threads.item(i).start(parentExtractSize, parentExtract);
                 try
                 {
-                    threads.item(i).join();
+                    sinks.item(sinks.ordinality()-1).execute(parentExtractSize, parentExtract);
                 }
                 catch (IException *E)
                 {
                     noteException(E);
                     E->Release();
                 }
-            }
-            checkAbort();
- #else
-            class casyncfor: public CAsyncFor
-            {
-            public:
-                IActivityGraph &parent;
-                unsigned parentExtractSize;
-                const byte * parentExtract;
-
-                casyncfor(IRoxieServerActivityCopyArray &_sinks, IActivityGraph &_parent, unsigned _parentExtractSize, const byte * _parentExtract) : 
-                    sinks(_sinks), parent(_parent), parentExtractSize(_parentExtractSize), parentExtract(_parentExtract) { }
-                void Do(unsigned i)
+                for (unsigned i = 0; i < sinks.ordinality()-1; i++)
                 {
                     try
                     {
-                        sinks.item(i).execute(parentExtractSize, parentExtract);
+                        threads.item(i).join();
                     }
                     catch (IException *E)
                     {
-                        parent.noteException(E);
-                        throw;
+                        noteException(E);
+                        E->Release();
                     }
                 }
-            private:
-                IRoxieServerActivityCopyArray &sinks;
-            } afor(sinks, *this, parentExtractSize, parentExtract);
-            afor.For(sinks.ordinality(), sinks.ordinality());
-#endif
+                checkAbort();
             }
+            else if (sinkMode == SinkMode::Parallel)
+            {
+                class casyncfor: public CAsyncFor
+                {
+                public:
+                    IActivityGraph &parent;
+                    unsigned parentExtractSize;
+                    const byte * parentExtract;
+
+                    casyncfor(IRoxieServerActivityCopyArray &_sinks, IActivityGraph &_parent, unsigned _parentExtractSize, const byte * _parentExtract) :
+                        parent(_parent), parentExtractSize(_parentExtractSize), parentExtract(_parentExtract), sinks(_sinks) { }
+                    void Do(unsigned i)
+                    {
+                        try
+                        {
+                            sinks.item(i).execute(parentExtractSize, parentExtract);
+                        }
+                        catch (IException *E)
+                        {
+                            parent.noteException(E);
+                            throw;
+                        }
+                    }
+                private:
+                    IRoxieServerActivityCopyArray &sinks;
+                } afor(sinks, *this, parentExtractSize, parentExtract);
+                afor.For(sinks.ordinality(), sinks.ordinality());
+            }
+            else
+                throwUnexpected();
+        }
 #endif
         else
         {
