@@ -218,7 +218,11 @@ static RGlobalState *queryGlobalState()
 {
     CriticalBlock b(RCrit);
     if (!globalState)
+    {
+        if (!isMainThread())
+            FAIL("R embed support must be loaded or preloaded on main thread");
         globalState = new RGlobalState;
+    }
     return globalState;
 }
 

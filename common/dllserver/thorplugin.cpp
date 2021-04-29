@@ -846,6 +846,40 @@ void SafePluginMap::loadFromList(const char * pluginsList)
     }
 }
 
+bool SafePluginMap::loadNamed(const char * pluginDirectories, const char * plugin)
+{
+    const char *pluginDir = pluginDirectories;
+    for (;*pluginDir;)
+    {
+        StringBuffer thisFile;
+        while (*pluginDir && *pluginDir != ENVSEPCHAR)
+            thisFile.append(*pluginDir++);
+        if(*pluginDir)
+            pluginDir++;
+
+        if(!thisFile.length())
+            continue;
+        Owned<IFile> dir = createIFile(thisFile);
+        if (dir->isDirectory() == fileBool::foundYes)
+        {
+            Owned<IFile> file = createIFile(addPathSepChar(thisFile).append(plugin));
+            if (file->exists())
+            {
+                if (addPlugin(thisFile, plugin))
+                    return true;
+            }
+        }
+        else if (dir->isFile() == fileBool::foundYes)
+        {
+            StringBuffer tail;
+            splitFilename(thisFile, NULL, NULL, &tail, &tail);
+            if (streq(tail, plugin) && addPlugin(thisFile, plugin))
+                return true;
+        }
+    }
+    return false;
+}
+
 void SafePluginMap::loadFromDirectory(const char * pluginDirectory)
 {
     const char * mask = "*" SharedObjectExtension;

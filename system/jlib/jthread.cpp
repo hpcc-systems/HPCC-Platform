@@ -54,6 +54,11 @@ static struct MainThreadIdHelper
     }
 } mainThreadIdHelper;
 
+extern bool isMainThread()
+{
+    return GetCurrentThreadId() == mainThreadIdHelper.tid;
+}
+
 /*
  * NB: Thread termination hook functions are tracked using a thread local vector (threadTermHooks).
  * However, hook functions installed on the main thread must be tracked separately in a non thread local vector (mainThreadTermHooks).

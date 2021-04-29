@@ -738,6 +738,11 @@
         "logging": {
           "$ref": "#/definitions/logging"
         },
+        "preload": {
+          "description": "Preloaded plugins",
+          "type": "array",
+          "items": { "type": "string" }
+        },
         "services": {
           "description": "Roxie query services",
           "type": "array",
