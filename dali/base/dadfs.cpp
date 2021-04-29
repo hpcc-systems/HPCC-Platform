@@ -39,6 +39,7 @@
 #include "dadfs.hpp"
 #include "eclhelper.hpp"
 #include "seclib.hpp"
+#include "dameta.hpp"
 
 #include <string>
 #include <vector>
@@ -10060,10 +10061,9 @@ public:
         return createClusterGroup(grp_unknown, hosts, path, nullptr, false, false);
     }
 
-    void ensureStorageGroup(bool force, const char * name, unsigned numDevices, const char * path, StringBuffer & messages)
+    void ensureConsistentStorageGroup(bool force, const char * name, IPropertyTree * newClusterGroup, StringBuffer & messages)
     {
         IPropertyTree *existingClusterGroup = queryExistingGroup(name);
-        Owned<IPropertyTree> newClusterGroup = createStorageGroup(name, numDevices, path);
         bool matchExisting = clusterGroupCompare(newClusterGroup, existingClusterGroup);
         if (!existingClusterGroup || !matchExisting)
         {
@@ -10072,14 +10072,14 @@ public:
                 VStringBuffer msg("New cluster layout for cluster %s", name);
                 UWARNLOG("%s", msg.str());
                 messages.append(msg).newline();
-                addClusterGroup(name, newClusterGroup.getClear(), false);
+                addClusterGroup(name, LINK(newClusterGroup), false);
             }
             else if (force)
             {
                 VStringBuffer msg("Forcing new group layout for storageplane %s", name);
                 UWARNLOG("%s", msg.str());
                 messages.append(msg).newline();
-                addClusterGroup(name, newClusterGroup.getClear(), false);
+                addClusterGroup(name, LINK(newClusterGroup), false);
             }
             else
             {
@@ -10090,12 +10090,20 @@ public:
         }
     }
 
+    void ensureStorageGroup(bool force, const char * name, unsigned numDevices, const char * path, StringBuffer & messages)
+    {
+        Owned<IPropertyTree> newClusterGroup = createStorageGroup(name, numDevices, path);
+        ensureConsistentStorageGroup(force, name, newClusterGroup, messages);
+    }
+
     void constructStorageGroups(bool force, StringBuffer &messages)
     {
         IPropertyTree & global = queryGlobalConfig();
         IPropertyTree * storage = global.queryPropTree("storage");
         if (storage)
         {
+            normalizeHostGroups();
+
             Owned<IPropertyTreeIterator> planes = storage->getElements("planes");
             ForEach(*planes)
             {
@@ -10104,25 +10112,45 @@ public:
                 if (isEmptyString(name))
                     continue;
 
-                //Lower case the group name - see CnamedGroupStore::dolookup which lower cases before resolving.
+                //Lower case the group name - see CNamedGroupStore::dolookup which lower cases before resolving.
                 StringBuffer gname;
                 gname.append(name).toLowerCase();
 
                 //Two main type of storage plane - with a host group (bare metal) and without.
-                IPropertyTree *existingGroup = queryExistingGroup(gname);
-                const char * hosts = plane.queryProp("@hosts");
+                const char * hostGroup = plane.queryProp("@hostGroup");
                 const char * prefix = plane.queryProp("@prefix");
-                if (hosts)
+                Owned<IPropertyTree> newClusterGroup;
+                if (hostGroup)
                 {
-                    IPropertyTree *existingClusterGroup = queryExistingGroup(gname);
-                    if (!existingClusterGroup)
-                        UNIMPLEMENTED_X("Bare metal storage planes not yet supported");
+                    IPropertyTree * match = queryHostGroup(hostGroup, true);
+                    std::vector<std::string> hosts;
+                    Owned<IPropertyTreeIterator> hostIter = match->getElements("hosts");
+                    ForEach (*hostIter)
+                        hosts.push_back(hostIter->query().queryProp(nullptr));
+
+                    //A bare-metal storage plane defined in terms of a hostGroup
+                    newClusterGroup.setown(createClusterGroup(grp_unknown, hosts, prefix, nullptr, false, false));
+                }
+                else if (plane.hasProp("hostGroup"))
+                {
+                    throw makeStringExceptionV(-1, "Use 'hosts' rather than 'hostGroup' for inline list of hosts for plane %s", name);
+                }
+                else if (plane.hasProp("hosts"))
+                {
+                    //A bare-metal storage plane defined by an explicit list of ips (useful for landing zones)
+                    std::vector<std::string> hosts;
+                    Owned<IPropertyTreeIterator> iter = plane.getElements("hosts");
+                    ForEach(*iter)
+                        hosts.push_back(iter->query().queryProp(nullptr));
+                    newClusterGroup.setown(createClusterGroup(grp_unknown, hosts, prefix, nullptr, false, false));
                 }
                 else
                 {
+                    //Locally mounted, or url accessed storage plane - no associated hosts, localhost used as a placeholder
                     unsigned numDevices = plane.getPropInt("@numDevices", 1);
-                    ensureStorageGroup(force, gname, numDevices, prefix, messages);
+                    newClusterGroup.setown(createStorageGroup(name, numDevices, prefix));
                 }
+                ensureConsistentStorageGroup(force, name, newClusterGroup, messages);
             }
         }
     }

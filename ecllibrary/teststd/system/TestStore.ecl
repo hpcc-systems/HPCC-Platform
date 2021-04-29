@@ -11,7 +11,7 @@ EXPORT TestStore := MODULE
     SHARED ESP := '';
 
     SHARED STORE_NAME := 'hpcc_internal_selftest';
-    SHARED STORE_NAMESPACE := 'ns';
+    SHARED STORE_NAMESPACE := 'ns_' + WORKUNIT;
     SHARED KEY_1 := 'some_key';
     SHARED VALUE_1 := 'fubar';
 

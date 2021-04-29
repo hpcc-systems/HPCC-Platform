@@ -442,6 +442,7 @@ define([
                                 case "Thor":
                                 case "hthor":
                                 case "Roxie":
+                                case "Plane":
                                     context.options.push({
                                         label: targetData[i].Name,
                                         value: targetData[i].Name

@@ -52,6 +52,8 @@ public:
     virtual bool onGetValue(IEspContext& context, IEspGetValueRequest& req, IEspResultResponse& resp) override;
     virtual bool onImport(IEspContext& context, IEspImportRequest& req, IEspResultResponse& resp) override;
     virtual bool onDelete(IEspContext& context, IEspDeleteRequest& req, IEspResultResponse& resp) override;
+    virtual bool onAdd(IEspContext& context, IEspAddRequest& req, IEspResultResponse& resp) override;
+    virtual bool onCount(IEspContext& context, IEspCountRequest& req, IEspCountResponse& resp) override;
 };
 
 class CWSDaliSoapBindingEx : public CWSDaliSoapBinding

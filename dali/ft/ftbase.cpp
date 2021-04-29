@@ -747,8 +747,12 @@ bool daftAbortHandler()
 
 const char * queryFtSlaveExecutable(const IpAddress &ip, StringBuffer &ret)
 {
+#ifdef _CONTAINERIZED
+    return ret.append("ftslave");
+#else
     StringBuffer dir; // not currently used
     return querySlaveExecutable("FTSlaveProcess", "ftslave", NULL, ip, ret, dir);
+#endif
 }
 
 static StringAttr ftslavelogdir;

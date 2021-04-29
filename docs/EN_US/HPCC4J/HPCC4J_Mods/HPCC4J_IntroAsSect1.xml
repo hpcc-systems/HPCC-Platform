@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="IntroHPCC4J" role="nobrk">
+  <title>Introduction to HPCC4J</title>
+
+  <para>The hpcc4j project is a collection Java based APIs which help
+  developers interact with HPCC in a relatively simple, and standardized
+  fashion.</para>
+
+  <para>The project houses multiple HPCC centric Java based API/tools. Each
+  API set has some useful capabilities.</para>
+</sect1>
+<sect1>
+    <title>HPCC4J Projects</title>
+
+    <para>The projects contained in the hpcc4j repository:</para>
+
+    <sect2>
+      <title>org.hpccsystems.ws.client</title>
+
+      <para>The API which standardizes and facilitates interaction with HPCC
+      Web based Services.</para>
+
+      <para>The project is based on stub code generated from WSDL using
+      Eclipse tools based on Apache Axis.</para>
+
+      <para>Provides a mechanism for activating HPCC web service
+      methods.</para>
+    </sect2>
+
+    <sect2>
+      <title>org.hpccsystems.clienttools</title>
+
+      <para>Java based interface to HPCC client tools. Currently only
+      interfaces with the ECLCC Server.</para>
+    </sect2>
+
+    <sect2>
+      <title>org.hpccsystems.rdf.rdf2hpcc</title>
+
+      <para>RDF data ingestion tool to HPCC. Based on Apache Jena and is
+      dependent on org.hpccsystems.ws.client.</para>
+    </sect2>
+
+    <sect2>
+      <title>org.hpccsystems.ws.client.legacy</title>
+
+      <para>The legacy HPCC Web based services interfaces used in conjunction
+      with the org.hpccsystems.ws.client project.</para>
+
+      <para>Dependent on org.hpccsystems.ws.client.</para>
+    </sect2>
+  </sect1>
+
+  <sect1>
+    <title>Use Cases</title>
+
+    <para>The following use cases depict how you can work with the hpcc4j
+    projects. </para>
+
+    <sect2>
+      <title>org.hpccsystems.ws.client</title>
+
+      <para>If you have some ECL code that you would want to submit and
+      execute from a Java client. Use the <emphasis
+      role="bold">org.hpccsystems.ws.client </emphasis>package to connect to
+      the target HPCC system. Create a workunit object with your ECL code and
+      submit that object to the WECL workunit web services. With the ws.client
+      package you can do this in less than 5 lines of code.</para>
+
+      <programlisting>{
+ //Fetch platform object based on connection settings
+ //Provide the connection type, http|https, the ecl watch ip, and port, 
+ //your ESP username and password (if required)
+  
+ Platform platform = Platform.get("http", "ip", 8010, "username", "password");
+
+ //platform the platform provides a ws client
+
+ HPCCWSClient connector = platform.getHPCCWSClient();
+
+ //This connector can be used to actuate various HPCC WebService methods
+ //For example, the client can request a list of available Target cluster names
+ //List&lt;String&gt; clusters = connector.getAvailableTargetClusterNames();
+ //or cluster groups 
+ //String[] clusterGroups = connector.getAvailableClusterGroups();
+ //which can then be used as one of the required parameters for other ws actions
+ //such as spraying a file:
+ //connector.sprayFlatHPCCFile
+ //("persons", "mythor::persons", 155, clusters.get(0), true);
+
+ //The WorkunitInfo object contains all the information needed by HPCC to compile 
+ //and execute an ECL query correctly
+
+   WorkunitInfo wu=new WorkunitInfo();
+   wu.setECL("output('Hello World');"); // the ECL to execute
+   wu.setCluster("mythor");             // can be hardcoded to a known cluster, 
+                                        // or can be selected from 
+                                        // valid cluster names clusterGroups[0] (above) 
+            
+ //this is just one way to submitECL, you can also submit ecl, 
+ //and receive the WUID, which can later be used to fetch results
+ //The results (if successful) are returned as a List of Object Lists 
+
+   List&lt;List&lt;Object&gt;&gt; results = connector.submitECLandGetResultsList(wu);
+
+  //logic to analyze results would need to be implemented.
+    int currentrs = 1;
+
+    for (List&lt;Object&gt; list : results)
+     {
+     Utils.print(System.out, "Resultset " + currentrs +":", false, true);
+         for (Object object : list)
+          {
+            System.out.print("[ " + object.toString() +" ]");
+          }
+         currentrs++;
+         System.out.println("");
+     }
+ }
+        catch (Exception e)
+        {
+            System.out.println( e.getLocalizedMessage());
+        }
+</programlisting>
+
+      <para>The above is just a sample of how to code for this interface. You
+      can create other modules and interfaces with the appropriate
+      packages.</para>
+    </sect2>
+  </sect1>
+
+  <sect1>
+    <title>Builds</title>
+
+    <para>Each individual hpcc4j project has been set up as an Eclipse Java
+    project (you may use other IDEs as well).</para>
+
+    <para>The project has also been configured to be built using Maven.</para>
+
+    <para>To build the projects using Maven, navigate to the base directory of
+    the project and issue the following command:</para>
+
+    <programlisting>mvn install</programlisting>
+
+    <para>For more information on how to use Maven see <ulink
+    url="http://maven.apache.org">http://maven.apache.org</ulink></para>
+
+    <para>Each Web Service has multiple methods.</para>
+  
+  <sect2>
+    <title>JAVA Source</title>
+
+    <para>The source can be found under the HPCC Platform github account in
+    the hpcc4j repo. </para>
+
+    <para><ulink
+    url="https://github.com/hpcc-systems/hpcc4j">https://github.com/hpcc-systems/hpcc4j</ulink></para>
+
+    <para>To utilize the API(s) you can either import the pertinent hpcc4j
+    project into your workspace and access the API source directly, or you can
+    build the library and subsequently import into the client project. </para>
+
+    <para>Contributions to source are accepted and encouraged. All
+    contributions must follow the JAVA source format described in the
+    HPCC-JAVA-Formatter.xml file which can be found in /eclipse. This
+    formatter can be used by the Eclipse IDE to automatically format JAVA
+    source code.</para>
+
+    <para><itemizedlist>
+        <listitem>
+          <para>From eclipse, choose Window-&gt;Preferences-&gt;Java-&gt;Code
+          Stype-&gt;Formatter.</para>
+
+          <para>Import the HPCC-JAVA-Formatter.xml file and set it as the
+          Active profile.</para>
+        </listitem>
+
+        <listitem>
+          <para>From the JAVA editor, choose Source-&gt;Format</para>
+        </listitem>
+      </itemizedlist></para>
+  </sect2>
+</sect1>

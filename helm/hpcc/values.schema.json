@@ -8,9 +8,6 @@
     "security" : {
       "$ref": "#/definitions/security"
     },
-    "hostgroups": {
-      "$ref": "#/definitions/hostgroups"
-    },
     "placements": {
       "type": "array",
       "items": {
@@ -47,6 +44,9 @@
               "type": "null"
             }
           ]
+        },
+        "hostGroups": {
+          "$ref": "#/definitions/hostGroups"
         },
         "planes": {
           "$ref": "#/definitions/storagePlanes"
@@ -277,6 +277,15 @@
               "type": "null"
             }
           ]
+        },
+        "metrics": {
+          "type" : "object",
+          "description" : "Global metrics configuration",
+          "properties" : {
+            "sinks" : {
+              "$ref" : "#/definitions/sinks"
+            }
+          }
         }
       },
       "additionalProperties": false
@@ -392,9 +401,14 @@
           "description": "optional name of the persistent volume claim for this plane",
           "type": "string"
         },
-        "hosts": {
+        "hostGroup": {
           "description": "optional name of the host group (for bare metal storage)",
           "type": "string"
+        },
+        "hosts": {
+          "description": "a list of host names",
+          "type": "array",
+          "items": { "type": "string" }
         },
         "numDevices": {
           "description": "optional number of devices in the storage plane (default 1)",
@@ -476,51 +490,55 @@
       "required": [ "name", "url" ],
       "additionalProperties": false
     },
-    "hostgroups": {
+    "hostGroups": {
       "oneOf": [
         {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/hostgroup"
-          }
+          "type": "array",
+          "items": { "$ref": "#/definitions/hostGroup" }
         },
         {
           "type": "null"
         }
       ]
     },
-    "hostgroup": {
+    "hostGroup": {
+      "type": "object",
       "oneOf": [
         {
+          "required": [ "name", "hosts" ]
+        },
+        {
+          "required": [ "name", "hostGroup" ]
+        }
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the host group process"
+        },
+        "hosts": {
           "description": "a list of host names",
           "type": "array",
           "items": { "type": "string" }
         },
-        {
-          "description": "a subset of an existing host group",
-          "type": "object",
-          "properties": {
-            "group": {
-              "description": "Name of the hostgroup to create a subset of",
-              "type": "string"
-            },
-            "count": {
-              "description": "Number of hosts in the subset",
-              "type": "integer"
-            },
-            "offset": {
-              "description": "Offset of the first host within the group",
-              "type": "integer"
-            },
-            "delta": {
-              "type": "integer",
-              "description": "Cycle offsset to apply to the hosts"
-            }
-          },
-          "required": [ "group" ],
-          "additionalProperties": false
+        "hostGroup": {
+          "description": "Name of the hostgroup to create a subset of",
+          "type": "string"
+        },
+        "count": {
+          "description": "Number of hosts in the subset",
+          "type": "integer"
+        },
+        "offset": {
+          "description": "Offset of the first host within the group",
+          "type": "integer"
+        },
+        "delta": {
+          "type": "integer",
+          "description": "Cycle offset to apply to the hosts"
         }
-      ]
+      }
     },
     "logging": {
       "type": "object",
@@ -719,6 +737,11 @@
         },
         "logging": {
           "$ref": "#/definitions/logging"
+        },
+        "preload": {
+          "description": "Preloaded plugins",
+          "type": "array",
+          "items": { "type": "string" }
         },
         "services": {
           "description": "Roxie query services",
@@ -1196,6 +1219,34 @@
           "type": "object"
         }
       }
+    },
+    "sinks": {
+      "type": "array",
+      "items" : {
+        "$ref" : "#/definitions/sink"
+      }
+    },
+    "sink": {
+      "type" : "object",
+      "description" : "Definition of a metric sink",
+      "properties" : {
+        "type": {
+          "type" : "string",
+          "description" : "The defined metric sink type"
+        },
+        "name" : {
+          "type" : "string",
+          "description" : "Name for the sink, must be unique for the component"
+        },
+        "settings": {
+          "type" : "object",
+          "description" : "Settings specific to the sink"
+        }
+      },
+      "required" : [
+        "type",
+        "name"
+      ]
     }
   }
 }

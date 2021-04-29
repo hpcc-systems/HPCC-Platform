@@ -22,13 +22,19 @@
 
 
 //More to a more central location
-IPropertyTree * queryHostGroup(const char * name)
+IPropertyTree * queryHostGroup(const char * name, bool required)
 {
-    if (isEmptyString(name))
-        return nullptr;
-    VStringBuffer xpath("storage/hostGroups[@name='%s']", name);
-    IPropertyTree & global = queryGlobalConfig();
-    return global.queryPropTree(xpath);
+    if (!isEmptyString(name))
+    {
+        VStringBuffer xpath("storage/hostGroups[@name='%s']", name);
+        IPropertyTree & global = queryGlobalConfig();
+        IPropertyTree * match = global.queryPropTree(xpath);
+        if (match)
+            return match;
+    }
+    if (required)
+        throw makeStringExceptionV(-1, "No entry found for hostGroup: '%s'", name ? name : "<null>");
+    return nullptr;
 }
 
 IPropertyTree * queryStoragePlane(const char * name)
@@ -36,6 +42,43 @@ IPropertyTree * queryStoragePlane(const char * name)
     VStringBuffer xpath("storage/planes[@name='%s']", name);
     IPropertyTree & global = queryGlobalConfig();
     return global.queryPropTree(xpath);
+}
+
+
+// Expand indirect hostGroups so each hostGroups has an expanded list of host names
+void normalizeHostGroups()
+{
+    Owned<IPropertyTreeIterator> hostGroupIter = queryGlobalConfig().getElements("storage/hostGroups");
+    //Process the groups in order - so that multiple levels of indirection are supported
+    ForEach (*hostGroupIter)
+    {
+        IPropertyTree & cur = hostGroupIter->query();
+        if (!cur.hasProp("hosts"))
+        {
+            const char * name = cur.queryProp("@name");
+            const char * baseGroup = cur.queryProp("@hostGroup");
+            IPropertyTree * match = queryHostGroup(baseGroup, true);
+            StringArray hosts;
+            Owned<IPropertyTreeIterator> hostIter = match->getElements("hosts");
+            ForEach (*hostIter)
+                hosts.append(hostIter->query().queryProp(nullptr));
+
+            if (hosts.ordinality() == 0)
+                throw makeStringExceptionV(-1, "Host group %s contains no hosts", baseGroup);
+
+            unsigned numHosts = cur.getPropInt("@count", hosts.ordinality());
+            unsigned offset = cur.getPropInt("@offset");
+            if (offset + numHosts > hosts.ordinality())
+                throw makeStringExceptionV(-1, "Group %s extends past the end of the base group %s", name, baseGroup);
+
+            unsigned delta = cur.getPropInt("@delta");
+            for (unsigned i=0; i < numHosts; i++)
+            {
+                unsigned baseIndex = offset + (i + delta) % numHosts;
+                cur.addPropTree("hosts")->setProp(nullptr, hosts.item(baseIndex));
+            }
+        }
+    }
 }
 
 //Cloned for now - export and use from elsewhere
@@ -103,10 +146,7 @@ void LogicalFileResolver::ensureHostGroup(const char * name)
     if (storage->hasProp(xpath))
         return;
 
-    IPropertyTree * hosts = queryHostGroup(name);
-    if (!hosts)
-        throw makeStringExceptionV(0, "No entry found for hostGroup: '%s'", name);
-
+    IPropertyTree * hosts = queryHostGroup(name, true);
     storage->addPropTreeArrayItem("hostGroups", LINK(hosts));
 }
 

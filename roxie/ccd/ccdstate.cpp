@@ -2896,7 +2896,22 @@ extern void loadPlugins()
     if (pluginDirectory.length())
     {
         plugins = new SafePluginMap(&PluginCtx, traceLevel >= 1);
-        plugins->loadFromList(pluginDirectory);
+        if (topology->hasProp("preload"))
+        {
+            Owned<IPropertyTreeIterator> preloads = topology->getElements("preload");
+            ForEach(*preloads)
+            {
+                const char *preload = preloads->query().queryProp(".");
+                if (!streq(preload, "none"))
+                {
+                    VStringBuffer soname(SharedObjectPrefix "%s" SharedObjectExtension, preload);
+                    if (!plugins->loadNamed(pluginDirectory, soname))
+                        DBGLOG("Could not preload plugin %s at any of the following locations: %s", soname.str(), pluginDirectory.str());
+                }
+            }
+        }
+        else
+            plugins->loadFromList(pluginDirectory);
     }
 }
 

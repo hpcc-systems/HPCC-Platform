@@ -25,7 +25,7 @@
 class CppCompiler : implements ICppCompiler, implements IThreadFactory, public CInterface, implements IExceptionHandler
 {
 public:
-    CppCompiler(const char * _coreName, const char * _sourceDir, const char * _targetDir, unsigned _targetCompiler, bool _verbose);
+    CppCompiler(const char * _coreName, const char * _sourceDir, const char * _targetDir, unsigned _targetCompiler, bool _verbose, const char * _compileBatchOut);
     IMPLEMENT_IINTERFACE
 
     virtual void addCompileOption(const char * option);
@@ -51,6 +51,10 @@ public:
     virtual void setPrecompileHeader(bool _pch);
     virtual void setAbortChecker(IAbortRequestCallback * _abortChecker) {abortChecker = _abortChecker;}
     virtual bool fireException(IException *e);
+    virtual void removeTempDir(const char *fname);
+    virtual void removeTemporary(const char *fname);
+    virtual bool reportOnly() const;
+    virtual void finish();
 
 protected:
     void expandCompileOptions(StringBuffer & target, bool isC);
@@ -59,7 +63,7 @@ protected:
     void removeTemporaries();
     bool compileFile(IThreadPool * pool, const char * filename, const char *flags, Semaphore & finishedCompiling);
     bool doLink();
-    void writeLogFile(const char* filepath, StringBuffer& log);
+    void writeLogFile(const char* filepath, StringBuffer& log) ;
 
 public:
     std::atomic_uint numFailed;
@@ -68,8 +72,10 @@ protected:
     StringBuffer    compilerOptions;
     StringBuffer    linkerOptions;
     StringBuffer    linkerLibraries;
+    StringBuffer    batchOutText;
     StringAttr      sourceDir;
     StringAttr      targetDir;
+    StringAttr      compileBatchOut;
     StringArray     allSources;
     StringArray     allFlags;
     StringArray     logFiles;

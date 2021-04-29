@@ -53,13 +53,6 @@ void usage()
     exit(1);
 }
 
-const char * queryDaFileSrvExecutable(const IpAddress &ip, StringBuffer &ret)
-{
-    StringBuffer dir; // not currently used
-    return querySlaveExecutable("DaFileSrvProcess", "dafilesrv", NULL, ip, ret, dir);
-}
-
-
 //extern REMOTE_API unsigned getDaliServixVersion(IpAddress &ip,StringBuffer &ver);
 
 enum ApplyMode

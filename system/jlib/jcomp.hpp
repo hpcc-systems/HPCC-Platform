@@ -65,9 +65,13 @@ public:
     virtual void setSaveTemps(bool _save) = 0;
     virtual void setPrecompileHeader(bool _pch) = 0;
     virtual void setAbortChecker(IAbortRequestCallback * abortChecker) = 0;
+    virtual void removeTemporary(const char *fname) = 0;
+    virtual void removeTempDir(const char *fname) = 0;
+    virtual bool reportOnly() const = 0;
+    virtual void finish() = 0;
+
 };
 
-extern jlib_decl ICppCompiler * createCompiler(const char * coreName, const char * sourceDir = NULL, const char * targetDir = NULL, bool verbose = true);
-extern jlib_decl ICppCompiler * createCompiler(const char * coreName, const char * sourceDir, const char * targetDir, CompilerType compiler, bool verbose);
+extern jlib_decl ICppCompiler * createCompiler(const char * coreName, const char * sourceDir, const char * targetDir, CompilerType compiler, bool verbose, const char *compileBatchOut);
 
 #endif

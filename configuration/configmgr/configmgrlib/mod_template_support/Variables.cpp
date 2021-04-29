@@ -98,8 +98,8 @@ std::string Variables::doValueSubstitution(const std::string &value) const
 
         //
         // If there is an index defined, evaluate it and update the index to be used for the final value
-        std::size_t bracketStartPos = result.find('[');
-        std::size_t sizePos = result.find(".size");
+        std::size_t bracketStartPos = varName.find('[');
+        std::size_t sizePos = varName.find(".size");
 
         if (bracketStartPos != std::string::npos && sizePos != std::string::npos)
         {
@@ -108,19 +108,21 @@ std::string Variables::doValueSubstitution(const std::string &value) const
 
         if (bracketStartPos != std::string::npos)
         {
-            std::size_t bracketEndPos = findClosingDelimiter(result, bracketStartPos, "[", "]");  //  result.find(']');
-            std::string indexStr = result.substr(bracketStartPos+1, bracketEndPos - bracketStartPos - 1);
-            varName = result.substr(bracesStartPos + 2, bracketStartPos - bracesStartPos - 2);
+            std::size_t bracketEndPos = findClosingDelimiter(varName, bracketStartPos, "[", "]");
+            std::string indexStr = varName.substr(bracketStartPos+1, bracketEndPos - bracketStartPos - 1);
+            varName = varName.substr(0, bracketStartPos);
             try {
                 index = std::stoul(evaluate(doValueSubstitution(indexStr)));
             } catch (...) {
                 throw TemplateException("Non-numeric count found for index value", false);
             }
+            sizePos = varName.find(".size");
         }
 
         if (sizePos != std::string::npos)
         {
-            result = std::to_string(getVariable(varName, true)->getNumValues());
+            std::string baseVarName = varName.substr(0, sizePos);
+            result = std::to_string(getVariable(baseVarName, true)->getNumValues());
         }
         else
         {
@@ -134,9 +136,6 @@ std::string Variables::doValueSubstitution(const std::string &value) const
         bracesStartPos = result.find("{{");
         done = bracesStartPos == std::string::npos;
     }
-
-    //
-    // This should NOT have a [] in it
 
     return evaluate(result);
 }

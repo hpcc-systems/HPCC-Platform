@@ -30,6 +30,7 @@
 #define strlwr _strlwr
 #endif
 
+#include <string>
 #include <vector>
 
 using namespace std;

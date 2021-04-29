@@ -110,6 +110,7 @@ export = {
         ComponentLogs: "Component Log",
         Compress: "Compress",
         Compressed: "Compressed",
+        CompressedSize: "Compressed Size",
         ComputerUpTime: "Computer Up Time",
         Condition: "Condition",
         ConfigureService: "Configure service",

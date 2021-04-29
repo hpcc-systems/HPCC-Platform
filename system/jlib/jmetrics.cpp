@@ -12,6 +12,7 @@
 ############################################################################## */
 
 #include "jmetrics.hpp"
+#include "jlog.hpp"
 
 using namespace hpccMetrics;
 
@@ -52,8 +53,7 @@ MetricsReporter::~MetricsReporter()
 
 void MetricsReporter::init(IPropertyTree *pMetricsTree)
 {
-    Owned<IPropertyTree> pSinkTree = pMetricsTree->getPropTree("sinks");
-    Owned<IPropertyTreeIterator> sinkElementsIt = pSinkTree->getElements("sink");
+    Owned<IPropertyTreeIterator> sinkElementsIt = pMetricsTree->getElements("sinks");
     initializeSinks(sinkElementsIt);
 }
 
@@ -68,7 +68,17 @@ void MetricsReporter::addMetric(const std::shared_ptr<IMetric> &pMetric)
     }
     else
     {
-        throw MakeStringException(MSGAUD_operator, "addMetric - Attempted to add duplicate named metric with name %s", pMetric->queryName().c_str());
+        //If there is a match only report an error if the metric has not been destroyed in the meantime
+        auto match = it->second.lock();
+        if (match)
+        {
+#ifdef _DEBUG
+            throw MakeStringException(MSGAUD_operator, "addMetric - Attempted to add duplicate named metric with name '%s'", pMetric->queryName().c_str());
+#else
+            OERRLOG("addMetric - Adding a duplicate named metric '%s', old metric replaced", pMetric->queryName().c_str());
+#endif
+        }
+        it->second = pMetric;
     }
 }
 

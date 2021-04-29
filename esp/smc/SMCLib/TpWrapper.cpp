@@ -27,6 +27,7 @@
 #include "portlist.h"
 #include "daqueue.hpp"
 #include "dautils.hpp"
+#include "dameta.hpp"
 
 const char* MSG_FAILED_GET_ENVIRONMENT_INFO = "Failed to get environment information.";
 
@@ -464,20 +465,49 @@ void CTpWrapper::getTpEspServers(IArrayOf<IConstTpEspServer>& list)
     }
 }
 
-static IEspTpMachine * createLocalHostTpMachine(const char *path)
+#ifdef _CONTAINERIZED
+static IEspTpMachine * createHostTpMachine(const char * hostname, const char *path)
 {
     Owned<IEspTpMachine> machine = createTpMachine();
     IpAddress ipAddr;
-    ipAddr.ipset("localhost");
+    ipAddr.ipset(hostname);
     StringBuffer localHost;
     ipAddr.getIpText(localHost);
     machine->setName(localHost.str());
     machine->setNetaddress(localHost.str());
-    machine->setConfigNetaddress("localhost");
+    machine->setConfigNetaddress(hostname);
     machine->setDirectory(path);
     machine->setOS(getPathSepChar(path) == '/' ? MachineOsLinux : MachineOsW2K);
     return machine.getClear();
 }
+
+static void gatherDropZoneMachinesFromHosts(IArrayOf<IEspTpMachine> & tpMachines, IPropertyTree & planeOrGroup, const char * prefix)
+{
+    Owned<IPropertyTreeIterator> iter = planeOrGroup.getElements("hosts");
+    ForEach(*iter)
+    {
+        const char * host = iter->query().queryProp(nullptr);
+        tpMachines.append(*createHostTpMachine(host, prefix));
+    }
+}
+
+static void gatherDropZoneMachines(IArrayOf<IEspTpMachine> & tpMachines, IPropertyTree & plane)
+{
+    const char * prefix = plane.queryProp("@prefix");
+    if (plane.hasProp("hosts"))
+    {
+        gatherDropZoneMachinesFromHosts(tpMachines, plane, prefix);
+    }
+    else if (plane.hasProp("@hostGroup"))
+    {
+        IPropertyTree * hostGroup = queryHostGroup(plane.queryProp("@hostGroup"), true);
+        gatherDropZoneMachinesFromHosts(tpMachines, *hostGroup, prefix);
+    }
+    else
+        tpMachines.append(*createHostTpMachine("localhost", prefix));
+}
+#endif
+
 
 void CTpWrapper::getTpDfuServers(IArrayOf<IConstTpDfuServer>& list)
 {
@@ -496,12 +526,8 @@ void CTpWrapper::getTpDfuServers(IArrayOf<IConstTpDfuServer>& list)
         pService->setQueue(queue);
         pService->setType(eqDfu);
         IArrayOf<IEspTpMachine> tpMachines;
-        Owned<IPropertyTreeIterator> planes = getDropZonePlanesIterator();
-        ForEach(*planes)
-        {
-            IPropertyTree & plane = planes->query();
-            tpMachines.append(*createLocalHostTpMachine(plane.queryProp("@prefix")));
-        }
+        //MORE: The ip and directory don't make any sense on the cloud version
+        tpMachines.append(*createHostTpMachine("localhost", "/var/lib/HPCCSystems"));
         pService->setTpMachines(tpMachines);
         list.append(*pService.getClear());
     }
@@ -1289,6 +1315,22 @@ void CTpWrapper::getGroupList(double espVersion, const char* kindReq, IArrayOf<I
 {
     try
     {
+#ifdef _CONTAINERIZED
+        Owned<IPropertyTreeIterator> dataPlanes = queryGlobalConfig().getElements("storage/planes[labels='data']");
+        ForEach(*dataPlanes)
+        {
+            IPropertyTree & plane = dataPlanes->query();
+            const char * name = plane.queryProp("@name");
+            IEspTpGroup* pGroup = createTpGroup("","");
+            pGroup->setName(name);
+            if (espVersion >= 1.21)
+            {
+                pGroup->setKind("Plane");
+                pGroup->setReplicateOutputs(false);
+            }
+            GroupList.append(*pGroup);
+        }
+#else
         Owned<IRemoteConnection> conn = querySDS().connect("/Groups", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
         Owned<IPropertyTreeIterator> groups= conn->queryRoot()->getElements("Group");
         if (groups->first())
@@ -1296,7 +1338,11 @@ void CTpWrapper::getGroupList(double espVersion, const char* kindReq, IArrayOf<I
             do
             {
                 IPropertyTree &group = groups->query();
+#ifdef _CONTAINERIZED
+                const char * kind = "Plane";
+#else
                 const char* kind = group.queryProp("@kind");
+#endif
                 if (kindReq && *kindReq && !strieq(kindReq, kind))
                     continue;
 
@@ -1311,6 +1357,7 @@ void CTpWrapper::getGroupList(double espVersion, const char* kindReq, IArrayOf<I
                 GroupList.append(*pGroup);
             } while (groups->next());
         }
+#endif
     }
     catch(IException* e)
     {
@@ -1715,7 +1762,6 @@ void CTpWrapper::getDropZoneMachineList(double clientVersion, bool ECLWatchVisib
 
 void CTpWrapper::getTpDropZones(double clientVersion, const char* name, bool ECLWatchVisibleOnly, IArrayOf<IConstTpDropZone>& list)
 {
-
 #ifdef _CONTAINERIZED
     Owned<IPropertyTreeIterator> planes = getDropZonePlanesIterator(name);
     ForEach(*planes)
@@ -1730,7 +1776,7 @@ void CTpWrapper::getTpDropZones(double clientVersion, const char* name, bool ECL
         dropZone->setBuild("");
         dropZone->setECLWatchVisible(true);
         IArrayOf<IEspTpMachine> tpMachines;
-        tpMachines.append(*createLocalHostTpMachine(path));
+        gatherDropZoneMachines(tpMachines, plane);
         dropZone->setTpMachines(tpMachines);
         list.append(*dropZone.getClear());
     }

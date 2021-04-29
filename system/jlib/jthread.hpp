@@ -44,7 +44,7 @@ interface jlib_decl IThreadName
 };
 
 
-
+extern jlib_decl bool isMainThread();
 extern jlib_decl void addThreadExceptionHandler(IExceptionHandler *handler);
 extern jlib_decl void removeThreadExceptionHandler(IExceptionHandler *handler);
 extern jlib_decl void enableThreadSEH();

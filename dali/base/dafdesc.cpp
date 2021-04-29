@@ -32,6 +32,7 @@
 
 #include "dafdesc.hpp"
 #include "dadfs.hpp"
+#include "dameta.hpp"
 
 #define INCLUDE_1_OF_1    // whether to use 1_of_1 for single part files
 
@@ -3303,7 +3304,6 @@ static void generateHosts(IPropertyTree * storage, GroupInfoArray & groups)
             }
         }
     }
-
 }
 
 static CriticalSection storageCS;
@@ -3313,6 +3313,9 @@ void initializeStorageGroups(bool createPlanesFromGroups)
     IPropertyTree * storage = queryGlobalConfig().queryPropTree("storage");
     if (!storage)
         storage = queryGlobalConfig().addPropTree("storage");
+
+    //Ensure that host groups that are defined in terms of other host groups are expanded out so they have an explicit list of hosts
+    normalizeHostGroups();
 
 #ifndef _CONTAINERIZED
     if (createPlanesFromGroups && !storage->hasProp("planes"))
@@ -3383,6 +3386,8 @@ void initializeStorageGroups(bool createPlanesFromGroups)
         //printYAML(storage);
     }
 #endif
+
+    normalizeHostGroups();
 
     //Groups are case insensitve, so add an extra key to the storage items to allow them to be
     //searched by group name, and also check for duplicates.
