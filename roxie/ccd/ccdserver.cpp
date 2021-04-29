@@ -7765,7 +7765,8 @@ class CRoxieServerHashDedupActivity : public CRoxieServerActivity
         virtual ~HashDedupTable()
         {
             //elementRowAllocator is a unique allocator, so all rows can be freed in a single call
-            elementRowAllocator->releaseAllRows();
+            if (elementRowAllocator)
+                elementRowAllocator->releaseAllRows();
             tablecount = 0;
         }
 
