@@ -592,11 +592,6 @@
 
         <para><orderedlist numeration="loweralpha">
             <listitem>
-              <para>Altere o <emphasis role="bold">ldapAuthMethod</emphasis>
-              para <emphasis role="blue">kerberos.</emphasis></para>
-            </listitem>
-
-            <listitem>
               <para>Altere o <emphasis role="bold">ldapConnections</emphasis>
               para o número adequado ao seu sistema (o número 10 é apenas um
               exemplo).</para>

@@ -682,6 +682,20 @@ END;</programlisting>
                   Se você nunca precisar fazer isso, a opção filesize pode ser
                   omitida. </para></entry>
                 </row>
+
+                <row>
+                  <entry><emphasis>wrap= 0 | 1</emphasis></entry>
+
+                  <entry>Opcional. Se definido como 1, faz o despray como
+                  arquivos múltiplos em uma landing zone. Padrão é 0.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>multicopy= 0 | 1</emphasis></entry>
+
+                  <entry>Opcional. Se for configurado para 1, cada parte do
+                  destino obtém o arquivo inteiro. Padrão é 0.</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable>
