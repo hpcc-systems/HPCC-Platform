@@ -156,14 +156,14 @@ private:
     const unsigned traceQueueSize;
     CTraceQueue buffers[2];
     CTraceQueue rowBufferLogCache;
-    atomic_t rowBufInUse;
+    std::atomic<unsigned> rowBufInUse;
     IThorDataLink *thorDataLink;
     IEngineRowStream *inputStream;
     IHThorArg *helper;
 
     inline void enqueueRowForTrace(const void *row)
     {
-        buffers[atomic_read(&rowBufInUse)].enqueue(row, thorDataLink->queryEndCycles());
+        buffers[rowBufInUse].enqueue(row, thorDataLink->queryEndCycles());
     }
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterfaceOf<IEngineRowStream>);
@@ -173,7 +173,7 @@ public:
         // NOTE - cannot be called by more than one thread
         buffers[1].init(traceQueueSize+1);
         rowBufferLogCache.init(traceQueueSize);
-        int bufToDump = atomic_read(&rowBufInUse);
+        int bufToDump = rowBufInUse;
         int inactiveBuf = 1 - bufToDump;
 
         // Queue any remaining rows from inactive buffer as the oldest row is skipped
@@ -181,7 +181,7 @@ public:
         // may have been formerly an active buffer)
         buffers[inactiveBuf].queueOut(rowBufferLogCache, false);
 
-        atomic_set(&rowBufInUse, inactiveBuf);// Swap Active & inactiveBuf
+        rowBufInUse = inactiveBuf;// Swap Active & inactiveBuf
         buffers[bufToDump].queueOut(rowBufferLogCache, true);
         rowBufferLogCache.dump(mb, helper);
     }
@@ -202,7 +202,7 @@ public:
     CTracingStream(IThorDataLink *_thorDataLink, IEngineRowStream *_inputStream, IHThorArg *_helper, unsigned _traceQueueSize)
         : thorDataLink(_thorDataLink), inputStream(_inputStream), helper(_helper), traceQueueSize(_traceQueueSize)
     {
-        atomic_set(&rowBufInUse, 0);
+        rowBufInUse = 0;
         buffers[0].init(traceQueueSize+1);
     }
 };

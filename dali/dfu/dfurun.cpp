@@ -533,7 +533,7 @@ class CDFUengine: public CInterface, implements IDFUengine
 
     CriticalSection monitorsect;
     CriticalSection subcopysect;
-    atomic_t runningflag;
+    std::atomic<unsigned> runningflag;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -541,7 +541,7 @@ public:
     CDFUengine()
     {
         defaultTransferBufferSize = 0;
-        atomic_set(&runningflag,1);
+        runningflag = 1;
         eventpusher.setown(getScheduleEventPusher());
     }
 
@@ -1069,12 +1069,12 @@ public:
         // only clear cache when nothing running (bit of a kludge)
         class CenvClear
         {
-            atomic_t &running;
+            std::atomic<unsigned> &running;
         public:
-            CenvClear(atomic_t &_running)
+            CenvClear(std::atomic<unsigned> &_running)
                 : running(_running)
             {
-                if (atomic_dec_and_test(&running)) {
+                if (--running == 0) {
                     Owned<IEnvironmentFactory> envf = getEnvironmentFactory(false);
                     Owned<IConstEnvironment> env = envf->openEnvironment();
                     env->clearCache();
@@ -1082,7 +1082,7 @@ public:
             }
             ~CenvClear()
             {
-                atomic_inc(&running);
+                ++running;
             }
         } cenvclear(runningflag);
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();

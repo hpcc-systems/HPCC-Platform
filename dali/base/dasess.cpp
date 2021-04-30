@@ -1262,7 +1262,7 @@ class CCovenSessionManager: public CSessionManagerBase, implements ISessionManag
     Owned<IDaliLdapConnection> ldapconn;
     Owned<CLdapWorkItem> ldapworker;
     Semaphore ldapsig;
-    atomic_t ldapwaiting;
+    std::atomic<unsigned> ldapwaiting{0};
     Semaphore workthreadsem;
     bool stopping;
 
@@ -1293,7 +1293,6 @@ public:
     {
         mySessionId = queryCoven().getUniqueId(); // tell others in coven TBD
         registerSubscriptionManager(SESSION_PUBLISHER,this);
-        atomic_set(&ldapwaiting,0);
         workthreadsem.signal(10);
         stopping = false;
         ldapsig.signal();
@@ -1463,11 +1462,11 @@ public:
 #endif
         if ((ldapconn->getLDAPflags()&(DLF_SAFE|DLF_ENABLED))!=(DLF_SAFE|DLF_ENABLED))
             return ldapconn->getPermissions(key,obj,udesc,flags);
-        atomic_inc(&ldapwaiting);
+        ldapwaiting++;
         unsigned retries = 0;
         while (!stopping) {
             if (ldapsig.wait(1000)) {
-                atomic_dec(&ldapwaiting);
+                ldapwaiting--;
                 if (!ldapworker)
                     ldapworker.setown(CLdapWorkItem::get(ldapconn,workthreadsem));
                 if (ldapworker) {
@@ -1489,7 +1488,7 @@ public:
                                 return ret;
                             }
                         }
-                        if (atomic_read(&ldapwaiting)>10)   // give up quicker if piling up
+                        if (ldapwaiting>10)   // give up quicker if piling up
                             break;
                         if (i==5) { // one retry
                             ldapworker->stop(); // abandon thread
@@ -1510,7 +1509,7 @@ public:
                 return SecAccess_None;
             }
             else {
-                unsigned waiting = atomic_read(&ldapwaiting);
+                unsigned waiting = ldapwaiting;
                 static unsigned last=0;
                 static unsigned lasttick=0;
                 static unsigned first50=0;
@@ -1533,7 +1532,7 @@ public:
                     first50 = 0;
             }
         }
-        atomic_dec(&ldapwaiting);
+        ldapwaiting--;
         return SecAccess_None;
 #endif
     }

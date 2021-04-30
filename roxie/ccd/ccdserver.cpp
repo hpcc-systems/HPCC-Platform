@@ -2160,27 +2160,27 @@ public:
 
 //=====================================================================================================
 
-atomic_t nextInstanceId;
+static std::atomic<unsigned> nextInstanceId;
 
 extern unsigned getNextInstanceId()
 {
-    return atomic_add_exchange(&nextInstanceId, 1)+1;
+    return ++nextInstanceId;
 }
 
-atomic_t nextRuid;
+static std::atomic<unsigned> nextRuid;
 
 ruid_t getNextRuid()
 {
-    ruid_t ret = atomic_add_exchange(&nextRuid, 1)+1;
+    ruid_t ret = ++nextRuid;
     while (ret < RUID_FIRST)
-        ret = atomic_add_exchange(&nextRuid, 1)+1; // ruids 0 and 1 are reserved for pings/unwanted discarder.
+        ret = ++nextRuid; // ruids 0 and 1 are reserved for pings/unwanted discarder.
     return ret;
 }
 
 void setStartRuid(unsigned restarts)
 {
-    atomic_set(&nextRuid, restarts * 0x10000);
-    atomic_set(&nextInstanceId, restarts * 10000);
+    nextRuid = restarts * 0x10000;
+    nextInstanceId = restarts * 10000;
 }
 
 enum { LimitSkipErrorCode = 0, KeyedLimitSkipErrorCode = 1 };
@@ -25175,7 +25175,7 @@ class CJoinGroup : public CInterface
 protected:
     const void *left;                   // LHS row
     PointerArrayOf<KeyedJoinHeader> rows;           // matching RHS rows
-    atomic_t endMarkersPending; // How many agent responses still waiting for
+    std::atomic<unsigned> endMarkersPending; // How many agent responses still waiting for
     CJoinGroup *groupStart;     // Head of group, or NULL if not grouping
     unsigned lastPartNo;
     unsigned pos;
@@ -25209,9 +25209,9 @@ public:
         groupStart = _groupStart;
         if (_groupStart)
         {
-            atomic_inc(&_groupStart->endMarkersPending);
+            ++_groupStart->endMarkersPending;
         }
-        atomic_set(&endMarkersPending, 1);
+        endMarkersPending = 1;
     }
 
     ~CJoinGroup()
@@ -25234,7 +25234,7 @@ public:
 
     inline bool complete() const
     {
-        return atomic_read(&endMarkersPending) == 0;
+        return endMarkersPending == 0;
     }
 
 #ifdef TRACE_JOINGROUPS
@@ -25244,9 +25244,9 @@ public:
 #endif
     {
         assert(!complete());
-        atomic_inc(&endMarkersPending);
+        ++endMarkersPending;
 #ifdef TRACE_JOINGROUPS
-        DBGLOG("CJoinGroup::notePending %p from %d, count became %d group count %d", this, lineNo, atomic_read(&endMarkersPending), groupStart ? atomic_read(&groupStart->endMarkersPending) : 0);
+        DBGLOG("CJoinGroup::notePending %p from %d, count became %d group count %d", this, lineNo, endMarkersPending.load(), groupStart ? groupStart->endMarkersPending.load() : 0);
 #endif
     }
 
@@ -25274,16 +25274,16 @@ public:
             candidates += candidateCount;
         }
 #ifdef TRACE_JOINGROUPS
-        DBGLOG("CJoinGroup::noteEndReceived %p from %d, candidates %d + %d, my count was %d, group count was %d", this, lineNo, candidates, candidateCount, atomic_read(&endMarkersPending), groupStart ? atomic_read(&groupStart->endMarkersPending) : 0);
+        DBGLOG("CJoinGroup::noteEndReceived %p from %d, candidates %d + %d, my count was %d, group count was %d", this, lineNo, candidates, candidateCount, endMarkersPending.load(), groupStart ? groupStart->endMarkersPending.load() : 0);
 #endif
         // NOTE - as soon as endMarkersPending and groupStart->endMarkersPending are decremented to zero this object may get released asynchronously by other threads
         // There must therefore be nothing in this method after them that acceses member variables. Think of it as a delete this...
         // In particular, we can't safely reference groupStart after the dec_and_test of endMarkersPending, hence copy local first 
         CJoinGroup *localGroupStart = groupStart;
-        if (atomic_dec_and_test(&endMarkersPending))
+        if (--endMarkersPending == 0)
         {
             if (localGroupStart)
-                return atomic_dec_and_test(&localGroupStart->endMarkersPending);
+                return --localGroupStart->endMarkersPending == 0;
             else
                 return true;
         }

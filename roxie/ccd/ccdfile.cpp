@@ -46,7 +46,7 @@
 #include "eclhelper_dyn.hpp"
 #include "rtldynfield.hpp"
 
-atomic_t numFilesOpen[2];
+std::atomic<unsigned> numFilesOpen[2];
 
 #define MAX_READ_RETRIES 2
 
@@ -206,7 +206,7 @@ public:
         {
             if (current.get()==&failure)
                 return;
-            atomic_dec(&numFilesOpen[remote]);
+            numFilesOpen[remote]--;
             mergeStats(fileStats, current);
             current.set(&failure); 
         }
@@ -314,8 +314,7 @@ public:
                 }
             }
             lastAccess = msTick();
-            atomic_inc(&numFilesOpen[remote]);
-            if ((unsigned) atomic_read(&numFilesOpen[remote]) > maxFilesOpen[remote])
+            if (++numFilesOpen[remote] > maxFilesOpen[remote])
                 queryFileCache().closeExpired(remote); // NOTE - this does not actually do the closing of expired files (which could deadlock, or could close the just opened file if we unlocked crit)
         }
     }
@@ -1654,7 +1653,7 @@ public:
         if (!closePending[remote])
         {
             closePending[remote] = true;
-            DBGLOG("closeExpired %s scheduled - %d files open", remote ? "remote" : "local", (int) atomic_read(&numFilesOpen[remote]));
+            DBGLOG("closeExpired %s scheduled - %d files open", remote ? "remote" : "local", (int) numFilesOpen[remote]);
             toClose.signal();
         }
     }

@@ -480,8 +480,8 @@ protected:
         bool senderFull, doDedup, aborted, initialized;
         Semaphore senderFullSem;
         Linked<IException> exception;
-        atomic_t numFinished;
-        atomic_t stoppedTargets;
+        std::atomic<unsigned> numFinished;
+        std::atomic<unsigned> stoppedTargets;
         unsigned dedupSamples, dedupSuccesses, self;
         Owned<IThreadPool> writerPool;
         unsigned totalActiveWriters;
@@ -492,8 +492,8 @@ protected:
         {
             totalSz = 0;
             senderFull = false;
-            atomic_set(&numFinished, 0);
-            atomic_set(&stoppedTargets, 0);
+            numFinished = 0;
+            stoppedTargets = 0;
             dedupSamples = dedupSuccesses = 0;
             doDedup = owner.doDedup;
             writerPool.setown(createThreadPool("HashDist writer pool", this, this, owner.writerPoolSize, 5*60*1000));
@@ -528,8 +528,8 @@ protected:
                 sendersFinished[dest] = false;
             totalSz = 0;
             senderFull = false;
-            atomic_set(&numFinished, 0);
-            atomic_set(&stoppedTargets, 0);
+            numFinished = 0;
+            stoppedTargets = 0;
             aborted = false;
         }
         unsigned queryInactiveWriters() const
@@ -599,7 +599,7 @@ protected:
             if (owner.sendBlock(target, msg))
                 return;
             markStopped(target); // Probably a bit pointless if target is 'self' - process loop will have done already
-            ::ActPrintLog(owner.activity, thorDetailedLogLevel, "CSender::sendBlock stopped slave %d (finished=%d)", target+1, atomic_read(&numFinished));
+            ::ActPrintLog(owner.activity, thorDetailedLogLevel, "CSender::sendBlock stopped slave %d (finished=%d)", target+1, numFinished.load());
         }
         void closeWrite()
         {
@@ -680,9 +680,9 @@ protected:
         void checkSendersFinished()
         {
             // check if any target has stopped and clear out partial now defunct buckets taking space.
-            if (atomic_read(&stoppedTargets) == 0) // cheap compared to atomic_xchg, so saves a few cycles in common case.
+            if (stoppedTargets == 0) // cheap compared to atomic_xchg, so saves a few cycles in common case.
                return;
-            int numStopped = atomic_xchg(0, &stoppedTargets);
+            int numStopped = stoppedTargets.exchange(0);
             if (numStopped)
             {
                 /* this will be infrequent, scan all.
@@ -714,7 +714,7 @@ protected:
             rowcount_t totalSent = 0;
             try
             {
-                while (!aborted && (unsigned)atomic_read(&numFinished) < owner.numnodes)
+                while (!aborted && numFinished < owner.numnodes)
                 {
                     while (queryTotalSz() >= owner.inputBufferSize)
                     {
@@ -817,7 +817,7 @@ protected:
                         for (;;)
                         {
                             if (timer.elapsedCycles() >= queryOneSecCycles()*10)
-                                owner.ActPrintLog("HD sender, waiting for space, inactive writers = %d, totalSz = %d, numFinished = %d", queryInactiveWriters(), queryTotalSz(), atomic_read(&numFinished));
+                                owner.ActPrintLog("HD sender, waiting for space, inactive writers = %d, totalSz = %d, numFinished = %d", queryInactiveWriters(), queryTotalSz(), numFinished.load());
                             timer.reset();
 
                             if (senderFullSem.wait(10000))
@@ -905,8 +905,8 @@ protected:
         {
             if (queryMarkSenderFinished(target))
             {
-                atomic_inc(&numFinished);
-                atomic_inc(&stoppedTargets);
+                ++numFinished;
+                ++stoppedTargets;
             }
         }
         void markSelfStopped() { markStopped(self); }

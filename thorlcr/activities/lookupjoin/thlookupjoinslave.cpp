@@ -2237,7 +2237,7 @@ protected:
             IChannelDistributor **channelDistributors;
             unsigned nextSpillChannel;
             CriticalSection crit;
-            atomic_t spilt;
+            std::atomic<unsigned> spilt;
         public:
             CChannelDistributor(CLookupJoinActivityBase &_owner, ICompare *cmp) : owner(_owner)
             {
@@ -2247,7 +2247,7 @@ protected:
                 channelDistributors = ((CLookupJoinActivityBase *)owner.channels[0])->channelDistributors;
                 channelDistributors[owner.queryJobChannelNumber()] = this;
                 nextSpillChannel = 0;
-                atomic_set(&spilt, 0);
+                spilt = 0;
                 //NB: all channels will have done this, before rows are added
             }
 #define HPCC_17331 // Whilst under investigation. Should be solved by fix for HPCC-21091
@@ -2342,7 +2342,8 @@ protected:
         // IChannelDistributor impl.
             virtual void putRow(const void *row)
             {
-                if (atomic_cas(&spilt, 0, 1))
+                unsigned expected = 1;
+                if (spilt.compare_exchange_strong(expected, 0))
                 {
                     StringBuffer traceInfo;
                     if (channelCollector->shrink(&traceInfo)) // grab back some valuable table array space
@@ -2354,7 +2355,7 @@ protected:
             {
                 if (!channelCollector->spill(critical))
                     return false;
-                atomic_set(&spilt, 1);
+                spilt = 1;
                 return true;
             }
             virtual roxiemem::IBufferedRowCallback *queryCallback() { return this; }

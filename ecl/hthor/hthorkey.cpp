@@ -2871,7 +2871,7 @@ public:
         left = NULL;
         prev = NULL;
         next = NULL;
-        atomic_set(&endMarkersPending,0);
+        endMarkersPending = 0;
         groupStart = NULL;
         matchcount = 0;
     }
@@ -2885,12 +2885,12 @@ public:
         if (_groupStart)
         {
             groupStart = _groupStart;
-            atomic_inc(&_groupStart->endMarkersPending);
+            ++_groupStart->endMarkersPending;
         }
         else
         {
             groupStart = this;
-            atomic_set(&endMarkersPending, 1);
+            endMarkersPending = 1;
         }
         matchcount = 0;
     }
@@ -2912,12 +2912,12 @@ public:
     inline void notePending()
     {
 //      assertex(!complete());
-        atomic_inc(&groupStart->endMarkersPending);
+        ++groupStart->endMarkersPending;
     }
 
     inline bool complete() const
     {
-        return atomic_read(&groupStart->endMarkersPending) == 0;
+        return groupStart->endMarkersPending == 0;
     }
 
     inline bool inGroup(CJoinGroup *leader) const
@@ -2931,7 +2931,7 @@ public:
         //Another completing group could cause this group to be processed once endMarkersPending is set to 0
         //So link this object to ensure it is not disposed of while this function is executing
         Linked<CJoinGroup> saveThis(this);
-        if (atomic_dec_and_test(&groupStart->endMarkersPending))
+        if (--groupStart->endMarkersPending == 0)
         {
             join->onComplete(groupStart);
         }
@@ -2966,7 +2966,7 @@ protected:
     const void *left;
     unsigned matchcount;
     CIArrayOf<MatchSet> matchsets;
-    atomic_t endMarkersPending;
+    std::atomic<unsigned> endMarkersPending;
     IJoinProcessor *join = nullptr;
     mutable CriticalSection crit;
     CJoinGroup *groupStart;
@@ -3439,9 +3439,9 @@ class CHThorKeyedJoinActivity  : public CHThorThreadedActivityBase, implements I
     Owned<JoinGroupPool> pool;
     QueueOf<const void, true> pending;
     CriticalSection statsCrit, imatchCrit, fmatchCrit;
-    atomic_t prefiltered;
-    atomic_t postfiltered;
-    atomic_t skips;
+    RelaxedAtomic<unsigned> prefiltered;
+    RelaxedAtomic<unsigned> postfiltered;
+    RelaxedAtomic<unsigned> skips;
     unsigned seeks;
     unsigned scans;
     unsigned wildseeks;
@@ -3460,9 +3460,9 @@ public:
     CHThorKeyedJoinActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorKeyedJoinArg &_arg, ThorActivityKind _kind, EclGraph & _graph, IPropertyTree *_node)
         : CHThorThreadedActivityBase(_agent, _activityId, _subgraphId, _arg, _arg, _kind, _graph, _arg.queryDiskRecordSize(), _node), helper(_arg)
     {
-        atomic_set(&prefiltered, 0);
-        atomic_set(&postfiltered, 0);
-        atomic_set(&skips, 0);
+        prefiltered = 0;
+        postfiltered = 0;
+        skips = 0;
         seeks = 0;
         scans = 0;
         eclKeySize.set(helper.queryIndexRecordSize());
@@ -3674,7 +3674,7 @@ public:
         CriticalBlock proc(fmatchCrit);
         bool ret = helper.fetchMatch(ms->queryJoinGroup()->queryLeft(), right);
         if (!ret)
-            atomic_inc(&postfiltered);
+            ++postfiltered;
         return ret;
     }
 
@@ -3682,7 +3682,7 @@ public:
     {
         bool ret = helper.leftCanMatch(_left);
         if (!ret)
-            atomic_inc(&prefiltered);
+            ++prefiltered;
         return ret;
     }
 
@@ -3802,7 +3802,7 @@ public:
                 }
                 else
                 {
-                    atomic_inc(&skips);
+                    ++skips;
                 }
             }
             else
@@ -3833,7 +3833,7 @@ public:
                             }
                             else
                             {
-                                atomic_inc(&skips);
+                                ++skips;
                             }
                         }
                         catch(IException * e)
@@ -3883,7 +3883,7 @@ public:
                                 }
                                 else
                                 {
-                                    atomic_inc(&skips);
+                                    ++skips;
                                 }
                             }
                             catch(IException * e)
@@ -3926,7 +3926,7 @@ public:
                                 }
                                 else
                                 {
-                                    atomic_inc(&skips);
+                                    ++skips;
                                 }
                             }
                             catch(IException * e)
@@ -3973,7 +3973,7 @@ public:
                         }
                         else
                         {
-                            atomic_inc(&skips);
+                            ++skips;
                         }
                     }
                     catch(IException * e)
@@ -4088,7 +4088,7 @@ public:
         }
         else
         {
-            atomic_inc(&postfiltered);
+            ++postfiltered;
         }
         return false;
     }
@@ -4115,9 +4115,9 @@ public:
     {
         CHThorThreadedActivityBase::updateProgress(progress);
         StatsActivityScope scope(progress, activityId);
-        progress.addStatistic(StNumPreFiltered, atomic_read(&prefiltered));
-        progress.addStatistic(StNumPostFiltered, atomic_read(&postfiltered));
-        progress.addStatistic(StNumIndexSkips, atomic_read(&skips));
+        progress.addStatistic(StNumPreFiltered, prefiltered);
+        progress.addStatistic(StNumPostFiltered, postfiltered);
+        progress.addStatistic(StNumIndexSkips, skips);
         progress.addStatistic(StNumIndexSeeks, seeks);
         progress.addStatistic(StNumIndexScans, scans);
         progress.addStatistic(StNumIndexWildSeeks, wildseeks);

@@ -28,21 +28,21 @@
 
 typedef IXslProcessor * (*getXslProcessor_func)();
 
-static atomic_t gActiveRequests;
+static RelaxedAtomic<unsigned> gActiveRequests;
 
-long ActiveRequests::getCount()
+unsigned ActiveRequests::getCount()
 {
-    return atomic_read(&gActiveRequests);
+    return gActiveRequests;
 }
 
-void ActiveRequests::inc()
+ActiveRequests::ActiveRequests()
 {
-    atomic_inc(&gActiveRequests);
+    gActiveRequests++;
 }
 
-void ActiveRequests::dec()
+ActiveRequests::~ActiveRequests()
 {
-    atomic_dec(&gActiveRequests);
+    gActiveRequests--;
 }
 
 CEspApplicationPort::CEspApplicationPort(bool viewcfg, CEspProtocol* prot) : viewConfig(viewcfg), rootAuth(false), navWidth(165), navResize(false), navScroll(false), protocol(prot)

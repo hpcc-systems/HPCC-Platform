@@ -2789,13 +2789,13 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         StructArrayOf<OpenFileInfo> openFiles;
         Owned<IDirectoryIterator> opendir;
         unsigned            lasttick, lastInactiveTick;
-        atomic_t            &globallasttick;
+        std::atomic<unsigned> &globallasttick;
         unsigned            previdx;        // for debug
 
 
         IMPLEMENT_IINTERFACE;
 
-        CRemoteClientHandler(CRemoteFileServer *_parent,ISocket *_socket,atomic_t &_globallasttick, bool _calledByRowService)
+        CRemoteClientHandler(CRemoteFileServer *_parent,ISocket *_socket,std::atomic<unsigned> &_globallasttick, bool _calledByRowService)
             : socket(_socket), globallasttick(_globallasttick), calledByRowService(_calledByRowService)
         {
             previdx = (unsigned)-1;
@@ -3073,7 +3073,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         void touch()
         {
             lastInactiveTick = lasttick = msTick();
-            atomic_set(&globallasttick,lasttick);
+            globallasttick = lasttick;
         }
 
         const char *queryPeerName()
@@ -3415,7 +3415,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
     CAsyncCommandManager asyncCommandManager;
     CThrottler stdCmdThrottler, slowCmdThrottler;
     CClientStatsTable clientStatsTable;
-    atomic_t globallasttick;
+    std::atomic<unsigned> globallasttick;
     unsigned targetActiveThreads;
     Linked<IPropertyTree> keyPairInfo;
 
@@ -3650,7 +3650,7 @@ public:
         stopping = false;
         clientcounttick = msTick();
         closedclients = 0;
-        atomic_set(&globallasttick,msTick());
+        globallasttick = msTick();
     }
 
     ~CRemoteFileServer()
@@ -5517,7 +5517,7 @@ public:
 
     unsigned idleTime()
     {
-        unsigned t = (unsigned)atomic_read(&globallasttick);
+        unsigned t = globallasttick;
         return msTick()-t;
     }
 

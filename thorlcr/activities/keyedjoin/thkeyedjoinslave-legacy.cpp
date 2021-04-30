@@ -97,7 +97,7 @@ interface IJoinProcessor
     virtual void onComplete(CJoinGroup * jg) = 0;
     virtual bool leftCanMatch(const void *_left) = 0;
 #ifdef TRACE_USAGE
-     virtual atomic_t &getdebug(unsigned w) = 0;
+     virtual std::atomic<unsigned> &getdebug(unsigned w) = 0;
 #endif
      virtual CActivityBase *queryOwner() = 0;
 };
@@ -173,7 +173,7 @@ public:
     CJoinGroup(CActivityBase &_activity, const void *_left, IJoinProcessor *_join, CJoinGroup *_groupStart) : activity(_activity), join(_join), rows(_activity, NULL)
     {
 #ifdef TRACE_USAGE
-        atomic_inc(&join->getdebug(0));
+        ++join->getdebug(0);
 #endif
 #ifdef TRACE_JOINGROUPS
         ActPrintLog(join->queryOwner(), "Creating joinGroup %x, groupstart %x", this, _groupStart);
@@ -201,7 +201,7 @@ public:
     {
 #ifdef TRACE_USAGE
         if (groupStart)
-            atomic_dec(&join->getdebug(0));
+            --join->getdebug(0);
 #endif
 #ifdef TRACE_JOINGROUPS
         if (groupStart)
@@ -570,7 +570,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     MemoryBuffer rawFetchMb;
 
 #ifdef TRACE_USAGE
-    atomic_t debugats[10];
+    std::atomic<unsigned> debugats[10];
     unsigned lastTick;
 #endif
 
@@ -1670,7 +1670,7 @@ public:
 #ifdef TRACE_USAGE
         unsigned it=0;
         for (; it<10; it++)
-            atomic_set(&debugats[it],0);
+            debugats[it] = 0;
         lastTick = 0;
 #endif
         helper = (IHThorKeyedJoinArg *)queryHelper();
@@ -1703,7 +1703,7 @@ public:
     {
         StringBuffer s;
         { CriticalBlock b(onCompleteCrit);
-            s.appendf("CJoinGroups=%d, doneGroups=%d, ",atomic_read(&debugats[0]), doneGroups.ordinality());
+            s.appendf("CJoinGroups=%d, doneGroups=%d, ",debugats[0].load(), doneGroups.ordinality());
             pool->getStats(s);
         }
         ActPrintLog(s.str());
@@ -1811,7 +1811,7 @@ public:
     virtual bool leftCanMatch(const void *_left) { UNIMPLEMENTED; return false; }
 
 #ifdef TRACE_USAGE
-    virtual atomic_t &getdebug(unsigned w)
+    virtual std::atomic<unsigned> &getdebug(unsigned w)
     {
         return debugats[w];
     }
