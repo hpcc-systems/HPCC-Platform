@@ -6,7 +6,7 @@ import * as ESPWorkunit from "src/ESPWorkunit";
 import { WorkunitsService, WUQuery } from "@hpcc-js/comms";
 import { Area, Column, Pie, Bar } from "@hpcc-js/chart";
 import { chain, filter, group, map, sort } from "@hpcc-js/dataflow";
-import Chip from "@material-ui/core/Chip";
+import { Chip } from "./controls/Chip";
 import nlsHPCC from "src/nlsHPCC";
 import { Memory } from "src/Memory";
 import { pushParamExact } from "../util/history";
@@ -206,7 +206,7 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
                                 <Card.Item>
                                     <Stack horizontal horizontalAlign="space-between">
                                         <Text variant="large" nowrap block styles={{ root: { fontWeight: "bold" } }}>{nlsHPCC.State}</Text>
-                                        {filterProps.state !== undefined && <Chip label={filterProps.state} clickable color="primary" onDelete={() => pushParamExact("state", undefined)} />}
+                                        {filterProps.state !== undefined && <Chip label={filterProps.state} onDelete={() => pushParamExact("state", undefined)} />}
                                     </Stack>
                                 </Card.Item>
                                 <Card.Item>
@@ -219,7 +219,7 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
                                 <Card.Item>
                                     <Stack horizontal horizontalAlign="space-between">
                                         <Text variant="large" nowrap block styles={{ root: { fontWeight: "bold" } }}>{nlsHPCC.Day}</Text>
-                                        {filterProps.day !== undefined && <Chip label={filterProps.day} clickable color="primary" onDelete={() => pushParamExact("day", undefined)} />}
+                                        {filterProps.day !== undefined && <Chip label={filterProps.day} color="primary" onDelete={() => pushParamExact("day", undefined)} />}
                                         <Dropdown onChange={(evt, opt, idx) => { pushParamExact("lastNDays", opt.key); }}
                                             options={[
                                                 { key: 1, text: "1 Day", selected: filterProps.lastNDays === 1 },
@@ -243,7 +243,7 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
                                 <Card.Item>
                                     <Stack horizontal horizontalAlign="space-between">
                                         <Text variant="large" nowrap block styles={{ root: { fontWeight: "bold" } }}>{nlsHPCC.Protected}</Text>
-                                        {filterProps.protected !== undefined && <Chip label={"" + filterProps.protected} clickable color="primary" onDelete={() => pushParamExact("protected", undefined)} />}
+                                        {filterProps.protected !== undefined && <Chip label={"" + filterProps.protected} color="primary" onDelete={() => pushParamExact("protected", undefined)} />}
                                     </Stack>
                                 </Card.Item>
                                 <Card.Item>
@@ -260,7 +260,7 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
                                 <Card.Item>
                                     <Stack horizontal horizontalAlign="space-between">
                                         <Text variant="large" nowrap block styles={{ root: { fontWeight: "bold" } }}>{nlsHPCC.Owner}</Text>
-                                        {filterProps.owner !== undefined && <Chip label={filterProps.owner} clickable color="primary" onDelete={() => pushParamExact("owner", undefined)} />}
+                                        {filterProps.owner !== undefined && <Chip label={filterProps.owner} color="primary" onDelete={() => pushParamExact("owner", undefined)} />}
                                     </Stack>
                                 </Card.Item>
                                 <Card.Item>
@@ -273,7 +273,7 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
                                 <Card.Item>
                                     <Stack horizontal horizontalAlign="space-between">
                                         <Text variant="large" nowrap block styles={{ root: { fontWeight: "bold" } }}>{nlsHPCC.Cluster}</Text>
-                                        {filterProps.cluster !== undefined && <Chip label={filterProps.cluster} clickable color="primary" onDelete={() => pushParamExact("cluster", undefined)} />}
+                                        {filterProps.cluster !== undefined && <Chip label={filterProps.cluster} color="primary" onDelete={() => pushParamExact("cluster", undefined)} />}
                                     </Stack>
                                 </Card.Item>
                                 <Card.Item>
