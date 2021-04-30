@@ -21,6 +21,7 @@
 #include "jfile.hpp"
 #include "jencrypt.hpp"
 #include "jregexp.hpp"
+#include "jcomp.hpp"
 #include "mpbase.hpp"
 #include "daclient.hpp"
 #include "dasess.hpp"
@@ -301,7 +302,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         }
     }
 
-    unsigned executeLine(const char *line, StringBuffer &output)
+    unsigned executeLine(const char *line, StringBuffer &output, bool alreadyFailed)
     {
         if (isEmptyString(line))
             return 0;
@@ -323,7 +324,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             remove(line + 3);
             return 0;
         }
-        else
+        else if (!alreadyFailed)
         {
             DBGLOG("Executing %s", line);
             unsigned retcode = runExternalCommand(nullptr, output, output, line, nullptr);
@@ -331,6 +332,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 DBGLOG("Error: retcode=%u executing %s", retcode, line);
             return retcode;
         }
+        return 0;
     }
     unsigned doCompileCpp(const char *wuid, unsigned maxThreads)
     {
@@ -338,14 +340,11 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         if (!maxThreads)
             maxThreads = 1;
         VStringBuffer ccfileName("%s.cc", wuid);
+        VStringBuffer cclogfileName("%s.cc.log", wuid);
         char dir[_MAX_PATH];
         if (!GetCurrentDirectory(sizeof(dir), dir))
             strcpy(dir, "unknown");
         DBGLOG("Compiling generated file list from %s, current directory %s", ccfileName.str(), dir);
-        {
-            Owned<IWUQuery> query = workunit->updateQuery();
-            associateLocalFile(query, FileTypeLog, ccfileName, "CPP log", 0);
-        }
         StringBuffer ccfileContents;
         ccfileContents.loadFile(ccfileName, false);
         StringArray lines;
@@ -371,7 +370,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 try
                 {
                     StringBuffer loutput;
-                    if (executeLine(lines.item(i+firstCompile), loutput))
+                    if (executeLine(lines.item(i+firstCompile), loutput, (numFailed != 0)))
                         numFailed++;
                     CriticalBlock b(crit);
                     output.append(loutput);
@@ -386,7 +385,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         while (lines.isItem(lineIdx))
         {
             const char *line = lines.item(lineIdx);
-            unsigned retcode = executeLine(line, output);
+            unsigned retcode = executeLine(line, output, (numFailed != 0));
             if (retcode)
                 numFailed++;
             lineIdx++;
@@ -394,13 +393,24 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         if (!saveTemps)
             removeFileTraceIfFail(ccfileName);
 
-        ccfileName.append(".log");
-        Owned <IFile> dstfile = createIFile(ccfileName);
+        Owned <IFile> dstfile = createIFile(cclogfileName);
         dstfile->remove();
         if (output.length())
         {
             Owned<IFileIO> dstIO = dstfile->open(IFOwrite);
             dstIO->write(0, output.length(), output.str());
+
+            IArrayOf<IError> errors;
+            extractErrorsFromCppLog(errors, output.str(), numFailed != 0);
+            ForEachItemIn(i, errors)
+                addWorkunitException(workunit, &errors.item(i), false);
+
+            VStringBuffer failText("Compile/Link failed for %s (see %s for details)",wuid,cclogfileName.str());
+            Owned<IWUException> msg = workunit->createException();
+            msg->setExceptionSource("eclccserver");
+            msg->setExceptionCode(3000);
+            msg->setExceptionMessage(failText);
+            msg->setSeverity(SeverityError);
         }
         return numFailed;
     }
@@ -602,18 +612,29 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
                 removeGeneratedFiles(wuid);
 #endif
                 queryDllServer().registerDll(realdllname.str(), "Workunit DLL", dllurl.str());
-                workunit->commit();
-                return true;
             }
             else
             {
 #ifndef _CONTAINERIZED
                 Owned<IWUQuery> query = workunit->updateQuery();
                 associateLocalFile(query, FileTypeLog, logfile, "Compiler log", 0);
-                workunit->commit();
 #endif
-                return false;
             }
+
+            if (compileCppSeparately)
+            {
+                //Files need to be added after the workunit has been cloned - otherwise they are overwritten
+                Owned<IWUQuery> query = workunit->updateQuery();
+                VStringBuffer ccfileName("%s.cc", wuid);
+                VStringBuffer cclogfileName("%s.cc.log", wuid);
+                if (checkFileExists(cclogfileName))
+                    associateLocalFile(query, FileTypeLog, cclogfileName, "CPP log", 0);
+                if (saveTemps && checkFileExists(ccfileName))
+                    associateLocalFile(query, FileTypeLog, ccfileName, "compile actions log", 0);
+            }
+
+            workunit->commit();
+            return (retcode == 0);
         }
         catch (IException * e)
         {
