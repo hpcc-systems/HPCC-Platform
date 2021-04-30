@@ -67,7 +67,6 @@ target_link_libraries ( ws_ecl
          hrpc 
          remote 
          dalibase 
-         environment 
          dllserver 
          nbcd 
          eclrtl 
@@ -79,6 +78,10 @@ target_link_libraries ( ws_ecl
          fileview2 
          xmllib 
     )
+
+if (NOT CONTAINERIZED)
+    target_link_libraries ( ws_ecl environment )
+endif()
 
 IF (USE_OPENSSL)
     target_link_libraries ( ws_ecl

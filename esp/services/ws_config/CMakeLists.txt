@@ -22,6 +22,10 @@
 #    Cmake Input File for ws_config
 #####################################################
 
+if (CONTAINERIZED)
+    message(FATAL_ERROR "Configgen is not included in container builds")
+endif()
+
 project( ws_config ) 
 
 include(${HPCC_SOURCE_DIR}/esp/scm/additional.cmake)
@@ -62,10 +66,8 @@ target_link_libraries ( ws_config
          hrpc 
          remote 
          dalibase 
-         environment 
+         environment
          ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
          xmllib 
          esphttp 
     )
-
-

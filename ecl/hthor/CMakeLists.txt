@@ -87,7 +87,6 @@ target_link_libraries ( hthorlib
          hrpc
          dafsclient
          dalibase
-         environment
          dllserver
          nbcd
          eclrtl
@@ -99,6 +98,10 @@ target_link_libraries ( hthorlib
          schedulectrl
          wuanalysis
     )
+
+if (NOT CONTAINERIZED)
+    target_link_libraries ( hthorlib environment )
+endif()
 
 IF (USE_OPENSSL)
     target_link_libraries ( hthorlib

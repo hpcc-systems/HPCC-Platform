@@ -192,6 +192,7 @@ static void setWorkunitState(ICodeContext * ctx, WUState state, const char * msg
     }
 }
 
+#ifndef _CONTAINERIZED
 static IConstEnvironment * openDaliEnvironment()
 {
     if (daliClientActive())
@@ -208,6 +209,7 @@ static IPropertyTree *getEnvironmentTree(IConstEnvironment * daliEnv)
         return &daliEnv->getPTree(); // No need to clone since daliEnv ensures connection stays alive.
     return getHPCCEnvironment();
 }
+#endif
 
 static void setServerAccess(CClientFileSpray &server, IConstWorkUnit * wu)
 {
@@ -287,6 +289,9 @@ static const char *getAccessibleEspServerURL(const char *param, IConstWorkUnit *
     if (param&&*param)
         return param;
 
+#ifdef _CONTAINERIZED
+    UNIMPLEMENTED_X("CONTAINERIZED(getAccessibleEspServerURL)");
+#else
     CriticalBlock b(espURLcrit);
     if (isUrlListEmpty())
     {
@@ -348,6 +353,7 @@ static const char *getAccessibleEspServerURL(const char *param, IConstWorkUnit *
     PROGLOG("FileServices: Targeting ESP WsFileSpray URL: %s", nextWsFSUrl);
 
     return nextWsFSUrl;
+#endif
 }
 
 StringBuffer & constructLogicalName(IConstWorkUnit * wu, const char * partialLogicalName, StringBuffer & result)
@@ -3008,6 +3014,9 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, cons
 
 FILESERVICES_API char * FILESERVICES_CALL fsGetDefaultDropZone()
 {
+#ifdef _CONTAINERIZED
+    UNIMPLEMENTED_X("CONTAINERIZED(fsGetDefaultDropZone)");
+#else
     Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv = envFactory-> openEnvironment();
     Owned<IConstDropZoneInfoIterator> dropZoneIt = constEnv->getDropZoneIterator();
@@ -3016,10 +3025,14 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetDefaultDropZone()
         dropZoneIt->query().getDirectory(dropZoneDir);
 
     return strdup(dropZoneDir.str());
+#endif
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsGetDropZones(ICodeContext *ctx, size32_t & __lenResult, void * & __result)
 {
+#ifdef _CONTAINERIZED
+    UNIMPLEMENTED_X("CONTAINERIZED(fsGetDropZones)");
+#else
     MemoryBuffer mb;
     Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv = envFactory-> openEnvironment();
@@ -3034,6 +3047,7 @@ FILESERVICES_API void FILESERVICES_CALL fsGetDropZones(ICodeContext *ctx, size32
 
     __lenResult = mb.length();
     __result = mb.detach();
+#endif
 }
 
 

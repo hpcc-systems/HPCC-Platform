@@ -3646,7 +3646,7 @@ public:
 #ifdef _CONTAINERIZED
         // in a containerized setup, the group is moving..
         return strdup("unknown");
-#endif
+#else
         StringBuffer groupName;
         if (workUnit && clusterNames.length())
         {
@@ -3687,6 +3687,7 @@ public:
             }
         }
         return groupName.detach();
+#endif
     }
     virtual char *queryIndexMetaData(char const * lfn, char const * xpath) { throwUnexpected(); }
     virtual char *getEnv(const char *name, const char *defaultValue) const

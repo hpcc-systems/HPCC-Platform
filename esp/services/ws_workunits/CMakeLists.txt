@@ -107,7 +107,6 @@ target_link_libraries ( ws_workunits
          xmllib
          esphttp
          dalibase
-         environment
          dalift
          dllserver
          nbcd
@@ -125,6 +124,10 @@ target_link_libraries ( ws_workunits
          thorhelper
          ${CPPUNIT_LIBRARIES}
     )
+
+if (NOT CONTAINERIZED)
+    target_link_libraries ( ws_workunits environment )
+endif()
 
 IF (USE_OPENSSL)
     target_link_libraries ( ws_workunits

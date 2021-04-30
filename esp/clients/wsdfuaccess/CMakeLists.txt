@@ -73,8 +73,10 @@ target_link_libraries ( wsdfuaccess
          dafsstream
          thorhelper
          dalibase
-         environment
          ${CPPUNIT_LIBRARIES}
     )
 
+if (NOT CONTAINERIZED)
+    target_link_libraries ( wsdfuaccess environment )
+endif()
 

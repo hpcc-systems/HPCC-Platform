@@ -180,6 +180,9 @@ IPluginContext * parentCtx = NULL;
 
 static void getSashaNodes(SocketEndpointArray &epa)
 {
+#ifdef _CONTAINERIZED
+    WARNLOG("CONTAINERIZED(getSashaNodes) not implemented");
+#else
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
     Owned<IPropertyTree> root = &env->getPTree();
@@ -191,6 +194,7 @@ static void getSashaNodes(SocketEndpointArray &epa)
             epa.append(sashaep);
         }
     }
+#endif
 }
 
 static IWorkUnitFactory * getWorkunitFactory(ICodeContext * ctx)

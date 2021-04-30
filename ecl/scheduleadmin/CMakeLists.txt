@@ -47,7 +47,6 @@ target_link_libraries ( scheduleadmin
          jlib
          remote 
          dalibase 
-         environment 
          dllserver 
          nbcd 
          eclrtl 
@@ -55,5 +54,3 @@ target_link_libraries ( scheduleadmin
          workunit 
          schedulectrl 
     )
-
-

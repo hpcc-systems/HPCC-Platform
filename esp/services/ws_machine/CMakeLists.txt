@@ -73,7 +73,7 @@ target_link_libraries ( ws_machine
          hrpc 
          remote 
          dalibase 
-         environment 
+         environment
          workunit
          SMCLib
     )

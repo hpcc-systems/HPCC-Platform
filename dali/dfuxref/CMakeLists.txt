@@ -52,8 +52,10 @@ target_link_libraries ( dfuxref
          hrpc 
          dafsclient
          dalibase 
-         environment 
          dfuXRefLib 
     )
 
+if (NOT CONTAINERIZED)
+    target_link_libraries ( dfuxref environment )
+endif()
 

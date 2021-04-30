@@ -58,7 +58,6 @@ target_link_libraries ( wutool
          jlib
          remote 
          dalibase 
-         environment 
          dllserver 
          nbcd 
          eclrtl 
