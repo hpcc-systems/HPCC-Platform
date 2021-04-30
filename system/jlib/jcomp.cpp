@@ -252,6 +252,101 @@ static void setDirectoryPrefix(StringAttr & target, const char * source)
     }
 }
 
+void extractErrorsFromCppLog(IArrayOf<IError> & errors, const char * cur, bool linkFailed)
+{
+    RegExpr vsErrorPattern("^{.+}({[0-9]+}) : error {.*$}");
+    RegExpr vsLinkErrorPattern("^{.+} : error {.*$}");
+
+    //cpperr.ecl:7:10: error: ‘syntaxError’ was not declared in this scope
+    RegExpr gccErrorPattern("^{.+}:{[0-9]+}:{[0-9]+}: {[a-z]+}: {.*$}");
+    RegExpr gccErrorPattern2("^{.+}:{[0-9]+}: {[a-z]+}: {.*$}");
+    RegExpr gccLinkErrorPattern("^{.+}:{[0-9]+}: {.*$}"); // undefined reference
+    RegExpr gccLinkErrorPattern2("^.+ld: {.*$}"); // fail to find library etc.
+    RegExpr gccExitStatusPattern("^.*exit status$"); // collect2: error: ld returned 1 exit status
+
+    do
+    {
+        const char * newline = strchr(cur, '\n');
+        StringAttr next;
+        if (newline)
+        {
+            next.set(cur, newline-cur);
+            cur = newline+1;
+            if (*cur == '\r')
+                cur++;
+        }
+        else
+        {
+            next.set(cur);
+            cur = NULL;
+        }
+
+        if (gccExitStatusPattern.find(next))
+        {
+            //ignore
+        }
+        else if (gccErrorPattern.find(next))
+        {
+            StringBuffer filename, line, column, kind, msg;
+            gccErrorPattern.findstr(filename, 1);
+            gccErrorPattern.findstr(line, 2);
+            gccErrorPattern.findstr(column, 3);
+            gccErrorPattern.findstr(kind, 4);
+            gccErrorPattern.findstr(msg, 5);
+
+            if (strieq(kind, "error"))
+                errors.append(*createError(CategoryError, SeverityError, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), atoi(column), 0));
+            else
+                errors.append(*createError(CategoryCpp, SeverityWarning, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), atoi(column), 0));
+        }
+        else if (gccErrorPattern2.find(next))
+        {
+            StringBuffer filename, line, kind, msg;
+            gccErrorPattern2.findstr(filename, 1);
+            gccErrorPattern2.findstr(line, 2);
+            gccErrorPattern2.findstr(kind, 3);
+            gccErrorPattern2.findstr(msg, 4);
+
+            if (strieq(kind, "error"))
+                errors.append(*createError(CategoryError, SeverityError, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), 0, 0));
+            else
+                errors.append(*createError(CategoryCpp, SeverityWarning, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), 0, 0));
+        }
+        else if (gccLinkErrorPattern.find(next))
+        {
+            StringBuffer filename, line, msg;
+            gccLinkErrorPattern.findstr(filename, 1);
+            gccLinkErrorPattern.findstr(line, 2);
+            gccLinkErrorPattern.findstr(msg, 3);
+
+            ErrorSeverity severity = linkFailed ? SeverityError : SeverityWarning;
+            errors.append(*createError(CategoryError, severity, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), 0, 0));
+        }
+        else if (gccLinkErrorPattern2.find(next))
+        {
+            StringBuffer msg("C++ link error: ");
+            gccLinkErrorPattern2.findstr(msg, 1);
+            ErrorSeverity severity = linkFailed ? SeverityError : SeverityWarning;
+            errors.append(*createError(CategoryError, severity, JLIBERR_CppCompileError, msg.str(), NULL, 0, 0, 0));
+        }
+        else if (vsErrorPattern.find(next))
+        {
+            StringBuffer filename, line, msg("C++ compiler error: ");
+            vsErrorPattern.findstr(filename, 1);
+            vsErrorPattern.findstr(line, 2);
+            vsErrorPattern.findstr(msg, 3);
+            errors.append(*createError(CategoryError, SeverityError, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), 0, 0));
+        }
+        else if (vsLinkErrorPattern.find(next))
+        {
+            StringBuffer filename, msg("C++ link error: ");
+            vsLinkErrorPattern.findstr(filename, 1);
+            vsLinkErrorPattern.findstr(msg, 2);
+            errors.append(*createError(CategoryError, SeverityError, JLIBERR_CppCompileError, msg.str(), filename.str(), 0, 0, 0));
+        }
+    } while (cur);
+}
+
 CppCompiler::CppCompiler(const char * _coreName, const char * _sourceDir, const char * _targetDir, unsigned _targetCompiler, bool _verbose, const char *_compileBatchOut)
 {
     coreName.set(_coreName);
@@ -578,97 +673,7 @@ void CppCompiler::extractErrors(IArrayOf<IError> & errors)
         StringBuffer file;
         file.loadFile(logfile);
 
-        RegExpr vsErrorPattern("^{.+}({[0-9]+}) : error {.*$}");
-        RegExpr vsLinkErrorPattern("^{.+} : error {.*$}");
-
-        //cpperr.ecl:7:10: error: ‘syntaxError’ was not declared in this scope
-        RegExpr gccErrorPattern("^{.+}:{[0-9]+}:{[0-9]+}: {[a-z]+}: {.*$}");
-        RegExpr gccErrorPattern2("^{.+}:{[0-9]+}: {[a-z]+}: {.*$}");
-        RegExpr gccLinkErrorPattern("^{.+}:{[0-9]+}: {.*$}"); // undefined reference
-        RegExpr gccLinkErrorPattern2("^.+ld: {.*$}"); // fail to find library etc.
-        RegExpr gccExitStatusPattern("^.*exit status$"); // collect2: error: ld returned 1 exit status
-        const char * cur = file.str();
-        do
-        {
-            const char * newline = strchr(cur, '\n');
-            StringAttr next;
-            if (newline)
-            {
-                next.set(cur, newline-cur);
-                cur = newline+1;
-                if (*cur == '\r')
-                    cur++;
-            }
-            else
-            {
-                next.set(cur);
-                cur = NULL;
-            }
-
-            if (gccExitStatusPattern.find(next))
-            {
-                //ignore
-            }
-            else if (gccErrorPattern.find(next))
-            {
-                StringBuffer filename, line, column, kind, msg;
-                gccErrorPattern.findstr(filename, 1);
-                gccErrorPattern.findstr(line, 2);
-                gccErrorPattern.findstr(column, 3);
-                gccErrorPattern.findstr(kind, 4);
-                gccErrorPattern.findstr(msg, 5);
-
-                if (strieq(kind, "error"))
-                    errors.append(*createError(CategoryError, SeverityError, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), atoi(column), 0));
-                else
-                    errors.append(*createError(CategoryCpp, SeverityWarning, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), atoi(column), 0));
-            }
-            else if (gccErrorPattern2.find(next))
-            {
-                StringBuffer filename, line, kind, msg;
-                gccErrorPattern2.findstr(filename, 1);
-                gccErrorPattern2.findstr(line, 2);
-                gccErrorPattern2.findstr(kind, 3);
-                gccErrorPattern2.findstr(msg, 4);
-
-                if (strieq(kind, "error"))
-                    errors.append(*createError(CategoryError, SeverityError, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), 0, 0));
-                else
-                    errors.append(*createError(CategoryCpp, SeverityWarning, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), 0, 0));
-            }
-            else if (gccLinkErrorPattern.find(next))
-            {
-                StringBuffer filename, line, msg;
-                gccLinkErrorPattern.findstr(filename, 1);
-                gccLinkErrorPattern.findstr(line, 2);
-                gccLinkErrorPattern.findstr(msg, 3);
-
-                ErrorSeverity severity = linkFailed ? SeverityError : SeverityWarning;
-                errors.append(*createError(CategoryError, severity, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), 0, 0));
-            }
-            else if (gccLinkErrorPattern2.find(next))
-            {
-                StringBuffer msg("C++ link error: ");
-                gccLinkErrorPattern2.findstr(msg, 1);
-                ErrorSeverity severity = linkFailed ? SeverityError : SeverityWarning;
-                errors.append(*createError(CategoryError, severity, JLIBERR_CppCompileError, msg.str(), NULL, 0, 0, 0));
-            }
-            else if (vsErrorPattern.find(next))
-            {
-                StringBuffer filename, line, msg("C++ compiler error: ");
-                vsErrorPattern.findstr(filename, 1);
-                vsErrorPattern.findstr(line, 2);
-                vsErrorPattern.findstr(msg, 3);
-                errors.append(*createError(CategoryError, SeverityError, JLIBERR_CppCompileError, msg.str(), filename.str(), atoi(line), 0, 0));
-            }
-            else if (vsLinkErrorPattern.find(next))
-            {
-                StringBuffer filename, msg("C++ link error: ");
-                vsLinkErrorPattern.findstr(filename, 1);
-                vsLinkErrorPattern.findstr(msg, 2);
-                errors.append(*createError(CategoryError, SeverityError, JLIBERR_CppCompileError, msg.str(), filename.str(), 0, 0, 0));
-            }
-        } while (cur);
+        extractErrorsFromCppLog(errors, file.str(), linkFailed);
     }
     catch (IException * e)
     {

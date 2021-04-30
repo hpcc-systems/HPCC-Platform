@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book xml:base="../">
+  <bookinfo>
+    <title>Containerized HPCC Systems® Platform</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre
+      documentação</emphasis> na linha de assunto e indique o nome do
+      documento, o número das páginas e número da versão atual no corpo da
+      mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
+      registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
+
+      <para>HPCC Systems<superscript>®</superscript> é uma marca registrada da
+      LexisNexis Risk Data Management Inc.</para>
+
+      <para>Os demais produtos, logotipos e serviços podem ser marcas
+      comerciais ou registradas de suas respectivas empresas.</para>
+
+      <para>Todos os nomes e dados de exemplo usados neste manual são
+      fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
+      mera coincidência.</para>
+
+      <para/>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg"/>
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="ContainerizedHPCCOverview">
+    <title>Visão geral do HPCC em contêineres</title>
+
+    <para>A partir da versão 8.0, a plataforma HPCC
+    Systems<superscript>®</superscript> focará em deploys em contêineres. Isso
+    é útil para implantações baseadas em nuvem (grandes ou pequenas) ou
+    implantações de teste/desenvolvimento locais.</para>
+
+    <para>Os contêineres do Docker gerenciados pelo Kubernetes (K8s) são um
+    novo ambiente operacional de destino, juntamente com o suporte contínuo
+    para instalações tradicionais "bare metal" usando arquivos do instalador
+    .deb ou .rpm. O suporte para instaladores tradicionais continua e esse
+    tipo de implantação é viável para implantações bare metal ou configurações
+    manuais na nuvem.</para>
+
+    <para>Esta não é uma mudança do tipo <emphasis>"rehosting"</emphasis>, em
+    que a plataforma executa sua estrutura legada inalterada e trata os
+    contêineres apenas como uma forma de fornecer <emphasis>máquinas
+    virtuais</emphasis> e para serem executadas, mas uma mudança significativa
+    em como os componentes são configurados, como e quando eles iniciam e onde
+    armazenam seus dados.</para>
+
+    <para>Este livro se concentra em implantações em contêineres. A primeira
+    seção é sobre o uso de contêineres Docker e gráficos Helm localmente.
+    Docker e Helm fazem muito do trabalho para você. A segunda parte usa as
+    mesmas técnicas na nuvem.</para>
+
+    <para>Para pequenas implantações locais (para desenvolvimento e teste),
+    sugerimos o uso de Docker Desktop e Helm. Para implantações em nuvem, você
+    pode usar qualquer tipo de serviço em nuvem, se for compatível com Docker,
+    Kubernetes e Helm. Este livro, no entanto, se concentrará no Microsoft
+    Azure para serviços em nuvem. As versões futuras podem incluir
+    especificações para outros provedores de nuvem.</para>
+
+    <para>Se você deseja gerenciar manualmente sua implantação local ou na
+    nuvem, ainda pode usar os instaladores tradicionais e o Configuration
+    Manager, mas isso remove muitos dos benefícios que o Docker, Kubernetes e
+    Helm fornecem, como instrumentação, monitoramento, escalonamento e custo
+    ao controle.</para>
+
+    <para>Os sistemas HPCC seguem as convenções padrão sobre como as
+    implantações do Kubernetes são normalmente configuradas e gerenciadas,
+    portanto, deve ser fácil para alguém familiarizado com o Kubernetes e o
+    Helm instalar e gerenciar a plataforma HPCC Systems.</para>
+
+    <variablelist>
+      <varlistentry>
+        <term>Note:</term>
+
+        <listitem>
+          <para>A versão tradicional bare-metal da plataforma de sistemas HPCC
+          está madura e tem sido amplamente usada em aplicativos comerciais
+          por quase duas décadas e é totalmente destinada para uso em
+          produção. A versão em contêiner é nova e ainda não está 100% pronta
+          para produção. Além disso, alguns aspectos dessa versão podem ser
+          alterados sem aviso prévio. Nós encorajamos você a usá-lo e fornecer
+          feedback para que possamos tornar esta versão tão robusta quanto uma
+          instalação bare-metal.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+
+    <sect1 id="barevscontainer">
+      <title>Bare-metal vs Containers</title>
+
+      <para>Se você estiver familiarizado com a plataforma HPCC Systems, há
+      algumas mudanças fundamentais a serem observadas.</para>
+
+      <sect2 id="processesandpods">
+        <title>Processoss e pods, não máquinas</title>
+
+        <para>Qualquer pessoa familiarizada com o sistema de configuração
+        existente saberá que parte da configuração envolve a criação de
+        instâncias de cada processo e a especificação de quais máquinas
+        físicas devem ser executadas.</para>
+
+        <para>Em um mundo Kubernetes, isso é gerenciado dinamicamente pelo
+        próprio sistema K8s (e pode ser alterado dinamicamente enquanto o
+        sistema é executado).</para>
+
+        <para>Além disso, um sistema em contêiner é muito mais simples de
+        gerenciar se você adotar o paradigma de um processo por contêiner, em
+        que as decisões sobre quais contêineres precisam ser agrupados em um
+        pod e quais pods podem ser executados em nós físicos de maneira
+        automática.</para>
+      </sect2>
+
+      <sect2 id="helmcharts001">
+        <title>Helm charts</title>
+
+        <para>No mundo em contêineres, as informações que o operador precisa
+        fornecer para configurar um ambiente HPCC Systems são bastante
+        reduzidas. Não há necessidade de especificar qualquer informação sobre
+        quais máquinas estão em uso e por qual processo. Conforme mencionado
+        acima, também não há necessidade de alterar muitas opções que podem
+        ser dependentes do ambiente operacional, uma vez que muito disso foi
+        padronizado no momento em que as imagens do contêiner foram
+        criadas.</para>
+
+        <para>Portanto, na maioria dos casos, a maior parte das configurações
+        devem ser ignoradas para usar o padrão. Como tal, o novo paradigma de
+        configuração requer que apenas o mínimo de informações seja
+        especificado e quaisquer parâmetros não especificados façam usos dos
+        padrões apropriados.</para>
+
+        <para>O <emphasis role="strong">environment.xml</emphasis> padrão que
+        incluímos em nossos pacotes bare-metal para descrever o sistema de nó
+        único padrão contém aproximadamente 1300 linhas e é complexo o
+        suficiente para que recomendamos o uso de uma ferramenta especial para
+        editá-lo.</para>
+
+        <para>O <emphasis role="strong">values.yaml</emphasis> do helm chart
+        padrão tem menos de 100 linhas e pode ser editado em qualquer editor
+        e/ou modificado por meio das substituições da linha de comando. Também
+        é autodocumentado com comentários extensos.</para>
+      </sect2>
+
+      <sect2 id="staticvsondemand">
+        <title>Static vs On-Demand Services</title>
+
+        <para>A fim de realizar a economia de custo potencial de um ambiente
+        de nuvem e, ao mesmo tempo, aproveitar a escalabilidade quando
+        necessário, alguns serviços que estão sempre ativos na tradição de
+        instalações bare-metal são lançados sob demanda em instalações em
+        contêiner.</para>
+
+        <para>Por exemplo, um componente eclccserver inicia um stub que requer
+        recursos mínimos, onde a única tarefa é observar as workunits enviadas
+        para compilação e lançar um job K8s independente para realizar a
+        compilação atual.</para>
+
+        <para>Da mesma forma, o componente eclagent também é um stub que ativa
+        um job K8s quando uma workunit é enviada e o stub Thor inicia um
+        cluster apenas quando necessário. Usando esse design, não apenas a
+        capacidade do sistema aumenta automaticamente para usar quantos pods
+        forem necessários para lidar com a carga enviada, como também diminui
+        para usar recursos mínimos (como uma fração de um único nó) durante os
+        tempos de inatividade quando aguardando que os trabalhos sejam
+        enviados.</para>
+
+        <para>Os componentes ESP e Dali estão sempre ligados, desde que o
+        cluster K8s seja iniciado. Não é viável iniciá-los e interrompê-los
+        sob demanda sem latência excessiva. No entanto, o ESP pode ser
+        ampliado e reduzido dinamicamente para executar quantas instâncias
+        forem necessárias para lidar com a carga atual.</para>
+      </sect2>
+
+      <sect2 id="topoclustersvsqueues">
+        <title>Configurações de topologia – Clusters vs filas</title>
+
+        <para>Em implantações bare-metal, há uma seção chamada <emphasis
+        role="strong">Topologia</emphasis> onde as várias filas às quais as
+        workunits podem ser enviadas são configuradas. É responsabilidade da
+        pessoa que edita o ambiente garantir que cada destino nomeado tenha as
+        instâncias eclccserver, hThor (ou ROXIE) e Thor (se desejado)
+        configuradas, para lidar com as workunit enviadas para a fila de
+        destino.</para>
+
+        <para>Essa configuração foi bastante simplificada ao usar Helm charts
+        para configurar um sistema em contêiner. Cada Thor nomeado ou
+        componente eclagent cria uma fila correspondente (com o mesmo nome) e
+        cada eclccserver escuta em todas as filas por padrão (mas você pode
+        restringir a certas filas apenas se realmente quiser). Definir um
+        componente do Thor automaticamente garante que os componentes do
+        agente necessários sejam provisionados.</para>
+
+        <para/>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <xi:include href="ContainerizedHPCC/ContainerizedMods/LocalDeployment.xml"
+              xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+  <xi:include href="ContainerizedHPCC/ContainerizedMods/PVCStorage.xml"
+              xmlns:xi="http://www.w3.org/2001/XInclude"/>
+</book>

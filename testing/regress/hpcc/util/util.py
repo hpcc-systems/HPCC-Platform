@@ -230,7 +230,7 @@ def abortWorkunit(wuid, taskId = -1, engine = None):
 
         if gConfig.preAbort != None:
             try:
-                logger.error("%3d. Execute pre abort script '%s'", taskId, str(gConfig.preAbort))
+                logger.error("%3d. Execute pre abort script '%s'", taskId, str(gConfig.preAbort), extra={'taskId':taskId})
                 outFile = os.path.expanduser(gConfig.logDir) + '/' + wuid +'-preAbort.log'
 
                 command=gConfig.preAbort + " > " + outFile + " 2>&1"
@@ -238,10 +238,10 @@ def abortWorkunit(wuid, taskId = -1, engine = None):
                 result = myProc.stdout.read() + myProc.stderr.read()
 
                 logger.debug("%3d. Pre abort script result '%s'", taskId, wuid, str(result))
-                logger.error("%3d. Pre abort script result stored into '%s'", taskId, outFile)
+                logger.error("%3d. Pre abort script result stored into '%s'", taskId, outFile, extra={'taskId':taskId})
             except Exception as e:
                 printException("preAbort scrip:" + repr(e),  True)
-                logger.error("%3d. Exception in executing pre abort script: '%s'", taskId, repr(e))
+                logger.error("%3d. Exception in executing pre abort script: '%s'", taskId, repr(e), extra={'taskId':taskId})
             pass
 
         shell = Shell()

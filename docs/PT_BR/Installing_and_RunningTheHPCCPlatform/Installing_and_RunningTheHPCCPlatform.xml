@@ -160,8 +160,8 @@
           Exemplos</link>) para iniciar sistemas maiores com vários nós
                     facilmente.</para>
 
-          <para>Para CentOS 6, Ubuntu 14.04, e outros sistemas veja <link
-          linkend="hpcc-init">Anexo: hpcc-init</link>.</para>
+          <para>Usuários de System V, por favor, veja o <link
+          linkend="hpcc-init">anexo: hpcc-init</link>.</para>
         </listitem>
 
         <listitem>
@@ -297,28 +297,6 @@
           <para>Opcionalmente você pode instalar o pacote com rpm
           (recomendamos utlizar as opções -Uvh); porém, será necessário
           negociar a instalação de quaisquer dependências adicionais.</para>
-
-          <para><variablelist>
-              <varlistentry>
-                <term>Nota:</term>
-
-                <listitem>
-                  <para>Se você estiver utilizando CentOS 6, talvez seja
-                  necessário executar os seguintes comandos para habilitar a
-                  instalação propriamente.</para>
-                </listitem>
-              </varlistentry>
-            </variablelist></para>
-
-          <para><programlisting>sudo wget \
- http://people.centos.org/tru/devtools-2/devtools-2.repo -O /etc/yum.repos.d/devtools-2.repo</programlisting></para>
-
-          <para>Isto irá adicionar o arquivo devtools-2.repo ao seu sistema.
-          Verifique se informação está no arquivo devtools-2.repo para
-          instalação yum funcionar. <programlisting>[testing-devtools-2-centos-6]
-name=testing 2 devtools for CentOS 6 
-baseurl=http://people.centos.org/tru/devtools-2/6/$basearch/RPMS
-gpgcheck=0</programlisting></para>
         </sect3>
 
         <sect3 id="Installing_Ubuntu-Debian">
@@ -2024,10 +2002,9 @@ init_start_thor--></property></para>
     <sect1 id="hpcc-init">
       <title>hpcc-init</title>
 
-      <para>O CentOS 6 e outros sistemas operacionais baseados no System V não
-      suportam        as chamadas systemd utilizadas pelo HPCC Systems.
-      Continuaremos a apoiar        o antigo estilo de chamada System V.
-      init.d.</para>
+      <para>Sistemas init baseados no System V não suportam as chamadas
+      systemd utilizadas pelo HPCC Systems. Continuaremos a apoiar o antigo
+      estilo de chamada System V. init.d.</para>
 
       <para><emphasis role="bold">hpcc-init
       </emphasis><emphasis><emphasis>[</emphasis>option<emphasis>]</emphasis>
@@ -2438,9 +2415,6 @@ add1(10);
 
             <para><emphasis role="bold">Sistemas baseados em
             RPM:</emphasis></para>
-
-            <para>O suporte ao JavaScript está disponível para CentOS 6.x ou
-            mais recente (está indisponível para CentOS 5.x).</para>
 
             <para>Em um sistema baseado em RPM (CentOS/Red Hat), instale o
             <emphasis role="bold">v8embed.</emphasis></para>
