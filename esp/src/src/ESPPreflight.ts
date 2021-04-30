@@ -254,7 +254,7 @@ class ClusterProcessesList extends ESPRequest.Store {
     preProcessRow(row) {
         lang.mixin(row, {
             Platform: this.getOS(row.OS),
-            hpcc_id: row.Name + "_" + row.Netaddress + "_" + row.Directory,
+            hpcc_id: `${row.Name}_${row.Netaddress}_${row.Directory}_${row.ProcessNumber}`,
             displayName: row.Name,
             type: "machine",
             Component: row.Type,
