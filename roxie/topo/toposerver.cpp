@@ -295,6 +295,10 @@ int main(int argc, const char *argv[])
     EnableSEHtoExceptionMapping();
     setTerminateOnSEH();
     init_signals();
+
+    if (!checkCreateDaemon(argc, argv))
+        return EXIT_FAILURE;
+
     // We need to do the above BEFORE we call InitModuleObjects
     try
     {
@@ -318,14 +322,6 @@ int main(int argc, const char *argv[])
                 topo_server_usage();
                 return EXIT_SUCCESS;
             }
-#ifndef _CONTAINERIZED
-            else if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
-                if (daemon(1,0) || write_pidfile(argv[++i])) {
-                    perror("Failed to daemonize");
-                    return EXIT_FAILURE;
-                }
-            }
-#endif
         }
 
         // locate settings xml file in runtime dir

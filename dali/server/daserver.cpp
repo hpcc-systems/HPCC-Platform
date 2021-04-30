@@ -424,13 +424,11 @@ int main(int argc, const char* argv[])
         Owned<IFile> sentinelFile = createSentinelTarget();
         removeSentinelFile(sentinelFile);
 #ifndef _CONTAINERIZED
+        if (!checkCreateDaemon(argc, argv))
+            return EXIT_FAILURE;
 
         for (unsigned i=1;i<(unsigned)argc;i++) {
             if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
-                if (daemon(1,0) || write_pidfile(argv[++i])) {
-                    perror("Failed to daemonize");
-                    return EXIT_FAILURE;
-                }
             }
             else if (streq(argv[i],"--server") || streq(argv[i],"-s"))
                 server = argv[++i];

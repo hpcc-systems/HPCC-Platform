@@ -550,17 +550,9 @@ void readStaticTopology()
 
 int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 {
-#ifndef _CONTAINERIZED
-    for (unsigned i=0;i<(unsigned)argc;i++) {
-        if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
-            if (daemon(1,0) || write_pidfile(argv[++i])) {
-                perror("Failed to daemonize");
-                return EXIT_FAILURE;
-            }
-            break;
-        }
-    }
-#endif
+    if (!checkCreateDaemon(argc, argv))
+        return EXIT_FAILURE;
+
     EnableSEHtoExceptionMapping();
     setTerminateOnSEH();
     init_signals();
