@@ -622,6 +622,7 @@ struct HPCCBuildInfo
 };
 
 extern jlib_decl HPCCBuildInfo hpccBuildInfo;
+extern jlib_decl bool checkCreateDaemon(unsigned argc, const char * * argv);
 
 
 #endif
