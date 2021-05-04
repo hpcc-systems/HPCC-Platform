@@ -3944,7 +3944,7 @@ bool validateEnv(IConstEnvironment* pConstEnv, bool abortOnException)
     StringBuffer sb;
     const char* inDir = pEnvRoot->queryProp(XML_TAG_ENVSETTINGS"/path");
     if (inDir)
-      sb.append("/componentfiles/configxml");
+      sb.append(inDir).append("/componentfiles/configxml");
     else
       sb.append(hpccBuildInfo.componentDir).append("/configxml");
     configGenMgr.setown(createConfigGenMgr(*pConstEnv, callback, NULL, sb.str(), tempdir, NULL, NULL, NULL));
