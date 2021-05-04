@@ -34,6 +34,11 @@
 #include "SOAP/Platform/soapservice.hpp"
 #include "SOAP/Platform/soapmessage.hpp"
 #include "SOAP/xpp/xjx/xjxpp.hpp"
+#include "jmetrics.hpp"
+
+
+static auto pSoapRequestCount = hpccMetrics::createMetricAndAddToReporter<hpccMetrics::CounterMetric>("soaprequests", "JSON and SOAP POST requests");
+
 
 #define ESP_FACTORY DECL_EXPORT
 
@@ -110,6 +115,7 @@ static CSoapFault* makeSoapFault(CHttpRequest* request, IMultiException* me, con
 
 int CHttpSoapBinding::onSoapRequest(CHttpRequest* request, CHttpResponse* response)
 {
+    pSoapRequestCount->inc(1);
     IEspContext* ctx = request->queryContext();
     if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
     {

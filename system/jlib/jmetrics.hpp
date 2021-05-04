@@ -77,18 +77,17 @@ interface IMetric
  * Concrete base class implementation of the IMetric interface. All metrics inherit
  * from this class.
 */
-class jlib_decl Metric : public IMetric
+class jlib_decl MetricBase : public IMetric
 {
 public:
-    virtual ~Metric() = default;
+    virtual ~MetricBase() = default;
     virtual const std::string &queryName() const override { return name; }
     virtual const std::string &queryDescription() const override { return description; }
     virtual MetricType queryMetricType() const override { return metricType; }
-    virtual __uint64 queryValue() const override { return value; }
 
 protected:
     // No one should be able to create one of these
-    Metric(const char *_name, const char *_desc, MetricType _metricType) :
+    MetricBase(const char *_name, const char *_desc, MetricType _metricType) :
         name{_name},
         description{_desc},
         metricType{_metricType} { }
@@ -97,17 +96,30 @@ protected:
     std::string name;
     std::string description;
     MetricType metricType;
+};
+
+
+class jlib_decl MetricVal : public MetricBase
+{
+public:
+    virtual __uint64 queryValue() const override { return value; }
+
+protected:
+    MetricVal(const char *name, const char *desc, MetricType metricType) :
+        MetricBase(name, desc, metricType) {}
+
     std::atomic<__uint64> value{0};
 };
+
 
 /*
  * Metric used to count events. Count is a monotonically increasing value
  */
-class jlib_decl CounterMetric : public Metric
+class jlib_decl CounterMetric : public MetricVal
 {
 public:
     CounterMetric(const char *name, const char *description) :
-            Metric{name, description, MetricType::METRICS_COUNTER}  { }
+        MetricVal{name, description, MetricType::METRICS_COUNTER}  { }
     void inc(uint64_t val)
     {
         value.fetch_add(val);
@@ -118,11 +130,11 @@ public:
 /*
  * Metric used to track the current state of some internal measurement.
  */
-class jlib_decl GaugeMetric : public Metric
+class jlib_decl GaugeMetric : public MetricVal
 {
 public:
     GaugeMetric(const char *name, const char *description) :
-        Metric{name, description, MetricType::METRICS_GAUGE}  { }
+        MetricVal{name, description, MetricType::METRICS_GAUGE}  { }
 
     /*
      * Update the value as indicated
@@ -141,6 +153,22 @@ public:
     }
 };
 
+template<typename T>
+class CustomMetric : public MetricBase
+{
+public:
+    CustomMetric(const char *name, const char *desc, MetricType metricType, T &_value) :
+        MetricBase(name, desc, metricType),
+        value{_value} { }
+
+    virtual __uint64 queryValue() const override
+    {
+        return static_cast<__uint64>(value);
+    }
+
+protected:
+    T &value;
+};
 
 
 class jlib_decl MetricSink
@@ -217,11 +245,19 @@ protected:
 
 
 //
-// Convenience function template to create a metric and add it to the reporter
+// Convenience function templates to create metrics and add to the reporter
 template <typename T>
 std::shared_ptr<T> createMetricAndAddToReporter(const char *name, const char* desc)
 {
     std::shared_ptr<T> pMetric = std::make_shared<T>(name, desc);
+    queryMetricsReporter().addMetric(pMetric);
+    return pMetric;
+}
+
+template <typename T>
+std::shared_ptr<CustomMetric<T>> createCustomMetricAndAddToReporter(const char *name, const char *desc, MetricType metricType, T &value)
+{
+    std::shared_ptr<CustomMetric<T>> pMetric = std::make_shared<CustomMetric<T>>(name, desc, metricType, value);
     queryMetricsReporter().addMetric(pMetric);
     return pMetric;
 }
