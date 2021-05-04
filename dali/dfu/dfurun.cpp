@@ -1657,7 +1657,7 @@ public:
                                 if (!mspec.isReplicated())
                                     needrep = false;
                             }
-#ifndef _DEBUG
+#if !defined(_DEBUG) &&  !defined(_CONTAINERIZED)
                             StringBuffer gname;
                             if (!destination->getRemoteGroupOverride()&&!testLocalCluster(destination->getGroupName(0,gname).str())) {
                                 throw MakeStringException(-1,"IMPORT cluster %s is not recognized locally",gname.str());
