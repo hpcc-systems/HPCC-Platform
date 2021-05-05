@@ -14,13 +14,10 @@
 #    limitations under the License.
 ################################################################################
 set (proxies_out_dir "plugins")
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_saltlib.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_keylib.ecllib DESTINATION  ${proxies_out_dir} COMPONENT Runtime)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_metaphone.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_metaphone3.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_thorlib.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_word.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
 
 IF (USE_OPENSSL)
-install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_cryptolib.ecllib DESTINATION plugins COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_cryptolib.ecllib DESTINATION ${proxies_out_dir} COMPONENT Runtime)
 ENDIF()
