@@ -104,14 +104,17 @@ export class ECLArchiveWidget {
             return ret;
         };
 
+        this.archiveViewer
+            .target(context.id + "EclContent")
+            ;
+
         const wu = Workunit.attach({ baseUrl: "" }, params.Wuid);
         wu.fetchQuery().then(function (query) {
             context.editor.text(query.Text);
             if (!wu.HasArchiveQuery) {
                 context.archiveViewer
-                    .target(context.id + "EclContent")
                     .addWidget(context.editor)
-                    .render()
+                    .lazyRender()
                     ;
             } else {
                 context.directoryTree
@@ -128,11 +131,10 @@ export class ECLArchiveWidget {
                     .rowItemPadding(2)
                     ;
                 context.archiveViewer
-                    .target(context.id + "EclContent")
                     .addWidget(context.directoryTree)
                     .addWidget(context.editor)
                     .relativeSizes([0.1, 0.9])
-                    .render()
+                    .lazyRender()
                     ;
                 const scopesOptions = {
                     ScopeFilter: {
