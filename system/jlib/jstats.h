@@ -824,5 +824,6 @@ public:
     }
 };
 
+extern jlib_decl StringBuffer & formatMoney(StringBuffer &out, unsigned __int64 value);
 
 #endif

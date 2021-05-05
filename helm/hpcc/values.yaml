@@ -104,6 +104,8 @@ storage:
   #   hosts: <name>                         # Name of the host group for bare metal - must match the name of the storage plane..
   #   secret: <secret-id>                   # what secret is required to access the files.  This could optionally become a list if required (or add secrets:).
   #   defaultSprayParts: 4                  # The number of partitions created when spraying (default: 1)
+  #   cost:                                 # The storage cost
+  #     storageAtRest: 0.113                # Storage at rest cost: cost per GiB/month
   #   options:                              # not sure if it is needed
 
   dllStorage:
