@@ -1316,7 +1316,7 @@ void CTpWrapper::getGroupList(double espVersion, const char* kindReq, IArrayOf<I
     try
     {
 #ifdef _CONTAINERIZED
-        Owned<IPropertyTreeIterator> dataPlanes = queryGlobalConfig().getElements("storage/planes[labels='data']");
+        Owned<IPropertyTreeIterator> dataPlanes = getGlobalConfigSP()->getElements("storage/planes[labels='data']");
         ForEach(*dataPlanes)
         {
             IPropertyTree & plane = dataPlanes->query();

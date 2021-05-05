@@ -8657,7 +8657,7 @@ void removeConfigUpdateHook(unsigned notifyFuncId)
         return;
     }
     if (!configFileUpdater->removeNotifyFunc(notifyFuncId))
-        WARNLOG("removeConfigUpdateHook(): notifyFuncId %u not installed");
+        WARNLOG("removeConfigUpdateHook(): notifyFuncId %u not installed", notifyFuncId);
 #endif
 }
 #else
