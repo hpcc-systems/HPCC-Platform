@@ -438,10 +438,10 @@ private:
 public:
     CVaultManager()
     {
-        IPropertyTree *config = nullptr;
+        Owned<const IPropertyTree> config;
         try
         {
-            config = queryComponentConfig().queryPropTree("vaults");
+            config.setown(getComponentConfigSP()->getPropTree("vaults"));
         }
         catch (IException * e)
         {

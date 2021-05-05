@@ -10098,8 +10098,7 @@ public:
 
     void constructStorageGroups(bool force, StringBuffer &messages)
     {
-        IPropertyTree & global = queryGlobalConfig();
-        IPropertyTree * storage = global.queryPropTree("storage");
+        Owned<IPropertyTree> storage = getGlobalConfigSP()->getPropTree("storage");
         if (storage)
         {
             normalizeHostGroups();
@@ -10122,7 +10121,7 @@ public:
                 Owned<IPropertyTree> newClusterGroup;
                 if (hostGroup)
                 {
-                    IPropertyTree * match = queryHostGroup(hostGroup, true);
+                    Owned<IPropertyTree> match = getHostGroup(hostGroup, true);
                     std::vector<std::string> hosts;
                     Owned<IPropertyTreeIterator> hostIter = match->getElements("hosts");
                     ForEach (*hostIter)

@@ -136,7 +136,7 @@ int main(int argc, const char* argv[])
         return -1;
     }
 
-    Owned<IPropertyTree> globals = loadConfiguration(defaultYaml, argv, "daliadmin", "DALIADMIN", "daliadmin.xml", nullptr);
+    Owned<IPropertyTree> globals = loadConfiguration(defaultYaml, argv, "daliadmin", "DALIADMIN", "daliadmin.xml", nullptr, nullptr, false);
     Owned<IProperties> props = createProperties("daliadmin.ini");
     StringArray params;
     SocketEndpoint ep;

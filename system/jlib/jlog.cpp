@@ -2548,7 +2548,7 @@ static constexpr bool useSysLogDefault = false;
 
 void setupContainerizedLogMsgHandler()
 {
-    IPropertyTree * logConfig = queryComponentConfig().queryPropTree("logging");
+    Owned<IPropertyTree> logConfig = getComponentConfigSP()->getPropTree("logging");
     if (logConfig)
     {
         if (logConfig->getPropBool(logQueueDisabledAtt, false))

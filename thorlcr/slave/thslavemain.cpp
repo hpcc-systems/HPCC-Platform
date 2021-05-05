@@ -363,7 +363,7 @@ int main( int argc, const char *argv[]  )
         }
         cmdArgs = argv+1;
 #ifdef _CONTAINERIZED
-        globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", nullptr, nullptr));
+        globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", nullptr, nullptr, nullptr, false));
 #else
         loadArgsIntoConfiguration(globals, cmdArgs);
 #endif

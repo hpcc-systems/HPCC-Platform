@@ -582,7 +582,7 @@ int main( int argc, const char *argv[]  )
     InitModuleObjects();
     NoQuickEditSection xxx;
     {
-        globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", "thor.xml", nullptr));
+        globals.setown(loadConfiguration(thorDefaultConfigYaml, argv, "thor", "THOR", "thor.xml", nullptr, nullptr, false));
     }
 #ifdef _DEBUG
     unsigned holdSlave = globals->getPropInt("@holdSlave", NotFound);
@@ -1017,7 +1017,7 @@ int main( int argc, const char *argv[]  )
                 StringBuffer uniqueGrpName;
                 queryNamedGroupStore().addUnique(&queryProcessGroup(), uniqueGrpName);
                 // change default plane
-                queryComponentConfig().setProp("storagePlane", uniqueGrpName);
+                getComponentConfigSP()->setProp("storagePlane", uniqueGrpName);
                 PROGLOG("Persistent Thor group created with group name: %s", uniqueGrpName.str());
             }
 #endif
