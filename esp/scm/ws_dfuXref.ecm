@@ -213,6 +213,7 @@ ESPrequest DFUXRefUnusedFilesRequest
     string ProcessCluster;
     bool CheckPackageMaps;
     [min_ver("1.01")] bool GetFileDetails(false);
+    [min_ver("1.03")] string TargetCluster;
 };
 
 ESPresponse [exceptions_inline] DFUXRefUnusedFilesResponse
@@ -223,7 +224,7 @@ ESPresponse [exceptions_inline] DFUXRefUnusedFilesResponse
 };
 
 //  ===========================================================================
-ESPservice [version("1.02"), default_client_version("1.02"), auth_feature("DEFERRED"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsDFUXRef
+ESPservice [version("1.03"), default_client_version("1.03"), auth_feature("DEFERRED"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsDFUXRef
 {
     ///ESPmethod [resp_xsl_default("./smc_xslt/xref_main.xslt")] DFUXRefList(DFUXRefListRequest, DFUXRefListResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/xref_main.xslt")] DFUXRefList(DFUXRefListRequest, DFUXRefListResponse);

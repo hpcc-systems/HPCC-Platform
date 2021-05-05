@@ -115,6 +115,10 @@ void CWsDfuXRefEx::init(IPropertyTree *cfg, const char *process, const char *ser
         throw MakeStringException(-1, "No Dali Connection Active. Please Specify a Dali to connect to in you configuration file");
     }
 
+#ifdef _CONTAINERIZED
+    initContainerRoxieTargets(roxieConnMap);
+#endif
+
     XRefNodeManager.setown(CreateXRefNodeFactory());
 
     //Start out builder thread......
@@ -555,12 +559,15 @@ bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &r
     {
         context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefList: Permission denied.");
 
+        Owned<IPropertyTree> xrefNodeTree = createPTree("XRefNodes");
+
+#ifndef _CONTAINERIZED
+        //In bare metal environment, each physical cluster is an XRef node.
         CConstWUClusterInfoArray clusters;
         getEnvironmentClusterInfo(clusters);
 
         BoolHash uniqueProcesses;
-        Owned<IPropertyTree> xrefNodeTree = createPTree("XRefNodes");
-        ForEachItemIn(c, clusters)
+        ForEachItemIn(c, clusters) //loop through every target cluster
         {
             IConstWUClusterInfo &cluster = clusters.item(c);
             switch (cluster.getPlatform())
@@ -578,6 +585,7 @@ bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &r
                 break;
             }
         }
+#endif
         addXRefNode("SuperFiles", xrefNodeTree);
 
         StringBuffer buf;
@@ -699,6 +707,7 @@ void CWsDfuXRefEx::findUnusedFilesWithDetailsInDFS(IEspContext &context, const c
 
 bool CWsDfuXRefEx::onDFUXRefUnusedFiles(IEspContext &context, IEspDFUXRefUnusedFilesRequest &req, IEspDFUXRefUnusedFilesResponse &resp)
 {
+#ifndef _CONTAINERIZED
     const char *process = req.getProcessCluster();
     if (isEmptyString(process))
         throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT, "process cluster not specified.");
@@ -709,6 +718,19 @@ bool CWsDfuXRefEx::onDFUXRefUnusedFiles(IEspContext &context, IEspDFUXRefUnusedF
         throw MakeStringExceptionDirect(ECLWATCH_INVALID_CLUSTER_INFO, "process cluster, not found.");
 
     Owned<ISocket> sock = ISocket::connect_timeout(servers.item(0), 5000);
+#else
+    const char *process = req.getTargetCluster();
+    if (isEmptyString(process))
+        process = req.getProcessCluster(); //backward compatible
+    if (isEmptyString(process))
+        throw makeStringException(ECLWATCH_MISSING_PARAMS, "Target cluster not specified.");
+
+    ISmartSocketFactory *conn = roxieConnMap.getValue(process);
+    if (!conn)
+        throw makeStringExceptionV(ECLWATCH_CANNOT_GET_ENV_INFO, "roxie target cluster not mapped: %s", process);
+
+    Owned<ISocket> sock = ISocket::connect_timeout(conn->nextEndpoint(), 5000);
+#endif
     Owned<IPropertyTree> controlXrefInfo = sendRoxieControlQuery(sock, "<control:getQueryXrefInfo/>", 5000);
     if (!controlXrefInfo)
         throw MakeStringExceptionDirect(ECLWATCH_INTERNAL_ERROR, "roxie cluster, not responding.");

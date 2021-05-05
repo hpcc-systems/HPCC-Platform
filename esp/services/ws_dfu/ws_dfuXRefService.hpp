@@ -189,6 +189,7 @@ class CWsDfuXRefEx : public CWsDFUXRef
 {
     Owned<IXRefNodeManager> XRefNodeManager;
     Owned<CXRefExBuilderThread> m_XRefbuilder;
+    MapStringToMyClass<ISmartSocketFactory> roxieConnMap;
 
     IXRefFilesNode* getFileNodeInterface(IXRefNode& XRefNode,const char* nodeType);
     void addXRefNode(const char* name, IPropertyTree* pXRefNodeTree);
