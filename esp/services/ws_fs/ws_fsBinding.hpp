@@ -90,10 +90,12 @@ public:
     }
 
 private:
+#ifndef _CONTAINERIZED //The code here is used by legacy ECLWatch.
     IPropertyTree* createPTreeForXslt(double clientVersion, const char* method, const char* dfuwuid);
     static void xsltTransform(const char* xml, const char* sheet, IProperties *params, StringBuffer& ret);
-    int downloadFile(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response);
     void appendDropZones(double clientVersion, IConstEnvironment* env, const char* dfuwuidSourcePartIP, IPropertyTree* softwareTree);
+#endif
+    int downloadFile(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response);
 };
 
 

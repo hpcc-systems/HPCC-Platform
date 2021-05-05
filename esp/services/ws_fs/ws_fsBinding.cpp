@@ -33,6 +33,7 @@ int CFileSpraySoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpReques
         return downloadFile(context, request, response);
     }
 
+#ifndef _CONTAINERIZED
     //The code below should be only for legacy ECLWatch.
     bool permission = true;
     bool bDownloadFile = false;
@@ -193,9 +194,11 @@ int CFileSpraySoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpReques
         return 0;
     }
     else
+#endif
         return CFileSpraySoapBinding::onGetInstantQuery(context, request, response, service, method);
 }
 
+#ifndef _CONTAINERIZED //The code here is used by legacy ECLWatch.
 IPropertyTree* CFileSpraySoapBindingEx::createPTreeForXslt(double clientVersion, const char* method, const char* dfuwuid)
 {
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
@@ -381,6 +384,7 @@ void CFileSpraySoapBindingEx::xsltTransform(const char* xml, const char* sheet, 
 
     trans->transform(ret);
 }
+#endif
 
 int CFileSpraySoapBindingEx::downloadFile(IEspContext &context, CHttpRequest* request, CHttpResponse* response)
 {

@@ -66,8 +66,11 @@ public:
 
 class CFileSprayEx : public CFileSpray
 {
+    IArrayOf<IConstTpDropZone> allTpDropZones;
+
     void readAndCheckSpraySourceReq(MemoryBuffer& srcxml, const char* srcIP, const char* srcPath,
         StringBuffer& sourceIPReq, StringBuffer& sourcePathReq);
+    StringBuffer& readNetAddress(const char* addressIn, StringBuffer& addressOut);
 
 public:
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
