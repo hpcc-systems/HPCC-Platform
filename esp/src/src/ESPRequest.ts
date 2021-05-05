@@ -35,7 +35,7 @@ class RequestHelper {
         return config[key];
     }
 
-    getBaseURL(service) {
+    getBaseURL(service?) {
         if (service === undefined) {
             service = "WsWorkunits";
         }
@@ -321,7 +321,7 @@ export function flattenMap(target, arrayName, _singularName?, supressAppName?, e
     return target;
 }
 
-export function getBaseURL(service) {
+export function getBaseURL(service?) {
     const helper = new RequestHelper();
     return helper.getBaseURL(service);
 }

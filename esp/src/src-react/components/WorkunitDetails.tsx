@@ -14,6 +14,7 @@ import { Results } from "./Results";
 import { Variables } from "./Variables";
 import { SourceFiles } from "./SourceFiles";
 import { TableGroup } from "./forms/Groups";
+import { Helpers } from "./Helpers";
 import { InfoGrid } from "./InfoGrid";
 import { Queries } from "./Queries";
 import { Resources } from "./Resources";
@@ -207,7 +208,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 <Resources wuid={wuid} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Helpers} itemKey="helpers" itemCount={workunit?.HelpersCount} style={pivotItemStyle(size, 0)}>
-                <DojoAdapter widgetClassID="HelpersWidget" params={{ Wuid: wuid }} />
+                <Helpers wuid={wuid} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.ECL} itemKey="eclsummary" style={pivotItemStyle(size, 0)}>
                 <DojoAdapter widgetClassID="ECLArchiveWidget" params={{ Wuid: wuid }} />

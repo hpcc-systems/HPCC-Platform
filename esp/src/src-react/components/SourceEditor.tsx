@@ -11,7 +11,7 @@ import { ShortVerticalDivider } from "./Common";
 interface SourceEditorProps {
     text?: string;
     readonly?: boolean;
-    mode?: "xml" | "text";
+    mode?: "ecl" | "xml" | "text";
 }
 
 const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
@@ -107,5 +107,30 @@ export const WUResourceEditor: React.FunctionComponent<WUResourceEditorProps> = 
     }, [src]);
 
     return <SourceEditor text={text} readonly={true} mode="text"></SourceEditor>;
+};
+
+interface FetchEditor {
+    url: string;
+    readonly?: boolean;
+    mode?: "ecl" | "xml" | "text";
+}
+
+export const FetchEditor: React.FunctionComponent<FetchEditor> = ({
+    url,
+    readonly = true,
+    mode = "text"
+}) => {
+
+    const [text, setText] = React.useState("");
+
+    React.useEffect(() => {
+        fetch(url).then(response => {
+            return response.text();
+        }).then(content => {
+            setText(content);
+        });
+    }, [url]);
+
+    return <SourceEditor text={text} readonly={readonly} mode={mode}></SourceEditor>;
 };
 
