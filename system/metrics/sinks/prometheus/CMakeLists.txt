@@ -1,4 +1,4 @@
-###############################################################################
+################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2021 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +14,26 @@
 #    limitations under the License.
 ################################################################################
 
-HPCC_ADD_SUBDIRECTORY (file)
-HPCC_ADD_SUBDIRECTORY (log)
-HPCC_ADD_SUBDIRECTORY (prometheus)
+project(hpccmetrics_prometheus)
+
+set ( srcs
+      prometheusSink.cpp
+    )
+
+set ( INCLUDES
+      ${HPCC_SOURCE_DIR}/system/httplib/httplib.h
+    )
+
+include_directories(
+        ${HPCC_SOURCE_DIR}/system/include
+        ${HPCC_SOURCE_DIR}/system/jlib
+        ${HPCC_SOURCE_DIR}/system/httplib
+)
+
+ADD_DEFINITIONS(  -DPROMETHEUSSINK_EXPORTS )
+HPCC_ADD_LIBRARY( hpccmetrics_prometheussink SHARED ${srcs} )
+TARGET_LINK_LIBRARIES( hpccmetrics_prometheussink
+                       jlib
+                     )
+
+INSTALL ( TARGETS hpccmetrics_prometheussink RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
