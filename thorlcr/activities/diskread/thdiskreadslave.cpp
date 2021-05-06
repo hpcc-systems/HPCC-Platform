@@ -410,8 +410,8 @@ void CDiskRecordPartHandler::close(CRC32 &fileCRC)
     }
     if (partStream)
     {
-        partStream->stop(&fileCRC);
         mergeStats(fileStats, partStream);
+        partStream->stop(&fileCRC);
     }
 }
 
