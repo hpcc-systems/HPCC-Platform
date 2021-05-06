@@ -917,6 +917,7 @@ void ComponentLogMsgFilter::addToPTree(IPropertyTree * tree) const
     tree->addPropTree("filter", filterTree);
 }
 
+
 bool RegexLogMsgFilter::includeMessage(const LogMsg & msg) const 
 { 
     if(localFlag && msg.queryRemoteFlag()) return false; 
@@ -3328,4 +3329,173 @@ IComponentLogFileCreator * createComponentLogFileCreator(const char *_logDir, co
 IComponentLogFileCreator * createComponentLogFileCreator(const char *_component)
 {
     return new CComponentLogFileCreator(_component);
+}
+
+ILogAccessFilter * getLogAccessFilterFromPTree(IPropertyTree * xml)
+{
+    if (xml == nullptr)
+        throw makeStringException(-2,"getLogAccessFilterFromPTree: input tree cannot be null");
+
+    StringBuffer type;
+    xml->getProp("@type", type);
+    if (streq(type.str(), "jobid"))
+        return new FieldLogAccessFilter(xml, LOGACCESS_FILTER_jobid);
+    else if (streq(type.str(), "audience"))
+        return new FieldLogAccessFilter(xml, LOGACCESS_FILTER_audience);
+    else if (streq(type.str(), "class"))
+        return new FieldLogAccessFilter(xml, LOGACCESS_FILTER_class);
+    else if (streq(type.str(), "component"))
+        return new FieldLogAccessFilter(xml, LOGACCESS_FILTER_component);
+    else if (streq(type.str(), "and"))
+        return new BinaryLogAccessFilter(xml, LOGACCESS_FILTER_and);
+    else if (streq(type.str(), "or"))
+        return new BinaryLogAccessFilter(xml, LOGACCESS_FILTER_or);
+    else
+        throwUnexpectedX("getLogAccessFilterFromPTree : unrecognized LogAccessFilter type");
+}
+
+ILogAccessFilter * getWildCardLogAccessFilter()
+{
+    return new FieldLogAccessFilter("", LOGACCESS_FILTER_wildcard);
+}
+
+ILogAccessFilter * getJobIDLogAccessFilter(const char * jobId)
+{
+    return new FieldLogAccessFilter(jobId, LOGACCESS_FILTER_jobid);
+}
+
+ILogAccessFilter * getComponentLogAccessFilter(const char * component)
+{
+    return new FieldLogAccessFilter(component, LOGACCESS_FILTER_component);
+}
+
+ILogAccessFilter * getAudienceLogAccessFilter(MessageAudience audience)
+{
+    return new FieldLogAccessFilter(LogMsgAudienceToFixString(audience), LOGACCESS_FILTER_audience);
+}
+
+ILogAccessFilter * getClassLogAccessFilter(LogMsgClass logclass)
+{
+    return new FieldLogAccessFilter(LogMsgClassToFixString(logclass), LOGACCESS_FILTER_class);
+}
+
+ILogAccessFilter * getBinaryLogAccessFilter(ILogAccessFilter * arg1, ILogAccessFilter * arg2, LogAccessFilterType type)
+{
+    return new BinaryLogAccessFilter(arg1, arg2, type);
+}
+
+ILogAccessFilter * getBinaryLogAccessFilterOwn(ILogAccessFilter * arg1, ILogAccessFilter * arg2, LogAccessFilterType type)
+{
+    ILogAccessFilter * ret = new BinaryLogAccessFilter(arg1, arg2, type);
+    arg1->Release();
+    arg2->Release();
+    return ret;
+}
+
+
+// LOG ACCESS HELPER METHODS
+
+// Fetches log entries - based on provided filter, via provided IRemoteLogAccess instance
+bool fetchLog(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, ILogAccessFilter * filter, LogAccessTimeRange timeRange, const StringArray & cols, LogAccessLogFormat format)
+{
+    LogAccessConditions logFetchOptions;
+    logFetchOptions.setTimeRange(timeRange);
+    logFetchOptions.setFilter(filter);
+    logFetchOptions.copyLogFieldNames(cols); //ensure these fields are declared in m_logMapping->queryProp("WorkUnits/@contentcolumn")? or in LogMap/Fields?"
+
+    return logAccess.fetchLog(logFetchOptions, returnbuf, format);
+}
+
+// Fetches log entries based on provided JobID, via provided IRemoteLogAccess instance
+bool fetchJobIDLog(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, const char *jobid, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
+{
+    return fetchLog(returnbuf, logAccess, getJobIDLogAccessFilter(jobid), timeRange, cols, format);
+}
+
+// Fetches log entries based on provided component name, via provided IRemoteLogAccess instance
+bool fetchComponentLog(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, const char * component, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
+{
+    return fetchLog(returnbuf, logAccess, getComponentLogAccessFilter(component), timeRange, cols, format);
+}
+
+// Fetches log entries based on provided audience, via provided IRemoteLogAccess instance
+bool fetchLogByAudience(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, MessageAudience audience, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
+{
+    return fetchLog(returnbuf, logAccess, getAudienceLogAccessFilter(audience), timeRange, cols, format);
+}
+
+// Fetches log entries based on provided log message class, via provided IRemoteLogAccess instance
+bool fetchLogByClass(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, LogMsgClass logclass, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
+{
+    return fetchLog(returnbuf, logAccess, getClassLogAccessFilter(logclass), timeRange, cols, format);
+}
+
+//logAccessPluginConfig expected to contain connectivity and log mapping information
+typedef IRemoteLogAccess * (*newLogAccessPluginMethod_t_)(IPropertyTree & logAccessPluginConfig);
+
+IRemoteLogAccess * queryRemoteLogAccessor()
+{
+    Owned<IPropertyTree> logAccessPluginConfig = getGlobalConfigSP()->getPropTree("logAccess");
+#ifdef LOGACCESSDEBUG
+    if (!logAccessPluginConfig)
+    {
+        const char *simulatedGlobalYaml = R"!!(global:
+          logAccess:
+            name: "localES"
+            type: "elasticstack"
+            connection:
+              protocol: "http"
+              host: "localhost"
+              port: 9200
+            logMaps:
+            - type: "global"
+              storeName: "filebeat-7.9.3-*"
+              searchColumn: "message"
+              timeStampColumn: "created_ts"
+            - type: "workunits"
+              storeName: "filebeat-7.9.3-*"
+              searchColumn: "hpcc.log.jobid"
+            - type: "components"
+              searchColumn: "kubernetes.container.name"
+            - type: "audience"
+              searchColumn: "hpcc.log.audience"
+            - type: "class"
+              searchColumn: "hpcc.log.class"
+        )!!";
+        Owned<IPropertyTree> testTree = createPTreeFromYAMLString(simulatedGlobalYaml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+        logAccessPluginConfig.setown(testTree->getPropTree("global/logAccess"));
+    }
+#endif
+
+    if (!logAccessPluginConfig)
+        throw makeStringException(-1, "RemoteLogAccessLoader: logaccess configuration not available!");
+
+    constexpr const char * methodName = "queryRemoteLogAccessor";
+    constexpr const char * instFactoryName = "createInstance";
+
+    StringBuffer libName; //lib<type>logaccess.so
+    StringBuffer type;
+    logAccessPluginConfig->getProp("@type", type);
+    if (type.isEmpty())
+        throw makeStringExceptionV(-1, "%s RemoteLogAccess plugin kind not specified.", methodName);
+    libName.append("lib").append(type.str()).append("logaccess");
+
+    //Load the DLL/SO
+    HINSTANCE logAccessPluginLib = LoadSharedObject(libName.str(), true, false);
+    if(logAccessPluginLib == nullptr)
+        throw makeStringExceptionV(-1, "%s cannot load library '%s'", methodName, libName.str());
+
+    newLogAccessPluginMethod_t_ xproc = nullptr;
+    xproc = (newLogAccessPluginMethod_t_)GetSharedProcedure(logAccessPluginLib, instFactoryName);
+    if (xproc == nullptr)
+        throw makeStringExceptionV(-1, "%s cannot locate procedure %s in library '%s'", methodName, instFactoryName, libName.str());
+
+    //Call logaccessplugin instance factory and return the new instance
+    DBGLOG("Calling '%s' in log access plugin '%s'", instFactoryName, libName.str());
+    IRemoteLogAccess * pLogAccessPlugin = dynamic_cast<IRemoteLogAccess*>(xproc(*logAccessPluginConfig));
+
+    if (pLogAccessPlugin == nullptr)
+        throw makeStringExceptionV(-1, "%s Log Access Plugin '%s' failed to instantiate in call to %s", methodName, libName.str(), instFactoryName);
+
+    return pLogAccessPlugin;
 }

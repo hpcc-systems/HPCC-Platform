@@ -249,6 +249,9 @@
         "logging": {
           "$ref": "#/definitions/logging"
         },
+        "logAccess": {
+          "$ref": "#/definitions/logAccess"
+        },
         "egress": {
           "$ref": "#/definitions/egress"
         },
@@ -1743,6 +1746,67 @@
     "maxStartupTime": {
       "description": "The time to wait before startup probing fails (in seconds). Default 300",
       "type": "integer"
+    },
+    "logAccess": {
+      "type" : "object",
+      "description" : "Remote log access information",
+      "properties" : {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "description": "Name of HPCC LogAccess plugin type such as 'elasticstack'"
+        },
+        "connection" : {
+          "$ref" : "#/definitions/logAccessConnection"
+        },
+        "logMaps": {
+          "description": "A list of log maps",
+          "type": "array",
+          "items": {
+            "$ref" : "#/definitions/logMap"
+           }
+        }
+      }
+    },
+    "logAccessConnection": {
+      "type": "object",
+      "description" : "Connection information for target remote log access",
+      "properties": {
+        "protocol": {
+          "type": "string"
+        },
+        "host": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer"
+        }
+      }
+    },
+    "logMap": {
+      "type": "object",
+      "description" : "Provides log-store mapping to searchable HPCC log columns",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description" : "The searchable HPCC log column to be mapped - 'global' applies to all known fields",
+          "enum": [ "global", "workunits", "components", "audience", "class" ]
+        },
+        "timeStampColumn": {
+          "description" : "Name of timestamp column related to mapped field (only requried for 'global' mapping)",
+          "type": "string"
+        },
+        "searchColumn": {
+          "description" : "Name of column mapped to HPCC log entry column",
+          "type": "string"
+        },
+        "storeName": {
+          "description" : "Name of container housing mapped HPCC log column",
+          "type": "string"
+        }
+      }
     },
     "sinks": {
       "type": "array",

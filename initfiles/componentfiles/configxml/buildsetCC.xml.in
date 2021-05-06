@@ -225,6 +225,10 @@
                         path="CodeSignAccess"
                         resource="CodeSignAccess"
                         service="ws_codesign"/>
+                    <AuthenticateFeature description="Access to LogAccess service"
+                        path="WsLogAccess"
+                        resource="WsLogAccess"
+                        service="ws_logaccess"/>
                     <ProcessFilters>
                         <Platform name="Windows">
                             <ProcessFilter name="any">
