@@ -1335,4 +1335,115 @@ interface IComponentLogFileCreator : extends IInterface
 extern jlib_decl IComponentLogFileCreator * createComponentLogFileCreator(IPropertyTree * _properties, const char *_component);
 extern jlib_decl IComponentLogFileCreator * createComponentLogFileCreator(const char *_logDir, const char *_component);
 extern jlib_decl IComponentLogFileCreator * createComponentLogFileCreator(const char *_component);
+
+enum AccessLogRangeType
+{
+	ACRTUnknown = -1,
+	ACRTAllAvailable,
+    ACRTFirstPage,
+	ACRTirstNRows,
+	ACRTLastNYears,
+	ACRTLastNMonths,
+	ACRTLastNWeeks,
+	ACRTLastNDays,
+	ACRTLastNHours,
+	ACRTLastNMinutes,
+    ACRTLastPage,
+    ACRTGoToPage,
+    ACRTLastNRows,
+	ACRTTimeRange,
+};
+
+struct LogAccessRange
+{
+	AccessLogRangeType rangeType;
+	StringBuffer startDate;
+	StringBuffer endDate;
+	unsigned quantity;
+};
+
+enum AccessLogFilterType
+{
+    ALF_ALLAvailable = 0,
+    ALF_Component = 1,
+	ALF_WorkUnit = 2,
+	ALF_Audience = 3,
+    ALF_Class = 4,
+    ALF_NativeQuery = 5
+};
+
+struct LogAccessFilter
+{
+	AccessLogFilterType filterType;
+	StringBuffer workUnit;
+	StringArray targetAudience;
+	StringArray messageClass;
+	StringBuffer componentName;
+};
+
+
+struct LogAccessConditions
+{
+	LogAccessFilter filter;
+	LogAccessRange range;
+    StringArray logFieldNames;
+};
+
+interface ILogAccess : extends IInterface
+{
+    //virtual bool init(const char * name, const char * type, const IPropertyTree * connConfig, const IPropertyTree * logMapping) = 0;
+    virtual bool fetchLog(LogAccessConditions options, StringBuffer & returnbuf) = 0;
+    virtual bool fetchWULog(StringBuffer & returnbuf, const char * wu, LogAccessRange range, StringArray * cols) = 0;
+    virtual bool fetchComponentLog(const char * component, LogAccessRange range, StringBuffer & returnbuf) = 0;
+    virtual bool fetchLogByAudience(const char * audience, LogAccessRange range, StringBuffer & returnbuf) = 0;
+};
+
+//logAccessPluginConfig expected to contain connectivity and log mapping information
+typedef ILogAccess * (*newLogAccessPluginMethod_t_)(IPropertyTree & logAccessPluginConfig);
+
+class ILogAccessLoader
+{
+public:
+	template <class LogAccessPlugin>
+	static LogAccessPlugin* loadLogAccessPlugin(IPropertyTree* logAccessPluginConfig)
+	{
+		const char * methodName = "loadLogAccessPlugin:";
+		const char * instFactoryName = "createInstance";
+
+#ifdef _DEBUG
+    StringBuffer thexml;
+    toXML(logAccessPluginConfig, thexml,0,0);
+    DBGLOG("*****%s", thexml.str());
+#endif
+
+		StringBuffer libName;
+		logAccessPluginConfig->getProp("@libName", libName);
+		if (libName.isEmpty())
+		{
+			// @libName is commonly used
+			logAccessPluginConfig->getProp("@libName", libName);
+			if (libName.isEmpty())
+				throw MakeStringException(-1, "%s library name not specified.", methodName);
+		}
+
+		//Load the DLL/SO
+		HINSTANCE logAccessPluginLib = LoadSharedObject(libName.str(), true, false);
+		if(logAccessPluginLib == nullptr)
+			throw MakeStringException(-1, "%s cannot load library '%s'", methodName, libName.str());
+
+		newLogAccessPluginMethod_t_ xproc = nullptr;
+		xproc = (newLogAccessPluginMethod_t_)GetSharedProcedure(logAccessPluginLib, instFactoryName);
+		if (xproc == nullptr)
+			throw MakeStringException(-1, "%s cannot locate procedure %s in library '%s'", methodName, instFactoryName, libName.str());
+
+		//Call logaccessplugin instance factory and return the new instance
+		DBGLOG("Calling '%s' in log access plugin '%s'", instFactoryName, libName.str());
+		LogAccessPlugin* pLogAccessPlugin = dynamic_cast<LogAccessPlugin*>(xproc(*logAccessPluginConfig));
+
+		if (pLogAccessPlugin == nullptr)
+			throw MakeStringException(-1, "%s Log Access Plugin '%s' failed to instantiate in call to %s", methodName, libName.str(), instFactoryName);
+
+		return pLogAccessPlugin;
+	}
+};
 #endif
