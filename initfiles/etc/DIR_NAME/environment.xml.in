@@ -423,6 +423,11 @@
                          path="WsDecoupledLogAccess"
                          resource="WsDecoupledLogAccess"
                          service="ws_decoupledlogging"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to LogAccess service"
+                         path="WsLogAccess"
+                         resource="WsLogAccess"
+                         service="ws_logaccess"/>
     <Authenticate access="Read"
                   description="Root access to SMC service"
                   path="/"
@@ -763,6 +768,11 @@
                          path="WsDecoupledLogAccess"
                          resource="WsDecoupledLogAccess"
                          service="ws_decoupledlogging"/>
+    <AuthenticateFeature authenticate="Yes"
+                         description="Access to LogAccess service"
+                         path="WsLogAccess"
+                         resource="WsLogAccess"
+                         service="ws_logaccess"/>
     <ProcessFilters>
      <Platform name="Windows">
       <ProcessFilter name="any">
@@ -1159,6 +1169,11 @@
                           path="WsDecoupledLogAccess"
                           resource="WsDecoupledLogAccess"
                           service="ws_decoupledlogging"/>
+     <AuthenticateFeature authenticate="Yes"
+                         description="Access to Log Access service"
+                         path="WsLogAccess"
+                         resource="WsLogAccess"
+                         service="ws_logaccess"/>
      <ProcessFilters>
       <Platform name="Windows">
        <ProcessFilter name="any">

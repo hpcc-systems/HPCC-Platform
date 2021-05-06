@@ -249,6 +249,9 @@
         "logging": {
           "$ref": "#/definitions/logging"
         },
+        "logAccess": {
+          "$ref": "#/definitions/logAccess"
+        },
         "egress": {
           "$ref": "#/definitions/egress"
         },
@@ -1694,6 +1697,63 @@
     "maxStartupTime": {
       "description": "The time to wait before startup probing fails (in seconds). Default 300",
       "type": "integer"
+    },
+    "logAccess": {
+      "type" : "object",
+      "description" : "Remote log access information",
+      "properties" : {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [ "elasticstack" ]
+        },
+        "connection" : {
+          "$ref" : "#/definitions/logAccessConnection"
+        },
+        "logMaps": {
+          "description": "A list of log maps",
+          "type": "array",
+          "items": {
+            "$ref" : "#/definitions/logMap"
+           }
+        }
+      }
+    },
+    "logAccessConnection": {
+      "type": "object",
+      "description" : "Connection information for target remote log access",
+      "properties": {
+        "protocol": {
+          "type": "string"
+        },
+        "host": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer"
+        }
+      }
+    },
+    "logMap": {
+      "type": "object",
+      "description" : "Maps HPCC Component log entries to log store columns",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [ "global", "workunits", "components", "audience", "class" ]
+        },
+        "timeStampColumn": {
+          "type": "string"
+        },
+        "searchColumn": {
+          "type": "string"
+        },
+        "storeName": {
+          "type": "string"
+        }
+      }
     },
     "sinks": {
       "type": "array",
