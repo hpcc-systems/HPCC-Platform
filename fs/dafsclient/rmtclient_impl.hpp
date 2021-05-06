@@ -197,7 +197,8 @@ extern bool clientAsyncCopyFileSection(const char *uuid,    // from genUUID - mu
                         offset_t fromofs,
                         offset_t size,                      // (offset_t)-1 for all file
                         ICopyFileProgress *progress,
-                        unsigned timeout                    // 0 to start, non-zero to wait
+                        unsigned timeout,                   // 0 to start, non-zero to wait
+                        CFflags copyFlags
                         ); // returns true when done
 
 extern void clientSetRemoteFileTimeouts(unsigned maxconnecttime, unsigned maxreadtime);

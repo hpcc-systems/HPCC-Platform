@@ -763,6 +763,11 @@
           "description": "The default storage plane to write data files to",
           "type": "string"
         },
+        "storagePlanes": {
+          "description": "A list of storage planes suitable for storing roxie data",
+          "type": "array",
+          "items": { "type": "string" }
+        },
         "spillPlane": {
           "description": "The storage plane to write spill files to",
           "type": "string"

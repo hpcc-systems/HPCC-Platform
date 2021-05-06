@@ -2330,13 +2330,18 @@ extern TPWRAPPER_API unsigned getWUClusterInfo(CConstWUClusterInfoArray& cluster
 #endif
 }
 
+static IPropertyTree * getContainerClusterConfig(const char * clusterName)
+{
+    VStringBuffer xpath("queues[@name='%s']", clusterName);
+    return getComponentConfigSP()->getPropTree(xpath);
+}
+
 extern TPWRAPPER_API IConstWUClusterInfo* getWUClusterInfoByName(const char* clusterName)
 {
 #ifndef _CONTAINERIZED
     return getTargetClusterInfo(clusterName);
 #else
-    VStringBuffer xpath("queues[@name='%s']", clusterName);
-    Owned<IPropertyTree> queue = getComponentConfigSP()->getPropTree(xpath);
+    Owned<IPropertyTree> queue = getContainerClusterConfig(clusterName);
     if (!queue)
         return nullptr;
 
@@ -2481,4 +2486,28 @@ bool getSashaServiceEP(SocketEndpoint &serviceEndpoint, const char *service, boo
         return false;
     serviceEndpoint.set(serviceAddress);
     return true;
+}
+
+StringBuffer & getRoxieDefaultPlane(StringBuffer & plane, const char * roxieName)
+{
+#ifdef _CONTAINERIZED
+    Owned<IPropertyTree> queue = getContainerClusterConfig(roxieName);
+    if (!queue)
+        throw makeStringExceptionV(ECLWATCH_INVALID_CLUSTER_NAME, "Unknown queue name %s", roxieName);
+
+    if (queue->getProp("@storagePlane", plane))
+        return plane;
+
+    //Find the first data plane - better if it was retrieved from roxie config
+    Owned<IPropertyTreeIterator> dataPlanes = getGlobalConfigSP()->getElements("storage/planes[labels='data']");
+    if (!dataPlanes->first())
+        throwUnexpectedX("No default data plane defined");
+    return plane.append(dataPlanes->query().queryProp("@name"));
+#else
+    Owned <IConstWUClusterInfo> clusterInfo(getTargetClusterInfo(roxieName));
+    StringBufferAdaptor process(plane);
+    if (clusterInfo && clusterInfo->getPlatform()==RoxieCluster)
+        clusterInfo->getRoxieProcess(process);
+    return plane;
+#endif
 }

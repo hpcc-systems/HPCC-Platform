@@ -858,16 +858,15 @@ bool CFile::fastCopyFile(CFile &target, size32_t buffersize, ICopyFileProgress *
 }
 
 
-void CFile::copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fromOfs, offset_t size, ICopyFileProgress *progress, CFflags copyFlags)
+void copyFileSection(IFile * src, IFile * target, offset_t toOfs, offset_t fromOfs, offset_t size, ICopyFileProgress *progress, CFflags copyFlags)
 {
     // check to see if src and target are remote
 
-    Owned<IFile> target = createIFile(dest);
     const size32_t buffersize = DEFAULT_COPY_BLKSIZE;
     IFOmode omode = IFOwrite;
     if (toOfs==(offset_t)-1) {
         if (fromOfs==0) {
-            copyFile(target,this,buffersize,progress,copyFlags);
+            copyFile(target,src,buffersize,progress,copyFlags);
             return;
         }
         omode = IFOcreate;
@@ -884,9 +883,9 @@ void CFile::copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fro
     IFEflags srcFlags = IFEnone;
     if (copyFlags & CFflush_read)
         srcFlags = IFEnocache;
-    OwnedIFileIO sourceIO = open(IFOread, srcFlags);
+    OwnedIFileIO sourceIO = src->open(IFOread, srcFlags);
     if (!sourceIO)
-        throw MakeStringException(-1, "copySection: source '%s' not found", queryFilename());
+        throw MakeStringException(-1, "copySection: source '%s' not found", src->queryFilename());
     
     offset_t offset = 0;
     offset_t total;
@@ -913,12 +912,18 @@ void CFile::copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fro
     catch (IException *e)
     {
         StringBuffer s;
-        s.append("copyFile target=").append(target->queryFilename()).append(" source=").append(queryFilename()).append("; read/write failure").append(": ");
+        s.append("copyFile target=").append(target->queryFilename()).append(" source=").append(src->queryFilename()).append("; read/write failure").append(": ");
         e->errorMessage(s);
         IException *e2 = makeOsExceptionV(e->errorCode(), "%s", s.str());
         e->Release();
         throw e2;
     }
+}
+
+void CFile::copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fromOfs, offset_t size, ICopyFileProgress *progress, CFflags copyFlags)
+{
+    Owned<IFile> target = createIFile(dest);
+    copyFileSection(this, target, toOfs, fromOfs, size, progress, copyFlags);
 }
 
 void CFile::copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *progress,bool usetmp,CFflags copyFlags)

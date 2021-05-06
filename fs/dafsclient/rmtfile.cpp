@@ -1789,12 +1789,14 @@ extern bool clientAsyncCopyFileSection(const char *uuid,
                         offset_t fromOfs,
                         offset_t size,
                         ICopyFileProgress *progress,
-                        unsigned timeout)       // returns true when done
+                        unsigned timeout,
+                        CFflags copyFlags)       // returns true when done
 {
     CRemoteFile *cfile = QUERYINTERFACE(from,CRemoteFile);
-    if (!cfile) {
-        // local - do sync
-        from->copySection(to,toOfs,fromOfs,size,progress);
+    if (!cfile || to.isLocal()) {
+        //local - ensure that the file copy is run locally rather than remote
+        Owned<IFile> dest = createIFile(to);
+        copyFileSection(from,dest,toOfs,fromOfs,size,progress,copyFlags);
         return true;
     }
     return cfile->copySectionAsync(uuid,to,toOfs,fromOfs, size, progress, timeout);
@@ -1808,10 +1810,11 @@ bool asyncCopyFileSection(const char *uuid,                 // from genUUID - mu
                             offset_t fromofs,
                             offset_t size,                      // (offset_t)-1 for all file
                             ICopyFileProgress *progress,
-                            unsigned timeout                    // 0 to start, non-zero to wait
+                            unsigned timeout,                   // 0 to start, non-zero to wait
+                            CFflags copyFlags
                         )
 {
-    return  clientAsyncCopyFileSection(uuid,from,to,toofs,fromofs,size,progress,timeout);
+    return  clientAsyncCopyFileSection(uuid,from,to,toofs,fromofs,size,progress,timeout,copyFlags);
 }
 
 
