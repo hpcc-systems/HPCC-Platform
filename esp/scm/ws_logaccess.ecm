@@ -1,0 +1,94 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2021 HPCC Systems®.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+ESPenum LogAccessType : int
+{
+    All(0, "All"),
+    ByJobIdID(1, "ByJobIdID"),
+    ByComponent(2, "ByComponent"),
+    ByLogType(3, "ByLogType"),
+    ByTargetAudience(4, "ByTargetAudience")
+};
+
+ESPenum LogAccessLogFormat : int
+{
+    XML(0, "XML"),
+    JSON(1, "JSON"),
+    CSV(2, "CSV")
+} ;
+
+ESPStruct TimeRange
+{
+    xsdDateTime StartDate; //example 1980-03-23T10:20:15
+    xsdDateTime EndDate;   //example 1980-03-23T10:20:15
+};
+
+ESPRequest GetLogAccessMetaRequest
+{
+};
+
+ESPResponse GetLogAccessMetaResponse
+{
+    string RemoteLogManagerType;
+    string RemoteLogManagerConnectionString;
+};
+
+ESPRequest GetLogsRequest
+{
+    ESPenum LogAccessType LogCategory;
+    string SearchByValue; //Value used to identify target log entries.
+                          //Limited to values associated with the the LogCategory choice.
+                          //
+                          //If searching by "ByJobIdID", the SearchByValue should contain the jobid of interest
+                          //If searching by "ByComponent", the SearchByValue should contain the component of interest
+                          //If searching by "ByLogType", the SearchByValue should contain the 3 letter code associated with the log type of interest.
+                          // valid values at time of writing are:
+                          //    DIS - Disaster
+                          //    ERR - Error
+                          //    WRN - Warning
+                          //    INF - Information
+                          //    PRO - Progress
+                          //    MET - Metric
+                          //
+                          //If searching by "ByTargetAudience", the SearchByValue should contain the 3 letter code associated with the target audience of interest.
+                          // valid values at time of writing are:
+                          //    OPR - Operator
+                          //    USR - User
+                          //    PRO - Programmer
+                          //    ADT - Audit
+    ESPStruct TimeRange Range;
+    unsigned LogLineLimit(100);
+    int64 LogLineStartFrom(0);
+    ESParray<string> Columns;
+    LogAccessLogFormat Format("JSON");
+};
+
+ESPResponse GetLogsResponse
+{
+    string LogLines;
+};
+
+ESPservice [auth_feature("WsLogAccess:READ"), version("1.0"), default_client_version("1.0"), exceptions_inline("xslt/exceptions.xslt")] ws_logaccess
+{
+    ESPmethod GetLogAccessMeta(GetLogAccessMetaRequest, GetLogAccessMetaResponse);
+    ESPmethod GetLogs(GetLogsRequest, GetLogsResponse);
+};
+
+SCMexportdef(ws_logaccess);
+
+SCMapi(ws_logaccess) IClientws_logaccess *createws_logaccessClient();
+

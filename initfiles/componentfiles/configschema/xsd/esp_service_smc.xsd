@@ -135,6 +135,8 @@
                                                          service="ws_esdlconfig"/>
                                     <AuthenticateFeature description="Access to ELK integration service"
                                                          path="WsELKAccess" resource="WsELKAccess" service="ws_elk"/>
+									<AuthenticateFeature description="Access to LogAccess service"
+                                                         path="WsLogAccess" resource="WsLogAccess" service="ws_logaccess"/>
                                     <ProcessFilters>
                                         <Platform name="Windows">
                                             <ProcessFilter name="any">
