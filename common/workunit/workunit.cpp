@@ -3624,7 +3624,7 @@ public:
     virtual IConstWUAppValueIterator & getApplicationValues() const { return *new CArrayIteratorOf<IConstWUAppValue,IConstWUAppValueIterator> (appvalues, 0, (IConstWorkUnitInfo *) this); };
 protected:
     StringAttr wuid, user, jobName, clusterName, timeScheduled, wuscope;
-    mutable CachedTags<CLocalWUAppValue,IConstWUAppValue> appvalues;
+    mutable CachedWUAppValues appvalues;
     unsigned totalThorTime;
     WUState state;
     WUAction action;
@@ -8515,7 +8515,7 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
             statTree->setProp("@desc", optDescription);
 
         if (statistics.cached)
-            statistics.append(LINK(statTree));
+            statistics.append(statTree); // links statTree
 
         mergeAction = StatsMergeAppend;
     }
@@ -11528,33 +11528,28 @@ void CLocalWUException::setPriority(unsigned _priority)
 
 //==========================================================================================
 
-CLocalWUAppValue::CLocalWUAppValue(IPropertyTree *props, unsigned child) : p(props)
+CLocalWUAppValue::CLocalWUAppValue(const IPropertyTree *_owner, const IPropertyTree *_props) : owner(_owner), props(_props)
 {
-    StringAttrBuilder propPath(prop);
-    propPath.append("*[").append(child).append("]");
 }
 
 const char * CLocalWUAppValue::queryApplication() const
 {
-    return p->queryName();
+    return owner->queryName();
 }
 
 const char * CLocalWUAppValue::queryName() const
 {
-    IPropertyTree* val=p->queryPropTree(prop.str());
-    if(val)
-        return val->queryName();
-    return ""; // Should not happen in normal usage
+    return props->queryName();
 }
 
 const char * CLocalWUAppValue::queryValue() const
 {
-    return p->queryProp(prop.str());
+    return props->queryProp(nullptr);
 }
 
 //==========================================================================================
 
-CLocalWUStatistic::CLocalWUStatistic(IPropertyTree *props) : p(props)
+CLocalWUStatistic::CLocalWUStatistic(const IPropertyTree *props) : p(props)
 {
 }
 

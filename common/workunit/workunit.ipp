@@ -29,11 +29,10 @@
 
 class WORKUNIT_API CLocalWUAppValue : implements IConstWUAppValue, public CInterface
 {
-    Owned<IPropertyTree> p;
-    StringAttr prop;
+    Owned<const IPropertyTree> owner, props;
 public:
     IMPLEMENT_IINTERFACE;
-    CLocalWUAppValue(IPropertyTree *p,unsigned child);
+    CLocalWUAppValue(const IPropertyTree *_owner, const IPropertyTree *_props);
 
     virtual const char *queryApplication() const;
     virtual const char *queryName() const;
@@ -43,11 +42,11 @@ public:
 
 class WORKUNIT_API CLocalWUStatistic : implements IConstWUStatistic, public CInterface
 {
-    Owned<IPropertyTree> p;
+    Owned<const IPropertyTree> p;
 public:
     IMPLEMENT_IINTERFACE;
 
-    CLocalWUStatistic(IPropertyTree *p);
+    CLocalWUStatistic(const IPropertyTree *p);
 
     virtual IStringVal & getCreator(IStringVal & str) const override;
     virtual IStringVal & getDescription(IStringVal & str, bool createDefault) const override;
@@ -66,7 +65,7 @@ public:
 
 //==========================================================================================
 
-template <typename T, typename IT> struct CachedTags
+template <typename T, typename IT, void (* ADD)(const IPropertyTree *p, IArrayOf<IT> &dst)> struct CachedTags
 {
     CachedTags(): cached(false) {}
     void load(IPropertyTree* p,const char* xpath)
@@ -77,9 +76,8 @@ template <typename T, typename IT> struct CachedTags
             Owned<IPropertyTreeIterator> r = p->getElements(xpath);
             for (r->first(); r->isValid(); r->next())
             {
-                IPropertyTree *rp = &r->query();
-                rp->Link();
-                tags.append(*new T(rp));
+                const IPropertyTree &rp = r->query();
+                ADD(&rp, tags); // NB: links items it adds
             }
             cached = true;
         }
@@ -96,22 +94,22 @@ template <typename T, typename IT> struct CachedTags
                 Owned<IPropertyTreeIterator> r = branch->getElements("*");
                 for (r->first(); r->isValid(); r->next())
                 {
-                    IPropertyTree *rp = &r->query();
-                    rp->Link();
-                    tags.append(*new T(rp));
+                    const IPropertyTree &rp = r->query();
+                    ADD(&rp, tags); // NB: links items it adds
                 }
             }
             cached = true;
         }
     }
-    void append(IPropertyTree * p)
-    {
-        tags.append(*new T(p));
-    }
 
     operator IArrayOf<IT>&() { return tags; }
     unsigned ordinality() const { return tags.ordinality(); }
     IT & item(unsigned i) const { return tags.item(i); }
+
+    void append(const IPropertyTree * p)
+    {
+        ADD(p, tags); // NB: links p
+    }
 
     void kill()
     {
@@ -123,66 +121,21 @@ template <typename T, typename IT> struct CachedTags
     IArrayOf<IT> tags;
 };
 
-template <>  struct CachedTags<CLocalWUAppValue, IConstWUAppValue>
+void addStatistic(const IPropertyTree * p, IArrayOf<IConstWUStatistic> &dst)
 {
-    CachedTags(): cached(false) {}
-    void load(IPropertyTree* p,const char* xpath)
-    {
-        if (!cached)
-        {
-            assertex(tags.length() == 0);
-            Owned<IPropertyTreeIterator> r = p->getElements(xpath);
-            for (r->first(); r->isValid(); r->next())
-            {
-                IPropertyTree *rp = &r->query();
-                Owned<IPropertyTreeIterator> v = rp->getElements("*");
-                unsigned pos = 1;
-                for (v->first(); v->isValid(); v->next())
-                {
-                    rp->Link();
-                    tags.append(*new CLocalWUAppValue(rp,pos++));
-                }
-            }
-            cached = true;
-        }
-    }
-    void loadBranch(IPropertyTree* p,const char* xpath)
-    {
-        if (!cached)
-        {
-            assertex(tags.length() == 0);
-            Owned<IPropertyTree> branch = p->getBranch(xpath);
-            if (branch)
-            {
-                Owned<IPropertyTreeIterator> r = branch->getElements("*");
-                for (r->first(); r->isValid(); r->next())
-                {
-                    IPropertyTree *rp = &r->query();
-                    Owned<IPropertyTreeIterator> v = rp->getElements("*");
-                    unsigned pos = 1;
-                    for (v->first(); v->isValid(); v->next())
-                    {
-                        rp->Link();
-                        tags.append(*new CLocalWUAppValue(rp,pos++));
-                    }
-                }
-            }
-            cached = true;
-        }
-    }
+    dst.append(*new CLocalWUStatistic(&OLINK(*p)));
+}
 
+void addWUAppValues(const IPropertyTree *p, IArrayOf<IConstWUAppValue> &dst)
+{
+    Owned<IPropertyTreeIterator> v = p->getElements("*");
+    for (v->first(); v->isValid(); v->next())
+        dst.append(*new CLocalWUAppValue(&OLINK(*p), &v->get()));
+}
 
-    operator IArrayOf<IConstWUAppValue>&() { return tags; }
+typedef CachedTags<CLocalWUStatistic, IConstWUStatistic, addStatistic> CachedStatistics;
+typedef CachedTags<CLocalWUStatistic, IConstWUAppValue, addWUAppValues> CachedWUAppValues;
 
-    void kill()
-    {
-        cached = false;
-        tags.kill();
-    }
-
-    bool cached;
-    IArrayOf<IConstWUAppValue> tags;
-};
 
 //==========================================================================================
 
@@ -215,8 +168,8 @@ protected:
     mutable IArrayOf<IWUResult> results;
     mutable IArrayOf<IWUResult> temporaries;
     mutable IArrayOf<IWUResult> variables;
-    mutable CachedTags<CLocalWUAppValue,IConstWUAppValue> appvalues;
-    mutable CachedTags<CLocalWUStatistic,IConstWUStatistic> statistics;
+    mutable CachedWUAppValues appvalues;
+    mutable CachedStatistics statistics;
     mutable Owned<IUserDescriptor> userDesc;
     Mutex locked;
     Owned<ISecManager> secMgr;

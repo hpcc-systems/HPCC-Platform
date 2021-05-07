@@ -438,7 +438,7 @@ private:
 static MoneyLocale moneyLocale;
 CriticalSection MoneyLocale::cslock;
 
-static StringBuffer & formatMoney(StringBuffer &out, unsigned __int64 value)
+StringBuffer & formatMoney(StringBuffer &out, unsigned __int64 value)
 {
     std::stringstream ss;
     std::locale & loc = moneyLocale.queryMoneyLocale();

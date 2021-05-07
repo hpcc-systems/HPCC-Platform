@@ -60,7 +60,7 @@ public:
     CRemoteParentInfo();
 
     ISocket * queryMasterSocket()               { return socket; }
-    bool processCommandLine(int argc, char * argv[], StringBuffer &logdir);
+    bool processCommandLine(int argc, const char * * argv, StringBuffer &logdir);
     void log();
     bool sendReply(unsigned version);
 
@@ -78,7 +78,7 @@ class REMOTE_API CRemoteSlave
 public:
     CRemoteSlave(const char * name, unsigned _tag, unsigned _version, bool _stayAlive);
 
-    void run(int argc, char * argv[]);
+    void run(int argc, const char * * argv);
     virtual bool processCommand(byte action, ISocket * masterSocket, MemoryBuffer & msg, MemoryBuffer & results) = 0;
 
 protected:

@@ -45,6 +45,7 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
+#include <time.h>
 
 #ifdef _DEBUG
 //#define EXTRA_LOGGING
@@ -174,6 +175,15 @@ const char *normalizeLFN(const char *s,StringBuffer &tmp)
 static IPropertyTree *getEmptyAttr()
 {
     return createPTree("Attr");
+}
+
+static double calcFileCost(const char * cluster, double sizeGB, double fileAgeDays)
+{
+    IPropertyTree * plane = queryStoragePlane(cluster);
+    if (!plane)
+        return 0.0;
+    double storageCostDaily = plane->getPropReal("cost/@storageAtRest", 0.0) * 12 / 365;
+    return storageCostDaily * sizeGB * fileAgeDays;
 }
 
 RemoteFilename &constructPartFilename(IGroup *grp,unsigned partno,unsigned partmax,const char *name,const char *partmask,const char *partdir,unsigned copy,ClusterPartDiskMapSpec &mspec,RemoteFilename &rfn)
@@ -4705,6 +4715,27 @@ public:
         else
             return false;
     }
+    virtual double getCost(const char * cluster) override
+    {
+        CDateTime dt;
+        getModificationTime(dt);
+        double fileAgeDays = difftime(time(nullptr), dt.getSimple())/(24*60*60);
+        double sizeGB = getDiskSize(true, false) / ((double)1024 * 1024 * 1024);
+
+        if (isEmptyString(cluster))
+        {
+            StringArray clusterNames;
+            unsigned countClusters = getClusterNames(clusterNames);
+            double totalCost = 0.0;
+            for (unsigned i = 0; i < countClusters; i++)
+                totalCost += calcFileCost(clusterNames[i], sizeGB, fileAgeDays);
+            return totalCost;
+        }
+        else
+        {
+            return calcFileCost(cluster, sizeGB, fileAgeDays);
+        }
+    }
 };
 
 static unsigned findSubFileOrd(const char *name)
@@ -6653,6 +6684,18 @@ public:
     virtual bool getSkewInfo(unsigned &maxSkew, unsigned &minSkew, unsigned &maxSkewPart, unsigned &minSkewPart, bool calculateIfMissing) override
     {
         return false;
+    }
+
+    virtual double getCost(const char * cluster) override
+    {
+        double totalCost = 0.0;
+        CriticalBlock block (sect);
+        ForEachItemIn(i,subfiles)
+        {
+            IDistributedFile &f = subfiles.item(i);
+            totalCost += f.getCost(cluster);
+        }
+        return totalCost;
     }
 };
 
