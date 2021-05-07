@@ -3199,45 +3199,38 @@ bool GroupInformation::checkIsSubset(const GroupInformation & other)
 void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy) const
 {
     IPropertyTree * plane = storage->addPropTree("planes");
-    if (copy == 0)
-    {
-        plane->setProp("@name", name);
-    }
-    else
-    {
-        StringBuffer mirrorname;
-        mirrorname.append(name).append("_mirror").append(copy);
-        plane->setProp("@name", mirrorname);
-    }
+    StringBuffer mirrorname;
+    const char * planeName = name;
+    if (copy != 0)
+        planeName = mirrorname.append(name).append("_mirror").append(copy);
+
+    plane->setProp("@name", planeName);
 
     //URL style drop zones don't generate a host entry, and will have a single device
     if (ordinality() != 0)
     {
-        if (container)
+        if (container && (copy == 0))
         {
-            plane->setProp("@hosts", container->name);
-            if (containerOffset)
-                plane->setPropInt("@start", containerOffset);
-            if (ordinality() != container->ordinality())
-                plane->setPropInt("@size", ordinality());
+            //hosts will be expanded by normalizeHostGroups
+            plane->setProp("@hostGroup", container->name);
         }
         else
-            plane->setProp("@hosts", name);
+        {
+            //Host group has been created that matches the name of the storage plane
+            plane->setProp("@hostGroup", planeName);
+        }
 
         if (ordinality() > 1)
             plane->setPropInt("@numDevices", ordinality());
     }
-
-    if (copy)
-        plane->setPropInt("@offset", copy);
 
     if (dir.length())
         plane->setProp("@prefix", dir);
     else
         plane->setProp("@prefix", queryBaseDirectory(groupType, copy));
 
-    if (dropZone)
-        plane->setPropBool("@dropZone", true);
+    const char * label = dropZone ? "lz" : "data";
+    addPTreeItem(plane, "label", label);
 
     //MORE: If container is identical to this except for the name we could generate an information tag @alias
 }
@@ -3283,6 +3276,9 @@ static void generateHosts(IPropertyTree * storage, GroupInfoArray & groups)
     ForEachItemIn(i, groups)
     {
         GroupInformation & cur = groups.item(i);
+        if (cur.ordinality() == 0)
+            continue;
+
         GroupInformation * container = nullptr;
         for (unsigned j=0; j < i; j++)
         {
@@ -3292,16 +3288,34 @@ static void generateHosts(IPropertyTree * storage, GroupInfoArray & groups)
         }
 
         // No containing hostGroup found, so generate a new entry for this set of hosts
-        if (!cur.container && cur.ordinality())
+        if (!cur.container)
         {
             IPropertyTree * plane = storage->addPropTree("hostGroups");
             plane->setProp("@name", cur.name);
             StringBuffer host;
             ForEachItemIn(i, cur.hosts)
-            {
-                IPropertyTree * entry = plane->addPropTreeArrayItem("hosts", createPTree());
-                entry->setProp("", cur.hosts.item(i));
-            }
+                addPTreeItem(plane, "hosts", cur.hosts.item(i));
+        }
+        else if (cur.containerOffset || cur.ordinality() != cur.container->ordinality())
+        {
+            IPropertyTree * plane = storage->addPropTree("hostGroups");
+            plane->setProp("@name", cur.name);
+            plane->setProp("@hostGroup", cur.container->name);
+            if (cur.containerOffset)
+                plane->setPropInt("@offset", cur.containerOffset);
+            if (cur.ordinality() != cur.container->ordinality())
+                plane->setPropInt("@count", cur.ordinality());
+            cur.container = nullptr;
+        }
+
+        if (cur.groupType == grp_thor)
+        {
+            VStringBuffer mirrorName("%s_mirror", cur.name.str());
+
+            IPropertyTree * plane = storage->addPropTree("hostGroups");
+            plane->setProp("@name", mirrorName);
+            plane->setProp("@hostGroup", cur.name);
+            plane->setPropInt("@delta", 1);
         }
     }
 }
@@ -3313,9 +3327,6 @@ void initializeStorageGroups(bool createPlanesFromGroups)
     IPropertyTree * storage = queryGlobalConfig().queryPropTree("storage");
     if (!storage)
         storage = queryGlobalConfig().addPropTree("storage");
-
-    //Ensure that host groups that are defined in terms of other host groups are expanded out so they have an explicit list of hosts
-    normalizeHostGroups();
 
 #ifndef _CONTAINERIZED
     if (createPlanesFromGroups && !storage->hasProp("planes"))
@@ -3360,7 +3371,7 @@ void initializeStorageGroups(bool createPlanesFromGroups)
 
                     next->dir.set(cur.queryProp("@directory"));
                     next->dropZone= true;
-                    if (ip)
+                    if (ip && !strieq(ip, "localhost"))
                         next->hosts.append(ip);
                     appendGroup(allGroups, next.getClear());
                 }
@@ -3387,6 +3398,8 @@ void initializeStorageGroups(bool createPlanesFromGroups)
     }
 #endif
 
+
+    //Ensure that host groups that are defined in terms of other host groups are expanded out so they have an explicit list of hosts
     normalizeHostGroups();
 
     //Groups are case insensitve, so add an extra key to the storage items to allow them to be
