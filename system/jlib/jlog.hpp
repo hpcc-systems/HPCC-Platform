@@ -481,6 +481,8 @@ inline char const * msgPrefix(LogMsgClass msgClass)
         return "ERROR: ";
     case MSGCLS_warning:
         return "WARNING: ";
+    case MSGCLS_metric:
+        return "METRICS: ";
     default:
         return "";
     }
