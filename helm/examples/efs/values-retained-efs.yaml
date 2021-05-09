@@ -31,6 +31,11 @@ storage:
     labels:
     - data # NB: if not set, this would be the default
 
+  - name: dropzone
+    pvc: dropzone-awsstorage-hpcc-efs-pvc
+    prefix: "/var/lib/HPCCSystems/dropzone"
+    labels:
+    - lz # NB: if not set, this would be the default
 
 
   dllStorage:
@@ -41,6 +46,9 @@ storage:
 
   dataStorage:
     plane: data
+
+  dropzoneStorage:
+    plane: dropzone
 
 sasha:
   wu-archiver:

@@ -26,6 +26,10 @@ storage:
   dataStorage:
     plane: {{ $plane.name }}
 {{ end -}}
+{{- if eq "dropzone" $plane.name }}
+  dropzoneStorage:
+    plane: {{ $plane.name }}
+{{ end -}}
 {{ end -}}
 
 {{ range $plane := .Values.planes -}}

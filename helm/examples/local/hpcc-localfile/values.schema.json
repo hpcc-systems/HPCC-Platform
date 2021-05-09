@@ -7,6 +7,9 @@
       "properties": {
         "hostpath": {
           "type": "string"
+        },
+        "mountPrefix": {
+          "type": "string"
         }
       }
     },

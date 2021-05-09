@@ -15,6 +15,10 @@ storage:
     storageSize: 1Gi
     storageClass: "azurefile"
 
+  dropzoneStorage:
+    storageSize: 3Gi
+    storageClass: "azurefile"
+
 sasha:
   wu-archiver:
     storage:

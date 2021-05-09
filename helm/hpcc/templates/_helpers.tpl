@@ -57,10 +57,12 @@ Pass in root as .
 {{- $spillStorage := ($storage.spillStorage | default dict) -}}
 {{- $daliStorage := ($storage.daliStorage | default dict) -}}
 {{- $dllStorage := ($storage.dllStorage | default dict) -}}
+{{- $dropzoneStorage := ($storage.dropzoneStorage | default dict) -}}
 {{- $dataStoragePlane := ($dataStorage.plane | default "hpcc-data-plane") -}}
 {{- $spillStoragePlane := ($spillStorage.plane | default "hpcc-spill-plane") -}}
 {{- $daliStoragePlane := ($daliStorage.plane | default "hpcc-dali-plane") -}}
 {{- $dllStoragePlane := ($dllStorage.plane | default "hpcc-dlls-plane") -}}
+{{- $dropzoneStoragePlane := ($dropzoneStorage.plane | default "hpcc-dropzone-plane") -}}
 {{- $certificates := (.Values.certificates | default dict) -}}
 {{- $issuers := ($certificates.issuers | default dict) -}}
 mtls: {{ and ($certificates.enabled) (hasKey $issuers "local") }}
@@ -105,6 +107,12 @@ storage:
 {{- if not $spillStorage.plane }}
   - name: hpcc-spill-plane
     prefix: {{ .Values.global.defaultSpillPath | default "/var/lib/HPCCSystems/hpcc-spill" | quote }}
+{{- end }}
+{{- if not $dropzoneStorage.plane }}
+  - name: hpcc-dropzone-plane
+    labels:
+    - lz
+    prefix: {{ .Values.global.defaultDropzonelPath | default "/var/lib/HPCCSystems/dropzone" | quote }}
 {{- end }}
 {{- if .Values.global.cost }}
 cost:
@@ -201,6 +209,7 @@ to addVolumeMounts so that if a plane can be used for multiple purposes then dup
 {{- /*Create local variables which always exist to avoid having to check if intermediate key values exist*/ -}}
 {{- $storage := (.root.Values.storage | default dict) -}}
 {{- $dataStorage := ($storage.dataStorage | default dict) -}}
+{{- $dropzoneStorage := ($storage.dropzoneStorage | default dict) -}}
 {{- $planes := ($storage.planes | default list) -}}
 {{- $includeLabels := .includeLabels | default list -}}
 {{- range $plane := $planes -}}
@@ -229,6 +238,10 @@ to be located here rather than in addDataVolumeMount.
 - name: datastorage
   mountPath: "/var/lib/HPCCSystems/hpcc-data"
 {{- end }}
+{{- if and (has "lz" $includeLabels) (not $dropzoneStorage.plane) }}
+- name: dropzonestorage
+  mountPath: "/var/lib/HPCCSystems/dropzone"
+{{- end }}
 {{- end -}}
 
 {{/*
@@ -247,6 +260,7 @@ Pass in root and includeLabels (optional)
 {{- /*Create local variables which always exist to avoid having to check if intermediate key values exist*/ -}}
 {{- $storage := (.root.Values.storage | default dict) -}}
 {{- $dataStorage := ($storage.dataStorage | default dict) -}}
+{{- $dropzoneStorage := ($storage.dropzoneStorage | default dict) -}}
 {{- $planes := ($storage.planes | default list) -}}
 {{- $includeLabels := .includeLabels | default list -}}
 {{- range $plane := $planes -}}
@@ -278,6 +292,11 @@ to be located here rather than in addDataVolumes.
 - name: datastorage
   persistentVolumeClaim:
     claimName: {{ $dataStorage.existingClaim | default (printf "%s-datastorage" (include "hpcc.fullname" . )) }}
+{{- end }}
+{{- if and (has "lz" $includeLabels) (not $dropzoneStorage.plane) }}
+- name: dropzonestorage
+  persistentVolumeClaim:
+    claimName: {{ $dropzoneStorage.existingClaim | default (printf "%s-dropzonestorage" (include "hpcc.fullname" . )) }}
 {{- end }}
 {{- end -}}
 

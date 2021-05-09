@@ -59,5 +59,10 @@ spec:
 kind: ConfigMap
 {{ include "hpcc.dfuServerConfigMap" $commonCtx }}
 ---
+{{- $storage := ($.Values.storage | default dict) -}}
+{{- $dropzoneStorage := ($storage.dropzoneStorage | default dict) -}}
+{{- if (and (not $dropzoneStorage.existingClaim) (not $dropzoneStorage.plane)) }}
+{{- include "hpcc.addPVC" (dict "root" $ "name" "dropzonestorage"  "me" $dropzoneStorage) -}}
+{{- end }}
 {{- end }}
 {{- end }}

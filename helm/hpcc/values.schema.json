@@ -35,6 +35,9 @@
         "daliStorage": {
           "$ref": "#/definitions/storageType"
         },
+        "dropzoneStorage": {
+          "$ref": "#/definitions/storageType"
+        },
         "spillStorage": {
           "oneOf": [
             {

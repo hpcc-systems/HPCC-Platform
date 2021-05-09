@@ -126,6 +126,12 @@ storage:
     # existingClaim: ""
     # forcePermissions: false
 
+  dropzoneStorage:
+    storageSize: 1Gi
+    storageClass: ""
+    # existingClaim: ""
+    # forcePermissions: false
+
 ## The certificates section can be used to enable cert-manager to generate TLS certificates for each component in the hpcc.
 ## You must first install cert-manager to use this feature.
 ## https://cert-manager.io/docs/installation/kubernetes/#installing-with-helm

@@ -15,6 +15,10 @@ storage:
     storageSize: 1Gi
     storageClass: "aws-efs"
 
+  dropzoneStorage:
+    storageSize: 3Gi
+    storageClass: "aws-efs"
+
 sasha:
   wu-archiver:
     storage:
