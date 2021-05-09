@@ -11,7 +11,7 @@ install_efs_provisioner()
 
   # Get EKS security group
   which aws > /dev/null
-  if [[ $? -eq 0 ]] && [[ -n "$EKS_NAME" ]] && [[ -n "$EFS_SCURITY_GROUPS" ]]
+  if [[ $? -eq 0 ]] && [[ -n "$EKS_NAME" ]] && [[ -n "$EFS_SECURITY_GROUPS" ]]
   then
     echo "aws eks describe-cluster "
     echo "  --name $EKS_NAME"
