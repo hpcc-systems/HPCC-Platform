@@ -26,11 +26,9 @@ module.exports = function (env) {
 
     const entry = {
         stub: "eclwatch/stub",
-        dojoLib: "lib/src/dojoLib"
+        dojoLib: "lib/src/dojoLib",
+        index: "lib/src-react/index"
     };
-    if (!isProduction) {
-        entry.index = "lib/src-react/index"
-    }
 
     const plugins = [
         new DojoWebpackPlugin({
