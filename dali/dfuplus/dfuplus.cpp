@@ -599,6 +599,7 @@ int CDfuPlusHelper::spray()
     const char* srcfile = globals->queryProp("srcfile");
 
     bool nowait = globals->getPropBool("nowait", false);
+    bool nolocal = globals->getPropBool("nolocal", false);
 
     MemoryBuffer xmlbuf;
 
@@ -606,13 +607,17 @@ int CDfuPlusHelper::spray()
     {
         if(srcfile == nullptr)
             throw MakeStringException(-1, "srcfile not specified");
-        if(srcip == nullptr) {
+        if(srcip == nullptr)
+        {
+            srcip = "127.0.0.1";
+            if (!nolocal)
+            {
 #ifdef DAFILESRV_LOCAL
-            progress("srcip not specified - assuming spray from local machine\n");
-            srcip = ".";
+                progress("srcip not specified - assuming spray from local machine\n");
 #else
-            throw MakeStringException(-1, "srcip not specified");
+                throw MakeStringException(-1, "srcip not specified");
 #endif
+            }
         }
     }
     else
@@ -639,7 +644,7 @@ int CDfuPlusHelper::spray()
 
     SocketEndpoint localep;
     StringBuffer localeps;
-    if (checkLocalDaFileSvr(srcip,localep))
+    if (!nolocal && checkLocalDaFileSvr(srcip,localep))
         srcip = localep.getUrlStr(localeps).str();
     StringBuffer wuid;
     StringBuffer errmsg;
