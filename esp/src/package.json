@@ -38,7 +38,7 @@
     "@fluentui/react-hooks": "^8.0.2",
     "@fluentui/react-icons-mdl2": "^1.0.2",
     "@hpcc-js/chart": "^2.57.0",
-    "@hpcc-js/codemirror": "^2.38.0",
+    "@hpcc-js/codemirror": "^2.40.0",
     "@hpcc-js/common": "^2.47.0",
     "@hpcc-js/comms": "^2.40.0",
     "@hpcc-js/dataflow": "^3.0.1",

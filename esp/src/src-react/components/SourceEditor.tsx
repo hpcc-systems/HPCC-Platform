@@ -1,12 +1,14 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
+import { CommandBar, ContextualMenuItemType, getTheme, ICommandBarItemProps } from "@fluentui/react";
+import { useConst, useOnEvent } from "@fluentui/react-hooks";
 import { Editor, XMLEditor } from "@hpcc-js/codemirror";
 import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { useWorkunitXML } from "../hooks/Workunit";
+import { darkTheme } from "../themes";
 import { ShortVerticalDivider } from "./Common";
+import "codemirror/theme/darcula.css";
 
 interface SourceEditorProps {
     text?: string;
@@ -19,6 +21,8 @@ const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
     readonly = false,
     mode = "text"
 }) => {
+
+    const theme = getTheme();
 
     //  Command Bar  ---
     const buttons: ICommandBarItemProps[] = [
@@ -39,7 +43,22 @@ const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
             .lazyRender()
             ;
 
-    }, [editor, readonly, text]);
+        if (theme.semanticColors.link === darkTheme.palette.themePrimary) {
+            editor.setOption("theme", "darcula");
+        }
+
+    }, [editor, readonly, text, theme.semanticColors.link]);
+
+    const handleThemeToggle = (evt) => {
+        if (!editor) return;
+        if (evt.detail && evt.detail.dark === true) {
+            editor.setOption("theme", "darcula");
+        } else {
+            editor.setOption("theme", "default");
+        }
+    };
+
+    useOnEvent(document, "eclwatch-theme-toggle", handleThemeToggle);
 
     return <HolyGrail
         header={<CommandBar items={buttons} overflowButtonProps={{}} />}
