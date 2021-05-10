@@ -1833,14 +1833,13 @@ void CFileSprayEx::readAndCheckSpraySourceReq(MemoryBuffer& srcxml, const char* 
 
 static void checkValidDfuQueue(const char * dfuQueue)
 {
+    if (isEmptyString(dfuQueue))
+        return;
 #ifndef _CONTAINERIZED
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-        if (!isEmptyString(dfuQueue))
-        {
-            if (!constEnv->isValidDfuQueueName(dfuQueue))
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid DFU server queue name:'%s'", dfuQueue);
-        }
+        if (!constEnv->isValidDfuQueueName(dfuQueue))
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid DFU server queue name:'%s'", dfuQueue);
 #else
         bool isValidDfuQueueName = false;
         Owned<IPropertyTreeIterator> dfuServers = queryComponentConfig().getElements("dfuQueues");
