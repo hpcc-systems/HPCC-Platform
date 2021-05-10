@@ -45,6 +45,7 @@ RUN apt-get install -y \
   psmisc \
   r-base-core \
   zip \
+  libarchive13 \
   curl
 
 ARG USE_CPPUNIT=1
