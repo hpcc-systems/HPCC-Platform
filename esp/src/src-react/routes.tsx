@@ -123,7 +123,7 @@ const routes: Routes = [
     {
         path: "/text", action: (ctx) => {
             const params = parseSearch(ctx.search);
-            return import("./components/SourceEditor").then(_ => <_.WUResourceEditor src={params.src as string} />);
+            return import("./components/SourceEditor").then(_ => <_.FetchEditor mode={params.mode as any} url={params.src as string} />);
         }
     },
     { path: "(.*)", action: () => <h1>Not Found</h1> }

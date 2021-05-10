@@ -2,6 +2,7 @@ import * as React from "react";
 import { useConst } from "@fluentui/react-hooks";
 import { Workunit, Result, WUStateID, WUInfo, WorkunitsService } from "@hpcc-js/comms";
 import nlsHPCC from "src/nlsHPCC";
+import * as Utility from "src/Utility";
 
 export function useCounter(): [number, () => void] {
 
@@ -199,4 +200,76 @@ export function useWorkunitResources(wuid: string): [string[], Workunit, WUState
     }, [workunit, state]);
 
     return [resources, workunit, state];
+}
+
+export interface HelperRow {
+    id: string;
+    Type: string;
+    Description?: string;
+    FileSize?: number;
+    Orig?: any;
+    workunit: Workunit;
+}
+
+function mapHelpers(workunit: Workunit, helpers: WUInfo.ECLHelpFile[] = []): HelperRow[] {
+    return helpers.map((helper, i): HelperRow => {
+        return {
+            id: "H:" + i,
+            Type: helper.Type,
+            Description: Utility.pathTail(helper.Name),
+            FileSize: helper.FileSize,
+            Orig: helper,
+            workunit
+        };
+    });
+}
+
+function mapThorLogInfo(workunit: Workunit, thorLogInfo: WUInfo.ThorLogInfo[] = []): HelperRow[] {
+    const retVal: HelperRow[] = [];
+    for (let i = 0; i < thorLogInfo.length; ++i) {
+        for (let j = 0; j < thorLogInfo[i].NumberSlaves; ++j) {
+            retVal.push({
+                id: "T:" + i + "_" + j,
+                Type: "ThorSlaveLog",
+                Description: thorLogInfo[i].ClusterGroup + "." + thorLogInfo[i].LogDate + ".log (slave " + (j + 1) + " of " + thorLogInfo[i].NumberSlaves + ")",
+                Orig: {
+                    SlaveNumber: j + 1,
+                    ...thorLogInfo[i]
+                },
+                workunit
+            });
+        }
+    }
+    return retVal;
+}
+
+export function useWorkunitHelpers(wuid: string): [HelperRow[]] {
+
+    const [workunit, state] = useWorkunit(wuid);
+    const [helpers, setHelpers] = React.useState<HelperRow[]>([]);
+
+    React.useEffect(() => {
+        workunit?.fetchInfo({
+            IncludeHelpers: true
+        }).then(response => {
+            setHelpers([{
+                id: "E:0",
+                Type: "ECL",
+                workunit
+            }, {
+                id: "X:0",
+                Type: "Workunit XML",
+                workunit
+            }, ...(workunit.HasArchiveQuery ? [{
+                id: "A:0",
+                Type: "Archive Query",
+                workunit
+            }] : []),
+            ...mapHelpers(workunit, response?.Workunit?.Helpers?.ECLHelpFile),
+            ...mapThorLogInfo(workunit, response?.Workunit?.ThorLogList?.ThorLogInfo)
+            ]);
+        });
+    }, [workunit, state]);
+
+    return [helpers];
 }
