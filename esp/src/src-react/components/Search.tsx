@@ -2,10 +2,9 @@ import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Pivot, PivotItem, ProgressIndicator } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { ESPSearch } from "src/ESPSearch";
-import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { ShortVerticalDivider } from "./Common";
+import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
 import { DojoGrid, selector } from "./DojoGrid";
 import { Workunits } from "./Workunits";
 import { Files } from "./Files";
@@ -84,19 +83,7 @@ export const Search: React.FunctionComponent<SearchProps> = ({
     ];
 
     const rightButtons: ICommandBarItemProps[] = [
-        {
-            key: "copy", text: nlsHPCC.CopyWUIDs, disabled: !uiState.hasSelection || !navigator?.clipboard?.writeText, iconOnly: true, iconProps: { iconName: "Copy" },
-            onClick: () => {
-                const wuids = selection.map(s => s.Wuid);
-                navigator?.clipboard?.writeText(wuids.join("\n"));
-            }
-        },
-        {
-            key: "download", text: nlsHPCC.DownloadToCSV, disabled: !uiState.hasSelection, iconOnly: true, iconProps: { iconName: "Download" },
-            onClick: () => {
-                Utility.downloadToCSV(grid, selection.map(row => ([row.Protected, row.Wuid, row.Owner, row.Jobname, row.Cluster, row.RoxieCluster, row.State, row.TotalClusterTime])), "workunits.csv");
-            }
-        }
+        ...createCopyDownloadSelection(grid, selection, "search.csv")
     ];
 
     //  Grid ---
@@ -151,11 +138,11 @@ export const Search: React.FunctionComponent<SearchProps> = ({
             </>}
             main={<DojoGrid store={search.store} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />}
         /> : selectedKey === "ecl" ?
-                <Workunits store={search.eclStore} /> : selectedKey === "dfu" ?
-                    <DFUWorkunits store={search.dfuStore} /> : selectedKey === "file" ?
-                        <Files store={search.fileStore} /> : selectedKey === "query" ?
-                            <Queries store={search.queryStore} /> :
-                            undefined
+            <Workunits store={search.eclStore} /> : selectedKey === "dfu" ?
+                <DFUWorkunits store={search.dfuStore} /> : selectedKey === "file" ?
+                    <Files store={search.fileStore} /> : selectedKey === "query" ?
+                        <Queries store={search.queryStore} /> :
+                        undefined
         }
     />;
 };

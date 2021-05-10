@@ -11,7 +11,7 @@ import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
-import { ShortVerticalDivider } from "./Common";
+import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
 import { DojoGrid, selector, tree } from "./DojoGrid";
 
 const FilterFields: Fields = {
@@ -106,19 +106,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     ];
 
     const rightButtons: ICommandBarItemProps[] = [
-        {
-            key: "copy", text: nlsHPCC.CopyLogicalFiles, disabled: !uiState.hasSelection || !navigator?.clipboard?.writeText, iconOnly: true, iconProps: { iconName: "Copy" },
-            onClick: () => {
-                const wuids = selection.map(s => s.Name);
-                navigator?.clipboard?.writeText(wuids.join("\n"));
-            }
-        },
-        {
-            key: "download", text: nlsHPCC.DownloadToCSV, disabled: !uiState.hasSelection, iconOnly: true, iconProps: { iconName: "Download" },
-            onClick: () => {
-                Utility.downloadToCSV(grid, selection.map(row => ([row.IsProtected, row.IsCompressed, row.IsKeyFile, row.__hpcc_displayName, row.Owner, row.SuperOwners, row.Description, row.NodeGroup, row.RecordCount, row.IntSize, row.Parts, row.Modified])), "workunits.csv");
-            }
-        }
+        ...createCopyDownloadSelection(grid, selection, "logicalfiles.csv")
     ];
 
     //  Grid ---

@@ -45,6 +45,7 @@ export function parseXML(val) {
 
 export function csvEncode(cell) {
     if (!isNaN(cell)) return cell;
+    if (cell === undefined) return "";
     return '"' + String(cell).replace('"', '""') + '"';
 }
 
@@ -207,6 +208,38 @@ export function espSkew2NumberTests() {
             console.log("espSkew2NumberTests failed with " + test.str + "(" + espSkew2Number(test.str) + ") !== " + test.expected);
         }
     }, this);
+}
+
+export function formatAsDelim(grid, rows: any, delim = ",") {
+    const headers = grid.columns;
+    const container: string[] = [];
+    const headerNames: string[] = [];
+
+    for (const key in headers) {
+        if (key !== headers[key].id && headers[key].selectorType !== "checkbox") {
+            if (!headers[key].label) {
+                const str = csvEncode(headers[key].field);
+                headerNames.push(str);
+            } else {
+                const str = csvEncode(headers[key].label);
+                headerNames.push(str);
+            }
+        }
+    }
+    container.push(headerNames.join(delim));
+
+    rows.forEach(row => {
+        const cells: any[] = [];
+        for (const key in headers) {
+            if (key !== headers[key].id && headers[key].selectorType !== "checkbox") {
+                const cell = row[headers[key].field];
+                cells.push(csvEncode(cell));
+            }
+        }
+        container.push(cells.join(delim));
+    });
+
+    return container.join("\n");
 }
 
 export function downloadToCSV(grid, rows, fileName) {
