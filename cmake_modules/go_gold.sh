@@ -86,8 +86,8 @@ if [ -e helm/hpcc/Chart.yaml ] ; then
     doit "git add -A ./helm"
   fi
   cd docs
-  for f in `find ${HPCC_DIR}/helm/examples -name Chart.yaml` ; do 
-    doit "helm package ${f%/*}/"  
+  for f in `find ${HPCC_DIR}/helm/examples ${HPCC_DIR}/helm/managed -name Chart.yaml` ; do
+    doit "helm package ${f%/*}/ --dependency-update"
   done
   doit "helm package ${HPCC_DIR}/helm/hpcc/"
   doit "helm repo index . --url https://hpcc-systems.github.io/helm-chart"
