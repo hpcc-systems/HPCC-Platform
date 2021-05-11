@@ -8555,7 +8555,7 @@ static void holdLoop()
 }
 #endif
 
-#ifndef _WIN32
+#if defined(__linux__)
 static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfiguration(IPropertyTree *componentDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute);
 
 class CConfigUpdater : public CInterface
@@ -8661,7 +8661,7 @@ void removeConfigUpdateHook(unsigned notifyFuncId)
 #endif
 }
 #else
-unsigned installConfigUpdateHook(std::function<void ()> notifyFunc)
+unsigned installConfigUpdateHook(ConfigUpdateFunc notifyFunc)
 {
     return 0;
 }
@@ -8669,7 +8669,7 @@ unsigned installConfigUpdateHook(std::function<void ()> notifyFunc)
 void removeConfigUpdateHook(unsigned notifyFuncId)
 {
 }
-#endif
+#endif // __linux__
 
 
 static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfiguration(IPropertyTree *componentDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute)
@@ -8820,7 +8820,7 @@ jlib_decl IPropertyTree * loadConfiguration(IPropertyTree *componentDefault, con
      * on-demand, which means this mechanism is sufficient to cover most cases.
      */
 
-#ifdef _CONTAINERIZED // NB: not defined in WIN32
+#if defined(__linux__) && defined(_CONTAINERIZED)
     /* In bare-metal - there is no auto process/component restart mechanism, so everything would need to be
      * hooked to ensure state is reflected correctly. Therefore this mechanism is disabled in bare-metal for now.
      */ 
