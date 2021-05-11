@@ -302,7 +302,7 @@ jobs:
         find -name '.git*' -prune -o -newer ../cmake-timestamp -type f -print | cpio -p -dum ../src-cache
         echo "Merge patch files:"
         git diff --name-only ${{ steps.vars.outputs.base_ref_sha }} ${{ steps.vars.outputs.sha }}
-        git diff ${{ steps.vars.outputs.base_ref_sha }} ${{ steps.vars.outputs.sha }} > ../merge-patch
+        git diff --binary ${{ steps.vars.outputs.base_ref_sha }} ${{ steps.vars.outputs.sha }} > ../merge-patch
 
     # - alter stock ecl-test.json, to point to install dir (using jq)
     # - create a clean copy of the install directory (for later reuse)
