@@ -12,52 +12,52 @@
     border-style: hidden;
 }
 
-.flat .dojo-component.dgrid .dgrid-header-row {
+.flat .dgrid-header-row {
     background-color: var(--grid-background);
     font-size: var(--header-font-size);
     line-height: 32px;
 }
 
-.flat .dojo-component.dgrid .dgrid-header-row .dgrid-cell {
+.flat .dgrid-header-row .dgrid-cell {
     border-bottom-color: var(--grid-selectionBackground);
 }
 
-.flat .dojo-component.dgrid .dgrid-header-row:focus {
+.flat .dgrid-header-row:focus {
     outline-width: 0px;
 }
 
-.flat .dojo-component.dgrid .dgrid-header.dgrid-header-scroll {
+.flat .dgrid-header.dgrid-header-scroll {
     background-color: var(--grid-background);
 }
 
-.flat .dojo-component.dgrid .dgrid-row {
+.flat .dgrid-row {
     font-size: var(--row-font-size);
     line-height: 22px;
 }
 
-.flat .dojo-component.dgrid .dgrid-row:hover {
+.flat .dgrid-row:hover {
     background-color: var(--grid-hoverBackground);
 }
 
-.flat .dojo-component.dgrid .dgrid-row.dgrid-selected:hover {
+.flat .dgrid-row.dgrid-selected:hover {
     background-color: var(--grid-selectionHoverBackground);
 }
 
-.flat .dojo-component.dgrid .dgrid-row .dgrid-selected {
+.flat .dgrid-row .dgrid-selected {
     background-color: var(--grid-selectionBackground);
     color: var(--grid-selectionForeground);
     border-color: var(--grid-background);
 }
 
-.flat .dojo-component.dgrid .dgrid-cell {
+.flat .dgrid-cell {
     border-color: var(--grid-background);
 }
 
-.flat .dojo-component.dgrid .dgrid-focus:focus {
+.flat .dgrid-focus:focus {
     outline-width: 0px;
 }
 
-.flat .dojo-component.dgrid .dgrid-fakeline {
+.flat .dgrid-fakeline {
     border: 0px;
     margin: 2px;
 }

@@ -56,6 +56,18 @@ export function useWorkunitResults(wuid: string): [Result[], Workunit, WUStateID
     return [results, workunit, state];
 }
 
+export function useWorkunitResult(wuid: string, resultName: string): [Result, Workunit, WUStateID] {
+
+    const [results, workunit, state] = useWorkunitResults(wuid);
+    const [result, setResult] = React.useState<Result>();
+
+    React.useEffect(() => {
+        setResult(results.filter(result => result.Name === resultName)[0]);
+    }, [resultName, results, state]);
+
+    return [result, workunit, state];
+}
+
 export interface Variable {
     Type: string;
     Name: string;

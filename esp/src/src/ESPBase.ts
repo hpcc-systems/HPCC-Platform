@@ -19,7 +19,7 @@ export class ESPBase {
         return config[key];
     }
 
-    getBaseURL(service) {
+    getBaseURL(service?) {
         if (!service) {
             service = "WsWorkunits";
         }

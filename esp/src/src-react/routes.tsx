@@ -60,7 +60,7 @@ const routes: Routes = [
             { path: "/dashboard", action: (ctx) => import("./components/WorkunitsDashboard").then(_ => <_.WorkunitsDashboard filterProps={parseSearch(ctx.search) as any} />) },
             { path: "/legacy", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="WUQueryWidget" />) },
             { path: "/:Wuid/:Tab", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => <_.WorkunitDetails wuid={params.Wuid as string} tab={params.Tab as string} />) },
-            { path: "/:Wuid/outputs/:Name", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="ResultWidget" params={params} />) },
+            { path: "/:Wuid/outputs/:Name", action: (ctx, params) => import("./components/Result").then(_ => <_.Result wuid={params.Wuid as string} resultName={params.Name as string} filter={parseSearch(ctx.search) as any} />) },
             { path: "/:Wuid", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => <_.WorkunitDetails wuid={params.Wuid as string} />) }
         ]
     },
