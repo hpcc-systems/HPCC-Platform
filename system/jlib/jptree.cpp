@@ -6005,6 +6005,12 @@ IPropertyTree *createPTreeFromXMLString(unsigned len, const char *xml, byte flag
     return LINK(iMaker->queryRoot());
 }
 
+
+void addPTreeItem(IPropertyTree *ptree, const char * name, const char * value)
+{
+    ptree->addPropTreeArrayItem(name, createPTree())->setProp(nullptr, value);
+}
+
 //////////////////////////
 /////////////////////////
 

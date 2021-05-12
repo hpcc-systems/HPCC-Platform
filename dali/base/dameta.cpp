@@ -75,7 +75,7 @@ void normalizeHostGroups()
             for (unsigned i=0; i < numHosts; i++)
             {
                 unsigned baseIndex = offset + (i + delta) % numHosts;
-                cur.addPropTree("hosts")->setProp(nullptr, hosts.item(baseIndex));
+                addPTreeItem(&cur, "hosts", hosts.item(baseIndex));
             }
         }
     }
