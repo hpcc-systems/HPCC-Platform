@@ -72,7 +72,7 @@ if [ -e helm/hpcc/Chart.yaml ] ; then
   # but only copy helm chart sources across for "latest stable" version
 
   HPCC_DIR="$( pwd )"
-  pushd ../helm-chart 2>&1 > /dev/null
+  doit2 "pushd ../helm-chart 2>&1 > /dev/null"
   doit "git fetch $REMOTE"
   doit "git checkout master"
   doit "git merge --ff-only $REMOTE/master"
@@ -85,7 +85,7 @@ if [ -e helm/hpcc/Chart.yaml ] ; then
     doit "rm ./helm/hpcc/*.bak" 
     doit "git add -A ./helm"
   fi
-  cd docs
+  doit2 "cd docs"
   for f in `find ${HPCC_DIR}/helm/examples ${HPCC_DIR}/helm/managed -name Chart.yaml` ; do
     doit "helm package ${f%/*}/ --dependency-update"
   done
@@ -98,5 +98,5 @@ if [ -e helm/hpcc/Chart.yaml ] ; then
     doit "git tag $FORCE $HPCC_MAJOR.$HPCC_MINOR.$HPCC_POINT && git push $REMOTE $HPCC_MAJOR.$HPCC_MINOR.$HPCC_POINT $FORCE"
   fi
   doit "git push $REMOTE master $FORCE"
-  popd
+  doit2 "popd 2>&1 > /dev/null"
 fi
