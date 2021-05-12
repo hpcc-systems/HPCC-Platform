@@ -83,7 +83,6 @@ target_link_libraries ( ws_smc
          remote 
          dalibase 
          environment 
-         ws_machine 
          dalift 
          dllserver 
          nbcd 
@@ -103,6 +102,13 @@ target_link_libraries ( ws_smc
          schedulectrl 
          ws_workunits 
     )
+
+if (NOT CONTAINERIZED)
+    target_link_libraries ( ws_smc
+        ws_machine
+    )
+endif()
+
 IF (USE_OPENSSL)
     target_link_libraries ( ws_smc
     	securesocket

@@ -32,7 +32,6 @@ set ( ESPSCM_SRCS
       soapesp.ecm
       ws_ecl_client.ecm
       ws_fs.ecm
-      ws_machine.ecm
       ws_smc.ecm
       ws_topology.ecm
       ws_workunits_struct.ecm
@@ -51,6 +50,10 @@ set ( ESPSCM_SRCS
       ws_dali.ecm
       ws_resources.ecm
     )
+
+if (NOT CONTAINERIZED)
+    list ( APPEND ESPSCM_SRCS ws_machine.ecm )
+endif()
 
 foreach ( loop_var ${ESPSCM_SRCS} )
     string(  REGEX REPLACE "[.]ecm" "" result ${loop_var} )

@@ -12,7 +12,6 @@ service_plugins:
   ws_elk: ws_elk
   ws_esdlconfig: ws_esdlconfig
   WsFileIO: ws_fileio
-  ws_machine: ws_machine
   WsPackageProcess: ws_packageprocess
   ws_store: ws_store
   WSESPControl: wsespcontrol
@@ -33,7 +32,6 @@ binding_plugins:
   ws_elk: ws_elk
   ws_esdlconfig: ws_esdlconfig
   WsFileIO: ws_fileio
-  ws_machine: ws_machine
   WsPackageProcess: ws_packageprocess
   ws_store: ws_store
   WsTopology: ws_topology
