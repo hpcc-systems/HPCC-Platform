@@ -1736,8 +1736,12 @@ void FileSprayer::locateJsonHeader(IFileIO * io, unsigned headerSize, offset_t &
     Owned<IFileIOStream> in = createIOStream(io);
 
     JsonSplitter jsplitter(srcFormat, *in);
+    if (headerSize > 0)
+        in->seek(headerSize, IFSbegin); // Skip BOM
     headerLength = jsplitter.getHeaderLength();
     footerLength = jsplitter.getFooterLength();
+    if (headerSize > 0)
+        footerLength -= headerSize;  // Adjust with BOM
 }
 
 void FileSprayer::locateContentHeader(IFileIO * io, unsigned headerSize, offset_t & headerLength, offset_t & footerLength)
