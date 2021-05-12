@@ -102,9 +102,9 @@ data:
 {{- if not $sasha.disabled -}}
 {{- $_ := set $sasha "name" $sashaName -}}
 kind: ConfigMap
-{{- with ($sasha | merge (pick $dali "logging") | merge (dict "inDaliPod" true "access" (splitList " " (include "hpcc.getSashaServiceAccess" $sasha)))) }}
-{{- $sashaSecretsCategories := append ((or (has "data" .access) (has "dalidata" .access)) | ternary (list "storage") list) "system" }}
-{{ include "hpcc.sashaConfigMap" (dict "root" $ "me" . "secretsCategories" $sashaSecretsCategories ) }}
+{{- with ($sasha | merge (pick $dali "logging") | merge (dict "inDaliPod" true "access" (splitList " " (include "hpcc.getSashaServiceAccess" $sasha)))) -}}
+{{- $sashaSecretsCategories := append ((or (has "data" .access) (has "dalidata" .access)) | ternary (list "storage") list) "system" -}}
+{{ include "hpcc.generateConfig" (dict "root" $ "me" . "secretsCategories" $sashaSecretsCategories "configMapHelper" "hpcc.sashaConfigMap") }}
 {{- end }}
 ---
 {{- if $sasha.servicePort -}}

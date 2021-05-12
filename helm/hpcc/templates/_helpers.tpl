@@ -826,7 +826,7 @@ apiVersion: v1
 metadata:
   name: {{ printf "%s-configmap" $configMapName }}
 data:
-  {{ $configMapName }}.yaml: |
+  {{ $configMapName }}.yaml:
     version: 1.0
     sasha:
 {{ toYaml (omit .me "logging") | indent 6 }}
@@ -1247,4 +1247,87 @@ Add a secret volume for a roxie udp key
     secretName: {{ .component }}-udp-{{ .name }}-dtls
 {{ end -}}
 {{- end -}}
+{{- end -}}
+
+{{/*
+A template to filter out a set of keys from a generated config yaml.
+Used to regenerate a configmap without the exclusions, so that it can be
+used to form an SHA as an annotation in a pod.
+This means pods only auto-restart if the non-excluded parts change.
+
+Pass in root, me, configMapHelper, component, excludeSectionRegexList and excludeKeyList
+excludeSectionRegexList is a list of regexp's that filter out top-level sections, e.g. [".*spec.yaml$" ]
+excludeKeyList is a list of key values to exclude from each section, e.g. [ "global", "esp.services" "esp.queues"]
+
+The configMap data section is reconstructed based on filtering out matches.
+
+Used to exclude parts of the config which are always allowed to change without causing a pod restart.
+e.g. a cache of secrets, with an auto reload/refresh mechanism, or 'replicas'.
+*/}}
+{{- define "hpcc.filterConfig" }}
+{{- $config := fromYaml (include .configMapHelper .) -}}
+{{- $configCtx := dict -}}
+{{- $excludeSectionRegexList := .excludeSectionRegexList -}}
+{{- $excludeKeyList := .excludeKeyList -}}
+{{- range $configElementName, $configElementDict := $config.data -}}
+  {{- $_ := set $configCtx "excludeSection" false -}}
+  {{- range $regex := $excludeSectionRegexList -}}
+    {{- if (regexMatch $regex $configElementName) -}}
+      {{- $_ := set $configCtx "excludeSection" true -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if not $configCtx.excludeSection -}}
+    {{- $configDictCtx := dict -}}
+    {{- range $key := $excludeKeyList -}}
+      {{- $_ := set $configDictCtx "keyDictStr" (regexReplaceAll "(.*)\\..*$" $key "${1}") -}}
+      {{- if eq $configDictCtx.keyDictStr $key -}}{{/* single component key, e.g. "global"*/}}
+        {{- $configElementDict := (unset $configElementDict $key) -}}
+      {{- else -}}{{/* scopes component key, e.g. "eclccserver.queue"*/}}
+        {{- $_ := set $configDictCtx "keyKeyStr" (regexReplaceAll ".*\\.(.*)$" $key "${1}") -}}
+        {{- $subDict := get $configElementDict $configDictCtx.keyDictStr -}}
+        {{- if $subDict -}}
+          {{- $_ := set $configElementDict $configDictCtx.keyDictStr (unset $subDict $configDictCtx.keyKeyStr) -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}{{/*range $key*/}}
+    {{- $configYaml := toYaml $configElementDict -}}
+    {{- $_ := set $config.data $configElementName $configYaml -}}
+  {{- else -}}
+    {{- $configData := (unset $config.data $configElementName) -}}
+    {{- $_ := set $config "data" $configData -}}
+  {{- end -}}
+{{- end -}}{{/*range $configElementName*/}}
+{{ toYaml $config }}
+{{- end -}}
+
+{{/*
+A template to generate a component config
+Pass in root, me, configMapHelper
+*/}}
+{{- define "hpcc.generateConfig" }}
+{{- $config := fromYaml (include .configMapHelper .) -}}
+{{- range $configElementName, $configElementDict := $config.data -}}
+  {{- $configYaml := toYaml $configElementDict -}}
+  {{- $_ := set $config.data $configElementName $configYaml -}}
+{{- end }}
+{{ toYaml $config }}
+{{- end -}}
+
+{{/*
+A template to generate an SHA from a component config, to be used to annotate a Deployment,
+such that it will auto restart if the SHA changes.
+Uses filterConfig helper to select pertinent parts of the config to be part of the SHA.
+Pass in root, me, configMapHelper, component and excludeKeys
+excludeKeys is a comma separated list of key values to exclude from each section, e.g. "global,esp.services,esp.queues"
+
+globalExcludeSectionRegexList below is hard-coded list of section regexp's to exclude.
+globalExcludeList below is a hard-coded list of global keys to exclude.
+
+*/}}
+{{- define "hpcc.getConfigSHA" }}
+{{- $globalExcludeList := list (printf "%s.replicas" .component) -}}
+{{- $globalExcludeSectionRegexList := list ".*spec.yaml$" -}}
+{{- $combinedExcludeKeyList := concat (splitList "," (.excludeKeys | default "")) $globalExcludeList -}}
+{{- $ctx := merge (omit . "excludeKeys") (dict "excludeSectionRegexList" $globalExcludeSectionRegexList "excludeKeyList" $combinedExcludeKeyList) -}}
+{{- include "hpcc.filterConfig" $ctx | sha256sum }}
 {{- end -}}

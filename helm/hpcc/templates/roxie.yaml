@@ -7,7 +7,7 @@ apiVersion: v1
 metadata:
   name: {{ .me.name }}-configmap
 data:
-  {{ .me.name }}.yaml: |
+  {{ .me.name }}.yaml:
     version: 1.0
     roxie:
 {{ toYaml ( omit .me "logging" "topoServer" "encryptInTransit") | indent 6 }}
@@ -37,7 +37,7 @@ apiVersion: v1
 metadata:
   name: {{ .toponame }}-configmap
 data:
-  {{ .toponame }}.yaml: |
+  {{ .toponame }}.yaml:
     version: 1.0
     toposerver:
       port: {{ .topoport }}
@@ -54,8 +54,8 @@ data:
 {{- $_ := set $commonCtx "numChannels" ($roxie.numChannels | int | default 1) -}}
 {{- $_ := set $commonCtx "topoport" ($toposerver.port | int | default 9004) -}}
 {{- $_ := set $toposerver "name" $commonCtx.toponame -}}
-{{- $configSHA := include "hpcc.roxieConfigMap" $commonCtx | sha256sum }}
-{{- $topoconfigSHA := include "hpcc.roxieTopoConfigMap" $commonCtx | sha256sum }}
+{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.roxieConfigMap" "component" "roxie" "excludeKeys" "global")) }}
+{{- $topoconfigSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.roxieTopoConfigMap" "component" "toposerver" "excludeKeys" "global")) }}
 {{- include "hpcc.checkDefaultStoragePlane" $commonCtx }}
 {{- if not $roxie.localAgent -}}
 {{- $_ := set $roxie "localAgent" false -}}
@@ -164,10 +164,10 @@ spec:
 
 ---
 kind: ConfigMap 
-{{ include "hpcc.roxieConfigMap" $commonCtx }}
+{{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.roxieConfigMap")) }}
 ---
 kind: ConfigMap 
-{{ include "hpcc.roxieTopoConfigMap" $commonCtx }}
+{{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.roxieTopoConfigMap")) }}
 ---
 
 {{ if $roxie.serverReplicas -}}

@@ -7,7 +7,7 @@ apiVersion: v1
 metadata:
   name: {{ .me.name }}-configmap
 data:
-  {{ .me.name }}.yaml: |
+  {{ .me.name }}.yaml:
     version: 1.0
     roxie:
 {{ toYaml (omit .me "logging") | indent 6 }}
@@ -21,7 +21,7 @@ data:
 {{- if not $roxie.disabled  -}}
 {{- $secretsCategories := list "system" "ecl-user" "ecl" "storage" }}
 {{- $commonCtx := dict "root" $ "me" $roxie "secretsCategories" $secretsCategories }}
-{{- $configSHA := include "hpcc.localroxieConfigMap" $commonCtx | sha256sum }}
+{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.localroxieConfigMap" "component" "roxie" "excludeKeys" "global")) }}
 {{- include "hpcc.checkDefaultStoragePlane" $commonCtx }}
 {{- if $roxie.localAgent -}}
 {{- $name := $roxie.name -}}
@@ -112,7 +112,7 @@ spec:
 {{- end }}
 {{- end }}
 kind: ConfigMap 
-{{ include "hpcc.localroxieConfigMap" $commonCtx }}
+{{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.localroxieConfigMap")) }}
 ---
 {{ include "hpcc.addCertificate" (dict "root" $ "name" $roxie.name "services" $roxie.services "component" "localroxie" "external" false) }}
 {{ include "hpcc.addCertificate" (dict "root" $ "name" $roxie.name "services" $roxie.services "component" "localroxie" "external" true) }}
