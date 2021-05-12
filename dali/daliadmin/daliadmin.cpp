@@ -314,7 +314,7 @@ int main(int argc, const char* argv[])
                     }
                     else if (strieq(cmd,"dfsfile")) {
                         CHECKPARAMS(1,1);
-                        dfsfile(params.item(1),userDesc);
+                        doLog(dfsfile(params.item(1),userDesc,out),out);
                     }
                     else if (strieq(cmd,"dfsmeta")) {
                         CHECKPARAMS(1,3);
@@ -323,19 +323,21 @@ int main(int argc, const char* argv[])
                     }
                     else if (strieq(cmd,"dfspart")) {
                         CHECKPARAMS(2,2);
-                        dfspart(params.item(1),userDesc,atoi(params.item(2)));
+                        doLog(dfspart(params.item(1),userDesc,atoi(params.item(2)),out),out);                        
                     }
                     else if (strieq(cmd,"setdfspartattr")) {
                         CHECKPARAMS(3,4);
-                        setdfspartattr(params.item(1), atoi(params.item(2)), params.item(3), np>3 ? params.item(4) : nullptr, userDesc);
+                        setdfspartattr(params.item(1),atoi(params.item(2)),params.item(3),np>3?params.item(4):nullptr,userDesc,out);
+                        PROGLOG("%s", out.str());
                     }
                     else if (strieq(cmd,"dfscheck")) {
                         CHECKPARAMS(0,0);
-                        dfsCheck();
+                        doLog(dfsCheck(out),out);
                     }
                     else if (strieq(cmd,"dfscsv")) {
                         CHECKPARAMS(1,1);
-                        dfscsv(params.item(1),userDesc);
+                        dfscsv(params.item(1),userDesc,out);
+                        PROGLOG("%s",out.str());
                     }
                     else if (strieq(cmd,"dfsgroup")) {
                         CHECKPARAMS(1,2);
@@ -347,11 +349,11 @@ int main(int argc, const char* argv[])
                     }
                     else if (strieq(cmd,"dfsls")) {
                         CHECKPARAMS(0,2);
-                        dfsLs((np>0)?params.item(1):NULL,(np>1)?params.item(2):NULL);
+                        doLog(dfsLs((np>0)?params.item(1):nullptr,(np>1)?params.item(2):nullptr,out),out);
                     }
                     else if (strieq(cmd,"dfsmap")) {
                         CHECKPARAMS(1,1);
-                        dfsmap(params.item(1), userDesc);
+                        doLog(dfsmap(params.item(1),userDesc,out),out);
                     }
                     else if (strieq(cmd,"dfsexists") || strieq(cmd,"dfsexist")) {
                         // NB: "dfsexist" typo', kept for backward compatibility only (<7.12)
@@ -360,7 +362,8 @@ int main(int argc, const char* argv[])
                     }
                     else if (strieq(cmd,"dfsparents")) {
                         CHECKPARAMS(1,1);
-                        dfsparents(params.item(1),userDesc);
+                        dfsparents(params.item(1),userDesc,out);
+                        PROGLOG("%s",out.str());
                     }
                     else if (strieq(cmd,"dfsunlink")) {
                         CHECKPARAMS(1,1);
