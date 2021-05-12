@@ -22,6 +22,8 @@
 #    Cmake Input File for ws_machine
 #####################################################
 
+SET(CMAKE_UNITY_BUILD FALSE)
+
 project( ws_machine ) 
 
 include(${HPCC_SOURCE_DIR}/esp/scm/espscm.cmake)

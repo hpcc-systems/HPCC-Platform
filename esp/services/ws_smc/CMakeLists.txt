@@ -22,6 +22,8 @@
 #    Cmake Input File for ws_smc
 #####################################################
 
+SET(CMAKE_UNITY_BUILD FALSE)
+
 project( ws_smc ) 
 
 include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)

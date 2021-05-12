@@ -16,6 +16,8 @@
 
 project( yaml_include)
 
+SET(CMAKE_UNITY_BUILD FALSE)
+
 remove_definitions(-fvisibility=hidden)
 
 if(WIN32 OR APPLE)

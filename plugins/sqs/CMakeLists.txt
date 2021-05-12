@@ -6,6 +6,11 @@ project(sqs)
 
 if(SQS AND USE_AWS)
     ADD_PLUGIN(sqs)
+
+    if (USE_UNITY_BUILD)
+        set(ENABLE_UNITY_BUILD TRUE)
+    endif ()
+
     set(AWS_SDK_CPP_SOURCE_DIR ${HPCC_SOURCE_DIR}/system/aws/aws-sdk-cpp)
 
     add_definitions(-DUSE_IMPORT_EXPORT)

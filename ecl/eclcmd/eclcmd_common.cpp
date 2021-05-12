@@ -26,10 +26,9 @@
 
 #include "eclcmd_common.hpp"
 
-static StringBuffer eclccpath;
-
 const char *queryEclccPath(bool optVerbose)
 {
+    static StringBuffer eclccpath;
     if (!eclccpath.length())
     {
         const char *envpath = getenv("ECLCC_PATH");

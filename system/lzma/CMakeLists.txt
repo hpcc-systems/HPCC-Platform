@@ -22,6 +22,7 @@
 #    Cmake Input File for lzma
 #####################################################
 
+SET(CMAKE_UNITY_BUILD FALSE)
 
 project( lzma ) 
 

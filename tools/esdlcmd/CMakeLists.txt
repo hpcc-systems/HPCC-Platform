@@ -22,6 +22,7 @@
 #    Cmake Input File for esdlcmd
 #####################################################
 
+SET(CMAKE_UNITY_BUILD FALSE)
 
 project( esdlcmd )
 

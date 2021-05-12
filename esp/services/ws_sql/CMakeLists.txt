@@ -20,6 +20,8 @@
 #    Cmake Input File for ws_sql
 #####################################################
 
+SET(CMAKE_UNITY_BUILD FALSE)
+
 project(ws_sql)
 
 if(WSSQL_SERVICE AND USE_JAVA)

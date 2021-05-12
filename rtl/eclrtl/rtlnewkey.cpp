@@ -196,20 +196,6 @@ void getStretchedValue(MemoryBuffer & target, const RtlTypeInfo & newType, const
 
 //---------------------------------------------------------------------------------------------------------------------
 
-static bool incrementBuffer(byte *buf, size32_t size)
-{
-    int i = size;
-    while (i--)
-    {
-        buf[i]++;
-        if (buf[i]!=0)
-            return true;
-    }
-    return false;
-}
-
-//---------------------------------------------------------------------------------------------------------------------
-
 bool needToApplySubString(const RtlTypeInfo & type, const byte * value, size32_t subLength)
 {
     if (subLength == MatchFullString)

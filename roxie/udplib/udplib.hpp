@@ -15,8 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef UDPMSGPK_INCL
-#define UDPMSGPK_INCL
+#ifndef UDPLIB_INCL
+#define UDPLIB_INCL
 #include "jiface.hpp"
 #include "jstring.hpp"
 #include "jisem.hpp"

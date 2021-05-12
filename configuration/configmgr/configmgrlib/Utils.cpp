@@ -17,6 +17,8 @@ limitations under the License.
 
 #include <vector>
 #include <string>
+
+#include "Utils.hpp"
 #include "Exceptions.hpp"
 
 bool getEnclosedString(const std::string &source, std::string &result, std::size_t startPos, char endDelim, bool throwIfError);
@@ -91,7 +93,7 @@ bool getEnclosedString(const std::string &source, std::string &result, std::size
 }
 
 
-std::string trim(const std::string& str, const std::string& whitespace = " \t")
+std::string trim(const std::string& str, const std::string& whitespace)
 {
     const auto strBegin = str.find_first_not_of(whitespace);
     if (strBegin == std::string::npos)

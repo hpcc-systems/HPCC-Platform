@@ -203,10 +203,18 @@ typedef volatile long atomic_t;
 
 #elif defined(__GNUC__)
 
-typedef struct { volatile int counter; } atomic_t;
 #define ATOMIC_INIT(i)          { (i) }
 #define atomic_read(v)          ((v)->counter)
-#define atomic_set(v,i)         (((v)->counter) = (i))
+
+#ifndef atomic_set
+
+#ifndef atomic_type_defined
+#define atomic_type_defined
+typedef struct { volatile int counter; } atomic_t;
+#endif
+
+#define atomic_set(v,i) (((v)->counter) = (i))
+#endif
 
 static __inline__ bool atomic_dec_and_test(atomic_t *v)
 {   

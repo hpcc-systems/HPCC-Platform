@@ -15,6 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
+#ifndef UDPMSGPK_INCL
+#define UDPMSGPK_INCL
+
 #include "roxiemem.hpp"
 #include <queue>
 
@@ -59,3 +62,6 @@ public:
     bool attach_data(const void *data, unsigned len);
     void noteDuplicate(bool isResend);
 };
+
+#endif
+

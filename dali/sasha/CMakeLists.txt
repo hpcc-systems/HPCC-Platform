@@ -24,6 +24,8 @@
 
 project (sasha)
 
+SET(UNITY_BUILD FALSE)
+
 INCLUDE(CheckLibraryExists) 
 
 if (NOT WIN32 AND NOT WIN64)

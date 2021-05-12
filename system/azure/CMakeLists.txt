@@ -24,6 +24,8 @@
 
 project( azure )
 
+SET(CMAKE_UNITY_BUILD FALSE)
+
 if(USE_AZURE)
 
     include(ExternalProject)
