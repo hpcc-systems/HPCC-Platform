@@ -24,7 +24,7 @@ RUN groupadd -g 10001 hpcc
 RUN useradd -s /bin/bash -r -m -N -c "hpcc runtime User" -u 10000 -g hpcc hpcc
 RUN passwd -l hpcc 
 
-RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.17.0/bin/linux/amd64/kubectl && chmod +x ./kubectl && mv ./kubectl /usr/local/bin
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.18/bin/linux/amd64/kubectl && chmod +x ./kubectl && mv ./kubectl /usr/local/bin
 
 WORKDIR /hpcc-dev
 RUN chown hpcc:hpcc /hpcc-dev
