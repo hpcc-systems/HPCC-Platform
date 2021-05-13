@@ -98,6 +98,11 @@ bool validateWsWorkunitAccess(IEspContext& ctx, const char* wuid, SecAccessFlags
     return ctx.validateFeatureAccess(getWuAccessType(*cw, ctx.queryUserId()), minAccess, false);
 }
 
+bool validateWsWorkunitAccessByOwnerId(IEspContext& ctx, const char* owner, SecAccessFlags minAccess)
+{
+    return ctx.validateFeatureAccess(getWuAccessType(owner, ctx.queryUserId()), minAccess, false);
+}
+
 void ensureWsWorkunitAccessByOwnerId(IEspContext& ctx, const char* owner, SecAccessFlags minAccess)
 {
     if (!ctx.validateFeatureAccess(getWuAccessType(owner, ctx.queryUserId()), minAccess, false))
