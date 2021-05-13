@@ -11586,8 +11586,6 @@ protected:
             OwnedRoxieString cluster(helper.getCluster(clusterIdx));
             if(!cluster)
                 break;
-            if (isContainerized())
-                throw makeStringException(0, "Output clusters not supported in cloud environment");
             clusters.append(cluster);
             clusterIdx++;
         }
@@ -11598,12 +11596,9 @@ protected:
         }
         else
         {
-            if (isContainerized() && fileNameServiceDali)
-            {
-                StringBuffer nasGroupName;
-                queryNamedGroupStore().getNasGroupName(nasGroupName, 1);
-                clusters.append(nasGroupName);
-            }
+            StringBuffer defaultCluster;
+            if (getDefaultStoragePlane(defaultCluster))
+                clusters.append(defaultCluster);
             else if (roxieName.length())
                 clusters.append(roxieName.str());
             else
@@ -12078,20 +12073,15 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
             OwnedRoxieString cluster(helper.getCluster(clusterIdx));
             if(!cluster)
                 break;
-            if (isContainerized())
-                throw makeStringException(0, "Output clusters not supported in cloud environment");
             clusters.append(cluster);
             clusterIdx++;
         }
 
         if (!clusters.length())
         {
-            if (isContainerized() && fileNameServiceDali)
-            {
-                StringBuffer nasGroupName;
-                queryNamedGroupStore().getNasGroupName(nasGroupName, 1);
-                clusters.append(nasGroupName);
-            }
+            StringBuffer defaultCluster;
+            if (getDefaultStoragePlane(defaultCluster))
+                clusters.append(defaultCluster);
             else if (roxieName.length())
                 clusters.append(roxieName.str());
             else

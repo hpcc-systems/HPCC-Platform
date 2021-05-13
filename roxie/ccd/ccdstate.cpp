@@ -734,7 +734,7 @@ public:
         else if (daliHelper)
             user = daliHelper->queryUserDescriptor();//predeployed query mode
 
-        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, user, onlyLocal, onlyDFS, true, isPrivilegedUser);
+        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, user, onlyLocal, onlyDFS, true, isPrivilegedUser, &clusters);
         if (!ldFile)
             throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s", fileName.str());
         return createRoxieWriteHandler(daliHelper, ldFile.getClear(), clusters);

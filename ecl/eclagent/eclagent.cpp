@@ -1394,7 +1394,12 @@ ILocalOrDistributedFile *EclAgent::resolveLFN(const char *fname, const char *err
     }
     if (expandedlfn)
         *expandedlfn = lfn;
-    Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(lfn.str(), queryUserDescriptor(), resolveFilesLocally, !resolveFilesLocally, isWrite, isPrivilegedUser);
+    /*
+     * NB: this code and ILocalOrDistributedFile should be revisited when DFS is refactored
+     * hthor doesn't use it to write, but instead uses createClusterWriteHandler to handle cluster writing.
+     * See code in e.g.: CHThorDiskWriteActivity::resolve
+     */
+    Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(lfn.str(), queryUserDescriptor(), resolveFilesLocally, !resolveFilesLocally, isWrite, isPrivilegedUser, nullptr);
     if (ldFile)
     {
         IDistributedFile * dFile = ldFile->queryDistributedFile();
