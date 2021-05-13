@@ -1,75 +1,33 @@
 {{- $serverName := (include "hpcc-nfs.fullname" $) }}
+{{- range $plane := .Values.planes -}}
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: {{ printf "dll-%s-pv" (include "hpcc-nfs.fullname" $) }}
+  name: {{ printf "%s-%s-pv" $plane.name (include "hpcc-nfs.fullname" $) }}
+  labels:
+    store: {{ printf "%s-%s-pv" $plane.name (include "hpcc-nfs.fullname" $) }}
 spec:
   capacity:
-    storage: {{ .Values.dllStorage.size }}
+    storage: {{ $plane.size }}
   accessModes:
-    - ReadWriteMany
+    - {{ $plane.rwmany | default false | ternary "ReadWriteMany" "ReadWriteOnce" }}
   nfs:
-    server: {{ printf "%s.%s.svc.cluster.local" $serverName .Values.namespace }}
+    server: {{ printf "%s.%s.svc.cluster.local" $serverName $.Values.namespace }}
     path: "/"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ printf "dll-%s-pvc" (include "hpcc-nfs.fullname" $) }}
+  name: {{ printf "%s-%s-pvc" $plane.name (include "hpcc-nfs.fullname" $) }}
 spec:
   accessModes:
-    - ReadWriteMany
+    - {{ $plane.rwmany | default false | ternary "ReadWriteMany" "ReadWriteOnce" }}
   storageClassName: ""
   resources:
     requests:
-      storage: {{ .Values.dllStorage.size }}
+      storage: {{ $plane.size }}
+  selector:
+    matchLabels:
+      store: {{ printf "%s-%s-pv" $plane.name (include "hpcc-nfs.fullname" $) }}
 ---
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: {{ printf "data-%s-pv" (include "hpcc-nfs.fullname" $) }}
-spec:
-  capacity:
-    storage: {{ .Values.dataStorage.size }}
-  accessModes:
-    - ReadWriteMany
-  nfs:
-    server: {{ printf "%s.%s.svc.cluster.local" $serverName .Values.namespace }}
-    path: "/"
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: {{ printf "data-%s-pvc" (include "hpcc-nfs.fullname" $) }}
-spec:
-  accessModes:
-    - ReadWriteMany
-  storageClassName: ""
-  resources:
-    requests:
-      storage: {{ .Values.dataStorage.size }}
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: {{ printf "dali-%s-pv" (include "hpcc-nfs.fullname" $) }}
-spec:
-  capacity:
-    storage: {{ .Values.daliStorage.size }}
-  accessModes:
-    - ReadWriteMany
-  nfs:
-    server: {{ printf "%s.%s.svc.cluster.local" $serverName .Values.namespace }}
-    path: "/"
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: {{ printf "dali-%s-pvc" (include "hpcc-nfs.fullname" $) }}
-spec:
-  accessModes:
-    - ReadWriteMany
-  storageClassName: ""
-  resources:
-    requests:
-      storage: {{ .Values.daliStorage.size }}
+{{ end }}

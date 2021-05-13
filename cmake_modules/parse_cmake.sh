@@ -110,6 +110,12 @@ function doit()
     if [ -z "$DRYRUN" ] ; then eval $1 ; fi
 }
 
+function doit2()
+{
+    if [ -n "$VERBOSE" ] || [ -n "$DRYRUN" ] ; then echo $1 ; fi
+    eval $1
+}
+
 function set_tag()
 {
     local _prefix=$1

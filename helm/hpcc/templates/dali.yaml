@@ -24,6 +24,14 @@ spec:
       serviceAccountName: "hpcc-default"
       initContainers: 
         {{- include "hpcc.checkDaliMount" (dict "root" $) | indent 6 }}
+        {{- if not ( $sashaServices.disabled ) -}}
+        {{- range $sashaName, $_sasha := $dali.services -}}
+        {{- $sasha := ($_sasha | default dict) -}}
+        {{- if and (not $sasha.disabled ) ( $sasha.storage) }}
+          {{- include "hpcc.checkSashaMount" (dict "root" $ "me"  $sasha) | indent 6 }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
       containers:
       - name: {{ $dali.name | quote }}
         workingDir: /var/lib/HPCCSystems

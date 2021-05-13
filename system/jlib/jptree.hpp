@@ -221,6 +221,9 @@ jlib_decl void synchronizePTree(IPropertyTree *target, const IPropertyTree *sour
 jlib_decl IPropertyTree *ensurePTree(IPropertyTree *root, const char *xpath);
 jlib_decl bool areMatchingPTrees(const IPropertyTree * left, const IPropertyTree * right);
 
+//Similar to ptree->addProp(name, value) except it ensures the appended item is part of a list.  Ensures that YAML is regenerated correctly.
+jlib_decl void addPTreeItem(IPropertyTree *ptree, const char * name, const char * value);
+
 jlib_decl IPropertyTree *createPTree(MemoryBuffer &src, byte flags=ipt_none);
 
 jlib_decl IPropertyTree *createPTree(byte flags=ipt_none);

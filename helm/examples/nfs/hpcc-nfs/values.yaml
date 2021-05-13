@@ -2,17 +2,31 @@
 namespace: default
 
 sharedStorage:
-  size: 2Gi 
+  size: 6Gi
   #existingClaim: myexistingclaim
 
 # NB: the sum of the size's below should be <= the sharedStorage size
 
-dllStorage:
-  size: 512Mi
+common:
+  mountPrefix: "/var/lib/HPCCSystems"
 
-daliStorage:
-  size: 512Mi
-
-dataStorage:
+planes:
+- name: dali
+  subPath: dalistorage
   size: 1Gi
-
+  labels: [ "dali" ]
+- name: dll
+  subPath: queries # cannot currently be changed
+  size: 1Gi
+  labels: [ "dll" ]
+  rwmany: true
+- name: sasha
+  subPath: sasha
+  size: 1Gi
+  rwmany: true
+  labels: [ "sasha" ]
+- name: data
+  subPath: hpcc-data
+  size: 3Gi
+  labels: [ "data" ] # NB: all "data" planes will be auto mounted by engine components and others that require access to data
+  rwmany: true

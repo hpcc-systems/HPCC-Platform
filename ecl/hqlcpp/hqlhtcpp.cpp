@@ -3950,8 +3950,10 @@ unsigned HqlCppTranslator::buildRtlIfBlockField(StringBuffer & instanceName, IHq
 
         bool isComplex = extraFilter || !extractor.isSingleMatchCondition();
         const char * baseClass = isComplex ? "RtlComplexIfBlockTypeInfo" : "RtlSimpleIfBlockTypeInfo";
-        if (isComplex)
-            fieldType |= RFTMnoserialize;
+        //Currently interpreted ifblocks() are far too inefficient to be used remotely, so unconditionally mark it as noserialize
+        //change when HPCC-25794 is fixed
+        //if (isComplex)
+        fieldType |= RFTMnoserialize;
 
         //The ifblock needs a unique instance of the class to evaluate the test
         BuildCtx fieldclassctx(declarectx);

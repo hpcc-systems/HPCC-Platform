@@ -1,22 +1,46 @@
-{{- $dllPvcName := printf "dll-%s-pvc" (include "hpcc-nfs.fullname" $) }}
-{{- $daliPvcName := printf "dali-%s-pvc" (include "hpcc-nfs.fullname" $) }}
-{{- $dataPvcName := printf "data-%s-pvc" (include "hpcc-nfs.fullname" $) }}
-
-# Nfs server deployed.
-# Persistent Volume Claims created: {{ $dllPvcName }}, {{ $daliPvcName }}, {{ $dataPvcName }}
-# 
-# Pass a values yaml to the hpcc helm chart to use these existing claims.
-# The generated content below can be used for that value yaml file.
+#The following is a generated values yaml that you can capture and feed to the hpcc helm chart when installing.
+#it will configure the hpcc storage to use the planes and pvcs installed by this chart.
 
 storage:
-  dllStorage:
-    existingClaim: "{{ $dllPvcName }}"
-    forcePermissions: true
+  planes:
+{{- range $plane := .Values.planes }}
+  - name: {{ $plane.name }}
+    pvc: {{ printf "%s-%s-pvc" $plane.name (include "hpcc-nfs.fullname" $) }}
+    prefix: {{ printf "%s%s%s" $.Values.common.mountPrefix (regexMatch ".*/$" $.Values.common.mountPrefix | ternary "" "/") $plane.subPath | quote }}
+{{- if hasKey $plane "labels" }}
+    labels:
+{{ toYaml $plane.labels | indent 4 }}
+{{ end -}}
+{{- end }}
 
+{{ range $plane := .Values.planes -}}
+{{- if eq "dali" $plane.name }}
   daliStorage:
-    existingClaim: "{{ $daliPvcName }}"
+    plane: {{ $plane.name }}
     forcePermissions: true
-
+{{ end -}}
+{{- if eq "dll" $plane.name }}
+  dllStorage:
+    plane: {{ $plane.name }}
+    forcePermissions: true
+{{ end -}}
+{{- if eq "data" $plane.name }}
   dataStorage:
-    existingClaim: "{{ $dataPvcName }}"
+    plane: {{ $plane.name }}
     forcePermissions: true
+{{ end -}}
+{{ end -}}
+
+{{ range $plane := .Values.planes -}}
+{{ if eq "sasha" $plane.name }}
+sasha:
+  wu-archiver:
+    storage:
+      plane: {{ $plane.name }}
+      forcePermissions: true
+  dfuwu-archiver:
+    storage:
+      plane: {{ $plane.name }}
+      forcePermissions: true
+{{ end -}}
+{{- end }}

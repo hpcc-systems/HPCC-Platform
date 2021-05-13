@@ -47,7 +47,6 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
     #UNIQUENAME(bestNamePrefix);
     #UNIQUENAME(recLevel);
 
-    IMPORT DataPatterns;
     IMPORT Std;
 
     // Attribute naming note:  In order to reduce symbol collisions with calling
@@ -216,7 +215,7 @@ EXPORT BestRecordStructure(inFile, sampling = 100, emitTransform = FALSE, textOu
         );
 
     // Get the best data types from the Profile() function
-    LOCAL __patternRes := DataPatterns.Profile(inFile, features := 'best_ecl_types', sampleSize := sampling);
+    LOCAL __patternRes := Std.DataPatterns.Profile(inFile, features := 'best_ecl_types', sampleSize := sampling);
 
     // Append the derived 'best' data types to the field information we
     // already collected

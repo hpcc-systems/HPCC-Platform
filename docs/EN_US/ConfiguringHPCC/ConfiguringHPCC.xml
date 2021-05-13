@@ -1616,6 +1616,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           </orderedlist>
         </sect3>
 
+        <para />
+
         <?hard-pagebreak ?>
 
         <sect3>
@@ -1691,6 +1693,63 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <?hard-pagebreak ?>
+
+        <para>
+          <emphasis role="bold">To add feature access flags to a preexisting
+          ECL Watch configuration:</emphasis>
+        </para>
+
+        <para>If you update the platform, but are using a preexisting
+        configuration, you could encounter a situation where Feature level
+        access flags are not automatically created. Missing flags can deny
+        access to users trying to access features in the system. </para>
+
+        <orderedlist>
+          <listitem>
+            <para>In Configuration Manager, open your working copy of the
+            environment.xml and enable <emphasis>Write
+            Access.</emphasis></para>
+          </listitem>
+
+          <listitem>
+            <para>On the left, select the ESP that is hosting the ECL Watch
+            service.</para>
+          </listitem>
+
+          <listitem>
+            <para>On the right, select the <emphasis>ESP Service
+            Bindings</emphasis> tab.</para>
+
+            <para>Manually add the access flag for the new service in the
+            Feature Authentication table.</para>
+          </listitem>
+
+          <listitem>
+            <para>Right-click on the Feature Authentication table, then select
+            <emphasis>Add</emphasis></para>
+
+            <para>
+              <graphic fileref="images/CM-img08AddFlag.jpg"
+                       vendor="configmgrSS" />
+            </para>
+          </listitem>
+
+          <listitem>
+            <para>Provide the values for path and resource (usually the same
+            value, for example, WsStoreAccess).</para>
+          </listitem>
+
+          <listitem>
+            <para>Click the disk icon to save</para>
+          </listitem>
+
+          <listitem>
+            <para>Copy the file to every node, then restart the system.</para>
+
+            <para>The OUs should get created in LDAP automatically upon
+            restart.</para>
+          </listitem>
+        </orderedlist>
 
         <sect3>
           <title>Esp - myesp AuthenticationTab</title>

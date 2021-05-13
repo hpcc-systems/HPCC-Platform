@@ -197,6 +197,12 @@ installFile "$binPath/eclplus" "/usr/bin/eclplus" 1 || exit 1
 installFile "$binPath/wuget" "/usr/bin/wuget" 1 || exit 1
 installFile "$configs/$environment" "$sourcedir/$environment" 0 "$sourcedir"
 
+installFile "$path${CONFIG_DIR}/configmgr/configmgr.conf"  \
+     "${CONFIG_DIR}/configmgr/" 0 "${CONFIG_DIR}/configmgr" || exit 1
+installFile "$path${CONFIG_DIR}/configmgr/esp.xml" "${CONFIG_DIR}/configmgr/" 0 || exit 1
+installFile "$path${CONFIG_DIR}/config2mgr/esp.xml"  \
+     "${CONFIG_DIR}/config2mgr/" 0 "${CONFIG_DIR}/config2mgr" || exit 1
+
 # locate sub install files.
 if [ -d ${INSTALL_DIR}/etc/init.d/install ]; then
     for subInstall in $(ls ${INSTALL_DIR}/etc/init.d/install); do

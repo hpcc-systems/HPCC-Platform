@@ -83,7 +83,7 @@ elif [ -e /etc/redhat-release ]; then
   if [ -x /bin/rpm ]; then
     OUTPUT="${OUTPUT}\npackage=rpm"
     OS_GROUP=`/bin/rpm -q --qf "%{NAME}" --whatprovides /etc/redhat-release | sed 's/-release.*//' |  tr '[A-Z]' '[a-z]'`
-    REDHAT_VERSION=`/bin/rpm -q --qf "%{VERSION}" --whatprovides /etc/redhat-release`
+    REDHAT_VERSION=`/bin/rpm -q --qf "%{VERSION}" --whatprovides /etc/redhat-release | cut -f1 -d"."`
     case "$OS_GROUP" in
       "centos"* | "fedora")
         if [ ${NOARCH} -eq 0 ]; then
