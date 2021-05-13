@@ -32,15 +32,13 @@ class SystemServersStore extends ESPRequest.Store {
         const results = [];
         for (const key in response.ServiceList) {
             for (const i in response.ServiceList[key]) {
-                if (key !== "TpEclServers") {
-                    response.ServiceList[key][i].map(function (item) {
-                        const cleanKey = key.replace("Tp", "");
-                        results.push(item);
-                        lang.mixin(item, {
-                            parent: cleanKey
-                        });
+                response.ServiceList[key][i].forEach(function (item) {
+                    const cleanKey = key.replace("Tp", "");
+                    results.push(item);
+                    lang.mixin(item, {
+                        parent: cleanKey
                     });
-                }
+                });
             }
         }
         response.ServiceList = results;

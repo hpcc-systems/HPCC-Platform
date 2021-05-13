@@ -168,27 +168,29 @@
         </div>
     </div>
     <div id="${id}ZapDialog" data-dojo-type="dijit.Dialog" title="${i18n.ZippedAnalysisPackage}">
-        <div id="${id}ZapForm" style="width:460px;" method="post" enctype="application/x-www-form-urlencoded" data-dojo-type="dijit.form.Form">
-            <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
-                <input id="${id}ZapName" title="${i18n.FileName}:" name="ZAPFileName" colspan="2" data-dojo-props="trim: true," data-dojo-type="dijit.form.TextBox" />
-                <input id="${id}ZapWUID" title="${i18n.WUID}:" name="Wuid" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
-                <input id="${id}BuildVersion" title="${i18n.ESPBuildVersion}:" name="BuildVersion" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
-                <input id="${id}ESPIPAddress" title="${i18n.ESPNetworkAddress}:" name="ESPIPAddress" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
-                <input id="${id}ThorIPAddress" title="${i18n.ThorNetworkAddress}:" name="ThorIPAddress" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
-                <input id="${id}ZapDescription" title="${i18n.Description}:" name="ProblemDescription" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea" />
-                <input id="${id}WarnHistory" title="${i18n.History}:" name="WhatChanged" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea" />
-                <input id="${id}WarnTimings" title="${i18n.Timings}:" name="WhereSlow" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea" />
-                <input id="${id}Password" title="${i18n.PasswordOpenZAP}:" name="Password" cols="22" colspan="2" type="password" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
-                <input id="${id}IncludeSlaveLogsCheckbox" title="${i18n.IncludeSlaveLogs}:" name="IncludeThorSlaveLog" cols="22" colspan="2" type="checkbox" data-dojo-type="dijit.form.CheckBox" />
-                <input id="${id}EmailCheckbox" title="${i18n.SendEmail}:" name="SendEmail" cols="22" colspan="2" type="checkbox" data-dojo-type="dijit.form.CheckBox" />
-                <input id="${id}EmailTo" title="${i18n.EmailTo}:" name="EmailTo" colspan="2" data-dojo-props="trim:true, readonly:true, placeHolder:'See Configuration Manager.'" data-dojo-type="dijit.form.TextBox" />
-                <input id="${id}EmailFrom" title="${i18n.EmailFrom}:" name="EmailFrom" colspan="2" data-dojo-props="trim:true, placeHolder:'See Configuration Manager.'" data-dojo-type="dijit.form.TextBox" />
-                <input id="${id}EmailSubject" title="${i18n.EmailSubject}:" name="EmailSubject" colspan="2" data-dojo-props="trim:true" data-dojo-type="dijit.form.ValidationTextBox" required="false" />
-                <input id="${id}EmailBody" title="${i18n.EmailBody}:" name="EmailBody" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea" />
-            </div>
-            <div class="dijitDialogPaneActionBar">
-                <button id="${id}onZapSubmit" data-dojo-attach-event="onClick:_onSubmitDialog" type="submit" data-dojo-type="dijit.form.Button">${i18n.Apply}</button>
-                <button style="float:left" data-dojo-attach-event="onClick:_onCancelDialog" data-dojo-type="dijit.form.Button">${i18n.Cancel}</button>
+        <div class="dijitDialogPaneContentArea">
+            <div id="${id}ZapForm" style="width:460px;" method="post" enctype="application/x-www-form-urlencoded" data-dojo-type="dijit.form.Form">
+                <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                    <input id="${id}ZapName" title="${i18n.FileName}:" name="ZAPFileName" colspan="2" data-dojo-props="trim: true," data-dojo-type="dijit.form.TextBox" />
+                    <input id="${id}ZapWUID" title="${i18n.WUID}:" name="Wuid" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
+                    <input id="${id}BuildVersion" title="${i18n.ESPBuildVersion}:" name="BuildVersion" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
+                    <input id="${id}ESPIPAddress" title="${i18n.ESPNetworkAddress}:" name="ESPIPAddress" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
+                    <input id="${id}ThorIPAddress" title="${i18n.ThorNetworkAddress}:" name="ThorIPAddress" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
+                    <input id="${id}ZapDescription" title="${i18n.Description}:" name="ProblemDescription" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea" />
+                    <input id="${id}WarnHistory" title="${i18n.History}:" name="WhatChanged" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea" />
+                    <input id="${id}WarnTimings" title="${i18n.Timings}:" name="WhereSlow" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea" />
+                    <input id="${id}Password" title="${i18n.PasswordOpenZAP}:" name="Password" cols="22" colspan="2" type="password" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
+                    <input id="${id}IncludeSlaveLogsCheckbox" title="${i18n.IncludeSlaveLogs}:" name="IncludeThorSlaveLog" cols="22" colspan="2" type="checkbox" data-dojo-type="dijit.form.CheckBox" />
+                    <input id="${id}EmailCheckbox" title="${i18n.SendEmail}:" name="SendEmail" cols="22" colspan="2" type="checkbox" data-dojo-type="dijit.form.CheckBox" />
+                    <input id="${id}EmailTo" title="${i18n.EmailTo}:" name="EmailTo" colspan="2" data-dojo-props="trim:true, readonly:true, placeHolder:'See Configuration Manager.'" data-dojo-type="dijit.form.TextBox" />
+                    <input id="${id}EmailFrom" title="${i18n.EmailFrom}:" name="EmailFrom" colspan="2" data-dojo-props="trim:true, placeHolder:'See Configuration Manager.'" data-dojo-type="dijit.form.TextBox" />
+                    <input id="${id}EmailSubject" title="${i18n.EmailSubject}:" name="EmailSubject" colspan="2" data-dojo-props="trim:true" data-dojo-type="dijit.form.ValidationTextBox" required="false" />
+                    <input id="${id}EmailBody" title="${i18n.EmailBody}:" name="EmailBody" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea" />
+                </div>
+                <div class="dijitDialogPaneActionBar">
+                    <button id="${id}onZapSubmit" data-dojo-attach-event="onClick:_onSubmitDialog" type="submit" data-dojo-type="dijit.form.Button">${i18n.Apply}</button>
+                    <button style="float:left" data-dojo-attach-event="onClick:_onCancelDialog" data-dojo-type="dijit.form.Button">${i18n.Cancel}</button>
+                </div>
             </div>
         </div>
     </div>

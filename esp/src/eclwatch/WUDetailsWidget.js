@@ -266,10 +266,10 @@ define([
                         context.emailBody.set("disabled", false);
                     } else {
                         context.emailCheckbox.set("disabled", true);
-                        context.emailTo.set("disabled", true);
-                        context.emailFrom.set("disabled", true);
-                        context.emailSubject.set("disabled", true);
-                        context.emailBody.set("disabled", true);
+                        context.emailTo && context.emailTo.set("disabled", true);
+                        context.emailFrom && context.emailFrom.set("disabled", true);
+                        context.emailSubject && context.emailSubject.set("disabled", true);
+                        context.emailBody && context.emailBody.set("disabled", true);
                     }
                     context.updateInput("ZapWUID", null, response.WUGetZAPInfoResponse.WUID);
                     context.updateInput("BuildVersion", null, response.WUGetZAPInfoResponse.BuildVersion);
