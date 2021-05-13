@@ -14,14 +14,25 @@
       },
       "additionalProperties": false
     },
-    "dllStorage": {
-      "$ref": "#/definitions/storage"
+    "common": {
+      "type": "object",
+      "properties": {
+        "commonPrefix": {
+          "type": "string"
+        }
+      }
     },
-    "dataStorage": {
-      "$ref": "#/definitions/storage"
-    },
-    "daliStorage": {
-      "$ref": "#/definitions/storage"
+    "planes": {
+      "description": "List of storage planes",
+      "oneOf": [
+        {
+          "type": "array",
+          "items": { "$ref": "#/definitions/plane" }
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "namespace": {
       "type": "string"
@@ -30,17 +41,39 @@
   "title": "Values",
   "type": "object",
   "definitions": {
-    "storage": {
+    "plane": {
       "type": "object",
-      "required": [ "size" ],
       "properties": {
-        "size": {
+        "name": {
+          "description": "Prefix for the pvc name",
           "type": "string"
         },
-        "sku": {
+        "subPath": {
+          "description": "sub path from common.hostpath on host where the pvc is created",
           "type": "string"
+        },
+        "size": {
+          "description": "Size that is required for the volume",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "rwmany": {
+          "description": "Does the pvc require rw many access (data/dll currently)",
+          "type": "boolean"
+        },
+        "labels": {
+          "description": "a list of labels associated with this plane, e.g. lz, data",
+          "type": "array",
+          "items": { "type": "string" }
         }
       },
+      "required": [ "name", "size" ],
       "additionalProperties": false
     }
   }

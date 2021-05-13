@@ -28,6 +28,10 @@ spec:
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $serviceName "type" "sasha") | indent 6 }}
       serviceAccountName: "hpcc-default"
+      {{- if $sasha.storage }}
+      initContainers:
+      {{- include "hpcc.checkSashaMount" (dict "root" $ "me"  $sasha) | indent 6 }}
+      {{- end }}
       containers:
 {{- include "hpcc.addSashaContainer" $commonCtx | indent 6 }}
         volumeMounts:
