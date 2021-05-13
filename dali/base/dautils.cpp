@@ -3194,7 +3194,7 @@ public:
         return dfile.get(); 
     }
 
-    bool init(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, bool write, bool isPrivilegedUser)
+    bool init(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, bool write, bool isPrivilegedUser, const StringArray *clusters)
     {
         fileExists = false;
         if (!onlydfs)
@@ -3245,9 +3245,24 @@ public:
                 if (dfile.get())
                     return true;
             }
+
+            StringBuffer dir;
+#ifdef _CONTAINERIZED
+            StringBuffer cluster;
+            if (clusters)
+            {
+                if (clusters->ordinality()>1)
+                    throw makeStringExceptionV(0, "Container mode does not yet support output to multiple clusters while writing file %s)", fname);
+                cluster.append(clusters->item(0));
+            }
+            else
+                getDefaultStoragePlane(cluster);
+            Owned<IStoragePlane> plane = getStoragePlane(cluster, true);
+            dir.append(plane->queryPrefix());
+#endif
             // MORE - should we create the IDistributedFile here ready for publishing (and/or to make sure it's locked while we write)?
             StringBuffer physicalPath;
-            makePhysicalPartName(lfn.get(), 1, 1, physicalPath, false); // more - may need to override path for roxie
+            makePhysicalPartName(lfn.get(), 1, 1, physicalPath, false, DFD_OSdefault, dir); // more - may need to override path for roxie
             localpath.set(physicalPath);
             fileExists = (dfile != NULL);
             return write;
@@ -3393,10 +3408,10 @@ public:
 
 };
 
-ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, bool iswrite, bool isPrivilegedUser)
+ILocalOrDistributedFile* createLocalOrDistributedFile(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, bool iswrite, bool isPrivilegedUser, const StringArray *clusters)
 {
     Owned<CLocalOrDistributedFile> ret = new CLocalOrDistributedFile();
-    if (ret->init(fname,user,onlylocal,onlydfs,iswrite,isPrivilegedUser))
+    if (ret->init(fname,user,onlylocal,onlydfs,iswrite,isPrivilegedUser,clusters))
         return ret.getClear();
     return NULL;
 }
