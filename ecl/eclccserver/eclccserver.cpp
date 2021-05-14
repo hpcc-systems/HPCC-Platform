@@ -918,6 +918,7 @@ class EclccServer : public CInterface, implements IThreadFactory, implements IAb
     bool running;
     CSDSServerStatus serverstatus;
     Owned<IJobQueue> queue;
+    CriticalSection updateConfigCS;
     StringAttr updatedQueueNames;
     unsigned reloadConifgCBId = 0;
 
@@ -932,20 +933,19 @@ class EclccServer : public CInterface, implements IThreadFactory, implements IAb
         {
             updatedQueueNames.set(newQueueNames);
             queue->cancelAcceptConversation();
+            PROGLOG("Updating queue due to queue names change from '%s' to '%s'", queueNames.str(), newQueueNames.str());
         }
     }
 public:
     IMPLEMENT_IINTERFACE;
     EclccServer(const char *_queueName, unsigned _poolSize)
-        : queueNames(_queueName), poolSize(_poolSize), serverstatus("ECLCCserver")
+        : updatedQueueNames(_queueName), poolSize(_poolSize), serverstatus("ECLCCserver")
     {
         threadsActive = 0;
         running = false;
         pool.setown(createThreadPool("eclccServerPool", this, NULL, poolSize, INFINITE));
         serverstatus.queryProperties()->setProp("@cluster", getComponentConfigSP()->queryProp("@name"));
-        serverstatus.queryProperties()->setProp("@queue", queueNames.get());
         serverstatus.commitProperties();
-        queue.setown(createJobQueue(queueNames.get()));
         reloadConifgCBId = installConfigUpdateHook(std::bind(&EclccServer::configUpdate, this));
     }
 
@@ -958,23 +958,29 @@ public:
 
     void run()
     {
-        DBGLOG("eclccServer (%d threads) waiting for requests on queue(s) %s", poolSize, queueNames.get());
-        queue->connect(false);
         running = true;
         LocalIAbortHandler abortHandler(*this);
         while (running)
         {
             try
             {
-                if (updatedQueueNames)
+                bool newQueues = false;
                 {
-                    PROGLOG("Updating queue due to queue names change from '%s' to '%s'", queueNames.str(), updatedQueueNames.str());
-                    queueNames.set(updatedQueueNames);
-                    updatedQueueNames.clear();
-                    serverstatus.queryProperties()->setProp("@queue", queueNames.get());
+                    CriticalBlock b(updateConfigCS);
+                    if (updatedQueueNames)
+                    {
+                        queueNames.set(updatedQueueNames);
+                        updatedQueueNames.clear();
+                        newQueues = true;
+                    }
+                }
+                if (newQueues)
+                {
                     queue.clear();
                     queue.setown(createJobQueue(queueNames.get()));
                     queue->connect(false);
+                    serverstatus.queryProperties()->setProp("@queue", queueNames.get());
+                    serverstatus.commitProperties();
                     DBGLOG("eclccServer (%d threads) waiting for requests on queue(s) %s", poolSize, queueNames.get());
                 }
                 if (!pool->waitAvailable(10000))

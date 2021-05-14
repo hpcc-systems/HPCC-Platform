@@ -29,6 +29,17 @@
 #include "dautils.hpp"
 #include "dameta.hpp"
 
+static unsigned reloadConifgCBId = (unsigned)-1;
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+MODULE_EXIT()
+{
+    if ((unsigned)-1 != reloadConifgCBId)
+        removeConfigUpdateHook(reloadConifgCBId);
+}
+
 const char* MSG_FAILED_GET_ENVIRONMENT_INFO = "Failed to get environment information.";
 
 //////////////////////////////////////////////////////////////////////
@@ -2387,8 +2398,8 @@ extern TPWRAPPER_API unsigned getThorClusterNames(StringArray& targetNames, Stri
 
 static std::set<std::string> validTargets;
 static CriticalSection validTargetSect;
-static bool targetsDirty = true;
 
+// called within validTargetSect lock
 static void refreshValidTargets()
 {
     validTargets.clear();
@@ -2410,29 +2421,36 @@ static void refreshValidTargets()
     }
 }
 
+static void configUpdate(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
+{
+    CriticalBlock block(validTargetSect);
+    // as much as effort [small] to check if different as to refresh
+    refreshValidTargets();
+    PROGLOG("Valid targets updated");
+}
+
 extern TPWRAPPER_API void validateTargetName(const char* target)
 {
     if (isEmptyString(target))
         throw makeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Empty target name.");
 
     CriticalBlock block(validTargetSect);
-    if (targetsDirty)
+#ifdef _CONTAINERIZED
+    if ((unsigned) -1 == reloadConifgCBId) // once only
     {
         refreshValidTargets();
-        targetsDirty = false;
+        reloadConifgCBId = installConfigUpdateHook(configUpdate);
     }
-
-    if (validTargets.find(target) != validTargets.end())
-        return;
-
-#ifdef _CONTAINERIZED
-    //Currently, if there's any change to the target queues, esp will be auto restarted by K8s.
-    throw makeStringExceptionV(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid target name: %s", target);
-#else
-    if (!validateTargetClusterName(target))
+    if (validTargets.find(target) == validTargets.end())
         throw makeStringExceptionV(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid target name: %s", target);
-
-    targetsDirty = true;
+#else
+    if (validTargets.find(target) == validTargets.end())
+    {
+        // bare metal rechecks in case env. changed since target list built
+        if (!validateTargetClusterName(target))
+            throw makeStringExceptionV(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid target name: %s", target);
+        refreshValidTargets();
+    }
 #endif
 }
 
