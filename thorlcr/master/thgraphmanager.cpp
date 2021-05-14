@@ -59,7 +59,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
     Owned<IException> exitException;
 
     Owned<IDeMonServer> demonServer;
-    atomic_t            activeTasks;
+    std::atomic<unsigned> activeTasks;
     StringAttr          currentWuid;
     ILogMsgHandler *logHandler;
 
@@ -259,7 +259,7 @@ CJobManager::CJobManager(ILogMsgHandler *_logHandler) : logHandler(_logHandler)
         demonServer.setown(createDeMonServer());
     else
         globals->setPropBool("@watchdogProgressEnabled", false);
-    atomic_set(&activeTasks, 0);
+    activeTasks = 0;
     setJobManager(this);
     debugListener.setown(new CThorDebugListener(*this));
 }
@@ -973,9 +973,9 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     {
         struct CounterBlock
         {
-            atomic_t &counter;
-            CounterBlock(atomic_t &_counter) : counter(_counter) { atomic_inc(&counter); }
-            ~CounterBlock() { atomic_dec(&counter); }
+            std::atomic<unsigned> &counter;
+            CounterBlock(std::atomic<unsigned> &_counter) : counter(_counter) { ++counter; }
+            ~CounterBlock() { --counter; }
         } cBlock(activeTasks);
 
         {

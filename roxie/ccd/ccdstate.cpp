@@ -1867,8 +1867,8 @@ public:
             daliHelper.setown(connectToDali());
         else
             daliHelper.setown(connectToDali(ROXIE_DALI_CONNECT_TIMEOUT));
-        atomic_set(&autoPending, 0);
-        atomic_set(&autoSignalsPending, 0);
+        autoPending = 0;
+        autoSignalsPending = 0;
         forcePending = false;
         pSetsNotifier.setown(daliHelper->getPackageSetsSubscription(this));
         pMapsNotifier.setown(daliHelper->getPackageMapsSubscription(this));
@@ -1891,8 +1891,8 @@ public:
         if (force)
             forcePending = true;    
         if (signal)
-            atomic_inc(&autoSignalsPending);
-        atomic_inc(&autoPending);
+            ++autoSignalsPending;
+        ++autoPending;
         autoReloadTrigger.signal();
         if (signal)
             autoReloadComplete.wait();
@@ -1973,8 +1973,8 @@ private:
 
     Semaphore autoReloadTrigger;
     Semaphore autoReloadComplete;
-    atomic_t autoSignalsPending;
-    atomic_t autoPending;
+    std::atomic<unsigned> autoSignalsPending;
+    std::atomic<unsigned> autoPending;
     bool forcePending;
 
     class AutoReloadThread : public Thread
@@ -1997,12 +1997,12 @@ private:
                 owner.autoReloadTrigger.wait();
                 if (closing)
                     break;
-                unsigned signalsPending = atomic_read(&owner.autoSignalsPending);
+                unsigned signalsPending = owner.autoSignalsPending;
                 if (!signalsPending)
                     Sleep(500); // Typically notifications come in clumps - this avoids reloading too often
-                if (atomic_read(&owner.autoPending))
+                if (owner.autoPending)
                 {
-                    atomic_set(&owner.autoPending, 0);
+                    owner.autoPending = 0;
                     try
                     {
                         owner.reload(owner.forcePending);
@@ -2021,7 +2021,7 @@ private:
                 }
                 if (signalsPending)
                 {
-                    atomic_dec(&owner.autoSignalsPending);
+                    owner.autoSignalsPending--;
                     owner.autoReloadComplete.signal();
                 }
             }

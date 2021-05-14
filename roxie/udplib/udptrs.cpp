@@ -66,7 +66,7 @@ using roxiemem::DataBuffer;
 
  *
  * Data races to watch for
- * 1. Two agent threads add data at same time - only one should sent rts (use atomic_inc for the count)
+ * 1. Two agent threads add data at same time - only one should sent rts (use atomic inc for the count)
  * 2. We check for timeout and resend rts or fail just as permission comes in
  *    - resend rts is harmless ?
  *    - fail is acceptable

@@ -1533,7 +1533,7 @@ public:
             return;
         //The function is to aid testing - it allows the cas code to be tested without a surrounding lock
         //Allocate all possible rows and add them to the free space map.
-        //This is not worth doing in general because it effectively replaces atomic_sets with atomic_cas
+        //This is not worth doing in general because it effectively replaces atomic sets with atomic cas
         //relaxed memory order since there will be no multi-threaded access
         unsigned nextFree = freeBase.load(std::memory_order_relaxed);
         unsigned nextBlock = r_blocks.load(std::memory_order_relaxed);
@@ -4275,7 +4275,7 @@ protected:
     unsigned backgroundReleaseCost;
     bool releaseWhenModifyCallback;
     bool releaseWhenModifyCallbackCritical;
-    volatile bool abortBufferThread;
+    std::atomic_bool abortBufferThread;
 };
 
 //Constants are here to ensure they can all be constant folded

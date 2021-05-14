@@ -6272,10 +6272,14 @@ void rtlBase64Decode(size32_t & tlen, void * & tgt, size32_t slen, const char * 
 
 //---------------------------------------------------------------------------
 
-void RtlCInterface::Link() const            { atomic_inc(&xxcount); }
+void RtlCInterface::Link() const
+{
+    xxcount++;
+}
+
 bool RtlCInterface::Release(void) const
 {
-    if (atomic_dec_and_test(&xxcount))
+    if (--xxcount == 0)
     {
         delete this;
         return true;

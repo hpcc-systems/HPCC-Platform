@@ -186,28 +186,16 @@ private:
     IUStrRegExprFindInstance * instance;
 };
 
-//Code is cloned from jiface.hpp + split into two to avoid including too much in generated code.
-#ifdef _WIN32
-typedef volatile long atomic_t;
-#define atomic_set(v,i) ((*v) = (i))
-#else
-#ifndef atomic_set
-typedef struct { volatile int counter; } atomic_t;
-#define atomic_set(v,i) (((v)->counter) = (i))
-#endif
-#endif
-
 class ECLRTL_API RtlCInterface
 {
 public:
-             RtlCInterface()        { atomic_set(&xxcount, 1); }
     virtual ~RtlCInterface()        { }
 //interface IInterface:
     void    Link() const;
     bool    Release(void) const;
 
 private:
-    mutable atomic_t    xxcount;
+    mutable std::atomic<unsigned> xxcount{1};
 };
 
 

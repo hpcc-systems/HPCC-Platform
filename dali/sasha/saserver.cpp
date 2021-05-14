@@ -50,14 +50,14 @@ extern void LDStest();
 
 Owned<IPropertyTree> serverConfig;
 static IArrayOf<ISashaServer> servers;
-static atomic_t StopSuspendCount = ATOMIC_INIT(0);
+static std::atomic<unsigned> StopSuspendCount{0};
 static bool stopped = false;
 static Semaphore stopSem;
 
 const char *sashaProgramName;
 
-CSuspendAutoStop::CSuspendAutoStop() { atomic_inc(&StopSuspendCount); }
-CSuspendAutoStop::~CSuspendAutoStop() { atomic_dec(&StopSuspendCount); }
+CSuspendAutoStop::CSuspendAutoStop() { StopSuspendCount++; }
+CSuspendAutoStop::~CSuspendAutoStop() { StopSuspendCount--; }
 
 #ifdef _CONTAINERIZED
 const char *service = nullptr;
@@ -265,7 +265,7 @@ void SashaMain()
                 stopped = true;
             }
             else if (timeout&&(timeout<msTick()-start)) {
-                if (atomic_read(&StopSuspendCount)==0) {
+                if (StopSuspendCount==0) {
                     PROGLOG("Auto Restart");
                     stopped = true;
                 }

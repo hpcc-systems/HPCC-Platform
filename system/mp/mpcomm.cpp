@@ -789,7 +789,7 @@ class CMPChannel: public CInterface
     CriticalSection attachsect;
     unsigned __int64 attachaddrval = 0;
     SocketEndpoint attachep, attachPeerEp;
-    atomic_t attachchk;
+    std::atomic<unsigned> attachchk;
 
 protected: friend class CMPServer;
     SocketEndpoint remoteep;
@@ -888,9 +888,9 @@ protected: friend class CMPPacketReader;
                     {
                         CriticalBlock block(attachsect);
 #ifdef _TRACE
-                        PROGLOG("MP: connect got attachsect, attachchk = %d, loopCnt = %u", atomic_read(&attachchk), loopCnt);
+                        PROGLOG("MP: connect got attachsect, attachchk = %d, loopCnt = %u", attachchk.load(), loopCnt);
 #endif
-                        if (atomic_read(&attachchk) > 0)
+                        if (attachchk > 0)
                         {
                             if (remoteep.equals(attachep))
                             {
@@ -1237,7 +1237,7 @@ public:
                 attachaddrval = 0;
                 attachep.set(nullptr);
                 attachPeerEp.set(nullptr);
-                atomic_set(&attachchk, 0);
+                attachchk = 0;
             }
             if (!keepsocket) {
                 try {
@@ -1684,7 +1684,7 @@ CMPChannel::CMPChannel(CMPServer *_parent,SocketEndpoint &_remoteep) : parent(_p
     localep.set(parent->getPort());
     reader = new CMPPacketReader(this);
     attachep.set(nullptr);
-    atomic_set(&attachchk, 0);
+    attachchk = 0;
     lastxfer = msTick();
 }
 
@@ -1702,7 +1702,7 @@ void CMPChannel::reset()
     attachaddrval = 0;
     attachep.set(nullptr);
     attachPeerEp.set(nullptr);
-    atomic_set(&attachchk, 0);
+    attachchk = 0;
     lastxfer = msTick();
 }
 
@@ -1718,9 +1718,9 @@ bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,c
 {
     struct attachdTor
     {
-        atomic_t &attchk;
-        attachdTor(atomic_t &_attchk) : attchk(_attchk) { }
-        ~attachdTor() { atomic_dec(&attchk); }
+        std::atomic<unsigned> &attchk;
+        attachdTor(std::atomic<unsigned> &_attchk) : attchk(_attchk) { }
+        ~attachdTor() { --attchk; }
     } attachChk (attachchk);
 
 #ifdef _FULLTRACE       
@@ -1733,7 +1733,7 @@ bool CMPChannel::attachSocket(ISocket *newsock,const SocketEndpoint &_remoteep,c
         attachep = _remoteep;
         if (newsock)
             newsock->getPeerEndpoint(attachPeerEp);
-        atomic_inc(&attachchk);
+        ++attachchk;
     }
 
     CriticalBlock block(connectsect);

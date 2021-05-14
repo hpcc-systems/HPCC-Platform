@@ -156,14 +156,14 @@ protected:
 class da_decl CTransactionLogTracker
 {
     unsigned max;
-    atomic_t *counts;
+    std::atomic<unsigned> * counts;
 public:
     CTransactionLogTracker(int _max) : max(_max)
     {
-        counts = new atomic_t[max+1]; // +1 reserve for unknown commands
+        counts = new std::atomic<unsigned>[max+1]; // +1 reserve for unknown commands
         unsigned t=0;
         for (; t<=max; t++)
-            atomic_set(&counts[t],0);
+            counts[t] = 0;
     }
     ~CTransactionLogTracker()
     {
@@ -172,15 +172,15 @@ public:
     inline const unsigned &getMax() const { return max; }
     inline void startTransaction(unsigned cmd)
     {
-        atomic_inc(&counts[cmd]);
+        counts[cmd]++;
     }
     inline void endTransaction(unsigned cmd)
     {
-        atomic_dec(&counts[cmd]);
+        counts[cmd]--;
     }
     unsigned getTransactionCount(unsigned cmd) const
     {
-        return (unsigned)atomic_read(&counts[cmd]);
+        return counts[cmd].load();
     }
     virtual StringBuffer &getCmdText(unsigned cmd, StringBuffer &ret) const = 0;
 };
