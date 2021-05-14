@@ -3210,17 +3210,20 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy
     StringBuffer mirrorname;
     const char * planeName = name;
     if (copy != 0)
-        planeName = mirrorname.append(name).append("_mirror").append(copy);
+        planeName = mirrorname.append(name).append("_mirror");
 
     plane->setProp("@name", planeName);
 
     //URL style drop zones don't generate a host entry, and will have a single device
     if (ordinality() != 0)
     {
-        if (container && (copy == 0))
+        if (container)
         {
+            const char * containerName = container->name;
+            if (copy != 0)
+                containerName = mirrorname.clear().append(containerName).append("_mirror");
             //hosts will be expanded by normalizeHostGroups
-            plane->setProp("@hostGroup", container->name);
+            plane->setProp("@hostGroup", containerName);
         }
         else
         {
@@ -3273,6 +3276,11 @@ static int compareGroupSize(CInterface * const * _left, CInterface * const * _ri
     int ret = (int) (right->hosts.ordinality() - left->hosts.ordinality());
     if (ret)
         return ret;
+    //Ensure thor groups come before non thor groups - so that a mirror host group will always be created
+    if (left->groupType == grp_thor)
+        return -1;
+    if (right->groupType == grp_thor)
+        return +1;
     return stricmp(left->name, right->name);
 }
 
@@ -3316,7 +3324,10 @@ static void generateHosts(IPropertyTree * storage, GroupInfoArray & groups)
             cur.container = nullptr;
         }
 
-        if (cur.groupType == grp_thor)
+        //If this is a thor group, create a host group for the replicas - same list of ips, but offset by 1
+        //If container is not null then there is already a hostGroup for an identical set of ips.  There will
+        //also be a corresponding mirror because thor groups are sorted first.
+        if (cur.groupType == grp_thor && !cur.container)
         {
             VStringBuffer mirrorName("%s_mirror", cur.name.str());
 
