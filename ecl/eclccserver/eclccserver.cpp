@@ -918,7 +918,7 @@ class EclccServer : public CInterface, implements IThreadFactory, implements IAb
     bool running;
     CSDSServerStatus serverstatus;
     Owned<IJobQueue> queue;
-    CriticalSection updateConfigCS;
+    CriticalSection queueUpdateCS;
     StringAttr updatedQueueNames;
     unsigned reloadConifgCBId = 0;
 
@@ -929,12 +929,17 @@ class EclccServer : public CInterface, implements IThreadFactory, implements IAb
         getQueues(newQueueNames);
         if (!newQueueNames.length())
             ERRLOG("No queues found to listen on");
-        if (!strsame(queueNames, newQueueNames))
+        Linked<IJobQueue> currentQueue;
         {
+            CriticalBlock b(queueUpdateCS);
+            if (strsame(queueNames, newQueueNames))
+                return;
             updatedQueueNames.set(newQueueNames);
-            queue->cancelAcceptConversation();
+            currentQueue.set(queue);
             PROGLOG("Updating queue due to queue names change from '%s' to '%s'", queueNames.str(), newQueueNames.str());
         }
+        if (currentQueue)
+            currentQueue->cancelAcceptConversation();
     }
 public:
     IMPLEMENT_IINTERFACE;
@@ -966,18 +971,18 @@ public:
             {
                 bool newQueues = false;
                 {
-                    CriticalBlock b(updateConfigCS);
+                    CriticalBlock b(queueUpdateCS);
                     if (updatedQueueNames)
                     {
                         queueNames.set(updatedQueueNames);
                         updatedQueueNames.clear();
+                        queue.clear();
+                        queue.setown(createJobQueue(queueNames.get()));
                         newQueues = true;
                     }
                 }
                 if (newQueues)
                 {
-                    queue.clear();
-                    queue.setown(createJobQueue(queueNames.get()));
                     queue->connect(false);
                     serverstatus.queryProperties()->setProp("@queue", queueNames.get());
                     serverstatus.commitProperties();
@@ -1035,7 +1040,13 @@ public:
     virtual bool onAbort() 
     {
         running = false;
-        if (queue)
+        Linked<IJobQueue> currentQueue = queue;
+        {
+            CriticalBlock b(queueUpdateCS);
+            if (queue)
+                currentQueue.set(queue);
+        }
+        if (currentQueue)
             queue->cancelAcceptConversation();
         return false;
     }
