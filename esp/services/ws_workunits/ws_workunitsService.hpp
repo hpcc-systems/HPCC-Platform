@@ -469,7 +469,9 @@ public:
         }
     }
 
+#ifndef _CONTAINERIZED
     int onGetForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);
+#endif
     int onGet(CHttpRequest* request, CHttpResponse* response);
     int onStartUpload(IEspContext& ctx, CHttpRequest* request, CHttpResponse* response, const char* service, const char* method);
 
