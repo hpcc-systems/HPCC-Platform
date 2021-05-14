@@ -44,7 +44,7 @@ public:
     const char * cacheHpccFileByName(const char * filename, bool namevalidated = false);
     bool isHpccFileCached(const char * filename);
     HPCCFilePtr getHpccFileByName(const char * filename);
-    bool populateTablesResponse(IEspGetDBMetaDataResponse & tablesrespstruct, const char * filterby);
+    bool populateTablesResponse(IEspGetDBMetaDataResponse & tablesrespstruct, const char * filterby, bool nestedcolumns);
 
     HPCCFileCache(const char * username, const char * passwd)
     {
