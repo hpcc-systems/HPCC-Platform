@@ -3322,7 +3322,10 @@ static void generateHosts(IPropertyTree * storage, GroupInfoArray & groups)
 
             IPropertyTree * plane = storage->addPropTree("hostGroups");
             plane->setProp("@name", mirrorName);
-            plane->setProp("@hostGroup", cur.name);
+            if (cur.container)
+                plane->setProp("@hostGroup", cur.container->name);
+            else
+                plane->setProp("@hostGroup", cur.name);
             plane->setPropInt("@delta", 1);
         }
     }
