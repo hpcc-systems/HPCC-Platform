@@ -29,16 +29,7 @@
 #include "dautils.hpp"
 #include "dameta.hpp"
 
-static unsigned reloadConifgCBId = (unsigned)-1;
-MODULE_INIT(INIT_PRIORITY_STANDARD)
-{
-    return true;
-}
-MODULE_EXIT()
-{
-    if ((unsigned)-1 != reloadConifgCBId)
-        removeConfigUpdateHook(reloadConifgCBId);
-}
+static CConfigUpdateHook configUpdateHook;
 
 const char* MSG_FAILED_GET_ENVIRONMENT_INFO = "Failed to get environment information.";
 
@@ -2436,11 +2427,7 @@ extern TPWRAPPER_API void validateTargetName(const char* target)
 
     CriticalBlock block(validTargetSect);
 #ifdef _CONTAINERIZED
-    if ((unsigned) -1 == reloadConifgCBId) // once only
-    {
-        refreshValidTargets();
-        reloadConifgCBId = installConfigUpdateHook(configUpdate);
-    }
+    configUpdateHook.installOnce(configUpdate, true);
     if (validTargets.find(target) == validTargets.end())
         throw makeStringExceptionV(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid target name: %s", target);
 #else

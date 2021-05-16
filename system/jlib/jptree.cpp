@@ -8606,7 +8606,17 @@ public:
                 /* NB: we are still holding 'configCS' at this point, blocking all other thread access.
                    However code in callbacks may call e.g. getComponentConfig() and re-enter the crit */
                 for (const auto &item: notifyConfigUpdates)
-                    item.second(oldComponentConfiguration, oldGlobalConfiguration);
+                {
+                    try
+                    {
+                        item.second(oldComponentConfiguration, oldGlobalConfiguration);
+                    }
+                    catch (IException *e)
+                    {
+                        EXCLOG(e, "CConfigUpdater callback");
+                        e->Release();
+                    }
+                }
 
                 absoluteConfigFilename.set(std::get<0>(result).c_str());
             }
@@ -8670,6 +8680,23 @@ void removeConfigUpdateHook(unsigned notifyFuncId)
 {
 }
 #endif // __linux__
+
+CConfigUpdateHook::~CConfigUpdateHook()
+{
+    if ((unsigned)-1 != configCBId)
+        removeConfigUpdateHook(configCBId);
+}
+
+void CConfigUpdateHook::installOnce(ConfigUpdateFunc callbackFunc, bool callWhenInstalled)
+{
+    unsigned uninitialized = (unsigned)-1;
+    if (configCBId.compare_exchange_strong(uninitialized, 0))
+    {
+        if (callWhenInstalled)
+            callbackFunc(getComponentConfigSP(), getGlobalConfigSP());
+        configCBId = installConfigUpdateHook(callbackFunc);
+    }
+}
 
 
 static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfiguration(IPropertyTree *componentDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute)
