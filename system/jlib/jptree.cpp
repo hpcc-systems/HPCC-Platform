@@ -8612,7 +8612,17 @@ public:
                 /* NB: we are still holding 'configCS' at this point, blocking all other thread access.
                    However code in callbacks may call e.g. getComponentConfig() and re-enter the crit */
                 for (const auto &item: notifyConfigUpdates)
-                    item.second(oldComponentConfiguration, oldGlobalConfiguration);
+                {
+                    try
+                    {
+                        item.second(oldComponentConfiguration, oldGlobalConfiguration);
+                    }
+                    catch (IException *e)
+                    {
+                        EXCLOG(e, "CConfigUpdater callback");
+                        e->Release();
+                    }
+                }
 
                 absoluteConfigFilename.set(std::get<0>(result).c_str());
             }
@@ -8676,6 +8686,31 @@ void removeConfigUpdateHook(unsigned notifyFuncId)
 {
 }
 #endif // __linux__
+
+void CConfigUpdateHook::clear()
+{
+    unsigned id = configCBId.exchange((unsigned)-1);
+    if ((unsigned)-1 != id)
+        removeConfigUpdateHook(id);
+}
+
+void CConfigUpdateHook::installOnce(ConfigUpdateFunc callbackFunc, bool callWhenInstalled)
+{
+    unsigned id = configCBId.load(std::memory_order_acquire);
+    if ((unsigned)-1 == id) // avoid CS in common case
+    {
+        CriticalBlock b(crit);
+        // check again now in CS
+        id = configCBId.load(std::memory_order_acquire);
+        if ((unsigned)-1 == id)
+        {
+            if (callWhenInstalled)
+                callbackFunc(getComponentConfigSP(), getGlobalConfigSP());
+            id = installConfigUpdateHook(callbackFunc);
+            configCBId.store(id, std::memory_order_release);
+        }
+    }
+}
 
 
 static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfiguration(IPropertyTree *componentDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute)

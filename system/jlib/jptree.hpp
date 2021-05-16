@@ -324,6 +324,16 @@ typedef std::function<void (const IPropertyTree *oldComponentConfiguration, cons
 jlib_decl unsigned installConfigUpdateHook(ConfigUpdateFunc notifyFunc);
 jlib_decl void removeConfigUpdateHook(unsigned notifyFuncId);
 
+class jlib_decl CConfigUpdateHook
+{
+    std::atomic<unsigned> configCBId{(unsigned)-1};
+    CriticalSection crit;
+public:
+    ~CConfigUpdateHook() { clear(); }
+    void clear();
+    void installOnce(ConfigUpdateFunc callbackFunc, bool callWhenInstalled);
+};
+
 /*
  YAML to PTree support
    By default YAML scalars become PTree attributes unless the YAML has an !element or !el YAML tag specifying that the scalar

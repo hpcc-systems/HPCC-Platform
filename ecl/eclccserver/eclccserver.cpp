@@ -920,7 +920,7 @@ class EclccServer : public CInterface, implements IThreadFactory, implements IAb
     Owned<IJobQueue> queue;
     CriticalSection queueUpdateCS;
     StringAttr updatedQueueNames;
-    unsigned reloadConfigCBId = 0;
+    CConfigUpdateHook reloadConfigHook;
 
 
     void configUpdate()
@@ -951,13 +951,12 @@ public:
         pool.setown(createThreadPool("eclccServerPool", this, NULL, poolSize, INFINITE));
         serverstatus.queryProperties()->setProp("@cluster", getComponentConfigSP()->queryProp("@name"));
         serverstatus.commitProperties();
-        reloadConfigCBId = installConfigUpdateHook(std::bind(&EclccServer::configUpdate, this));
+        reloadConfigHook.installOnce(std::bind(&EclccServer::configUpdate, this), false);
     }
 
     ~EclccServer()
     {
-        if (reloadConfigCBId)
-            removeConfigUpdateHook(reloadConfigCBId);
+        reloadConfigHook.clear();
         pool->joinAll(false, INFINITE);
     }
 
