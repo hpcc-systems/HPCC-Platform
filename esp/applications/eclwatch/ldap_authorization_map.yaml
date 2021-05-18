@@ -136,17 +136,6 @@ ldap:
          -  path: FileIOAccess
             resource: FileIOAccess
             description: Access to files in dropzone
-      ws_machine:
-         Feature:
-         -  path: MachineInfoAccess
-            resource: MachineInfoAccess
-            description: Access to machine information
-         -  path: MetricsAccess
-            resource: MetricsAccess
-            description: Access to SNMP metrics information
-         -  path: ExecuteAccess
-            resource: ExecuteAccess
-            description: Access to remote execution
       ws_config:
          Feature:
          -  path: ConfigAccess
