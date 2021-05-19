@@ -1331,3 +1331,20 @@ globalExcludeList below is a hard-coded list of global keys to exclude.
 {{- $ctx := merge (omit . "excludeKeys") (dict "excludeSectionRegexList" $globalExcludeSectionRegexList "excludeKeyList" $combinedExcludeKeyList) -}}
 {{- include "hpcc.filterConfig" $ctx | sha256sum }}
 {{- end -}}
+
+{{/*
+A template to ensure that the flag specifying whether kubernetes resource validation is allowed exists.  When running helm
+in template mode access to functions like "lookup" that need to access the kubernetes API are diabled.  We use that function
+to validate things like the existance of secrets we have dependencies on.  We also check the Capabilities.APIVersions for the
+existence of custom CRDS which are not updated when kubernetes API access is not allowed.
+
+By default the behavior should now be correct for both install and template.
+
+Setting the default requires an extra call to lookup.  To avoid a call to "lookup" every time we cache the value in
+global.noResourceValidation flag.  This behavior can be overriden by the caller using "--set global.noResourceValidation=true"
+*/}}
+{{- define "hpcc.ensureNoResourceValidationFlag" }}
+  {{- if not (hasKey .root.Values.global "noResourceValidation" )}}
+    {{- $_ := set .root.Values.global "noResourceValidation" (not (lookup "v1" "Namespace" "" "")) -}}
+  {{- end }}
+{{- end -}}

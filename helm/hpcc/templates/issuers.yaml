@@ -6,23 +6,29 @@ metadata:
   namespace: {{ .root.Release.Namespace | default "default" }}
    {{- if .me.spec }}
 spec:
+  {{- if not .root.Values.global.noResourceValidation -}}
   {{- if .me.spec.ca }}
    {{- if .me.spec.ca.secretName }}
     {{- if not (lookup "v1" "Secret" .root.Release.Namespace .me.spec.ca.secretName) }}
-      {{- $_ := fail (printf "Using a local certificate authority requires a CA certificate stored in the secret named '%s'. You can disable mTLS security by setting certificates.enabled=false" .me.spec.ca.secretName ) -}}
+      {{- $_ := fail (printf "\n\nUsing a local certificate authority requires a CA certificate stored in the secret named '%s'. To disable mTLS security set \"certificates.enabled=false\". To bypass this validation check set \"global.noResourceValidation=true\". \n" .me.spec.ca.secretName ) -}}
     {{- end }}
    {{- end }}
+  {{- end }}
   {{- end }}
 {{ toYaml .me.spec | indent 2 }}
 
  {{- end }}
 {{- end }}
 
+{{- template "hpcc.ensureNoResourceValidationFlag" ( dict "root" $ ) }}
+
 {{- if $.Values.certificates -}}
  {{- if $.Values.certificates.enabled -}}
+  {{- if not $.Values.global.noResourceValidation -}}
    {{- if not (.Capabilities.APIVersions.Has "cert-manager.io/v1") }}
-    {{- $_ := fail (printf "Enabling certificate generation requires cert-manager resources. Please intall cert-manager. You can disable mTLS security by setting certificates.enabled=false" ) -}}
+    {{- $_ := fail (printf "\n\nEnabling certificate generation requires cert-manager resources. Please intall cert-manager. To disable mTLS security set \"certificates.enabled=false\". To bypass this validation check set \"global.noResourceValidation=true\". \n" ) -}}
    {{- end -}}
+  {{- end -}}
   {{- range $k, $v := .Values.certificates.issuers }}
 {{- include "hpcc.issuers" (dict "root" $ "me" $v ) }}
 ---
