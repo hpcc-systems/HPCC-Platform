@@ -26,7 +26,7 @@ As mentioned earlier, the HPCC Systems logs provide a wealth of information whic
 
 By default, the component logs are not filtered, and contain the following columns:
     
-    MessageID TargetAudience DateStamp TimeStamp ProcessId ThreadID QuotedLogMessage
+    MessageID TargetAudience LogEntryClass DateStamp TimeStamp ProcessId ThreadID QuotedLogMessage
 
 The logs can be filtered by TargetAudience, Category or Detail Level, and the output columns can be configured. Logging configuration settings can be applied at the global, or component level.
 
@@ -40,7 +40,7 @@ The availble target audiences include operator(OPR), user(USR), programmer(PRO),
     
 ### Target Category Filtering
 
-The available target categories include disaster(DIS), error(ERR), warning(WRN),information(INF),progress(PRO). The category (or class) filter is controlled by the `<section>`.logging.classes value, comprised of 3 letter codes delimited by the aggregation operator (+) or the removal operator (-).
+The available target categories include disaster(DIS), error(ERR), warning(WRN),information(INF),progress(PRO),metrics(MET). The category (or class) filter is controlled by the `<section>`.logging.classes value, comprised of 3 letter codes delimited by the aggregation operator (+) or the removal operator (-).
     
     For example, the mydali instance's log output to include all classes except for progress:
     helm install myhpcc ./hpcc --set dali[0].logging.classes="ALL-PRO" --set dali[0].name="mydali"
@@ -55,8 +55,8 @@ Log output verbosity can be adjusted from "critical messages only" (1) up to "re
 
 The available log data columns include messageid(MID), audience(AUD), class(CLS), date(DAT), time(TIM), millitime(MLT), microtime(MCT), nanotime(NNT), processid(PID), threadid(TID), node(NOD), job(JOB), use(USE), session(SES), code(COD), component(COM), quotedmessage(QUO), prefix(PFX), all(ALL), and standard(STD). The log data columns (or fields) configuration is controlled by the `<section>`.logging.fields value, comprised of 3 letter codes delimited by the aggregation operator (+) or the removal operator (-).
     
-    For example, all component log output should include the standard columns and the log message class name:
-    helm install myhpcc ./hpcc --set global.logging.fields="STD+CLS"
+    For example, all component log output should include the standard columns and the job ID column:
+    helm install myhpcc ./hpcc --set global.logging.fields="STD+JOB"
     
 Adjustment of per-component logging values can require assertion of multiple component specific values, which can be inconvinient to do via the --set command line parameter. In these cases, a custom values file could be used to set all required fields.
 
