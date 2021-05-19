@@ -44,7 +44,7 @@ void populateColums(IArrayOf<HPCCColumnMetaData> * cols, IArrayOf<IEspHPCCColumn
     }
 }
 
-bool HPCCFileCache::populateTablesResponse(IEspGetDBMetaDataResponse & tablesrespstruct, const char * filterby)
+bool HPCCFileCache::populateTablesResponse(IEspGetDBMetaDataResponse & tablesrespstruct, const char * filterby, bool nestedcolumns=true)
 {
     bool success = false;
 
@@ -80,12 +80,15 @@ bool HPCCFileCache::populateTablesResponse(IEspGetDBMetaDataResponse & tablesres
                    Owned<IEspHPCCColumn> pCol = createHPCCColumn();
                    HPCCColumnMetaData& currcol = cols->item(i);
 
-                   IArrayOf<HPCCColumnMetaData> * ccols = currcol.getChildColumns();
-                   if (ccols->length() != 0)
+                   if (nestedcolumns)
                    {
-                       IArrayOf<IEspHPCCColumn> pCColumns;
-                       populateColums(ccols, pCColumns);
-                       pCol->setColumns(pCColumns);
+                       IArrayOf<HPCCColumnMetaData> * ccols = currcol.getChildColumns();
+                       if (ccols->length() != 0)
+                       {
+                           IArrayOf<IEspHPCCColumn> pCColumns;
+                           populateColums(ccols, pCColumns);
+                           pCol->setColumns(pCColumns);
+                       }
                    }
                    pCol->setName(currcol.getColumnName());
                    pCol->setType(currcol.getColumnType());
