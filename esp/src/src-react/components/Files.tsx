@@ -72,10 +72,10 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
             onClick: () => {
                 if (selection.length === 1) {
-                    window.location.href = `#/files/${selection[0].Name}`;
+                    window.location.href = `#/files/${selection[0].NodeGroup}/${selection[0].Name}`;
                 } else {
                     for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/files/${selection[i].Name}`, "_blank");
+                        window.open(`#/files/${selection[0].NodeGroup}/${selection[i].Name}`, "_blank");
                     }
                 }
             }
@@ -164,7 +164,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 if (row.__hpcc_isDir) {
                     return name;
                 }
-                return (row.getStateImageHTML ? row.getStateImageHTML() + "&nbsp;" : "") + "<a href='#/files/" + name + "' class='dgrid-row-url'>" + name + "</a>";
+                return (row.getStateImageHTML ? row.getStateImageHTML() + "&nbsp;" : "") + "<a href='#/files/" + row.NodeGroup + "/" + name + "' class='dgrid-row-url'>" + name + "</a>";
             },
             renderExpando: function (level, hasChildren, expanded, object) {
                 const dir = this.grid.isRTL ? "right" : "left";

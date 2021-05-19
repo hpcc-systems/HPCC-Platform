@@ -202,8 +202,9 @@ function doDownload(type: string, wuid: string, sequence?: number, logicalName?:
 }
 
 interface ResultProps {
-    wuid: string;
-    resultName: string;
+    wuid?: string;
+    resultName?: string;
+    logicalFile?: string;
     filter?: { [key: string]: any };
 }
 
@@ -212,6 +213,7 @@ const emptyFilter: { [key: string]: any } = {};
 export const Result: React.FunctionComponent<ResultProps> = ({
     wuid,
     resultName,
+    logicalFile,
     filter = emptyFilter
 }) => {
 
@@ -219,6 +221,7 @@ export const Result: React.FunctionComponent<ResultProps> = ({
         .baseUrl("")
         .wuid(wuid)
         .resultName(resultName)
+        .logicalFile(resultName)
         .pagination(true)
         .pageSize(50) as ResultWidget
     );

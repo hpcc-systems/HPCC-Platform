@@ -38,7 +38,7 @@ const Dropdown: React.FunctionComponent<DropdownProps> = ({
     return <DropdownBase key={key} label={label} className={className} defaultSelectedKey={selectedKey} onChange={onChange} placeholder={placeholder} options={selOptions} />;
 };
 
-export type FieldType = "string" | "checkbox" | "datetime" | "link" |
+export type FieldType = "string" | "number" | "checkbox" | "datetime" | "link" | "links" |
     "workunit-state" |
     "file-type" | "file-sortby" |
     "queries-suspend-state" | "queries-active-state" |
@@ -58,6 +58,13 @@ interface BaseField {
 interface StringField extends BaseField {
     type: "string";
     value?: string;
+    readonly?: boolean;
+    multiline?: boolean;
+}
+
+interface NumericField extends BaseField {
+    type: "number";
+    value?: number;
 }
 
 interface DateTimeField extends BaseField {
@@ -112,78 +119,23 @@ interface LogicalFileType extends BaseField {
 
 interface DFUWorkunitStateField extends BaseField {
     type: "dfuworkunit-state";
-    value?: string;
-}
-
-interface StringField extends BaseField {
-    type: "string";
-    value?: string;
-    readonly?: boolean;
-    multiline?: boolean;
-}
-
-interface DateTimeField extends BaseField {
-    type: "datetime";
     value?: string;
 }
 
 interface LinkField extends BaseField {
     type: "link";
     href: string;
-    value?: undefined;
+    value?: string;
+    newTab?: boolean;
 }
 
-interface CheckboxField extends BaseField {
-    type: "checkbox";
-    value?: boolean;
-}
-
-interface WorkunitStateField extends BaseField {
-    type: "workunit-state";
+interface LinksField extends BaseField {
+    type: "links";
+    links: LinkField[]
     value?: string;
 }
 
-interface FileTypeField extends BaseField {
-    type: "file-type";
-    value?: string;
-}
-
-interface FileSortByField extends BaseField {
-    type: "file-sortby";
-    value?: string;
-}
-
-interface QueriesSuspendStateField extends BaseField {
-    type: "queries-suspend-state";
-    value?: string;
-}
-
-interface QueriesActiveStateField extends BaseField {
-    type: "queries-active-state";
-    value?: string;
-}
-
-interface TargetClusterField extends BaseField {
-    type: "target-cluster";
-    value?: string;
-}
-
-interface TargetGroupField extends BaseField {
-    type: "target-group";
-    value?: string;
-}
-
-interface LogicalFileType extends BaseField {
-    type: "logicalfile-type";
-    value?: string;
-}
-
-interface DFUWorkunitStateField extends BaseField {
-    type: "dfuworkunit-state";
-    value?: string;
-}
-
-type Field = StringField | CheckboxField | DateTimeField | LinkField |
+type Field = StringField | NumericField | CheckboxField | DateTimeField | LinkField | LinksField |
     WorkunitStateField |
     FileTypeField | FileSortByField |
     QueriesSuspendStateField | QueriesActiveStateField |
@@ -335,8 +287,20 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     field: <Link
                         key={fieldID}
                         href={field.href}
-                        target="_blank"
-                        style={{ paddingLeft: 8 }}>{field.href}</Link>
+                        target={field.newTab ? "_blank" : ""}
+                        style={{ paddingLeft: 8 }}>{field.value || ""}</Link>
+                });
+                break;
+            case "links":
+                retVal.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: field.links?.map((link, idx) => <Link
+                        key={`${fieldID}_${idx}`}
+                        href={link.href}
+                        target={link.newTab ? "_blank" : ""}
+                        style={{ paddingLeft: 8 }}>{link.value || ""}</Link>
+                    )
                 });
                 break;
             case "workunit-state":

@@ -18,6 +18,28 @@ export const createID = function (Cluster, Name) {
     return (Cluster ? Cluster : "") + "--" + Name;
 };
 
+export interface IFile {
+    isSuperfile: boolean;
+    StateID: number;
+    ContentType: string;
+}
+
+export function getStateImageName(file: IFile) {
+    if (file?.isSuperfile) {
+        switch (file?.StateID) {
+            case 999:
+                return "superfile_deleted.png";
+        }
+        return "superfile.png";
+    } else {
+        switch (file?.StateID) {
+            case 999:
+                return "logicalfile_deleted.png";
+        }
+        return file?.ContentType === "key" ? "index.png" : "logicalfile.png";
+    }
+}
+
 const create = function (id) {
     if (!lang.exists(id, _logicalFiles)) {
         const idParts = id.split("--");
@@ -392,23 +414,8 @@ const LogicalFile = declare([ESPUtil.Singleton], {
             return "iconLogicalFile";
         }
     },
-    getStateImageName() {
-        if (this.isSuperfile) {
-            switch (this.StateID) {
-                case 999:
-                    return "superfile_deleted.png";
-            }
-            return "superfile.png";
-        } else {
-            switch (this.StateID) {
-                case 999:
-                    return "logicalfile_deleted.png";
-            }
-            return "logicalfile.png";
-        }
-    },
     getStateImageHTML() {
-        return Utility.getImageHTML(this.getStateImageName());
+        return Utility.getImageHTML(getStateImageName(this));
     },
     getProtectedImage() {
         if (this.ProtectList.DFUFileProtect.length > 0) {
