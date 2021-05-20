@@ -197,7 +197,7 @@ const char * LogMsgJobInfo::queryJobIDStr() const
     if (isDeserialized)
         return jobIDStr;
     else if (jobID == UnknownJob)
-        return "Unknown";
+        return "UNK";
     else
         return theManager->queryJobId(jobID);
 }

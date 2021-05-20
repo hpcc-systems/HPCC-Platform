@@ -26,7 +26,7 @@ As mentioned earlier, the HPCC Systems logs provide a wealth of information whic
 
 By default, the component logs are not filtered, and contain the following columns:
     
-    MessageID TargetAudience LogEntryClass DateStamp TimeStamp ProcessId ThreadID QuotedLogMessage
+    MessageID TargetAudience LogEntryClass JobID DateStamp TimeStamp ProcessId ThreadID QuotedLogMessage
 
 The logs can be filtered by TargetAudience, Category or Detail Level, and the output columns can be configured. Logging configuration settings can be applied at the global, or component level.
 
@@ -55,8 +55,8 @@ Log output verbosity can be adjusted from "critical messages only" (1) up to "re
 
 The available log data columns include messageid(MID), audience(AUD), class(CLS), date(DAT), time(TIM), millitime(MLT), microtime(MCT), nanotime(NNT), processid(PID), threadid(TID), node(NOD), job(JOB), use(USE), session(SES), code(COD), component(COM), quotedmessage(QUO), prefix(PFX), all(ALL), and standard(STD). The log data columns (or fields) configuration is controlled by the `<section>`.logging.fields value, comprised of 3 letter codes delimited by the aggregation operator (+) or the removal operator (-).
     
-    For example, all component log output should include the standard columns and the job ID column:
-    helm install myhpcc ./hpcc --set global.logging.fields="STD+JOB"
+    For example, all component log output should include the standard columns except the job ID column:
+    helm install myhpcc ./hpcc --set global.logging.fields="STD-JOB"
     
 Adjustment of per-component logging values can require assertion of multiple component specific values, which can be inconvinient to do via the --set command line parameter. In these cases, a custom values file could be used to set all required fields.
 
