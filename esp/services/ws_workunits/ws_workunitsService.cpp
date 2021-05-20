@@ -3092,6 +3092,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                 winfo.getWorkunitResTxt(mb);
                 openSaveFile(context, opt, req.getSizeLimit(), "res.txt", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
+#ifndef _CONTAINERIZED
             else if (strncmp(req.getType(), File_ThorLog, 7) == 0)
             {
                 winfo.getWorkunitThorMasterLog(nullptr, req.getName(), mb, nullptr);
@@ -3108,6 +3109,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                 winfo.getWorkunitEclAgentLog(nullptr, req.getName(), req.getProcess(), mb, nullptr);
                 openSaveFile(context, opt, req.getSizeLimit(), "eclagent.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
+#endif
             else if (strieq(File_XML,req.getType()) && notEmpty(req.getName()))
             {
                 const char* name  = req.getName();
