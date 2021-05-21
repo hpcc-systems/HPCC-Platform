@@ -105,7 +105,7 @@ define([
             var fileName = this.fileName.get("value") + ".csv";
 
             arrayUtil.forEach(selections, function (cell, idx) {
-                var rowData = [cell.Protected, cell.Wuid, cell.Owner, cell.Jobname, cell.Cluster, cell.RoxieCluster, cell.State, cell.TotalClusterTime];
+                var rowData = [cell.Protected, cell.Wuid, cell.Owner, cell.Jobname, cell.Cluster, cell.State, cell.TotalClusterTime];
                 row.push(rowData);
             });
 
@@ -478,13 +478,12 @@ define([
                             return wu.getStateImageHTML() + "&nbsp;<a href='#/workunits/" + Wuid + "' class='dgrid-row-url' onClick='return false;'>" + Wuid + "</a>";
                         }
                     },
-                    Owner: { label: this.i18n.Owner, width: 90 },
-                    Jobname: { label: this.i18n.JobName, width: 500 },
+                    Owner: { label: this.i18n.Owner, width: 120 },
+                    Jobname: { label: this.i18n.JobName },
                     Cluster: { label: this.i18n.Cluster, width: 90 },
-                    RoxieCluster: { label: this.i18n.RoxieCluster, width: 99 },
                     State: { label: this.i18n.State, width: 90 },
                     TotalClusterTime: {
-                        label: this.i18n.TotalClusterTime, width: 117,
+                        label: this.i18n.TotalClusterTime, width: 150,
                         renderCell: function (object, value, node, options) {
                             domClass.add(node, "justify-right");
                             node.innerText = value;
