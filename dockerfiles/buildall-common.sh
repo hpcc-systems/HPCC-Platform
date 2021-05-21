@@ -71,7 +71,7 @@ build_image() {
   [[ -z ${buildTag} ]] && buildTag=$BUILD_TAG
 
   if ! docker pull ${DOCKER_REPO}/${name}:${label} ; then
-    docker image build --no-cache -t ${DOCKER_REPO}/${name}:${label} \
+    docker image build -t ${DOCKER_REPO}/${name}:${label} \
        --build-arg BASE_VER=${BASE_VER} \
        --build-arg DOCKER_REPO=${DOCKER_REPO} \
        --build-arg BUILD_TAG=${buildTag} \
