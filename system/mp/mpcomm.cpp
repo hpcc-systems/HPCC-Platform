@@ -3244,6 +3244,7 @@ public:
     ~CGlobalMPServer()
     {
         ::Release(worldcomm);
+        worldcomm = nullptr;
     }
     IInterCommunicator &queryWorldCommunicator()
     {
@@ -3267,7 +3268,9 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 }
 MODULE_EXIT()
 {
-    ::Release(globalMPServer);
+    CGlobalMPServer * savedMPServer = globalMPServer;
+    globalMPServer = nullptr;
+    ::Release(savedMPServer);
 }
 
 void startMPServer(unsigned __int64 role, unsigned port, bool paused, bool listen)
