@@ -3453,7 +3453,7 @@ const char * queryDefaultStoragePlane()
 {
     // If the plane is specified for the component, then use that
     IPropertyTree & config = queryComponentConfig();
-    const char * plane = config.queryProp("storagePlane");
+    const char * plane = config.queryProp("@storagePlane");
     if (plane)
         return plane;
 
