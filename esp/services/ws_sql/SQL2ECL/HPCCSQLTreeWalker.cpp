@@ -304,12 +304,20 @@ ISQLExpression * HPCCSQLTreeWalker::expressionTreeWalker(pANTLR3_BASE_TREE exprA
             case LIKE_SYM:
             case NOT_LIKE:
                 leftexp.set(expressionTreeWalker((pANTLR3_BASE_TREE)(exprAST->getChild(exprAST, 0)),exprAST));
-                if (leftexp->getExpType() != Value_ExpressionType && strnicmp(leftexp->getECLType(),"DATASET",7)==0)
-                    throw MakeStringException(-1, "Cannot apply arithmetic logic to normalized nested column: '%s'!\n", leftexp->getName());
+                if (leftexp->getLogicType() == NestedDS_LogicType)
+                {
+                    StringBuffer invalidexp;
+                    leftexp->toString(invalidexp, false);
+                    throw makeStringExceptionV(-1, "Cannot apply arithmetic logic to normalized nested column: '%s'!\n", invalidexp.str());
+                }
 
                 rightexp.set(expressionTreeWalker((pANTLR3_BASE_TREE)(exprAST->getChild(exprAST, 1)),exprAST));
-                if (rightexp->getExpType() != Value_ExpressionType && strnicmp(rightexp->getECLType(),"DATASET",7)==0)
-                    throw MakeStringException(-1, "Cannot apply arithmetic logic to normalized nested column: '%s'!\n", rightexp->getName());
+                if (rightexp->getLogicType() == NestedDS_LogicType)
+                {
+                    StringBuffer invalidexp;
+                    rightexp->toString(invalidexp, false);
+                    throw makeStringExceptionV(-1, "Cannot apply arithmetic logic to normalized nested column: '%s'!\n", invalidexp.str());
+                }
 
                 tmpexp.setown( new SQLBinaryExpression(exptype,leftexp, rightexp));
                 if (parameterizeStaticValues)
@@ -341,8 +349,12 @@ ISQLExpression * HPCCSQLTreeWalker::expressionTreeWalker(pANTLR3_BASE_TREE exprA
             case NOT_SYM:
             {
                 tmpexp.setown(new SQLUnaryExpression(expressionTreeWalker((pANTLR3_BASE_TREE)(exprAST->getChild(exprAST, 0)),exprAST), exptype ));
-                if (tmpexp->getExpType() != Value_ExpressionType && strnicmp(tmpexp->getECLType(),"DATASET",7)==0)
-                    throw MakeStringException(-1, "Cannot apply arithmetic logic to normalized nested column: '%s'!\n", rightexp->getName());
+                if (tmpexp->getLogicType() == NestedDS_LogicType)
+                {
+                    StringBuffer expstr;
+                    tmpexp->toString(expstr, false);
+                    throw makeStringExceptionV(-1, "Cannot apply arithmetic logic to normalized nested column: '%s'!\n", expstr.str());
+                }
                 break;
             }
             //case PARENEXP: ANTLR idiosyncrasy prevented using imaginary token as root node

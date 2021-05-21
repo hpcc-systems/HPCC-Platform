@@ -3479,7 +3479,7 @@ void initializeStorageGroups(bool createPlanesFromGroups)
 bool getDefaultStoragePlane(StringBuffer &ret)
 {
     // If the plane is specified for the component, then use that
-    if (getComponentConfigSP()->getProp("storagePlane", ret))
+    if (getComponentConfigSP()->getProp("@storagePlane", ret))
         return true;
 
     //Otherwise check what the default plane for data storage is configured to be

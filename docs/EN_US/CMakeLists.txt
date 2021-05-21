@@ -77,6 +77,7 @@ add_subdirectory(HPCC4J)
 add_subdirectory(IMDB)
 add_subdirectory(InstantCloud)
 add_subdirectory(Installing_and_RunningTheHPCCPlatform)
+add_subdirectory(JDBC-driver)
 add_subdirectory(RoxieReference)
 add_subdirectory(RunningHPCCinaVirtualMachine)
 

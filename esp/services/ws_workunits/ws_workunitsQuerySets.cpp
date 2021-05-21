@@ -2995,7 +2995,8 @@ bool CWsWorkunitsEx::onWUCopyQuerySet(IEspContext &context, IEspWUCopyQuerySetRe
     StringBuffer srcTarget;
     if (!splitQueryPath(source, srcAddress, srcTarget, NULL))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid source target");
-    if (!srcTarget.isEmpty())
+    //don't validate source target if it's remote (has srcAddress)
+    if (srcAddress.isEmpty() && !srcTarget.isEmpty())
         validateTargetName(srcTarget);
 
     const char *target = req.getTarget();

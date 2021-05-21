@@ -53,7 +53,7 @@ bool CwssqlEx::onGetDBMetaData(IEspContext &context, IEspGetDBMetaDataRequest &r
     if (includetables)
     {
         Owned<HPCCFileCache> tmpHPCCFileCache = HPCCFileCache::createFileCache(username.str(), passwd);
-        tmpHPCCFileCache->populateTablesResponse(resp, req.getTableFilter());
+        tmpHPCCFileCache->populateTablesResponse(resp, req.getTableFilter(), context.getClientVersion() >= 3.06);
         resp.setTableCount(resp.getTables().length());
     }
 
