@@ -753,7 +753,7 @@ public:
         if (!process.length())
             return;
 #else
-        StringBuffer process(target);
+        process.set(target);
 #endif
 
         ps.setown(createPackageSet(process.str()));
@@ -766,11 +766,21 @@ public:
         if (queryname && *queryname)
             queryname = queryid.append(queryname).append(".0").str(); //prepublish dummy version number to support fuzzy match like queries="myquery.*" in package
         files->addFilesFromQuery(cw, pm, queryname);
-        files->resolveFiles(process.str(), remoteIP, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM | DALI_UPDATEF_SUPERFILES)), true, false, true);
+
+#ifdef _CONTAINERIZED
+        StringBuffer targetPlane;
+        getRoxieDefaultPlane(targetPlane, target);
+        const char * targetPlaneOrGroup = targetPlane;
+#else
+        const char * targetPlaneOrGroup = process;
+#endif
+        files->resolveFiles(targetPlaneOrGroup, remoteIP, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM | DALI_UPDATEF_SUPERFILES)), true, false, true);
+        Owned<IDFUhelper> helper = createIDFUhelper();
+#ifdef _CONTAINERIZED
+        files->cloneAllInfo(updateFlags, helper, true, true, 0, 1, 0, nullptr);
+#else
         StringBuffer defReplicateFolder;
         getConfigurationDirectory(NULL, "data2", "roxie", process.str(), defReplicateFolder);
-        Owned<IDFUhelper> helper = createIDFUhelper();
-#ifndef _CONTAINERIZED
         files->cloneAllInfo(updateFlags, helper, true, true, clusterInfo->getRoxieRedundancy(), clusterInfo->getChannelsPerNode(), clusterInfo->getRoxieReplicateOffset(), defReplicateFolder);
 #endif
     }
@@ -881,7 +891,7 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
         target.set(cw->queryClusterName());
     validateTargetName(target);
 
-    DBGLOG("%s publishing wuid %s to target %s as query %s", context.queryUserId(), wuid.str(), target.str(), queryName.str());
+    DBGLOG("%s publishing wuid %s to target %s as query %s", nullText(context.queryUserId()), wuid.str(), target.str(), queryName.str());
 
     StringBuffer daliIP;
     StringBuffer srcCluster;
@@ -2937,7 +2947,13 @@ public:
         wufiles.setown(createReferencedFileList(context->queryUserId(), context->queryPassword(), allowForeign, false));
         Owned<IHpccPackageSet> ps = createPackageSet(destProcess);
         pm.set(ps->queryActiveMap(target));
-        process.set(destProcess);
+        if (isContainerized())
+        {
+            StringAttrBuilder builder(process);
+            getRoxieDefaultPlane(builder, target);
+        }
+        else
+            process.set(destProcess);
     }
 
     void cloneFiles()
@@ -2949,10 +2965,14 @@ public:
             Owned <IConstWUClusterInfo> cl = getWUClusterInfoByName(target);
             if (cl)
             {
+#ifdef _CONTAINERIZED
+                wufiles->cloneAllInfo(updateFlags, helper, true, true, 0, 1, 0, nullptr);
+#else
                 SCMStringBuffer process;
                 StringBuffer defReplicateFolder;
                 getConfigurationDirectory(NULL, "data2", "roxie", cl->getRoxieProcess(process).str(), defReplicateFolder);
                 wufiles->cloneAllInfo(updateFlags, helper, true, true, cl->getRoxieRedundancy(), cl->getChannelsPerNode(), cl->getRoxieReplicateOffset(), defReplicateFolder);
+#endif
             }
         }
     }

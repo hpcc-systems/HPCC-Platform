@@ -704,6 +704,15 @@ securityContext:
 Generate instance queue names
 */}}
 {{- define "hpcc.generateConfigMapQueues" -}}
+{{- $storage := ($.Values.storage | default dict) -}}
+{{- $planes := ($storage.planes | default list) -}}
+{{- $firstPlane := dict -}}
+{{- range $plane := $planes -}}
+ {{- if and (not $firstPlane.plane) (or (not $plane.labels) (has "data" $plane.labels)) }}
+ {{- $_ := set $firstPlane "plane" $plane.name -}}
+ {{- end -}}
+{{- end -}}
+{{- $defaultDataPlane := ($storage.dataStorage.plane | default $firstPlane.plane | default "hpcc-data-plane") -}}
 {{- range $.Values.eclagent -}}
  {{- if not .disabled -}}
 - name: {{ .name }}
@@ -717,6 +726,7 @@ Generate instance queue names
   type: roxie 
   prefix: {{ .prefix | default "null" }}
   queriesOnly: true
+  storagePlane: {{ .storagePlane | default $defaultDataPlane }}
  {{- end }}
 {{ end -}}
 {{- range $.Values.thor -}}

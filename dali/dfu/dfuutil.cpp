@@ -69,7 +69,8 @@ static bool physicalPartCopy(IFile *from,const char *tofile, Owned<IException> &
                 0,
                 (offset_t)-1, // all file
                 NULL,
-                PHYSICAL_COPY_POLL_TIME)) {
+                PHYSICAL_COPY_POLL_TIME,
+                CFflush_rdwr)) {
             // Abort check TBD
         }
     }
@@ -1265,11 +1266,17 @@ public:
     {
         DBGLOG("cloneRoxieSubFile src=%s@%s, dst=%s@%s, prefix=%s, ow=%d, docopy=false", srcLFN, srcCluster, dstLFN, dstCluster, prefix, overwriteFlags);
         CFileCloner cloner;
-        cloner.init(dstCluster, DFUcpdm_c_replicated_by_d, true, NULL, userdesc, foreigndali, NULL, NULL, false, false);
+        bool copyPhysical = false;
+        // MORE: Would the following be better to ensure files are copied when queries are deployed?
+        // bool copyPhysical = isContainerized() && (foreigndali != nullptr);
+        cloner.init(dstCluster, DFUcpdm_c_replicated_by_d, true, NULL, userdesc, foreigndali, NULL, NULL, false, copyPhysical);
         cloner.overwriteFlags = overwriteFlags;
+#ifndef _CONTAINERIZED
+        //In containerized mode there is no need to replicate files to the local disks of the roxie cluster - so don't set the special flag
         cloner.spec1.setRoxie(redundancy, channelsPerNode, replicateOffset);
         if (defReplicateFolder)
             cloner.spec1.setDefaultReplicateDir(defReplicateFolder);
+#endif
         cloner.srcCluster.set(srcCluster);
         cloner.prefix.set(prefix);
         cloner.cloneRoxieFile(srcLFN, dstLFN);

@@ -415,7 +415,8 @@ bool ReplicatePartCopyItem::doneCopy(unsigned timeout)
                 0,
                 (offset_t)-1, // all file
                 NULL, // no progress needed (yet)
-                timeout))
+                timeout,
+                CFflush_rdwr))
                     state = RPCS_tempcopied;  // done
         }
         catch (IException *e) {

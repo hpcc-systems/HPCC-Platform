@@ -635,6 +635,9 @@ const static bool filenamesAreCaseSensitive = true;
 extern jlib_decl IDirectoryIterator *getSortedDirectoryIterator(IFile *directory, SortDirectoryMode mode = SD_byname, bool rev = false, const char *mask = nullptr, bool sub = false, bool includedirs = false);
 extern jlib_decl IDirectoryIterator *getSortedDirectoryIterator(const char *dirName, SortDirectoryMode mode = SD_byname, bool rev = false, const char *mask = nullptr, bool sub = false, bool includedirs = false);
 
+//Locally copy from the source to the target
+extern jlib_decl void copyFileSection(IFile * src, IFile * target, offset_t toOfs, offset_t fromOfs, offset_t size, ICopyFileProgress *progress, CFflags copyFlags);
+
 //--------------------------------------------------------------------------------------------------------------------
 
 class jlib_decl FileIOStats

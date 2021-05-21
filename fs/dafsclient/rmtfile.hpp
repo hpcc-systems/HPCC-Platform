@@ -73,7 +73,8 @@ extern DAFSCLIENT_API bool asyncCopyFileSection(const char *uuid,   // from genU
                             offset_t fromofs,
                             offset_t size,                      // (offset_t)-1 for all file
                             ICopyFileProgress *progress,
-                            unsigned timeout                    // 0 to start, non-zero to wait
+                            unsigned timeout,                   // 0 to start, non-zero to wait
+                            CFflags copyFlags
                         ); // returns true when done
 
 extern DAFSCLIENT_API void setRemoteFileTimeouts(unsigned maxconnecttime,unsigned maxreadtime);

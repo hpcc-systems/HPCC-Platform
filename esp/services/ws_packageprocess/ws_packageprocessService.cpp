@@ -31,6 +31,7 @@
 #include "exception_util.hpp"
 #include "TpWrapper.hpp"
 
+
 void CWsPackageProcessEx::init(IPropertyTree *cfg, const char *process, const char *service)
 {
     packageMapAndSet.subscribe();
@@ -136,6 +137,16 @@ void cloneFileInfoToDali(unsigned updateFlags, StringArray &notFound, IPropertyT
 
     Owned<IReferencedFileList> wufiles = createReferencedFileList(user, password, allowForeignFiles, false);
     wufiles->addFilesFromPackageMap(packageMap);
+
+    Owned<IDFUhelper> helper = createIDFUhelper();
+#ifdef _CONTAINERIZED
+    SCMStringBuffer clusterName;
+    dstInfo->getName(clusterName);
+    StringBuffer targetPlane;
+    getRoxieDefaultPlane(targetPlane, clusterName.str());
+    wufiles->resolveFiles(targetPlane, lookupDaliIp, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM)), false, false);
+    wufiles->cloneAllInfo(updateFlags, helper, true, false, 0, 1, 0, nullptr);
+#else
     SCMStringBuffer processName;
     dstInfo->getRoxieProcess(processName);
     wufiles->resolveFiles(processName.str(), lookupDaliIp, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM)), false, false);
@@ -143,8 +154,8 @@ void cloneFileInfoToDali(unsigned updateFlags, StringArray &notFound, IPropertyT
     StringBuffer defReplicateFolder;
     getConfigurationDirectory(NULL, "data2", "roxie", processName.str(), defReplicateFolder);
 
-    Owned<IDFUhelper> helper = createIDFUhelper();
     wufiles->cloneAllInfo(updateFlags, helper, true, false, dstInfo->getRoxieRedundancy(), dstInfo->getChannelsPerNode(), dstInfo->getRoxieReplicateOffset(), defReplicateFolder);
+#endif
 
     Owned<IReferencedFileIterator> iter = wufiles->getFiles();
     ForEach(*iter)
