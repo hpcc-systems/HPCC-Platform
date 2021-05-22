@@ -2149,6 +2149,11 @@ extern TPWRAPPER_API void validateTargetName(const char* target)
     }
 }
 
+extern TPWRAPPER_API bool validateDataPlaneName(const char * remoteDali, const char * name)
+{
+    return isProcessCluster(remoteDali, name);
+}
+
 bool getSashaService(StringBuffer &serviceAddress, const char *serviceName, bool failIfNotFound)
 {
     if (!isEmptyString(serviceName))

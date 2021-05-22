@@ -47,23 +47,6 @@ static const char *QuerySetQueryActionTypes[] = { "Suspend", "Unsuspend", "Toggl
 static unsigned NumOfQuerySetAliasActionTypes = 1;
 static const char *QuerySetAliasActionTypes[] = { "Deactivate", NULL };
 
-bool isRoxieProcess(const char *process)
-{
-#ifdef _CONTAINERIZED
-    IERRLOG("CONTAINERIZED(isRoxieProcess) not fully implemented");
-    return false;
-#else
-    if (!process)
-        return false;
-
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
-    Owned<IConstEnvironment> env = factory->openEnvironment();
-    Owned<IPropertyTree> root = &env->getPTree();
-    VStringBuffer xpath("Software/RoxieCluster[@name=\"%s\"]", process);
-    return root->hasProp(xpath.str());
-#endif
-}
-
 void checkUseEspOrDaliIP(SocketEndpoint &ep, const char *ip, const char *esp)
 {
     if (!ip || !*ip)
@@ -178,7 +161,7 @@ void doWuFileCopy(IClientFileSpray &fs, IEspWULogicalFileCopyInfo &info, const c
     }
 }
 
-bool copyWULogicalFiles(IEspContext &context, IConstWorkUnit &cw, const char *cluster, bool copyLocal, IEspWUCopyLogicalClusterFileSections &lfinfo)
+bool copyWULogicalFiles(IEspContext &context, IConstWorkUnit &cw, const char *cluster, bool isRoxie, bool copyLocal, IEspWUCopyLogicalClusterFileSections &lfinfo)
 {
     if (isEmpty(cluster))
         throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "copyWULogicalFiles Cluster parameter not set.");
@@ -198,8 +181,6 @@ bool copyWULogicalFiles(IEspContext &context, IConstWorkUnit &cw, const char *cl
         VStringBuffer url("http://.:%d/FileSpray", 8010);
         fs->addServiceUrl(url.str());
     }
-
-    bool isRoxie = isRoxieProcess(cluster);
 
     Owned<IConstWUGraphIterator> graphs = &cw.getGraphs(GraphTypeActivities);
     ForEach(*graphs)
@@ -275,7 +256,7 @@ void copyWULogicalFilesToTarget(IEspContext &context, IConstWUClusterInfo &clust
     ForEachItemIn(i, thors)
     {
         Owned<IEspWUCopyLogicalClusterFileSections> files = createWUCopyLogicalClusterFileSections();
-        copyWULogicalFiles(context, cw, thors.item(i), doLocalCopy, *files);
+        copyWULogicalFiles(context, cw, thors.item(i), false, doLocalCopy, *files);
         clusterfiles.append(*files.getClear());
     }
     SCMStringBuffer roxie;
@@ -283,7 +264,7 @@ void copyWULogicalFilesToTarget(IEspContext &context, IConstWUClusterInfo &clust
     if (roxie.length())
     {
         Owned<IEspWUCopyLogicalClusterFileSections> files = createWUCopyLogicalClusterFileSections();
-        copyWULogicalFiles(context, cw, roxie.str(), doLocalCopy, *files);
+        copyWULogicalFiles(context, cw, roxie.str(), true, doLocalCopy, *files);
         clusterfiles.append(*files.getClear());
     }
 }
@@ -907,12 +888,8 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
 
     if (srcCluster.length())
     {
-#ifdef _CONTAINERIZED
-        IERRLOG("CONTAINERIZED(CWsWorkunitsEx::onWUPublishWorkunit) not fully implemented");
-#else
-        if (!isProcessCluster(daliIP, srcCluster))
+        if (!validateDataPlaneName(daliIP, srcCluster))
             throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Process cluster %s not found on %s DALI", srcCluster.str(), daliIP.length() ? daliIP.str() : "local");
-#endif
     }
     unsigned updateFlags = 0;
     if (req.getUpdateDfs())
@@ -1998,12 +1975,8 @@ bool CWsWorkunitsEx::onWURecreateQuery(IEspContext &context, IEspWURecreateQuery
 
                 if (srcCluster.length())
                 {
-#ifdef _CONTAINERIZED
-                    IERRLOG("CONTAINERIZED(CWsWorkunitsEx::onWURecreateQuery) not fully implemented");
-#else
-                    if (!isProcessCluster(daliIP, srcCluster))
+                    if (!validateDataPlaneName(daliIP, srcCluster))
                         throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Process cluster %s not found on %s DALI", srcCluster.str(), daliIP.length() ? daliIP.str() : "local");
-#endif
                 }
                 unsigned updateFlags = 0;
                 if (req.getUpdateDfs())
@@ -2229,10 +2202,8 @@ void CWsWorkunitsEx::getWUQueryDetails(IEspContext &context, CWUQueryDetailsReq 
 
     if (req.getIncludeWsEclAddresses())
     {
-#ifdef _CONTAINERIZED
-        UNIMPLEMENTED_X("CONTAINERIZED(CWsWorkunitsEx::onWURecreateQuery)");
-#else
         StringArray wseclAddresses;
+#ifndef _CONTAINERIZED
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> env = factory->openEnvironment();
         Owned<IPropertyTree> root = &env->getPTree();
@@ -2280,8 +2251,18 @@ void CWsWorkunitsEx::getWUQueryDetails(IEspContext &context, CWUQueryDetailsReq 
                 }
             }
         }
-        resp.setWsEclAddresses(wseclAddresses);
+#else
+        IArrayOf<IConstHPCCService> eclservices;
+        CTpWrapper tpWrapper;
+        tpWrapper.getServices(version, "eclqueries", nullptr, eclservices);
+        ForEachItemIn(i, eclservices)
+        {
+            IConstHPCCService& eclservice = eclservices.item(i);
+            VStringBuffer wseclAddr("%s:%u", eclservice.getName(), eclservice.getPort());
+            wseclAddresses.append(wseclAddr);
+        }
 #endif
+        resp.setWsEclAddresses(wseclAddresses);
     }
 }
 

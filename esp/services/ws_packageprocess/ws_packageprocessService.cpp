@@ -324,16 +324,11 @@ public:
     void setDerivedDfsLocation(const char *dfsLocation, const char *srcProcess)
     {
         splitDerivedDfsLocation(dfsLocation, srcCluster, daliIP, prefix, srcProcess, srcProcess, NULL, NULL);
-
-#ifdef _CONTAINERIZED
-        IERRLOG("CONTAINERIZED(PackageMapUpdater::setDerivedDfsLocation) not fully implemented");
-#else
         if (srcCluster.length())
         {
-            if (!isProcessCluster(daliIP, srcCluster))
+            if (!validateDataPlaneName(daliIP, srcCluster))
                 throw MakeStringException(PKG_INVALID_CLUSTER_TYPE, "Process cluster %s not found on %s DALI", srcCluster.str(), daliIP.length() ? daliIP.str() : "local");
         }
-#endif
     }
     void convertExisting()
     {
