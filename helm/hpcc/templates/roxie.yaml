@@ -28,6 +28,8 @@ data:
 {{ end -}}
 {{- include "hpcc.generateLoggingConfig" (dict "root" .root "me" .me) | indent 6 }}
 {{ include "hpcc.generateVaultConfig" . | indent 6 }}
+      services:
+{{ include "hpcc.generateConfigMapServices" .root | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
 {{- end -}}

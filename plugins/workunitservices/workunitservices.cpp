@@ -54,6 +54,7 @@ Persists changed?
 #include "workunitservices.ipp"
 #include "environment.hpp"
 #include "seclib.hpp"
+#include "TpWrapper.hpp"
 
 #define WORKUNITSERVICES_VERSION "WORKUNITSERVICES 1.0.2"
 
@@ -151,7 +152,6 @@ static const char * EclDefinition =
 "END;";
 
 #define WAIT_SECONDS 30
-#define SDS_LOCK_TIMEOUT (1000*60*5)
 #define SASHA_TIMEOUT (1000*60*10)
 
 WORKUNITSERVICES_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
@@ -181,7 +181,9 @@ IPluginContext * parentCtx = NULL;
 static void getSashaNodes(SocketEndpointArray &epa)
 {
 #ifdef _CONTAINERIZED
-    WARNLOG("CONTAINERIZED(getSashaNodes) not implemented");
+    SocketEndpoint sashaep;
+    getSashaServiceEP(sashaep, "sasha-wu-archiver", true);
+    epa.append(sashaep);
 #else
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();

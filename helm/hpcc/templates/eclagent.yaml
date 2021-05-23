@@ -18,6 +18,8 @@ data:
 {{ toYaml (omit .me "logging" "env") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" . | indent 6 }}
 {{ include "hpcc.generateVaultConfig" . | indent 6 }}
+      services:
+{{ include "hpcc.generateConfigMapServices" .root | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
 {{- if not .me.useChildProcesses }}

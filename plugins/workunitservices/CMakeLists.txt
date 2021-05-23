@@ -45,6 +45,9 @@ include_directories (
          ./../../system/jlib 
          ./../../dali/sasha 
          ./../../system/security/shared
+         ${HPCC_SOURCE_DIR}/esp/platform
+         ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
+         ${CMAKE_BINARY_DIR}/generated
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DWORKUNITSERVICES_EXPORTS )
@@ -57,7 +60,8 @@ target_link_LIBRARies ( workunitservices
          hrpc 
          remote 
          dalibase 
-         workunit 
+         workunit
+         SMCLib
     )
 
 if (NOT CONTAINERIZED)

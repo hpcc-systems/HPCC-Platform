@@ -25,11 +25,15 @@ data:
 {{ toYaml $thorScope | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" (dict "root" .root "me" $thorScope) | indent 6 }}
 {{ include "hpcc.generateVaultConfig" . | indent 6 }}
+      services:
+{{ include "hpcc.generateConfigMapServices" .root | indent 6 }}
     {{ $eclAgentType }}: # hthor or roxie
 {{ toYaml $hthorScope | indent 6 }}
       platform:
         type: "thor"
         width: {{ mul ($thorScope.numWorkers | default 1) ( $thorScope.channelsPerWorker | default 1) }}
+      services:
+{{ include "hpcc.generateConfigMapServices" .root | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" (dict "root" .root "me" $hthorScope ) | indent 6 }}
 {{ include "hpcc.generateVaultConfig" . | indent 6 }}
     eclagent: # main agent Q handler
