@@ -98,7 +98,8 @@ const unsigned MAX_KEY_ROWS = 20;
 
 short days[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
-
+#ifndef _CONTAINERIZED
+//CThorNodeGroupCache is for bare metal only.
 CThorNodeGroup* CThorNodeGroupCache::readNodeGroup(const char* _groupName)
 {
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
@@ -130,6 +131,7 @@ CThorNodeGroup* CThorNodeGroupCache::lookup(const char* groupName, unsigned time
 
     return e.getClear();
 }
+#endif
 
 void CWsDfuEx::init(IPropertyTree *cfg, const char *process, const char *service)
 {
@@ -171,6 +173,8 @@ void CWsDfuEx::init(IPropertyTree *cfg, const char *process, const char *service
     if (processTree->hasProp("@MaxPageCacheItems"))
         setMaxPageCacheItems(processTree->getPropInt("@MaxPageCacheItems"));
 
+#ifndef _CONTAINERIZED
+    //CThorNodeGroupCache is for bare metal only.
     int timeout = serviceTree->getPropInt("NodeGroupCacheMinutes", -1);
     if (timeout > -1)
         nodeGroupCacheTimeout = (unsigned) timeout*60*1000;
@@ -178,13 +182,15 @@ void CWsDfuEx::init(IPropertyTree *cfg, const char *process, const char *service
         nodeGroupCacheTimeout = NODE_GROUP_CACHE_DEFAULT_TIMEOUT;
     thorNodeGroupCache.setown(new CThorNodeGroupCache());
 
+    factory.setown(getEnvironmentFactory(true));
+    env.setown(factory->openEnvironment());
+#endif
+
     if (!daliClientActive())
         throw MakeStringException(-1, "No Dali Connection Active. Please Specify a Dali to connect to in you configuration file");
 
     setDaliServixSocketCaching(true);
 
-    factory.setown(getEnvironmentFactory(true));
-    env.setown(factory->openEnvironment());
     maxFileAccessExpirySeconds = serviceTree->getPropInt("@maxFileAccessExpirySeconds", defaultMaxFileAccessExpirySeconds);
 }
 
@@ -2108,9 +2114,11 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char *clusterR
             if (clusterInfo) //Should be valid. But, check it just in case.
             {
                 partsOnCluster->setReplicate(clusterInfo->queryPartDiskMapping().isReplicated());
+#ifndef _CONTAINERIZED
                 Owned<CThorNodeGroup> nodeGroup = thorNodeGroupCache->lookup(clusterName, nodeGroupCacheTimeout);
                 if (nodeGroup)
                     partsOnCluster->setCanReplicate(nodeGroup->queryCanReplicate());
+#endif
                 const char *defaultDir = fdesc->queryDefaultDir();
                 if (!isEmptyString(defaultDir))
                 {
@@ -5861,6 +5869,7 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
     return iRet;
 }
 
+#ifndef _CONTAINERIZED
 void CWsDfuEx::getFilePartsInfo(IEspContext &context, IFileDescriptor &fileDesc, bool forFileCreate, IEspDFUFileAccessInfo &accessInfo)
 {
     double version = context.getClientVersion();
@@ -6093,12 +6102,16 @@ void CWsDfuEx::dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileNa
 
     LOG(MCauditInfo,",FileAccess,EspProcess,READ,%s,%s,%s,jobid=%s,expirySecs=%d", cluster.str(), userID.str(), fileName.str(), requestId, expirySecs);
 }
+#endif
 
 // NB: deprecated from ver >= 1.50
 bool CWsDfuEx::onDFUFileAccess(IEspContext &context, IEspDFUFileAccessRequest &req, IEspDFUFileAccessResponse &resp)
 {
     try
     {
+#ifdef _CONTAINERIZED
+        UNIMPLEMENTED_X("CONTAINERIZED(DFUFileAccess)"); //See JIRA issue HPCC-25172
+#else
         IConstDFUFileAccessRequestBase &requestBase = req.getRequestBase();
 
         bool returnTextResponse = CFileAccessRole_External == requestBase.getAccessRole();
@@ -6108,6 +6121,7 @@ bool CWsDfuEx::onDFUFileAccess(IEspContext &context, IEspDFUFileAccessRequest &r
         lfn.setCluster(requestBase.getCluster());
 
         dFUFileAccessCommon(context, lfn, 0, requestBase.getJobId(), requestBase.getExpirySeconds(), returnTextResponse, 0, resp);
+#endif
     }
     catch (IException *e)
     {
@@ -6120,11 +6134,15 @@ bool CWsDfuEx::onDFUFileAccessV2(IEspContext &context, IEspDFUFileAccessV2Reques
 {
     try
     {
+#ifdef _CONTAINERIZED
+        UNIMPLEMENTED_X("CONTAINERIZED(DFUFileAccessV2)"); //See JIRA issue HPCC-25172
+#else
         CDfsLogicalFileName lfn;
         lfn.set(req.getName());
         lfn.setCluster(req.getCluster());
 
         dFUFileAccessCommon(context, lfn, req.getSessionId(), req.getRequestId(), req.getExpirySeconds(), req.getReturnTextResponse(), req.getLockTimeoutMs(), resp);
+#endif
     }
     catch (IException *e)
     {
@@ -6133,6 +6151,7 @@ bool CWsDfuEx::onDFUFileAccessV2(IEspContext &context, IEspDFUFileAccessV2Reques
     return true;
 }
 
+#ifndef _CONTAINERIZED
 // NB: deprecated from ver >= 1.50
 static IGroup *getDFUFileIGroup(const char *clusterName, ClusterType clusterType, const char *clusterTypeEx, StringArray &locations, StringBuffer &groupName)
 {
@@ -6218,12 +6237,16 @@ void CWsDfuEx::exportRecordDefinitionBinaryType(const char *recordDefinition, Me
     if (!exportBinaryType(layoutBin, expr, false))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "exportRecordDefinitionBinaryType: Failed in exportBinaryType.");
 }
+#endif
 
 // NB: deprecated from ver >= 1.50
 bool CWsDfuEx::onDFUFileCreate(IEspContext &context, IEspDFUFileCreateRequest &req, IEspDFUFileCreateResponse &resp)
 {
     try
     {
+#ifdef _CONTAINERIZED
+        UNIMPLEMENTED_X("CONTAINERIZED(DFUFileCreate)"); //See JIRA issue HPCC-25172
+#else
         IConstDFUFileAccessRequestBase &requestBase = req.getRequestBase();
         const char *fileName = requestBase.getName();
         const char *clusterName = requestBase.getCluster();
@@ -6309,6 +6332,7 @@ bool CWsDfuEx::onDFUFileCreate(IEspContext &context, IEspDFUFileCreateRequest &r
         accessInfo.setExpiryTime(metaInfo->queryProp("expiryTime"));
         accessInfo.setFileAccessPort(metaInfo->getPropInt("port"));
         accessInfo.setFileAccessSSL(metaInfo->getPropBool("secure"));
+#endif
     }
     catch (IException *e)
     {
@@ -6321,6 +6345,9 @@ bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Reques
 {
     try
     {
+#ifdef _CONTAINERIZED
+        UNIMPLEMENTED_X("CONTAINERIZED(DFUFileCreateV2)"); //See JIRA issue HPCC-25172
+#else
         const char *fileName = req.getName();
         const char *clusterName = req.getCluster();
         const char *recordDefinition = req.getECLRecordDefinition();
@@ -6440,6 +6467,7 @@ bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Reques
             accessInfo.setFileAccessPort(metaInfo->getPropInt("port"));
             accessInfo.setFileAccessSSL(metaInfo->getPropBool("secure"));
         }
+#endif
     }
     catch (IException *e)
     {
@@ -6450,6 +6478,9 @@ bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Reques
 
 bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest &req, IEspDFUFilePublishResponse &resp)
 {
+#ifdef _CONTAINERIZED
+    UNIMPLEMENTED_X("CONTAINERIZED(DFUFilePublish)"); //See JIRA issue HPCC-25172
+#else
     Owned<IException> exception;
     Owned<IDistributedFile> newFile;
     Owned<IFileDescriptor> fileDesc;
@@ -6600,9 +6631,10 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
             newFile->detach(30000);
         FORWARDEXCEPTION(context, exception.getClear(), ECLWATCH_INTERNAL_ERROR);
     }
+#endif
     return true;
 }
-
+#ifndef _CONTAINERIZED
 void CWsDfuEx::setPublishFileSize(const char *lfn, IFileDescriptor *fileDesc)
 {
     auto funcFilePartSize = [lfn, fileDesc](unsigned partNum)
@@ -6645,5 +6677,6 @@ void CWsDfuEx::setPublishFileSize(const char *lfn, IFileDescriptor *fileDesc)
     CAsyncForFunc<decltype(funcFilePartSize)> async(funcFilePartSize);
     async.For(fileDesc->numParts(), 100);
 }
+#endif
 
 //////////////////////HPCC Browser//////////////////////////

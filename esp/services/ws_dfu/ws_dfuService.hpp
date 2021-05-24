@@ -27,6 +27,7 @@
 #include <atomic>
 #include "ws_dfuHelpers.hpp"
 
+#ifndef _CONTAINERIZED
 class CThorNodeGroup: public CInterface
 {
     unsigned timeCached;
@@ -96,6 +97,7 @@ public:
 
     CThorNodeGroup *lookup(const char* groupName, unsigned timeOutMinutes);
 };
+#endif
 
 class CWsDfuSoapBindingEx : public CWsDfuSoapBinding
 {
@@ -139,15 +141,19 @@ class CWsDfuEx : public CWsDfu
 {
     Owned<IXslProcessor> m_xsl;
     Mutex m_superfilemutex;
+#ifndef _CONTAINERIZED
     unsigned nodeGroupCacheTimeout;
     Owned<CThorNodeGroupCache> thorNodeGroupCache;
+#endif
     std::atomic<bool> m_daliDetached{false};
     Owned<IEnvironmentFactory> factory;
     Owned<IConstEnvironment> env;
     static const unsigned defaultMaxFileAccessExpirySeconds=86400; // 24 hours
 
+#ifndef _CONTAINERIZED
     void dFUFileAccessCommon(IEspContext &context, const CDfsLogicalFileName &lfn, SessionId clientSessionId, const char *requestId, unsigned expirySecs, bool returnTextResponse, unsigned lockTimeoutMs, IEspDFUFileAccessResponse &resp);
     void setPublishFileSize(const char *logicalName, IFileDescriptor *fileDesc);
+#endif
     void clearFileProtections(IDistributedFile *df);
     bool changeFileProtections(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp);
     bool changeFileRestrictions(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp);
@@ -251,10 +257,12 @@ private:
     void queryFieldNames(IEspContext &context, const char *fileName, const char *cluster,
         unsigned __int64 fieldMask, StringArray &fieldNames);
     void parseFieldMask(unsigned __int64 fieldMask, unsigned &fieldCount, IntArray &fieldIndexArray);
+#ifndef _CONTAINERIZED
     void getFilePartsInfo(IEspContext &context, IFileDescriptor &fileDesc, bool forFileCreate, IEspDFUFileAccessInfo &accessInfo);
     void getFileDafilesrvConfiguration(StringBuffer &keyPairName, unsigned &port, bool &secure, const char *fileName, std::vector<std::string> &groups);
     void getFileDafilesrvConfiguration(StringBuffer &keyPairName, unsigned &retPort, bool &retSecure, const char *group);
     void exportRecordDefinitionBinaryType(const char *recordDefinition, MemoryBuffer &layoutBin);
+#endif
     void appendTimeString(const char *in, StringBuffer &out);
     void setTimeRangeFilter(const char *from, const char *to, DFUQFilterField filterID, StringBuffer &filterBuf);
 

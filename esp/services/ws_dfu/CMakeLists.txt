@@ -95,7 +95,6 @@ target_link_libraries ( ws_dfu
          eclrtl 
          jhtree 
          dalibase 
-         environment 
          dllserver 
          deftype 
          workunit 
@@ -110,6 +109,12 @@ target_link_libraries ( ws_dfu
          roxiecommlib 
          wsdfuaccess
     )
+
+IF (NOT CONTAINERIZED)
+    target_link_libraries ( ws_dfu
+        environment
+    )
+ENDIF()
 
 IF (USE_OPENSSL)
     target_link_libraries ( ws_dfu
