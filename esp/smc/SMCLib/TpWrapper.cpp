@@ -2080,7 +2080,7 @@ void CTpWrapper::getAttPath(const char* Path,StringBuffer& returnStr)
 
 void CTpWrapper::getServices(double version, const char* serviceType, const char* serviceName, IArrayOf<IConstHPCCService>& services)
 {
-    Owned<IPropertyTreeIterator> itr = getGlobalConfigSP()->getElements("services");
+    Owned<IPropertyTreeIterator> itr = getComponentConfigSP()->getElements("services");
     ForEach(*itr)
     {
         IPropertyTree& service = itr->query();
