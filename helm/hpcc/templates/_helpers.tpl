@@ -427,9 +427,6 @@ Pass in dict with root and secretsCategories
 Add sentinel-based probes for a component
 */}}
 {{- define "hpcc.addSentinelProbes" -}}
-env:
-- name: "SENTINEL"
-  value: "/tmp/{{ .name }}.sentinel"
 startupProbe:
   exec:
     command:
@@ -867,6 +864,9 @@ Pass in dict with root, me and dali if container in dali pod
         ]
 {{- include "hpcc.addResources" (dict "me" .me.resources) | indent 2 }}
 {{- include "hpcc.addSecurityContext" . | indent 2 }}
+  env:
+  - name: "SENTINEL"
+    value: "/tmp/{{ $serviceName }}.sentinel"
 {{- with (dict "name" $serviceName) }}
 {{ include "hpcc.addSentinelProbes" . | indent 2 }}
 {{- end }}
@@ -1357,4 +1357,18 @@ global.noResourceValidation flag.  This behavior can be overriden by the caller 
   {{- if not (hasKey .root.Values.global "noResourceValidation" )}}
     {{- $_ := set .root.Values.global "noResourceValidation" (not (lookup "v1" "Namespace" "" "")) -}}
   {{- end }}
+{{- end -}}
+
+{{/*
+A template to output a merged environment. Pass in a list with global then local environments. Only the last specified value for each named environment variable will be output
+*/}}
+{{- define "hpcc.mergeEnvironments" -}}
+{{- $result := dict -}}
+{{- range . -}}
+{{- $_ := set $result .name .value -}}
+{{- end -}}
+{{- range $key,$value := $result -}}
+- name: {{ $key }}
+  value: {{ $value }}
+{{ end -}}
 {{- end -}}

@@ -10,7 +10,7 @@ data:
   {{ .me.name }}.yaml:
     version: 1.0
     roxie:
-{{ toYaml ( omit .me "logging" "topoServer" "encryptInTransit") | indent 6 }}
+{{ toYaml ( omit .me "logging" "topoServer" "encryptInTransit" "env") | indent 6 }}
       numChannels: {{ .numChannels }}
       topologyServers: "{{ .toponame }}:{{ .topoport }}"
       resolveLocally: false
@@ -47,9 +47,10 @@ data:
 
 {{ range $roxie := $.Values.roxie -}}
 {{- if not $roxie.disabled -}}
+{{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $secretsCategories := list "system" "ecl-user" "ecl" "storage" }}
 {{- $toposerver := ($roxie.topoServer | default dict) -}}
-{{- $commonCtx := dict "root" $ "me" $roxie "secretsCategories" $secretsCategories "toposerver" $toposerver }}
+{{- $commonCtx := dict "root" $ "me" $roxie "secretsCategories" $secretsCategories "toposerver" $toposerver "env" $env }}
 {{- $_ := set $commonCtx "toponame" (printf "%s-toposerver" $roxie.name) -}}
 {{- $_ := set $commonCtx "numChannels" ($roxie.numChannels | int | default 1) -}}
 {{- $_ := set $commonCtx "topoport" ($toposerver.port | int | default 9004) -}}
@@ -94,6 +95,10 @@ spec:
         args: [ 
                 {{ include "hpcc.configArg" $toposerver }}
               ]
+        env:
+{{ include "hpcc.mergeEnvironments" $env | indent 8 -}}
+        - name: "SENTINEL"
+          value: "/tmp/{{ $commonCtx.toponame }}.sentinel"
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" $toposerver | indent 8 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" "topo" "name" $commonCtx.toponame "external" false) | indent 8 }}
@@ -204,6 +209,10 @@ spec:
                 {{ include "hpcc.daliArg" $ }},
                 "--server=true" 
               ]
+        env:
+{{ include "hpcc.mergeEnvironments" $env | indent 8 -}}
+        - name: "SENTINEL"
+          value: "/tmp/{{ $roxie.name }}.sentinel"
 {{- $local := dict "first" true }}
 {{- range $service := $roxie.services }}
 {{- if ne (int $service.port)  0 }}
@@ -285,6 +294,10 @@ spec:
                 "--channels={{ $channel }}", 
                 "--server={{ not $roxie.serverReplicas }}",
               ]
+        env:
+{{ include "hpcc.mergeEnvironments" $env | indent 8 -}}
+        - name: "SENTINEL"
+          value: "/tmp/{{ $roxie.name }}.sentinel"
 {{- if not $roxie.serverReplicas }}
 {{- $local := dict "first" true }}
 {{- range $service := $roxie.services }}

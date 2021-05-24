@@ -10,7 +10,7 @@ data:
   {{ .me.name }}.yaml:
     version: 1.0
     roxie:
-{{ toYaml (omit .me "logging") | indent 6 }}
+{{ toYaml (omit .me "logging" "env") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" . | indent 6 }}
 {{ include "hpcc.generateVaultConfig" . | indent 6 }}
     global:
@@ -19,8 +19,9 @@ data:
 
 {{ range $roxie := $.Values.roxie -}}
 {{- if not $roxie.disabled  -}}
+{{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $secretsCategories := list "system" "ecl-user" "ecl" "storage" }}
-{{- $commonCtx := dict "root" $ "me" $roxie "secretsCategories" $secretsCategories }}
+{{- $commonCtx := dict "root" $ "me" $roxie "secretsCategories" $secretsCategories "env" $env }}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.localroxieConfigMap" "component" "roxie" "excludeKeys" "global")) }}
 {{- include "hpcc.checkDefaultStoragePlane" $commonCtx }}
 {{- if $roxie.localAgent -}}
@@ -61,6 +62,10 @@ spec:
                 "--localAgent=true",
                 "--resolveLocally=false"
               ]
+        env:
+{{ include "hpcc.mergeEnvironments" $env | indent 8 -}}
+        - name: "SENTINEL"
+          value: "/tmp/{{ $roxie.name }}.sentinel"
 {{- $local := dict "first" true }}
 {{- range $service := $roxie.services }}
 {{- if ne (int $service.port)  0 }}

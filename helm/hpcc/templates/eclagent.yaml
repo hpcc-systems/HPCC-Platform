@@ -12,10 +12,10 @@ data:
   {{ .me.name }}.yaml:
     version: 1.0
     eclagent:
-{{ toYaml (omit .me "logging") | indent 6 }}
+{{ toYaml (omit .me "logging" "env") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" . | indent 6 }}
     {{ $apptype }}:
-{{ toYaml (omit .me "logging") | indent 6 }}
+{{ toYaml (omit .me "logging" "env") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" . | indent 6 }}
 {{ include "hpcc.generateVaultConfig" . | indent 6 }}
     global:
@@ -50,6 +50,10 @@ data:
 {{- include "hpcc.addResources" (dict "me" .me.resources) | indent 12 }}
 {{- $appCmd := printf "%s %s %s _HPCC_ARGS_" $apptype (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $appCmd)) | indent 12 }}
+{{- if .env }}
+            env:
+{{ include "hpcc.mergeEnvironments" .env | indent 12 }}
+{{- end }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
@@ -76,9 +80,10 @@ data:
 
 {{ range $.Values.eclagent -}}
 {{- if not .disabled -}}
+{{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $apptype := .type | default "hthor" -}}
 {{- $secretsCategories := list "system" "ecl-user" "ecl" "storage" }}
-{{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories }}
+{{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories "env" $env }}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.agentConfigMap" "component" "eclagent" "excludeKeys" (print "global," $apptype ".replicas"))) }}
 {{- include "hpcc.checkDefaultStoragePlane" $commonCtx }}
 apiVersion: apps/v1
@@ -111,6 +116,10 @@ spec:
                 {{ include "hpcc.configArg" . }},
                 {{ include "hpcc.daliArg" $ }}
               ]
+        env:
+{{ include "hpcc.mergeEnvironments" $env | indent 8 -}}
+        - name: "SENTINEL"
+          value: "/tmp/{{ .name }}.sentinel"
 {{ include "hpcc.addSentinelProbes" . | indent 8 }}
 {{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
 {{- if .useChildProcesses }}
