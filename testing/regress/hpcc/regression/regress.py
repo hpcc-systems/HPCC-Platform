@@ -72,6 +72,7 @@ class Regression:
 
         # Use the existing logger instance
         self.log = self.config.log
+        self.loglevel = args.loglevel
         if args.loglevel == 'info':
             logger.setLevel(logging.INFO)
         elif args.loglevel == 'debug':
@@ -184,7 +185,7 @@ class Regression:
         logHandler = os.path.join(self.logDir, logName)
         self.args.testFile=logHandler
         self.saveConfig()
-        self.log.addHandler(logHandler)
+        self.log.addHandler(logHandler, self.loglevel )
         return (report, logHandler)
 
     def closeLogging(self):
