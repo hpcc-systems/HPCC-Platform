@@ -57,10 +57,6 @@ Pass in root as .
 {{- $spillStorage := ($storage.spillStorage | default dict) -}}
 {{- $daliStorage := ($storage.daliStorage | default dict) -}}
 {{- $dllStorage := ($storage.dllStorage | default dict) -}}
-{{- $dataStoragePlane := ($dataStorage.plane | default "hpcc-data-plane") -}}
-{{- $spillStoragePlane := ($spillStorage.plane | default "hpcc-spill-plane") -}}
-{{- $daliStoragePlane := ($daliStorage.plane | default "hpcc-dali-plane") -}}
-{{- $dllStoragePlane := ($dllStorage.plane | default "hpcc-dlls-plane") -}}
 {{- $certificates := (.Values.certificates | default dict) -}}
 {{- $issuers := ($certificates.issuers | default dict) -}}
 mtls: {{ and ($certificates.enabled) (hasKey $issuers "local") }}
@@ -79,10 +75,6 @@ storage:
   hostGroups:
 {{ toYaml $storage.hostGroups | indent 2 }}
 {{- end }}
-  daliPlane: {{ $daliStoragePlane }}
-  dllsPlane: {{ $dllStoragePlane }}
-  dataPlane: {{ $dataStoragePlane }}
-  spillPlane: {{ $spillStoragePlane }}
   planes:
 {{- /*Generate entries for each data plane (removing the pvc).  Exclude the planes used for dlls and dali.*/ -}}
 {{- range $plane := $planes -}}
