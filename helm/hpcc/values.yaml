@@ -40,12 +40,12 @@ global:
     moneyLocale: "en_US.UTF-8"
     perCpu: 0.126
 
-  # postJobCommand will execute at the end of a dynamically lauched K8s job,
+  # postJobCommand will execute at the end of a dynamically launched K8s job,
   # when the main entrypoint process finishes, or if the readiness probes trigger a preStop event.
   # This can be useful if injected sidecars are installed that need to be told to stop.
   # If they are not stopped, the pod continues running with the side car container only, in a "NotReady" state.
   # An example of this is the Istio envoy side car. It can be stopped with the command below.
-  # Set postJobCommandViaSidecar to true, if the command needs to run with priviledge, this will enable the command
+  # Set postJobCommandViaSidecar to true, if the command needs to run with privilege, this will enable the command
   # to run as root in a sidecar in same process space as other containers, allowing it to for example send signals
   # to processes in sidecars
 
@@ -79,6 +79,14 @@ security:
 
 ## storage:
 ##
+## 1. If a component has the storagePlane property set, then that plane will be the default data location for that component.
+## 2. If storage.dataStorage.plane is defined then that plane will be the default location
+## 3. If there is a plane definition with no label or a label of "data" then the first matching plane will be the default data location
+## 4. Otherwise the default data location will be derived from the properties of storage.dataStorage.
+##
+## If a data plane contains the storageClass property then an implicit pvc will be created for that data plane.
+## An implicit pvc is only created for storage.dataStorage if option(4) above is used to select the data location.
+##
 ## If storage.[type].existingClaim is defined, a Persistent Volume Claim must
 ## exist with that name. If an existingClaim is specified, storageClass and
 ## storageSize are not used.
@@ -107,6 +115,10 @@ storage:
   #   cost:                                 # The storage cost
   #     storageAtRest: 0.113                # Storage at rest cost: cost per GiB/month
   #   options:                              # not sure if it is needed
+  #
+  # For dynamic pvc creation:
+  #   storageClass: ''
+  #   storageSize: 1Gi
 
   dllStorage:
     storageSize: 3Gi
@@ -131,7 +143,7 @@ storage:
 ## https://cert-manager.io/docs/installation/kubernetes/#installing-with-helm
 ##
 ## The Certificate issuers are divided into "local" (those which will be used for local mutual TLS) and "public" those
-## which will be publicly accesible and therefore need to be recognized by browsers and/or other entities.
+## which will be publicly accessible and therefore need to be recognized by browsers and/or other entities.
 ##
 ## Both public and local issuers have a spec section. The contents of the "spec" are documented in the cer-manager
 ## "Issuer configuration" documentation. https://cert-manager.io/docs/configuration/#supported-issuer-types
@@ -139,8 +151,8 @@ storage:
 ## The default configuration is meant to provide reasonable functionality without additional dependencies.
 ##
 ## Public issuers can be tricky if you want browsers to recognize the certificates.  This is a complex topic outside the scope
-## of this comment.  The default for the public issuer generates self signed certifiecates. The expectation is that this will be
-## overriden by the configuration of an external certificate authority or vault in QA and production environments.
+## of this comment.  The default for the public issuer generates self signed certificates. The expectation is that this will be
+## overridden by the configuration of an external certificate authority or vault in QA and production environments.
 ##
 ## The default for the local (mTLS) issuer is designed to act as our own local certificate authority. We need only need to recognize
 ## what a component is, and that it belongs to this cluster.
@@ -173,7 +185,7 @@ certificates:
       spec:
         selfSigned: {}
 
-## The secrets section contains a set of categories, each of which contain a list of secrets.  The categories deterime which
+## The secrets section contains a set of categories, each of which contain a list of secrets.  The categories determine which
 ## components have access to the secrets.
 ## For each secret:
 ##   name is the name that is is accessed by within the platform
