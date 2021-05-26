@@ -146,6 +146,13 @@ typedef IIteratorOf<IPartDescriptor> IPartDescriptorIterator;
 #define IFDSF_EXCLUDE_CLUSTERNAMES  0x08
 #define IFDSF_FOREIGN_GROUP   0x10
 
+enum class FileDescriptorFlags
+{
+    none          = 0x00,
+    dirperpart    = 0x01
+};
+BITMASK_ENUM(FileDescriptorFlags);
+
 // ==FILE DESCRIPTOR ==============================================================================================
 interface ISuperFileDescriptor;
 

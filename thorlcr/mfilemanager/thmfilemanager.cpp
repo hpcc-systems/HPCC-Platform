@@ -483,6 +483,8 @@ public:
             desc->queryProperties().setProp("@workunit", wuidStr.str());
             desc->queryProperties().setProp("@job", jobStr.str());
             desc->queryProperties().setProp("@owner", userStr.str());
+            if (job.getOptBool("subDirPerFilePart"))
+                desc->queryProperties().setPropInt("@flags", static_cast<int>(FileDescriptorFlags::dirperpart));
 
             // if supporting different OS's in CLUSTER this should be checked where addCluster called
             DFD_OS os = DFD_OSdefault;
