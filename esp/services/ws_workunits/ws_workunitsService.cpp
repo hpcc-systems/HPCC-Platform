@@ -2877,8 +2877,14 @@ INewResultSet* createFilteredResultSet(INewResultSet* result, IArrayOf<IConstNam
 
 static bool isResultRequestSzTooBig(unsigned __int64 start, unsigned requestCount, unsigned __int64 resultSz, unsigned resultRows, unsigned __int64 limitSz)
 {
-    if ((0 == requestCount) || (0 == resultRows))
+    if ((0 == start) && (0 == requestCount)) // all being requested
         return resultSz > limitSz;
+    else if (0 == resultRows)
+    {
+        // if resultRows == 0, have to assume the row count of the file is unknown (e.g. because sprayed and no meta)
+        // There is insuficient information to validate if the result will be too big.
+        return false;
+    }
     else
     {
         if (start+requestCount > resultRows)
