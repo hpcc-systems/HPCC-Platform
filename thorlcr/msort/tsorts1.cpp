@@ -26,6 +26,7 @@
 #include "tsorts.hpp"
 #include "thmem.hpp"
 
+#include "securesocket.hpp"
 
 #ifdef _DEBUG
 //#define TRACE_UNIQUE
@@ -34,7 +35,6 @@
 //#define TRACE_PARTITION
 //#define TRACE_PARTITION_OVERFLOW
 #endif
-
 
 // This contains the original global merge method
 
@@ -55,7 +55,7 @@ protected:
     }
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-    CMergeReadStream(IThorRowInterfaces *rowif, unsigned streamno,SocketEndpoint &targetep, rowcount_t startrec, rowcount_t numrecs)
+    CMergeReadStream(IThorRowInterfaces *rowif, unsigned streamno,SocketEndpoint &targetep, rowcount_t startrec, rowcount_t numrecs, unsigned sortTraceLevel=0, ISecureSocketContext *secureContextClient=nullptr)
     {
         endpoint = targetep;
         char url[100];
@@ -63,7 +63,29 @@ public:
         LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge READ: Stream(%u) %s, pos=%" RCPF "d len=%" RCPF "u",streamno,url,startrec,numrecs);
         SocketEndpoint mergeep = targetep;
         mergeep.port+=SOCKETSERVERINC; 
-        stream = ConnectMergeRead(streamno,rowif,mergeep,startrec,numrecs);
+
+        Owned<ISocket> socket = ISocket::connect_wait(mergeep,CONNECTTIMEOUT*1000);
+
+#if defined(_USE_OPENSSL)
+        if (secureContextClient)
+        {
+            Owned<ISecureSocket> ssock = secureContextClient->createSecureSocket(socket.getClear());
+            int tlsTraceLevel = SSLogMin;
+            if (sortTraceLevel >= MPVerboseMsgThreshold)
+                tlsTraceLevel = SSLogMax;
+            int status = ssock->secure_connect(tlsTraceLevel);
+            if (status < 0)
+            {
+                ssock->close();
+                VStringBuffer errmsg("Secure connect failed: %d", status);
+                throw createJSocketException(JSOCKERR_connection_failed, errmsg);
+            }
+            socket.setown(ssock.getClear());
+        }
+#endif // OPENSSL
+
+        stream = ConnectMergeRead(streamno,rowif,mergeep,startrec,numrecs,socket.getClear());
+
         LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge READ: Stream(%u) connected to %s",streamno,url);
     }
     virtual ~CMergeReadStream()
@@ -274,6 +296,8 @@ protected: friend class CSortMerge;
     Linked<IThorRowInterfaces> rowif;
     CriticalSection rowifsect;
     Semaphore rowifsem;
+    Owned<ISecureSocketContext> secureContextServer;
+    Owned<ISecureSocketContext> secureContextClients;
 public:
     IMPLEMENT_IINTERFACE_USING(Thread)
 
@@ -288,6 +312,13 @@ public:
         unsigned port = in.getTransferPort();
         server.setown(ISocket::create(port));
         term = false;
+#if defined(_USE_OPENSSL)
+        if (slave.queryTLS())
+        {
+            secureContextServer.setown(createSecureSocketContextSecretSrv("local"));
+            secureContextClients.setown(createSecureSocketContextSecret("local", ClientSocket));
+        }
+#endif
     }
 
     void setRowIF(IThorRowInterfaces *_rowif)
@@ -333,6 +364,25 @@ public:
                 Owned<ISocket> socket = server->accept(true);
                 if (!socket)
                     break;
+
+#if defined(_USE_OPENSSL)
+                if (slave.queryTLS())
+                {
+                    Owned<ISecureSocket> ssock = secureContextServer->createSecureSocket(socket.getClear());
+                    int tlsTraceLevel = SSLogMin;
+                    unsigned sortTraceLevel = slave.queryTraceLevel();
+                    if (sortTraceLevel >= MPVerboseMsgThreshold)
+                        tlsTraceLevel = SSLogMax;
+                    int status = ssock->secure_accept(tlsTraceLevel);
+                    if (status < 0)
+                    {
+                        ssock->close();
+                        VStringBuffer errmsg("Secure accept failed: %d", status);
+                        throw createJSocketException(JSOCKERR_connection_failed, errmsg);
+                    }
+                    socket.setown(ssock.getClear());
+                }
+#endif // OPENSSL
 
                 rowcount_t poscount=0;
                 rowcount_t numrecs=0;
@@ -489,7 +539,7 @@ public:
                         readers.append(*slave.createMergeInputStream(sstart,snum));
                     }
                     else
-                        readers.append(*new CMergeReadStream(rowif,i,endpoints[i], sstart, snum));
+                        readers.append(*new CMergeReadStream(rowif,i,endpoints[i], sstart, snum, slave.queryTraceLevel(), secureContextClients));
                 }
             }
         }

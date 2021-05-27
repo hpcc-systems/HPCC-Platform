@@ -36,6 +36,7 @@ include_directories (
          ./../include 
          .
          ./../jlib
+         ./../security/securesocket
     )
 
 ADD_DEFINITIONS( -DLOGMSGCOMPONENT=2 -D_USRDLL -DMP_EXPORTS )
@@ -45,5 +46,8 @@ install ( TARGETS mp RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_D
 target_link_libraries ( mp 
          jlib
     )
+    if (USE_OPENSSL)
+        target_link_libraries(mp securesocket)
+    endif()
 
 HPCC_ADD_SUBDIRECTORY(test "PLATFORM")

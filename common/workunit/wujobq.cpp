@@ -21,6 +21,7 @@
 #include "limits.h"
 #include "jlib.hpp"
 #include "jbuff.hpp"
+#include "jsecrets.hpp"
 #include "dasess.hpp"
 #include "dautils.hpp"
 #include "portlist.h"
@@ -33,6 +34,8 @@
 
 #include "workunit.hpp"
 #include "wujobq.hpp"
+
+#include "securesocket.hpp"
 
 #ifndef _CONTAINERIZED
 #include "environment.hpp"
@@ -1756,7 +1759,12 @@ public:
         assertex(!initiateconv.get());
         SocketEndpoint ep = item->queryEndpoint();
         unsigned short port = (unsigned short)item->getPort();
-        initiateconv.setown(createSingletonSocketConnection(port));
+#if defined(_USE_OPENSSL)
+        if (queryMtls())
+            initiateconv.setown(createSingletonSecureSocketConnection(port));
+        else
+#endif
+            initiateconv.setown(createSingletonSocketConnection(port));
         if (!port)
             item->setPort(initiateconv->setRandomPort(WUJOBQ_BASE_PORT,WUJOBQ_PORT_NUM));
         initiatewu.set(item->queryWUID());
@@ -1800,7 +1808,13 @@ public:
                 if (item->isValidSession()) {
                     SocketEndpoint ep = item->queryEndpoint();
                     ep.port = item->getPort();
-                    Owned<IConversation> acceptconv = createSingletonSocketConnection(ep.port,&ep);
+                    Owned<IConversation> acceptconv;
+#if defined(_USE_OPENSSL)
+                    if (queryMtls())
+                        acceptconv.setown(createSingletonSecureSocketConnection(ep.port,&ep));
+                    else
+#endif
+                        acceptconv.setown(createSingletonSocketConnection(ep.port,&ep));
                     if (acceptconv->connect(3*60*1000)) { // shouldn't need that long
                         retitem = item.getClear();
                         return acceptconv.getClear();
@@ -1841,7 +1855,13 @@ public:
             if (item->isValidSession()) {
                 SocketEndpoint ep = item->queryEndpoint();
                 ep.port = item->getPort();
-                Owned<IConversation> acceptconv = createSingletonSocketConnection(ep.port,&ep);
+                Owned<IConversation> acceptconv;
+#if defined(_USE_OPENSSL)
+                if (queryMtls())
+                    acceptconv.setown(createSingletonSecureSocketConnection(ep.port,&ep));
+                else
+#endif
+                    acceptconv.setown(createSingletonSocketConnection(ep.port,&ep));
                 acceptconv->connect(3*60*1000); // connect then close should close other end
                 return true;
             }

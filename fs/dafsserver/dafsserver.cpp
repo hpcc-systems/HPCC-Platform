@@ -2886,6 +2886,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
                 }
                 if (left)
                 {
+                    // TLS TODO: avail_read() may not return accurate amount of pending bytes
                     avail = (size32_t)socket->avail_read();
                     try
                     {

@@ -206,6 +206,7 @@ void doServer(ISocket *socket)
             try
             {
                 Owned<ISocket> p = ISocket::connect(me);
+                // TLS TODO: secure_connect() here if globally configured for mtls ...
                 p->write("\0\0\0\0", 4);
                 p->close();
             }
@@ -220,6 +221,7 @@ void doServer(ISocket *socket)
         try
         {
             Owned<ISocket> client = socket->accept();
+            // TLS TODO: secure_accept() here if globally configured for mtls ...
             timeoutTopology();
             unsigned packetLen;
             client->read(&packetLen, 4);
