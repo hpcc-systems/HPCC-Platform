@@ -3339,17 +3339,8 @@ static void generateHosts(IPropertyTree * storage, GroupInfoArray & groups)
     }
 }
 
-
+static CConfigUpdateHook configUpdateHook;
 static std::atomic<unsigned> normalizeHostGroupUpdateCBId{(unsigned)-1};
-MODULE_INIT(INIT_PRIORITY_STANDARD)
-{
-    return true;
-}
-MODULE_EXIT()
-{
-    if ((unsigned)-1 != normalizeHostGroupUpdateCBId)
-        removeConfigUpdateHook(normalizeHostGroupUpdateCBId);
-}
 static CriticalSection storageCS;
 static void doInitializeStorageGroups(bool createPlanesFromGroups)
 {
@@ -3463,17 +3454,12 @@ static void doInitializeStorageGroups(bool createPlanesFromGroups)
 
 void initializeStorageGroups(bool createPlanesFromGroups)
 {
-    doInitializeStorageGroups(createPlanesFromGroups);
-    unsigned uninitialized = (unsigned)-1;
-    if (normalizeHostGroupUpdateCBId.compare_exchange_strong(uninitialized, 0))
+    auto updateFunc = [createPlanesFromGroups](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
     {
-        auto updateFunc = [createPlanesFromGroups](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
-        {
-            PROGLOG("initializeStorageGroups update");
-            doInitializeStorageGroups(createPlanesFromGroups);
-        };
-        normalizeHostGroupUpdateCBId = installConfigUpdateHook(updateFunc);
-    }
+        PROGLOG("initializeStorageGroups update");
+        doInitializeStorageGroups(createPlanesFromGroups);
+    };
+    configUpdateHook.installOnce(updateFunc, true);
 }
 
 bool getDefaultStoragePlane(StringBuffer &ret)
