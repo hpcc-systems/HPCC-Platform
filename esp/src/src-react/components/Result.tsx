@@ -7,9 +7,10 @@ import { WUResult } from "@hpcc-js/eclwatch";
 import nlsHPCC from "src/nlsHPCC";
 import { ESPBase } from "src/ESPBase";
 import { csvEncode } from "src/Utility";
+import { useFavorite } from "../hooks/favorite";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { pushParams } from "../util/history";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
+import { pushParams } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
@@ -231,6 +232,7 @@ export const Result: React.FunctionComponent<ResultProps> = ({
     const [result] = React.useState<CommsResult>(resultTable.calcResult());
     const [FilterFields, setFilterFields] = React.useState<Fields>({});
     const [showFilter, setShowFilter] = React.useState(false);
+    const [isFavorite, addFavorite, removeFavorite] = useFavorite(window.location.hash);
 
     React.useEffect(() => {
         result?.fetchXMLSchema().then(() => {
@@ -290,7 +292,18 @@ export const Result: React.FunctionComponent<ResultProps> = ({
                     { key: "csv", text: nlsHPCC.CSV, onClick: () => doDownload("csv", wuid, result.Sequence) },
                 ]
             }
-        }
+        },
+        {
+            key: "star", iconProps: { iconName: isFavorite ? "FavoriteStarFill" : "FavoriteStar" },
+            onClick: () => {
+                if (isFavorite) {
+                    removeFavorite();
+                } else {
+                    addFavorite();
+                }
+            }
+        },
+
     ];
 
     return <HolyGrail
