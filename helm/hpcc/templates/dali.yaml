@@ -1,6 +1,7 @@
 {{ range $dali := $.Values.dali -}}
 {{- if not $dali.disabled -}}
-{{- $commonCtx := dict "root" $ "me" $dali }}
+{{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
+{{- $commonCtx := dict "root" $ "me" $dali "env" $env }}
 {{- $sashaServices := $dali.services | default dict -}}
 {{- $daliSecretsCategories := list "system" }}
 {{- $tmpDaliScope := dict "aggregateSashaSecretsCategories" list "aggregateSashaAccess" list -}}
@@ -39,6 +40,10 @@ spec:
         args: [
                 {{ include "hpcc.configArg" $dali }}
               ]
+        env:
+{{ include "hpcc.mergeEnvironments" $env | indent 8 -}}
+        - name: "SENTINEL"
+          value: "/tmp/{{ $dali.name }}.sentinel"
 {{ include "hpcc.addSentinelProbes" $dali | indent 8 }}
 {{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
 {{- include "hpcc.addResources" (dict "me" $dali.resources) | indent 8 }}
@@ -97,7 +102,7 @@ data:
   {{ $dali.name }}.yaml: |
     version: 1.0
     dali:
-{{ toYaml (omit $dali "logging" "services") | indent 6 }}
+{{ toYaml (omit $dali "logging" "services" "env") | indent 6 }}
       dataPath: {{ include "hpcc.getVolumeMountPrefix" (dict "root" $ "me" $daliStorage "path" "dalistorage") }}
 {{- include "hpcc.generateLoggingConfig" $commonCtx | indent 6 }}
 {{ include "hpcc.generateVaultConfig" (dict "root" $ "secretsCategories" $daliSecretsCategories ) | indent 6 }}

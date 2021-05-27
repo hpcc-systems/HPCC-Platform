@@ -10,7 +10,7 @@ data:
   {{ .me.name }}.yaml:
     version: 1.0
     eclscheduler:
-{{ toYaml (omit .me "logging") | indent 6 }}
+{{ toYaml (omit .me "logging" "env") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" . | indent 6 }}
       queues:
 {{ include "hpcc.generateConfigMapQueues" .root | indent 6 }}
@@ -22,8 +22,9 @@ data:
 
 {{ range $.Values.eclscheduler -}}
 {{- if not .disabled -}}
+{{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $secretsCategories := list "system" }}
-{{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories }}
+{{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories "env" $env }}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.eclSchedulerConfigMap" "component" "eclscheduler" "excludeKeys" "global")) -}}
 apiVersion: apps/v1
 kind: Deployment
@@ -56,6 +57,10 @@ spec:
                 {{ include "hpcc.configArg" . }},
                 {{ include "hpcc.daliArg" $ }}
               ]
+        env:
+{{ include "hpcc.mergeEnvironments" $env | indent 8 -}}
+        - name: "SENTINEL"
+          value: "/tmp/{{ .name }}.sentinel"
 {{ include "hpcc.addSentinelProbes" . | indent 8 }}
 {{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
 {{- if not $.Values.global.privileged }}

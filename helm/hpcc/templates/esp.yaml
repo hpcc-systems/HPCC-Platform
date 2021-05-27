@@ -10,7 +10,7 @@ data:
   {{ .me.name }}.yaml:
     version: 1.0
     esp:
-{{ toYaml (omit .me "logging" "metrics") | indent 6 }}
+{{ toYaml (omit .me "logging" "metrics" "env") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" . | indent 6 }}
 {{- include "hpcc.generateMetricsConfig" . | indent 6 }}
 {{- if and .root.Values.certificates .root.Values.certificates.enabled }}
@@ -48,10 +48,11 @@ data:
 
 {{ range $.Values.esp -}}
 {{- if not .disabled -}}
+{{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $application := .application | default "eclwatch" -}}
 {{- $secretsCategories := ternary (list "storage" "esp" "codeSign" "codeVerify")  (list "storage" "esp") (eq $application "eclwatch") -}}
 {{- $includeStorageLabels := ternary (list "lz" "data" "") (list "data" "") (eq $application "eclwatch") -}}
-{{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories  "includeLabels" $includeStorageLabels -}}
+{{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories  "includeLabels" $includeStorageLabels "env" $env -}}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.espConfigMap" "component" "esp" "excludeKeys" "global,esp.services,esp.queues")) }}
 
 apiVersion: apps/v1
@@ -83,6 +84,10 @@ spec:
                 {{ include "hpcc.configArg" . }},
                 {{ include "hpcc.daliArg" $ }}
               ]
+        env:
+{{ include "hpcc.mergeEnvironments" $env | indent 8 -}}
+        - name: "SENTINEL"
+          value: "/tmp/{{ .name }}.sentinel"
 {{ include "hpcc.addSentinelProbes" . | indent 8 }}
 {{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
 {{- include "hpcc.addResources" (dict "me" .resources) | indent 8 }}

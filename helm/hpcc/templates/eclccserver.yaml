@@ -51,6 +51,10 @@ data:
 {{- $postJobCommand := $misc.postJobCommand | default "" }}
 {{- $eclccserverCmd := printf "eclccserver %s %s _HPCC_ARGS_" (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $eclccserverCmd)) | indent 12 }}
+{{- if .env }}
+            env:
+{{ include "hpcc.mergeEnvironments" .env | indent 12 }}
+{{- end }}
             workingDir: /tmp
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
@@ -78,8 +82,9 @@ data:
 
 {{ range $.Values.eclccserver -}}
 {{- if not .disabled -}}
+{{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $secretsCategories := list "system" "codeVerify" }}
-{{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories }}
+{{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories "env" $env }}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.eclccServerConfigMap" "component" "eclccserver" "excludeKeys" "global,eclccserver.queues")) }}
 apiVersion: apps/v1
 kind: Deployment
@@ -113,6 +118,10 @@ spec:
                 {{ include "hpcc.configArg" . }},
                 {{ include "hpcc.daliArg" $ }}
               ]
+        env:
+{{ include "hpcc.mergeEnvironments" $env | indent 8 -}}
+        - name: "SENTINEL"
+          value: "/tmp/{{ .name }}.sentinel"
 {{ include "hpcc.addSentinelProbes" . | indent 8 }}
 {{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
 {{- if .useChildProcesses }}

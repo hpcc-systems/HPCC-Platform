@@ -8,7 +8,7 @@ Pass in dict with root and me
 {{- $eclAgentScope := dict "name" .eclAgentName "type" $eclAgentType "useChildProcesses" .eclAgentUseChildProcesses "replicas" .eclAgentReplicas | merge (pick .me "keepJobs") }}
 {{- $thorAgentScope := dict "name" .thorAgentName "replicas" .thorAgentReplicas  | merge (pick .me "keepJobs") }}
 {{- $hthorScope := dict "name" $hthorName | merge (pick .me "multiJobLinger") }}
-{{- $thorScope := omit .me "eclagent" "thoragent" "hthor" "logging" "eclAgentResources" "eclAgentUseChildProcesses" "eclAgentReplicas" "thorAgentReplicas" "eclAgentType" }}
+{{- $thorScope := omit .me "eclagent" "thoragent" "hthor" "logging" "env" "eclAgentResources" "eclAgentUseChildProcesses" "eclAgentReplicas" "thorAgentReplicas" "eclAgentType" }}
 {{- $misc := .root.Values.global.misc | default dict }}
 {{- $postJobCommand := $misc.postJobCommand | default "" }}
 {{- $eclAgentJobName := printf "%s-_HPCC_JOBNAME_" $eclAgentType }}
@@ -73,6 +73,10 @@ data:
 {{- include "hpcc.addResources" (dict "me" .eclAgentResources) | indent 12 }}
 {{- $agentCmd := printf "%s %s %s _HPCC_ARGS_" $eclAgentType (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $agentCmd)) | indent 12 }}
+{{- if .env }}
+            env:
+{{ include "hpcc.mergeEnvironments" .env | indent 12 }}
+{{- end }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
@@ -128,6 +132,10 @@ data:
 {{- include "hpcc.addResources" (dict "me" $thorScope.managerResources) | indent 12 }}
 {{- $thorManagerCmd := printf "thormaster_lcr %s %s _HPCC_ARGS_" (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $thorManagerCmd)) | indent 12 }}
+{{- if .env }}
+            env:
+{{ include "hpcc.mergeEnvironments" .env | indent 12 }}
+{{- end }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
@@ -180,6 +188,10 @@ data:
 {{- include "hpcc.addResources" (dict "me" $thorScope.workerResources) | indent 12 }}
 {{- $thorWorkerCmd := printf "thorslave_lcr %s %s _HPCC_ARGS_" (include "hpcc.configArg" .me) (include "hpcc.daliArg" .root) }}
 {{ include "hpcc.addCommandAndLifecycle" (. | merge (dict "command" $thorWorkerCmd)) | indent 12 }}
+{{- if .env }}
+            env:
+{{ include "hpcc.mergeEnvironments" .env | indent 12 }}
+{{- end }}
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
@@ -229,8 +241,9 @@ data:
 {{- $local := dict "first" true }}
 {{ range $.Values.thor -}}
 {{- if not .disabled -}}
+{{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $secretsCategories := list "system" "ecl-user" "ecl" "storage" }}
-{{- $commonCtx := dict "root" $ "me" .  "secretsCategories" $secretsCategories -}}
+{{- $commonCtx := dict "root" $ "me" .  "secretsCategories" $secretsCategories "env" $env -}}
 {{- $_ := set $commonCtx "eclAgentName" (printf "%s-eclagent" .name) -}}
 {{- $_ := set $commonCtx "thorAgentName" (printf "%s-thoragent" .name) -}}
 {{- $_ := set $commonCtx "eclAgentUseChildProcesses" (hasKey . "eclAgentUseChildProcesses" | ternary .eclAgentUseChildProcesses true) }}
@@ -267,6 +280,10 @@ spec:
                 {{ include "hpcc.daliArg" $ }},
                 {{ printf "\"--name=%s\"" .name }}
               ]
+        env:
+{{ include "hpcc.mergeEnvironments" $env | indent 8 -}}
+        - name: "SENTINEL"
+          value: "/tmp/{{ $commonCtx.eclAgentName }}.sentinel"
 {{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
 {{- if $commonCtx.eclAgentUseChildProcesses }}
 {{- include "hpcc.addResources" (dict "me" .eclAgentResources) | indent 8 }}
@@ -317,6 +334,10 @@ spec:
                 {{ include "hpcc.daliArg" $ }},
                 {{ printf "\"--name=%s\"" .name }}
               ]
+        env:
+{{ include "hpcc.mergeEnvironments" $env | indent 8 -}}
+        - name: "SENTINEL"
+          value: "/tmp/{{ $commonCtx.thorAgentName }}.sentinel"
 {{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
 {{- if not $.Values.global.privileged }}
 {{- include "hpcc.addStubResources" . | indent 8 }}

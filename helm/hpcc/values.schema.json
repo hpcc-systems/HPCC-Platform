@@ -235,6 +235,9 @@
         "image": {
           "$ref": "#/definitions/image"
         },
+        "env": {
+          "$ref": "#/definitions/env"
+        },
         "logging": {
           "$ref": "#/definitions/logging"
         },
@@ -572,6 +575,22 @@
       },
       "additionalProperties": { "type": ["integer", "string", "boolean"] }
     },
+    "env": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Environment variable name"
+          },
+          "value": {
+            "type": ["number", "string", "boolean"],
+            "description": "Environment variable value"
+          }
+        }
+      }
+    },
     "egress": {
       "type": "object",
       "properties": {
@@ -717,6 +736,9 @@
         },
         "image": {
           "$ref": "#/definitions/image"
+        },
+        "env": {
+          "$ref": "#/definitions/env"
         },
         "logging": {
           "$ref": "#/definitions/logging"
