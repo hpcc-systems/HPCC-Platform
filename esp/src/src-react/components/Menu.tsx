@@ -3,10 +3,15 @@ import { INavLink, INavLinkGroup, INavStyles, Nav } from "@fluentui/react";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import { useFavorites } from "../hooks/favorite";
+import { hashHistory } from "../util/history";
 
 const navLinkGroups: INavLinkGroup[] = [
     {
         name: "Favorites",
+        links: []
+    },
+    {
+        name: "History",
         links: []
     },
     {
@@ -98,6 +103,15 @@ export const DevMenu: React.FunctionComponent<DevMenuProps> = ({
         });
         setMenu([...navLinkGroups]);
     }, [favorites]);
+
+    React.useEffect(() => {
+        return hashHistory.listen((location, action) => {
+            navLinkGroups[1].links = hashHistory.recent().map((row): INavLink => {
+                return { url: `#${row.pathname + row.search}`, name: row.pathname };
+            });
+            setMenu([...navLinkGroups]);
+        });
+    }, []);
 
     return <SizeMe monitorHeight>{({ size }) =>
         <div style={{ width: `${FIXED_WIDTH}px`, height: "100%", position: "relative" }}>
