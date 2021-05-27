@@ -980,6 +980,7 @@ protected:
     bool aborted;
     bool connected = false;
     bool collectFactoryStatistics = false;
+    unsigned lastLoggedTime = 0;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CInterfaceOf<IRoxieServerActivity>)
@@ -1376,6 +1377,20 @@ public:
             }
         }
 #endif
+        if (factory)
+        {
+            ActResetLog actVal = factory->queryQueryFactory().getActResetLogged();
+            if (actVal == ActResetSome)
+            {
+                factory->queryQueryFactory().setActResetLogged(ActResetAll);
+                lastLoggedTime = msTick();
+            }
+            else if (actVal == ActResetAll)
+            {
+                if ((msTick() - lastLoggedTime) >= 30000)
+                    factory->queryQueryFactory().setActResetLogged(ActResetNone);
+            }
+        }
         executeDependencies(parentExtractSize, parentExtract, 0);
         if (input)
             input->start(parentExtractSize, parentExtract, paused);
@@ -1484,8 +1499,12 @@ public:
             {
                 if (state==STATEstarted || state==STATEstarting)
                 {
-                    VStringBuffer err("STATE: activity %d reset without stop", activityId);
-                    ctx->queryCodeContext()->addWuException(err.str(), ROXIE_INTERNAL_ERROR, SeverityError, "roxie");
+                    if (factory->queryQueryFactory().getActResetLogged() != ActResetAll)
+                    {
+                        factory->queryQueryFactory().setActResetLogged(ActResetSome);
+                        VStringBuffer err("STATE: activity %d reset without stop", activityId);
+                        ctx->queryCodeContext()->addWuException(err.str(), ROXIE_INTERNAL_ERROR, SeverityError, "roxie");
+                    }
                     if (ctx->queryOptions().failOnLeaks)
                         throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "STATE: activity %d reset without stop", activityId);
                     try

@@ -33,6 +33,8 @@
 #include "package.h"
 #include "enginecontext.hpp"
 
+enum ActResetLog { ActResetNone=0, ActResetSome, ActResetAll };
+
 interface IQueryFactory;
 
 interface IActivityGraph : extends IInterface
@@ -168,6 +170,8 @@ interface IQueryFactory : extends IInterface
     virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
     virtual void getQueryInfo(StringBuffer &result, bool full, IArrayOf<IQueryFactory> *agentQueries,const IRoxieContextLogger &logctx) const = 0;
     virtual bool isDynamic() const = 0;
+    virtual ActResetLog getActResetLogged() = 0;
+    virtual ActResetLog setActResetLogged(ActResetLog _val) = 0;
     virtual void checkSuspended() const = 0;
     virtual void onTermination(TerminationCallbackInfo *info) const= 0;
 };

@@ -563,6 +563,7 @@ protected:
     ClusterType targetClusterType;
     unsigned libraryInterfaceHash;
     hash64_t hashValue;
+    ActResetLog actResetLogged = ActResetNone;
 
     static CriticalSection activeQueriesCrit;
     static CopyMapXToMyClass<hash64_t, hash64_t, CQueryFactory> activeQueries;    // Active queries
@@ -1658,6 +1659,18 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
     virtual bool isDynamic() const override
     {
         return dynamic;
+    }
+
+    virtual ActResetLog getActResetLogged() override
+    {
+        return actResetLogged;
+    }
+
+    virtual ActResetLog setActResetLogged(ActResetLog _val) override
+    {
+        ActResetLog preVal = actResetLogged;
+        actResetLogged = _val;
+        return preVal;
     }
 
 protected:
