@@ -25,10 +25,13 @@
 #ifdef _USE_OPENLDAP
 #include "ldapsecurity.ipp"
 #endif
-
-typedef IXslProcessor * (*getXslProcessor_func)();
+#include "jmetrics.hpp"
 
 static RelaxedAtomic<unsigned> gActiveRequests;
+
+static auto pActiveRequests = hpccMetrics::createCustomMetricAndAddToReporter("activerequests", "Number of active requests", hpccMetrics::METRICS_GAUGE, gActiveRequests);
+
+typedef IXslProcessor * (*getXslProcessor_func)();
 
 unsigned ActiveRequests::getCount()
 {
