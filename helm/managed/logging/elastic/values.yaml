@@ -58,3 +58,5 @@ kibana:
   #   kibana.yml: |
   #     key:
   #       nestedkey: value
+  service:
+    type: "LoadBalancer"
