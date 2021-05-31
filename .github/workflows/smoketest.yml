@@ -251,7 +251,7 @@ jobs:
     - name: Cache miss prep
       if: steps.cache.outputs.cache-hit != 'true' && (steps.check-cache.outputs.cache-exists != 'true' || steps.cache-hit-prep.outputs.hit-success != 'true')
       run: |
-        rm -rf build merge-patch src-cache
+        rm -rf build build-cache merge-patch src-cache
         mkdir build
         mkdir src-cache
         cd src
