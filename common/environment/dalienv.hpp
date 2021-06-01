@@ -26,12 +26,12 @@
 
 #include "environment.hpp"
 
+#ifndef _CONTAINERIZED
+
 interface IFile;
 class RemoteFilename;
 
 extern ENVIRONMENT_API EnvMachineOS queryOS(const IpAddress & ip);
-
-
 extern ENVIRONMENT_API bool canAccessFilesDirectly(const RemoteFilename & file);
 extern ENVIRONMENT_API bool canAccessFilesDirectly(const IpAddress & ip);
 extern ENVIRONMENT_API bool canAccessFilesDirectly(const char * ipText);
@@ -53,4 +53,10 @@ extern ENVIRONMENT_API void envInstallNASHooks(IPropertyTree *nasPTree, SocketEn
 extern ENVIRONMENT_API IPropertyTree *envGetInstallNASHooks(SocketEndpoint *myEp=NULL);
 extern ENVIRONMENT_API IPropertyTree *envGetInstallNASHooks(IPropertyTree *nasPTree, SocketEndpoint *myEp=NULL);
 
+#else
+
+inline bool canSpawnChildProcess(const IpAddress & ip) { return true; }
+inline EnvMachineOS queryOS(const IpAddress & ip) { return MachineOsLinux; }
+
+#endif
 #endif

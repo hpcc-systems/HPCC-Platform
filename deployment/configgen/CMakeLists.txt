@@ -48,6 +48,10 @@ target_link_libraries ( configgen
         environment 
         )
 
+if (CONTAINERIZED)
+    message(FATAL_ERROR "Configgen is not included in container builds")
+endif()
+
 IF (USE_OPENSSL)
     target_link_libraries ( configgen
     	securesocket

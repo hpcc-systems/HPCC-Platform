@@ -50,8 +50,11 @@ static CriticalSection dfuServiceUrlCrit;
 static std::atomic<unsigned> currentDfuServiceUrl{0};
 static std::atomic<bool> dfuServiceUrlsDiscovered{false};
 
-void ensureAccessibleDfuServiceURLList()
+static void ensureAccessibleDfuServiceURLList()
 {
+#ifdef _CONTAINERIZED
+    UNIMPLEMENTED_X("CONTAINERIZED(ensureAccessibleDfuServiceURLList)");
+#else
     bool expected = false;
     if (dfuServiceUrlsDiscovered.compare_exchange_strong(expected, true))
     {
@@ -62,6 +65,7 @@ void ensureAccessibleDfuServiceURLList()
         for (auto &s: dfuServiceUrls)
             s = s + "/WsDfu/";
     }
+#endif
 }
 
 static unsigned getNumDfuServiceURL()

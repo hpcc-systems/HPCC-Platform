@@ -80,13 +80,16 @@ target_link_libraries ( saserver
          jlib 
          dafsclient 
          dalibase 
-         environment 
          dllserver 
          nbcd 
          eclrtl 
          deftype 
          workunit 
     )
+
+if (NOT CONTAINERIZED)
+    target_link_libraries ( saserver environment )
+endif()
 
 set (    SRCS 
          sacmd.cpp 

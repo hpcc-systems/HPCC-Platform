@@ -120,12 +120,15 @@ target_link_libraries ( ccd
          deftype 
          thorhelper 
          jhtree 
-         environment 
          schedulectrl
          dllserver 
          workunit 
          libbase58
     )
+
+if (NOT CONTAINERIZED)
+    target_link_libraries ( ccd environment )
+endif()
 
 IF (USE_OPENSSL)
     target_link_libraries ( ccd

@@ -42,7 +42,11 @@ class CDKDPitem : public CInterface
     StringBuffer &getExePath(const char *tail,StringBuffer &ret,StringBuffer &workdir)
     {
         StringBuffer p;
+#ifdef _CONTAINERIZED
+        UNIMPLEMENTED_X("CONTAINERIZED(dkc)");
+#else
         querySlaveExecutable("DKCSlaveProcess", "dkcslave", NULL, ep, p, workdir);
+#endif
         splitDirTail(p.str(),ret);
         addPathSepChar(ret).append(tail);
         if (getPathSepChar(ret.str())=='\\') {

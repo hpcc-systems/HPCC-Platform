@@ -38,7 +38,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/esplib
          ${HPCC_SOURCE_DIR}/esp/platform
          ${HPCC_SOURCE_DIR}/system/jlib
-         ${HPCC_SOURCE_DIR}/common/environment
          ${HPCC_SOURCE_DIR}/esp/services
          ${HPCC_SOURCE_DIR}/common
          ${HPCC_SOURCE_DIR}/system/security/securesocket
@@ -70,7 +69,5 @@ target_link_libraries ( ws_elk
          xmllib
          esphttp
          dalibase
-         environment
          dllserver
-         SMCLib
     )

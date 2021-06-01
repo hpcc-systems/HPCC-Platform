@@ -48,7 +48,9 @@ target_link_libraries ( dalidiag
          mp 
          hrpc 
          remote 
-         environment 
          dalibase 
     )
 
+if (NOT CONTAINERIZED)
+    target_link_libraries ( dalidiag environment )
+endif()

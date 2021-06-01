@@ -101,6 +101,7 @@ short days[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
 CThorNodeGroup* CThorNodeGroupCache::readNodeGroup(const char* _groupName)
 {
+#ifndef _CONTAINERIZED
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
     Owned<IPropertyTree> root = &env->getPTree();
@@ -113,6 +114,7 @@ CThorNodeGroup* CThorNodeGroupCache::readNodeGroup(const char* _groupName)
         if (groupName.length() && strieq(groupName.str(), _groupName))
             return new CThorNodeGroup(_groupName, cluster.getCount("ThorSlaveProcess"), cluster.getPropBool("@replicateOutputs", false));
     }
+#endif
 
     return NULL;
 }
@@ -183,8 +185,13 @@ void CWsDfuEx::init(IPropertyTree *cfg, const char *process, const char *service
 
     setDaliServixSocketCaching(true);
 
+#ifdef _CONTAINERIZED
+    IERRLOG("CONTAINERIZED(CWsDfuEx::init)");
+    maxFileAccessExpirySeconds = defaultMaxFileAccessExpirySeconds;
+#else
     factory.setown(getEnvironmentFactory(true));
     env.setown(factory->openEnvironment());
+#endif
     maxFileAccessExpirySeconds = serviceTree->getPropInt("@maxFileAccessExpirySeconds", defaultMaxFileAccessExpirySeconds);
 }
 
@@ -2108,9 +2115,11 @@ void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char *clusterR
             if (clusterInfo) //Should be valid. But, check it just in case.
             {
                 partsOnCluster->setReplicate(clusterInfo->queryPartDiskMapping().isReplicated());
+#ifndef _CONTAINERIZED
                 Owned<CThorNodeGroup> nodeGroup = thorNodeGroupCache->lookup(clusterName, nodeGroupCacheTimeout);
                 if (nodeGroup)
                     partsOnCluster->setCanReplicate(nodeGroup->queryCanReplicate());
+#endif
                 const char *defaultDir = fdesc->queryDefaultDir();
                 if (!isEmptyString(defaultDir))
                 {
@@ -5928,6 +5937,9 @@ void CWsDfuEx::getFileDafilesrvConfiguration(StringBuffer &keyPairName, unsigned
 {
     port = DEFAULT_ROWSERVICE_PORT;
     secure = false;
+#ifdef _CONTAINERIZED
+    IERRLOG("CONTAINERIZED(CWsDfuEx::getFileDafilesrvConfiguration)");
+#else
     keyPairName.set(env->getClusterGroupKeyPairName(group));
     Owned<IConstDaFileSrvInfo> daFileSrvInfo = env->getDaFileSrvGroupInfo(group);
     if (daFileSrvInfo)
@@ -5935,6 +5947,7 @@ void CWsDfuEx::getFileDafilesrvConfiguration(StringBuffer &keyPairName, unsigned
         port = daFileSrvInfo->getPort();
         secure = daFileSrvInfo->getSecure();
     }
+#endif
 }
 
 void CWsDfuEx::getFileDafilesrvConfiguration(StringBuffer &keyPairName, unsigned &retPort, bool &retSecure, const char *fileName, std::vector<std::string> &groups)
@@ -6136,6 +6149,9 @@ bool CWsDfuEx::onDFUFileAccessV2(IEspContext &context, IEspDFUFileAccessV2Reques
 // NB: deprecated from ver >= 1.50
 static IGroup *getDFUFileIGroup(const char *clusterName, ClusterType clusterType, const char *clusterTypeEx, StringArray &locations, StringBuffer &groupName)
 {
+#ifdef _CONTAINERIZED
+    UNIMPLEMENTED_X("CONTAINERIZED(getDFUFileIGroup)"); // call to getClusterGroupName() is not available.
+#else
     GroupType groupType;
     StringBuffer basedir;
     getClusterGroupName(groupName, clusterName);
@@ -6201,6 +6217,7 @@ static IGroup *getDFUFileIGroup(const char *clusterName, ClusterType clusterType
         ESPLOG(LogMin, "DFUFileIGroup %s added", groupName.str());
     }
     return group.getClear();
+#endif
 }
 
 void CWsDfuEx::exportRecordDefinitionBinaryType(const char *recordDefinition, MemoryBuffer &layoutBin)
@@ -6224,6 +6241,9 @@ bool CWsDfuEx::onDFUFileCreate(IEspContext &context, IEspDFUFileCreateRequest &r
 {
     try
     {
+#ifdef _CONTAINERIZED
+        UNIMPLEMENTED_X("CONTAINERIZED(CWsDfuEx::onDFUFileCreate)");
+#else
         IConstDFUFileAccessRequestBase &requestBase = req.getRequestBase();
         const char *fileName = requestBase.getName();
         const char *clusterName = requestBase.getCluster();
@@ -6309,6 +6329,7 @@ bool CWsDfuEx::onDFUFileCreate(IEspContext &context, IEspDFUFileCreateRequest &r
         accessInfo.setExpiryTime(metaInfo->queryProp("expiryTime"));
         accessInfo.setFileAccessPort(metaInfo->getPropInt("port"));
         accessInfo.setFileAccessSSL(metaInfo->getPropBool("secure"));
+#endif
     }
     catch (IException *e)
     {
@@ -6321,6 +6342,9 @@ bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Reques
 {
     try
     {
+#ifdef _CONTAINERIZED
+        UNIMPLEMENTED_X("CONTAINERIZED(CWsDfuEx::onDFUFileCreateV2)");
+#else
         const char *fileName = req.getName();
         const char *clusterName = req.getCluster();
         const char *recordDefinition = req.getECLRecordDefinition();
@@ -6440,6 +6464,7 @@ bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Reques
             accessInfo.setFileAccessPort(metaInfo->getPropInt("port"));
             accessInfo.setFileAccessSSL(metaInfo->getPropBool("secure"));
         }
+#endif
     }
     catch (IException *e)
     {
@@ -6494,7 +6519,12 @@ bool CWsDfuEx::onDFUFilePublish(IEspContext &context, IEspDFUFilePublishRequest 
             if (isEmptyString(recordDefinition))
                  throw makeStringException(ECLWATCH_INVALID_INPUT, "DFUFilePublish: No ECLRecordDefinition defined.");
 
+#ifdef _CONTAINERIZED
+            IERRLOG("CONTAINERIZED(CWsDfuEx::onDFUFilePublish)");
+            ClusterType clusterType = NoCluster;
+#else
             ClusterType clusterType = getClusterTypeByClusterName(clusterName);
+#endif
             const char *clusterTypeEx = clusterTypeString(clusterType, false);
             GroupType groupType;
             StringBuffer basedir;

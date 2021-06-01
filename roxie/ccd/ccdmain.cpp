@@ -880,12 +880,14 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             lazyOpen = (restarts > 0);
         else
             lazyOpen = topology->getPropBool("@lazyOpen", false);
+#ifndef _CONTAINERIZED
         bool useNasTranslation = topology->getPropBool("@useNASTranslation", true);
         if (useNasTranslation)
         {
             Owned<IPropertyTree> nas = envGetNASConfiguration(topology);
             envInstallNASHooks(nas);
         }
+#endif
         useAeron = topology->getPropBool("@useAeron", false);
         doIbytiDelay = topology->getPropBool("@doIbytiDelay", true);
         minIbytiDelay = topology->getPropInt("@minIbytiDelay", 2);

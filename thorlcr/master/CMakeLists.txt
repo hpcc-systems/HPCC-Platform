@@ -73,7 +73,6 @@ target_link_libraries (  thormaster_lcr
          jhtree 
          dafsclient 
          dalibase 
-         environment 
          dllserver 
          nbcd 
          eclrtl 
@@ -90,6 +89,11 @@ target_link_libraries (  thormaster_lcr
          activitymasters_lcr 
          swapnodelib
     )
+
 if (USE_OPENSSL)
     target_link_libraries(thormaster_lcr securesocket)
+endif()
+
+if (NOT CONTAINERIZED)
+    target_link_libraries ( thormaster_lcr environment )
 endif()

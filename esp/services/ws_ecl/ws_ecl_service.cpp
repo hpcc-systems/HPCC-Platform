@@ -216,6 +216,7 @@ void initContainerRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap)
     }
 }
 
+#ifndef _CONTAINERIZED
 void initBareMetalRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap, IPropertyTree *serviceTree, const char *daliAddress)
 {
     IPropertyTree *vips = serviceTree->queryPropTree("VIPS");
@@ -281,6 +282,8 @@ void initBareMetalRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap,
         }
     }
 }
+#endif
+
 bool CWsEclService::init(const char * name, const char * type, IPropertyTree * cfg, const char * process)
 {
     StringBuffer xpath;
@@ -1533,9 +1536,13 @@ int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttp
     xform->setParameter("includeSoapTest", "1");
     xform->setParameter("useTextareaForStringArray", "1");
 
+#ifdef _CONTAINERIZED
+    WARNLOG("CONTAINERIZED(CWsEclBinding::getGenForm) not fully implemented");
+#else
     Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(wuinfo.qsetname);
     bool isRoxie = clusterInfo && (clusterInfo->getPlatform() == RoxieCluster);
     xform->setParameter("includeRoxieOptions", isRoxie ? "1" : "0");
+#endif
 
     // set the prop noDefaultValue param
     IProperties* props = context.queryRequestParameters();

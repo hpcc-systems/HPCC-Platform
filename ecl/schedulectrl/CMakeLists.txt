@@ -50,7 +50,6 @@ target_link_libraries ( schedulectrl
          jlib
          remote 
          dalibase 
-         environment 
          dllserver 
          nbcd 
          eclrtl 

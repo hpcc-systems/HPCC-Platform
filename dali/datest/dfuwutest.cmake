@@ -50,6 +50,8 @@ target_link_libraries ( dfuwutest
          dafsclient 
          dalibase 
          dfuwu 
-         environment 
     )
 
+if (NOT CONTAINERIZED)
+    target_link_libraries ( dfuwutest environment )
+endif()

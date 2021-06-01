@@ -115,7 +115,6 @@ target_link_libraries ( activitymasters_lcr
          deftype 
          thorhelper 
          dalibase 
-         environment 
          dllserver 
          workunit 
          thorcodectx_lcr 
@@ -125,4 +124,7 @@ target_link_libraries ( activitymasters_lcr
          graphmaster_lcr 
     )
 
+if (NOT CONTAINERIZED)
+    target_link_libraries ( activitymasters_lcr environment )
+endif()
 

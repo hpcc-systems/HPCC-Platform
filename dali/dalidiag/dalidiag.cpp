@@ -302,6 +302,7 @@ void partInfo(const char *name,unsigned copy)
 
 void nodeInfo(const char *ip)
 {
+#ifndef _CONTAINERIZED
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory(false);
     Owned<IConstEnvironment> env = factory->openEnvironment();
 
@@ -331,6 +332,7 @@ void nodeInfo(const char *ip)
     }
     else
         printf("ERROR: cannot find '%s' in Dali Environment\n",ip);
+#endif
 }
 
 void slaveNode(const char *thor,unsigned n)

@@ -50,6 +50,8 @@ target_link_libraries ( dafscontrol
          hrpc 
          dafsclient 
          dalibase 
-         environment 
     )
 
+if (NOT CONTAINERIZED)
+    target_link_libraries ( dafscontrol environment )
+endif()
