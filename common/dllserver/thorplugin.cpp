@@ -752,6 +752,9 @@ extern DLLSERVER_API void getAdditionalPluginsPath(StringBuffer &pluginsPath, co
     defaultLocation.append(PATHSEPSTR "plugins");
     StringArray paths;
     paths.appendList(pluginsPath, ENVSEPSTR);
+#ifdef _CONTAINERIZED
+    //MORE: No place to provide additional plugins...
+#else
     if (paths.contains(defaultLocation))
     {
         const char *additional = queryEnvironmentConf().queryProp("additionalPlugins");
@@ -769,6 +772,7 @@ extern DLLSERVER_API void getAdditionalPluginsPath(StringBuffer &pluginsPath, co
             }
         }
     }
+#endif
 }
 
 bool SafePluginMap::addPlugin(const char *path, const char *dllname)

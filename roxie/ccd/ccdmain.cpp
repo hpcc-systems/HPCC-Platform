@@ -771,12 +771,14 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         miscDebugTraceLevel = topology->getPropInt("@miscDebugTraceLevel", 0);
 
         Linked<IPropertyTree> directoryTree = topology->queryPropTree("Directories");
+#ifndef _CONTAINERIZED
         if (!directoryTree)
         {
             Owned<IPropertyTree> envFile = getHPCCEnvironment();
             if (envFile)
                 directoryTree.set(envFile->queryPropTree("Software/Directories"));
         }
+#endif
         if (directoryTree)
         {
             getConfigurationDirectory(directoryTree, "query", "roxie", roxieName, queryDirectory);
