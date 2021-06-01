@@ -41,7 +41,7 @@
     </itemizedlist>
 
     <para>In either case, once installed and configured, the network traffic
-    is encrypted and secure. The Public and Private Keys use 1024-bit RSA
+    is encrypted and secure. The Public and Private Keys use 2048-bit RSA
     encryption.</para>
 
     <para>These server keys are read at runtime by the ESP process. It is
@@ -60,11 +60,11 @@
       self-signed certificate. Self-signed certificates are useful for
       internal use or testing.</para>
 
-      <para>The following example, creates a 1024-bit RSA Private Key which is
+      <para>The following example, creates a 2048-bit RSA Private Key which is
       encrypted using Triple-DES encryption and stored in Privacy Enhanced
       Mail (PEM) format.</para>
 
-      <programlisting>openssl genrsa -des3 -out server.key 1024</programlisting>
+      <programlisting>openssl genrsa -des3 -out server.key 2048</programlisting>
 
       <para>When prompted, provide a passphrase. This is used as the basis for
       the encryption.</para>
@@ -175,13 +175,13 @@
       locations and set the appropriate ownership and permissions</para>
 
       <para>Your Private Key and certificate must be copied to
-      /var/lib/HPCCSystems/myesp/ as illustrated in the following example.
-      </para>
+      /var/lib/HPCCSystems/myesp/ as illustrated in the following
+      example.</para>
 
       <orderedlist numeration="arabic">
         <listitem>
-          <para>Copy the certificate (crt) file to the required
-          location:</para>
+          <para>Copy the certificate (crt) file to the required location on
+          the ESP server(s) :</para>
 
           <para><programlisting>sudo cp server.crt /var/lib/HPCCSystems/myesp/server.crt
 </programlisting></para>
@@ -195,15 +195,15 @@
         </listitem>
 
         <listitem>
-          <para>Set the file permissions: </para>
+          <para>Set the file permissions:</para>
 
           <para><programlisting>sudo chmod 644 /var/lib/HPCCSystems/myesp/server.crt </programlisting></para>
         </listitem>
 
         <listitem>
-          <para>Copy the private key:</para>
+          <para>Copy the private key to the ESP server(s):</para>
 
-          <programlisting>sudo cp private.key /var/lib/HPCCSystems/myesp/private.key
+          <programlisting>sudo cp server.key /var/lib/HPCCSystems/myesp/private.key
 </programlisting>
         </listitem>
 
