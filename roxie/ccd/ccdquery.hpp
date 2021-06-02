@@ -168,6 +168,8 @@ interface IQueryFactory : extends IInterface
     virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
     virtual void getQueryInfo(StringBuffer &result, bool full, IArrayOf<IQueryFactory> *agentQueries,const IRoxieContextLogger &logctx) const = 0;
     virtual bool isDynamic() const = 0;
+    virtual unsigned getTimeActResetLastLogged() const = 0;
+    virtual void setTimeActResetLastLogged(unsigned _ntime) const = 0;
     virtual void checkSuspended() const = 0;
     virtual void onTermination(TerminationCallbackInfo *info) const= 0;
 };
