@@ -591,6 +591,7 @@ public:
     Owned<IPropertyTree> attr;
     StringAttr directory;
     StringAttr partmask;
+    FileDescriptorFlags fileFlags = FileDescriptorFlags::none;
     virtual unsigned numParts() = 0;                                            // number of parts
     virtual unsigned numCopies(unsigned partnum) = 0;                           // number of copies
     virtual INode *doQueryNode(unsigned partidx, unsigned copy, unsigned rn) = 0;               // query machine node
@@ -1179,6 +1180,8 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                 buf.append(fullpath);
             else
                 buf.swapWith(fullpath);
+            if (FileDescriptorFlags::none != (fileFlags & FileDescriptorFlags::dirperpart))
+                addPathSepChar(buf).append(idx+1); // part subdir 1 based
         }
         return buf;
     }
@@ -1331,6 +1334,7 @@ public:
         attr.setown(createPTree(mb));
         if (!attr)
             attr.setown(createPTree("Attr")); // doubt can happen
+        fileFlags = static_cast<FileDescriptorFlags>(attr->getPropInt("@flags"));
         if (version == SERIALIZATION_VERSION2)
         {
             if (subcounts)
@@ -1374,6 +1378,7 @@ public:
         directory.set(pt.queryProp("@directory"));
         partmask.set(pt.queryProp("@partmask"));
         unsigned np = pt.getPropInt("@numparts");
+        fileFlags = static_cast<FileDescriptorFlags>(pt.getPropInt("@flags"));
         StringBuffer query;
         IPropertyTree **trees = NULL;
         Owned<IPropertyTreeIterator> piter;
