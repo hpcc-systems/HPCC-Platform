@@ -46,7 +46,7 @@ The available target categories include disaster(DIS), error(ERR), warning(WRN),
     helm install myhpcc ./hpcc --set dali[0].logging.classes="ALL-PRO" --set dali[0].name="mydali"
 
 ### Log Detail Level Configuration
-Log output verbosity can be adjusted from "critical messages only" (1) up to "report all messages" (100). By default, the log level is set highest (100). 
+Log output verbosity can be adjusted from "critical messages only" (1) up to "report all messages" (100). The default log level is rather high (80) and should be adjusted accordingly.
 
     For example, verbosity should be medium for all components:
     helm install myhpcc ./hpcc --set global.logging.detail="50"

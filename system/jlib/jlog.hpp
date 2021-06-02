@@ -239,7 +239,7 @@ inline unsigned LogMsgClassFromAbbrev(char const * abbrev)
 }
 
 typedef unsigned LogMsgDetail;
-#define DefaultDetail   100
+#define DefaultDetail   DebugMsgThreshold
 #define TopDetail (LogMsgDetail)-1
 
 /*
