@@ -3108,7 +3108,11 @@ private:
         rolling = true;
         append = true;
         flushes = true;
+#ifdef _CONTAINERIZED
+        const char *logFields = nullptr;
+#else
         const char *logFields = queryEnvironmentConf().queryProp("logfields");
+#endif
         if (!isEmptyString(logFields))
             msgFields = logMsgFieldsFromAbbrevs(logFields);
         else

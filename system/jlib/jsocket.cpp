@@ -3009,6 +3009,9 @@ const char * GetCachedHostName()
     if (!cachehostname.get())
     {
 #ifndef _WIN32
+#ifdef _CONTAINERIZED
+        //MORE: Does this need to be implemented a different way?
+#else
         IpAddress ip;
         const char *ifs = queryEnvironmentConf().queryProp("interface");
         if (getInterfaceIp(ip, ifs))
@@ -3022,6 +3025,7 @@ const char * GetCachedHostName()
                 return cachehostname.get();
             }
         }
+#endif
 #endif
         char temp[1024];
         if (gethostname(temp, sizeof(temp))==0)
@@ -5380,6 +5384,11 @@ void check_epoll_cfg()
     // DBGLOG("check_epoll_cfg(): epoll_method = %d",epoll_method);
     if (epoll_method == EPOLL_INIT)
     {
+#ifdef _CONTAINERIZED
+//Does this need to be implemented a different way?
+        epoll_method = EPOLL_ENABLED;
+        epoll_hdlPerThrd = UINT_MAX;
+#else
         if (queryEnvironmentConf().getPropBool("use_epoll", true))
             epoll_method = EPOLL_ENABLED;
         else
@@ -5389,6 +5398,7 @@ void check_epoll_cfg()
         if (epoll_hdlPerThrd == 0)
             epoll_hdlPerThrd = UINT_MAX;
         // DBGLOG("check_epoll_cfg(): after reading conf file, epoll_hdlPerThrd = %u",epoll_hdlPerThrd);
+#endif
     }
 }
 #endif // _HAS_EPOLL_SUPPORT

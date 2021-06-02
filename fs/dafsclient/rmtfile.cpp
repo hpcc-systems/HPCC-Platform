@@ -55,22 +55,21 @@
 
 //#define TEST_DAFILESRV_FOR_UNIX_PATHS     // probably not needed
 
-static class CSecuritySettings
-{
-    unsigned short daliServixPort;
-public:
-    CSecuritySettings()
-    {
-        querySecuritySettings(nullptr, &daliServixPort, nullptr, nullptr, nullptr);
-    }
-
-    unsigned short queryDaliServixPort() { return daliServixPort; }
-} securitySettings;
-
-
+static std::atomic<unsigned> dafilesrvPort{(unsigned)-1};
+static CriticalSection dafilesrvCs;
 unsigned short getDaliServixPort()
 {
-    return securitySettings.queryDaliServixPort();
+    if (dafilesrvPort == (unsigned)-1)
+    {
+        CriticalBlock block(dafilesrvCs);
+        if (dafilesrvPort == (unsigned) -1)
+        {
+            unsigned short daliServixPort;
+            querySecuritySettings(nullptr, &daliServixPort, nullptr, nullptr, nullptr);
+            dafilesrvPort = daliServixPort;
+        }
+    }
+    return dafilesrvPort;
 }
 
 
