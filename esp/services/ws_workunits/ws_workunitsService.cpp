@@ -4430,6 +4430,8 @@ bool CWsWorkunitsEx::onWUGraphTiming(IEspContext &context, IEspWUGraphTimingRequ
     return true;
 }
 
+#ifndef _CONTAINERIZED
+//The code here is for legacy ECLWatch only.
 int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method)
 {
     try
@@ -4530,6 +4532,7 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
     }
     return onGetNotFound(context, request, response, service);
 }
+#endif
 
 int CWsWorkunitsSoapBindingEx::onStartUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
 {
