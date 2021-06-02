@@ -92,7 +92,7 @@
 
   <programlisting>ds := DATASET('~local::rkc::person',
         { STRING15 f1, STRING15 f2, STRING15 f3, STRING15 f4,
-        UNSIGNED8 filepos{virtual(fileposition)} }, FLAT);
+        UNSIGNED8 filepos{VIRTUAL(fileposition)} }, FLAT);
 ix := INDEX(ds, { ds },'\\lexis\\person.name_first.key');
 
 /*** Valid examples ****/

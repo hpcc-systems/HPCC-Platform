@@ -16,7 +16,11 @@
   EXPIRE<indexterm>
       <primary>EXPIRE</primary>
     </indexterm>( [ </emphasis><emphasis>days </emphasis><emphasis
-  role="bold">] ) ] </emphasis><emphasis role="bold">[, UNORDERED | ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [, STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis> <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
+  role="bold">] ) ] </emphasis><emphasis role="bold">[, UNORDERED |
+  ORDERED(</emphasis> <emphasis>bool </emphasis><emphasis role="bold">) ] [,
+  STABLE | UNSTABLE ] [, PARALLEL [ (</emphasis> <emphasis>numthreads
+  </emphasis><emphasis role="bold">) ] ] [, ALGORITHM(</emphasis>
+  <emphasis>name </emphasis><emphasis role="bold">) ] );</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -74,52 +78,70 @@
           <entry>Optional. The number of days after which the file may be
           automatically deleted. If omitted, the default is seven (7).</entry>
         </row>
-          <row>
-            <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-            <entry>Optional. Specifies the output record order is not significant.</entry>
-          </row>
-          <row>
-            <entry><emphasis role="bold">ORDERED</emphasis></entry>
+        <row>
+          <entry><emphasis role="bold">UNORDERED</emphasis></entry>
 
-            <entry>Specifies the significance of the output record order.</entry>
-          </row>
-          <row>
-            <entry><emphasis>bool</emphasis></entry>
+          <entry>Optional. Specifies the output record order is not
+          significant.</entry>
+        </row>
 
-            <entry>When False, specifies the output record order is not significant. When True, specifies the default output record order.</entry>
-          </row>
-          <row>
-            <entry><emphasis role="bold">STABLE</emphasis></entry>
+        <row>
+          <entry><emphasis role="bold">ORDERED</emphasis></entry>
 
-            <entry>Optional. Specifies the input record order is significant.</entry>
-          </row>
-          <row>
-            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+          <entry>Specifies the significance of the output record
+          order.</entry>
+        </row>
 
-            <entry>Optional. Specifies the input record order is not significant.</entry>
-          </row>
-          <row>
-            <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+        <row>
+          <entry><emphasis>bool</emphasis></entry>
 
-            <entry>Optional. Try to evaluate this activity in parallel.</entry>
-          </row>
-          <row>
-            <entry><emphasis>numthreads</emphasis></entry>
+          <entry>When False, specifies the output record order is not
+          significant. When True, specifies the default output record
+          order.</entry>
+        </row>
 
-            <entry>Optional. Try to evaluate this activity using <emphasis>numthreads</emphasis> threads.</entry>
-          </row>
-          <row>
-            <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+        <row>
+          <entry><emphasis role="bold">STABLE</emphasis></entry>
 
-            <entry>Optional. Override the algorithm used for this activity.</entry>
-          </row>
-          <row>
-            <entry><emphasis>name</emphasis></entry>
+          <entry>Optional. Specifies the input record order is
+          significant.</entry>
+        </row>
 
-            <entry>The algorithm to use for this activity. Must be from the list of supported algorithms for the SORT function's STABLE and UNSTABLE options.</entry>
-          </row>
-        
+        <row>
+          <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+          <entry>Optional. Specifies the input record order is not
+          significant.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">PARALLEL</emphasis></entry>
+
+          <entry>Optional. Try to evaluate this activity in parallel.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>numthreads</emphasis></entry>
+
+          <entry>Optional. Try to evaluate this activity using
+          <emphasis>numthreads</emphasis> threads.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ALGORITHM</emphasis></entry>
+
+          <entry>Optional. Override the algorithm used for this
+          activity.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>name</emphasis></entry>
+
+          <entry>The algorithm to use for this activity. Must be from the list
+          of supported algorithms for the SORT function's STABLE and UNSTABLE
+          options.</entry>
+        </row>
       </tbody>
     </tgroup>
   </informaltable>
@@ -136,7 +158,7 @@
      {STRING2 st,
       STRING20 city,
       STRING20 lname,
-      UNSIGNED8 filepos{virtual(fileposition)}},
+      UNSIGNED8 filepos{VIRTUAL(fileposition)}},
      FLAT);
 i1 := INDEX(Vehicles,
   {st,city,lname,filepos},
