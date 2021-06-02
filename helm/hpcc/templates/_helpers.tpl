@@ -46,6 +46,21 @@ Translate a port list to a comma-separated list
 {{- end -}}
 
 {{/*
+Get default data plane
+*/}}
+{{- define "hpcc.getDefaultDataPlane" -}}
+{{- $storage := ($.Values.storage | default dict) -}}
+{{- $planes := ($storage.planes | default list) -}}
+{{- $firstPlane := dict -}}
+{{- range $plane := $planes -}}
+ {{- if and (not $firstPlane.plane) (or (not $plane.labels) (has "data" $plane.labels)) }}
+ {{- $_ := set $firstPlane "plane" $plane.name -}}
+ {{- end -}}
+{{- end -}}
+{{- printf "%s" ($storage.dataStorage.plane | default $firstPlane.plane | default "hpcc-data-plane") -}}
+{{- end -}}
+
+{{/*
 Generate global ConfigMap info
 Pass in root as .
 */}}
@@ -75,6 +90,7 @@ storage:
   hostGroups:
 {{ toYaml $storage.hostGroups | indent 2 }}
 {{- end }}
+  dataPlane: {{ include "hpcc.getDefaultDataPlane" . }}
   planes:
 {{- /*Generate entries for each data plane (removing the pvc).  Exclude the planes used for dlls and dali.*/ -}}
 {{- range $plane := $planes -}}
@@ -693,15 +709,6 @@ securityContext:
 Generate instance queue names
 */}}
 {{- define "hpcc.generateConfigMapQueues" -}}
-{{- $storage := ($.Values.storage | default dict) -}}
-{{- $planes := ($storage.planes | default list) -}}
-{{- $firstPlane := dict -}}
-{{- range $plane := $planes -}}
- {{- if and (not $firstPlane.plane) (or (not $plane.labels) (has "data" $plane.labels)) }}
- {{- $_ := set $firstPlane "plane" $plane.name -}}
- {{- end -}}
-{{- end -}}
-{{- $defaultDataPlane := ($storage.dataStorage.plane | default $firstPlane.plane | default "hpcc-data-plane") -}}
 {{- range $.Values.eclagent -}}
  {{- if not .disabled -}}
 - name: {{ .name }}
@@ -715,7 +722,7 @@ Generate instance queue names
   type: roxie 
   prefix: {{ .prefix | default "null" }}
   queriesOnly: true
-  storagePlane: {{ .storagePlane | default $defaultDataPlane }}
+  storagePlane: {{ .storagePlane | default (include "hpcc.getDefaultDataPlane" $) }}
  {{- end }}
 {{ end -}}
 {{- range $.Values.thor -}}
