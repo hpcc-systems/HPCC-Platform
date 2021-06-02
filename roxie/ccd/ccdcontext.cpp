@@ -2538,6 +2538,8 @@ public:
 
 };
 
+enum LogActReset { LogResetSkip=0, LogResetOK, LogResetInit };
+
 class CRoxieServerContext : public CRoxieContextBase, implements IRoxieServerContext, implements IGlobalCodeContext, implements IEngineContext
 {
     const IQueryFactory *serverQueryFactory = nullptr;
@@ -2562,6 +2564,7 @@ protected:
     bool isBlocked;
     bool isNative;
     bool trim;
+    LogActReset actResetLogState = LogResetInit;
 
     void doPostProcess()
     {
@@ -3932,6 +3935,35 @@ public:
             wu->setClusterName(clusterNames.item(clusterNames.length()-1));
         clusterNames.pop();
         clusterWidth = -1;
+    }
+
+    virtual bool okToLogStartStopError()
+    {
+        // Each query starts with actResetLogState set to LogResetInit
+        // State is changed to LogResetOK and a timer is started
+        // If same query runs again then time since last logged is checked
+        // If two of the same query run at the same time and it is
+        // past the logging skip period then both will log activity reset msgs
+        if (actResetLogState == LogResetInit)
+        {
+            unsigned timeNow = msTick();
+            unsigned timePrev = serverQueryFactory->getTimeActResetLastLogged();
+            if ((timeNow - timePrev) > (actResetLogPeriod*1000))
+            {
+                serverQueryFactory->setTimeActResetLastLogged(timeNow);
+                actResetLogState = LogResetOK;
+                return true;
+            }
+            else
+            {
+                actResetLogState = LogResetSkip;
+                return false;
+            }
+        }
+        else if (actResetLogState == LogResetOK)
+            return true;
+        else
+            return false;
     }
 };
 

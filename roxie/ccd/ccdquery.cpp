@@ -564,6 +564,8 @@ protected:
     unsigned libraryInterfaceHash;
     hash64_t hashValue;
 
+    mutable unsigned timeActResetLastLogged;
+
     static CriticalSection activeQueriesCrit;
     static CopyMapXToMyClass<hash64_t, hash64_t, CQueryFactory> activeQueries;    // Active queries
     static CopyMapXToMyClass<hash64_t, hash64_t, CQueryFactory> queryCache;       // Active and loading queries
@@ -1136,6 +1138,7 @@ public:
         libraryInterfaceHash = 0;
         options.enableFieldTranslation = package.getEnableFieldTranslation();  // NOTE - can be overridden by wu settings
         options.allSortsMaySpill = dynamic;
+        timeActResetLastLogged = 0;
         addToCache();
     }
 
@@ -1658,6 +1661,16 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
     virtual bool isDynamic() const override
     {
         return dynamic;
+    }
+
+    virtual unsigned getTimeActResetLastLogged() const override
+    {
+        return timeActResetLastLogged;
+    }
+
+    virtual void setTimeActResetLastLogged(unsigned _ntime) const override
+    {
+        timeActResetLastLogged = _ntime;
     }
 
 protected:
