@@ -138,9 +138,9 @@ private:
     CStringSet* m_peers;
     int         m_loglevel;
     bool        m_isSecure;
-    size32_t    nextblocksize;
-    unsigned    blockflags;
-    unsigned    blocktimeoutms;
+    size32_t    nextblocksize = 0;
+    unsigned    blockflags = BF_ASYNC_TRANSFER;
+    unsigned    blocktimeoutms = WAIT_FOREVER;
 #ifdef USERECVSEM
     static Semaphore receiveblocksem;
     bool             receiveblocksemowned; // owned by this socket

@@ -387,8 +387,8 @@ protected:
 
     MCASTREQ    *   mcastreq;
     size32_t        nextblocksize;
-    unsigned        blockflags;
-    unsigned        blocktimeoutms;
+    unsigned        blockflags = BF_ASYNC_TRANSFER;
+    unsigned        blocktimeoutms = WAIT_FOREVER;
     bool            owned;
     enum            {accept_not_cancelled, accept_cancel_pending, accept_cancelled} accept_cancel_state;
     bool            in_accept;
