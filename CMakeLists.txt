@@ -67,7 +67,7 @@
 #
 #########################################################
 
-project(hpccsystems-platform CXX)
+project(hpccsystems-platform)
 
 # Stupid workaround. See https://gitlab.kitware.com/cmake/cmake/-/issues/21378
 # If cmake runs twice, cmake might not correctly set the compiler version variables
