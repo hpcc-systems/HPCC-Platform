@@ -140,7 +140,7 @@ private:
     bool        m_isSecure;
     size32_t    nextblocksize = 0;
     unsigned    blockflags = BF_ASYNC_TRANSFER;
-    unsigned    blocktimeoutms = WAIT_FOREVER;
+    unsigned    blocktimeoutms = 0;
 #ifdef USERECVSEM
     static Semaphore receiveblocksem;
     bool             receiveblocksemowned; // owned by this socket
