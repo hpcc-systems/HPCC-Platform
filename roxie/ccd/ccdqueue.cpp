@@ -2851,6 +2851,11 @@ public:
         sendManager.setown(createSendManager(serverFlowPort, dataPort, clientFlowPort, udpSendQueueSize, fastLaneQueue ? 3 : 2, bucket, encryptionInTransit));
     }
 
+    virtual void abortPendingData(const SocketEndpoint &ep) override
+    {
+        sendManager->abortAll(ep);
+    }
+
 };
 
 class RoxieAeronSocketQueueManager : public RoxieSocketQueueManager
@@ -2863,6 +2868,10 @@ public:
         receiveManager.setown(createAeronReceiveManager(ep, encryptionInTransit));
         assertex(!myNode.getIpAddress().isNull());
         sendManager.setown(createAeronSendManager(dataPort, fastLaneQueue ? 3 : 2, myNode.getIpAddress(), encryptionInTransit));
+    }
+
+    virtual void abortPendingData(const SocketEndpoint &ep) override
+    {
     }
 
 };
@@ -3258,9 +3267,13 @@ public:
         return false;
     }
 
+    virtual void abortPendingData(const SocketEndpoint &ep) override
+    {
+        // Shouldn't ever happen, I think
+    }
+
 };
 
-IRoxieOutputQueueManager *ROQ;
 
 extern IRoxieOutputQueueManager *createOutputQueueManager(unsigned numWorkers, bool encrypted)
 {
