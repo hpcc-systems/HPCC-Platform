@@ -30,6 +30,7 @@
 ## Checklist:
 - [ ] My code follows the code style of this project.
   - [ ] My code does not create any new warnings from compiler, build system, or lint.
+- [ ] The commit is targeting the appropriate branch.
 - [ ] The commit message is properly formatted and free of typos.
   - [ ] The commit message title makes sense in a changelog, by itself.
   - [ ] The commit is signed.
