@@ -3338,7 +3338,7 @@ int main(int argc, char* argv[])
 
     try {
 
- PROGLOG("1");
+ PROGLOG("2");
 
         StringBuffer cmd;
         splitFilename(argv[0], NULL, NULL, &cmd, NULL);
