@@ -2953,15 +2953,27 @@ void CJobBase::decrease(offset_t usage, const char *key)
     diskUsage -= usage;
 }
 
+static inline StringBuffer &getExpertOptPath(const char *opt, StringBuffer &out)
+{
+#ifdef _CONTAINERIZED
+    return out.append("expert/@").append(opt);
+#else
+    return out.append("Debug/@").append(opt);
+#endif
+}
+
 // these getX methods for property in workunit settings, then global setting, defaulting to provided 'dft' if not present
 StringBuffer &CJobBase::getOpt(const char *opt, StringBuffer &out)
 {
     if (!opt || !*opt)
         return out; // probably error
-    VStringBuffer gOpt("Debug/@%s", opt);
     getWorkUnitValue(opt, out);
     if (0 == out.length())
+    {
+        StringBuffer gOpt;
+        getExpertOptPath(opt, gOpt);
         globals->getProp(gOpt, out);
+    }
     return out;
 }
 
@@ -2969,7 +2981,8 @@ bool CJobBase::getOptBool(const char *opt, bool dft)
 {
     if (!opt || !*opt)
         return dft; // probably error
-    VStringBuffer gOpt("Debug/@%s", opt);
+    StringBuffer gOpt;
+    getExpertOptPath(opt, gOpt);    
     return getWorkUnitValueBool(opt, globals->getPropBool(gOpt, dft));
 }
 
@@ -2977,7 +2990,8 @@ int CJobBase::getOptInt(const char *opt, int dft)
 {
     if (!opt || !*opt)
         return dft; // probably error
-    VStringBuffer gOpt("Debug/@%s", opt);
+    StringBuffer gOpt;
+    getExpertOptPath(opt, gOpt);    
     return (int)getWorkUnitValueInt(opt, globals->getPropInt(gOpt, dft));
 }
 
@@ -2985,7 +2999,8 @@ __int64 CJobBase::getOptInt64(const char *opt, __int64 dft)
 {
     if (!opt || !*opt)
         return dft; // probably error
-    VStringBuffer gOpt("Debug/@%s", opt);
+    StringBuffer gOpt;
+    getExpertOptPath(opt, gOpt);    
     return getWorkUnitValueInt(opt, globals->getPropInt64(gOpt, dft));
 }
 

@@ -936,6 +936,10 @@
         },
         "eclAgentResources": {
           "$ref": "#/definitions/resources"
+        },
+        "expert": {
+          "description": "Custom internal options usually reserved for internal testing",
+          "type": "object"
         }
       }
     },
