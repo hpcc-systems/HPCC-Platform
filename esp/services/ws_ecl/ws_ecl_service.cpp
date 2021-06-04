@@ -1537,12 +1537,12 @@ int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttp
     xform->setParameter("useTextareaForStringArray", "1");
 
 #ifdef _CONTAINERIZED
-    WARNLOG("CONTAINERIZED(CWsEclBinding::getGenForm) not fully implemented");
+    bool isRoxie = wsecl->connMap.getValue(wuinfo.qsetname) != nullptr;
 #else
     Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(wuinfo.qsetname);
     bool isRoxie = clusterInfo && (clusterInfo->getPlatform() == RoxieCluster);
-    xform->setParameter("includeRoxieOptions", isRoxie ? "1" : "0");
 #endif
+    xform->setParameter("includeRoxieOptions", isRoxie ? "1" : "0");
 
     // set the prop noDefaultValue param
     IProperties* props = context.queryRequestParameters();
