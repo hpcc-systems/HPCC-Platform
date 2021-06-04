@@ -762,7 +762,7 @@ bool CFileSprayEx::GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorku
     context.getUserID(user);
 
     SocketEndpoint ep;
-    getSashaServiceEP(ep, "sasha-dfuwu-archiver", true);
+    getSashaServiceEP(ep, "dfuwu-archiver", true);
     Owned<INode> sashaserver = createINode(ep);
 
     __int64 count=req.getPageSize();

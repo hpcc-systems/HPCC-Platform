@@ -28,6 +28,7 @@
 #include "daqueue.hpp"
 #include "dautils.hpp"
 #include "dameta.hpp"
+#include "hpccconfig.hpp"
 
 static CConfigUpdateHook configUpdateHook;
 
@@ -494,7 +495,7 @@ void CTpWrapper::getAttPath(const char* Path,StringBuffer& returnStr)
 
 void CTpWrapper::getServices(double version, const char* serviceType, const char* serviceName, IArrayOf<IConstHPCCService>& services)
 {
-    Owned<IPropertyTreeIterator> itr = getComponentConfigSP()->getElements("services");
+    Owned<IPropertyTreeIterator> itr = getGlobalConfigSP()->getElements("services");
     ForEach(*itr)
     {
         IPropertyTree& service = itr->query();
@@ -689,7 +690,7 @@ extern TPWRAPPER_API IConstWUClusterInfo* getWUClusterInfoByName(const char* clu
 
 extern TPWRAPPER_API void initContainerRoxieTargets(MapStringToMyClass<ISmartSocketFactory>& connMap)
 {
-    Owned<IPropertyTreeIterator> services = getComponentConfigSP()->getElements("services[@type='roxie']");
+    Owned<IPropertyTreeIterator> services = getGlobalConfigSP()->getElements("services[@type='roxie']");
     ForEach(*services)
     {
         IPropertyTree& service = services->query();
@@ -761,21 +762,10 @@ extern TPWRAPPER_API void validateTargetName(const char* target)
         throw makeStringExceptionV(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid target name: %s", target);
 }
 
+// NB: bare-metal has a different implementation in TpWrapper.cpp
 bool getSashaService(StringBuffer &serviceAddress, const char *serviceName, bool failIfNotFound)
 {
-    if (!isEmptyString(serviceName))
-    {
-        VStringBuffer serviceQualifier("services[@type='sasha'][@name='%s']", serviceName);
-        Owned<IPropertyTree> serviceTree = getComponentConfigSP()->getPropTree(serviceQualifier);
-        if (serviceTree)
-        {
-            serviceAddress.append(serviceName).append(':').append(serviceTree->queryProp("@port"));
-            return true;
-        }
-    }
-    if (failIfNotFound)
-        throw makeStringExceptionV(ECLWATCH_ARCHIVE_SERVER_NOT_FOUND, "Sasha '%s' server not found", serviceName);
-    return false;
+    return getService(serviceAddress, serviceName, failIfNotFound);
 }
 
 bool getSashaServiceEP(SocketEndpoint &serviceEndpoint, const char *service, bool failIfNotFound)

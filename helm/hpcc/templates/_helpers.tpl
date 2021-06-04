@@ -80,10 +80,8 @@ singleNode: {{ .Values.global.singleNode | default false }}
 {{ if .Values.global.defaultEsp -}}
 defaultEsp: {{ .Values.global.defaultEsp | quote }}
 {{ end -}}
-{{ if hasPrefix "[]" (typeOf .Values.esp) -}}
-esp:
-{{ toYaml .Values.esp }}
-{{ end -}}
+services:
+{{ include "hpcc.generateConfigMapServices" . }}
 secretTimeout: {{ .Values.secrets.timeout | default 300 }}
 storage:
 {{- if hasKey $storage "hostGroups" }}
@@ -744,6 +742,7 @@ Generate list of available services
   {{- range $service := $roxie.services -}}
    {{- if ne (int $service.port) 0 -}}
 - name: {{ $service.name }}
+  class: roxie
   type: roxie
   port: {{ $service.port }}
   target: {{ $roxie.name }}
@@ -754,6 +753,7 @@ Generate list of available services
 {{- end -}}
 {{- range $esp := $.Values.esp -}}
 - name: {{ $esp.name }}
+  class: esp
   type: {{ $esp.application }}
   port: {{ $esp.servicePort }}
   {{- if hasKey $esp "tls" }}
@@ -770,7 +770,8 @@ Generate list of available services
 {{- $sasha := ($_sasha | default dict) -}}
 {{- if and (not $sasha.disabled) ($sasha.servicePort) -}}
 - name: {{ printf "sasha-%s" $sashaName }}
-  type: sasha
+  class: sasha
+  type: {{ $sashaName }}
   port: {{ $sasha.servicePort }}
 {{ end -}}
 {{ end -}}
@@ -782,7 +783,8 @@ Generate list of available services
 {{- $sasha := ($_sasha | default dict) -}}
 {{- if and (not $sasha.disabled) ($sasha.servicePort) -}}
 - name: {{ printf "sasha-%s" $sashaName }}
-  type: sasha
+  class: sasha
+  type: {{ $sashaName }}
   port: {{ $sasha.servicePort }}
 {{ end -}}
 {{ end -}}

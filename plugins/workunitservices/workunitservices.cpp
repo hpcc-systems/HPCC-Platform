@@ -54,6 +54,7 @@ Persists changed?
 #include "workunitservices.ipp"
 #include "environment.hpp"
 #include "seclib.hpp"
+#include "hpccconfig.hpp"
 
 #define WORKUNITSERVICES_VERSION "WORKUNITSERVICES 1.0.2"
 
@@ -178,10 +179,13 @@ namespace nsWorkunitservices {
 IPluginContext * parentCtx = NULL;
 
 
-static void getSashaNodes(SocketEndpointArray &epa)
+static void getSashaWUArchiveNodes(SocketEndpointArray &epa)
 {
 #ifdef _CONTAINERIZED
-    WARNLOG("CONTAINERIZED(getSashaNodes) not implemented");
+    StringBuffer service;
+    getService(service, "wu-archiver", true);
+    SocketEndpoint sashaep(service);
+    epa.append(sashaep);    
 #else
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
@@ -364,7 +368,7 @@ WORKUNITSERVICES_API void wsWorkunitList(
     MemoryBuffer mb;
     if (archived) {
         SocketEndpointArray sashaeps;
-        getSashaNodes(sashaeps);
+        getSashaWUArchiveNodes(sashaeps);
         ForEachItemIn(i,sashaeps) {
             Owned<ISashaCommand> cmd = createSashaCommand();    
             cmd->setAction(SCA_WORKUNIT_SERVICES_GET);                          
@@ -496,7 +500,7 @@ WORKUNITSERVICES_API bool wsWorkunitExists(ICodeContext *ctx, const char *wuid, 
     if (archived)
     {
         SocketEndpointArray sashaeps;
-        getSashaNodes(sashaeps);
+        getSashaWUArchiveNodes(sashaeps);
         ForEachItemIn(i,sashaeps) {
             Owned<ISashaCommand> cmd = createSashaCommand();    
             cmd->setAction(SCA_LIST);                           
