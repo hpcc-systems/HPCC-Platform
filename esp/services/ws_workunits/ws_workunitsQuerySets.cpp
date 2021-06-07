@@ -882,7 +882,9 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     resp.setWuid(wuid.str());
 
     StringAttr queryName;
-    if (notEmpty(req.getJobName()))
+    if (notEmpty(req.getQueryName()))
+        queryName.set(req.getQueryName());
+    else if (notEmpty(req.getJobName()))
         queryName.set(req.getJobName());
     else
         queryName.set(cw->queryJobName());
@@ -937,7 +939,9 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     }
 
     WorkunitUpdate wu(&cw->lock());
-    if (req.getUpdateWorkUnitName() && notEmpty(req.getJobName()))
+    if (notEmpty(req.getWorkUnitJobName()))
+        wu->setJobName(req.getWorkUnitJobName());
+    else if (req.getUpdateWorkUnitName() && notEmpty(req.getJobName()))
         wu->setJobName(req.getJobName());
 
     StringBuffer queryId;
