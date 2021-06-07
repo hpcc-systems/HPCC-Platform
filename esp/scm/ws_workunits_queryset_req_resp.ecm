@@ -293,6 +293,7 @@ ESPresponse [exceptions_inline] WUQueryDetailsResponse
     [min_ver("1.44")] ESParray<ESPstruct QuerySuperFile, SuperFile> SuperFiles;
     [min_ver("1.46")] bool IsLibrary;
     [min_ver("1.46")] string Priority;
+    [min_ver("1.83")] int PriorityID;
     [min_ver("1.46")] string WUSnapShot; //Label
     [min_ver("1.46")] string CompileTime;
     [min_ver("1.46")] ESParray<string> LibrariesUsed;

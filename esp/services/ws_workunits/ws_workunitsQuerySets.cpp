@@ -1028,8 +1028,21 @@ void addClusterQueryStates(IPropertyTree* queriesOnCluster, const char *target, 
     clusterStates.append(*clusterState.getClear());
 }
 
+template<typename T>
+void checkAndSetQueryPriority(double version, IPropertyTree *query, T *ret)
+{
+    if (!query->hasProp("@priority"))
+        return;
+
+    int priorityID = query->getPropInt("@priority");
+    ret->setPriority(getQueryPriorityName(priorityID));
+    if (version >= 1.83)
+        ret->setPriorityID(priorityID);
+}
+
 void gatherQuerySetQueryDetails(IEspContext &context, IPropertyTree *query, IEspQuerySetQuery *queryInfo, const char *cluster, IPropertyTree *queriesOnCluster)
 {
+    double version = context.getClientVersion();
     queryInfo->setId(query->queryProp("@id"));
     queryInfo->setName(query->queryProp("@name"));
     queryInfo->setDll(query->queryProp("@dll"));
@@ -1045,13 +1058,11 @@ void gatherQuerySetQueryDetails(IEspContext &context, IPropertyTree *query, IEsp
         queryInfo->setTimeLimit(query->getPropInt("@timeLimit"));
     if (query->hasProp("@warnTimeLimit"))
         queryInfo->setWarnTimeLimit(query->getPropInt("@warnTimeLimit"));
-    if (query->hasProp("@priority"))
-        queryInfo->setPriority(getQueryPriorityName(query->getPropInt("@priority")));
+    checkAndSetQueryPriority(version, query, queryInfo);
     if (query->hasProp("@comment"))
         queryInfo->setComment(query->queryProp("@comment"));
     if (query->hasProp("@snapshot"))
         queryInfo->setSnapshot(query->queryProp("@snapshot"));
-    double version = context.getClientVersion();
     if (version >= 1.46)
     {
         queryInfo->setPublishedBy(query->queryProp("@publishedBy"));
@@ -1662,6 +1673,7 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
         q->setWuid(query.queryProp("@wuid"));
         q->setActivated(query.getPropBool("@activated", false));
         q->setSuspended(query.getPropBool("@suspended", false));
+
         if (query.hasProp("@memoryLimit"))
         {
             StringBuffer s;
@@ -1672,8 +1684,7 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
             q->setTimeLimit(query.getPropInt("@timeLimit"));
         if (query.hasProp("@warnTimeLimit"))
             q->setWarnTimeLimit(query.getPropInt("@warnTimeLimit"));
-        if (query.hasProp("@priority"))
-            q->setPriority(getQueryPriorityName(query.getPropInt("@priority")));
+        checkAndSetQueryPriority(version, &query, q.get());
         if (query.hasProp("@comment"))
             q->setComment(query.queryProp("@comment"));
         if (version >= 1.46)
@@ -2101,8 +2112,7 @@ void CWsWorkunitsEx::getWUQueryDetails(IEspContext &context, CWUQueryDetailsReq 
     double version = context.getClientVersion();
     if (version >= 1.46)
     {
-        if (query->hasProp("@priority"))
-            resp.setPriority(getQueryPriorityName(query->getPropInt("@priority")));
+        checkAndSetQueryPriority(version, query, &resp);
         resp.setIsLibrary(query->getPropBool("@isLibrary"));
 
         if (version < 1.64)
