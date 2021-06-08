@@ -963,6 +963,9 @@
           "type": "integer",
           "description": "throttle ratio percentage (0-99, 0 no throttling, 50 is half speed)"
         },
+        "image": {
+          "$ref": "#/definitions/image"
+        },
         "storage": {
           "$ref": "#/definitions/storageType"
         },
@@ -1004,6 +1007,7 @@
                 "port": {},
                 "at" : {},
                 "throttle": {},
+                "image": {},
                 "storage": {},
                 "resources": {}    
               },
@@ -1052,6 +1056,7 @@
                 "port": {},
                 "at" : {},
                 "throttle": {},
+                "image": {},
                 "storage": {},
                 "resources": {},
                 "limit": {},
@@ -1082,6 +1087,7 @@
                 "port": {},
                 "at" : {},
                 "throttle": {},
+                "image": {},
                 "storage": {},
                 "resources": {},
                 "limit": {},
@@ -1111,6 +1117,7 @@
                 "port": {},
                 "at" : {},
                 "throttle": {},
+                "image": {},
                 "storage": {},
                 "resources": {},
                 "limit": {},
@@ -1151,6 +1158,7 @@
             "port": {},
             "at" : {},
             "throttle": {},
+            "image": {},
             "storage": {},
             "resources": {}
           },

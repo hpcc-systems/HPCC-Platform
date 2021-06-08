@@ -5,9 +5,9 @@ global:
 
   image:
     ## It is recommended to name a specific version rather than latest, for any non-trivial deployment
-    ## For best results, the helm chart version and platform version should match. Leave this unset to use the
-    ## version that matches the version of the helm chart
-    #version: x.y.z 
+    ## For best results, the helm chart version and platform version should match, which is the default if version is
+    ## not specified. Do not override without good reason as undefined behavior may result. 
+    ## version: x.y.z
     root: "hpccsystems"    # change this if you want to pull your images from somewhere other than DockerHub hpccsystems
     pullPolicy: IfNotPresent
 
