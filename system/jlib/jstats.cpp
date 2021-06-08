@@ -178,45 +178,6 @@ extern jlib_decl unsigned __int64 getTimeStampNowValue()
 #endif
 }
 
-const static unsigned __int64 msUntilResync = 1000; // resync every second ~= 1ms accuracy
-static cycle_t cyclesUntilResync;
-
-MODULE_INIT(INIT_PRIORITY_STANDARD)
-{
-    cyclesUntilResync = nanosec_to_cycle(msUntilResync * 1000000);
-    return true;
-}
-
-OptimizedTimestamp::OptimizedTimestamp()
-{
-    lastCycles = get_cycles_now();
-    lastTimestamp = ::getTimeStampNowValue();
-}
-
-#if 0
-//This version almost certainly has problems if the computer is suspended and cycles->nanoseconds is only accurate to
-//about 0.1% - so should only be used for relatively short periods
-unsigned __int64 OptimizedTimestamp::getTimeStampNowValue()
-{
-    cycle_t nowCycles = get_cycles_now();
-    return lastTimestamp + cycle_to_microsec(nowCycles - lastCycles);
-}
-#else
-//This version will resync every minute, but is not thread safe.  Adding a critical section makes it less efficient than recalculating
-unsigned __int64 OptimizedTimestamp::getTimeStampNowValue()
-{
-    cycle_t nowCycles = get_cycles_now();
-    if (nowCycles - lastCycles > cyclesUntilResync)
-    {
-        lastCycles = nowCycles;
-        lastTimestamp = ::getTimeStampNowValue();
-    }
-    return lastTimestamp + cycle_to_microsec(nowCycles - lastCycles);
-}
-#endif
-
-
-
 unsigned __int64 getIPV4StatsValue(const IpAddress & ip)
 {
     unsigned ipValue;
@@ -295,23 +256,46 @@ extern void formatTimeCollatable(StringBuffer & out, unsigned __int64 value, boo
     // More than 999 days, I don't care that it goes wrong.
 }
 
-extern unsigned __int64 extractTimeCollatable(const char *s, bool nano)
+extern unsigned __int64 extractTimestamp(const char *s, const char * * end)
 {
     if (!s)
         return 0;
-    unsigned days,hours,mins,secs,fracs;
-    if (sscanf(s, " %ud %u:%u:%u.%u", &days, &hours, &mins, &secs, &fracs)!=5)
+    const char * next = nullptr;
+    CDateTime timestamp;
+    try
+    {
+        timestamp.setString(s, &next, false); // Sets to date and time given as yyyy-mm-ddThh:mm:ss[.nnnnnnnnn]
+    }
+    catch(IException * e)
+    {
+        e->Release();
+        return 0;
+    }
+    //Skip a trailing Z.  The setString function should really process it, but that may break other code in CScmDateTime.
+    if (*next == 'Z')
+        next++;
+    if (end)
+        *end = next;
+
+    return timestamp.getTimeStamp();
+}
+
+extern unsigned __int64 extractTimeCollatable(const char *s, const char * * end)
+{
+    if (!s)
+        return 0;
+    unsigned days,hours,mins;
+    double secs;
+    unsigned numRead = 0;
+    if (sscanf(s, " %ud %u:%u:%lf%n", &days, &hours, &mins, &secs, &numRead)!=4)
     {
         days = 0;
-        if (sscanf(s, " %u:%u:%u.%u", &hours, &mins, &secs, &fracs) != 4)
+        if (sscanf(s, " %u:%u:%lf%n", &hours, &mins, &secs, &numRead) != 3)
             return 0;
     }
-    unsigned __int64 ret = days*oneDay + hours*oneHour + mins*oneMinute + secs*oneSecond;
-    if (nano)
-        ret += fracs;
-    else
-        ret += milliToNano(fracs);
-    return ret;
+    if (end)
+        *end = s + numRead;
+    return days*oneDay + hours*oneHour + mins*oneMinute + secs*oneSecond;
 }
 
 static void formatTimeStamp(StringBuffer & out, unsigned __int64 value)
@@ -501,11 +485,20 @@ StringBuffer & formatStatistic(StringBuffer & out, unsigned __int64 value, Stati
 
 stat_type readStatisticValue(const char * cur, const char * * end, StatisticMeasure measure)
 {
-    char * next;
+    char * next = nullptr;
     stat_type value = strtoll(cur, &next, 10);
 
     switch (measure)
     {
+    case SMeasureTimestampUs:
+    {
+        //ignore value and check if it is a formatted timestamp
+        stat_type timestamp = extractTimestamp(cur, end);
+        if (timestamp)
+            return timestamp;
+        //Assume that it is a single number
+        break;
+    }
     case SMeasureTimeNs:
         //Allow s, ms and us as scaling suffixes
         if (next[0] == 's')
@@ -522,6 +515,17 @@ stat_type readStatisticValue(const char * cur, const char * * end, StatisticMeas
         {
             value *= 1000;
             next += 2;
+        }
+        else if ((next[0] == 'n') && (next[1] == 's'))
+        {
+            next += 2;
+        }
+        else
+        {
+            stat_type timestamp = extractTimeCollatable(cur, end);
+            if (timestamp)
+                return timestamp;
+            //Assume that it is a single number
         }
         break;
     case SMeasureCount:
