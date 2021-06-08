@@ -401,23 +401,25 @@ define([
         searchAll: function () {
             this.standby.show();
 
-            if (validate.isNumberFormat(this.searchText, { format: ["W########-######", "W########-######-#???"] })) {
+            if (validate.isNumberFormat(this.searchText, { format: ["w########-######", "W########-######", "W########-######-#???"] })) {
+                var newSearchText = this.searchText.toUpperCase();
                 var tab = this.ensurePane({
-                    id: this.searchText,
+                    id: newSearchText,
                     Type: "ECL Workunit",
                     Summary: this.searchText,
                     _type: "Wuid",
-                    _wuid: this.searchText
+                    _wuid: newSearchText
                 }, {});
                 this.selectChild(tab);
 
-            } else if (validate.isNumberFormat(this.searchText, { format: ["D########-######", "D########-######-#???"] })) {
+            } else if (validate.isNumberFormat(this.searchText, { format: ["d########-######", "D########-######", "D########-######-#???"] })) {
+                var newSearchText = this.searchText.toUpperCase();
                 var tab = this.ensurePane({
-                    id: this.searchText,
+                    id: newSearchText,
                     Type: "DFU Workunit",
                     Summary: this.searchText,
                     _type: "DFUWuid",
-                    _wuid: this.searchText
+                    _wuid: newSearchText
                 }, {});
                 this.selectChild(tab);
             }
