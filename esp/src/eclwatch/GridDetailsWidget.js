@@ -101,7 +101,7 @@ define([
             var store = new MemoryMod.AlphaNumSortMemory(this.idProperty, this.alphanumSort);
             this.store = new Observable(store);
             this.grid = this.createGrid(this.id + "Grid");
-            this.setGridNoDataMessage(this.i18n.loadingMessage);
+            this.setGridNoDataMessage(this.i18n.noDataMessage);
 
             this.grid.on(".dgrid-row:dblclick", function (evt) {
                 if (!evt.defaultPrevented) {
