@@ -70,6 +70,7 @@ spec:
         run: {{ .name | quote }}
         accessDali: "yes"
         app: {{ $application }}
+        helmVersion: 8.2.0-closedown
       annotations:
         checksum/config: {{ $configSHA }}
     spec:

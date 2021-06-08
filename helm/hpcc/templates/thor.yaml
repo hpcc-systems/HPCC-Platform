@@ -55,6 +55,7 @@ data:
           labels:
             accessDali: "yes"
             accessEsp: "yes"
+            helmVersion: 8.2.0-closedown
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $eclAgentJobName "target" .me.name "type" "thor") | indent 10 }}
           serviceAccountName: "hpcc-agent"
@@ -114,6 +115,7 @@ data:
             accessDali: "yes"
             accessEsp: "yes"
             job: "_HPCC_JOBNAME_"
+            helmVersion: 8.2.0-closedown
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $thorManagerJobName "target" .me.name "type" "thor") | indent 10 }}
           serviceAccountName: hpcc-agent
@@ -172,6 +174,7 @@ data:
             app: thor
             accessEsp: "true"
             job: "_HPCC_JOBNAME_"
+            helmVersion: 8.2.0-closedown
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $thorWorkerJobName "target" .me.name "type" "thor") | indent 10 }}
           serviceAccountName: hpcc-default
@@ -266,6 +269,7 @@ spec:
         run: {{ $commonCtx.eclAgentName | quote }}
         accessDali: "yes"
         accessEsp: {{ $commonCtx.eclAgentUseChildProcesses | ternary "yes" "no" | quote }}
+        helmVersion: 8.2.0-closedown
       annotations:
         checksum/config: {{ $configSHA }}
     spec:
@@ -319,6 +323,7 @@ spec:
         run: {{ $commonCtx.thorAgentName | quote }}
         accessDali: "yes"
         accessEsp: "no"
+        helmVersion: 8.2.0-closedown
       annotations:
         checksum/config: {{ $configSHA }}
     spec:
