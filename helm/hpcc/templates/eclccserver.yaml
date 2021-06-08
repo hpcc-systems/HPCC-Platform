@@ -57,6 +57,13 @@ data:
             accessDali: "yes"
             accessEsp: "yes"
             helmVersion: 8.2.0-closedown
+{{- if hasKey .me "labels" }}
+{{ toYaml .me.labels | indent 12 }}
+{{- end }}
+{{- if hasKey .me "annotations" }}
+          annotations:
+{{ toYaml .me.annotations | indent 12 }}
+{{- end }}
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $compileJobName "target" .me.name "type" "eclccserver") | indent 10 }}
           serviceAccountName: "hpcc-default"
@@ -126,8 +133,14 @@ spec:
         accessDali: "yes"
         accessEsp: {{ .useChildProcesses | default false | ternary "yes" "no" | quote }}
         helmVersion: 8.2.0-closedown
+{{- if hasKey . "labels" }}
+{{ toYaml .labels | indent 8 }}
+{{- end }}
       annotations:
         checksum/config: {{ $configSHA }}
+{{- if hasKey . "annotations" }}
+{{ toYaml .annotations | indent 8 }}
+{{- end }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" .name "target" .name "type" "eclccserver") | indent 6 }}
       serviceAccountName: {{ .useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}

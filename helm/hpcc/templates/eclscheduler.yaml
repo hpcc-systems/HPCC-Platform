@@ -65,8 +65,14 @@ spec:
         accessDali: "yes"
         accessEsp: "no"
         helmVersion: 8.2.0-closedown
+{{- if hasKey . "labels" }}
+{{ toYaml .labels | indent 8 }}
+{{- end }}
       annotations:
         checksum/config: {{ $configSHA }}
+{{- if hasKey . "annotations" }}
+{{ toYaml .annotations | indent 8 }}
+{{- end }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" .name "target" .name "type" "eclscheduler") | indent 6 }}
       serviceAccountName: "hpcc-default"

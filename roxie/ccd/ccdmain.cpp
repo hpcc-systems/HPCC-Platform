@@ -739,7 +739,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     // Makes debugging easier...
                     IPropertyTree *service = topology->addPropTree("services");
                     service->setProp("@name", "query");
-                    service->setPropInt("@port", 9876);
+                    service->setPropInt("@port", ROXIE_SERVER_PORT);
                 }
 #else
                 if (!topology->getCount("RoxieFarmProcess"))
@@ -1202,7 +1202,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             ForEach(*roxieFarms)
             {
                 IPropertyTree &roxieFarm = roxieFarms->query();
-                unsigned port = roxieFarm.getPropInt("@port", ROXIE_SERVER_PORT);
+                unsigned port = roxieFarm.getPropInt("@port", roxieFarm.getPropInt("@servicePort", ROXIE_SERVER_PORT));
                 RoxieEndpointInfo me = {RoxieEndpointInfo::RoxieServer, 0, { (unsigned short) port, myIP }, 0};
                 myRoles.push_back(me);
             }
@@ -1326,7 +1326,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     unsigned numThreads = roxieFarm.getPropInt("@numThreads", 0);
                     if (!numThreads)
                         numThreads = numServerThreads;
-                    unsigned port = roxieFarm.getPropInt("@port", ROXIE_SERVER_PORT);
+                    unsigned port = roxieFarm.getPropInt("@port", roxieFarm.getPropInt("@servicePort", ROXIE_SERVER_PORT));
                     //unsigned requestArrayThreads = roxieFarm.getPropInt("@requestArrayThreads", 5);
                     // NOTE: farmer name [@name=] is not copied into topology
                     const IpAddress ip = myNode.getIpAddress();

@@ -63,6 +63,23 @@ global:
   #   postJobCommand: "kill $(pgrep linkerd2-proxy)"
   #   postJobCommandViaSidecar: true
 
+  ## visibilities section can be used to set labels, annotations and service type for any service with the specified visibility
+  visibilities:
+    cluster:
+      type: ClusterIP
+    local:
+      annotations:
+        # This annotation will make azure load balancer use an internal rather than an internet-visible address
+        # May want different values on different cloud providers or use-cases. For example on AWS you may want to use
+        #service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+        service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+      type: LoadBalancer
+    global:
+      #labels:
+      #  mylabel: "4"
+      type: LoadBalancer
+      
+      
 
   # For pod placement instruction and examples please reference docs/placements.md
 
@@ -262,7 +279,8 @@ dali:
 - name: mydali
   services: # internal house keeping services
     coalescer:
-      #servicePort: 8877
+      service:
+        servicePort: 8877
       #interval: 2 # (hours)
       #at: "* * * * *" # cron type schedule, i.e. Min(0-59) Hour(0-23) DayOfMonth(1-31) Month(1-12) DayOfWeek(0-6)
       #minDeltaSize: 50 # (Kb) will not start coalescing until delta log is above this threshold
@@ -280,7 +298,8 @@ sasha:
   #disabled: true # disable all services. Alternatively set sasha to null (sasha: null)
   wu-archiver:
     #disabled: true
-    servicePort: 8877
+    service:
+      servicePort: 8877
     storage:
       #existingClaim: pvc
       storageSize: 1Gi
@@ -298,7 +317,8 @@ sasha:
 
   dfuwu-archiver:
     #disabled: true
-    servicePort: 8877
+    service:
+      servicePort: 8877
     storage:
       #existingClaim: pvc
       storageSize: 1Gi
@@ -377,12 +397,19 @@ esp:
   application: eclwatch
   auth: none
   replicas: 1
-  ## port can be used to change the local port used by the pod. If omitted, the default port (8880) is used
-  port: 8888
-  ## servicePort controls the port that this service will be exposed on, either internally to the cluster, or externally
-  servicePort: 8010
-  ## Specify public: true if you want the service available from outside the cluster. Typically, eclwatch and wsecl are published externally, while eclservices is designed for internal use.
-  public: true
+  service:
+    ## port can be used to change the local port used by the pod. If omitted, the default port (8880) is used
+    port: 8888
+    ## servicePort controls the port that this service will be exposed on, either internally to the cluster, or externally
+    servicePort: 8010
+    ## Specify visibility: local (or global) if you want the service available from outside the cluster. Typically, eclwatch and wsecl are published externally, while eclservices is designed for internal use.
+    visibility: local
+    ## Annotations can be specified on a service - for example to specify provider-specific information such as service.beta.kubernetes.io/azure-load-balancer-internal-subnet
+    #annotations:
+    #  service.beta.kubernetes.io/azure-load-balancer-internal-subnet: "mysubnet"
+    ## You can also specify labels on a service
+    #labels:
+    #  mylabel: "3"
   #resources:
   #  cpu: "1"
   #  memory: "2G"
@@ -390,8 +417,9 @@ esp:
   application: eclservices
   auth: none
   replicas: 1
-  servicePort: 8010
-  public: false
+  service:
+    servicePort: 8010
+    visibility: cluster
   #resources:
   #  cpu: "250m"
   #  memory: "1G"
@@ -399,8 +427,9 @@ esp:
   application: eclqueries
   auth: none
   replicas: 1
-  public: true
-  servicePort: 8002
+  service:
+    visibility: local
+    servicePort: 8002
   #resources:
   #  cpu: "250m"
   #  memory: "1G"
@@ -408,8 +437,9 @@ esp:
   application: esdl-sandbox
   auth: none
   replicas: 1
-  public: true
-  servicePort: 8899
+  service:
+    visibility: local
+    servicePort: 8899
   #resources:
   #  cpu: "250m"
   #  memory: "1G"
@@ -417,8 +447,9 @@ esp:
   application: sql2ecl
   auth: none
   replicas: 1
-  public: true
-  servicePort: 8510
+  service:
+    visibility: local
+    servicePort: 8510
   #domain: hpccsql.com
   #resources:
   #  cpu: "250m"
@@ -430,10 +461,10 @@ roxie:
   prefix: roxie
   services:
   - name: roxie
-    port: 9876
+    servicePort: 9876
     listenQueue: 200
     numThreads: 30
-    external: true
+    visibility: local
   ## replicas indicates the number of replicas per channel
   replicas: 2  
   numChannels: 2

@@ -85,6 +85,11 @@ data:
 {{- $_ := set $roxie "localAgent" false -}}
 {{- $servername := printf "%s-server" $roxie.name -}}
 {{- $udpkeyname := $roxie.name -}}
+{{- range $service := $roxie.services }}
+ {{- if ne (int $service.servicePort)  0 }}
+  {{- $_ := set $service "port" $service.servicePort }} 
+ {{- end }}
+{{- end }}
 
 apiVersion: apps/v1
 kind: Deployment
@@ -101,8 +106,14 @@ spec:
         run: {{ $commonCtx.toponame | quote }}
         roxie-cluster: {{ $roxie.name | quote }}
         helmVersion: 8.2.0-closedown
+{{- if hasKey $toposerver "labels" }}
+{{ toYaml $toposerver.labels | indent 8 }}
+{{- end }}
       annotations:
         checksum/config: {{ $topoconfigSHA }}
+{{- if hasKey $toposerver "annotations" }}
+{{ toYaml $toposerver.annotations | indent 8 }}
+{{- end }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $commonCtx.toponame "target" $roxie.name "type" "roxie") | indent 6 }}
       serviceAccountName: "hpcc-default"
@@ -136,22 +147,8 @@ spec:
 
 ---
 {{- range $service := $roxie.services }}
-{{- if ne (int $service.port)  0 }}
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ $service.name | quote }}
-  labels:
-    type: roxie-service
-    helmVersion: 8.2.0-closedown
-spec:
-  ports:
-  - port: {{ $service.port }}
-    protocol: TCP
-    targetPort: {{ $service.port }}
-  selector:
-    roxie-server: {{ $servername | quote }}
-  type: {{ if $service.external -}} LoadBalancer {{- else -}} ClusterIP {{- end }}
+{{- if ne (int $service.servicePort)  0 }}
+{{ include "hpcc.addService" ( dict "root" $ "name" $service.name "service" $service "selector" $servername "defaultPort" $service.servicePort ) }}
 ---
 {{- end }}
 {{- end }}
@@ -214,13 +211,19 @@ spec:
     metadata:
       labels:
         run: {{ $servername | quote }}
-        roxie-server: {{ $servername | quote }}
+        server: {{ $roxie.name | quote }}
         roxie-cluster: {{ $roxie.name | quote }}
         accessDali: "yes"
         accessEsp: "yes"
         helmVersion: 8.2.0-closedown
+{{- if hasKey $roxie "labels" }}
+{{ toYaml $roxie.labels | indent 8 }}
+{{- end }}
       annotations:
         checksum/config: {{ $configSHA }}
+{{- if hasKey $roxie "annotations" }}
+{{ toYaml $roxie.annotations | indent 8 }}
+{{- end }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $servername "target" $roxie.name "type" "roxie") | indent 6 }}
       serviceAccountName: "hpcc-default"
@@ -241,13 +244,13 @@ spec:
           value: "/tmp/{{ $roxie.name }}.sentinel"
 {{- $local := dict "first" true }}
 {{- range $service := $roxie.services }}
-{{- if ne (int $service.port)  0 }}
+{{- if ne (int $service.servicePort)  0 }}
 {{- if $local.first }}
 {{- $_ := set $local "first" false }}
         ports:
 {{- end }}
         - name: {{ $service.name }}
-          containerPort: {{ $service.port }}
+          containerPort: {{ $service.servicePort }}
 {{- end }}
 {{- end }}
 {{ include "hpcc.addSentinelProbes" $roxie | indent 8 }}
@@ -298,14 +301,20 @@ spec:
       labels:
         run: {{ $name | quote}}
 {{- if not $roxie.serverReplicas }}        
-        roxie-server: {{ $servername | quote }}
+        server: {{ $servername | quote }}
 {{- end }}
         roxie-cluster: {{ $roxie.name | quote }}
         accessDali: "yes"
         accessEsp: "yes"
         helmVersion: 8.2.0-closedown
+{{- if hasKey $roxie "labels" }}
+{{ toYaml $roxie.labels | indent 8 }}
+{{- end }}
       annotations:
         checksum/config: {{ $configSHA }}
+{{- if hasKey $roxie "annotations" }}
+{{ toYaml $roxie.annotations | indent 8 }}
+{{- end }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $name "target" $roxie.name "type" "roxie") | indent 6 }}
       serviceAccountName: "hpcc-default"
@@ -328,13 +337,13 @@ spec:
 {{- if not $roxie.serverReplicas }}
 {{- $local := dict "first" true }}
 {{- range $service := $roxie.services }}
-{{- if ne (int $service.port)  0 }}
+{{- if ne (int $service.servicePort)  0 }}
 {{- if $local.first }}
 {{- $_ := set $local "first" false }}
         ports:
 {{- end }}
         - name: {{ $service.name }}
-          containerPort: {{ $service.port }}
+          containerPort: {{ $service.servicePort }}
 {{- end }}
 {{- end }}
 {{ include "hpcc.addSentinelProbes" $roxie | indent 8 }}

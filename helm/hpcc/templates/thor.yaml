@@ -79,6 +79,13 @@ data:
             accessDali: "yes"
             accessEsp: "yes"
             helmVersion: 8.2.0-closedown
+{{- if hasKey .me "labels" }}
+{{ toYaml .me.labels | indent 12 }}
+{{- end }}
+{{- if hasKey .me "annotations" }}
+          annotations:
+{{ toYaml .me.annotations | indent 12 }}
+{{- end }}
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $eclAgentJobName "target" .me.name "type" "thor") | indent 10 }}
           serviceAccountName: "hpcc-agent"
@@ -139,6 +146,13 @@ data:
             accessEsp: "yes"
             job: "_HPCC_JOBNAME_"
             helmVersion: 8.2.0-closedown
+{{- if hasKey $thorScope "labels" }}
+{{ toYaml $thorScope.labels | indent 12 }}
+{{- end }}
+{{- if hasKey $thorScope "annotations" }}
+          annotations:
+{{ toYaml $thorScope.annotations | indent 12 }}
+{{- end }}
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $thorManagerJobName "target" .me.name "type" "thor") | indent 10 }}
           serviceAccountName: hpcc-agent
@@ -198,6 +212,13 @@ data:
             accessEsp: "true"
             job: "_HPCC_JOBNAME_"
             helmVersion: 8.2.0-closedown
+{{- if hasKey $thorScope "labels" }}
+{{ toYaml $thorScope.labels | indent 12 }}
+{{- end }}
+{{- if hasKey $thorScope "annotations" }}
+          annotations:
+{{ toYaml $thorScope.annotations | indent 12 }}
+{{- end }}
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $thorWorkerJobName "target" .me.name "type" "thor") | indent 10 }}
           serviceAccountName: hpcc-default
@@ -293,8 +314,14 @@ spec:
         accessDali: "yes"
         accessEsp: {{ $commonCtx.eclAgentUseChildProcesses | ternary "yes" "no" | quote }}
         helmVersion: 8.2.0-closedown
+{{- if hasKey $commonCtx.me "labels" }}
+{{ toYaml $commonCtx.me.labels | indent 8 }}
+{{- end }}
       annotations:
         checksum/config: {{ $configSHA }}
+{{- if hasKey $commonCtx.me "annotations" }}
+{{ toYaml $commonCtx.me.annotations | indent 8 }}
+{{- end }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $commonCtx.eclAgentName "target" .name "type" "thor") | indent 6 }}
       serviceAccountName: {{ $commonCtx.eclAgentUseChildProcesses | ternary "hpcc-default" "hpcc-agent" }}
@@ -347,8 +374,14 @@ spec:
         accessDali: "yes"
         accessEsp: "no"
         helmVersion: 8.2.0-closedown
+{{- if hasKey $commonCtx.me "labels" }}
+{{ toYaml $commonCtx.me.labels | indent 8 }}
+{{- end }}
       annotations:
         checksum/config: {{ $configSHA }}
+{{- if hasKey $commonCtx.me "annotations" }}
+{{ toYaml $commonCtx.me.annotations | indent 8 }}
+{{- end }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $commonCtx.thorAgentName "target" .name "type" "thor") | indent 6 }}
       serviceAccountName: "hpcc-thoragent"

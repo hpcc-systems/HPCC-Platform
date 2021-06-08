@@ -56,8 +56,14 @@ spec:
         run: {{ .name | quote }}
         accessDali: "yes"
         helmVersion: 8.2.0-closedown
+{{- if hasKey . "labels" }}
+{{ toYaml .labels | indent 8 }}
+{{- end }}
       annotations:
         checksum/config: {{ $configSHA }}
+{{- if hasKey . "annotations" }}
+{{ toYaml .annotations | indent 8 }}
+{{- end }}
     spec:
       serviceAccountName: "hpcc-default"
       initContainers:
