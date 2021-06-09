@@ -739,18 +739,6 @@ void mergeStat(CRuntimeStatisticCollection & stats, Shared<INTERFACE> source, St
 //---------------------------------------------------------------------------------------------------------------------
 
 //A class for minimizing the overhead of collecting timestamps.
-class jlib_decl OptimizedTimestamp
-{
-public:
-    OptimizedTimestamp();
-
-    unsigned __int64 getTimeStampNowValue();
-
-protected:
-    cycle_t lastCycles;
-    unsigned __int64 lastTimestamp;
-};
-
 class IpAddress;
 
 extern jlib_decl unsigned __int64 getTimeStampNowValue();
@@ -795,7 +783,7 @@ extern jlib_decl void setStatisticsComponentName(StatisticCreatorType processTyp
 
 extern jlib_decl void verifyStatisticFunctions();
 extern jlib_decl void formatTimeCollatable(StringBuffer & out, unsigned __int64 value, bool nano);
-extern jlib_decl unsigned __int64 extractTimeCollatable(const char *s, bool nano);
+extern jlib_decl unsigned __int64 extractTimeCollatable(const char *s, const char * * end);
 
 extern jlib_decl void validateScopeId(const char * idText);
 extern jlib_decl void validateScope(const char * scopeText);

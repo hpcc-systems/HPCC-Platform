@@ -3597,7 +3597,7 @@ public:
         priorityLevel = calcPriorityValue(&p);
         wuscope.set(p.queryProp("@scope"));
         appvalues.loadBranch(&p,"Application");
-        totalThorTime = (unsigned)nanoToMilli(extractTimeCollatable(p.queryProp("@totalThorTime"), false));
+        totalThorTime = (unsigned)nanoToMilli(extractTimeCollatable(p.queryProp("@totalThorTime"), nullptr));
         _isProtected = p.getPropBool("@protected", false);
     }
     virtual const char *queryWuid() const { return wuid.str(); }
@@ -7025,7 +7025,7 @@ unsigned CLocalWorkUnit::getTotalThorTime() const
 {
     CriticalBlock block(crit);
     if (p->hasProp("@totalThorTime"))
-        return (unsigned)nanoToMilli(extractTimeCollatable(p->queryProp("@totalThorTime"), false));
+        return (unsigned)nanoToMilli(extractTimeCollatable(p->queryProp("@totalThorTime"), nullptr));
 
     const WuScopeFilter filter("stype[graph],nested[0],stat[TimeElapsed]");
     StatsAggregation summary;
