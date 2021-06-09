@@ -62,8 +62,6 @@ data:
 {{ include "hpcc.generateConfigMapQueues" .root | indent 6 }}
       dfuQueues:
 {{- include "hpcc.generateConfigDfuQueues" . | indent 6}}
-      services:
-{{ include "hpcc.generateConfigMapServices" .root | indent 6 }}
 {{ include "hpcc.generateVaultConfig" . | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
@@ -76,7 +74,7 @@ data:
 {{- $secretsCategories := ternary (list "storage" "esp" "codeSign" "codeVerify")  (list "storage" "esp") (eq $application "eclwatch") -}}
 {{- $includeStorageLabels := ternary (list "lz" "data" "") (list "data" "") (eq $application "eclwatch") -}}
 {{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories  "includeLabels" $includeStorageLabels "env" $env -}}
-{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.espConfigMap" "component" "esp" "excludeKeys" "global,esp.services,esp.queues")) }}
+{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.espConfigMap" "component" "esp" "excludeKeys" "global,esp.queues")) }}
 
 apiVersion: apps/v1
 kind: Deployment
