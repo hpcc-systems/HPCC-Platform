@@ -145,7 +145,7 @@ kind: ConfigMap
 {{- end }}
 ---
 {{- if $sasha.servicePort -}}
-{{ include "hpcc.addSashaService" (dict "root" $ "me" $sasha) }}
+{{ include "hpcc.addSashaService" (dict "root" $ "selectorName" $dali.name "me" $sasha) }}
 ---
 {{- end }}
 
