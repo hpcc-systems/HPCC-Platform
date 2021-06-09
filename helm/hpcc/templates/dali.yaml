@@ -43,6 +43,7 @@ spec:
       labels:
         run: {{ $dali.name | quote }}
         app: dali
+        helmVersion: 8.2.0-closedown
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $dali.name "type" "dali") | indent 6 }}
       serviceAccountName: "hpcc-default"

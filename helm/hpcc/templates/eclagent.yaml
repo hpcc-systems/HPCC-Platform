@@ -57,6 +57,7 @@ data:
           labels:
             accessDali: "yes"
             accessEsp: "yes"
+            helmVersion: 8.2.0-closedown
         spec:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $appJobName "target" .me.name "type" "eclagent") | indent 10 }}
           serviceAccountName: "hpcc-default"
@@ -124,6 +125,7 @@ spec:
         run: {{ .name | quote }}
         accessDali: "yes"
         accessEsp: {{ .useChildProcesses | default false | ternary "yes" "no" | quote }}
+        helmVersion: 8.2.0-closedown
       annotations:
         checksum/config: {{ $configSHA }}
     spec:

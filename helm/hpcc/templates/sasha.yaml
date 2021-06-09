@@ -46,6 +46,7 @@ spec:
       labels:
         run: {{ $serviceName | quote }}
         accessDali: {{ (has "dali" $sasha.access) | ternary "yes" "no" | quote }}
+        helmVersion: 8.2.0-closedown
       annotations:
         checksum/config: {{ $configSHA }}
     spec:

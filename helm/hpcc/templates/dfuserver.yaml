@@ -55,6 +55,7 @@ spec:
       labels:
         run: {{ .name | quote }}
         accessDali: "yes"
+        helmVersion: 8.2.0-closedown
       annotations:
         checksum/config: {{ $configSHA }}
     spec:

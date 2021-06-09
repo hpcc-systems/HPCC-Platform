@@ -100,6 +100,7 @@ spec:
       labels:
         run: {{ $commonCtx.toponame | quote }}
         roxie-cluster: {{ $roxie.name | quote }}
+        helmVersion: 8.2.0-closedown
       annotations:
         checksum/config: {{ $topoconfigSHA }}
     spec:
@@ -142,6 +143,7 @@ metadata:
   name: {{ $service.name | quote }}
   labels:
     type: roxie-service
+    helmVersion: 8.2.0-closedown
 spec:
   ports:
   - port: {{ $service.port }}
@@ -216,6 +218,7 @@ spec:
         roxie-cluster: {{ $roxie.name | quote }}
         accessDali: "yes"
         accessEsp: "yes"
+        helmVersion: 8.2.0-closedown
       annotations:
         checksum/config: {{ $configSHA }}
     spec:
@@ -300,6 +303,7 @@ spec:
         roxie-cluster: {{ $roxie.name | quote }}
         accessDali: "yes"
         accessEsp: "yes"
+        helmVersion: 8.2.0-closedown
       annotations:
         checksum/config: {{ $configSHA }}
     spec:
