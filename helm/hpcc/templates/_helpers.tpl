@@ -960,7 +960,7 @@ spec:
     protocol: TCP
     targetPort: {{ .port | default 8877 }}
   selector:
-    run: {{ $serviceName | quote }}
+    run: {{ .selectorName | default $serviceName | quote }}
   type: ClusterIP
 {{- end -}}
 
