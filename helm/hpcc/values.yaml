@@ -13,7 +13,7 @@ global:
 
   # logging sets the default logging information for all components. Can be overridden locally
   logging:
-    detail: 100
+    detail: 80
 
   # Specify a defaultEsp to control which eclservices service is returned from Std.File.GetEspURL, and other uses
   # If not specified, the first esp component that exposes eclservices application is assumed.
