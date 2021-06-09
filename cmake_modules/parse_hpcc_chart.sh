@@ -80,5 +80,5 @@ function update_chart_file()
     fi
     CHART_CHANGED=0
     diff -y  --suppress-common-lines $_chart $_chart.bak || CHART_CHANGED=1
-    rm $_chart.bak
+    rm -f $_chart.bak
 }
