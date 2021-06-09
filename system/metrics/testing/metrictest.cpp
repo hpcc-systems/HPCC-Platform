@@ -38,6 +38,18 @@ const char *testLogSinkConfigYml = R"!!(component:
           period: 5
 )!!";
 
+const char *testPrometheusSinkConfigYml = R"!!(component:
+  metrics:
+    name: config_name
+    prefix: component_prefix.
+    sinks:
+      - type: prometheus
+        name: PrometheusMetricsSink
+        settings:
+          port: 8767
+          serviceName: metrics
+          verbose : true
+)!!";
 
 int main(int argc, char *argv[])
 {
@@ -47,7 +59,8 @@ int main(int argc, char *argv[])
 
         //
         // Simulate retrieving the component and global config
-        Owned<IPropertyTree> pSettings = createPTreeFromYAMLString(testLogSinkConfigYml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+        //Owned<IPropertyTree> pSettings = createPTreeFromYAMLString(testLogSinkConfigYml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+        Owned<IPropertyTree> pSettings = createPTreeFromYAMLString(testPrometheusSinkConfigYml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
 
         //
         // Retrieve the global and component metrics config
