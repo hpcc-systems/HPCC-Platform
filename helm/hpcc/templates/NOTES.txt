@@ -1,5 +1,5 @@
-
-Thank you for installing the HPCC chart.
+{{- $defaultImage :=  include "hpcc.imageName" (dict "root" $ "me" dict ) | quote }}
+Thank you for installing the HPCC chart version {{ .Chart.Version }} using image {{ $defaultImage }}
 
 This chart has defined the following HPCC components:
 {{- $names := dict -}}
@@ -12,6 +12,10 @@ This chart has defined the following HPCC components:
 {{-       required ( printf "Component name %s in section %s was already seen in section %s" $component.name $sectionName (get $names $component.name)) nil -}}
 {{-      else }}
   {{ $sectionName }}.{{ $component.name }}
+  {{- $localImage := include "hpcc.imageName" (dict "root" $ "me" $component ) | quote }}
+  {{- if not ( eq $defaultImage $localImage ) -}}
+   {{- printf " using overriden image %s" $localImage -}}
+  {{- end }} 
 {{-       $_ := set $names $component.name $sectionName -}}
 {{-      end -}}
 {{-     end -}}
@@ -28,6 +32,10 @@ This chart has defined the following HPCC components:
 {{-     required ( printf "Component name %s in section sasha was already seen in section %s" $serviceName (get $names $serviceName)) nil -}}
 {{-    else }}
   sasha.{{ $serviceName }}
+  {{- $localImage := include "hpcc.imageName" (dict "root" $ "me" $service ) | quote }}
+  {{- if not ( eq $defaultImage $localImage ) -}}
+   {{- printf " using overriden image %s" $localImage -}}
+  {{- end }} 
 {{-    end -}}
 {{-   end -}}
 {{-  end }}
