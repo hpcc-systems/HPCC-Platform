@@ -198,7 +198,7 @@ static void appendServerAddress(StringBuffer &s, IPropertyTree &env, IPropertyTr
 
 void initContainerRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap)
 {
-    Owned<IPropertyTreeIterator> services = getComponentConfigSP()->getElements("services[@type='roxie']");
+    Owned<IPropertyTreeIterator> services = getGlobalConfigSP()->getElements("services[@type='roxie']");
     ForEach(*services)
     {
         IPropertyTree &service = services->query();
@@ -374,7 +374,7 @@ static IStringIterator *getContainerTargetClusters()
         if (!isEmptyString(qName))
             ret->append_unique(qName);
     }
-    Owned<IPropertyTreeIterator> services = getComponentConfigSP()->getElements("services[@type='roxie']");
+    Owned<IPropertyTreeIterator> services = getGlobalConfigSP()->getElements("services[@type='roxie']");
     ForEach(*services)
     {
         IPropertyTree &service = services->query();

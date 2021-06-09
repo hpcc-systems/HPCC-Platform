@@ -58,6 +58,7 @@ target_link_LIBRARies ( workunitservices
          remote 
          dalibase 
          workunit 
+         thorhelper
     )
 
 if (NOT CONTAINERIZED)

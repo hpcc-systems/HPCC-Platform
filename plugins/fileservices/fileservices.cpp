@@ -2903,50 +2903,46 @@ FILESERVICES_API void FILESERVICES_CALL fsDfuPlusExec(ICodeContext * ctx,const c
 FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, const char *userPW)
 {
 #ifdef _CONTAINERIZED
-    Owned<IPropertyTree> compConfig = getComponentConfig();
-    const char *defaultEsp = compConfig->queryProp("@defaultEsp");
+    const IPropertyTree *match = nullptr;
+    const char *espService = getComponentConfigSP()->queryProp("@defaultEsp");
     Owned<IPropertyTree> globalConfig = getGlobalConfig();
-    if (isEmptyString(defaultEsp))
-        defaultEsp = globalConfig->queryProp("@defaultEsp");
-    if (isEmptyString(defaultEsp))
+    if (isEmptyString(espService))
+        espService = globalConfig->queryProp("@defaultEsp");
+    if (!isEmptyString(espService))
     {
-        Owned<IPropertyTreeIterator> esps = globalConfig->getElements("esp");
-        ForEach(*esps)
+        VStringBuffer service("services[@name='%s']", espService);
+        match = globalConfig->queryPropTree(service.str());
+    }
+    if (!match)
+    {
+        // Look for 'eclservices' esp service, fallback to 'eclwatch' service.
+        Owned<IPropertyTreeIterator> iter = globalConfig->getElements("services");
+        ForEach(*iter)
         {
-            const char *application = esps->query().queryProp("@application");
-            if (application)
+            const char *type = iter->query().queryProp("@type");
+            if (streq("eclservices", type))
             {
-                if (streq(application, "eclservices"))
-                {
-                    defaultEsp = esps->query().queryProp("@name");
-                    break;
-                }
-                else if (!defaultEsp && streq(application, "eclwatch"))
-                    defaultEsp = esps->query().queryProp("@name");
+                match = &iter->query();
+                break;
             }
+            else if (streq("eclwatch", type))
+                match = &iter->query();
         }
     }
-    if (!isEmptyString(defaultEsp))
+    if (match) // MORE - if not found, we could generate a warning - it implies something misconfigured!
     {
+        if (!espService)
+            espService = match->queryProp("@name");
         StringBuffer credentials;
         if (username && username[0] && userPW && userPW[0])
             credentials.setf("%s:%s@", username, userPW);
         else if (username && username[0])
             credentials.setf("%s@", username);
 
-        VStringBuffer espInfo("esp[@name='%s']", defaultEsp);
-        const char *protocol = "https";
-        unsigned port = 8010;
-        const IPropertyTree *espconfig = globalConfig->queryPropTree(espInfo);
-        if (espconfig)
-        {
-            if (!espconfig->getPropBool("@tls", true))
-                protocol = "http";
-            port = espconfig->getPropInt("@servicePort", port);
-        }
-        // MORE - if not found, we could generate a warning - it implies something misconfigured!
+        const char *protocol = match->getPropBool("@tls") ? "https" : "http";
+        unsigned port = match->getPropInt("@servicePort", 8010);
 
-        VStringBuffer espURL("mtls:%s://%s%s:%u", protocol, credentials.str(), defaultEsp, port);
+        VStringBuffer espURL("mtls:%s://%s%s:%u", protocol, credentials.str(), espService, port);
         return espURL.detach();
     }
 #else

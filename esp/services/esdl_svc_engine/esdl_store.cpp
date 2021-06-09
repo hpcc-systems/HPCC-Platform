@@ -1247,7 +1247,7 @@ private:
     {
 #ifdef _CONTAINERIZED
         VStringBuffer xpath("services[@name='%s']", espprocname);
-        Owned<IPropertyTree> service = getComponentConfigSP()->getPropTree(xpath);
+        Owned<IPropertyTree> service = getGlobalConfigSP()->getPropTree(xpath);
         if (service)
         {
             const char *serviceType = service->queryProp("@type");

@@ -82,7 +82,7 @@ extern TPWRAPPER_API IStringIterator* getContainerTargetClusters(const char* pro
     if (!isEmptyString(processType) && !strieq("roxie", processType))
         return ret.getClear();
 
-    Owned<IPropertyTreeIterator> services = getComponentConfigSP()->getElements("services[@type='roxie']");
+    Owned<IPropertyTreeIterator> services = getGlobalConfigSP()->getElements("services[@type='roxie']");
     ForEach(*services)
     {
         IPropertyTree& service = services->query();
