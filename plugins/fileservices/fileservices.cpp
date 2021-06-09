@@ -2940,7 +2940,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, cons
             credentials.setf("%s@", username);
 
         const char *protocol = match->getPropBool("@tls") ? "https" : "http";
-        unsigned port = match->getPropInt("@servicePort", 8010);
+        unsigned port = match->getPropInt("@port", 8010);
 
         VStringBuffer espURL("mtls:%s://%s%s:%u", protocol, credentials.str(), espService, port);
         return espURL.detach();
