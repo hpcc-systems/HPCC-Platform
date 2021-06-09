@@ -72,7 +72,7 @@ void setStatisticsComponentName(StatisticCreatorType processType, const char * p
 // Textual forms of the different enumerations, first items are for none and all.
 static constexpr const char * const measureNames[] = { "", "all", "ns", "ts", "cnt", "sz", "cpu", "skw", "node", "ppm", "ip", "cy", "en", "txt", "bool", "id", "fname", "cost", NULL };
 static constexpr const char * const creatorTypeNames[]= { "", "all", "unknown", "hthor", "roxie", "roxie:s", "thor", "thor:m", "thor:s", "eclcc", "esp", "summary", NULL };
-static constexpr const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", "function", "workflow", "child", "unknown", nullptr };
+static constexpr const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", "function", "workflow", "child", "file", "unknown", nullptr };
 
 static unsigned matchString(const char * const * names, const char * search, unsigned dft)
 {
@@ -111,6 +111,7 @@ static const StatisticScopeType scoreOrder[] = {
     SSTfunction,
     SSTworkflow,
     SSTchildgraph,
+    SSTfile,
     SSTunknown
 };
 static int scopePriority[SSTmax];
@@ -1408,6 +1409,7 @@ void StatsScopeId::describe(StringBuffer & description) const
     case SSTedge:
         description.append(' ').append(id).append(',').append(extra);
         break;
+    case SSTfile:
     case SSTfunction:
         description.append(' ').append(name);
         break;
@@ -1479,6 +1481,7 @@ void StatsScopeId::serialize(MemoryBuffer & out) const
         out.append(id);
         out.append(extra);
         break;
+    case SSTfile:
     case SSTfunction:
         out.append(name);
         break;
@@ -1554,6 +1557,15 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
             return true;
         }
         break;
+    case FileScopePrefix[0]:
+        if (MATCHES_CONST_PREFIX(text, FileScopePrefix))
+        {
+            setFileId(text+strlen(FileScopePrefix));
+            if (_next)
+                *_next = text + strlen(text);
+            return true;
+        }
+        break;
     case WorkflowScopePrefix[0]:
         if (MATCHES_CONST_PREFIX(text, WorkflowScopePrefix) && isdigit(text[strlen(WorkflowScopePrefix)]))
         {
@@ -1614,6 +1626,11 @@ void StatsScopeId::setSubgraphId(unsigned _id)
 void StatsScopeId::setFunctionId(const char * _name)
 {
     scopeType = SSTfunction;
+    name.set(_name);
+}
+void StatsScopeId::setFileId(const char * _name)
+{
+    scopeType = SSTfile;
     name.set(_name);
 }
 void StatsScopeId::setWorkflowId(unsigned _id)
