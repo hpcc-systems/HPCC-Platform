@@ -430,7 +430,7 @@
           "items": { "type": "string" }
         },
         "labels": {
-          "description": "a list of labels associated with this plane, e.g. lz, data. NB: if blank/unset, treated as if 'data'",
+          "description": "a list of labels associated with this plane, e.g. lz, data, dali, sasha, dlls, spill. NB: if blank/unset, treated as if 'data'",
           "type": "array",
           "items": { "type": "string" }
         },
@@ -441,6 +441,15 @@
         "defaultSprayParts" : {
           "description": "Number of parts sprayed by default",
           "type" : "integer"
+        },
+        "storageSize": {
+          "type": "string"
+        },
+        "storageClass": {
+          "type": "string"
+        },
+        "forcePermissions": {
+          "type": "boolean"
         },
         "cost" : {
           "description": "Costs associated with the storage and use of the plane",

@@ -173,12 +173,5 @@ spec:
 ---
 {{ include "hpcc.addCertificate" (dict "root" $ "name" .name "service" . "component" "dali" "external" false) }}
 
-{{- $storage := ($.Values.storage | default dict) -}}
-{{- $daliStorage := ($storage.daliStorage | default dict) -}}
-{{- if (and (not $daliStorage.existingClaim) (not $daliStorage.plane)) }}
-{{- $services := (.services | default dict) -}}
-{{- $modeForCoalescer := (hasKey $services "coalescer") | ternary "ReadWriteOnce" "ReadWriteMany" -}}
-{{- include "hpcc.addPVC" (dict "root" $ "name" "dalistorage" "mode" $modeForCoalescer "me" $daliStorage) -}}
-{{- end }}
 {{- end }}
 {{- end }}

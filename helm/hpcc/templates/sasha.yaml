@@ -76,6 +76,7 @@ kind: ConfigMap
 {{- if and (not $sasha.storage.existingClaim) (not $sasha.storage.plane) }}
 {{ include "hpcc.addPVC" (dict "root" $ "name" (printf "sasha-%s" $sasha.name) "me" $sasha.storage) }}
 {{- end }}
+{{/* Any PVCS for sasha that are based on planes have already been generated in dali.yaml */}}
 ---
 {{ end -}}
 {{- end }}
