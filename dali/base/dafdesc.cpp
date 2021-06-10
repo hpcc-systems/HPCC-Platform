@@ -3176,7 +3176,7 @@ public:
     const GroupInformation * container = nullptr;
     unsigned containerOffset = 0;
     GroupType groupType = grp_unknown;
-    bool dropZone = false;
+    unsigned dropZoneIndex = 0;
 };
 
 using GroupInfoArray = CIArrayOf<GroupInformation>;
@@ -3245,8 +3245,8 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy
     else
         plane->setProp("@prefix", queryBaseDirectory(groupType, copy));
 
-    const char * label = dropZone ? "lz" : "data";
-    addPTreeItem(plane, "label", label);
+    const char * label = (dropZoneIndex != 0) ? "lz" : "data";
+    addPTreeItem(plane, "labels", label);
 
     //MORE: If container is identical to this except for the name we could generate an information tag @alias
 }
@@ -3278,6 +3278,10 @@ static int compareGroupSize(CInterface * const * _left, CInterface * const * _ri
 {
     const GroupInformation * left = static_cast<const GroupInformation *>(*_left);
     const GroupInformation * right = static_cast<const GroupInformation *>(*_right);
+    //Ensure drop zones come after non drop zones, and the drop zone order is preserved
+    if (left->dropZoneIndex || right->dropZoneIndex)
+        return (int)(left->dropZoneIndex - right->dropZoneIndex);
+
     int ret = (int) (right->hosts.ordinality() - left->hosts.ordinality());
     if (ret)
         return ret;
@@ -3286,6 +3290,7 @@ static int compareGroupSize(CInterface * const * _left, CInterface * const * _ri
         return -1;
     if (right->groupType == grp_thor)
         return +1;
+
     return stricmp(left->name, right->name);
 }
 
@@ -3384,6 +3389,7 @@ static void doInitializeStorageGroups(bool createPlanesFromGroups)
         Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), 0, 2000);
         if (conn)
         {
+            unsigned numDropZones = 0;
             Owned<IPropertyTreeIterator> dropzones = conn->queryRoot()->getElements("DropZone");
             ForEach(*dropzones)
             {
@@ -3397,7 +3403,7 @@ static void doInitializeStorageGroups(bool createPlanesFromGroups)
                     const char * ip = cur.queryProp("ServerList[1]/@server");
 
                     next->dir.set(cur.queryProp("@directory"));
-                    next->dropZone= true;
+                    next->dropZoneIndex = ++numDropZones;
                     if (ip && !strieq(ip, "localhost"))
                         next->hosts.append(ip);
                     appendGroup(allGroups, next.getClear());
