@@ -3659,13 +3659,13 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             startLogMsgParentReceiver();
             connectLogMsgManagerToDali();
 
+#ifndef _CONTAINERIZED
             StringBuffer baseDir;
             if (getConfigurationDirectory(agentTopology->queryPropTree("Directories"),"data","eclagent",agentTopology->queryProp("@name"),baseDir.clear()))
                 setBaseDirectory(baseDir.str(), false);
             if (getConfigurationDirectory(agentTopology->queryPropTree("Directories"),"mirror","eclagent",agentTopology->queryProp("@name"),baseDir.clear()))
                 setBaseDirectory(baseDir.str(), true);
 
-#ifndef _CONTAINERIZED
             if (agentTopology->getPropBool("@useNASTranslation", true))
                 envInstallNASHooks();
 #endif
