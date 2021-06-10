@@ -26,6 +26,7 @@ if (USE_CPPUNIT)
 
 if (NOT CONTAINERIZED)
 ADD_SUBDIRECTORY(configmgr)
+ADD_SUBDIRECTORY(metrics)
 endif()
 
 project( unittests )

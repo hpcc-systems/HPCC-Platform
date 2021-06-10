@@ -202,6 +202,26 @@ MetricSink *MetricsReporter::getSinkFromLib(const char *type, const char *sinkNa
     return pSink;
 }
 
+bool MetricsReporter::insertSink(MetricSink *pSink, const char *name)
+{
+    bool rc = false;
+    //
+    // If sink already registered, use it, otherwise it's new.
+    auto sinkIt = sinks.find(name);
+    if (sinkIt == sinks.end())
+    {
+        sinks.insert({std::string(name), std::unique_ptr<SinkInfo>(new SinkInfo(pSink))});
+        rc = true;
+    }
+    return rc;
+}
+
+
+void MetricsReporter::addSink(MetricSink *pSink, const char *name)
+{
+    insertSink(pSink, name);
+}
+
 
 PeriodicMetricSink::PeriodicMetricSink(const char *name, const char *type, const IPropertyTree *pSettingsTree) :
     MetricSink(name, type),

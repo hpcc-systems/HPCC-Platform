@@ -120,7 +120,7 @@ class jlib_decl CounterMetric : public MetricVal
 public:
     CounterMetric(const char *name, const char *description) :
         MetricVal{name, description, MetricType::METRICS_COUNTER}  { }
-    void inc(uint64_t val)
+    void inc(uint64_t val = 1)
     {
         value.fetch_add(val);
     }
@@ -226,6 +226,7 @@ public:
     MetricsReporter() = default;
     ~MetricsReporter();
     void init(IPropertyTree *pMetricsTree);
+    void addSink(MetricSink *pSink, const char *name);
     void addMetric(const std::shared_ptr<IMetric> &pMetric);
     void startCollecting();
     void stopCollecting();
@@ -234,6 +235,7 @@ public:
 protected:
     void initializeSinks(IPropertyTreeIterator *pSinkIt);
     static MetricSink *getSinkFromLib(const char *type, const char *sinkName, const IPropertyTree *pSettingsTree);
+    bool insertSink(MetricSink *pSink, const char *name);
 
 protected:
     StringBuffer componentPrefix;
