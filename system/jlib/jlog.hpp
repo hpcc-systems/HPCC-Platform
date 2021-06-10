@@ -730,6 +730,7 @@ interface jlib_decl ILogMsgManager : public ILogMsgListener
     virtual offset_t          getLogPosition(StringBuffer &logFileName, const ILogMsgHandler * handler) const = 0;
     virtual LogMsgJobId       addJobId(const char *job) = 0;
     virtual void              removeJobId(LogMsgJobId) = 0;
+    virtual const char *      queryJobId(LogMsgJobId id) const = 0;
 };
 
 // CONCRETE CLASSES

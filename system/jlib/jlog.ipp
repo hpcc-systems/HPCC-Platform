@@ -770,8 +770,7 @@ public:
     virtual offset_t          getLogPosition(StringBuffer &logFileName, const ILogMsgHandler * handler) const;
     virtual LogMsgJobId       addJobId(const char *job);
     virtual void              removeJobId(LogMsgJobId);
-
-    const char *              queryJobId(LogMsgJobId id) const;
+    virtual const char *      queryJobId(LogMsgJobId id) const;
 private:
     void                      sendFilterToChildren(bool locked = false) const;
     aindex_t                  find(const ILogMsgHandler * handler) const;
@@ -837,15 +836,6 @@ private:
     CriticalSection           dataLogLock;
 #endif
 };
-
-// Standard filters, handlers, manager, and audit event logger
-
-extern PassAllLogMsgFilter * thePassAllFilter;
-extern PassLocalLogMsgFilter * thePassLocalFilter;
-extern PassNoneLogMsgFilter * thePassNoneFilter;
-extern HandleLogMsgHandlerTable * theStderrHandler;
-extern CLogMsgManager * theManager;
-extern CSysLogEventLogger * theSysLogEventLogger;
 
 // Reset logging-related thread-local variables, when a threadpool starts
 extern void resetThreadLogging();
