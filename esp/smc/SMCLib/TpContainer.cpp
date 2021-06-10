@@ -724,8 +724,8 @@ extern TPWRAPPER_API unsigned getThorClusterNames(StringArray& targetNames, Stri
 }
 
 static std::set<std::string> validTargets;
-static CriticalSection validTargetSect;
-static bool targetsDirty = true;
+static std::set<std::string> validDataPlaneNames;
+static CriticalSection configUpdateSect;
 
 static void refreshValidTargets()
 {
@@ -743,11 +743,20 @@ static void refreshValidTargets()
     }
 }
 
+static void refreshValidDataPlaneNames()
+{
+    validDataPlaneNames.clear();
+    Owned<IPropertyTreeIterator> dataPlanes = getGlobalConfigSP()->getElements("storage/planes[labels='data']");
+    ForEach(*dataPlanes)
+        validDataPlaneNames.insert(dataPlanes->query().queryProp("@name"));
+}
+
 static void configUpdate(const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
 {
-    CriticalBlock block(validTargetSect);
+    CriticalBlock block(configUpdateSect);
     // as much as effort [small] to check if different as to refresh
     refreshValidTargets();
+    refreshValidDataPlaneNames();
     PROGLOG("Valid targets updated");
 }
 
@@ -756,10 +765,20 @@ extern TPWRAPPER_API void validateTargetName(const char* target)
     if (isEmptyString(target))
         throw makeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Empty target name.");
 
-    CriticalBlock block(validTargetSect);
     configUpdateHook.installOnce(configUpdate, true);
+    CriticalBlock block(configUpdateSect);
     if (validTargets.find(target) == validTargets.end())
         throw makeStringExceptionV(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid target name: %s", target);
+}
+
+extern TPWRAPPER_API bool validateDataPlaneName(const char * remoteDali, const char * name)
+{
+    if (isEmptyString(name))
+        throw makeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Empty data plane name.");
+
+    configUpdateHook.installOnce(configUpdate, true);
+    CriticalBlock block(configUpdateSect);
+    return validDataPlaneNames.find(name) != validDataPlaneNames.end();
 }
 
 // NB: bare-metal has a different implementation in TpWrapper.cpp
