@@ -3010,40 +3010,25 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, cons
 
 FILESERVICES_API char * FILESERVICES_CALL fsGetDefaultDropZone()
 {
-#ifdef _CONTAINERIZED
-    UNIMPLEMENTED_X("CONTAINERIZED(fsGetDefaultDropZone)");
-#else
-    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
-    Owned<IConstEnvironment> constEnv = envFactory-> openEnvironment();
-    Owned<IConstDropZoneInfoIterator> dropZoneIt = constEnv->getDropZoneIterator();
-    SCMStringBuffer dropZoneDir;
-    if (dropZoneIt->first())
-        dropZoneIt->query().getDirectory(dropZoneDir);
-
-    return strdup(dropZoneDir.str());
-#endif
+    StringBuffer dropZonePath;
+    Owned<IPropertyTreeIterator> dropZones = getGlobalConfigSP()->getElements("storage/planes[labels='lz']");
+    if (dropZones->first())
+        dropZones->query().getProp("@prefix", dropZonePath);        // Why the directory? seems a very stange choice
+    return strdup(dropZonePath.str());
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsGetDropZones(ICodeContext *ctx, size32_t & __lenResult, void * & __result)
 {
-#ifdef _CONTAINERIZED
-    UNIMPLEMENTED_X("CONTAINERIZED(fsGetDropZones)");
-#else
     MemoryBuffer mb;
-    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
-    Owned<IConstEnvironment> constEnv = envFactory-> openEnvironment();
-    Owned<IConstDropZoneInfoIterator> dropZoneIt = constEnv->getDropZoneIterator();
-    ForEach(*dropZoneIt)
+    Owned<IPropertyTreeIterator> dropZones = getGlobalConfigSP()->getElements("storage/planes[labels='lz']");
+    ForEach(*dropZones)
     {
-        SCMStringBuffer dropZoneDir;
-        dropZoneIt->query().getDirectory(dropZoneDir);
-        size32_t sz = dropZoneDir.length();
-        mb.append(sz).append(sz,dropZoneDir.str());
+        const char * directory = dropZones->query().queryProp("@prefix");
+        size32_t sz = strlen(directory);
+        mb.append(sz).append(sz,directory);
     }
-
     __lenResult = mb.length();
     __result = mb.detach();
-#endif
 }
 
 
