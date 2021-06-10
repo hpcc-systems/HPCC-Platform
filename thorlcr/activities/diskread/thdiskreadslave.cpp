@@ -411,6 +411,7 @@ void CDiskRecordPartHandler::close(CRC32 &fileCRC)
     if (partStream)
     {
         mergeStats(fileStats, partStream);
+        activity.mergeSubFileStats(partDesc, partStream);
         partStream->stop(&fileCRC);
     }
 }
