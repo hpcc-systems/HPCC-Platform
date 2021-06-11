@@ -1814,19 +1814,70 @@ bool CFileSprayEx::onGetDFUExceptions(IEspContext &context, IEspGetDFUExceptions
     return true;
 }
 
-void CFileSprayEx::readAndCheckSpraySourceReq(MemoryBuffer& srcxml, const char* srcIP, const char* srcPath,
+void CFileSprayEx::readAndCheckSpraySourceReq(MemoryBuffer& srcxml, const char* srcIP, const char* srcPath, const char* srcPlane,
     StringBuffer& sourceIPReq, StringBuffer& sourcePathReq)
 {
-    StringBuffer sourcePath(srcPath);
-    sourceIPReq.set(srcIP);
-    sourceIPReq.trim();
-    sourcePath.trim();
+    StringBuffer sourcePath;
+
     if(srcxml.length() == 0)
     {
+        if (!isEmptyString(srcPlane))
+        {
+            Owned<IPropertyTree> dropZone = getDropZonePlane(srcPlane);
+            if (!dropZone)
+                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Unknown landing zone: %s", srcPlane);
+            const char * dropZonePlanePath = dropZone->queryProp("@prefix");
+            if (isAbsolutePath(srcPath))
+            {
+                if (!startsWith(srcPath,dropZonePlanePath))
+                    throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid source path");
+                sourcePath.append(srcPath).trim();
+            }
+            else
+            {
+                sourcePath.append(dropZonePlanePath);
+                addNonEmptyPathSepChar(sourcePath);
+                sourcePath.append(srcPath).trim();
+            }
+            const char * hostGroup = dropZone->queryProp("@hostGroup");
+            if (hostGroup)
+            {
+                Owned<IPropertyTree> match = getHostGroup(hostGroup,true);
+                if (!isEmptyString(srcIP))
+                {
+                    // Already have srcIP. Just need to check that the ip is valid for storage plane.
+                    bool ipAddressMatches = false;
+                    Owned<IPropertyTreeIterator> hostIter = match->getElements("hosts");
+                    ForEach (*hostIter)
+                    {
+                        const char *knownIP = hostIter->query().queryProp(nullptr);
+                        if (strcmp(knownIP, srcIP)==0)
+                        {
+                            ipAddressMatches=true;
+                            break;
+                        }
+                    }
+                    if (!ipAddressMatches)
+                        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "srcip %s is not valid storage plane %s", srcIP, srcPlane);
+                    sourceIPReq.set(srcIP);
+                }
+                else
+                    sourceIPReq.set(match->queryProp("hosts[1]"));
+            }
+            else
+            {
+                sourceIPReq.set("localhost"); // storage plane will be mounted when not using hostgroup
+            }
+        }
+        else
+        {
+            sourcePath.append(srcPath).trim();
+            sourceIPReq.set(srcIP).trim();
+        }
         if (sourceIPReq.isEmpty())
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source network IP not specified.");
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Source network IP not specified.");
         if (sourcePath.isEmpty())
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source path not specified.");
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Source path not specified.");
     }
     getStandardPosixPath(sourcePathReq, sourcePath.str());
 }
@@ -1869,20 +1920,20 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         StringBuffer destFolder, destTitle, defaultFolder, defaultReplicateFolder;
 
         const char* destNodeGroup = req.getDestGroup();
-        if(destNodeGroup == NULL || *destNodeGroup == '\0')
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination node group not specified.");
+        if (isEmptyString(destNodeGroup))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Destination node group not specified.");
 
         MemoryBuffer& srcxml = (MemoryBuffer&)req.getSrcxml();
         StringBuffer sourceIPReq, sourcePathReq;
-        readAndCheckSpraySourceReq(srcxml, req.getSourceIP(), req.getSourcePath(), sourceIPReq, sourcePathReq);
+        readAndCheckSpraySourceReq(srcxml, req.getSourceIP(), req.getSourcePath(), req.getSourcePlane(), sourceIPReq, sourcePathReq);
         const char* srcip = sourceIPReq.str();
         const char* srcfile = sourcePathReq.str();
         const char* destname = req.getDestLogicalName();
-        if(!destname || !*destname)
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination file not specified.");
+        if(isEmptyString(destname))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Destination file not specified.");
         CDfsLogicalFileName lfn;
         if (!lfn.setValidate(destname))
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "invalid destination filename:'%s'", destname);
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid destination filename:'%s'", destname);
         destname = lfn.get();
         PROGLOG("SprayFixed: DestLogicalName %s, DestGroup %s", destname, destNodeGroup);
 
@@ -1919,7 +1970,7 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
             RemoteMultiFilename rmfn;
             SocketEndpoint ep(srcip);
             if (ep.isNull())
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "SprayFixed to %s: cannot resolve source network IP from %s.", destname, srcip);
+                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "SprayFixed to %s: cannot resolve source network IP from %s.", destname, srcip);
 
             rmfn.setEp(ep);
             StringBuffer fnamebuf(srcfile);
@@ -2042,8 +2093,8 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         StringBuffer destFolder, destTitle, defaultFolder, defaultReplicateFolder;
 
         const char* destNodeGroup = req.getDestGroup();
-        if(destNodeGroup == NULL || *destNodeGroup == '\0')
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination node group not specified.");
+        if (isEmptyString(destNodeGroup))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Destination node group not specified.");
 
         StringBuffer gName, ipAddr;
         const char *pTr = strchr(destNodeGroup, ' ');
@@ -2057,15 +2108,15 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
 
         MemoryBuffer& srcxml = (MemoryBuffer&)req.getSrcxml();
         StringBuffer sourceIPReq, sourcePathReq;
-        readAndCheckSpraySourceReq(srcxml, req.getSourceIP(), req.getSourcePath(), sourceIPReq, sourcePathReq);
+        readAndCheckSpraySourceReq(srcxml, req.getSourceIP(), req.getSourcePath(), req.getSourcePlane(), sourceIPReq, sourcePathReq);
         const char* srcip = sourceIPReq.str();
         const char* srcfile = sourcePathReq.str();
         const char* destname = req.getDestLogicalName();
-        if(!destname || !*destname)
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination file not specified.");
+        if(isEmptyString(destname))
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Destination file not specified.");
         CDfsLogicalFileName lfn;
         if (!lfn.setValidate(destname))
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "invalid destination filename:'%s'", destname);
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid destination filename:'%s'", destname);
 
         destname = lfn.get();
         PROGLOG("SprayVariable: DestLogicalName %s, DestGroup %s", destname, destNodeGroup);
@@ -2096,7 +2147,7 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
             RemoteMultiFilename rmfn;
             SocketEndpoint ep(srcip);
             if (ep.isNull())
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "SprayVariable to %s: cannot resolve source network IP from %s.", destname, srcip);
+                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "SprayVariable to %s: cannot resolve source network IP from %s.", destname, srcip);
 
             rmfn.setEp(ep);
             StringBuffer fnamebuf(srcfile);
@@ -2260,25 +2311,54 @@ bool CFileSprayEx::onReplicate(IEspContext &context, IEspReplicate &req, IEspRep
     return true;
 }
 
-void CFileSprayEx::getDropZoneInfoByDestPlane(double clientVersion, const char* destPlane, const char* destFileIn, StringBuffer& destFileOut, StringBuffer& umask)
+void CFileSprayEx::getDropZoneInfoByDestPlane(double clientVersion, const char* destPlane, const char* destFileIn, StringBuffer& destFileOut, StringBuffer& umask, StringBuffer & hostip)
 {
-    Owned<IPropertyTree> plane = getDropZonePlane(destPlane);
-    if (!plane)
-        throw makeStringExceptionV(ECLWATCH_DROP_ZONE_NOT_FOUND, "No drop zone matching plane %s", destPlane);
+    Owned<IPropertyTree> dropZone = getDropZonePlane(destPlane);
+    if (!dropZone)
+        throw makeStringExceptionV(ECLWATCH_DROP_ZONE_NOT_FOUND, "Unknown landing zone %s", destPlane);
 
-    StringBuffer fullDropZoneDir(plane->queryProp("@prefix"));
+    StringBuffer fullDropZoneDir(dropZone->queryProp("@prefix"));
     addPathSepChar(fullDropZoneDir);
     if (isAbsolutePath(destFileIn))
     {
-        if (strncmp(fullDropZoneDir, destFileIn, fullDropZoneDir.length()))
-            throw makeStringExceptionV(ECLWATCH_DROP_ZONE_NOT_FOUND, "No drop zone configured for %s:%s", destPlane, destFileIn);
-        destFileOut.set(destFileIn);
+        if (!startsWith(destFileIn, fullDropZoneDir))
+            throw makeStringExceptionV(ECLWATCH_DROP_ZONE_NOT_FOUND, "No landing zone configured for %s:%s", destPlane, destFileIn);
     }
     else
     {
-        destFileOut.append(destFileIn);
+        destFileOut.append(fullDropZoneDir);
+        addNonEmptyPathSepChar(destFileOut);
     }
-    plane->getProp("@umask", umask);
+    destFileOut.append(destFileIn).trim();
+    dropZone->getProp("@umask", umask);
+    const char * hostGroup = dropZone->queryProp("@hostGroup");
+    if (hostGroup)
+    {
+        Owned<IPropertyTree> match = getHostGroup(hostGroup,true);
+        if (!hostip.isEmpty())
+        {
+            // Already have hostip. Just need to check that the ip is valid for storage plane.
+            bool ipAddressMatches = false;
+            Owned<IPropertyTreeIterator> hostIter = match->getElements("hosts");
+            ForEach (*hostIter)
+            {
+                const char *knownIP = hostIter->query().queryProp(nullptr);
+                if (strcmp(knownIP, hostip)==0)
+                {
+                    ipAddressMatches=true;
+                    break;
+                }
+            }
+            if (!ipAddressMatches)
+                throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "destip %s is not valid storage plane %s", hostip.str(), destPlane);
+        }
+        else
+            hostip.set(match->queryProp("hosts[1]"));
+    }
+    else
+    {
+        hostip.set("localhost"); // storage plane will be mounted when not using hostgroup
+    }
 }
 
 void CFileSprayEx::getDropZoneInfoByIP(double clientVersion, const char* ip, const char* destFileIn, StringBuffer& destFileOut, StringBuffer& umask)
@@ -2405,7 +2485,13 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
 
         PROGLOG("Despray %s", srcname);
         double version = context.getClientVersion();
-        const char* destip = req.getDestIP();
+        StringBuffer destip(req.getDestIP());
+        const char* destPlane = req.getDestPlane();
+#ifdef _CONTAINERIZED
+        if (isEmptyString(destPlane))
+            destPlane = req.getDestGroup();  // allow eclwatch to continue providing storage plane as 'destgroup' field
+#endif
+
         StringBuffer destPath;
         StringBuffer implicitDestFile;
         const char* destfile = getStandardPosixPath(destPath, req.getDestPath()).str();
@@ -2413,8 +2499,8 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         MemoryBuffer& dstxml = (MemoryBuffer&)req.getDstxml();
         if(dstxml.length() == 0)
         {
-            if(!destip || !*destip)
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination network IP not specified.");
+            if(isEmptyString(destPlane) && destip.isEmpty())
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination network IP/storage plane not specified.");
 
             //If the destination filename is not provided, calculate a relative filename from the logical filename
             if(!destfile || !*destfile)
@@ -2444,18 +2530,17 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
 
         if(dstxml.length() == 0)
         {
-            RemoteFilename rfn;
-            SocketEndpoint ep(destip);
-            if (ep.isNull())
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Despray %s: cannot resolve destination network IP from %s.", srcname, destip);
-
             StringBuffer destfileWithPath, umask;
-#ifdef _CONTAINERIZED
-            const char* destPlane = req.getDestGroup();
-            getDropZoneInfoByDestPlane(version, destPlane, destfile, destfileWithPath, umask);
-#else
-            getDropZoneInfoByIP(version, destip, destfile, destfileWithPath, umask);
-#endif
+            if (!isEmptyString(destPlane))
+                getDropZoneInfoByDestPlane(version, destPlane, destfile, destfileWithPath, umask, destip);
+            else
+                getDropZoneInfoByIP(version, destip, destfile, destfileWithPath, umask);
+
+            RemoteFilename rfn;
+            SocketEndpoint ep(destip.str());
+            if (ep.isNull())
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Despray %s: cannot resolve destination network IP from %s.", srcname, destip.str());
+
             //Ensure the filename is dependent on the file part if parts are being preserved
             if (preserveFileParts && !strstr(destfileWithPath, "$P$"))
                 destfileWithPath.append("._$P$_of_$N$");
@@ -2564,7 +2649,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         if (!bRoxie)
         {
             if (!lfn.setValidate(dstname))
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "invalid destination filename:'%s'", dstname);
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid destination filename:'%s'", dstname);
             dstname = lfn.get();
         }
 

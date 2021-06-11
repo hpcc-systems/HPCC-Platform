@@ -468,7 +468,6 @@ class CDFUengine: public CInterface, implements IDFUengine
             IPropertyTree & plane = planes->query();
             const char * fullDropZoneDir = plane.queryProp("@prefix");
             assertex(fullDropZoneDir);
-            // note: for bare-metal drop-zones, will need to compare ip address
             if (startsWith(pfilePath, fullDropZoneDir))
                 return;
         }
@@ -1317,7 +1316,7 @@ public:
 #ifdef _CONTAINERIZED
                         StringBuffer clusterName;
                         destination->getGroupName(0, clusterName);
-                        Owned<IPropertyTree> plane = getDropZonePlane(clusterName);
+                        Owned<IPropertyTree> plane = getStoragePlane(clusterName);
                         if (plane)
                         {
                             if (plane->hasProp("@defaultSprayParts"))
