@@ -15,7 +15,7 @@ define([
         i18n: nlsHPCC,
 
         gridTitle: nlsHPCC.title_LibrariesUsed,
-        idProperty: "Name",
+        idProperty: "__hpcc_id",
 
         init: function (params) {
             if (this.inherited(arguments))
@@ -30,6 +30,7 @@ define([
             var context = this;
             var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
+                sort: [{ attribute: "__hpcc_id" }],
                 columns: {
                     Name: { label: this.i18n.LibrariesUsed }
                 }
@@ -44,6 +45,7 @@ define([
                 if (lang.exists("LibrariesUsed.Item", context.query)) {
                     arrayUtil.forEach(context.query.LibrariesUsed.Item, function (item, idx) {
                         var file = {
+                            __hpcc_id: idx,
                             Name: item
                         };
                         librariesUsed.push(file);

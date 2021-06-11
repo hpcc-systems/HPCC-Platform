@@ -92,7 +92,6 @@ target_link_libraries ( fileview2
          eclrtl 
          jhtree 
          dalibase 
-         environment 
          dllserver 
          deftype 
          workunit 
@@ -100,3 +99,6 @@ target_link_libraries ( fileview2
          hql 
     )
 
+if (NOT CONTAINERIZED)
+    target_link_libraries ( fileview2 environment )
+endif()

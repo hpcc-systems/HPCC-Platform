@@ -57,8 +57,11 @@ target_link_LIBRARies ( workunitservices
          hrpc 
          remote 
          dalibase 
-         environment 
          workunit 
+         thorhelper
     )
 
+if (NOT CONTAINERIZED)
+    target_link_libraries ( workunitservices environment )
+endif()
 

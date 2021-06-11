@@ -61,5 +61,8 @@ target_link_libraries ( esp
          hrpc 
          remote 
          dalibase 
-         environment 
     ) 
+
+if (NOT CONTAINERIZED)
+    target_link_libraries ( esp environment )
+endif()

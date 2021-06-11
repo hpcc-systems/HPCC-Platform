@@ -15,7 +15,9 @@
 ################################################################################
 HPCC_ADD_SUBDIRECTORY (deftype)
 HPCC_ADD_SUBDIRECTORY (dllserver)
-HPCC_ADD_SUBDIRECTORY (environment)
+if (NOT CONTAINERIZED)
+    HPCC_ADD_SUBDIRECTORY (environment)
+ENDIF()
 if ("${BUILD_LEVEL}" STREQUAL "INTERNAL")
     HPCC_ADD_SUBDIRECTORY (fileview2)
 else ()

@@ -43,6 +43,13 @@ if [ "$HPCC_MATURITY" = "closedown" ] ; then
   update_version_file closedown $((NEW_POINT+1)) 0 $NEW_MINOR
   if [ -e helm/hpcc/Chart.yaml ] ; then
     update_chart_file helm/hpcc/Chart.yaml closedown $((NEW_POINT+1)) 0 $NEW_MINOR 
+    doit "git add helm/hpcc/Chart.yaml"
+    for f in helm/hpcc/templates/* ; do
+      update_chart_file $f closedown $((NEW_POINT+1)) 0 $NEW_MINOR 
+    if [ "$CHART_CHANGED" != "0" ] ; then
+        doit "git add $f"
+      fi
+    done
   fi
   doit "git add $VERSIONFILE"
   doit "git commit -s -m \"Split off $HPCC_MAJOR.$NEW_MINOR.$NEW_POINT\""
@@ -69,6 +76,12 @@ update_version_file rc $NEW_POINT $NEW_SEQUENCE $NEW_MINOR
 if [ -e helm/hpcc/Chart.yaml ] ; then
   update_chart_file helm/hpcc/Chart.yaml rc $NEW_POINT $NEW_SEQUENCE $NEW_MINOR 
   doit "git add helm/hpcc/Chart.yaml"
+  for f in helm/hpcc/templates/* ; do
+    update_chart_file $f rc $NEW_POINT $NEW_SEQUENCE $NEW_MINOR 
+    if [ "$CHART_CHANGED" != "0" ] ; then
+      doit "git add $f"
+    fi
+  done
 fi
 
 HPCC_MATURITY=rc

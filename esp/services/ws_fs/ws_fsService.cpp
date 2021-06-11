@@ -611,6 +611,9 @@ bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, StringBuffer &tit
 void setRoxieClusterPartDiskMapping(const char *clusterName, const char *defaultFolder, const char *defaultReplicateFolder,
                                bool supercopy, IDFUfileSpec *wuFSpecDest, IDFUoptions *wuOptions)
 {
+#ifdef _CONTAINERIZED
+    UNIMPLEMENTED_X("CONTAINERIZED(setRoxieClusterPartDiskMapping)");
+#else
     Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
 
@@ -664,6 +667,7 @@ void setRoxieClusterPartDiskMapping(const char *clusterName, const char *default
         spec.setRepeatedCopies(CPDMSRP_lastRepeated,false);
     wuFSpecDest->setClusterPartDiskMapSpec(clusterName,spec);
     wuOptions->setReplicate(replicate);
+#endif
 }
 
 StringBuffer& constructFileMask(const char* filename, StringBuffer& filemask)
@@ -676,6 +680,9 @@ bool CFileSprayEx::onDFUWUSearch(IEspContext &context, IEspDFUWUSearchRequest & 
 {
     try
     {
+#ifdef _CONTAINERIZED
+        UNIMPLEMENTED_X("CONTAINERIZED(CFileSprayEx::onDFUWUSearch)");
+#else
         context.ensureFeatureAccess(DFU_WU_URL, SecAccess_Read, ECLWATCH_DFU_WU_ACCESS_DENIED, "Access to DFU workunit is denied.");
 
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
@@ -697,6 +704,7 @@ bool CFileSprayEx::onDFUWUSearch(IEspContext &context, IEspDFUWUSearchRequest & 
         }
 
         resp.setClusterNames(dfuclusters);
+#endif
     }
     catch(IException* e)
     {
@@ -754,7 +762,7 @@ bool CFileSprayEx::GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorku
     context.getUserID(user);
 
     SocketEndpoint ep;
-    getSashaServiceEP(ep, "sasha-dfuwu-archiver", true);
+    getSashaServiceEP(ep, "dfuwu-archiver", true);
     Owned<INode> sashaserver = createINode(ep);
 
     __int64 count=req.getPageSize();
@@ -956,11 +964,14 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
             clusterReq.append(clusterName);
         }
 
+        StringArray targetClusters, clusterProcesses;
+#ifdef _CONTAINERIZED
+        IERRLOG("CONTAINERIZED(CFileSprayEx::onGetDFUWorkunits)");
+#else
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> root = &constEnv->getPTree();
 
-        StringArray targetClusters, clusterProcesses;
         Owned<IPropertyTreeIterator> clusters= root->getElements("Software/Topology/Cluster");
         if (clusters->first())
         {
@@ -1007,6 +1018,7 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
                 }
             } while (clusters->next());
         }
+#endif
 
         __int64 pagesize = req.getPageSize();
         __int64 pagefrom = req.getPageStartFrom();
@@ -2940,6 +2952,10 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
 
 bool CFileSprayEx::checkDropZoneIPAndPath(double clientVersion, const char* dropZoneName, const char* netAddr, const char* path)
 {
+#ifdef _CONTAINERIZED
+    IERRLOG("CONTAINERIZED(CFileSprayEx::checkDropZoneIPAndPath)");
+    return false;
+#else
     if (isEmptyString(netAddr) || isEmptyString(path))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "NetworkAddress or Path not defined.");
 
@@ -2962,6 +2978,7 @@ bool CFileSprayEx::checkDropZoneIPAndPath(double clientVersion, const char* drop
         }
     }
     return false;
+#endif
 }
 
 void CFileSprayEx::addDropZoneFile(IEspContext& context, IDirectoryIterator* di, const char* name, const char pathSep, IArrayOf<IEspPhysicalFileStruct>& files)
@@ -3051,6 +3068,9 @@ bool CFileSprayEx::onDropZoneFileSearch(IEspContext &context, IEspDropZoneFileSe
         if (!validNameFilter)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Name Filter '*'");
 
+#ifdef _CONTAINERIZED
+        UNIMPLEMENTED_X("CONTAINERIZED(CFileSprayEx::onDropZoneFileSearch)");
+#else
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IConstDropZoneInfo> dropZoneInfo = constEnv->getDropZone(dropZoneName);
@@ -3098,6 +3118,7 @@ bool CFileSprayEx::onDropZoneFileSearch(IEspContext &context, IEspDropZoneFileSe
             resp.setWarning(msg.str());
         }
         resp.setFiles(files);
+#endif
     }
     catch(IException* e)
     {
@@ -3274,6 +3295,10 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
         bool filesFromALinux = false;
         IArrayOf<IEspDropZone> dropZoneList;
         bool ECLWatchVisibleOnly = req.getECLWatchVisibleOnly();
+
+#ifdef _CONTAINERIZED
+        IERRLOG("CONTAINERIZED(CFileSprayEx::onDropZoneFileSearch)");
+#else
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IConstDropZoneInfoIterator> dropZoneItr = constEnv->getDropZoneIterator();
@@ -3316,6 +3341,7 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
                 dropZoneList.append(*aDropZone.getClear());
             }
         }
+#endif
 
         if (dropZoneList.ordinality())
             resp.setDropZones(dropZoneList);
@@ -3550,11 +3576,15 @@ bool CFileSprayEx::onGetDFUServerQueues(IEspContext &context, IEspGetDFUServerQu
 {
     try
     {
+#ifdef _CONTAINERIZED
+        UNIMPLEMENTED_X("CONTAINERIZED(CFileSprayEx::onGetDFUServerQueues)");
+#else
         context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
 
         StringArray qlist;
         getDFUServerQueueNames(qlist, req.getDFUServerName());
         resp.setNames(qlist);
+#endif
     }
     catch(IException* e)
     {

@@ -49,6 +49,9 @@ target_link_libraries ( agentexec
          jlib 
          dalibase 
          eclrtl 
-         environment
          workunit
     )
+
+if (NOT CONTAINERIZED)
+    target_link_libraries ( agentexec environment )
+endif()

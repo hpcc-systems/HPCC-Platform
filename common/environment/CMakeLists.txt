@@ -22,7 +22,7 @@
 #    Cmake Input File for environment
 #####################################################
 
-project( environment ) 
+project( environment )
 
 set (    SRCS 
          dalienv.cpp 
@@ -53,4 +53,3 @@ target_link_libraries ( environment
          remote 
          dalibase 
     )
-

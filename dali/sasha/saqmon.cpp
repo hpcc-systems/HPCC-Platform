@@ -13,6 +13,9 @@
 #include "wujobq.hpp"
 #include "environment.hpp"
 
+#ifndef _CONTAINERIZED
+//not currently created or used in the containerized version
+
 //#define TESTING
 
 #define DEFAULT_QMONITOR_INTERVAL       1  // minutes
@@ -294,5 +297,4 @@ ISashaServer *createSashaQMonitorServer()
     return sashaQMonitorServer;
 }
 
-
-
+#endif // !_CONTAINERIZED

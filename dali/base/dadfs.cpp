@@ -3257,6 +3257,7 @@ protected:
     StringAttr directory;
     StringAttr partmask;
     FileClusterInfoArray clusters;
+    FileDescriptorFlags fileFlags = FileDescriptorFlags::none;
 
     void savePartsAttr(bool force) override
     {
@@ -3582,6 +3583,11 @@ public:
         clusters.kill();
     }
 
+    bool hasDirPerPart() const
+    {
+        return FileDescriptorFlags::none != (fileFlags & FileDescriptorFlags::dirperpart);
+    }
+
     IFileDescriptor *getFileDescriptor(const char *_clusterName) override
     {
         CriticalBlock block (sect);
@@ -3612,21 +3618,23 @@ public:
                 partmask.set(mask);
             }
         }
-        if (!save)
-            return;
-        if (directory.isEmpty())
-            root->removeProp("@directory");
-        else
-            root->setProp("@directory",directory);
-        if (partmask.isEmpty())
-            root->removeProp("@partmask");
-        else
-            root->setProp("@partmask",partmask);
-        IPropertyTree *t = &fdesc->queryProperties();
-        if (isEmptyPTree(t))
-            resetFileAttr();
-        else
-            resetFileAttr(createPTreeFromIPT(t));
+        if (save)
+        {
+            if (directory.isEmpty())
+                root->removeProp("@directory");
+            else
+                root->setProp("@directory",directory);
+            if (partmask.isEmpty())
+                root->removeProp("@partmask");
+            else
+                root->setProp("@partmask",partmask);
+            IPropertyTree *t = &fdesc->queryProperties();
+            if (isEmptyPTree(t))
+                resetFileAttr();
+            else
+                resetFileAttr(createPTreeFromIPT(t));
+        }
+        fileFlags = static_cast<FileDescriptorFlags>(root->getPropInt("Attr/@flags"));
     }
 
     void setClusters(IFileDescriptor *fdesc)
@@ -6866,6 +6874,8 @@ StringBuffer &CDistributedFilePart::getPartDirectory(StringBuffer &ret,unsigned 
         parent.adjustClusterDir(partIndex,copy,dir);
         ret.append(dir);
     }
+    if (parent.hasDirPerPart())
+        addPathSepChar(ret).append(partIndex+1); // part subdir 1 based
     return ret;
 }
 

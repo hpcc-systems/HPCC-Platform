@@ -63,6 +63,9 @@ private:
 
     void updateUsers()
     {
+#ifdef _CONTAINERIZED
+        IERRLOG("CONTAINERIZED(QueryFilesInUse::updateUsers)");
+#else
         Owned<IStringIterator> clusters = getTargetClusters("RoxieCluster", NULL);
         ForEach(*clusters)
         {
@@ -75,6 +78,7 @@ private:
             roxieUserMap.setValue(target.str(), user);
             roxieUsers.append(*user.getClear());
         }
+#endif
     }
 
 public:
@@ -469,7 +473,9 @@ public:
         }
     }
 
+#ifndef _CONTAINERIZED
     int onGetForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);
+#endif
     int onGet(CHttpRequest* request, CHttpResponse* response);
     int onStartUpload(IEspContext& ctx, CHttpRequest* request, CHttpResponse* response, const char* service, const char* method);
 

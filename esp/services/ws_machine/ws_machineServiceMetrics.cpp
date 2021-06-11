@@ -322,6 +322,9 @@ void Cws_machineEx::doGetMetrics(CMetricsThreadParam* pParam)
 //-------------------------------------------------METRICS------------------------------------------------------
 void Cws_machineEx::getRoxieClusterConfig(char const * clusterType, char const * clusterName, char const * processName, StringBuffer& netAddress, int& port)
 {
+#ifdef _CONTAINERIZED
+    UNIMPLEMENTED_X("CONTAINERIZED(Cws_machineEx::getRoxieClusterConfig)");
+#else
 #if 0
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
     Owned<IConstEnvironment> environment = factory->openEnvironment();
@@ -373,8 +376,7 @@ void Cws_machineEx::getRoxieClusterConfig(char const * clusterType, char const *
             netAddress.append(addr);
     }
 #endif
-    
-    return;
+#endif
 }
 
 void Cws_machineEx::processValue(const char *oid, const char *value, const bool bShow, CFieldInfoMap& myfieldInfoMap, CFieldMap&  myfieldMap)

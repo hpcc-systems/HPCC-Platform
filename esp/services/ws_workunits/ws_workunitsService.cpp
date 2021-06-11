@@ -112,7 +112,7 @@ void setActionResult(const char* wuid, CECLWUActions action, const char* result,
 IPropertyTree *getArchivedWorkUnitProperties(const char *wuid, bool dfuWU)
 {
     SocketEndpoint ep;
-    getSashaServiceEP(ep, "sasha-wu-archiver", true);
+    getSashaServiceEP(ep, "wu-archiver", true);
     Owned<INode> node = createINode(ep);
     if (!node)
         throw MakeStringException(ECLWATCH_INODE_NOT_FOUND, "INode not found.");
@@ -1541,7 +1541,7 @@ void getArchivedWUInfo(IEspContext &context, const char* sashaServerIP, unsigned
     if (sashaServerIP && *sashaServerIP)
         ep.set(sashaServerIP, sashaServerPort);
     else
-        getSashaServiceEP(ep, "sasha-wu-archiver", true);
+        getSashaServiceEP(ep, "wu-archiver", true);
 
     if (getWsWuInfoFromSasha(context, ep, wuid, &resp.updateWorkunit()))
     {
@@ -2441,7 +2441,7 @@ public:
         if (sashaServerIP && *sashaServerIP)
             ep.set(sashaServerIP, sashaServerPort);
         else
-            getSashaServiceEP(ep, "sasha-wu-archiver", true);
+            getSashaServiceEP(ep, "wu-archiver", true);
 
         Owned<INode> sashaserver = createINode(ep);
 
@@ -4430,6 +4430,8 @@ bool CWsWorkunitsEx::onWUGraphTiming(IEspContext &context, IEspWUGraphTimingRequ
     return true;
 }
 
+#ifndef _CONTAINERIZED
+//The code here is for legacy ECLWatch only.
 int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method)
 {
     try
@@ -4438,11 +4440,14 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
         StringBuffer xslt;
         if(strieq(method,"WUQuery") || strieq(method,"WUJobList"))
         {
-            Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
-            Owned<IConstEnvironment> environment = factory->openEnvironment();
-            Owned<IPropertyTree> root = &environment->getPTree();
             if(strieq(method,"WUQuery"))
             {
+#ifdef _CONTAINERIZED
+                UNIMPLEMENTED_X("CONTAINERIZED(CWsWorkunitsSoapBindingEx::onGetForm)");
+#else
+                Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+                Owned<IConstEnvironment> environment = factory->openEnvironment();
+                Owned<IPropertyTree> root = &environment->getPTree();
                 SecAccessFlags accessOwn;
                 SecAccessFlags accessOthers;
                 getUserWuAccessFlags(context, accessOwn, accessOthers, false);
@@ -4469,6 +4474,7 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
                 }
                 xml.append("</WUQuery>");
                 xslt.append(getCFD()).append("./smc_xslt/wuid_search.xslt");
+#endif
             }
             else if (strieq(method,"WUJobList"))
             {
@@ -4526,6 +4532,7 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
     }
     return onGetNotFound(context, request, response, service);
 }
+#endif
 
 int CWsWorkunitsSoapBindingEx::onStartUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
 {

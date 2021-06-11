@@ -4,20 +4,16 @@
 <sect1 id="WorkunitMessages">
   <title>WorkunitMessages</title>
 
-  <para><emphasis role="bold">STD.System.Workunit.WorkunitMessages    <indexterm>
+  <para><emphasis role="bold">STD.System.Workunit.WorkunitMessages <indexterm>
       <primary>STD.System.Workunit.WorkunitMessages</primary>
-    </indexterm>
-    <indexterm>
+    </indexterm> <indexterm>
       <primary>System.Workunit.WorkunitMessages</primary>
-    </indexterm>
-    <indexterm>
+    </indexterm> <indexterm>
       <primary>Workunit.WorkunitMessages</primary>
-    </indexterm>
-    <indexterm>
+    </indexterm> <indexterm>
       <primary>WorkunitMessages</primary>
-    </indexterm>
-(</emphasis>
-  <emphasis> wuid </emphasis> <emphasis role="bold">)</emphasis></para>
+    </indexterm> (</emphasis> <emphasis> wuid </emphasis> <emphasis
+  role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -56,10 +52,14 @@
   STRING message{MAXLENGTH(1024)};
 END;</programlisting>
 
-  <para>Each record in the returned dataset specifies a message in the
-  workunit.</para>
+  <para>This function returns all messages in the workunit. Each record in the
+  returned dataset specifies a message in the workunit. </para>
+
+  <para>The <emphasis>severity</emphasis> value can be 1 for Warning, 2 for
+  Error, or 3 for Information. </para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitMessages('W20070308-164946'));</programlisting>
+  <programlisting format="linespecific">IMPORT STD;
+OUTPUT(STD.System.Workunit.WorkunitMessages('W20210602-164946'));</programlisting>
 </sect1>

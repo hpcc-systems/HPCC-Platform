@@ -670,7 +670,7 @@
     <emphasis>index</emphasis>. The join is actually done between the
     <emphasis>leftrecset</emphasis> and the <emphasis>index </emphasis>into
     the <emphasis>rightrecset--</emphasis>the <emphasis>index </emphasis>needs
-    the dataset's record pointer (virtual(fileposition)) field to properly
+    the dataset's record pointer (VIRTUAL(fileposition)) field to properly
     fetch records from the <emphasis>rightrecset</emphasis>. The typical KEYED
     join passes only the <emphasis>rightrecset </emphasis>to the
     TRANSFORM.</para>
@@ -679,7 +679,7 @@
     is a "half-keyed" JOIN. Usually, the INDEX in a "half-keyed" JOIN contains
     "payload" fields, which frequently eliminates the need to read the base
     dataset. If this is the case, the "payload" INDEX does not need to have
-    the dataset's record pointer (virtual(fileposition)) field declared. For a
+    the dataset's record pointer (VIRTUAL(fileposition)) field declared. For a
     "half-keyed" JOIN the <emphasis>joincondition</emphasis> may use the KEYED
     and WILD keywords that are available for use in INDEX filters,
     only.</para>
@@ -895,7 +895,7 @@ Proj := PROJECT(Person(per_last_name[1]=per_first_name[1]),
 PtblOut := OUTPUT(Proj,,'~RTTEMP::TestKeyedJoin',OVERWRITE);
 
 Ptbl := DATASET('RTTEMP::TestKeyedJoin',
-                {PtblRec,UNSIGNED8 __fpos {virtual(fileposition)}},
+                {PtblRec,UNSIGNED8 __fpos {VIRTUAL(fileposition)}},
                 FLAT);
 AlphaKey := INDEX(Ptbl,{lname,fname,__fpos},
                   '~RTTEMPkey::lname.fname');

@@ -1,5 +1,0 @@
-{{- $storage := (.Values.storage | default dict) -}}
-{{- $dllStorage := ($storage.dllStorage | default dict) -}}
-{{- if (and (not $dllStorage.existingClaim) (not $dllStorage.plane)) }}
-{{ include "hpcc.addPVC" (dict "root" $ "name" "dllstorage" "me" $dllStorage) }}
-{{- end }}

@@ -81,6 +81,8 @@ set (    SRCS
          roxiehelper.ipp
          roxielmj.hpp
                  
+         hpccconfig.cpp
+         hpccconfig.hpp
     )
 
 include_directories ( 

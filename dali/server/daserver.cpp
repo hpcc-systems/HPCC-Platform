@@ -663,6 +663,7 @@ int main(int argc, const char* argv[])
 // Audit logging
         StringBuffer auditDir;
         {
+            //MORE: Does this need to change in CONTAINERIZED mode?
             Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(serverConfig, "dali");
             lf->setLogDirSubdir("audit");//add to tail of config log dir
             lf->setName("DaAudit");//override default filename

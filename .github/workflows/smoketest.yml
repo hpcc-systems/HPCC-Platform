@@ -256,7 +256,7 @@ jobs:
     - name: Cache miss prep
       if: ${{ steps.check-cache.outputs.state == 'miss' }}
       run: |
-        rm -rf build merge-patch src-cache
+        rm -rf build build-cache merge-patch src-cache
         mkdir build
         mkdir src-cache
         cd src

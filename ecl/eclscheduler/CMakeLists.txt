@@ -51,7 +51,9 @@ install ( TARGETS eclscheduler RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( eclscheduler 
          jlib
          schedulectrl
-         environment
          workunit
     )
 
+if (NOT CONTAINERIZED)
+    target_link_libraries ( eclscheduler environment )
+endif()

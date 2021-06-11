@@ -59,7 +59,6 @@ target_link_libraries ( graphslave_lcr
          thorhelper 
          dafsclient 
          dalibase 
-         environment 
          dllserver 
          workunit 
          thorcodectx_lcr 

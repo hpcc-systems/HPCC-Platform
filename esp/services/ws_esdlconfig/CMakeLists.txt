@@ -67,9 +67,12 @@ install ( TARGETS ws_esdlconfig RUNTIME DESTINATION bin LIBRARY DESTINATION lib 
 target_link_libraries ( ws_esdlconfig
          jlib
          esphttp
-         environment
          dllserver
          SMCLib
          esdl_svc_engine
          dalibase
     )
+
+if (NOT CONTAINERIZED)
+    target_link_libraries ( ws_esdlconfig environment )
+endif()

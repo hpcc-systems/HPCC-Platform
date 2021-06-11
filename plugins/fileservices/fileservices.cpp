@@ -192,6 +192,7 @@ static void setWorkunitState(ICodeContext * ctx, WUState state, const char * msg
     }
 }
 
+#ifndef _CONTAINERIZED
 static IConstEnvironment * openDaliEnvironment()
 {
     if (daliClientActive())
@@ -208,6 +209,7 @@ static IPropertyTree *getEnvironmentTree(IConstEnvironment * daliEnv)
         return &daliEnv->getPTree(); // No need to clone since daliEnv ensures connection stays alive.
     return getHPCCEnvironment();
 }
+#endif
 
 static void setServerAccess(CClientFileSpray &server, IConstWorkUnit * wu)
 {
@@ -287,6 +289,9 @@ static const char *getAccessibleEspServerURL(const char *param, IConstWorkUnit *
     if (param&&*param)
         return param;
 
+#ifdef _CONTAINERIZED
+    UNIMPLEMENTED_X("CONTAINERIZED(getAccessibleEspServerURL)");
+#else
     CriticalBlock b(espURLcrit);
     if (isUrlListEmpty())
     {
@@ -348,6 +353,7 @@ static const char *getAccessibleEspServerURL(const char *param, IConstWorkUnit *
     PROGLOG("FileServices: Targeting ESP WsFileSpray URL: %s", nextWsFSUrl);
 
     return nextWsFSUrl;
+#endif
 }
 
 StringBuffer & constructLogicalName(IConstWorkUnit * wu, const char * partialLogicalName, StringBuffer & result)
@@ -2897,50 +2903,46 @@ FILESERVICES_API void FILESERVICES_CALL fsDfuPlusExec(ICodeContext * ctx,const c
 FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, const char *userPW)
 {
 #ifdef _CONTAINERIZED
-    Owned<IPropertyTree> compConfig = getComponentConfig();
-    const char *defaultEsp = compConfig->queryProp("@defaultEsp");
+    const IPropertyTree *match = nullptr;
+    const char *espService = getComponentConfigSP()->queryProp("@defaultEsp");
     Owned<IPropertyTree> globalConfig = getGlobalConfig();
-    if (isEmptyString(defaultEsp))
-        defaultEsp = globalConfig->queryProp("@defaultEsp");
-    if (isEmptyString(defaultEsp))
+    if (isEmptyString(espService))
+        espService = globalConfig->queryProp("@defaultEsp");
+    if (!isEmptyString(espService))
     {
-        Owned<IPropertyTreeIterator> esps = globalConfig->getElements("esp");
-        ForEach(*esps)
+        VStringBuffer service("services[@name='%s']", espService);
+        match = globalConfig->queryPropTree(service.str());
+    }
+    if (!match)
+    {
+        // Look for 'eclservices' esp service, fallback to 'eclwatch' service.
+        Owned<IPropertyTreeIterator> iter = globalConfig->getElements("services");
+        ForEach(*iter)
         {
-            const char *application = esps->query().queryProp("@application");
-            if (application)
+            const char *type = iter->query().queryProp("@type");
+            if (streq("eclservices", type))
             {
-                if (streq(application, "eclservices"))
-                {
-                    defaultEsp = esps->query().queryProp("@name");
-                    break;
-                }
-                else if (!defaultEsp && streq(application, "eclwatch"))
-                    defaultEsp = esps->query().queryProp("@name");
+                match = &iter->query();
+                break;
             }
+            else if (streq("eclwatch", type))
+                match = &iter->query();
         }
     }
-    if (!isEmptyString(defaultEsp))
+    if (match) // MORE - if not found, we could generate a warning - it implies something misconfigured!
     {
+        if (!espService)
+            espService = match->queryProp("@name");
         StringBuffer credentials;
         if (username && username[0] && userPW && userPW[0])
             credentials.setf("%s:%s@", username, userPW);
         else if (username && username[0])
             credentials.setf("%s@", username);
 
-        VStringBuffer espInfo("esp[@name='%s']", defaultEsp);
-        const char *protocol = "https";
-        unsigned port = 8010;
-        const IPropertyTree *espconfig = globalConfig->queryPropTree(espInfo);
-        if (espconfig)
-        {
-            if (!espconfig->getPropBool("@tls", true))
-                protocol = "http";
-            port = espconfig->getPropInt("@servicePort", port);
-        }
-        // MORE - if not found, we could generate a warning - it implies something misconfigured!
+        const char *protocol = match->getPropBool("@tls") ? "https" : "http";
+        unsigned port = match->getPropInt("@port", 8010);
 
-        VStringBuffer espURL("mtls:%s://%s%s:%u", protocol, credentials.str(), defaultEsp, port);
+        VStringBuffer espURL("mtls:%s://%s%s:%u", protocol, credentials.str(), espService, port);
         return espURL.detach();
     }
 #else
@@ -3008,30 +3010,23 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, cons
 
 FILESERVICES_API char * FILESERVICES_CALL fsGetDefaultDropZone()
 {
-    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
-    Owned<IConstEnvironment> constEnv = envFactory-> openEnvironment();
-    Owned<IConstDropZoneInfoIterator> dropZoneIt = constEnv->getDropZoneIterator();
-    SCMStringBuffer dropZoneDir;
-    if (dropZoneIt->first())
-        dropZoneIt->query().getDirectory(dropZoneDir);
-
-    return strdup(dropZoneDir.str());
+    StringBuffer dropZonePath;
+    Owned<IPropertyTreeIterator> dropZones = getGlobalConfigSP()->getElements("storage/planes[labels='lz']");
+    if (dropZones->first())
+        dropZones->query().getProp("@prefix", dropZonePath);        // Why the directory? seems a very stange choice
+    return strdup(dropZonePath.str());
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsGetDropZones(ICodeContext *ctx, size32_t & __lenResult, void * & __result)
 {
     MemoryBuffer mb;
-    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
-    Owned<IConstEnvironment> constEnv = envFactory-> openEnvironment();
-    Owned<IConstDropZoneInfoIterator> dropZoneIt = constEnv->getDropZoneIterator();
-    ForEach(*dropZoneIt)
+    Owned<IPropertyTreeIterator> dropZones = getGlobalConfigSP()->getElements("storage/planes[labels='lz']");
+    ForEach(*dropZones)
     {
-        SCMStringBuffer dropZoneDir;
-        dropZoneIt->query().getDirectory(dropZoneDir);
-        size32_t sz = dropZoneDir.length();
-        mb.append(sz).append(sz,dropZoneDir.str());
+        const char * directory = dropZones->query().queryProp("@prefix");
+        size32_t sz = strlen(directory);
+        mb.append(sz).append(sz,directory);
     }
-
     __lenResult = mb.length();
     __result = mb.detach();
 }
