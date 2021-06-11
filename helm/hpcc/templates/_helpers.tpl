@@ -840,13 +840,13 @@ Generate list of available services
 {{- range $roxie := $.Values.roxie -}}
  {{- if not $roxie.disabled -}}
   {{- range $service := $roxie.services -}}
-   {{- if ne (int $service.port) 0 -}}
+   {{- if ne (int $service.servicePort) 0 -}}
 - name: {{ $service.name }}
   class: roxie
   type: roxie
-  port: {{ $service.port }}
+  port: {{ $service.servicePort }}
   target: {{ $roxie.name }}
-  public: {{ $service.external }}
+  public: {{ (ne ( include "hpcc.isVisibilityPublic" (dict "root" $ "visibility" $service.visibility)) "") | ternary "true" "false" }}
    {{- end -}}
   {{- end }}
 {{ end -}}
@@ -855,24 +855,26 @@ Generate list of available services
 - name: {{ $esp.name }}
   class: esp
   type: {{ $esp.application }}
-  port: {{ $esp.servicePort }}
+  port: {{ $esp.service.servicePort }}
   {{- if hasKey $esp "tls" }}
   tls: {{ $esp.tls }}
   {{- else }}
   tls: {{ ($.Values.certificates | default dict).enabled }}
   {{- end }}
-  public: {{ $esp.public }}
+  public: {{ (ne ( include "hpcc.isVisibilityPublic" (dict "root" $ "visibility" $esp.service.visibility))  "") | ternary "true" "false" }}
 {{ end -}}
 {{- range $dali := $.Values.dali -}}
 {{- $sashaServices := $dali.services | default dict -}}
 {{- if not $sashaServices.disabled -}}
 {{- range $sashaName, $_sasha := $sashaServices -}}
 {{- $sasha := ($_sasha | default dict) -}}
-{{- if and (not $sasha.disabled) ($sasha.servicePort) -}}
+{{- if hasKey $sasha "service" -}}
+{{- if and (not $sasha.disabled) ($sasha.service.servicePort) -}}
 - name: {{ printf "sasha-%s" $sashaName }}
   class: sasha
   type: {{ $sashaName }}
-  port: {{ $sasha.servicePort }}
+  port: {{ $sasha.service.servicePort }}
+{{ end -}}
 {{ end -}}
 {{ end -}}
 {{ end -}}
@@ -881,11 +883,13 @@ Generate list of available services
 {{- if not $sashaServices.disabled -}}
 {{- range $sashaName, $_sasha := $sashaServices -}}
 {{- $sasha := ($_sasha | default dict) -}}
-{{- if and (not $sasha.disabled) ($sasha.servicePort) -}}
+{{- if and (not $sasha.disabled) (hasKey $sasha "service") -}}
+{{- if $sasha.service.servicePort -}}
 - name: {{ printf "sasha-%s" $sashaName }}
   class: sasha
   type: {{ $sashaName }}
-  port: {{ $sasha.servicePort }}
+  port: {{ $sasha.service.servicePort }}
+{{ end -}}
 {{ end -}}
 {{ end -}}
 {{- end -}}
@@ -1023,23 +1027,71 @@ Pass in dict with root and me
 {{- end -}}
 
 {{/*
-A template to generate Sasha service
-Pass in dict me
+A template to generate the type of a service based on the visibility setting
+Pass in dict with .root, .visibility defined
 */}}
-{{- define "hpcc.addSashaService" }}
-{{- $serviceName := printf "sasha-%s" .me.name }}
+{{- define "hpcc.isVisibilityPublic" }}
+{{- if and (hasKey . "visibility") .visibility -}}
+ {{- if hasKey .root.Values.global "visibilities" -}}
+  {{- if hasKey .root.Values.global.visibilities .visibility -}}
+   {{- $globalServiceInfo := get .root.Values.global.visibilities .visibility -}}
+   {{- if (not (eq $globalServiceInfo.type "ClusterIP")) -}}
+   true
+   {{- end -}}
+  {{- else -}}
+   {{- required (printf "Specified service visibility %s not found in global visibilities section" .visibility) nil -}}
+  {{- end -}}
+ {{- else -}}
+  {{- required "global visibilities section not found" nil -}}
+ {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+A template to generate a service
+Pass in dict with .root, .name, .service, .defaultPort, .selector defined
+*/}}
+{{- define "hpcc.addService" }}
+{{- $lvars := dict "type" "ClusterIP" "labels" dict "annotations" dict -}}
+{{- if hasKey . "service" -}}
+ {{- if hasKey .service "labels" -}}{{- $_ := set $lvars "labels" (merge $lvars.labels .service.labels) -}}{{- end -}}
+ {{- if hasKey .service "annotations" -}}{{- $_ := set $lvars "annotations" (merge $lvars.annotations .service.annotations) -}}{{- end -}}
+ {{- if hasKey .service "visibility" -}}
+  {{- if hasKey .root.Values.global "visibilities" -}}
+   {{- if hasKey .root.Values.global.visibilities .service.visibility -}}
+    {{- $globalServiceInfo := get .root.Values.global.visibilities .service.visibility -}}
+    {{- if hasKey $globalServiceInfo "labels" -}}{{- $_ := set $lvars "labels" (merge $lvars.labels $globalServiceInfo.labels) -}}{{- end -}}
+    {{- if hasKey $globalServiceInfo "annotations" -}}{{- $_ := set $lvars "annotations" (merge $lvars.annotations $globalServiceInfo.annotations) -}}{{- end -}}
+    {{- $_ := set $lvars "type" $globalServiceInfo.type -}}
+   {{- else -}}
+    {{- required (printf "Specified service visibility %s not found in global visibilities section" .service.visibility) nil -}}
+   {{- end -}}
+  {{- else -}}
+   {{- required "global visibilities section not found" nil -}}
+  {{- end -}}
+ {{- end -}}
+{{- end -}}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ $serviceName | quote }}
+  name: {{ .name | quote }}
+  labels:
+    helmVersion: 8.2.0-closedown
+{{- if $lvars.labels }}
+{{ toYaml $lvars.labels | indent 4 }}
+{{- end }}
+{{- if $lvars.annotations }}
+  annotations:
+{{ toYaml $lvars.annotations | indent 4 }}
+{{- end }}
 spec:
   ports:
-  - port: {{ .me.servicePort }}
+  - port: {{ required "servicePort must be specified" .service.servicePort }}
     protocol: TCP
-    targetPort: {{ .port | default 8877 }}
+    targetPort: {{ .service.port | default .defaultPort }}
   selector:
-    run: {{ .selectorName | default $serviceName | quote }}
-  type: ClusterIP
+    server: {{ .selector | quote }}
+  type: {{ $lvars.type }}
 {{- end -}}
 
 
@@ -1193,7 +1245,7 @@ so that we can recognize the signature of our own CA.
 */}}
 {{- define "hpcc.addCertificate" }}
 {{- if (.root.Values.certificates | default dict).enabled -}}
-{{- $externalCert := and (hasKey . "external") .external -}}
+{{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
 {{- $issuer := ternary .root.Values.certificates.issuers.public .root.Values.certificates.issuers.local $externalCert -}}
 {{- if $issuer -}}
 {{- $namespace := .root.Release.Namespace -}}
@@ -1230,7 +1282,7 @@ spec:
   - {{ .servicename }}.{{ $domain }}
  {{- /* if service parameter is passed in we are using the component config as a service config entry */ -}}
  {{- else if .service -}}
-   {{- $public := and (hasKey .service "public") .service.public -}}
+   {{- $public := and (hasKey .service "visibility") (not (eq .service.visibility "cluster")) -}}
    {{- if eq $public $externalCert }}
   - {{ .service.name }}.{{ $domain }}
    {{- end }}
@@ -1311,7 +1363,7 @@ spec:
 Add a certficate volume mount for a component
 */}}
 {{- define "hpcc.addCertificateVolumeMount" -}}
-{{- $externalCert := and (hasKey . "external") .external -}}
+{{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
 {{- $exposure := ternary "public" "local" $externalCert }}
 {{- /*
     A .certificate parameter means the user explictly configured a certificate to use
@@ -1333,7 +1385,7 @@ Add a certficate volume mount for a component
 Add a secret volume for a certificate
 */}}
 {{- define "hpcc.addCertificateVolume" -}}
-{{- $externalCert := and (hasKey . "external") .external -}}
+{{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
 {{- $exposure := ternary "public" "local" $externalCert -}}
 {{- /*
     A .certificate parameter means the user explictly configured a certificate to use

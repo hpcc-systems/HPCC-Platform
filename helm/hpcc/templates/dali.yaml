@@ -37,13 +37,22 @@ spec:
   selector:
     matchLabels:
       run: {{ $dali.name | quote }}
+      server: {{ $dali.name | quote }}
       app: dali
   template:
     metadata:
       labels:
         run: {{ $dali.name | quote }}
+        server: {{ $dali.name | quote }}
         app: dali
         helmVersion: 8.2.0-closedown
+{{- if hasKey $dali "labels" }}
+{{ toYaml $dali.labels | indent 8 }}
+{{- end }}
+{{- if hasKey $dali "annotations" }}
+      annotations:
+{{ toYaml $dali.annotations | indent 8 }}
+{{- end }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $dali.name "type" "dali") | indent 6 }}
       serviceAccountName: "hpcc-default"
@@ -144,9 +153,11 @@ kind: ConfigMap
 {{ include "hpcc.generateConfig" (dict "root" $ "me" . "secretsCategories" $sashaSecretsCategories "configMapHelper" "hpcc.sashaConfigMap") }}
 {{- end }}
 ---
-{{- if $sasha.servicePort -}}
-{{ include "hpcc.addSashaService" (dict "root" $ "selectorName" $dali.name "me" $sasha) }}
+{{- if hasKey $sasha "service" -}}
+{{- if $sasha.service.servicePort -}}
+{{ include "hpcc.addService" ( dict "root" $ "name" (printf "sasha-%s" $sasha.name) "service" $sasha.service "selector" $dali.name "defaultPort" 8877 ) }}
 ---
+{{- end }}
 {{- end }}
 
 {{- if $sasha.storage }}
@@ -168,7 +179,7 @@ spec:
     protocol: TCP
     targetPort: 7070
   selector:
-    run: {{ .name | quote }}
+    server: {{ .name | quote }}
   type: ClusterIP
 ---
 {{ include "hpcc.addCertificate" (dict "root" $ "name" .name "service" . "component" "dali" "external" false) }}

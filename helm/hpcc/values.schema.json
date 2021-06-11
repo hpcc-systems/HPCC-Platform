@@ -135,6 +135,8 @@
     "dali": {
       "description": "dali process",
       "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
       "items": { "$ref": "#/definitions/dali" }
     },
     "eclccserver": {
@@ -184,25 +186,33 @@
       "description": "dfuserver process",
       "type": "array",
       "items": {
-        "allOf": [
-          {
-            "name": {
-              "type": "string",
-              "description": "The name of the dfuserver process"
-            },
-            "disabled": {
-              "type": "boolean"
-            },
-            "maxJobs": {
-              "type": "integer"
-            },
-            "required": [ "name" ]
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the dfuserver process"
+          },
+          "disabled": {
+            "type": "boolean"
+          },
+          "maxJobs": {
+            "type": "integer"
+          },
+          "annotations": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
           }
-        ]
+        },
+        "additionalProperties": { "type": ["integer", "string", "boolean"] },
+        "required": [ "name" ]
       }
     },
     "roxie": {
-      "description": "eclagent process",
+      "description": "roxie process",
       "type": "array",
       "items": { "$ref": "#/definitions/roxie" }
     },
@@ -291,6 +301,29 @@
             "sinks" : {
               "$ref" : "#/definitions/sinks"
             }
+          }
+        },
+        "visibilities": {
+          "type": "object",
+          "description" : "Global visibilities configuration",
+          "additionalProperties": {
+            "type": "object",
+            "required": [ "type" ],
+            "properties":
+            {
+              "annotations": {
+                "type": "object",
+                "additionalProperties": { "type": "string" }
+              },
+              "labels": {
+                "type": "object",
+                "additionalProperties": { "type": "string" }
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
           }
         }
       },
@@ -637,6 +670,14 @@
         "logging": {
           "$ref": "#/definitions/logging"
         },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
         "resources": {
           "$ref": "#/definitions/resources"
         },
@@ -673,6 +714,14 @@
         "logging": {
           "$ref": "#/definitions/logging"
         },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
         "resources": {
           "$ref": "#/definitions/resources"
         }
@@ -693,6 +742,14 @@
         "logging": {
           "$ref": "#/definitions/logging"
         },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
         "resources": {
           "$ref": "#/definitions/resources"
         }
@@ -700,7 +757,7 @@
     },
     "esp": {
       "type": "object",
-      "required": [ "name" ],
+      "required": [ "name", "service" ],
       "additionalProperties": { "type": ["integer", "string", "boolean"] },
       "properties": {
         "name": {
@@ -718,6 +775,42 @@
         },
         "resources": {
           "$ref": "#/definitions/resources"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "service": {
+          "description": "Service properties",
+          "type": "object",
+          "required": [ "servicePort", "visibility" ],
+          "properties": {
+            "port": {
+              "type": "integer",
+              "description": "The local port used by the pod",
+              "default": 8880
+            },
+            "servicePort": {
+              "type": "integer",
+              "description": "The port that this service will be exposed on"
+            },
+            "visibility": {
+              "type": "string",
+              "description": "Should this service be exposed outside the cluster, locally or to the internet"
+            },
+            "annotations": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            },
+            "labels": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            }
+          }
         }
       }
     },
@@ -755,6 +848,14 @@
         "storagePlane": {
           "description": "The default storage plane to write data files to",
           "type": "string"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
         },
         "resources": {
           "$ref": "#/definitions/resources"
@@ -811,11 +912,20 @@
         },
         "channelResources": {
           "$ref": "#/definitions/resources"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
         }
       }
     },
     "toposerver": {
       "type": "object",
+      "additionalProperties": { "type": ["integer", "string", "boolean"] },
       "properties": {
         "port": {
           "type": "integer"
@@ -828,6 +938,14 @@
         },
         "logging": {
           "$ref": "#/definitions/logging"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
         }
       }
     },
@@ -838,7 +956,12 @@
           "type": "string"
         },
         "port": {
-          "type": "integer"
+          "type": "integer",
+          "description": "The local port used by the pod (same as servicePort if not specified)"
+        },
+        "servicePort": {
+          "type": "integer",
+          "description": "The port that this service will be exposed on"
         },
         "numThreads": {
           "type": "integer"
@@ -846,11 +969,20 @@
         "listenQueue": {
           "type": "integer"
         },
-        "external": {
-          "type": "boolean"
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "visibility": {
+          "type": "string",
+          "description": "Should this service be exposed outside the cluster, locally or to the internet"
         }
       },
-      "required": [ "name", "port" ],
+      "required": [ "name", "servicePort" ],
       "additionalProperties": false
     },
     "bundle": {
@@ -937,6 +1069,14 @@
           "description": "The storage plane to write spill files to",
           "type": "string"
         },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
         "managerResources": {
           "$ref": "#/definitions/resources"
         },
@@ -962,11 +1102,37 @@
           "type": "integer",
           "default": 1
         },
-        "servicePort": {
-          "type": "integer"
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
         },
-        "port": {
-          "type": "integer"
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "service": {
+          "description": "Service properties",
+          "type": "object",
+          "required": [ "servicePort" ],
+          "properties": {
+            "port": {
+              "type": "integer",
+              "description": "The local port used by the pod",
+              "default": 8880
+            },
+            "servicePort": {
+              "type": "integer",
+              "description": "The port that this service will be exposed on"
+            },
+            "annotations": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            },
+            "labels": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            }
+          }
         },
         "at" : {
           "type": "string",
@@ -1012,17 +1178,18 @@
               "properties": {
                 "minDeltaSize": {
                   "type": "integer",
-                  "description": "Coalescing will only begin, if the delta size is above this threashold (K)"
+                  "description": "Coalescing will only begin, if the delta size is above this threshold (K)"
                 },
                 "disabled": {},
                 "interval": {},
-                "servicePort": {},
-                "port": {},
+                "service": {},
                 "at" : {},
                 "throttle": {},
                 "image": {},
                 "storage": {},
-                "resources": {}    
+                "resources": {},
+                "annotations": {},
+                "labels": {}
               },
               "additionalProperties": false
             }
@@ -1065,13 +1232,14 @@
                 },
                 "disabled": {},
                 "interval": {},
-                "servicePort": {},
-                "port": {},
+                "service": {},
                 "at" : {},
                 "throttle": {},
                 "image": {},
                 "storage": {},
                 "resources": {},
+                "annotations": {},
+                "labels": {},
                 "limit": {},
                 "cutoff": {}    
               },
@@ -1096,13 +1264,14 @@
               {
                 "disabled": {},
                 "interval": {},
-                "servicePort": {},
-                "port": {},
+                "service": {},
                 "at" : {},
                 "throttle": {},
                 "image": {},
                 "storage": {},
                 "resources": {},
+                "annotations": {},
+                "labels": {},
                 "limit": {},
                 "cutoff": {}
               },
@@ -1126,13 +1295,14 @@
               "properties": {
                 "disabled": {},
                 "interval": {},
-                "servicePort": {},
-                "port": {},
+                "service": {},
                 "at" : {},
                 "throttle": {},
                 "image": {},
                 "storage": {},
                 "resources": {},
+                "annotations": {},
+                "labels": {},
                 "limit": {},
                 "cutoff": {}    
               },
@@ -1167,13 +1337,14 @@
             },
             "disabled": {},
             "interval": {},
-            "servicePort": {},
-            "port": {},
+            "service": {},
             "at" : {},
             "throttle": {},
             "image": {},
             "storage": {},
-            "resources": {}
+            "resources": {},
+            "annotations": {},
+            "labels": {}
           },
           "additionalProperties": false
         },

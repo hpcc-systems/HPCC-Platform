@@ -60,16 +60,23 @@ spec:
   selector:
     matchLabels:
       run: {{ $roxie.name | quote }}
+      server: {{ $servername | quote }}
   template:
     metadata:
       labels:
         run: {{ $roxie.name | quote }}
-        roxie-server: {{ $servername | quote }}
+        server: {{ $servername | quote }}
         accessDali: "yes"
         accessEsp: "yes"
         helmVersion: 8.2.0-closedown
+{{- if hasKey . "labels" }}
+{{ toYaml .labels | indent 8 }}
+{{- end }}
       annotations:
         checksum/config: {{ $configSHA }}
+{{- if hasKey . "annotations" }}
+{{ toYaml .annotations | indent 8 }}
+{{- end }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $roxie.name "target" $roxie.name "type" "roxie") | indent 6 }}
       serviceAccountName: "hpcc-default"
@@ -92,13 +99,13 @@ spec:
           value: "/tmp/{{ $roxie.name }}.sentinel"
 {{- $local := dict "first" true }}
 {{- range $service := $roxie.services }}
-{{- if ne (int $service.port)  0 }}
+{{- if ne (int $service.servicePort)  0 }}
 {{- if $local.first }}
 {{- $_ := set $local "first" false }}
         ports:
 {{- end }}
         - name: {{ $service.name }}
-          containerPort: {{ $service.port }}
+          containerPort: {{ $service.servicePort }}
 {{- end }}
 {{- end }}
 {{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
@@ -122,22 +129,8 @@ spec:
 {{ include "hpcc.addUDPCertificateVolume" (dict "root" $ "name" $roxie.name "component" "localudpkey" ) | indent 6 }}
 ---
 {{- range $service := $roxie.services }}
-{{- if ne (int $service.port)  0 }}
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ $service.name | quote }}
-  labels:
-    type: roxie-service
-    helmVersion: 8.2.0-closedown
-spec:
-  ports:
-  - port: {{ $service.port }}
-    protocol: TCP
-    targetPort: {{ $service.port }}
-  selector:
-    roxie-server: {{ $servername | quote }}
-  type: {{ if $service.external -}} LoadBalancer {{- else -}} ClusterIP {{- end }}
+{{- if ne (int $service.servicePort)  0 }}
+{{ include "hpcc.addService" ( dict "root" $ "name" $service.name "service" $service "selector" $servername "defaultPort" $service.servicePort ) }}
 ---
 {{- end }}
 {{- end }}
