@@ -649,7 +649,11 @@ export class WUScopeController extends WUScopeControllerBase<Subgraph, VertexTyp
         const e = this.createEdge(edge);
         if (e) {
             const attrs = edge._.rawAttrs();
-            const numSlaves = edge.parent._.hasAttr("NumSlaves") ? parseInt(edge.parent._.attr("NumSlaves").RawValue) : Number.MAX_SAFE_INTEGER;
+            const numSlaves = edge._.hasAttr("NumSlaves") ?
+                parseInt(edge._.attr("NumSlaves").RawValue) :
+                edge.parent._.hasAttr("NumSlaves") ?
+                    parseInt(edge.parent._.attr("NumSlaves").RawValue) :
+                    Number.MAX_SAFE_INTEGER;
             const numStarts = parseInt(attrs["NumStarts"]);
             const numStops = parseInt(attrs["NumStops"]);
             if (!isNaN(numSlaves) && !isNaN(numStarts) && !isNaN(numStops)) {
@@ -1044,7 +1048,11 @@ export class WUScopeController8 extends WUScopeControllerBase<ISubgraph, IVertex
         const e = this.createEdge(edge);
         if (e) {
             const attrs = edge._.rawAttrs();
-            const numSlaves = edge.parent._.hasAttr("NumSlaves") ? parseInt(edge.parent._.attr("NumSlaves").RawValue) : Number.MAX_SAFE_INTEGER;
+            const numSlaves = edge._.hasAttr("NumSlaves") ?
+                parseInt(edge._.attr("NumSlaves").RawValue) :
+                edge.parent._.hasAttr("NumSlaves") ?
+                    parseInt(edge.parent._.attr("NumSlaves").RawValue) :
+                    Number.MAX_SAFE_INTEGER;
             const numStarts = parseInt(attrs["NumStarts"]);
             const numStops = parseInt(attrs["NumStops"]);
             if (!isNaN(numSlaves) && !isNaN(numStarts) && !isNaN(numStops)) {
