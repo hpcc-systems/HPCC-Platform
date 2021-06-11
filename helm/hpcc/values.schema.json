@@ -681,6 +681,12 @@
         "resources": {
           "$ref": "#/definitions/resources"
         },
+        "minStartupTime": {
+          "$ref": "#/definitions/minStartupTime"
+        },
+        "maxStartupTime": {
+          "$ref": "#/definitions/maxStartupTime"
+        },
         "services": {
           "description": "sasha services",
           "type": "object",
@@ -874,6 +880,12 @@
         "prefix": {
           "type": "string",
           "description": "The (optional) file prefix to add to relative filenames"
+        },
+        "minStartupTime": {
+          "$ref": "#/definitions/minStartupTime"
+        },
+        "maxStartupTime": {
+          "$ref": "#/definitions/maxStartupTime"
         },
         "image": {
           "$ref": "#/definitions/image"
@@ -1452,6 +1464,14 @@
           "type": "object"
         }
       }
+    },
+    "minStartupTime": {
+      "description": "The time to wait before initiating startup probing (in seconds). Default 0",
+      "type": "integer"
+    },
+    "maxStartupTime": {
+      "description": "The time to wait before startup probing fails (in seconds). Default 300",
+      "type": "integer"
     },
     "sinks": {
       "type": "array",

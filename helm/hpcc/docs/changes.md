@@ -117,3 +117,9 @@ sasha:
     storage:
 ```
 
+# Startup probe changes
+
+Some components may take a while to start up, but should not be added to the relevant k8s load balancer until they have done so. We us
+standard k8s startup probes and readiness probes to manage this process. In 8.2.0 it is possible to override the default settings for the
+startup probe by setting minStartupTime and maxStartupTime on any component (Roxie and Dali are the two that are likely to need it). 
+

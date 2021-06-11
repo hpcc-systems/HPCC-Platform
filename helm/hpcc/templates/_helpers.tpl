@@ -504,13 +504,17 @@ Pass in dict with root and secretsCategories
 Add sentinel-based probes for a component
 */}}
 {{- define "hpcc.addSentinelProbes" -}}
+{{- $minStartupTime := .minStartupTime | default 0 }}
+{{- $maxStartupTime := .maxStartupTime | default 300 }}
+{{- $numAttempts := div (sub $maxStartupTime $minStartupTime) 10 }}
 startupProbe:
   exec:
     command:
     - cat
     - "/tmp/{{ .name }}.sentinel"
-  failureThreshold: 30
+  failureThreshold: {{ $numAttempts }}
   periodSeconds: 10
+  initialDelaySeconds: {{ $minStartupTime }}
 readinessProbe:
   exec:
     command:

@@ -481,6 +481,10 @@ roxie:
   #serverResources:
   #  cpu: "1"
   #  memory: "1G"
+  # Roxie may take a while to start up if there are a lot of queries to load. Yuo may need to 
+  #override the default startup/readiness probing by setting these values
+  #minStartupTime: 30      # How long to wait before initiating startup probing
+  #maxStartupTime: 600     # Maximum time to wait for startup to complete before failing
   topoServer:
     replicas: 1
     #traceLevel: 1
