@@ -75,6 +75,7 @@ unsigned perChannelFlowLimit = 10;
 time_t startupTime;
 unsigned statsExpiryTime = 3600;
 unsigned miscDebugTraceLevel = 0;  // separate trace settings purely for debugging specific items (i.e. all possible locations to look for files at startup)
+bool traceRemoteFiles = false;
 unsigned readTimeout = 300;
 unsigned indexReadChunkSize = 60000;
 unsigned maxBlockSize = 10000000;
@@ -102,6 +103,8 @@ bool oneShotRoxie = false;
 unsigned udpMulticastBufferSize = 262142;
 #ifndef _CONTAINERIZED
 bool roxieMulticastEnabled = true;
+#else
+unsigned myChannel;
 #endif
 
 IPropertyTree *topology;
@@ -174,6 +177,10 @@ bool fastLaneQueue;
 unsigned mtu_size = 1400; // upper limit on outbound buffer size - allow some header room too
 StringBuffer fileNameServiceDali;
 StringBuffer roxieName;
+#ifdef _CONTAINERIZED
+StringBuffer defaultPlane;
+StringBuffer defaultPlaneDirPrefix;
+#endif
 bool trapTooManyActiveQueries;
 unsigned maxEmptyLoopIterations;
 unsigned maxGraphLoopIterations;
@@ -675,6 +682,13 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "Invalid channel specification %s", channels);
                 agentChannels.push_back(std::pair<unsigned, unsigned>(channel, repl));
             }
+#ifdef _CONTAINERIZED
+            if (agentChannels.size() != 1)
+                throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "Invalid channel specification %s - single channel expected", channels);
+            myChannel = agentChannels[0].first;
+            if (myChannel > numChannels)
+                throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "Invalid channel specification %s - value out of range", channels);
+#endif
         }
 #ifdef _CONTAINERIZED
         else if (localAgent)
@@ -706,7 +720,13 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             setStatisticsComponentName(SCTroxie, roxieName, true);
         else
             setStatisticsComponentName(SCTroxie, "roxie", true);
-
+#ifdef _CONTAINERIZED
+        getDefaultStoragePlane(defaultPlane);
+        {
+            Owned<IStoragePlane> plane = getStoragePlane(defaultPlane, true);
+            defaultPlaneDirPrefix.set(plane->queryPrefix());
+        }
+#endif
         installDefaultFileHooks(topology);
 
         Owned<const IQueryDll> standAloneDll;
@@ -770,6 +790,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         roxiemem::setMemTraceLevel(topology->getPropInt("@memTraceLevel", runOnce ? 0 : 1));
         soapTraceLevel = topology->getPropInt("@soapTraceLevel", runOnce ? 0 : 1);
         miscDebugTraceLevel = topology->getPropInt("@miscDebugTraceLevel", 0);
+        traceRemoteFiles = topology->getPropBool("@traceRemoteFiles", false);
 
         Linked<IPropertyTree> directoryTree = topology->queryPropTree("Directories");
 #ifndef _CONTAINERIZED
