@@ -48,7 +48,7 @@ typedef unsigned short UChar;
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      652
+#define ACTIVITY_INTERFACE_VERSION      653
 #define MIN_ACTIVITY_INTERFACE_VERSION  650             //minimum value that is compatible with current interface
 
 typedef unsigned char byte;
@@ -2222,7 +2222,8 @@ enum
     SOAPFxpathhints     = 0x002000,
     SOAPFnoroot         = 0x004000,
     SOAPFjson           = 0x008000,
-    SOAPFxml            = 0x010000
+    SOAPFxml            = 0x010000,
+    SOAPFlogusertail    = 0x020000
 };
 
 struct IHThorWebServiceCallActionArg : public IHThorArg
@@ -2256,6 +2257,7 @@ struct IHThorWebServiceCallActionArg : public IHThorArg
     virtual const char * getXpathHintsXml() = 0; //iff SOAPFxpathhints
     virtual const char * getRequestHeader() = 0;
     virtual const char * getRequestFooter() = 0;
+    virtual void getLogTailText(size32_t & lenText, char * & text, const void * left) = 0;  // iff SOAPFlogusertail set
 };
 typedef IHThorWebServiceCallActionArg IHThorSoapActionArg ;
 typedef IHThorWebServiceCallActionArg IHThorHttpActionArg ;

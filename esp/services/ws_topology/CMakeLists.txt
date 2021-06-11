@@ -70,7 +70,6 @@ target_link_libraries ( ws_topology
          xmllib 
          esphttp 
          dalibase 
-         environment 
          dalift 
          dllserver 
          nbcd 
@@ -80,6 +79,10 @@ target_link_libraries ( ws_topology
          SMCLib 
          swapnodelib
          )
+
+if (NOT CONTAINERIZED)
+    target_link_libraries ( ws_topology environment )
+endif()
 
 IF (USE_OPENSSL)
     target_link_libraries ( ws_topology
@@ -93,5 +96,3 @@ IF (USE_ZLIB)
       zcrypt
       )
 ENDIF()
-
-

@@ -3768,6 +3768,12 @@ soapFlag
                             parser->normalizeExpression($3, type_string, false);
                             $$.setExpr(createExprAttribute(logAtom, $3.getExpr()), $1);
                         }
+    | TOK_LOG '(' expression ',' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_string, false);
+                            parser->normalizeExpression($5, type_string, false);
+                            $$.setExpr(createExprAttribute(logAtom, $3.getExpr(), $5.getExpr()), $1);
+                        }
     | XML_TOKEN         {
                             $$.setExpr(createAttribute(xmlAtom));
                             $$.setPosition($1);

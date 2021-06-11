@@ -58,6 +58,8 @@ target_link_libraries ( dalift
          hrpc 
          dafsclient
          dalibase 
-         environment 
     )
 
+if (NOT CONTAINERIZED)
+    target_link_libraries ( dalift environment )
+endif()

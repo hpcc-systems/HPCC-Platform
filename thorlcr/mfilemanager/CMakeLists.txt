@@ -60,7 +60,6 @@ target_link_libraries ( mfilemanager_lcr
          jlib
          remote 
          dalibase 
-         environment 
          dalift 
          dllserver 
          nbcd 
@@ -71,4 +70,7 @@ target_link_libraries ( mfilemanager_lcr
          graph_lcr 
     )
 
+if (NOT CONTAINERIZED)
+    target_link_libraries ( mfilemanager_lcr environment )
+endif()
 

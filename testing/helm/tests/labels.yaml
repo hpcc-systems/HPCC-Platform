@@ -1,0 +1,92 @@
+esp:
+- name: eclwatch
+  application: eclwatch
+  service:
+    servicePort: 8880
+    visibility: cluster
+  annotations:
+    ea1: eav1
+  labels:
+    el1: elv1
+    
+roxie:
+- name: roxie
+  services:
+  - name: roxie
+    servicePort: 9876
+  annotations:
+    ra1: rav1
+  labels:
+    rl1: rlv1
+  topoServer:
+    replicas: 1
+    annotations:
+      rta1: rtav1
+    labels:
+      rtl1: rtlv1
+- name: roxiel
+  services:
+  - name: roxiel
+    servicePort: 9876
+  annotations:
+    ra1: rav1
+  labels:
+    rl1: rlv1
+  localAgent: true
+
+
+dfuserver:
+- name: dfuserver
+  annotations:
+    da1: dav1
+  labels:
+    dl1: dlv1
+    
+eclagent:
+- name: eclagent
+  annotations:
+    eaa1: eaav1
+  labels:
+    eal1: ealv1
+
+eclscheduler: 
+- name: eclscheduler
+  annotations:
+    esa1: esav1
+  labels:
+    esl1: esalv1
+
+thor:
+- name: thor
+  maxJobs: 3
+  maxGraphs: 4
+  annotations:
+    ta1: tv1
+  labels:
+    tl1: tv1
+
+eclccserver: 
+- name: eclccserver
+  annotations:
+    esa1: esav1
+  labels:
+    esl1: esalv1
+
+sasha:
+  wu-archiver:
+    annotations:
+      sa1: sav1
+    labels:
+      sl1: salv1
+    service:
+      servicePort: 8877
+
+dali:
+- name: mydali
+  annotations:
+    da1: dav1
+  labels:
+    dl1: dlv1
+  services: # internal house keeping services
+    coalescer:
+      

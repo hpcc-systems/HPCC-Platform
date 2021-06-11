@@ -53,6 +53,12 @@ update_version_file release $HPCC_POINT $NEW_SEQUENCE
 if [ -e helm/hpcc/Chart.yaml ] ; then
   update_chart_file helm/hpcc/Chart.yaml release $HPCC_POINT $NEW_SEQUENCE
   doit "git add helm/hpcc/Chart.yaml"
+  for f in helm/hpcc/templates/* ; do
+    update_chart_file $f release $HPCC_POINT $NEW_SEQUENCE
+    if [ "$CHART_CHANGED" != "0" ] ; then
+      doit "git add $f"
+    fi
+  done
 fi
 
 HPCC_MATURITY=release
@@ -82,7 +88,7 @@ if [ -e helm/hpcc/Chart.yaml ] ; then
   if [[ "$HPCC_MAJOR" == "8" ]] && [[ "$HPCC_MINOR" == "0" ]] ; then
     doit "rm -rf ./helm"
     doit "cp -rf $HPCC_DIR/helm ./helm" 
-    doit "rm ./helm/hpcc/*.bak" 
+    doit "rm -f ./helm/hpcc/*.bak" 
     doit "git add -A ./helm"
   fi
   doit2 "cd docs"

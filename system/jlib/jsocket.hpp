@@ -710,7 +710,7 @@ public:
     Owned<ISocket> sock;
     Owned<ISocket> listensock;
     enum { Snone, Saccept, Sconnect, Srecv, Ssend, Scancelled } state;
-    bool cancelling;
+    bool cancelling = false;
     SocketEndpoint ep;
     CriticalSection crit;
     IMPLEMENT_IINTERFACE;

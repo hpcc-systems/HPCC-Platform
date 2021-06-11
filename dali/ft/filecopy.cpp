@@ -43,6 +43,25 @@
 #include "dalienv.hpp"
 #include "ftbase.ipp"
 
+#ifdef _CONTAINERIZED
+//Temporary see HPCC-25822
+inline bool canAccessFilesDirectly(const RemoteFilename & file)
+{
+    if (file.queryEndpoint().port!=0)
+        return false;
+    const IpAddress & ip = file.queryIP();
+    if (ip.isLocal()||ip.isNull())  // the isNull check is probably an error but saves time
+        return true;                // I think usually already checked, but another can't harm
+    return false;
+}
+
+inline void setCanAccessDirectly(RemoteFilename & file)
+{
+    setCanAccessDirectly(file,canAccessFilesDirectly(file));
+}
+
+#endif
+
 #define DEFAULT_MAX_CONNECTIONS 800
 #define PARTITION_RECOVERY_LIMIT 1000
 #define EXPECTED_RESPONSE_TIME          (60 * 1000)
@@ -935,6 +954,8 @@ void FileSprayer::beforeTransfer()
     }
 
     throttleNicSpeed = options->getPropInt(ANthrottle, 0);
+#ifndef _CONTAINERIZED
+    //MORE: This is very old windows support code.  We could add support for per-plane throttling if it is required.
     if (throttleNicSpeed == 0 && !usePullOperation() && targets.ordinality() == 1 && sources.ordinality() > 1)
     {
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
@@ -951,6 +972,7 @@ void FileSprayer::beforeTransfer()
             }
         }
     }
+#endif
 }
 
 

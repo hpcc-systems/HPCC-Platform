@@ -298,8 +298,6 @@ static constexpr const char * defaultYaml = R"!!(
 version: 1.0
 sasha:
   name: sasha
-  logging:
-    detail: 100
 )!!";
 
 int main(int argc, const char* argv[])

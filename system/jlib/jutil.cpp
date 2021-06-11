@@ -2421,6 +2421,14 @@ StringBuffer & fillConfigurationDirectoryEntry(const char *dir,const char *name,
 
 IPropertyTree *getHPCCEnvironment()
 {
+#ifdef _CONTAINERIZED
+#ifdef _DEBUG
+    throwUnexpectedX("getHPCCEnvironment() called from container system");
+#else
+    IERRLOG("getHPCCEnvironment() called from container system");
+#endif
+#endif
+
     StringBuffer envfile;
     if (queryEnvironmentConf().getProp("environment",envfile) && envfile.length())
     {
@@ -2444,6 +2452,12 @@ static CriticalSection envConfCrit;
 
 jlib_decl const IProperties &queryEnvironmentConf()
 {
+#if defined(_CONTAINERIZED) && defined(_DEBUG)
+    //The following line is currently hit by too many examples.  Re-enable the exception when more
+    //work has been done removing calls to getConfigurationDirectory() and other related functions.
+    //throwUnexpectedX("queryEnvironmentConf() callled from container system");
+    IERRLOG("queryEnvironmentConf() callled from container system");
+#endif
     CriticalBlock b(envConfCrit);
     if (!envConfFile)
         envConfFile.setown(createProperties(CONFIG_DIR PATHSEPSTR ENV_CONF_FILE, true));
@@ -2469,6 +2483,15 @@ jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
     // TLS TODO: could share mtls setting and cert/config for secure dafilesrv
     //           but note remote cluster configs should then match this one
 
+#ifdef _CONTAINERIZED
+    //MORE: If these come from the component configuration they will need to clone the strings
+    if (_certificate)
+        *_certificate = nullptr;
+    if (_privateKey)
+        *_privateKey = nullptr;
+    if (_passPhrase)
+        *_passPhrase = nullptr;
+#else
     const IProperties & conf = queryEnvironmentConf();
     StringAttr sslMethod;
     sslMethod.set(conf.queryProp("dfsUseSSL"));
@@ -2545,6 +2568,7 @@ jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
             *_passPhrase = DAFSpassPhraseDec.str();//return decrypted password. Note the preferred queryHPCCPKIKeyFiles() method returns it encrypted
         }
     }
+#endif
 
     return true;
 }
@@ -2602,6 +2626,10 @@ jlib_decl bool queryMtlsBareMetalConfig()
 
 static IPropertyTree *getOSSdirTree()
 {
+#ifdef _CONTAINERIZED
+    IERRLOG("getOSSdirTree() called from container system");
+    return nullptr;
+#endif
     Owned<IPropertyTree> envtree = getHPCCEnvironment();
     if (envtree) {
         IPropertyTree *ret = envtree->queryPropTree("Software/Directories");

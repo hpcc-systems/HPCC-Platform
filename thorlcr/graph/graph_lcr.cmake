@@ -66,7 +66,6 @@ target_link_libraries ( graph_lcr
          jhtree 
          remote 
          dalibase 
-         environment 
          dllserver 
          nbcd 
          eclrtl 

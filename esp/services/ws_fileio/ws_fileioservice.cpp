@@ -37,6 +37,9 @@ bool CWsFileIOEx::CheckServerAccess(const char* targetDZNameOrAddress, const cha
     if (!targetDZNameOrAddress || (targetDZNameOrAddress[0] == 0) || !relPath || (relPath[0] == 0))
         return false;
 
+#ifdef _CONTAINERIZED
+    UNIMPLEMENTED_X("CONTAINERIZED(CWsFileIOEx::CheckServerAccess)");
+#else
     netAddr.clear();
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();
@@ -119,6 +122,7 @@ bool CWsFileIOEx::CheckServerAccess(const char* targetDZNameOrAddress, const cha
     }
 
     return false;
+#endif
 }
 
 bool CWsFileIOEx::onCreateFile(IEspContext &context, IEspCreateFileRequest &req, IEspCreateFileResponse &resp)

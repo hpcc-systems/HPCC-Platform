@@ -127,7 +127,6 @@ target_link_libraries ( activityslaves_lcr
          thorhelper 
          remote 
          dalibase 
-         environment 
          dllserver 
          workunit 
          thorcodectx_lcr 
@@ -137,4 +136,6 @@ target_link_libraries ( activityslaves_lcr
          roxiemem
     )
 
-
+if (NOT CONTAINERIZED)
+    target_link_libraries ( activityslaves_lcr environment )
+endif()

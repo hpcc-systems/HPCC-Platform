@@ -71,6 +71,9 @@ target_link_libraries ( ws_codesign
          xmllib
          esphttp
          dalibase
-         environment
          SMCLib
     )
+
+if (NOT CONTAINERIZED)
+    target_link_libraries ( ws_codesign environment )
+endif()

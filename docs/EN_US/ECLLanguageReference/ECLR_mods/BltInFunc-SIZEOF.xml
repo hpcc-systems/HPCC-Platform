@@ -84,7 +84,7 @@ STRING1 sex;
 STRING3 age;
 STRING8 dob;
 BOOLEAN age_flag;
-UNSIGNED8 __filepos { virtual(fileposition)};
+UNSIGNED8 __filepos { VIRTUAL(fileposition)};
 END;
 File_People := DATASET('ecl_training::People', Layout_People,
           FLAT);

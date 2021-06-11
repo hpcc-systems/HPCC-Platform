@@ -1181,6 +1181,9 @@ bool CWsTopologyEx::onTpListTargetClusters(IEspContext &context, IEspTpListTarge
     {
         context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpListTargetClusters: Permission denied.");
 
+#ifdef _CONTAINERIZED
+        UNIMPLEMENTED_X("CONTAINERIZED(CWsTopologyEx::onTpListTargetClusters)");
+#else
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> env = factory->openEnvironment();
         Owned<IPropertyTree> root = &env->getPTree();
@@ -1256,6 +1259,7 @@ bool CWsTopologyEx::onTpListTargetClusters(IEspContext &context, IEspTpListTarge
             }
         }
         resp.setTargetClusters(clusters);
+#endif
     }
     catch(IException* e)
     {
@@ -1666,6 +1670,9 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context, IEspTpGetComponen
         StringAttr      sDirectory;
         if (bCluster && !(netAddress && *netAddress))
         {
+#ifdef _CONTAINERIZED
+            UNIMPLEMENTED_X("CONTAINERIZED(CWsTopologyEx::onTpGetComponentFile)");
+#else
             Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
             Owned<IConstEnvironment> constEnv = factory->openEnvironment();
             Owned<IPropertyTree> pRoot = &constEnv->getPTree();
@@ -1713,6 +1720,7 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context, IEspTpGetComponen
                     }
                 }
             }
+#endif
         }
 
         if (netAddressStr.length() > 0)

@@ -62,18 +62,23 @@ function update_chart_file()
       echo sed -E \
        -e "s/^version: .*$/version: $_v/" \
        -e "s/^appVersion: .*$/appVersion: $_v/" \
+       -e "s/helmVersion: .*$/helmVersion: $_v/" \
        -i.bak $_chart
     fi
     if [ -z "$DRYRUN" ] ; then 
       sed -E \
        -e "s/^version: .*$/version: $_v/" \
        -e "s/^appVersion: .*$/appVersion: $_v/" \
+       -e "s/helmVersion: .*$/helmVersion: $_v/" \
        -i.bak $_chart
-       cat $_chart
     else
       sed -E \
        -e "s/^version: .*$/version: $_v/" \
        -e "s/^appVersion: .*$/appVersion: $_v/" \
-       $_chart
+       -e "s/helmVersion: .*$/helmVersion: $_v/" \
+       $_chart > $_chart.bak
     fi
+    CHART_CHANGED=0
+    diff -y  --suppress-common-lines $_chart $_chart.bak || CHART_CHANGED=1
+    rm -f $_chart.bak
 }

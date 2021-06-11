@@ -69,10 +69,13 @@ target_link_libraries(ws_configmgr
     jlib
     xmllib
     esphttp
-    environment
     dllserver
     configmgr
     )
+
+if (NOT CONTAINERIZED)
+    target_link_libraries ( ws_configmgr environment )
+endif()
 
 IF (USE_OPENSSL)
     target_link_libraries ( ws_configmgr

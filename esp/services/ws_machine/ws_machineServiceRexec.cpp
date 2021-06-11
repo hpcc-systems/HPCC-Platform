@@ -153,6 +153,7 @@ public:
 #endif
     }//doWork()
 };
+#ifndef _CONTAINERIZED
 
 //-------------------------------------------------StartStop--------------------------------------------------
 
@@ -497,10 +498,14 @@ void Cws_machineEx::ConvertAddress( const char* originalAddress, StringBuffer& n
 #endif
     return;
 }
+#endif
 
 bool Cws_machineEx::doStartStop(IEspContext &context, StringArray& addresses, char* userName, char* password, bool bStop,
                                                      IEspStartStopResponse &resp)
 {
+#ifdef _CONTAINERIZED
+    UNIMPLEMENTED_X("CONTAINERIZED(Cws_machineEx::doStartStop)");
+#else
     bool containCluster = false;
     double version = context.getClientVersion();
     const int ordinality= addresses.ordinality();
@@ -637,6 +642,7 @@ bool Cws_machineEx::doStartStop(IEspContext &context, StringArray& addresses, ch
         resp.setContainCluster(containCluster);
     }
     return true;
+#endif
 }
 
 bool Cws_machineEx::onStartStop( IEspContext &context, IEspStartStopRequest &req, 

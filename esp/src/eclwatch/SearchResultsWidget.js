@@ -43,7 +43,7 @@ define([
             lang.mixin(this.params, {
                 searchText: searchText
             });
-            this.searchText = searchText;
+            this.searchText = searchText.toUpperCase();
             this.refreshGrid();
         },
 

@@ -71,8 +71,11 @@ target_link_libraries ( ws_fs
          jlib
          esphttp 
          dalibase 
-         environment 
          workunit
          SMCLib 
          dfuwu 
     )
+
+if (NOT CONTAINERIZED)
+    target_link_libraries ( ws_fs environment )
+endif()

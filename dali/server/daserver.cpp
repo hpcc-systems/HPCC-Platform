@@ -398,8 +398,6 @@ version: 1.0
 dali:
   name: dali
   dataPath: "/var/lib/HPCCSystems/dalistorage"
-  logging:
-    detail: 100
 )!!";
 
 
@@ -652,7 +650,7 @@ int main(int argc, const char* argv[])
         Owned<IMPServer> mpServer = getMPServer();
         Owned<IAllowListHandler> allowListHandler = createAllowListHandler(populateAllowListFromEnvironment, formatDaliRole);
         mpServer->installAllowListCallback(allowListHandler);
-        setMsgLevel(fileMsgHandler, serverConfig->getPropInt("SDS/@msgLevel", 100));
+        setMsgLevel(fileMsgHandler, serverConfig->getPropInt("SDS/@msgLevel", DebugMsgThreshold));
 #endif
         startLogMsgChildReceiver();
         startLogMsgParentReceiver();
@@ -665,6 +663,7 @@ int main(int argc, const char* argv[])
 // Audit logging
         StringBuffer auditDir;
         {
+            //MORE: Does this need to change in CONTAINERIZED mode?
             Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(serverConfig, "dali");
             lf->setLogDirSubdir("audit");//add to tail of config log dir
             lf->setName("DaAudit");//override default filename

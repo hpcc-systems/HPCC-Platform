@@ -553,6 +553,9 @@ bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &r
 {
     try
     {
+#ifdef _CONTAINERIZED
+        IERRLOG("CONTAINERIZED(CWsDfuXRefEx::onDFUXRefList)");
+#else
         context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_DFU_XREF_ACCESS_DENIED, "WsDfuXRef::DFUXRefList: Permission denied.");
 
         CConstWUClusterInfoArray clusters;
@@ -582,6 +585,7 @@ bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &r
 
         StringBuffer buf;
         resp.setDFUXRefListResult(formatResult(context, xrefNodeTree, buf));
+#endif
     }
     catch(IException *e)
     {   
@@ -699,6 +703,9 @@ void CWsDfuXRefEx::findUnusedFilesWithDetailsInDFS(IEspContext &context, const c
 
 bool CWsDfuXRefEx::onDFUXRefUnusedFiles(IEspContext &context, IEspDFUXRefUnusedFilesRequest &req, IEspDFUXRefUnusedFilesResponse &resp)
 {
+#ifdef _CONTAINERIZED
+    UNIMPLEMENTED_X("CONTAINERIZED(CWsDfuXRefEx::onDFUXRefUnusedFiles)");
+#else
     const char *process = req.getProcessCluster();
     if (isEmptyString(process))
         throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT, "process cluster not specified.");
@@ -734,6 +741,7 @@ bool CWsDfuXRefEx::onDFUXRefUnusedFiles(IEspContext &context, IEspDFUXRefUnusedF
         resp.setUnusedFilesWithDetails(unusedLFs);
     }
     return true;
+#endif
 }
 
 IXRefNode *CWsDfuXRefEx::getXRefNodeByCluster(const char* cluster)

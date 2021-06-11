@@ -198,12 +198,15 @@ int CFileSpraySoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpReques
 
 IPropertyTree* CFileSpraySoapBindingEx::createPTreeForXslt(double clientVersion, const char* method, const char* dfuwuid)
 {
+    Owned<IPropertyTree> pRoot = createPTreeFromXMLString("<Environment/>");
+#ifdef _CONTAINERIZED
+    IERRLOG("CONTAINERIZED(CFileSpraySoapBindingEx::createPTreeForXslt)");
+#else
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv = factory->openEnvironment();
     Owned<IPropertyTree> pEnvRoot = &constEnv->getPTree();
     IPropertyTree* pEnvSoftware = pEnvRoot->queryPropTree("Software");
 
-    Owned<IPropertyTree> pRoot = createPTreeFromXMLString("<Environment/>");
     IPropertyTree* pSoftware = pRoot->addPropTree("Software", createPTree("Software"));
 
     if (pEnvSoftware)
@@ -295,6 +298,7 @@ IPropertyTree* CFileSpraySoapBindingEx::createPTreeForXslt(double clientVersion,
         if (wuxml.length() > 0)
             pSoftware->addPropTree("DfuWorkunit", createPTreeFromXMLString(wuxml.str()));
     }
+#endif
     return pRoot.getClear();
 }
 

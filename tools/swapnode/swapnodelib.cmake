@@ -49,5 +49,4 @@ target_link_libraries ( swapnodelib
          dafsclient
          dalibase
          workunit
-         environment
     )

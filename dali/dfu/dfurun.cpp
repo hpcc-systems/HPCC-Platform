@@ -1075,9 +1075,11 @@ public:
                 : running(_running)
             {
                 if (--running == 0) {
+#ifndef _CONTAINERIZED
                     Owned<IEnvironmentFactory> envf = getEnvironmentFactory(false);
                     Owned<IConstEnvironment> env = envf->openEnvironment();
                     env->clearCache();
+#endif
                 }
             }
             ~CenvClear()
@@ -1263,6 +1265,9 @@ public:
                     {
                         if (options->getPush())
                         {
+#ifdef _CONTAINERIZED
+                            UNIMPLEMENTED_X("CONTAINERIZED(ForeignFileCopy:push)");
+#else
                             // need to set ftslave location
                             StringBuffer progpath;
                             StringBuffer workdir;
@@ -1271,6 +1276,7 @@ public:
                             {
                                 opttree->setProp("@slave",progpath.str());
                             }
+#endif
                         }
                     }
                     if (destination->getMultiCopy()&&!destination->getWrap())

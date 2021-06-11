@@ -59,7 +59,6 @@ target_link_libraries ( dfuserver
          hrpc 
          dafsclient 
          dalibase 
-         environment 
          dllserver 
          nbcd 
          eclrtl 
@@ -70,3 +69,7 @@ target_link_libraries ( dfuserver
          jhtree 
          dfuwu 
     )
+
+if (NOT CONTAINERIZED)
+    target_link_libraries ( dfuserver environment )
+endif()

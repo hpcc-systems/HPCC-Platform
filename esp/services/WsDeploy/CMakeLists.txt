@@ -72,7 +72,6 @@ target_link_libraries ( WsDeploy
          xmllib 
          esphttp 
          dalibase 
-         environment 
          dllserver 
          eclrtl 
          hql 
@@ -80,6 +79,10 @@ target_link_libraries ( WsDeploy
          deployutils
          configutils
     )
+
+if (NOT CONTAINERIZED)
+    target_link_libraries ( WsDeploy environment )
+endif()
 
 IF (USE_OPENSSL)
     target_link_libraries ( WsDeploy

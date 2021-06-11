@@ -232,7 +232,7 @@
   <para>These data types are supported in the keyed portion of an
   INDEX:<itemizedlist>
       <listitem>
-        <para>BOOLEAN </para>
+        <para>BOOLEAN</para>
       </listitem>
 
       <listitem>
@@ -277,7 +277,7 @@ END;
 PtblOut := OUTPUT(TABLE(Person,PtblRec),,'RTTEMP::TestFetch');
           
 Ptbl := DATASET('RTTEMP::TestFetch',
-          {PtblRec,UNSIGNED8 RecPtr {virtual(fileposition)}},
+          {PtblRec,UNSIGNED8 RecPtr {VIRTUAL(fileposition)}},
           FLAT);
           
 AlphaInStateCity := INDEX(Ptbl,
@@ -310,7 +310,7 @@ Bld := BUILDINDEX(AlphaInStateCity);</programlisting>
 
     <programlisting>Vehicles := DATASET('vehicles',
           {STRING2 st,STRING20 city,STRING20 lname,
-          UNSIGNED8 fpos{virtual(fileposition)}},FLAT);
+          UNSIGNED8 fpos{VIRTUAL(fileposition)}},FLAT);
 
 VehicleKey := INDEX(Vehicles,{st,city},{lname,fpos},'vkey::st.city'); 
 BUILDINDEX(VehicleKey);</programlisting>

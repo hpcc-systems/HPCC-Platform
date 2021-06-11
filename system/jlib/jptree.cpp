@@ -8666,6 +8666,8 @@ unsigned installConfigUpdateHook(ConfigUpdateFunc notifyFunc)
 
 void removeConfigUpdateHook(unsigned notifyFuncId)
 {
+    if (0 == notifyFuncId)
+        return;
 #ifdef _CONTAINERIZED
     if (!configFileUpdater)
     {
