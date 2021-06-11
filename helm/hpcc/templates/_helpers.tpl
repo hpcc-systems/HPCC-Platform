@@ -402,7 +402,7 @@ Pass in dict with root
 {{- $dllStorage := ($storage.dllStorage | default dict) -}}
 {{- if not $dllStorage.plane -}}
 {{- if (not (include "hpcc.hasPlaneForLabel" (dict "root" .root "label" "dll"))) }}
-{{ include "hpcc.addVolumeMount" (dict "root" .root "me" $dllStorage "name" ($dllStorage.plane | default "dllstorage") "path" "queries") }}
+{{ include "hpcc.addVolumeMount" (dict "root" .root "me" $dllStorage "name" "dllstorage" "path" "queries") }}
 {{- end -}}
 {{- end -}}
 {{- include "hpcc.addVolumeMounts" (dict "root" .root "includeLabels" (list "dll")) -}}
@@ -418,7 +418,7 @@ Pass in dict with root
 {{- $daliStorage := ($storage.daliStorage | default dict) -}}
 {{- if not $daliStorage.plane -}}
 {{- if (not (include "hpcc.hasPlaneForLabel" (dict "root" .root "label" "dali"))) }}
-{{ include "hpcc.addVolumeMount" (dict "root" .root "me" $daliStorage "name" ($daliStorage.plane | default "dalistorage") "path" "dalistorage") }}
+{{ include "hpcc.addVolumeMount" (dict "root" .root "me" $daliStorage "name" "dalistorage" "path" "dalistorage") }}
 {{- end -}}
 {{- end -}}
 {{- include "hpcc.addVolumeMounts" (dict "root" .root "includeLabels" (list "dali")) -}}
@@ -981,7 +981,8 @@ Pass in dict with root and me
 {{- define "hpcc.addSashaVolumeMounts" }}
 {{- $serviceName := printf "sasha-%s" .me.name -}}
 {{- if .me.storage }}
-{{ include "hpcc.addVolumeMount" (dict "root" .root "me" .me.storage "name" (.me.storage.plane | default $serviceName)) -}}
+{{- $volumeName := (hasKey .me.storage "plane") | ternary (printf "%s-pv" .me.storage.plane) $serviceName }}
+{{ include "hpcc.addVolumeMount" (dict "root" .root "me" .me.storage "name" $volumeName) -}}
 {{- end }}
 {{ with (dict "name" $serviceName ) -}}
 {{ include "hpcc.addConfigMapVolumeMount" . }}
