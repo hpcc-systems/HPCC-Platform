@@ -21,20 +21,40 @@ storage:
   planes:
   #Bare metal system with attached storage
   - name: thor400
+    labels: [ data ]
     prefix: /var/lib/hpccsystems/hpcc-data       # only used if the local host matches the host for the device
     hostGroup: thor400
     replication: [ attachedThor400MirrorPlane ]
     #numDevices: count(hosts)
   - name: thor400mirror
+    labels: [ data ]
     prefix: /var/lib/hpccsystems/hpcc-mirror       # only used if the local host matches the host for the device
     hostGroup: thor400mirror
     #Does any other information about the replication policy need to be included?  I don't think it does....
 
   - name: thor100_4
+    labels: [ data ]
     prefix: /var/lib/hpccsystems/hpcc-data       # only used if the local host matches the host for the device
     hostGroup: thor100_4
     replication: [ azureBlobPlane ]
 
   - name: azureBlobPlane
+    labels: [ data ]
     prefix: azure://ghallidaystorage      # Not sure if this should be different from the mount.
     secret: azure-ghallidaystorage
+
+  - name: dali
+    labels: [ dali ]
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/dalistorage"
+  - name: dll
+    labels: [ dll ]
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/queries"
+  - name: sasha
+    labels: [ sasha ]
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/sashastorage"
