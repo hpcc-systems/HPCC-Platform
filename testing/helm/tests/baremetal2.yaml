@@ -40,3 +40,19 @@ storage:
   - name: myInlinePlane
     prefix: /home/gavin/temp
     hosts: [ 'here', 'there', 'everywhere']
+
+  - name: dali
+    labels: [ dali ]
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/dalistorage"
+  - name: dll
+    labels: [ dll ]
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/queries"
+  - name: sasha
+    labels: [ sasha ]
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/sashastorage"
