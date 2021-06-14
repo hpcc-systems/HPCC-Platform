@@ -8,7 +8,7 @@ import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { useWorkunitXML } from "../hooks/Workunit";
 import { darkTheme } from "../themes";
 import { ShortVerticalDivider } from "./Common";
-import "codemirror/theme/darcula.css";
+import "eclwatch/css/cmDarcula.css";
 
 interface SourceEditorProps {
     text?: string;

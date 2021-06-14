@@ -416,6 +416,18 @@ export function alphanumCase(a, b) {
     return aa.length - bb.length;
 }
 
+export function onDomMutate(domNode, callback, observerOpts) {
+    observerOpts = observerOpts || { attributes: true, attributeFilter: ["style"] };
+    var observer = new MutationObserver(mutations => {
+        if (domNode.offsetParent === null) return;
+        observer.disconnect();
+        if (typeof callback === "function") {
+            callback();
+        }
+    });
+    observer.observe(domNode, observerOpts);
+}
+
 export function alphanumSort(arr, col, caseInsensitive, reverse: boolean = false) {
     if (arr && arr instanceof Array) {
         arr.sort(function (l, r) {
