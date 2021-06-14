@@ -1,4 +1,4 @@
-#Changes in 8.2.0
+# Changes in 8.2.0
 
 There are a few changes in the way the values.yaml needs to be specified for HPCC clusters
 starting with 8.2.0. These were necessary to implement required functionality. If you have a
@@ -6,7 +6,7 @@ customized values file that you have been using with 8.0.x builds, you will need
 few simple changes to be able to use it with 8.2.x. The required changes are all enforced
 by the schema, so you will see schema errors if you try to use an uncorrected values file.
 
-Service changes
+## Service changes
 
 In order to support annotations on services, and thus control whether public services are
 connected to internal subnets or published to the internet, we have changed the way that
@@ -42,7 +42,7 @@ If you try to launch with an unmodified 8.0.x values.yaml, you may see errors li
 - sasha.wu-archiver: Must validate all the schemas (allOf)
 ```
 
- For the ESP “service is required” errors, you will need to change a spec that looks like (for example)
+For the ESP “service is required” errors, you will need to change a spec that looks like (for example)
 
 ```code
 esp:
@@ -55,7 +55,7 @@ esp:
   public: true
 ```
 
-to 
+to
 
 ```code
 - name: eclwatch
@@ -84,7 +84,7 @@ roxie:
   ...
 ```
 
- to
+to
 
 ```code
 roxie:
@@ -99,7 +99,7 @@ roxie:
     visibility: local
 ```
 
-The sasha errors are not quite so descriptive but are addressed in the same way as the ESP ones, i.e. change something that looks like:  
+The sasha errors are not quite so descriptive but are addressed in the same way as the ESP ones, i.e. change something that looks like:
 
 ```code
 sasha:
@@ -117,9 +117,63 @@ sasha:
     storage:
 ```
 
-# Startup probe changes
+## Startup probe changes
 
 Some components may take a while to start up, but should not be added to the relevant k8s load balancer until they have done so. We us
 standard k8s startup probes and readiness probes to manage this process. In 8.2.0 it is possible to override the default settings for the
 startup probe by setting minStartupTime and maxStartupTime on any component (Roxie and Dali are the two that are likely to need it). 
 
+## Storage changes
+
+In 8.2.x all storage for data, dlls, landing zones etc. is defined in the list of storage.planes.
+
+Previously daliStorage, dataStorage and dllStorage could either refer to an existing plane, or could implicitly
+define a storage plane.  That implicit plane could be based on a pre-existing persistent volume claim (by setting
+existingClaim) or ephemeral storage (by setting storageClass and storageSize).  In version 8.2. these sections can
+only refer to a plane defined in the plane list.
+
+For instance if you have the following definition in 8.0.x:
+
+```code
+storage:
+  daliStorage:
+     existingClaim: my-pvc
+```
+
+would be defined as follows in 8.2.x:
+
+```code
+storage:
+  - name: dali
+    pvc: my-pvc
+    prefix: "/var/lib/HPCCSystems/dalistorage"
+    labels: [ "dali" ]
+
+  daliStorage:
+     name: dali
+```
+
+And similarly a definition that uses ephemeral storage:
+`
+```code
+storage:
+  daliStorage:
+    storageClass: ""
+    storageSize: 1Gi
+```
+
+would be become:
+
+```code
+storage:
+  - name: dali
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/dalistorage"
+    labels: [ "dali" ]
+
+  daliStorage:
+     name: dali
+```
+
+The default values.yaml and example files have been updated to reflect this change.
