@@ -295,7 +295,7 @@ bool addProtocol(IPropertyTree *legacyEsp, IPropertyTree *app)
 void addServices(IPropertyTree *legacyEsp, IPropertyTree *appEsp, const char *application, const char *auth, bool tls)
 {
     Owned<IPropertyTreeIterator> services = appEsp->getElements("application/services");
-    int port = appEsp->getPropInt("@port", 8880);
+    int port = appEsp->getPropInt("service/@port", appEsp->getPropInt("@port", 8880));
     const char *netAddress = appEsp->queryProp("@netAddress");
     if (!netAddress)
         netAddress = ".";
