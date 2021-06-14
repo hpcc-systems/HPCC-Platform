@@ -9,6 +9,49 @@ import * as ESPUtil from "./ESPUtil";
 
 declare const dojo;
 
+const lfEncode = (path) => {
+    let retVal = "";
+    for (let i = 0; i < path.length; ++i) {
+        switch (path[i]) {
+            case "/":
+            case "\\":
+                retVal += "::";
+                break;
+            case "A":
+            case "B":
+            case "C":
+            case "D":
+            case "E":
+            case "F":
+            case "G":
+            case "H":
+            case "I":
+            case "J":
+            case "K":
+            case "L":
+            case "M":
+            case "N":
+            case "O":
+            case "P":
+            case "Q":
+            case "R":
+            case "S":
+            case "T":
+            case "U":
+            case "V":
+            case "W":
+            case "X":
+            case "Y":
+            case "Z":
+                retVal += "^" + path[i];
+                break;
+            default:
+                retVal += path[i];
+        }
+    }
+    return retVal;
+};
+
 const FileListStore = declare([ESPRequest.Store], {
     service: "FileSpray",
     action: "FileList",
@@ -16,50 +59,8 @@ const FileListStore = declare([ESPRequest.Store], {
     idProperty: "calculatedID",
     create(id) {
         const retVal = {
-            lfEncode(path) {
-                let retVal = "";
-                for (let i = 0; i < path.length; ++i) {
-                    switch (path[i]) {
-                        case "/":
-                        case "\\":
-                            retVal += "::";
-                            break;
-                        case "A":
-                        case "B":
-                        case "C":
-                        case "D":
-                        case "E":
-                        case "F":
-                        case "G":
-                        case "H":
-                        case "I":
-                        case "J":
-                        case "K":
-                        case "L":
-                        case "M":
-                        case "N":
-                        case "O":
-                        case "P":
-                        case "Q":
-                        case "R":
-                        case "S":
-                        case "T":
-                        case "U":
-                        case "V":
-                        case "W":
-                        case "X":
-                        case "Y":
-                        case "Z":
-                            retVal += "^" + path[i];
-                            break;
-                        default:
-                            retVal += path[i];
-                    }
-                }
-                return retVal;
-            },
             getLogicalFile() {
-                return "~file::" + this.NetAddress + this.lfEncode(this.fullPath);
+                return "~file::" + this.NetAddress + lfEncode(this.fullPath);
             }
         };
         retVal[this.idProperty] = id;
@@ -107,13 +108,21 @@ const LandingZonesFilterStore = declare([ESPRequest.Store], {
         }
     },
     preProcessRow(row) {
-        const fullPath = this.dropZone.machine.Directory + "/" + (row.Path === null ? "" : (row.Path + "/"));
+        const fullPath = this.dropZone.machine.Directory + "/" + (row.Path === null ? "" : (row.Path + "/")) + row.name;
+        const fullFolderPathParts = fullPath.split("/");
+        fullFolderPathParts.pop();
+        const netAddress = this.dropZone.machine.Netaddress;
+        const getLogicalFile = () => {
+            return `~file::${netAddress}${lfEncode(fullPath)}`;
+        }
         lang.mixin(row, {
             NetAddress: this.dropZone.machine.Netaddress,
             Directory: this.dropZone.machine.Directory,
             calculatedID: this.dropZone.machine.Netaddress + fullPath,
             OS: this.dropZone.machine.OS,
-            fullFolderPath: fullPath,
+            fullPath,
+            fullFolderPath: fullFolderPathParts.join("/"),
+            getLogicalFile: getLogicalFile,
             displayName: row.Path ? (row.Path + "/" + row.name) : row.name,
             type: row.isDir ? "filteredFolder" : "file"
         });
@@ -132,7 +141,7 @@ const LandingZonesStore = declare([ESPRequest.Store], {
         this.userAddedFiles = {};
     },
     query: ESPUtil.override(function (inherited, query, options) {
-        if (!query.filter) {
+        if (!query.filter || Object.entries(query.filter).length === 0) {
             return inherited(query, options);
         }
         const landingZonesFilterStore = new LandingZonesFilterStore({ dropZone: query.filter.__dropZone, server: query.filter.Server });
