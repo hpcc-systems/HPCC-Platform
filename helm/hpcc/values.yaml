@@ -155,6 +155,11 @@ storage:
     storageSize: 1Gi
     prefix: "/var/lib/HPCCSystems/hpcc-data"
     labels: [ "data" ]
+  - name: mydropzone
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/dropzone"
+    labels: [ "lz" ]
 
   dllStorage:
     plane: dll

@@ -32,6 +32,13 @@ storage:
     labels:
     - data # NB: if not set, this would be the default
 
+  - name: mydropzone
+    storageSize: 1Gi
+    storageClass: "azurefile"
+    prefix: "/var/lib/HPCCSystems/dropzone"
+    labels:
+    - lz
+
   daliStorage:
     plane: dali
 
