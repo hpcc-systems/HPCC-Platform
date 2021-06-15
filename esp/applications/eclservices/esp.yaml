@@ -6,7 +6,8 @@ esp:
    auth: ldap
    tls: true
    wuTokens: true
-   port: 8880
+   service:
+     port: 8880
    enableSEHMapping: true
    httpConfigAccess: true
    logLevel: 1
