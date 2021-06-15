@@ -1,14 +1,12 @@
 ldap:
    objname: ldapserver
+   serverType: ActiveDirectory
    description: LDAP server process
    ldapProtocol: ldaps
    localDomain: localdomain
    ldapPort: 389
    ldapSecurePort: 636
-   systemCommonName: hpcc_admin2
-   systemPassword: ""
-   systemUser: hpcc_admin2
-   adminGroupName: HPCCAdmin
+   adminGroupName: HPCCAdmins
    maxConnections: 10
    passwordExpirationWarningDays: 10
    cacheTimeout: 5
@@ -22,3 +20,14 @@ ldap:
    usersBasedn: ou=users,ou=ecl
    resourcesBasedn: ou=WsEcl,ou=EspServices,ou=ecl
    workunitsBasedn: ou=workunits,ou=ecl
+
+   #LDAP Admin username/password can be specified as a secret, or hard coded here
+
+   #Specify if username/password externalized as a secret
+   ldapAdminSecretKey: ""
+   ldapAdminVaultId: ""
+
+   #Specify if username/password not stored as secret. Password MD5 encoded
+   systemCommonName: "hpcc_admin"
+   systemPassword: ""
+   systemUser: "hpcc_admin"

@@ -205,7 +205,7 @@ certificates:
 ## The secrets section contains a set of categories, each of which contain a list of secrets.  The categories determine which
 ## components have access to the secrets.
 ## For each secret:
-##   name is the name that is is accessed by within the platform
+##   name is the name that it is accessed by within the platform
 ##   secret is the name of the secret that should be published
 secrets:
   #timeout: 300 # timeout period for cached secrets.  Should be similar to the k8s refresh period.
@@ -216,6 +216,9 @@ secrets:
     ## likely be restricted to esp (when it becomes the meta-data provider)
     ## For example, to set the secret associated with the azure storage account "mystorageaccount" use
     ##azure-mystorageaccount: storage-myazuresecret
+
+  authn: {}
+    ## Category to deploy LDAP and other credential secrets to container
 
   ecl: {}
     ## Category for secrets published to all components that run ecl
@@ -237,7 +240,7 @@ secrets:
 ## by system components and not exposed directly to ECL code.
 ##
 ## For each vault:
-##   name is the name that is is accessed by within the platform
+##   name is the name that it is accessed by within the platform
 ##   url is the url used to read a secret from the vault.
 ##   kind is the type of vault being accessed, or the protocol to use to access the secrets
 ##   client_secret a kubernetes level secret that contains the client_token used to retrive secrets.
@@ -245,6 +248,8 @@ secrets:
 
 vaults:
   storage:
+
+  authn:
 
   ecl:
 

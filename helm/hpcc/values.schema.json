@@ -84,6 +84,9 @@
         "storage": {
           "$ref": "#/definitions/secrets"
         },
+        "authn": {
+          "$ref": "#/definitions/secrets"
+        },
         "ecl": {
           "$ref": "#/definitions/secrets"
         },
@@ -107,6 +110,9 @@
           "type": "integer"
         },
         "storage": {
+          "$ref": "#/definitions/vaultCategory"
+        },
+        "authn": {
           "$ref": "#/definitions/vaultCategory"
         },
         "esp": {
