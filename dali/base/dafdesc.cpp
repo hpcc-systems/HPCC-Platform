@@ -3237,7 +3237,11 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy
         }
 
         if (ordinality() > 1)
+        {
             plane->setPropInt("@numDevices", ordinality());
+            if (dropZoneIndex == 0)
+                plane->setPropInt("@defaultSprayParts", ordinality());
+        }
     }
 
     if (dir.length())
