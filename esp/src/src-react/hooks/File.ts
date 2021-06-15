@@ -1,5 +1,6 @@
 import * as React from "react";
 import { LogicalFile } from "@hpcc-js/comms";
+import * as WsDfu from "src/WsDfu";
 import { useCounter } from "./Workunit";
 
 export function useFile(cluster: string, name: string): [LogicalFile, number, () => void] {
@@ -17,5 +18,21 @@ export function useFile(cluster: string, name: string): [LogicalFile, number, ()
     }, [cluster, name, count]);
 
     return [file, lastUpdate, increment];
+}
+
+export function useDefFile(cluster: string, name: string, format: "def" | "xml"): [string] {
+    const [file, setFile] = React.useState("");
+
+    React.useEffect(() => {
+        if (name) {
+            WsDfu.DFUDefFile(
+                { "request": { "Name": name, "Format": format }
+            }).then(response => {
+                setFile(response);
+            });
+        }
+    }, [cluster, name]);
+
+    return [file];
 }
 

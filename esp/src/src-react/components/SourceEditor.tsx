@@ -1,7 +1,7 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, getTheme, ICommandBarItemProps } from "@fluentui/react";
 import { useConst, useOnEvent } from "@fluentui/react-hooks";
-import { Editor, XMLEditor } from "@hpcc-js/codemirror";
+import { Editor, ECLEditor, XMLEditor } from "@hpcc-js/codemirror";
 import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
@@ -126,6 +126,34 @@ export const WUResourceEditor: React.FunctionComponent<WUResourceEditorProps> = 
     }, [src]);
 
     return <SourceEditor text={text} readonly={true} mode="text"></SourceEditor>;
+};
+
+interface ECLSourceEditorProps {
+    text: string,
+    readonly?: boolean;
+    setEditor?: (_: any) => void;
+}
+
+export const ECLSourceEditor: React.FunctionComponent<ECLSourceEditorProps> = ({
+    text = "",
+    readonly = false,
+    setEditor
+}) => {
+
+    const editor = useConst(new ECLEditor());
+    React.useEffect(() => {
+        editor
+            .text(text)
+            .readOnly(readonly)
+            .lazyRender()
+            ;
+
+        if (setEditor) {
+            setEditor(editor);
+        }
+    }, [editor, readonly, text, setEditor]);
+
+    return <AutosizeHpccJSComponent widget={editor} padding={4} />;
 };
 
 interface FetchEditor {
