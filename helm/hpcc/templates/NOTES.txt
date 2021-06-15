@@ -1,43 +1,65 @@
 {{- $defaultImage :=  include "hpcc.imageName" (dict "root" $ "me" dict ) | quote }}
 Thank you for installing the HPCC chart version {{ .Chart.Version }} using image {{ $defaultImage }}
 
+{{/* Gather a list of ephemeral and persistant planes */}}
+{{- $storage := (.Values.storage | default dict) -}}
+{{- $match := dict "ephemeral" (list) "persistant" (list) -}}
+{{- $planes := ($storage.planes | default list) -}}
+{{- $searchLabels := list "data" "dali" "sasha" "dll" "lz" -}}
+{{- range $plane := $planes -}}
+ {{- $labels := $plane.labels | default (list "data") -}}
+ {{- $tag := (hasKey $plane "storageClass" | ternary "ephemeral" "persistant") }}
+ {{- range $label := $labels -}}
+  {{- if has $label $searchLabels -}}
+   {{- $prev := get $match $tag -}}
+   {{- $_ := set $match $tag (append $prev $plane.name) -}}
+  {{- end }}
+ {{- end }}
+{{- end }}
+{{- /* Warn if any of the planes are ephemeral */ -}}
+{{- if (ne (len $match.ephemeral) 0) }}
+ {{- printf "**** WARNING: The configuration contains ephemeral planes: %s ****" (print (uniq $match.ephemeral)) }}
+{{- end }}
+{{/* Check for a mixture of ephemeral and persistent planes - ignore spill - generally indicates a problem.  Could use required to force a failure  */}}
+{{- if and (ne (len $match.ephemeral) 0) (ne (len $match.persistant) 0) }}
+ {{- printf "**** ERROR: The configuration contains a mixture of ephemeral %s and persistent %s planes ****" (print (uniq $match.ephemeral)) (print (uniq $match.persistant)) }}
+{{ end }}
 This chart has defined the following HPCC components:
 {{- $names := dict -}}
 {{- range $sectionName, $section := .Values -}}
-{{-  if hasPrefix "[]" (typeOf $section) -}}
-{{-   range $component := $section -}}
-{{-    if hasKey $component "name" -}}
-{{-     if not $component.disabled -}}
-{{-      if hasKey $names $component.name -}}
-{{-       required ( printf "Component name %s in section %s was already seen in section %s" $component.name $sectionName (get $names $component.name)) nil -}}
-{{-      else }}
+ {{- if hasPrefix "[]" (typeOf $section) -}}
+  {{- range $component := $section -}}
+   {{- if hasKey $component "name" -}}
+    {{- if not $component.disabled -}}
+     {{- if hasKey $names $component.name -}}
+      {{- required ( printf "Component name %s in section %s was already seen in section %s" $component.name $sectionName (get $names $component.name)) nil -}}
+     {{- else }}
   {{ $sectionName }}.{{ $component.name }}
-  {{- $localImage := include "hpcc.imageName" (dict "root" $ "me" $component ) | quote }}
-  {{- if not ( eq $defaultImage $localImage ) -}}
-   {{- printf " using overriden image %s" $localImage -}}
-  {{- end }} 
-{{-       $_ := set $names $component.name $sectionName -}}
-{{-      end -}}
-{{-     end -}}
-{{-    end -}}
-{{-   end -}}
-{{-  end -}}
+      {{- $localImage := include "hpcc.imageName" (dict "root" $ "me" $component ) | quote }}
+      {{- if not ( eq $defaultImage $localImage ) -}}
+       {{- printf " using overridden image %s" $localImage -}}
+      {{- end }}
+      {{- $_ := set $names $component.name $sectionName -}}
+     {{- end -}}
+    {{- end -}}
+   {{- end -}}
+  {{- end -}}
+ {{- end -}}
 {{- end }}
 {{- $sashaServices := $.Values.sasha | default dict -}}
 {{- if not $sashaServices.disabled -}}
-{{-  range $serviceName, $_service := $sashaServices }}
-{{-   $service := ($_service | default dict) -}}
-{{-   if not $service.disabled -}}
-{{-    if hasKey $names $serviceName -}}
-{{-     required ( printf "Component name %s in section sasha was already seen in section %s" $serviceName (get $names $serviceName)) nil -}}
-{{-    else }}
+ {{- range $serviceName, $_service := $sashaServices }}
+  {{- $service := ($_service | default dict) -}}
+  {{- if not $service.disabled -}}
+   {{- if hasKey $names $serviceName -}}
+    {{- required ( printf "Component name %s in section sasha was already seen in section %s" $serviceName (get $names $serviceName)) nil -}}
+   {{- else }}
   sasha.{{ $serviceName }}
-  {{- $localImage := include "hpcc.imageName" (dict "root" $ "me" $service ) | quote }}
-  {{- if not ( eq $defaultImage $localImage ) -}}
-   {{- printf " using overriden image %s" $localImage -}}
-  {{- end }} 
-{{-    end -}}
-{{-   end -}}
-{{-  end }}
+    {{- $localImage := include "hpcc.imageName" (dict "root" $ "me" $service ) | quote }}
+    {{- if not ( eq $defaultImage $localImage ) -}}
+     {{- printf " using overridden image %s" $localImage -}}
+    {{- end }}
+   {{- end -}}
+  {{- end -}}
+ {{- end }}
 {{- end }}
-
