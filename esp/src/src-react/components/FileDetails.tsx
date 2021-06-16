@@ -8,6 +8,7 @@ import { useFile, useDefFile } from "../hooks/File";
 import { pivotItemStyle } from "../layouts/pivot";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { pushUrl } from "../util/history";
+import { SuperFiles } from "./SuperFiles";
 import { ECLSourceEditor, XMLSourceEditor } from "./SourceEditor";
 import { ShortVerticalDivider } from "./Common";
 import { FileDetailsGraph } from "./FileDetailsGraph";
@@ -158,7 +159,8 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
             <PivotItem headerText={nlsHPCC.XML} itemKey="XML" style={pivotItemStyle(size, 0)}>
                 <XMLSourceEditor text={xmlFile} readonly={true} />
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.Superfiles} itemKey="Superfiles" style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.Superfiles} itemKey="superfiles" itemCount={file?.Superfiles?.DFULogicalFile.length || 0} style={pivotItemStyle(size, 0)}>
+                <SuperFiles cluster={cluster} logicalFile={logicalFile} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.FileParts} itemKey="FileParts" style={pivotItemStyle(size, 0)}>
             </PivotItem>
