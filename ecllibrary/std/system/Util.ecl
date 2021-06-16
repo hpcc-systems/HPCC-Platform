@@ -11,17 +11,6 @@ import lib_fileservices;
 RETURN MODULE
 
 /**
- * Execute an external program.
- *
- * @param prog          The name of the program to excute.  Can include command line options.
- * @param src           The text that is piped into the program as stdin.
- * @returns             The text output from the pipe program.
- */
- 
-EXPORT string CmdProcess(varstring prog, string src) :=
-    lib_fileservices.FileServices.CmdProcess2(prog, src) : deprecated('This function will be removed in 8.4.x');
-
-/**
  * Returns the host name associated with a particular ip.
  *
  * @param ipaddress     The ip address to resolve.

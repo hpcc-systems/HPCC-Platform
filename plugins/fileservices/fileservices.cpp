@@ -71,8 +71,6 @@ static const char * EclDefinition =
 "  SendEmail(const varstring to, const varstring subject, const varstring body, const varstring mailServer=GETENV('SMTPserver'), unsigned4 port=(unsigned4) GETENV('SMTPport', '25'), const varstring sender=GETENV('emailSenderAddress'), const varstring cc='', const varstring bcc='', boolean highPriority=false) : c,action,context,entrypoint='fsSendEmail_v2'; \n"
 "  SendEmailAttachText(const varstring to, const varstring subject, const varstring body, const varstring attachment, const varstring mimeType, const varstring attachmentName, const varstring mailServer=GETENV('SMTPserver'), unsigned4 port=(unsigned4) GETENV('SMTPport', '25'), const varstring sender=GETENV('emailSenderAddress'), const varstring cc='', const varstring bcc='', boolean highPriority=false) : c,action,context,entrypoint='fsSendEmailAttachText_v2'; \n"
 "  SendEmailAttachData(const varstring to, const varstring subject, const varstring body, const data attachment, const varstring mimeType, const varstring attachmentName, const varstring mailServer=GETENV('SMTPserver'), unsigned4 port=(unsigned4) GETENV('SMTPport', '25'), const varstring sender=GETENV('emailSenderAddress'), const varstring cc='', const varstring bcc='', boolean highPriority=false) : c,action,context,entrypoint='fsSendEmailAttachData_v2'; \n"
-"  varstring CmdProcess(const varstring prog, const varstring src) : c,action,entrypoint='fsCmdProcess'; \n"
-"  string CmdProcess2(const varstring prog, const string src) : c,action,entrypoint='fsCmdProcess2'; \n"
 "  SprayFixed(const varstring sourceIP, const varstring sourcePath, integer4 recordSize, const varstring destinationGroup, const varstring destinationLogicalName, integer4 timeOut=-1, const varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowoverwrite=false, boolean replicate=false,boolean compress=false, boolean failIfNoSourceFile=false, integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=false) : c,action,context,entrypoint='fsSprayFixed_v4'; \n"
 "  SprayVariable(const varstring sourceIP, const varstring sourcePath, integer4 sourceMaxRecordSize=8192, const varstring sourceCsvSeparate='\\\\,', const varstring sourceCsvTerminate='\\\\n,\\\\r\\\\n', const varstring sourceCsvQuote='\"', const varstring destinationGroup, const varstring destinationLogicalName, integer4 timeOut=-1, const varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowoverwrite=false, boolean replicate=false,boolean compress=false,const varstring sourceCsvEscape='', boolean failIfNoSourceFile=false, boolean recordStructurePresent=false, boolean quotedTerminator=true, const varstring encoding='ascii', integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=false) : c,action,context,entrypoint='fsSprayVariable_v8'; \n"
 "  SprayXml(const varstring sourceIP, const varstring sourcePath, integer4 sourceMaxRecordSize=8192, const varstring sourceRowTag, const varstring sourceEncoding='utf8', const varstring destinationGroup, const varstring destinationLogicalName, integer4 timeOut=-1, const varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowoverwrite=false, boolean replicate=false,boolean compress=false, boolean failIfNoSourceFile=false, integer4 expireDays=-1, const varstring dfuServerQueue='', boolean noSplit=false) : c,action,context,entrypoint='fsSprayXml_v4'; \n"
@@ -633,24 +631,13 @@ FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachData(ICodeContext * ctx
 
 FILESERVICES_API char * FILESERVICES_CALL fsCmdProcess(const char *prog, const char *src)
 {
-    StringBuffer in, out, err;
-    in.append(src);
-
-    runExternalCommand(out, err, prog, in);
-
-    return CTXSTRDUP(parentCtx, out.str());
+    throw makeStringException(0, "CmdProcess no longer supported for security reasons");
 }
 
 
 FILESERVICES_API void FILESERVICES_CALL fsCmdProcess2(unsigned & tgtLen, char * & tgt, const char *prog, unsigned srcLen, const char * src)
 {
-    StringBuffer in, out, err;
-    in.append(srcLen, src);
-
-    runExternalCommand(out, err, prog, in);
-
-    tgtLen = out.length();
-    tgt = (char *)CTXDUP(parentCtx, out.str(), out.length());
+    throw makeStringException(0, "CmdProcess no longer supported for security reasons");
 }
 
 
