@@ -19,7 +19,7 @@ RETURN MODULE
  */
  
 EXPORT string CmdProcess(varstring prog, string src) :=
-    lib_fileservices.FileServices.CmdProcess2(prog, src);
+    lib_fileservices.FileServices.CmdProcess2(prog, src) : deprecated('This function will be removed in 8.4.x');
 
 /**
  * Returns the host name associated with a particular ip.
