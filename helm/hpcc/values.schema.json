@@ -382,30 +382,11 @@
     "storageType": {
       "type": "object",
       "properties": {
-        "storageSize": {
-          "type": "string"
-        },
-        "storageClass": {
-          "type": "string"
-        },
         "plane": {
           "type": "string"
-        },
-        "existingClaim": {
-          "type": "string"
-        },
-        "forcePermissions": {
-          "type": "boolean"
         }
       },
-      "anyOf": [
-        {
-          "required": [ "storageSize" ]
-        },
-        {
-          "required": [ "plane" ]
-        }
-      ],
+      "required": [ "plane" ],
       "additionalProperties": false
     },
     "storagePlanes": {
@@ -479,6 +460,9 @@
           "type": "string"
         },
         "storageClass": {
+          "type": "string"
+        },
+        "storageMode": {
           "type": "string"
         },
         "forcePermissions": {
