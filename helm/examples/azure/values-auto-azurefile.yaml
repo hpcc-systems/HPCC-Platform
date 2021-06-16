@@ -31,7 +31,7 @@ storage:
   - name: mydropzone
     storageSize: 1Gi
     storageClass: "azurefile"
-    prefix: "/var/lib/HPCCSystems/dropzone"
+    prefix: "/var/lib/HPCCSystems/mydropzone"
     category: lz
 
   daliStorage:
