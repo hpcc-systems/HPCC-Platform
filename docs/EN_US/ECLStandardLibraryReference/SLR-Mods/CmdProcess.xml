@@ -51,6 +51,9 @@
   <emphasis>program</emphasis>. This is similar to the PIPE built-in function,
   but limited to simple text input and output.</para>
 
+  <para><emphasis role="bold">This function has been deprecated and will be
+  removed in version 8.4.0.</emphasis></para>
+
   <para>Example:</para>
 
   <programlisting format="linespecific">IMPORT STD;
