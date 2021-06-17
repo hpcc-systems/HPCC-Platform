@@ -1466,7 +1466,6 @@ bool CWsTopologyEx::onTpServiceQuery(IEspContext &context, IEspTpServiceQueryReq
             m_TpWrapper.getTpGenesisServers( ServiceList.getTpGenesisServers() );
             m_TpWrapper.getTpLdapServers( ServiceList.getTpLdapServers() );
             m_TpWrapper.getTpFTSlaves( ServiceList.getTpFTSlaves() );
-            m_TpWrapper.getTpDkcSlaves( ServiceList.getTpDkcSlaves() );
 
             if (version > 1.15)
             {

@@ -54,10 +54,6 @@ test multiclusteradd with replicate
 
 extern ILogMsgHandler * fileMsgHandler;
 
-extern void doKeyDiff(IFileDescriptor *oldf,IFileDescriptor *newf,IFileDescriptor *patchf); // patchf out
-extern void doKeyPatch(IFileDescriptor *oldf,IFileDescriptor *newf,IFileDescriptor *patchf);
-
-
 static void LOGXML(const char *trc,const IPropertyTree *pt)
 {
     StringBuffer s;
@@ -1166,8 +1162,6 @@ public:
             Owned<IDistributedFile> dstFile;        // NB not attached
             StringAttr dstName;
             StringAttr srcName;
-            StringAttr diffNameSrc;
-            StringAttr diffNameDst;
             Owned<INode> foreigndalinode;
             StringAttr oldRoxiePrefix;
             bool foreigncopy = false;
@@ -1175,12 +1169,6 @@ public:
             switch (cmd) {
             case DFUcmd_copy:
                 {
-                    source->getDiffKey(tmp.clear());
-                    if (tmp.length())
-                        diffNameSrc.set(tmp.str());
-                    destination->getDiffKey(tmp.clear());
-                    if (tmp.length())
-                        diffNameDst.set(tmp.str());
                     source->getLogicalName(tmp.clear());
                     CDfsLogicalFileName srclfn;
                     if (tmp.length())
@@ -1190,11 +1178,8 @@ public:
                     if (tmp.length())
                         dstlfn.set(tmp.str());
                     SocketEndpoint foreigndali;
-                    if (srclfn.isSet()&&dstlfn.isSet()&&(strcmp(srclfn.get(),dstlfn.get())==0)&&(!source->getForeignDali(foreigndali))) {
-                        if (!diffNameSrc.isEmpty()||!diffNameDst.isEmpty())
-                            throw MakeStringException(-1,"Cannot add to multi-cluster file using keypatch");
+                    if (srclfn.isSet()&&dstlfn.isSet()&&(strcmp(srclfn.get(),dstlfn.get())==0)&&(!source->getForeignDali(foreigndali)))
                         multiclusterinsert = true;
-                    }
                     break;
                 }
             }
@@ -1446,26 +1431,7 @@ public:
                 {
                     if (!replicating)
                     {
-                        Owned<IFileDescriptor> patchf;
                         Owned<IFileDescriptor> olddstf;
-                        if (diffNameSrc.get()||diffNameDst.get())
-                        {
-                            Owned<IFileDescriptor> oldf;
-                            oldf.setown(queryDistributedFileDirectory().getFileDescriptor(diffNameSrc,foreigncopy?foreignuserdesc:userdesc,foreigncopy?foreigndalinode:NULL));
-                            if (!oldf.get())
-                            {
-                                StringBuffer s;
-                                throw MakeStringException(-1,"Old key file %s could not be found in source",diffNameSrc.get());
-                            }
-                            olddstf.setown(queryDistributedFileDirectory().getFileDescriptor(diffNameDst,userdesc,NULL));
-                            if (!olddstf.get())
-                            {
-                                StringBuffer s;
-                                throw MakeStringException(-1,"Old key file %s could not be found in destination",diffNameDst.get());
-                            }
-                            patchf.setown(createFileDescriptor());
-                            doKeyDiff(oldf,srcFdesc,patchf);
-                        }
                         runningconn.setown(setRunning(runningpath.str()));
                         bool needrep = options->getReplicate();
                         ClusterPartDiskMapSpec mspec;
@@ -1486,43 +1452,7 @@ public:
                             feedback.repmode=cProgressReporter::REPbefore;
                         if (foreigncopy)
                             checkPhysicalFilePermissions(srcFdesc,userdesc,false);
-                        if (patchf) { // patch assumes only 1 cluster
-                            // need to create dstpatchf
-                            StringBuffer gname;
-                            destination->getGroupName(0,gname);
-                            if (!gname.length())
-                                throw MakeStringException(-1,"No cluster specified for destination");
-                            Owned<IGroup> grp = queryNamedGroupStore().lookup(gname.str());
-                            if (!grp)
-                                throw MakeStringException(-1,"Destination cluster %s not found",gname.str());
-                            StringBuffer lname;
-                            destination->getLogicalName(lname);
-                            lname.append(".__patch__");
-                            DFD_OS os;
-                            switch (queryOS(grp->queryNode(0).endpoint())) {
-                            case MachineOsW2K:
-                                os = DFD_OSwindows; break;
-                            case MachineOsSolaris:
-                            case MachineOsLinux:
-                                os = DFD_OSunix; break;
-                            default:
-                                os = DFD_OSdefault;
-                            };
-                            Owned<IFileDescriptor> dstpatchf = createFileDescriptor(lname.str(),grp,NULL,os,patchf->numParts());
-                            fsys.transfer(patchf, dstpatchf, NULL, NULL, NULL, opttree, &feedback, &abortnotify, dfuwuid);
-                            removePartFiles(patchf);
-                            Owned<IFileDescriptor> newf = dstFile->getFileDescriptor();
-                            doKeyPatch(olddstf,newf,dstpatchf);
-                            removePartFiles(dstpatchf);
-                            if (!abortnotify.abortRequested()) {
-                                if (needrep)
-                                    replicating = true;
-                                else
-                                    dstFile->attach(dstName.get(), userdesc);
-                                Audit("COPYDIFF",userdesc,srcName.get(),dstName.get());
-                            }
-                        }
-                        else if (foreigncopy||auxfdesc)
+                        if (foreigncopy||auxfdesc)
                         {
                             IFileDescriptor * srcDesc = (auxfdesc.get() ? auxfdesc.get() : srcFdesc.get());
                             fsys.import(srcDesc, dstFile, recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);

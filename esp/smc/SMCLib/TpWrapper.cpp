@@ -596,30 +596,6 @@ void CTpWrapper::getTpFTSlaves(IArrayOf<IConstTpFTSlave>& list)
     }
 }
 
-void CTpWrapper::getTpDkcSlaves(IArrayOf<IConstTpDkcSlave>& list)
-{
-    Owned<IPropertyTree> root = getEnvironment("Software");
-    if (!root)
-        throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
-
-    Owned<IPropertyTreeIterator> services= root->getElements(eqDkcSlave);
-    ForEach(*services)
-    {
-        IPropertyTree& serviceTree = services->query();
-
-        Owned<IEspTpDkcSlave> pService =createTpDkcSlave("","");
-        pService->setName(serviceTree.queryProp("@name"));
-        pService->setDescription(serviceTree.queryProp("@description"));
-        pService->setBuild(serviceTree.queryProp("@build"));
-
-        IArrayOf<IEspTpMachine> tpMachines;
-        fetchInstances(eqDkcSlave, serviceTree, tpMachines);
-        pService->setTpMachines(tpMachines);
-
-        list.append(*pService.getLink());
-    }
-}
-
 void CTpWrapper::getTpGenesisServers(IArrayOf<IConstTpGenesisServer>& list)
 {
     Owned<IPropertyTree> root = getEnvironment("Software");

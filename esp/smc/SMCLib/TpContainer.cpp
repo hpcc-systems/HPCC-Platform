@@ -164,11 +164,6 @@ void CTpWrapper::getTpFTSlaves(IArrayOf<IConstTpFTSlave>& list)
     throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 }
 
-void CTpWrapper::getTpDkcSlaves(IArrayOf<IConstTpDkcSlave>& list)
-{
-    throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
-}
-
 void CTpWrapper::getTpGenesisServers(IArrayOf<IConstTpGenesisServer>& list)
 {
     throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);

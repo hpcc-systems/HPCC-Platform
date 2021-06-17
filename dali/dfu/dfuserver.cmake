@@ -27,7 +27,6 @@ project( dfuserver )
 
 set (    SRCS 
          dfurun.cpp 
-         dfurunkdp.cpp 
          dfuserver.cpp 
          dfurepl.cpp 
     )
