@@ -22,3 +22,10 @@
 
 */}}
 {{- include "hpcc.addPVCsFromPlanes" . }}
+{{- $storage := (.Values.storage | default dict) }}
+{{- $planes := ($storage.planes | default list) -}}
+{{- range $plane := $planes -}}
+{{- if (ne (lower $plane.name) $plane.name) -}}
+{{- required (printf "Name of storage plane '%s' must not contain upper case" $plane.name) nil -}}
+{{- end -}}
+{{- end -}}
