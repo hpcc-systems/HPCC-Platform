@@ -25,7 +25,7 @@ jobs:
         uses: hpcc-systems/skip-duplicate-actions@master
         with:
           github_token: ${{ github.token }}
-          paths_ignore: '["docs/**", "esp/src/**/*", "dockerfiles/**", "helm/**", "ecllibrary/**", "testing/**", "initfiles/**" ]'
+          paths_ignore: '["docs/**", "esp/srcXXX/**/*", "dockerfiles/**", "helm/**", "ecllibrary/**", "testing/**", "initfiles/**" ]'
 
   build:
     name: "Check compiles on Win32"
@@ -43,6 +43,16 @@ jobs:
           echo "Checkout to $Env:GITHUB_WORKSPACE"
           echo "vcpkg @$(get-command vcpkg | Select-Object -ExpandProperty Source | Split-Path)"
           echo "vcpkg @$vcpkg_root"
+      - name: Check out source code
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Windows ECL Watch Test
+        working-directory: .
+        run: |
+          cd esp/src
+          npm ci
+          npm run build
       - name: Install bison
         working-directory: .
         run: |
@@ -57,10 +67,6 @@ jobs:
           vcpkg install zlib:x64-windows
           vcpkg install openssl:x64-windows
           vcpkg install libxslt:x64-windows
-      - name: Check out source code
-        uses: actions/checkout@v2
-        with:
-          submodules: true
       - name: Windows compilation
         working-directory: .
         run: |
