@@ -25,6 +25,8 @@
 {{- if not $sashaServices.disabled -}}
 {{ range $sashaName, $_sasha := $sashaServices -}}
 {{ $sasha := ($_sasha | default dict) -}}
+{{- $sashaStorage := $sasha.storage | default dict -}}
+{{- $sashaPlane := $sashaStorage.plane -}}
 {{- if not $sasha.disabled -}}
 {{- $_ := set $sasha "name" $sashaName -}}
 {{- $_ := set $sasha "access" (splitList " " (include "hpcc.getSashaServiceAccess" $sasha)) -}}
@@ -62,7 +64,7 @@ spec:
       serviceAccountName: "hpcc-default"
       {{- if $sasha.storage }}
       initContainers:
-      {{- include "hpcc.checkSashaMount" (dict "root" $ "me"  $sasha) | indent 6 }}
+      {{ include "hpcc.changePlaneMountPerms" (dict "root" $ "includeNames" (list $sashaPlane)) | indent 6}}
       {{- end }}
       containers:
 {{- include "hpcc.addSashaContainer" $commonCtx | indent 6 }}
@@ -82,13 +84,6 @@ spec:
 kind: ConfigMap 
 {{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.sashaConfigMap")) }}
 ---
-{{- if $sasha.storage }}
-{{- if and (not $sasha.storage.existingClaim) (not $sasha.storage.plane) }}
-{{ include "hpcc.addPVC" (dict "root" $ "name" (printf "sasha-%s" $sasha.name) "me" $sasha.storage) }}
-{{- end }}
-{{/* Any PVCS for sasha that are based on planes have already been generated in dali.yaml */}}
----
-{{ end -}}
 {{- end }}
 {{- end }}
 {{- end -}}

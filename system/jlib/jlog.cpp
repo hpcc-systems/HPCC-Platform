@@ -41,6 +41,15 @@ using namespace ln_uid;
 // Time, in nanoseconds, after which the clock field loops --- 3600000000000ns = 1hr
 #define CLOCK_LOOP_NANOSECONDS I64C(3600000000000)
 
+// Standard filters, handlers, manager, and audit event logger
+static ILogMsgManager * theManager = nullptr;
+static PassAllLogMsgFilter * thePassAllFilter = nullptr;
+static PassLocalLogMsgFilter * thePassLocalFilter = nullptr;
+static PassNoneLogMsgFilter * thePassNoneFilter = nullptr;
+static HandleLogMsgHandlerTable * theStderrHandler = nullptr;
+static CSysLogEventLogger * theSysLogEventLogger = nullptr;
+
+
 // LogMsgSysInfo
 
 static FILE *getNullHandle()
@@ -2482,13 +2491,81 @@ void attachManyLogMsgMonitorsFromPTree(IPropertyTree * tree)
 
 // Calls to make, remove, and return the manager, standard handler, pass all/none filters, reporter array
 
-PassAllLogMsgFilter * thePassAllFilter;
-PassLocalLogMsgFilter * thePassLocalFilter;
-PassNoneLogMsgFilter * thePassNoneFilter;
-HandleLogMsgHandlerTable * theStderrHandler;
-CLogMsgManager * theManager;
-CSysLogEventLogger * theSysLogEventLogger;
 LogMsgComponentReporter * theReporters[MSGCOMP_NUMBER];
+
+class CNullManager : implements ILogMsgManager
+{
+public:
+// IInterface impl.
+    virtual void Link() const override {}
+    virtual bool Release() const override { return false; }
+
+// ILogMsgListener impl.
+    virtual bool              addMonitor(ILogMsgHandler * handler, ILogMsgFilter * filter) override { return true; }
+    virtual bool              addMonitorOwn(ILogMsgHandler * handler, ILogMsgFilter * filter) override { return true; }
+    virtual bool              removeMonitor(ILogMsgHandler * handler)  override { return true; }
+    virtual unsigned          removeMonitorsMatching(HandlerTest & test) override { return 0; }
+    virtual void              removeAllMonitors()  override {}
+    virtual bool              isActiveMonitor(const ILogMsgHandler * handler) const override { return false; }
+    virtual ILogMsgFilter *   queryMonitorFilter(const ILogMsgHandler * handler) const override { return nullptr; }
+    virtual ILogMsgFilter *   getMonitorFilter(const ILogMsgHandler * handler) const override { return nullptr; }
+    virtual bool              changeMonitorFilter(const ILogMsgHandler * handler, ILogMsgFilter * newFilter) override { return true; }
+    virtual bool              changeMonitorFilterOwn(const ILogMsgHandler * handler, ILogMsgFilter * newFilter) override { return true; }
+    virtual void              prepAllHandlers() const override {}
+    virtual void              addChildOwn(ILogMsgLinkToChild * child) override {}
+    virtual void              removeChild(ILogMsgLinkToChild * child) override {}
+    virtual void              removeAllChildren() override {}
+    virtual ILogMsgFilter *   getCompoundFilter(bool locked = false) const override { return nullptr; }
+    virtual void              suspendChildren() override {}
+    virtual void              unsuspendChildren() override {}
+    virtual bool              addMonitorToPTree(const ILogMsgHandler * handler, IPropertyTree * tree) const override { return true; }
+    virtual void              addAllMonitorsToPTree(IPropertyTree * tree) const override {}
+    virtual void              setPort(unsigned _port) override {}
+    virtual unsigned          queryPort() const override { return 0; }
+    virtual void              setSession(LogMsgSessionId _session) override {}
+    virtual LogMsgSessionId   querySession() const override { return 0; }
+
+// ILogMsgManager impl.
+    virtual void              enterQueueingMode() override {}
+    virtual void              setQueueBlockingLimit(unsigned lim) override {}
+    virtual void              setQueueDroppingLimit(unsigned lim, unsigned numToDrop) override {}
+    virtual void              resetQueueLimit() override {}
+    virtual bool              flushQueue(unsigned timeout) override { return true; }
+    virtual void              resetMonitors() override {}
+    virtual void              report(const LogMsgCategory & cat, const char * format, ...) override {}
+    virtual void              report_va(const LogMsgCategory & cat, const char * format, va_list args) override {}
+    virtual void              report(const LogMsgCategory & cat, LogMsgCode code , const char * format, ...) override {}
+    virtual void              report_va(const LogMsgCategory & cat, LogMsgCode code , const char * format, va_list args) override {}
+    virtual void              report(const LogMsgCategory & cat, const IException * e, const char * prefix = NULL) override {}
+    virtual void              report(unsigned compo, const LogMsgCategory & cat, const char * format, ...) override {}
+    virtual void              report_va(unsigned compo, const LogMsgCategory & cat, const char * format, va_list args) override {}
+    virtual void              report(unsigned compo, const LogMsgCategory & cat, LogMsgCode code , const char * format, ...) override {}
+    virtual void              report_va(unsigned compo, const LogMsgCategory & cat, LogMsgCode code , const char * format, va_list args) override {}
+    virtual void              report(unsigned compo, const LogMsgCategory & cat, const IException * e, const char * prefix = NULL)  override {}
+    virtual void              report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...) override {}
+    virtual void              report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) override {}
+    virtual void              report(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, ...) override {}
+    virtual void              report_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, va_list args) override {}
+    virtual void              report(const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * e, const char * prefix = NULL) override {}
+    virtual void              report(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, ...) override {}
+    virtual void              report_va(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) override {}
+    virtual void              report(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, ...) override {}
+    virtual void              report_va(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, LogMsgCode code , const char * format, va_list args) override {}
+    virtual void              report(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, const IException * e, const char * prefix = NULL) override {}
+    virtual void              mreport_direct(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * msg) override {}
+    virtual void              mreport_direct(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * msg) override {}
+    virtual void              mreport_va(unsigned compo, const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) override {}
+    virtual void              mreport_va(const LogMsgCategory & cat, const LogMsgJobInfo & job, const char * format, va_list args) override {}
+    virtual void              report(const LogMsg & msg) const override {}
+    virtual LogMsgId          getNextID() override { return 0; }
+    virtual bool              rejectsCategory(const LogMsgCategory & cat) const override { return true; }
+    virtual offset_t          getLogPosition(StringBuffer &logFileName, const ILogMsgHandler * handler) const override { return 0; }
+    virtual LogMsgJobId       addJobId(const char *job) override { return 0; }
+    virtual void              removeJobId(LogMsgJobId) override {}
+    virtual const char *      queryJobId(LogMsgJobId id) const override { return ""; }
+};
+
+static CNullManager nullManager;
 
 MODULE_INIT(INIT_PRIORITY_JLOG)
 {
@@ -2510,18 +2587,18 @@ MODULE_EXIT()
         delete theReporters[compo];
         theReporters[compo] = NULL;
     }
-    delete theManager;
+    ::Release(theManager);
+    theManager = &nullManager;
     delete theSysLogEventLogger;
     delete theStderrHandler;
     delete thePassNoneFilter;
     delete thePassLocalFilter;
     delete thePassAllFilter;
-    theManager = NULL;
-    theSysLogEventLogger = NULL;
-    theStderrHandler = NULL;
-    thePassNoneFilter = NULL;
-    thePassLocalFilter = NULL;
-    thePassAllFilter = NULL;
+    theSysLogEventLogger = nullptr;
+    theStderrHandler = nullptr;
+    thePassNoneFilter = nullptr;
+    thePassLocalFilter = nullptr;
+    thePassAllFilter = nullptr;
 }
 
 #ifdef _CONTAINERIZED

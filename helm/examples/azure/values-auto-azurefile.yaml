@@ -3,24 +3,55 @@
 # provisioned Persistent Volume's with a reclaimPolicy of "Delete"
 
 storage:
-  dllStorage:
-    storageSize: 3Gi
+  planes:
+  - name: dali
+    storageSize: 1Gi
     storageClass: "azurefile"
+    prefix: "/var/lib/HPCCSystems/dalistorage"
+    labels:
+    - dali
+
+  - name: dll
+    prefix: "/var/lib/HPCCSystems/queries"
+    storageSize: 1Gi
+    storageClass: "azurefile"
+    labels:
+    - dll
+
+  - name: sasha
+    storageSize: 1Gi
+    storageClass: "azurefile"
+    prefix: "/var/lib/HPCCSystems/sashastorage"
+    labels:
+    - sasha
+
+  - name: data
+    storageSize: 1Gi
+    storageClass: "azurefile"
+    prefix: "/var/lib/HPCCSystems/hpcc-data"
+    labels:
+    - data # NB: if not set, this would be the default
+
+  - name: mydropzone
+    storageSize: 1Gi
+    storageClass: "azurefile"
+    prefix: "/var/lib/HPCCSystems/dropzone"
+    labels:
+    - lz
 
   daliStorage:
-    storageSize: 1Gi
-    storageClass: "azurefile"
+    plane: dali
+
+  dllStorage:
+    plane: dll
 
   dataStorage:
-    storageSize: 1Gi
-    storageClass: "azurefile"
+    plane: data
 
 sasha:
   wu-archiver:
     storage:
-      storageSize: 1Gi
-      storageClass: "azurefile"
+      plane: sasha
   dfuwu-archiver:
     storage:
-      storageSize: 1Gi
-      storageClass: "azurefile"
+      plane: sasha

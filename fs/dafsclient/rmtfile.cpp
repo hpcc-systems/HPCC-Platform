@@ -2137,15 +2137,21 @@ IDaFileSrvHook *queryDaFileSrvHook()
 
 void enableForceRemoteReads()
 {
+#ifndef _CONTAINERIZED
     const char *forceRemotePattern = queryEnvironmentConf().queryProp("forceRemotePattern");
     if (!isEmptyString(forceRemotePattern))
         queryDaFileSrvHook()->forceRemote(forceRemotePattern);
+#endif
 }
 
 bool testForceRemote(const char *path)
 {
+#ifndef _CONTAINERIZED
     const char *forceRemotePattern = queryEnvironmentConf().queryProp("forceRemotePattern");
     return !isEmptyString(forceRemotePattern) && WildMatch(path, forceRemotePattern, false);
+#else
+    return false;
+#endif
 }
 
 

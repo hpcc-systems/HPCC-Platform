@@ -39,7 +39,7 @@ data:
 {{- if not .disabled -}}
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $secretsCategories := list "system" "storage" -}}
-{{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories "includeLabels" (list "lz" "data" "") "env" $env }}
+{{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories "includeLabels" (list "lz" "data") "env" $env }}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.dfuServerConfigMap" "component" "dfuserver" "excludeKeys" "global")) -}}
 apiVersion: apps/v1
 kind: Deployment

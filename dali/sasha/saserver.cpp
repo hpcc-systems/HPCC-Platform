@@ -360,7 +360,7 @@ int main(int argc, const char* argv[])
     #endif
         DBGLOG("Build %s", hpccBuildInfo.buildTag);
 
-        unsigned short port = serverConfig->getPropInt("@port");
+        unsigned short port = serverConfig->getPropInt("service/@port", serverConfig->getPropInt("@port"));
         if (!port)
         {
             if (!stop && !coalescer)

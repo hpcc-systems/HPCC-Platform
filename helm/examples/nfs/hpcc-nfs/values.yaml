@@ -30,3 +30,8 @@ planes:
   size: 3Gi
   labels: [ "data" ] # NB: all "data" planes will be auto mounted by engine components and others that require access to data
   rwmany: true
+- name: mydropzone
+  subPath: dropzone
+  size: 1Gi
+  rwmany: true
+  labels: [ "lz" ]

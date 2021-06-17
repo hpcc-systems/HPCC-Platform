@@ -1243,9 +1243,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             queryFileCache().start();
             loadPlugins();
         }
-#ifdef _CONTAINERIZED
-        initializeTopology(topoValues, myRoles);
-#endif
         createDelayedReleaser();
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
         globalPackageSetManager->load();
@@ -1414,7 +1411,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                 queryFileCache().loadSavedOsCacheInfo();
                 queryFileCache().startCacheReporter();
 #ifdef _CONTAINERIZED
-                publishTopology(traceLevel);
+                publishTopology(traceLevel, topoValues, myRoles);
 #endif
                 writeSentinelFile(sentinelFile);
                 DBGLOG("Startup completed - LPT=%u APT=%u", queryNumLocalTrees(), queryNumAtomTrees());

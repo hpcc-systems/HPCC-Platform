@@ -246,7 +246,7 @@ Return: If there is any matching labels, there will be a non-empty string return
 {{- define "hpcc.doesStorageLabelsMatch" -}}
 {{- $plane := .plane -}}
   {{- range $label := .includeLabels -}}
-    {{- if and (eq $label "") (not $plane.labels) -}}
+    {{- if and (eq $label "data") (not $plane.labels) -}}
       {{- print "T" -}}
     {{- else if has $label $plane.labels -}}
       {{- print "T" -}}
@@ -302,12 +302,13 @@ Add data volume mount
 Pass in root
 */}}
 {{- define "hpcc.addDataVolumeMount" -}}
-{{- include "hpcc.addVolumeMounts" (dict "root" .root "includeLabels" (list "data" "" "lz")) -}}
+{{- include "hpcc.addVolumeMounts" (dict "root" .root "includeLabels" (list "data" "lz")) -}}
 {{- end -}}
 
 {{/*
 Add volumes
-Pass in root and includeLabels (optional)
+Pass in root, includeLabels (optional) and includeNames (optional)
+The plane will generate a volume if it matches either an includeLabel or an includeName
 */}}
 {{- define "hpcc.addVolumes" -}}
 {{- /*Create local variables which always exist to avoid having to check if intermediate key values exist*/ -}}
@@ -315,41 +316,27 @@ Pass in root and includeLabels (optional)
 {{- $dataStorage := ($storage.dataStorage | default dict) -}}
 {{- $planes := ($storage.planes | default list) -}}
 {{- $includeLabels := .includeLabels | default list -}}
-{{- $filterName := .name | default "" -}}
+{{- $includeNames := .includeNames | default list -}}
 {{- range $plane := $planes -}}
  {{- if or ($plane.pvc) (hasKey $plane "storageClass") -}}
   {{- $matchedLabels := include "hpcc.doesStorageLabelsMatch" (dict "plane" $plane "includeLabels" $includeLabels) -}}
-  {{- if ne $matchedLabels "" }}
-   {{- if or (not $filterName) (eq $filterName $plane.name) }}
-    {{- $pvc := hasKey $plane "pvc" | ternary $plane.pvc (printf "%s-%s-pvc" (include "hpcc.fullname" $) $plane.name) -}}
-    {{- $num := int ( $plane.numDevices | default 1 ) -}}
-    {{- if le $num 1 }}
+  {{- if or ($matchedLabels) (has $plane.name $includeNames) }}
+   {{- $pvc := hasKey $plane "pvc" | ternary $plane.pvc (printf "%s-%s-pvc" (include "hpcc.fullname" $) $plane.name) -}}
+   {{- $num := int ( $plane.numDevices | default 1 ) -}}
+   {{- if le $num 1 }}
 - name: {{ lower $plane.name }}-pv
   persistentVolumeClaim:
     claimName: {{ $pvc }}
-    {{- else }}
-     {{- range $elem := until $num }}
+   {{- else }}
+    {{- range $elem := until $num }}
 - name: {{ lower $plane.name }}-pv-many-{{- add $elem 1 }}
   persistentVolumeClaim:
     claimName: {{ $pvc }}-{{- add $elem 1 }}
-     {{- end }}
-    {{- end -}}
+    {{- end }}
    {{- end -}}
   {{- end }}
  {{- end }}
 {{- end -}}
-{{- /*
-Create a data volume if data plane have not been specified in storage.planes
-Note: Some services used addVolumes to add data planes and other types of plane using addVolumes, so this code has
-to be located here rather than in addDataVolumes.
-*/ -}}
-{{- if and (has "data" $includeLabels) (not $dataStorage.plane) }}
-{{- if (not (include "hpcc.hasPlaneForLabel" (dict "root" .root "label" "data"))) }}
-- name: datastorage
-  persistentVolumeClaim:
-    claimName: {{ $dataStorage.existingClaim | default (printf "%s-datastorage" (include "hpcc.fullname" . )) }}
-{{- end }}
-{{- end }}
 {{- end -}}
 
 {{/*
@@ -375,7 +362,7 @@ Pass in dict with root, me, name, and optional path
   {{- end -}}
  {{- end -}}
 {{- else -}}
-{{ printf "/var/lib/HPCCSystems/%s" (.path | default (printf "%sstorage" .name)) | quote }}
+ {{- $_ := fail (printf "Volume mount %s does not define a storage plane" .name ) -}}
 {{- end -}}
 {{- end -}}
 
@@ -386,7 +373,7 @@ Pass in dict with root, me, name, and optional path
 {{- define "hpcc.addVolumeMount" -}}
 {{- $mountPath := include "hpcc.getVolumeMountPrefix" . }}
 {{- if not $mountPath -}}
-{{- $_ := fail (printf "Invalid storage definition for: %s" .name ) -}}
+ {{- $_ := fail (printf "Missing plane definition for plane: %s" .me.plane ) -}}
 {{- end -}}
 - name: {{ .name }}
   mountPath: {{ $mountPath }}
@@ -397,14 +384,6 @@ Add dll volume mount - if default plane is used, or the dll storage plane specif
 Pass in dict with root
 */}}
 {{- define "hpcc.addDllVolumeMount" -}}
-{{- $storage := (.root.Values.storage | default dict) -}}
-{{- $planes := ($storage.planes | default list) -}}
-{{- $dllStorage := ($storage.dllStorage | default dict) -}}
-{{- if not $dllStorage.plane -}}
-{{- if (not (include "hpcc.hasPlaneForLabel" (dict "root" .root "label" "dll"))) }}
-{{ include "hpcc.addVolumeMount" (dict "root" .root "me" $dllStorage "name" "dllstorage" "path" "queries") }}
-{{- end -}}
-{{- end -}}
 {{- include "hpcc.addVolumeMounts" (dict "root" .root "includeLabels" (list "dll")) -}}
 {{- end -}}
 
@@ -413,33 +392,7 @@ Add dali volume mount - if default plane is used, or the dali storage plane spec
 Pass in dict with root
 */}}
 {{- define "hpcc.addDaliVolumeMount" -}}
-{{- $storage := (.root.Values.storage | default dict) -}}
-{{- $planes := ($storage.planes | default list) -}}
-{{- $daliStorage := ($storage.daliStorage | default dict) -}}
-{{- if not $daliStorage.plane -}}
-{{- if (not (include "hpcc.hasPlaneForLabel" (dict "root" .root "label" "dali"))) }}
-{{ include "hpcc.addVolumeMount" (dict "root" .root "me" $daliStorage "name" "dalistorage" "path" "dalistorage") }}
-{{- end -}}
-{{- end -}}
 {{- include "hpcc.addVolumeMounts" (dict "root" .root "includeLabels" (list "dali")) -}}
-{{- end -}}
-
-{{/*
-Add a volume - if default plane is used, or the storage plane specifies a pvc
-Pass in dict with root, me and name
-*/}}
-{{- define "hpcc.addVolume" -}}
-{{- /*Create local variables which always exist to avoid having to check if intermediate key values exist*/ -}}
-{{- $storage := (.root.Values.storage | default dict) -}}
-{{- $planes := ($storage.planes | default list) -}}
-{{- $label := .label -}}
-{{- if not .me.plane -}}
-{{- if (not (include "hpcc.hasPlaneForLabel" (dict "root" .root "label" $label))) }}
-- name: {{ .name }}
-  persistentVolumeClaim:
-    claimName: {{ .me.existingClaim | default (printf "%s-%s" (include "hpcc.fullname" .) .name) }}
-{{- end }}
-{{- end -}}
 {{- end -}}
 
 {{/*
@@ -447,10 +400,6 @@ Add dll volume - if default plane is used, or the dll storage plane specifies a 
 Pass in dict with root
 */}}
 {{- define "hpcc.addDllVolume" -}}
-{{- /*Create local variables which always exist to avoid having to check if intermediate key values exist*/ -}}
-{{- $storage := (.root.Values.storage | default dict) -}}
-{{- $dllStorage := ($storage.dllStorage | default dict) -}}
-{{- include "hpcc.addVolume" (dict "root" .root "name" "dllstorage" "me" $dllStorage "label" "dll") }}
 {{- include "hpcc.addVolumes" (dict "root" .root "includeLabels" (list "dll") ) }}
 {{- end -}}
 
@@ -459,10 +408,6 @@ Add dali volume - if default plane is used, or the dali storage plane specifies 
 Pass in dict with root
 */}}
 {{- define "hpcc.addDaliVolume" -}}
-{{- /*Create local variables which always exist to avoid having to check if intermediate key values exist*/ -}}
-{{- $storage := (.root.Values.storage | default dict) -}}
-{{- $daliStorage := ($storage.daliStorage | default dict) -}}
-{{- include "hpcc.addVolume" (dict "root" .root "name" "dalistorage" "me" $daliStorage "label" "dali") }}
 {{- include "hpcc.addVolumes" (dict "root" .root "includeLabels" (list "dali") ) }}
 {{- end -}}
 
@@ -648,12 +593,13 @@ A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop
 {{- define "hpcc.changePlaneMountPerms" -}}
 {{- $storage := (.root.Values.storage | default dict) -}}
 {{- $planes := ($storage.planes | default list) -}}
-  {{- $includeLabels := .includeLabels | default list -}}
+{{- $includeLabels := .includeLabels | default list -}}
+{{- $includeNames := .includeNames | default list -}}
 {{- range $plane := $planes -}}
  {{- if and ($plane.forcePermissions) (or ($plane.pvc) (hasKey $plane "storageClass")) -}}
   {{- $mountpath := $plane.prefix -}}
   {{- $matchedLabels := include "hpcc.doesStorageLabelsMatch" (dict "plane" $plane "includeLabels" $includeLabels) }}
-  {{- if ne $matchedLabels "" }}
+  {{- if or ($matchedLabels) (has $plane.name $includeNames) }}
 {{- $volumeName := (printf "%s-pv" $plane.name) -}}
 {{ include "hpcc.changeMountPerms" (dict "root" .root "volumeName" $volumeName "volumePath" $plane.prefix) }}
 {{- end }}
@@ -711,13 +657,6 @@ Add wait-and-run shared inter container volume
 Check dll mount point, using hpcc.changeMountPerms
 */}}
 {{- define "hpcc.checkDllMount" -}}
-{{- $storage := (.root.Values.storage | default dict) -}}
-{{- $dllStorage := ($storage.dllStorage | default dict) -}}
-{{- if $dllStorage.forcePermissions | default false }}
-{{- $volumeName := ($dllStorage.plane | ternary (printf "%s-pv" $dllStorage.plane) "dll") -}}
-{{- $volumePath :=  include "hpcc.getVolumeMountPrefix" (dict "root" .root "me" $dllStorage "name" "dll" "path" "queries") }}
-{{ include "hpcc.changeMountPerms" (dict "root" .root "volumeName" $volumeName "volumePath" $volumePath) }}
-{{- end }}
 {{ include "hpcc.changePlaneMountPerms" (dict "root" .root "includeLabels" (list "dll")) }}
 {{- end }}
 
@@ -726,13 +665,6 @@ Check datastorage mount point, using hpcc.changeMountPerms
 Pass in a dictionary with root
 */}}
 {{- define "hpcc.checkDataMount" -}}
-{{- $storage := (.root.Values.storage | default dict) -}}
-{{- $dataStorage := ($storage.dataStorage | default dict) -}}
-{{- if $dataStorage.forcePermissions | default false }}
-{{- $volumeName := printf "%s-pv" $dataStorage.plane -}}
-{{- $volumePath :=  include "hpcc.getVolumeMountPrefix" (dict "root" .root "me" $dataStorage "name" "data" "path" "hpcc-data") }}
-{{ include "hpcc.changeMountPerms" (dict "root" .root "volumeName" $volumeName "volumePath" $volumePath) }}
-{{- end }}
 {{ include "hpcc.changePlaneMountPerms" (dict "root" .root "includeLabels" (list "" "data" "lz")) }}
 {{- end }}
 
@@ -740,27 +672,9 @@ Pass in a dictionary with root
 Check dalistorage mount point, using hpcc.changeMountPerms
 */}}
 {{- define "hpcc.checkDaliMount" -}}
-{{- $storage := (.root.Values.storage | default dict) -}}
-{{- $daliStorage := ($storage.daliStorage | default dict) -}}
-{{- if $daliStorage.forcePermissions | default false }}
-{{- $volumeName := ($daliStorage.plane | default "dalistorage") -}}
-{{- $volumePath :=  include "hpcc.getVolumeMountPrefix" (dict "root" .root "me" $daliStorage "name" "dali" "path" "dalistorage") }}
-{{ include "hpcc.changeMountPerms" (dict "root" .root "volumeName" $volumeName "volumePath" $volumePath) }}
-{{- end }}
 {{ include "hpcc.changePlaneMountPerms" (dict "root" .root "includeLabels" (list "dali")) }}
 {{- end }}
 
-{{/*
-Check sashastorage mount point, using hpcc.changeMountPerms
-Pass in sashaName
-*/}}
-{{- define "hpcc.checkSashaMount" -}}
-{{- if .me.storage.forcePermissions | default false }}
-{{- $volumeName := (.me.storage.plane | default "sashastorage") -}}
-{{- $volumePath :=  include "hpcc.getVolumeMountPrefix" (dict "root" .root "me" .me.storage "name" "sasha" "path" "sasha") }}
-{{ include "hpcc.changeMountPerms" (dict "root" .root "volumeName" $volumeName "volumePath" $volumePath) }}
-{{- end }}
-{{- end }}
 
 {{/*
 Add any bundles
@@ -1014,8 +928,7 @@ Pass in dict with root and me
 {{- define "hpcc.addSashaVolumes" }}
 {{- $serviceName := printf "sasha-%s" .me.name -}}
 {{- if .me.storage }}
-{{ include "hpcc.addVolume" (dict "root" .root "name" $serviceName "me" .me.storage "label" "sasha") -}}
-{{ include "hpcc.addVolumes" (dict "root" .root "includeLabels" (list "sasha") "name" .me.storage.plane ) }}
+{{ include "hpcc.addVolumes" (dict "root" .root "includeNames" (list .me.storage.plane) ) }}
 {{- end }}
 {{ with (dict "name" $serviceName) -}}
 {{ include "hpcc.addConfigMapVolume" . }}
@@ -1135,7 +1048,7 @@ metadata:
     helm.sh/chart: {{ include "hpcc.chart" . }}
 spec:
   accessModes:
-    - {{ .mode | default "ReadWriteMany" }}
+    - {{ .mode | default .me.storageMode | default "ReadWriteMany" }}
   resources:
     requests:
       storage: {{ .me.storageSize }}
