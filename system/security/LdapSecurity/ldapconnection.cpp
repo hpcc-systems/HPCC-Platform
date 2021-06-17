@@ -162,7 +162,7 @@ public:
         {
             char *copyFullText = strdup(addrlist);
             char *saveptr;
-            char *ip = strtok_r(copyFullText, "|", &saveptr);
+            char *ip = strtok_r(copyFullText, "|,", &saveptr);//multiple LDAP IP separators ("ldapAddress=x.x.x.x,y.y.y.y")
             while (ip != NULL)
             {
                 if (isdigit(*ip))
@@ -192,7 +192,7 @@ public:
                     m_hostArray.append(ip);
                 }
                 DBGLOG("Added ldap server %s", m_hostArray.item(m_hostArray.ordinality()-1));
-                ip = strtok_r(NULL, "|", &saveptr);
+                ip = strtok_r(NULL, "|,", &saveptr);
             }
             free(copyFullText);
 
