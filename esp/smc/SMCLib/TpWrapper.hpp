@@ -93,7 +93,6 @@ using std::string;
 #define eqAgentExec         "AgentExecProcess"
 #define eqEsp                   "EspProcess"
 #define eqDfu                   "DfuServerProcess"
-#define eqDkcSlave          "DKCSlaveProcess"
 #define eqSashaServer      "SashaServerProcess"
 #define eqLdapServer       "LDAPServerProcess"
 #define eqFTSlave          "FTSlaveProcess"
@@ -183,7 +182,6 @@ public:
     void getTpLdapServers(IArrayOf<IConstTpLdapServer>& list);
     void getTpDropZones(double clientVersion, const char* name, bool ECLWatchVisibleOnly, IArrayOf<IConstTpDropZone>& list);
     void getTpFTSlaves(IArrayOf<IConstTpFTSlave>& list);
-    void getTpDkcSlaves(IArrayOf<IConstTpDkcSlave>& list);
     void getTpGenesisServers(IArrayOf<IConstTpGenesisServer>& list);
     void getTpSparkThors(double clientVersion, const char* name, IArrayOf<IConstTpSparkThor>& list);
 

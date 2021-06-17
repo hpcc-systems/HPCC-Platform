@@ -47,6 +47,10 @@ class CDKDPitem : public CInterface
 #else
         querySlaveExecutable("DKCSlaveProcess", "dkcslave", NULL, ep, p, workdir);
 #endif
+        // This code is being used to execute run_keypatch and run_keydiff.  I suspect it does not work, because it
+        // is using the dkcslave entry to find the execution directory, which is unlikely to be configured since it is no
+        // longer part of the source.  Retain the code for the moment.
+        // If we did want to support this again it would be better to move the keydiff/keypatch functionality into dafilesrv.
         splitDirTail(p.str(),ret);
         addPathSepChar(ret).append(tail);
         if (getPathSepChar(ret.str())=='\\') {
