@@ -26,3 +26,9 @@ planes:
   labels: [ "data" ] # NB: all "data" planes will be auto mounted by engine components and others that require access to data
   rwmany: true
   #sku: "Standard_LRS"
+- name: mydropzone
+  subPath: dropzone
+  size: 1Gi
+  rwmany: true
+  labels: [ "lz" ]
+  #sku: "Standard_LRS"

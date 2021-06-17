@@ -146,6 +146,7 @@ interface ISendManager : extends IInterface
     virtual void writeOwn(IUdpReceiverEntry &receiver, roxiemem::DataBuffer *buffer, unsigned len, unsigned queue) = 0;
     virtual bool dataQueued(ruid_t ruid, unsigned sequence, const ServerIdentifier &destNode) = 0;
     virtual bool abortData(ruid_t ruid, unsigned sequence, const ServerIdentifier &destNode) = 0;
+    virtual void abortAll(const ServerIdentifier &destNode) = 0;
     virtual bool allDone() = 0;
 };
 
@@ -192,5 +193,34 @@ extern UDPLIB_API RelaxedAtomic<unsigned> flowRequestsSent;
 extern UDPLIB_API RelaxedAtomic<unsigned> flowPermitsReceived;
 extern UDPLIB_API RelaxedAtomic<unsigned> dataPacketsSent;
 
+interface IRoxieQueryPacket;
+class RoxiePacketHeader;
+interface IPendingCallback;
+interface IRoxieContextLogger;
+
+interface IRoxieOutputQueueManager : public IInterface
+{
+    virtual void sendPacket(IRoxieQueryPacket *x, const IRoxieContextLogger &logctx) = 0;
+    virtual void sendIbyti(RoxiePacketHeader &header, const IRoxieContextLogger &logctx, unsigned subChannel) = 0;
+    virtual void sendAbort(RoxiePacketHeader &header, const IRoxieContextLogger &logctx) = 0;
+    virtual void sendAbortCallback(const RoxiePacketHeader &header, const char *lfn, const IRoxieContextLogger &logctx) = 0;
+    virtual IMessagePacker *createOutputStream(RoxiePacketHeader &x, bool outOfBand, const IRoxieContextLogger &logctx) = 0;
+    virtual bool replyPending(RoxiePacketHeader &x) = 0;
+    virtual bool abortCompleted(RoxiePacketHeader &x) = 0;
+
+    virtual unsigned getHeadRegionSize() const = 0;
+    virtual void setHeadRegionSize(unsigned newsize) = 0;
+
+    virtual void start() = 0;
+    virtual void stop() = 0;
+    virtual void join() = 0;
+    virtual IReceiveManager *queryReceiveManager() = 0;
+
+    virtual IPendingCallback *notePendingCallback(const RoxiePacketHeader &header, const char *lfn) = 0;
+    virtual void removePendingCallback(IPendingCallback *x) = 0;
+    virtual void abortPendingData(const SocketEndpoint &ep) = 0;
+};
+
+extern UDPLIB_API IRoxieOutputQueueManager *ROQ;
 
 #endif

@@ -62,9 +62,15 @@ static void topo_server_usage()
     printf("\n");
 }
 
+struct TopologyEntry
+{
+    unsigned lastSeen = 0;
+    time_t instance = 0;
+};
+
 unsigned traceLevel = 0;
 unsigned topoPort = TOPO_SERVER_PORT;
-std::map<std::string, unsigned> topology;
+std::map<std::string, TopologyEntry> topology;
 StringBuffer cachedResponse;
 StringBuffer cachedDigest;
 bool responseDirty = true;
@@ -73,6 +79,7 @@ unsigned lastTopologyReport = 0;
 const unsigned timeoutCheckInterval = 1000;
 const unsigned heartbeatInterval = 5000;
 const unsigned timeoutHeartbeatInterval = 10000;
+const unsigned removeHeartbeatInterval = 120000;
 const unsigned topologyReportInterval = 60000;
 bool aborted = false;
 Semaphore stopping;
@@ -121,20 +128,13 @@ void init_signals()
 #endif
 }
 
-void updateTopology(const std::string &newInfo)
+void updateTopology(const std::string &newInfo, time_t instance)
 {
-    if (newInfo[0]=='-')
-    {
-        if (topology.erase(newInfo.substr(1)))
-            responseDirty = true;
-    }
-    else
-    {
-        unsigned &found = topology[newInfo];
-        if (found==0)
-            responseDirty = true;
-        found = msTick();
-    }
+    TopologyEntry &found = topology[newInfo];
+    if (found.lastSeen==0 || found.instance != instance)
+        responseDirty = true;
+    found.lastSeen = msTick();
+    found.instance = instance;
 }
 
 void timeoutTopology()
@@ -142,16 +142,22 @@ void timeoutTopology()
     unsigned now = msTick();
     if (now - lastTimeoutCheck < timeoutCheckInterval)
         return;
-    for (auto it = topology.cbegin(); it != topology.cend(); /* no increment */)
+    for (auto it = topology.begin(); it != topology.end(); /* no increment */)
     {
-        unsigned lastSeen = it->second;
+        unsigned lastSeen = it->second.lastSeen;
         if (now-lastSeen > timeoutHeartbeatInterval)
         {
             if (traceLevel)
             {
                 DBGLOG("No heartbeat for %u ms for %s", now-lastSeen, it->first.c_str());
             }
-            it = topology.erase(it);
+            if (now-lastSeen > removeHeartbeatInterval)
+                it = topology.erase(it);
+            else
+            {
+                it->second.instance = 0;  // By leaving the entry present but with instance=0, we will ensure that all clients get to see that the machine is no longer present
+                ++it;
+            }
             responseDirty = true;
         }
         else
@@ -170,7 +176,7 @@ void reportTopology()
     DBGLOG("Current state:");
     for (const auto& it : topology)
     {
-        DBGLOG(" %s - %ums", it.first.c_str(), now-it.second);
+        DBGLOG(" %s - %ums", it.first.c_str(), now-it.second.lastSeen);
     }
     lastTopologyReport = now;
 }
@@ -183,7 +189,7 @@ void regenerateResponse()
         cachedDigest.set("=");
         for (const auto& it : topology)
         {
-           cachedResponse.append(it.first.c_str()).append('\n');
+           cachedResponse.append(it.first.c_str()).append('\t').append((__uint64) it.second.instance).append('\n');
         }
         md5_string(cachedResponse, cachedDigest);
         cachedDigest.append('\n');
@@ -241,7 +247,26 @@ void doServer(ISocket *socket)
                     if (line[0]=='=')
                         suppliedDigest.swap(line);
                     else
-                        updateTopology(line);
+                    {
+                        time_t instance = 0;
+                        auto end = line.find('\t', 0);
+                        if (end != line.npos)
+                        {
+                            char *tail = nullptr;
+                            instance = strtoul(line.substr(end+1).c_str(), &tail, 10);
+                            if (*tail)
+                                DBGLOG("Unexpected characters parsing instance value in topology entry %s", line.c_str());
+                            line = line.substr(0, end);
+                        }
+                        if (line[0]=='-')
+                        {
+                            line = line.substr(1);
+                            instance = 0;
+                        }
+                        if (traceLevel >= 6)
+                            DBGLOG("Adding entry %s instance %" I64F "u", line.c_str(), (__uint64) instance);
+                        updateTopology(line, instance);
+                    }
                 }
                 regenerateResponse();
                 bool match = suppliedDigest.append("\n").compare(cachedDigest) == 0;

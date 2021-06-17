@@ -22,35 +22,20 @@ This document summarises how storage is configured for the HPCC platform.  It is
 
   When processing complex queries all the data many not fit into memory.  This option configures where the data can be temporarily spilled to.  It is likely to be local, ephemeral and fast.
 
-Each class of storage has an entry within the storage section of the Helm chart.  E.g. information about data is configured in storage.dataStorage, dali in daliStorage etc.
+- sasha
 
-There are three different ways of configuring the storage with different levels of complexity:
+  Where archived workunits are stored, and other sasha activities.
 
-Use the defaults
-----------------
+- lz
 
-The default Helm chart creates temporary persistent volume claims for each of the sources of data.  The data disappears when the cluster is brought down.  The requirements can be configured in a couple of different ways:
+  A landing zone.  Used for getting data onto and off a cluster.
 
-  - storageSize: The capacity required for this particular type of storage.
-  - storageClass: This provides some control over where the data is stored.
-
-This mode is useful for experimenting with the system, or providing a consistent development environment.
-
-Configure persistent volume claims (pvcs)
------------------------------------------
-
-This option allows you to use pvcs created independently of deploying the hpcc Helm chart.  This allows the data to be have a longer lifetime than hpcc cluster - so the cluster can be brought down when it is not in use, and the hpcc cluster can be upgraded to a new version, but the data is preserved.
-
-The pre-existing pvc is specified by setting a value for ``storage.<class>Storage.pvc`` key, e.g. ``--set storage.daliStorage.pvc = my-nvme-pvc``, or::
-
-  storage:
-    daliStorage:
-       pvc: my-nbme-pvc
-    
-There are several examples in the examples directory that demonstrate how to use pvcs to access data on a local host, and azure or aws storage.  
+Each class of storage will typically be associated with one or more storage planes, and will have a definition to indicate which of these planes is the default.
 
 Storage planes
 --------------
+
+The storage.planes section of the values.yaml is used to define all storage that is accessed by the platform.  They can reference pre-existing storage, or can be used to create ephemeral storage which disappears when the cluster is uninstalled.
 
 This provides full control over how and where the data is stored.  Any number of storage planes can be defined in the storage.planes section of the Helm chart.  A definition of a storage plane has the following structure:
 
@@ -59,37 +44,47 @@ planes:
 
   prefix: For locally mounted file systems this is the path to the local mount.  For file systems accessed via a protocol/url this is the url prefix.
 
-  pvc: What pvc is used to access this data.  If supplied the pvc will be mounted in each component that is required to access the data.  (The option is not specified for blob storage accessed via a url.)
-
   secret: If a secret is required to access the storage (e.g. an access token), the name of the entry in the secrets section of the helm chart.  (Not the k8s secret name.)
 
-  numDevices: The number of logical storage devices.  An advanced option.  This allows data to be striped over multiple storage locations.  If it is set, then it assumes pvc defines a set of pvcs: ``pvc-1`` .. ``pvc-<n>``, which are mounted at locations ``prefix/d1`` .. ``prefix/d<n>``.  
+  numDevices: The number of logical storage devices.  An advanced option.  This allows data to be striped over multiple storage locations.  If it is set, then it assumes pvc defines a set of pvcs: ``pvc-1`` .. ``pvc-<n>``, which are mounted at locations ``prefix/d1`` .. ``prefix/d<n>``.  (Not yet implemented and likely to change!)
 
-  replication: Not normally set, but if specified data will be copied in the background to each of the storage planes in the list.
+  labels:  A list of uses which the plane is used for.  On a simple system it may make sense to place dali, dlls and sasha all on the same volume.
 
-The planes are used by refering to them in the plane tag in the appropriate storage section.  E.g. ``--set storage.daliStorage.plane=dali-plane``.  If no plane is referenced for a storage class the simpler configuration will be used for that class.
+
+The planes are used by refering to them in the plane tag in the appropriate storage section.  E.g. ``--set storage.daliStorage.plane=dali-plane``.
 
 By default the different engines - thor, roxie, eclagent write their data to the default data storage plane.  This can be overridden by defining the plane key within the component.  The spill location can be set through the spillPlane option.  It is also possible to override the target storage plane by using the CLUSTER options in the ECL language.  This allows the ECL programmer to write data to different storage planes depending on the performance/cost requirements.  The engines can read data from any of the data planes.
 (Currently we use cluster to mean which set of machines to run a query on, and where the data is stored.  We probably need to separate those with a new attribute STORE(?) .)
 
-A plane can only be used for one of dali, data or dlls or spills.  An error will be reported if a plane is used for more than one purpose.  This prevents ECL queries having access to dali or dlls, (for reading or corruption).
-
 Bare-metal compatible storage planes are similar, and are generally derived from the existing deployment.  They'll be documented later.
 
-How the simple modes map onto the storage planes
-------------------------------------------------
+Ephemeral storage
+-----------------
 
-If no planes are mentioned for a specific class, then the following plane is implicitly created for the class::
+The default values.yaml creates temporary persistent volume claims for each of the sources of data.  The data disappears when the cluster is brought down.  The requirements can be configured by setting a couple of different attributes of the storage plane:
 
-  name: hpcc-<class>-plane
-  prefix: /var/lib/HPCCSystems/hpcc<class>
-  pvc: storage.<class>Storage.pvc
+  - storageSize: The capacity required for this particular type of storage.
+  - storageClass: This provides some control over where the data is stored.
 
-If no pvc was defined then an implicit pvc will be used.
+This mode is useful for experimenting with the system, or providing a consistent clean development environment.
+
+
+Configure persistent volume claims (pvcs)
+-----------------------------------------
+
+This allows the data to be have a longer lifetime than hpcc cluster - so the cluster can be brought down when it is not in use, and the hpcc cluster can be upgraded to a new version, but the data is preserved.
+
+A pre-existing pvc is specified by setting the pvc attribute on a data plane:
+
+  storage:
+    planes:
+    - name: data
+      pvc: my-nvme-pvc
+
+There are several examples in the examples directory that demonstrate how to use pvcs to access data on a local host, and azure or aws storage.
 
 Notes
 =====
-I suggest replication is only supported if explicitly defined using the storage planes, or if it is deduced from the group information on a bare metal system.
 
 In the future we may want to restrict which storage planes
 I suggest we deprecate the following options:

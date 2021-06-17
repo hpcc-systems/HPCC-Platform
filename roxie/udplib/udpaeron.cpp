@@ -423,6 +423,7 @@ public:
     virtual IMessagePacker *createMessagePacker(ruid_t id, unsigned sequence, const void *messageHeader, unsigned headerSize, const ServerIdentifier &destNode, int queue) override;
     virtual bool dataQueued(ruid_t ruid, unsigned sequence, const ServerIdentifier &destNode) override { return false; }
     virtual bool abortData(ruid_t ruid, unsigned sequence, const ServerIdentifier &destNode) override { return false; }
+    virtual void abortAll(const ServerIdentifier &destNode) override { }
     virtual bool allDone() override { return true; }
 };
 

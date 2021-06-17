@@ -36,6 +36,11 @@ storage:
     labels:
     - data # NB: if not set, this would be the default
 
+  - name: mydropzone
+    pvc: mydropzone-localfile-hpcc-localfile-pvc
+    prefix: "/var/lib/HPCCSystems/dropzone"
+    labels:
+    - lz
 
 
   daliStorage:

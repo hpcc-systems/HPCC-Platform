@@ -41,3 +41,9 @@ storage:
     pvc: nas-array-data-pvc
     numDevices: 100
     includeDeviceInPath: true
+
+  - name: sasha
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/sashastorage"
+    labels: [ sasha ]

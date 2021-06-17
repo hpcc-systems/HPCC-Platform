@@ -4,7 +4,8 @@ esp:
    daliServers: mydali
    auth: ldap
    tls: true
-   port: 8880
+   service:
+     port: 8880
    bindings: "/opt/HPCCSystems/bindings"
    loadDaliBindings: false
    enableSEHMapping: true

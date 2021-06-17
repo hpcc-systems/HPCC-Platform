@@ -21,25 +21,4 @@
 ##############################################################################
 
 */}}
-{{- $storage := (.Values.storage | default dict) -}}
-{{- $dllStorage := ($storage.dllStorage | default dict) -}}
-{{- if (and (not $dllStorage.existingClaim) (not $dllStorage.plane)) }}
-{{- if (not (include "hpcc.hasPlaneForLabel" (dict "root" $ "label" "dll"))) }}
-{{ include "hpcc.addPVC" (dict "root" $ "name" "dllstorage" "me" $dllStorage) }}
-{{- end }}
-{{- end }}
-{{- $dataStorage := ($storage.dataStorage | default dict) -}}
-{{- if (and (not $dataStorage.existingClaim) (not $dataStorage.plane)) }}
-{{- if (not (include "hpcc.hasPlaneForLabel" (dict "root" $ "label" "data"))) }}
-{{ include "hpcc.addPVC" (dict "root" $ "name" "datastorage" "me" $dataStorage) }}
-{{- end }}
-{{- end }}
-{{- $daliStorage := ($storage.daliStorage | default dict) -}}
-{{- if (and (not $daliStorage.existingClaim) (not $daliStorage.plane)) }}
-{{- if (not (include "hpcc.hasPlaneForLabel" (dict "root" $ "label" "dali"))) }}
-{{- $services := (.services | default dict) -}}
-{{- $modeForCoalescer := (hasKey $services "coalescer") | ternary "ReadWriteOnce" "ReadWriteMany" -}}
-{{- include "hpcc.addPVC" (dict "root" $ "name" "dalistorage" "mode" $modeForCoalescer "me" $daliStorage) -}}
-{{- end }}
-{{- end }}
 {{- include "hpcc.addPVCsFromPlanes" . }}

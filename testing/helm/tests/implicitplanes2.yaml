@@ -26,6 +26,11 @@ storage:
     storageSize: 1Gi
     storageClass: ""
     labels: [ lz ]
+  - name: sasha
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/sashastorage"
+    labels: [ sasha ]
 
   #   name: <required>
   #   prefix: <path>                        # Root directory for accessing the plane (if pvc defined), or url to access plane.

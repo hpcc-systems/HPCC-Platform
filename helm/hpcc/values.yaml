@@ -99,22 +99,16 @@ security:
 ## 1. If a component has the storagePlane property set, then that plane will be the default data location for that component.
 ## 2. If storage.dataStorage.plane is defined then that plane will be the default location
 ## 3. If there is a plane definition with no label or a label of "data" then the first matching plane will be the default data location
-## 4. Otherwise the default data location will be derived from the properties of storage.dataStorage.
 ##
 ## If a data plane contains the storageClass property then an implicit pvc will be created for that data plane.
-## An implicit pvc is only created for storage.dataStorage if option(4) above is used to select the data location.
 ##
-## If storage.[type].existingClaim is defined, a Persistent Volume Claim must
-## exist with that name. If an existingClaim is specified, storageClass and
-## storageSize are not used.
+## If plane.pvc is defined, a Persistent Volume Claim must exist with that name, storageClass and storageSize are not used.
 ##
-## If storage.[type].storageClass is defined, storageClassName: <storageClass>
+## If plane.storageClass is defined, storageClassName: <storageClass>
 ## If set to "-", storageClassName: "", which disables dynamic provisioning
-## If undefined (the default) or set to null, no storageClassName spec is
-##   set, choosing the default provisioner.  (gp2 on AWS, standard on
-##   GKE, AWS & OpenStack)
+## If set to "", choosing the default provisioner.  (gp2 on AWS, standard on GKE, AWS & OpenStack)
 ##
-## storage.[type].forcePermissions=true is required by some types of provisioned
+## plane.forcePermissions=true is required by some types of provisioned
 ## storage, where the mounted filing system has insufficient permissions to be
 ## read by the hpcc pods. Examples include using hostpath storage (e.g. on
 ## minikube and docker for desktop), or using NFS mounted storage.
@@ -123,6 +117,7 @@ storage:
   planes:
   #   name: <required>
   #   prefix: <path>                        # Root directory for accessing the plane (if pvc defined), or url to access plane.
+  #   pvc: <name>                           # The name of the persistant volume claim
   #   numDevices: 1                         # number of devices that are part of the plane
   #   replication: nullptr                  # a list or single item indicating which planes the data should be replicated onto
   #   includeDeviceInPath: false            # Is the device number appended to the mount for the physical path for a file?  (Only required in unusual situations)
@@ -136,24 +131,44 @@ storage:
   # For dynamic pvc creation:
   #   storageClass: ''
   #   storageSize: 1Gi
+  #   storageMode: "ReadWriteOnce"|"ReadWriteMany"
+  #
+  #   forcePermissions: false
+
+  - name: dali
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/dalistorage"
+    labels: [ "dali" ]
+  - name: sasha
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/sashastorage"
+    labels: [ "sasha" ]
+  - name: dll
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/queries"
+    labels: [ "dll" ]
+  - name: data
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/hpcc-data"
+    labels: [ "data" ]
+  - name: mydropzone
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/dropzone"
+    labels: [ "lz" ]
 
   dllStorage:
-    storageSize: 3Gi
-    storageClass: ""
-    # existingClaim: ""
-    # forcePermissions: false
+    plane: dll
 
   daliStorage:
-    storageSize: 1Gi
-    storageClass: ""
-    # existingClaim: ""
-    # forcePermissions: false
+    plane: dali
 
   dataStorage:
-    storageSize: 1Gi
-    storageClass: ""
-    # existingClaim: ""
-    # forcePermissions: false
+    plane: data
 
 ## The certificates section can be used to enable cert-manager to generate TLS certificates for each component in the hpcc.
 ## You must first install cert-manager to use this feature.
@@ -301,10 +316,7 @@ sasha:
     service:
       servicePort: 8877
     storage:
-      #existingClaim: pvc
-      storageSize: 1Gi
-      storageClass: ""
-      # forcePermissions: false
+      plane: sasha
     #interval: 6 # (hours)
     #limit: 1000 # threshold number of workunits before archiving starts (0 disables)
     #cutoff: 8 # minimum workunit age to archive (days)
@@ -320,9 +332,7 @@ sasha:
     service:
       servicePort: 8877
     storage:
-      #existingClaim: pvc
-      storageSize: 1Gi
-      storageClass: ""
+      plane: sasha
       #forcePermissions: false
     #limit: 1000 # threshold number of DFU workunits before archiving starts (0 disables)
     #cutoff: 14 # minimum DFU workunit age to archive (days)

@@ -117,7 +117,7 @@ class CTopologyServer : public CInterfaceOf<ITopologyServer>
 {
 public:
     CTopologyServer();
-    CTopologyServer(const char *topologyInfo);
+    CTopologyServer(const char *topologyInfo, const ITopologyServer *current);
 
     virtual const SocketEndpointArray &queryAgents(unsigned channel) const override;
     virtual const SocketEndpointArray &queryServers(unsigned port) const override;
@@ -125,10 +125,11 @@ public:
     virtual const std::vector<unsigned> &queryChannels() const override;
     virtual bool implementsChannel(unsigned channel) const override;
     virtual void report(StringBuffer &ret) const override;
-
+    virtual time_t queryServerInstance(const SocketEndpoint &ep) const override;
 private:
     std::map<unsigned, SocketEndpointArray> agents;  // indexed by channel
     std::map<unsigned, SocketEndpointArray> servers; // indexed by port
+    std::map<SocketEndpoint, time_t> serverInstances;
     static const SocketEndpointArray nullArray;
     std::map<unsigned, ChannelInfo> channelInfo;
     std::map<unsigned, unsigned> mySubChannels;
@@ -145,7 +146,7 @@ CTopologyServer::CTopologyServer()
 {
 }
 
-CTopologyServer::CTopologyServer(const char *topologyInfo)
+CTopologyServer::CTopologyServer(const char *topologyInfo, const ITopologyServer *old)
 #ifdef _DEBUG
     : rawData(topologyInfo)
 #endif
@@ -155,13 +156,14 @@ CTopologyServer::CTopologyServer(const char *topologyInfo)
     while (std::getline(ss, line, '\n'))
     {
         StringArray fields;
-        fields.appendList(line.c_str(), "|", true);
-        if (fields.length()==4)
+        fields.appendList(line.c_str(), "|\t", true);
+        if (fields.length()==5)
         {
             const char *role = fields.item(0);
             const char *channelStr = fields.item(1);
             const char *epStr = fields.item(2);
             const char *replStr = fields.item(3);
+            const char *instanceStr = fields.item(4);
             char *tail = nullptr;
             unsigned channel = strtoul(channelStr, &tail, 10);
             if (*tail)
@@ -176,6 +178,13 @@ CTopologyServer::CTopologyServer(const char *topologyInfo)
                 DBGLOG("Unexpected characters parsing replication level in topology entry %s", line.c_str());
                 continue;
             }
+            tail = nullptr;
+            time_t instance = strtoul(instanceStr, &tail, 10);
+            if (*tail)
+            {
+                DBGLOG("Unexpected characters parsing instance value in topology entry %s", line.c_str());
+                continue;
+            }
             SocketEndpoint ep;
             if (!ep.set(epStr))
             {
@@ -184,18 +193,36 @@ CTopologyServer::CTopologyServer(const char *topologyInfo)
             }
             if (streq(role, "agent"))
             {
-                agents[channel].append(ep);
-                if (ep.equals(myAgentEP))
+                if (instance)
                 {
-                    mySubChannels[channel] = agents[channel].ordinality()-1;
-                    channels.push_back(channel);
-                    replicationLevels.push_back(repl);
+                    agents[channel].append(ep);
+                    if (ep.equals(myAgentEP))
+                    {
+                        mySubChannels[channel] = agents[channel].ordinality()-1;
+                        channels.push_back(channel);
+                        replicationLevels.push_back(repl);
+                    }
+                    agents[0].append(ep);
                 }
-                agents[0].append(ep);
             }
             else if (streq(role, "server"))
-                servers[ep.port].append(ep);
+            {
+                time_t oldInstance = old ? old->queryServerInstance(ep) : 0;
+                if (!instance || (oldInstance && oldInstance != instance))
+                {
+                    StringBuffer s;
+                    DBGLOG("Deleting pending data for server %s which has terminated or restarted", ep.getUrlStr(s).str());
+                    ROQ->abortPendingData(ep);
+                }
+                if (instance)
+                {
+                    servers[ep.port].append(ep);
+                    serverInstances[ep] = instance;
+                }
+            }
         }
+        else
+            DBGLOG("Unable to process information in topology entry %s (expected 5 fields)", line.c_str());
     }
     for (unsigned i = 0; i < channels.size(); i++)
     {
@@ -204,6 +231,15 @@ CTopologyServer::CTopologyServer(const char *topologyInfo)
         unsigned subChannel = mySubChannels[channel];
         channelInfo.emplace(std::make_pair(channel, ChannelInfo(subChannel, agents[channel].ordinality(), repl)));
     }
+}
+
+time_t CTopologyServer::queryServerInstance(const SocketEndpoint &ep) const
+{
+    auto match = serverInstances.find(ep);
+    if (match == serverInstances.end())
+        return 0;
+    return match->second;
+
 }
 
 const SocketEndpointArray &CTopologyServer::queryAgents(unsigned channel) const
@@ -265,7 +301,7 @@ public:
     TopologyManager() { currentTopology.setown(new CTopologyServer); };
     void setServers(const StringArray &_topoServers);
     void setRoles(const std::vector<RoxieEndpointInfo> &myRoles);
-    void closedown();
+    void closedown(const std::vector<RoxieEndpointInfo> &myRoles);
     const ITopologyServer &getCurrent();
 
     bool update();
@@ -273,9 +309,11 @@ public:
     void freeze(bool frozen);
 
 private:
+    void _setRoles(const std::vector<RoxieEndpointInfo> &myRoles, bool remove);
     Owned<const ITopologyServer> currentTopology;
     SpinLock lock;
     StringArray topoServers;
+    time_t myInstance = 0;
     const unsigned topoConnectTimeout = 1000;
     const unsigned maxReasonableResponse = 32*32*1024;  // At ~ 32 bytes per entry, 1024 channels and 32-way redundancy that's a BIG cluster!
     StringBuffer md5;
@@ -335,7 +373,8 @@ bool TopologyManager::update()
                                     {
                                         eol++;
                                         md5.clear().append(eol-mem, mem);  // Note: includes '\n'
-                                        Owned<const ITopologyServer> newServer = new CTopologyServer(eol);
+                                        Owned<const ITopologyServer> oldServer = &getCurrent();
+                                        Owned<const ITopologyServer> newServer = new CTopologyServer(eol, oldServer);
                                         SpinBlock b(lock);
                                         currentTopology.swap(newServer);
                                         updated = true;
@@ -379,11 +418,13 @@ void TopologyManager::setServers(const StringArray &_topoServers)
         topoServers.append(_topoServers.item(idx));
 }
 
-void TopologyManager::setRoles(const std::vector<RoxieEndpointInfo> &myRoles)
+void TopologyManager::_setRoles(const std::vector<RoxieEndpointInfo> &myRoles, bool remove)
 {
     topoBuf.clear();
     for (const auto &role : myRoles)
     {
+        if (remove)
+            topoBuf.append('-');
         switch (role.role)
         {
         case RoxieEndpointInfo::RoxieServer: topoBuf.append("server|"); break;
@@ -393,17 +434,26 @@ void TopologyManager::setRoles(const std::vector<RoxieEndpointInfo> &myRoles)
         topoBuf.append(role.channel).append('|');
         role.ep.getUrlStr(topoBuf);
         topoBuf.append('|').append(role.replicationLevel);
+        topoBuf.append('\t').append((__uint64) myInstance);
         topoBuf.append('\n');
     }
-    Owned<const ITopologyServer> newServer = new CTopologyServer(topoBuf);   // We set the initial topology to just the local information we know about
+}
+
+void TopologyManager::setRoles(const std::vector<RoxieEndpointInfo> &myRoles)
+{
+    topoBuf.clear();
+    myInstance = time(nullptr);
+    if (!myInstance) myInstance++;
+    _setRoles(myRoles, false);
+    Owned<const ITopologyServer> newServer = new CTopologyServer(topoBuf, nullptr);   // We set the initial topology to just the local information we know about
     SpinBlock b(lock);
     currentTopology.swap(newServer);
 }
 
-void TopologyManager::closedown()
+void TopologyManager::closedown(const std::vector<RoxieEndpointInfo> &myRoles)
 {
-    topoBuf.replaceString("server|", "-server|");
-    topoBuf.replaceString("agent|", "-agent|");
+    topoBuf.clear();
+    _setRoles(myRoles, true);  // Tell toposerver to remove the specified roles
     freeze(false);
     update();
 }
@@ -435,17 +485,13 @@ static std::thread topoThread;
 static Semaphore abortTopo;
 const unsigned topoUpdateInterval = 5000;
 
-extern UDPLIB_API void initializeTopology(const StringArray &topoValues, const std::vector<RoxieEndpointInfo> &myRoles)
+extern UDPLIB_API void publishTopology(unsigned traceLevel, const StringArray &topoValues, const std::vector<RoxieEndpointInfo> &myRoles)
 {
     topologyManager.setServers(topoValues);
     topologyManager.setRoles(myRoles);
-}
-
-extern UDPLIB_API void publishTopology(unsigned traceLevel)
-{
     if (topologyManager.numServers())
     {
-        topoThread = std::thread([traceLevel]()
+        topoThread = std::thread([traceLevel, &myRoles]()
         {
             topologyManager.update();
             unsigned waitTime = 1000;  // First time around we don't wait as long, so that system comes up faster
@@ -464,7 +510,7 @@ extern UDPLIB_API void publishTopology(unsigned traceLevel)
                 }
                 waitTime = topoUpdateInterval;
             }
-            topologyManager.closedown();
+            topologyManager.closedown(myRoles);
         });
     }
 }
@@ -484,7 +530,8 @@ extern UDPLIB_API void stopTopoThread()
 class BuddyHealthTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(BuddyHealthTest);
-        CPPUNIT_TEST(testBuddyHealth);
+    CPPUNIT_TEST(testBuddyHealth);
+    CPPUNIT_TEST(testMap);
     CPPUNIT_TEST_SUITE_END();
 
     void testBuddyHealth()
@@ -511,9 +558,33 @@ class BuddyHealthTest : public CppUnit::TestFixture
         noteNodeSick(a2);
         CPPUNIT_ASSERT(getIbytiDelay(a2)==minIbytiDelay);
     }
+
+    void testMap()
+    {
+        std::map<SocketEndpoint, time_t> serverInstances;
+        SocketEndpoint ep1, ep2, ep3, ep4, ep5, ep6;
+        ep1.set("1.2.3.4", 5);
+        ep2.set("1.2.3.4", 6);
+        ep3.set("1.2.3.4", 5);
+        ep4.set("1.2.3.4", 6);
+        ep5.set("1.2.3.5", 6);
+        ep6.set("1.2.3.4", 7);
+        serverInstances[ep1] = 7;
+        serverInstances[ep2] = 8;
+        CPPUNIT_ASSERT(ep1<ep2);
+        CPPUNIT_ASSERT(!(ep2<ep1));
+        CPPUNIT_ASSERT(serverInstances.find(ep1) != serverInstances.end());
+        CPPUNIT_ASSERT(serverInstances.find(ep2) != serverInstances.end());
+        CPPUNIT_ASSERT(serverInstances.find(ep3) != serverInstances.end());
+        CPPUNIT_ASSERT(serverInstances.find(ep4) != serverInstances.end());
+        CPPUNIT_ASSERT(serverInstances.find(ep5) == serverInstances.end());
+        CPPUNIT_ASSERT(serverInstances.find(ep6) == serverInstances.end());
+
+    }
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( BuddyHealthTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( BuddyHealthTest, "BuddyHealthTest" );
 
 #endif
+
