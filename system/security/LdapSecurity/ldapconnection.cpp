@@ -5999,6 +5999,9 @@ private:
             act_ctrl_val |= 0x10000;
 #endif
 
+        // Ensure password required
+        act_ctrl_val &= ~(0x20);// UF_PASSWD_NOTREQD 0x0020
+
         StringBuffer new_act_ctrl;
         new_act_ctrl.append(act_ctrl_val);
 
