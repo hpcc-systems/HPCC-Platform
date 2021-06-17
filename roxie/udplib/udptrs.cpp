@@ -985,6 +985,11 @@ public:
         return receiversTable[destNode].removeData((void*) &pkHdr, &UdpReceiverEntry::comparePacket);
     }
 
+    virtual void abortAll(const ServerIdentifier &destNode)
+    {
+        receiversTable[destNode].abort();
+    }
+
     virtual bool allDone() 
     {
         // Used for some timing tests only
@@ -1193,3 +1198,5 @@ extern UDPLIB_API IMessagePacker *createMessagePacker(ruid_t ruid, unsigned msgI
 {
     return new CMessagePacker(ruid, msgId, messageHeader, headerSize, _parent, _receiver, _sourceNode, _msgSeq, _queue, _encrypted);
 }
+
+IRoxieOutputQueueManager *ROQ = nullptr;

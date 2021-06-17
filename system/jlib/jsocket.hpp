@@ -173,7 +173,7 @@ public:
     }
     bool operator == (const SocketEndpoint &other) const { return equals(other); }
     bool operator != (const SocketEndpoint &other) const { return !equals(other); }
-
+    bool operator < (const SocketEndpoint &other) const { int cp =  ipcompare(other); return cp<0 || (cp==0 && (port < other.port)); }
     unsigned hash(unsigned prev) const;
     
     unsigned short port = 0;
