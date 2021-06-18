@@ -81,7 +81,7 @@ build_image() {
        --build-arg USE_CPPUNIT=${USE_CPPUNIT} \
        --build-arg BUILD_THREADS=${BUILD_THREADS} \
        --build-arg GITHUB_TOKEN=${GITHUB_TOKEN} \
-       ${rest} ${name}/
+       --no-cache ${rest} ${name}/
   fi
   push_image $name $label
 }
