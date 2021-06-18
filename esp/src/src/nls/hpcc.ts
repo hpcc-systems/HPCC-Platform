@@ -129,6 +129,7 @@ export = {
         CopyWUIDs: "Copy WUIDs to clipboard",
         CopyWUIDToClipboard: "Copy WUID to clipboard",
         CopyLogicalFiles: "Copy Logical Files to clipboard",
+        CopyLogicalFilename: "Copy Logical Filename",
         CopySelectionToClipboard: "Copy selection to clipboard",
         Copied: "Copied!",
         Count: "Count",

@@ -8,6 +8,7 @@ import { getStateIconClass } from "src/ESPWorkunit";
 import { WUStatus } from "src/react/index";
 import { useWorkunit } from "../hooks/Workunit";
 import { DojoAdapter } from "../layouts/DojoAdapter";
+import { pivotItemStyle } from "../layouts/pivot";
 import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { Results } from "./Results";
@@ -54,13 +55,6 @@ const classNames = mergeStyleSets({
     }
 });
 
-const pivotItemStyle = (size, padding: number = 4) => {
-    if (isNaN(size.width)) {
-        return { position: "absolute", padding: `${padding}px`, overflow: "auto", zIndex: 0 } as React.CSSProperties;
-    }
-    return { position: "absolute", padding: `${padding}px`, overflow: "auto", zIndex: 0, width: size.width - padding * 2, height: size.height - 45 - padding * 2 } as React.CSSProperties;
-};
-
 interface WorkunitDetailsProps {
     wuid: string;
     tab?: string;
@@ -82,7 +76,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
         setProtected(_protected || workunit?.Protected);
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [workunit?.Jobname, workunit?.Jobname, workunit?.Jobname]);
+    }, [workunit?.Jobname, workunit?.Description, workunit?.Protected]);
 
     const canSave = workunit && (
         jobname !== workunit.Jobname ||

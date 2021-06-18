@@ -52,7 +52,7 @@ export const About: React.FunctionComponent<AboutProps> = ({
                 <div style={{ minHeight: "208px", paddingTop: "32px" }}>
                     <TableGroup fields={{
                         version: { label: nlsHPCC.Version, type: "string", value: version || "???", readonly: true },
-                        homepage: { label: nlsHPCC.Homepage, type: "link", href: "https://hpccsystems.com" },
+                        homepage: { label: nlsHPCC.Homepage, type: "link", href: "https://hpccsystems.com", newTab: true },
                     }}>
                     </TableGroup>
                 </div>
