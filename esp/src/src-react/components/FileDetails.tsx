@@ -8,6 +8,7 @@ import { useFile } from "../hooks/File";
 import { pivotItemStyle } from "../layouts/pivot";
 import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
+import { FileDetailsGraph } from "./FileDetailsGraph";
 import { TableGroup } from "./forms/Groups";
 
 import "react-reflex/styles.css";
@@ -29,6 +30,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
     const [_protected, setProtected] = React.useState(false);
     const [restricted, setRestricted] = React.useState(false);
 
+    const isDFUWorkunit = file?.Wuid[0] === "D";
     const isProtected = file?.ProtectList?.DFUFileProtect?.length > 0 || false;
 
     React.useEffect(() => {
@@ -95,7 +97,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
                         </div>
                     </Sticky>
                     <TableGroup fields={{
-                        "Wuid": { label: nlsHPCC.Workunit, type: "link", value: file?.Wuid, href: `#/workunits/${file?.Wuid}`, readonly: true, },
+                        "Wuid": { label: nlsHPCC.Workunit, type: "link", value: file?.Wuid, href: `#/${isDFUWorkunit ? "dfu" : ""}workunits/${file?.Wuid}`, readonly: true, },
                         "Owner": { label: nlsHPCC.Owner, type: "string", value: file?.Owner, readonly: true },
                         "SuperOwner": { label: nlsHPCC.SuperFile, type: "links", links: file?.Superfiles?.DFULogicalFile?.map(row => ({ label: "", type: "link", value: row.Name, href: `#/superfiles/${row.Name}` })) },
                         "NodeGroup": { label: nlsHPCC.ClusterName, type: "string", value: file?.NodeGroup, readonly: true },
@@ -153,7 +155,8 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Queries} itemKey="Queries" style={pivotItemStyle(size, 0)}>
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.Graphs} itemKey="Graphs" style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.Graphs} itemKey="Graphs" itemCount={file?.Graphs?.ECLGraph?.length} headerButtonProps={{ disabled: isDFUWorkunit }} style={pivotItemStyle(size, 0)}>
+                <FileDetailsGraph cluster={cluster} logicalFile={logicalFile} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Workunit} itemKey="Workunit" style={pivotItemStyle(size, 0)}>
             </PivotItem>
