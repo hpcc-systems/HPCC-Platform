@@ -35,7 +35,7 @@
 #define UFO_RELOAD_MAPPED_QUERIES                0x04
 #define UFO_REMOVE_QUERIES_NOT_IN_QUERYSET       0x08
 
-static const __uint64 defaultWUResultMaxSize = 10000000; //10M
+static const __uint64 defaultWUResultMaxSize = 0x100000*10; //10M
 
 class QueryFilesInUse : public CInterface, implements ISDSSubscription
 {
