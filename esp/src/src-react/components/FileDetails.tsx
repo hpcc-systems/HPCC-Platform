@@ -6,10 +6,12 @@ import * as Utility from "src/Utility";
 import { getStateImageName, IFile } from "src/ESPLogicalFile";
 import { useFile } from "../hooks/File";
 import { pivotItemStyle } from "../layouts/pivot";
+import { DojoAdapter } from "../layouts/DojoAdapter";
 import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { TableGroup } from "./forms/Groups";
 import { Queries } from "./Queries";
+import { WorkunitDetails } from "./WorkunitDetails";
 
 import "react-reflex/styles.css";
 
@@ -30,6 +32,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
     const [_protected, setProtected] = React.useState(false);
     const [restricted, setRestricted] = React.useState(false);
 
+    const isDFUWorkunit = file?.Wuid[0] === "D";
     const isProtected = file?.ProtectList?.DFUFileProtect?.length > 0 || false;
 
     React.useEffect(() => {
@@ -160,6 +163,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
             <PivotItem headerText={nlsHPCC.Graphs} itemKey="Graphs" style={pivotItemStyle(size, 0)}>
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Workunit} itemKey="Workunit" style={pivotItemStyle(size, 0)}>
+                {isDFUWorkunit ? <DojoAdapter widgetClassID="DFUWUDetailsWidget" params={{ Wuid: file?.Wuid }} /> : <WorkunitDetails wuid={file?.Wuid} />}
             </PivotItem>
             <PivotItem headerText={nlsHPCC.History} itemKey="History" style={pivotItemStyle(size, 0)}>
             </PivotItem>
