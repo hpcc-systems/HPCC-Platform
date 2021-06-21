@@ -381,25 +381,14 @@ jobs:
     timeout-minutes: 60 # each matrix step has its own timeout, however the job can sometimes take time to download dependencies
     runs-on: ubuntu-20.04
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
-        engine: ['hthor', 'thor', 'roxie']
+        engine: ['thor']
         match:
-        - pattern: '[a-d]*.ecl'
-        - pattern: '[e-h]*.ecl'
-        - pattern: '[i-l]*.ecl'
-        - pattern: '[m-q]*.ecl'
-        - pattern: '[r-u]*.ecl'
+        - pattern: 'fet*.ecl'
           exclude: teststdlibrary.ecl
-        - pattern: '[v-z]*.ecl'
         include:
-        - engine: 'hthor'
-          match:
-            pattern: teststdlibrary.ecl
         - engine: 'thor'
-          match:
-            pattern: teststdlibrary.ecl
-        - engine: 'roxie'
           match:
             pattern: teststdlibrary.ecl
 
