@@ -253,7 +253,8 @@ void doServer(ISocket *socket)
                         if (end != line.npos)
                         {
                             char *tail = nullptr;
-                            instance = strtoul(line.substr(end+1).c_str(), &tail, 10);
+                            std::string instanceStr = line.substr(end+1);
+                            instance = strtoul(instanceStr.c_str(), &tail, 10);
                             if (*tail)
                                 DBGLOG("Unexpected characters parsing instance value in topology entry %s", line.c_str());
                             line = line.substr(0, end);
