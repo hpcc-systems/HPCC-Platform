@@ -458,6 +458,7 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
 
     const char *name = cfg->queryProp("Software/EspProcess/@name");
     getConfigurationDirectory(directories, "query", "esp", name ? name : "esp", queryDirectory);
+
     recursiveCreateDirectory(queryDirectory.str());
 
     dataCache.setown(new DataCache(DATA_SIZE));
