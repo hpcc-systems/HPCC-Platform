@@ -52,8 +52,6 @@ FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachText_v2(ICodeContext * 
 FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachText(ICodeContext * ctx, const char * to, const char * subject, const char * body, const char * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender);
 FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachData_v2(ICodeContext * ctx, const char * to, const char * subject, const char * body, size32_t lenAttachment, const void * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender, const char *cc, const char *bcc, bool highPriority);
 FILESERVICES_API void FILESERVICES_CALL fsSendEmailAttachData(ICodeContext * ctx, const char * to, const char * subject, const char * body, size32_t lenAttachment, const void * attachment, const char * mimeType, const char * attachmentName, const char * mailServer, unsigned int port, const char * sender);
-FILESERVICES_API char * FILESERVICES_CALL fsCmdProcess(const char *prog, const char *src);
-FILESERVICES_API void FILESERVICES_CALL fsCmdProcess2(unsigned & tgtLen, char * & tgt, const char *prog, unsigned srcLen, const char * src);
 FILESERVICES_API void FILESERVICES_CALL fsSprayFixed(ICodeContext *ctx, const char * sourceIP, const char * sourcePath, int recordSize, const char * destinationGroup, const char * destinationLogicalName, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite=false, bool replicate=false, bool compress=false, bool failIfNoSourceFile=false);
 FILESERVICES_API void FILESERVICES_CALL fsSprayFixed_v2(ICodeContext *ctx, const char * sourceIP, const char * sourcePath, int recordSize, const char * destinationGroup, const char * destinationLogicalName, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite=false, bool replicate=false, bool compress=false, bool failIfNoSourceFile=false, int expireDays=-1);
 FILESERVICES_API void FILESERVICES_CALL fsSprayFixed_v3(ICodeContext *ctx, const char * sourceIP, const char * sourcePath, int recordSize, const char * destinationGroup, const char * destinationLogicalName, int timeOut, const char * espServerIpPort, int maxConnections, bool overwrite=false, bool replicate=false, bool compress=false, bool failIfNoSourceFile=false, int expireDays=-1, const char * dfuServerQueue=nullptr);
@@ -173,6 +171,10 @@ FILESERVICES_API void FILESERVICES_CALL fsGetDropZones(ICodeContext *ctx,size32_
 FILESERVICES_API int FILESERVICES_CALL fsGetExpireDays(ICodeContext * ctx, const char *lfn);
 FILESERVICES_API void FILESERVICES_CALL fsSetExpireDays(ICodeContext * ctx, const char *lfn, int expireDays);
 FILESERVICES_API void FILESERVICES_CALL fsClearExpireDays(ICodeContext * ctx, const char *lfn);
+
+//Deprecated, but kept to allow old workunits to load
+FILESERVICES_API char * FILESERVICES_CALL fsCmdProcess(const char *prog, const char *src);
+FILESERVICES_API void FILESERVICES_CALL fsCmdProcess2(unsigned & tgtLen, char * & tgt, const char *prog, unsigned srcLen, const char * src);
 
 }
 
