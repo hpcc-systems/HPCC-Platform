@@ -4,9 +4,10 @@ import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
 import { getStateImageName, IFile } from "src/ESPLogicalFile";
-import { useFile } from "../hooks/File";
+import { useFile, useDefFile } from "../hooks/File";
 import { pivotItemStyle } from "../layouts/pivot";
 import { pushUrl } from "../util/history";
+import { ECLSourceEditor, XMLSourceEditor } from "./SourceEditor";
 import { ShortVerticalDivider } from "./Common";
 import { TableGroup } from "./forms/Groups";
 import { Queries } from "./Queries";
@@ -26,6 +27,8 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
 }) => {
 
     const [file, , refresh] = useFile(cluster, logicalFile);
+    const [defFile] = useDefFile(cluster, logicalFile, "def");
+    const [xmlFile] = useDefFile(cluster, logicalFile, "xml");
     const [description, setDescription] = React.useState("");
     const [_protected, setProtected] = React.useState(false);
     const [restricted, setRestricted] = React.useState(false);
@@ -143,10 +146,13 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
             <PivotItem headerText={nlsHPCC.DataPatterns} itemKey="DataPatterns" style={pivotItemStyle(size, 0)}>
             </PivotItem>
             <PivotItem headerText={nlsHPCC.ECL} itemKey="ECL" style={pivotItemStyle(size, 0)}>
+                <ECLSourceEditor text={file?.Ecl} readonly={true} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.DEF} itemKey="DEF" style={pivotItemStyle(size, 0)}>
+                <XMLSourceEditor text={defFile} readonly={true} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.XML} itemKey="XML" style={pivotItemStyle(size, 0)}>
+                <XMLSourceEditor text={xmlFile} readonly={true} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Superfiles} itemKey="Superfiles" style={pivotItemStyle(size, 0)}>
             </PivotItem>
