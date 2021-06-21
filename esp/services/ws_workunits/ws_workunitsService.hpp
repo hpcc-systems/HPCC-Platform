@@ -233,7 +233,7 @@ public:
     void checkAndSetClusterQueryState(IEspContext &context, const char* cluster, const char* querySetId, IArrayOf<IEspQuerySetQuery>& queries, bool checkAllNodes);
     void checkAndSetClusterQueryState(IEspContext &context, const char* cluster, StringArray& querySetIds, IArrayOf<IEspQuerySetQuery>& queries, bool checkAllNodes);
     IWorkUnitFactory *queryWUFactory() { return wuFactory; };
-    const char *getDataDirectory() const { return dataDirectory.str(); };
+    const char *getTempDirectory() const { return tempDirectory.str(); };
 
     bool onWUQuery(IEspContext &context, IEspWUQueryRequest &req, IEspWUQueryResponse &resp);
     bool onWULightWeightQuery(IEspContext &context, IEspWULightWeightQueryRequest &req, IEspWULightWeightQueryResponse &resp);
@@ -421,7 +421,7 @@ private:
     Owned<IThreadPool> clusterQueryStatePool;
     unsigned thorSlaveLogThreadPoolSize = THOR_SLAVE_LOG_THREAD_POOL_SIZE;
     Owned<IWorkUnitFactory> wuFactory;
-    StringBuffer dataDirectory;
+    StringBuffer tempDirectory;
     __uint64 wuResultMaxSize = defaultWUResultMaxSize;
 
 public:

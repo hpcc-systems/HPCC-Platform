@@ -1058,7 +1058,7 @@ void openLogFile()
 {
 #ifndef _CONTAINERIZED
     StringBuffer logname;
-    envGetConfigurationDirectory("log","eclccserver", getComponentConfigSP()->queryProp("@name"),logname);
+    getConfigurationDirectory(nullptr, "log","eclccserver", getComponentConfigSP()->queryProp("@name"),logname);
     Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(logname.str(), "eclccserver");
     lf->beginLogging();
 #else

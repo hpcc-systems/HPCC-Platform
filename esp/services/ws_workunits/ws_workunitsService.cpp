@@ -471,7 +471,7 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
 
     recursiveCreateDirectory(ESP_WORKUNIT_DIR);
 
-    getConfigurationDirectory(directories, "data", "esp", process, dataDirectory);
+    getConfigurationDirectory(directories, "temp", "esp", process, tempDirectory);
     wuFactory.setown(getWorkUnitFactory());
 
 #ifdef _CONTAINERIZED
@@ -4562,7 +4562,7 @@ int CWsWorkunitsSoapBindingEx::onStartUpload(IEspContext &ctx, CHttpRequest* req
 
             VStringBuffer fileName("%s%s", zipFolder, fileNames.item(0));
             wswService->queryWUFactory()->importWorkUnit(fileName, password,
-                wswService->getDataDirectory(), "ws_workunits", ctx.queryUserId(), ctx.querySecManager(), ctx.queryUser());
+                wswService->getTempDirectory(), "ws_workunits", ctx.queryUserId(), ctx.querySecManager(), ctx.queryUser());
         }
         else
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "WsWorkunits::%s does not support the upload_ option.", method);

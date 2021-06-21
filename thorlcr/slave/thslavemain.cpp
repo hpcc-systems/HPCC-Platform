@@ -447,6 +447,7 @@ int main( int argc, const char *argv[]  )
             else
                 globals->setProp("@externalProgDir", thorPath);
 
+#ifndef _CONTAINERIZED
             const char * overrideBaseDirectory = globals->queryProp("@thorDataDirectory");
             const char * overrideReplicateDirectory = globals->queryProp("@thorReplicateDirectory");
             StringBuffer datadir;
@@ -459,6 +460,8 @@ int main( int argc, const char *argv[]  )
                 setBaseDirectory(overrideBaseDirectory, false);
             if (!isEmptyString(overrideReplicateDirectory))
                 setBaseDirectory(overrideReplicateDirectory, true);
+#endif
+
             StringBuffer tempDirStr;
             if (getConfigurationDirectory(globals->queryPropTree("Directories"),"temp","thor",globals->queryProp("@name"), tempDirStr))
                 globals->setProp("@thorTempDirectory", tempDirStr.str());

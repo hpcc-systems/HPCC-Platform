@@ -2624,12 +2624,9 @@ jlib_decl bool queryMtlsBareMetalConfig()
 }
 #endif
 
+#ifndef _CONTAINERIZED
 static IPropertyTree *getOSSdirTree()
 {
-#ifdef _CONTAINERIZED
-    IERRLOG("getOSSdirTree() called from container system");
-    return nullptr;
-#endif
     Owned<IPropertyTree> envtree = getHPCCEnvironment();
     if (envtree) {
         IPropertyTree *ret = envtree->queryPropTree("Software/Directories");
@@ -2638,6 +2635,8 @@ static IPropertyTree *getOSSdirTree()
     }
     return NULL;
 }
+#endif
+
 
 StringBuffer &getFileAccessUrl(StringBuffer &out)
 {
@@ -2663,8 +2662,79 @@ StringBuffer &getFileAccessUrl(StringBuffer &out)
     return out;
 }
 
+
+#ifdef _CONTAINERIZED
+static bool getDefaultPlane(StringBuffer &ret, const char * componentOption, const char * globalOption)
+{
+    // If the plane is specified for the component, then use that
+    if (getComponentConfigSP()->getProp(componentOption, ret))
+        return true;
+
+    //Otherwise check what the default plane for data storage is configured to be
+    if (getGlobalConfigSP()->getProp(globalOption, ret))
+        return true;
+
+    return false;
+}
+
+static bool getDefaultPlaneDirectory(StringBuffer &ret, const char * componentOption, const char * globalOption)
+{
+    StringBuffer planeName;
+    if (!getDefaultPlane(planeName, componentOption, globalOption))
+        return false;
+
+    Owned<IPropertyTree> storagePlane = getStoragePlane(planeName);
+    return storagePlane->getProp("@prefix", ret);
+}
+#endif
+
 bool getConfigurationDirectory(const IPropertyTree *useTree, const char *category, const char *component, const char *instance, StringBuffer &dirout)
 {
+#ifdef _CONTAINERIZED
+    if (streq(category, "data"))
+    {
+        Owned<IPropertyTree> storagePlane = getStoragePlane(instance);
+        if (!storagePlane)
+            throw makeStringExceptionV(-1, "no default directory available for plane '%s'", instance);
+        return storagePlane->getProp("@prefix", dirout);
+    }
+    if (streq(category, "data2") || streq(category, "data3") || streq(category, "data4") || streq(category, "mirror"))
+        return false;
+    if (streq(category, "spill"))
+    {
+        return getDefaultPlaneDirectory(dirout, "@spillPlane", "storage/@spillPlane");
+    }
+    if (streq(category, "temp"))
+    {
+        if (getDefaultPlaneDirectory(dirout, "@tempPlane", "storage/@tempPlane"))
+            return true;
+        return getDefaultPlaneDirectory(dirout, "@spillPlane", "storage/@spillPlane");
+    }
+    if (streq(category, "log"))
+    {
+        return false;
+    }
+    if (streq(category, "dali"))
+    {
+        return getDefaultPlaneDirectory(dirout, "@daliPlane", "storage/@daliPlane");
+    }
+    if (streq(category, "query"))
+    {
+        return getDefaultPlaneDirectory(dirout, "@dllPlane", "storage/@dllPlane");
+    }
+    if (streq(category, "lock"))
+    {
+        //Called by NamedMutex.  Currently unused in the containerized system.
+        dirout.append("/var/lib/HPCCSystems/lock");
+        return true;
+    }
+    if (streq(category, "key") || streq(category, "run"))
+    {
+        throw makeStringExceptionV(-1, "Unexpected category '%s' requested in containerized mode", category);
+    }
+
+    throw makeStringExceptionV(-1, "Unrecognised configuration category %s", category);
+#else
     Linked<const IPropertyTree> dirtree = useTree;
     if (!dirtree)
         dirtree.setown(getOSSdirTree());
@@ -2726,6 +2796,7 @@ bool getConfigurationDirectory(const IPropertyTree *useTree, const char *categor
         }
     }
     return false;
+#endif
 }
 
 
