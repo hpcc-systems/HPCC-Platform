@@ -1,6 +1,0 @@
-<Dataset name='httpcallResult'>
- <Row><Method>GET</Method><UrlPath>/WsSmc/HttpEcho</UrlPath><UrlParameters>name=doe,joe&amp;number=1</UrlParameters><Headers><Header>Accept-Encoding: gzip, deflate</Header><Header>Accept: text/xml</Header><Header>HPCC-Caller-Id: http111</Header><Header>HPCC-Global-Id: 9876543210</Header><Header>constHeader: constHeaderValue</Header><Header>literalHeader: literalValue</Header><Header>storedHeader: StoredHeaderDefault</Header></Headers><Content></Content></Row>
-</Dataset>
-<Dataset name='proxyResult'>
- <Row><Method>GET</Method><UrlPath>/WsSmc/HttpEcho</UrlPath><UrlParameters>name=doe,joe&amp;number=1</UrlParameters><Headers><Header>Accept-Encoding: gzip, deflate</Header><Header>Accept: text/xml</Header><Header>HPCC-Caller-Id: http222</Header><Header>HPCC-Global-Id: 9876543210</Header><Header>constHeader: constHeaderValue</Header><Header>literalHeader: literalValue</Header><Header>storedHeader: StoredHeaderDefault</Header></Headers><Content></Content></Row>
-</Dataset>

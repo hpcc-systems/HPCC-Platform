@@ -1,4 +1,0 @@
-<Dataset name='Result 1'>
- <Row><owner>gavin</owner><books><Row><title>the hobbit          </title><words><Row><word>gandalf</word></Row><Row><word>rivendell</word></Row><Row><word>dragon</word></Row><Row><word>dwarves</word></Row><Row><word>elves</word></Row></words><__internal_fpos__>0</__internal_fpos__></Row></books></Row>
- <Row><owner>jim</owner><books></books></Row>
-</Dataset>

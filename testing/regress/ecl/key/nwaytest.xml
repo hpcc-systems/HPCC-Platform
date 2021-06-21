@@ -1,5 +1,0 @@
-<Dataset name='Result 1'>
- <Row><key>1</key><children1><Row><key>1</key><l>a1</l></Row><Row><key>2</key><l>a2</l></Row></children1><children2><Row><key>1</key><l>a1</l></Row><Row><key>2</key><l>a2</l></Row></children2><joinres><Row><key>1</key><l>a1c1</l></Row><Row><key>2</key><l>a2c2</l></Row></joinres></Row>
- <Row><key>2</key><children1><Row><key>1</key><l>c1</l></Row><Row><key>2</key><l>c2</l></Row></children1><children2><Row><key>1</key><l>t_b1</l></Row><Row><key>2</key><l>t_b2</l></Row></children2><joinres><Row><key>1</key><l>t_b1c1</l></Row><Row><key>2</key><l>t_b2c2</l></Row></joinres></Row>
- <Row><key>2</key><children1><Row><key>1</key><l>c1</l></Row><Row><key>2</key><l>c2</l></Row></children1><children2><Row><key>1</key><l>t_b1</l></Row><Row><key>2</key><l>t_b2</l></Row></children2><joinres><Row><key>1</key><l>t_b1c1</l></Row><Row><key>2</key><l>t_b2c2</l></Row></joinres></Row>
-</Dataset>

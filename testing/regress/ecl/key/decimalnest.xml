@@ -1,4 +1,0 @@
-<Dataset name='Result 1'>
- <Row><id>2</id><total>34.2</total><children><Row><value>2.2</value></Row><Row><value>4.6</value></Row><Row><value>9</value></Row><Row><value>13.4</value></Row></children></Row>
- <Row><id>4</id><total>24.05</total><children><Row><value>-2</value></Row><Row><value>20.6</value></Row></children></Row>
-</Dataset>

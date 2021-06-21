@@ -1,8 +1,0 @@
-<Dataset name='Result 1'>
-</Dataset>
-<Dataset name='Result 2'>
-</Dataset>
-<Dataset name='fetched'>
- <Row><surname>Mitchell            </surname><forename>David     </forename><category>1</category><uid>1</uid><homephone areaCode="09876" number="123456"></homephone><hasmobile>true</hasmobile><mobilephone areaCode="07967" number="838690"></mobilephone><contact hasEmail="true"><phone areaCode="n/a  " number="0"></phone><email>dm@edata.com</email></contact><books><Row><title>Love in the Time of Cholera</title><author>Marquez</author></Row><Row><title>Where the Wild Things Are</title><author>Sendak</author></Row></books><colours><All/></colours><endmarker>$$</endmarker></Row>
- <Row><surname>Mitchell            </surname><forename>Margaret  </forename><category>1</category><uid>1</uid><homephone areaCode="09876" number="123456"></homephone><hasmobile>true</hasmobile><mobilephone areaCode="07967" number="838690"></mobilephone><contact hasEmail="true"><phone areaCode="n/a  " number="0"></phone><email>maggy@edata.com</email></contact><books><Row><title>Harry Potter and the Deathly Hallows</title><author>Rowling</author></Row><Row><title>Where the Sidewalk Ends</title><author>Silverstein</author></Row></books><colours><Item>Violet</Item><Item>Orange</Item></colours><endmarker>$$</endmarker></Row>
-</Dataset>

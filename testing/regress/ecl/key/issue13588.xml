@@ -1,6 +1,0 @@
-<Dataset name='Result 1'>
-</Dataset>
-<Dataset name='Result 2'>
- <Row><id>1</id><r><id>2</id><name>gavin</name><x><Row><x>1</x></Row><Row><x>2</x></Row></x></r><__internal_fpos__>0</__internal_fpos__></Row>
- <Row><id>2</id><r><id>3</id><name>john</name><x><Row><x>-1</x></Row><Row><x>-5</x></Row></x></r><__internal_fpos__>0</__internal_fpos__></Row>
-</Dataset>

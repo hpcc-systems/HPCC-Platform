@@ -1,6 +1,0 @@
-<Dataset name='Result 1'>
- <Row><x>92</x><y><Row><id>3</id></Row><Row><id>192</id></Row></y></Row>
- <Row><x>67</x><y><Row><id>3</id></Row><Row><id>167</id></Row></y></Row>
- <Row><x>56</x><y><Row><id>3</id></Row><Row><id>3</id></Row></y></Row>
- <Row><x>23</x><y><Row><id>3</id></Row><Row><id>3</id></Row></y></Row>
-</Dataset>

@@ -1,6 +1,0 @@
-<Dataset name='Result 1'>
- <Row><id>1</id><child1><children><Row><cid>1</cid></Row><Row><cid>3</cid></Row><Row><cid>5</cid></Row></children></child1><child2><children><Row><cid>5</cid></Row><Row><cid>3</cid></Row><Row><cid>1</cid></Row></children></child2></Row>
- <Row><id>2</id><child1><children><Row><cid>3</cid></Row><Row><cid>3</cid></Row></children></child1><child2><children><Row><cid>3</cid></Row><Row><cid>3</cid></Row></children></child2></Row>
- <Row><id>3</id><child1><children><Row><cid>9</cid></Row><Row><cid>7</cid></Row><Row><cid>5</cid></Row><Row><cid>3</cid></Row></children></child1><child2><children><Row><cid>7</cid></Row><Row><cid>9</cid></Row><Row><cid>5</cid></Row><Row><cid>3</cid></Row></children></child2></Row>
- <Row><id>4</id><child1><children><Row><cid>3</cid></Row><Row><cid>3</cid></Row><Row><cid>3</cid></Row><Row><cid>3</cid></Row><Row><cid>5</cid></Row><Row><cid>5</cid></Row><Row><cid>5</cid></Row></children></child1><child2><children><Row><cid>5</cid></Row><Row><cid>5</cid></Row><Row><cid>5</cid></Row><Row><cid>3</cid></Row><Row><cid>3</cid></Row><Row><cid>3</cid></Row><Row><cid>3</cid></Row></children></child2></Row>
-</Dataset>

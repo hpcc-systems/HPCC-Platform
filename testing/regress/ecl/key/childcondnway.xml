@@ -1,7 +1,0 @@
-<Dataset name='Result 1'>
- <Row><surname>Jones</surname><cds><Row><name>Gina      </name><sex>F</sex></Row><Row><name>Adam      </name><sex>M</sex></Row></cds></Row>
- <Row><surname>Jones</surname><cds><Row><name>Gina      </name><sex>F</sex></Row><Row><name>Gloria    </name><sex>F</sex></Row><Row><name>Grace     </name><sex>F</sex></Row><Row><name>Adam      </name><sex>M</sex></Row><Row><name>Arthur    </name><sex>M</sex></Row></cds></Row>
- <Row><surname>Peters</surname><cds><Row><name>David     </name><sex>M</sex></Row><Row><name>Daniel    </name><sex>M</sex></Row><Row><name>Damien    </name><sex>M</sex></Row></cds></Row>
- <Row><surname>Smith</surname><cds><Row><name>Heather   </name><sex>F</sex></Row><Row><name>John      </name><sex>M</sex></Row><Row><name>Jim       </name><sex>M</sex></Row></cds></Row>
- <Row><surname>Smith</surname><cds><Row><name>Heather   </name><sex>F</sex></Row><Row><name>Hazel     </name><sex>F</sex></Row><Row><name>Helen     </name><sex>F</sex></Row><Row><name>John      </name><sex>M</sex></Row><Row><name>Jim       </name><sex>M</sex></Row><Row><name>James     </name><sex>M</sex></Row></cds></Row>
-</Dataset>

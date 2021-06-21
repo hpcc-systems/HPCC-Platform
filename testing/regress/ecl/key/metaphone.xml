@@ -1,6 +1,0 @@
-<Dataset name='Result 1'>
- <Row><name>Algernon</name><d1>ALKRNN</d1><d2>ALJRNN</d2><db>ALKRNNALJRNN</db><d1_20>ALKRNN              </d1_20><d2_20>ALJRNN              </d2_20><db_40>ALKRNNALJRNN                            </db_40></Row>
- <Row><name>Englebert</name><d1>ANKLPRT</d1><d2>ANKLPRT</d2><db>ANKLPRTANKLPRT</db><d1_20>ANKLPRT             </d1_20><d2_20>ANKLPRT             </d2_20><db_40>ANKLPRTANKLPRT                          </db_40></Row>
- <Row><name>Cholmondley</name><d1>XLMNTL</d1><d2>XLMNTL</d2><db>XLMNTLXLMNTL</db><d1_20>XLMNTL              </d1_20><d2_20>XLMNTL              </d2_20><db_40>XLMNTLXLMNTL                            </db_40></Row>
- <Row><name>Farquar</name><d1>FRKR</d1><d2>FRKR</d2><db>FRKRFRKR</db><d1_20>FRKR                </d1_20><d2_20>FRKR                </d2_20><db_40>FRKRFRKR                                </db_40></Row>
-</Dataset>

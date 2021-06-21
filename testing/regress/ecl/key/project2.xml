@@ -1,5 +1,0 @@
-<Dataset name='Result 1'>
- <Row><id>1</id><hint>Gavin</hint><child><id>3</id><name>no</name><value>12</value></child></Row>
- <Row><id>2</id><hint>James</hint><child><id>5</id><name>yes</name><value>1</value></child></Row>
- <Row><id>3</id><hint>Jane</hint><child><id>3</id><name>madness</name><value>12</value></child></Row>
-</Dataset>

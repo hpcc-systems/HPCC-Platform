@@ -1,7 +1,0 @@
-<Dataset name='Result 1'>
- <Row><s1>xxx</s1><s2>yyy</s2></Row>
- <Row><s1>xx,x</s1><s2>y,yy</s2></Row>
- <Row><s1>zzz</s1><s2>z</s2></Row>
-</Dataset>
-<Dataset name='Result 2'>
-</Dataset>

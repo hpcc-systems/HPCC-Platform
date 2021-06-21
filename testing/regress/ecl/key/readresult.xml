@@ -1,8 +1,0 @@
-<Dataset name='Result 1'>
- <Row><Result_1>W</Result_1></Row>
-</Dataset>
-<Dataset name='Result 2'>
- <Row><forename>Jo        </forename><surname>Smith               </surname></Row>
- <Row><forename>Jim       </forename><surname>Smithe              </surname></Row>
- <Row><forename>Joe       </forename><surname>Schmitt             </surname></Row>
-</Dataset>

@@ -1,7 +1,0 @@
-<Dataset name='Result 1'>
- <Row><type>SumDedupVals</type><val>2000</val></Row>
- <Row><type>SumDedupAllVals</type><val>2000</val></Row>
- <Row><type>ExistsDedupTotal</type><val>2000</val></Row>
- <Row><type>ExistsDedupAllTotal</type><val>2000</val></Row>
- <Row><type>ChoosenDedupAllTotal</type><val>3800</val></Row>
-</Dataset>

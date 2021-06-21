@@ -1,9 +1,0 @@
-<Dataset name='Result 1'>
- <Row><f1>3.4</f1><f2>1.6</f2><expected>100</expected><calculated>100</calculated><calculated2>100</calculated2><score>1.2</score></Row>
- <Row><f1>3.4</f1><f2>2.6</f2><expected>101</expected><calculated>101</calculated><calculated2>101</calculated2><score>12.6</score></Row>
- <Row><f1>0.4</f1><f2>3.6</f2><expected>102</expected><calculated>102</calculated><calculated2>103</calculated2><score>-3.5</score></Row>
- <Row><f1>3.4</f1><f2>3.6</f2><expected>103</expected><calculated>103</calculated><calculated2>102</calculated2><score>9.0</score></Row>
- <Row><f1>6.4</f1><f2>1.6</f2><expected>104</expected><calculated>104</calculated><calculated2>106</calculated2><score>9.199999999999999</score></Row>
- <Row><f1>8.699999999999999</f1><f2>1.6</f2><expected>105</expected><calculated>105</calculated><calculated2>106</calculated2><score>12.6</score></Row>
- <Row><f1>8.9</f1><f2>3.7</f2><expected>106</expected><calculated>106</calculated><calculated2>105</calculated2><score>19.3</score></Row>
-</Dataset>

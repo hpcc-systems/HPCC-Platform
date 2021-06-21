@@ -1,6 +1,0 @@
-<Dataset name='Result 1'>
- <Row><surname>Hawthorn</surname><forename>Gavin               </forename><addr>Slapdash Lane</addr><extra>ABCD</extra><extra2></extra2></Row>
- <Row><surname>Hawthorn</surname><forename>Mia                 </forename><addr>Slapdash Lane</addr><extra>1234</extra><extra2>groan</extra2></Row>
- <Row><surname>Smithe</surname><forename>Pru                 </forename><addr>Ashley Road</addr><extra>PLEH</extra><extra2>grown</extra2></Row>
- <Row><surname>X</surname><forename>Z                   </forename><addr>Mars</addr><extra>!EM </extra><extra2>help</extra2></Row>
-</Dataset>

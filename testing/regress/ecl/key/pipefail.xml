@@ -1,6 +1,0 @@
-<Dataset name='Result 1'>
- <Row><f1>ERROR: 2: exec failed: /tmp/fakepipecmd, No such file or directory&apos;</f1></Row>
-</Dataset>
-<Dataset name='Result 2'>
- <Row><f1>ERROR: 2: exec failed: /tmp/fakepipecmd, No such file or directory&apos;</f1></Row>
-</Dataset>

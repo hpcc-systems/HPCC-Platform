@@ -1,6 +1,0 @@
-<Dataset name='unicode_empty_string'>
- <Row><unicode_empty_string>startend</unicode_empty_string></Row>
-</Dataset>
-<Dataset name='unicode_empty_string8'>
- <Row><unicode_empty_string8>true</unicode_empty_string8></Row>
-</Dataset>

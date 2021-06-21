@@ -1,5 +1,0 @@
-<Dataset name='Result 1'>
- <Row><title>cheeses             </title><words><Row><word>cheddar</word></Row><Row><word>parmesan</word></Row><Row><word>stilton</word></Row><Row><word>wensleydale</word></Row></words><__internal_fpos__>0</__internal_fpos__></Row>
- <Row><title>eragon              </title><words><Row><word>eragon</word></Row><Row><word>dragon</word></Row><Row><word>spine</word></Row><Row><word>elves</word></Row><Row><word>dwarves</word></Row><Row><word>krull</word></Row></words><__internal_fpos__>0</__internal_fpos__></Row>
- <Row><title>the hobbit          </title><words><Row><word>gandalf</word></Row><Row><word>rivendell</word></Row><Row><word>dragon</word></Row><Row><word>dwarves</word></Row><Row><word>elves</word></Row></words><__internal_fpos__>0</__internal_fpos__></Row>
-</Dataset>

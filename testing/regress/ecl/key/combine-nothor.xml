@@ -1,5 +1,0 @@
-<Dataset name='Result 1'>
- <Row><result>11</result><lhs>1</lhs><rhs>10</rhs></Row>
- <Row><result>22</result><lhs>2</lhs><rhs>20</rhs></Row>
- <Row><result>33</result><lhs>3</lhs><rhs>30</rhs></Row>
-</Dataset>

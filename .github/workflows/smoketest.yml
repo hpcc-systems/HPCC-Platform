@@ -383,7 +383,8 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        engine: ['hthor', 'thor', 'roxie']
+#        engine: ['hthor', 'thor', 'roxie']
+        engine: ['thor']
         match:
         - pattern: '[a-d]*.ecl'
         - pattern: '[e-h]*.ecl'
@@ -432,14 +433,20 @@ jobs:
         install/opt/HPCCSystems/etc/init.d/hpcc-init start
         cd install/opt/HPCCSystems/testing/regress
 
-        (cd ecl; ls ${{ matrix.match.pattern }}) > matches.tmp
+        (cd ecl; ls ${{ matrix.match.pattern }} || true) > matches.tmp
         echo queries are:
         cat matches.tmp
         if [[ -z "${{ matrix.match.exclude }}" ]]
         then
           queries="$(cat matches.tmp | tr '\n' ' ')"
         else
-          queries="$(cd ecl; ls ${{ matrix.match.exclude }} | grep -v -f - ../matches.tmp | tr '\n' ' ')"
+          queries="$(cd ecl; (ls ${{ matrix.match.exclude }} || true) | grep -v -f - ../matches.tmp | tr '\n' ' ')"
+        fi
+
+        if [[ $(echo $queries | wc -w) -lt 1 ]]
+        then
+            echo "No matching queries"
+            exit 0
         fi
         echo queries after exclude: ${queries}
 

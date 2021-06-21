@@ -1,8 +1,0 @@
-<Dataset name='OriginalReadRow'>
- <Row><L1><L2><fname>MOE</fname><lname>DOE</lname><pr>1</pr><st>11TH</st><zi>11</zi><ag>31</ag><ix>315367</ix></L2><L2><fname>JOE</fname><lname>POE</lname><pr>2</pr><st>22ND</st><zi>11</zi><ag>32</ag><ix>315370</ix></L2><L2><fname>XOE</fname><lname>ROE</lname><pr>3</pr><st>33RD</st><zi>11</zi><ag>33</ag><ix>315204</ix></L2></L1></Row>
-</Dataset>
-<Dataset name='Result 2'>
-</Dataset>
-<Dataset name='readWrittenDataset'>
- <Row><L1><L2><fname>MOE</fname><lname>DOE</lname><pr>1</pr><st>11TH</st><zi>11</zi><ag>31</ag><ix>315367</ix></L2><L2><fname>JOE</fname><lname>POE</lname><pr>2</pr><st>22ND</st><zi>11</zi><ag>32</ag><ix>315370</ix></L2><L2><fname>XOE</fname><lname>ROE</lname><pr>3</pr><st>33RD</st><zi>11</zi><ag>33</ag><ix>315204</ix></L2></L1></Row>
-</Dataset>

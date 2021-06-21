@@ -36,6 +36,8 @@
 //#define TRACE_PARTITION_OVERFLOW
 #endif
 
+#define _FULL_TRACE 1
+
 // This contains the original global merge method
 
 class CSortMerge;
