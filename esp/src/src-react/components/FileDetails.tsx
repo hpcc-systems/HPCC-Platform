@@ -9,6 +9,7 @@ import { pivotItemStyle } from "../layouts/pivot";
 import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { TableGroup } from "./forms/Groups";
+import { Queries } from "./Queries";
 
 import "react-reflex/styles.css";
 
@@ -150,6 +151,9 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
             <PivotItem headerText={nlsHPCC.Superfiles} itemKey="Superfiles" style={pivotItemStyle(size, 0)}>
             </PivotItem>
             <PivotItem headerText={nlsHPCC.FileParts} itemKey="FileParts" style={pivotItemStyle(size, 0)}>
+            </PivotItem>
+            <PivotItem headerText={nlsHPCC.Queries} itemIcon="Search" itemKey="queries" style={pivotItemStyle(size, 0)}>
+                <Queries filter={{ FileName: logicalFile }} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Queries} itemKey="Queries" style={pivotItemStyle(size, 0)}>
             </PivotItem>
