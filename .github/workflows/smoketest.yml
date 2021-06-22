@@ -406,6 +406,7 @@ jobs:
         - pattern: 'fetch18.ecl'
         - pattern: 'fetch19.ecl'
         - pattern: 'fetch20.ecl'
+        - pattern: 'fetch.ecl'
 
     steps:
     - uses: actions/download-artifact@v2
