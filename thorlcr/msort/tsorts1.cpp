@@ -86,7 +86,8 @@ public:
         }
 #endif // OPENSSL
 
-        stream = ConnectMergeRead(streamno,rowif,mergeep,startrec,numrecs,socket.getClear());
+//        stream = ConnectMergeRead(streamno,rowif,mergeep,startrec,numrecs,socket.getClear());
+        stream = ConnectMergeRead(streamno,rowif,mergeep,startrec,numrecs,socket);
 
         LOG(MCthorDetailedDebugInfo, thorJob, "SORT Merge READ: Stream(%u) connected to %s",streamno,url);
     }
