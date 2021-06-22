@@ -386,23 +386,26 @@ jobs:
 #        engine: ['hthor', 'thor', 'roxie']
         engine: ['thor']
         match:
-        - pattern: '[a-d]*.ecl'
-        - pattern: '[e-h]*.ecl'
-        - pattern: '[i-l]*.ecl'
-        - pattern: '[m-q]*.ecl'
-        - pattern: '[r-u]*.ecl'
-          exclude: teststdlibrary.ecl
-        - pattern: '[v-z]*.ecl'
-        include:
-        - engine: 'hthor'
-          match:
-            pattern: teststdlibrary.ecl
-        - engine: 'thor'
-          match:
-            pattern: teststdlibrary.ecl
-        - engine: 'roxie'
-          match:
-            pattern: teststdlibrary.ecl
+        - pattern: 'fetch.ecl'
+        - pattern: 'fetch2.ecl'
+        - pattern: 'fetch3.ecl'
+        - pattern: 'fetch4.ecl'
+        - pattern: 'fetch5.ecl'
+        - pattern: 'fetch5.ecl'
+        - pattern: 'fetch7.ecl'
+        - pattern: 'fetch8.ecl'
+        - pattern: 'fetch9.ecl'
+        - pattern: 'fetch10.ecl'
+        - pattern: 'fetch11.ecl'
+        - pattern: 'fetch12.ecl'
+        - pattern: 'fetch13.ecl'
+        - pattern: 'fetch14.ecl'
+        - pattern: 'fetch15.ecl'
+        - pattern: 'fetch16.ecl'
+        - pattern: 'fetch17.ecl'
+        - pattern: 'fetch18.ecl'
+        - pattern: 'fetch19.ecl'
+        - pattern: 'fetch20.ecl'
 
     steps:
     - uses: actions/download-artifact@v2
