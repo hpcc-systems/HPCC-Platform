@@ -7,5 +7,4 @@ export function useGrid(store, filter, sort, columns) {
         sort,
         columns
     };
-
 } 

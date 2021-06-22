@@ -7,6 +7,7 @@ import { getImageURL } from "src/Utility";
 import { getStateIconClass } from "src/ESPWorkunit";
 import { WUStatus } from "src/react/index";
 import { useWorkunit } from "../hooks/Workunit";
+import { useFavorite } from "../hooks/favorite";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { pivotItemStyle } from "../layouts/pivot";
 import { pushUrl } from "../util/history";
@@ -69,6 +70,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     const [jobname, setJobname] = React.useState("");
     const [description, setDescription] = React.useState("");
     const [_protected, setProtected] = React.useState(false);
+    const [isFavorite, addFavorite, removeFavorite] = useFavorite(window.location.hash);
 
     React.useEffect(() => {
         setJobname(jobname || workunit?.Jobname);
@@ -113,6 +115,20 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
 
     const protectedImage = getImageURL(workunit?.Protected ? "locked.png" : "unlocked.png");
     const stateIconClass = getStateIconClass(workunit?.StateID, workunit?.isComplete(), workunit?.Archived);
+
+    const rightButtons: ICommandBarItemProps[] = [
+        {
+            key: "star", iconProps: { iconName: isFavorite ? "FavoriteStarFill" : "FavoriteStar" },
+            onClick: () => {
+                if (isFavorite) {
+                    removeFavorite();
+                } else {
+                    addFavorite();
+                }
+            }
+        }
+    ];
+
     const serviceNames = workunit?.ServiceNames?.Item?.join("\n") || "";
     const resourceCount = workunit?.ResourceURLCount > 1 ? workunit?.ResourceURLCount - 1 : undefined;
 
@@ -125,7 +141,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                             <div className="pane-content">
                                 <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto}>
                                     <Sticky stickyPosition={StickyPositionType.Header}>
-                                        <CommandBar items={buttons} />
+                                        <CommandBar items={buttons} farItems={rightButtons} />
                                     </Sticky>
                                     <Sticky stickyPosition={StickyPositionType.Header}>
                                         <div style={{ display: "inline-block" }}>
