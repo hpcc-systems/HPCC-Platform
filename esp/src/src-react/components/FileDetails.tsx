@@ -6,12 +6,14 @@ import * as Utility from "src/Utility";
 import { getStateImageName, IFile } from "src/ESPLogicalFile";
 import { useFile, useDefFile } from "../hooks/File";
 import { pivotItemStyle } from "../layouts/pivot";
+import { DojoAdapter } from "../layouts/DojoAdapter";
 import { pushUrl } from "../util/history";
 import { ECLSourceEditor, XMLSourceEditor } from "./SourceEditor";
 import { ShortVerticalDivider } from "./Common";
 import { FileDetailsGraph } from "./FileDetailsGraph";
 import { TableGroup } from "./forms/Groups";
 import { Queries } from "./Queries";
+import { WorkunitDetails } from "./WorkunitDetails";
 
 import "react-reflex/styles.css";
 
@@ -169,6 +171,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
                 <FileDetailsGraph cluster={cluster} logicalFile={logicalFile} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Workunit} itemKey="Workunit" style={pivotItemStyle(size, 0)}>
+                {isDFUWorkunit ? <DojoAdapter widgetClassID="DFUWUDetailsWidget" params={{ Wuid: file?.Wuid }} /> : <WorkunitDetails wuid={file?.Wuid} />}
             </PivotItem>
             <PivotItem headerText={nlsHPCC.History} itemKey="History" style={pivotItemStyle(size, 0)}>
             </PivotItem>
