@@ -381,7 +381,7 @@ jobs:
     timeout-minutes: 60 # each matrix step has its own timeout, however the job can sometimes take time to download dependencies
     runs-on: ubuntu-20.04
     strategy:
-      #fail-fast: true
+      fail-fast: false
       matrix:
 #        engine: ['hthor', 'thor', 'roxie']
         engine: ['thor']
