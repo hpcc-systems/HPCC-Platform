@@ -61,3 +61,6 @@
 [submodule "system/security/plugins/jwtSecurity/jwt-cpp"]
 	path = system/security/plugins/jwtSecurity/jwt-cpp
 	url = https://github.com/hpcc-systems/jwt-cpp.git
+[submodule "nlp/nlp-engine"]
+	path = plugins/nlp/nlp-engine
+	url = https://github.com/hpcc-systems/nlp-engine.git
