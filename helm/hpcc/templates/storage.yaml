@@ -21,11 +21,26 @@
 ##############################################################################
 
 */}}
-{{- include "hpcc.addPVCsFromPlanes" . }}
+{{- /* check planes are unique, have valid names, and do not define the mount in multiple ways */ -}}
 {{- $storage := (.Values.storage | default dict) }}
 {{- $planes := ($storage.planes | default list) -}}
+{{- $previousPlanes := dict -}}
+{{- $previousMounts := dict -}}
 {{- range $plane := $planes -}}
-{{- if (ne (lower $plane.name) $plane.name) -}}
-{{- required (printf "Name of storage plane '%s' must not contain upper case" $plane.name) nil -}}
+ {{- if (ne (lower $plane.name) $plane.name) -}}
+  {{- required (printf "Name of storage plane '%s' must not contain upper case" $plane.name) nil -}}
+ {{- end -}}
+ {{- if hasKey $previousPlanes $plane.name -}}
+  {{- required (printf "Storage plane '%s' is defined more than once" $plane.name) nil -}}
+ {{- end -}}
+ {{- $_ := set $previousPlanes $plane.name true -}}
+ {{- $rawPlane := omit $plane "name" "labels" -}}
+ {{- if hasKey $previousMounts $plane.prefix -}}
+  {{- /* Should this restrict if has a pvc or a storage class? */ -}}
+  {{- if not (deepEqual (get $previousMounts $plane.prefix) $rawPlane) -}}
+    {{- required (printf "Multiple incompatible planes refer to prefix '%s'" $plane.prefix) nil -}}
+  {{- end -}}
+ {{- end -}}
+ {{- $_ := set $previousMounts $plane.prefix $rawPlane -}}
 {{- end -}}
-{{- end -}}
+{{- include "hpcc.addPVCsFromPlanes" . }}

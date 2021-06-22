@@ -150,8 +150,12 @@ storage:
   {{- if not $plane.labels }}
     labels:
     - data
-  {{- end }}
-{{ toYaml (omit $plane "name" "pvc" "storageClass" "storageSize") | indent 4 }}
+  {{- end -}}
+  {{- $planeYaml := omit $plane "name" "pvc" "storageClass" "storageSize" "subPath" -}}
+  {{- if $plane.subPath -}}
+   {{- $_ := set $planeYaml "prefix" (printf "%s/%s" $planeYaml.prefix $plane.subPath) -}}
+  {{- end -}}
+    {{- toYaml $planeYaml | nindent 4 }}
  {{- end }}
 {{- end }}
 {{- /* Add implicit planes if data or spill storage plane not specified*/ -}}
@@ -265,21 +269,25 @@ to addVolumeMounts so that if a plane can be used for multiple purposes then dup
 {{- $storage := (.root.Values.storage | default dict) -}}
 {{- $planes := ($storage.planes | default list) -}}
 {{- $includeLabels := .includeLabels | default list -}}
+{{- $previousMounts := dict -}}
 {{- range $plane := $planes -}}
  {{- if or ($plane.pvc) (hasKey $plane "storageClass") -}}
-  {{- $mountpath := $plane.prefix -}}
-  {{- $matchedLabels := include "hpcc.doesStorageLabelsMatch" (dict "plane" $plane "includeLabels" $includeLabels) }}
-  {{ if ne $matchedLabels "" }}
-   {{- $num := int ( $plane.numDevices | default 1 ) -}}
-   {{- if le $num 1 }}
+  {{- if not (hasKey $previousMounts $plane.prefix) -}}
+   {{- $mountpath := $plane.prefix -}}
+   {{- $matchedLabels := include "hpcc.doesStorageLabelsMatch" (dict "plane" $plane "includeLabels" $includeLabels) }}
+   {{- if ne $matchedLabels "" }}
+    {{- $num := int ( $plane.numDevices | default 1 ) -}}
+    {{- if le $num 1 }}
 - name: {{ lower $plane.name }}-pv
   mountPath: {{ $mountpath | quote }}
-   {{- else }}
-    {{- range $elem := untilStep 1 (int (add $num 1)) 1 }}
+    {{- else }}
+     {{- range $elem := untilStep 1 (int (add $num 1)) 1 }}
 - name: {{ lower $plane.name }}-pv-many-{{- $elem }}
   mountPath: {{ printf "%s/d%d" $mountpath $elem | quote }}
+     {{- end }}
     {{- end }}
    {{- end }}
+   {{- $_ := set $previousMounts $plane.prefix true -}}
   {{- end }}
  {{- end }}
 {{- end }}
@@ -317,23 +325,28 @@ The plane will generate a volume if it matches either an includeLabel or an incl
 {{- $planes := ($storage.planes | default list) -}}
 {{- $includeLabels := .includeLabels | default list -}}
 {{- $includeNames := .includeNames | default list -}}
+{{- $previousMounts := dict -}}
 {{- range $plane := $planes -}}
  {{- if or ($plane.pvc) (hasKey $plane "storageClass") -}}
-  {{- $matchedLabels := include "hpcc.doesStorageLabelsMatch" (dict "plane" $plane "includeLabels" $includeLabels) -}}
-  {{- if or ($matchedLabels) (has $plane.name $includeNames) }}
-   {{- $pvc := hasKey $plane "pvc" | ternary $plane.pvc (printf "%s-%s-pvc" (include "hpcc.fullname" $) $plane.name) -}}
-   {{- $num := int ( $plane.numDevices | default 1 ) -}}
-   {{- if le $num 1 }}
+  {{- if not (hasKey $previousMounts $plane.prefix) -}}
+   {{- $mountpath := $plane.prefix -}}
+   {{- $matchedLabels := include "hpcc.doesStorageLabelsMatch" (dict "plane" $plane "includeLabels" $includeLabels) -}}
+   {{- if or ($matchedLabels) (has $plane.name $includeNames) }}
+    {{- $pvc := hasKey $plane "pvc" | ternary $plane.pvc (printf "%s-%s-pvc" (include "hpcc.fullname" $) $plane.name) -}}
+    {{- $num := int ( $plane.numDevices | default 1 ) -}}
+    {{- if le $num 1 }}
 - name: {{ lower $plane.name }}-pv
   persistentVolumeClaim:
     claimName: {{ $pvc }}
-   {{- else }}
-    {{- range $elem := until $num }}
+    {{- else }}
+     {{- range $elem := until $num }}
 - name: {{ lower $plane.name }}-pv-many-{{- add $elem 1 }}
   persistentVolumeClaim:
     claimName: {{ $pvc }}-{{- add $elem 1 }}
-    {{- end }}
-   {{- end -}}
+     {{- end }}
+    {{- end -}}
+   {{- end }}
+   {{- $_ := set $previousMounts $plane.prefix true -}}
   {{- end }}
  {{- end }}
 {{- end -}}
@@ -1069,11 +1082,15 @@ Pass in dict with root, label.  optional name to restrict it to a single name.
 {{- define "hpcc.addPVCsFromPlanes" }}
 {{- $storage := (.Values.storage | default dict) }}
 {{- $planes := ($storage.planes | default list) -}}
+{{- $previousMounts := dict -}}
 {{- range $plane := $planes -}}
-{{- if (hasKey $plane "storageClass") }}
-{{- $pvcname := (printf "%s-pvc" $plane.name) -}}
-{{- include "hpcc.addPVC" (dict "root" $ "name" $pvcname "me" $plane) }}
-{{- end }}
+ {{- if (hasKey $plane "storageClass") -}}
+  {{- if not (hasKey $previousMounts $plane.prefix) -}}
+   {{- $pvcname := (printf "%s-pvc" $plane.name) -}}
+   {{- include "hpcc.addPVC" (dict "root" $ "name" $pvcname "me" $plane) }}
+   {{- $_ := set $previousMounts $plane.prefix true -}}
+ {{- end }}
+ {{- end }}
 {{- end }}
 {{- end -}}
 

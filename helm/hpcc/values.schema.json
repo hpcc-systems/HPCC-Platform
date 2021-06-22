@@ -413,6 +413,10 @@
           "description": "either the path for a local mount, or the url prefix",
           "type": "string"
         },
+        "subPath": {
+          "description": "optional subdirectory within the mount directory",
+          "type": "string"
+        },
         "secret": {
           "description": "optional name of any secret required to access this storage plane",
           "type": "string"

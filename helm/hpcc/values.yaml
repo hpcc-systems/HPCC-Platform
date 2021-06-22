@@ -117,6 +117,7 @@ storage:
   planes:
   #   name: <required>
   #   prefix: <path>                        # Root directory for accessing the plane (if pvc defined), or url to access plane.
+  #   subPath: <relative-path>              # Optional sub directory within <prefix> to use as the root directory
   #   pvc: <name>                           # The name of the persistant volume claim
   #   numDevices: 1                         # number of devices that are part of the plane
   #   replication: nullptr                  # a list or single item indicating which planes the data should be replicated onto
