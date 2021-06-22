@@ -16,34 +16,28 @@ export function useCounter(): [number, () => void] {
 
 export function useWorkunit(wuid: string, full: boolean = false): [Workunit, WUStateID, number] {
 
-    const [workunit, setWorkunit] = React.useState<Workunit>();
-    const [state, setState] = React.useState<WUStateID>();
-    const [lastUpdate, setLastUpdate] = React.useState(Date.now());
+    const [retVal, setRetVal] = React.useState<{ workunit: Workunit, state: number, lastUpdate: number }>();
 
     React.useEffect(() => {
         if (!wuid) return;
         const wu = Workunit.attach({ baseUrl: "" }, wuid);
-        const handle = wu.watch(() => {
-            if (wu.StateID !== 999) {
-                if (full) {
-                    wu.refresh(true).then(() => {
-                        setWorkunit(wu);
-                        setState(wu.StateID);
-                    }).catch(logger.error);
-                } else {
-                    setState(wu.StateID);
-                }
-                setLastUpdate(Date.now());
+        let active = true;
+        let handle;
+        wu.refresh(full).then(() => {
+            if (active) {
+                setRetVal({ workunit: wu, state: wu.StateID, lastUpdate: Date.now() });
+                handle = wu.watch(() => {
+                    setRetVal({ workunit: wu, state: wu.StateID, lastUpdate: Date.now() });
+                });
             }
-        });
-        setWorkunit(wu);
-        setLastUpdate(Date.now());
+                    }).catch(logger.error);
         return () => {
-            handle.release();
+            active = false;
+            handle?.release();
         };
     }, [wuid, full]);
 
-    return [workunit, state, lastUpdate];
+    return [retVal?.workunit, retVal?.state, retVal?.lastUpdate];
 }
 
 export function useWorkunitResults(wuid: string): [Result[], Workunit, WUStateID] {

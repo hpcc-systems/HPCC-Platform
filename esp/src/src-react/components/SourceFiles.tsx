@@ -6,7 +6,7 @@ import * as domClass from "dojo/dom-class";
 import { AlphaNumSortMemory } from "src/Memory";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
-import { useWorkunitSourceFiles } from "../hooks/Workunit";
+import { useWorkunitSourceFiles } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
 import { DojoGrid, selector, tree } from "./DojoGrid";

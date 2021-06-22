@@ -3,7 +3,7 @@ import { useConst } from "@fluentui/react-hooks";
 import * as Observable from "dojo/store/Observable";
 import { Memory } from "src/Memory";
 import nlsHPCC from "src/nlsHPCC";
-import { useFile } from "../hooks/File";
+import { useFile } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { DojoGrid } from "./DojoGrid";
 

@@ -5,7 +5,7 @@ import * as Observable from "dojo/store/Observable";
 import { Memory } from "src/Memory";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
-import { useFile } from "../hooks/File";
+import { useFile } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
 import { DojoGrid, selector } from "./DojoGrid";

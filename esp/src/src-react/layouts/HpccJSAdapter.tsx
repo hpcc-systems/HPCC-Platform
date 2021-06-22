@@ -58,12 +58,14 @@ export const AutosizeHpccJSComponent: React.FunctionComponent<AutosizeHpccJSComp
     debounce = true
 }) => {
 
-    return <SizeMe monitorHeight>{({ size }) =>
-        <div style={{ width: "100%", height: fixedHeight, position: "relative" }}>
+    return <SizeMe monitorHeight>{({ size }) => {
+        const width = size?.width || padding * 2;
+        const height = size?.height || padding * 2;
+        return <div style={{ width: "100%", height: fixedHeight, position: "relative" }}>
             <div style={{ position: "absolute", padding: `${padding}px` }}>
-                <HpccJSComponent widget={widget} debounce={debounce} width={size.width - padding * 2} height={size.height - padding * 2} />
+                <HpccJSComponent widget={widget} debounce={debounce} width={width - padding * 2} height={height - padding * 2} />
             </div>
-        </div>
-    }
-    </SizeMe>;
+        </div>;
+    }}
+    </SizeMe >;
 };
