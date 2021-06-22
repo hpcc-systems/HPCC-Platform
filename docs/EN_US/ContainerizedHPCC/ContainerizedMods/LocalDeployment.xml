@@ -69,7 +69,7 @@
     <para>To use the HPCC Systems helm chart, you must add it to the helm
     repository list, as shown below:</para>
 
-    <para><programlisting>&gt;helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting></para>
+    <para><programlisting>helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting></para>
 
     <para>Expected response:</para>
 
@@ -85,7 +85,7 @@
 
     <para><emphasis role="bold">To start this simple system:</emphasis></para>
 
-    <para><programlisting>&gt;helm install mycluster hpcc/hpcc --set global.image.version=latest </programlisting></para>
+    <para><programlisting>helm install mycluster hpcc/hpcc --set global.image.version=latest </programlisting></para>
 
     <para>Expected response:</para>
 
@@ -118,7 +118,7 @@ sasha.wu-archiver</programlisting></para>
 
     <para><emphasis role="bold">To check status:</emphasis></para>
 
-    <para><programlisting>&gt;kubectl get pods</programlisting></para>
+    <para><programlisting>kubectl get pods</programlisting></para>
 
     <para>Expected response:</para>
 
@@ -178,7 +178,7 @@ thor-thoragent-56d788869f-7trxk               1/1     Running   0          2m6s<
     <para>Use this command to get a list running services and IP
     addresses:</para>
 
-    <para><programlisting>&gt;kubectl get svc</programlisting></para>
+    <para><programlisting>kubectl get svc</programlisting></para>
 
     <para>Expected response:</para>
 
@@ -213,11 +213,11 @@ sql2ecl               LoadBalancer 10.107.177.180  localhost    8510:30054/TCP  
     <para>To check which Helm charts are currently installed, run this
     command:</para>
 
-    <para><programlisting>&gt;helm list</programlisting></para>
+    <para><programlisting>helm list</programlisting></para>
 
     <para>To stop the HPCC Systems pods, use helm to uninstall:</para>
 
-    <para><programlisting>&gt;helm uninstall mycluster</programlisting></para>
+    <para><programlisting>helm uninstall mycluster</programlisting></para>
 
     <para>This stops the cluster, deletes the pods, and with the default
     settings and persistent volumes, it also deletes the storage used.</para>

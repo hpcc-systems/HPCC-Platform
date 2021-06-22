@@ -26,11 +26,12 @@
 mkdir c:\hpccdata\dalistorage
 mkdir c:\hpccdata\queries
 mkdir c:\hpccdata\sasha
-mkdir c:\hpccdata\hpcc-data</programlisting></para>
+mkdir c:\hpccdata\hpcc-data
+mkdir c:\hpccdata\mydropzone</programlisting></para>
 
         <para>For macOS, use this command:</para>
 
-        <para><programlisting>mkdir -p /Users/myUser/hpccdata/{dalistorage,queries,sasha,hpcc-data}</programlisting></para>
+        <para><programlisting>mkdir -p /Users/myUser/hpccdata/{dalistorage,queries,sasha,hpcc-data,mydropzone}</programlisting></para>
       </listitem>
 
       <listitem>
