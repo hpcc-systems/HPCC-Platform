@@ -49,14 +49,6 @@ global:
   # to run as root in a sidecar in same process space as other containers, allowing it to for example send signals
   # to processes in sidecars
 
-  # Define global default metrics configuration for all components
-  metrics:
-    sinks:
-      - type: log
-        name: logging
-        settings:
-          period: 60
-
   # misc:
   #   postJobCommand: "curl -sf -XPOST http://127.0.0.1:15020/quitquitquit"
   # Or example for linkerd
@@ -94,7 +86,7 @@ security:
     extern: "allow"
     datafile: "allow"
 
-## storage:
+## ge:
 ##
 ## 1. If a component has the storagePlane property set, then that plane will be the default data location for that component.
 ## 2. If storage.dataStorage.plane is defined then that plane will be the default location

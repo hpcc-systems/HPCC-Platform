@@ -1,0 +1,13 @@
+#
+# Defines a logging sink that writes metric reports to the log
+# Settings:
+#   type             - sink type (must be log for the logging sink)
+#   name             - name for the sink instance
+#   settings.period  - period in seconds between collections
+global:
+  metrics:
+    sinks:
+    - type: log
+      name: loggingsink
+      settings:
+        period: 60
