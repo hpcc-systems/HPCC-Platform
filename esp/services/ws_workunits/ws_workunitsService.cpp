@@ -2793,7 +2793,7 @@ void getCSVHeaders(const IResultSetMetaData& metaIn, CommonCSVWriter* writer, un
     }
 }
 
-unsigned getResultCSV(IStringVal& ret, INewResultSet* result, const char* name, __int64 start, unsigned& count)
+unsigned getResultCSV(IStringVal& ret, INewResultSet* result, const char* name, __int64 start, unsigned& count, __uint64 maxSize)
 {
     unsigned headerLayer = 0;
     CSVOptions csvOptions;
@@ -2806,12 +2806,12 @@ unsigned getResultCSV(IStringVal& ret, INewResultSet* result, const char* name, 
     writer->finishCSVHeaders();
 
     Owned<IResultSetCursor> cursor = result->createCursor();
-    count = writeResultCursorXml(*writer, cursor, name, start, count, NULL);
+    count = writeResultCursorXml(*writer, cursor, name, start, count, nullptr, nullptr, false, maxSize);
     ret.set(writer->str());
     return count;
 }
 
-void appendResultSet(MemoryBuffer& mb, INewResultSet* result, const char *name, __int64 start, unsigned& count, __int64& total, bool bin, bool xsd, ESPSerializationFormat fmt, const IProperties *xmlns)
+void appendResultSet(MemoryBuffer& mb, INewResultSet* result, const char *name, __int64 start, unsigned& count, __int64& total, bool bin, bool xsd, ESPSerializationFormat fmt, const IProperties *xmlns, __uint64 maxSize)
 {
     if (!result)
         return;
@@ -2819,7 +2819,7 @@ void appendResultSet(MemoryBuffer& mb, INewResultSet* result, const char *name, 
     total=result->getNumRows();
 
     if(bin)
-        count = getResultBin(mb, result, (unsigned)start, count);
+        count = getResultBin(mb, result, (unsigned)start, count, maxSize);
     else
     {
         struct MemoryBuffer2IStringVal : public CInterface, implements IStringVal
@@ -2836,11 +2836,11 @@ void appendResultSet(MemoryBuffer& mb, INewResultSet* result, const char *name, 
         } adaptor(mb);
 
         if (fmt==ESPSerializationCSV)
-            count = getResultCSV(adaptor, result, name, (unsigned) start, count);
+            count = getResultCSV(adaptor, result, name, (unsigned) start, count, maxSize);
         else if (fmt==ESPSerializationJSON)
-            count = getResultJSON(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL);
+            count = getResultJSON(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL, maxSize);
         else
-            count = getResultXml(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL, xmlns);
+            count = getResultXml(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL, xmlns, maxSize);
     }
 }
 
@@ -2872,27 +2872,6 @@ INewResultSet* createFilteredResultSet(INewResultSet* result, IArrayOf<IConstNam
         }
     }
     return filter->create();
-}
-
-
-static bool isResultRequestSzTooBig(unsigned __int64 start, unsigned requestCount, unsigned __int64 resultSz, unsigned resultRows, unsigned __int64 limitSz)
-{
-    if ((0 == start) && (0 == requestCount)) // all being requested
-        return resultSz > limitSz;
-    else if (0 == resultRows)
-    {
-        // if resultRows == 0, have to assume the row count of the file is unknown (e.g. because sprayed and no meta)
-        // There is insuficient information to validate if the result will be too big.
-        return false;
-    }
-    else
-    {
-        if (start+requestCount > resultRows)
-            requestCount = resultRows-start;
-        unsigned __int64 avgRecSize = resultSz / resultRows;
-        unsigned __int64 estSize = requestCount * avgRecSize;
-        return estSize > limitSz;
-    }
 }
 
 void CWsWorkunitsEx::getWsWuResult(IEspContext &context, const char *wuid, const char *name, const char *logical, unsigned index, __int64 start,
@@ -2935,39 +2914,16 @@ void CWsWorkunitsEx::getWsWuResult(IEspContext &context, const char *wuid, const
     result->getResultLogicalName(logicalName);
     Owned<INewResultSet> rs;
     if (logicalName.length())
-    {
         rs.setown(resultSetFactory->createNewFileResultSet(logicalName.str(), cw->queryClusterName())); //MORE is this wrong cluster?
-    }
     else
         rs.setown(resultSetFactory->createNewResultSet(result, wuid));
+
     if (!filterBy || !filterBy->length())
-    {
-        unsigned __int64 resultSz;
-
-        if (0 == logicalName.length()) // could be a workunit owned file (OUTPUT, THOR)
-            result->getResultFilename(logicalName);
-        if (logicalName.length())
-        {
-            Owned<IDistributedFile> df = lookupLogicalName(context, logicalName.str(), false, false, false, nullptr, defaultPrivilegedUser);
-            if (!df)
-                throw makeStringExceptionV(ECLWATCH_FILE_NOT_EXIST, "Cannot find file %s.", logicalName.str());
-            resultSz = df->getDiskSize(true, false);
-        }
-        else
-            resultSz = result->getResultRawSize(nullptr, nullptr);
-
-        if (isResultRequestSzTooBig(start, count, resultSz, rs->getNumRows(), wuResultMaxSize))
-        {
-            throw makeStringExceptionV(ECLWATCH_INVALID_ACTION, "Failed to get the result for %s. The size is bigger than %lld MB.",
-                                       wuid, wuResultMaxSize/0x100000);
-        }
-
-        appendResultSet(mb, rs, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns());
-    }
+        appendResultSet(mb, rs, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns(), wuResultMaxSize);
     else
     {
         Owned<INewResultSet> filteredResult = createFilteredResultSet(rs, filterBy);
-        appendResultSet(mb, filteredResult, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns());
+        appendResultSet(mb, filteredResult, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns(), wuResultMaxSize);
     }
 
     wuState = cw->getState();
@@ -3265,20 +3221,11 @@ void CWsWorkunitsEx::getFileResults(IEspContext &context, const char *logicalNam
     Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
     Owned<INewResultSet> result(resultSetFactory->createNewFileResultSet(df, cluster));
     if (!filterBy || !filterBy->length())
-    {
-        if (isResultRequestSzTooBig(start, count, df->getDiskSize(true, false), result->getNumRows(), wuResultMaxSize))
-        {
-            throw makeStringExceptionV(ECLWATCH_INVALID_ACTION, "Failed to get the result from file %s. The size is bigger than %lld MB.",
-                                       logicalName, wuResultMaxSize/0x100000);
-        }
-    
-        appendResultSet(buf, result, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), NULL);
-    }
+        appendResultSet(buf, result, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), NULL, wuResultMaxSize);
     else
     {
-        // NB: this could be still be very big, appendResultSet should be changed to ensure filtered result doesn't grow bigger than wuResultMaxSize
         Owned<INewResultSet> filteredResult = createFilteredResultSet(result, filterBy);
-        appendResultSet(buf, filteredResult, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), NULL);
+        appendResultSet(buf, filteredResult, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), NULL, wuResultMaxSize);
     }
 }
 
