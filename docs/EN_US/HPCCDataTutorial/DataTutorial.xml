@@ -101,8 +101,8 @@
 
       <itemizedlist>
         <listitem>
-          <para>You have a running HPCC Systems platform. This can be a VM
-          Edition or a single or multinode HPCC Systems platform</para>
+          <para>You have a running HPCC Systems platform. This can be a single
+          or multinode HPCC Systems platform deployment.</para>
         </listitem>
       </itemizedlist>
 
