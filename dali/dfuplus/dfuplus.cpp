@@ -351,7 +351,9 @@ int CDfuPlusHelper::doit()
     return 0;
 }
 
-bool CDfuPlusHelper::fixedSpray(const char* srcxml,const char* srcip,const char* srcfile,const MemoryBuffer &xmlbuf,const char* dstcluster,const char* dstname,const char *format, StringBuffer &retwuid, StringBuffer &except)
+bool CDfuPlusHelper::fixedSpray(const char* srcxml,const char* srcip,const char* srcfile,const char* srcplane,
+                                const MemoryBuffer &xmlbuf,const char* dstcluster,const char* dstname,
+                                const char *format, StringBuffer &retwuid, StringBuffer &except)
 {
     int recordsize;
     if(stricmp(format, "recfmvb") == 0) {
@@ -374,18 +376,23 @@ bool CDfuPlusHelper::fixedSpray(const char* srcxml,const char* srcip,const char*
     }
 
     Owned<IClientSprayFixed> req = sprayclient->createSprayFixedRequest();
-    if(srcxml == nullptr)
+    if(isEmptyString(srcxml))
     {
-        req->setSourceIP(srcip);
+        info("\nFixed spraying from %s on %s to %s\n", srcfile, srcplane?srcplane:srcip, dstname);
+        if (!isEmptyString(srcip)) req->setSourceIP(srcip);
+        if (!isEmptyString(srcplane)) req->setSourcePlane(srcplane);
         req->setSourcePath(srcfile);
     }
     else
+    {
+        info("\nSpraying to %s\n", dstname);
         req->setSrcxml(xmlbuf);
+    }
 
     if(recordsize != 0)
         req->setSourceRecordSize(recordsize);
 
-    if(dstcluster != nullptr)
+    if(!isEmptyString(dstcluster))
         req->setDestGroup(dstcluster);
     req->setDestLogicalName(dstname);
     req->setOverwrite(globals->getPropBool("overwrite", false));
@@ -429,11 +436,6 @@ bool CDfuPlusHelper::fixedSpray(const char* srcxml,const char* srcip,const char*
     if(globals->hasProp("expireDays"))
         req->setExpireDays(globals->getPropInt("expireDays"));
 
-    if(srcxml == nullptr)
-        info("\nFixed spraying from %s on %s to %s\n", srcfile, srcip, dstname);
-    else
-        info("\nSpraying to %s\n", dstname);
-
     Owned<IClientSprayFixedResponse> result = sprayclient->SprayFixed(req);
     const char *wuid = result->getWuid();
     if (!wuid||!*wuid) {
@@ -444,21 +446,26 @@ bool CDfuPlusHelper::fixedSpray(const char* srcxml,const char* srcip,const char*
     return true;
 }
 
-bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const char* srcfile,const MemoryBuffer &xmlbuf,const char* dstcluster,const char* dstname,const char *format,StringBuffer &retwuid, StringBuffer &except)
+bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const char* srcfile,const char* srcplane,
+                                   const MemoryBuffer &xmlbuf,const char* dstcluster,const char* dstname,
+                                   const char *format,StringBuffer &retwuid, StringBuffer &except)
 {
     Owned<IClientSprayVariable> req = sprayclient->createSprayVariableRequest();
-    if(srcxml == nullptr)
+    if(isEmptyString(srcxml))
     {
-        req->setSourceIP(srcip);
+        info("\nVariable spraying from %s on %s to %s\n", srcfile, srcplane?srcplane:srcip, dstname);
+        if (!isEmptyString(srcip)) req->setSourceIP(srcip);
+        if (!isEmptyString(srcplane)) req->setSourcePlane(srcplane);
         req->setSourcePath(srcfile);
     }
     else
     {
+        info("\nSpraying to %s\n", dstname);
         req->setSrcxml(xmlbuf);
     }
 
     const char* mrsstr = globals->queryProp("maxRecordSize");
-    if(mrsstr != nullptr)
+    if(!isEmptyString(mrsstr))
         req->setSourceMaxRecordSize(atoi(mrsstr));
     else
         req->setSourceMaxRecordSize(8192);
@@ -480,23 +487,23 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
     }
     else if(stricmp(format, "xml") == 0)
     {
-        if(encoding == nullptr)
+        if(isEmptyString(encoding))
             encoding = "utf8";
         else if(stricmp(encoding, "ascii") == 0)
             throw MakeStringException(-1, "xml format only accepts utf encodings");
-        if(rowtag == nullptr || *rowtag == '\0')
+        if(isEmptyString(rowtag))
             throw MakeStringException(-1, "rowtag not specified.");
-        if(rowpath && *rowpath)
+        if(!isEmptyString(rowpath))
             throw MakeStringException(-1, "You can't use rowpath option with xml format");
     }
     else if(stricmp(format, "csv") == 0)
     {
-        if(encoding == nullptr)
+        if(isEmptyString(encoding))
             encoding = "ascii";
 
-        if(rowtag != nullptr && *rowtag != '\0')
+        if(!isEmptyString(rowtag))
             throw MakeStringException(-1, "You can't use rowtag option with csv/delimited format");
-        if(rowpath && *rowpath)
+        if(!isEmptyString(rowpath))
             throw MakeStringException(-1, "You can't use rowpath option with csv/delimited format");
 
         const char* separator = globals->queryProp("separator");
@@ -509,7 +516,7 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
                 req->setNoSourceCsvSeparator(true);
         }
         const char* terminator = globals->queryProp("terminator");
-        if(terminator && *terminator)
+        if(!isEmptyString(terminator))
             req->setSourceCsvTerminate(terminator);
         const char* quote = globals->queryProp("quote");
         if(quote)
@@ -519,17 +526,17 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
             req->setSourceCsvQuote(quote);
         }
         const char* escape = globals->queryProp("escape");
-        if(escape && *escape)
+        if(!isEmptyString(escape))
             req->setSourceCsvEscape(escape);
     }
     else
         encoding = format; // may need extra later
 
     req->setSourceFormat(CDFUfileformat::decode(encoding));
-    if(rowtag != nullptr)
+    if(!isEmptyString(rowtag))
         req->setSourceRowTag(rowtag);
 
-    if(dstcluster != nullptr)
+    if(!isEmptyString(dstcluster))
         req->setDestGroup(dstcluster);
     req->setDestLogicalName(dstname);
     req->setOverwrite(globals->getPropBool("overwrite", false));
@@ -578,13 +585,10 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
     if(globals->hasProp("expireDays"))
         req->setExpireDays(globals->getPropInt("expireDays"));
 
-    if(srcxml == nullptr)
-        info("\nVariable spraying from %s on %s to %s\n", srcfile, srcip, dstname);
-    else
-        info("\nSpraying to %s\n", dstname);
     Owned<IClientSprayResponse> result = sprayclient->SprayVariable(req);
     const char *wuid = result->getWuid();
-    if (!wuid||!*wuid) {
+    if (isEmptyString(wuid))
+    {
         result->getExceptions().errorMessage(except);
         return false;
     }
@@ -594,31 +598,36 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
 
 int CDfuPlusHelper::spray()
 {
+    bool usingSrcPlane = false;
     const char* srcxml = globals->queryProp("srcxml");
     const char* srcip = globals->queryProp("srcip");
+    const char* srcplane =  globals->queryProp("srcPlane");
     const char* srcfile = globals->queryProp("srcfile");
 
     bool nowait = globals->getPropBool("nowait", false);
 
+    if (!isEmptyString(srcplane))
+        usingSrcPlane=true;
     MemoryBuffer xmlbuf;
 
-    if(srcxml == nullptr)
+    if(isEmptyString(srcxml))
     {
-        if(srcfile == nullptr)
+        if(isEmptyString(srcfile))
             throw MakeStringException(-1, "srcfile not specified");
-        if(srcip == nullptr) {
+        if(!usingSrcPlane && isEmptyString(srcip))
+        {
 #ifdef DAFILESRV_LOCAL
             progress("srcip not specified - assuming spray from local machine\n");
             srcip = ".";
 #else
-            throw MakeStringException(-1, "srcip not specified");
+            throw MakeStringException(-1, "Neither srcip nor srcplane specified");
 #endif
         }
     }
     else
     {
-        if(srcip != nullptr || srcfile != nullptr)
-            throw MakeStringException(-1, "srcip/srcfile and srcxml can't be used at the same time");
+        if(!isEmptyString(srcip) || !isEmptyString(srcfile) || usingSrcPlane)
+            throw MakeStringException(-1, "srcip/srcfile/srcplane and srcxml can't be used at the same time");
         StringBuffer buf;
         buf.loadFile(srcxml);
         int len = buf.length();
@@ -626,10 +635,10 @@ int CDfuPlusHelper::spray()
     }
 
     const char* dstname = globals->queryProp("dstname");
-    if(dstname == nullptr)
+    if(isEmptyString(dstname))
         throw MakeStringException(-1, "dstname not specified");
     const char* dstcluster = globals->queryProp("dstcluster");
-    if(dstcluster == nullptr)
+    if(isEmptyString(dstcluster))
         throw MakeStringException(-1, "dstcluster not specified");
     const char* format = globals->queryProp("format");
     if(format == nullptr)
@@ -637,17 +646,20 @@ int CDfuPlusHelper::spray()
     else if (stricmp(format, "delimited") == 0)
         format="csv";
 
-    SocketEndpoint localep;
-    StringBuffer localeps;
-    if (checkLocalDaFileSvr(srcip,localep))
-        srcip = localep.getUrlStr(localeps).str();
+    if (!usingSrcPlane)
+    {
+        SocketEndpoint localep;
+        StringBuffer localeps;
+        if (checkLocalDaFileSvr(srcip,localep))
+            srcip = localep.getUrlStr(localeps).str();
+    }
     StringBuffer wuid;
     StringBuffer errmsg;
     bool ok;
     if ((stricmp(format, "fixed") == 0)||(stricmp(format, "recfmvb") == 0)||(stricmp(format, "recfmv") == 0)||(stricmp(format, "variablebigendian") == 0))
-        ok = fixedSpray(srcxml,srcip,srcfile,xmlbuf,dstcluster,dstname,format,wuid,errmsg);
+        ok = fixedSpray(srcxml,srcip,srcfile,srcplane,xmlbuf,dstcluster,dstname,format,wuid,errmsg);
     else if((stricmp(format, "csv") == 0)||(stricmp(format, "xml") == 0)||(stricmp(format, "json") == 0)||(stricmp(format, "variable") == 0))
-        ok = variableSpray(srcxml,srcip,srcfile,xmlbuf,dstcluster,dstname,format,wuid, errmsg);
+        ok = variableSpray(srcxml,srcip,srcfile,srcplane,xmlbuf,dstcluster,dstname,format,wuid, errmsg);
     else
         throw MakeStringException(-1, "format %s not supported", format);
     if (!ok) {
@@ -716,21 +728,22 @@ int CDfuPlusHelper::replicate()
 int CDfuPlusHelper::despray()
 {
     const char* srcname = globals->queryProp("srcname");
-    if(srcname == nullptr)
+    if(isEmptyString(srcname))
         throw MakeStringException(-1, "srcname not specified");
 
     const char* dstxml = globals->queryProp("dstxml");
     const char* dstip = globals->queryProp("dstip");
+    const char* dstplane = globals->queryProp("dstplane");
     const char* dstfile = globals->queryProp("dstfile");
 
     bool nowait = globals->getPropBool("nowait", false);
 
     MemoryBuffer xmlbuf;
-    if(dstxml == nullptr)
+    if(isEmptyString(dstxml))
     {
-        if(dstip == nullptr) {
+        if (isEmptyString(dstplane) && isEmptyString(dstip)) {
 #ifdef DAFILESRV_LOCAL
-            progress("dstip not specified - assuming spray from local machine\n");
+            progress("dstip and dstplane not specified - assuming despray to local machine\n");
             dstip = ".";
 #else
             throw MakeStringException(-1, "dstip not specified");
@@ -739,28 +752,36 @@ int CDfuPlusHelper::despray()
     }
     else
     {
-        if(dstip != nullptr || dstfile != nullptr)
-            throw MakeStringException(-1, "dstip/dstfile and dstxml can't be used at the same time");
+        if(!isEmptyString(dstip) || !isEmptyString(dstfile) || !isEmptyString(dstplane))
+            throw MakeStringException(-1, "dstip/dstfile/dstplane and dstxml can't be used at the same time");
         StringBuffer buf;
         buf.loadFile(dstxml);
         int len = buf.length();
         xmlbuf.setBuffer(len, buf.detach(), true);
     }
 
-    if(dstxml == nullptr)
-        info("\nDespraying %s to host %s file %s\n", srcname, dstip, dstfile ? dstfile : "");
-    else
-        info("\nDespraying %s\n", srcname);
-
     Owned<IClientDespray> req = sprayclient->createDesprayRequest();
     req->setSourceLogicalName(srcname);
-    if(dstxml == nullptr)
+    StringBuffer extrainfo;
+    if(isEmptyString(dstxml))
     {
-        req->setDestIP(dstip);
+        extrainfo.append(" to");
+        if (!isEmptyString(dstplane))
+        {
+            extrainfo.appendf(" storage plane %s", dstplane);
+            req->setDestPlane(dstplane);
+        }
+        if (!isEmptyString(dstip))
+        {
+            extrainfo.appendf(" host %s", dstip);
+            req->setDestIP(dstip);
+        }
+        extrainfo.appendf(" file %s", dstfile ? dstfile : "");
         req->setDestPath(dstfile);
     }
     else
         req->setDstxml(xmlbuf);
+    info("\nDespraying %s%s\n",srcname,extrainfo.str());
 
     req->setOverwrite(globals->getPropBool("overwrite", false));
     if(globals->hasProp("connect"))
@@ -794,14 +815,13 @@ int CDfuPlusHelper::despray()
     if(globals->hasProp("decrypt"))
         req->setDecrypt(globals->queryProp("decrypt"));
 
-
     SocketEndpoint localep;
     StringBuffer localeps;
-    if (checkLocalDaFileSvr(dstip,localep))
+    if (isEmptyString(dstplane) && checkLocalDaFileSvr(dstip,localep))
         dstip = localep.getUrlStr(localeps).str();
     Owned<IClientDesprayResponse> result = sprayclient->Despray(req);
     const char* wuid = result->getWuid();
-    if(wuid == nullptr || *wuid == '\0')
+    if(isEmptyString(wuid))
         exc(result->getExceptions(),"despraying");
     else
     {
