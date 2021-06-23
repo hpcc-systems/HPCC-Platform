@@ -1038,7 +1038,7 @@ OUTPUT(L);</programlisting></para>
         <para>We will download the word list from <ulink
         url="http://wordlist.sourceforge.net/">http://wordlist.sourceforge.net/</ulink>
         Look for a link to the <emphasis role="bold">2of12.txt</emphasis> file
-        on that page. </para>
+        on that page.</para>
 
         <para><orderedlist>
             <listitem>
@@ -1069,7 +1069,7 @@ OUTPUT(L);</programlisting></para>
         <para>Next you will distribute (or Spray) the dataset to all the nodes
         in the HPCC Systems Thor cluster. The power of the HPCC Systems comes
         from its ability to assign multiple processors to work on different
-        portions of the data file in parallel. Even though the VM Edition only
+        portions of the data file in parallel. Even if your deployment only
         has a single node, the data must be sprayed to the cluster.</para>
 
         <orderedlist>
