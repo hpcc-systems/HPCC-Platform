@@ -140,27 +140,27 @@ storage:
     storageClass: ""
     storageSize: 1Gi
     prefix: "/var/lib/HPCCSystems/dalistorage"
-    labels: [ "dali" ]
+    category: dali
   - name: sasha
     storageClass: ""
     storageSize: 1Gi
     prefix: "/var/lib/HPCCSystems/sashastorage"
-    labels: [ "sasha" ]
+    category: sasha
   - name: dll
     storageClass: ""
     storageSize: 1Gi
     prefix: "/var/lib/HPCCSystems/queries"
-    labels: [ "dll" ]
+    category: dll
   - name: data
     storageClass: ""
     storageSize: 1Gi
     prefix: "/var/lib/HPCCSystems/hpcc-data"
-    labels: [ "data" ]
+    category: data
   - name: mydropzone
     storageClass: ""
     storageSize: 1Gi
     prefix: "/var/lib/HPCCSystems/dropzone"
-    labels: [ "lz" ]
+    category: lz
 
   dllStorage:
     plane: dll

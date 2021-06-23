@@ -3011,7 +3011,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetEspURL(const char *username, cons
 FILESERVICES_API char * FILESERVICES_CALL fsGetDefaultDropZone()
 {
     StringBuffer dropZonePath;
-    Owned<IPropertyTreeIterator> dropZones = getGlobalConfigSP()->getElements("storage/planes[labels='lz']");
+    Owned<IPropertyTreeIterator> dropZones = getGlobalConfigSP()->getElements("storage/planes[@category='lz']");
     if (dropZones->first())
         dropZones->query().getProp("@prefix", dropZonePath);        // Why the directory? seems a very stange choice
     return strdup(dropZonePath.str());
@@ -3020,7 +3020,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsGetDefaultDropZone()
 FILESERVICES_API void FILESERVICES_CALL fsGetDropZones(ICodeContext *ctx, size32_t & __lenResult, void * & __result)
 {
     MemoryBuffer mb;
-    Owned<IPropertyTreeIterator> dropZones = getGlobalConfigSP()->getElements("storage/planes[labels='lz']");
+    Owned<IPropertyTreeIterator> dropZones = getGlobalConfigSP()->getElements("storage/planes[@category='lz']");
     ForEach(*dropZones)
     {
         const char * directory = dropZones->query().queryProp("@prefix");

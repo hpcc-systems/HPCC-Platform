@@ -34,7 +34,7 @@
   {{- required (printf "Storage plane '%s' is defined more than once" $plane.name) nil -}}
  {{- end -}}
  {{- $_ := set $previousPlanes $plane.name true -}}
- {{- $rawPlane := omit $plane "name" "labels" -}}
+ {{- $rawPlane := omit $plane "name" "category" "subPath" -}}
  {{- if hasKey $previousMounts $plane.prefix -}}
   {{- /* Should this restrict if has a pvc or a storage class? */ -}}
   {{- if not (deepEqual (get $previousMounts $plane.prefix) $rawPlane) -}}

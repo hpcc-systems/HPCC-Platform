@@ -48,7 +48,7 @@
 #define MIN_REDIRECTION_LOAD_INTERVAL 1000
 
 
-constexpr const char * lz_plane_path = "storage/planes[labels='lz']";
+constexpr const char * lz_plane_path = "storage/planes[@category='lz']";
 
 IPropertyTreeIterator * getDropZonePlanesIterator(const char * name)
 {
