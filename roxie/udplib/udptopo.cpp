@@ -485,10 +485,14 @@ static std::thread topoThread;
 static Semaphore abortTopo;
 const unsigned topoUpdateInterval = 5000;
 
-extern UDPLIB_API void publishTopology(unsigned traceLevel, const StringArray &topoValues, const std::vector<RoxieEndpointInfo> &myRoles)
+extern UDPLIB_API void initializeTopology(const StringArray &topoValues, const std::vector<RoxieEndpointInfo> &myRoles)
 {
     topologyManager.setServers(topoValues);
     topologyManager.setRoles(myRoles);
+}
+
+extern UDPLIB_API void publishTopology(unsigned traceLevel, const std::vector<RoxieEndpointInfo> &myRoles)
+{
     if (topologyManager.numServers())
     {
         topoThread = std::thread([traceLevel, &myRoles]()
