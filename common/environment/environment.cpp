@@ -207,7 +207,7 @@ private:
         if (!clusterGroupKeyNameCache)
         {
             StringBuffer keysDir;
-            envGetConfigurationDirectory("keys",nullptr, nullptr, keysDir);
+            getConfigurationDirectory(nullptr, "keys",nullptr, nullptr, keysDir);
 
             Owned<IPropertyTreeIterator> keyPairIt = p->getElements("EnvSettings/Keys/KeyPair");
             ForEach(*keyPairIt)

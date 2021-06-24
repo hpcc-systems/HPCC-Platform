@@ -756,7 +756,7 @@ IDllServer & queryDllServer()
         StringBuffer dir;
         if(dllserver_root == NULL)
         {
-            if (envGetConfigurationDirectory("temp","dllserver","dllserver",dir)) // not sure if different instance might be better but never separated in past
+            if (getConfigurationDirectory(nullptr, "temp","dllserver","dllserver",dir)) // not sure if different instance might be better but never separated in past
                 dllserver_root = dir.str();
             else
                 dllserver_root = DEFAULT_SERVER_ROOTDIR;
