@@ -26,7 +26,6 @@ if (USE_CPPUNIT)
 
 if (NOT CONTAINERIZED)
 ADD_SUBDIRECTORY(configmgr)
-ADD_SUBDIRECTORY(metrics)
 endif()
 
 project( unittests )
@@ -48,6 +47,8 @@ set (    SRCS
          configmgr/ConfigMgrUnitTests.cpp
          configmgr/ConfigMgrTemplateTests.cpp
          configmgr/ConfigMgrHPCCTests.cpp
+         metrics/MetricFrameworkTests.cpp
+         metrics/PeriodicSinkTests.cpp
     )
 endif ()
 

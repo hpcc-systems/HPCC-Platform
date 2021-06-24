@@ -18,50 +18,54 @@
 #ifdef _USE_CPPUNIT
 
 #include <cppunit/TestFixture.h>
-#include "metricunittests.hpp"
+#include "unittests.hpp"
 #include <algorithm>
 
 #include "jptree.hpp"
 #include "jmetrics.hpp"
 
-#include "PeriodicTestSink.hpp"
+using namespace hpccMetrics;
 
-static MetricsReporter &reporter = queryMetricsReporter();
+class PeriodicTestSink : public PeriodicMetricSink
+{
+public:
+    explicit PeriodicTestSink(const char *name, const IPropertyTree *pSettingsTree) :
+        PeriodicMetricSink(name, "test", pSettingsTree) { }
+
+    ~PeriodicTestSink() = default;
+
+protected:
+    virtual void prepareToStartCollecting() override
+    {
+        prepareCalled = true;
+        numCollections = 0;
+    }
+
+    virtual void collectingHasStopped() override
+    {
+        stopCollectionNotificationCalled = true;
+    }
+
+    void doCollection() override
+    {
+        numCollections++;
+    }
+
+public:
+    bool prepareCalled = false;
+    bool stopCollectionNotificationCalled = false;
+    int numCollections = 0;
+};
+
+
+MetricsReporter periodicSinkTestReporter;
 
 const char *periodicSinkSettingsTestYml = R"!!(period: 2
 )!!";
 
-int period = 5;
+int period = 2;
 
 PeriodicTestSink *pPeriodicTestSink = nullptr;
-
-void usage()
-{
-    printf("\n"
-           "Usage:\n"
-           "    periodicsinktests>\n"
-           "\n");
-}
-
-int main(int argc, char* argv[])
-{
-    InitModuleObjects();
-    bool wasSuccessful = false;
-    {
-        // New scope as we need the TestRunner to be destroyed before unloading the dlls...
-        CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry();
-        CppUnit::TextUi::TestRunner runner;
-        CppUnit::Test *all = registry.makeTest();
-        int numTests = all->getChildTestCount();
-        for (int i = 0; i < numTests; i++)
-        {
-            CppUnit::Test *sub = all->getChildTestAt(i);
-            runner.addTest(sub);
-        }
-        wasSuccessful = runner.run( "", false );
-    }
-    return wasSuccessful ? 0 : 1; // 0 == exit code success
-}
 
 class PeriodicSinkTests : public CppUnit::TestFixture
 {
@@ -75,7 +79,7 @@ class PeriodicSinkTests : public CppUnit::TestFixture
                 Owned<IPropertyTree> pSettings = createPTreeFromYAMLString(periodicSinkSettingsTestYml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
                 pSettings->setPropInt("@period", period);
                 pPeriodicTestSink = new PeriodicTestSink("periodic_test_sink", pSettings);
-                reporter.addSink(pPeriodicTestSink, "periodic_test_sink");
+                periodicSinkTestReporter.addSink(pPeriodicTestSink, "periodic_test_sink");
             }
         }
 
@@ -91,28 +95,25 @@ class PeriodicSinkTests : public CppUnit::TestFixture
             // To test setting the period correctly, start collection and delay a multiple of that period.
             // Stop collection and ask the test sink how many collections were done. If the count is +/- 1
             // from the wait period multiple used, then we are close enough
-            int multiple = 5;
-            reporter.startCollecting();
+            int multiple = 3;
+            periodicSinkTestReporter.startCollecting();
 
             //
-            // Check that the sink is collecting
-            CPPUNIT_ASSERT_MESSAGE("Expected sink to report it was collecting", pPeriodicTestSink->isCurrentlyCollectiing());
+            // Check that the sink called to prepare for collection
+            CPPUNIT_ASSERT_MESSAGE("Expected sink to report it was collecting", pPeriodicTestSink->prepareCalled);
 
-            // wait... then stop collecing
+            // wait... then stop collecting
             sleep(multiple * period);
-            reporter.stopCollecting();
+            periodicSinkTestReporter.stopCollecting();
 
-            int numCollections = pPeriodicTestSink->getNumCollections();
+            int numCollections = pPeriodicTestSink->numCollections;
 
-            char msg[256];
-            sprintf(msg, "The number of reports was incorrect, it was expected to be between %d and %d", multiple-1, multiple+1);
             bool numReportsCorrect = (numCollections >= multiple-1) && (numCollections <= multiple+1);
-            CPPUNIT_ASSERT_EQUAL_MESSAGE(msg, true, numReportsCorrect);
+            CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("The number of reports was incorrect, it was expected to be between %d and %d", multiple-1, multiple+1).str(), true, numReportsCorrect);
 
             //
-            // Verify that some flags are also set properly after collection has stopped
-            CPPUNIT_ASSERT_MESSAGE("Collection stop flag not set properly", pPeriodicTestSink->isCollectionStopped());
-            CPPUNIT_ASSERT_MESSAGE("Stop collection was not called", pPeriodicTestSink->isCollectionStoppedCalled());
+            // Verify collection was stopped
+            CPPUNIT_ASSERT_MESSAGE("Stop collection was not called", pPeriodicTestSink->stopCollectionNotificationCalled);
         }
 };
 

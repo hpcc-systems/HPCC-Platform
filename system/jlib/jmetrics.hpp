@@ -218,7 +218,12 @@ protected:
 
 extern "C" { typedef hpccMetrics::MetricSink* (*getSinkInstance)(const char *, const IPropertyTree *pSettingsTree); }
 
-struct SinkInfo;
+struct SinkInfo
+{
+    explicit SinkInfo(MetricSink *_pSink) : pSink{_pSink} {}
+    MetricSink *pSink = nullptr;             // ptr to the sink
+    std::vector<std::string> reportMetrics;   // vector of metrics to report (empty for none)
+};
 
 class jlib_decl MetricsReporter
 {
@@ -226,7 +231,7 @@ public:
     MetricsReporter() = default;
     ~MetricsReporter();
     void init(IPropertyTree *pMetricsTree);
-    void addSink(MetricSink *pSink, const char *name);
+    void addSink(MetricSink *pSink, const char *name);  // for use by unit tests
     void addMetric(const std::shared_ptr<IMetric> &pMetric);
     void startCollecting();
     void stopCollecting();
@@ -235,7 +240,6 @@ public:
 protected:
     void initializeSinks(IPropertyTreeIterator *pSinkIt);
     static MetricSink *getSinkFromLib(const char *type, const char *sinkName, const IPropertyTree *pSettingsTree);
-    bool insertSink(MetricSink *pSink, const char *name);
 
 protected:
     StringBuffer componentPrefix;
