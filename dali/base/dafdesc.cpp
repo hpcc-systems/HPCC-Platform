@@ -3435,30 +3435,6 @@ static void doInitializeStorageGroups(bool createPlanesFromGroups)
     //Ensure that host groups that are defined in terms of other host groups are expanded out so they have an explicit list of hosts
     normalizeHostGroups();
 
-    //Groups are case insensitve, so add an extra key to the storage items to allow them to be
-    //searched by group name, and also check for duplicates.
-    Owned<IPropertyTreeIterator> iter = storage->getElements("planes");
-    StringBuffer group;
-    ForEach(*iter)
-    {
-        IPropertyTree & cur = iter->query();
-        //Check if this has already been done - so the function is safe to call more than once
-        const char * oldgroup = cur.queryProp("@group");
-        if (oldgroup)
-            continue;
-
-        const char * name = cur.queryProp("@name");
-        group.clear().append(name).toLowerCase();
-
-        //Check the storage plane does not match another one case-insensitiviely. (It is unlikely the Helm chart will have installed.)
-        VStringBuffer xpath("plane[@group='%s']", group.str());
-        IPropertyTree * match = storage->queryPropTree(xpath);
-        if (match)
-            throwStringExceptionV(DALI_DUPLICATE_STORAGE_PLANE, "Duplicate storage planes %s,%s (case insensitive)", name, match->queryProp("@name"));
-
-        cur.setProp("@group", group);
-    }
-
     //The following can be removed once the storage planes have better integration
     setupContainerizedStorageLocations();
 }
@@ -3513,7 +3489,7 @@ IStoragePlane * getStoragePlane(const char * name, bool required)
     StringBuffer group;
     group.append(name).toLowerCase();
 
-    VStringBuffer xpath("storage/planes[@group='%s']", group.str());
+    VStringBuffer xpath("storage/planes[@name='%s']", group.str());
     Owned<IPropertyTree> match = getGlobalConfigSP()->getPropTree(xpath);
     if (!match)
     {
