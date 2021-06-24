@@ -817,6 +817,7 @@ int main( int argc, const char *argv[]  )
         PROGLOG("Global memory size = %d MB", mmemSize);
         roxiemem::setTotalMemoryLimit(gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, ((memsize_t)mmemSize) * 0x100000, 0, thorAllocSizes, NULL);
 
+#ifndef _CONTAINERIZED
         const char * overrideBaseDirectory = globals->queryProp("@thorDataDirectory");
         const char * overrideReplicateDirectory = globals->queryProp("@thorReplicateDirectory");
         StringBuffer datadir;
@@ -829,6 +830,8 @@ int main( int argc, const char *argv[]  )
             setBaseDirectory(overrideBaseDirectory, false);
         if (overrideReplicateDirectory&&*overrideBaseDirectory)
             setBaseDirectory(overrideReplicateDirectory, true);
+#endif
+
         StringBuffer tempDirStr;
         if (!getConfigurationDirectory(globals->queryPropTree("Directories"),"temp","thor",globals->queryProp("@name"), tempDirStr))
         {

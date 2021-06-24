@@ -507,10 +507,10 @@ void initPersistentHandler()
     if (!persistentInitDone)
     {
 #ifndef _CONTAINERIZED
-        int maxPersistentRequests = queryEnvironmentConf().getPropInt("maxPersistentRequests", DEFAULT_MAX_PERSISTENT_REQUESTS);
+        int maxPersistentRequests = queryEnvironmentConf().getPropInt("maxHttpCallPersistentRequests", 0);
 #else
         Owned<IPropertyTree> conf = getComponentConfig();
-        int maxPersistentRequests = conf->getPropInt("@maxPersistentRequests", DEFAULT_MAX_PERSISTENT_REQUESTS);
+        int maxPersistentRequests = conf->getPropInt("@maxHttpCallPersistentRequests", 0);
 #endif
         if (maxPersistentRequests != 0)
             persistentHandler = createPersistentHandler(nullptr, DEFAULT_MAX_PERSISTENT_IDLE_TIME, maxPersistentRequests, PersistentLogLevel::PLogMin, true);

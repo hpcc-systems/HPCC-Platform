@@ -63,6 +63,14 @@ public:
             summary.merge(*nodeStats[n], n);
         summary.recordStatistics(result);
     }
+    stat_type getStatisticSum(StatisticKind kind)
+    {
+        stat_type total = 0;
+        unsigned index = mapping.getIndex(kind);
+        for (unsigned n=0; n < nodeStats.size(); n++) // NB: size is = queryClusterWidth()
+            total += nodeStats[n]->getValue(index);
+        return total;
+    }
 };
 
 class graphmaster_decl CThorEdgeCollection : public CThorStatsCollection

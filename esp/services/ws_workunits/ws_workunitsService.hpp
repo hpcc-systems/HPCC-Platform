@@ -36,7 +36,7 @@
 #define UFO_RELOAD_MAPPED_QUERIES                0x04
 #define UFO_REMOVE_QUERIES_NOT_IN_QUERYSET       0x08
 
-static const __uint64 defaultWUResultMaxSize = 10000000; //10M
+static const __uint64 defaultWUResultMaxSize = 0x100000*10; //10M
 
 class QueryFilesInUse : public CInterface, implements ISDSSubscription
 {
@@ -233,7 +233,7 @@ public:
     void checkAndSetClusterQueryState(IEspContext &context, const char* cluster, const char* querySetId, IArrayOf<IEspQuerySetQuery>& queries, bool checkAllNodes);
     void checkAndSetClusterQueryState(IEspContext &context, const char* cluster, StringArray& querySetIds, IArrayOf<IEspQuerySetQuery>& queries, bool checkAllNodes);
     IWorkUnitFactory *queryWUFactory() { return wuFactory; };
-    const char *getDataDirectory() const { return dataDirectory.str(); };
+    const char *getTempDirectory() const { return tempDirectory.str(); };
 
     bool onWUQuery(IEspContext &context, IEspWUQueryRequest &req, IEspWUQueryResponse &resp);
     bool onWULightWeightQuery(IEspContext &context, IEspWULightWeightQueryRequest &req, IEspWULightWeightQueryResponse &resp);
@@ -421,7 +421,7 @@ private:
     Owned<IThreadPool> clusterQueryStatePool;
     unsigned thorSlaveLogThreadPoolSize = THOR_SLAVE_LOG_THREAD_POOL_SIZE;
     Owned<IWorkUnitFactory> wuFactory;
-    StringBuffer dataDirectory;
+    StringBuffer tempDirectory;
     __uint64 wuResultMaxSize = defaultWUResultMaxSize;
 
 public:

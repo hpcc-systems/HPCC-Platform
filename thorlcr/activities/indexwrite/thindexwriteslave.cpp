@@ -243,6 +243,7 @@ public:
             builder.clear();
             if (builderIFileIO)
             {
+                mergeStats(stats, builderIFileIO, diskWriteRemoteStatistics);
                 builderIFileIO->close();
                 builderIFileIO.clear();
             }

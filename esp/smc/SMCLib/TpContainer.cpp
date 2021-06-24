@@ -164,11 +164,6 @@ void CTpWrapper::getTpFTSlaves(IArrayOf<IConstTpFTSlave>& list)
     throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 }
 
-void CTpWrapper::getTpDkcSlaves(IArrayOf<IConstTpDkcSlave>& list)
-{
-    throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
-}
-
 void CTpWrapper::getTpGenesisServers(IArrayOf<IConstTpGenesisServer>& list)
 {
     throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
@@ -204,7 +199,7 @@ void CTpWrapper::getGroupList(double espVersion, const char* kindReq, IArrayOf<I
 {
     try
     {
-        Owned<IPropertyTreeIterator> dataPlanes = getGlobalConfigSP()->getElements("storage/planes[labels='data']");
+        Owned<IPropertyTreeIterator> dataPlanes = getGlobalConfigSP()->getElements("storage/planes[@category='data']");
         ForEach(*dataPlanes)
         {
             IPropertyTree & plane = dataPlanes->query();
@@ -746,7 +741,7 @@ static void refreshValidTargets()
 static void refreshValidDataPlaneNames()
 {
     validDataPlaneNames.clear();
-    Owned<IPropertyTreeIterator> dataPlanes = getGlobalConfigSP()->getElements("storage/planes[labels='data']");
+    Owned<IPropertyTreeIterator> dataPlanes = getGlobalConfigSP()->getElements("storage/planes[@category='data']");
     ForEach(*dataPlanes)
         validDataPlaneNames.insert(dataPlanes->query().queryProp("@name"));
 }
@@ -806,7 +801,7 @@ StringBuffer & getRoxieDefaultPlane(StringBuffer & plane, const char * roxieName
         return plane;
 
     //Find the first data plane - better if it was retrieved from roxie config
-    Owned<IPropertyTreeIterator> dataPlanes = getGlobalConfigSP()->getElements("storage/planes[labels='data']");
+    Owned<IPropertyTreeIterator> dataPlanes = getGlobalConfigSP()->getElements("storage/planes[@category='data']");
     if (!dataPlanes->first())
         throwUnexpectedX("No default data plane defined");
     return plane.append(dataPlanes->query().queryProp("@name"));

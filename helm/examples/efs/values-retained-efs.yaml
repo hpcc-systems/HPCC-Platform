@@ -10,32 +10,27 @@ storage:
   - name: dali
     pvc: dali-awsstorage-hpcc-efs-pvc
     prefix: "/var/lib/HPCCSystems/dalistorage"
-    labels:
-    - dali
+    category: dali
 
   - name: dll
     pvc: dll-awsstorage-hpcc-efs-pvc
     prefix: "/var/lib/HPCCSystems/queries"
-    labels:
-    - dll
+    category: dll
 
   - name: sasha
     pvc: sasha-awsstorage-hpcc-efs-pvc
     prefix: "/var/lib/HPCCSystems/sasha"
-    labels:
-    - sasha
+    category: sasha
 
   - name: data
     pvc: data-awsstorage-hpcc-efs-pvc
     prefix: "/var/lib/HPCCSystems/hpcc-data"
-    labels:
-    - data # NB: if not set, this would be the default
+    category: data
 
   - name: mydropzone
     pvc: mydropzone-awsstorage-hpcc-efs-pvc
-    prefix: "/var/lib/HPCCSystems/dropzone"
-    labels:
-    - lz
+    prefix: "/var/lib/HPCCSystems/mydropzone"
+    category: lz
 
 
   dllStorage:

@@ -7350,3 +7350,26 @@ IFileEventWatcher *createFileEventWatcher(FileWatchFunc callback)
 #endif // __linux__
 
 
+//---- Storage plane related functions ----------------------------------------------------
+
+IPropertyTree * getHostGroup(const char * name, bool required)
+{
+    if (!isEmptyString(name))
+    {
+        VStringBuffer xpath("storage/hostGroups[@name='%s']", name);
+        Owned<IPropertyTree> global = getGlobalConfig();
+        IPropertyTree * match = global->getPropTree(xpath);
+        if (match)
+            return match;
+    }
+    if (required)
+        throw makeStringExceptionV(-1, "No entry found for hostGroup: '%s'", name ? name : "<null>");
+    return nullptr;
+}
+
+IPropertyTree * getStoragePlane(const char * name)
+{
+    VStringBuffer xpath("storage/planes[@name='%s']", name);
+    Owned<IPropertyTree> global = getGlobalConfig();
+    return global->getPropTree(xpath);
+}

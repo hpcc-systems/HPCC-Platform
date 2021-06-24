@@ -55,10 +55,9 @@
         "sku": {
           "type": "string"
         },
-        "labels": {
-          "description": "a list of labels associated with this plane, e.g. lz, data",
-          "type": "array",
-          "items": { "type": "string" }
+        "category": {
+          "description": "the category this plane is usd for, e.g. lz, data",
+          "type": "string"
         }
       },
       "required": [ "name", "subPath", "size" ],

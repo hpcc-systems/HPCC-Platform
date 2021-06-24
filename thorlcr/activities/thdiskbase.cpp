@@ -224,6 +224,7 @@ void CWriteMasterBase::publish()
     }
     if (TDWrestricted & diskHelperBase->getFlags())
         props.setPropBool("restricted", true );
+    props.setPropInt64("@numDiskWrites", statsCollection.getStatisticSum(StNumDiskWrites));
     container.queryTempHandler()->registerFile(fileName, container.queryOwner().queryGraphId(), diskHelperBase->getTempUsageCount(), TDXtemporary & diskHelperBase->getFlags(), getDiskOutputKind(diskHelperBase->getFlags()), &clusters);
     if (!dlfn.isExternal())
     {

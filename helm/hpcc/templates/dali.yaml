@@ -66,7 +66,7 @@ spec:
       {{- end }}
       {{- end }}
       initContainers: 
-        {{- include "hpcc.changePlaneMountPerms" (dict "root" $ "includeLabels" (list "dali") "includeNames" (uniq $sashaPlanes)) | indent 8 }}
+        {{- include "hpcc.changePlaneMountPerms" (dict "root" $ "includeCategories" (list "dali") "includeNames" (uniq $sashaPlanes)) | indent 8 }}
       containers:
       - name: {{ $dali.name | quote }}
         workingDir: /var/lib/HPCCSystems

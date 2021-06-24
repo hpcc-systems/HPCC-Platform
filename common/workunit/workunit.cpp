@@ -14148,7 +14148,12 @@ void deleteK8sResource(const char *componentName, const char *job, const char *r
     if (error.length())
         DBGLOG("kubectl delete error: %s", error.trimRight().str());
     if (ret)
-        throw makeStringException(0, "Failed to run kubectl delete");
+    {
+        StringBuffer errorText("Failed to run kubectl delete");
+        if (error.length())
+            errorText.append(", error: ").append(error);
+        throw makeStringException(0, errorText);
+    }
 }
 
 void waitK8sJob(const char *componentName, const char *job, unsigned pendingTimeoutSecs, KeepK8sJobs keepJob)
@@ -14274,7 +14279,10 @@ bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, 
     if (ret)
     {
         DBGLOG("Using yaml %s", jobYaml.str());
-        throw makeStringException(0, "Failed to replace k8s resource");
+        StringBuffer errorText("Failed to replace k8s resource");
+        if (error.length())
+            errorText.append(", error: ").append(error);
+        throw makeStringException(0, errorText);
     }
     return true;
 }
