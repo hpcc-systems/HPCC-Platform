@@ -19,40 +19,46 @@ storage:
 
   planes:
   - name: demoOne
+    category: data
     prefix: /home/gavin/temp
     hostGroup: demoOne
   - name: myDropZone
     prefix: /home/gavin/temp
     hosts: [ '192.168.86.202']
-    labels: ['lz']
+    category: 'lz'
   - name: demoTwo
     prefix: /home/gavin/temp/demoTwo
     hostGroup: demoTwo
+    category: data
   - name: demoTwoReplica
     prefix: /home/gavin/temp/demoTwo
     hostGroup: demoThree
+    category: data
   - name: demoTwoA
     prefix: /home/gavin/temp/demoTwoA
     hostGroup: demoTwoA
+    category: data
   - name: demoTwoB
     prefix: /home/gavin/temp/demoTwoB
     hostGroup: demoTwoB
+    category: data
   - name: myInlinePlane
     prefix: /home/gavin/temp
     hosts: [ 'here', 'there', 'everywhere']
+    category: data
 
   - name: dali
-    labels: [ dali ]
+    category: dali
     storageClass: ""
     storageSize: 1Gi
     prefix: "/var/lib/HPCCSystems/dalistorage"
   - name: dll
-    labels: [ dll ]
+    category: dll
     storageClass: ""
     storageSize: 1Gi
     prefix: "/var/lib/HPCCSystems/queries"
   - name: sasha
-    labels: [ sasha ]
+    category: sasha
     storageClass: ""
     storageSize: 1Gi
     prefix: "/var/lib/HPCCSystems/sashastorage"

@@ -132,6 +132,12 @@ define a storage plane.  That implicit plane could be based on a pre-existing pe
 existingClaim) or ephemeral storage (by setting storageClass and storageSize).  In version 8.2. these sections can
 only refer to a plane defined in the plane list.
 
+Another change is that previously a storage plane had a labels: attribute to indicate what kind of data was stored on
+the plane.  It was a list, and if blank defaulted to \[ data \].  This has now become a single valued "category" attribute.
+In the unlikely event of wanting to have multiple categories stored on the same mounted drive, it is possible to define
+a plane with a duplicate prefix and storage definition with a different category.  Planes also support the subPath
+attribute to allow a subdirectory to be used within a mount point.
+
 For instance if you have the following definition in 8.0.x:
 
 ```code
@@ -147,7 +153,7 @@ storage:
   - name: dali
     pvc: my-pvc
     prefix: "/var/lib/HPCCSystems/dalistorage"
-    labels: [ "dali" ]
+    category: dali
 
   daliStorage:
      name: dali
@@ -170,7 +176,7 @@ storage:
     storageClass: ""
     storageSize: 1Gi
     prefix: "/var/lib/HPCCSystems/dalistorage"
-    labels: [ "dali" ]
+    category: dali
 
   daliStorage:
      name: dali

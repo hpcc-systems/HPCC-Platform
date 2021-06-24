@@ -3245,8 +3245,8 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy
     else
         plane->setProp("@prefix", queryBaseDirectory(groupType, copy));
 
-    const char * label = (dropZoneIndex != 0) ? "lz" : "data";
-    addPTreeItem(plane, "labels", label);
+    const char * category = (dropZoneIndex != 0) ? "lz" : "data";
+    plane->setProp("@category", category);
 
     //MORE: If container is identical to this except for the name we could generate an information tag @alias
 }
