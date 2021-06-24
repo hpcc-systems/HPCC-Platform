@@ -1395,7 +1395,7 @@ public:
         }
     }
 
-    void stopDependencies(unsigned parentExtractSize, const byte *parentExtract, unsigned controlId)
+    void stopDependencies(unsigned controlId)
     {
         ForEachItemIn(idx, dependencies)
         {
@@ -11976,9 +11976,10 @@ public:
 class CRoxieServerDiskWriteActivityFactory : public CRoxieServerMultiOutputFactory
 {
     bool isTemp;
+    bool isRoot;
 public:
-    CRoxieServerDiskWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
-        : CRoxieServerMultiOutputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
+    CRoxieServerDiskWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
+        : CRoxieServerMultiOutputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
     {
         Owned<IHThorDiskWriteArg> helper = (IHThorDiskWriteArg *) helperFactory();
         isTemp = (helper->getFlags() & TDXtemporary) != 0;
@@ -12015,14 +12016,14 @@ public:
 
     virtual bool isSink() const
     {
-        return numOutputs == 0 && (kind==TAKspillwrite || !isTemp); // MORE - check with Gavin if this is right if not a temp but reread in  same job...
+        return numOutputs == 0 && (kind==TAKspillwrite || (!isTemp && isRoot)); // MORE - check with Gavin if this is right if not a temp but reread in  same job...
     }
 
 };
 
-IRoxieServerActivityFactory *createRoxieServerDiskWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+IRoxieServerActivityFactory *createRoxieServerDiskWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
 {
-    return new CRoxieServerDiskWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
+    return new CRoxieServerDiskWriteActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode, _isRoot);
 }
 
 //=================================================================================
@@ -12403,9 +12404,10 @@ public:
 
 class CRoxieServerIndexWriteActivityFactory : public CRoxieServerMultiOutputFactory
 {
+    bool isRoot;
 public:
     CRoxieServerIndexWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool _isRoot)
-        : CRoxieServerMultiOutputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode)
+        : CRoxieServerMultiOutputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode), isRoot(_isRoot)
     {
         setNumOutputs(0);
     }
@@ -12417,7 +12419,7 @@ public:
 
     virtual bool isSink() const
     {
-        return true;
+        return isRoot;
     }
     virtual const StatisticsMapping &queryStatsMapping() const
     {
@@ -20777,6 +20779,8 @@ class CRoxieServerActionBaseActivity : public CRoxieServerActivity
 {
     CriticalSection ecrit;
     Owned<IException> exception;
+
+protected:
     bool executed;
 
 public:
@@ -20848,7 +20852,7 @@ public:
             ActivityTimer t(activityStats, timeActivities);
             cond = helper.getCondition();
         }
-        stopDependencies(parentExtractSize, parentExtract, cond ? 2 : 1);
+        stopDependencies(cond ? 2 : 1);
         executeDependencies(parentExtractSize, parentExtract, cond ? 1 : 2);
     }
 
@@ -20866,6 +20870,7 @@ public:
     }
 
 };
+
 
 class CRoxieServerIfActionActivityFactory : public CRoxieServerActivityFactory
 {
@@ -20902,7 +20907,7 @@ public:
     {
     }
 
-    virtual void doExecuteAction(unsigned parentExtractSize, const byte * parentExtract) 
+    virtual void doExecuteAction(unsigned parentExtractSize, const byte * parentExtract) override
     {
 #ifdef PARALLEL_EXECUTE
         CParallelActivityExecutor afor(dependencies, parentExtractSize, parentExtract);
@@ -20915,6 +20920,12 @@ public:
 #endif
     }
 
+    virtual void stop() override
+    {
+        ForEachItemIn(idx, dependencies)
+            dependencies.item(idx).stop();
+        CRoxieServerActionBaseActivity::stop();
+    }
 };
 
 class CRoxieServerParallelActionActivityFactory : public CRoxieServerActivityFactory
@@ -20966,11 +20977,18 @@ public:
         catch (...)
         {
             for (unsigned branch=1; branch <= numBranches; branch++)
-                stopDependencies(parentExtractSize, parentExtract, branch);
+                stopDependencies(branch);
             throw;
         }
     }
 
+    virtual void stop() override
+    {
+        unsigned numBranches = helper.numBranches();
+        for (unsigned branch=1; branch <= numBranches; branch++)
+            stopDependencies(branch);
+        CRoxieServerActionBaseActivity::stop();
+    }
 };
 
 class CRoxieServerSequentialActionActivityFactory : public CRoxieServerActivityFactory
@@ -21027,12 +21045,12 @@ public:
     {
         if (state == STATEreset || (!aborted && !eofseen))  // If someone else aborted, then WHEN clauses don't trigger, whatever
         {
-            stopDependencies(savedExtractSize, savedExtract, WhenSuccessId);
-            stopDependencies(savedExtractSize, savedExtract, WhenFailureId);
+            stopDependencies(WhenSuccessId);
+            stopDependencies(WhenFailureId);
         }
         else if (state != STATEstopped)
         {
-            stopDependencies(savedExtractSize, savedExtract, aborted ? WhenSuccessId : WhenFailureId);  // These ones don't get executed
+            stopDependencies(aborted ? WhenSuccessId : WhenFailureId);  // These ones don't get executed
             executeDependencies(savedExtractSize, savedExtract, aborted ? WhenFailureId : WhenSuccessId); // These ones do
         }
         CRoxieServerActivity::stop();
@@ -21116,7 +21134,7 @@ public:
     {
         if (state != STATEstopped)
         {
-            stopDependencies(savedExtractSize, savedExtract, aborted ? WhenSuccessId : WhenFailureId);  // these are NOT going to execute
+            stopDependencies(aborted ? WhenSuccessId : WhenFailureId);  // these are NOT going to execute
             executeDependencies(savedExtractSize, savedExtract, aborted ? WhenFailureId : WhenSuccessId);
         }
         CRoxieServerActionBaseActivity::stop();

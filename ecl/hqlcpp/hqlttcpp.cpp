@@ -904,6 +904,9 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
     if (parallel && getIntValue(parallel->queryChild(0), 0) != 1)
         return OptionYes;
 
+    if (expr->getInfoFlags() & HEFonFailDependent)
+        return OptionNo;
+
     switch (op)
     {
     case no_attr:
@@ -978,8 +981,13 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
             {
                 IHqlExpression * falseExpr = expr->queryChild(2);
                 YesNoOption leftOption = normalizeThor(expr->queryChild(1));
-                YesNoOption rightOption = falseExpr ? normalizeThor(falseExpr) : OptionMaybe;
+                YesNoOption rightOption = falseExpr ? normalizeThor(falseExpr) : leftOption;
                 YesNoOption branchOption = combine(leftOption, rightOption, true);
+                if ((leftOption == OptionYes) && (rightOption != OptionNo))
+                    branchOption = OptionYes;
+                if ((rightOption == OptionYes) && (leftOption != OptionNo))
+                    branchOption = OptionYes;
+
                 YesNoOption condOption = normalizeThor(expr->queryChild(0));
                 if ((branchOption == OptionYes) && (condOption != OptionNo))
                     return OptionYes;
@@ -8556,7 +8564,8 @@ bool AutoScopeMigrateInfo::doAutoHoist(IHqlExpression * transformed, bool minimi
         return false;
     }
 
-    if (firstUseIsConditional && firstUseIsSequential)
+    if (firstUseIsConditional)
+    //if (firstUseIsConditional && firstUseIsSequential)
         return false;
 
     if (firstUseIsSequential && !manyGraphs)
