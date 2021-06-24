@@ -272,6 +272,8 @@ jobs:
       if: ${{ steps.check-cache.outputs.state != '' }} # if 'state' set to anything, then step needed
       run: |
         cd build
+        echo "removing CMakeCache.txt"
+        rm -f CMakeCache.txt
         if [[ ! -f cache-timestamp ]]; then touch cache-timestamp; fi
         touch ../cmake-timestamp
         ../cmake/cmake ../src -Wno-dev -DRUNTIME_USER=$(whoami) -DRUNTIME_GROUP=$(id -gn) -DDESTDIR=$(realpath ..)/install -DINCLUDE_PLUGINS=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_PYTHON2=0 -DUSE_PYTHON3=1 -DSUPPRESS_SPARK=1 -DUSE_CPPUNIT=1 -DUSE_CASSANDRA=Off -DCMAKE_CXX_FLAGS="-DBUILD_TAG=\\\"dummytag\\\" -DBUILD_VERSION_MAJOR=1 -DBUILD_VERSION_MINOR=1 -DBUILD_VERSION_POINT=0" -DBUILD_TAG="smoketest"
