@@ -26,7 +26,7 @@ import Std.File AS FileServices;
 import $.setup;
 prefix := setup.Files(false, false).QueryFilePrefix;
 
-dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
+dropzonePath := '';// Use relative paths
 
 unsigned VERBOSE := 0;
 unsigned CLEAN_UP := 0;
@@ -70,7 +70,7 @@ end;
 desprayRec despray(desprayRec l) := TRANSFORM
   SELF.msg := FileServices.fDespray(
                        LOGICALNAME := sprayPrepFileName + l.suffix
-                      ,DESTINATIONIP := '.'
+                      ,DESTINATIONPLANE := 'mydropzone'
                       ,DESTINATIONPATH := desprayOutFileName + l.suffix
                       ,ALLOWOVERWRITE := True
                       );
@@ -107,13 +107,17 @@ c2 := CATCH(NOFOLD(p2), ONFAIL(TRANSFORM(desprayRec,
 #end
 
 
-
+#if (__CONTAINERIZED__)
+SprayClusterName := 'data';
+CopySplitClusterName := 'data';
+CopyNoSplitClusterName := 'data';
+#else
 SprayClusterName := 'mythor';
 CopySplitClusterName := 'myroxie';
 CopyNoSplitClusterName := 'mythor';
+#end
 
 DestFile := 'split_test';
-ESPportIP := 'http://127.0.0.1:8010/FileSpray';
 
 gatherCounts(string filename, unsigned origRecCount, boolean noSplit, string operation = 'variable') := FUNCTION
 
@@ -147,53 +151,54 @@ sprayRec := RECORD
 end;
 
 // Variable spray tests
+#if (__CONTAINERIZED__)
+myRemoteEspFsURL := 'http://eclwatch:8010/FileSpray';
+#else
+myRemoteEspFsURL := 'http://127.0.0.1:8010/FileSpray';
+#end
 
 sprayRec spray(sprayRec l) := TRANSFORM
      SELF.msg :=
      if ( l.operation = 'variable',
             FileServices.fSprayVariable(
-                            SOURCEIP := '.',
+                            SOURCEPLANE := 'mydropzone',
                             SOURCEPATH := l.sourceFilename,
                             DESTINATIONGROUP := l.targetCluster,
                             DESTINATIONLOGICALNAME := l.targetFilename,
                             TIMEOUT := -1,
-                            ESPSERVERIPPORT := 'http://127.0.0.1:8010/FileSpray',
                             ALLOWOVERWRITE := true,
                             NOSPLIT :=  l.noSplit
                             ),
 
         if ( l.operation = 'fixed',
              FileServices.fSprayFixed(
-                                SOURCEIP := '.',
+                                SOURCEPLANE := 'mydropzone',
                                 SOURCEPATH :=  l.sourceFilename,
                                 RECORDSIZE := recSize,
                                 DESTINATIONGROUP := l.targetCluster,
                                 DESTINATIONLOGICALNAME := l.targetFilename,
                                 TIMEOUT := -1,
-                                ESPSERVERIPPORT := 'http://127.0.0.1:8010/FileSpray',
                                 ALLOWOVERWRITE := true,
                                 NOSPLIT :=  l.noSplit
                                 ),
              if ( l.operation = 'delimited',
                 FileServices.fSprayDelimited(
-                          SOURCEIP := '.',
+                          SOURCEPLANE := 'mydropzone',
                           SOURCEPATH :=  l.sourceFilename,
                           DESTINATIONGROUP := l.targetCluster,
                           DESTINATIONLOGICALNAME := l.targetFilename,
                           TIMEOUT := -1,
-                          ESPSERVERIPPORT := 'http://127.0.0.1:8010/FileSpray',
                           ALLOWOVERWRITE := true,
                           NOSPLIT :=  l.noSplit
                         ),
                     if ( l.operation = 'xml',
                         FileServices.fSprayXml(
-                            SOURCEIP := '.',
+                            SOURCEPLANE := 'mydropzone',
                             SOURCEPATH := l.sourceFilename,
                             SOURCEROWTAG := 'Rowtag',
                             DESTINATIONGROUP :=  l.targetCluster,
                             DESTINATIONLOGICALNAME := l.targetFilename,
                             TIMEOUT := -1,
-                            ESPSERVERIPPORT := 'http://127.0.0.1:8010/FileSpray',
                             ALLOWOVERWRITE := true,
                             NOSPLIT :=  l.noSplit
                             ),
@@ -202,15 +207,13 @@ sprayRec spray(sprayRec l) := TRANSFORM
                                     sourceLogicalName := l.sourceFilename,
                                     destinationGroup := l.targetCluster, //'myroxie', //ClusterName,
                                     destinationLogicalName := l.targetFilename,
-                                    sourceDali := '.',
                                     TIMEOUT := -1,
-                                    ESPSERVERIPPORT := 'http://127.0.0.1:8010/FileSpray',
                                     ALLOWOVERWRITE := true,
                                     NOSPLIT :=  l.noSplit
                                     ),
                                 if (l.operation = 'remotePull',
                                     FileServices.fRemotePull(
-                                         remoteEspFsURL := 'http://127.0.0.1:8010/FileSpray',
+                                         remoteEspFsURL := myRemoteEspFsURL,
                                          sourceLogicalName := l.sourceFilename,
                                          destinationGroup := l.targetCluster,
                                          destinationLogicalName := l.targetFilename,

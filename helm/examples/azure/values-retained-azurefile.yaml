@@ -34,7 +34,7 @@ storage:
 
   - name: mydropzone
     pvc: mydropzone-azstorage-hpcc-azurefile-pvc
-    prefix: "/var/lib/HPCCSystems/dropzone"
+    prefix: "/var/lib/HPCCSystems/mydropzone"
     category: lz
 
 

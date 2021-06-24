@@ -159,7 +159,7 @@ storage:
   - name: mydropzone
     storageClass: ""
     storageSize: 1Gi
-    prefix: "/var/lib/HPCCSystems/dropzone"
+    prefix: "/var/lib/HPCCSystems/mydropzone"
     category: lz
 
   dllStorage:
