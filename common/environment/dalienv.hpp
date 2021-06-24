@@ -42,8 +42,6 @@ extern ENVIRONMENT_API bool canSpawnChildProcess(const IpAddress & ip);
 
 extern ENVIRONMENT_API bool getRemoteRunInfo(const char * keyName, const char * exeName, const char * version, const IpAddress &ip, StringBuffer &progpath, StringBuffer &workdir,INode *remotedali, unsigned timeout);
 
-extern ENVIRONMENT_API bool envGetConfigurationDirectory(const char *category, const char *component,const char *instance, StringBuffer &dirout);
-
 extern ENVIRONMENT_API IPropertyTree *envGetNASConfiguration(); // return NAS config from environment
 extern ENVIRONMENT_API IPropertyTree *envGetNASConfiguration(IPropertyTree *source);
 // These methods filter the NAS hooks based on the callers IP, unless 'myEp' is supplied.

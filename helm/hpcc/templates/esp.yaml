@@ -72,8 +72,8 @@ data:
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $application := .application | default "eclwatch" -}}
 {{- $secretsCategories := ternary (list "storage" "esp" "codeSign" "codeVerify")  (list "storage" "esp") (eq $application "eclwatch") -}}
-{{- $includeStorageLabels := ternary (list "lz" "data" "") (list "data" "") (eq $application "eclwatch") -}}
-{{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories  "includeLabels" $includeStorageLabels "env" $env -}}
+{{- $includeStorageCategories := ternary (list "lz" "data") (list "data") (eq $application "eclwatch") -}}
+{{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories  "includeCategories" $includeStorageCategories "env" $env -}}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.espConfigMap" "component" "esp" "excludeKeys" "global,esp.queues")) }}
 
 apiVersion: apps/v1

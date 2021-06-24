@@ -84,6 +84,7 @@ interface IResultSetMetaData : extends IInterface
 typedef double xdouble;
 interface INewResultSet;
 interface IXmlWriter;
+interface IXmlWriterExt;
 interface IResultSetCursor : extends IInterface
 {
     virtual bool absolute(__int64 row) = 0;
@@ -159,24 +160,24 @@ extern FILEVIEW_API IResultSetFactory * getSecResultSetFactory(ISecManager *secm
 //Formatting applied remotely, so it can be accessed between different operating systems...
 extern FILEVIEW_API int findResultSetColumn(const INewResultSet * results, const char * columnName);
 
-extern FILEVIEW_API unsigned getResultCursorXml(IStringVal & ret, IResultSetCursor * cursor, const char * name, unsigned start=0, unsigned count=0, const char * schemaName=NULL, const IProperties *xmlns=NULL);
+extern FILEVIEW_API unsigned getResultCursorXml(IStringVal & ret, IResultSetCursor * cursor, const char * name, unsigned start=0, unsigned count=0, const char * schemaName=NULL, const IProperties *xmlns=NULL, __uint64 maxSize=0);
 extern FILEVIEW_API unsigned getResultXml(IStringVal & ret, INewResultSet * cursor,  const char * name,
-    unsigned start=0, unsigned count=0, const char * schemaName=nullptr, const IProperties * xmlns=nullptr, IAbortRequestCallback * abortCheck=nullptr);
+    unsigned start=0, unsigned count=0, const char * schemaName=nullptr, const IProperties * xmlns=nullptr, IAbortRequestCallback * abortCheck=nullptr, __uint64 maxSize=0);
 extern FILEVIEW_API unsigned getResultJSON(IStringVal & ret, INewResultSet * cursor,  const char* name,
-    unsigned start=0, unsigned count=0, const char * schemaName=nullptr, IAbortRequestCallback * abortCheck=nullptr);
-extern FILEVIEW_API unsigned writeResultCursorXml(IXmlWriter & writer, IResultSetCursor * cursor, const char * name,
+    unsigned start=0, unsigned count=0, const char * schemaName=nullptr, IAbortRequestCallback * abortCheck=nullptr, __uint64 maxSize=0);
+extern FILEVIEW_API unsigned writeResultCursorXml(IXmlWriterExt & writer, IResultSetCursor * cursor, const char * name,
     unsigned start=0, unsigned count=0, const char * schemaName=nullptr, const IProperties * xmlns=nullptr, bool flushContent=false,
-    IAbortRequestCallback * abortCheck=nullptr);
-extern FILEVIEW_API unsigned writeResultXml(IXmlWriter & writer, INewResultSet * cursor,  const char* name, unsigned start=0, unsigned count=0, const char * schemaName=NULL, const IProperties *xmlns = NULL);
+    IAbortRequestCallback * abortCheck=nullptr, __uint64 maxSize=0);
+extern FILEVIEW_API unsigned writeResultXml(IXmlWriterExt & writer, INewResultSet * cursor,  const char* name, unsigned start=0, unsigned count=0, const char * schemaName=NULL, const IProperties *xmlns = NULL);
 
-extern FILEVIEW_API unsigned getResultCursorBin(MemoryBuffer & ret, IResultSetCursor * cursor, unsigned start=0, unsigned count=0);
-extern FILEVIEW_API unsigned getResultBin(MemoryBuffer & ret, INewResultSet * cursor, unsigned start=0, unsigned count=0);
+extern FILEVIEW_API unsigned getResultCursorBin(MemoryBuffer & ret, IResultSetCursor * cursor, unsigned start=0, unsigned count=0, __uint64 maxSize=0);
+extern FILEVIEW_API unsigned getResultBin(MemoryBuffer & ret, INewResultSet * cursor, unsigned start=0, unsigned count=0, __uint64 maxSize=0);
 
 #define WorkUnitXML_InclSchema      0x0001
 #define WorkUnitXML_NoRoot          0x0002
 #define WorkUnitXML_SeverityTags    0x0004
 
-extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const char *password, const IConstWorkUnit *cw, IXmlWriter &writer, unsigned flags, ErrorSeverity minSeverity, const char *rootTag);
+extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const char *password, const IConstWorkUnit *cw, IXmlWriterExt &writer, unsigned flags, ErrorSeverity minSeverity, const char *rootTag);
 extern FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *user, const char *pw, const IConstWorkUnit *wu, IStringVal &str, unsigned flags=0, ErrorSeverity minSeverity=SeverityInformation);
 extern FILEVIEW_API IStringVal& getFullWorkUnitResultsJSON(const char *user, const char *pw, const IConstWorkUnit *wu, IStringVal &str, unsigned flags=0, ErrorSeverity minSeverity=SeverityInformation);
 

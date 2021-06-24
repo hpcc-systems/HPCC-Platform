@@ -48,7 +48,7 @@ planes:
 
   numDevices: The number of logical storage devices.  An advanced option.  This allows data to be striped over multiple storage locations.  If it is set, then it assumes pvc defines a set of pvcs: ``pvc-1`` .. ``pvc-<n>``, which are mounted at locations ``prefix/d1`` .. ``prefix/d<n>``.  (Not yet implemented and likely to change!)
 
-  labels:  A list of uses which the plane is used for.  On a simple system it may make sense to place dali, dlls and sasha all on the same volume.
+  category:  The category of data which is stored on the plane - one of (data, lz, dali, sasha, dll, spill).  On a simple system it may make sense to place dali, dlls and sasha all on the same volume - in which case multiple planes can be defined with exactly the same definition, but different categories (and subPaths).
 
 
 The planes are used by refering to them in the plane tag in the appropriate storage section.  E.g. ``--set storage.daliStorage.plane=dali-plane``.

@@ -10,27 +10,22 @@ storage:
   - name: dali
     pvc: dali-gcpstorage-hpcc-filestore-pvc
     prefix: "/var/lib/HPCCSystems/dalistorage"
-    labels:
-    - dali
+    category: dali
 
   - name: dll
     pvc: dll-gcpstorage-hpcc-filestore-pvc
     prefix: "/var/lib/HPCCSystems/queries"
-    labels:
-    - dll
+    category: dll
 
   - name: sasha
     pvc: sasha-gcpstorage-hpcc-filestore-pvc
     prefix: "/var/lib/HPCCSystems/sasha"
-    labels:
-    - sasha
+    category: sasha
 
   - name: data
     pvc: data-gcpstorage-hpcc-filestore-pvc
     prefix: "/var/lib/HPCCSystems/hpcc-data"
-    labels:
-    - data # NB: if not set, this would be the default
-
+    category: data # NB: if not set, this would be the default
 
 
   dllStorage:

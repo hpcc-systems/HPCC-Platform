@@ -724,4 +724,9 @@ interface IFileEventWatcher : extends IInterface
 typedef std::function<void (const char *, FileWatchEvents)> FileWatchFunc;
 jlib_decl IFileEventWatcher *createFileEventWatcher(FileWatchFunc callback);
 
+//---- Storage plane related functions ----------------------------------------------------
+
+extern jlib_decl IPropertyTree * getHostGroup(const char * name, bool required);
+extern jlib_decl IPropertyTree * getStoragePlane(const char * name);
+
 #endif

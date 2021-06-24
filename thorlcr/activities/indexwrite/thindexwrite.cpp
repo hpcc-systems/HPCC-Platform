@@ -280,6 +280,7 @@ public:
                 bloom->setProp("@bloomProbability", pval.str());
             }
             container.queryTempHandler()->registerFile(fileName, container.queryOwner().queryGraphId(), 0, false, WUFileStandard, &clusters);
+            props.setPropInt64("@numDiskWrites", statsCollection.getStatisticSum(StNumDiskWrites));
             if (!dlfn.isExternal())
                 queryThorFileManager().publish(container.queryJob(), fileName, *fileDesc);
         }

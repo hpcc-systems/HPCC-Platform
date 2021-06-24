@@ -391,15 +391,8 @@
     },
     "storagePlanes": {
       "description": "storage plane definitions",
-      "oneOf": [
-        {
-          "type": "array",
-          "items": { "$ref": "#/definitions/storagePlane" }
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": "array",
+      "items": { "$ref": "#/definitions/storagePlane" }
     },
     "storagePlane": {
       "description": "information about an individual storage plane",
@@ -411,6 +404,10 @@
         },
         "prefix": {
           "description": "either the path for a local mount, or the url prefix",
+          "type": "string"
+        },
+        "subPath": {
+          "description": "optional subdirectory within the mount directory",
           "type": "string"
         },
         "secret": {
@@ -443,10 +440,10 @@
           "type": "array",
           "items": { "type": "string" }
         },
-        "labels": {
-          "description": "a list of labels associated with this plane, e.g. lz, data, dali, sasha, dlls, spill. NB: if blank/unset, treated as if 'data'",
-          "type": "array",
-          "items": { "type": "string" }
+        "category": {
+          "description": "the category this plane is usd for, e.g. lz, data",
+          "type": "string",
+          "enum": ["data", "lz", "dali", "sasha", "dll", "spill" ]
         },
         "umask" : {
           "description": "file creation mask (used by despray)",
@@ -480,7 +477,7 @@
         }
 
       },
-      "required": [ "name", "prefix" ],
+      "required": [ "name", "prefix", "category" ],
       "additionalProperties": false
     },
     "resources": {

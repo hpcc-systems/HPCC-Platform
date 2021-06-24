@@ -1074,6 +1074,10 @@ __STAND_ALONE__     {
                     }
 __TARGET_PLATFORM__ { RETURNSYM(__TARGET_PLATFORM__); }
 
+__CONTAINERIZED__   {   setupdatepos;
+                        return isContainerized() ? TOK_TRUE : TOK_FALSE;
+                    }
+
 {percent}{alphanumcolon}*{percent} {
                         setupdatepos;
                         if (lexer->skipNesting || lexer->macroGathering)
