@@ -1,5 +1,9 @@
 #The following is a generated values yaml that you can capture and feed to the hpcc helm chart when installing.
 #it will configure the hpcc storage to use the planes and pvcs installed by this chart.
+## The following planes are defined by localstorage:
+{{- range $plane := .Values.planes }}
+## {{ $plane.name }}
+{{- end }}
 
 storage:
   planes:
