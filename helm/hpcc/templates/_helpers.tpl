@@ -1087,7 +1087,7 @@ Pass in dict with root, job, target and type
 {{- $target := (printf "target:%s" .target | default "") -}}
 {{- $type := printf "type:%s" .type -}}
 {{- range $placement := .root.Values.placements -}}
-{{- if or (has $target $placement.pods) (has $type $placement.pods) -}}
+{{- if or (has $target $placement.pods) (has $type $placement.pods) (has "all" $placement.pods) -}}
 {{ include "hpcc.doPlacement" (dict "me" $placement) -}}
 {{- else -}}
 {{- range $jobPattern := $placement.pods -}}
@@ -1110,7 +1110,7 @@ Pass in dict with root, pod, target and type
 {{- $target := (printf "target:%s" .target | default "") -}}
 {{- $type := printf "type:%s" .type -}}
 {{- range $placement := .root.Values.placements -}}
-{{- if or (has $pod $placement.pods) (has $target $placement.pods) (has $type $placement.pods) -}}
+{{- if or (has $pod $placement.pods) (has $target $placement.pods) (has $type $placement.pods) (has "all"  $placement.pods) -}}
 {{ include "hpcc.doPlacement" (dict "me" $placement) -}}
 {{- end -}}
 {{- end -}}
