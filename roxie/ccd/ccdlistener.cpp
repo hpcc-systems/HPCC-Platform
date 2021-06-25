@@ -1102,24 +1102,6 @@ protected:
     unsigned qstart;
     time_t startTime;
 
-    void noteQuery(bool failed, unsigned elapsedTime, unsigned priority)
-    {
-        Owned <IJlibDateTime> now = createDateTimeNow();
-        unsigned y,mo,d,h,m,s,n;
-        now->getLocalTime(h, m, s, n);
-        now->getLocalDate(y, mo, d);
-        lastQueryTime = h*10000 + m * 100 + s;
-        lastQueryDate = y*10000 + mo * 100 + d;
-
-        switch(priority)
-        {
-        case 0: loQueryStats.noteQuery(failed, elapsedTime); break;
-        case 1: hiQueryStats.noteQuery(failed, elapsedTime); break;
-        case 2: slaQueryStats.noteQuery(failed, elapsedTime); break;
-        default: unknownQueryStats.noteQuery(failed, elapsedTime); return; // Don't include unknown in the combined stats
-        }
-        combinedQueryStats.noteQuery(failed, elapsedTime);
-    }
 };
 
 /**
@@ -1138,6 +1120,23 @@ protected:
 
 class RoxieWorkUnitWorker : public RoxieQueryWorker
 {
+    void noteQuery(bool failed, unsigned elapsedTime, unsigned priority)
+    {
+        Owned <IJlibDateTime> now = createDateTimeNow();
+        unsigned y,mo,d,h,m,s,n;
+        now->getLocalTime(h, m, s, n);
+        now->getLocalDate(y, mo, d);
+        lastQueryTime = h*10000 + m * 100 + s;
+        lastQueryDate = y*10000 + mo * 100 + d;
+
+        switch(priority)
+        {
+        case 0: loQueryStats.noteQuery(failed, elapsedTime); break;
+        case 1: hiQueryStats.noteQuery(failed, elapsedTime); break;
+        case 2: slaQueryStats.noteQuery(failed, elapsedTime); break;
+        }
+        combinedQueryStats.noteQuery(failed, elapsedTime);
+    }
 public:
     RoxieWorkUnitWorker(RoxieListener *_pool)
         : RoxieQueryWorker(_pool)
@@ -1357,6 +1356,7 @@ public:
 
     SocketEndpoint ep;
     time_t startTime;
+    bool notedActive = false;
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -1368,6 +1368,8 @@ public:
     }
     ~RoxieProtocolMsgContext()
     {
+        if (!notedActive)
+            unknownQueryStats.noteComplete();
     }
 
     inline ContextLogger &ensureContextLogger()
@@ -1420,6 +1422,7 @@ public:
         }
         unknownQueryStats.noteComplete();
         combinedQueryStats.noteActive();
+        notedActive = true;
     }
     IQueryFactory *queryQueryFactory(){return queryFactory;}
     virtual IContextLogger *queryLogContext()
@@ -1564,15 +1567,22 @@ public:
         now->getLocalDate(y, mo, d);
         lastQueryTime = h*10000 + m * 100 + s;
         lastQueryDate = y*10000 + mo * 100 + d;
-
-        switch(getQueryPriority())
+        if (!notedActive)
         {
-        case 0: loQueryStats.noteQuery(failed, elapsedTime); break;
-        case 1: hiQueryStats.noteQuery(failed, elapsedTime); break;
-        case 2: slaQueryStats.noteQuery(failed, elapsedTime); break;
-        default: unknownQueryStats.noteQuery(failed, elapsedTime); return; // Don't include unknown in the combined stats
+            unknownQueryStats.noteQuery(failed, elapsedTime);
+            notedActive = true;
         }
-        combinedQueryStats.noteQuery(failed, elapsedTime);
+        else
+        {
+            switch(getQueryPriority())
+            {
+            case 0: loQueryStats.noteQuery(failed, elapsedTime); break;
+            case 1: hiQueryStats.noteQuery(failed, elapsedTime); break;
+            case 2: slaQueryStats.noteQuery(failed, elapsedTime); break;
+            default: unknownQueryStats.noteQuery(failed, elapsedTime); return; // Don't include unknown in the combined stats
+            }
+            combinedQueryStats.noteQuery(failed, elapsedTime);
+        }
     }
     void noteQuery(const char *peer, bool failed, unsigned elapsed, unsigned memused, unsigned agentsReplyLen, unsigned bytesOut, bool continuationNeeded)
     {
