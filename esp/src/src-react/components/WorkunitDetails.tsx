@@ -14,6 +14,9 @@ import { Results } from "./Results";
 import { Variables } from "./Variables";
 import { SourceFiles } from "./SourceFiles";
 import { TableGroup } from "./forms/Groups";
+import { PublishQueryForm } from "./forms/PublishQuery";
+import { SlaveLogs } from "./forms/SlaveLogs";
+import { ZAPDialog } from "./forms/ZAPDialog";
 import { Helpers } from "./Helpers";
 import { InfoGrid } from "./InfoGrid";
 import { Queries } from "./Queries";
@@ -70,25 +73,40 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     const [description, setDescription] = React.useState("");
     const [_protected, setProtected] = React.useState(false);
     const [isFavorite, addFavorite, removeFavorite] = useFavorite(window.location.hash);
+    const [showPublishForm, setShowPublishForm] = React.useState(false);
+    const [showZapForm, setShowZapForm] = React.useState(false);
+    const [showThorSlaveLogs, setShowThorSlaveLogs] = React.useState(false);
 
     React.useEffect(() => {
-        setJobname(jobname || workunit?.Jobname);
-        setDescription(description || workunit?.Description);
-        setProtected(_protected || workunit?.Protected);
-
-    }, [_protected, description, jobname, workunit?.Description, workunit?.Jobname, workunit?.Protected]);
+        setJobname(workunit?.Jobname);
+        setDescription(workunit?.Description);
+        setProtected(workunit?.Protected);
+    }, [workunit?.Description, workunit?.Jobname, workunit?.Protected]);
 
     const canSave = workunit && (
         jobname !== workunit.Jobname ||
         description !== workunit.Description ||
         _protected !== workunit.Protected
     );
+    const canDelete = workunit && (
+        _protected !== workunit.Protected ||
+        999 !== workunit.StateID ||
+        workunit.Archived
+    );
+    const canDeschedule = workunit && workunit?.EventSchedule === 2;
+    const canReschedule = workunit && workunit?.EventSchedule === 1;
 
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => {
                 workunit.refresh();
+            }
+        },
+        {
+            key: "copy", text: nlsHPCC.CopyWUID, iconProps: { iconName: "Copy" },
+            onClick: () => {
+                navigator?.clipboard?.writeText(wuid);
             }
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
@@ -103,13 +121,71 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
             }
         },
         {
-            key: "copy", text: nlsHPCC.CopyWUID, iconProps: { iconName: "Copy" },
+            key: "delete", text: nlsHPCC.Delete, iconProps: { iconName: "Delete" }, disabled: !canDelete,
             onClick: () => {
-                navigator?.clipboard?.writeText(wuid);
+                if (confirm(nlsHPCC.YouAreAboutToDeleteThisWorkunit)) {
+                    workunit?.delete();
+                    pushUrl("/workunits");
+                }
             }
         },
+        {
+            key: "restore", text: nlsHPCC.Restore, disabled: !workunit?.Archived,
+            onClick: () => workunit?.restore()
+        },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-    ], [_protected, canSave, description, jobname, workunit, wuid]);
+        {
+            key: "reschedule", text: nlsHPCC.Reschedule, disabled: !canReschedule,
+            onClick: () => workunit?.reschedule()
+        },
+        {
+            key: "deschedule", text: nlsHPCC.Deschedule, disabled: !canDeschedule,
+            onClick: () => workunit?.deschedule()
+        },
+        { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "setToFailed", text: nlsHPCC.SetToFailed, disabled: workunit?.Archived || workunit?.isComplete() || workunit?.isDeleted(),
+            onClick: () => workunit?.setToFailed()
+        },
+        {
+            key: "abort", text: nlsHPCC.Abort, disabled: workunit?.Archived || workunit?.isComplete() || workunit?.isDeleted(),
+            onClick: () => workunit?.abort()
+        },
+        { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "recover", text: nlsHPCC.Recover, disabled: workunit?.Archived || !workunit?.isComplete() || workunit?.isDeleted(),
+            onClick: () => workunit?.resubmit()
+        },
+        {
+            key: "resubmit", text: nlsHPCC.Resubmit, disabled: workunit?.Archived || !workunit?.isComplete() || workunit?.isDeleted(),
+            onClick: () => workunit?.resubmit()
+        },
+        {
+            key: "clone", text: nlsHPCC.Clone, disabled: workunit?.Archived || !workunit?.isComplete() || workunit?.isDeleted(),
+            onClick: () => {
+                workunit?.clone().then(wu => {
+                    if (wu && wu.Wuid) {
+                        pushUrl(`/workunits/${wu?.Wuid}`);
+                    }
+                });
+            }
+        },
+        { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "publish", text: nlsHPCC.Publish,
+            onClick: () => setShowPublishForm(true)
+        },
+        { key: "divider_6", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "zap", text: nlsHPCC.ZAP, disabled: !canDelete,
+            onClick: () => setShowZapForm(true)
+        },
+        { key: "divider_7", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "slaveLogs", text: nlsHPCC.SlaveLogs, disabled: !workunit?.ThorLogList,
+            onClick: () => setShowThorSlaveLogs(true)
+        },
+    ], [_protected, canDelete, canDeschedule, canReschedule, canSave, description, jobname, workunit, wuid]);
 
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -127,7 +203,8 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     const serviceNames = workunit?.ServiceNames?.Item?.join("\n") || "";
     const resourceCount = workunit?.ResourceURLCount > 1 ? workunit?.ResourceURLCount - 1 : undefined;
 
-    return <SizeMe monitorHeight>{({ size }) =>
+    return <>
+        <SizeMe monitorHeight>{({ size }) =>
         <Pivot overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab} onLinkClick={evt => pushUrl(`/workunits/${wuid}/${evt.props.itemKey}`)}>
             <PivotItem headerText={wuid} itemKey="summary" style={pivotItemStyle(size)} >
                 <div style={{ height: "100%", position: "relative" }}>
@@ -218,5 +295,9 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 <WUXMLSourceEditor wuid={wuid} />
             </PivotItem>
         </Pivot>
-    }</SizeMe>;
+    }</SizeMe>
+    <PublishQueryForm wuid={wuid} showForm={showPublishForm} setShowForm={setShowPublishForm} />
+    <ZAPDialog wuid={wuid} showForm={showZapForm} setShowForm={setShowZapForm} />
+    <SlaveLogs wuid={wuid} showForm={showThorSlaveLogs} setShowForm={setShowThorSlaveLogs} />
+    </>;
 };
