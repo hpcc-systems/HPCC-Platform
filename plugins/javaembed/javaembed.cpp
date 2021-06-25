@@ -898,6 +898,7 @@ public:
 
 static StringBuffer &appendClassPath(StringBuffer &classPath)
 {
+#ifndef _CONTAINERIZED
     const IProperties &conf = queryEnvironmentConf();
     if (conf.hasProp("classpath"))
     {
@@ -905,6 +906,7 @@ static StringBuffer &appendClassPath(StringBuffer &classPath)
         classPath.append(ENVSEPCHAR);
     }
     else
+#endif
     {
         classPath.append(hpccBuildInfo.installDir).append(PATHSEPCHAR).append("classes").append(ENVSEPCHAR);
     }
@@ -930,6 +932,23 @@ public:
         newPath.append(".");
         optionStrings.append(newPath);
 
+        // Options we should set (but allow for override with jvmoptions below)
+        optionStrings.append("-XX:-UseLargePages");
+
+#ifdef _CONTAINERIZED
+        const char *jvmLibPath = getenv("JAVA_LIBRARY_PATH");
+        if (jvmLibPath)
+        {
+            VStringBuffer libPath("-Djava.library.path=%s", jvmLibPath);
+            optionStrings.append(libPath);
+        }
+        const char *jvmOptions = getenv("JVM_OPTIONS");
+        if (jvmOptions)
+        {
+            // Use space as field sep as ':' and ';' are valid
+            optionStrings.appendList(jvmOptions, " ");
+        }
+#else
         const IProperties &conf = queryEnvironmentConf();
         if (conf.hasProp("jvmlibpath"))
         {
@@ -938,15 +957,12 @@ public:
             conf.getProp("jvmlibpath", libPath);
             optionStrings.append(libPath);
         }
-
-        // Options we should set (but allow for override with jvmoptions below)
-        optionStrings.append("-XX:-UseLargePages");
-
         if (conf.hasProp("jvmoptions"))
         {
             // Use space as field sep as ':' and ';' are valid
             optionStrings.appendList(conf.queryProp("jvmoptions"), " ");
         }
+#endif
 
         // Options we know we always want set
         optionStrings.append("-Xrs");
