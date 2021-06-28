@@ -49,20 +49,9 @@ public:
         return pReporter->queryMetricsForReport(name);
     }
 
-    void reset()
-    {
-        isCollecting = false;
-    }
-
 public:
     bool isCollecting = false;
 };
-
-
-MetricsReporter frameworkTestReporter;
-
-static MetricFrameworkTestSink *pTestSink = new MetricFrameworkTestSink("testsink");
-bool sinkAdded = false;
 
 
 class MetricFrameworkTests : public CppUnit::TestFixture
@@ -70,12 +59,13 @@ class MetricFrameworkTests : public CppUnit::TestFixture
 public:
     MetricFrameworkTests()
     {
-        if (!sinkAdded)
-        {
-            sinkAdded = true;
-            frameworkTestReporter.addSink(pTestSink, "testsink");
-        }
-        pTestSink->reset();
+        pTestSink = new MetricFrameworkTestSink("testsink");
+        frameworkTestReporter.addSink(pTestSink, "testsink");
+    }
+
+    ~MetricFrameworkTests()
+    {
+        delete pTestSink;
     }
 
     CPPUNIT_TEST_SUITE(MetricFrameworkTests);
@@ -92,37 +82,43 @@ protected:
     void Test_counter_metric_increments_properly()
     {
         std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("test-counter", "description");
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Counter metric expected initial value to be 0", 0, static_cast<int>(pCounter->queryValue()));
+        CPPUNIT_ASSERT_EQUAL(0, static_cast<int>(pCounter->queryValue()));
 
         //
         // Test default increment (by 1)
         pCounter->inc();
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Counter metric expected value to be 1 after default increment", 1, static_cast<int>(pCounter->queryValue()));
+        int counterValue = pCounter->queryValue();
+        CPPUNIT_ASSERT_EQUAL(1, counterValue);
 
         //
         // Test increment by > 1
         pCounter->inc(2);
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Counter metric expected value to be 3 after increment by 2", 3, static_cast<int>(pCounter->queryValue()));
+        counterValue = pCounter->queryValue();
+        CPPUNIT_ASSERT_EQUAL(3, counterValue);
     }
 
 
     void Test_gauge_metric_updates_properly()
     {
         std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("test-gauge", "description");
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Gauge metric expected initial value to be 0", 0, static_cast<int>(pGauge->queryValue()));
+        int gaugeValue = pGauge->queryValue();
+        CPPUNIT_ASSERT_EQUAL(0, gaugeValue);
 
         //
         // Test initial setting of gauge
         pGauge->set(25);
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Gauge metric expected value to be 25 after setting", 25, static_cast<int>(pGauge->queryValue()));
+        gaugeValue = pGauge->queryValue();
+        CPPUNIT_ASSERT_EQUAL(25, gaugeValue);
 
         //
         // Test updating gauge
         pGauge->add(10);
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Gauge metric expected value to be 35", 35, static_cast<int>(pGauge->queryValue()));
+        gaugeValue = pGauge->queryValue();
+        CPPUNIT_ASSERT_EQUAL(35, gaugeValue);
 
         pGauge->add(-5);
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Gauge metric expected value to be 30", 30, static_cast<int>(pGauge->queryValue()));
+        gaugeValue = pGauge->queryValue();
+        CPPUNIT_ASSERT_EQUAL(30, gaugeValue);
     }
 
 
@@ -130,19 +126,21 @@ protected:
     {
         int customCounter = 0;
         std::shared_ptr<CustomMetric<int>> pCustomCounter = std::make_shared<CustomMetric<int>>("custom-counter", "description", METRICS_COUNTER, customCounter);
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Counter metric expected initial value to be 0", 0, static_cast<int>(pCustomCounter->queryValue()));
+        int customCounterValue = pCustomCounter->queryValue();
+        CPPUNIT_ASSERT_EQUAL(0, customCounterValue);
 
         customCounter++;
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Counter metric expected value to be 1 after default increment", 1, static_cast<int>(pCustomCounter->queryValue()));
+        customCounterValue = pCustomCounter->queryValue();
+        CPPUNIT_ASSERT_EQUAL(1, customCounterValue);
     }
 
 
     void Test_reporter_calls_sink_to_start_and_stop_collection()
     {
         frameworkTestReporter.startCollecting();
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Test sink start collection was not called", true, pTestSink->isCollecting);
+        CPPUNIT_ASSERT_EQUAL(true, pTestSink->isCollecting);
         frameworkTestReporter.stopCollecting();
-        CPPUNIT_ASSERT_EQUAL_MESSAGE("Test sink stop collection was not called", false, pTestSink->isCollecting);
+        CPPUNIT_ASSERT_EQUAL(false, pTestSink->isCollecting);
     }
 
 
@@ -159,8 +157,8 @@ protected:
 
         //
         // Make sure the initial list is correct
-        auto numMetrics = frameworkTestReporter.queryMetricsForReport("testsink").size();
-        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("Expected %d metrics to be returned", numAdded).str(), numAdded, static_cast<int>(numMetrics));
+        int numMetrics = frameworkTestReporter.queryMetricsForReport("testsink").size();
+        CPPUNIT_ASSERT_EQUAL(numAdded, numMetrics);
 
         //
         // Add a metric while reporting is enabled and make sure it is returned
@@ -169,7 +167,7 @@ protected:
         numAdded++;
 
         numMetrics = frameworkTestReporter.queryMetricsForReport("testsink").size();
-        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("Expected %d metrics after adding new metric", numAdded).str(), numAdded, static_cast<int>(numMetrics));
+        CPPUNIT_ASSERT_EQUAL(numAdded, numMetrics);
 
         //
         // Destroy a metric and ensure it is no longer in the list of report metrics
@@ -177,10 +175,14 @@ protected:
         numAdded--;
 
         numMetrics = frameworkTestReporter.queryMetricsForReport("testsink").size();
-        CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("Expected %d metrics after destroying metric", numAdded).str(), numAdded, static_cast<int>(numMetrics));
+        CPPUNIT_ASSERT_EQUAL(numAdded, numMetrics);
 
         frameworkTestReporter.stopCollecting();
     }
+
+protected:
+    MetricsReporter frameworkTestReporter;
+    MetricFrameworkTestSink *pTestSink;
 
 };
 

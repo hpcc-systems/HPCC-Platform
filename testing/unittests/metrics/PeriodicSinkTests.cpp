@@ -58,63 +58,66 @@ public:
 };
 
 
-MetricsReporter periodicSinkTestReporter;
-
 const char *periodicSinkSettingsTestYml = R"!!(period: 2
 )!!";
 
-int period = 2;
+static const int period = 2;
 
-PeriodicTestSink *pPeriodicTestSink = nullptr;
 
 class PeriodicSinkTests : public CppUnit::TestFixture
 {
-    public:
-        PeriodicSinkTests()
-        {
-            if (pPeriodicTestSink == nullptr)
-            {
-                //
-                // Load the settings then set the period using the global var
-                Owned<IPropertyTree> pSettings = createPTreeFromYAMLString(periodicSinkSettingsTestYml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
-                pSettings->setPropInt("@period", period);
-                pPeriodicTestSink = new PeriodicTestSink("periodic_test_sink", pSettings);
-                periodicSinkTestReporter.addSink(pPeriodicTestSink, "periodic_test_sink");
-            }
-        }
+public:
+    PeriodicSinkTests()
+    {
+        //
+        // Load the settings then set the period using the global var
+        Owned<IPropertyTree> pSettings = createPTreeFromYAMLString(periodicSinkSettingsTestYml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+        pSettings->setPropInt("@period", period);
+        pPeriodicTestSink = new PeriodicTestSink("periodic_test_sink", pSettings);
+        periodicSinkTestReporter.addSink(pPeriodicTestSink, "periodic_test_sink");
+    }
+
+    ~PeriodicSinkTests()
+    {
+        delete pPeriodicTestSink;
+    }
 
     CPPUNIT_TEST_SUITE(PeriodicSinkTests);
         CPPUNIT_TEST(Test_sets_period_correctly);
     CPPUNIT_TEST_SUITE_END();
 
-    protected:
+protected:
 
-        void Test_sets_period_correctly()
-        {
-            //
-            // To test setting the period correctly, start collection and delay a multiple of that period.
-            // Stop collection and ask the test sink how many collections were done. If the count is +/- 1
-            // from the wait period multiple used, then we are close enough
-            int multiple = 3;
-            periodicSinkTestReporter.startCollecting();
+    void Test_sets_period_correctly()
+    {
+        //
+        // To test setting the period correctly, start collection and delay a multiple of that period.
+        // Stop collection and ask the test sink how many collections were done. If the count is +/- 1
+        // from the wait period multiple used, then we are close enough
+        int multiple = 3;
+        periodicSinkTestReporter.startCollecting();
 
-            //
-            // Check that the sink called to prepare for collection
-            CPPUNIT_ASSERT_MESSAGE("Expected sink to report it was collecting", pPeriodicTestSink->prepareCalled);
+        //
+        // Check that the sink called to prepare for collection
+        CPPUNIT_ASSERT(pPeriodicTestSink->prepareCalled);
 
-            // wait... then stop collecting
-            sleep(multiple * period);
-            periodicSinkTestReporter.stopCollecting();
+        // wait... then stop collecting
+        sleep(multiple * period);
+        periodicSinkTestReporter.stopCollecting();
 
-            int numCollections = pPeriodicTestSink->numCollections;
+        int numCollections = pPeriodicTestSink->numCollections;
 
-            bool numReportsCorrect = (numCollections >= multiple-1) && (numCollections <= multiple+1);
-            CPPUNIT_ASSERT_EQUAL_MESSAGE(VStringBuffer("The number of reports was incorrect, it was expected to be between %d and %d", multiple-1, multiple+1).str(), true, numReportsCorrect);
+        bool numReportsCorrect = (numCollections >= multiple-1) && (numCollections <= multiple+1);
+        CPPUNIT_ASSERT_EQUAL(true, numReportsCorrect);
 
-            //
-            // Verify collection was stopped
-            CPPUNIT_ASSERT_MESSAGE("Stop collection was not called", pPeriodicTestSink->stopCollectionNotificationCalled);
-        }
+        //
+        // Verify collection was stopped
+        CPPUNIT_ASSERT(pPeriodicTestSink->stopCollectionNotificationCalled);
+    }
+
+protected:
+    MetricsReporter periodicSinkTestReporter;
+    PeriodicTestSink *pPeriodicTestSink;
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( PeriodicSinkTests );
