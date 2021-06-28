@@ -478,21 +478,27 @@ vaults:
 {{- end -}}
 
 {{/*
-Return a value indicating whether a storage plane is defined or not.
+Check whether a storage plane is defined or not.
 */}}
-{{- define "hpcc.isValidStoragePlane" -}}
+{{- define "hpcc.checkValidStoragePlane" -}}
 {{- $search := .search -}}
+{{- $category := .category -}}
 {{- $storage := (.root.Values.storage | default dict) -}}
 {{- $planes := ($storage.planes | default list) -}}
 {{- $dataStorage := ($storage.dataStorage | default dict) -}}
 {{- /* If storage.dataStorage.plane is defined, the implicit plane hpcc-dataplane is not defined */ -}}
-{{- $done := dict "matched" (and (not $dataStorage.plane) (eq $search "hpcc-dataplane")) -}}
+{{- $done := dict "matched" (and (not $dataStorage.plane) (eq $search "hpcc-dataplane")) "all" "" -}}
 {{- range $plane := $planes -}}
- {{- if eq $search $plane.name -}}
- {{- $_ := set $done "matched" true -}}
+ {{- if eq $category $plane.category -}}
+  {{- if eq $search $plane.name -}}
+   {{- $_ := set $done "matched" true -}}
+  {{- end -}}
+  {{- $_ := set $done "all" ( printf "%s \"%s\"" $done.all $plane.name) -}}
  {{- end -}}
 {{- end -}}
-{{- $done.matched | ternary "true" "false" -}}
+{{- if not $done.matched -}}
+ {{- $_ := required (printf "%s plane %s for %s is not defined (defined %s planes are:%s)" .type $search .for $category $done.all ) nil }}
+{{- end -}}
 {{- end -}}
 
 {{/*
@@ -501,15 +507,11 @@ Check that the storage and spill planes for a component exist
 {{- define "hpcc.checkDefaultStoragePlane" -}}
 {{- if (hasKey .me "storagePlane") }}
  {{- $search := .me.storagePlane -}}
- {{- if ne (include "hpcc.isValidStoragePlane" (dict "search" $search "root" .root)) "true" -}}
-  {{- $_ := fail (printf "storage data plane %s for %s is not defined" $search .me.name ) }}
- {{- end -}}
+ {{- include "hpcc.checkValidStoragePlane" (dict "search" $search "root" .root "category" "data" "type" "storage data" "for" .me.name) -}}
 {{- end }}
 {{- if (hasKey .me "spillPlane") }}
  {{- $search := .me.spillPlane -}}
- {{- if ne (include "hpcc.isValidStoragePlane" (dict "search" $search "root" .root)) "true" -}}
-  {{- $_ := fail (printf "storage spill plane %s for %s is not defined" $search .me.name ) }}
- {{- end -}}
+ {{- include "hpcc.checkValidStoragePlane" (dict "search" $search "root" .root "category" "spill" "type" "storage spill" "for" .me.name) -}}
 {{- end }}
 {{- end -}}
 
