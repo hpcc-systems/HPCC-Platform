@@ -59,13 +59,14 @@ class MetricFrameworkTests : public CppUnit::TestFixture
 public:
     MetricFrameworkTests()
     {
+        pFrameworkTestReporter = new MetricsReporter();
         pTestSink = new MetricFrameworkTestSink("testsink");
-        frameworkTestReporter.addSink(pTestSink, "testsink");
+        pFrameworkTestReporter->addSink(pTestSink, "testsink");
     }
 
     ~MetricFrameworkTests()
     {
-        delete pTestSink;
+        delete pFrameworkTestReporter;
     }
 
     CPPUNIT_TEST_SUITE(MetricFrameworkTests);
@@ -137,9 +138,9 @@ protected:
 
     void Test_reporter_calls_sink_to_start_and_stop_collection()
     {
-        frameworkTestReporter.startCollecting();
+        pFrameworkTestReporter->startCollecting();
         CPPUNIT_ASSERT_EQUAL(true, pTestSink->isCollecting);
-        frameworkTestReporter.stopCollecting();
+        pFrameworkTestReporter->stopCollecting();
         CPPUNIT_ASSERT_EQUAL(false, pTestSink->isCollecting);
     }
 
@@ -149,24 +150,24 @@ protected:
         int numAdded;
         std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("test-counter", "description");
         std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("test-gauge", "description");
-        frameworkTestReporter.addMetric(pCounter);
-        frameworkTestReporter.addMetric(pGauge);
+        pFrameworkTestReporter->addMetric(pCounter);
+        pFrameworkTestReporter->addMetric(pGauge);
         numAdded = 2;
 
-        frameworkTestReporter.startCollecting();
+        pFrameworkTestReporter->startCollecting();
 
         //
         // Make sure the initial list is correct
-        int numMetrics = frameworkTestReporter.queryMetricsForReport("testsink").size();
+        int numMetrics = pFrameworkTestReporter->queryMetricsForReport("testsink").size();
         CPPUNIT_ASSERT_EQUAL(numAdded, numMetrics);
 
         //
         // Add a metric while reporting is enabled and make sure it is returned
         std::shared_ptr<CounterMetric> pNewCounter = std::make_shared<CounterMetric>("test-newcounter", "description");
-        frameworkTestReporter.addMetric(pNewCounter);
+        pFrameworkTestReporter->addMetric(pNewCounter);
         numAdded++;
 
-        numMetrics = frameworkTestReporter.queryMetricsForReport("testsink").size();
+        numMetrics = pFrameworkTestReporter->queryMetricsForReport("testsink").size();
         CPPUNIT_ASSERT_EQUAL(numAdded, numMetrics);
 
         //
@@ -174,14 +175,14 @@ protected:
         pNewCounter = nullptr;
         numAdded--;
 
-        numMetrics = frameworkTestReporter.queryMetricsForReport("testsink").size();
+        numMetrics = pFrameworkTestReporter->queryMetricsForReport("testsink").size();
         CPPUNIT_ASSERT_EQUAL(numAdded, numMetrics);
 
-        frameworkTestReporter.stopCollecting();
+        pFrameworkTestReporter->stopCollecting();
     }
 
 protected:
-    MetricsReporter frameworkTestReporter;
+    MetricsReporter *pFrameworkTestReporter;
     MetricFrameworkTestSink *pTestSink;
 
 };

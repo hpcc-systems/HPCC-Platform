@@ -69,17 +69,18 @@ class PeriodicSinkTests : public CppUnit::TestFixture
 public:
     PeriodicSinkTests()
     {
+        pPeriodicSinkTestReporter = new MetricsReporter();
         //
         // Load the settings then set the period using the global var
         Owned<IPropertyTree> pSettings = createPTreeFromYAMLString(periodicSinkSettingsTestYml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
         pSettings->setPropInt("@period", period);
         pPeriodicTestSink = new PeriodicTestSink("periodic_test_sink", pSettings);
-        periodicSinkTestReporter.addSink(pPeriodicTestSink, "periodic_test_sink");
+        pPeriodicSinkTestReporter->addSink(pPeriodicTestSink, "periodic_test_sink");
     }
 
     ~PeriodicSinkTests()
     {
-        delete pPeriodicTestSink;
+        delete pPeriodicSinkTestReporter;
     }
 
     CPPUNIT_TEST_SUITE(PeriodicSinkTests);
@@ -95,7 +96,7 @@ protected:
         // Stop collection and ask the test sink how many collections were done. If the count is +/- 1
         // from the wait period multiple used, then we are close enough
         int multiple = 3;
-        periodicSinkTestReporter.startCollecting();
+        pPeriodicSinkTestReporter->startCollecting();
 
         //
         // Check that the sink called to prepare for collection
@@ -103,7 +104,7 @@ protected:
 
         // wait... then stop collecting
         sleep(multiple * period);
-        periodicSinkTestReporter.stopCollecting();
+        pPeriodicSinkTestReporter->stopCollecting();
 
         int numCollections = pPeriodicTestSink->numCollections;
 
@@ -116,7 +117,7 @@ protected:
     }
 
 protected:
-    MetricsReporter periodicSinkTestReporter;
+    MetricsReporter *pPeriodicSinkTestReporter;
     PeriodicTestSink *pPeriodicTestSink;
 };
 
