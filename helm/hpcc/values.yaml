@@ -488,7 +488,8 @@ roxie:
   serverReplicas: 0
   ## Set localAgent to true for a scalable cluster of "single-node" roxie servers, each implementing all channels locally
   localAgent: false
-  useAeron: false
+  ## Adjust traceLevel to taste (1 is default)
+  traceLevel: 1
   ## Set mtuPayload to the maximum amount of data Roxie will put in a single packet. This should be just less than the system MTU. Default is 1400
   # mtuPayload: 3800
   #channelResources:
@@ -503,7 +504,6 @@ roxie:
   #maxStartupTime: 600     # Maximum time to wait for startup to complete before failing
   topoServer:
     replicas: 1
-    #traceLevel: 1
 
 thor:
 - name: thor

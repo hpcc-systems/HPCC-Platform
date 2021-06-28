@@ -3498,7 +3498,7 @@ IStoragePlane * getStoragePlane(const char * name, bool required)
     if (!match)
     {
         if (required)
-            throw makeStringExceptionV(-1, "Scope contains unknown storage plane '%s'", name);
+            throw makeStringExceptionV(-1, "Unknown storage plane '%s'", name);
         return nullptr;
     }
 
