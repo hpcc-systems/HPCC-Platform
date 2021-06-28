@@ -29,8 +29,11 @@ while [ "$#" -gt 0 ]; do
       -n) shift
          CLUSTERNAME=$1
          ;;
+      -e) UNINSTALL_ELK=1
+         ;;
       *) echo "Usage: stoptall.sh [options]"
          echo "    -w  Wait for all pods to terminate"
+         echo "    -e  Uninstall light-weight Elastic Stack"
          exit
          ;;
     esac
@@ -39,8 +42,14 @@ done
 
 helm uninstall $CLUSTERNAME
 helm uninstall localfile
-kubectl delete jobs --all 
-kubectl delete networkpolicy --all 
+kubectl delete jobs --all
+kubectl delete networkpolicy --all
+if [[ $UNINSTALL_ELK == 1 ]] ; then
+  echo "Uninstalling myelastic4hpcclogs:"
+  echo "PLEASE NOTE: Elastic Search declares PVC(s) which might require explicit manual removal if no longer needed."
+  helm uninstall myelastic4hpcclogs
+  kubectl get pvc
+fi
 if [[ $wait == 1 ]] ; then
   sleep 2
   while (kubectl get pods | grep -q ^NAME) ; do

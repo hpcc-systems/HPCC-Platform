@@ -39,8 +39,8 @@ Bash scripts
 buildall.sh - Used to create and publish a docker container corresponding to a github tag
 clean.sh    - Clean up old docker images (if disk gets full)
 incr.sh     - Build local images for testing (delta from a published image)
-startall.sh - Start a local k8s cluster
-stopall.sh  - Stop a local k8s cluster
+startall.sh - Start a local k8s cluster, and optional Elastic Stack for log processing purposes
+stopall.sh  - Stop a local k8s cluster, and optional Elastic Stack
 
 ---
 
