@@ -15,6 +15,11 @@ global:
   logging:
     detail: 80
 
+  ## env adds default environment variables for all components. Environment settings can also be added or overridden locally
+  #env:
+  #- name: SMTPserver
+  #  value: mysmtpserver
+
   # Specify a defaultEsp to control which eclservices service is returned from Std.File.GetEspURL, and other uses
   # If not specified, the first esp component that exposes eclservices application is assumed.
   # Can also be overridden locally in individual components

@@ -198,6 +198,9 @@
           "maxJobs": {
             "type": "integer"
           },
+          "env": {
+            "$ref": "#/definitions/env"
+          },
           "annotations": {
             "type": "object",
             "additionalProperties": { "type": "string" }
@@ -648,6 +651,9 @@
         "image": {
           "$ref": "#/definitions/image"
         },
+        "env": {
+          "$ref": "#/definitions/env"
+        },
         "logging": {
           "$ref": "#/definitions/logging"
         },
@@ -698,6 +704,9 @@
         "image": {
           "$ref": "#/definitions/image"
         },
+        "env": {
+          "$ref": "#/definitions/env"
+        },
         "logging": {
           "$ref": "#/definitions/logging"
         },
@@ -725,6 +734,9 @@
         },
         "image": {
           "$ref": "#/definitions/image"
+        },
+        "env": {
+          "$ref": "#/definitions/env"
         },
         "logging": {
           "$ref": "#/definitions/logging"
@@ -756,6 +768,9 @@
         },
         "image": {
           "$ref": "#/definitions/image"
+        },
+        "env": {
+          "$ref": "#/definitions/env"
         },
         "logging": {
           "$ref": "#/definitions/logging"
@@ -874,6 +889,9 @@
         "topoServer": {
           "$ref": "#/definitions/toposerver"
         },
+        "env": {
+          "$ref": "#/definitions/env"
+        },
         "logging": {
           "$ref": "#/definitions/logging"
         },
@@ -928,6 +946,9 @@
         },
         "replicas": {
           "type": "integer"
+        },
+        "env": {
+          "$ref": "#/definitions/env"
         },
         "logging": {
           "$ref": "#/definitions/logging"
@@ -1051,6 +1072,9 @@
         "image": {
           "$ref": "#/definitions/image"
         },
+        "env": {
+          "$ref": "#/definitions/env"
+        },
         "logging": {
           "$ref": "#/definitions/logging"
         },
@@ -1094,6 +1118,9 @@
         "interval": {
           "type": "integer",
           "default": 1
+        },
+        "env": {
+          "$ref": "#/definitions/env"
         },
         "annotations": {
           "type": "object",
@@ -1181,6 +1208,7 @@
                 "image": {},
                 "storage": {},
                 "resources": {},
+                "env": {},
                 "annotations": {},
                 "labels": {}
               },
@@ -1231,6 +1259,7 @@
                 "image": {},
                 "storage": {},
                 "resources": {},
+                "env": {},
                 "annotations": {},
                 "labels": {},
                 "limit": {},
@@ -1263,6 +1292,7 @@
                 "image": {},
                 "storage": {},
                 "resources": {},
+                "env": {},
                 "annotations": {},
                 "labels": {},
                 "limit": {},
@@ -1294,6 +1324,7 @@
                 "image": {},
                 "storage": {},
                 "resources": {},
+                "env": {},
                 "annotations": {},
                 "labels": {},
                 "limit": {},
