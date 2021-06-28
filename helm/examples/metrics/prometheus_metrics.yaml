@@ -1,0 +1,17 @@
+#
+# Defines a prometheus sink that responds to scraping requests
+# Settings:
+#   type                  - sink type (must be prometheus for prometheus support)
+#   name                  - name for the sink instance
+#   settings.port         - port number on which to listen for scrape requests
+#   settings.serviceName  - local service name for the prometheus HTTP service
+#   settings.verbose      - enables verbose reports
+global:
+  metrics:
+    sinks:
+    - type: prometheus
+      name: prometheussink
+      settings:
+        port: 8767
+        serviceName: metrics
+        verbose: true
