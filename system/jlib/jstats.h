@@ -82,6 +82,7 @@ public:
     void setActivityId(unsigned _id);
     void setEdgeId(unsigned _id, unsigned _output);
     void setFunctionId(const char * _name);
+    void setFileId(const char * _name);
     void setSubgraphId(unsigned _id);
     void setWorkflowId(unsigned _id);
     void setChildGraphId(unsigned _id);

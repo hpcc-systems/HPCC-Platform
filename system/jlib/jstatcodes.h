@@ -26,6 +26,7 @@
 #define FunctionScopePrefix "f"
 #define WorkflowScopePrefix "w"
 #define ChildGraphScopePrefix "c"
+#define FileScopePrefix "p"
 
 #define MATCHES_CONST_PREFIX(search, prefix) (strncmp(search, prefix, strlen(prefix)) == 0)
 
@@ -69,6 +70,7 @@ enum StatisticScopeType
     SSTfunction,                        // a function call
     SSTworkflow,
     SSTchildgraph,
+    SSTfile,
     SSTunknown,
     SSTmax
 };
