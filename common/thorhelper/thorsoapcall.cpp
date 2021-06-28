@@ -1868,7 +1868,7 @@ private:
                                 chunkSize = (chunkSize*16) + 10 + (toupper(ch) - 'A');
                             dataProvider->getBytes(&ch, 1);
                         }
-                        while (chunkSize && ch != '\n')//consume chunk-extension and CRLF
+                        while (ch != '\n')//consume chunk-extension and CRLF
                             dataProvider->getBytes(&ch, 1);
                         while (chunkSize)
                         {
@@ -1895,9 +1895,20 @@ private:
                                     chunkSize = (chunkSize*16) + 10 + (toupper(ch) - 'A');
                                 dataProvider->getBytes(&ch, 1);
                             }
-                            while(chunkSize && ch != '\n')//consume chunk-extension and CRLF
+                            while(ch != '\n')//consume chunk-extension and CRLF
                                 dataProvider->getBytes(&ch, 1);
                         }
+                        //to support persistent connections we need to consume all trailing bytes for each message
+                        dataProvider->getBytes(&ch, 1);
+                        //the standard allows trailing HTTP headers to be included at the of the chunked message, the following loop will consume those
+                        while ( ch != '\r' ) //if there is content before the CRLF it is a trailing HTTP header
+                        {
+                            while (ch != '\n')//consume the CRLF of the trailing header
+                                dataProvider->getBytes(&ch, 1);
+                            dataProvider->getBytes(&ch, 1);
+                        }
+                        while (ch != '\n') //consume final CRLF
+                            dataProvider->getBytes(&ch, 1);
                     }
                     break;
                 }
