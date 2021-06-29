@@ -14262,6 +14262,7 @@ void exportData(IPropertyTree *data, IHqlExpression *table, bool flatten)
 
 static bool exprContainsCounter(RecursionChecker & checker, IHqlExpression * expr, IHqlExpression * counter)
 {
+    expr = expr->queryBody();
     if (checker.alreadyVisited(expr))
         return false;
     checker.setVisited(expr);
@@ -14290,9 +14291,11 @@ static bool exprContainsCounter(RecursionChecker & checker, IHqlExpression * exp
 
 bool transformContainsCounter(IHqlExpression * transform, IHqlExpression * counter)
 {
-    RecursionChecker checker;
+    if (!counter)
+        return false;
 
-    return exprContainsCounter(checker, transform, counter);
+    RecursionChecker checker;
+    return exprContainsCounter(checker, transform, counter->queryBody());
 }
 
 //==============================================================================================================
@@ -16116,7 +16119,8 @@ IHqlExpression * createUniqueId(IAtom * name)
 static UniqueSequenceCounter counterSequence;
 IHqlExpression * createCounter()
 {
-    return createSequence(no_counter, makeIntType(8, false), NULL, counterSequence.next());
+    unique_id_t seq = counterSequence.next();
+    return createSequence(no_counter, makeIntType(8, false), NULL, seq);
 }
 
 static UniqueSequenceCounter selectorSequence;

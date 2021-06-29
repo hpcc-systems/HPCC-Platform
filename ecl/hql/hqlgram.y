@@ -8901,8 +8901,7 @@ simpleDataSet
                         {
                             OwnedHqlExpr transform = parser->createRowAssignTransform($3, $6, $10);
                             $6.release();
-                            $7.release();
-                            $$.setExpr(createDataset(no_hqlproject, $3.getExpr(), createComma(transform.getClear(), $8.getExpr(), $10.getExpr())));
+                            $$.setExpr(createDataset(no_hqlproject, { $3.getExpr(), transform.getClear(), $8.getExpr(), $10.getExpr(), $7.getExpr() }));
                             $$.setPosition($1);
                         }
     | PULL '(' startTopFilter ')' endTopFilter
