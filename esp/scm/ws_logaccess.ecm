@@ -1,0 +1,125 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2021 HPCC Systems®.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+//virtual bool fetchLog(LogAccessConditions options, StringBuffer & returnbuf) = 0;
+//virtual bool fetchWULog(StringBuffer & returnbuf, const char * wu, LogAccessRange range) = 0;
+//virtual bool fetchComponentLog(const char * component, LogAccessRange range, StringBuffer & returnbuf) = 0;
+//virtual bool fetchLogByAudience(con
+
+ESPenum RangeType : int
+{
+	All(0, "All"),
+    LastNMinutes(1, "LastNMinutes"),
+    LastNHours(2, "LastNHours"),
+    LastNDays(3, "LastNDays"),
+    LastNWeeks(4, "LastNWeeks"),
+    LastNMonths(5, "LastNMonths"),
+    LastNYears(6, "LastNYears"),
+    StartEndDate(7, "StartEndDate"),
+    FirstNEntries(8, "FirstNEntries"),
+    LastNEntries(9, "LastNEntries")
+};
+
+ESPStruct Range
+{
+    ESPenum RangeType Type;
+    int Quantity;
+    xsdDateTime StartDate;
+    xsdDateTime EndDate;
+};
+ESPRequest GetLogAccessMetaRequest
+{
+};
+ESPResponse GetLogAccessMetaResponse
+{
+    string Type;
+    string Connection;
+    string Source;
+    ESParray<string> AvailableColumns;
+};
+
+ESPRequest GetWULogMetaRequest
+{
+};
+
+ESPResponse GetWULogMetaResponse
+{
+    string SearchColumn;
+    string SourceStore;
+    string ContentColumn;
+    ESParray<string> AvailableColumns;
+};
+
+ESPRequest GetWULogRequest
+{
+    string WUID;
+    ESPStruct Range Range;
+    ESParray<string> Columns;
+};
+
+ESPResponse GetWULogResponse
+{
+    string Log;
+    string WUID;
+    ESPStruct Range Range;
+    ESParray<string> Columns;
+    boolean Success;
+    string Message;
+};
+
+ESPRequest GetComponentLogMetaRequest
+{
+};
+
+ESPResponse GetComponentLogMetaResponse
+{
+    string SearchColumn;
+    string SourceStore;
+    string ContentColumn;
+    ESParray<string> AvailableColumns;
+};
+
+ESPRequest GetComponentLogRequest
+{
+    string Name;
+    ESPStruct Range Range;
+    ESParray<string> Columns;
+};
+
+ESPResponse GetComponentLogResponse
+{
+    string Log;
+    string Name;
+    ESPStruct Range Range;
+    ESParray<string> Columns;
+    boolean Success;
+    string Message;
+};
+
+ESPservice [auth_feature("WsLogAccess:ACCESS"), version("1.0"), default_client_version("1.0"), exceptions_inline("xslt/exceptions.xslt")] ws_logaccess
+{
+	ESPmethod GetLogAccessMeta(GetLogAccessMetaRequest, GetLogAccessMetaResponse);
+    ESPmethod GetWULog(GetWULogRequest, GetWULogResponse);
+    ESPmethod GetWULogMeta(GetWULogMetaRequest, GetWULogMetaResponse);
+    ESPmethod GetComponentLog(GetComponentLogRequest, GetComponentLogResponse);
+    ESPmethod GetComponentLogMeta(GetComponentLogMetaRequest, GetComponentLogMetaResponse);
+};
+
+SCMexportdef(ws_logaccess);
+
+SCMapi(ws_logaccess) IClientws_logaccess *createws_logaccessClient();
+

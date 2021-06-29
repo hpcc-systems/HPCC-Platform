@@ -1341,4 +1341,183 @@ interface IComponentLogFileCreator : extends IInterface
 extern jlib_decl IComponentLogFileCreator * createComponentLogFileCreator(IPropertyTree * _properties, const char *_component);
 extern jlib_decl IComponentLogFileCreator * createComponentLogFileCreator(const char *_logDir, const char *_component);
 extern jlib_decl IComponentLogFileCreator * createComponentLogFileCreator(const char *_component);
+
+enum AccessLogRangeType
+{
+    ACRTUnknown = -1,
+    ACRTAllAvailable,
+    ACRTFirstPage,
+    ACRTirstNRows,
+    ACRTLastNYears,
+    ACRTLastNMonths,
+    ACRTLastNWeeks,
+    ACRTLastNDays,
+    ACRTLastNHours,
+    ACRTLastNMinutes,
+    ACRTLastPage,
+    ACRTGoToPage,
+    ACRTLastNRows,
+    ACRTTimeRange,
+};
+
+struct LogAccessRange
+{
+    AccessLogRangeType rangeType;
+    StringBuffer startDate;
+    StringBuffer endDate;
+    unsigned quantity;
+};
+
+enum AccessLogFilterType
+{
+    ALF_ALLAvailable = 0,
+    ALF_Component = 1,
+    ALF_WorkUnit = 2,
+    ALF_Audience = 3,
+    ALF_Class = 4,
+    ALF_NativeQuery = 5
+};
+
+struct LogAccessFilter
+{
+    AccessLogFilterType filterType;
+    StringBuffer workUnit;
+    StringArray targetAudience;
+    StringArray messageClass;
+    StringBuffer componentName;
+};
+
+struct LogAccessConditions
+{
+    LogAccessFilter filter;
+    LogAccessRange range;
+    StringArray logFieldNames;
+
+    void operator = (const LogAccessConditions & l)
+    {
+        if (l.logFieldNames.ordinality())
+        {
+            ForEachItemIn(i, l.logFieldNames)
+            {
+                logFieldNames.append(l.logFieldNames.item(i));
+            }
+        }
+    }
+
+    ~LogAccessConditions()
+    {
+        logFieldNames.kill(true);
+    }
+
+    void appendLogFieldName(const char * fieldname) {logFieldNames.append(fieldname);}
+    void copyLogFieldNames(StringArray * fields)
+    {
+        if (*fields)
+        {
+            ForEachItemIn(fieldsindex,*fields)
+            {
+                logFieldNames.append(fields->item(fieldsindex));
+            }
+        }
+    }
+    inline const StringArray &queryLogFieldNames() { return logFieldNames; }
+};
+
+interface IRemoteLogAccess : extends IInterface
+{
+    virtual bool fetchLog(LogAccessConditions & options, StringBuffer & returnbuf) = 0;
+    virtual bool fetchWULog(StringBuffer & returnbuf, const char * wu, LogAccessRange range, StringArray & cols) = 0;
+    virtual bool fetchComponentLog(StringBuffer & returnbuf, const char * component, LogAccessRange range, StringArray & cols) = 0;
+    virtual bool fetchLogByAudience(StringBuffer & returnbuf, const char * audience, LogAccessRange range,  StringArray & cols) = 0;
+
+    virtual const char * getRemoteLogAccessType() = 0;
+    virtual IPropertyTree * fetchLogMap() = 0;
+};
+
+//logAccessPluginConfig expected to contain connectivity and log mapping information
+typedef IRemoteLogAccess * (*newLogAccessPluginMethod_t_)(IPropertyTree & logAccessPluginConfig);
+
+class jlib_decl RemoteLogAccessLoader
+{
+public:
+    RemoteLogAccessLoader() = default;
+    ~RemoteLogAccessLoader();
+
+    template <class RemoteLogAccessPlugin>
+    static RemoteLogAccessPlugin * queryRemoteLogAccessor()
+    {
+        const char *simulatedGlobalYaml = R"!!(global:
+              logaccess:
+                name: localES
+                type: elasticstack
+                libname: libelasticstacklogaccess.so
+                connection:
+                  protocol: http
+                  host: localhost
+                logmap:
+                  global:
+                    indexsearchpattern: filebeat-7.9.3-*
+                    searchcolumn: message
+                    contentcolumn: message
+                    timestampcolumn: created_ts
+                  workunits:
+                    indexsearchpattern: filebeat-7.9.3-*
+                    searchcolumn: message
+                    contentcolumn: message
+                  components:
+                    defaultindexsearchpattern: filebeat-7.9.3-*
+                    searchcolumn: kubernetes.container.name
+                    contentcolumn: message
+                  fields:
+                    field:
+                      - message
+                      - kubernetes.container.name
+                      - container.image.name
+                      - created_ts
+            )!!";
+        Owned<IPropertyTree> testTree = createPTreeFromYAMLString(simulatedGlobalYaml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+
+        const char * methodName = "loadLogAccessPlugin:";
+        const char * instFactoryName = "createInstance";
+
+        IPropertyTree* logAccessPluginConfig = testTree->queryPropTree("global/logaccess");
+
+#ifdef _DEBUG
+    StringBuffer thexml;
+    toXML(logAccessPluginConfig, thexml,0,0);
+    DBGLOG("*****%s", thexml.str());
+#endif
+
+        StringBuffer libName;
+        logAccessPluginConfig->getProp("@libname", libName);
+        if (libName.isEmpty())
+        {
+            //If no libname provided default to lib<type>logaccess.so
+            StringBuffer type;
+            logAccessPluginConfig->getProp("@type", type);
+            if (type.isEmpty())
+                throw MakeStringException(-1, "%s library name not specified.", methodName);
+            libName.append("lib").append(type.str()).append("logaccess");
+        }
+
+        //Load the DLL/SO
+        HINSTANCE logAccessPluginLib = LoadSharedObject(libName.str(), true, false);
+        if(logAccessPluginLib == nullptr)
+            throw MakeStringException(-1, "%s cannot load library '%s'", methodName, libName.str());
+
+        newLogAccessPluginMethod_t_ xproc = nullptr;
+        xproc = (newLogAccessPluginMethod_t_)GetSharedProcedure(logAccessPluginLib, instFactoryName);
+        if (xproc == nullptr)
+            throw MakeStringException(-1, "%s cannot locate procedure %s in library '%s'", methodName, instFactoryName, libName.str());
+
+        //Call logaccessplugin instance factory and return the new instance
+        DBGLOG("Calling '%s' in log access plugin '%s'", instFactoryName, libName.str());
+        RemoteLogAccessPlugin * pLogAccessPlugin = dynamic_cast<RemoteLogAccessPlugin*>(xproc(*logAccessPluginConfig));
+
+        if (pLogAccessPlugin == nullptr)
+            throw MakeStringException(-1, "%s Log Access Plugin '%s' failed to instantiate in call to %s", methodName, libName.str(), instFactoryName);
+
+        return pLogAccessPlugin;
+    }
+};
 #endif

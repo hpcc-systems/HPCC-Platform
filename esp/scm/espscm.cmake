@@ -49,6 +49,7 @@ set ( ESPSCM_SRCS
       ws_decoupledlogging.ecm
       ws_dali.ecm
       ws_resources.ecm
+      ws_logaccess.ecm
     )
 
 if (NOT CONTAINERIZED)
