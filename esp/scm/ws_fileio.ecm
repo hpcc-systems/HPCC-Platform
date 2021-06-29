@@ -21,6 +21,7 @@ ESPrequest CreateFileRequest
 {
     string DestDropZone;        //name or IP address
     string DestRelativePath;    //file name and/or path; related to the predefined directory of the dropzone
+    [min_ver("1.01")] string DestNetAddress;
     bool   Overwrite(false);
 };
 
@@ -38,6 +39,7 @@ ESPrequest WriteFileDataRequest
     binary Data;
     string DestDropZone;        //name or IP address; 
     string DestRelativePath;    //file name and/or path;
+    [min_ver("1.01")] string DestNetAddress;
     int64  Offset(0);
     bool   Append(false);
 };
@@ -56,6 +58,7 @@ ESPrequest ReadFileDataRequest
 {
     string DestDropZone;        //name or IP address; 
     string DestRelativePath;    //file name and/or path;
+    [min_ver("1.01")] string DestNetAddress;
     int64  Offset(0);
     int64  DataSize;        
 };
@@ -72,7 +75,7 @@ ReadFileDataResponse
 };
 
 
-ESPservice [auth_feature("DEFERRED"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsFileIO
+ESPservice [auth_feature("DEFERRED"), version("1.01"), default_client_version("1.01"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsFileIO
 {
     ESPmethod CreateFile(CreateFileRequest, CreateFileResponse);
     ESPmethod WriteFileData(WriteFileDataRequest, WriteFileDataResponse);
