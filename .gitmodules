@@ -62,5 +62,5 @@
 	path = system/security/plugins/jwtSecurity/jwt-cpp
 	url = https://github.com/hpcc-systems/jwt-cpp.git
 [submodule "system/logaccess/ElasticStack/elasticclient"]
-	path = system/logaccess/ElasticStack/elasticclient
+	path = system/logaccess/ElasticStack/elasticlient
 	url = https://github.com/seznam/elasticlient.git

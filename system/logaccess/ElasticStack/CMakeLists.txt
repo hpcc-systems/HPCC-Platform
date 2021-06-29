@@ -21,7 +21,7 @@ project(ElasticStackLogAccess)
 include(ExternalProject)
 ExternalProject_Add(
   elasticlient-build
-  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/elasticclient
+  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/elasticlient
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/elasticlient
   CMAKE_ARGS -DBUILD_ELASTICLIENT_TESTS=OFF -DBUILD_ELASTICLIENT_EXAMPLE=OFF -DUSE_ALL_SYSTEM_LIBS=OFF -DUSE_SYSTEM_CURL=ON -DBUILD_CPR_TESTS=OFF
   BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} cpr jsoncpp_lib elasticlient
@@ -53,13 +53,13 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
 
 set(srcs
   ${CMAKE_CURRENT_SOURCE_DIR}/ElasticStackLogAccess.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/elasticclient/include/elasticlient/client.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/elasticlient/include/elasticlient/client.h
 )
 
 include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}/elasticclient/include
-  ${CMAKE_CURRENT_SOURCE_DIR}/elasticclient/external/jsoncpp/include
-  ${CMAKE_CURRENT_SOURCE_DIR}/elasticclient/external/cpr/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/elasticlient/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/elasticlient/external/jsoncpp/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/elasticlient/external/cpr/include
   ${HPCC_SOURCE_DIR}/system/include
   ${HPCC_SOURCE_DIR}/system/jlib
 )
@@ -79,3 +79,29 @@ install(TARGETS elasticstacklogaccess
 )
 
 
+if(NOT PLUGIN)
+  install(CODE "set(ENV{LD_LIBRARY_PATH} \"\$ENV{LD_LIBRARY_PATH}:${PROJECT_BINARY_DIR}:${PROJECT_BINARY_DIR}/elasticlient/lib\")")
+  install(FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/elasticlient/LICENSE.txt
+    DESTINATION ${LIB_DIR}
+    RENAME elasticlient-LICENSE.txt)
+  install(CODE "file(RPATH_CHANGE
+    FILE \"${CMAKE_CURRENT_BINARY_DIR}/elasticlient/lib/libelasticlient${CMAKE_SHARED_LIBRARY_SUFFIX}\"
+    OLD_RPATH \"${PROJECT_BINARY_DIR}/elasticlient/lib:\"
+    NEW_RPATH \"${LIB_PATH}\")")
+  install(CODE "file(RPATH_CHANGE
+    FILE \"${CMAKE_CURRENT_BINARY_DIR}/elasticlient/lib/libcpr${CMAKE_SHARED_LIBRARY_SUFFIX}\"
+    OLD_RPATH \"${PROJECT_BINARY_DIR}/elasticlient/lib:\"
+    NEW_RPATH \"${LIB_PATH}\")")
+  install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/elasticlient/lib/libelasticlient${CMAKE_SHARED_LIBRARY_SUFFIX}.2.1.0
+    ${CMAKE_CURRENT_BINARY_DIR}/elasticlient/lib/libelasticlient${CMAKE_SHARED_LIBRARY_SUFFIX}.2
+    ${CMAKE_CURRENT_BINARY_DIR}/elasticlient/lib/libelasticlient${CMAKE_SHARED_LIBRARY_SUFFIX}
+    ${CMAKE_CURRENT_BINARY_DIR}/elasticlient/lib/libjsoncpp${CMAKE_SHARED_LIBRARY_SUFFIX}.1.8.4
+    ${CMAKE_CURRENT_BINARY_DIR}/elasticlient/lib/libjsoncpp${CMAKE_SHARED_LIBRARY_SUFFIX}.19
+    ${CMAKE_CURRENT_BINARY_DIR}/elasticlient/lib/libjsoncpp${CMAKE_SHARED_LIBRARY_SUFFIX}
+    ${CMAKE_CURRENT_BINARY_DIR}/elasticlient/lib/libcpr${CMAKE_SHARED_LIBRARY_SUFFIX}.1.5.1
+    ${CMAKE_CURRENT_BINARY_DIR}/elasticlient/lib/libcpr${CMAKE_SHARED_LIBRARY_SUFFIX}.1
+    ${CMAKE_CURRENT_BINARY_DIR}/elasticlient/lib/libcpr${CMAKE_SHARED_LIBRARY_SUFFIX}
+    DESTINATION ${LIB_DIR})
+endif(NOT PLUGIN)
