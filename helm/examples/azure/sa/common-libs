@@ -1,0 +1,13 @@
+get_share_names()
+{
+  _share_names=()
+  while read _share_name
+  do
+    if [[ " ${_share_names[*]} " != *" $_share_name "* ]]
+    then
+	    _share_names+=(${_share_name})
+    fi
+  done <<< $(cat $VALUES_FILE | grep "^[[:space:]]*shareName:"|cut -d':' -f2|sed 's/[[:space:]\"]//g')
+  #SHARE_NAMES_INPUT=" ${_share_names[*]} "
+  SHARE_NAMES_INPUT=${_share_names[*]}
+}
