@@ -9,6 +9,7 @@ import { useFile, useDefFile } from "../hooks/File";
 import { pivotItemStyle } from "../layouts/pivot";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { pushUrl } from "../util/history";
+import { FileBlooms } from "./FileBlooms";
 import { SuperFiles } from "./SuperFiles";
 import { ECLSourceEditor, XMLSourceEditor } from "./SourceEditor";
 import { ShortVerticalDivider } from "./Common";
@@ -179,7 +180,8 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
             </PivotItem>
             <PivotItem headerText={nlsHPCC.History} itemKey="History" style={pivotItemStyle(size, 0)}>
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.Blooms} itemKey="Blooms" style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.Blooms} itemKey="Blooms" itemCount={file?.Blooms?.DFUFileBloom?.length} style={pivotItemStyle(size, 0)}>
+                <FileBlooms cluster={cluster} logicalFile={logicalFile} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.ProtectBy} itemKey="ProtectBy" style={pivotItemStyle(size, 0)}>
             </PivotItem>
