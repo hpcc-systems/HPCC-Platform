@@ -3456,12 +3456,13 @@ void initializeStorageGroups(bool createPlanesFromGroups)
 bool getDefaultStoragePlane(StringBuffer &ret)
 {
     // If the plane is specified for the component, then use that
-    if (getComponentConfigSP()->getProp("@storagePlane", ret))
+    if (getComponentConfigSP()->getProp("@dataPlane", ret))
         return true;
 
     //Otherwise check what the default plane for data storage is configured to be
-    if (getGlobalConfigSP()->getProp("storage/@dataPlane", ret))
-        return true;
+    Owned<IPropertyTreeIterator> dataPlanes = getGlobalConfigSP()->getElements("storage/planes[@category='data']");
+    if (dataPlanes->first())
+        return dataPlanes->query().getProp("@name", ret);
 
 #ifdef _CONTAINERIZED
     throwUnexpectedX("Default data plane not specified"); // The default should always have been configured by the helm charts
