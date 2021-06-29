@@ -4964,7 +4964,15 @@ void doPrecompile(size32_t & __lenResult, void * & __result, const char *funcNam
     StringBuffer options(compilerOptions);
     if (isEmptyString(compilerOptions))
         options.append("-g:none");
-    appendClassPath(options.append(" -cp "));
+    options.append(" -cp ");
+    const char* origPath = getenv("CLASSPATH");
+    StringBuffer newPath;
+    if (origPath && *origPath)
+    {
+        options.append(origPath).append(ENVSEPCHAR);
+    }
+    appendClassPath(options);
+    options.append(".");
     VStringBuffer javac("javac %s %s", options.str(), javafile.str());
     if (!pipe->run("javac", javac, tmpDirName, false, false, true, 0, false))
     {
