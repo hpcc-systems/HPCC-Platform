@@ -28,13 +28,6 @@ MODULE_EXIT()
 }
 
 
-//struct hpccMetrics::SinkInfo
-//{
-//    explicit SinkInfo(MetricSink *_pSink) : pSink{_pSink} {}
-//    MetricSink *pSink = nullptr;             // ptr to the sink
-//    std::vector<std::string> reportMetrics;   // vector of metrics to report (empty for none)
-//};
-
 MetricsReporter &hpccMetrics::queryMetricsReporter()
 {
     return *metricsReporter.query([] { return new MetricsReporter; });
