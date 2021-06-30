@@ -1500,6 +1500,10 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
         case no_activetable:
         case no_counter:
             s.append(getEclOpString(no));
+            if (expandProcessed && expr->querySequenceExtra())
+            {
+                s.append("{").append(expr->querySequenceExtra()).append("}");
+            }
             break;
         case no_selfref:
             if (expandProcessed)

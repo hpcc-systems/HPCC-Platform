@@ -193,6 +193,7 @@ extern HQL_API void checkIndependentOfScope(IHqlExpression * expr)
         exprs.append(OLINK(scopeUsed.item(i)));
 
     EclIR::dbglogIR(exprs);
+    EclIR::dump_ir(exprs);
 }
 
 extern HQL_API void checkNormalized(IHqlExpression * expr)
