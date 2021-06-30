@@ -60,8 +60,9 @@ spec:
       {{- if not ( $sashaServices.disabled ) -}}
       {{- range $sashaName, $_sasha := $dali.services -}}
       {{- $sasha := ($_sasha | default dict) -}}
-      {{- if and (not $sasha.disabled) ($sasha.storage) }}
-        {{- $_ := append $sashaPlanes $sasha.storage.plane }}
+      {{- if and (not $sasha.disabled) (hasKey $sasha "plane") }}
+        {{- $sashaStoragePlane := $sasha.plane | default (include "hpcc.getFirstPlaneForCategory" (dict "root" $ "category" "sasha")) }}
+        {{- $_ := append $sashaPlanes $sashaStoragePlane }}
       {{- end }}
       {{- end }}
       {{- end }}
@@ -126,8 +127,7 @@ spec:
 {{- include "hpcc.addSecretVolumes" (dict "root" $ "secretsCategories" $tmpDaliScope.aggregateSashaSecretsCategories) | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" "dali" "external" false) | indent 6 }}
 ---
-{{- $storage := ($.Values.storage | default dict) -}}
-{{- $daliStorage := ($storage.daliStorage | default dict) }}
+{{- $daliStoragePlane := $dali.daliPlane | default (include "hpcc.getFirstPlaneForCategory" (dict "root" $ "category" "dali")) }}
 kind: ConfigMap 
 apiVersion: v1 
 metadata:
@@ -137,7 +137,7 @@ data:
     version: 1.0
     dali:
 {{ toYaml (omit $dali "logging" "services" "env") | indent 6 }}
-      dataPath: {{ include "hpcc.getVolumeMountPrefix" (dict "root" $ "me" $daliStorage "path" "dalistorage") }}
+      dataPath: {{ include "hpcc.getPlanePrefix" (dict "root" $ "planeName" $daliStoragePlane) }}
 {{- include "hpcc.generateLoggingConfig" $commonCtx | indent 6 }}
 {{ include "hpcc.generateVaultConfig" (dict "root" $ "secretsCategories" $daliSecretsCategories ) | indent 6 }}
     global:

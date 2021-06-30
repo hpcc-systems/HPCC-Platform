@@ -101,9 +101,8 @@ security:
 
 ## storage:
 ##
-## 1. If a component has the storagePlane property set, then that plane will be the default data location for that component.
-## 2. If storage.dataStorage.plane is defined then that plane will be the default location
-## 3. If there is a plane definition with no label or a label of "data" then the first matching plane will be the default data location
+## 1. If an engine component has the dataPlane property set, then that plane will be the default data location for that component.
+## 2. If there is a plane definition with a category of "data" then the first matching plane will be the default data location
 ##
 ## If a data plane contains the storageClass property then an implicit pvc will be created for that data plane.
 ##
@@ -166,15 +165,6 @@ storage:
     storageSize: 1Gi
     prefix: "/var/lib/HPCCSystems/mydropzone"
     category: lz
-
-  dllStorage:
-    plane: dll
-
-  daliStorage:
-    plane: dali
-
-  dataStorage:
-    plane: data
 
 ## The certificates section can be used to enable cert-manager to generate TLS certificates for each component in the hpcc.
 ## You must first install cert-manager to use this feature.
@@ -321,8 +311,7 @@ sasha:
     #disabled: true
     service:
       servicePort: 8877
-    storage:
-      plane: sasha
+    plane: sasha
     #interval: 6 # (hours)
     #limit: 1000 # threshold number of workunits before archiving starts (0 disables)
     #cutoff: 8 # minimum workunit age to archive (days)
@@ -337,8 +326,7 @@ sasha:
     #disabled: true
     service:
       servicePort: 8877
-    storage:
-      plane: sasha
+    plane: sasha
       #forcePermissions: false
     #limit: 1000 # threshold number of DFU workunits before archiving starts (0 disables)
     #cutoff: 14 # minimum DFU workunit age to archive (days)

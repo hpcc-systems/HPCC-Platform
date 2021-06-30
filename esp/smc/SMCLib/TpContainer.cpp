@@ -797,7 +797,7 @@ StringBuffer & getRoxieDefaultPlane(StringBuffer & plane, const char * roxieName
     if (!queue)
         throw makeStringExceptionV(ECLWATCH_INVALID_CLUSTER_NAME, "Unknown queue name %s", roxieName);
 
-    if (queue->getProp("@storagePlane", plane))
+    if (queue->getProp("@dataPlane", plane))
         return plane;
 
     //Find the first data plane - better if it was retrieved from roxie config
