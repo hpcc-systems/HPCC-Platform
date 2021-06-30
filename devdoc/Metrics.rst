@@ -199,22 +199,26 @@ arise in the implementation of a sink shall be the sole responsibility of the si
 ************************
 Framework Implementation
 ************************
-This section describe the implementation of each area of the framework.
+The framework is implemented within jlib. The following sections describe each area of the
+framework.
 
 Metrics
 =======
 Components use metrics to measure their internal state. Metrics can represent everything from the
-number of requests received to the average length some value remains cached. The point is that the
-component is responsible for creating and updating the metric. The framework shall provide a set of
+number of requests received to the average length some value remains cached. Components are responsible
+for creating and updating metrics for each measured state. The framework shall provide a set of
 metrics designed to cover the majority of component measurement requirements. All metrics share a
 common interface to allow the framework to manage them in a common way.
 
 To meet the requirement to manage metrics independent of the underlying metric state, all metrics
 implement a common interface. All metrics then add their specific methods to update and retrieve
-internal state. Generally the component uses the update method(s) to change metric state whenever
-an event or other process dictates. The sink, described later, is generally the consumer of the
-retrieval methods. Components create and update metrics and sinks retrieve and consume the values.
-The metric is responsible for synchronizing access between update and retrieval.
+internal state. Generally the component uses the update method(s) to update state and the framework
+uses retrieval methods to get current state when reporting. The metric insures synchronized access.
+
+For components that already have an implementation that tracks a metric, the framework provides a way
+to instantiate a custom metric. The custom metric allows the component to leverage the existing
+implementation and give the framework access to the metric value for collection and reporting. Note
+that custom metrics only support simple scalar metrics such as a counter or a gauge.
 
 Sinks
 =====
@@ -276,6 +280,15 @@ Once created, the component shall update the gauge anytime the state of what is 
 The metric shall provide methods to increase and decrease the value. The sink reads the value during
 collection and reporting.
 
+Custom Metric
+-------------
+A custom metric is a class that allows a component to leverage existing metrics. The component creates
+an instance of a custom metric (a templated class) and passes a reference to the underlying metric
+value. When collection is performed, the custom metric simply reads the value of the metric using the
+reference provided during construction. The component maintains full responsibility for updating the
+metric value as the custom metric class provides no update methods. The component is also responsible
+for ensuring atomic access to the value if necessary.
+
 
 *************
 Configuration
@@ -289,14 +302,11 @@ form as shown below. Note that as the design progresses it is expected that ther
   component:
     metrics:
       sinks:
-        sink:
-          - type: <sink_type>
-            name: <sink name>
-            settings:
-              sink_setting1: sink_setting_value1
-              sink_setting2: sink_setting_value2
-            metrics:
-              - name: <metric_name>
+      - type: <sink_type>
+        name: <sink name>
+        settings:
+          sink_setting1: sink_setting_value1
+          sink_setting2: sink_setting_value2
 
 Where (based on being a child of the current *component*):
 
@@ -306,29 +316,91 @@ metrics
 metrics.sinks
     List of sinks defined for the component (may have been combined with global config)
 
-metrics.sinks.sink
-    The repeating element
-
-metrics.sinks.sink.type
+metrics.sinks[].type
     The type for the sink. The type is substituted into the following pattern to determine the lib to load:
     libhpccmetrics<type><shared_object_extension>
 
-metrics.sinks.sink.name
-    A name for the sink. Note this may not be needed, but can provide a way to combine global and
-    component config based on value
+metrics.sinks[].name
+    A name for the sink.
 
-metrics.sinks.sink.settings
-    A set of key/value pairs that passed to the sink when initialized. It should contain information
+metrics.sinks[].settings
+    A set of key/value pairs passed to the sink when initialized. It should contain information
     necessary for the operation of the sink. Nested YML is supported. Example settings are the
     prometheus server name, or the collection period for a periodic sink.
-
-metrics.sinks.sink.metrics
-    Optional list of component-defined metrics reported by the sink to the backend during collection
-    and reporting. If no list if given, all component metrics are reported by default.
 
 
 *************************
 Component Instrumentation
 *************************
 
-This section describes component instrumentation. Will be filled in later.
+In order to instrument a component for metrics using the framework, a component must include the metrics
+header from jlib (*jmetrics.hpp*) and add jlib as a dependent lib (if not already doing so).
+
+The general steps for instrumentation are
+
+1. Create a metrics reporter object
+2. Create metric objects for each internal state to measure and add each to the reporter
+3. Add updates to each metric throughout the component wherever metric state changes
+
+The *metrics reporter* is a singleton created using the platform defined singleton pattern template. The component
+must obtain a reference to the reporter. Use the following example:
+
+::
+
+    using namespace hpccMetrics;
+    MetricsReporter &metricsReporter = queryMetricsReporter();
+
+Metrics are wrapped by a standard C++ shared pointer. The component is responsible for maintaining a reference to
+each shared pointer during the lifetime of the metric. The framework keeps a weak pointer to each metric and thus
+does not maintain a reference. The following is an example of creating a counter metric and adding it to the
+reporter. The *using namespace* eliminates the need to prefix all metrics types with *hpccMetrics*. Its use
+is assumed for all code examples that follow.
+
+::
+
+    std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("metricName", "description");
+    metricsReporter.add(pCounter);
+
+Note the metric type for both the shared pointer variable and in the *make_shared* template that creates the
+metric and returns a shared pointer. Simply substitute other metric types and handle any differences in the
+constructor arguments as needed.
+
+Once created, add updates to the metric state throughout the component code where required. Using the above
+example, the following line of code increments the counter metric by 1.
+
+::
+
+    pCounter->inc(1);
+
+Note that only a single line of code is required to update the metric.
+
+That's it! There are no component requirements related to collection or reporting of metric values. That is
+handled by the framework and loaded sinks.
+
+For convenience, there are function templates that handle creating the reporter, creating a metric, and adding
+the metric to the reporter. For example, the above three lines of code that created the reporter, a metric, and
+added it, can be replaced by the following:
+
+::
+
+    auto pCount = createMetricAndAddToReporter<CounterMetric>("metricName", "description");
+
+For convenience a similar function template exists for creating custom metrics. For a custom metric the framework
+must know the metric type and have a reference to the underlying state variable. The following template function
+handles creating a custom metric and adding it to the reporter (which is created if needed as well):
+
+::
+
+    auto pCustomMetric = createCustomMetricAndAddToReporter("customName", "description", metricType, value);
+
+
+Where:
+
+* metricType
+
+  A defined metric type as defined by the *MetricType* enum.
+
+* value
+
+  A reference to the underlying event state which must be a scalar value convertable to a 64bit unsigned
+  integer (__uint64)

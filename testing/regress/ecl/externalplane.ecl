@@ -27,7 +27,7 @@ ds := DATASET([{'a'}], rec);
 dropzone := 'mydropzone' : STORED('dropzone');
 
 string getFName(string ext) := FUNCTION
- RETURN '~PLANE::' + dropzone + '::' + 'external' + ext;
+ RETURN '~PLANE::' + dropzone + '::'  + WORKUNIT + 'external' + ext;
 END;
 
 external1 := getFName('1');

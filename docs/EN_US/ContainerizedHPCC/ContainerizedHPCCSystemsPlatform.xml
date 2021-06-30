@@ -87,10 +87,13 @@
     cloud.</para>
 
     <para>For local small deployments (for development and testing), we
-    suggest using Docker Desktop and Helm. For Cloud deployments, you can use
-    any flavor of Cloud services, if it supports Docker, Kubernetes, and Helm.
-    This book, however, will focus on Microsoft Azure for Cloud Services.
-    Future versions may include specifics for other Cloud providers.</para>
+    suggest using Docker Desktop and Helm. This is useful for learning,
+    development, and testing.</para>
+
+    <para>For Cloud deployments, you can use any flavor of Cloud services, if
+    it supports Docker, Kubernetes, and Helm. This book, however, will focus
+    on Microsoft Azure for Cloud Services. Future versions may include
+    specifics for other Cloud providers.</para>
 
     <para>If you want to manually manage your local or Cloud deployment, you
     can still use the traditional installers and Configuration Manager, but
