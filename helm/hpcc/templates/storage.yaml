@@ -43,4 +43,51 @@
  {{- end -}}
  {{- $_ := set $previousMounts $plane.prefix $rawPlane -}}
 {{- end -}}
+{{- /* check that planes exist for each of the required planes */ -}}
+{{ $need := dict }}
+{{- range $.Values.dali -}}
+ {{- if not .disabled -}}
+   {{- $_ := set $need "dali" true -}}
+ {{- end }}
+{{ end -}}
+{{- range $.Values.eclccserver -}}
+ {{- if not .disabled -}}
+   {{- $_ := set $need "dll" true -}}
+ {{- end }}
+{{ end -}}
+{{- range $.Values.eclscheduler -}}
+ {{- if not .disabled -}}
+   {{- $_ := set $need "dali" true -}}
+   {{- $_ := set $need "dll" true -}}
+ {{- end }}
+{{ end -}}
+{{- range $.Values.esp -}}
+ {{- if not .disabled -}}
+  {{- /* placeholder .. if any planes are required */ -}}
+ {{- end }}
+{{ end -}}
+{{- range $.Values.eclagent -}}
+ {{- if not .disabled -}}
+   {{- $_ := set $need "data" true -}}
+   {{- $_ := set $need "dll" true -}}
+   {{- $_ := set $need "dali" true -}}
+ {{- end }}
+{{ end -}}
+{{- range $.Values.roxie -}}
+ {{- if not .disabled -}}
+   {{- $_ := set $need "data" true -}}
+   {{- $_ := set $need "dll" true -}}
+ {{- end }}
+{{ end -}}
+{{- range $.Values.thor -}}
+ {{- if not .disabled -}}
+   {{- $_ := set $need "data" true -}}
+   {{- $_ := set $need "dll" true -}}
+   {{- $_ := set $need "dali" true -}}
+ {{- end }}
+{{ end -}}
+{{- range $category, $value := $need }}
+ {{- $_ := required (printf "No plane defined for category '%s'" $category) (include "hpcc.getFirstPlaneForCategory" (dict "root" $ "category" $category)) }}
+{{- end -}}
+{{- /* finally generate the pvcs for each of the storage planes that need one */ -}}
 {{- include "hpcc.addPVCsFromPlanes" . }}

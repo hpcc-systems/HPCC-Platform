@@ -224,6 +224,7 @@ extern TPWRAPPER_API bool getSashaServiceEP(SocketEndpoint &serviceEndpoint, con
 
 extern TPWRAPPER_API StringBuffer & getRoxieDefaultPlane(StringBuffer & plane, const char * roxieName);
 extern TPWRAPPER_API bool validateDataPlaneName(const char *remoteDali, const char * name);
+extern TPWRAPPER_API bool matchNetAddressRequest(const char* netAddressReg, bool ipReq, IConstTpMachine& tpMachine);
 
 #endif //_ESPWIZ_TpWrapper_HPP__
 

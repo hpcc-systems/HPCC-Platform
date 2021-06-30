@@ -353,6 +353,10 @@ extern bool fastLaneQueue;
 extern unsigned mtu_size;
 extern StringBuffer fileNameServiceDali;
 extern StringBuffer roxieName;
+#ifdef _CONTAINERIZED
+extern StringBuffer defaultPlane;
+extern StringBuffer defaultPlaneDirPrefix;
+#endif
 extern bool trapTooManyActiveQueries;
 extern unsigned maxEmptyLoopIterations;
 extern unsigned maxGraphLoopIterations;
@@ -374,6 +378,7 @@ extern SinkMode defaultSinkMode;
 
 #ifdef _CONTAINERIZED
 static constexpr bool roxieMulticastEnabled = false;
+extern unsigned myChannel;
 #else
 extern bool roxieMulticastEnabled;   // enable use of multicast for sending requests to agents
 #endif
@@ -406,6 +411,7 @@ struct PartNoType
 extern unsigned statsExpiryTime;
 extern time_t startupTime;
 extern unsigned miscDebugTraceLevel;
+extern bool traceRemoteFiles;
 extern RecordTranslationMode fieldTranslationEnabled;
 
 extern unsigned defaultParallelJoinPreload;

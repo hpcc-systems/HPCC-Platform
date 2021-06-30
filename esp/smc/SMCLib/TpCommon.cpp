@@ -97,3 +97,10 @@ extern TPWRAPPER_API IStringIterator* getContainerTargetClusters(const char* pro
     }
     return ret.getClear();
 }
+
+extern TPWRAPPER_API bool matchNetAddressRequest(const char* netAddressReg, bool ipReq, IConstTpMachine& tpMachine)
+{
+    if (ipReq)
+        return streq(netAddressReg, tpMachine.getNetaddress());
+    return streq(netAddressReg, tpMachine.getConfigNetaddress());
+}

@@ -169,7 +169,15 @@ public:
         }
         copying = _copying; 
     }
-
+    virtual void dump() const
+    {
+        CriticalBlock b(crit);
+        DBGLOG("LazyFileIO object %s has %d sources:", queryFilename(), sources.ordinality());
+        ForEachItemIn(idx, sources)
+        {
+            DBGLOG("%c %s", idx==currentIdx ? '*' : ' ', sources.item(idx).queryFilename());
+        }
+    }
     virtual bool isCopying() const
     {
         CriticalBlock b(crit);
@@ -401,7 +409,7 @@ public:
     virtual void setSize(offset_t size) { throwUnexpected(); }
     virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) { throwUnexpected(); return 0; }
 
-    virtual const char *queryFilename() { return logical->queryFilename(); }
+    virtual const char *queryFilename() const { return logical->queryFilename(); }
     virtual bool isAliveAndLink() const { return CInterface::isAliveAndLink(); }
 
     virtual IMemoryMappedFile *getMappedFile() override
@@ -478,17 +486,26 @@ public:
 
     void copyComplete()
     {
+        CriticalBlock b(crit);
+        setFailure(); // lazyOpen will then reopen it...
+        currentIdx = 0;
+        remote = false;
+        copying = false;
+        sources.kill();
+        sources.add(*logical.getLink(), 0);
+        if (!lazyOpen)
+            _checkOpen();
+    }
+
+    bool checkCopyComplete()
+    {
+        CriticalBlock b(crit);
+        if (logical->exists())   // MORE - do we need to check data/size etc? do we have the info to do so?
         {
-            CriticalBlock b(crit);
-            setFailure(); // lazyOpen will then reopen it...
-            currentIdx = 0;
-            remote = false;
-            copying = false;
-            sources.kill();
-            sources.add(*logical.getLink(), 0);
-            if (!lazyOpen)
-                _checkOpen();
+            copyComplete();
+            return true;
         }
+        return false;
     }
 
     virtual IFile *querySource() 
@@ -536,6 +553,8 @@ static int getClusterPriority(const char *clusterName)
 
 static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations, const char *localFileName, const char *fromCluster, bool includeFromCluster)
 {
+    if (traceRemoteFiles)
+        DBGLOG("appendRemoteLocations lfn=%s fromCluster=%s, includeFromCluster=%s", nullText(localFileName), nullText(fromCluster), boolToStr(includeFromCluster));
     IFileDescriptor &fdesc = pdesc->queryOwner();
     unsigned numCopies = pdesc->numCopies();
     unsigned lastClusterNo = (unsigned) -1;
@@ -548,6 +567,8 @@ static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations
         unsigned clusterNo = pdesc->copyClusterNum(copy);
         StringBuffer clusterName;
         fdesc.getClusterGroupName(clusterNo, clusterName);
+        if (traceRemoteFiles)
+           DBGLOG("appendRemoteLocations found entry in cluster %s", clusterName.str());
         if (fromCluster && *fromCluster)
         {
             bool matches = strieq(clusterName.str(), fromCluster);
@@ -591,6 +612,8 @@ static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations
             }
             priorities.add(priority, idx);
             locations.add(path.str(), idx+initialSize);
+            if (traceRemoteFiles)
+                DBGLOG("appendRemoteLocations adding location %s at position %u", path.str(), idx+initialSize);
         }
     }
 }
@@ -798,6 +821,11 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
 {
     friend class CcdFileTest;
     mutable ICopyArrayOf<ILazyFileIO> todo; // Might prefer a queue but probably doesn't really matter.
+#ifdef _CONTAINERIZED
+    mutable ICopyArrayOf<ILazyFileIO> buddyCopying;
+    mutable bool buddyChecking = false;
+#endif
+    bool reportedFilesToCopy = false;
     InterruptableSemaphore toCopy;
     InterruptableSemaphore toClose;
     InterruptableSemaphore cidtSleep;
@@ -933,6 +961,8 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                            offset_t size, const CDateTime &modified)
     {
         Owned<IFile> local = createIFile(localLocation);
+        if (traceRemoteFiles)
+            DBGLOG("openFile adding file %s (localLocation %s)", lfn, localLocation);
         bool isCompressed = selfTestMode ? false : pdesc->queryOwner().isCompressed();
         unsigned crc = 0;
         if (!selfTestMode)
@@ -950,6 +980,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
         {
             bool addedOne = false;
 
+#ifndef _CONTAINERIZED
             // put the peerRoxieLocations next in the list
             StringArray localLocations;
             if (selfTestMode)
@@ -989,7 +1020,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                 }
                 ret->setRemote(true);
             }
-
+#endif
             if (!addedOne && (copyResources || useRemoteResources || selfTestMode))  // If no peer locations available, go to remote
             {
                 ForEachItemIn(idx, remoteLocationInfo)
@@ -1007,7 +1038,10 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                                 DBGLOG("adding remote location %s", remoteName);
                             RemoteFilename rfn;
                             rfn.setRemotePath(remoteName);
+#ifndef _CONTAINERIZED
+                            // MORE - may want to change this to mark some other locations as "local enough"
                             if (!rfn.isLocal())    // MORE - may still want to copy files even if they are on a posix-accessible path, for local caching? Probably really want to know if hooked or not...
+#endif
                                 ret->setRemote(true);
                             ret->addSource(remote.getClear());
                             addedOne = true;
@@ -1031,12 +1065,16 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                 {
                     if (traceLevel >= 2)
                     {
+#ifndef _CONTAINERIZED
                         DBGLOG("Failed to open file at any of the following %d local locations:", localLocations.length());
                         ForEachItemIn(local_idx, localLocations)
                         {
                             DBGLOG("%d: %s", local_idx+1, localLocations.item(local_idx));
                         }
                         DBGLOG("Or at any of the following %d remote locations:", remoteLocationInfo.length());
+#else
+                        DBGLOG("Failed to open file at any of the following %d remote locations:", remoteLocationInfo.length());
+#endif
                         ForEachItemIn(remote_idx, remoteLocationInfo)
                         {
                             DBGLOG("%d: %s", remote_idx+1, remoteLocationInfo.item(remote_idx));
@@ -1051,7 +1089,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
         return ret.getClear();
     }
 
-    void deleteTempFiles(const char *targetFilename)
+    static void deleteTempFiles(const char *targetFilename)
     {
         try
         {
@@ -1078,7 +1116,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
         }
     }
 
-    bool doCopyFile(ILazyFileIO *f, const char *tempFile, const char *targetFilename, const char *destPath, const char *msg, CFflags copyFlags=CFnone)
+    static bool doCopyFile(ILazyFileIO *f, const char *tempFile, const char *targetFilename, const char *destPath, const char *msg, CFflags copyFlags=CFnone)
     {
         bool fileCopied = false;
         IFile *sourceFile;
@@ -1112,6 +1150,13 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
 
             bool hardLinkCreated = false;
             unsigned start = msTick();
+#ifdef _DEBUG
+            if (topology->getPropBool("@simulateSlowCopies"))
+            {
+                DBGLOG("Simulating a slow copy");
+                Sleep(10*1000);
+            }
+#endif
             try
             {
                 if (useHardLink)
@@ -1177,15 +1222,12 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
         return fileCopied;
     }
 
-    bool doCopy(ILazyFileIO *f, bool background, bool displayFirstFileMessage, CFflags copyFlags=CFnone)
+    static bool doCopy(ILazyFileIO *f, bool background, CFflags copyFlags=CFnone)
     {
         if (!f->isRemote())
             f->copyComplete();
         else
         {
-            if (displayFirstFileMessage)
-                DBGLOG("Received files to copy");
-
             const char *targetFilename = f->queryTarget()->queryFilename();
             StringBuffer tempFile(targetFilename);
             StringBuffer destPath;
@@ -1342,12 +1384,8 @@ public:
         }
         try
         {
-            int fileCopiedCount = 0;
-            bool fileCopied = false;
-
             for (;;)
             {
-                fileCopied = false;
                 Linked<ILazyFileIO> next;
                 toCopy.wait();
                 {
@@ -1368,10 +1406,7 @@ public:
                 {
                     try
                     {
-                        fileCopied = doCopy(next, true, (fileCopiedCount==0) ? true : false, CFflush_rdwr);
-                        CriticalBlock b(crit);
-                        if (fileCopied)
-                            fileCopiedCount++;
+                        doCopy(next, true, CFflush_rdwr);
                     }
                     catch (IException *E)
                     {
@@ -1387,10 +1422,16 @@ public:
                 }
 
                 CriticalBlock b(crit);
-                if ( (todo.ordinality()== 0) && (fileCopiedCount)) // finished last copy
+                if (todo.ordinality()==0 && reportedFilesToCopy)
                 {
-                    DBGLOG("No more data files to copy");
-                    fileCopiedCount = 0;
+#ifdef _CONTAINERIZED
+                    DBGLOG("No more data files for this node to copy");
+                    if (!buddyCopying.length() && !buddyChecking)
+#endif
+                    {
+                        DBGLOG("No more data files to copy");
+                        reportedFilesToCopy = false;
+                    }
                 }
             }
         }
@@ -1416,13 +1457,66 @@ public:
             DBGLOG("HandleCloser thread %p starting", this);
         try
         {
+            unsigned lastCloseCheck = msTick();
             for (;;)
             {
-                toClose.wait(10 * 60 * 1000);  // check expired file handles every 10 minutes 
+#ifdef _CONTAINERIZED
+                unsigned checkPeriod = topology->getPropInt("@copyCheckPeriod", 60);
+#else
+                unsigned checkPeriod = 10*60;  // check expired file handles every 10 minutes, buddyCopying a little more often
+#endif
+                toClose.wait(checkPeriod * 1000);
                 if (closing)
                     break;
-                doCloseExpired(true);
-                doCloseExpired(false);
+#ifdef _CONTAINERIZED
+                // Periodically recheck the list to see what is now local, and remove them from the buddyCopying list
+                ICopyArrayOf<ILazyFileIO> checkBuddies;
+                {
+                    CriticalBlock b(crit);
+                    if (buddyCopying.length())
+                    {
+                        buddyCopying.swapWith(checkBuddies);
+                        buddyChecking = true;
+                    }
+                }
+                if (checkBuddies.length())
+                {
+                    ForEachItemIn(idx, checkBuddies)
+                    {
+                        ILazyFileIO &check = checkBuddies.item(idx);
+                        if (traceRemoteFiles)
+                            DBGLOG("Checking whether someone has copied file %s for me", check.queryFilename());
+                        if (check.isRemote())
+                        {
+                            if (traceRemoteFiles)
+                                check.dump();
+                            if (!check.checkCopyComplete())   // Recheck whether there is a local file we can open
+                            {
+                                CriticalBlock b1(crit);
+                                buddyCopying.append(check);
+                            }
+                        }
+                    }
+                    CriticalBlock b2(crit);
+                    buddyChecking = false;
+                    if (buddyCopying.length()==0)
+                    {
+                        DBGLOG("No more data files being copied by other nodes");
+                        if (todo.ordinality()==0 && reportedFilesToCopy)
+                        {
+                            DBGLOG("No more data files to copy");
+                            reportedFilesToCopy = false;
+                        }
+                    }
+                }
+#endif
+                unsigned elapsed = msTick()-lastCloseCheck;
+                if (elapsed >= 10*60*1000)
+                {
+                    doCloseExpired(true);
+                    doCloseExpired(false);
+                    lastCloseCheck = msTick();
+                }
             }
         }
         catch (IException *E)
@@ -1532,12 +1626,17 @@ public:
             dlfn.set(lfn);
             if (dlfn.isForeign())
                 dlfn.clearForeign();
-            makePhysicalPartName(dlfn.get(), partNo, numParts, localLocation, replicationLevel, DFD_OSdefault);
+#ifdef _CONTAINERIZED
+            const char *defaultDir = defaultPlaneDirPrefix;
+#else
+            const char *defaultDir = nullptr;
+#endif
+            makePhysicalPartName(dlfn.get(), partNo, numParts, localLocation, replicationLevel, DFD_OSdefault, defaultDir);
         }
         Owned<ILazyFileIO> ret;
         try
         {
-            CriticalBlock b(crit);
+            CLeavableCriticalBlock b(crit);
             ILazyFileIO * match = files.getValue(localLocation);
             if (match && match->isAliveAndLink())
             {
@@ -1585,22 +1684,64 @@ public:
                 {
                     if (copyResources) // MORE - should always copy peer files
                     {
+#ifdef _CONTAINERIZED
+                        // In containerized mode, Roxie file copies are restricted to have only one node do the copying (first node on a channel,
+                        // random node for single-part). But any node that has
+                        //    (a) files being read remotely and
+                        //    (b) no files to copy and
+                        //    (c) a small delay will go through all remote files and check if they are now available locally
+                        // There is an assumption that a "pull" roxie does not have replicas that we don't know about
+                        //     - more than one "pull" roxie copying to the same plane at the same time
+                        //     - replicas=1 should be set on the "pull" roxie (we may be able to relax that using info from toposerver)
+                        //     - can't use localAgent mode on a "pull" roxie
+                        bool iShouldCopy = (replicationLevel==0);
                         if (numParts==1 || (partNo==numParts && fileType==ROXIE_KEY))
                         {
+                            // We distribute the responsibility for copying the TLK/single-part files
+                            unsigned whoShouldCopy = (rtlHash32VStr(lfn, HASH32_INIT) % numChannels) + 1;
+                            if (whoShouldCopy != myChannel)
+                                iShouldCopy = false;
+                        }
+                        if (!reportedFilesToCopy)
+                            DBGLOG("Received files to copy");
+
+                        reportedFilesToCopy = true;
+                        if (iShouldCopy)
+                        {
+                            todo.append(*ret);
+                            numFilesToProcess++;  // must increment counter for SNMP accuracy
+                            toCopy.signal();
+                        }
+                        else
+                        {
+                            if (traceRemoteFiles)
+                                DBGLOG("Add file %s to buddyCopying list", ret->queryFilename());
+                            buddyCopying.append(*ret);   // We expect someone else to copy it for us
+                        }
+#else
+                        // Single-part files and top-level keys are copied immediately rather than being read remotely while background copying
+                        // This is to avoid huge contention on the source dafilesrv if the Roxie is live.
+                        if (numParts==1 || (partNo==numParts && fileType==ROXIE_KEY))
+                        {
+                            b.leave();
                             ret->checkOpen();
-                            doCopy(ret, false, false, CFflush_rdwr);
+                            doCopy(ret, false, CFflush_rdwr);
                             return ret.getLink();
                         }
 
                         // Copies are popped from end of the todo list
                         // By putting the replicates on the front we ensure they are done after the primaries
                         // and are therefore likely to result in local rather than remote copies.
+                        if (!reportedFilesToCopy)
+                            DBGLOG("Received files to copy");
+                        reportedFilesToCopy = true;
                         if (replicationLevel)
                             todo.add(*ret, 0);
                         else
                             todo.append(*ret);
                         numFilesToProcess++;  // must increment counter for SNMP accuracy
                         toCopy.signal();
+#endif
 
                     }
                 }
@@ -2020,6 +2161,11 @@ public:
 
 ILazyFileIO *createPhysicalFile(const char *id, IPartDescriptor *pdesc, IPartDescriptor *remotePDesc, RoxieFileType fileType, int numParts, bool startCopy, unsigned channel)
 {
+#ifdef _CONTAINERIZED
+    const char *myCluster = defaultPlane.str();
+#else
+    const char *myCluster = roxieName.str();
+#endif
     StringArray remoteLocations;
     const char *peerCluster = pdesc->queryOwner().queryProperties().queryProp("@cloneFromPeerCluster");
     if (peerCluster)
@@ -2028,7 +2174,7 @@ ILazyFileIO *createPhysicalFile(const char *id, IPartDescriptor *pdesc, IPartDes
             appendRemoteLocations(pdesc, remoteLocations, NULL, peerCluster, true);  // Add only from specified cluster
     }
     else
-        appendRemoteLocations(pdesc, remoteLocations, NULL, roxieName, false);      // Add from any cluster on same dali, other than mine
+        appendRemoteLocations(pdesc, remoteLocations, NULL, myCluster, false);      // Add from any cluster on same dali, other than mine
     if (remotePDesc)
         appendRemoteLocations(remotePDesc, remoteLocations, NULL, NULL, false);    // Then any remote on remote dali
 
@@ -3697,7 +3843,7 @@ protected:
         CPPUNIT_ASSERT(val==1);
 
         // Now copy it - should copy the buddy
-        cache.doCopy(io, false, false);
+        cache.doCopy(io, false);
 
         // Reading it should read 2...
         val = 0;

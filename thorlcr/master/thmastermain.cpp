@@ -1025,7 +1025,7 @@ int main( int argc, const char *argv[]  )
                 StringBuffer uniqueGrpName;
                 queryNamedGroupStore().addUnique(&queryProcessGroup(), uniqueGrpName);
                 // change default plane
-                getComponentConfigSP()->setProp("storagePlane", uniqueGrpName);
+                getComponentConfigSP()->setProp("@dataPlane", uniqueGrpName);
                 PROGLOG("Persistent Thor group created with group name: %s", uniqueGrpName.str());
             }
 #endif

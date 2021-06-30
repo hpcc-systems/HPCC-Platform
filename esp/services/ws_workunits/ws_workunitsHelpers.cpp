@@ -561,7 +561,7 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned long flags)
             for (unsigned i = 0; i < FileTypeSize; i++)
                 getHelpFiles(query, (WUFileType) i, helpers, flags, helpersCount);
         }
-
+#ifndef _CONTAINERIZED
         getWorkunitThorLogInfo(helpers, info, flags, helpersCount);
 
         if (cw->getWuidVersion() > 0)
@@ -625,6 +625,7 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned long flags)
                 break;
             }
         }
+#endif
 
         info.setHelpers(helpers);
         info.setHelpersCount(helpersCount);
@@ -1063,6 +1064,7 @@ void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned long flags)
     getServiceNames(info, flags);
 }
 
+#ifndef _CONTAINERIZED
 unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IEspECLWorkunit &info, unsigned long flags, unsigned& helpersCount)
 {
     unsigned countThorLog = 0;
@@ -1259,6 +1261,7 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
 
     return countThorLog;
 }
+#endif
 
 bool WsWuInfo::getClusterInfo(IEspECLWorkunit &info, unsigned long flags)
 {
@@ -1905,6 +1908,7 @@ void WsWuInfo::readFileContent(const char* sourceFileName, const char* sourceIPA
         throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Cannot read %s.", sourceAlias);
 }
 
+#ifndef _CONTAINERIZED
 void WsWuInfo::getWorkunitEclAgentLog(const char* processName, const char* fileName, const char* agentPid, MemoryBuffer& buf, const char* outFile)
 {
     if (isEmptyString(processName) && isEmptyString(fileName))
@@ -2241,6 +2245,7 @@ void WsWuInfo::getWUProcessLogSpecs(const char* processName, const char* logSpec
     if (logSpecs.length() > 1)
         logSpecs.sortAscii(false); //Sort the logSpecs from old to new
 }
+#endif
 
 void WsWuInfo::getWorkunitResTxt(MemoryBuffer& buf)
 {
@@ -2510,7 +2515,7 @@ void WsWuInfo::getArchiveFile(IPropertyTree* archive, const char* moduleName, co
 
     file.set(archive->queryProp(xPath.str()));
 }
-
+#ifndef _CONTAINERIZED
 void WsWuInfo::outputALine(size32_t length, const char* content, MemoryBuffer& outputBuf, IFileIOStream* outIOS)
 {
     if (outIOS)
@@ -2518,6 +2523,7 @@ void WsWuInfo::outputALine(size32_t length, const char* content, MemoryBuffer& o
     else
         outputBuf.append(length, content);
 }
+#endif
 
 WsWuSearch::WsWuSearch(IEspContext& context,const char* owner,const char* state,const char* cluster,const char* startDate,const char* endDate,const char* jobname)
 {
@@ -3492,6 +3498,7 @@ void CWsWuFileHelper::cleanFolder(IFile* folder, bool removeFolder)
         folder->remove();
 }
 
+#ifndef _CONTAINERIZED
 void CWsWuFileHelper::createProcessLogfile(IConstWorkUnit* cwu, WsWuInfo& winfo, const char* process, const char* path)
 {
     BoolHash uniqueProcesses;
@@ -3599,6 +3606,7 @@ void CWsWuFileHelper::createThorSlaveLogfile(IConstWorkUnit* cwu, WsWuInfo& winf
     threadPool->joinAll();
 #endif
 }
+#endif
 
 void CWsWuFileHelper::createZAPInfoFile(const char* url, const char* espIP, const char* thorIP, const char* problemDesc,
     const char* whatChanged, const char* timing, IConstWorkUnit* cwu, const char* pathNameStr)
@@ -3797,10 +3805,12 @@ void CWsWuFileHelper::createWUZAPFile(IEspContext& context, IConstWorkUnit* cwu,
     createZAPWUXMLFile(winfo, inFileNamePrefixWithPath.str());
     createZAPWUGraphProgressFile(request.wuid.str(), inFileNamePrefixWithPath.str());
     createZAPWUQueryAssociatedFiles(cwu, folderToZIP);
+#ifndef _CONTAINERIZED
     createProcessLogfile(cwu, winfo, "EclAgent", folderToZIP.str());
     createProcessLogfile(cwu, winfo, "Thor", folderToZIP.str());
     if (request.includeThorSlaveLog.isEmpty() || strieq(request.includeThorSlaveLog.str(), "on"))
         createThorSlaveLogfile(cwu, winfo, folderToZIP.str());
+#endif
 
     //Write out to ZIP file
     int zipRet = zipAFolder(folderToZIP.str(), request.password.str(), zipFileNameWithPath);
@@ -4053,6 +4063,7 @@ void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, Ws
         winfo.getWorkunitResTxt(mb);
         writeToFileIOStream(workingFolder, fileName.str(), mb);
         break;
+#ifndef _CONTAINERIZED
     case CWUFileType_ThorLog:
         fileName.set("thormaster.log");
         fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
@@ -4075,6 +4086,7 @@ void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, Ws
         fileNameWithPath.set(workingFolder).append(PATHSEPCHAR).append(fileName.str());
         winfo.getWorkunitEclAgentLog(nullptr, item.getName(), item.getProcess(), mb, fileNameWithPath.str());
         break;
+#endif
     case CWUFileType_XML:
     {
         StringBuffer name(item.getName());

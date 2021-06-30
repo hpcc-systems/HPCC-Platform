@@ -7,6 +7,15 @@
       "properties": {
         "commonPrefix": {
           "type": "string"
+        },
+        "secretName": {
+          "description": "Kubernetes secret name for Azure storage account",
+          "type": "string"
+        },
+        "secretNamespace": {
+          "description": "Kubernetes namespace for secret",
+          "type": "string",
+          "default": "default"
         }
       }
     },
@@ -57,6 +66,10 @@
         },
         "category": {
           "description": "the category this plane is usd for, e.g. lz, data",
+          "type": "string"
+        },
+        "shareName": {
+          "description": "Azure storage share name",
           "type": "string"
         }
       },

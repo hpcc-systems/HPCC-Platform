@@ -129,8 +129,15 @@ In 8.2.x all storage for data, dlls, landing zones etc. is defined in the list o
 
 Previously daliStorage, dataStorage and dllStorage could either refer to an existing plane, or could implicitly
 define a storage plane.  That implicit plane could be based on a pre-existing persistent volume claim (by setting
-existingClaim) or ephemeral storage (by setting storageClass and storageSize).  In version 8.2. these sections can
-only refer to a plane defined in the plane list.
+existingClaim) or ephemeral storage (by setting storageClass and storageSize).  In version 8.2. these sections are no longer
+supported.
+
+Implicit planes that were defined within those sections must now use an explicit plane definition.  The plane definitions
+have been extended to allow ephemeral storage to be defined (see dali example below).
+
+Previously the default storage plane for a particular storage category could be specified by naming it in the appropriate storage
+section.  E.g. storage.dataStorage.plane could name the default data storage plane. The default is now the first plane with the
+corresponding category.
 
 Another change is that previously a storage plane had a labels: attribute to indicate what kind of data was stored on
 the plane.  It was a list, and if blank defaulted to \[ data \].  This has now become a single valued "category" attribute.
@@ -154,9 +161,6 @@ storage:
     pvc: my-pvc
     prefix: "/var/lib/HPCCSystems/dalistorage"
     category: dali
-
-  daliStorage:
-     name: dali
 ```
 
 And similarly a definition that uses ephemeral storage:
@@ -177,9 +181,29 @@ storage:
     storageSize: 1Gi
     prefix: "/var/lib/HPCCSystems/dalistorage"
     category: dali
-
-  daliStorage:
-     name: dali
 ```
 
-The default values.yaml and example files have been updated to reflect this change.
+The default values.yaml and example files have been updated to reflect these changes.
+
+## Default data plane changes
+
+Previously the storagePlane property could be set on an engine to change the default data plane.  This has now been
+renamed to dataPlane for consistency with the category name.  In future other types of planes will be configurable
+in the same way (spill, dll, temp).
+
+Sasha services used to define their storage plane within a nested storage attribute:
+
+```sasha:
+  wu-archiver:
+    storage:
+      plane: sasha
+```
+
+This is now simplified to:
+
+```sasha:
+  wu-archiver:
+    plane: sasha
+```
+
+A value of "" can be used mean use the 1st plane with the sasha catagory.

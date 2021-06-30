@@ -348,7 +348,7 @@ interface IDistributedFile: extends IInterface
     virtual bool getAccessedTime(CDateTime &dt) = 0;                            // get date and time last accessed (returns false if not set)
     virtual void setAccessedTime(const CDateTime &dt) = 0;                      // set date and time last accessed
     virtual void setAccessed() = 0;                                             // set date and time last accessed to now (local time)
-
+    virtual void addAttrValue(const char *attr, unsigned __int64 value) = 0;    // atomic add to attribute value
     virtual unsigned numCopies(unsigned partno) = 0;                            // number of copies
 
     virtual bool existsPhysicalPartFiles(unsigned short port) = 0;              // returns true if physical patrs all exist (on primary OR secondary)

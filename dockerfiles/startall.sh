@@ -23,6 +23,8 @@
 DOCKER_REPO=hpccsystems
 scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 restArgs=()
+CLUSTERNAME=mycluster
+PVFILE=$scriptdir/../helm/examples/local/hpcc-localfile/values.yaml
 
 CMD="install"
 while [ "$#" -gt 0 ]; do
@@ -32,13 +34,21 @@ while [ "$#" -gt 0 ]; do
       l) shift
          LABEL=$1
          ;;
+      n) shift
+         CLUSTERNAME=$1
+         ;;
       d) shift;
          INPUT_DOCKER_REPO=$1
          ;;
       u) CMD="upgrade"
          ;;
       p) shift
-         PERSIST=$1
+         if [[ $arg == '-pv' ]] ; then
+           PERSISTVALUES="--values=$1"
+           PVFILE=$1
+         else
+           PERSIST=$1
+         fi
          ;;
       c) DEP_UPDATE_ARG="--dependency-update"
          ;;
@@ -47,8 +57,10 @@ while [ "$#" -gt 0 ]; do
          echo "    -l                 Build image label to use"
          echo "    -u                 Use "upgrade" rather than "install""
          echo "    -t                 Generate templates instead of starting the system"
+         echo "    -n <name>          Specify cluster name"
          echo "    -c                 Update chart dependencies"
          echo "    -p <location>      Use local persistent data"
+         echo "    -pv <yamlfile>     Override dataplane definitions for local persistent data"
          exit
          ;;
       t) CMD="template"
@@ -91,14 +103,15 @@ fi
 if [[ -n ${PERSIST} ]] ; then
   PERSIST=$(realpath -q $PERSIST || echo $PERSIST)
   PERSIST_PATH=$(echo $PERSIST | sed 's/\\//g')
-  mkdir -p ${PERSIST_PATH}/dalistorage
-  mkdir -p ${PERSIST_PATH}/hpcc-data
-  mkdir -p ${PERSIST_PATH}/queries
-  mkdir -p ${PERSIST_PATH}/sasha
-  helm ${CMD} localfile $scriptdir/../helm/examples/local/hpcc-localfile --set common.hostpath=${PERSIST} | grep -A100 storage > localstorage.yaml && \
-  helm ${CMD} mycluster $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL --set global.privileged=true $DEP_UPDATE_ARG ${restArgs[@]} -f localstorage.yaml
+  for subdir in `grep subPath: $PVFILE | awk '{ print $2 }'` ; do
+    echo mkdir -p ${PERSIST_PATH}/$subdir
+    mkdir -p ${PERSIST_PATH}/$subdir
+  done
+  helm ${CMD} localfile $scriptdir/../helm/examples/local/hpcc-localfile --set common.hostpath=${PERSIST} $PERSISTVALUES | tee lsfull.yaml | grep -A1000 storage: > localstorage.yaml && \
+  grep "##" lsfull.yaml  && \
+  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL --set global.privileged=true $DEP_UPDATE_ARG ${restArgs[@]} -f localstorage.yaml
 else
-  helm ${CMD} mycluster $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL --set global.privileged=true $DEP_UPDATE_ARG ${restArgs[@]}
+  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL --set global.privileged=true $DEP_UPDATE_ARG ${restArgs[@]}
 fi
 
 if [ ${CMD} != "template" ] ; then

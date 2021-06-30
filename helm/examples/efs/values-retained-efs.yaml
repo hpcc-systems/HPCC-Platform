@@ -32,20 +32,8 @@ storage:
     prefix: "/var/lib/HPCCSystems/mydropzone"
     category: lz
 
-
-  dllStorage:
-    plane: dll
-
-  daliStorage:
-    plane: dali
-
-  dataStorage:
-    plane: data
-
 sasha:
   wu-archiver:
-    storage:
-      plane: sasha
+    plane: sasha
   dfuwu-archiver:
-    storage:
-      plane: sasha
+    plane: sasha
