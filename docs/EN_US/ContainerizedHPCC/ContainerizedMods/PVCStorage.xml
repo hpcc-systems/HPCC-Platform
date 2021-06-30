@@ -26,11 +26,12 @@
 mkdir c:\hpccdata\dalistorage
 mkdir c:\hpccdata\queries
 mkdir c:\hpccdata\sasha
-mkdir c:\hpccdata\hpcc-data</programlisting></para>
+mkdir c:\hpccdata\hpcc-data
+mkdir c:\hpccdata\mydropzone</programlisting></para>
 
         <para>For macOS, use this command:</para>
 
-        <para><programlisting>mkdir -p /Users/myUser/hpccdata/{dalistorage,queries,sasha,hpcc-data}</programlisting></para>
+        <para><programlisting>mkdir -p /Users/myUser/hpccdata/{dalistorage,queries,sasha,hpcc-data,mydropzone}</programlisting></para>
       </listitem>
 
       <listitem>
@@ -58,14 +59,14 @@ mkdir c:\hpccdata\hpcc-data</programlisting></para>
 
         <para>This chart creates persistent volumes based on host directories
         you created earlier.<programlisting># for a WSL2 deployment:
-helm install localfile examples/local/hpcc-localfile 
+helm install hpcc-localfile examples/local/hpcc-localfile 
            --set common.hostpath=/run/desktop/mnt/host/c/hpccdata
 
 # for a Hyper-V deployment:
-helm install localfile examples/local/hpcc-localfile --set common.hostpath=/c/hpccdata
+helm install hpcc-localfile examples/local/hpcc-localfile --set common.hostpath=/c/hpccdata
 
 # for a macOS deployment:
-helm install localfile examples/local/hpcc-localfile --set common.hostpath=/Users/myUser/hpccdata
+helm install hpcc-localfile examples/local/hpcc-localfile --set common.hostpath=/Users/myUser/hpccdata
 </programlisting></para>
 
         <para>The <emphasis role="bold">--set common.hostpath=

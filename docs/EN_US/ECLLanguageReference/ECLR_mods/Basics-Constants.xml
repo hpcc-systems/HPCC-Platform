@@ -235,13 +235,22 @@ MyDec2  := 3.14159265358979323846d // value of MyDec2 is the DECIMAL
             </row>
 
             <row>
-              <entry><emphasis> __TARGET_PLATFORM__<indexterm>
+              <entry><emphasis>__TARGET_PLATFORM__<indexterm>
                   <primary>__TARGET_PLATFORM__</primary>
                 </indexterm></emphasis></entry>
 
               <entry>A STRING containing the value of the target platform (the
               type of cluster the query was submitted to). Possible values
               are: 'roxie', 'hthor', or 'thorlcr'.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>__CONTAINERIZED__<indexterm>
+                  <primary>__CONTAINERIZED__</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>A BOOLEAN value indicating if the platform is a
+              containerized version.</entry>
             </row>
           </tbody>
         </tgroup>

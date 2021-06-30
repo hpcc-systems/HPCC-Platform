@@ -2785,6 +2785,18 @@ public:
         DistributedFilePropertyLock lock(this);
         queryAttributes().removeTree(queryHistory());
     }
+    void lockFileAttrLock(CFileAttrLock & attrLock)
+    {
+        if (!attrLock.init(logicalName, DXB_File, RTM_LOCK_WRITE, conn, defaultTimeout, "CDistributedFile::lockFileAttrLock"))
+        {
+            // In unlikely event File/Attr doesn't exist, must ensure created, commited and root connection is reloaded.
+            verifyex(attrLock.init(logicalName, DXB_File, RTM_LOCK_WRITE|RTM_CREATE_QUERY, conn, defaultTimeout, "CDistributedFile::lockFileAttrLock"));
+            attrLock.commit();
+            conn->commit();
+            conn->reload();
+            root.setown(conn->getRoot());
+        }
+    }
 
 protected:
     class CFileChangeWriteLock
@@ -3141,6 +3153,24 @@ public:
         CDateTime dt;
         dt.setNow();
         setAccessedTime(dt);
+    }
+
+    virtual void addAttrValue(const char *attr, unsigned __int64 value) override
+    {
+        if (0==value)
+            return;
+        if (logicalName.isForeign())
+        {
+            // Note: it is not possible to update foreign attributes at the moment, so ignoring
+        }
+        else
+        {
+            CFileAttrLock attrLock;
+            if (conn)
+                lockFileAttrLock(attrLock);
+            unsigned __int64 currentVal = queryAttributes().getPropInt64(attr);
+            queryAttributes().setPropInt64(attr, currentVal+value);
+        }
     }
 
     virtual StringBuffer &getColumnMapping(StringBuffer &mapping)
@@ -4671,17 +4701,8 @@ public:
         {
             CFileAttrLock attrLock;
             if (conn)
-            {
-                if (!attrLock.init(logicalName, DXB_File, RTM_LOCK_WRITE, conn, defaultTimeout, "CDistributedFile::setAccessedTime"))
-                {
-                    // In unlikely event File/Attr doesn't exist, must ensure created, commited and root connection is reloaded.
-                    verifyex(attrLock.init(logicalName, DXB_File, RTM_LOCK_WRITE|RTM_CREATE_QUERY, conn, defaultTimeout, "CDistributedFile::setAccessedTime"));
-                    attrLock.commit();
-                    conn->commit();
-                    conn->reload();
-                    root.setown(conn->getRoot());
-                }
-            }
+                lockFileAttrLock(attrLock);
+
             if (dt.isNull())
                 queryAttributes().removeProp("@accessed");
             else

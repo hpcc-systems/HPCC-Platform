@@ -426,7 +426,15 @@ public:
         PyEval_InitThreads();
         preservedScopes.setown(PyDict_New());
         tstate = PyEval_SaveThread();
-        skipPythonCleanup = queryEnvironmentConf().getPropBool("skipPythonCleanup", true);
+        skipPythonCleanup = true;
+        const char* skipCleanupText = getenv("SKIP_PYTHON_CLEANUP");
+        if (skipCleanupText)
+            skipPythonCleanup = strToBool(skipCleanupText);
+        else
+            skipPythonCleanup = true;
+#ifndef _CONTAINERIZED
+        skipPythonCleanup = queryEnvironmentConf().getPropBool("skipPythonCleanup", skipPythonCleanup);
+#endif
         initialized = true;
     }
     ~Python3xGlobalState()

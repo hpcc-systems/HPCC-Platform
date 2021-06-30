@@ -30,7 +30,7 @@ interface IRoxieFileCache;
 
 interface ILazyFileIO : extends IFileIO
 {
-    virtual const char *queryFilename() = 0;
+    virtual const char *queryFilename() const = 0;
     virtual void checkOpen() = 0;
     virtual bool isAliveAndLink() const = 0;
     virtual void addSource(IFile *source) = 0;
@@ -54,6 +54,8 @@ interface ILazyFileIO : extends IFileIO
     virtual void removeCache(const IRoxieFileCache *) = 0;
     virtual unsigned getFileIdx() const = 0;
     virtual unsigned getCrc() const = 0;
+    virtual bool checkCopyComplete() = 0;
+    virtual void dump() const = 0;
 };
 
 interface IRoxieFileCache : extends IInterface

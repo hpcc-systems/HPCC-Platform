@@ -33,10 +33,3 @@ storage:
     storageSize: 1Gi
     prefix: "/var/lib/HPCCSystems/sashastorage"
     category: sasha
-
-  dllStorage:
-    plane: my-dll-plane
-  daliStorage:
-    plane: my-dali-plane
-  dataStorage:
-    plane: my-data-plane

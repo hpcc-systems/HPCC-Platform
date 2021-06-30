@@ -27,20 +27,8 @@ storage:
     prefix: "/var/lib/HPCCSystems/hpcc-data"
     category: data # NB: if not set, this would be the default
 
-
-  dllStorage:
-    plane: dll
-
-  daliStorage:
-    plane: dali
-
-  dataStorage:
-    plane: data
-
 sasha:
   wu-archiver:
-    storage:
-      plane: sasha
+    plane: sasha
   dfuwu-archiver:
-    storage:
-      plane: sasha
+    plane: sasha

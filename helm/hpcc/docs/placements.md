@@ -19,6 +19,7 @@ The list item in "pods" can be one of the following:
 3) Pod, "Deployment" metadata name, which usually should be from the name of the array
    item of a type. For example, "eclwatch", "mydali", "thor-thoragent"..
 4) Job name regular expression:  For example "compile-" or "compile-.*" or exact match "^compile-.*$"
+5) set pod: ["all"] for all HPCC Systems components
 
 Supported configurations under each "placement"
 1) nodeSelector

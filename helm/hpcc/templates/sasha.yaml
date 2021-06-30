@@ -25,8 +25,7 @@
 {{- if not $sashaServices.disabled -}}
 {{ range $sashaName, $_sasha := $sashaServices -}}
 {{ $sasha := ($_sasha | default dict) -}}
-{{- $sashaStorage := $sasha.storage | default dict -}}
-{{- $sashaPlane := $sashaStorage.plane -}}
+{{- $sashaPlane := $sasha.plane | default (include "hpcc.getFirstPlaneForCategory" (dict "root" $ "category" "sasha")) }}
 {{- if not $sasha.disabled -}}
 {{- $_ := set $sasha "name" $sashaName -}}
 {{- $_ := set $sasha "access" (splitList " " (include "hpcc.getSashaServiceAccess" $sasha)) -}}
@@ -50,7 +49,7 @@ spec:
         run: {{ $serviceName | quote }}
         server: {{ $serviceName | quote }}
         accessDali: {{ (has "dali" $sasha.access) | ternary "yes" "no" | quote }}
-        helmVersion: 8.4.0-closedown0
+        helmVersion: 8.3.0-trunk0
 {{- if hasKey $sasha "labels" }}
 {{ toYaml $sasha.labels | indent 8 }}
 {{- end }}
@@ -62,7 +61,7 @@ spec:
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $serviceName "type" "sasha") | indent 6 }}
       serviceAccountName: "hpcc-default"
-      {{- if $sasha.storage }}
+      {{- if hasKey $sasha "plane" }}
       initContainers:
       {{ include "hpcc.changePlaneMountPerms" (dict "root" $ "includeNames" (list $sashaPlane)) | indent 6}}
       {{- end }}

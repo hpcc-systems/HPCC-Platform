@@ -51,7 +51,7 @@ planes:
   category:  The category of data which is stored on the plane - one of (data, lz, dali, sasha, dll, spill).  On a simple system it may make sense to place dali, dlls and sasha all on the same volume - in which case multiple planes can be defined with exactly the same definition, but different categories (and subPaths).
 
 
-The planes are used by refering to them in the plane tag in the appropriate storage section.  E.g. ``--set storage.daliStorage.plane=dali-plane``.
+The first plane for each category is used as the default to store that kind of data.
 
 By default the different engines - thor, roxie, eclagent write their data to the default data storage plane.  This can be overridden by defining the plane key within the component.  The spill location can be set through the spillPlane option.  It is also possible to override the target storage plane by using the CLUSTER options in the ECL language.  This allows the ECL programmer to write data to different storage planes depending on the performance/cost requirements.  The engines can read data from any of the data planes.
 (Currently we use cluster to mean which set of machines to run a query on, and where the data is stored.  We probably need to separate those with a new attribute STORE(?) .)
