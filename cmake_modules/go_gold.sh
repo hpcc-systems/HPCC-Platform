@@ -88,7 +88,7 @@ if [ -e helm/hpcc/Chart.yaml ] ; then
   if [[ "$HPCC_MAJOR" == "8" ]] && [[ "$HPCC_MINOR" == "0" ]] ; then
     doit "rm -rf ./helm"
     doit "cp -rf $HPCC_DIR/helm ./helm" 
-    doit "rm -f ./helm/hpcc/*.bak" 
+    doit "rm -f ./helm/*.bak" 
     doit "git add -A ./helm"
   fi
   doit2 "cd docs"
