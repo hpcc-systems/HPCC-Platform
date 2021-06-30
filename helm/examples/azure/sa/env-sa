@@ -1,0 +1,17 @@
+# Azure subscription
+SUBSCRIPTION=
+STORAGE_ACCOUNT_NAME=
+SA_RESOURCE_GROUP=
+# Set the same location as Kubernetes cluster
+SA_LOCATION=eastus
+SA_KEY_DIR=~/.azure/storage
+SA_SKU=Standard_LRS
+
+# These settings are also for generating PersistentVolume.
+# Settings in ../hpcc-azurefile/values.yaml will have higher priority.
+# If you will set these with "--set" for helm install you need set them
+# here also if you want to generate storage account, storage share and
+# Kubernetes secret.
+SECRET_NAME=
+SECRET_NAMESPACE="default"
+SHARE_NAMES=

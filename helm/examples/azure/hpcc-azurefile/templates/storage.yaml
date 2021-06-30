@@ -1,0 +1,8 @@
+{{- range $plane := .Values.planes -}}
+{{- if $plane.shareName }}
+{{ include "hpcc-azurefile.addStoragePV" (dict "root" $ "plane" $plane) }}
+{{- else }}
+{{ include "hpcc-azurefile.addStorageSC" (dict "root" $ "plane" $plane) }}
+{{- end }}
+---
+{{ end }}

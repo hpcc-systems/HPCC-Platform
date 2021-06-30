@@ -21,6 +21,10 @@ The values-retained-azurefile.yaml is an example of the HPCC storage settings th
 
 The storage class used in this example supports mountOptions, which are used to ensure that the mounts are owned by user and group 'hpcc' with suitable file permissions.
 
+There are two cases:
+- Dynamically generate a storage account and shared volume with Storage Class
+- Manually create storage account and shared volume and provide the following information in values.yaml: secretName, secretNamespace and sharedName. Reference sa/README.md for details.
+
 NB: The output of installing this chart, will contain a generated example with the correct PVC names.
 
 Example use:
