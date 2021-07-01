@@ -75,6 +75,8 @@ protected:
     rowcount_t keyedProcessed = 0;
     rowcount_t rowLimit = RCMAX;
     bool useRemoteStreaming = false;
+    Owned<IFileIO> lazyIFileIO;
+    std::vector<OwnedPtr<CRuntimeStatisticCollection>> subIndexFileStats;
 
     template<class StatProvider>
     class CCaptureIndexStats
@@ -299,7 +301,7 @@ public:
 
                 // local key handling
 
-                Owned<IFileIO> lazyIFileIO = queryThor().queryFileCache().lookupIFileIO(*this, logicalFilename, part);
+                lazyIFileIO.setown(queryThor().queryFileCache().lookupIFileIO(*this, logicalFilename, part, nullptr, indexReadActivityStatistics));
 
                 RemoteFilename rfn;
                 part.getFilename(0, rfn);
@@ -351,10 +353,31 @@ public:
         else
             return nullptr;
     }
+    void mergeSubFileStats(IPartDescriptor *partDesc, IFileIO *partIO)
+    {
+        if (subIndexFileStats.size()>0)
+        {
+            ISuperFileDescriptor * superFDesc = partDesc->queryOwner().querySuperFileDescriptor();
+            dbgassertex(superFDesc);
+            unsigned subfile, lnum;
+            if(superFDesc->mapSubPart(partDesc->queryPartIndex(), subfile, lnum))
+                mergeStats(*subIndexFileStats[subfile], partIO);
+        }
+    }
+    void updateStats()
+    {
+        if (lazyIFileIO)
+        {
+            mergeStats(stats, lazyIFileIO);
+            if (currentPart<partDescs.ordinality())
+                mergeSubFileStats(&partDescs.item(currentPart), lazyIFileIO);
+        }
+    }
     void configureNextInput()
     {
         if (currentManager)
         {
+            updateStats();
             resetManager(currentManager);
             currentManager = nullptr;
         }
@@ -579,7 +602,13 @@ public:
         {
             IPartDescriptor &part0 = partDescs.item(0);
             IFileDescriptor &fileDesc = part0.queryOwner();
-
+            ISuperFileDescriptor *super = fileDesc.querySuperFileDescriptor();
+            if (super)
+            {
+                unsigned numSubFiles = super->querySubFiles();
+                for (unsigned i=0; i<numSubFiles; i++)
+                    subIndexFileStats.push_back(new CRuntimeStatisticCollection(indexReadActivityStatistics));
+            }
             if ((0 == (helper->getFlags() & TIRusesblob)) && !localMerge)
             {
                 if (!inChildQuery())
@@ -690,6 +719,13 @@ public:
     {
         stats.setStatistic(StNumRowsProcessed, progress);
         PARENT::serializeStats(mb);
+        for (auto &indexFileStats: subIndexFileStats)
+            indexFileStats->serialize(mb);
+    }
+    virtual void done() override
+    {
+        updateStats();
+        PARENT::done();
     }
 };
 
