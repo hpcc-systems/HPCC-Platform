@@ -272,7 +272,8 @@ export abstract class WUScopeControllerBase<ISubgraph, IVertex, IEdge, IGraphDat
                         ScopeType: "dummy-edge",
                         Properties: {
                             Property: [vertex._.attr("Label")]
-                        }
+                        },
+                        Notes: vertex._.Notes
                     });
                 });
             }
@@ -718,7 +719,8 @@ export class WUScopeController extends WUScopeControllerBase<Subgraph, VertexTyp
                                     Creator: "",
                                     CreatorType: ""
                                 }]
-                            }
+                            },
+                            Notes: subgraph._.Notes
                         };
                         const dummyScope = new BaseScope(dummyDetails);
                         const dummyVertex = subgraph.createVertex(dummyScope);
@@ -732,7 +734,8 @@ export class WUScopeController extends WUScopeControllerBase<Subgraph, VertexTyp
                                         ScopeType: "dummy-in",
                                         Properties: {
                                             Property: []
-                                        }
+                                        },
+                                        Notes: edge.source._.Notes
                                     });
                                     console.log(dummyEdgeScope.Id);
                                     subgraph.createEdge(edge.source, dummyVertex, dummyEdgeScope);
@@ -746,7 +749,8 @@ export class WUScopeController extends WUScopeControllerBase<Subgraph, VertexTyp
                                         ScopeType: "dummy-out",
                                         Properties: {
                                             Property: []
-                                        }
+                                        },
+                                        Notes: edge.target._.Notes
                                     });
                                     console.log(dummyEdgeScope.Id);
                                     subgraph.createEdge(dummyVertex, edge.target, dummyEdgeScope);
