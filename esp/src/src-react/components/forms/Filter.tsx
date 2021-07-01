@@ -89,7 +89,7 @@ export const Filter: React.FunctionComponent<FilterProps> = ({
             <IconButton
                 styles={iconButtonStyles}
                 iconProps={cancelIcon}
-                ariaLabel="Close popup modal"
+                ariaLabel={nlsHPCC.CloseModal}
                 onClick={closeFilter}
             />
         </div>

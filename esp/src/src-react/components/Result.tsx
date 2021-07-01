@@ -206,6 +206,7 @@ interface ResultProps {
     wuid?: string;
     resultName?: string;
     logicalFile?: string;
+    cluster?: string;
     filter?: { [key: string]: any };
 }
 
@@ -215,6 +216,7 @@ export const Result: React.FunctionComponent<ResultProps> = ({
     wuid,
     resultName,
     logicalFile,
+    cluster,
     filter = emptyFilter
 }) => {
 
@@ -222,7 +224,8 @@ export const Result: React.FunctionComponent<ResultProps> = ({
         .baseUrl("")
         .wuid(wuid)
         .resultName(resultName)
-        .logicalFile(resultName)
+        .nodeGroup(cluster)
+        .logicalFile(logicalFile)
         .pagination(true)
         .pageSize(50) as ResultWidget
     );
