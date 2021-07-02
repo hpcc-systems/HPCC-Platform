@@ -4900,7 +4900,7 @@ public:
             }
             else
             {
-                if (!anyActivity && !localAgent && lastActivity-msTick() >= timeout)
+                if (!anyActivity && !localAgent && (msTick()-lastActivity >= timeout))
                 {
                     activity.queryLogCtx().CTXLOG("Input has stalled for %u ms - retry required?", timeout);
                     retryPending();
