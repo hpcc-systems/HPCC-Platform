@@ -29,22 +29,45 @@ filebeat:
   labels: {"managedby" : "HPCC"}
   ## Allows you to add any config files in /usr/share/filebeat
   ## such as filebeat.yml
-  #filebeatConfig:
-    #filebeat.yml: |
-      #filebeat.inputs:
-      #- type: container
-      #  paths:
-      #    - /var/log/containers/*.log
-        #processors:
-        #- add_kubernetes_metadata:
-            #host: ${NODE_NAME}
-            #matchers:
-            #- logs_path:
-                #logs_path: "/var/log/containers/"
-      #output.elasticsearch:
-      #  host: '${NODE_NAME}'
-      #  hosts: '${ELASTICSEARCH_HOSTS:elasticsearch-master:9200}'
-      #  index: "hpcc-%{[fields.log_type]}-%{[agent.version]}-%{+yyyy.MM.dd}"
+  filebeatConfig:
+    filebeat.yml: |
+      filebeat.inputs:
+      - type: container
+        paths:
+          - /var/log/containers/esdl-sandbox-*.log
+          - /var/log/containers/eclwatch-*.log
+          - /var/log/containers/mydali-*.log
+          - /var/log/containers/eclqueries-*.log
+          - /var/log/containers/sql2ecl-*.log
+          - /var/log/containers/eclservices-*.log
+          - /var/log/containers/dfuserver-*.log
+          - /var/log/containers/eclscheduler-*.log
+          - /var/log/containers/hthor-*.log
+          - /var/log/containers/myeclccserver-*.log
+          - /var/log/containers/roxie-*.log
+          - /var/log/containers/sasha-*.log
+          - /var/log/containers/thor-*.log
+        #exclude_files: ['(myelk-kibana|myelk-filebeat)+(.*).log']
+        processors:
+        - add_kubernetes_metadata:
+            host: ${NODE_NAME}
+            matchers:
+            - logs_path:
+                logs_path: "/var/log/containers/"
+      #Required if targeting non-default index (filebeat-%{[agent.version]}-%{+yyyy.MM.dd}) such as hpccsystems-%{[fields.log_type]}-%{[agent.version]}-%{+yyyy.MM.dd}, etc.
+       #setup.ilm.enabled: false
+       #setup.template.overwrite: true
+      output.elasticsearch:
+        host: '${NODE_NAME}'
+        hosts: '${ELASTICSEARCH_HOSTS:elasticsearch-master:9200}'
+      #NOTE: Pipeline could be used to provide Log structure and therefore enhance search capabilities of HPCC component log entries
+      #      Pipeline must be manually inserted either via Elastic Search API, or Kibana Pipeline ingest UI.
+      #      See https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/managed/logging/elastic/README.md
+      #  pipeline: 'hpccpipeline'
+      #  index: "hpccsystems-%{[fields.log_type]}-%{[agent.version]}-%{+yyyy.MM.dd}"
+      #setup.template.name: hpccsystems
+      #setup.template.pattern: hpccsystems-*
+      #setup.template.enabled: true
 
 ##The kibana component can be customized by modifying helm chart values here.
 kibana:

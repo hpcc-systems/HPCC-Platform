@@ -5,7 +5,10 @@ type: application
 
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
-version: 0.1.0
+version: 1.0.0
+
+# Elastic Stack version
+appVersion: 7.12.0
 
 # Dependencies can be automatically updated via HELM dependancy update command:
 # > 'helm dependency update' command
@@ -13,12 +16,12 @@ version: 0.1.0
 # > helm install myelastic ./ —-dependency-update
 dependencies:
 - name: filebeat
-  version: 7.9.3
+  version: 7.12.0
   repository: https://helm.elastic.co
 - name: elasticsearch
-  version: 7.9.3
+  version: 7.12.0
   repository: https://helm.elastic.co
 - name: kibana # Optional managed logging processor front-end
-  version: 7.9.3
+  version: 7.12.0
   repository: https://helm.elastic.co
   condition: kibana.enabled
