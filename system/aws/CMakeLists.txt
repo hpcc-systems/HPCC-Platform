@@ -8,13 +8,19 @@ if(USE_AWS)
         set(EXTERNAL_SQS_CXX_FLAGS "-Wno-error=implicit-fallthrough -Wno-error=int-in-bool-context -Wno-error=format-nonliteral -Wno-error=maybe-uninitialized" )
     endif()
 
+    include(ProcessorCount)
+    ProcessorCount(N)
+    if(NOT N EQUAL 0 AND CMAKE_MAKE_PROGRAM STREQUAL "/usr/bin/make")
+        set(AWS_BUILD_FLAGS -j${N})
+    endif()
+
     include(ExternalProject)
     ExternalProject_Add(
         aws-sdk-cpp
         SOURCE_DIR ${AWS_SDK_CPP_SOURCE_DIR}
         BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp
         CMAKE_ARGS -DCUSTOM_MEMORY_MANAGEMENT:string=0 -DCMAKE_CXX_FLAGS=${EXTERNAL_SQS_CXX_FLAGS} -DCMAKE_SHARED_LINKER_FLAGS_INIT=-Wl,-rpath-link,${LIB_PATH}
-        BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} aws-cpp-sdk-sqs aws-cpp-sdk-s3
+        BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} ${AWS_BUILD_FLAGS} aws-cpp-sdk-sqs aws-cpp-sdk-s3
         BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-core/libaws-cpp-sdk-core${CMAKE_SHARED_LIBRARY_SUFFIX}
                          ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-sqs/libaws-cpp-sdk-sqs${CMAKE_SHARED_LIBRARY_SUFFIX}
                          ${CMAKE_CURRENT_BINARY_DIR}/aws-sdk-cpp/aws-cpp-sdk-s3/libaws-cpp-sdk-s3${CMAKE_SHARED_LIBRARY_SUFFIX}
