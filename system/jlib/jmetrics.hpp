@@ -120,7 +120,7 @@ class jlib_decl CounterMetric : public MetricVal
 public:
     CounterMetric(const char *name, const char *description) :
         MetricVal{name, description, MetricType::METRICS_COUNTER}  { }
-    void inc(uint64_t val)
+    void inc(uint64_t val = 1)
     {
         value.fetch_add(val);
     }
@@ -218,7 +218,12 @@ protected:
 
 extern "C" { typedef hpccMetrics::MetricSink* (*getSinkInstance)(const char *, const IPropertyTree *pSettingsTree); }
 
-struct SinkInfo;
+struct SinkInfo
+{
+    explicit SinkInfo(MetricSink *_pSink) : pSink{_pSink} {}
+    MetricSink *pSink = nullptr;             // ptr to the sink
+    std::vector<std::string> reportMetrics;   // vector of metrics to report (empty for none)
+};
 
 class jlib_decl MetricsReporter
 {
@@ -226,6 +231,7 @@ public:
     MetricsReporter() = default;
     ~MetricsReporter();
     void init(IPropertyTree *pMetricsTree);
+    void addSink(MetricSink *pSink, const char *name);  // for use by unit tests
     void addMetric(const std::shared_ptr<IMetric> &pMetric);
     void startCollecting();
     void stopCollecting();
