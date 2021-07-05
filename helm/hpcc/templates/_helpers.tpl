@@ -129,6 +129,17 @@ Get default dll plane
 {{- end -}}
 
 {{/*
+Returns the largest number of workers from all the thors
+*/}}
+{{- define "hpcc.getMaxNumWorkers" -}}
+ {{- $maxNumWorkers := 1 -}}
+ {{- range $thor := .Values.thor -}}
+  {{- $maxNumWorkers = max $maxNumWorkers $thor.numWorkers -}}
+ {{- end -}}
+ {{- $maxNumWorkers -}}
+{{- end -}}
+
+{{/*
 Generate global ConfigMap info
 Pass in root as .
 */}}
@@ -162,7 +173,10 @@ storage:
   {{- if $plane.subPath -}}
    {{- $_ := set $planeYaml "prefix" (printf "%s/%s" $planeYaml.prefix $plane.subPath) -}}
   {{- end -}}
-    {{- toYaml $planeYaml | nindent 4 }}
+  {{- if and (eq "data" $plane.category) (not $plane.defaultSprayParts) -}}
+   {{- $_ := set $planeYaml "defaultSprayParts" (include "hpcc.getMaxNumWorkers" $ | int) -}}
+  {{- end -}}
+  {{- toYaml $planeYaml | nindent 4 }}
  {{- end }}
 {{- end }}
 {{- if not (include "hpcc.hasPlaneForCategory" (dict "root" $ "category" "spill")) }}
