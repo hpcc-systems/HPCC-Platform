@@ -121,24 +121,25 @@ storage:
   planes:
   #   name: <required>
   #   prefix: <path>                        # Root directory for accessing the plane (if pvc defined), or url to access plane.
-  #   subPath: <relative-path>              # Optional sub directory within <prefix> to use as the root directory
-  #   pvc: <name>                           # The name of the persistant volume claim
-  #   numDevices: 1                         # number of devices that are part of the plane
-  #   replication: nullptr                  # a list or single item indicating which planes the data should be replicated onto
-  #   includeDeviceInPath: false            # Is the device number appended to the mount for the physical path for a file?  (Only required in unusual situations)
-  #   hosts: <name>                         # Name of the host group for bare metal - must match the name of the storage plane..
-  #   secret: <secret-id>                   # what secret is required to access the files.  This could optionally become a list if required (or add secrets:).
-  #   defaultSprayParts: 4                  # The number of partitions created when spraying (default: 1)
-  #   cost:                                 # The storage cost
-  #     storageAtRest: 0.113                # Storage at rest cost: cost per GiB/month
-  #   options:                              # not sure if it is needed
+  #   category: data|dali|lz|dll|spill|temp # What category of data is stored on this plane?
   #
   # For dynamic pvc creation:
   #   storageClass: ''
   #   storageSize: 1Gi
-  #   storageMode: "ReadWriteOnce"|"ReadWriteMany"
   #
+  # For persistent storage:
+  #   pvc: <name>                           # The name of the persistant volume claim
   #   forcePermissions: false
+  #   hosts: [ <host-list ]                 # Inline list of hosts
+  #   hostGroup: <name>                     # Name of the host group for bare metal - must match the name of the storage plane..
+  #
+  # Other options:
+  #   subPath: <relative-path>              # Optional sub directory within <prefix> to use as the root directory
+  #   numDevices: 1                         # number of devices that are part of the plane
+  #   secret: <secret-id>                   # what secret is required to access the files.  This could optionally become a list if required (or add secrets:).
+  #   defaultSprayParts: 4                  # The number of partitions created when spraying (default: 1)
+  #   cost:                                 # The storage cost
+  #     storageAtRest: 0.113                # Storage at rest cost: cost per GiB/month
 
   - name: dali
     storageClass: ""
