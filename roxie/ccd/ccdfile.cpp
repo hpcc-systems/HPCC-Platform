@@ -1170,7 +1170,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
             bool hardLinkCreated = false;
             unsigned start = msTick();
 #ifdef _DEBUG
-            if (topology->getPropBool("@simulateSlowCopies"))
+            if (topology && topology->getPropBool("@simulateSlowCopies"))  // topology is null when running unit tests
             {
                 DBGLOG("Simulating a slow copy");
                 Sleep(10*1000);
