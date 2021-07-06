@@ -174,7 +174,7 @@ check_status() {
 checkSentinelFile() {
     FILEPATH="${runtime}/${compName}"
     if [[ -d ${FILEPATH} ]]; then
-       fileCheckOP=$(find ${FILEPATH} -name "*senti*")
+       fileCheckOP=$(find ${FILEPATH} -maxdepth 1 -name "*senti*")
        [[ ! -z "${fileCheckOP}" ]] && return 1
     fi
     return 0
