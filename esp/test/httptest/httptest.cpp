@@ -1297,8 +1297,7 @@ void SplitURL(const char* url, StringBuffer& protocol,StringBuffer& UserName,Str
         UserName.append(username);
     }
 
-    if(hostptr)
-        host.append(hostptr);
+    host.append(hostptr);
 
     if(portptr)
         port.append(portptr);

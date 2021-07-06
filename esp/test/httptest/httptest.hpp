@@ -64,11 +64,11 @@ private:
     int          m_threads;
     int          m_times;
     StringBuffer m_host;
-    int          m_port;
-    FILE*        m_ofile;
-    bool         m_use_ssl;
+    int          m_port = 0;
+    FILE*        m_ofile = nullptr;
+    bool         m_use_ssl = false;
     Owned<ISecureSocketContext> m_ssctx;
-    int          m_delay;
+    int          m_delay = 0;
     HttpStat     m_stat;
 
 public:
