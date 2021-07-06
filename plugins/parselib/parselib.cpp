@@ -20,6 +20,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "jlib.hpp"
+#include "jhash.hpp"
 #include "thorparse.hpp"
 #include "parselib.hpp"
 

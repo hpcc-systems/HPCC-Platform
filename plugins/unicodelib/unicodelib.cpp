@@ -16,6 +16,7 @@
 ############################################################################## */
 
 #include "jlib.hpp"
+#include "jhash.hpp"
 #include "jsem.hpp"
 
 #include <string.h>
