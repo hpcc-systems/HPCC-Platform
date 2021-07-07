@@ -14300,4 +14300,48 @@ void runK8sJob(const char *componentName, const char *wuid, const char *job, con
         throw exception.getClear();
 }
 
+
+std::pair<std::string, unsigned> getExternalService(const char *serviceName)
+{
+    static CTimeLimitedCache<std::string, std::pair<std::string, unsigned>> externalServiceCache;
+    static CriticalSection externalServiceCacheCrit;
+
+    {
+        CriticalBlock b(externalServiceCacheCrit);
+        std::pair<std::string, unsigned> cachedExternalSevice;
+        if (externalServiceCache.get(serviceName, cachedExternalSevice))
+            return cachedExternalSevice;
+    }
+
+    StringBuffer output;
+    try
+    {
+        VStringBuffer getServiceCmd("kubectl get svc --selector=server=%s --output=jsonpath={.items[0].status.loadBalancer.ingress[0].hostname},{.items[0].spec.ports[0].port}", serviceName);
+        runKubectlCommand("get-external-service", getServiceCmd, nullptr, &output);
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e);
+        VStringBuffer exceptionText("Failed to get external service for '%s'. Error: [%d, ", serviceName, e->errorCode());
+        e->errorMessage(exceptionText).append("]");
+        e->Release();
+        throw makeStringException(-1, exceptionText);
+    }
+    StringArray fields;
+    fields.appendList(output, ",");
+
+    // NB: add even if no result, want non-result to be cached too
+    std::string host;
+    unsigned port = 0;
+    if (fields.ordinality())
+    {
+        host = fields.item(0);
+        if (fields.ordinality()>1)
+            port = atoi(fields.item(1));
+    }
+    auto servicePair = std::make_pair(host, port);
+    externalServiceCache.add(serviceName, servicePair);
+    return servicePair;
+}
+
 #endif
