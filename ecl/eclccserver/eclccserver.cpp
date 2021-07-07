@@ -506,7 +506,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         }
         Owned<IPipeProcess> pipe = createPipeProcess();
         pipe->setenv("ECLCCSERVER_THREAD_INDEX", idxStr.str());
-        Owned<IPropertyTreeIterator> options = config->getElements("./Option");
+        Owned<IPropertyTreeIterator> options = config->getElements(isContainerized() ? "./options" : "./Option");
         ForEach(*options)
         {
             IPropertyTree &option = options->query();

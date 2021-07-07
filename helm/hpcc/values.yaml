@@ -390,6 +390,12 @@ eclccserver:
   maxActive: 4
   ## Specify a list of queues to listen on if you don't want this eclccserver listening on all queues. If empty or missing, listens on all queues
   listen: []
+  ## The following allows eclcc options (names start with a -) and debug options to be defined for each of the workunits that are compiled.
+  #options:
+  #- name: globalAutoHoist
+  #  value: false
+  #  cluster: name   # optional cluster this is applied to
+
   ## The following resources apply to child compile pods when useChildProcesses=false, otherwise they apply to eclccserver pod.
   #resources:
   #  cpu: "1"
