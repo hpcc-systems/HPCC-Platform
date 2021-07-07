@@ -7,12 +7,12 @@ import { useFile } from "../../hooks/File";
 import * as FileSpray from "src/FileSpray";
 import { pushUrl } from "../../util/history";
 
-type RenameFileFormValues = {
+interface RenameFileFormValues {
     dstname: string;
     overwrite: boolean;
 };
 
-const defaultValues = {
+const defaultValues: RenameFileFormValues = {
     dstname: "",
     overwrite: false
 };
@@ -39,7 +39,7 @@ export const RenameFile: React.FunctionComponent<RenameFileProps> = ({
     const onSubmit = () => {
         handleSubmit(
             (data, evt) => {
-                const request = { ...data, ...{ srcname: logicalFile } };
+                const request = { ...data, srcname: logicalFile };
                 FileSpray.Rename({ request: request }).then(response => {
                     setShowForm(false);
                     pushUrl(`/files/${cluster}/${data.dstname}`);
@@ -59,8 +59,8 @@ export const RenameFile: React.FunctionComponent<RenameFileProps> = ({
     };
 
     const dragOptions: IDragOptions = {
-        moveMenuItemText: "Move",
-        closeMenuItemText: "Close",
+        moveMenuItemText: nlsHPCC.Move,
+        closeMenuItemText: nlsHPCC.Close,
         menu: ContextualMenu,
     };
 
@@ -120,7 +120,7 @@ export const RenameFile: React.FunctionComponent<RenameFileProps> = ({
     });
 
     React.useEffect(() => {
-        const newValues = { ...defaultValues, ...{ "dstname": logicalFile } };
+        const newValues = { ...defaultValues, dstname: logicalFile };
         reset(newValues);
     }, [file, logicalFile, reset]);
 

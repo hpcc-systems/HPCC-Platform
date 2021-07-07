@@ -224,8 +224,8 @@ export const Result: React.FunctionComponent<ResultProps> = ({
         .baseUrl("")
         .wuid(wuid)
         .resultName(resultName)
-        .logicalFile(logicalFile)
         .nodeGroup(cluster)
+        .logicalFile(logicalFile)
         .pagination(true)
         .pageSize(50) as ResultWidget
     );

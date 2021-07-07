@@ -8,13 +8,13 @@ import * as FileSpray from "src/FileSpray";
 import { TargetGroupTextField } from "./Fields";
 import { pushUrl } from "../../util/history";
 
-type ReplicateFileFormValues = {
+interface ReplicateFileFormValues {
     sourceLogicalName: string;
     replicateOffset: string;
     cluster: string;
 };
 
-const defaultValues = {
+const defaultValues: ReplicateFileFormValues = {
     sourceLogicalName: "",
     replicateOffset: "1",
     cluster: ""
@@ -41,7 +41,7 @@ export const ReplicateFile: React.FunctionComponent<ReplicateFileProps> = ({
     const onSubmit = () => {
         handleSubmit(
             (data, evt) => {
-                const request = { ...data, ...{ srcname: logicalFile } };
+                const request = { ...data, srcname: logicalFile };
                 FileSpray.Replicate({ request: request }).then(response => {
                     setShowForm(false);
                     pushUrl(`/dfuworkunits/${response?.ReplicateResponse?.wuid}`);
@@ -61,8 +61,8 @@ export const ReplicateFile: React.FunctionComponent<ReplicateFileProps> = ({
     };
 
     const dragOptions: IDragOptions = {
-        moveMenuItemText: "Move",
-        closeMenuItemText: "Close",
+        moveMenuItemText: nlsHPCC.Move,
+        closeMenuItemText: nlsHPCC.Close,
         menu: ContextualMenu,
     };
 
@@ -122,7 +122,7 @@ export const ReplicateFile: React.FunctionComponent<ReplicateFileProps> = ({
     });
 
     React.useEffect(() => {
-        const newValues = { ...defaultValues, ...{ "sourceLogicalName": logicalFile } };
+        const newValues = { ...defaultValues, sourceLogicalName: logicalFile };
         reset(newValues);
     }, [file, logicalFile, reset]);
 
@@ -191,14 +191,14 @@ export const ReplicateFile: React.FunctionComponent<ReplicateFileProps> = ({
                         label={nlsHPCC.Cluster}
                         required={true}
                         selectedKey={value}
-                        placeholder={"Select a value"}
+                        placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
                             onChange(option.key);
                         }}
                         errorMessage={ error && error.message }
                     /> }
                     rules={{
-                        required: `Select a ${nlsHPCC.Cluster}`
+                        required: `${nlsHPCC.SelectA} ${nlsHPCC.Cluster}`
                     }}
                 />
             </Stack>

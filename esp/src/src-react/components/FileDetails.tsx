@@ -237,17 +237,9 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
                 </PivotItem>
             </Pivot>
         }</SizeMe>
-        { showCopyFile &&
         <CopyFile cluster={cluster} logicalFile={logicalFile} showForm={showCopyFile} setShowForm={setShowCopyFile} />
-        }
-        { showRenameFile &&
         <RenameFile cluster={cluster} logicalFile={logicalFile} showForm={showRenameFile} setShowForm={setShowRenameFile} />
-        }
-        { showDesprayFile &&
         <DesprayFile cluster={cluster} logicalFile={logicalFile} showForm={showDesprayFile} setShowForm={setShowDesprayFile} />
-        }
-        { showReplicateFile &&
         <ReplicateFile cluster={cluster} logicalFile={logicalFile} showForm={showReplicateFile} setShowForm={setShowReplicateFile} />
-        }
     </>;
 };

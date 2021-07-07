@@ -8,7 +8,7 @@ import * as FileSpray from "src/FileSpray";
 import { TargetDropzoneTextField, TargetFolderTextField, TargetServerTextField } from "./Fields";
 import { pushUrl } from "../../util/history";
 
-type DesprayFileFormValues = {
+interface DesprayFileFormValues {
     destGroup: string;
     destIP: string;
     destPath: string;
@@ -19,7 +19,7 @@ type DesprayFileFormValues = {
     wrap: boolean;
 };
 
-const defaultValues = {
+const defaultValues: DesprayFileFormValues = {
     destGroup: "",
     destIP: "",
     destPath: "",
@@ -82,8 +82,8 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
     };
 
     const dragOptions: IDragOptions = {
-        moveMenuItemText: "Move",
-        closeMenuItemText: "Close",
+        moveMenuItemText: nlsHPCC.Move,
+        closeMenuItemText: nlsHPCC.Close,
         menu: ContextualMenu,
     };
 
@@ -143,7 +143,7 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
     });
 
     React.useEffect(() => {
-        const newValues = { ...defaultValues, ...{ "targetName": file?.Filename } };
+        const newValues = { ...defaultValues, targetName: file?.Filename };
         reset(newValues);
     }, [file?.Filename, reset]);
 
@@ -176,7 +176,7 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                         label={nlsHPCC.DropZone}
                         required={true}
                         selectedKey={value}
-                        placeholder={"Select a value"}
+                        placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
                             setDirectory(option["path"] as string);
                             if (option["path"].indexOf("\\") > -1) {
@@ -187,7 +187,7 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                         errorMessage={ error && error.message }
                     /> }
                     rules={{
-                        required: `Select a ${nlsHPCC.DropZone}`
+                        required: `${nlsHPCC.SelectA} ${nlsHPCC.DropZone}`
                     }}
                 />
                 <Controller
@@ -200,7 +200,7 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                         required={true}
                         label={nlsHPCC.IPAddress}
                         selectedKey={value}
-                        placeholder={"Select a value"}
+                        placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
                             setMachine(option.key as string);
                             setOs(option["OS"] as number);
@@ -225,7 +225,7 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                         machineDirectory={directory}
                         machineOS={os}
                         required={true}
-                        placeholder="Select a value"
+                        placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
                             onChange(option.key);
                         }}
@@ -233,10 +233,6 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                     /> }
                     rules={{
                         required: nlsHPCC.ValidationErrorRequired,
-                        // pattern: {
-                        //     value: /^(\/[a-z0-9]*)+$/i,
-                        //     message: nlsHPCC.ValidationErrorTargetNameRequired
-                        // }
                     }}
                 />
                 <Controller

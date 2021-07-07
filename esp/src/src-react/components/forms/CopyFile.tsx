@@ -8,7 +8,7 @@ import * as FileSpray from "src/FileSpray";
 import { TargetGroupTextField } from "./Fields";
 import { pushUrl } from "../../util/history";
 
-type CopyFileFormValues = {
+interface CopyFileFormValues {
     destGroup: string;
     destLogicalName: string;
     overwrite: boolean;
@@ -21,7 +21,7 @@ type CopyFileFormValues = {
     ExpireDays: string;
 };
 
-const defaultValues = {
+const defaultValues: CopyFileFormValues = {
     destGroup: "",
     destLogicalName: "",
     overwrite: false,
@@ -56,7 +56,7 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
     const onSubmit = () => {
         handleSubmit(
             (data, evt) => {
-                const request = { ...data, ...{ sourceLogicalName: logicalFile } };
+                const request = { ...data, sourceLogicalName: logicalFile };
                 FileSpray.Copy({ request: request }).then(response => {
                     setShowForm(false);
                     pushUrl(`/files/${data.destGroup}/${data.destLogicalName}`);
@@ -76,8 +76,8 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
     };
 
     const dragOptions: IDragOptions = {
-        moveMenuItemText: "Move",
-        closeMenuItemText: "Close",
+        moveMenuItemText: nlsHPCC.Move,
+        closeMenuItemText: nlsHPCC.Close,
         menu: ContextualMenu,
     };
 
@@ -137,7 +137,7 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
     });
 
     React.useEffect(() => {
-        const newValues = { ...defaultValues, ...{ "destLogicalName": logicalFile } };
+        const newValues = { ...defaultValues, destLogicalName: logicalFile };
         reset(newValues);
     }, [file, logicalFile, reset]);
 
@@ -170,14 +170,14 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
                         label={nlsHPCC.Group}
                         required={true}
                         selectedKey={value}
-                        placeholder={"Select a value"}
+                        placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
                             onChange(option.key);
                         }}
                         errorMessage={ error && error.message }
                     /> }
                     rules={{
-                        required: `Select a ${nlsHPCC.Group}`
+                        required: `${nlsHPCC.SelectA} ${nlsHPCC.Group}`
                     }}
                 />
                 <Controller
