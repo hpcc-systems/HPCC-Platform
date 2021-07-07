@@ -3489,7 +3489,7 @@ private:
 
 
 //MORE: This could be cached
-IStoragePlane * getStoragePlane(const char * name, bool required)
+IStoragePlane * getDataStoragePlane(const char * name, bool required)
 {
     StringBuffer group;
     group.append(name).toLowerCase();
@@ -3500,6 +3500,13 @@ IStoragePlane * getStoragePlane(const char * name, bool required)
     {
         if (required)
             throw makeStringExceptionV(-1, "Unknown storage plane '%s'", name);
+        return nullptr;
+    }
+    const char * category = match->queryProp("@category");
+    if (!streq(category, "data") && !streq(category, "lz"))
+    {
+        if (required)
+            throw makeStringExceptionV(-1, "storage plane '%s' does not store data (category %s)", name, category);
         return nullptr;
     }
 

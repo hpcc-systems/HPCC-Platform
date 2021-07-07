@@ -33,7 +33,6 @@ RUN setcap cap_sys_ptrace+eip /usr/bin/gdb
 
 ENV PATH="/opt/HPCCSystems/bin:${PATH}"
 ENV HPCC_containerized=1
-ENV HPCC_DLLSERVER_PATH=/var/lib/HPCCSystems/queries
 
 USER hpcc
 WORKDIR /var/lib/HPCCSystems
