@@ -1103,27 +1103,29 @@ int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user)
 
 //=============================================================================
 
-void setprotect(const char *filename, const char *callerid, IUserDescriptor *user)
+void setprotect(const char *filename, const char *callerid, IUserDescriptor *user, StringBuffer &out)
 {
     Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(filename,user,false,false,false,nullptr,defaultPrivilegedUser);
     file->setProtect(callerid,true);
+    out.appendf("%s is protected", file->queryLogicalName());
 }
 
 //=============================================================================
 
-void unprotect(const char *filename, const char *callerid, IUserDescriptor *user)
+void unprotect(const char *filename, const char *callerid, IUserDescriptor *user, StringBuffer &out)
 {
     Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(filename,user,false,false,false,nullptr,defaultPrivilegedUser);
     file->setProtect((strcmp(callerid,"*")==0)?NULL:callerid,false);
+    out.appendf("%s is unprotected", file->queryLogicalName());
 }
 //=============================================================================
 
-void listprotect(const char *filename, const char *callerid)
+void listprotect(const char *filename, const char *callerid, StringBuffer &out)
 {
     Owned<IDFProtectedIterator> piter = queryDistributedFileDirectory().lookupProtectedFiles((strcmp(callerid,"*")==0)?NULL:callerid); 
     ForEach(*piter) {
         if (WildMatch(piter->queryFilename(),filename))
-            OUTLOG("%s,%s,%s", piter->isSuper()?"SuperFile":"File", piter->queryFilename(), piter->queryOwner());
+            out.appendf("%s,%s,%s", piter->isSuper()?"SuperFile":"File", piter->queryFilename(), piter->queryOwner());
     }
 }
 

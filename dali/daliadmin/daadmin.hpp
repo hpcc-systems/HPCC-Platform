@@ -58,9 +58,9 @@ extern DALIADMIN_API void dfsparents(const char *lname, IUserDescriptor *user, S
 extern DALIADMIN_API void dfsunlink(const char *lname, IUserDescriptor *user);
 extern DALIADMIN_API int dfsverify(const char *name, CDateTime *cutoff, IUserDescriptor *user);
 extern DALIADMIN_API int dfsperm(const char *obj, IUserDescriptor *user);
-extern DALIADMIN_API void setprotect(const char *filename, const char *callerid, IUserDescriptor *user);
-extern DALIADMIN_API void unprotect(const char *filename, const char *callerid, IUserDescriptor *user);
-extern DALIADMIN_API void listprotect(const char *filename, const char *callerid);
+extern DALIADMIN_API void setprotect(const char *filename, const char *callerid, IUserDescriptor *user, StringBuffer &out);
+extern DALIADMIN_API void unprotect(const char *filename, const char *callerid, IUserDescriptor *user, StringBuffer &out);
+extern DALIADMIN_API void listprotect(const char *filename, const char *callerid, StringBuffer &out);
 extern DALIADMIN_API void checksuperfile(const char *lfn, bool fix);
 extern DALIADMIN_API void checksubfile(const char *lfn);
 extern DALIADMIN_API void listexpires(const char * lfnmask, IUserDescriptor *user);
