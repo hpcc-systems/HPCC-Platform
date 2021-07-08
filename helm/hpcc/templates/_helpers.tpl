@@ -956,7 +956,7 @@ kind: Service
 metadata:
   name: {{ .name | quote }}
   labels:
-    helmVersion: 8.2.1-closedown0
+    helmVersion: 8.2.2-rc1
 {{- if $lvars.labels }}
 {{ toYaml $lvars.labels | indent 4 }}
 {{- end }}
