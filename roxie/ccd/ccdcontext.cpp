@@ -3941,6 +3941,8 @@ public:
 
     virtual bool okToLogStartStopError()
     {
+        if (!actResetLogPeriod)
+            return false;
         // Each query starts with actResetLogState set to LogResetInit
         // State is changed to LogResetOK and a timer is started
         // If same query runs again then time since last logged is checked
