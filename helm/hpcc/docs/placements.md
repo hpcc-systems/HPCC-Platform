@@ -5,11 +5,10 @@ through placement to include an array of objects to configure the Kubernetes Sch
 It must have a "pods" list which tells it which pod the settings will be applied to.<br/>
 The syntax is:
 ```code
-   global
-     placements:
-     - pods [list]
-       placement:
-         <supported configurations>
+   placements:
+   - pods [list]
+     placement:
+       <supported configurations>
 ```
 The list item in "pods" can be one of the following:
 1) HPCC Systems component types in format: "type:<type name>". <type name> includes
@@ -23,12 +22,55 @@ The list item in "pods" can be one of the following:
 
 Supported configurations under each "placement"
 1) nodeSelector
+   Multiple nodeSelectors can be applied. For example
+   placements:
+   - pods ["all"]
+     placement:
+       nodeSelector:
+         group: "hpcc"
+   - pods ["type:dali"]
+     placement:
+       nodeSelector:
+         spot: "false"
+   All dali pods will have:
+     spec:
+       nodeSelector:
+         group: "hpcc"
+         spot: "false"
 2) taints/tolerations
+   Multiple taints/torerations can be applied. For example
+   placements:
+   - pods ["all"]
+     tolerations:
+     - key: "group"
+       operator: "Equal"
+       value: "hpcc"
+       effect: "NoSchedule"
+   - pods ["type:thor"]
+     tolerations:
+     - key: "gpu"
+       operator: "Equal"
+       value: "true"
+       effect: "NoSchedule"
+   All thor pods will have:
+     tolerations:
+     - key: "group"
+       operator: "Equal"
+       value: "hpcc"
+       effect: "NoSchedule"
+     - key: "gpu"
+       operator: "Equal"
+       value: "true"
+       effect: "NoSchedule"
+
 3) affinity
    There is no schema check for the content of affinity. Reference
    https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+   Only one "affinity" can be applied to a Pod/Job. If different "affinity" are supplied to multiple pods list which containe a same Pod/Job
+   only the last definition prevails.
 4) schedulerName: profile names. "affinity" defined in scheduler profile  requires
    Kubernetes 1.20.0 beta and later releases
+   Only one "scheduerName" can be applied to a Pod/Job.
 
 "nodeSelector" example:
 ```code

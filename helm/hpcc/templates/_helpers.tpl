@@ -956,7 +956,7 @@ kind: Service
 metadata:
   name: {{ .name | quote }}
   labels:
-    helmVersion: 8.2.0-2
+    helmVersion: 8.2.0
 {{- if $lvars.labels }}
 {{ toYaml $lvars.labels | indent 4 }}
 {{- end }}
@@ -1045,11 +1045,42 @@ Pass in dict with root, category.  optional name to restrict it to a single name
 
 {{/*
 Create placement related settings
-Pass in dict with placement
+Pass in dict with current placment and new placements dictinary for this entity
+*/}}
+{{- define "hpcc.addPlacementSetting" -}}
+{{- if .me.placement.nodeSelector }}
+{{- $_ := set .new "nodeSelector" (merge (.new.nodeSelector | default dict ) .me.placement.nodeSelector)  }}
+{{- end -}}
+{{- if .me.placement.tolerations }}
+{{- $_ := set .new "tolerations" (concat (.new.tolerations | default list ) .me.placement.tolerations)  }}
+{{- end -}}
+{{- if .me.placement.affinity }}
+{{- $_ := set .new "affinity" .me.placement.affinity  }}
+{{- end -}}
+{{- if .me.placement.schedulerName }}
+{{- $_ := set .new "schedulerName" .me.placement.schedulerName }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Add placement related settings
+Pass in dict with all placements for this entity
 */}}
 {{- define "hpcc.doPlacement" -}}
-{{- if .me.placement }}
-{{ toYaml .me.placement }}
+{{- if (hasKey .me "nodeSelector") }}
+nodeSelector:
+{{ toYaml .me.nodeSelector  | indent 2 }}
+{{- end -}}
+{{- if (hasKey .me "tolerations") }}
+tolerations:
+{{ toYaml .me.tolerations  }}
+{{- end -}}
+{{- if (hasKey .me "affinity") }}
+affinity:
+{{ toYaml .me.affinity  | indent 2 }}
+{{- end -}}
+{{- if (hasKey .me "schedulerName") }}
+schedulerName: {{ .me.schedulerName }}
 {{- end -}}
 {{- end -}}
 
@@ -1062,17 +1093,19 @@ Pass in dict with root, job, target and type
 {{- $job := .job -}}
 {{- $target := (printf "target:%s" .target | default "") -}}
 {{- $type := printf "type:%s" .type -}}
+{{- $placementsDict := dict  -}}
 {{- range $placement := .root.Values.placements -}}
 {{- if or (has $target $placement.pods) (has $type $placement.pods) (has "all" $placement.pods) -}}
-{{ include "hpcc.doPlacement" (dict "me" $placement) -}}
+{{ include "hpcc.addPlacementSetting" (dict "me" $placement "new" $placementsDict) -}}
 {{- else -}}
 {{- range $jobPattern := $placement.pods -}}
 {{- if mustRegexMatch $jobPattern $job -}}
-{{ include "hpcc.doPlacement" (dict "me" $placement) -}}
+{{ include "hpcc.addPlacementSetting" (dict "me" $placement "new" $placementsDict) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
+{{ include "hpcc.doPlacement" (dict "me" $placementsDict) -}}
 {{- end -}}
 {{- end -}}
 
@@ -1085,11 +1118,13 @@ Pass in dict with root, pod, target and type
 {{- $pod := .pod -}}
 {{- $target := (printf "target:%s" .target | default "") -}}
 {{- $type := printf "type:%s" .type -}}
+{{- $placementsDict := dict  -}}
 {{- range $placement := .root.Values.placements -}}
 {{- if or (has $pod $placement.pods) (has $target $placement.pods) (has $type $placement.pods) (has "all"  $placement.pods) -}}
-{{ include "hpcc.doPlacement" (dict "me" $placement) -}}
+{{ include "hpcc.addPlacementSetting" (dict "me" $placement "new" $placementsDict) -}}
 {{- end -}}
 {{- end -}}
+{{ include "hpcc.doPlacement" (dict "me" $placementsDict) -}}
 {{- end -}}
 {{- end -}}
 
