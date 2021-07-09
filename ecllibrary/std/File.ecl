@@ -101,6 +101,8 @@ EXPORT FsDropZone := lib_fileservices.FsDropZone;
 
 EXPORT FsDropZoneRecord := lib_fileservices.FsDropZoneRecord;
 
+EXPORT FsLandingZoneRecord := lib_fileservices.FsLandingZoneRecord;
+
 /*------------------------------------- Spray functions -----------------------------------------------------------*/
 
 /**
@@ -1047,6 +1049,19 @@ EXPORT varstring GetDefaultDropZone() :=
 
 EXPORT dataset(FsDropZoneRecord) GetDropZones() :=
     lib_fileservices.FileServices.GetDropZones();
+
+/**
+ * Returns a dataset with (name, path and hostname) for all landing zones (or Drop Zones)
+ * A enhanced version of GetDropZones()
+ *
+ *
+ * @return              A dataset containing all defined Drop Zone paths.
+ *                      Will return an empty dataset if a Drop Zone
+ *                      cannot be found
+ */
+
+EXPORT dataset(FsLandingZoneRecord) GetLandingZones() :=
+    lib_fileservices.FileServices.GetLandingZones();
 
 /**
  * Return the expire days property of the specified logical filename.
