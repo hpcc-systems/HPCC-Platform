@@ -27,6 +27,7 @@ CLUSTERNAME=mycluster
 PVFILE=$scriptdir/../helm/examples/local/hpcc-localfile/values.yaml
 
 CMD="install"
+DEVELOPER_OPTIONS="--set global.privileged=true"
 while [ "$#" -gt 0 ]; do
   arg=$1
   if [[ ${arg:0:1} == '-' ]]; then
@@ -65,6 +66,9 @@ while [ "$#" -gt 0 ]; do
          ;;
       t) CMD="template"
          restArgs+="--debug"
+         ;;
+      # vanilla install - for testing system in the same way it will normally be used
+      v) DEVELOPER_OPTIONS=""
          ;;
       *) restArgs+=(${arg})
          ;;
@@ -109,9 +113,9 @@ if [[ -n ${PERSIST} ]] ; then
   done
   helm ${CMD} localfile $scriptdir/../helm/examples/local/hpcc-localfile --set common.hostpath=${PERSIST} $PERSISTVALUES | tee lsfull.yaml | grep -A1000 storage: > localstorage.yaml && \
   grep "##" lsfull.yaml  && \
-  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL --set global.privileged=true $DEP_UPDATE_ARG ${restArgs[@]} -f localstorage.yaml
+  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS $DEP_UPDATE_ARG ${restArgs[@]} -f localstorage.yaml
 else
-  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL --set global.privileged=true $DEP_UPDATE_ARG ${restArgs[@]}
+  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS $DEP_UPDATE_ARG ${restArgs[@]}
 fi
 
 if [ ${CMD} != "template" ] ; then
