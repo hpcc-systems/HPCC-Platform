@@ -87,12 +87,19 @@ SEQUENTIAL(
 
 SEQUENTIAL(
     memcached.Clear(servers);
+    // There is not hi-res timer in memcached, so all timeout should handled with +/-1 s tolerance
     memcached.SetString('testExpire', 'foobar', servers,, 10);
-    memcached.Exists('testExpire', servers);
-    Std.System.Debug.Sleep(9 * 1000);
-    memcached.Exists('testExpire', servers);
-    Std.System.Debug.Sleep(2 * 1000);
-    memcached.Exists('testExpire', servers);
+    memcached.Exists('testExpire', servers);	// Result 14
+    
+    // Wait 8 sec before test again
+    Std.System.Debug.Sleep(8 * 1000);
+    // It should exists at this point
+    memcached.Exists('testExpire', servers);	// Result 15
+    
+    // Wait 4 sec before test again
+    Std.System.Debug.Sleep(4 * 1000);
+    // Shouldn't exists at this point
+    memcached.Exists('testExpire', servers);	// Result 16
     );
 
 SEQUENTIAL(
