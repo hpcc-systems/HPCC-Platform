@@ -14,6 +14,7 @@ import { DojoGrid, selector } from "./DojoGrid";
 
 const FilterFields: Fields = {
     "QueryID": { type: "string", label: nlsHPCC.ID, placeholder: nlsHPCC.QueryIDPlaceholder },
+    "Priority": { type: "queries-priority", label: nlsHPCC.Priority },
     "QueryName": { type: "string", label: nlsHPCC.Name, placeholder: nlsHPCC.QueryNamePlaceholder },
     "PublishedBy": { type: "string", label: nlsHPCC.PublishedBy, placeholder: nlsHPCC.PublishedBy },
     "WUID": { type: "string", label: nlsHPCC.WUID, placeholder: "W20130222-171723" },
@@ -24,19 +25,13 @@ const FilterFields: Fields = {
     "Activated": { type: "queries-active-state", label: nlsHPCC.Activated }
 };
 
-function formatQuery(filter: any, wuid?: string) {
-    if (wuid !== undefined) {
-        return {
-            WUID: wuid
-        };
-    }
-    const retVal = { ...filter };
-    if (filter.StartDate) {
-        retVal.StartDate = new Date(filter.StartDate).toISOString();
-    }
-    if (filter.EndDate) {
-        retVal.EndDate = new Date(filter.StartDate).toISOString();
-    }
+function formatQuery(filter: any) {
+    const retVal = {
+        ...filter,
+        PriorityLow: filter.Priority,
+        PriorityHigh: filter.Priority
+    };
+    delete retVal.Priority;
     return retVal;
 }
 
@@ -70,7 +65,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
 
     //  Grid ---
     const gridStore = useConst(store || ESPQuery.CreateQueryStore({}));
-    const gridQuery = useConst(formatQuery(filter, wuid));
+    const gridQuery = useConst(formatQuery(filter));
     const gridSort = useConst([{ attribute: "Id" }]);
     const gridColumns = useConst({
         col1: selector({
@@ -136,6 +131,13 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 return `<a href='#/queries/${row.QuerySetId}/${Id}' class='dgrid-row-url'>${Id}</a>`;
             }
         },
+        priority: {
+            label: nlsHPCC.Priority,
+            width: 80,
+            formatter: function (priority, row) {
+                return priority === undefined ? "" : priority;
+            }
+        },
         Name: {
             label: nlsHPCC.Name
         },
@@ -168,11 +170,11 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
     });
 
     const refreshTable = React.useCallback((clearSelection = false) => {
-        grid?.set("query", formatQuery(filter, wuid));
+        grid?.set("query", formatQuery(filter));
         if (clearSelection) {
             grid?.clearSelection();
         }
-    }, [filter, grid, wuid]);
+    }, [filter, grid]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
