@@ -34,6 +34,12 @@
                         <input id="${id}QueryName" title="${i18n.Name}:" name="QueryName" colspan="2"
                             data-dojo-props="trim: true, placeHolder: '${i18n.QueryNamePlaceholder}'"
                             data-dojo-type="dijit.form.TextBox" />
+                        <select id="${id}Priority" title="${i18n.Priority}:" name="PriorityLow" colspan="2" data-dojo-type="dijit.form.Select">
+                           <option value="" selected="selected">${i18n.None}</option>
+                           <option value="0">${i18n.Low}</option>
+                           <option value="1">${i18n.High}</option>
+                           <option value="2">${i18n.SLA}</option>
+                        </select>
                         <input id="${id}PublishedBy" title="${i18n.PublishedBy}:" name="PublishedBy" colspan="2"
                             data-dojo-props="trim: true, placeHolder: '${i18n.PublishedBy}'"
                             data-dojo-type="dijit.form.TextBox" />
