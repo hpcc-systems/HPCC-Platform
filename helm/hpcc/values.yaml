@@ -53,6 +53,11 @@ global:
   # Set postJobCommandViaSidecar to true, if the command needs to run with privilege, this will enable the command
   # to run as root in a sidecar in same process space as other containers, allowing it to for example send signals
   # to processes in sidecars
+  # For Istio or similar:
+  #   postJobCommand: "curl -sf -XPOST http://127.0.0.1:15020/quitquitquit"
+  # Or example for linkerd
+  #   postJobCommand: "kill $(pgrep linkerd2-proxy)"
+  #   postJobCommandViaSidecar: true
 
   # Define global default metrics configuration for all components
   metrics:
@@ -62,11 +67,6 @@ global:
         settings:
           period: 60
 
-  # misc:
-  #   postJobCommand: "curl -sf -XPOST http://127.0.0.1:15020/quitquitquit"
-  # Or example for linkerd
-  #   postJobCommand: "kill $(pgrep linkerd2-proxy)"
-  #   postJobCommandViaSidecar: true
 
   ## visibilities section can be used to set labels, annotations and service type for any service with the specified visibility
   visibilities:
