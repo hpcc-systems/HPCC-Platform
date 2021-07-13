@@ -47,8 +47,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
         setProtected(_protected || isProtected);
         setRestricted(restricted || file?.IsRestricted);
 
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [file?.Description, file?.ProtectList?.DFUFileProtect, file?.IsRestricted]);
+    }, [_protected, description, file?.Description, file?.IsRestricted, isProtected, restricted]);
 
     const canSave = file && (
         description !== file.Description ||
@@ -56,7 +55,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
         restricted !== file?.IsRestricted
     );
 
-    const buttons: ICommandBarItemProps[] = [
+    const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => {
@@ -82,7 +81,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
             }
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-    ];
+    ], [_protected, canSave, description, file, logicalFile, refresh, restricted]);
 
     const protectedImage = _protected ? Utility.getImageURL("locked.png") : Utility.getImageURL("unlocked.png");
     const stateImage = Utility.getImageURL(getStateImageName(file as unknown as IFile));

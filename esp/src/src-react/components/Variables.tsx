@@ -21,19 +21,6 @@ export const Variables: React.FunctionComponent<VariablesProps> = ({
     const [selection, setSelection] = React.useState([]);
     const [variables] = useWorkunitVariables(wuid);
 
-    //  Command Bar  ---
-    const buttons: ICommandBarItemProps[] = [
-        {
-            key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
-        },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-    ];
-
-    const rightButtons: ICommandBarItemProps[] = [
-        ...createCopyDownloadSelection(grid, selection, "variables.csv")
-    ];
-
     //  Grid ---
     const gridStore = useConst(new Observable(new AlphaNumSortMemory("__hpcc_id", { Name: true, Value: true })));
     const gridSort = useConst([{ attribute: "Wuid", "descending": true }]);
@@ -43,12 +30,12 @@ export const Variables: React.FunctionComponent<VariablesProps> = ({
         Value: { label: nlsHPCC.Value }
     });
 
-    const refreshTable = (clearSelection = false) => {
+    const refreshTable = React.useCallback((clearSelection = false) => {
         grid?.set("query", {});
         if (clearSelection) {
             grid?.clearSelection();
         }
-    };
+    }, [grid]);
 
     React.useEffect(() => {
         gridStore.setData(variables.map((row, idx) => {
@@ -58,13 +45,25 @@ export const Variables: React.FunctionComponent<VariablesProps> = ({
             };
         }));
         refreshTable();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [gridStore, variables]);
+    }, [gridStore, refreshTable, variables]);
+
+    //  Command Bar  ---
+    const buttons = React.useMemo((): ICommandBarItemProps[] => [
+        {
+            key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
+            onClick: () => refreshTable()
+        },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+    ], [refreshTable]);
+
+    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
+        ...createCopyDownloadSelection(grid, selection, "variables.csv")
+    ], [grid, selection]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
         main={
-            <DojoGrid store={gridStore} query={{}} sort={gridSort} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
+            <DojoGrid store={gridStore} sort={gridSort} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
         }
     />;
 };

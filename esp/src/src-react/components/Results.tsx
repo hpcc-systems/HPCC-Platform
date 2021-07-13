@@ -26,43 +26,6 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [results] = useWorkunitResults(wuid);
 
-    //  Command Bar  ---
-    const buttons: ICommandBarItemProps[] = [
-        {
-            key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
-        },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-        {
-            key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
-            onClick: () => {
-                if (selection.length === 1) {
-                    window.location.href = `#/workunits/${wuid}/outputs/${selection[0].Name}`;
-                } else {
-                    for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/workunits/${wuid}/outputs/${selection[i].Name}`, "_blank");
-                    }
-                }
-            }
-        },
-        {
-            key: "open legacy", text: nlsHPCC.OpenLegacyMode, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
-            onClick: () => {
-                if (selection.length === 1) {
-                    window.location.href = `#/workunits/${wuid}/outputs/${selection[0].Name}/legacy`;
-                } else {
-                    for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/workunits/${wuid}/outputs/${selection[i].Name}/legacy`, "_blank");
-                    }
-                }
-            }
-        },
-    ];
-
-    const rightButtons: ICommandBarItemProps[] = [
-        ...createCopyDownloadSelection(grid, selection, "results.csv")
-    ];
-
     //  Grid ---
     const gridStore = useConst(new Observable(new AlphaNumSortMemory("__hpcc_id", { Name: true, Value: true })));
     const gridQuery = useConst({});
@@ -93,7 +56,7 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
             label: nlsHPCC.Views, sortable: true,
             formatter: function (ResultViews, idx) {
                 let retVal = "";
-                ResultViews.forEach((item, idx) => {
+                ResultViews?.forEach((item, idx) => {
                     retVal += "<a href='#' onClick='return false;' viewName=" + encodeURIComponent(item) + " class='dgrid-row-url3'>" + item + "</a>&nbsp;";
                 });
                 return retVal;
@@ -101,12 +64,49 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
         }
     });
 
-    const refreshTable = (clearSelection = false) => {
+    const refreshTable = React.useCallback((clearSelection = false) => {
         grid?.set("query", gridQuery);
         if (clearSelection) {
             grid?.clearSelection();
         }
-    };
+    }, [grid, gridQuery]);
+
+    //  Command Bar  ---
+    const buttons = React.useMemo((): ICommandBarItemProps[] => [
+        {
+            key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
+            onClick: () => refreshTable()
+        },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
+            onClick: () => {
+                if (selection.length === 1) {
+                    window.location.href = `#/workunits/${wuid}/outputs/${selection[0].Name}`;
+                } else {
+                    for (let i = selection.length - 1; i >= 0; --i) {
+                        window.open(`#/workunits/${wuid}/outputs/${selection[i].Name}`, "_blank");
+                    }
+                }
+            }
+        },
+        {
+            key: "open legacy", text: nlsHPCC.OpenLegacyMode, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
+            onClick: () => {
+                if (selection.length === 1) {
+                    window.location.href = `#/workunits/${wuid}/outputs/${selection[0].Name}/legacy`;
+                } else {
+                    for (let i = selection.length - 1; i >= 0; --i) {
+                        window.open(`#/workunits/${wuid}/outputs/${selection[i].Name}/legacy`, "_blank");
+                    }
+                }
+            }
+        },
+    ], [refreshTable, selection, uiState.hasSelection, wuid]);
+
+    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
+        ...createCopyDownloadSelection(grid, selection, "results.csv")
+    ], [grid, selection]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -121,7 +121,7 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
 
     React.useEffect(() => {
         gridStore.setData(results.map(row => {
-            const tmp: any = row?.ResultViews;
+            const tmp: any = row.ResultViews;
             return {
                 __hpcc_id: row.Name,
                 Name: row.Name,
@@ -132,8 +132,7 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
             };
         }));
         refreshTable();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [gridStore, results]);
+    }, [gridStore, refreshTable, results]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}

@@ -63,11 +63,11 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
     }, [filterProps.lastNDays]);
 
     //  Cluster Chart ---
-    const clusterChart = React.useRef(
+    const clusterChart = useConst(
         new Bar()
             .columns(["Cluster", "Count"])
             .on("click", (row, col, sel) => pushParamExact("cluster", sel ? row.Cluster : undefined))
-    ).current;
+    );
 
     const clusterPipeline = chain(
         filter<WorkunitEx>(row => filterProps.state === undefined || row.State === filterProps.state),
@@ -84,11 +84,11 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
         ;
 
     //  Owner Chart ---
-    const ownerChart = React.useRef(
+    const ownerChart = useConst(
         new Column()
             .columns(["Owner", "Count"])
             .on("click", (row, col, sel) => pushParamExact("owner", sel ? row.Owner : undefined))
-    ).current;
+    );
 
     const ownerPipeline = chain(
         filter<WorkunitEx>(row => filterProps.cluster === undefined || row.Cluster === filterProps.cluster),
@@ -105,11 +105,11 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
         ;
 
     //  State Chart ---
-    const stateChart = React.useRef(
+    const stateChart = useConst(
         new Pie()
             .columns(["State", "Count"])
             .on("click", (row, col, sel) => pushParamExact("state", sel ? row.State : undefined))
-    ).current;
+    );
 
     const statePipeline = chain(
         filter<WorkunitEx>(row => filterProps.cluster === undefined || row.Cluster === filterProps.cluster),
@@ -125,11 +125,11 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
         ;
 
     //  Protected Chart ---
-    const protectedChart = React.useRef(
+    const protectedChart = useConst(
         new Pie()
             .columns(["Protected", "Count"])
             .on("click", (row, col, sel) => pushParamExact("protected", sel ? row.Protected === "true" : undefined))
-    ).current;
+    );
 
     const protectedPipeline = chain(
         filter<WorkunitEx>(row => filterProps.cluster === undefined || row.Cluster === filterProps.cluster),
@@ -144,14 +144,14 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
         ;
 
     //  Day Chart ---
-    const dayChart = React.useRef(
+    const dayChart = useConst(
         new Area()
             .columns(["Day", "Count"])
             .xAxisType("time")
             .interpolate("cardinal")
             // .xAxisTypeTimePattern("")
             .on("click", (row, col, sel) => pushParamExact("day", sel ? row.Day : undefined))
-    ).current;
+    );
 
     const dayPipeline = chain(
         filter<WorkunitEx>(row => filterProps.cluster === undefined || row.Cluster === filterProps.cluster),

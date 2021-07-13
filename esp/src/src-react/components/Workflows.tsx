@@ -21,21 +21,6 @@ export const Workflows: React.FunctionComponent<WorkflowsProps> = ({
     const [selection, setSelection] = React.useState([]);
     const [workflows, , refreshWorkflow] = useWorkunitWorkflows(wuid);
 
-    //  Command Bar  ---
-    const buttons: ICommandBarItemProps[] = [
-        {
-            key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => {
-                refreshWorkflow();
-            }
-        },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-    ];
-
-    const rightButtons: ICommandBarItemProps[] = [
-        ...createCopyDownloadSelection(grid, selection, "workflows.csv")
-    ];
-
     //  Grid ---
     const gridStore = useConst(new Observable(new AlphaNumSortMemory("__hpcc_id", { Name: true, Value: true })));
     const gridQuery = useConst({});
@@ -63,12 +48,12 @@ export const Workflows: React.FunctionComponent<WorkflowsProps> = ({
         }
     });
 
-    const refreshTable = (clearSelection = false) => {
+    const refreshTable = React.useCallback((clearSelection = false) => {
         grid?.set("query", gridQuery);
         if (clearSelection) {
             grid?.clearSelection();
         }
-    };
+    }, [grid, gridQuery]);
 
     React.useEffect(() => {
         gridStore.setData(workflows.map(row => {
@@ -78,8 +63,22 @@ export const Workflows: React.FunctionComponent<WorkflowsProps> = ({
             };
         }));
         refreshTable();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [gridStore, workflows]);
+    }, [gridStore, refreshTable, workflows]);
+
+    //  Command Bar  ---
+    const buttons = React.useMemo((): ICommandBarItemProps[] => [
+        {
+            key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
+            onClick: () => {
+                refreshWorkflow();
+            }
+        },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+    ], [refreshWorkflow]);
+
+    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
+        ...createCopyDownloadSelection(grid, selection, "workflows.csv")
+    ], [grid, selection]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}

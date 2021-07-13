@@ -33,6 +33,32 @@ export const Search: React.FunctionComponent<SearchProps> = ({
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [searchCount, setSearchCount] = React.useState(0);
 
+    //  Grid ---
+    const gridColumns = useConst({
+        col1: selector({ width: 27, selectorType: "checkbox" }),
+        Type: {
+            label: nlsHPCC.What, width: 108, sortable: true,
+            formatter: function (type, idx) {
+                return "<a href='#' onClick='return false;' rowIndex=" + idx + " class='" + "SearchTypeClick'>" + type + "</a>";
+            }
+        },
+        Reason: { label: nlsHPCC.Where, width: 108, sortable: true },
+        Summary: {
+            label: nlsHPCC.Who, sortable: true,
+            formatter: function (summary) {
+                return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + summary + "</a>";
+            }
+        }
+    });
+
+    const refreshTable = React.useCallback((clearSelection = false) => {
+        grid?.set("query", {});
+        if (clearSelection) {
+            grid?.clearSelection();
+        }
+    }, [grid]);
+
+    //  Search
     const search = useConst(new ESPSearch(
         searchCount => {
             setSearchCount(searchCount);
@@ -51,11 +77,10 @@ export const Search: React.FunctionComponent<SearchProps> = ({
             search.searchAll(searchText);
             refreshTable();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchText]);
+    }, [progress, refreshTable, search, searchText]);
 
     //  Command Bar  ---
-    const buttons: ICommandBarItemProps[] = [
+    const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshTable()
@@ -80,36 +105,11 @@ export const Search: React.FunctionComponent<SearchProps> = ({
                 setMine(!mine);
             }
         },
-    ];
+    ], [mine, refreshTable, selection, uiState.hasSelection]);
 
-    const rightButtons: ICommandBarItemProps[] = [
+    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
         ...createCopyDownloadSelection(grid, selection, "search.csv")
-    ];
-
-    //  Grid ---
-    const gridColumns = useConst({
-        col1: selector({ width: 27, selectorType: "checkbox" }),
-        Type: {
-            label: nlsHPCC.What, width: 108, sortable: true,
-            formatter: function (type, idx) {
-                return "<a href='#' onClick='return false;' rowIndex=" + idx + " class='" + "SearchTypeClick'>" + type + "</a>";
-            }
-        },
-        Reason: { label: nlsHPCC.Where, width: 108, sortable: true },
-        Summary: {
-            label: nlsHPCC.Who, sortable: true,
-            formatter: function (summary) {
-                return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + summary + "</a>";
-            }
-        }
-    });
-
-    const refreshTable = (clearSelection = false) => {
-        grid?.set("query", {});
-        if (clearSelection) {
-            grid?.clearSelection();
-        }
-    };
+    ], [grid, selection]);
 
     //  Selection  ---
     React.useEffect(() => {

@@ -88,8 +88,7 @@ export const DojoAdapter: React.FunctionComponent<DojoAdapterProps> = ({
             }
             widget = null;  //  Avoid race condition  ---
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [delayProps, onWidgetMount, params, uid, widgetClass, widgetClassID]);
 
     widget?.resize();
     return <div ref={myRef} style={{ width: "100%", height: "100%" }}>{nlsHPCC.Loading} {widgetClassID}...</div>;
@@ -129,8 +128,7 @@ export const DojoComponent: React.FunctionComponent<DojoComponentProps> = ({
         return () => {
             w.destroyRecursive();
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [Widget, WidgetParams, divID, id, postCreate]);
 
     return <div style={{ width: "100%", height: "100%", position: "relative" }}>
         <div id={divID} className="dojo-component">
