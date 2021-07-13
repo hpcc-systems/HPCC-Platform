@@ -20,8 +20,13 @@
 #ifndef JHASH_HPP
 #define JHASH_HPP
 
+#include <functional>
+#include <unordered_map>
+#include <utility>
+
 #include "platform.h"
 #include <stdio.h>
+#include "jdebug.hpp" // for get_cycles_now()
 #include "jiface.hpp"
 #include "jobserve.hpp"
 #include "jiter.hpp"
@@ -597,5 +602,87 @@ public:
 
 };
 
+
+/* 
+ * A HT/Cache implementation whose items are only valid for a defined timeout period (default 30 secs)
+ * Example use:
+ *   CTimeLimitedCache<std::string, Owned<IPropertyTree>> myCache(10);
+ *   Owned<IPropertyTree> match;
+ *   verifyex( !myCache.get("tree1", match) );
+ *   myCache.add("tree1", createPTree("tree1"));
+ *   verifyex( nullptr != myCache.query("tree1") );
+ *   MilliSleep(11000); // sleep until "tree1" has expired
+ *   verifyex( nullptr == myCache.query("tree1") );
+ *
+ *   myCache.ensure("tree2", [](std::string key) { return createPTree(key.c_str()); });
+ *
+ * Keywords: cache,time,limit,hashtable,hash
+ */
+
+template <class KEYTYPE, class VALUETYPE>
+class jlib_decl CTimeLimitedCache
+{
+public:
+    CTimeLimitedCache<KEYTYPE, VALUETYPE>(unsigned timeoutMs=defaultCacheTimeoutMs)
+    {
+        timeoutPeriodCycles = ((cycle_t)timeoutMs) * queryOneSecCycles() / 1000;
+    }
+    VALUETYPE *query(KEYTYPE key, bool touch=false)
+    {
+        CacheElement *match = getMatch(key, touch);
+        if (!match)
+            return nullptr;
+        return &match->second;
+    }
+    bool get(KEYTYPE key, VALUETYPE &result, bool touch=false)
+    {
+        VALUETYPE *res = query(key, touch);
+        if (!res)
+            return false;
+        result = *res;
+        return true;
+    }
+    VALUETYPE &add(KEYTYPE key, VALUETYPE val)
+    {
+        auto &ref = ht[key];
+        ref = std::make_pair(get_cycles_now(), val);
+        return ref.second;
+    }
+    VALUETYPE &ensure(KEYTYPE key, std::function<VALUETYPE (KEYTYPE k)> func)
+    {
+        VALUETYPE *res = query(key);
+        if (res)
+            return *res;
+        return add(key, func(key));
+    }
+    void kill()
+    {
+        // NB: std::unordered_map clear() does not free the map memory (or call dtors) until it is out of scope
+        std::unordered_map<KEYTYPE, CacheElement> empty;
+        empty.swap(ht);
+    }
+
+private:
+    static constexpr unsigned defaultCacheTimeoutMs = 30000;
+    typedef std::pair<cycle_t, VALUETYPE> CacheElement;
+    cycle_t timeoutPeriodCycles = 0;
+    std::unordered_map<KEYTYPE, CacheElement> ht;
+
+    CacheElement *getMatch(KEYTYPE key, bool touch)
+    {
+        auto it = ht.find(key);
+        if (it == ht.end())
+            return nullptr;
+        cycle_t nowCycles = get_cycles_now();
+        if ((nowCycles - it->second.first) > timeoutPeriodCycles) // NB: rollover is okay
+        {
+            ht.erase(it);
+            return nullptr;
+        }
+        if (touch)
+            it->second.first = nowCycles;
+        return &it->second;
+    }
+};
 
 #endif

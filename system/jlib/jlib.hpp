@@ -275,8 +275,6 @@ enum DAFSConnectCfg { SSLNone = 0, SSLOnly, SSLFirst, UnsecureFirst };
 
 #include "jstring.hpp"
 #include "jarray.hpp"
-#include "jhash.hpp"
-#include "jstream.hpp"
 #include "jutil.hpp"
 
 template <class ARRAY>
