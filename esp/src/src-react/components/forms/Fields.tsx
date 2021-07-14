@@ -41,7 +41,7 @@ const Dropdown: React.FunctionComponent<DropdownProps> = ({
 export type FieldType = "string" | "number" | "checkbox" | "datetime" | "link" | "links" |
     "workunit-state" |
     "file-type" | "file-sortby" |
-    "queries-suspend-state" | "queries-active-state" |
+    "queries-priority" | "queries-suspend-state" | "queries-active-state" |
     "target-cluster" | "target-group" |
     "logicalfile-type" | "dfuworkunit-state";
 
@@ -92,6 +92,11 @@ interface FileSortByField extends BaseField {
     value?: string;
 }
 
+interface QueriesPriorityField extends BaseField {
+    type: "queries-priority";
+    value?: string;
+}
+
 interface QueriesSuspendStateField extends BaseField {
     type: "queries-suspend-state";
     value?: string;
@@ -138,7 +143,7 @@ interface LinksField extends BaseField {
 type Field = StringField | NumericField | CheckboxField | DateTimeField | LinkField | LinksField |
     WorkunitStateField |
     FileTypeField | FileSortByField |
-    QueriesSuspendStateField | QueriesActiveStateField |
+    QueriesPriorityField | QueriesSuspendStateField | QueriesActiveStateField |
     TargetClusterField | TargetGroupField |
     LogicalFileType | DFUWorkunitStateField;
 
@@ -356,6 +361,25 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                             { key: "Oldest", text: nlsHPCC.Oldest },
                             { key: "Smallest", text: nlsHPCC.Smallest },
                             { key: "Largest", text: nlsHPCC.Largest }
+                        ]}
+                        onChange={(ev, row) => onChange(fieldID, row.key)}
+                        placeholder={field.placeholder}
+                    />
+                });
+                break;
+            case "queries-priority":
+                field.value = field.value === undefined ? "" : field.value;
+                retVal.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: <Dropdown
+                        key={fieldID}
+                        selectedKey={field.value.toString()}
+                        options={[
+                            { key: "", text: nlsHPCC.None },
+                            { key: "0", text: nlsHPCC.Low },
+                            { key: "1", text: nlsHPCC.High },
+                            { key: "2", text: nlsHPCC.SLA }
                         ]}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
