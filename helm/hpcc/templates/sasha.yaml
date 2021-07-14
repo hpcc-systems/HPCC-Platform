@@ -70,9 +70,11 @@ spec:
         volumeMounts:
 {{- include "hpcc.addSashaVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
+{{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" $sashaName "component" "sasha" "external" false) | indent 8 }}
       volumes:
 {{- include "hpcc.addSashaVolumes" $commonCtx | indent 6 }}
 {{- include "hpcc.addSecretVolumes"  $commonCtx | indent 6 }}
+{{ include "hpcc.addCertificateVolume" (dict "root" $ "name" $sashaName "component" "sasha" "external" false) | indent 6 }}
 ---
 {{- if and (not $sasha.disabled) (hasKey $sasha "service") -}}
 {{- if $sasha.service.servicePort -}}
@@ -83,6 +85,7 @@ spec:
 kind: ConfigMap 
 {{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.sashaConfigMap")) }}
 ---
+{{ include "hpcc.addCertificate" (dict "root" $ "name" $sashaName "component" "sasha" "external" false) }}
 {{- end }}
 {{- end }}
 {{- end -}}

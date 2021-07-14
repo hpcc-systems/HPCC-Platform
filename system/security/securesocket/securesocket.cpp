@@ -63,7 +63,6 @@
 
 static JSocketStatistics *SSTATS;
 
-Owned<ISecureSocketContext> server_securesocket_context;
 bool accept_selfsigned = false;
 
 #define CHK_NULL(x) if((x)==NULL) exit(1)
@@ -1824,9 +1823,7 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContext(SecureSocketTyp
     }
     else
     {
-        if(server_securesocket_context.get() == NULL)
-            server_securesocket_context.setown(new securesocket::CSecureSocketContext(sockettype));
-        return server_securesocket_context.getLink();
+        return new securesocket::CSecureSocketContext(sockettype);
     }
 }
 
@@ -1839,9 +1836,7 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx(const char* c
     }
     else
     {
-        if(server_securesocket_context.get() == NULL)
-            server_securesocket_context.setown(new securesocket::CSecureSocketContext(certfile, privkeyfile, passphrase, sockettype));
-        return server_securesocket_context.getLink();
+        return new securesocket::CSecureSocketContext(certfile, privkeyfile, passphrase, sockettype);
     }
 }
 
@@ -1857,9 +1852,7 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx2(IPropertyTre
     }
     else
     {
-        if(server_securesocket_context.get() == NULL)
-            server_securesocket_context.setown(new securesocket::CSecureSocketContext(config, sockettype));
-        return server_securesocket_context.getLink();
+        return new securesocket::CSecureSocketContext(config, sockettype);
     }
 }       
 
@@ -1883,7 +1876,7 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecretSrv(const 
     if (info)
         return createSecureSocketContextEx2(info, ServerSocket);
     else
-        throw makeStringException(-101, "TLS secure communication requested but not configured");
+        throw makeStringException(-101, "TLS secure communication requested but not configured (2)");
 }
 
 SECURESOCKET_API ICertificate *createCertificate()
