@@ -15,7 +15,7 @@ import { ShortVerticalDivider } from "./Common";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 
-import "srcReact/components/DojoGrid.css";
+import "src-react-css/components/DojoGrid.css";
 
 function eclTypeTPL(type: string, isSet: boolean) {
     const prefix = isSet ? "SET OF " : "";

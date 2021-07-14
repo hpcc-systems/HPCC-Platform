@@ -3,7 +3,7 @@ import { useId } from "@fluentui/react-hooks";
 import { SizeMe } from "react-sizeme";
 import { Widget } from "@hpcc-js/common";
 
-import "srcReact/layouts/HpccJSAdapter.css";
+import "src-react-css/layouts/HpccJSAdapter.css";
 
 export interface HpccJSComponentProps {
     widget: Widget;
