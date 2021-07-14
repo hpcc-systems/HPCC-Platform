@@ -41,8 +41,31 @@ export const FileDetailsGraph: React.FunctionComponent<FileDetailsGraphProps> = 
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     // const [helpers] = useWorkunitHelpers(wuid);
 
+    //  Grid ---
+    const gridStore = useConst(new Observable(new Memory("Name")));
+    const gridQuery = useConst({});
+    const gridColumns = useConst({
+        col1: selector({
+            width: 27,
+            selectorType: "checkbox"
+        }),
+        Name: {
+            label: nlsHPCC.Name, sortable: true,
+            formatter: function (Name, row) {
+                return Utility.getImageHTML(getStateImageName(row)) + `&nbsp;<a href='#/workunits/${file?.Wuid}/graphs/${Name}' onClick='return false;' class='dgrid-row-url'>${Name}</a>`;
+            }
+        }
+    });
+
+    const refreshTable = React.useCallback((clearSelection = false) => {
+        grid?.set("query", gridQuery);
+        if (clearSelection) {
+            grid?.clearSelection();
+        }
+    }, [grid, gridQuery]);
+
     //  Command Bar  ---
-    const buttons: ICommandBarItemProps[] = [
+    const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshTable()
@@ -60,34 +83,11 @@ export const FileDetailsGraph: React.FunctionComponent<FileDetailsGraphProps> = 
                 }
             }
         }
-    ];
+    ], [file?.Wuid, refreshTable, selection, uiState.hasSelection]);
 
-    const rightButtons: ICommandBarItemProps[] = [
+    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
         ...createCopyDownloadSelection(grid, selection, "graphs.csv")
-    ];
-
-    //  Grid ---
-    const gridStore = useConst(new Observable(new Memory("Name")));
-    const gridQuery = useConst({});
-    const gridColumns = useConst({
-        col1: selector({
-            width: 27,
-            selectorType: "checkbox"
-        }),
-        Name: {
-            label: nlsHPCC.Name, sortable: true,
-            formatter: function (Name, row) {
-                return Utility.getImageHTML(getStateImageName(row)) + `&nbsp;<a href='#/workunits/${file?.Wuid}/graphs/${Name}' onClick='return false;' class='dgrid-row-url'>${Name}</a>`;
-            }
-        }
-    });
-
-    const refreshTable = (clearSelection = false) => {
-        grid?.set("query", gridQuery);
-        if (clearSelection) {
-            grid?.clearSelection();
-        }
-    };
+    ], [grid, selection]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -109,8 +109,7 @@ export const FileDetailsGraph: React.FunctionComponent<FileDetailsGraphProps> = 
             }));
             refreshTable();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [gridStore, file?.Graphs?.ECLGraph]);
+    }, [file?.Graphs?.ECLGraph, gridStore, refreshTable]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}

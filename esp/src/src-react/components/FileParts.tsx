@@ -37,12 +37,12 @@ export const FileParts: React.FunctionComponent<FilePartsProps> = ({
         CompressedSize: { label: nlsHPCC.CompressedSize, sortable: true, },
     });
 
-    const refreshTable = (clearSelection = false) => {
+    const refreshTable = React.useCallback((clearSelection = false) => {
         grid?.set("query", gridQuery);
         if (clearSelection) {
             grid?.clearSelection();
         }
-    };
+    }, [grid, gridQuery]);
 
     React.useEffect(() => {
         if (file?.DFUFilePartsOnClusters) {
@@ -61,8 +61,7 @@ export const FileParts: React.FunctionComponent<FilePartsProps> = ({
                 refreshTable();
             }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [gridStore, file?.DFUFilePartsOnClusters]);
+    }, [cluster, file?.DFUFilePartsOnClusters, gridStore, refreshTable]);
 
     return <HolyGrail
         main={

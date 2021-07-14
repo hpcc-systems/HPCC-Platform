@@ -39,8 +39,7 @@ export const TableForm: React.FunctionComponent<TableFormProps> = ({
     React.useEffect(() => {
         if (doSubmit === false) return;
         onSubmit(fieldsToRequest(localFields));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [doSubmit]);
+    }, [doSubmit, localFields, onSubmit]);
 
     React.useEffect(() => {
         if (doReset === false) return;
@@ -55,8 +54,7 @@ export const TableForm: React.FunctionComponent<TableFormProps> = ({
         }
         setLocalFields(localFields);
         onReset(fieldsToRequest(localFields));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [doReset]);
+    }, [doReset, localFields, onReset]);
 
     return <TableGroup fields={localFields} onChange={(id, value) => {
         const field = localFields[id];

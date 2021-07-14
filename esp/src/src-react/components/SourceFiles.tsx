@@ -39,31 +39,6 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [variables] = useWorkunitSourceFiles(wuid);
 
-    //  Command Bar  ---
-    const buttons: ICommandBarItemProps[] = [
-        {
-            key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
-        },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-        {
-            key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
-            onClick: () => {
-                if (selection.length === 1) {
-                    window.location.href = `#/files/${selection[0].Name}`;
-                } else {
-                    for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/files/${selection[i].Name}`, "_blank");
-                    }
-                }
-            }
-        },
-    ];
-
-    const rightButtons: ICommandBarItemProps[] = [
-        ...createCopyDownloadSelection(grid, selection, "sourcefiles.csv")
-    ];
-
     //  Grid ---
     const gridStore = useConst(new Observable(new TreeStore("Name", { Name: true, Value: true })));
     const gridSort = useConst([{ attribute: "Name", "descending": false }]);
@@ -89,12 +64,37 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
         }
     });
 
-    const refreshTable = (clearSelection = false) => {
+    const refreshTable = React.useCallback((clearSelection = false) => {
         grid?.set("query", gridQuery);
         if (clearSelection) {
             grid?.clearSelection();
         }
-    };
+    }, [grid, gridQuery]);
+
+    //  Command Bar  ---
+    const buttons = React.useMemo((): ICommandBarItemProps[] => [
+        {
+            key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
+            onClick: () => refreshTable()
+        },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
+            onClick: () => {
+                if (selection.length === 1) {
+                    window.location.href = `#/files/${selection[0].Name}`;
+                } else {
+                    for (let i = selection.length - 1; i >= 0; --i) {
+                        window.open(`#/files/${selection[i].Name}`, "_blank");
+                    }
+                }
+            }
+        },
+    ], [refreshTable, selection, uiState.hasSelection]);
+
+    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
+        ...createCopyDownloadSelection(grid, selection, "sourcefiles.csv")
+    ], [grid, selection]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -110,8 +110,7 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
     React.useEffect(() => {
         gridStore.setData(variables);
         refreshTable();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [gridStore, variables]);
+    }, [gridStore, refreshTable, variables]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}

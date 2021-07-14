@@ -76,8 +76,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
         setDescription(description || workunit?.Description);
         setProtected(_protected || workunit?.Protected);
 
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [workunit?.Jobname, workunit?.Description, workunit?.Protected]);
+    }, [_protected, description, jobname, workunit?.Description, workunit?.Jobname, workunit?.Protected]);
 
     const canSave = workunit && (
         jobname !== workunit.Jobname ||
@@ -85,7 +84,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
         _protected !== workunit.Protected
     );
 
-    const buttons: ICommandBarItemProps[] = [
+    const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => {
@@ -110,9 +109,9 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
             }
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-    ];
+    ], [_protected, canSave, description, jobname, workunit, wuid]);
 
-    const rightButtons: ICommandBarItemProps[] = [
+    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "star", iconProps: { iconName: isFavorite ? "FavoriteStarFill" : "FavoriteStar" },
             onClick: () => {
@@ -123,7 +122,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 }
             }
         }
-    ];
+    ], [addFavorite, isFavorite, removeFavorite]);
 
     const serviceNames = workunit?.ServiceNames?.Item?.join("\n") || "";
     const resourceCount = workunit?.ResourceURLCount > 1 ? workunit?.ResourceURLCount - 1 : undefined;

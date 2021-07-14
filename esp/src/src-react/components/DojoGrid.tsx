@@ -35,7 +35,7 @@ interface DojoGridProps {
 export const DojoGrid: React.FunctionComponent<DojoGridProps> = ({
     type = "PageSel",
     store,
-    query = {},
+    query,
     sort,
     columns,
     setGrid,
@@ -54,8 +54,20 @@ export const DojoGrid: React.FunctionComponent<DojoGridProps> = ({
         }
     });
 
-    return <DojoComponent Widget={Grid} WidgetParams={{ deselectOnRefresh: true, store, query, sort, columns: { ...columns } }} postCreate={grid => {
+    const params = React.useMemo(() => {
+        return {
+            deselectOnRefresh: true,
+            store,
+            query,
+            sort,
+            columns: { ...columns }
+        };
+    }, [columns, query, sort, store]);
+
+    const gridSelInit = React.useCallback(grid => {
         grid.onSelectionChanged(() => setSelection(grid.getSelected()));
         setGrid(grid);
-    }} />;
+    }, [setGrid, setSelection]);
+
+    return <DojoComponent Widget={Grid} WidgetParams={params} postCreate={gridSelInit} />;
 };

@@ -176,7 +176,6 @@ export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFi
                 })
             );
         });
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return <Dropdown key={key} label={label} selectedKey={selectedKey} optional className={className} onChange={onChange} placeholder={placeholder} options={targetClusters} />;

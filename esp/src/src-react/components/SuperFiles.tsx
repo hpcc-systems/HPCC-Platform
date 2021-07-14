@@ -6,7 +6,7 @@ import { Memory } from "src/Memory";
 import nlsHPCC from "src/nlsHPCC";
 import { useFile } from "../hooks/File";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { ShortVerticalDivider } from "./Common";
+import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
 import { DojoGrid, selector } from "./DojoGrid";
 
 const defaultUIState = {
@@ -28,8 +28,27 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
     const [selection, setSelection] = React.useState([]);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
+    //  Grid ---
+    const gridStore = useConst(new Observable(new Memory("Name")));
+    const gridSort = useConst([{ attribute: "Name", "descending": false }]);
+    const gridQuery = useConst({});
+    const gridColumns = useConst({
+        col1: selector({
+            width: 27,
+            selectorType: "checkbox"
+        }),
+        Name: { label: nlsHPCC.Name, sortable: true, },
+    });
+
+    const refreshTable = React.useCallback((clearSelection = false) => {
+        grid?.set("query", gridQuery);
+        if (clearSelection) {
+            grid?.clearSelection();
+        }
+    }, [grid, gridQuery]);
+
     //  Command Bar  ---
-    const buttons: ICommandBarItemProps[] = [
+    const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshTable()
@@ -47,26 +66,11 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
                 }
             }
         },
-    ];
+    ], [cluster, refreshTable, selection, uiState.hasSelection]);
 
-    //  Grid ---
-    const gridStore = useConst(new Observable(new Memory("Name")));
-    const gridSort = useConst([{ attribute: "Name", "descending": false }]);
-    const gridQuery = useConst({});
-    const gridColumns = useConst({
-        col1: selector({
-            width: 27,
-            selectorType: "checkbox"
-        }),
-        Name: { label: nlsHPCC.Name, sortable: true, },
-    });
-
-    const refreshTable = (clearSelection = false) => {
-        grid?.set("query", gridQuery);
-        if (clearSelection) {
-            grid?.clearSelection();
-        }
-    };
+    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
+        ...createCopyDownloadSelection(grid, selection, "syper_files.csv")
+    ], [grid, selection]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -84,11 +88,10 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
             gridStore.setData(file?.Superfiles?.DFULogicalFile);
             refreshTable();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [gridStore, file?.Superfiles?.DFULogicalFile]);
+    }, [file, gridStore, refreshTable]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={[]} />}
+        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
         main={
             <DojoGrid store={gridStore} query={gridQuery} sort={gridSort} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
         }
