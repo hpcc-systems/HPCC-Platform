@@ -8,6 +8,11 @@ import { TpGetServerVersion } from "src/WsTopology";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { TableGroup } from "./forms/Groups";
 
+const dialogContentProps = {
+    type: DialogType.largeHeader,
+    title: nlsHPCC.AboutHPCCSystems
+};
+
 interface AboutProps {
     show?: boolean;
     onClose?: () => void;
@@ -33,18 +38,19 @@ export const About: React.FunctionComponent<AboutProps> = ({
     }, []);
 
     const browserChart = useConst(new Bar().columns([nlsHPCC.Client, nlsHPCC.Count]));
-    browserChart
-        .data(browser)
-        ;
+    React.useEffect(() => {
+        browserChart
+            .data(browser)
+            .lazyRender()
+            ;
+    }, [browser, browserChart]);
     const osChart = useConst(new Bar().columns([nlsHPCC.Client, nlsHPCC.Count]));
-    osChart
-        .data(os)
-        ;
-
-    const dialogContentProps = {
-        type: DialogType.largeHeader,
-        title: nlsHPCC.AboutHPCCSystems
-    };
+    React.useEffect(() => {
+        osChart
+            .data(os)
+            .lazyRender()
+            ;
+    }, [os, osChart]);
 
     return <Dialog hidden={!show} onDismiss={onClose} dialogContentProps={dialogContentProps} minWidth="640px">
         <Pivot>

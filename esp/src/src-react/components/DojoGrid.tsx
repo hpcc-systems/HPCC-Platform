@@ -8,7 +8,7 @@ import * as tree from "dgrid/tree";
 import * as ESPUtil from "src/ESPUtil";
 import { DojoComponent } from "../layouts/DojoAdapter";
 
-import "srcReact/components/DojoGrid.css";
+import "src-react-css/components/DojoGrid.css";
 
 export { selector, tree };
 

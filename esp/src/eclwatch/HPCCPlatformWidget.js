@@ -22,6 +22,7 @@ define([
 
     "src/CodeMirror",
     "src/react/index",
+    "src-react/components/About",
 
     "hpcc/_TabContainerWidget",
     "src/ESPRequest",
@@ -60,7 +61,7 @@ define([
 ], function (declare, lang, nlsHPCCMod, arrayUtil, dom, domConstruct, domClass, domForm, domStyle, domGeo, cookie, query, topic, xhr,
     registry, Tooltip,
     UpgradeBar, ColorPicker,
-    CodeMirror, srcReact,
+    CodeMirror, srcReact, AboutModule,
     _TabContainerWidget, ESPRequest, ESPActivity, ESPUtil, WsAccount, WsAccess, WsSMC, WsTopology, WsMachine, LockDialogWidget, EnvironmentTheme,
     template) {
 
@@ -488,9 +489,9 @@ define([
         _onAboutLoaded: false,
         _onAbout: function (evt) {
             var aboutNode = dom.byId(this.id + "AboutDialog");
-            srcReact.render(srcReact.AboutDialog, {
-                version: this.build.orig,
-                handleClose: function () {
+            srcReact.render(AboutModule.About, {
+                show: true,
+                onClose: function () {
                     srcReact.unrender(aboutNode);
                 }
             }, aboutNode);
