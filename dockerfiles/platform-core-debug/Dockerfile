@@ -35,6 +35,7 @@ ENV PATH="/opt/HPCCSystems/bin:${PATH}"
 ENV HPCC_containerized=1
 ENV HPCC_DLLSERVER_PATH=/var/lib/HPCCSystems/queries
 
+RUN echo "hpcc  ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 USER hpcc
 WORKDIR /var/lib/HPCCSystems
 ARG BUILD_TAG_OVERRIDE
