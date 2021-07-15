@@ -119,12 +119,13 @@ function doit2()
 function set_tag()
 {
     local _prefix=$1
-    local _maturity=$HPCC_MATURITY
     if [ "$HPCC_MATURITY" = "release" ]; then
-      _maturity=
+      HPCC_SHORT_TAG=$HPCC_MAJOR.$HPCC_MINOR.$HPCC_POINT
+      HPCC_LONG_TAG=${_prefix}_$HPCC_SHORT_TAG-$HPCC_SEQUENCE
+    else
+      HPCC_SHORT_TAG=$HPCC_MAJOR.$HPCC_MINOR.$HPCC_POINT-$HPCC_MATURITY$HPCC_SEQUENCE
+      HPCC_LONG_TAG=${_prefix}_$HPCC_SHORT_TAG
     fi
-    HPCC_SHORT_TAG=$HPCC_MAJOR.$HPCC_MINOR.$HPCC_POINT-$_maturity$HPCC_SEQUENCE
-    HPCC_LONG_TAG=${_prefix}_$HPCC_SHORT_TAG
 }
 
 function update_version_file()

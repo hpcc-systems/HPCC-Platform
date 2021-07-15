@@ -67,7 +67,7 @@ set_tag
 
 # Commit the change
 doit "git add $VERSIONFILE"
-doit "git commit -s -m \"$HPCC_NAME $HPCC_SHORT_TAG Gold\""
+doit "git commit -s -m \"$HPCC_NAME $HPCC_SHORT_TAG-$HPCC_SEQUENCE Gold\""
 doit "git push $REMOTE $GIT_BRANCH $FORCE"
 
 # tag it
@@ -99,7 +99,7 @@ if [ -e helm/hpcc/Chart.yaml ] ; then
   doit "helm repo index . --url https://hpcc-systems.github.io/helm-chart"
   doit "git add *.tgz"
   
-  doit "git commit -a -s -m \"$HPCC_NAME Helm Charts $HPCC_SHORT_TAG\""
+  doit "git commit -a -s -m \"$HPCC_NAME Helm Charts $HPCC_SHORT_TAG-$HPCC_SEQUENCE\""
   if [[ "$HPCC_MAJOR" == "8" ]] && [[ "$HPCC_MINOR" == "2" ]] ; then
     doit "git tag $FORCE $HPCC_MAJOR.$HPCC_MINOR.$HPCC_POINT && git push $REMOTE $HPCC_MAJOR.$HPCC_MINOR.$HPCC_POINT $FORCE"
   fi

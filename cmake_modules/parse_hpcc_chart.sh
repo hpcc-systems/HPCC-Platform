@@ -53,7 +53,7 @@ function update_chart_file()
       _new_minor=$HPCC_MINOR
     fi
     if [ "$_new_maturity" == "release" ] ; then
-      local _v=${HPCC_MAJOR}.${_new_minor}.${_new_point}-${_new_sequence}
+      local _v=${HPCC_MAJOR}.${_new_minor}.${_new_point}
     else
       local _v=${HPCC_MAJOR}.${_new_minor}.${_new_point}-${_new_maturity}${_new_sequence}
     fi
