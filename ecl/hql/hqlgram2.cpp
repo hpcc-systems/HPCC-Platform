@@ -1178,7 +1178,15 @@ IHqlExpression * HqlGram::processIndexBuild(const attribute &err, attribute & in
     }
     else
     {
-        checkIndexRecordType(dataset->queryRecord(), 1, false, indexAttr);
+        IHqlExpression * record = dataset->queryRecord();
+        IHqlExpression * payloadAttr = record->queryAttribute(_payload_Atom);
+        unsigned numPayload = 1;
+        if (payloadAttr)
+        {
+            numPayload = (unsigned)getIntValue(payloadAttr->queryChild(0));
+            flags.setown(createComma(flags.getClear(), LINK(payloadAttr)));
+        }
+        checkIndexRecordType(dataset->queryRecord(), numPayload, false, indexAttr);
     }
 
     HqlExprArray args;
