@@ -909,9 +909,20 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                     break;
                 if (traceLevel>8)
                     DBGLOG("Cache info dump");
+
                 // Note - cache info is stored in the DLLSERVER persistent area - which we should perhaps consider renaming
-                const char* dllserver_root = getenv("HPCC_DLLSERVER_PATH");
-                assertex(dllserver_root != nullptr);
+                StringBuffer cacheRootDirectory;
+                if (isContainerized())
+                {
+                    if (!getConfigurationDirectory(nullptr, "query", nullptr, nullptr, cacheRootDirectory))
+                        throwUnexpected();
+                }
+                else
+                {
+                    const char* dllserver_root = getenv("HPCC_DLLSERVER_PATH");
+                    assertex(dllserver_root != nullptr);
+                    cacheRootDirectory.append(dllserver_root);
+                }
 
                 Owned<const ITopologyServer> topology = getTopology();
                 Owned<CacheReportingBuffer> tempCacheReportingBuffer = new CacheReportingBuffer(*activeCacheReportingBuffer);
@@ -923,7 +934,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                 if (ret.length())
                 {
                     // NOTE - this location is shared with other nodes - who may also be writing
-                    VStringBuffer cacheFileName("%s/%s/cacheInfo.%d", dllserver_root, roxieName.str(), 0);
+                    VStringBuffer cacheFileName("%s/%s/cacheInfo.%d", cacheRootDirectory.str(), roxieName.str(), 0);
                     atomicWriteFile(cacheFileName, ret);
                     if (traceLevel > 8)
                         DBGLOG("Channel 0 cache info:\n%s", ret.str());
@@ -933,7 +944,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
                     tempCacheReportingBuffer->report(ret.clear(), channel, cacheIndexes, cacheIndexChannels);
                     if (ret.length())
                     {
-                        VStringBuffer cacheFileName("%s/%s/cacheInfo.%d", dllserver_root, roxieName.str(), channel);
+                        VStringBuffer cacheFileName("%s/%s/cacheInfo.%d", cacheRootDirectory.str(), roxieName.str(), channel);
                         atomicWriteFile(cacheFileName, ret);
                         if (traceLevel > 8)
                             DBGLOG("Channel %u cache info:\n%s", channel, ret.str());
@@ -1852,16 +1863,23 @@ public:
 
     void doLoadSavedOsCacheInfo(unsigned channel)
     {
-        const char* dllserver_root = getenv("HPCC_DLLSERVER_PATH");
-#ifdef _CONTAINERIZED
-        assertex(dllserver_root != nullptr);
-#else
-        //Default behaviour is to not load or saving anything on bare metal
-        if (!dllserver_root)
-            return;
-#endif
+        StringBuffer cacheRootDirectory;
+        if (isContainerized())
+        {
+            if (!getConfigurationDirectory(nullptr, "query", nullptr, nullptr, cacheRootDirectory))
+                throwUnexpected();
+        }
+        else
+        {
+            //Default behaviour is to not load or saving anything on bare metal
+            const char* dllserver_root = getenv("HPCC_DLLSERVER_PATH");
+            if (!dllserver_root)
+                return;
+            cacheRootDirectory.append(dllserver_root);
+        }
+
         unsigned cacheWarmTraceLevel = topology->getPropInt("@cacheWarmTraceLevel", traceLevel);
-        VStringBuffer cacheFileName("%s/%s/cacheInfo.%d", dllserver_root, roxieName.str(), channel);
+        VStringBuffer cacheFileName("%s/%s/cacheInfo.%d", cacheRootDirectory.str(), roxieName.str(), channel);
         StringBuffer cacheInfo;
         try
         {

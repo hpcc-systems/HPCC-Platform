@@ -2664,23 +2664,29 @@ StringBuffer &getFileAccessUrl(StringBuffer &out)
 
 
 #ifdef _CONTAINERIZED
-static bool getDefaultPlane(StringBuffer &ret, const char * componentOption, const char * globalOption)
+static bool getDefaultPlane(StringBuffer &ret, const char * componentOption, const char * category)
 {
     // If the plane is specified for the component, then use that
     if (getComponentConfigSP()->getProp(componentOption, ret))
         return true;
 
     //Otherwise check what the default plane for data storage is configured to be
-    if (getGlobalConfigSP()->getProp(globalOption, ret))
+    //Iterator needed because "storage/planes[@category='%s'][1]/@name" generates an ambiguous error
+    VStringBuffer xpath("storage/planes[@category='%s']", category);
+    Owned<IPropertyTreeIterator> iter = getGlobalConfigSP()->getElements(xpath);
+    if (iter->first())
+    {
+        iter->query().getProp("@name", ret);
         return true;
+    }
 
     return false;
 }
 
-static bool getDefaultPlaneDirectory(StringBuffer &ret, const char * componentOption, const char * globalOption)
+static bool getDefaultPlaneDirectory(StringBuffer &ret, const char * componentOption, const char * category)
 {
     StringBuffer planeName;
-    if (!getDefaultPlane(planeName, componentOption, globalOption))
+    if (!getDefaultPlane(planeName, componentOption, category))
         return false;
 
     Owned<IPropertyTree> storagePlane = getStoragePlane(planeName);
@@ -2702,13 +2708,13 @@ bool getConfigurationDirectory(const IPropertyTree *useTree, const char *categor
         return false;
     if (streq(category, "spill"))
     {
-        return getDefaultPlaneDirectory(dirout, "@spillPlane", "storage/@spillPlane");
+        return getDefaultPlaneDirectory(dirout, "@spillPlane", "spill");
     }
     if (streq(category, "temp"))
     {
-        if (getDefaultPlaneDirectory(dirout, "@tempPlane", "storage/@tempPlane"))
+        if (getDefaultPlaneDirectory(dirout, "@tempPlane", "temp"))
             return true;
-        return getDefaultPlaneDirectory(dirout, "@spillPlane", "storage/@spillPlane");
+        return getDefaultPlaneDirectory(dirout, "@spillPlane", "spill");
     }
     if (streq(category, "log"))
     {
@@ -2716,11 +2722,12 @@ bool getConfigurationDirectory(const IPropertyTree *useTree, const char *categor
     }
     if (streq(category, "dali"))
     {
-        return getDefaultPlaneDirectory(dirout, "@daliPlane", "storage/@daliPlane");
+        //Not used... the dataPath configuration property is used instead
+        return getDefaultPlaneDirectory(dirout, "@daliPlane", "dali");
     }
     if (streq(category, "query"))
     {
-        return getDefaultPlaneDirectory(dirout, "@dllPlane", "storage/@dllPlane");
+        return getDefaultPlaneDirectory(dirout, "@dllPlane", "dll");
     }
     if (streq(category, "lock"))
     {
