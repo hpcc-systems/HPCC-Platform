@@ -4082,20 +4082,29 @@ public:
         PROGLOG("CDistributedFile::attach(%s)",_logicalname);
         LOGPTREE("CDistributedFile::attach root.1",root);
 #endif
-        calculateSkew();
-        parent->addEntry(logicalName,root.getClear(),false,false);
-        killParts();
-        clusters.kill();
-        CFileLock fcl;
-        verifyex(fcl.init(logicalName, DXB_File, RTM_LOCK_READ, defaultTimeout, "CDistributedFile::attach"));
-        conn.setown(fcl.detach());
-        root.setown(conn->getRoot());
-        root->queryBranch(".");     // load branch
-        Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(root,&queryNamedGroupStore(),0);
-        setFileAttrs(fdesc,false);
-        setClusters(fdesc);
-        setParts(fdesc,false);
-        setUserDescriptor(udesc, user);
+        try
+        {
+            calculateSkew();
+            parent->addEntry(logicalName,root.getClear(),false,false);
+            killParts();
+            clusters.kill();
+            CFileLock fcl;
+            verifyex(fcl.init(logicalName, DXB_File, RTM_LOCK_READ, defaultTimeout, "CDistributedFile::attach"));
+            conn.setown(fcl.detach());
+            root.setown(conn->getRoot());
+            root->queryBranch(".");     // load branch
+            Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(root,&queryNamedGroupStore(),0);
+            setFileAttrs(fdesc,false);
+            setClusters(fdesc);
+            setParts(fdesc,false);
+            setUserDescriptor(udesc, user);
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "CDistributedFile::attach");
+            logicalName.clear();
+            throw;
+        }
 #ifdef EXTRA_LOGGING
         LOGFDESC("CDistributedFile::attach fdesc",fdesc);
         LOGPTREE("CDistributedFile::attach root.2",root);
@@ -5784,15 +5793,24 @@ public:
         StringBuffer tail;
         StringBuffer lfn;
         logicalName.set(_logicalname);
-        checkLogicalName(logicalName,user,true,true,false,"attach");
-        parent->addEntry(logicalName,root.getClear(),true,false);
-        conn.clear();
-        CFileLock fcl;
-        verifyex(fcl.init(logicalName, DXB_SuperFile, RTM_LOCK_READ, defaultTimeout, "CDistributedSuperFile::attach"));
-        conn.setown(fcl.detach());
-        assertex(conn.get()); // must have been attached
-        root.setown(conn->getRoot());
-        loadSubFiles(NULL, 0, true);
+        try
+        {
+            checkLogicalName(logicalName,user,true,true,false,"attach");
+            parent->addEntry(logicalName,root.getClear(),true,false);
+            conn.clear();
+            CFileLock fcl;
+            verifyex(fcl.init(logicalName, DXB_SuperFile, RTM_LOCK_READ, defaultTimeout, "CDistributedSuperFile::attach"));
+            conn.setown(fcl.detach());
+            assertex(conn.get()); // must have been attached
+            root.setown(conn->getRoot());
+            loadSubFiles(NULL, 0, true);
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "CDistributedSuperFile::attach");
+            logicalName.clear();
+            throw;
+        }
     }
 
     virtual void detach(unsigned timeoutMs=INFINITE, ICodeContext *ctx=NULL) override
