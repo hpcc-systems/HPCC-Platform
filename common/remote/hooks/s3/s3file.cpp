@@ -225,7 +225,6 @@ public:
     virtual IDirectoryIterator *directoryFiles(const char *mask, bool sub, bool includeDirs) override
     {
         UNIMPLEMENTED;
-        return createNullDirectoryIterator();
     }
     virtual bool getInfo(bool &isdir,offset_t &size,CDateTime &modtime) override
     {

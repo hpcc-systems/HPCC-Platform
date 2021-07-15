@@ -338,10 +338,11 @@ int main(int argc, const char *argv[])
         E->Release();
         return EXIT_FAILURE;
     }
-    Owned<IFile> sentinelFile = createSentinelTarget();
-    removeSentinelFile(sentinelFile);
     try
     {
+        Owned<IFile> sentinelFile = createSentinelTarget();
+        removeSentinelFile(sentinelFile);
+
         for (unsigned i=0; i<(unsigned)argc; i++)
         {
             if (stricmp(argv[i], "--help")==0 ||

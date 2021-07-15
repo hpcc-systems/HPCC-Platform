@@ -210,7 +210,6 @@ public:
     virtual IDirectoryIterator *directoryFiles(const char *mask, bool sub, bool includeDirs) override
     {
         UNIMPLEMENTED_X("AzureFile::directoryFiles");
-        return createNullDirectoryIterator();
     }
     virtual bool getInfo(bool &isdir,offset_t &size,CDateTime &modtime) override
     {
@@ -431,7 +430,6 @@ void AzureFileAppendBlobWriteIO::close()
 offset_t AzureFileAppendBlobWriteIO::appendFile(IFile *file, offset_t pos, offset_t len)
 {
     UNIMPLEMENTED_X("AzureFileAppendBlobWriteIO::appendFile");
-    return 0;
 }
 
 offset_t AzureFileAppendBlobWriteIO::size()
