@@ -1,0 +1,92 @@
+{{/*
+Dafilesrv configmap
+Pass in dict with root and me
+*/}}
+{{- define "hpcc.dafilesrvConfigMap" -}}
+apiVersion: v1 
+metadata:
+  name: {{ .me.name }}-configmap 
+data:
+  {{ .me.name }}.yaml:
+    version: 1.0
+    dafilesrv:
+{{ toYaml (omit .me "logging" "env") | indent 6 }}
+{{- include "hpcc.generateLoggingConfig" . | indent 6 }}
+    global:
+{{ include "hpcc.generateGlobalConfigMap" .root | indent 6 }}
+{{- end -}}
+
+
+{{ range $.Values.dafilesrv -}}
+{{- if not .disabled -}}
+{{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
+{{- $commonCtx := dict "root" $ "me" . "env" $env "exposure" "local" "visibility" .service.visibility -}}
+{{- if ($.Values.certificates | default dict).enabled -}}
+ {{- $externalCert := ne (include "hpcc.isVisibilityPublic" $commonCtx) "" -}}
+ {{- $issuerName := ternary "public" "local" $externalCert -}}
+ {{- $issuer := get $.Values.certificates.issuers $issuerName -}}
+ {{- if $issuer -}}
+  {{- $_ := set $commonCtx "exposure" (ternary "public" "local" $externalCert) -}}
+ {{- else -}}
+  {{- $_ := fail (printf "dafilesrv - unable to locate issuer '%s'" $issuerName) -}}
+ {{- end -}}
+{{- else -}}
+ {{- $_ := fail (printf "dafilesrv - certificates must be enabled to use") -}}
+{{- end -}}
+{{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.dafilesrvConfigMap" "component" "dafilesrv" "excludeKeys" "global")) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .name | quote }}
+spec:
+  replicas: {{ .replicas | default 1 }}
+  selector:
+    matchLabels:
+      server: {{ .name | quote }}
+  template:
+    metadata:
+      labels:
+        server: {{ .name | quote }}
+      annotations:
+        checksum/config: {{ $configSHA }}
+    spec:
+      serviceAccountName: "hpcc-default"
+      initContainers:
+        {{- include "hpcc.checkDataMount" $commonCtx | indent 6 }}
+      containers:
+      - name: {{ .name | quote }}
+        workingDir: /var/lib/HPCCSystems
+        command: [ dafilesrv ] 
+        args: [
+                {{ include "hpcc.configArg" . }}
+              ]
+        env:
+{{ include "hpcc.mergeEnvironments" $env | indent 8 -}}
+        - name: "SENTINEL"
+          value: "/tmp/{{ .name }}.sentinel"
+{{ include "hpcc.addSentinelProbes" . | indent 8 }}
+{{- include "hpcc.addSecurityContext" $commonCtx | indent 8 }}
+{{- include "hpcc.addResources" (dict "me" .resources) | indent 8 }}
+{{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
+        volumeMounts:
+{{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
+{{ include "hpcc.addDataVolumeMount" $commonCtx | indent 8 }}
+{{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" .name "component" "dafilesrv" "certificate" .certificate "visibility" .service.visibility) | indent 8 }}
+      volumes:
+{{ include "hpcc.addConfigMapVolume" . | indent 6 }}
+{{ include "hpcc.addDataVolume" $commonCtx | indent 6 }}
+{{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" "dafilesrv" "certificate" .certificate "visibility" .service.visibility) | indent 6 }}
+---
+kind: ConfigMap 
+{{ include "hpcc.generateConfig" ($commonCtx | merge (dict "configMapHelper" "hpcc.dafilesrvConfigMap")) }}
+---
+{{- $service := deepCopy .service -}}
+{{- if not (hasKey $service "labels") -}}
+ {{- $_ := set $service "labels" dict -}}
+{{- end -}}
+{{- $_ := set $service "labels" (merge $service.labels (dict "server" .name)) -}}
+{{ include "hpcc.addService" ( dict "root" $ "name" .name "service" $service "selector" .name "defaultPort" 7600 ) }}
+---
+{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "service" .service "component" "dafilesrv" "visibility" .service.visibility) }}
+{{- end }}
+{{- end }}
