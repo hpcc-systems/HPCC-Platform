@@ -596,6 +596,7 @@ inline bool streq(const char* s, const char* t) { return strcmp(s,t)==0; }
 inline bool strsame(const char* s, const char* t) { return (s == t) || (s && t && strcmp(s,t)==0); }  // also allow nulls
 inline bool strisame(const char* s, const char* t) { return (s == t) || (s && t && stricmp(s,t)==0); }  // also allow nulls
 inline bool isEmptyString(const char *text) { return !text||!*text; }
+inline const char * nullIfEmptyString(const char * text) { return isEmptyString(text) ? nullptr : text; }
 inline bool hasPrefix(const char * text, const char * prefix, bool caseSensitive)
 {
     if (caseSensitive)

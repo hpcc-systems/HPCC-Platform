@@ -83,6 +83,8 @@ data:
 {{- else -}}
  {{- $_ := set $commonCtx "externalCert" false -}}
 {{- end -}}
+{{- $generateSigningCert := and (eq $application "eclwatch") (hasKey $.Values.certificates.issuers "signing") -}}
+{{- $signingCertGenerator := or ($generateSigningCert) (has $application (list "eclservices")) | ternary "eclwatch" "" -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -137,6 +139,9 @@ spec:
 {{- if $commonCtx.externalCert }}
  {{- include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" $application "name" .name "external" false) | nindent 8 }}
 {{- end }}
+{{- if $signingCertGenerator }}
+ {{- include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" $signingCertGenerator "name" "global" "issuer" "signing") | nindent 8 }}
+{{- end }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
 {{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
@@ -145,6 +150,9 @@ spec:
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "component" $application "name" .name "certificate" .certificate "visibility" .service.visibility) | indent 6 }}
 {{- if $commonCtx.externalCert }}
  {{- include "hpcc.addCertificateVolume" (dict "root" $ "component" $application "name" .name "external" false) | nindent 6 }}
+{{- end }}
+{{- if $signingCertGenerator }}
+ {{- include "hpcc.addCertificateVolume" (dict "root" $ "component" $signingCertGenerator "name" "global" "issuer" "signing") | nindent 6 }}
 {{- end }}
 ---
 kind: ConfigMap
@@ -160,6 +168,9 @@ kind: ConfigMap
 {{ include "hpcc.addCertificate" (dict "root" $ "name" .name "service" .service "component" $application "visibility" .service.visibility) }}
 {{- if $commonCtx.externalCert }}
  {{- include "hpcc.addCertificate" (dict "root" $ "name" .name "service" .service "component" $application "external" false) }}
+{{- end }}
+{{- if $generateSigningCert }}
+ {{- include "hpcc.addCertificate" (dict "root" $ "name" "global" "component" $application "issuer" "signing") }}
 {{- end }}
 {{- end }}
 {{- end }}
