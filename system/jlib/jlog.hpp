@@ -856,6 +856,7 @@ constexpr LogMsgCategory MCauditInfo(MSGAUD_audit, MSGCLS_information, AudMsgThr
 constexpr LogMsgCategory MCstats(MSGAUD_operator, MSGCLS_progress, ProgressMsgThreshold);
 constexpr LogMsgCategory MCoperatorInfo(MSGAUD_operator, MSGCLS_information, InfoMsgThreshold);
 constexpr LogMsgCategory MCmetrics(MSGAUD_operator, MSGCLS_metric, ErrMsgThreshold);
+constexpr LogMsgCategory MCExtraneousInfo(MSGAUD_programmer, MSGCLS_information, ExtraneousMsgThreshold);
 
 /*
  * Function to determine log level (detail) for exceptions, based on log message class

@@ -26,7 +26,33 @@ restArgs=()
 CLUSTERNAME=mycluster
 PVFILE=$scriptdir/../helm/examples/local/hpcc-localfile/values.yaml
 
+dependency_check () {
+
+  if [ -z "$1" ]
+  then
+      CHART_SUBPATH="hpcc"
+  else
+      CHART_SUBPATH=$1
+  fi
+
+  missingDeps=0
+  while IFS= read -r line
+  do
+    echo "${line}"
+    if echo "${line}" | egrep -q 'missing$'; then
+      let "missingDeps++"
+    fi
+  done < <(helm dependency list ${scriptdir}/../helm/${CHART_SUBPATH} | grep -v WARNING)
+  if [[ ${missingDeps} -gt 0 ]]; then
+    echo "Some of the chart dependencies are missing."
+    echo "Either issue a 'helm dependency update ${scriptdir}/../helm/${CHART_SUBPATH}' to fetch them,"
+    echo "or rerun $0 with option -c to auto update them."
+    exit 0
+  fi
+}
+
 CMD="install"
+DEVELOPER_OPTIONS="--set global.privileged=true"
 while [ "$#" -gt 0 ]; do
   arg=$1
   if [[ ${arg:0:1} == '-' ]]; then
@@ -61,10 +87,16 @@ while [ "$#" -gt 0 ]; do
          echo "    -c                 Update chart dependencies"
          echo "    -p <location>      Use local persistent data"
          echo "    -pv <yamlfile>     Override dataplane definitions for local persistent data"
+         echo "    -e                 Deploy light-weight Elastic Stack for component log processing"
          exit
          ;;
       t) CMD="template"
          restArgs+="--debug"
+         ;;
+      # vanilla install - for testing system in the same way it will normally be used
+      v) DEVELOPER_OPTIONS=""
+         ;;
+      e) DEPLOY_ES=true
          ;;
       *) restArgs+=(${arg})
          ;;
@@ -75,26 +107,14 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
+
 if [[ -n "${DEP_UPDATE_ARG}" ]]; then
   if [[ "${CMD}" = "upgrade" ]]; then
     echo "Chart dependencies cannot be updated whilst performing a helm upgrade"
     DEP_UPDATE_ARG=""
   fi
 else
-  missingDeps=0
-  while IFS= read -r line
-  do
-    echo "${line}"
-    if echo "${line}" | egrep -q 'missing$'; then
-      let "missingDeps++"
-    fi
-  done < <(helm dependency list ${scriptdir}/../helm/hpcc | grep -v WARNING)
-  if [[ ${missingDeps} -gt 0 ]]; then
-    echo "Some of the chart dependencies are missing."
-    echo "Either issue a 'helm dependency update ${scriptdir}/../helm/hpcc' to fetch them,"
-    echo "or rerun $0 with option -c to auto update them."
-    exit 0
-  fi
+  dependency_check "hpcc"
 fi
 
 [[ -n ${INPUT_DOCKER_REPO} ]] && DOCKER_REPO=${INPUT_DOCKER_REPO}
@@ -109,9 +129,17 @@ if [[ -n ${PERSIST} ]] ; then
   done
   helm ${CMD} localfile $scriptdir/../helm/examples/local/hpcc-localfile --set common.hostpath=${PERSIST} $PERSISTVALUES | tee lsfull.yaml | grep -A1000 storage: > localstorage.yaml && \
   grep "##" lsfull.yaml  && \
-  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL --set global.privileged=true $DEP_UPDATE_ARG ${restArgs[@]} -f localstorage.yaml
+  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS $DEP_UPDATE_ARG ${restArgs[@]} -f localstorage.yaml
 else
-  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL --set global.privileged=true $DEP_UPDATE_ARG ${restArgs[@]}
+  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS $DEP_UPDATE_ARG ${restArgs[@]}
+fi
+
+if [[ $DEPLOY_ES ]] ; then
+  echo -e "\n\nDeploying "myelastic4hpcclogs" - light-weight Elastic Stack:"
+  if [[ -z "${DEP_UPDATE_ARG}" ]]; then
+    dependency_check "managed/logging/elastic"
+  fi
+  helm ${CMD} myelastic4hpcclogs $scriptdir/../helm/managed/logging/elastic $DEP_UPDATE_ARG ${restArgs[@]}
 fi
 
 if [ ${CMD} != "template" ] ; then

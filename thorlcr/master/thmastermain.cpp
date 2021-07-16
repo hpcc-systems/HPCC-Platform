@@ -72,6 +72,20 @@
 #define SHUTDOWN_IN_PARALLEL 20
 
 
+/* These percentages are used to determine the amount roxiemem allocated
+ * from total system memory.
+ *
+ * For historical reasons the default in bare-metal has always been a
+ * conservative 75%.
+ *
+ * NB: These percentages do not apply if the memory amount has been configured
+ * manually via 'globalMemorySize' and 'masterMemorySize'
+ */
+
+static constexpr unsigned bareMetalRoxieMemPC = 75;
+static constexpr unsigned containerRoxieMemPC = 90;
+
+
 class CThorEndHandler : implements IThreaded
 {
     CThreaded threaded;
@@ -736,11 +750,13 @@ int main( int argc, const char *argv[]  )
         unsigned gmemSize = globals->getPropInt("@globalMemorySize"); // in MB
         if (0 == gmemSize)
         {
+            // NB: This could be in a isContainerized(), but the 'workerResources' section only applies to containerized setups
             const char *workerResourcedMemory = globals->queryProp("workerResources/@memory");
             if (!isEmptyString(workerResourcedMemory))
             {
                 offset_t sizeBytes = friendlyStringToSize(workerResourcedMemory);
                 gmemSize = (unsigned)(sizeBytes / 0x100000);
+                gmemSize = gmemSize * containerRoxieMemPC / 100;
             }
             else
             {
@@ -765,17 +781,17 @@ int main( int argc, const char *argv[]  )
 #endif            
 #endif
 #endif
-#ifndef _CONTAINERIZED
+#ifdef _CONTAINERIZED
+                gmemSize = maxMem * containerRoxieMemPC / 100; // NB: MB's
+#else
                 if (globals->getPropBool("@localThor") && 0 == mmemSize)
                 {
                     gmemSize = maxMem / 2; // 50% of total for slaves
                     mmemSize = maxMem / 4; // 25% of total for master
                 }
                 else
+                    gmemSize = maxMem * bareMetalRoxieMemPC / 100; // NB: MB's
 #endif
-                {
-                    gmemSize = maxMem * 3 / 4; // 75% of total for slaves
-                }
             }
             unsigned perSlaveSize = gmemSize;
 #ifndef _CONTAINERIZED
@@ -796,11 +812,13 @@ int main( int argc, const char *argv[]  )
         }
         if (0 == mmemSize)
         {
+            // NB: This could be in a isContainerized(), but the 'managerResources' section only applies to containerized setups
             const char *managerResourcedMemory = globals->queryProp("managerResources/@memory");
             if (!isEmptyString(managerResourcedMemory))
             {
                 offset_t sizeBytes = friendlyStringToSize(managerResourcedMemory);
                 mmemSize = (unsigned)(sizeBytes / 0x100000);
+                mmemSize = mmemSize * containerRoxieMemPC / 100;
             }
             else
                 mmemSize = gmemSize; // default to same as slaves

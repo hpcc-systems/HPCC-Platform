@@ -1924,32 +1924,31 @@ public:
     }
     virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned sequence)
     {
-        if (isSpecialResultSequence(sequence))
+        memset(tgt, 0, tlen);
+        CriticalBlock b(contextCrit);
+        IPropertyTree &ctx = useContext(sequence);
+        if (ctx.hasProp(stepname))
         {
-            MemoryBuffer m;
-            CriticalBlock b(contextCrit);
-            useContext(sequence).getPropBin(stepname, m);
-            if (m.length())
+            if (ctx.isBinary(stepname))
             {
-                assertex(m.length() == tlen);
-                m.read(tlen, tgt);
+                MemoryBuffer m;
+                ctx.getPropBin(stepname, m);
+                if (m.length())
+                {
+                    assertex(m.length() == tlen);
+                    m.read(tlen, tgt);
+                }
             }
             else
-                memset(tgt, 0, tlen);
-        }
-        else
-        {
-            StringBuffer x;
             {
-                CriticalBlock b(contextCrit);
-                useContext(sequence).getProp(stepname, x);
+                const char *val = ctx.queryProp(stepname);
+                Decimal d;
+                d.setCString(val);
+                if (isSigned)
+                    d.getDecimal(tlen, precision, tgt);
+                else
+                    d.getUDecimal(tlen, precision, tgt);
             }
-            Decimal d;
-            d.setString(x.length(), x.str());
-            if (isSigned)
-                d.getDecimal(tlen, precision, tgt);
-            else
-                d.getUDecimal(tlen, precision, tgt);
         }
     }
     virtual __int64 getResultInt(const char * name, unsigned sequence)
@@ -3941,6 +3940,8 @@ public:
 
     virtual bool okToLogStartStopError()
     {
+        if (!actResetLogPeriod)
+            return false;
         // Each query starts with actResetLogState set to LogResetInit
         // State is changed to LogResetOK and a timer is started
         // If same query runs again then time since last logged is checked

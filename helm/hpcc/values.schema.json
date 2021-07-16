@@ -572,6 +572,25 @@
       },
       "additionalProperties": { "type": ["integer", "string", "boolean"] }
     },
+    "compileOption": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Compiler option name"
+        },
+        "value": {
+          "type": ["number", "string", "boolean"],
+          "description": "Compiler option  value"
+        },
+        "cluster": {
+          "type": "string",
+          "description": "Cluster to apply option to"
+        }
+      },
+      "required": [ "name", "value" ],
+      "additionalProperties": false
+    },
     "env": {
       "type": "array",
       "items": {
@@ -688,6 +707,10 @@
         "labels": {
           "type": "object",
           "additionalProperties": { "type": "string" }
+        },
+        "options": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/compileOption" }
         },
         "resources": {
           "$ref": "#/definitions/resources"

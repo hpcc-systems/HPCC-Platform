@@ -14,6 +14,9 @@
 #    limitations under the License.
 ################################################################################
 HPCC_ADD_SUBDIRECTORY (ccd)
+IF (NOT WIN32)
+  HPCC_ADD_SUBDIRECTORY (ccdcache "PLATFORM")
+ENDIF()
 HPCC_ADD_SUBDIRECTORY (roxie "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (topo "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (roxiemem)

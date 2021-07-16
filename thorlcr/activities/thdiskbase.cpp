@@ -68,19 +68,20 @@ void CDiskReadMasterBase::init()
             mapping.setown(getFileSlaveMaps(file->queryLogicalName(), *fileDesc, container.queryJob().queryUserDescriptor(), container.queryJob().querySlaveGroup(), local, false, hash, file->querySuperFile()));
             addReadFile(file, temp);
         }
+        IDistributedSuperFile *super = file->querySuperFile();
+        unsigned numsubs = super?super->numSubFiles(true):0;
         if (0 != (helper->getFlags() & TDRfilenamecallback)) // only get/serialize if using virtual file name fields
         {
-            IDistributedSuperFile *super = file->querySuperFile();
-            if (super)
+            for (unsigned s=0; s<numsubs; s++)
             {
-                unsigned numsubs = super->numSubFiles(true);
-                unsigned s=0;
-                for (; s<numsubs; s++)
-                {
-                    IDistributedFile &subfile = super->querySubFile(s, true);
-                    subfileLogicalFilenames.append(subfile.queryLogicalName());
-                }
+                IDistributedFile &subfile = super->querySubFile(s, true);
+                subfileLogicalFilenames.append(subfile.queryLogicalName());
             }
+        }
+        if (0==(helper->getFlags() & TDXtemporary))
+        {
+            for (unsigned i=0; i<numsubs; i++)
+                subFileStats.push_back(new CThorStatsCollection(diskReadRemoteStatistics));
         }
         void *ekey;
         size32_t ekeylen;
@@ -116,6 +117,34 @@ void CDiskReadMasterBase::serializeSlaveData(MemoryBuffer &dst, unsigned slave)
         CSlavePartMapping::serializeNullMap(dst);
 }
 
+void CDiskReadMasterBase::done()
+{
+    if (!subFileStats.empty())
+    {
+        unsigned numSubFiles = subFileStats.size();
+        for (unsigned i=0; i<numSubFiles; i++)
+        {
+            IDistributedFile *file = queryReadFile(i);
+            if (file)
+                file->addAttrValue("@numDiskReads", subFileStats[i]->getStatisticSum(StNumDiskReads));
+        }
+    }
+    else
+    {
+        IDistributedFile *file = queryReadFile(0);
+        if (file)
+            file->addAttrValue("@numDiskReads", statsCollection.getStatisticSum(StNumDiskReads));
+    }
+    CMasterActivity::done();
+}
+
+void CDiskReadMasterBase::deserializeStats(unsigned node, MemoryBuffer &mb)
+{
+    CMasterActivity::deserializeStats(node, mb);
+
+    for (auto &stats: subFileStats)
+        stats->deserialize(node, mb);
+}
 /////////////////
 
 void CWriteMasterBase::init()

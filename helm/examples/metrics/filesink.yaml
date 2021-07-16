@@ -1,0 +1,19 @@
+#
+# Defines a file sink for accepting metric reports.
+# Settings:
+#   type              - type of sink (must be file for the file sink)
+#   name              - name for the sink instance
+#   settings.filename - name of the file where metrics are to be written
+#   settings.clear    - true to clear the file when metric reporting begins
+#                       false to append to an existing file
+#   settings.period   - period in seconds between collections
+
+global:
+  metrics:
+    sinks:
+    - type: file
+      name: filesink
+      settings:
+        filename: testout.txt
+        clear: true
+        period: 5

@@ -75,6 +75,7 @@ interface IRoxieFileCache : extends IInterface
     virtual void loadSavedOsCacheInfo() = 0;
     virtual void noteRead(unsigned fileIdx, offset_t pos, unsigned len) = 0;
     virtual void startCacheReporter() = 0;
+    virtual ILazyFileIO *lookupLocalFile(const char *filename) = 0;
 };
 
 interface IDiffFileInfoCache : extends IInterface

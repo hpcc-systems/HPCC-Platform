@@ -2575,6 +2575,40 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION( JlibStatsTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibStatsTest, "JlibStatsTest" );
 
+class HashTableTests : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE( HashTableTests );
+        CPPUNIT_TEST(testTimedCache);
+    CPPUNIT_TEST_SUITE_END();
+
+    void testTimedCache()
+    {
+        unsigned hv = 0;
+        unsigned __int64 inputHvSum = 0;
+        unsigned __int64 lookupHvSum = 0;
+        CTimeLimitedCache<unsigned, unsigned> cache(100); // 100ms timeout
+        for (unsigned i=0; i<10; i++)
+        {
+            hv = hashc((const byte *)&i,sizeof(i), hv);
+            inputHvSum += hv;
+            cache.add(i, hv);
+            unsigned lookupHv;
+            CPPUNIT_ASSERT(cache.get(i, lookupHv));
+            lookupHvSum += lookupHv;
+        }
+        CPPUNIT_ASSERT(inputHvSum == lookupHvSum);
+        MilliSleep(50);
+        CPPUNIT_ASSERT(nullptr != cache.query(0, true)); // touch
+        MilliSleep(60);
+        // all except 0 that was touched should have expired
+        CPPUNIT_ASSERT(nullptr != cache.query(0));
+        for (unsigned i=1; i<10; i++)
+            CPPUNIT_ASSERT(nullptr == cache.query(i));
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( HashTableTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( HashTableTests, "HashTableTests" );
 
 
 #endif // _USE_CPPUNIT

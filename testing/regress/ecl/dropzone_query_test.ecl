@@ -22,3 +22,5 @@ import Std.File AS FileServices;
 output(NOTHOR(FileServices.GetDefaultDropZone()));
 
 output(NOTHOR(FileServices.GetDropZones()));
+
+output(NOTHOR(FileServices.GetLandingZones()));

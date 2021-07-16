@@ -14137,23 +14137,31 @@ KeepK8sJobs translateKeepJobs(const char *keepJob)
     return KeepK8sJobs::none;
 }
 
+// NB: will fire an exception if command fails (returns non-zero exit code)
+static void runKubectlCommand(const char *title, const char *cmd, const char *input, StringBuffer *output)
+{
+    StringBuffer _output, error;
+    if (!output)
+        output = &_output;
+    unsigned ret = runExternalCommand(title, *output, error, cmd, input);
+    if (output->length())
+        MLOG(MCExtraneousInfo, unknownJob, "%s: ret=%u, stdout=%s", cmd, ret, output->trimRight().str());
+    if (error.length())
+        MLOG(MCinternalError, unknownJob, "%s: ret=%u, stderr=%s", cmd, ret, error.trimRight().str());
+    if (ret)
+    {
+        if (input)
+            MLOG(MCinternalError, unknownJob, "Using input %s", input);
+        throw makeStringExceptionV(0, "Failed to run %s: error %u: %s", cmd, ret, error.str());
+    }
+}
+
 void deleteK8sResource(const char *componentName, const char *job, const char *resource)
 {
     VStringBuffer jobname("%s-%s", componentName, job);
     jobname.toLowerCase();
     VStringBuffer deleteResource("kubectl delete %s/%s", resource, jobname.str());
-    StringBuffer output, error;
-    bool ret = runExternalCommand(componentName, output, error, deleteResource.str(), nullptr);
-    DBGLOG("kubectl delete output: %s", output.trimRight().str());
-    if (error.length())
-        DBGLOG("kubectl delete error: %s", error.trimRight().str());
-    if (ret)
-    {
-        StringBuffer errorText("Failed to run kubectl delete");
-        if (error.length())
-            errorText.append(", error: ").append(error);
-        throw makeStringException(0, errorText);
-    }
+    runKubectlCommand(componentName, deleteResource, nullptr, nullptr);
 }
 
 void waitK8sJob(const char *componentName, const char *job, unsigned pendingTimeoutSecs, KeepK8sJobs keepJob)
@@ -14173,27 +14181,19 @@ void waitK8sJob(const char *componentName, const char *job, unsigned pendingTime
     {
         for (;;)
         {
-            StringBuffer output, error;
-            unsigned ret = runExternalCommand(nullptr, output, error, waitJob.str(), nullptr);
-            if (ret || error.length())
-                throw makeStringExceptionV(0, "Failed to run %s: error %u: %s", waitJob.str(), ret, error.str());
+            StringBuffer output;
+            runKubectlCommand(componentName, waitJob, nullptr, &output);
             if (!streq(output, "1"))  // status.active value
             {
                 // Job is no longer active - we can terminate
                 DBGLOG("kubectl jobs output: %s", output.str());
-                unsigned ret = runExternalCommand(nullptr, output.clear(), error.clear(), checkJobExitCode.str(), nullptr);
-                if (ret || error.length())
-                    throw makeStringExceptionV(0, "Failed to run %s: error %u: %s", checkJobExitCode.str(), ret, error.str());
+                runKubectlCommand(componentName, checkJobExitCode, nullptr, &output.clear());
                 if (output.length() && !streq(output, "0"))  // state.terminated.exitCode
                     throw makeStringExceptionV(0, "Failed to run %s: pod exited with error: %s", jobname.str(), output.str());
                 break;
             }
-            ret = runExternalCommand(nullptr, output.clear(), error.clear(), getScheduleStatus.str(), nullptr);
-            if (error.length())
-            {
-                DBGLOG("kubectl get schedule status error: %s", error.str());
-                break;
-            }
+            runKubectlCommand(nullptr, getScheduleStatus, nullptr, &output.clear());
+
             // Check whether pod has been scheduled yet - if resources are not available pods may block indefinitely waiting to be scheduled, and
             // we would prefer them to fail instead.
             bool pending = streq(output, "False");
@@ -14201,7 +14201,7 @@ void waitK8sJob(const char *componentName, const char *job, unsigned pendingTime
             {
                 schedulingTimeout = true;
                 VStringBuffer getReason("kubectl get pods --selector=job-name=%s \"--output=jsonpath={range .items[*].status.conditions[?(@.type=='PodScheduled')]}{.reason}{': '}{.message}{end}\"", jobname.str());
-                runExternalCommand(componentName, output.clear(), error.clear(), getReason.str(), nullptr);
+                runKubectlCommand(componentName, getReason, nullptr, &output.clear());
                 throw makeStringExceptionV(0, "Failed to run %s - pod not scheduled after %u seconds: %s ", jobname.str(), pendingTimeoutSecs, output.str());
             }
             MilliSleep(delay);
@@ -14271,19 +14271,7 @@ bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, 
     }
 #endif
 
-    StringBuffer output, error;
-    unsigned ret = runExternalCommand(componentName, output, error, "kubectl replace --force -f -", jobYaml.str());
-    DBGLOG("kubectl output: %s", output.trimRight().str());
-    if (error.length())
-        DBGLOG("kubectl error: %s", error.trimRight().str());
-    if (ret)
-    {
-        DBGLOG("Using yaml %s", jobYaml.str());
-        StringBuffer errorText("Failed to replace k8s resource");
-        if (error.length())
-            errorText.append(", error: ").append(error);
-        throw makeStringException(0, errorText);
-    }
+    runKubectlCommand(componentName, "kubectl replace --force -f -", jobYaml, nullptr);
     return true;
 }
 
@@ -14310,6 +14298,50 @@ void runK8sJob(const char *componentName, const char *wuid, const char *job, con
         deleteK8sResource(componentName, job, "networkpolicy");
     if (exception)
         throw exception.getClear();
+}
+
+
+std::pair<std::string, unsigned> getExternalService(const char *serviceName)
+{
+    static CTimeLimitedCache<std::string, std::pair<std::string, unsigned>> externalServiceCache;
+    static CriticalSection externalServiceCacheCrit;
+
+    {
+        CriticalBlock b(externalServiceCacheCrit);
+        std::pair<std::string, unsigned> cachedExternalSevice;
+        if (externalServiceCache.get(serviceName, cachedExternalSevice))
+            return cachedExternalSevice;
+    }
+
+    StringBuffer output;
+    try
+    {
+        VStringBuffer getServiceCmd("kubectl get svc --selector=server=%s --output=jsonpath={.items[0].status.loadBalancer.ingress[0].hostname},{.items[0].spec.ports[0].port}", serviceName);
+        runKubectlCommand("get-external-service", getServiceCmd, nullptr, &output);
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e);
+        VStringBuffer exceptionText("Failed to get external service for '%s'. Error: [%d, ", serviceName, e->errorCode());
+        e->errorMessage(exceptionText).append("]");
+        e->Release();
+        throw makeStringException(-1, exceptionText);
+    }
+    StringArray fields;
+    fields.appendList(output, ",");
+
+    // NB: add even if no result, want non-result to be cached too
+    std::string host;
+    unsigned port = 0;
+    if (fields.ordinality())
+    {
+        host = fields.item(0);
+        if (fields.ordinality()>1)
+            port = atoi(fields.item(1));
+    }
+    auto servicePair = std::make_pair(host, port);
+    externalServiceCache.add(serviceName, servicePair);
+    return servicePair;
 }
 
 #endif

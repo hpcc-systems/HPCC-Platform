@@ -141,7 +141,7 @@ define([
 
             this.dropZoneTarget2Select.on("change", function (evt) {
                 if (evt) {
-                    context.serverFilterSelect.loadDropZoneMachines(evt);
+                    context.serverFilterSelect.loadDropZoneMachines(evt, true);
                 }
             });
         },

@@ -308,6 +308,7 @@ protected:
     void processDefinitions(EclRepositoryArray & repositories);
     void reportCompileErrors(IErrorReceiver & errorProcessor, const char * processName);
     void setDebugOption(const char * name, bool value);
+    void traceError(char const * format, ...) __attribute__((format(printf, 2, 3)));
     void usage();
 
 protected:
@@ -926,7 +927,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                     fprintf(stdout, "Output file '%s' created\n",outputFile);
                     break;
                 case WUStateFailed:
-                    UERRLOG("Failed to create output file '%s'\n",outputFile);
+                    traceError("Failed to create output file '%s'\n",outputFile);
                     break;
                 case WUStateUploadingFiles:
                     fprintf(stdout, "Output file '%s' created, local file upload required\n",outputFile);
@@ -935,7 +936,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                     fprintf(stdout, "No DLL/SO required\n");
                     break;
                 default:
-                    UERRLOG("Unexpected Workunit state %d\n", (int) wu->getState());
+                    traceError("Unexpected Workunit state %d\n", (int) wu->getState());
                     break;
                 }
             }
@@ -2014,7 +2015,7 @@ bool EclCC::generatePrecompiledHeader()
 {
     if (inputFiles.ordinality() != 0)
     {
-        UERRLOG("No input files should be specified when generating precompiled header");
+        traceError("No input files should be specified when generating precompiled header");
         return false;
     }
     StringArray paths;
@@ -2033,7 +2034,7 @@ bool EclCC::generatePrecompiledHeader()
     }
     if (!foundPath)
     {
-        UERRLOG("Cannot find eclinclude4.hpp");
+        traceError("Cannot find eclinclude4.hpp");
         return false;
     }
     Owned<ICppCompiler> compiler = createCompiler("precompile", foundPath, nullptr, nullptr);
@@ -2055,7 +2056,7 @@ bool EclCC::generatePrecompiledHeader()
     }
     else
     {
-        UERRLOG("Compilation failed - see %s for details", cclogFilename.str());
+        traceError("Compilation failed - see %s for details", cclogFilename.str());
         return false;
     }
 }
@@ -2177,6 +2178,25 @@ void EclCC::setDebugOption(const char * name, bool value)
     debugOptions.append(temp);
 }
 
+
+void EclCC::traceError(char const * format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    if (optXml)
+    {
+        StringBuffer msg;
+        msg.valist_appendf(format, args);
+        StringBuffer encoded;
+        encodeXML(msg.str(), encoded);
+        UERRLOG("<exception msg='%s'/>", encoded.str());
+    }
+    else
+        VALOG(MCuserError, unknownJob, format, args);
+
+    va_end(args);
+}
 
 void EclCompileInstance::checkEclVersionCompatible()
 {
@@ -2814,7 +2834,7 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
             if (!checkFileExists(optIniFilename))
             {
-                UERRLOG("Error: INI file '%s' does not exist",optIniFilename.get());
+                traceError("Error: INI file '%s' does not exist",optIniFilename.get());
                 return 1;
             }
         }
@@ -2908,7 +2928,7 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
             //If --config has been specified, then ignore any unknown options beginning with -- since they will be added to the globals.
             if ((arg[1] == '-') && optConfig)
                 continue;
-            UERRLOG("Error: unrecognised option %s",arg);
+            traceError("Error: unrecognised option %s",arg);
             usage();
             return 1;
         }

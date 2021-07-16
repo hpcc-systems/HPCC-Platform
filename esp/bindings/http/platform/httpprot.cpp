@@ -317,7 +317,7 @@ bool CSecureHttpProtocol::notifySelected(ISocket *sock,unsigned selected, IPersi
             {
                 char peername[256];
                 int port = accepted->peer_name(peername, 256);
-                DBGLOG("HTTPS connection from %s:%d on %s socket", peername, port, persistentHandler?"persistent":"new");
+                ESPLOG(LogMax, "HTTPS connection from %s:%d on %s socket", peername, port, persistentHandler?"persistent":"new");
                 if(m_ssctx != NULL)
                 {
                     if(m_maxConcurrentThreads > 0)

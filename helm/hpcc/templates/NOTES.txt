@@ -1,6 +1,10 @@
 {{- $defaultImage :=  include "hpcc.imageName" (dict "root" $ "me" dict ) | quote }}
+{{- $defaultVersion :=  .Values.global.image.version | default .Chart.Version }}
 Thank you for installing the HPCC chart version {{ .Chart.Version }} using image {{ $defaultImage }}
 
+{{ if (ne $defaultVersion .Chart.Version) }}
+ {{- printf "**** WARNING: The expected image version for this helm chart is %s ****" .Chart.Version }}
+{{- end }}
 {{/* Gather a list of ephemeral and persistant planes */}}
 {{- $storage := (.Values.storage | default dict) -}}
 {{- $match := dict "ephemeral" (list) "persistant" (list) -}}

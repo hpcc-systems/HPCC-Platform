@@ -206,4 +206,4 @@ This is now simplified to:
     plane: sasha
 ```
 
-A value of "" can be used mean use the 1st plane with the sasha catagory.
+A value of "" can be used mean use the 1st plane with the sasha category.

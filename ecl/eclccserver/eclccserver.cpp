@@ -463,7 +463,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         StringBuffer eclccProgName;
         splitDirTail(queryCurrentProcessPath(), eclccProgName);
         eclccProgName.append("eclcc");
-        StringBuffer eclccCmd(" -shared");
+        StringBuffer eclccCmd(" --xml -shared");
         //Clone all the options that were passed to eclccserver (but not the filename) and also pass them to eclcc
         for (const char * * pArg = globalArgv+1; *pArg; pArg++)
             eclccCmd.append(' ').append(*pArg);
@@ -472,7 +472,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             eclccCmd.append(" -");
         if (mainDefinition.length())
             eclccCmd.append(" -main \"").append(mainDefinition).append("\"");
-        eclccCmd.append(" --timings --xml");
+        eclccCmd.append(" --timings");
         eclccCmd.append(" --nostdinc");
         eclccCmd.append(" --metacache=");
 
@@ -506,7 +506,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         }
         Owned<IPipeProcess> pipe = createPipeProcess();
         pipe->setenv("ECLCCSERVER_THREAD_INDEX", idxStr.str());
-        Owned<IPropertyTreeIterator> options = config->getElements("./Option");
+        Owned<IPropertyTreeIterator> options = config->getElements(isContainerized() ? "./options" : "./Option");
         ForEach(*options)
         {
             IPropertyTree &option = options->query();

@@ -62,6 +62,7 @@ static const char * EclDefinition =
 "export integer4 PREFIX_VARIABLE_BIGENDIAN_RECSIZE := -4; // special value for SprayFixed record size \n"
 "export FsDropZone := string; \n"
 "export FsDropZoneRecord := record FsDropZone dropzone; end; \n"
+"export FsLandingZoneRecord := record string name; string path; string hostname; end; \n"
 "export FileServices := SERVICE : time\n"
 "  boolean FileExists(const varstring lfn, boolean physical=false) : c,context,entrypoint='fsFileExists'; \n"
 "  DeleteLogicalFile(const varstring lfn,boolean ifexists=false) : c,action,context,entrypoint='fsDeleteLogicalFile'; \n"
@@ -140,6 +141,7 @@ static const char * EclDefinition =
 "  varstring GetEspURL(const varstring username = '', const varstring userPW = '') : c,once,entrypoint='fsGetEspURL'; \n"
 "  varstring GetDefaultDropZone() : c,once,entrypoint='fsGetDefaultDropZone'; \n"
 "  dataset(FsDropZoneRecord) GetDropZones() : c,context,entrypoint='fsGetDropZones'; \n"
+"  dataset(FsLandingZoneRecord) GetLandingZones() : c,context,entrypoint='fsGetLandingZones'; \n"
 "  integer4 GetExpireDays(const varstring lfn) : c,context,entrypoint='fsGetExpireDays'; \n"
 "  SetExpireDays(const varstring lfn, integer4 expireDays) : c,context,entrypoint='fsSetExpireDays'; \n"
 "  ClearExpireDays(const varstring lfn) : c,context,entrypoint='fsClearExpireDays'; \n"
@@ -3109,6 +3111,41 @@ FILESERVICES_API void FILESERVICES_CALL fsGetDropZones(ICodeContext *ctx, size32
 }
 
 
+FILESERVICES_API void FILESERVICES_CALL fsGetLandingZones(ICodeContext *ctx, size32_t & __lenResult, void * & __result)
+{
+    MemoryBuffer mb;
+    size32_t sz;
+    Owned<IPropertyTree> global = getGlobalConfig();
+    Owned<IPropertyTreeIterator> dropZones = global->getElements("storage/planes[labels='lz']");
+    ForEach(*dropZones)
+    {
+        const IPropertyTree &dropZone = dropZones->query();
+        const char * name = dropZone.queryProp("@name");
+        const char * directory = dropZone.queryProp("@prefix");
+        const char * hostGroup = dropZone.queryProp("@hostGroup");
+        // field "name"
+        sz = strlen(name);
+        mb.append(sz).append(sz,name);
+
+        // field "prefix"
+        sz = strlen(directory);
+        mb.append(sz).append(sz,directory);
+
+        // field "host"
+        const char * host = nullptr;
+        if (hostGroup)
+        {
+            VStringBuffer xpath("storage/hostGroups[@name='%s']", name);
+            IPropertyTree * match = global->queryPropTree(xpath);
+            if (match)
+                host = match->queryProp("hosts[1]");
+        }
+        sz = host ? strlen(host) : 0;
+        mb.append(sz).append(sz, host);
+    }
+    __lenResult = mb.length();
+    __result = mb.detach();
+}
 
 FILESERVICES_API int FILESERVICES_CALL fsGetExpireDays(ICodeContext * ctx, const char *_lfn)
 {

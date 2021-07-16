@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2021 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -15,61 +15,20 @@
 ################################################################################
 
 
-# Component: ccd 
-
-#####################################################
-# Description:
-# ------------
-#    Cmake Input File for ccd
-#####################################################
-
-
-project( ccd ) 
+project( ccdcache ) 
 
 set (   SRCS 
-        ccdactivities.cpp
-        ../ccdcache/ccdcache.cpp
-        ccddali.cpp
-        ccdcontext.cpp
-        ccddebug.cpp
-        ccdserver.cpp 
-        ccdfile.cpp 
-        ccdkey.cpp 
-        ccdlistener.cpp
-        ccdmain.cpp
-        ccdprotocol.cpp
-        ccdquery.cpp
-        ccdqueue.cpp
-        ccdsnmp.cpp 
-        ccdstate.cpp 
-         
-        ccd.hpp
-        ccdactivities.hpp
-        ccdcontext.hpp
-        ccddebug.hpp
-        ccddali.hpp
-        ccdserver.hpp
-        ccdfile.hpp
-        ccdkey.hpp
-        ccdlistener.hpp
-        ccdprotocol.hpp
-        ccdquery.hpp
-        ccdqueue.ipp
-        ccdsnmp.hpp
-        ccdstate.hpp 
-        hpccprotocol.hpp
-        
-                sourcedoc.xml
+        ccdcache.cpp
     )
 
 include_directories ( 
          .
+         ${HPCC_SOURCE_DIR}/roxie/ccd
          ${HPCC_SOURCE_DIR}/fs/dafsclient
          ${HPCC_SOURCE_DIR}/system/jhtree
          ${HPCC_SOURCE_DIR}/system/mp
          ${HPCC_SOURCE_DIR}/common/workunit
          ${HPCC_SOURCE_DIR}/roxie/udplib
-         ${HPCC_SOURCE_DIR}/roxie/ccdcache
          ${HPCC_SOURCE_DIR}/roxie/roxie
          ${HPCC_SOURCE_DIR}/common/environment
          ${HPCC_SOURCE_DIR}/ecl/hthor
@@ -86,8 +45,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/rtl/eclrtl
          ${HPCC_SOURCE_DIR}/rtl/include
          ${HPCC_SOURCE_DIR}/testing/unittests
-         ${CMAKE_BINARY_DIR}
-         ${CMAKE_BINARY_DIR}/oss
          ${HPCC_SOURCE_DIR}/dali/ft
          ${HPCC_SOURCE_DIR}/system/security/shared
          ${HPCC_SOURCE_DIR}/system/security/securesocket
@@ -101,44 +58,16 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
   endif()
 endif()
 
-ADD_DEFINITIONS( -D_USRDLL -DCCD_EXPORTS -DSTARTQUERY_EXPORTS )
+ADD_DEFINITIONS( -D_USRDLL -D_STANDALONE_CCDCACHE )
 
 if (CMAKE_COMPILER_IS_CLANGXX)
   SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-switch-enum -Wno-format-security -Werror=reorder")
 endif()
 
+HPCC_ADD_EXECUTABLE ( ccdcache ${SRCS} )
+install ( TARGETS ccdcache RUNTIME DESTINATION ${EXEC_DIR} )
 
-HPCC_ADD_LIBRARY( ccd SHARED ${SRCS} )
-install ( TARGETS ccd RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} ARCHIVE DESTINATION componentfiles/cl/lib )
-
-target_link_libraries ( ccd 
+target_link_libraries ( ccdcache
          jlib
-         nbcd
-         roxiemem 
-         udplib 
-         dafsclient 
-         eclrtl 
-         dalibase 
-         deftype 
-         thorhelper 
-         jhtree 
-         schedulectrl
-         dllserver 
-         workunit 
-         libbase58
     )
 
-if (NOT CONTAINERIZED)
-    target_link_libraries ( ccd environment )
-endif()
-
-IF (USE_OPENSSL)
-    target_link_libraries ( ccd
-    	securesocket
-    )
-ENDIF()
-
-IF (USE_TBBMALLOC AND USE_TBBMALLOC_ROXIE)
-   add_dependencies ( ccd tbb )
-   target_link_libraries ( ccd libtbbmalloc_proxy libtbbmalloc)
-ENDIF()
