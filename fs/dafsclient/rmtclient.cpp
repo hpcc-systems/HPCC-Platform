@@ -29,6 +29,7 @@
 #include "jmisc.hpp"
 #include "jthread.hpp"
 #include "jqueue.tpp"
+#include "jsecrets.hpp"
 
 #include "securesocket.hpp"
 #include "portlist.h"
@@ -141,33 +142,33 @@ protected:
 
 
 static CriticalSection              secureContextCrit;
-static Owned<ISecureSocketContext>  secureContextServer;
 static Owned<ISecureSocketContext>  secureContextClient;
 
 #ifdef _USE_OPENSSL
-static ISecureSocket *createSecureSocket(ISocket *sock, SecureSocketType type)
+static ISecureSocket *createSecureSocket(ISocket *sock)
 {
     {
         CriticalBlock b(secureContextCrit);
-        if (type == ServerSocket)
+        if (!secureContextClient)
         {
-            if (!secureContextServer)
-                secureContextServer.setown(createSecureSocketContextEx(securitySettings.queryCertificate(), securitySettings.queryPrivateKey(), securitySettings.queryPassPhrase(), type));
+#ifdef _CONTAINERIZED
+            IPropertyTree *info = queryTlsSecretInfo("local");
+            if (!info)
+                throw makeStringException(-1, "createSecureSocket() : missing MTLS configuration");
+            secureContextClient.setown(createSecureSocketContextEx2(info, ClientSocket));
+#else
+            secureContextClient.setown(createSecureSocketContextEx(securitySettings.queryCertificate(), securitySettings.queryPrivateKey(), securitySettings.queryPassPhrase(), ClientSocket));
+#endif
         }
-        else if (!secureContextClient)
-            secureContextClient.setown(createSecureSocketContext(type));
     }
     int loglevel = SSLogNormal;
 #ifdef _DEBUG
     loglevel = SSLogMax;
 #endif
-    if (type == ServerSocket)
-        return secureContextServer->createSecureSocket(sock, loglevel);
-    else
-        return secureContextClient->createSecureSocket(sock, loglevel);
+    return secureContextClient->createSecureSocket(sock, loglevel);
 }
 #else
-static ISecureSocket *createSecureSocket(ISocket *sock, SecureSocketType type)
+static ISecureSocket *createSecureSocket(ISocket *sock)
 {
     throwUnexpected();
 }
@@ -708,7 +709,7 @@ void CRemoteBase::connectSocket(SocketEndpoint &ep, unsigned connectTimeoutMs, u
                 Owned<ISecureSocket> ssock;
                 try
                 {
-                    ssock.setown(createSecureSocket(socket.getClear(), ClientSocket));
+                    ssock.setown(createSecureSocket(socket.getClear()));
                     int status = ssock->secure_connect();
                     if (status < 0)
                         throw createDafsException(DAFSERR_connection_failed, "Failure to establish secure connection");
@@ -1077,7 +1078,7 @@ ISocket *checkSocketSecure(ISocket *socket)
         Owned<ISecureSocket> ssock;
         try
         {
-            ssock.setown(createSecureSocket(LINK(socket), ClientSocket));
+            ssock.setown(createSecureSocket(LINK(socket)));
             int status = ssock->secure_connect();
             if (status < 0)
                 throw createDafsException(DAFSERR_connection_failed, "Failure to establish secure connection");

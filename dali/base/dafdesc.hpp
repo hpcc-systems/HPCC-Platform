@@ -290,6 +290,7 @@ interface IStoragePlane: extends IInterface
     virtual unsigned numDevices() const = 0;
     virtual const char * queryHosts() const = 0;
     virtual const char * querySingleHost() const = 0;
+    virtual unsigned numDefaultSprayParts() const = 0 ;
 };
 
 IClusterInfo *createClusterInfo(const char *grpname,                  // NULL if roxie label set
@@ -353,6 +354,7 @@ extern da_decl IFileDescriptor *deserializeFileDescriptorTree(IPropertyTree *tre
 extern da_decl IFileDescriptor *createFileDescriptor(const char *lname,IGroup *grp,IPropertyTree *tree,DFD_OS os=DFD_OSdefault,unsigned width=0);  // creates default
 extern da_decl IPartDescriptor *deserializePartFileDescriptor(MemoryBuffer &mb);
 extern da_decl void deserializePartFileDescriptors(MemoryBuffer &mb,IArrayOf<IPartDescriptor> &parts);
+extern da_decl IFileDescriptor *createFileDescriptor(const char *lname, const char *planeName, unsigned numParts);
 
 extern da_decl IFileDescriptor *createMultiCopyFileDescriptor(IFileDescriptor *in,unsigned num);
 
