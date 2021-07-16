@@ -85,7 +85,10 @@
 
     <para><emphasis role="bold">To start this simple system:</emphasis></para>
 
-    <para><programlisting>helm install mycluster hpcc/hpcc --set global.image.version=latest </programlisting></para>
+    <para><programlisting>helm install mycluster hpcc/hpcc --version=8.2.2 </programlisting></para>
+
+    <para><emphasis role="bold">This example uses 8.2.2, but you should use
+    the version you want. </emphasis></para>
 
     <para>Expected response:</para>
 
