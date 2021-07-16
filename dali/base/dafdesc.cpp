@@ -3505,6 +3505,7 @@ public:
     virtual unsigned numDevices() const override { return xml->getPropInt("@numDevices", 1); }
     virtual const char * queryHosts() const override { return xml->queryProp("@hosts"); }
     virtual const char * querySingleHost() const override { return xml->queryProp("@host"); }   // MORE: Likely to be changed to resolve hosts
+    virtual unsigned numDefaultSprayParts() const override { return xml->getPropInt("@defaultSprayParts", 1); }
 
 private:
     Linked<IPropertyTree> xml;
