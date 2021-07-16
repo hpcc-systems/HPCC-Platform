@@ -142,7 +142,7 @@ protected:
         unsigned expectedFormatCrc = helper->getDiskFormatCrc();
         IOutputMetaData *expectedFormat = helper->queryDiskRecordSize();
 
-        Owned<ITranslator> ret = ::getTranslators("rowstream", expectedFormatCrc, expectedFormat, publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode);
+        Owned<ITranslator> ret = ::getTranslators(logicalFilename, expectedFormatCrc, expectedFormat, publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode);
         if (!ret)
             return nullptr;
         if (!ret->queryTranslator().canTranslate())

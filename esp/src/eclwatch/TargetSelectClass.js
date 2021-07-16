@@ -328,7 +328,7 @@ define([
             });
         },
 
-        loadDropZoneMachines: function (Name) {
+        loadDropZoneMachines: function (Name, useConfig) {
             var context = this;
             this.set("disabled", true);
             if (Name) {
@@ -349,7 +349,7 @@ define([
                             for (var i = 0; i < targetData.length; ++i) {
                                 context.options.push({
                                     label: targetData[i].Netaddress,
-                                    value: targetData[i].Netaddress
+                                    value: useConfig ? targetData[i].ConfigNetaddress : targetData[i].Netaddress
                                 });
                             }
                             context._postLoad();

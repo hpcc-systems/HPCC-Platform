@@ -88,7 +88,7 @@ protected:
 
         unsigned projectedFormatCrc = helper->getProjectedFormatCrc();
         IOutputMetaData *projectedFormat = helper->queryProjectedDiskRecordSize();
-        return ::getTranslators("rowstream", expectedFormatCrc, expectedFormat, publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode);
+        return ::getTranslators(logicalFilename, expectedFormatCrc, expectedFormat, publishedFormatCrc, publishedFormat, projectedFormatCrc, projectedFormat, translationMode);
     }
 public:
     CDiskReadSlaveActivityRecord(CGraphElementBase *_container, IHThorArg *_helper=NULL) 
