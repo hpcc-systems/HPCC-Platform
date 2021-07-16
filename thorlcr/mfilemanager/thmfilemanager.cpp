@@ -226,13 +226,6 @@ public:
     CFileManager()
     {
         replicateOutputs = globals->getPropBool("@replicateOutputs");
-
-        /* In nas/non-local storage mode, create a published named group for files to use
-         * that matches the width of the cluster.
-         * Also create a 1-way named group, that is used in special cases, e.g. BUILDINDEX,FEW
-         */
-        if (isContainerized())
-            queryNamedGroupStore().ensureNasGroup(queryClusterWidth());
     }
     StringBuffer &mangleLFN(CJobBase &job, const char *lfn, StringBuffer &out)
     {
