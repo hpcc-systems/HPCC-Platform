@@ -642,6 +642,7 @@ public:
         CWUFileDownloadOption &downloadOptions, StringBuffer &contentType);
 
     IFileIOStream* createIOStreamWithFileName(const char *fileNameWithPath, IFOmode mode);
+    void validateFilePath(const char *file, bool UNCFileName, const char *fileType, const char *compType, const char *compName);
 };
 
 class CWsWuEmailHelper
