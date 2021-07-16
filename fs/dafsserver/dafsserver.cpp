@@ -121,8 +121,24 @@ static ISecureSocket *createSecureSocket(ISocket *sock, SecureSocketType type)
         CriticalBlock b(secureContextCrit);
         if (type == ServerSocket)
         {
-            if (!secureContextServer)
-                secureContextServer.setown(createSecureSocketContextEx(securitySettings.certificate, securitySettings.privateKey, securitySettings.passPhrase, type));
+#ifdef _CONTAINERIZED
+            /* Connections are expected from 3rd parties via TLS,
+             * we do not expect them to provide a valid certificate for verification.
+             * Currently the server (this dafilesrv), will use either the "public" certificate issuer,
+             * unless it's visibility is "cluster" (meaning internal only)
+             */
+
+            const char *certScope = strsame("cluster", getComponentConfigSP()->queryProp("service/@visibility")) ? "local" : "public";
+            IPropertyTree *info = queryTlsSecretInfo(certScope);
+            if (!info)
+                throw makeStringException(-1, "createSecureSocket() : missing MTLS configuration");
+            Owned<IPropertyTree> cloneInfo = createPTreeFromIPT(info);
+            // we do not want to insist clients provide a cerificate for verification.
+            cloneInfo->setPropBool("verify/@enable", false);
+            secureContextServer.setown(createSecureSocketContextEx2(cloneInfo, ServerSocket));
+#else
+            secureContextServer.setown(createSecureSocketContextEx(securitySettings.certificate, securitySettings.privateKey, securitySettings.passPhrase, ServerSocket));
+#endif
         }
         else if (!secureContextClient)
             secureContextClient.setown(createSecureSocketContext(type));

@@ -151,8 +151,14 @@ static ISecureSocket *createSecureSocket(ISocket *sock, SecureSocketType type)
         CriticalBlock b(secureContextCrit);
         if (type == ServerSocket)
         {
-            if (!secureContextServer)
-                secureContextServer.setown(createSecureSocketContextEx(securitySettings.queryCertificate(), securitySettings.queryPrivateKey(), securitySettings.queryPassPhrase(), type));
+#ifdef _CONTAINERIZED
+            IPropertyTree *info = queryTlsSecretInfo("local");
+            if (!info)
+                throw makeStringException(-1, "createSecureSocket() : missing MTLS configuration");
+            secureContextClient.setown(createSecureSocketContextEx2(info, ClientSocket));
+#else
+            secureContextClient.setown(createSecureSocketContextEx(securitySettings.queryCertificate(), securitySettings.queryPrivateKey(), securitySettings.queryPassPhrase(), ClientSocket));
+#endif
         }
         else if (!secureContextClient)
             secureContextClient.setown(createSecureSocketContext(type));

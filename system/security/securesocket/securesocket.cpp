@@ -1833,7 +1833,7 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx2(IPropertyTre
 
 SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecret(const char *mtlsSecretName, SecureSocketType sockettype)
 {
-    IPropertyTree *info = queryMtlsSecretInfo(mtlsSecretName);
+    IPropertyTree *info = queryTlsSecretInfo(mtlsSecretName);
     //if the secret doesn't exist doesn't exist just go on without it. IF it is required the tls connection will fail. 
     //This is primarily for client side... server side would probably use the explict ptree config or explict cert param at least for now.
     if (info)
@@ -1847,7 +1847,7 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecretSrv(const 
     if (!queryMtls())
         throw makeStringException(-100, "TLS secure communication requested but not configured");
 
-    IPropertyTree *info = queryMtlsSecretInfo(mtlsSecretName);
+    IPropertyTree *info = queryTlsSecretInfo(mtlsSecretName);
     if (info)
         return createSecureSocketContextEx2(info, ServerSocket);
     else

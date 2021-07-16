@@ -541,7 +541,7 @@ StringBuffer &encodeDFUFileMeta(StringBuffer &metaInfoBlob, IPropertyTree *metaI
          * The delegated service (dafilesrv) will only trust this cert. if from our CA.
          * It will then use it to verify the signature.
          */
-        IPropertyTree *info = queryMtlsSecretInfo(keyPairName);
+        IPropertyTree *info = queryTlsSecretInfo(keyPairName);
         if (!info)
             throw makeStringExceptionV(-1, "encodeDFUFileMeta: No '%s' MTLS certificate detected.", keyPairName);
         privateKeyFName = info->queryProp("privatekey");
