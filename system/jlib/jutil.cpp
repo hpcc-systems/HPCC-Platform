@@ -2715,6 +2715,22 @@ bool replaceConfigurationDirectoryEntry(const char *path,const char *frommask,co
     return true;
 }
 
+bool checkConfigurationDirectory(const IPropertyTree* useTree, const char* category, const char* component, const char* instance, const char* dirToCheck)
+{
+    if (isEmptyString(dirToCheck))
+        return false;
+
+    StringBuffer configDir;
+    if (!getConfigurationDirectory(useTree, category, component, instance, configDir))
+        return false;
+    
+    addPathSepChar(configDir);
+    unsigned configDirLen = configDir.length();
+    if (strlen(dirToCheck) < configDirLen)
+        return false;
+    return strncmp(configDir.str(), dirToCheck, configDirLen) == 0;
+}
+
 static CriticalSection sect;
 static StringAttr processPath;
 const char * queryCurrentProcessPath()

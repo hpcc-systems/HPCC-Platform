@@ -5248,6 +5248,29 @@ bool isRemotePath(const char *path)
     }
 }
 
+bool hasSpecialPathCharacters(const char *path)
+{
+    if (!path||!*path)
+        return false;
+    const char *cur = path;
+    for (;;)
+    {
+        switch (*cur++)
+        {
+        case '.':
+        case '~':
+        case '%':
+        case '&':
+        case '#':
+        case ':':
+            return true;
+        case '\0':
+            return false;
+        }
+    }
+    return false;
+}
+
 StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustExist)
 {
     // NOTE - this function also normalizes the supplied path to remove . and .. references

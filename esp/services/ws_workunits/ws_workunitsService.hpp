@@ -398,6 +398,7 @@ private:
     void readPluginFolders(StringBuffer &eclccPaths, StringArray &pluginFolders);
     void findPlugins(const char *pluginFolder, bool dotSoFile, StringArray &plugins);
     bool checkPluginECLAttr(const char *fileNameWithPath);
+    void checkFilePath(const char *file, bool UNCFileName, const char *fileType, const char *compType, const char *compName);
 
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;
