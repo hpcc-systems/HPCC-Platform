@@ -20,7 +20,7 @@ define([
     "dojox/widget/UpgradeBar",
     "dojox/widget/ColorPicker",
 
-    "src/CodeMirror",
+    "@hpcc-js/codemirror",
     "src/react/index",
     "src-react/components/About",
 
@@ -419,17 +419,14 @@ define([
                     handleAs: "text"
                 }).then(function (response) {
                     context.configText = context.formatXml(response);
-                    context.configSourceCM = CodeMirror.fromTextArea(dom.byId(context.id + "ConfigTextArea"), {
-                        tabMode: "indent",
-                        matchBrackets: true,
-                        lineNumbers: true,
-                        mode: "xml",
-                        readOnly: true,
-                        foldGutter: true,
-                        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"]
-                    });
-                    context.configSourceCM.setSize("100%", "100%");
-                    context.configSourceCM.setValue(context.configText);
+                    context.configSourceCM = new CodeMirror.XMLEditor();
+
+                    var t = window.setTimeout(() => {
+                        context.configSourceCM.target(dom.byId(context.id + "_Config")).render();
+                        dom.byId(context.id + "ConfigTextArea").style.display = "none";
+                        window.clearTimeout(t);
+                    }, 50);
+                    context.configSourceCM.text(context.configText);
                 });
             }
             this.stackContainer.selectChild(this.widget._Config);

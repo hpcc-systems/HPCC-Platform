@@ -240,7 +240,6 @@ set ( SRCS
     ${CMAKE_CURRENT_BINARY_DIR}/src/react/wuStatus.tsx
     ${CMAKE_CURRENT_BINARY_DIR}/src/UserPreferences/EnvironmentTheme.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/Clippy.ts
-    ${CMAKE_CURRENT_BINARY_DIR}/src/CodeMirror.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/DataPatternsWidget.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/DeclareDecorator.ts
     ${CMAKE_CURRENT_BINARY_DIR}/src/DiskUsage.ts
