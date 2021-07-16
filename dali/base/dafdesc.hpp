@@ -353,6 +353,7 @@ extern da_decl IFileDescriptor *deserializeFileDescriptorTree(IPropertyTree *tre
 extern da_decl IFileDescriptor *createFileDescriptor(const char *lname,IGroup *grp,IPropertyTree *tree,DFD_OS os=DFD_OSdefault,unsigned width=0);  // creates default
 extern da_decl IPartDescriptor *deserializePartFileDescriptor(MemoryBuffer &mb);
 extern da_decl void deserializePartFileDescriptors(MemoryBuffer &mb,IArrayOf<IPartDescriptor> &parts);
+extern da_decl IFileDescriptor *createFileDescriptor(const char *lname, const char *planeName, unsigned numParts);
 
 extern da_decl IFileDescriptor *createMultiCopyFileDescriptor(IFileDescriptor *in,unsigned num);
 

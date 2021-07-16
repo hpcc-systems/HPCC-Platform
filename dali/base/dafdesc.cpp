@@ -2366,6 +2366,29 @@ IFileDescriptor *createFileDescriptor(const char *lname, const char *clusterType
     return fileDesc.getClear();
 }
 
+IFileDescriptor *createFileDescriptor(const char *lname, const char *planeName, unsigned numParts)
+{
+    Owned<IStoragePlane> plane = getStoragePlane(planeName, true);
+    if (!numParts)
+        numParts = plane->numDefaultSprayParts();
+
+    StringBuffer partMask, dir;
+    getPartMask(partMask, lname, numParts);
+    makePhysicalPartName(lname, 0, 0, dir, false, DFD_OSdefault, plane->queryPrefix());
+
+    Owned<IFileDescriptor> fileDesc = createFileDescriptor();
+    fileDesc->setNumParts(numParts);
+    fileDesc->setPartMask(partMask);
+    fileDesc->setDefaultDir(dir);
+
+    ClusterPartDiskMapSpec mspec;
+    mspec.defaultCopies = DFD_NoCopies;
+    Owned<IGroup> group = queryNamedGroupStore().lookup(planeName);
+    fileDesc->addCluster(planeName, group, mspec);
+
+    return fileDesc.getClear();
+}
+
 IFileDescriptor *deserializeFileDescriptor(MemoryBuffer &mb)
 {
     return doDeserializePartFileDescriptors(mb,NULL);
