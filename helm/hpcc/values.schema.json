@@ -316,6 +316,11 @@
     "security": {
       "type": "object",
       "properties": {
+        "mtls": {
+          "description": "enable global mtls between clients (except roxie which has own setting). NB: requires certificates.enabled=true",
+          "type": "boolean",
+          "default": true
+        },
         "eclSecurity": {
           "$ref": "#/definitions/eclSecurity"
         }

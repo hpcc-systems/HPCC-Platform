@@ -426,8 +426,8 @@ kind: ConfigMap
 {{- $_ := set $local "first" false }}
 ## thorworker and thormanager pods have unique names by workunit not by cluster. So we have to use a global certificate.
 ## create these only once
-{{ include "hpcc.addCertificate" (dict "root" $ "name" "thormanager-w" "component" "thormanager") }}
-{{ include "hpcc.addCertificate" (dict "root" $ "name" "thorworker-w" "component" "thorworker") }}
+{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "thormanager") }}
+{{ include "hpcc.addCertificate" (dict "root" $ "name" .name "component" "thorworker") }}
 {{- end }}
 
 {{- if $commonCtx.eclAgentUseChildProcesses }}
