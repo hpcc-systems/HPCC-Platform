@@ -965,7 +965,7 @@ public:
         worker->threadmain();
     }
 
-    virtual void noteQuery(IHpccProtocolMsgContext *msgctx, const char *peer, bool failed, unsigned bytesOut, unsigned elapsed, unsigned memused, unsigned agentsReplyLen, unsigned agentsDuplicates, unsigned agentsResends, bool continuationNeeded)
+    virtual void noteQuery(IHpccProtocolMsgContext *msgctx, const char *peer, bool failed, unsigned bytesOut, unsigned elapsed, unsigned memused, unsigned agentsReplyLen, unsigned agentsDuplicates, unsigned agentsResends, bool continuationNeeded, unsigned requestArraySize)
     {
     }
 
@@ -1448,7 +1448,7 @@ public:
             return;
         uid.set(id);
         ensureContextLogger();
-        if (!isEmptyString(logctx->queryGlobalId())) //globalId wins
+        if (!global && !isEmptyString(logctx->queryGlobalId())) //globalId wins
             return;
         StringBuffer s;
         ep.getIpText(s).appendf(":%u{%s}", ep.port, uid.str()); //keep no matter what for existing log parsers
@@ -1590,7 +1590,7 @@ public:
             combinedQueryStats.noteQuery(failed, elapsedTime);
         }
     }
-    void noteQuery(const char *peer, bool failed, unsigned elapsed, unsigned memused, unsigned agentsReplyLen, unsigned agentsDuplicates, unsigned agentsResends, unsigned bytesOut, bool continuationNeeded)
+    void noteQuery(const char *peer, bool failed, unsigned elapsed, unsigned memused, unsigned agentsReplyLen, unsigned agentsDuplicates, unsigned agentsResends, unsigned bytesOut, bool continuationNeeded, unsigned requestArraySize)
     {
         noteQueryStats(failed, elapsed);
         if (queryFactory)
@@ -1617,7 +1617,10 @@ public:
                 }
                 if (txIds.length())
                     txIds.insert(0, '[').append(']');
-                logctx->CTXLOG("COMPLETE: %s %s%s from %s complete in %u msecs memory=%u Mb priority=%d agentsreply=%u duplicatePackets=%u resentPackets=%u resultsize=%u continue=%d%s", queryName.get(), uid.get(), txIds.str(), peer, elapsed, memused, getQueryPriority(), agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded, s.str());
+                if (requestArraySize > 1)
+                    logctx->CTXLOG("COMPLETE: %s(x%u) %s%s from %s complete in %u msecs memory=%u Mb priority=%d agentsreply=%u duplicatePackets=%u resentPackets=%u resultsize=%u continue=%d%s", queryName.get(), requestArraySize, uid.get(), txIds.str(), peer, elapsed, memused, getQueryPriority(), agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded, s.str());
+                else
+                    logctx->CTXLOG("COMPLETE: %s %s%s from %s complete in %u msecs memory=%u Mb priority=%d agentsreply=%u duplicatePackets=%u resentPackets=%u resultsize=%u continue=%d%s", queryName.get(), uid.get(), txIds.str(), peer, elapsed, memused, getQueryPriority(), agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded, s.str());
             }
         }
     }
@@ -1888,10 +1891,10 @@ public:
         roxieMsgCtx->ensureDebugCommandHandler().doDebugCommand(msg, &roxieMsgCtx->ensureDebuggerContext(uid), out);
     }
 
-    virtual void noteQuery(IHpccProtocolMsgContext *msgctx, const char *peer, bool failed, unsigned bytesOut, unsigned elapsed, unsigned memused, unsigned agentsReplyLen, unsigned agentsDuplicates, unsigned agentsResends, bool continuationNeeded)
+    virtual void noteQuery(IHpccProtocolMsgContext *msgctx, const char *peer, bool failed, unsigned bytesOut, unsigned elapsed, unsigned memused, unsigned agentsReplyLen, unsigned agentsDuplicates, unsigned agentsResends, bool continuationNeeded, unsigned requestArraySize)
     {
         RoxieProtocolMsgContext *roxieMsgCtx = checkGetRoxieMsgContext(msgctx);
-        roxieMsgCtx->noteQuery(peer, failed, elapsed, memused, agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded);
+        roxieMsgCtx->noteQuery(peer, failed, elapsed, memused, agentsReplyLen, agentsDuplicates, agentsResends, bytesOut, continuationNeeded, requestArraySize);
     }
 
 };

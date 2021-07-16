@@ -725,7 +725,7 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="maxHttpConnectionRequests" type="xs:nonNegativeInteger" use="optional" default="10">
+    <xs:attribute name="maxHttpConnectionRequests" type="xs:nonNegativeInteger" use="optional" default="0">
       <xs:annotation>
         <xs:appinfo>
           <tooltip>Max number of query requests per persistent http connection</tooltip>
