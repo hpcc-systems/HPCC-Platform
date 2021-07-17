@@ -75,6 +75,7 @@ public:
     }
 
     int onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);
+    int onStartUpload(IEspContext& ctx, CHttpRequest* request, CHttpResponse* response, const char* serv, const char* method);
     int onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method, StringArray& fileNames, StringArray& files, IMultiException *me);
     virtual bool canDetachFromDali() override
     {

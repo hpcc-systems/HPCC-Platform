@@ -470,6 +470,17 @@ int CFileSpraySoapBindingEx::downloadFile(IEspContext &context, CHttpRequest* re
     return 0;
 }
 
+int CFileSpraySoapBindingEx::onStartUpload(IEspContext& ctx, CHttpRequest* request, CHttpResponse* response, const char* serv, const char* method)
+{
+    StringBuffer netAddress, path;
+    request->getParameter("NetAddress", netAddress);
+    request->getParameter("Path", path);
+    if (!verifyDropZonePath(nullptr, netAddress, path)) //The path should be the absolute path for the dropzone.
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid Landing Zone path %s", path.str());
+
+    return EspHttpBinding::onStartUpload(ctx, request, response, serv, method);
+}
+
 int CFileSpraySoapBindingEx::onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response,   const char *service, const char *method, StringArray& fileNames, StringArray& files, IMultiException *me)
 {
     if (!me || (me->ordinality()==0))
