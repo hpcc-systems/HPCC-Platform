@@ -781,17 +781,18 @@ int main( int argc, const char *argv[]  )
 #endif            
 #endif
 #endif
-#ifdef _CONTAINERIZED
-                gmemSize = maxMem * containerRoxieMemPC / 100; // NB: MB's
-#else
-                if (globals->getPropBool("@localThor") && 0 == mmemSize)
-                {
-                    gmemSize = maxMem / 2; // 50% of total for slaves
-                    mmemSize = maxMem / 4; // 25% of total for master
-                }
+                if (isContainerized())
+                    gmemSize = maxMem * containerRoxieMemPC / 100; // NB: MB's
                 else
-                    gmemSize = maxMem * bareMetalRoxieMemPC / 100; // NB: MB's
-#endif
+                {
+                    if (globals->getPropBool("@localThor") && 0 == mmemSize)
+                    {
+                        gmemSize = maxMem / 2; // 50% of total for slaves
+                        mmemSize = maxMem / 4; // 25% of total for master
+                    }
+                    else
+                        gmemSize = maxMem * bareMetalRoxieMemPC / 100; // NB: MB's
+                }
             }
             unsigned perSlaveSize = gmemSize;
 #ifndef _CONTAINERIZED
