@@ -1193,6 +1193,11 @@ int main(int argc, const char *argv[])
             unsigned maxThreads = globals->getPropInt("@maxEclccProcesses", globals->getPropInt("@maxCompileThreads", 4));
 #endif
             EclccServer server(queueNames.str(), maxThreads);
+
+            std::vector<std::string> allCats = { "data", "log", "query" };
+            Owned<IValidateFilePaths> validateHook = createFileValidateHook(allCats);
+            installValidateFileHook(validateHook);
+
             // if we got here, eclserver is successfully started and all options are good, so create the "sentinel file" for re-runs from the script
             // put in its own "scope" to force the flush
             writeSentinelFile(sentinelFile);

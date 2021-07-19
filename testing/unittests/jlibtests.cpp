@@ -2575,9 +2575,9 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION( JlibStatsTest );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibStatsTest, "JlibStatsTest" );
 
-class HashTableTests : public CppUnit::TestFixture
+class JlibHashTableTests : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE( HashTableTests );
+    CPPUNIT_TEST_SUITE( JlibHashTableTests );
         CPPUNIT_TEST(testTimedCache);
     CPPUNIT_TEST_SUITE_END();
 
@@ -2607,8 +2607,32 @@ class HashTableTests : public CppUnit::TestFixture
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( HashTableTests );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( HashTableTests, "HashTableTests" );
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibHashTableTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibHashTableTests, "JlibHashTableTests" );
+
+class JlibFileAbsTests : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE( JlibFileAbsTests );
+        CPPUNIT_TEST(testIsAbs);
+    CPPUNIT_TEST_SUITE_END();
+
+    void testIsAbs()
+    {
+        // +ve's
+        CPPUNIT_ASSERT((FPTabsolute|FPTabspure) == identifyPathType("/a/b/c/"));
+        CPPUNIT_ASSERT((FPTabsolute|FPTabspure) == identifyPathType("/abc"));
+        // -ve's
+        CPPUNIT_ASSERT((FPTabsolute|FPTrelcurrent) == identifyPathType("/a/b/c/.", false));
+        CPPUNIT_ASSERT(FPTrelative == identifyPathType("a/b/c/", false));
+        CPPUNIT_ASSERT((FPTabsolute|FPTrelparent) == identifyPathType("/a/b/../c/", false));
+        CPPUNIT_ASSERT((FPTabsolute|FPTrelcurrent) == identifyPathType("/a/./b/c/", false));
+        CPPUNIT_ASSERT((FPTabsolute|FPTinvalid) == identifyPathType("/a//b/c/", false));
+        CPPUNIT_ASSERT(FPThome == identifyPathType("~a/bc", false));
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( JlibFileAbsTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibFileAbsTests, "JlibFileAbsTests" );
 
 
 #endif // _USE_CPPUNIT

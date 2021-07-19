@@ -99,6 +99,21 @@ static IFile *createIFileByHook(const RemoteFilename & filename);
 static IFile *createContainedIFileByHook(const char *filename);
 static inline bool isPCFlushAllowed();
 
+static Owned<IValidateFilePaths> validatePrefixHook;
+
+void installValidateFileHook(IValidateFilePaths *_validatePrefixHook)
+{
+    verifyex(validatePrefixHook.get() == nullptr);
+    validatePrefixHook.set(_validatePrefixHook);
+}
+
+void removeValidateFileHook(IValidateFilePaths *_validatePrefixHook)
+{
+    verifyex(validatePrefixHook == _validatePrefixHook);
+    validatePrefixHook.clear();
+}
+
+
 static char ShareChar='$';
 
 bool isShareChar(char c)
@@ -199,6 +214,8 @@ const char * pathExtension(const char * path)
 
 bool checkFileExists(const char * filename)
 {
+    if (validatePrefixHook)
+        validatePrefixHook->validatePath(filename, IFOread);
 #ifdef _WIN32
     for (unsigned i=0;i<10;i++) {
         DWORD ret = (DWORD)GetFileAttributes(filename); 
@@ -216,7 +233,7 @@ bool checkFileExists(const char * filename)
 #endif
 }
 
-bool checkDirExists(const char * filename)
+bool unvalidateCheckDirExists(const char * filename)
 {
 #ifdef _WIN32
     DWORD attr = GetFileAttributes(filename);
@@ -227,6 +244,13 @@ bool checkDirExists(const char * filename)
         return false;
     return S_ISDIR(info.st_mode);
 #endif
+}
+
+bool checkDirExists(const char * filename)
+{
+    if (validatePrefixHook)
+        validatePrefixHook->validatePath(filename, IFOread);
+    return unvalidateCheckDirExists(filename);
 }
 
 static void set_inherit(HANDLE handle, bool inherit)
@@ -299,7 +323,7 @@ bool CFile::exists()
 
 #ifdef _WIN32
 
-bool WindowsCreateDirectory(const char * path)
+static bool WindowsCreateDirectory(const char * path)
 {
     unsigned retry = 0;
     for (;;) {
@@ -327,7 +351,7 @@ bool WindowsCreateDirectory(const char * path)
 #else
 
 
-bool LinuxCreateDirectory(const char * path)
+static bool LinuxCreateDirectory(const char * path)
 {
     if (!path)
         return false;
@@ -365,7 +389,9 @@ bool localCreateDirectory(const char *name)
             return true;
     }
 #endif
-    if (checkDirExists(name))
+    if (validatePrefixHook)
+        validatePrefixHook->validatePath(name, IFOwrite);
+    if (unvalidateCheckDirExists(name))
         return true;
 #ifdef _WIN32
     if (WindowsCreateDirectory(name))
@@ -448,6 +474,8 @@ FILETIME * IDateTimetoFILETIME(FILETIME & ft, const CDateTime * dt)
 
 bool CFile::getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateTime * accessedTime)
 {
+    if (validatePrefixHook)
+        validatePrefixHook->validatePath(filename, IFOread);
 #ifdef _WIN32
     //MORE could use GetFileAttributesEx() if we were allowed...
     FILETIME timeCreated, timeModified, timeAccessed;
@@ -472,6 +500,8 @@ bool CFile::getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateTime 
 
 bool CFile::setTime(const CDateTime * createTime, const CDateTime * modifiedTime, const CDateTime * accessedTime)
 {
+    if (validatePrefixHook)
+        validatePrefixHook->validatePath(filename, IFOwrite);
 #ifdef _WIN32
     FILETIME timeCreated, timeModified, timeAccessed;
     FILETIME *pTimeCreated, *pTimeModified, *pTimeAccessed;
@@ -507,6 +537,8 @@ bool CFile::setTime(const CDateTime * createTime, const CDateTime * modifiedTime
 
 fileBool CFile::isDirectory()
 {
+    if (validatePrefixHook)
+        validatePrefixHook->validatePath(filename, IFOread);
 #ifdef _WIN32
     DWORD attr = GetFileAttributes(filename);
     if (attr == -1)
@@ -524,6 +556,9 @@ fileBool CFile::isFile()
 {
     if (stdIoHandle(filename)>=0)
         return fileBool::foundYes;
+
+    if (validatePrefixHook)
+        validatePrefixHook->validatePath(filename, IFOread);
 #ifdef _WIN32
     DWORD attr = GetFileAttributes(filename);
     if (attr == -1)
@@ -539,6 +574,8 @@ fileBool CFile::isFile()
 
 fileBool CFile::isReadOnly()
 {
+    if (validatePrefixHook)
+        validatePrefixHook->validatePath(filename, IFOread);
 #ifdef _WIN32
     DWORD attr = GetFileAttributes(filename);
     if (attr == -1)
@@ -582,6 +619,8 @@ static bool setShareLock(int fd,IFSHmode share)
 HANDLE CFile::openHandle(IFOmode mode, IFSHmode sharemode, bool async, int stdh)
 {
     HANDLE handle = NULLFILE;
+    if (validatePrefixHook && (stdh <= 0))
+        validatePrefixHook->validatePath(filename, mode);
 #ifdef _WIN32
     if (stdh>=0) {
         DWORD mode;
@@ -1731,6 +1770,215 @@ public:
     }
 
 };
+
+class CValidateHook : public CSimpleInterfaceOf<IValidateFilePaths>
+{
+public:
+    CValidateHook()
+    {
+    }
+    virtual void validatePath(const char *filePath, IFOmode mode) override
+    {
+        unsigned n = validPrefixes.size();
+        if (0 == n)
+            return;
+        const char *pathToValidate = filePath;
+        char curDir[_MAX_PATH];
+        FilePathType type = identifyPathType(pathToValidate);
+        if (type & FPTinvalid)
+            throw makeStringExceptionV(-1, "Invalid filename '%s'", filePath);
+        if (!(type & FPTabspure))
+        {
+            // local relative paths allowed, but not relative paths
+            verifyex(type & FPTrelative);
+            if (type & (FPTrelcurrent | FPTrelparent | FPThome))
+                throw makeStringExceptionV(-1, "Relative filenames not supported: '%s'", filePath);
+            if (!GetCurrentDirectory(sizeof(curDir), curDir))
+                throw makeStringExceptionV(-1, "validatePath: failed to get current handling file '%s'", filePath);
+            pathToValidate = curDir;
+        }
+
+        // JCSMORE - would a trie/prefix tree be worth it here?
+        for (const auto &entry: validPrefixes)
+        {
+            const char *validPrefix = entry.first.c_str();
+            if (startsWith(pathToValidate, validPrefix))
+            {
+                IFOmode validMode = entry.second;
+                switch (validMode)
+                {
+                    case IFOread:
+                        if (mode == IFOread)
+                            return;
+                        break;
+                    case IFOwrite:
+                        if ((mode == IFOwrite) || (mode == IFOcreate))
+                            return;
+                        break;
+                    case IFOreadwrite:
+                        return; // any mode allowed
+                }
+                throw makeStringExceptionV(-1, "Unsupproted mode(%u) for prefix: '%s', validating file '%s'", mode, validPrefix, filePath);
+            }
+        }
+        if (type & FPTabspure)
+            throw makeStringExceptionV(-1, "Attempting to access a file from an unsupported directory prefix: %s", filePath);
+        else
+            throw makeStringExceptionV(-1, "Attempting to access a file from an unsupported local current directory, file = '%s', cwd = '%s'", filePath, pathToValidate);
+    }
+    void add(const char *prefix, IFOmode mode)
+    {
+        validPrefixes.emplace_back(std::make_pair(prefix, mode));
+    }
+private:
+    typedef std::vector<std::pair<std::string, IFOmode>> ValidPrefixVector;
+
+    ValidPrefixVector validPrefixes;
+};
+
+
+class CPrefixTree
+{
+public:
+    CPrefixTree()
+    {
+    }
+    ~CPrefixTree()
+    {
+        delete root;
+    }
+    bool search(const char *prefix)
+    {
+        if (nullptr == root)
+            return false;
+        return root->search(prefix);
+    }
+    void insert(const char *input)
+    {
+        if (!root)
+            root = new CTrieNode();
+        root->insert(input);
+    }
+    bool isEmpty() const
+    {
+        return nullptr == root;
+    }
+private:
+    class CTrieNode
+    {
+    public:
+        ~CTrieNode()
+        {
+            for (auto &child: children)
+                delete child;
+        }
+        void insert(const char *input)
+        {
+            CTrieNode *current = this;
+            for (char c=*input; c != '\0'; c=*input++)
+            {
+                CTrieNode * &child = current->children[c];
+                if (nullptr == child)
+                    child = new CTrieNode();
+                current = child;
+            }
+            current->isLeaf = true;
+        }
+        bool search(const char *prefix)
+        {
+            CTrieNode *current = this;
+            for (char c=*prefix; c != '\0'; c=*prefix++)
+            {
+                current = current->children[c];
+                if (nullptr == current)
+                    return false;
+            }
+            return true;
+        }
+        std::array<CTrieNode *, 128> children{};
+        bool isLeaf = false;
+    };
+    CTrieNode *root = nullptr;
+};
+
+class CValidateHookPrefixTree : public CSimpleInterfaceOf<IValidateFilePaths>
+{
+public:
+    CValidateHookPrefixTree()
+    {
+    }
+    virtual void validatePath(const char *filePath, IFOmode mode) override
+    {
+        if (validPrefixes.isEmpty())
+            return;
+        const char *pathToValidate = filePath;
+        char curDir[_MAX_PATH];
+        FilePathType type = identifyPathType(pathToValidate);
+        if (type & FPTinvalid)
+            throw makeStringExceptionV(-1, "Invalid filename '%s'", filePath);
+        if (!(type & FPTabspure))
+        {
+            // local relative paths allowed, but not relative paths
+            verifyex(type & FPTrelative);
+            if (type & (FPTrelcurrent | FPTrelparent | FPThome))
+                throw makeStringExceptionV(-1, "Relative filenames not supported: '%s'", filePath);
+            if (!GetCurrentDirectory(sizeof(curDir), curDir))
+                throw makeStringExceptionV(-1, "validatePath: failed to get current handling file '%s'", filePath);
+            pathToValidate = curDir;
+        }
+
+        if (!validPrefixes.search(pathToValidate))
+            throw makeStringExceptionV(-1, "Attempting to access a file from an unsupported directory prefix: %s", filePath);
+    }
+    void add(const char *prefix, IFOmode mode)
+    {
+        validPrefixes.insert(prefix); // mode?
+    }
+private:
+    CPrefixTree validPrefixes;
+};
+
+
+
+IValidateFilePaths *createFileValidateHook(const std::vector<std::string> &_categories)
+{
+    static const std::vector<std::string> allCats = { "data", "spill", "temp", "log", "dali", "query", "lock", "key", "run" }; // NB: container version should not have/use "key"
+
+    Owned<CValidateHook> ret = new CValidateHook();
+    StringBuffer dir;
+    const std::vector<std::string> &categories = _categories.size() ? _categories : allCats;
+    for (auto const &cat: categories)
+    {
+        if ("data" == cat) // special case "data", means allow all data dirs or planes
+        {
+#ifdef _CONTAINERIZED
+            Owned<IPropertyTreeIterator> dataPlanes = getGlobalConfigSP()->getElements("storage/planes[@category='data']");
+            ForEach (*dataPlanes)
+                ret->add(dataPlanes->query().queryProp("@prefixname"), IFOreadwrite);
+#else
+            if (getConfigurationDirectory(nullptr, "data", nullptr, nullptr, dir.clear()))
+                ret->add(dir, IFOreadwrite);
+            if (getConfigurationDirectory(nullptr, "data2", nullptr, nullptr, dir.clear()))
+                ret->add(dir, IFOreadwrite);
+            if (getConfigurationDirectory(nullptr, "data3", nullptr, nullptr, dir.clear()))
+                ret->add(dir, IFOreadwrite);
+            if (getConfigurationDirectory(nullptr, "data4", nullptr, nullptr, dir.clear()))
+                ret->add(dir, IFOreadwrite);
+            if (getConfigurationDirectory(nullptr, "mirror", nullptr, nullptr, dir.clear()))
+                ret->add(dir, IFOreadwrite);
+#endif            
+        }
+        else if (getConfigurationDirectory(nullptr, cat.c_str(), nullptr, nullptr, dir.clear()))
+            ret->add(dir, IFOreadwrite);
+    }
+#ifndef _CONTAINERIZED
+    // for now, in bare-metal - all componnents have acces to environment.xml/conf
+    ret->add(hpccBuildInfo.configDir, IFOreadwrite);
+    
+    ret->add(hpccBuildInfo.runtimeDir, IFOreadwrite); // could be limited to cwd instead?
+#endif
+    return ret.getClear();
+}
 
 IFileIO * CFile::openShared(IFOmode mode,IFSHmode share,IFEflags extraFlags)
 {
@@ -3730,6 +3978,8 @@ public:
             StringBuffer location(path);
             if (subidx)
                 location.append(subpaths.item(subidx-1).text);
+            if (validatePrefixHook)
+                validatePrefixHook->validatePath(location, IFOread);
             // not sure if should remove trailing '/'  
             handle = ::opendir(location.str());
             // better error handling here?
@@ -3866,6 +4116,8 @@ IDirectoryIterator *CFile::directoryFiles(const char *mask,bool sub,bool include
 bool CFile::getInfo(bool &isdir,offset_t &size,CDateTime &modtime)
 {
     struct stat info;
+    if (validatePrefixHook)
+        validatePrefixHook->validatePath(filename, IFOread);
     if (stat(filename, &info) == 0) {
         size = (offset_t)info.st_size;
         isdir = S_ISDIR(info.st_mode);
@@ -5342,6 +5594,83 @@ bool isRemotePath(const char *path)
             return false;
         case ':':
             return cur[0]=='/' && cur[1]=='/';
+        }
+    }
+}
+
+FilePathType identifyPathType(const char *path, bool stopAtFirstDirective)
+{
+    FilePathType ret = FPTnone;
+    if (isEmptyString(path))
+        return FPTinvalid;
+    if ('~' == *path)
+    {
+        ret |= FPThome;
+        if (stopAtFirstDirective)
+            return ret;
+    }
+    else
+    {
+        ret |= (*path == PATHSEPCHAR) ? FPTabsolute : FPTrelative;
+    }
+    const char *cursor = path+1;
+    bool partSepLast = false;
+    bool dotLast = false;
+    bool dotdotLast = false;
+    while (true)
+    {
+        char c = *cursor++;
+        switch (c)
+        {
+            case '\0':
+                if (dotLast) // '/a/b/c/.' - trailing '.' not allowed
+                    ret |= FPTrelcurrent;
+                else if (dotdotLast) // '/a/b/c/..' - trailing '..' not allowed
+                    ret |= FPTrelparent;
+                else if ((FPTabsolute & ret) && !((FPTrelcurrent|FPTrelparent) & ret))
+                    ret |= FPTabspure;
+                return ret;
+            case '.':
+            {
+                if (dotdotLast) // this is allowing for triple (or greater) '.' sequences, theoretically valid file/dir names
+                    dotdotLast = false;
+                else if (dotLast)
+                {
+                    dotdotLast = true;
+                    dotLast = false;
+                }
+                else
+                    dotLast = true;
+                partSepLast = false;
+                break;
+            }
+            case PATHSEPCHAR:
+            {
+                if (dotLast)
+                {
+                    ret |= FPTrelcurrent;
+                    if (stopAtFirstDirective)
+                        return ret;
+                    dotLast = false;
+                }
+                else if (dotdotLast)
+                {
+                    ret |= FPTrelparent;
+                    if (stopAtFirstDirective)
+                        return ret;
+                    dotdotLast = false;
+                }
+                if (partSepLast) // '//' etc. - double path seperators not allowed
+                {
+                    ret |= FPTinvalid;
+                    return ret;
+                }
+                partSepLast = true;
+                break;
+            }
+            default:
+                dotLast = dotdotLast = partSepLast = false;
+                break;
         }
     }
 }

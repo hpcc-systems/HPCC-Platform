@@ -559,6 +559,10 @@ int init_main(int argc, const char* argv[])
             return -1;
         }
 
+        std::vector<std::string> allCats = { "data", "log", "query" };
+        Owned<IValidateFilePaths> validateHook = createFileValidateHook(allCats);
+        installValidateFileHook(validateHook);
+
         writeSentinelFile(sentinelFile);
 
         result = work_main(*config, *server.get());

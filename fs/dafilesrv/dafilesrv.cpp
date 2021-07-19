@@ -852,6 +852,9 @@ int main(int argc,char **argv)
     startPerformanceMonitor(10*60*1000, PerfMonStandard, &perfHook);
 #endif
 
+    Owned<IValidateFilePaths> validateHook = createFileValidateHook({"data", "log", "query"});
+    installValidateFileHook(validateHook);
+
     writeSentinelFile(sentinelFile);
     try
     {

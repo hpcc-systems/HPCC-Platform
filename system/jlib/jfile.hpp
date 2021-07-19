@@ -20,6 +20,8 @@
 #ifndef JFILE_HPP
 #define JFILE_HPP
 
+#include <string>
+
 #if defined (__linux__)
 #include <sys/inotify.h>
 #endif
@@ -549,7 +551,21 @@ inline const char *splitDirTail(const char *path,StringBuffer &dir)
 
 extern jlib_decl bool isUrl(const char *path);
 extern jlib_decl bool isRemotePath(const char *path);
-extern jlib_decl bool isAbsolutePath(const char *path);
+extern jlib_decl bool isAbsolutePath(const char *path); // NB: only validates that begins absolute
+
+enum FilePathType : unsigned
+{
+    FPTnone       = 0x0000,   //
+    FPTinvalid    = 0x0001,   // invalid path
+    FPTabsolute   = 0x0002,
+    FPTrelative   = 0x0004,
+    FPTrelcurrent = 0x0008,   // '.'
+    FPTrelparent  = 0x0010,   // '..'
+    FPThome       = 0x0020,   // '~'
+    FPTabspure    = 0x0040,   // pure absolute path
+};
+BITMASK_ENUM(FilePathType);
+extern jlib_decl FilePathType identifyPathType(const char *path, bool stopAtFirstDirective=true); // NB: scans path checking for relative specifiers. Doesn't handle Windows drive specifiers, e.g. "C:\"
 
 // NOTE - makeAbsolutePath also normalizes the supplied path to remove . and .. references
 extern jlib_decl StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out,bool mustExist=false);
@@ -728,5 +744,15 @@ jlib_decl IFileEventWatcher *createFileEventWatcher(FileWatchFunc callback);
 
 extern jlib_decl IPropertyTree * getHostGroup(const char * name, bool required);
 extern jlib_decl IPropertyTree * getStoragePlane(const char * name);
+
+
+interface IValidateFilePaths : extends IInterface
+{
+    virtual void validatePath(const char *path, IFOmode mode) = 0;
+};
+
+extern jlib_decl IValidateFilePaths *createFileValidateHook(const std::vector<std::string> &categories);
+extern jlib_decl void installValidateFileHook(IValidateFilePaths *_validatePrefixHook);
+extern jlib_decl void removeValidateFileHook(IValidateFilePaths *_validatePrefixHook);
 
 #endif
