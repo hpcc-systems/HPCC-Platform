@@ -652,7 +652,8 @@ public:
             CNodeMapping &mapping = iter->query();
             const CKeyIdAndPos &key = mapping.queryFindValue();
             const CJHTreeNode &node = mapping.queryElement();
-            cacheInfo.noteWarm(key.keyId, key.pos, node.getNodeSize(), node.getNodeType());
+            if (node.isReady())
+                cacheInfo.noteWarm(key.keyId, key.pos, node.getNodeSize(), node.getNodeType());
         }
     }
     void noteReady(CJHTreeNode &node)
