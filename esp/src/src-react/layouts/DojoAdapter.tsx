@@ -29,6 +29,7 @@ export const DojoAdapter: React.FunctionComponent<DojoAdapterProps> = ({
 
     const myRef = React.useRef<HTMLDivElement>();
     const uid = useId("");
+    const Wuid = params && params["Wuid"] ? params["Wuid"] : null;
     const [widget, setWidget] = React.useState<any>();
 
     React.useEffect(() => {
@@ -88,7 +89,20 @@ export const DojoAdapter: React.FunctionComponent<DojoAdapterProps> = ({
             }
             widget = null;  //  Avoid race condition  ---
         };
-    }, [delayProps, onWidgetMount, params, uid, widgetClass, widgetClassID]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    React.useEffect(() => {
+        if (!widget || !Wuid) return;
+
+        switch (widgetClassID) {
+            case "Graph7Widget":
+            case "InfoGridWidget":
+                widget.doInit(Wuid);
+                break;
+
+        }
+    }, [Wuid, widget, widgetClassID]);
 
     widget?.resize();
     return <div ref={myRef} style={{ width: "100%", height: "100%" }}>{nlsHPCC.Loading} {widgetClassID}...</div>;
@@ -128,7 +142,8 @@ export const DojoComponent: React.FunctionComponent<DojoComponentProps> = ({
         return () => {
             w.destroyRecursive();
         };
-    }, [Widget, WidgetParams, divID, id, postCreate]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return <div style={{ width: "100%", height: "100%", position: "relative" }}>
         <div id={divID} className="dojo-component">

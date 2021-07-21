@@ -18,6 +18,7 @@ export function useWorkunit(wuid: string, full: boolean = false): [Workunit, WUS
     const [lastUpdate, setLastUpdate] = React.useState(Date.now());
 
     React.useEffect(() => {
+        if (!wuid) return;
         const wu = Workunit.attach({ baseUrl: "" }, wuid);
         const handle = wu.watch(() => {
             if (wu.StateID !== 999) {
@@ -188,6 +189,7 @@ export function useWorkunitExceptions(wuid: string): [WUInfo.ECLException[], Wor
     const [count, increment] = useCounter();
 
     React.useEffect(() => {
+        if (!workunit) return;
         workunit?.fetchInfo({
             IncludeExceptions: true
         }).then(response => {

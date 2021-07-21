@@ -38,7 +38,7 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
         Name: {
             label: nlsHPCC.Name, width: 180, sortable: true,
             formatter: function (Name, row) {
-                return `<a href='#/workunits/${wuid}/outputs/${Name}' class='dgrid-row-url'>${Name}</a>`;
+                return `<a href='#/workunits/${row.Wuid}/outputs/${Name}' class='dgrid-row-url'>${Name}</a>`;
             }
         },
         FileName: {
@@ -125,6 +125,7 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
             return {
                 __hpcc_id: row.Name,
                 Name: row.Name,
+                Wuid: row.Wuid,
                 FileName: row.FileName,
                 Value: row.Value,
                 ResultViews: tmp?.View,

@@ -926,6 +926,7 @@ export = {
         Views: "Views",
         ViewSparkClusterInfo: "View Spark Cluster Information",
         Visualize: "Visualize",
+        Visualizations: "Visualizations",
         Warning: "Warning",
         Warnings: "Warning(s)",
         WarnIfCPUUsageIsOver: "Warn if CPU usage is over",
