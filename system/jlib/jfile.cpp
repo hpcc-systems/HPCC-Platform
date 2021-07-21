@@ -215,7 +215,7 @@ const char * pathExtension(const char * path)
 bool checkFileExists(const char * filename)
 {
     if (validatePrefixHook)
-        validatePrefixHook->validatePath(filename, IFOread);
+        validatePrefixHook->validatePath(filename);
 #ifdef _WIN32
     for (unsigned i=0;i<10;i++) {
         DWORD ret = (DWORD)GetFileAttributes(filename); 
@@ -249,7 +249,7 @@ bool unvalidateCheckDirExists(const char * filename)
 bool checkDirExists(const char * filename)
 {
     if (validatePrefixHook)
-        validatePrefixHook->validatePath(filename, IFOread);
+        validatePrefixHook->validatePath(filename);
     return unvalidateCheckDirExists(filename);
 }
 
@@ -297,7 +297,17 @@ static StringBuffer &getLocalOrRemoteName(StringBuffer &name,const RemoteFilenam
 
 CFile::CFile(const char * _filename)
 {
-    filename.set(_filename);
+    if (stdIoHandle(_filename) < 0)
+    {
+        StringBuffer res;
+        makeAbsolutePath(_filename, res);
+        if (validatePrefixHook)
+            validatePrefixHook->validatePath(res);
+        filename.set(res);
+    }
+    else
+        filename.set(_filename);
+
     flags = ((unsigned)IFSHread)|((S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)<<16);
 }
 
@@ -390,7 +400,7 @@ bool localCreateDirectory(const char *name)
     }
 #endif
     if (validatePrefixHook)
-        validatePrefixHook->validatePath(name, IFOwrite);
+        validatePrefixHook->validatePath(name);
     if (unvalidateCheckDirExists(name))
         return true;
 #ifdef _WIN32
@@ -474,8 +484,6 @@ FILETIME * IDateTimetoFILETIME(FILETIME & ft, const CDateTime * dt)
 
 bool CFile::getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateTime * accessedTime)
 {
-    if (validatePrefixHook)
-        validatePrefixHook->validatePath(filename, IFOread);
 #ifdef _WIN32
     //MORE could use GetFileAttributesEx() if we were allowed...
     FILETIME timeCreated, timeModified, timeAccessed;
@@ -500,8 +508,6 @@ bool CFile::getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateTime 
 
 bool CFile::setTime(const CDateTime * createTime, const CDateTime * modifiedTime, const CDateTime * accessedTime)
 {
-    if (validatePrefixHook)
-        validatePrefixHook->validatePath(filename, IFOwrite);
 #ifdef _WIN32
     FILETIME timeCreated, timeModified, timeAccessed;
     FILETIME *pTimeCreated, *pTimeModified, *pTimeAccessed;
@@ -537,8 +543,6 @@ bool CFile::setTime(const CDateTime * createTime, const CDateTime * modifiedTime
 
 fileBool CFile::isDirectory()
 {
-    if (validatePrefixHook)
-        validatePrefixHook->validatePath(filename, IFOread);
 #ifdef _WIN32
     DWORD attr = GetFileAttributes(filename);
     if (attr == -1)
@@ -557,8 +561,6 @@ fileBool CFile::isFile()
     if (stdIoHandle(filename)>=0)
         return fileBool::foundYes;
 
-    if (validatePrefixHook)
-        validatePrefixHook->validatePath(filename, IFOread);
 #ifdef _WIN32
     DWORD attr = GetFileAttributes(filename);
     if (attr == -1)
@@ -574,8 +576,6 @@ fileBool CFile::isFile()
 
 fileBool CFile::isReadOnly()
 {
-    if (validatePrefixHook)
-        validatePrefixHook->validatePath(filename, IFOread);
 #ifdef _WIN32
     DWORD attr = GetFileAttributes(filename);
     if (attr == -1)
@@ -619,8 +619,6 @@ static bool setShareLock(int fd,IFSHmode share)
 HANDLE CFile::openHandle(IFOmode mode, IFSHmode sharemode, bool async, int stdh)
 {
     HANDLE handle = NULLFILE;
-    if (validatePrefixHook && (stdh <= 0))
-        validatePrefixHook->validatePath(filename, mode);
 #ifdef _WIN32
     if (stdh>=0) {
         DWORD mode;
@@ -1777,7 +1775,7 @@ public:
     CValidateHook()
     {
     }
-    virtual void validatePath(const char *filePath, IFOmode mode) override
+    virtual void validatePath(const char *filePath) override
     {
         unsigned n = validPrefixes.size();
         if (0 == n)
@@ -1798,42 +1796,22 @@ public:
             pathToValidate = curDir;
         }
 
-        // JCSMORE - would a trie/prefix tree be worth it here?
-        for (const auto &entry: validPrefixes)
+        for (const auto &validPrefix: validPrefixes)
         {
-            const char *validPrefix = entry.first.c_str();
-            if (startsWith(pathToValidate, validPrefix))
-            {
-                IFOmode validMode = entry.second;
-                switch (validMode)
-                {
-                    case IFOread:
-                        if (mode == IFOread)
-                            return;
-                        break;
-                    case IFOwrite:
-                        if ((mode == IFOwrite) || (mode == IFOcreate))
-                            return;
-                        break;
-                    case IFOreadwrite:
-                        return; // any mode allowed
-                }
-                throw makeStringExceptionV(-1, "Unsupproted mode(%u) for prefix: '%s', validating file '%s'", mode, validPrefix, filePath);
-            }
+            if (startsWith(pathToValidate, validPrefix.c_str()))
+                return;
         }
         if (type & FPTabspure)
             throw makeStringExceptionV(-1, "Attempting to access a file from an unsupported directory prefix: %s", filePath);
         else
             throw makeStringExceptionV(-1, "Attempting to access a file from an unsupported local current directory, file = '%s', cwd = '%s'", filePath, pathToValidate);
     }
-    void add(const char *prefix, IFOmode mode)
+    void add(const char *prefix)
     {
-        validPrefixes.emplace_back(std::make_pair(prefix, mode));
+        validPrefixes.emplace_back(prefix);
     }
 private:
-    typedef std::vector<std::pair<std::string, IFOmode>> ValidPrefixVector;
-
-    ValidPrefixVector validPrefixes;
+    std::vector<std::string> validPrefixes;
 };
 
 
@@ -1907,7 +1885,7 @@ public:
     CValidateHookPrefixTree()
     {
     }
-    virtual void validatePath(const char *filePath, IFOmode mode) override
+    virtual void validatePath(const char *filePath) override
     {
         if (validPrefixes.isEmpty())
             return;
@@ -1930,14 +1908,13 @@ public:
         if (!validPrefixes.search(pathToValidate))
             throw makeStringExceptionV(-1, "Attempting to access a file from an unsupported directory prefix: %s", filePath);
     }
-    void add(const char *prefix, IFOmode mode)
+    void add(const char *prefix)
     {
-        validPrefixes.insert(prefix); // mode?
+        validPrefixes.insert(prefix);
     }
 private:
     CPrefixTree validPrefixes;
 };
-
 
 
 IValidateFilePaths *createFileValidateHook(const std::vector<std::string> &_categories)
@@ -1957,25 +1934,25 @@ IValidateFilePaths *createFileValidateHook(const std::vector<std::string> &_cate
                 ret->add(dataPlanes->query().queryProp("@prefixname"), IFOreadwrite);
 #else
             if (getConfigurationDirectory(nullptr, "data", nullptr, nullptr, dir.clear()))
-                ret->add(dir, IFOreadwrite);
+                ret->add(dir);
             if (getConfigurationDirectory(nullptr, "data2", nullptr, nullptr, dir.clear()))
-                ret->add(dir, IFOreadwrite);
+                ret->add(dir);
             if (getConfigurationDirectory(nullptr, "data3", nullptr, nullptr, dir.clear()))
-                ret->add(dir, IFOreadwrite);
+                ret->add(dir);
             if (getConfigurationDirectory(nullptr, "data4", nullptr, nullptr, dir.clear()))
-                ret->add(dir, IFOreadwrite);
+                ret->add(dir);
             if (getConfigurationDirectory(nullptr, "mirror", nullptr, nullptr, dir.clear()))
-                ret->add(dir, IFOreadwrite);
+                ret->add(dir);
 #endif            
         }
         else if (getConfigurationDirectory(nullptr, cat.c_str(), nullptr, nullptr, dir.clear()))
-            ret->add(dir, IFOreadwrite);
+            ret->add(dir);
     }
 #ifndef _CONTAINERIZED
     // for now, in bare-metal - all componnents have acces to environment.xml/conf
-    ret->add(hpccBuildInfo.configDir, IFOreadwrite);
+    ret->add(hpccBuildInfo.configDir);
     
-    ret->add(hpccBuildInfo.runtimeDir, IFOreadwrite); // could be limited to cwd instead?
+    ret->add(hpccBuildInfo.runtimeDir); // could be limited to cwd instead?
 #endif
     return ret.getClear();
 }
@@ -3979,7 +3956,7 @@ public:
             if (subidx)
                 location.append(subpaths.item(subidx-1).text);
             if (validatePrefixHook)
-                validatePrefixHook->validatePath(location, IFOread);
+                validatePrefixHook->validatePath(location);
             // not sure if should remove trailing '/'  
             handle = ::opendir(location.str());
             // better error handling here?
@@ -4116,8 +4093,6 @@ IDirectoryIterator *CFile::directoryFiles(const char *mask,bool sub,bool include
 bool CFile::getInfo(bool &isdir,offset_t &size,CDateTime &modtime)
 {
     struct stat info;
-    if (validatePrefixHook)
-        validatePrefixHook->validatePath(filename, IFOread);
     if (stat(filename, &info) == 0) {
         size = (offset_t)info.st_size;
         isdir = S_ISDIR(info.st_mode);

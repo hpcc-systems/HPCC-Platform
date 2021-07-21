@@ -748,7 +748,7 @@ extern jlib_decl IPropertyTree * getStoragePlane(const char * name);
 
 interface IValidateFilePaths : extends IInterface
 {
-    virtual void validatePath(const char *path, IFOmode mode) = 0;
+    virtual void validatePath(const char *path) = 0;
 };
 
 extern jlib_decl IValidateFilePaths *createFileValidateHook(const std::vector<std::string> &categories);
