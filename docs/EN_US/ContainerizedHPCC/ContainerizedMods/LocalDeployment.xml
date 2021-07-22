@@ -74,6 +74,14 @@
     <para>Expected response:</para>
 
     <para><programlisting>"hpcc" has been added to your repositories</programlisting></para>
+
+    <para>To update to the latest charts:</para>
+
+    <para><programlisting>helm repo update</programlisting></para>
+
+    <para>Expected response:</para>
+
+    <para><programlisting>Update Complete. Happy Helming!</programlisting></para>
   </sect1>
 
   <sect1 id="startdefault">
@@ -85,7 +93,12 @@
 
     <para><emphasis role="bold">To start this simple system:</emphasis></para>
 
-    <para><programlisting>helm install mycluster hpcc/hpcc --set global.image.version=latest </programlisting></para>
+    <para><programlisting>helm install mycluster hpcc/hpcc --version=8.2.2 </programlisting></para>
+
+    <para><emphasis role="bold">The --version argument is optional, but
+    recommended. It ensures that you know which version you are installing. If
+    omitted, the latest non-development version is installed. This example
+    uses 8.2.2, but you should use the version you want. </emphasis></para>
 
     <para>Expected response:</para>
 

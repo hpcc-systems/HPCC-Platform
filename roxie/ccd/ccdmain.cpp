@@ -1432,7 +1432,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     roxieServer->start();
                 }
 
-                queryFileCache().loadSavedOsCacheInfo();
+                if (!topology->getPropBool("@disableCachePrewarming", false))
+                    queryFileCache().loadSavedOsCacheInfo();
                 queryFileCache().startCacheReporter();
 #ifdef _CONTAINERIZED
                 publishTopology(traceLevel, myRoles);

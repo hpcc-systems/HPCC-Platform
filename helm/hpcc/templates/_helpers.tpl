@@ -149,7 +149,9 @@ Pass in root as .
 {{- $planes := ($storage.planes | default list) -}}
 {{- $certificates := (.Values.certificates | default dict) -}}
 {{- $issuers := ($certificates.issuers | default dict) -}}
-mtls: {{ and ($certificates.enabled) (hasKey $issuers "local") }}
+{{- $security := .Values.security | default dict -}}
+{{- $mtls := hasKey $security "mtls" | ternary $security.mtls true -}}
+mtls: {{ (and $mtls (and ($certificates.enabled) (hasKey $issuers "local"))) }}
 imageVersion: {{ .Values.global.image.version | default .Chart.Version }}
 singleNode: {{ .Values.global.singleNode | default false }}
 {{ if .Values.global.defaultEsp -}}
@@ -1140,26 +1142,28 @@ There are separate certificate issuers for local and public certificates
 by default public certificates are self-signed and local certificates are signed
 by our own certificate authority.  A CA certificate is also provided to the pod
 so that we can recognize the signature of our own CA.
+NB: if optional 'issuer' passed in use it, otherwise base on visibility and
+use "public" or "local" 
 */}}
 {{- define "hpcc.addCertificate" }}
 {{- if (.root.Values.certificates | default dict).enabled -}}
 {{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
-{{- $issuer := ternary .root.Values.certificates.issuers.public .root.Values.certificates.issuers.local $externalCert -}}
+{{- $issuerName := .issuer | default (ternary "public" "local" $externalCert) -}}
+{{- $issuer := get .root.Values.certificates.issuers $issuerName -}}
 {{- if $issuer -}}
 {{- $namespace := .root.Release.Namespace -}}
 {{- $service := (.service | default dict) -}}
 {{- $domain := ( $service.domain | default $issuer.domain | default $namespace | default "default" ) -}}
-{{- $exposure := ternary "public" "local" $externalCert -}}
 {{- $name := .name }}
 
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: {{ .component }}-{{ $exposure }}-{{ $name }}-cert
+  name: {{ .component }}-{{ $issuerName }}-{{ $name }}-cert
   namespace: {{ $namespace }}
 spec:
   # Secret names are always required.
-  secretName: {{ .component }}-{{ $exposure }}-{{ $name }}-tls
+  secretName: {{ .component }}-{{ $issuerName }}-{{ $name }}-tls
   duration: 2160h # 90d
   renewBefore: 360h # 15d
   subject:
@@ -1182,7 +1186,7 @@ spec:
  {{- else if .service -}}
    {{- $public := and (hasKey .service "visibility") (not (eq .service.visibility "cluster")) -}}
    {{- if eq $public $externalCert }}
-  - {{ .service.name }}.{{ $domain }}
+  - {{ $name }}.{{ $domain }}
    {{- end }}
  {{- /* if services parameter is passed the component has an array of services to configure */ -}}
  {{- else if .services -}}
@@ -1259,46 +1263,50 @@ spec:
 
 {{/*
 Add a certficate volume mount for a component
+NB: if optional 'issuer' passed in use it, otherwise base on visibility and
+use "public" or "local" 
 */}}
 {{- define "hpcc.addCertificateVolumeMount" -}}
 {{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
-{{- $exposure := ternary "public" "local" $externalCert }}
+{{- $issuerName := .issuer | default (ternary "public" "local" $externalCert) -}}
 {{- /*
     A .certificate parameter means the user explictly configured a certificate to use
     otherwise check if certificate generation is enabled
 */ -}}
 {{- if .certificate -}}
-- name: certificate-{{ .component }}-{{ $exposure }}-{{ .name }}
-  mountPath: /opt/HPCCSystems/secrets/certificates/{{ $exposure }}
+- name: certificate-{{ .component }}-{{ $issuerName }}-{{ .name }}
+  mountPath: /opt/HPCCSystems/secrets/certificates/{{ $issuerName }}
 {{- else if (.root.Values.certificates | default dict).enabled -}}
-{{- $issuer := ternary .root.Values.certificates.issuers.public .root.Values.certificates.issuers.local $externalCert -}}
+{{- $issuer := get .root.Values.certificates.issuers $issuerName -}}
 {{- if $issuer -}}
-- name: certificate-{{ .component }}-{{ $exposure }}-{{ .name }}
-  mountPath: /opt/HPCCSystems/secrets/certificates/{{ $exposure }}
+- name: certificate-{{ .component }}-{{ $issuerName }}-{{ .name }}
+  mountPath: /opt/HPCCSystems/secrets/certificates/{{ $issuerName }}
 {{- end }}
 {{- end -}}
 {{- end -}}
 
 {{/*
 Add a secret volume for a certificate
+NB: if optional 'issuer' passed in use it, otherwise base on visibility and
+use "public" or "local" 
 */}}
 {{- define "hpcc.addCertificateVolume" -}}
 {{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
-{{- $exposure := ternary "public" "local" $externalCert -}}
+{{- $issuerName := .issuer | default (ternary "public" "local" $externalCert) -}}
 {{- /*
     A .certificate parameter means the user explictly configured a certificate to use
     otherwise check if certificate generation is enabled
 */ -}}
 {{- if .certificate -}}
-- name: certificate-{{ .component }}-{{ $exposure }}-{{ .name }}
+- name: certificate-{{ .component }}-{{ $issuerName }}-{{ .name }}
   secret:
     secretName: {{ .certificate }}
 {{- else if (.root.Values.certificates | default dict).enabled -}}
-{{- $issuer := ternary .root.Values.certificates.issuers.public .root.Values.certificates.issuers.local $externalCert -}}
+{{- $issuer := get .root.Values.certificates.issuers $issuerName -}}
 {{- if $issuer -}}
-- name: certificate-{{ .component }}-{{ $exposure }}-{{ .name }}
+- name: certificate-{{ .component }}-{{ $issuerName }}-{{ .name }}
   secret:
-    secretName: {{ .component }}-{{ $exposure }}-{{ .name }}-tls
+    secretName: {{ .component }}-{{ $issuerName }}-{{ .name }}-tls
 {{- end -}}
 {{- end -}}
 {{- end -}}

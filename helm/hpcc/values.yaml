@@ -174,7 +174,7 @@ storage:
 ## of this comment.  The default for the public issuer generates self signed certificates. The expectation is that this will be
 ## overridden by the configuration of an external certificate authority or vault in QA and production environments.
 ##
-## The default for the local (mTLS) issuer is designed to act as our own local certificate authority. We need only need to recognize
+## The default for the local (mTLS) issuer is designed to act as our own local certificate authority. We only need to recognize
 ## what a component is, and that it belongs to this cluster.
 ## But a kubernetes secret must be provided for the certificate authority key-pair.  The default name for the secret
 ## is "local-issuer-ca-key-pair". The secret is a standard kubernetes.io/tls secret and should provide data values for
