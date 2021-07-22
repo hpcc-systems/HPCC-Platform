@@ -16,7 +16,6 @@
 if ( PLATFORM AND UNIX )
    ADD_SUBDIRECTORY(ftslave)
    ADD_SUBDIRECTORY(thor)
-   ADD_SUBDIRECTORY(launcher)
    ADD_SUBDIRECTORY(configxml)
 endif()
 
