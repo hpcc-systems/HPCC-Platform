@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ReflexContainer, ReflexElement, ReflexSplitter } from "react-reflex";
+import { ReflexContainer, ReflexElement, ReflexSplitter } from "../layouts/react-reflex";
 import { getTheme, PrimaryButton, IconButton, IIconProps, Link, Dropdown, IDropdownOption } from "@fluentui/react";
 import { useOnEvent } from "@fluentui/react-hooks";
 import { mergeStyleSets } from "@fluentui/style-utilities";
@@ -14,7 +14,7 @@ import { Results } from "./Results";
 import { ECLSourceEditor } from "./SourceEditor";
 import { TargetClusterTextField } from "./forms/Fields";
 import nlsHPCC from "src/nlsHPCC";
-import "react-reflex/styles.css";
+
 import "eclwatch/css/cmDarcula.css";
 
 interface ECLPlaygroundProps {
@@ -187,7 +187,7 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
     const [wuState, setWuState] = React.useState("");
 
     const submitWU = React.useCallback(async () => {
-        const wu = await Workunit.create({baseUrl: ""});
+        const wu = await Workunit.create({ baseUrl: "" });
 
         await wu.update({ QueryText: editor.ecl() });
         await wu.submit(cluster);
@@ -208,7 +208,7 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
     }, [cluster, editor, setOutputMode, setWorkunit]);
 
     const handleKeyUp = React.useCallback((evt) => {
-        switch(evt.key) {
+        switch (evt.key) {
             case "Enter":
                 if (evt.ctrlKey) {
                     submitWU();
@@ -243,20 +243,20 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
             <div className={playgroundStyles.outputButtons}>
                 <IconButton
                     iconProps={warningIcon}
-                    onClick={ React.useCallback(() => setOutputMode(OutputMode.ERRORS), [setOutputMode]) }
-                    checked={ outputMode === OutputMode.ERRORS ? true : false }
+                    onClick={React.useCallback(() => setOutputMode(OutputMode.ERRORS), [setOutputMode])}
+                    checked={outputMode === OutputMode.ERRORS ? true : false}
                 />
                 <IconButton
                     iconProps={resultsIcon}
-                    onClick={ React.useCallback(() => setOutputMode(OutputMode.RESULTS), [setOutputMode]) }
-                    checked={ outputMode === OutputMode.RESULTS ? true : false }
-                    disabled={ workunit?.Wuid ? false : true }
+                    onClick={React.useCallback(() => setOutputMode(OutputMode.RESULTS), [setOutputMode])}
+                    checked={outputMode === OutputMode.RESULTS ? true : false}
+                    disabled={workunit?.Wuid ? false : true}
                 />
                 <IconButton
                     iconProps={graphIcon}
-                    onClick={ React.useCallback(() => setOutputMode(OutputMode.VIS), [setOutputMode]) }
-                    checked={ outputMode === OutputMode.VIS ? true : false }
-                    disabled={ workunit?.Wuid ? false : true }
+                    onClick={React.useCallback(() => setOutputMode(OutputMode.VIS), [setOutputMode])}
+                    checked={outputMode === OutputMode.VIS ? true : false}
+                    disabled={workunit?.Wuid ? false : true}
                 />
             </div>
         </div>
@@ -341,7 +341,7 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
                 <ReflexContainer orientation="vertical">
                     <ReflexElement>
                         <HolyGrail
-                            main={ <ECLSourceEditor text={query} setEditor={setEditor} /> }
+                            main={<ECLSourceEditor text={query} setEditor={setEditor} />}
                             footer={
                                 <ECLEditorToolbar
                                     editor={editor}
@@ -352,24 +352,24 @@ export const ECLPlayground: React.FunctionComponent<ECLPlaygroundProps> = (props
                         />
                     </ReflexElement>
                     <ReflexSplitter />
-                    <ReflexElement minSize={100} flex={0.25} style={{overflow: "hidden"}}>
+                    <ReflexElement minSize={100} flex={0.25} style={{ overflow: "hidden" }}>
                         <DojoAdapter widgetClassID="Graph7Widget" params={{ Wuid: workunit?.Wuid }} />
                     </ReflexElement>
                 </ReflexContainer>
             </ReflexElement>
             <ReflexSplitter />
             <ReflexElement propagateDimensions={true} minSize={100}>
-            { outputMode === OutputMode.ERRORS ? (
-                <InfoGrid wuid={workunit?.Wuid} />
+                {outputMode === OutputMode.ERRORS ? (
+                    <InfoGrid wuid={workunit?.Wuid} />
 
-            ) : outputMode === OutputMode.RESULTS ? (
-                <Results wuid={workunit?.Wuid} />
+                ) : outputMode === OutputMode.RESULTS ? (
+                    <Results wuid={workunit?.Wuid} />
 
-            ) : outputMode === OutputMode.VIS ? (
-                <div style={{ height: "calc(100% - 25px)" }}>
-                    <DojoAdapter widgetClassID="VizWidget" params={{ Wuid: workunit?.Wuid, Sequence: 0 }} />
-                </div>
-            ) : null }
+                ) : outputMode === OutputMode.VIS ? (
+                    <div style={{ height: "calc(100% - 25px)" }}>
+                        <DojoAdapter widgetClassID="VizWidget" params={{ Wuid: workunit?.Wuid, Sequence: 0 }} />
+                    </div>
+                ) : null}
             </ReflexElement>
         </ReflexContainer>
     </div>;
