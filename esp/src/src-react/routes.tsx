@@ -148,7 +148,15 @@ export const routes: RoutesEx = [
     },
     {
         mainNav: ["queries"],
-        path: "/packagemaps", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="PackageMapQueryWidget" />)
+        path: "/packagemaps",
+        children: [
+            { path: "", action: (ctx, params) => import("./components/PackageMaps").then(_ => <_.PackageMaps filter={parseSearch(ctx.search) as any} />) },
+            { path: "/validate/:Tab", action: (ctx, params) => import("./components/PackageMaps").then(_ => <_.PackageMaps filter={parseSearch(ctx.search) as any} tab={params.Tab as string} />) },
+            { path: "/:Name", action: (ctx, params) => import("./components/PackageMapDetails").then(_ => <_.PackageMapDetails name={params.Name as string} />) },
+            { path: "/:Name/:Tab", action: (ctx, params) => import("./components/PackageMapDetails").then(_ => <_.PackageMapDetails name={params.Name as string} tab={params.Tab as string} />) },
+            { path: "/:Name/parts/:Part", action: (ctx, params) => import("./components/PackageMapPartDetails").then(_ => <_.PackageMapPartDetails name={params.Name as string} part={params.Part as string} />) },
+
+        ]
     },
     //  Ops  ---
     {
