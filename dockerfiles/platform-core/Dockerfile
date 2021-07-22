@@ -46,6 +46,7 @@ RUN apt-get install -y \
   r-base-core \
   zip \
   libarchive13 \
+  libatlas3-base \
   curl
 
 ARG USE_CPPUNIT=1
