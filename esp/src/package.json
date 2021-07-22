@@ -69,8 +69,8 @@
     "react": "^16.12.0",
     "react-dom": "^16.13.1",
     "react-hook-form": "^7.6.6",
-    "react-reflex": "^3.1.1",
-    "react-sizeme": "^2.6.12",
+    "react-reflex": "^4.0.2",
+    "react-sizeme": "^3.0.1",
     "universal-router": "^9.0.1"
   },
   "devDependencies": {

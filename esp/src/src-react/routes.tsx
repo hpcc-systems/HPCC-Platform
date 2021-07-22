@@ -31,7 +31,14 @@ const routes: Routes = [
         name: "clusters",
         path: "/clusters",
         children: [
-            { path: "/:ClusterName", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="TpClusterInfoWidget" params={params} />) }
+            { path: "/:ClusterName", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="TpClusterInfoWidget" params={params} />) },
+            { path: "/:Cluster/usage", action: (ctx, params) => import("./components/DiskUsage").then(_ => <_.ClusterUsage cluster={params.Cluster as string} />) },
+        ]
+    },
+    {
+        path: "/machines",
+        children: [
+            { path: "/:Machine/usage", action: (ctx, params) => import("./components/DiskUsage").then(_ => <_.MachineUsage machine={params.Machine as string} />) },
         ]
     },
     {
@@ -64,8 +71,8 @@ const routes: Routes = [
             { path: "/:Wuid/outputs/:Name", action: (ctx, params) => import("./components/Result").then(_ => <_.Result wuid={params.Wuid as string} resultName={params.Name as string} filter={parseSearch(ctx.search) as any} />) },
         ]
     },
-    { 
-        path: ["/play", "/playground"], 
+    {
+        path: ["/play", "/playground"],
         children: [
             { path: "", action: () => import("./components/ECLPlayground").then(_ => <_.ECLPlayground />) },
             { path: "/legacy", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="ECLPlaygroundWidget" />) },

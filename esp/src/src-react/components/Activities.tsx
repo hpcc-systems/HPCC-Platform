@@ -4,9 +4,11 @@ import { useConst } from "@fluentui/react-hooks";
 import * as ESPActivity from "src/ESPActivity";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { ReflexContainer, ReflexElement, ReflexSplitter, classNames, styles } from "../layouts/react-reflex";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
 import { DojoGrid, selector, tree } from "./DojoGrid";
+import { Summary } from "./DiskUsage";
 
 class DelayedRefresh {
     _promises: Promise<any>[] = [];
@@ -397,10 +399,20 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
         setUIState(state);
     }, [activity, selection]);
 
-    return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
-        main={
-            <DojoGrid type="Sel" store={gridParams.store} query={gridParams.query} columns={gridParams.columns} setGrid={setGrid} setSelection={setSelection} />
-        }
-    />;
+    return <ReflexContainer orientation="horizontal">
+        <ReflexElement minSize={100} size={100}>
+            <Summary />
+        </ReflexElement>
+        <ReflexSplitter style={styles.reflexSplitter}>
+            <div className={classNames.reflexSplitterDiv}></div>
+        </ReflexSplitter>
+        <ReflexElement>
+            <HolyGrail
+                header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
+                main={
+                    <DojoGrid type="Sel" store={gridParams.store} query={gridParams.query} columns={gridParams.columns} setGrid={setGrid} setSelection={setSelection} />
+                }
+            />
+        </ReflexElement>
+    </ReflexContainer >;
 };
