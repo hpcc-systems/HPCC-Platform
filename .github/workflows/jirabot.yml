@@ -66,6 +66,8 @@ jobs:
                     user = 'mcmuja01'
                 if user == 'asselitx':
                     user = 'terrenceasselin'
+                if user == 'jeclrsg':
+                    user = 'clemje01'
                 options = {
                   'server': jira_url
                 }
