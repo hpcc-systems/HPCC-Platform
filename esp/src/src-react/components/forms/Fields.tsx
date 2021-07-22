@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, Dropdown as DropdownBase, TextField, IDropdownOption, Link } from "@fluentui/react";
+import { Checkbox, Dropdown as DropdownBase, TextField, IDropdownOption, Link, ProgressIndicator } from "@fluentui/react";
 import { TextField as MaterialUITextField } from "@material-ui/core";
 import { Topology, TpLogicalClusterQuery } from "@hpcc-js/comms";
 import { TpGroupQuery } from "src/WsTopology";
@@ -38,7 +38,7 @@ const Dropdown: React.FunctionComponent<DropdownProps> = ({
     return <DropdownBase key={key} label={label} className={className} defaultSelectedKey={selectedKey} onChange={onChange} placeholder={placeholder} options={selOptions} />;
 };
 
-export type FieldType = "string" | "number" | "checkbox" | "datetime" | "link" | "links" |
+export type FieldType = "string" | "number" | "checkbox" | "datetime" | "link" | "links" | "progress" |
     "workunit-state" |
     "file-type" | "file-sortby" |
     "queries-suspend-state" | "queries-active-state" |
@@ -135,7 +135,12 @@ interface LinksField extends BaseField {
     value?: string;
 }
 
-type Field = StringField | NumericField | CheckboxField | DateTimeField | LinkField | LinksField |
+interface ProgressField extends BaseField {
+    type: "progress";
+    value?: string;
+}
+
+type Field = StringField | NumericField | CheckboxField | DateTimeField | LinkField | LinksField | ProgressField |
     WorkunitStateField |
     FileTypeField | FileSortByField |
     QueriesSuspendStateField | QueriesActiveStateField |
@@ -293,6 +298,15 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         target={link.newTab ? "_blank" : ""}
                         style={{ paddingLeft: 8 }}>{link.value || ""}</Link>
                     )
+                });
+                break;
+            case "progress":
+                retVal.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: <ProgressIndicator
+                        key={fieldID}
+                        percentComplete={parseInt(field.value, 10)} />
                 });
                 break;
             case "workunit-state":

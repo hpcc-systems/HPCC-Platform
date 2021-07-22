@@ -88,7 +88,8 @@ const routes: Routes = [
         children: [
             { path: "", action: (context) => import("./components/DFUWorkunits").then(_ => <_.DFUWorkunits filter={parseSearch(context.search) as any} />) },
             { path: "/legacy", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="GetDFUWorkunitsWidget" />) },
-            { path: "/:Wuid", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="DFUWUDetailsWidget" params={params} />) }
+            { path: "/:Wuid", action: (ctx, params) => import("./components/DFUWorkunitDetails").then(_ => <_.DFUWorkunitDetails wuid={params.Wuid as string} />) },
+            { path: "/:Wuid/:Tab", action: (ctx, params) => import("./components/DFUWorkunitDetails").then(_ => <_.DFUWorkunitDetails wuid={params.Wuid as string} tab={params.Tab as string} />) }
         ]
     },
     {

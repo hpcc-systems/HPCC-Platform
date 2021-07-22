@@ -521,6 +521,7 @@ export = {
         OrphanFile2: "Orphan File",
         OrphanMessage: "An orphan file has partial file parts on disk. However, a full set of parts is not available to construct a complete logical file. There is no reference to these file parts in the Dali server.",
         OSStats: "OS Stats",
+        Other: "Other",
         Others: "Other(s)",
         Outputs: "Outputs",
         Overview: "Overview",
