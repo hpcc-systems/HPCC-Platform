@@ -32,21 +32,21 @@
 
           <entry>Number of days before the file expires. Setting to 0
           specifies to use the system's default expire value (specified in the
-          Sasha server's <emphasis>ExpiryDefault</emphasis> attribute).
-          </entry>
+          Sasha server's <emphasis>ExpiryDefault</emphasis>
+          attribute).</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">SetExpireDays </emphasis>function sets a
+  <para>The <emphasis role="bold">SetExpireDays </emphasis>action sets a
   logical file's expiration criteria (the <emphasis>expireDays</emphasis>
   attribute). The file is deleted by the Sasha server when a file has not been
-  accessed for the number of days specified. </para>
+  accessed for the number of days specified.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := STD.File.SetExpireDays('~samples::myscope::myfile',30);
+  <programlisting format="linespecific">STD.File.SetExpireDays('~samples::myscope::myfile',30);
  //file expires and is deleted after 30 days w/o access
 </programlisting>
 
