@@ -31,11 +31,11 @@
 
   <para>The <emphasis role="bold">GetExpireDays </emphasis>function retrieves
   a logical file's expiration criteria (the <emphasis>expireDays</emphasis>
-  attribute). </para>
+  attribute). A return of -1 indicates that there is no expiration set.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := STD.File.SetExpireDays('~samples::myscope::myfile');
+  <programlisting format="linespecific">A := STD.File.GetExpireDays('~samples::myscope::myfile');
  //returns a file's expireDays 
 </programlisting>
 
