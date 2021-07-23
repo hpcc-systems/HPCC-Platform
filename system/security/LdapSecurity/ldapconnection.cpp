@@ -5999,9 +5999,6 @@ private:
             act_ctrl_val |= 0x10000;
 #endif
 
-        // Ensure password required
-        act_ctrl_val &= ~(0x20);// UF_PASSWD_NOTREQD 0x0020
-
         StringBuffer new_act_ctrl;
         new_act_ctrl.append(act_ctrl_val);
 
@@ -6032,6 +6029,24 @@ private:
             DBGLOG("Error updating password for %s",username);
             throw MakeStringException(-1, "Error updating password for %s",username);
         }
+
+        //Now that the password is set, we can ensure passwords are always required
+
+        act_ctrl_val &= ~(0x20);// UF_PASSWD_NOTREQD 0x0020
+        new_act_ctrl.clear().append(act_ctrl_val);
+        LDAPMod attr = {
+            LDAP_MOD_REPLACE,
+            "userAccountControl",
+            ctrl_values
+        };
+        cattrs[0] = &attr;
+        cattrs[1] = NULL;
+        rc = ldap_modify_ext_s(ld, (char*)dn, cattrs, NULL, NULL);
+        if ( rc != LDAP_SUCCESS )
+        {
+            throw MakeStringException(-1, "error enableUser2 %s, ldap_modify_ext_s error2: %s", username, ldap_err2string( rc ));
+        }
+
     }
 
 
