@@ -140,6 +140,33 @@ Returns the largest number of workers from all the thors
 {{- end -}}
 
 {{/*
+Returns true if the given certificate issuer is enabled, otherwise false
+*/}}
+{{- define "hpcc.isIssuerEnabled" -}}
+{{- $certificates := (.root.Values.certificates | default dict) -}}
+{{- $issuers := ($certificates.issuers | default dict) -}}
+{{- $issuer := get $issuers .issuer -}}
+{{- if $issuer -}}
+  {{- (hasKey $issuer "enabled" | ternary $issuer.enabled true) }}
+{{- else -}}
+false
+{{- end -}}
+{{- end -}}
+
+{{/*
+Returns true if mtls should be enabled, otherwise false
+*/}}
+{{- define "hpcc.isMtlsEnabled" -}}
+{{- $security := .root.Values.security | default dict -}}
+{{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" "local")) "true" -}}
+  {{- (hasKey $security "mtls" | ternary $security.mtls true) -}}
+{{- else -}}
+false
+{{- end -}}
+{{- end -}}
+
+
+{{/*
 Generate global ConfigMap info
 Pass in root as .
 */}}
@@ -150,8 +177,7 @@ Pass in root as .
 {{- $certificates := (.Values.certificates | default dict) -}}
 {{- $issuers := ($certificates.issuers | default dict) -}}
 {{- $security := .Values.security | default dict -}}
-{{- $mtls := hasKey $security "mtls" | ternary $security.mtls true -}}
-mtls: {{ (and $mtls (and ($certificates.enabled) (hasKey $issuers "local"))) }}
+mtls: {{ (include "hpcc.isMtlsEnabled" (dict "root" $)) }}
 imageVersion: {{ .Values.global.image.version | default .Chart.Version }}
 singleNode: {{ .Values.global.singleNode | default false }}
 {{ if .Values.global.defaultEsp -}}
@@ -1149,6 +1175,7 @@ use "public" or "local"
 {{- if (.root.Values.certificates | default dict).enabled -}}
 {{- $externalCert := or (and (hasKey . "external") .external) (ne (include "hpcc.isVisibilityPublic" .) "") -}}
 {{- $issuerName := .issuer | default (ternary "public" "local" $externalCert) -}}
+{{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" $issuerName)) "true" -}}
 {{- $issuer := get .root.Values.certificates.issuers $issuerName -}}
 {{- if $issuer -}}
 {{- $namespace := .root.Release.Namespace -}}
@@ -1211,6 +1238,7 @@ spec:
 {{- end }}
 {{- end }}
 {{- end }}
+{{- end }}
 
 {{/*
 Experimental: Use certmanager to generate a key for roxie udp encryption.
@@ -1220,6 +1248,7 @@ Key is in pem format and the private key would need to be extracted.
 */}}
 {{- define "hpcc.addUDPCertificate" }}
 {{- if (.root.Values.certificates | default dict).enabled -}}
+{{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" "local")) "true" -}}
 {{- $issuer := .root.Values.certificates.issuers.local -}}
 {{- $namespace := .root.Release.Namespace -}}
 {{- $name := .name -}}
@@ -1260,6 +1289,7 @@ spec:
 {{- end }}
 {{- end }}
 {{- end }}
+{{- end }}
 
 {{/*
 Add a certficate volume mount for a component
@@ -1277,8 +1307,7 @@ use "public" or "local"
 - name: certificate-{{ .component }}-{{ $issuerName }}-{{ .name }}
   mountPath: /opt/HPCCSystems/secrets/certificates/{{ $issuerName }}
 {{- else if (.root.Values.certificates | default dict).enabled -}}
-{{- $issuer := get .root.Values.certificates.issuers $issuerName -}}
-{{- if $issuer -}}
+{{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" $issuerName)) "true" -}}
 - name: certificate-{{ .component }}-{{ $issuerName }}-{{ .name }}
   mountPath: /opt/HPCCSystems/secrets/certificates/{{ $issuerName }}
 {{- end }}
@@ -1302,8 +1331,7 @@ use "public" or "local"
   secret:
     secretName: {{ .certificate }}
 {{- else if (.root.Values.certificates | default dict).enabled -}}
-{{- $issuer := get .root.Values.certificates.issuers $issuerName -}}
-{{- if $issuer -}}
+{{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" $issuerName)) "true" -}}
 - name: certificate-{{ .component }}-{{ $issuerName }}-{{ .name }}
   secret:
     secretName: {{ .component }}-{{ $issuerName }}-{{ .name }}-tls
@@ -1316,7 +1344,7 @@ Add the certficate volume mount for a roxie udp key
 */}}
 {{- define "hpcc.addUDPCertificateVolumeMount" }}
 {{- if (.root.Values.certificates | default dict).enabled -}}
-{{- if .root.Values.certificates.issuers.local -}}
+{{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" "local")) "true" -}}
 - name: certificate-{{ .component }}-udp-{{ .name }}
   mountPath: /opt/HPCCSystems/secrets/certificates/udp
 {{- end -}}
@@ -1328,7 +1356,7 @@ Add a secret volume for a roxie udp key
 */}}
 {{- define "hpcc.addUDPCertificateVolume" }}
 {{- if (.root.Values.certificates | default dict).enabled -}}
-{{- if .root.Values.certificates.issuers.local -}}
+{{- if eq (include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" "local")) "true" -}}
 - name: certificate-{{ .component }}-udp-{{ .name }}
   secret:
     secretName: {{ .component }}-udp-{{ .name }}-dtls
