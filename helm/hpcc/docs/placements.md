@@ -5,11 +5,10 @@ through placement to include an array of objects to configure the Kubernetes Sch
 It must have a "pods" list which tells it which pod the settings will be applied to.<br/>
 The syntax is:
 ```code
-   global
-     placements:
-     - pods [list]
-       placement:
-         <supported configurations>
+   placements:
+   - pods: [list]
+     placement:
+       <supported configurations>
 ```
 The list item in "pods" can be one of the following:
 1) HPCC Systems component types in format: "type:<type name>". <type name> includes
@@ -23,12 +22,57 @@ The list item in "pods" can be one of the following:
 
 Supported configurations under each "placement"
 1) nodeSelector
+   Multiple nodeSelectors can be applied. For example
+   placements:
+   - pods: ["all"]
+     placement:
+       nodeSelector:
+         group: "hpcc"
+   - pods: ["type:dali"]
+     placement:
+       nodeSelector:
+         spot: "false"
+   All dali pods will have:
+     spec:
+       nodeSelector:
+         group: "hpcc"
+         spot: "false"
+   If duplicated keys are defined only the last one will prevail.
+
 2) taints/tolerations
+   Multiple taints/tolerations can be applied. For example
+   placements:
+   - pods: ["all"]
+     tolerations:
+     - key: "group"
+       operator: "Equal"
+       value: "hpcc"
+       effect: "NoSchedule"
+   - pods: ["type:thor"]
+     tolerations:
+     - key: "gpu"
+       operator: "Equal"
+       value: "true"
+       effect: "NoSchedule"
+   All thor pods will have:
+     tolerations:
+     - key: "group"
+       operator: "Equal"
+       value: "hpcc"
+       effect: "NoSchedule"
+     - key: "gpu"
+       operator: "Equal"
+       value: "true"
+       effect: "NoSchedule"
+
 3) affinity
    There is no schema check for the content of affinity. Reference
    https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+   Only one "affinity" can be applied to a Pod/Job. If a Pod/Job matches multiple placement 'pods' lists, then only the last "affinity" definition will apply.
+
 4) schedulerName: profile names. "affinity" defined in scheduler profile  requires
    Kubernetes 1.20.0 beta and later releases
+   Only one "schedulerName" can be applied to a Pod/Job.
 
 "nodeSelector" example:
 ```code
