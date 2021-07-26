@@ -559,7 +559,8 @@ startCmd() {
     fi
 
     EXEC_COMMAND="${bin_path}/init_${compType} "
-    startcmd="${START_STOP_DAEMON} -S -p ${pid}/init_${compName}.pid -c ${user}:${group} -d ${compPath} ${UMASK_ARG} -m -x ${EXEC_COMMAND} -b"
+    #startcmd="${START_STOP_DAEMON} -S -p ${pid}/init_${compName}.pid -c ${user}:${group} -d ${compPath} ${UMASK_ARG} -m -x ${EXEC_COMMAND} -b"
+    startcmd="${START_STOP_DAEMON} -S -p ${pid}/init_${compName}.pid -d ${compPath} ${UMASK_ARG} -m -x ${EXEC_COMMAND} -b"
 
     log "${startcmd}"
 
@@ -577,7 +578,8 @@ startCmd() {
         return 3
     fi
 
-    eval $startcmd
+    ${bin_path}/init_hpcc_chroot "${startcmd}" "${compPath}" "${user}" "${group}"
+    #eval $startcmd
 
     while [[ ${WAITTIME} -gt 0 ]]; do
         WAITTIME=`expr ${WAITTIME} - 1`
@@ -643,6 +645,20 @@ stop_component() {
             log_failure_msg
             return $RESULT
         fi
+        myCompName=$(basename ${compPath})
+        chrootDir=/tmp/chroot/${compName}
+
+	checkAndUnmount ${chrootDir} /etc # for profile
+	checkAndUnmount ${chrootDir} /dev # for /dev/null (as used by init_* scripts) !
+	checkAndUnmount ${chrootDir} /sys/dev/block # for lsblk
+	# JCSMORE - will need to vary...
+        tmpRuntime=/var/lib/HPCCSystems # JCSMORE not sure where/how to get this from
+	checkAndUnmount ${chrootDir} ${tmpRuntime}/hpcc-data true
+	checkAndUnmount ${chrootDir} ${INSTALL_DIR}/etc
+	checkAndUnmount ${chrootDir} ${INSTALL_DIR}/sbin
+	checkAndUnmount ${chrootDir} ${LOG_DIR}/${compName} true
+	checkAndUnmount ${chrootDir} ${PID_DIR} # JCSMORE I am not sure why this doesn't work if created via ensureDir instead
+        checkAndUnmount ${chrootDir} ${compPath}
     fi
 
     log_success_msg
@@ -1104,3 +1120,61 @@ cleanup_component() {
     fi
     return $RUNNING
 }
+
+##
+## Returns true if arg1 path is mounted
+##
+is_mounted()
+{
+    mount | awk -v DIR="$1" '{if ($3 == DIR) { exit 0}} ENDFILE{exit -1}'
+}
+
+##
+## Ensures that arg1/arg2 directory exists and optionally (arg3) changes ownership to hpcc user
+##
+ensureDir()
+{
+  rootDir=$1
+  targetDir=$2
+  doUser=$3
+  compoundDir=${rootDir}${targetDir}
+  mkdir -p ${compoundDir}
+  if [ "$doUser" = "true" ]; then
+    chown $user:$group ${compoundDir}
+  fi
+}
+
+##
+## Checks and mounts arg2 inside arg1 root and optionally (arg3) changes ownership to hpcc user
+##
+checkAndMount()
+{
+  rootDir=$1
+  srcMntPoint=$2
+  doUser=$3
+  compoundDir=${rootDir}${srcMntPoint}
+  if ! is_mounted ${compoundDir}; then
+    mkdir -p ${compoundDir}
+    if [ ! -d ${srcMntPoint} ]; then
+      mkdir -p ${srcMntPoint}
+    fi
+    mount --bind ${srcMntPoint} ${compoundDir}
+    if [ "$doUser" = "true" ]; then
+      chown $user:$group ${compoundDir}
+    fi
+  fi
+}
+
+##
+## If arg1/arg2 is mounted, umount
+##
+checkAndUnmount()
+{
+  rootDir=$1
+  srcMntPoint=$2
+  compoundDir=${rootDir}${srcMntPoint}
+  if is_mounted ${compoundDir}; then
+    umount ${compoundDir}
+  fi
+}
+

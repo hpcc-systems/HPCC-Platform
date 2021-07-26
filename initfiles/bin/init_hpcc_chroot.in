@@ -1,0 +1,119 @@
+#!/bin/bash
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
+
+###<REPLACE>###
+
+startcmd=$1
+compPath=$2
+user=$3
+group=$4
+
+source ${INSTALL_DIR}/sbin/hpcc_setenv
+source ${INSTALL_DIR}/etc/init.d/hpcc_common
+
+
+compName=$(basename ${compPath})
+
+newRootDir=/tmp/chroot/${compName}
+
+mkdir -p ${newRootDir}
+chown $user:$group ${newRootDir}
+
+
+#ensureDir ${newRootDir} ${PID_DIR} true
+#ensureDir ${newRootDir} ${PID_DIR}/${compName} true
+ensureDir ${newRootDir} ${LOCK_DIR} true
+ensureDir ${newRootDir} ${LOCK_DIR}/${compName} true
+checkAndMount ${newRootDir} ${compPath} true
+
+checkAndMount ${newRootDir} ${PID_DIR} # JCSMORE I am not sure why this doesn't work if created via ensureDir instead
+checkAndMount ${newRootDir} ${LOG_DIR}/${compName} true
+checkAndMount ${newRootDir} ${INSTALL_DIR}/sbin
+checkAndMount ${newRootDir} ${INSTALL_DIR}/etc
+
+tmpRuntime=/var/lib/HPCCSystems # JCSMORE not sure where/how to get this from
+# JCSMORE - will need to vary...
+ensureDir ${newRootDir} ${tmpRuntime}/hpcc-data true
+checkAndMount ${newRootDir} ${tmpRuntime}/hpcc-data true
+
+checkAndMount ${newRootDir} /sys/dev/block # for lsblk
+checkAndMount ${newRootDir} /dev # for /dev/null (as used by init_* scripts) !
+checkAndMount ${newRootDir} /etc # for profile
+
+usedSystemTools="bash cat rm basename lsblk sed grep uname date locale-check"
+#hpccBinPaths="start-stop-daemon daserver init_dali dafilesrv eclccserver thorslave_lcr thormaster_lcr"
+#all hpcc binaries for now, could change to be selective per component...
+hpccBinPaths=$(ls ${INSTALL_DIR}/bin)
+
+
+binPaths=()
+for tool in ${usedSystemTools}
+do
+    toolPath=$(which ${tool})
+    binPaths+=(${toolPath})
+done
+for tool in ${hpccBinPaths}
+do
+    toolPath="${INSTALL_DIR}/bin/${tool}"
+    binPaths+=(${toolPath})
+done
+
+#could use rsync?
+deps=()
+for toolPath in "${binPaths[@]}"
+do
+    parentDir=$(dirname ${toolPath})
+    targetDir=${newRootDir}${parentDir}
+    mkdir -p ${targetDir}
+    #echo cp ${toolPath} ${targetDir}/
+    cp ${toolPath} ${targetDir}/
+    for path in $(ldd ${toolPath} 2>/dev/null | grep " => /" | awk '{print $3}')
+    do
+	deps+=(${path})
+    done
+    for path in $(ldd ${toolPath} 2>/dev/null | grep "^\s*\/" | awk '{print $1}')
+    do
+	deps+=(${path})
+    done
+done
+uniqPaths=()
+while IFS= read -r -d '' x
+do
+    uniqPaths+=("$x")
+done < <(printf "%s\0" "${deps[@]}" | sort -uz)
+
+for path in "${uniqPaths[@]}"
+do
+    parentDir=$(dirname ${path})
+    mkdir -p ${newRootDir}${parentDir}
+    #echo cp -v ${path} ${newRootDir}${parentDir}/
+    cp ${path} ${newRootDir}${parentDir}/
+done
+
+if [ ! -d ${newRootDir}/bin ]; then
+  ln -s usr/bin ${newRootDir}/bin
+fi
+
+newCompPath=${newRootDir}${compPath}
+echo "#!/bin/bash" > ${newCompPath}/startcmd
+echo "${startcmd}" >> ${newCompPath}/startcmd
+
+chmod +x ${newCompPath}/startcmd
+echo chroot --userspec=${user}:${group} $newRootDir ${compPath}/startcmd
+chroot --userspec=${user}:${group} $newRootDir ${compPath}/startcmd
+
+#eval $startcmd

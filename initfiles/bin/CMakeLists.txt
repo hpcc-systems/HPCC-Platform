@@ -15,6 +15,7 @@
 ################################################################################
 
 SET(outFiles)
+GENERATE_BASH(processor ${bash-vars} "init_hpcc_chroot.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "init_dafilesrv.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "init_eclagent.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "init_dali.in" outFiles)
