@@ -6023,11 +6023,7 @@ private:
 
         // set the password.
         Owned<ISecUser> tmpuser = new CLdapSecUser(user->getName(), "");
-        const char* passwd = user->credentials().getPassword();
-        if(passwd == NULL || *passwd == '\0')
-            passwd = "password";
-
-        if (!updateUserPassword(*tmpuser, passwd, NULL))
+        if (!updateUserPassword(*tmpuser, user->credentials().getPassword(), NULL))
         {
             DBGLOG("Error updating password for %s",username);
             throw MakeStringException(-1, "Error updating password for %s",username);
@@ -6042,6 +6038,12 @@ private:
         {
             DBGLOG("Can't add user, username not set");
             throw MakeStringException(-1, "Can't add user, username not set");
+        }
+
+        const char* userPassword = user.credentials().getPassword();
+        if(isEmptyString(userPassword))
+        {
+            throw MakeStringException(-1, "Can't add user, password not set");
         }
 
         const char* fname = user.getFirstName();
@@ -6134,10 +6136,7 @@ private:
             actname_values
         };
 
-        const char* passwd = user.credentials().getPassword();
-        if(passwd == NULL || *passwd == '\0')
-            passwd = "password";
-        char* passwd_values[] = {(char*)passwd, NULL};
+        char* passwd_values[] = {(char*)userPassword, nullptr};//password is set later (in enableUser) if ACTIVE_DIRECTORY
         LDAPMod passwd_attr =
         {
             LDAP_MOD_ADD,
