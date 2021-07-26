@@ -21,6 +21,8 @@
                 <div id="${id}More" class="left glow" data-dojo-props="iconClass:'iconAdvanced', showLabel:false" data-dojo-type="dijit.form.DropDownButton">
                     <span>${i18n.Advanced}</span>
                     <div data-dojo-type="dijit.DropDownMenu">
+                        <div id="${id}ModernECLWatch" data-dojo-attach-event="onClick:_onOpenModernECLWatch" data-dojo-type="dijit.MenuItem">${i18n.OpenModernECLWatch}</div>
+                        <span data-dojo-type="dijit.MenuSeparator"></span>
                         <div id="${id}ErrWarn" data-dojo-attach-event="onClick:_onOpenErrWarn" data-dojo-type="dijit.MenuItem">${i18n.ErrorWarnings}</div>
                         <span data-dojo-type="dijit.MenuSeparator"></span>
                         <div id="${id}SetBanner" data-dojo-attach-event="onClick:_onSetBanner" data-dojo-type="dijit.MenuItem">${i18n.SetBanner}</div>

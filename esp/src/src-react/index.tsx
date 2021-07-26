@@ -6,6 +6,7 @@ import { initSession } from "src/Session";
 import "css!dojo-themes/flat/flat.css";
 import "css!hpcc/css/ecl.css";
 import "css!hpcc/css/hpcc.css";
+import "src-react-css/index.css";
 
 initializeIcons();
 

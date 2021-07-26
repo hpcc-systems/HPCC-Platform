@@ -1,4 +1,8 @@
-//  https://fabricweb.z5.web.core.windows.net/pr-deploy-site/refs/heads/7.0/theming-designer/index.html
+/*
+ *  https://fabricweb.z5.web.core.windows.net/pr-deploy-site/refs/heads/7.0/theming-designer/index.html
+ *
+ *  Keep in sync with themes.css
+ */
 
 export const lightTheme = {
     palette: {

@@ -1,8 +1,10 @@
 import * as React from "react";
 import { CallbackFunction, Observable } from "@hpcc-js/util";
 import { userKeyValStore } from "src/KeyValStore";
+import { IContextualMenuItem } from "@fluentui/react";
+import { hashHistory } from "src-react/util/history";
 
-const STORE_ID = "favorites";
+const STORE_FAVORITES_ID = "favorites";
 const STORE_CACHE_TIMEOUT = 10000;
 
 interface Payload {
@@ -21,7 +23,7 @@ class Favorites {
     private _prevPull: Promise<UrlMap>;
     private async pull(): Promise<UrlMap> {
         if (!this._prevPull) {
-            this._prevPull = this._store.get(STORE_ID).then((str: string): UrlMap => {
+            this._prevPull = this._store.get(STORE_FAVORITES_ID).then((str: string): UrlMap => {
                 if (typeof str === "string") {
                     try {
                         const retVal = JSON.parse(str);
@@ -41,7 +43,7 @@ class Favorites {
 
     private async push(favs: UrlMap): Promise<void> {
         this._prevPull = Promise.resolve(favs);
-        return this._store.set(STORE_ID, JSON.stringify(favs));
+        return this._store.set(STORE_FAVORITES_ID, JSON.stringify(favs));
     }
 
     async clear(): Promise<void> {
@@ -107,4 +109,24 @@ export function useFavorites(): [UrlMap] {
     }, []);
 
     return [all];
+}
+
+export function useHistory(): [IContextualMenuItem[]] {
+
+    const [history, setHistory] = React.useState<IContextualMenuItem[]>([]);
+
+    React.useEffect(() => {
+        return hashHistory.listen((location, action) => {
+            setHistory(hashHistory.recent().map((row): IContextualMenuItem => {
+                const url = `#${row.pathname + row.search}`;
+                return {
+                    name: decodeURI(row.pathname),
+                    href: url,
+                    key: url
+                };
+            }));
+        });
+    }, []);
+
+    return [history];
 }
