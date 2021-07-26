@@ -235,6 +235,7 @@ enum StatisticKind
     StTimeBlocked,
     StCycleBlockedCycles,
     StCostExecute,
+    StSizeAgentReply,
     StMax,
 
     //For any quantity there is potentially the following variants.
