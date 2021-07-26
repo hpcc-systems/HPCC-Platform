@@ -97,6 +97,7 @@ interface IRoxieServerContext : extends IInterface
     virtual IRoxieDaliHelper *checkDaliConnection() = 0;
     virtual const IProperties *queryXmlns(unsigned seqNo) = 0;
     virtual IHpccProtocolResponse *queryProtocol() = 0;
+    virtual const char *queryStatsWuid() const = 0;
 };
 
 interface IDeserializedResultStore : public IInterface

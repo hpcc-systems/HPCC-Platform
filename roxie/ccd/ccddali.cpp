@@ -462,6 +462,13 @@ public:
         return userdesc;
     }
 
+    virtual IWorkUnit *createWorkUnit() override
+    {
+        Owned<IWorkUnitFactory> wuFactory = getWorkUnitFactory();
+        return wuFactory->createWorkUnit("roxie", ""); // NOTE - scope is later overridden by clone operation
+        // MORE - What about security parms?
+    }
+
     static const char *getQuerySetPath(StringBuffer &buf, const char *id)
     {
         buf.appendf("QuerySets/QuerySet[@id='%s']", id);

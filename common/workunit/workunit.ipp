@@ -150,6 +150,7 @@ protected:
     mutable Owned<IWUQuery> query;
     mutable Owned<IWUWebServicesInfo> webServicesInfo;
     mutable Owned<IWorkflowItemIterator> workflowIterator;
+    mutable Owned<IPropertyTree> indirectTree;
     mutable bool workflowIteratorCached;
     mutable bool resultsCached;
     mutable unsigned char graphsCached;  // 0 means uncached, 1 means light, 2 means heavy
@@ -185,6 +186,7 @@ public:
     void beforeDispose();
     
     IPropertyTree *getUnpackedTree(bool includeProgress) const;
+    IPropertyTree *queryMergedTree() const;
 
     ISecManager *querySecMgr() { return secMgr.get(); }
     ISecUser *querySecUser() { return secUser.get(); }
