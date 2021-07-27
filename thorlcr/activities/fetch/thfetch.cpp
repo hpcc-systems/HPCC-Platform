@@ -20,6 +20,7 @@
 #include "thbufdef.hpp"
 #include "mptag.hpp"
 #include "dadfs.hpp"
+#include "jstats.h"
 #include "thexception.hpp"
 
 #include "../hashdistrib/thhashdistrib.ipp"
@@ -30,12 +31,13 @@ class CFetchActivityMaster : public CMasterActivity
     Owned<CSlavePartMapping> mapping;
     MemoryBuffer offsetMapMb;
     SocketEndpoint *endpoints;
+    std::vector<OwnedPtr<CThorStatsCollection>> subFileStats;
 
 protected:
     IHThorFetchArg *helper;
 
 public:
-    CFetchActivityMaster(CMasterGraphElement *info) : CMasterActivity(info)
+    CFetchActivityMaster(CMasterGraphElement *info) : CMasterActivity(info, diskReadActivityStatistics)
     {
         endpoints = NULL;
         if (!container.queryLocalOrGrouped())
@@ -73,7 +75,12 @@ public:
             }
             else if (encrypted)
                 throw MakeActivityException(this, 0, "File '%s' was published as encrypted but no encryption key provided", fetchFile->queryLogicalName());
-            mapping.setown(getFileSlaveMaps(fetchFile->queryLogicalName(), *fileDesc, container.queryJob().queryUserDescriptor(), container.queryJob().querySlaveGroup(), container.queryLocalOrGrouped(), false, NULL, fetchFile->querySuperFile()));
+            IDistributedSuperFile *super = fetchFile->querySuperFile();
+            unsigned numsubs = super?super->numSubFiles(true):0;
+            for (unsigned i=0; i<numsubs; i++)
+                subFileStats.push_back(new CThorStatsCollection(diskReadActivityStatistics));
+
+            mapping.setown(getFileSlaveMaps(fetchFile->queryLogicalName(), *fileDesc, container.queryJob().queryUserDescriptor(), container.queryJob().querySlaveGroup(), container.queryLocalOrGrouped(), false, NULL, super));
             mapping->serializeFileOffsetMap(offsetMapMb);
             addReadFile(fetchFile);
         }
@@ -92,6 +99,32 @@ public:
         }
         if (!container.queryLocalOrGrouped())
             dst.append((int)mpTag);
+    }
+    virtual void deserializeStats(unsigned node, MemoryBuffer &mb) override
+    {
+        CMasterActivity::deserializeStats(node, mb);
+        for (auto &stats: subFileStats)
+            stats->deserialize(node, mb);
+    }
+    virtual void done() override
+    {
+        if (!subFileStats.empty())
+        {
+            unsigned numSubFiles = subFileStats.size();
+            for (unsigned i=0; i<numSubFiles; i++)
+            {
+                IDistributedFile *file = queryReadFile(i);
+                if (file)
+                    file->addAttrValue("@numDiskReads", subFileStats[i]->getStatisticSum(StNumDiskReads));
+            }
+        }
+        else
+        {
+            IDistributedFile *file = queryReadFile(0);
+            if (file)
+                file->addAttrValue("@numDiskReads", statsCollection.getStatisticSum(StNumDiskReads));
+        }
+        CMasterActivity::done();
     }
 };
 
