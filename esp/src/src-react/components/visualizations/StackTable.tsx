@@ -29,18 +29,26 @@ export const StackTable: React.FunctionComponent<StackTableProps> = ({
     },
     tableRowStyles = {
         root: {
-            marginTop: 6
+            marginTop: 6,
+            textOverflow: "nowrap",
+            overflow: "hidden",
+            lineHeight: FontSizes.small,
+            fontSize: FontSizes.small
         }
     },
     headerStyles = {
         root: {
             height: FontSizes.medium,
+            lineHeight: FontSizes.small,
+            fontSize: FontSizes.small,
             fontWeight: FontWeights.bold 
         }
     },
     labelStyles = {
         root: {
             height: FontSizes.medium,
+            lineHeight: FontSizes.small,
+            fontSize: FontSizes.small,
         }
     },
     valueStyles = {
@@ -49,7 +57,9 @@ export const StackTable: React.FunctionComponent<StackTableProps> = ({
             paddingLeft: 6,
             minWidth: 50,
             maxWidth: 200,
-            textAlign: "right"
+            textAlign: "right",
+            lineHeight: FontSizes.small,
+            fontSize: FontSizes.small
         }
     },
 }) => {
@@ -64,17 +74,10 @@ export const StackTable: React.FunctionComponent<StackTableProps> = ({
                         .filter((n, i) => i >= rowCount)
                         .map((row, rowIdx) => {
                             return <Stack.Item key={rowIdx}>
-                                    <Stack horizontal styles={tableRowStyles}>
+                                    <Stack horizontal styles={tableRowStyles} grow={rowIdx ? 1 : 0}>
                                     {
-                                        row.map((n, i) => {
-                                            return <Stack.Item
-                                                key={i}
-                                                grow={i === 0 ? 1 : 0}
-                                                styles={i === 0 ? labelStyles : valueStyles}
-                                            >
-                                                {n}
-                                            </Stack.Item>
-                                                ;
+                                        row.map((n: any, i) => {
+                                            return rowStackItem(n, i);
                                         })
                                     }
                                 </Stack>
@@ -103,14 +106,7 @@ export const StackTable: React.FunctionComponent<StackTableProps> = ({
                         <Stack horizontal styles={tableRowStyles}>
                             {
                                 row.map((n, i) => {
-                                    return <Stack.Item
-                                        key={i}
-                                        grow={i === 0 ? 1 : 0}
-                                        styles={i === 0 ? labelStyles : valueStyles}
-                                    >
-                                        {n}
-                                    </Stack.Item>
-                                        ;
+                                    return rowStackItem(n, i);
                                 })
                             }
                         </Stack>
@@ -120,7 +116,6 @@ export const StackTable: React.FunctionComponent<StackTableProps> = ({
             }
         </Stack.Item>
         ;
-
     const footerStackItem = data.length <= rowCount ? undefined : <Stack.Item 
             key="tooltip-wrapper"
             grow={0}
@@ -147,4 +142,27 @@ export const StackTable: React.FunctionComponent<StackTableProps> = ({
             {footerStackItem}
         </Stack>
         ;
+
+    function rowStackItem(n, i) {
+        if(n.styles || n.text) {
+            const styles = n.styles ?? (i === 0 ? labelStyles : valueStyles);
+            return <Stack.Item
+                key={i}
+                grow={i === 0 ? 1 : 0}
+                styles={styles}
+            >
+                {n.text}
+            </Stack.Item>
+                ;
+        } else {
+            return <Stack.Item
+                key={i}
+                grow={i === 0 ? 1 : 0}
+                styles={i === 0 ? labelStyles : valueStyles}
+            >
+                {n}
+            </Stack.Item>
+                ;
+        }
+    }
 };

@@ -4,7 +4,7 @@ import { StackTable } from "./StackTable";
 
 interface VizProps {
     label?: string;
-    data: [string | number, number][];
+    data: any;
     rowCount?: number;
     usePercentage?: boolean;
 }
@@ -37,7 +37,20 @@ export const BreakdownTable: React.FunctionComponent<VizProps> = ({
 
     return <StackTable
         label={label}
-        data={data}
+        data={data.map(n=>{
+            const v = n[1];
+            if(usePercentage){
+                return [
+                    n[0],
+                    Math.floor(v / total * 100) + "%"
+                ];
+            } else {
+                return [
+                    n[0],
+                    v
+                ];
+            }
+        })}
         rowCount={rowCount}
         overflowLabel="Other..."
         overflowValue={overflowValueText}

@@ -17,6 +17,7 @@ import { FileDetailsGraph } from "./FileDetailsGraph";
 import { TableGroup } from "./forms/Groups";
 import { Queries } from "./Queries";
 import { WorkunitDetails } from "./WorkunitDetails";
+import { DataPatternsReport } from "./DataPatternsReport";
 
 import "react-reflex/styles.css";
 
@@ -150,6 +151,9 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
             <PivotItem headerText={nlsHPCC.Contents} itemKey="Contents" style={pivotItemStyle(size, 0)}>
             </PivotItem>
             <PivotItem headerText={nlsHPCC.DataPatterns} itemKey="DataPatterns" style={pivotItemStyle(size, 0)}>
+                <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto}>
+                    <DataPatternsReport Wuid={file?.Wuid} />
+                </ScrollablePane>
             </PivotItem>
             <PivotItem headerText={nlsHPCC.ECL} itemKey="ECL" style={pivotItemStyle(size, 0)}>
                 <ECLSourceEditor text={file?.Ecl} readonly={true} />
