@@ -510,12 +510,18 @@ class CNestedRuntimeStatisticMap;
 class jlib_decl CRuntimeStatisticCollection
 {
 public:
-    CRuntimeStatisticCollection(const StatisticsMapping & _mapping) : mapping(_mapping)
-    {
+    CRuntimeStatisticCollection(const StatisticsMapping & _mapping, bool _filtering = false) : mapping(_mapping)
+#ifdef _DEBUG
+    ,filtering(_filtering)
+#endif
+{
         unsigned num = mapping.numStatistics();
         values = new CRuntimeStatistic[num+1]; // extra entry is to gather unexpected stats
     }
-    CRuntimeStatisticCollection(const CRuntimeStatisticCollection & _other) : mapping(_other.mapping)
+    CRuntimeStatisticCollection(const CRuntimeStatisticCollection & _other, bool _filtering = false) : mapping(_other.mapping)
+#ifdef _DEBUG
+    ,filtering(_filtering)
+#endif
     {
         unsigned num = mapping.numStatistics();
         values = new CRuntimeStatistic[num+1];
@@ -527,13 +533,19 @@ public:
     inline CRuntimeStatistic & queryStatistic(StatisticKind kind)
     {
         unsigned index = queryMapping().getIndex(kind);
-        //dbgassertex(index < mapping.numStatistics());
+#ifdef _DEBUG
+        if (!filtering)
+            dbgassertex(index < mapping.numStatistics());
+#endif
         return values[index];
     }
     inline const CRuntimeStatistic & queryStatistic(StatisticKind kind) const
     {
         unsigned index = queryMapping().getIndex(kind);
-        //dbgassertex(index < mapping.numStatistics());
+#ifdef _DEBUG
+        if (!filtering)
+            dbgassertex(index < mapping.numStatistics());
+#endif
         return values[index];
     }
 
@@ -602,6 +614,9 @@ protected:
     CRuntimeStatistic * values;
     std::atomic<CNestedRuntimeStatisticMap *> nested {nullptr};
     static CriticalSection nestlock;
+#ifdef _DEBUG
+    bool filtering = false;
+#endif
 };
 
 //NB: Serialize and deserialize are not currently implemented.

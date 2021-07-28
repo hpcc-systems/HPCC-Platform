@@ -578,7 +578,7 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
 
-    ContextLogger() : stats(globalStatistics)
+    ContextLogger() : stats(globalStatistics, true)
     {
         ctxTraceLevel = traceLevel;
         intercept = false;
