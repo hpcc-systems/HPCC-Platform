@@ -406,6 +406,25 @@ static const StatisticsMapping groupStatistics({ StNumGroups, StNumGroupMax }, a
 static const StatisticsMapping sortStatistics({ StTimeSortElapsed }, actStatistics);
 static const StatisticsMapping indexWriteStatistics({ StNumDuplicateKeys }, actStatistics);
 
+// These ones get accumulated and reported in COMPLETE: line (and workunit). Excludes ones that are not sensible to sum across activities
+
+extern const StatisticsMapping globalStatistics({StWhenFirstRow, StTimeLocalExecute, StSizeMaxRowSize,
+                                                 StNumRowsProcessed, StNumSlaves, StNumStarts, StNumStops, StNumStrands,
+                                                 StNumScansPerRow, StNumAllocations, StNumAllocationScans,
+                                                 StTimeFirstExecute, StCycleLocalExecuteCycles,
+                                                 StNumAtmostTriggered,
+                                                 StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
+                                                 StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
+                                                 StNumPreFiltered, StNumPostFiltered, StNumIndexAccepted, StNumIndexRejected,
+                                                 StNumIndexRowsRead, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
+                                                 StNumBlobCacheHits, StNumLeafCacheHits, StNumNodeCacheHits,
+                                                 StNumBlobCacheAdds, StNumLeafCacheAdds, StNumNodeCacheAdds,
+                                                 StNumDiskRejected, StSizeAgentReply, StTimeAgentWait,
+                                                 StTimeSoapcall,
+                                                 StNumGroups,
+                                                 StTimeSortElapsed,
+                                                 StNumDuplicateKeys});
+
 //=================================================================================
 
 extern SinkMode getSinkMode(const char *val)

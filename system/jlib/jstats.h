@@ -527,13 +527,13 @@ public:
     inline CRuntimeStatistic & queryStatistic(StatisticKind kind)
     {
         unsigned index = queryMapping().getIndex(kind);
-        dbgassertex(index < mapping.numStatistics());
+        //dbgassertex(index < mapping.numStatistics());
         return values[index];
     }
     inline const CRuntimeStatistic & queryStatistic(StatisticKind kind) const
     {
         unsigned index = queryMapping().getIndex(kind);
-        dbgassertex(index < mapping.numStatistics());
+        //dbgassertex(index < mapping.numStatistics());
         return values[index];
     }
 
