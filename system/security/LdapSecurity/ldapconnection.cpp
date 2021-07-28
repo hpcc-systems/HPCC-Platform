@@ -3400,6 +3400,12 @@ public:
             return false;
         }
 
+        if(isEmptyString(newPassword))
+        {
+            DBGLOG("CLdapClient::updateUserPassword password must be provided");
+            return false;
+        }
+
         if (currPassword)
         {
             //User will not be authenticated if their password was expired,
@@ -3418,6 +3424,12 @@ public:
         if(!username || !*username)
         {
             DBGLOG("CLdapClient::updateUserPassword username must be provided");
+            return false;
+        }
+
+        if(isEmptyString(newPassword))
+        {
+            DBGLOG("CLdapClient::updateUserPassword password must be provided");
             return false;
         }
 
@@ -6023,7 +6035,7 @@ private:
 
         // set the password.
         Owned<ISecUser> tmpuser = new CLdapSecUser(user->getName(), "");
-        if (!updateUserPassword(*tmpuser, user->credentials().getPassword(), NULL))
+        if (!updateUserPassword(*tmpuser, user->credentials().getPassword(), nullptr))
         {
             DBGLOG("Error updating password for %s",username);
             throw MakeStringException(-1, "Error updating password for %s",username);
