@@ -29,17 +29,17 @@ The 'name' property is used to identify the storage plane in the helm charts.  I
 * dll  
   Where are the compiled ECL queries stored?  The storage needs to allow shared objects to be directly loaded from it efficiently.
 * sasha  
-  Location to stored archived workunits etc.  Typically less speed critical and requires lower storage costs.
+  Location to store archived workunits, etc.  Typically less speed critical and requires lower storage costs.
 * spill (optional)  
   Where are spill files from thor written?  Local NVMe disks are potentially a good choice.
 * temp (optional)  
   Where are temporary files written?
 
-Currently temp and spill are not completely implemented, but will be in future point releases.  It is likely that other categories will be added in the future e.g. a location to store inter-subgraph spills.
+Currently temp and spill are not completely implemented, but will be in future point releases.  It is likely that other categories will be added in the future (for example, a location to store inter-subgraph spills).
 
 ## prefix
 
-The most common case is where this defines the path within the container that the storage is mounted.  E.g. In the example above they are all sub directories of /var/lib/HPCCSystems.
+The most common case is where this defines the path within the container that the storage is mounted.  In the example above they are all sub-directories of /var/lib/HPCCSystems.
 
 HPCC also allows some file systems to be accessed through a url syntax.  For instance the following landing zone uses azure blob storage:
 
@@ -56,7 +56,7 @@ So far we have seen the properties that describe how the HPCC application views 
 
 ## Ephemeral storage: (storageClass, storageSize)
 
-Ephemeral storage is allocated when the HPCC cluster is installed and deleted when the chart is uninstalled.  It is useful for providing a clean system for testing and for a demonstration system to allow you to experiment with the system.  It is not so useful for production systems - for this reason the helm chart will generate a warning if it is used.
+Ephemeral storage is allocated when the HPCC cluster is installed and deleted when the chart is uninstalled.  It is useful for providing a clean system for testing and for a demonstration system to allow you to experiment with the system.  It is not so useful for production systems - for this reason the helm chart generates a warning if it is used.
 
 * storageClass:  
 Which storage provisioner should be used to allocate the storage?  A blank storage class indicates it should use the default provisioner.
@@ -88,7 +88,7 @@ And to add an ephemeral landing zone (which you can upload files to via eclwatch
 
 ## Persistent storage (pvc)
 
-For persistent storage, the hpcc cluster will use persistent volume claims that have already been created by installing another Kubernetes chart.  Using a pvc allows the lifetime of the data stored on those volumes to be longer than the lifetime of the HPCC cluster that uses them.  The helm/examples directory contains charts to simplify defining persistent storage for a local machine, azure, aws etc.
+For persistent storage, the hpcc cluster uses persistent volume claims that have already been created by installing another Kubernetes chart.  Using a pvc allows the lifetime of the data stored on those volumes to be longer than the lifetime of the HPCC cluster that uses them.  The helm/examples directory contains charts to simplify defining persistent storage for a local machine, azure, aws etc.
 
 * pvc  
 The pvc property names a Persistent Volume Claim created by another chart.
@@ -97,7 +97,7 @@ The pvc property names a Persistent Volume Claim created by another chart.
 
 The values file can contain more than one storage plane definition for each category.  The first storage plane in the list for each category is used as the default location to store that category of data.
 
-That default can be overridden on each component by specifying a property with the name "\<category>Plane".  E.g. to override the default dali storage plane use daliPlane:
+That default can be overridden on each component by specifying a property with the name "\<category>Plane".  For example, to override the default dali storage plane to use daliPlane:
 
 ```
 eclagent:
@@ -119,7 +119,7 @@ can read data from any of the data planes.
 In some situations the default permissions for the mounted volumes do not allow the hpcc user to write to the storage.  Setting this option ensures the ownership of the volume is changed before the main process is started.
 
 * subPath: \<string>  
-This property provides an optional sub directory within \<prefix> to use as the root directory.  Most of the time the different categories of data will be stored in different locations and this option is not needed.  However, if there is a requirement to store two categories of data in the same location, then it is legal to have two storage planes use the same prefix/path and different categories as long as the rest of the plane definitions are identical (except for the name and the subPath).  The subPath property allows the data to reside in separate directories so they cannot clash.
+This property provides an optional sub-directory within \<prefix> to use as the root directory.  Most of the time the different categories of data will be stored in different locations and this option is not needed.  However, if there is a requirement to store two categories of data in the same location, then it is legal to have two storage planes use the same prefix/path and different categories as long as the rest of the plane definitions are identical (except for the name and the subPath).  The subPath property allows the data to reside in separate directories so they cannot clash.
 
 * secret: \<string>  
 This provides the name of any secret that is required to access the plane's storage.  It it currently unused, but may be required once inter-cluster remote file access is finished.
@@ -169,13 +169,15 @@ storage:
     delta: 1
 ```
 
-The second aspect is to add a property to the storage plane definition to indicate which hosts are associated with it.  There are two options:
+The second aspect is to add a property to the storage plane definition to indicate which hosts are associated with it.
+
+There are two options:
 * hostGroup: \<name>  
   The name of the host group for bare metal.  For historical reasons the name of the hostgroup must match the name of the storage plane.
 * hosts: \<list-of-namesname>  
   An inline list of hosts.  Primarily useful for defining one-off external landing zones.
 
-Example:
+For example:
 ```
 storage:
   planes:
