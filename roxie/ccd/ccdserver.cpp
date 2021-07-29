@@ -392,15 +392,15 @@ static const StatisticsMapping keyedJoinStatistics({ StNumServerCacheHits, StNum
                                                     StNumIndexRowsRead, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
                                                     StNumBlobCacheHits, StNumLeafCacheHits, StNumNodeCacheHits,
                                                     StNumBlobCacheAdds, StNumLeafCacheAdds, StNumNodeCacheAdds,
-                                                    StNumDiskRejected}, joinStatistics);
+                                                    StNumDiskRejected, StSizeAgentReply}, joinStatistics);
 static const StatisticsMapping indexStatistics({StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
                                                 StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
                                                 StNumPreFiltered, StNumPostFiltered, StNumIndexAccepted, StNumIndexRejected,
                                                 StNumBlobCacheHits, StNumLeafCacheHits, StNumNodeCacheHits,
                                                 StNumBlobCacheAdds, StNumLeafCacheAdds, StNumNodeCacheAdds,
-                                                StNumIndexRowsRead}, actStatistics);
+                                                StNumIndexRowsRead, StSizeAgentReply}, actStatistics);
 static const StatisticsMapping diskStatistics({StNumServerCacheHits, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
-                                               StNumDiskRejected }, actStatistics);
+                                               StNumDiskRejected, StSizeAgentReply }, actStatistics);
 static const StatisticsMapping soapStatistics({ StTimeSoapcall }, actStatistics);
 static const StatisticsMapping groupStatistics({ StNumGroups, StNumGroupMax }, actStatistics);
 static const StatisticsMapping sortStatistics({ StTimeSortElapsed }, actStatistics);
@@ -4141,7 +4141,7 @@ public:
             //       activity type/activity behaviour/expected reply size .. etc).
             //       
             //       Currently (code below) based on high priority, seq=0, and none-child activity.
-            //       But this could still cause too many reply packets on the fatlane
+            //       But this could still cause too many reply packets on the fastlane
             //       (higher priority output Q), which may cause the activities on the 
             //       low priority output Q to not get service on time.
             if ((colocalArg == 0) &&     // not a child query activity??
@@ -4403,8 +4403,12 @@ public:
             ROQ->queryReceiveManager()->detachCollator(mc);
         merger.reset();
         pending.kill();
-        if (mc && ctx)
-            ctx->addAgentsReplyLen(mc->queryBytesReceived(), mc->queryDuplicates(), mc->queryResends());
+        if (mc)
+        {
+            activity.noteStatistic(StSizeAgentReply, mc->queryBytesReceived());
+            if (ctx)
+                ctx->addAgentsReplyLen(mc->queryBytesReceived(), mc->queryDuplicates(), mc->queryResends());
+        }
         mc.clear(); // Or we won't free memory for graphs that get recreated
         mu.clear(); //ditto
         deferredStart = false;
@@ -17516,6 +17520,7 @@ public:
             DBGLOG("activityid = %d  isKeyed = %d  line = %d", activityId, isKeyed, __LINE__);
         helper.onLimitExceeded();
     }
+
     virtual const void *createLimitFailRow(bool isKeyed)
     {
         UNIMPLEMENTED; // MORE - is there an ONFAIL for a limit folded into a remote?
