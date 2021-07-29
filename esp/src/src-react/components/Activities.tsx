@@ -10,6 +10,8 @@ import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
 import { DojoGrid, selector, tree } from "./DojoGrid";
 import { Summary } from "./DiskUsage";
 
+declare const dojoConfig;
+
 class DelayedRefresh {
     _promises: Promise<any>[] = [];
 
@@ -399,8 +401,16 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
         setUIState(state);
     }, [activity, selection]);
 
+    if (dojoConfig.isContainer) {
+        return <HolyGrail
+            header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
+            main={
+                <DojoGrid type="Sel" store={gridParams.store} query={gridParams.query} columns={gridParams.columns} setGrid={setGrid} setSelection={setSelection} />
+            }
+        />;
+    }
     return <ReflexContainer orientation="horizontal">
-        <ReflexElement minSize={100} size={100}>
+        <ReflexElement minSize={100} style={{ overflow: "hidden" }}>
             <Summary />
         </ReflexElement>
         <ReflexSplitter style={styles.reflexSplitter}>
@@ -414,5 +424,5 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
                 }
             />
         </ReflexElement>
-    </ReflexContainer >;
+    </ReflexContainer>;
 };

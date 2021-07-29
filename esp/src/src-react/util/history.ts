@@ -1,6 +1,7 @@
 import UniversalRouter, { ResolveContext } from "universal-router";
 import { parse, ParsedQuery, stringify } from "query-string";
 import { hashSum } from "@hpcc-js/util";
+import { userKeyValStore } from "src/KeyValStore";
 
 let g_router: UniversalRouter;
 
@@ -48,6 +49,8 @@ export type ListenerCallback<S extends object = object> = (location: HistoryLoca
 
 const globalHistory = globalThis.history;
 
+const STORE_HISTORY_ID = "history";
+
 class History<S extends object = object> {
 
     location: HistoryLocation = {
@@ -56,6 +59,7 @@ class History<S extends object = object> {
         id: hashSum("#/")
     };
     state: S = {} as S;
+    _store = userKeyValStore();
 
     constructor() {
         this.location = parseHash(document.location.hash);
@@ -72,6 +76,18 @@ class History<S extends object = object> {
         window.addEventListener("popstate", ev => {
             console.log("popstate: " + document.location + ", state: " + JSON.stringify(ev.state));
             this.state = ev.state;
+        });
+
+        this._store.get(STORE_HISTORY_ID).then((str: string) => {
+            if (typeof str === "string") {
+                const retVal: HistoryLocation[] = JSON.parse(str);
+                if (Array.isArray(retVal)) {
+                    this._recent = retVal;
+                }
+            }
+        }).catch(e => {
+        }).finally(() => {
+            this._recent = this._recent === undefined ? [] : this._recent;
         });
     }
 
@@ -99,16 +115,19 @@ class History<S extends object = object> {
         };
     }
 
-    protected _recent: HistoryLocation[] = [];
+    protected _recent;
     recent() {
-        return this._recent;
+        return this._recent === undefined ? [] : this._recent;
     }
 
     updateRecent() {
+        if (this._recent !== undefined) {
         this._recent = this._recent?.filter(row => row.id !== this.location.id) || [];
         this._recent.unshift(this.location);
         if (this._recent.length > 10) {
             this._recent.length = 10;
+        }
+            this._store.set(STORE_HISTORY_ID, JSON.stringify(this._recent));
         }
     }
 

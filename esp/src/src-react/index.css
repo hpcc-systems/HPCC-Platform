@@ -1,0 +1,33 @@
+@import "./themes.css";
+
+.flat .dojo-component a:link {
+    color:var(--themePrimary)  
+}
+
+.flat .dojo-component a:visited {
+    color:var(--themePrimary)  
+}
+
+.flat .dojo-component a:hover {
+    color:var(--themeDarker)  
+}
+
+.flat .dojo-component a:active {
+    color:var(--themeDarker)  
+}
+
+.flat-dark .dojo-component a:link {
+    color:var(--dark-themePrimary)  
+}
+
+.flat-dark .dojo-component a:visited {
+    color:var(--dark-themePrimary)  
+}
+
+.flat-dark .dojo-component a:hover {
+    color:var(--dark-themeDarker)  
+}
+
+.flat-dark .dojo-component a:active {
+    color:var(--dark-themeDarker)  
+}
