@@ -1023,7 +1023,7 @@ public:
                 CriticalBlock b(statsLock);
                 for (auto thisSlot: aggregated)
                 {
-                    if (thisSlot.inRange(from, to))
+                    if (thisSlot.timeOverlap(from, to))
                         aggregator.mergeStats(thisSlot);
                     else if (thisSlot.older(from))
                         break;
