@@ -173,7 +173,7 @@ class StandaloneCacheWarmer : implements ICacheWarmer
     unsigned pagesTouched = 0;
     char *file_mmap = nullptr;
     int fd = -1;
-    struct stat file_stat;
+    struct stat file_stat = {};
     char dummy = 0;
 
     void warmRange(offset_t startOffset, offset_t endOffset)
@@ -197,9 +197,8 @@ public:
     {
         file_mmap = nullptr;
         fd = open(filename, 0);
-        if (fd != -1)
+        if (fd != -1 && fstat(fd, &file_stat)==0)
         {
-            fstat(fd, &file_stat);
             file_mmap = (char *) mmap((void *)0, file_stat.st_size, PROT_READ, MAP_SHARED, fd, 0);
             if (file_mmap == MAP_FAILED)
             {
@@ -298,6 +297,8 @@ int main(int argc, const char **argv)
             cacheFileName = argv[arg];
         arg++;
     }
+    if (!cacheFileName)
+        usage();
     StringBuffer cacheInfo;
     install_signal_handlers();
     StandaloneCacheWarmer warmer(traceLevel);

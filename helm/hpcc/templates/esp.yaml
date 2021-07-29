@@ -37,11 +37,13 @@ data:
 {{- include "hpcc.generateLoggingConfig" . | indent 6 }}
 {{- include "hpcc.generateMetricsConfig" . | indent 6 }}
 {{- if and .root.Values.certificates .root.Values.certificates.enabled }}
+ {{- $externalCert := (ne (include "hpcc.isVisibilityPublic" (dict "root" .root "visibility" .me.service.visibility)) "") -}}
+ {{- $issuerName := ternary "public" "local" $externalCert -}}
  {{- if not (hasKey .me "tls" )}}
-      tls: true
+      tls: {{ include "hpcc.isIssuerEnabled" (dict "root" .root "issuer" $issuerName) }}
  {{- end }}
       tls_config:
- {{- if (not (eq .me.service.visibility "cluster")) }}
+ {{- if $externalCert }}
         certificate: /opt/HPCCSystems/secrets/certificates/public/tls.crt
         privatekey: /opt/HPCCSystems/secrets/certificates/public/tls.key
  {{- else }}

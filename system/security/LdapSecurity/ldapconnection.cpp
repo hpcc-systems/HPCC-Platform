@@ -3400,6 +3400,12 @@ public:
             return false;
         }
 
+        if(isEmptyString(newPassword))
+        {
+            DBGLOG("CLdapClient::updateUserPassword password must be provided");
+            return false;
+        }
+
         if (currPassword)
         {
             //User will not be authenticated if their password was expired,
@@ -3418,6 +3424,12 @@ public:
         if(!username || !*username)
         {
             DBGLOG("CLdapClient::updateUserPassword username must be provided");
+            return false;
+        }
+
+        if(isEmptyString(newPassword))
+        {
+            DBGLOG("CLdapClient::updateUserPassword password must be provided");
             return false;
         }
 
@@ -5999,9 +6011,6 @@ private:
             act_ctrl_val |= 0x10000;
 #endif
 
-        // Ensure password required
-        act_ctrl_val &= ~(0x20);// UF_PASSWD_NOTREQD 0x0020
-
         StringBuffer new_act_ctrl;
         new_act_ctrl.append(act_ctrl_val);
 
@@ -6023,15 +6032,29 @@ private:
 
         // set the password.
         Owned<ISecUser> tmpuser = new CLdapSecUser(user->getName(), "");
-        const char* passwd = user->credentials().getPassword();
-        if(passwd == NULL || *passwd == '\0')
-            passwd = "password";
-
-        if (!updateUserPassword(*tmpuser, passwd, NULL))
+        if (!updateUserPassword(*tmpuser, user->credentials().getPassword(), nullptr))
         {
             DBGLOG("Error updating password for %s",username);
             throw MakeStringException(-1, "Error updating password for %s",username);
         }
+
+        //Now that the password is set, we can ensure passwords are always required
+
+        act_ctrl_val &= ~(0x20);// UF_PASSWD_NOTREQD 0x0020
+        new_act_ctrl.clear().append(act_ctrl_val);
+        LDAPMod attr = {
+            LDAP_MOD_REPLACE,
+            "userAccountControl",
+            ctrl_values
+        };
+        cattrs[0] = &attr;
+        cattrs[1] = NULL;
+        rc = ldap_modify_ext_s(ld, (char*)dn, cattrs, NULL, NULL);
+        if ( rc != LDAP_SUCCESS )
+        {
+            throw MakeStringException(-1, "error enableUser2 %s, ldap_modify_ext_s error2: %s", username, ldap_err2string( rc ));
+        }
+
     }
 
 
@@ -6042,6 +6065,12 @@ private:
         {
             DBGLOG("Can't add user, username not set");
             throw MakeStringException(-1, "Can't add user, username not set");
+        }
+
+        const char* userPassword = user.credentials().getPassword();
+        if(isEmptyString(userPassword))
+        {
+            throw MakeStringException(-1, "Can't add user, password not set");
         }
 
         const char* fname = user.getFirstName();
@@ -6134,10 +6163,7 @@ private:
             actname_values
         };
 
-        const char* passwd = user.credentials().getPassword();
-        if(passwd == NULL || *passwd == '\0')
-            passwd = "password";
-        char* passwd_values[] = {(char*)passwd, NULL};
+        char* passwd_values[] = {(char*)userPassword, nullptr};//password is set later (in enableUser) if ACTIVE_DIRECTORY
         LDAPMod passwd_attr =
         {
             LDAP_MOD_ADD,

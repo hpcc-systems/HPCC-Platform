@@ -187,6 +187,7 @@ interface IRoxieServerActivity : extends IActivityBase
     virtual ISectionTimer * registerTimer(unsigned activityId, const char * name) = 0;
     virtual IEngineRowAllocator * createRowAllocator(IOutputMetaData * metadata) = 0;
     virtual void gatherStatistics(IStatisticGatherer * statsBuilder) const = 0;
+    virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const = 0;
 };
 
 interface IRoxieServerActivityFactory : extends IActivityFactory

@@ -47,6 +47,8 @@ set (    SRCS
          configmgr/ConfigMgrUnitTests.cpp
          configmgr/ConfigMgrTemplateTests.cpp
          configmgr/ConfigMgrHPCCTests.cpp
+         metrics/MetricFrameworkTests.cpp
+         metrics/PeriodicSinkTests.cpp
     )
 endif ()
 

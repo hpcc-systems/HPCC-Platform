@@ -28,18 +28,10 @@ MODULE_EXIT()
 }
 
 
-struct hpccMetrics::SinkInfo
-{
-    explicit SinkInfo(MetricSink *_pSink) : pSink{_pSink} {}
-    MetricSink *pSink = nullptr;             // ptr to the sink
-    std::vector<std::string> reportMetrics;   // vector of metrics to report (empty for none)
-};
-
 MetricsReporter &hpccMetrics::queryMetricsReporter()
 {
     return *metricsReporter.query([] { return new MetricsReporter; });
 }
-
 
 MetricsReporter::~MetricsReporter()
 {
@@ -200,6 +192,23 @@ MetricSink *MetricsReporter::getSinkFromLib(const char *type, const char *sinkNa
         throw MakeStringException(MSGAUD_operator, "getSinkFromLib - Unable to load sink lib (%s)", libName.c_str());
     }
     return pSink;
+}
+
+// Method for use when testing
+void MetricsReporter::addSink(MetricSink *pSink, const char *name)
+{
+    //
+    // Add the sink if it does not already exist, otherwise delete the sink because
+    // we are taking ownership.
+    auto sinkIt = sinks.find(name);
+    if (sinkIt == sinks.end())
+    {
+        sinks.insert({std::string(name), std::unique_ptr<SinkInfo>(new SinkInfo(pSink))});
+    }
+    else
+    {
+        delete pSink;
+    }
 }
 
 
