@@ -47,6 +47,8 @@ define([
         summaryTabLoaded: false,
         errorsTab: null,
         errorsTabLoaded: false,
+        statsTab: null,
+        statsTabLoaded: false,
         graphsTab: null,
         graphsTabLoaded: false,
         logicalFilesTab: null,
@@ -63,6 +65,7 @@ define([
             this.inherited(arguments);
             this.summaryTab = registry.byId(this.id + "_Summary");
             this.errorsTab = registry.byId(this.id + "_Errors");
+            this.statsTab = registry.byId(this.id + "_Stats");
             this.graphsTab = registry.byId(this.id + "_Graphs");
             this.logicalFilesTab = registry.byId(this.id + "_QuerySetLogicalFiles");
             this.superFilesTab = registry.byId(this.id + "_QuerySetSuperFiles");
@@ -128,6 +131,12 @@ define([
             } else if (currSel.id === this.errorsTab.id && !this.errorsTabLoaded) {
                 this.errorsTabLoaded = true;
                 this.errorsTab.init({
+                    QuerySetId: this.params.QuerySetId,
+                    Id: this.params.Id
+                });
+            } else if (currSel.id === this.statsTab.id && !this.statsTabLoaded) {
+                this.statsTabLoaded = true;
+                this.statsTab.init({
                     QuerySetId: this.params.QuerySetId,
                     Id: this.params.Id
                 });

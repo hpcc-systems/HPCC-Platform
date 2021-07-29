@@ -736,6 +736,9 @@ export function resolve(hpccWidget, callback) {
         case "SourceFilesWidget":
             require(["hpcc/SourceFilesWidget"], doLoad);
             break;
+        case "SummaryStatsQueryWidget":
+            require(["hpcc/SummaryStatsQueryWidget"], doLoad);
+            break;
         case "SystemServersQueryWidget":
             require(["hpcc/SystemServersQueryWidget"], doLoad);
             break;
