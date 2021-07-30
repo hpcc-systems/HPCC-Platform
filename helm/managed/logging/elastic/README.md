@@ -31,14 +31,20 @@ The following example creates a pipeline named 'hpccpipeline' via the Elastic Se
 ```JSON
 PUT _ingest/pipeline/hpccpipeline
 {
+    "description" : "Parses and structures HPCC Systems component log entries",
     "processors" : [
       {
         "grok" : {
           "field" : "message",
           "patterns" : [
-            """%{BASE16NUM:hpcc.log.sequence}\s+(%{WORD:hpcc.log.audience})\s+%{WORD:hpcc.log.class}\s+%{TIMESTAMP_ISO8601:hpcc.log.timestamp}\s+%{POSINT:hpcc.log.procid\s+%{POSINT:hpcc.log.threadid}\s+%{WORD:hpcc.log.jobid}\s+%{QUOTEDSTRING:hpcc.log.message}""",
-            """%{BASE16NUM:hpcc.log.sequence}\s+%{WORD:hpcc.log.audience}\s+%{WORD:hpcc.log.class}\s%{TIMESTAMP_ISO8601:hpcc.log.timestamp}\s+%{POSINT:hpcc.log.procid}\s+%{POSINT:hpcc.log.threadid}\s+%{WORD:hpcc.log.jobid}\s+%{GREEDYDATA:hpcc.log.message}"""
-          ]
+            """%{BASE16NUM:hpcc.log.sequence}\s+(%{HPCC_LOG_AUDIENCE:hpcc.log.audience})\s+%{HPCC_LOG_CLASS:hpcc.log.class}\s+%{TIMESTAMP_ISO8601:hpcc.log.timestamp}\s+%{POSINT:hpcc.log.procid\s+%{POSINT:hpcc.log.threadid}\s+%{HPCC_LOG_WUID:hpcc.log.jobid}\s+%{QUOTEDSTRING:hpcc.log.message}""",
+            """%{BASE16NUM:hpcc.log.sequence}\s+%{HPCC_LOG_AUDIENCE:hpcc.log.audience}\s+%{HPCC_LOG_CLASS:hpcc.log.class}\s%{TIMESTAMP_ISO8601:hpcc.log.timestamp}\s+%{POSINT:hpcc.log.procid}\s+%{POSINT:hpcc.log.threadid}\s+%{HPCC_LOG_WUID:hpcc.log.jobid}\s+%{GREEDYDATA:hpcc.log.message}"""
+          ],
+          "pattern_definitions" : {
+            "HPCC_LOG_WUID" : "([A-Z][0-9]{8}-[0-9]{6})|(UNK)",
+            "HPCC_LOG_CLASS" : "DIS|ERR|WRN|INF|PRO|MET|UNK",
+            "HPCC_LOG_AUDIENCE" : "OPR|USR|PRG|AUD|UNK"
+          }
         }
       }
     ],
