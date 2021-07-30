@@ -160,6 +160,8 @@ public:
     virtual CJHTreeNode * loadNode(CJHTreeNode * optNode, offset_t offset) = 0;
     CJHTreeNode *locateFirstNode(KeyStatsCollector &stats);
     CJHTreeNode *locateLastNode(KeyStatsCollector &stats);
+
+    virtual void mergeStats(CRuntimeStatisticCollection & stats) const override {}
 };
 
 class jhtree_decl CMemKeyIndex : public CKeyIndex
@@ -173,6 +175,7 @@ public:
     virtual const IFileIO *queryFileIO() const override { return nullptr; }
 // INodeLoader impl.
     virtual CJHTreeNode *loadNode(CJHTreeNode * optNode, offset_t offset);
+    virtual void mergeStats(CRuntimeStatisticCollection & stats) const override {}
 };
 
 class jhtree_decl CDiskKeyIndex : public CKeyIndex
@@ -188,6 +191,7 @@ public:
     virtual const IFileIO *queryFileIO() const override { return io; }
 // INodeLoader impl.
     virtual CJHTreeNode *loadNode(CJHTreeNode * optNode, offset_t offset);
+    virtual void mergeStats(CRuntimeStatisticCollection & stats) const override { ::mergeStats(stats, io); }
 };
 
 class jhtree_decl CKeyCursor : public CInterfaceOf<IKeyCursor>
@@ -250,6 +254,10 @@ protected:
     inline void endRange(unsigned segno)
     {
         filter->endRange(segno, keyBuffer);
+    }
+    virtual void mergeStats(CRuntimeStatisticCollection & stats) const override
+    {
+        key.mergeStats(stats);
     }
 };
 

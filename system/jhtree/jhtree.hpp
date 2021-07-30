@@ -79,6 +79,7 @@ interface jhtree_decl IKeyCursor : public IInterface
     virtual unsigned __int64 getCurrentRangeCount(unsigned groupSegCount, KeyStatsCollector &stats) = 0;
     virtual bool nextRange(unsigned groupSegCount) = 0;
     virtual const byte *queryKeyBuffer() const = 0;
+    virtual void mergeStats(CRuntimeStatisticCollection & stats) const = 0;
 };
 
 interface IKeyIndex;
@@ -116,6 +117,7 @@ interface jhtree_decl IKeyIndex : public IKeyIndexBase
     virtual bool hasSpecialFileposition() const = 0;
     virtual bool needsRowBuffer() const = 0;
     virtual bool prewarmPage(offset_t offset, NodeType type) = 0;
+    virtual void mergeStats(CRuntimeStatisticCollection & stats) const = 0;
 };
 
 interface IKeyArray : extends IInterface
@@ -286,6 +288,7 @@ interface IKeyManager : public IInterface, extends IIndexReadContext
     virtual unsigned getPartition() = 0;  // Use PARTITION() to retrieve partno, if possible, or zero to mean read all
 
     virtual unsigned numActiveKeys() const = 0;
+    virtual void mergeStats(CRuntimeStatisticCollection & stats) const = 0;
 };
 
 inline offset_t extractFpos(IKeyManager * manager)

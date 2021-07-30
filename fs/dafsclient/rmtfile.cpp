@@ -1349,6 +1349,8 @@ public:
             return ioWrites.load(std::memory_order_relaxed);
         case StNumDiskRetries:
             return ioRetries.load(std::memory_order_relaxed);
+        case StTimeLocalExecute:
+            return cycle_to_nanosec(ioReadCycles.load(std::memory_order_relaxed)+ioWriteCycles.load(std::memory_order_relaxed));
         }
         return 0;
     }

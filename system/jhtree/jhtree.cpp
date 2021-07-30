@@ -568,6 +568,11 @@ public:
         filter->describe(out);
     }
 
+    virtual void mergeStats(CRuntimeStatisticCollection & stats) const
+    {
+        if (keyCursor)
+            keyCursor->mergeStats(stats);
+    }
 };
 
 
@@ -1422,7 +1427,6 @@ CJHTreeNode *CKeyIndex::locateLastNode(KeyStatsCollector &stats)
         ::Release(last);
     }
 }
-
 
 void KeyStatsCollector::noteSeeks(unsigned lseeks, unsigned lscans, unsigned lwildseeks)
 {
@@ -2300,7 +2304,12 @@ public:
     virtual bool hasSpecialFileposition() const { return checkOpen().hasSpecialFileposition(); }
     virtual bool needsRowBuffer() const { return checkOpen().needsRowBuffer(); }
     virtual bool prewarmPage(offset_t offset, NodeType type) { return checkOpen().prewarmPage(offset, type); }
-
+    virtual void mergeStats(CRuntimeStatisticCollection & stats) const override
+    {
+        CriticalBlock b(c);
+        if (!realKey) return;
+        checkOpen().mergeStats(stats);
+    }
 };
 
 extern jhtree_decl IKeyIndex *createKeyIndex(const char *keyfile, unsigned crc, IFileIO &iFileIO, unsigned fileIdx, bool isTLK)
