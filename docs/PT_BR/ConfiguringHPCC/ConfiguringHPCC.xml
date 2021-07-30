@@ -1451,7 +1451,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 role="brk">
-          <title>Aba EclAgent Options</title>
+          <title>EclAgent Options</title>
 
           <para>Esta seção descreve a aba EclAgent Options.</para>
 
@@ -1634,15 +1634,17 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
             <listitem>
               <para>Clique <inlinegraphic fileref="images/GS-img01c.png"/> no
-              ícone do</para>
+              ícone do disco para salvar</para>
             </listitem>
           </orderedlist>
         </sect3>
 
+        <para/>
+
         <?hard-pagebreak ?>
 
         <sect3>
-          <title>disco para salvar a aba Esp - myesp Attributes</title>
+          <title>Esp - myesp Attributes</title>
 
           <para>Esta seção descreve a aba Esp - myesp Attributes.</para>
 
@@ -1667,10 +1669,10 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 role="brk">
-          <title>Aba Esp - myesp Service Bindings</title>
+          <title>Esp - myesp Service Bindings</title>
 
-          <para>Esta seção descreve a aba Esp - myesp Service Bindings Esta
-          guia requer etapas adicionais para configurar as conexões do
+          <para>Esta seção descreve a aba Esp - myesp Service Bindings. É
+          necessários etapas adicionais para configurar as conexões do
           serviço.</para>
 
           <para>
@@ -1718,8 +1720,67 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
         <?hard-pagebreak ?>
 
+        <para>
+          <emphasis role="bold">Para adicionar flags de acesso a recursos a
+          uma configuração preexistente do ECL Watch:</emphasis>
+        </para>
+
+        <para>Se você atualizar a plataforma, mas estiver usando uma
+        configuração preexistente, poderá encontrar uma situação em que as
+        flags de acesso de nível de recurso não sejam criadas automaticamente.
+        Flags ausentes podem negar acesso a usuários que tentam acessar
+        recursos no sistema.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>No Configuration Manager, abra sua cópia do arquivo
+            environment.xml e habilite <emphasis>Write
+            Access.</emphasis></para>
+          </listitem>
+
+          <listitem>
+            <para>À esquerda, selecione o ESP que tá hosteando o serviço ECL
+            Watch.</para>
+          </listitem>
+
+          <listitem>
+            <para>À direita, selecione a aba <emphasis>ESP Service
+            Bindings</emphasis>.</para>
+
+            <para>Manualmente adicione a flad de acesso ao novo serviço na
+            tabela Feature Authentication.</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique com botão direito no tabela Feature Authentication e
+            selecione <emphasis>Add</emphasis></para>
+
+            <para>
+              <graphic fileref="images/CM-img08AddFlag.jpg"
+                       vendor="configmgrSS"/>
+            </para>
+          </listitem>
+
+          <listitem>
+            <para>Providencie os valores para path e resource (normalmente o
+            mesmo valor, por exemplo, WsStoreAccess).</para>
+          </listitem>
+
+          <listitem>
+            <para>Clique no ícone para salvar</para>
+          </listitem>
+
+          <listitem>
+            <para>Copie o arquivo para cada nó, em seguida reinice o
+            sistema.</para>
+
+            <para>As OUs devem ser criadas automaticamente no LDAP após o
+            reinicio.</para>
+          </listitem>
+        </orderedlist>
+
         <sect3>
-          <title>Aba Esp - myesp Authentication</title>
+          <title>Esp - myesp Authentication</title>
 
           <para>Esta seção descreve a aba Esp - myesp Service
           Authentication</para>
@@ -1782,7 +1843,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3 role="brk">
-          <title>Aba Esp - AuthDomain</title>
+          <title>Esp - AuthDomain</title>
 
           <!--   Temporarily removing image 
 		  <para>
@@ -1807,7 +1868,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </sect3>
 
         <sect3>
-          <title>Aba Esp - myesp HTTPS</title>
+          <title>Esp - myesp HTTPS</title>
 
           <para>Esta seção descreve os atributos do Aba Esp - myesp
           HTTPS.</para>

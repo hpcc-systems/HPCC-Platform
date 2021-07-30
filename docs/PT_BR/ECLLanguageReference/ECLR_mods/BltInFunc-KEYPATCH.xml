@@ -161,7 +161,7 @@
      {STRING2 st,
       STRING20 city,
       STRING20 lname,
-      UNSIGNED8 filepos{virtual(fileposition)}},
+      UNSIGNED8 filepos{VIRTUAL(fileposition)}},
      FLAT);
 i1 := INDEX(Vehicles,
   {st,city,lname,filepos},

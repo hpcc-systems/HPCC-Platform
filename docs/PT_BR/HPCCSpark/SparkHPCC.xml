@@ -560,6 +560,29 @@
       <para>O conector distribuído Spark-HPCCSystems também suporta o PySpark.
       Ele usa as mesmas classes/API que o Java.</para>
 
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry><graphic fileref="images/tip.jpg"/></entry>
+
+                <entry><para>Como é comum na comunicação do cliente Java por
+                TLS, os conectores Spark-HPCC direcionados a um cluster HPCC
+                por TLS precisarão importar os certificados apropriados para o
+                keystore Java local.</para><para> </para><para>*Uma maneira de
+                fazer isso é usar o keytool fornecido com as instalações Java.
+                Consulte a documentação do keytool para uso.</para></entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
       <sect2 role="brk">
         <title>Considerações Especiais</title>
 
@@ -707,6 +730,72 @@ throws Exception { </programlisting>
       gravação amando <emphasis>DFUCreateFile</emphasis> e publicar o arquivo
       depois de ter sido escrito chamando
       <emphasis>DFUPublishFile</emphasis>.</para>
+
+      <sect2 role="brk">
+        <title>Using the Spark Datasource API to Read and Write</title>
+
+        <para>Example Python code:</para>
+
+        <para><programlisting># Connect to HPCC and read a file
+df = spark.read.load(format="hpcc",
+                     host="127.0.0.1:8010",
+                     password="",
+                     username="",
+                     limitPerFilePart=100,        
+                                      # Limit the number of rows to read from each file part
+                     projectList="field1, field2, field3.childField1",     
+                                      # Comma separated list of columns to read
+                     fileAccessTimeout=240,
+                     path="example::file")
+# Write the file back to HPCC
+df.write.save(format="hpcc",
+              mode="overwrite",        
+                   # Left blank or not specified results in an error if the file exists
+              host="127.0.0.1:8010",
+              password="",
+              username="",
+              cluster="mythor",
+              path="example::file")</programlisting></para>
+
+        <para>Exemplo de código Scala:</para>
+
+        <para><programlisting>// Read a file from HPCC
+val dataframe = spark.read.format("hpcc")
+                .option("host","127.0.0.1:8010")
+                .option("password", "")
+                .option("username", "")
+                .option("limitPerFilePart",100)
+                .option("fileAccessTimeout",240)
+                .option("projectList","field1, field2, field3.childField")
+                .load("example::file")
+// Write the dataset back
+   dataframe.write.mode("overwrite")
+                   .format("hpcc")
+                   .option("host","127.0.0.1:8010")
+                   .option("password", "")
+                   .option("username", "")
+                   .option("cluster","mythor")
+                   .save("example::file")</programlisting></para>
+
+        <para>Exemplo de código R:</para>
+
+        <para><programlisting>df &lt;- read.df(source = "hpcc",
+              host = "127.0.0.1:8010",
+              path = "example::file",
+              password = "",
+              username = "",
+              limitPerFilePart = 100,
+              fileAccessTimeout = 240,
+              projectList = "field1, field2, field3.childField")
+write.df(df, source = "hpcc",
+             host = "127.0.0.1:8010",
+             cluster = "mythor",
+             path = "example::file",
+             mode = "overwrite",
+             password = "",
+             username = "",
+             fileAccessTimeout = 240)</programlisting></para>
+      </sect2>
     </sect1>
 
     <sect1 id="additional-classes-of-interest">

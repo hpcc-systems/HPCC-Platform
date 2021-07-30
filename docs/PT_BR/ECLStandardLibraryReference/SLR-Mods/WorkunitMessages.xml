@@ -52,10 +52,14 @@
   STRING message{MAXLENGTH(1024)};
 END;</programlisting>
 
-  <para>Cada registro no dataset retornado especifica uma mensagem na
-  workunit.</para>
+  <para>Esta função retorna todas as mensagens na workunit. Cada registro Each
+  record in the retornado no dataset específica a mensagem na workunit.</para>
+
+  <para>O valor de <emphasis>severidade</emphasis> pode ser 1 para Alerta, 2
+  para Erro, ou 3 para informação.</para>
 
   <para>Exemplo:</para>
 
-  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitMessages('W20070308-164946'));</programlisting>
+  <programlisting format="linespecific">IMPORT STD;
+OUTPUT(STD.System.Workunit.WorkunitMessages('W20210602-164946'));</programlisting>
 </sect1>
