@@ -526,6 +526,31 @@ private:
                     token.push_back(ch);
                 }
                 break;
+            case '{':
+                while (isspace(fragment[idx])) idx++;
+                if ('$' == fragment[idx])
+                {
+                    idx++;
+                    if (!inVariable)
+                    {
+                        inVariable = true;
+                    }
+                    else
+                    {
+                        error("%s fragment '%s' contains invalid variable markup (nested variable reference)", m_scopeMapper(srcScope), fragment.c_str());
+                        token.clear();
+                        variable.clear();
+                        inVariable = false;
+                        while (fragment[idx] != '\0' && fragment[idx] != ',') idx++;
+                        done = '\0' == fragment[idx];
+                        continue;
+                    }
+                }
+                else
+                {
+                    token.push_back(ch);
+                }
+                break;
             case '}':
                 if (inVariable)
                 {
