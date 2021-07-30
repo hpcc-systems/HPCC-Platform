@@ -41,6 +41,7 @@ class CKeyedJoinMaster : public CMasterActivity
     bool remoteKeyedFetch = false;
     bool assumePrimary = false;
     unsigned totalIndexParts = 0;
+    std::vector<OwnedPtr<CThorStatsCollection>> fileStats;
 
     // CMap contains mappings and lists of parts for each slave
     class CMap
@@ -308,6 +309,11 @@ public:
             if (!isFileKey(indexFile))
                 throw MakeActivityException(this, TE_FileTypeMismatch, "Attempting to read flat file as an index: %s", indexFileName.get());
             IDistributedSuperFile *superIndex = indexFile->querySuperFile();
+            // One entry for each subfile (unless it is not a superfile => then add one entry for index data file stats)
+            unsigned numSuperIndexSubs = superIndex?superIndex->numSubFiles(true):1;
+            for (unsigned i=0; i<numSuperIndexSubs; i++)
+                fileStats.push_back(new CThorStatsCollection(indexReadStatistics));
+
             if (helper->diskAccessRequired())
             {
                 OwnedRoxieString fetchFilename(helper->getFileName());
@@ -351,6 +357,11 @@ public:
                                 remoteKeyedFetch = false;
                         }
                         dataMap.map(*this, dataFile, false, getOptBool("allLocalFetchParts"));
+                        IDistributedSuperFile *super = dataFile->querySuperFile();
+                        // One entry for each subfile (unless it is not a superfile => then have 1 entry for data file stats)
+                        unsigned numsubs = super?super->numSubFiles(true):1;
+                        for (unsigned i=0; i<numsubs; i++)
+                            fileStats.push_back(new CThorStatsCollection(diskReadRemoteStatistics));
                     }
                 }
             }
@@ -369,10 +380,8 @@ public:
                 indexFileDesc.setown(indexFile->getFileDescriptor());
 
                 unsigned superIndexWidth = 0;
-                unsigned numSuperIndexSubs = 0;
                 if (superIndex)
                 {
-                    numSuperIndexSubs = superIndex->numSubFiles(true);
                     bool first=true;
                     // consistency check
                     Owned<IDistributedFileIterator> iter = superIndex->getSubFileIterator(true);
@@ -458,10 +467,7 @@ public:
                     initMb.append(keyHasTlk);
                     if (keyHasTlk)
                     {
-                        if (numSuperIndexSubs)
-                            initMb.append(numSuperIndexSubs);
-                        else
-                            initMb.append((unsigned)1);
+                        initMb.append(numSuperIndexSubs);
 
                         Owned<IDistributedFileIterator> iter;
                         IDistributedFile *f;
@@ -551,6 +557,23 @@ public:
                     dataMap.serializePartMap(dst);
             }
         }
+    }
+    virtual void deserializeStats(unsigned node, MemoryBuffer &mb) override
+    {
+        CMasterActivity::deserializeStats(node, mb);
+        for (auto &stats: fileStats)
+            stats->deserialize(node, mb);
+    }
+    virtual void done() override
+    {
+        unsigned numSubFiles = fileStats.size();
+        for (unsigned i=0; i<numSubFiles; i++)
+        {
+            IDistributedFile *file = queryReadFile(i);
+            if (file) //publish the number of disk reads for indexes and disk fetches.
+                file->addAttrValue("@numDiskReads", fileStats[i]->getStatisticSum(StNumDiskReads));
+        }
+        CMasterActivity::done();
     }
 };
 
