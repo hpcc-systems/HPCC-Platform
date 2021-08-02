@@ -31,7 +31,7 @@ LogMetricSink::LogMetricSink(const char *name, const IPropertyTree *pSettingsTre
 
 void LogMetricSink::doCollection()
 {
-    auto reportMetrics = pReporter->queryMetricsForReport(name);
+    auto reportMetrics = pManager->queryMetricsForReport(name);
     for (auto &pMetric: reportMetrics)
     {
         writeLogEntry(pMetric);

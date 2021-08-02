@@ -39,7 +39,7 @@ void FileMetricSink::prepareToStartCollecting()
 
 void FileMetricSink::doCollection()
 {
-    auto reportMetrics = pReporter->queryMetricsForReport(name);
+    auto reportMetrics = pManager->queryMetricsForReport(name);
     writeReportHeaderToFile();
     for (auto &pMetric: reportMetrics)
     {

@@ -16,7 +16,7 @@
 
 using namespace hpccMetrics;
 
-static Singleton<MetricsReporter> metricsReporter;
+static Singleton<MetricsManager> metricsManager;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     return true;
@@ -24,16 +24,16 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 
 MODULE_EXIT()
 {
-    delete metricsReporter.queryExisting();
+    delete metricsManager.queryExisting();
 }
 
 
-MetricsReporter &hpccMetrics::queryMetricsReporter()
+MetricsManager &hpccMetrics::queryMetricsManager()
 {
-    return *metricsReporter.query([] { return new MetricsReporter; });
+    return *metricsManager.query([] { return new MetricsManager; });
 }
 
-MetricsReporter::~MetricsReporter()
+MetricsManager::~MetricsManager()
 {
     for (auto const &sinkIt : sinks)
     {
@@ -43,14 +43,14 @@ MetricsReporter::~MetricsReporter()
 }
 
 
-void MetricsReporter::init(IPropertyTree *pMetricsTree)
+void MetricsManager::init(IPropertyTree *pMetricsTree)
 {
     Owned<IPropertyTreeIterator> sinkElementsIt = pMetricsTree->getElements("sinks");
     initializeSinks(sinkElementsIt);
 }
 
 
-void MetricsReporter::addMetric(const std::shared_ptr<IMetric> &pMetric)
+void MetricsManager::addMetric(const std::shared_ptr<IMetric> &pMetric)
 {
     std::unique_lock<std::mutex> lock(metricVectorMutex);
     auto it = metrics.find(pMetric->queryName());
@@ -75,7 +75,7 @@ void MetricsReporter::addMetric(const std::shared_ptr<IMetric> &pMetric)
 }
 
 
-void MetricsReporter::startCollecting()
+void MetricsManager::startCollecting()
 {
     for (auto const &sinkIt : sinks)
     {
@@ -84,7 +84,7 @@ void MetricsReporter::startCollecting()
 }
 
 
-void MetricsReporter::stopCollecting()
+void MetricsManager::stopCollecting()
 {
     for (auto const &sinkIt : sinks)
     {
@@ -93,7 +93,7 @@ void MetricsReporter::stopCollecting()
 }
 
 
-std::vector<std::shared_ptr<IMetric>> MetricsReporter::queryMetricsForReport(const std::string &sinkName)
+std::vector<std::shared_ptr<IMetric>> MetricsManager::queryMetricsForReport(const std::string &sinkName)
 {
     std::vector<std::shared_ptr<IMetric>> reportMetrics;
     reportMetrics.reserve(metrics.size());
@@ -130,7 +130,7 @@ std::vector<std::shared_ptr<IMetric>> MetricsReporter::queryMetricsForReport(con
 }
 
 
-void MetricsReporter::initializeSinks(IPropertyTreeIterator *pSinkIt)
+void MetricsManager::initializeSinks(IPropertyTreeIterator *pSinkIt)
 {
     for (pSinkIt->first(); pSinkIt->isValid(); pSinkIt->next())
     {
@@ -160,7 +160,7 @@ void MetricsReporter::initializeSinks(IPropertyTreeIterator *pSinkIt)
 }
 
 
-MetricSink *MetricsReporter::getSinkFromLib(const char *type, const char *sinkName, const IPropertyTree *pSettingsTree)
+MetricSink *MetricsManager::getSinkFromLib(const char *type, const char *sinkName, const IPropertyTree *pSettingsTree)
 {
     std::string libName;
 
@@ -195,7 +195,7 @@ MetricSink *MetricsReporter::getSinkFromLib(const char *type, const char *sinkNa
 }
 
 // Method for use when testing
-void MetricsReporter::addSink(MetricSink *pSink, const char *name)
+void MetricsManager::addSink(MetricSink *pSink, const char *name)
 {
     //
     // Add the sink if it does not already exist, otherwise delete the sink because
@@ -232,9 +232,9 @@ PeriodicMetricSink::~PeriodicMetricSink()
 }
 
 
-void PeriodicMetricSink::startCollection(MetricsReporter *_pReporter)
+void PeriodicMetricSink::startCollection(MetricsManager *_pManager)
 {
-    pReporter = _pReporter;
+    pManager = _pManager;
     prepareToStartCollecting();
     isCollecting = true;
     collectThread = std::thread(&PeriodicMetricSink::collectionThread, this);

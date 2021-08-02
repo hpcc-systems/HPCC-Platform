@@ -368,9 +368,9 @@ void initializeMetrics(CEspConfig* config)
     if (pMetricsTree != nullptr)
     {
         PROGLOG("Metrics initializing...");
-        MetricsReporter &metricsReporter = queryMetricsReporter();
-        metricsReporter.init(pMetricsTree);
-        metricsReporter.startCollecting();
+        MetricsManager &metricsManager = queryMetricsManager();
+        metricsManager.init(pMetricsTree);
+        metricsManager.startCollecting();
     }
 }
 
@@ -580,7 +580,7 @@ int init_main(int argc, const char* argv[])
 int main(int argc, const char* argv[])
 {
     start_init_main(argc, argv, init_main);
-    queryMetricsReporter().stopCollecting();
+    queryMetricsManager().stopCollecting();
     stopPerformanceMonitor();
     UseSysLogForOperatorMessages(false);
     releaseAtoms();

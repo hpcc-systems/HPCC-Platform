@@ -28,7 +28,7 @@ extern "C" MetricSink* getSinkInstance(const char *name, const IPropertyTree *pS
 PrometheusMetricSink::PrometheusMetricSink(const char *name, const IPropertyTree *pSettingsTree) :
     MetricSink(name, PROMETHEUS_REPORTER_TYPE)
 {
-    m_metricsReporter = nullptr;
+    m_metricsManager = nullptr;
     m_metricsSinkName = name;
     m_processing = false;
     m_port = DEFAULT_PROMETHEUS_METRICS_SERVICE_PORT;
@@ -70,10 +70,10 @@ PrometheusMetricSink::PrometheusMetricSink(const char *name, const IPropertyTree
         m_server.Get(m_metricsServiceName.str(), [&](const Request& req, Response& res)
         {
             StringBuffer payload;
-            if (!m_metricsReporter)
-                throw std::runtime_error("NULL MetricsReporter detected!");
+            if (!m_metricsManager)
+                throw std::runtime_error("NULL MetricsManager detected!");
             else
-                toPrometheusMetrics(m_metricsReporter->queryMetricsForReport(std::string(m_metricsSinkName.str())), payload, m_verbose);
+                toPrometheusMetrics(m_metricsManager->queryMetricsForReport(std::string(m_metricsSinkName.str())), payload, m_verbose);
 
             res.set_content(payload.str(), PROMETHEUS_METRICS_SERVICE_RESP_TYPE);
             LOG(MCuserInfo, "TxSummary[status=%d;user=@%s:%d;contLen=%ld;req=GET;]\n",res.status, req.remote_addr.c_str(), req.remote_port, req.content_length);
@@ -123,12 +123,12 @@ void PrometheusMetricSink::toPrometheusMetrics(std::vector<std::shared_ptr<IMetr
     }
 }
 
-void PrometheusMetricSink::startCollection(MetricsReporter *_pReporter)
+void PrometheusMetricSink::startCollection(MetricsManager *_pManager)
 {
-    if (!_pReporter)
-        throw MakeStringException(-1, "PrometheusMetricsService: NULL MetricsReporter detected!");
+    if (!_pManager)
+        throw MakeStringException(-1, "PrometheusMetricsService: NULL MetricsManager detected!");
 
-    m_metricsReporter = _pReporter;
+    m_metricsManager = _pManager;
 
     m_collectThread = std::thread(collectionThread, this);
     m_processing = true;

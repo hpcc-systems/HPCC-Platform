@@ -74,7 +74,7 @@ public:
         Owned<IPropertyTree> pSettings = createPTreeFromYAMLString(periodicSinkSettingsTestYml, ipt_none, ptr_ignoreWhiteSpace, nullptr);
         pSettings->setPropInt("@period", period);
         pPeriodicTestSink = new PeriodicTestSink("periodic_test_sink", pSettings);
-        periodicSinkTestReporter.addSink(pPeriodicTestSink, "periodic_test_sink");
+        periodicSinkTestManager.addSink(pPeriodicTestSink, "periodic_test_sink");
     }
 
     ~PeriodicSinkTests() = default;
@@ -92,7 +92,7 @@ protected:
         // Stop collection and ask the test sink how many collections were done. If the count is +/- 1
         // from the wait period multiple used, then we are close enough
         unsigned multiple = 3;
-        periodicSinkTestReporter.startCollecting();
+        periodicSinkTestManager.startCollecting();
 
         //
         // Check that the sink called to prepare for collection
@@ -100,7 +100,7 @@ protected:
 
         // wait... then stop collecting
         sleep(multiple * period);
-        periodicSinkTestReporter.stopCollecting();
+        periodicSinkTestManager.stopCollecting();
 
         unsigned numCollections = pPeriodicTestSink->numCollections;
 
@@ -113,7 +113,7 @@ protected:
     }
 
 protected:
-    MetricsReporter periodicSinkTestReporter;
+    MetricsManager periodicSinkTestManager;
     PeriodicTestSink *pPeriodicTestSink = nullptr;
 };
 
