@@ -136,10 +136,7 @@ public:
     GaugeMetric(const char *name, const char *description) :
         MetricVal{name, description, MetricType::METRICS_GAUGE}  { }
 
-    /*
-     * Update the value as indicated
-     */
-    void add(int64_t delta)
+    void adjust(int64_t delta)
     {
         value += delta;
     }
@@ -267,5 +264,49 @@ std::shared_ptr<CustomMetric<T>> createCustomMetricAndAddToReporter(const char *
     queryMetricsReporter().addMetric(pMetric);
     return pMetric;
 }
+
+
+class jlib_decl ScopedGaugeUpdater
+{
+public:
+    explicit ScopedGaugeUpdater(GaugeMetric &_pGauge, int64_t _amount=1)
+        : gauge{_pGauge}, amount{_amount}
+    {
+        gauge.adjust(amount);
+    }
+    ScopedGaugeUpdater(const ScopedGaugeUpdater&) = delete;
+    ScopedGaugeUpdater(ScopedGaugeUpdater&) = delete;
+    ScopedGaugeUpdater& operator=(const ScopedGaugeUpdater&) = delete;
+    ScopedGaugeUpdater& operator=(ScopedGaugeUpdater&) = delete;
+    ~ScopedGaugeUpdater()
+    {
+        gauge.adjust(-amount);
+    }
+
+protected:
+    GaugeMetric &gauge;
+    int64_t amount;
+};
+
+
+class jlib_decl ScopedGaugeDecrementer
+{
+public:
+    explicit ScopedGaugeDecrementer(GaugeMetric &_pGauge, int64_t _amount=1)
+        : gauge{_pGauge}, amount{_amount}
+    { }
+    ScopedGaugeDecrementer(const ScopedGaugeDecrementer&) = delete;
+    ScopedGaugeDecrementer(ScopedGaugeDecrementer&) = delete;
+    ScopedGaugeDecrementer& operator=(const ScopedGaugeDecrementer&) = delete;
+    ScopedGaugeDecrementer& operator=(ScopedGaugeDecrementer&) = delete;
+    ~ScopedGaugeDecrementer()
+    {
+        gauge.adjust(-amount);
+    }
+
+protected:
+    GaugeMetric &gauge;
+    int64_t amount;
+};
 
 }

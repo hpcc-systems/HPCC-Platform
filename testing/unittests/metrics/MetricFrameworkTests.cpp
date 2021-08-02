@@ -109,11 +109,11 @@ protected:
 
         //
         // Test updating gauge
-        pGauge->add(10);
+        pGauge->adjust(10);
         gaugeValue = pGauge->queryValue();
         CPPUNIT_ASSERT_EQUAL(35, gaugeValue);
 
-        pGauge->add(-5);
+        pGauge->adjust(-5);
         gaugeValue = pGauge->queryValue();
         CPPUNIT_ASSERT_EQUAL(30, gaugeValue);
     }

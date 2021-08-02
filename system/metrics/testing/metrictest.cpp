@@ -130,12 +130,12 @@ void processThread(int numLoops, unsigned delay, bool addDynamic, const std::str
 
         if (pDynamicMetric)
         {
-            pDynamicMetric->add(1);
+            pDynamicMetric->adjust(1);
         }
 
         pEventCountMetric->inc(2u);
-        pQueueSizeMetric->add(3);
+        pQueueSizeMetric->adjust(3);
         std::this_thread::sleep_for(std::chrono::seconds(delay));
-        pQueueSizeMetric->add(-1);
+        pQueueSizeMetric->adjust(-1);
     }
 }
