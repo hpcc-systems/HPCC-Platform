@@ -83,3 +83,13 @@ kibana:
   #       nestedkey: value
   service:
     type: "LoadBalancer"
+    annotations:
+      # This annotation delcares the Azure load balancer for the service as internal rather than internet-visible
+      service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+
+      # Enable appropriate annotation for target cloud provider to ensure Kibana access is internal
+      #
+      #service.beta.kubernetes.io/cce-load-balancer-internal-vpc: "true"
+      #cloud.google.com/load-balancer-type: "Internal"
+      #service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+      #service.beta.kubernetes.io/openstack-internal-load-balancer: "true"
