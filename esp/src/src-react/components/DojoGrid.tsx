@@ -70,7 +70,10 @@ export const DojoGrid: React.FunctionComponent<DojoGridProps> = ({
     }, [columns, getSelected, query, sort, store]);
 
     const gridSelInit = React.useCallback(grid => {
-        grid.onSelectionChanged(() => setSelection(grid.getSelected()));
+        //setSelection prop is defined (grid has selectors for rows)
+        if (setSelection) {
+            grid.onSelectionChanged(() => setSelection(grid.getSelected()));
+        }
         setGrid(grid);
     }, [setGrid, setSelection]);
 

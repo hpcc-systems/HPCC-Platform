@@ -38,6 +38,8 @@ define([
         gridTitle: "Change Me",
         idProperty: "Change Me",
 
+        displayOpenButton: true,
+
         store: null,
         toolbar: null,
         gridTab: null,
@@ -58,6 +60,12 @@ define([
             this.inherited(arguments);
             this.initGrid();
             this.initContextMenu();
+
+            if (!this.displayOpenButton) {
+                dojo.destroy(this.id + "Open");
+                dojo.destroy(this.id + "ContainerNode");
+                dojo.destroy(this.id + "RemovableSeperator2");
+            }
         },
 
         //  Hitched actions  ---
