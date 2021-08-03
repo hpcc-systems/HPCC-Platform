@@ -26,6 +26,8 @@
 #define FunctionScopePrefix "f"
 #define WorkflowScopePrefix "w"
 #define ChildGraphScopePrefix "c"
+#define FileScopePrefix "p"
+#define ChannelScopePrefix "x"
 
 #define MATCHES_CONST_PREFIX(search, prefix) (strncmp(search, prefix, strlen(prefix)) == 0)
 
@@ -69,6 +71,8 @@ enum StatisticScopeType
     SSTfunction,                        // a function call
     SSTworkflow,
     SSTchildgraph,
+    SSTfile,
+    SSTchannel,                         // a Roxie channel
     SSTunknown,
     SSTmax
 };
@@ -233,6 +237,9 @@ enum StatisticKind
     StTimeBlocked,
     StCycleBlockedCycles,
     StCostExecute,
+    StSizeAgentReply,
+    StTimeAgentWait,
+    StCycleAgentWaitCycles,
     StMax,
 
     //For any quantity there is potentially the following variants.
