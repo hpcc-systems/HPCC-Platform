@@ -1163,6 +1163,7 @@ public:
     virtual bool isPlugin() const override { return false; }
     virtual int getPropInt(IAtom * a, int def) const override { return def; }
     virtual bool getProp(IAtom * a, StringBuffer &ret) const override { return false; }
+    virtual bool includeInArchive() const override { return false; }
 
     using CHqlDelayedCall::clone;
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols) override { throwUnexpected(); }
@@ -1225,6 +1226,7 @@ public:
     virtual bool isPlugin() const override { return false; }
     virtual int getPropInt(IAtom *, int) const override;
     virtual bool getProp(IAtom *, StringBuffer &) const override;
+    virtual bool includeInArchive() const override { return true; }
 
     virtual void    getSymbols(HqlExprArray& exprs) const override;
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols) override { throwUnexpected(); }
@@ -1323,6 +1325,7 @@ public:
     virtual bool getProp(IAtom *, StringBuffer &) const override;
     virtual void setProp(IAtom *, const char *) override;
     virtual void setProp(IAtom *, int) override;
+    virtual bool includeInArchive() const override;
     virtual IEclSource * queryEclSource() const override { return eclSource; }
 };
 
@@ -1628,6 +1631,7 @@ public:
     virtual bool isPlugin() const override { return false; }
     virtual int getPropInt(IAtom *, int dft) const override { return dft; }
     virtual bool getProp(IAtom *, StringBuffer &) const override { return false; }
+    virtual bool includeInArchive() const override { return false; }
 
 //IHqlCreateScope
     virtual void defineSymbol(IIdAtom * id, IIdAtom * moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int lineno, int column, int _startpos, int _bodypos, int _endpos) override { throwUnexpected(); }

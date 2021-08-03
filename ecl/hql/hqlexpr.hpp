@@ -914,6 +914,7 @@ public:
     inline void setIgnoreSimplified() { ignoreSimplified = true; }
     void setNeverSimplify(const char *regex) { neverSimplifyRegEx.assign(regex, std::regex_constants::icase); neverSimplifyEnabled = true; };
     bool neverSimplify(const char *fullname) { return neverSimplifyEnabled? std::regex_match(fullname, neverSimplifyRegEx):false; };
+    bool includeInArchive(IHqlScope * scope) const;
     inline IPropertyTree * queryNestedDependTree() const { return nestedDependTree; }
 
     void beginMetaScope() { metaStack.append(*new FileParseMeta); }
@@ -1103,6 +1104,7 @@ interface IHqlScope : public IInterface
     virtual bool isPlugin() const = 0;
     virtual int getPropInt(IAtom *, int) const = 0;
     virtual bool getProp(IAtom *, StringBuffer &) const = 0;
+    virtual bool includeInArchive() const = 0;
 
     //IHqlCreateScope
     virtual void defineSymbol(IIdAtom * name, IIdAtom * moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int lineno, int column, int _startpos, int _bodypos, int _endpos) = 0;

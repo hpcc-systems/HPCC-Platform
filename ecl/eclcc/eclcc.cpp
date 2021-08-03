@@ -422,6 +422,7 @@ protected:
     bool optIgnoreCache = false;
     bool optIgnoreSimplified = false;
     bool optExtraStats = false;
+    bool optPruneArchive = true;
 
     mutable bool daliConnected = false;
     mutable bool disconnectReported = false;
@@ -1585,7 +1586,7 @@ void EclCC::processDefinitions(EclRepositoryArray & repositories)
         //Create a repository with just that attribute.
         timestamp_type ts = 1; // Use a non zero timestamp so the value can be cached.  Changes are spotted through the optionHash
         Owned<IFileContents> contents = createFileContentsFromText(value, NULL, false, NULL, ts);
-        repositories.append(*createSingleDefinitionEclRepository(module, attr, contents));
+        repositories.append(*createSingleDefinitionEclRepository(module, attr, contents, true));
     }
 }
 
@@ -1677,7 +1678,7 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
         if (queryAttributePath && queryText && *queryText)
         {
             Owned<IEclSourceCollection> inputFileCollection = createSingleDefinitionEclCollection(queryAttributePath, contents);
-            repositories.append(*createRepository(inputFileCollection));
+            repositories.append(*createRepository(inputFileCollection, nullptr, true));
         }
     }
     else
@@ -1695,10 +1696,10 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
 
         //Create a repository with just that attribute, and place it before the archive in the resolution order.
         Owned<IFileContents> contents = createFileContentsFromText(queryText, NULL, false, NULL, 0);
-        repositories.append(*createSingleDefinitionEclRepository(syntaxCheckModule, syntaxCheckAttribute, contents));
+        repositories.append(*createSingleDefinitionEclRepository(syntaxCheckModule, syntaxCheckAttribute, contents, true));
     }
 
-    repositories.append(*createRepository(archiveCollection));
+    repositories.append(*createRepository(archiveCollection, nullptr, true));
 
     instance.dataServer.setown(createCompoundRepository(repositories));
 
@@ -1791,7 +1792,7 @@ void EclCC::processFile(EclCompileInstance & instance)
             if (!optQueryRepositoryReference || queryText->length())
             {
                 Owned<IEclSourceCollection> inputFileCollection = createSingleDefinitionEclCollection(attributePath, queryText);
-                repositories.append(*createRepository(inputFileCollection));
+                repositories.append(*createRepository(inputFileCollection, nullptr, true));
             }
         }
         else
@@ -1811,10 +1812,10 @@ void EclCC::processFile(EclCompileInstance & instance)
                 attributePath.append(moduleName).append(".").append(thisTail);
 
                 Owned<IEclSourceCollection> inputFileCollection = createSingleDefinitionEclCollection(attributePath, queryText);
-                repositories.append(*createRepository(inputFileCollection));
+                repositories.append(*createRepository(inputFileCollection, nullptr, true));
 
                 Owned<IEclSourceCollection> directory = createFileSystemEclCollection(&instance.queryErrorProcessor(), thisDirectory, 0, 0);
-                Owned<IEclRepository> directoryRepository = createRepository(directory, moduleName);
+                Owned<IEclRepository> directoryRepository = createRepository(directory, moduleName, true);
                 Owned<IEclRepository> nested = createNestedRepository(moduleNameId, directoryRepository);
                 repositories.append(*LINK(nested));
             }
@@ -2135,12 +2136,15 @@ bool EclCC::processFiles()
     if (optCheckIncludePaths)
         checkForOverlappingPaths(searchPath);
 
+    bool includePluginsInArchive = !optPruneArchive;
+    bool includeBundlesInArchive = true;
+    bool includeLibraryInArchive = !optPruneArchive;
     Owned<IErrorReceiver> errs = optXml ? createXmlFileErrorReceiver(stderr) : createFileErrorReceiver(stderr);
-    pluginsRepository.setown(createNewSourceFileEclRepository(errs, pluginsPath.str(), ESFallowplugins, logVerbose ? PLUGIN_DLL_MODULE : 0));
+    pluginsRepository.setown(createNewSourceFileEclRepository(errs, pluginsPath.str(), ESFallowplugins, logVerbose ? PLUGIN_DLL_MODULE : 0, includePluginsInArchive));
     if (!optNoBundles)
-        bundlesRepository.setown(createNewSourceFileEclRepository(errs, eclBundlePath.str(), 0, 0));
-    libraryRepository.setown(createNewSourceFileEclRepository(errs, eclLibraryPath.str(), 0, 0));
-    includeRepository.setown(createNewSourceFileEclRepository(errs, searchPath.str(), 0, 0));
+        bundlesRepository.setown(createNewSourceFileEclRepository(errs, eclBundlePath.str(), 0, 0, includeBundlesInArchive));
+    libraryRepository.setown(createNewSourceFileEclRepository(errs, eclLibraryPath.str(), 0, 0, includeLibraryInArchive));
+    includeRepository.setown(createNewSourceFileEclRepository(errs, searchPath.str(), 0, 0, true));
 
     //Ensure symbols for plugins are initialised - see comment before CHqlMergedScope...
 //    lookupAllRootDefinitions(pluginsRepository);
@@ -2799,6 +2803,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
         }
         else if (iter.matchFlag(optGenerateHeader, "-pch"))
+        {
+        }
+        else if (iter.matchFlag(optPruneArchive, "--prunearchive"))
         {
         }
         else if (iter.matchOption(optComponentName, "--component"))

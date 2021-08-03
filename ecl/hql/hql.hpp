@@ -183,6 +183,7 @@ interface IEclRepository: public IInterface
 {
     virtual IHqlScope * queryRootScope() = 0;
     virtual IEclSource * getSource(const char * eclFullname) = 0;
+    virtual bool includeInArchive() const = 0;
 };
 
 //MORE: Make this more private
