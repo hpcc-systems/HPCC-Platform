@@ -10,6 +10,7 @@ import { pivotItemStyle } from "../layouts/pivot";
 import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { QueryErrors } from "./QueryErrors";
+import { QueryGraphs } from "./QueryGraphs";
 import { QueryLibrariesUsed } from "./QueryLibrariesUsed";
 import { QueryLogicalFiles } from "./QueryLogicalFiles";
 import { QuerySummaryStats } from "./QuerySummaryStats";
@@ -162,7 +163,7 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
                 <QuerySummaryStats queryId={queryId} querySet={querySet} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Graphs} itemKey="graphs" itemCount={query?.WUGraphs?.ECLGraph?.length || 0} style={pivotItemStyle(size, 0)}>
-                <DojoAdapter widgetClassID="GraphsQueryWidget" params={{ Id: queryId, QuerySetId: querySet }} />
+                <QueryGraphs queryId={queryId} querySet={querySet} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Resources} itemKey="resources" style={pivotItemStyle(size, 0)}>
                 <Resources wuid={query?.Wuid} />
