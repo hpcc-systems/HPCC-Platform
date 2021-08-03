@@ -543,7 +543,7 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
             Owned<IPropertyTree> graphTree = createPTree("Graph");
             graphTree->addProp("@id", graphName.str());
             Owned<IPropertyTree> xgmmlTree = createPTree("xgmml");
-            Owned<IPropertyTree> graphXgmml = graphs->query().getXGMMLTree(false);
+            Owned<IPropertyTree> graphXgmml = graphs->query().getXGMMLTree(false, false);
             xgmmlTree->addPropTree("graph", graphXgmml.getClear());
             graphTree->addPropTree("xgmml", xgmmlTree.getClear());
             destTree->addPropTree("Graph", graphTree.getClear());

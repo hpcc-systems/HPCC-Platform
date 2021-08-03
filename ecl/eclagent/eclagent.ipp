@@ -920,83 +920,6 @@ class EclSubGraph : public CInterface, implements ILocalEclGraphResults, public 
     friend class EclGraphElement;
 private:
 
-    class LegacyInputProbe : public CInterface, implements IHThorInput, implements IEngineRowStream
-    {
-        IHThorInput  *in;
-        size32_t    maxRowSize;
-        unsigned sourceId;
-        unsigned outputIndex;
-
-        StringAttr edgeId;
-
-    public:
-        IMPLEMENT_IINTERFACE;
-
-        LegacyInputProbe(IHThorInput *_in, unsigned _sourceId, int outputidx)
-            : in(_in), sourceId(_sourceId), outputIndex(outputidx)
-        {
-            StringAttrBuilder edgeIdText(edgeId);
-            edgeIdText.append(_sourceId).append("_").append(outputidx);
-            maxRowSize = 0;
-        }
-
-        IOutputMetaData * queryOutputMeta() const { return in->queryOutputMeta(); }
-
-        void ready()
-        {
-            in->ready();
-        }
-
-        void stop()
-        {
-            in->stop();
-        }
-
-        virtual void resetEOF()
-        {
-            in->resetEOF();
-        }
-
-        IEngineRowStream &queryStream()
-        {
-            return *this;
-        }
-
-        bool isGrouped() { return in->isGrouped(); }
-
-        bool nextGroup(ConstPointerArray & group)
-        {
-            const void * next;
-            while ((next = nextRow()) != NULL)
-                group.append(next);
-            if (group.ordinality())
-                return true;
-            return false;
-        }
-
-        const void *nextRow()
-        {
-            const void *ret = in->nextRow();
-            if (ret)
-            {
-                size32_t size = in->queryOutputMeta()->getRecordSize(ret);
-                if (size > maxRowSize)
-                    maxRowSize = size;
-            }
-            return ret;
-        }
-
-        virtual void updateProgress(IStatisticGatherer &progress) const
-        {
-            {
-                StatsEdgeScope scope(progress, sourceId, outputIndex);
-                progress.addStatistic(StSizeMaxRowSize, maxRowSize);
-            }
-            if (in)
-                in->updateProgress(progress);
-        }
-    };
-
     RedirectedAgentContext subgraphAgentContext;
     class SubGraphCodeContext : public IndirectCodeContext
     {
@@ -1016,11 +939,8 @@ private:
         EclSubGraph * container;
     } subgraphCodeContext;
 
-    friend class LegacyInputProbe;
-    bool probeEnabled;
-
 public:
-    EclSubGraph(IAgentContext & _agent, EclGraph &parent, EclSubGraph * _owner, unsigned subGraphSeqNo, bool enableProbe, CHThorDebugContext * _debugContext, IProbeManager * _probeManager);
+    EclSubGraph(IAgentContext & _agent, EclGraph &parent, EclSubGraph * _owner, unsigned subGraphSeqNo, CHThorDebugContext * _debugContext, IProbeManager * _probeManager);
     IMPLEMENT_IINTERFACE
 
     void createFromXGMML(EclGraph * graph, ILoadedDllEntry * dll, IPropertyTree * xgmml, unsigned & subGraphSeqNo, EclSubGraph * resultsGraph);
@@ -1034,22 +954,6 @@ public:
     void updateProgress();
     void doExecuteChild(const byte * parentExtract);
     IEclLoopGraph * resolveLoopGraph(unsigned id);
-
-    IHThorInput *createLegacyProbe(IHThorInput      *in,
-                             unsigned           sourceId,
-                             unsigned           targetId,
-                             int                outputidx,
-                             IConstWorkUnit     *workunit)
-    {
-        if (probeEnabled)
-        {
-            LegacyInputProbe *probe = new LegacyInputProbe(in, sourceId, outputidx);
-            probes.append(*probe);
-            return probe;
-        }
-        else
-            return in;
-    }
 
 //interface IEclGraphResults
     virtual IHThorGraphResult * queryResult(unsigned id);
@@ -1144,7 +1048,7 @@ public:
         aborted = false;
     }
 
-    void createFromXGMML(ILoadedDllEntry * dll, IPropertyTree * xgmml, bool enableProbe);
+    void createFromXGMML(ILoadedDllEntry * dll, IPropertyTree * xgmml);
     void execute(const byte * parentExtract);
     void executeLibrary(const byte * parentExtract, IHThorGraphResults * results);
     IWUGraphStats *updateStats(StatisticCreatorType creatorType, const char * creator, unsigned wfid, unsigned subgraph);

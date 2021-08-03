@@ -2658,6 +2658,9 @@ public:
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
     {
     }
+    virtual void setStatistic(StatisticKind kind, unsigned __int64 value) const
+    {
+    }
     virtual void mergeStats(const CRuntimeStatisticCollection &from) const
     {
     }
@@ -2732,7 +2735,7 @@ CJobBase::CJobBase(ILoadedDllEntry *_querySo, const char *_graphName) : querySo(
         throw MakeStringException(0, "Failed to locate workunit info in query : %s", querySo->queryName());
     Owned<ILocalWorkUnit> localWU = createLocalWorkUnit(wuXML);
     Owned<IConstWUGraph> graph = localWU->getGraph(graphName);
-    graphXGMML.setown(graph->getXGMMLTree(false));
+    graphXGMML.setown(graph->getXGMMLTree(false, false));
     if (!graphXGMML)
         throwUnexpected();
 }

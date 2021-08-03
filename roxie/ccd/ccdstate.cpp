@@ -26,6 +26,7 @@
 #include "udptopo.hpp"
 #include "ccd.hpp"
 #include "ccdquery.hpp"
+#include "ccddali.hpp"
 #include "ccdstate.hpp"
 #include "ccdqueue.ipp"
 #include "ccdlistener.hpp"
@@ -1064,14 +1065,12 @@ public:
             hash = rtlHash64VStr("active", hash);
     }
 
-    virtual void getStats(const char *queryName, const char *graphName, StringBuffer &reply, const IRoxieContextLogger &logctx) const
+    virtual void getStats(const char *queryName, const char *graphName, IConstWorkUnit *statsWu, unsigned channel, bool reset, const IRoxieContextLogger &logctx) const override
     {
         Owned<IQueryFactory> f = getQuery(queryName, NULL, logctx);
         if (f)
         {
-            reply.appendf("<Query id='%s'>\n", queryName);
-            f->getStats(reply, graphName);
-            reply.append("</Query>\n");
+            f->gatherStats(statsWu, channel, reset);
         }
         else
             throw MakeStringException(ROXIE_UNKNOWN_QUERY, "Unknown query %s", queryName);
@@ -1437,7 +1436,7 @@ public:
         return true;
     }
 
-    bool getStats(const char *queryId, const char *action, const char *graphName, StringBuffer &reply, const IRoxieContextLogger &logctx) const
+    bool getStats(const char *queryId, const char *graphName, StringBuffer &reply, const char *wuid, const IRoxieContextLogger &logctx) const
     {
         Owned<IRoxieQuerySetManager> serverManager;
         Owned<CRoxieAgentQuerySetManagerSet> agentManagers;
@@ -1447,18 +1446,45 @@ public:
             Owned<IQueryFactory> query = serverManager->getQuery(queryId, NULL, logctx);
             if (query)
             {
-                StringBuffer freply;
-                serverManager->getStats(queryId, graphName, freply, logctx);
-                Owned<IPropertyTree> stats = createPTreeFromXMLString(freply.str(), ipt_fast);
+                bool reset = false;  // MORE - tidy up around here.
+                Owned<IConstWorkUnit> statsWu;
+                if (wuid)
+                {
+                    Owned<IRoxieDaliHelper> daliHelper = ::connectToDali();
+                    if (!daliHelper->connected())
+                        throw makeStringException(ROXIE_CONTROL_MSG_ERROR, "Can't create stats WU - dali not connected");
+                    statsWu.setown(daliHelper->createStatsWorkUnit(wuid, query->queryDll()->queryName()));
+                }
+                else
+                {
+                    statsWu.setown(createLocalWorkUnitFromPTree(createPTreeFromIPT(queryExtendedWU(query->queryWorkUnit())->queryPTree())));
+                }
+                query->gatherStats(statsWu, -1, reset);
                 for (unsigned channel = 0; channel < numChannels; channel++)
                     if (agentManagers->item(channel))
+                        agentManagers->item(channel)->getStats(queryId, graphName, statsWu, channel+1, reset, logctx);
+                if (!wuid || *wuid=='*')
+                {
+                    WorkunitUpdate wu(&statsWu->lock());
+                    wu->setState(WUStateCompleted);   // We don't set the state when updating existing workunits
+                }
+                reply.appendf("<Query id='%s'>\n", queryId);
+                if (wuid)
+                    reply.appendf(" <wuid>%s</wuid>\n", statsWu->queryWuid());
+                else
+                {
+                    Owned<IConstWUGraphIterator> graphs = &statsWu->getGraphs(GraphTypeActivities);
+                    ForEach(*graphs)
                     {
-                        StringBuffer sreply;
-                        agentManagers->item(channel)->getStats(queryId, graphName, sreply, logctx);
-                        Owned<IPropertyTree> cstats = createPTreeFromXMLString(sreply.str(), ipt_fast);
-                        mergeStats(stats, cstats, 1);
+                        IConstWUGraph &graph = graphs->query();
+                        SCMStringBuffer s;
+                        reply.appendf("<Graph id='%s'>\n <xgmml>\n", graph.getName(s).str());
+                        Owned<IPropertyTree> xgmml = graph.getXGMMLTree(true, false);  // We can't merge between nodes if we format the values
+                        toXML(xgmml, reply, 2);
+                        reply.append(" </xgmml>\n</Graph>\n");
                     }
-                toXML(stats, reply);
+                }
+                reply.append("</Query>\n");
                 return true;
             }
         }
@@ -1727,11 +1753,11 @@ public:
         reply.append("</PackageSets>\n");
     }
 
-    void getStats(StringBuffer &reply, const char *id, const char *action, const char *graphName, const IRoxieContextLogger &logctx) const
+    void getStats(StringBuffer &reply, const char *id, const char *graphName, const char *wuid, const IRoxieContextLogger &logctx) const
     {
         ForEachItemIn(idx, allQueryPackages)
         {
-            if (allQueryPackages.item(idx).getStats(id, action, graphName, reply, logctx))
+            if (allQueryPackages.item(idx).getStats(id, graphName, reply, wuid, logctx))
                return;
         }
     }
@@ -2504,10 +2530,6 @@ private:
                 preabortKeyedJoinsThreshold = control->getPropInt("@val", 100);
                 topology->setPropInt("@preabortKeyedJoinsThreshold", preabortKeyedJoinsThreshold);
             }
-            else if (stricmp(queryName, "control:probeAllRows")==0)
-            {
-                probeAllRows = control->getPropBool("@val", true);
-            }
             else
                 unknown = true;
             break;
@@ -2578,6 +2600,7 @@ private:
                 if (!id)
                     badFormat();
                 const char *action = control->queryProp("Query/@action");
+                const char *wuid = control->queryProp("Query/@wuid");
                 const char *graphName = 0;
                 if (action)
                 {
@@ -2604,7 +2627,7 @@ private:
                         throw MakeStringException(ROXIE_CONTROL_MSG_ERROR, "invalid action in control:queryStats %s", action);
                 }
                 ReadLockBlock readBlock(packageCrit);
-                allQueryPackages->getStats(reply, id, action, graphName, logctx);
+                allQueryPackages->getStats(reply, id, graphName, wuid, logctx);
             }
             else if (stricmp(queryName, "control:queryWuid")==0)
             {
@@ -2960,27 +2983,24 @@ void mergeNodes(IPropertyTree *s1, IPropertyTree *s2)
         {
             StringBuffer xpath;
             xpath.appendf("att[@name='%s']", name);
-            const char *type = e1.queryProp("@type");
-            if (type)
+            if (startsWith(name, "SizeMax"))
             {
                 IPropertyTree *e2 = s2->queryPropTree(xpath.str());
                 if (e2)
                 {
                     unsigned __int64 v2 = e2->getPropInt64("@value", 0);
-                    if (strcmp(name, "max")==0)
-                    {
-                        if (v2 > v1)
-                            e1.setPropInt64("@value", v2);
-                    }
-                    else if (strcmp(type, "min")==0)
-                    {
-                        if (v2 < v1)
-                            e1.setPropInt64("@value", v2);
-                    }
-                    else if (strcmp(type, "sum")==0)
-                        e1.setPropInt64("@value", v1+v2);
-                    else
-                        throw MakeStringException(ROXIE_UNKNOWN_QUERY, "Unknown type %s in graph statistics", type);
+                    if (v2 > v1)
+                        e1.setPropInt64("@value", v2);
+                    s2->removeTree(e2);
+                }
+            }
+            else if (startsWith(name, "Size") || startsWith(name, "Time") || startsWith(name, "Num"))
+            {
+                IPropertyTree *e2 = s2->queryPropTree(xpath.str());
+                if (e2)
+                {
+                    unsigned __int64 v2 = e2->getPropInt64("@value", 0);
+                    e1.setPropInt64("@value", v1+v2);
                     s2->removeTree(e2);
                 }
             }
@@ -3170,7 +3190,7 @@ static const char *g1 =
               " <att name='_kind' value='1'>"   // TAKsubgraph
               "  <graph>"
               "   <node id='7696' label='Nested'>"
-              "    <att name='seeks' value='15' type='sum'/>"
+              "    <att name='NumSeeks' value='15'/>"
               "   </node>"
               "  </graph>"
               " </att>"
@@ -3182,23 +3202,23 @@ static const char *g1 =
               "</node>"
               "<att name='rootGraph' value='1'/>"
               "<edge id='2_0' source='2' target='3'>"
-               "<att name='count' value='15' type='sum'/>"
+               "<att name='NumRows' value='15'/>"
                "<att name='started' value='1'/>"
                "<att name='stopped' value='1'/>"
               "</edge>"
               "<edge id='3_0' source='3' target='5'>"
-               "<att name='count' value='15' type='sum'/>"
+               "<att name='NumRows' value='15'/>"
                "<att name='started' value='1'/>"
                "<att name='stopped' value='1'/>"
               "</edge>"
               "<edge id='5_0' source='5' target='6'>"
-               "<att name='count' value='3' type='sum'/>"
+               "<att name='NumRows' value='3'/>"
                "<att name='started' value='1'/>"
                "<att name='stopped' value='1'/>"
               "</edge>"
               "<edge id='5_1' source='5' target='7'>"
                "<att name='_sourceIndex' value='1'/>"
-               "<att name='count' value='15' type='sum'/>"
+               "<att name='NumRows' value='15'/>"
                "<att name='started' value='1'/>"
                "<att name='stopped' value='1'/>"
               "</edge>"
@@ -3228,7 +3248,7 @@ static const char *g2 =
               " <att name='_kind' value='1'>"   // TAKsubgraph
               "  <graph>"
               "   <node id='7696' label='Nested'>"
-              "    <att name='seeks' value='25' type='sum'/>"
+              "    <att name='NumSeeks' value='25'/>"
               "   </node>"
               "  </graph>"
               " </att>"
@@ -3240,17 +3260,17 @@ static const char *g2 =
               "</node>"
               "<att name='rootGraph' value='1'/>"
               "<edge id='2_0' source='2' target='3'>"
-               "<att name='count' value='15' type='sum'/>"
+               "<att name='NumRows' value='15'/>"
                "<att name='started' value='1'/>"
                "<att name='stopped' value='1'/>"
               "</edge>"
               "<edge id='3_0' source='3' target='5'>"
-               "<att name='count' value='15' type='sum'/>"
+               "<att name='NumRows' value='15'/>"
                "<att name='started' value='1'/>"
                "<att name='stopped' value='1'/>"
               "</edge>"
               "<edge id='5_0' source='5' target='6'>"
-               "<att name='count' value='3' type='sum'/>"
+               "<att name='NumRows' value='3'/>"
                "<att name='started' value='1'/>"
                "<att name='stopped' value='1'/>"
               "</edge>"
@@ -3280,7 +3300,7 @@ static const char *expected =
               " <att name='_kind' value='1'>"   // TAKsubgraph
               "  <graph>"
               "   <node id='7696' label='Nested'>"
-              "    <att name='seeks' type='sum' value='40'/>"
+              "    <att name='NumSeeks' value='40'/>"
               "   </node>"
               "  </graph>"
               " </att>"
@@ -3297,23 +3317,23 @@ static const char *expected =
               "</node>"
               "<att name='rootGraph' value='1'/>"
               "<edge id='2_0' source='2' target='3'>"
-               "<att name='count' value='30' type='sum'/>"
+               "<att name='NumRows' value='30'/>"
                "<att name='started' value='1'/>"
                "<att name='stopped' value='1'/>"
               "</edge>"
               "<edge id='3_0' source='3' target='5'>"
-               "<att name='count' value='30' type='sum'/>"
+               "<att name='NumRows' value='30'/>"
                "<att name='started' value='1'/>"
                "<att name='stopped' value='1'/>"
               "</edge>"
               "<edge id='5_0' source='5' target='6'>"
-               "<att name='count' value='6' type='sum'/>"
+               "<att name='NumRows' value='6'/>"
                "<att name='started' value='1'/>"
                "<att name='stopped' value='1'/>"
               "</edge>"
               "<edge id='5_1' source='5' target='7'>"
                "<att name='_sourceIndex' value='1'/>"
-               "<att name='count' value='15' type='sum'/>"
+               "<att name='NumRows' value='15'/>"
                "<att name='started' value='1'/>"
                "<att name='stopped' value='1'/>"
               "</edge>"

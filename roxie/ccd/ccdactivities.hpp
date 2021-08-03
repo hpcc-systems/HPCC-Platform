@@ -37,14 +37,13 @@ interface IIndexReadActivityInfo;
 interface IActivityFactory : extends IInterface
 {
     virtual void addChildQuery(unsigned id, ActivityArray *childQuery) = 0;
-    virtual void getEdgeProgressInfo(unsigned idx, IPropertyTree &edge) const = 0;
-    virtual void getNodeProgressInfo(IPropertyTree &node) const = 0;
     virtual ActivityArray *queryChildQuery(unsigned idx, unsigned &id) = 0;
     virtual unsigned queryId() const = 0;
     virtual void resetNodeProgressInfo() = 0;
     virtual IQueryFactory &queryQueryFactory() const = 0;
     virtual ThorActivityKind getKind() const = 0;
     virtual void getActivityMetrics(StringBuffer &reply) const = 0;
+    virtual void gatherStats(IStatisticGatherer &builder, int channel, bool reset) const = 0;
     virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const = 0;
     virtual void mergeStats(const CRuntimeStatisticCollection &from) const = 0;
 };

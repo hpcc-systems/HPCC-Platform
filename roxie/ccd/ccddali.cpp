@@ -462,11 +462,28 @@ public:
         return userdesc;
     }
 
-    virtual IWorkUnit *createWorkUnit() override
+    virtual IConstWorkUnit *createStatsWorkUnit(const char *wuid, const char *dllname) const override
     {
         Owned<IWorkUnitFactory> wuFactory = getWorkUnitFactory();
-        return wuFactory->createWorkUnit("roxie", ""); // NOTE - scope is later overridden by clone operation
-        // MORE - What about security parms?
+        Owned<IWorkUnit> wu;
+        if (!wuid || streq(wuid, "*"))
+        {
+            wu.setown(wuFactory->createWorkUnit("roxie", ""));  // MORE - What about security parms?
+            StringBuffer dllFileName;
+            splitFilename(dllname, nullptr, nullptr, &dllFileName, nullptr, false);
+            if (strlen(SharedObjectPrefix))
+                dllFileName.replaceString(SharedObjectPrefix, "");
+            queryExtendedWU(wu)->queryPTree()->setProp("@clonedFromWorkunit", dllFileName);
+            addTimeStamp(wu, SSTglobal, NULL, StWhenStarted);
+            wu->setState(WUStateRunning);
+        }
+        else
+        {
+            wu.setown(wuFactory->updateWorkUnit(wuid));
+            if (!wu)
+                throw makeStringExceptionV(ROXIE_CONTROL_MSG_ERROR, "Can't open stats WU %s", wuid);
+        }
+        return wu->unlock();
     }
 
     static const char *getQuerySetPath(StringBuffer &buf, const char *id)

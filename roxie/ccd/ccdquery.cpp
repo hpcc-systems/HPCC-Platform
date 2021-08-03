@@ -70,6 +70,14 @@ unsigned ActivityArray::recursiveFindActivityIndex(unsigned id)
     return NotFound;
 }
 
+void ActivityArray::gatherStats(IStatisticGatherer &builder, int channel, bool reset)
+{
+    ForEachItemIn(idx, activities)
+    {
+        activities.item(idx).gatherStats(builder, channel, reset);
+    }
+}
+
 //----------------------------------------------------------------------------------------------
 // Class CQueryDll maps dlls into loadable workunits, complete with caching to ensure that a refresh of the QuerySet 
 // can avoid reloading dlls, and that the same CQueryDll (and the objects it owns) can be shared between server and 
@@ -574,6 +582,7 @@ protected:
 
     mutable CIArrayOf<TerminationCallbackInfo> callbacks;
     mutable CriticalSection callbacksCrit;
+    mutable CRuntimeStatisticCollection stats;
 public:
     static CriticalSection queryCacheCrit;
 
@@ -1131,7 +1140,7 @@ public:
     unsigned channelNo;
 
     CQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, unsigned _channelNo, ISharedOnceContext *_sharedOnceContext, bool _dynamic)
-        : package(_package), dll(_dll), sharedOnceContext(_sharedOnceContext), id(_id), dynamic(_dynamic), hashValue(_hashValue), channelNo(_channelNo)
+        : package(_package), dll(_dll), sharedOnceContext(_sharedOnceContext), id(_id), dynamic(_dynamic), hashValue(_hashValue), stats(accumulatedStatistics), channelNo(_channelNo)
     {
         package.Link();
         targetClusterType = RoxieCluster;
@@ -1274,7 +1283,7 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
                         Owned<IConstWUGraphIterator> graphs = &wu->getGraphs(GraphTypeActivities);
                         ForEach(*graphs)
                         {
-                            Owned<IPropertyTree> graphXgmml = graphs->query().getXGMMLTree(false);
+                            Owned<IPropertyTree> graphXgmml = graphs->query().getXGMMLTree(false, false);
                             Owned<IPropertyTreeIterator> nodes = graphXgmml->getElements(".//node");
                             ForEach(*nodes)
                             {
@@ -1367,7 +1376,7 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
                 {
                     graphs->query().getName(graphNameStr);
                     const char *graphName = graphNameStr.s.str();
-                    Owned<IPropertyTree> graphXgmml = graphs->query().getXGMMLTree(false);
+                    Owned<IPropertyTree> graphXgmml = graphs->query().getXGMMLTree(false, false);
                     try
                     {
                         ActivityArray *activities = loadGraph(*graphXgmml, graphName);
@@ -1432,33 +1441,6 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
         return ret.getClear();
     }
 
-    void getGraphStats(StringBuffer &reply, const IPropertyTree &thisGraph) const
-    {
-        Owned<IPropertyTree> graph = createPTreeFromIPT(&thisGraph, ipt_lowmem);
-        Owned<IPropertyTreeIterator> edges = graph->getElements(".//edge");
-        ForEach(*edges)
-        {
-            IPropertyTree &edge = edges->query();
-            IActivityFactory *a = findActivity(edge.getPropInt("@source", 0));
-            if (!a)
-                a = findActivity(edge.getPropInt("att[@name=\"_sourceActivity\"]/@value", 0));
-            if (a)
-            {
-                unsigned sourceOutput = edge.getPropInt("att[@name=\"_sourceIndex\"]/@value", 0);
-                a->getEdgeProgressInfo(sourceOutput, edge);
-            }
-        }
-        Owned<IPropertyTreeIterator> nodes = graph->getElements(".//node");
-        ForEach(*nodes)
-        {
-            IPropertyTree &node = nodes->query();
-            IActivityFactory *a = findActivity(node.getPropInt("@id", 0));
-            if (a)
-                a->getNodeProgressInfo(node);
-        }
-        toXML(graph, reply);
-    }
-
     virtual IPropertyTree* cloneQueryXGMML() const override
     {
         assertex(dll && dll->queryWorkUnit());
@@ -1469,7 +1451,7 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
         {
             graphs->query().getName(graphNameStr);
             const char *graphName = graphNameStr.s.str();
-            Owned<IPropertyTree> graphXgmml = graphs->query().getXGMMLTree(false);
+            Owned<IPropertyTree> graphXgmml = graphs->query().getXGMMLTree(false, false);
             IPropertyTree *newGraph = tree->addPropTree("Graph");
             newGraph->setProp("@id", graphName);
             newGraph->addPropTree("xgmml")->addPropTree("graph", graphXgmml.getLink());
@@ -1477,28 +1459,6 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
         return tree.getClear();
     }
 
-    virtual void getStats(StringBuffer &reply, const char *graphName) const override
-    {
-        if (dll)
-        {
-            assertex(dll->queryWorkUnit());
-            Owned<IConstWUGraphIterator> graphs = &dll->queryWorkUnit()->getGraphs(GraphTypeActivities);
-            SCMStringBuffer thisGraphNameStr;
-            ForEach(*graphs)
-            {
-                graphs->query().getName(thisGraphNameStr);
-                if (graphName)
-                {
-                    if (thisGraphNameStr.length() && (stricmp(graphName, thisGraphNameStr.s.str()) != 0))
-                        continue; // not interested in this one
-                }
-                reply.appendf("<Graph id='%s'><xgmml>", thisGraphNameStr.s.str());
-                Owned<IPropertyTree> graphXgmml = graphs->query().getXGMMLTree(false);
-                getGraphStats(reply, *graphXgmml);
-                reply.append("</xgmml></Graph>");
-            }
-        }
-    }
     virtual void getActivityMetrics(StringBuffer &reply) const override
     {
         HashIterator i(allActivities);
@@ -1509,11 +1469,43 @@ static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxieP
             f->getActivityMetrics(myReply.clear());
             if (myReply.length())
             {
-                reply.appendf("  <activity query='%s' id='%d' channel='%d'\n", queryQueryName(), f->queryId(), queryChannel());
+                reply.appendf("  <activity query='%s' id='%d' channel='%d'>\n", queryQueryName(), f->queryId(), queryChannel());
                 reply.append(myReply);
-                reply.append("  </activity>\n");
+                reply.append("\n  </activity>\n");
             }
         }
+    }
+    virtual void gatherStats(IConstWorkUnit *statsWu, int channel, bool reset) const override
+    {
+        if (dll)
+        {
+            assertex(dll->queryWorkUnit());
+            Owned<IConstWUGraphIterator> graphs = &dll->queryWorkUnit()->getGraphs(GraphTypeActivities);
+            SCMStringBuffer thisGraphNameStr;
+            ForEach(*graphs)
+            {
+                IConstWUGraph &graph = graphs->query();
+                graphs->query().getName(thisGraphNameStr);
+                Owned<IWUGraphStats> graphStats = statsWu->updateStats(thisGraphNameStr.str(), SCTroxie, queryStatisticsComponentName(), graph.getWfid(), 0, true);
+                IStatisticGatherer &builder = graphStats->queryStatsBuilder();
+                ActivityArrayPtr *activities = graphMap.getValue(thisGraphNameStr.str());
+                assertex(activities && *activities);
+                (*activities)->gatherStats(builder, channel, reset);
+            }
+            WorkunitUpdate w(&statsWu->lock());
+            Owned<IStatisticGatherer> gbuilder = createGlobalStatisticGatherer(w);
+            if (channel != -1)
+                gbuilder->beginChannelScope(channel);
+            stats.recordStatistics(*gbuilder, reset);
+        }
+    }
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const override
+    {
+        stats.merge(from);
+    }
+    virtual void mergeStats(const IRoxieContextLogger &from) const override
+    {
+        from.gatherStats(stats);
     }
     virtual void getQueryInfo(StringBuffer &reply, bool full, IArrayOf<IQueryFactory> *agentQueries, const IRoxieContextLogger &logctx) const override
     {
@@ -1794,11 +1786,6 @@ public:
         }
         else
             return NULL;
-    }
-
-    virtual IPropertyTree *getQueryStats(time_t from, time_t to)
-    {
-        return queryStats->getStats(from, to);
     }
 };
 

@@ -306,10 +306,17 @@ bool looksLikeWuid(const char * arg)
     return false;
 }
 
+static constexpr const char * defaultYaml = R"!!(
+version: "1.0"
+wutool:
+    name: wutool
+)!!";
+
 int main(int argc, const char *argv[])
 {
     int ret = 0;
     InitModuleObjects();
+    Owned<IPropertyTree> dummyconfig = loadConfiguration(defaultYaml, argv, "wutool", "WUTOOL", "wutool.xml", nullptr, nullptr, false);
     unsigned count=0;
     globals.setown(createProperties("wutool.ini", true));
     const char *action = NULL;
@@ -1139,7 +1146,7 @@ protected:
         ASSERT(graph->getType() == GraphTypeActivities);
         ASSERT(streq(graph->getName(s).str(),"Graph1"));
         ASSERT(streq(graph->getLabel(s).str(),"graphLabel"));
-        ASSERT(streq(graph->getXGMML(s, false).str(), "<graph/>\n"));
+        ASSERT(streq(graph->getXGMML(s, false, false).str(), "<graph/>\n"));
 
         // Then the lightweight meta....
         wu.setown(factory->openWorkUnit(wuid));
@@ -1174,7 +1181,7 @@ protected:
         {
             ASSERT(it2->query().getType() == GraphTypeActivities);
             ASSERT(streq(it2->query().getLabel(s).str(),"graphLabel"));
-            ASSERT(streq(it2->query().getXGMML(s, false).str(), "<graph/>\n"));
+            ASSERT(streq(it2->query().getXGMML(s, false, false).str(), "<graph/>\n"));
             numIterated++;
         }
         ASSERT(numIterated==2);
@@ -1186,7 +1193,7 @@ protected:
         ForEach (*it2)
         {
             ASSERT(streq(it2->query().getLabel(s).str(),"graphLabel"));
-            ASSERT(streq(it2->query().getXGMML(s, false).str(), "<graph/>\n"));
+            ASSERT(streq(it2->query().getXGMML(s, false, false).str(), "<graph/>\n"));
             numIterated++;
         }
         ASSERT(numIterated==3);
@@ -1210,7 +1217,7 @@ protected:
         {
             ASSERT(it2->query().getType() == GraphTypeActivities);
             ASSERT(streq(it2->query().getLabel(s).str(),"graphLabel"));
-            ASSERT(streq(it2->query().getXGMML(s, false).str(), "<graph/>\n"));
+            ASSERT(streq(it2->query().getXGMML(s, false, false).str(), "<graph/>\n"));
             numIterated++;
         }
         ASSERT(numIterated==2);
@@ -1224,7 +1231,7 @@ protected:
         {
             ASSERT(it2->query().getType() == GraphTypeActivities);
             ASSERT(streq(it2->query().getLabel(s).str(),"graphLabel"));
-            ASSERT(streq(it2->query().getXGMML(s, false).str(), "<graph/>\n"));
+            ASSERT(streq(it2->query().getXGMML(s, false, false).str(), "<graph/>\n"));
             numIterated++;
         }
         ASSERT(numIterated==2);
@@ -1276,7 +1283,7 @@ protected:
         ret = wu->getRunningGraph(s, subid);
         ASSERT(!ret);
 
-        Owned<IWUGraphStats> progress = wu->updateStats("graph1", SCThthor, queryStatisticsComponentName(), 1, 1);
+        Owned<IWUGraphStats> progress = wu->updateStats("graph1", SCThthor, queryStatisticsComponentName(), 1, 1, false);
         IStatisticGatherer & stats = progress->queryStatsBuilder();
         {
             StatsSubgraphScope subgraph(stats, 1);

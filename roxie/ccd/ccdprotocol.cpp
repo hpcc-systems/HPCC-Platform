@@ -859,24 +859,6 @@ public:
             }
         }
     }
-    virtual void appendProbeGraph(const char *xml)
-    {
-        if (!xml)
-        {
-            if (probe)
-                probe.clear();
-            return;
-        }
-        if (!probe)
-        {
-            probe.setown(new FlushingStringBuffer(client, isBlocked, MarkupFmt_XML, false, isHTTP, logctx));
-            probe->startDataset("_Probe", NULL, (unsigned) -1);  // initialize it
-        }
-
-        probe->append("\n");
-        probe->append(xml);
-    }
-
 };
 
 class CHpccXmlResultsWriter : public CHpccNativeResultsWriter
@@ -1114,11 +1096,6 @@ public:
             results->flush();
         ForEachItemIn(i, contentsMap)
             contentsMap.item(i)->flush(true);
-    }
-    virtual void appendProbeGraph(const char *xml)
-    {
-        if (results)
-            results->appendProbeGraph(xml);
     }
 };
 
@@ -1658,7 +1635,7 @@ private:
             if (!uid)
                 uid = queryPT->queryProp("_TransactionId");
             isBlind = queryPT->getPropBool("@blind", false) || queryPT->getPropBool("_blind", false);
-            isDebug = queryPT->getPropBool("@debug") || queryPT->getPropBool("_Probe", false);
+            isDebug = queryPT->getPropBool("@debug");
             toXML(queryPT, saniText, 0, isBlind ? (XML_SingleQuoteAttributeValues | XML_Sanitize) : XML_SingleQuoteAttributeValues);
         }
     }

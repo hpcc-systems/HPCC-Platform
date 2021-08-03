@@ -184,7 +184,6 @@ StringBuffer defaultPlaneDirPrefix;
 bool trapTooManyActiveQueries;
 unsigned maxEmptyLoopIterations;
 unsigned maxGraphLoopIterations;
-bool probeAllRows;
 bool steppingEnabled = true;
 bool simpleLocalKeyedJoins = true;
 bool adhocRoxie = false;

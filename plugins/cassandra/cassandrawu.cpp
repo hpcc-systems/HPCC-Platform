@@ -2422,7 +2422,7 @@ public:
                 const char *name=sub.queryName();
                 if (name[0]=='s' && name[1]=='g')
                 {
-                    setGraphProgress(&graph, graphName, atoi(name+2), sub.queryProp("@creator"));
+                    setGraphProgress(&graph, graphName, atoi(name+2), sub.queryProp("@creator"), false);
                 }
                 else if (streq(name, "node"))
                 {
@@ -2430,7 +2430,7 @@ public:
                     if (subid)
                     {
                         if (sub.hasChildren()) // Old format
-                            setGraphProgress(&sub, graphName, subid, sub.queryProp("@creator"));
+                            setGraphProgress(&sub, graphName, subid, sub.queryProp("@creator"), false);
                         if (sub.hasProp("@_state"))
                             setNodeState(graphName, subid, (WUGraphState) sub.getPropInt("@_state"));
                     }
@@ -2745,25 +2745,30 @@ public:
     class CCassandraWuGraphStats : public CWuGraphStats
     {
     public:
-        CCassandraWuGraphStats(const CCassandraWorkUnit *_parent, StatisticCreatorType _creatorType, const char * _creator, unsigned _wfid, const char * _rootScope, unsigned _id)
-        : CWuGraphStats(createPTree(_rootScope), _creatorType, _creator, _wfid, _rootScope, _id),
-          parent(_parent)
+        CCassandraWuGraphStats(const CCassandraWorkUnit *_parent, StatisticCreatorType _creatorType, const char * _creator, unsigned _wfid, const char * _rootScope, unsigned _id, bool _merge)
+        : CWuGraphStats(_creatorType, _creator, _wfid, _rootScope, _id, _merge),
+          progress(createPTree(_rootScope)), parent(_parent)
         {
         }
-        virtual void beforeDispose()
+        virtual IPropertyTree &queryProgressTree() override
+        {
+            return *progress.get();
+        }
+        virtual void beforeDispose() override
         {
             CWuGraphStats::beforeDispose(); // Sets up progress - should contain a single child tree sqNN where nn==id
-            parent->setGraphProgress(progress, progress->queryName(), id, creator);
+            parent->setGraphProgress(progress, progress->queryName(), id, creator, merge);
         }
 
     protected:
+        Owned<IPropertyTree> progress;
         Linked<const CCassandraWorkUnit> parent;
         StringAttr wuid;
     };
 
-    IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned wfid, unsigned subgraph) const override
+    IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned wfid, unsigned subgraph, bool merge) const override
     {
-        return new CCassandraWuGraphStats(this, creatorType, creator, wfid, graphName, subgraph);
+        return new CCassandraWuGraphStats(this, creatorType, creator, wfid, graphName, subgraph, merge);
     }
 
 
@@ -2858,8 +2863,10 @@ public:
         return p;
     }
 
-    void setGraphProgress(IPropertyTree *progress, const char *gid, unsigned subid, const char *creator) const
+    void setGraphProgress(IPropertyTree *progress, const char *gid, unsigned subid, const char *creator, bool merge) const
     {
+        if (merge)
+            UNIMPLEMENTED;
         const char *wuid=queryWuid();
         CassandraStatement statement(sessionCache->prepareStatement("INSERT INTO wuGraphProgress (partition, wuid, graphID, subgraphID, creator, progress) values (?,?,?,?,?,?);"));
         statement.bindInt32(0, rtlHash32VStr(wuid, 0) % sessionCache->queryPartitions());
@@ -3428,7 +3435,7 @@ public:
                         const char *name=sub.queryName();
                         if (name[0]=='s' && name[1]=='g')
                         {
-                            wu->setGraphProgress(&graph, graphName, atoi(name+2), sub.queryProp("@creator"));
+                            wu->setGraphProgress(&graph, graphName, atoi(name+2), sub.queryProp("@creator"), false);
                         }
                         else if (streq(name, "node"))
                         {
@@ -3436,7 +3443,7 @@ public:
                             if (subid)
                             {
                                 if (sub.hasChildren()) // Old format
-                                    wu->setGraphProgress(&sub, graphName, subid, sub.queryProp("@creator"));
+                                    wu->setGraphProgress(&sub, graphName, subid, sub.queryProp("@creator"), false);
                                 if (sub.hasProp("@_state"))
                                     wu->setNodeState(graphName, subid, (WUGraphState) sub.getPropInt("@_state"));
                             }

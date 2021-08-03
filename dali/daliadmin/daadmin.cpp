@@ -2577,7 +2577,7 @@ void dumpProgress(const char *wuid, const char * graph)
     Owned<IConstWUGraphProgress> progress = workunit->getGraphProgress(graph);
     if (!progress)
         return;
-    Owned<IPropertyTree> tree = progress->getProgressTree();
+    Owned<IPropertyTree> tree = progress->getProgressTree(true);
     saveXML("stdout:", tree);
 }
 

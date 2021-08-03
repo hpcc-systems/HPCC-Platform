@@ -1194,7 +1194,6 @@ protected:
     MapXToMyClass<unsigned, unsigned, IActivityGraph> childGraphs;
     Owned<IActivityGraph> graph;
     StringBuffer authToken;
-    Owned<IPropertyTree> probeQuery;
     unsigned lastWuAbortCheck;
     unsigned startTime;
     std::atomic<unsigned> totAgentsReplyLen = {0};
@@ -1208,7 +1207,6 @@ protected:
     Owned<IRoxieDaliHelper> daliHelperLink;
     Owned<IDistributedFileTransaction> superfileTransaction;
 
-    mutable CriticalSection statsCrit;
     const IRoxieContextLogger &logctx;
 
 
@@ -1305,6 +1303,11 @@ public:
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
     {
         logctx.noteStatistic(kind, value);
+    }
+
+    virtual void setStatistic(StatisticKind kind, unsigned __int64 value) const
+    {
+        logctx.setStatistic(kind, value);
     }
 
     virtual void mergeStats(const CRuntimeStatisticCollection &from) const
@@ -1525,16 +1528,14 @@ public:
             probeManager.setown(createDebugManager(debugContext, graphName));
             debugContext->checkBreakpoint(DebugStateGraphCreate, NULL, graphName);
         }
-        else if (probeAllRows || probeQuery != NULL)
-            probeManager.setown(createProbeManager());
         graph.setown(factory->lookupGraph(this, graphName, probeManager, *this, NULL));
         graph->onCreate(NULL);  // MORE - is that right
         if (debugContext)
             debugContext->checkBreakpoint(DebugStateGraphStart, NULL, graphName);
         if (workUnit)
-            graphStats.setown(workUnit->updateStats(graph->queryName(), SCTroxie, queryStatisticsComponentName(), graph->queryWorkflowId(), 0));
+            graphStats.setown(workUnit->updateStats(graph->queryName(), SCTroxie, queryStatisticsComponentName(), graph->queryWorkflowId(), 0, false));
         else if (statsWu)
-            graphStats.setown(statsWu->updateStats(graph->queryName(), SCTroxie, queryStatisticsComponentName(), graph->queryWorkflowId(), 0));
+            graphStats.setown(statsWu->updateStats(graph->queryName(), SCTroxie, queryStatisticsComponentName(), graph->queryWorkflowId(), 0, true));
     }
 
     IWorkUnit *updateStatsWorkUnit() const
@@ -1606,20 +1607,7 @@ public:
 
     void runGraph()
     {
-        try
-        {
-            graph->execute();
-
-            if (probeQuery)
-                graph->getProbeResponse(probeQuery);
-
-        }
-        catch(...)
-        {
-            if (probeQuery)
-                graph->getProbeResponse(probeQuery);
-            throw;
-        }
+        graph->execute();
     }
 
     virtual void executeGraph(const char * name, bool realThor, size32_t parentExtractSize, const void * parentExtract)
@@ -2353,6 +2341,8 @@ public:
         // NOTE: This is needed to ensure that owned activities are destroyed BEFORE I am,
         // to avoid pure virtual calls when they come to call noteProcessed()
         logctx.mergeStats(globalStats);
+        if (factory)
+            factory->mergeStats(logctx);
         childGraphs.releaseAll();
     }
 
@@ -2581,33 +2571,18 @@ protected:
 
     void doPostProcess()
     {
-        if (workUnit || statsWu)
-        {
-            WorkunitUpdate w(updateStatsWorkUnit());
-            Owned<IStatisticGatherer> builder = createGlobalStatisticGatherer(w);
-            globalStats.recordStatistics(*builder);
-        }
         logctx.mergeStats(globalStats);
+        logctx.setStatistic(StTimeTotalExecute, elapsedTimer.elapsedNs());
+        if (factory)
+        {
+            factory->mergeStats(logctx);
+        }
         globalStats.reset();
         if (!protocol)
             return;
 
         if (!isRaw && !isBlocked)
             protocol->flush();
-
-        if (probeQuery)
-        {
-            // loop through all of the graphs and create a _Probe to output each xgmml
-            Owned<IPropertyTreeIterator> graphs = probeQuery->getElements("Graph");
-            ForEach(*graphs)
-            {
-                IPropertyTree &graph = graphs->query();
-
-                StringBuffer xgmml;
-                _toXML(&graph, xgmml, 0);
-                protocol->appendProbeGraph(xgmml.str());
-            }
-        }
     }
     void addWuException(IException *E)
     {
@@ -2731,23 +2706,13 @@ public:
         sendHeartBeats = enableHeartBeat && isRaw && isBlocked && options.priority==0;
 
         const char *wuid = context->queryProp("@wuid");
-        if (!wuid && options.statsToWorkunit)
+        if (options.statsToWorkunit)
         {
             IRoxieDaliHelper *daliHelper = checkDaliConnection();
-            if (daliHelper)
+            if (daliHelper->connected())
             {
-                // MORE - can we accumulate results from several runs?
-                statsWu.setown(daliHelper->createWorkUnit());
-                // Rather than copying the entire workunit, for example via
-                //    queryExtendedWU(statsWu)->copyWorkUnit(_factory->queryWorkUnit(), false, true);
-                // we create a blank workunit with a reference to the original workunit that allows the graph info to be patched in as needed
-                StringBuffer dllFileName;
-                splitFilename(_factory->queryDll()->queryName(), nullptr, nullptr, &dllFileName, nullptr, false);
-                if (strlen(SharedObjectPrefix))
-                    dllFileName.replaceString(SharedObjectPrefix, "");
-                queryExtendedWU(statsWu)->queryPTree()->setProp("@clonedFromWorkunit", dllFileName);
+                statsWu.setown(daliHelper->createStatsWorkUnit(wuid, _factory->queryDll()->queryName()));
                 WorkunitUpdate wu(&statsWu->lock());
-                addTimeStamp(wu, SSTglobal, NULL, StWhenStarted);
                 wu->setState(WUStateRunning);
                 VStringBuffer jobname("Stats for %s", _factory->queryQueryName());
                 const char *statsID = context->queryProp("@statsId");
@@ -2773,8 +2738,6 @@ public:
             if (debugUID && *debugUID)
                 initDebugMode(breakAtStart, debugUID);
         }
-        else if (context->getPropBool("_Probe", false))
-            probeQuery.setown(_factory->cloneQueryXGMML());
 
         // MORE some of these might be appropriate in wu case too?
         rowManager->setActivityTracking(context->getPropBool("_TraceMemory", false));
@@ -2937,9 +2900,9 @@ public:
         addTimeStamp(w, SSTglobal, NULL, StWhenFinished);
         updateWorkunitTimings(w, myTimer);
         Owned<IStatisticGatherer> gatherer = createGlobalStatisticGatherer(w);
-        CRuntimeStatisticCollection merged(allStatistics);
+        CRuntimeStatisticCollection merged(accumulatedStatistics);
         logctx.gatherStats(merged);
-        merged.recordStatistics(*gatherer);
+        merged.recordStatistics(*gatherer, false);
 
         //MORE: If executed more than once (e.g., scheduled), then TimeElapsed isn't particularly correct.
         gatherer->updateStatistic(StTimeElapsed, elapsedTimer.elapsedNs(), StatsMergeReplace);

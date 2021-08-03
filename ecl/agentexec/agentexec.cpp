@@ -67,7 +67,6 @@ CEclAgentExecutionServer::CEclAgentExecutionServer(IPropertyTree *_config) : con
 
     agentName = config->queryProp("@name");
     assertex(agentName);
-    setStatisticsComponentName(SCThthor, agentName, true);
 
     daliServers = config->queryProp("@daliServers");
     assertex(daliServers);
@@ -75,6 +74,12 @@ CEclAgentExecutionServer::CEclAgentExecutionServer(IPropertyTree *_config) : con
     apptype = config->queryProp("@type");
     if (!apptype)
         apptype = "hthor";
+    StatisticCreatorType ctype = SCThthor;
+    if (strieq(apptype, "roxie"))
+        ctype = SCTroxie;
+    else if (strieq(apptype, "thor"))
+        ctype = SCTthor;
+    setStatisticsComponentName(ctype, agentName, true);
 #ifdef _CONTAINERIZED
     unsigned poolSize = config->getPropInt("@maxActive", 100);
     pool.setown(createThreadPool("agentPool", this, NULL, poolSize, INFINITE));
