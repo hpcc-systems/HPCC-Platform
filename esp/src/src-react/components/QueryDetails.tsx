@@ -12,6 +12,7 @@ import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { QueryErrors } from "./QueryErrors";
 import { QueryLogicalFiles } from "./QueryLogicalFiles";
+import { QuerySummaryStats } from "./QuerySummaryStats";
 import { Resources } from "./Resources";
 import { TableGroup } from "./forms/Groups";
 
@@ -169,7 +170,7 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
                 <DojoAdapter widgetClassID="LibrariesUsedWidget" params={{ Id: queryId, QuerySetId: querySet }} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.SummaryStatistics} itemKey="summaryStatistics" style={pivotItemStyle(size, 0)}>
-                <DojoAdapter widgetClassID="SummaryStatsQueryWidget" params={{ Id: queryId, QuerySetId: querySet }} />
+                <QuerySummaryStats queryId={queryId} querySet={querySet} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Graphs} itemKey="graphs" itemCount={query?.WUGraphs?.ECLGraph?.length || 0} style={pivotItemStyle(size, 0)}>
                 <DojoAdapter widgetClassID="GraphsQueryWidget" params={{ Id: queryId, QuerySetId: querySet }} />
