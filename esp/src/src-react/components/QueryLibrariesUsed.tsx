@@ -9,14 +9,14 @@ import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { DojoGrid } from "./DojoGrid";
 
-const logger = scopedLogger("../components/QueryErrors.tsx");
+const logger = scopedLogger("src-react/components/QueryLibrariesUsed.tsx");
 
-interface QueryErrorsProps {
+interface QueryLibrariesUsedProps {
     querySet?: string;
     queryId?: string;
 }
 
-export const QueryErrors: React.FunctionComponent<QueryErrorsProps> = ({
+export const QueryLibrariesUsed: React.FunctionComponent<QueryLibrariesUsedProps> = ({
     querySet,
     queryId
 }) => {
@@ -29,9 +29,7 @@ export const QueryErrors: React.FunctionComponent<QueryErrorsProps> = ({
     const gridQuery = useConst({});
     const gridSort = useConst([{ attribute: "__hpcc_id" }]);
     const gridColumns = useConst({
-        Cluster: { label: nlsHPCC.Cluster, width: 140 },
-        Errors: { label: nlsHPCC.Errors },
-        State: { label: nlsHPCC.State, width: 120 },
+        Name: { label: nlsHPCC.LibrariesUsed }
     });
 
     const refreshTable = React.useCallback((clearSelection = false) => {
@@ -56,14 +54,12 @@ export const QueryErrors: React.FunctionComponent<QueryErrorsProps> = ({
     React.useEffect(() => {
         query?.getDetails()
             .then(({ WUQueryDetailsResponse }) => {
-                const clusterStates = query?.Clusters?.ClusterQueryState;
-                if (clusterStates) {
-                    gridStore.setData(clusterStates.map((item, idx) => {
+                const librariesUsed = query?.LibrariesUsed?.Item;
+                if (librariesUsed) {
+                    gridStore.setData(librariesUsed.map((item, idx) => {
                         return {
                             __hpcc_id: idx,
-                            Cluster: item.Cluster,
-                            Errors: item.Errors,
-                            State: item.State
+                            Name: item
                         };
                     }));
                     refreshTable();
