@@ -331,6 +331,7 @@ QueryOptions::QueryOptions()
     traceLimit = defaultTraceLimit;
     noSeekBuildIndex = defaultNoSeekBuildIndex;
     allSortsMaySpill = false; // No global default for this
+    statsToWorkunit = false; // No global default or workunit setting for this
     failOnLeaks = alwaysFailOnLeaks;
     collectFactoryStatistics = defaultCollectFactoryStatistics;
     parallelWorkflow = false;
@@ -489,6 +490,7 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
 
         updateFromContext(parallelWorkflow, ctx, "@parallelWorkflow", "_parallelWorkflow");
         updateFromContext(numWorkflowThreads, ctx, "@numWorkflowThreads", "_numWorkflowThreads");
+        updateFromContext(statsToWorkunit, ctx, "@statsToWorkunit", "_statsToWorkunit");
     }
 }
 

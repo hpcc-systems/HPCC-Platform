@@ -1204,6 +1204,7 @@ protected:
 
     QueryOptions options;
     Owned<IConstWorkUnit> workUnit;
+    Owned<IConstWorkUnit> statsWu;
     Owned<IRoxieDaliHelper> daliHelperLink;
     Owned<IDistributedFileTransaction> superfileTransaction;
 
@@ -1298,7 +1299,7 @@ public:
     // interface IRoxieServerContext
     virtual bool collectingDetailedStatistics() const
     {
-        return (workUnit != nullptr);
+        return (workUnit != nullptr) || (statsWu != nullptr);
     }
 
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
@@ -1530,8 +1531,20 @@ public:
         graph->onCreate(NULL);  // MORE - is that right
         if (debugContext)
             debugContext->checkBreakpoint(DebugStateGraphStart, NULL, graphName);
-        if (collectingDetailedStatistics())
+        if (workUnit)
             graphStats.setown(workUnit->updateStats(graph->queryName(), SCTroxie, queryStatisticsComponentName(), graph->queryWorkflowId(), 0));
+        else if (statsWu)
+            graphStats.setown(statsWu->updateStats(graph->queryName(), SCTroxie, queryStatisticsComponentName(), graph->queryWorkflowId(), 0));
+    }
+
+    IWorkUnit *updateStatsWorkUnit() const
+    {
+        if (workUnit)
+            return &workUnit->lock();
+        else if (statsWu)
+            return &statsWu->lock();
+        else
+            return nullptr;
     }
 
     virtual void endGraph(unsigned __int64 startTimeStamp, cycle_t startCycles, bool aborting)
@@ -1546,12 +1559,12 @@ public:
                     debugContext->checkBreakpoint(aborting ? DebugStateGraphAbort : DebugStateGraphEnd, NULL, graph->queryName());
                 if (aborting)
                     graph->abort();
-                if (workUnit)
+                if (workUnit || statsWu)
                 {
                     const char * graphName = graph->queryName();
                     StringBuffer graphDesc;
                     formatGraphTimerLabel(graphDesc, graphName);
-                    WorkunitUpdate progressWorkUnit(&workUnit->lock());
+                    WorkunitUpdate progressWorkUnit(updateStatsWorkUnit());
                     StringBuffer graphScope;
                     graphScope.append(WorkflowScopePrefix).append(graph->queryWorkflowId()).append(":").append(graphName);
                     progressWorkUnit->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, graphScope, StWhenStarted, NULL, startTimeStamp, 1, 0, StatsMergeAppend);
@@ -2568,9 +2581,9 @@ protected:
 
     void doPostProcess()
     {
-        if (workUnit)
+        if (workUnit || statsWu)
         {
-            WorkunitUpdate w(&workUnit->lock());
+            WorkunitUpdate w(updateStatsWorkUnit());
             Owned<IStatisticGatherer> builder = createGlobalStatisticGatherer(w);
             globalStats.recordStatistics(*builder);
         }
@@ -2600,6 +2613,8 @@ protected:
     {
         if (workUnit)
             ::addWuException(workUnit, E);
+        else if (statsWu)
+            ::addWuException(statsWu, E);
     }
 
     void init()
@@ -2716,14 +2731,40 @@ public:
         sendHeartBeats = enableHeartBeat && isRaw && isBlocked && options.priority==0;
 
         const char *wuid = context->queryProp("@wuid");
-        if (wuid)
+        if (!wuid && options.statsToWorkunit)
+        {
+            IRoxieDaliHelper *daliHelper = checkDaliConnection();
+            if (daliHelper)
+            {
+                // MORE - can we accumulate results from several runs?
+                statsWu.setown(daliHelper->createWorkUnit());
+                // Rather than copying the entire workunit, for example via
+                //    queryExtendedWU(statsWu)->copyWorkUnit(_factory->queryWorkUnit(), false, true);
+                // we create a blank workunit with a reference to the original workunit that allows the graph info to be patched in as needed
+                StringBuffer dllFileName;
+                splitFilename(_factory->queryDll()->queryName(), nullptr, nullptr, &dllFileName, nullptr, false);
+                if (strlen(SharedObjectPrefix))
+                    dllFileName.replaceString(SharedObjectPrefix, "");
+                queryExtendedWU(statsWu)->queryPTree()->setProp("@clonedFromWorkunit", dllFileName);
+                WorkunitUpdate wu(&statsWu->lock());
+                addTimeStamp(wu, SSTglobal, NULL, StWhenStarted);
+                wu->setState(WUStateRunning);
+                VStringBuffer jobname("Stats for %s", _factory->queryQueryName());
+                const char *statsID = context->queryProp("@statsId");
+                if (!isEmptyString(statsID))
+                    jobname.appendf(" (%s)", statsID);
+                wu->setJobName(jobname);
+                logctx.CTXLOG("Created wu %s for query statistics", statsWu->queryWuid());
+            }
+        }
+        else if (wuid)  // This is undocumented for developer debug use only
         {
             IRoxieDaliHelper *daliHelper = checkDaliConnection();
             assertex(daliHelper );
             workUnit.setown(daliHelper->attachWorkunit(wuid, _factory->queryDll()));
             if (!workUnit)
                 throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid);
-            startWorkUnit();
+            startWorkUnit(); // MORE - will go horribly wrong if specified wu doesn't match query
         }
         else if (context->getPropBool("@debug", false))
         {
@@ -2883,6 +2924,30 @@ public:
         doPostProcess();
     }
 
+    void setWuStats(IWorkUnit *w, bool failed)
+    {
+        if (aborted)
+            w->setState(WUStateAborted);
+        else if (failed)
+            w->setState(WUStateFailed);
+        else if (workflow && workflow->hasItemsWaiting())
+            w->setState(WUStateWait);
+        else
+            w->setState(WUStateCompleted);
+        addTimeStamp(w, SSTglobal, NULL, StWhenFinished);
+        updateWorkunitTimings(w, myTimer);
+        Owned<IStatisticGatherer> gatherer = createGlobalStatisticGatherer(w);
+        CRuntimeStatisticCollection merged(allStatistics);
+        logctx.gatherStats(merged);
+        merged.recordStatistics(*gatherer);
+
+        //MORE: If executed more than once (e.g., scheduled), then TimeElapsed isn't particularly correct.
+        gatherer->updateStatistic(StTimeElapsed, elapsedTimer.elapsedNs(), StatsMergeReplace);
+
+        WuStatisticTarget statsTarget(w, "roxie");
+        rowManager->reportPeakStatistics(statsTarget, 0);
+    }
+
     virtual void done(bool failed)
     {
         if (debugContext)
@@ -2909,14 +2974,7 @@ public:
                 }
             }
             WorkunitUpdate w(&workUnit->lock());
-            if (aborted)
-                w->setState(WUStateAborted);
-            else if (failed)
-                w->setState(WUStateFailed);
-            else if (workflow && workflow->hasItemsWaiting())
-                w->setState(WUStateWait);
-            else
-                w->setState(WUStateCompleted);
+            setWuStats(w, failed);
             if(w->queryEventScheduledCount() > 0 && w->getState() != WUStateWait)
             {
                 try
@@ -2935,18 +2993,11 @@ public:
             }
             while (clusterNames.ordinality())
                 restoreCluster();
-            addTimeStamp(w, SSTglobal, NULL, StWhenFinished);
-            updateWorkunitTimings(w, myTimer);
-            Owned<IStatisticGatherer> gatherer = createGlobalStatisticGatherer(w);
-            CRuntimeStatisticCollection merged(allStatistics);
-            logctx.gatherStats(merged);
-            merged.recordStatistics(*gatherer);
-
-            //MORE: If executed more than once (e.g., scheduled), then TimeElapsed isn't particularly correct.
-            gatherer->updateStatistic(StTimeElapsed, elapsedTimer.elapsedNs(), StatsMergeReplace);
-
-            WuStatisticTarget statsTarget(w, "roxie");
-            rowManager->reportPeakStatistics(statsTarget, 0);
+        }
+        else if (statsWu)
+        {
+            WorkunitUpdate w(&statsWu->lock());
+            setWuStats(w, failed);
         }
     }
 
@@ -3594,9 +3645,9 @@ public:
         if (severity > SeverityInformation)
             LOG(mapToLogMsgCategory(severity, (MessageAudience)audience), "%d - %s", code, text);
 
-        if (workUnit)
+        if (workUnit || statsWu)
         {
-            WorkunitUpdate wu(&workUnit->lock());
+            WorkunitUpdate wu(updateStatsWorkUnit());
             addExceptionToWorkunit(wu, severity, source, code, text, NULL, 0 ,0, 0);
         }
     }
@@ -3604,9 +3655,9 @@ public:
     {
         CTXLOG("%s", text);
         OERRLOG("%d - %s", code, text);
-        if (workUnit)
+        if (workUnit || statsWu)
         {
-            WorkunitUpdate wu(&workUnit->lock());
+            WorkunitUpdate wu(updateStatsWorkUnit());
             addExceptionToWorkunit(wu, SeverityError, "user", code, text, filename, lineno, column, 0);
         }
         if (isAbort)
@@ -3908,6 +3959,7 @@ public:
     }
     virtual unsigned getPriority() const { return options.priority; }
     virtual IConstWorkUnit *queryWorkUnit() const { return workUnit; }
+    virtual const char *queryStatsWuid() const override { return statsWu ? statsWu->queryWuid() : nullptr; }
     virtual bool outputResultsToSocket() const { return protocol != NULL; }
 
     virtual void selectCluster(const char * newCluster)

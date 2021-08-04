@@ -1402,7 +1402,8 @@ public:
             IPropertyTree &request = requestArray.item(idx);
             Owned<IHpccProtocolResponse> protocol = createProtocolResponse(request.queryName(), &client, httpHelper, logctx, flags, xmlReadFlags);
             // MORE - agentReply etc should really be atomic
-            sink->onQueryMsg(msgctx, &request, protocol, flags, xmlReadFlags, querySetName, idx, memused, agentReplyLen, agentDuplicates, agentResends);
+            StringAttr statsWuid;
+            sink->onQueryMsg(msgctx, &request, protocol, flags, xmlReadFlags, querySetName, idx, memused, agentReplyLen, agentDuplicates, agentResends, statsWuid);
         }
         catch (IException * E)
         {
@@ -1845,6 +1846,7 @@ readAnother:
 
         StringAttr queryName;
         StringAttr queryPrefix;
+        StringAttr statsWuid;
         WhiteSpaceHandling whitespace = WhiteSpaceHandling::Default;
         try
         {
@@ -2060,7 +2062,7 @@ readAnother:
                         else
                         {
                             Owned<IHpccProtocolResponse> protocol = createProtocolResponse(queryPT->queryName(), client, httpHelper, logctx, protocolFlags, (PTreeReaderOptions)readFlags);
-                            sink->onQueryMsg(msgctx, queryPT, protocol, protocolFlags, (PTreeReaderOptions)readFlags, querySetName, 0, memused, agentsReplyLen, agentsDuplicates, agentsResends);
+                            sink->onQueryMsg(msgctx, queryPT, protocol, protocolFlags, (PTreeReaderOptions)readFlags, querySetName, 0, memused, agentsReplyLen, agentsDuplicates, agentsResends, statsWuid);
                         }
                     }
                 }
@@ -2147,6 +2149,13 @@ readAnother:
                         FlushingStringBuffer response(client, (protocolFlags & HPCC_PROTOCOL_BLOCKED), mlResponseFmt, (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW), false, logctx);
                         response.startDataset("Tracing", NULL, (unsigned) -1);
                         msgctx->outputLogXML(response);
+                    }
+                    if (statsWuid.length())
+                    {
+                        FlushingStringBuffer response(client, (protocolFlags & HPCC_PROTOCOL_BLOCKED), mlResponseFmt, (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW), false, logctx);
+                        response.startDataset("Statistics", NULL, (unsigned) -1);
+                        VStringBuffer xml(" <wuid>%s</wuid>\n", statsWuid.str());
+                        response.flushXML(xml, true);
                     }
                     unsigned replyLen = 0;
                     client->write(&replyLen, sizeof(replyLen));
