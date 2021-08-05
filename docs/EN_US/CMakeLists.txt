@@ -18,8 +18,8 @@
 #  This CMakeLists intended to be used in docs/EN
 #    Refactored for internationalization
 ###
-# Last Mod GP 7/2018
-#  Removed ECL Plugin For Eclipse
+# Last Mod GP 7/2021
+#  Removed HPCC in a VM
 ####################
 #
 # Doc dirs to include.
@@ -79,8 +79,7 @@ add_subdirectory(InstantCloud)
 add_subdirectory(Installing_and_RunningTheHPCCPlatform)
 add_subdirectory(JDBC-driver)
 add_subdirectory(RoxieReference)
-add_subdirectory(RunningHPCCinaVirtualMachine)
-
+#add_subdirectory(RunningHPCCinaVirtualMachine)
 #add_subdirectory(ECLPluginForEclipse)
 add_subdirectory(ECLScheduler)
 add_subdirectory(ECLWatch)
