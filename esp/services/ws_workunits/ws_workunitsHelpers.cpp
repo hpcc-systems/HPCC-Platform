@@ -4023,6 +4023,19 @@ IFileIOStream* CWsWuFileHelper::createWUFileIOStream(IEspContext& context, const
     return createIOStreamWithFileName(zipFileNameWithPath.str(), IFOread);
 }
 
+void CWsWuFileHelper::validateFilePath(const char *file, bool UNCFileName, const char *fileType, const char *compType, const char *compName)
+{
+    StringBuffer actualPath;
+    if (UNCFileName)
+        splitUNCFilename(file, nullptr, &actualPath, nullptr, nullptr);
+    else
+        splitFilename(file, nullptr, &actualPath, nullptr, nullptr);
+    if (containsRelPaths(actualPath)) //Detect a path like: /home/lexis/runtime/var/log/HPCCSystems/myesp/../../../
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid file path %s", actualPath.str());
+    if (!validateConfigurationDirectory(nullptr, fileType, compType, compName, actualPath))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid file path %s", actualPath.str());
+}
+
 void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, WsWuInfo& winfo, IConstWUFileOption& item,
     StringBuffer& fileName, StringBuffer& fileMimeType)
 {
@@ -4040,11 +4053,18 @@ void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, Ws
     case CWUFileType_CPP:
     case CWUFileType_LOG:
     {
-        const char *tail=pathTail(item.getName());
-        fileName.set(tail ? tail : item.getName());
+        const char *file=item.getName();
+#ifndef _CONTAINERIZED
+        validateFilePath(file, false, "run", nullptr, nullptr);
+#else
+        validateFilePath(file, false, "query", nullptr, nullptr);
+#endif
+
+        const char *tail=pathTail(file);
+        fileName.set(tail ? tail : file);
         fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
         fileNameWithPath.set(workingFolder).append(PATHSEPCHAR).append(fileName.str());
-        winfo.getWorkunitCpp(item.getName(), item.getDescription(), item.getIPAddress(), mb, true, fileNameWithPath.str());
+        winfo.getWorkunitCpp(file, item.getDescription(), item.getIPAddress(), mb, true, fileNameWithPath.str());
         break;
     }
     case CWUFileType_DLL:
@@ -4065,11 +4085,16 @@ void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, Ws
         break;
 #ifndef _CONTAINERIZED
     case CWUFileType_ThorLog:
+    {
+        const char *file=item.getName();
+        validateFilePath(file, true, "log", nullptr, nullptr);
+
         fileName.set("thormaster.log");
         fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
         fileNameWithPath.set(workingFolder).append(PATHSEPCHAR).append(fileName.str());
-        winfo.getWorkunitThorMasterLog(nullptr, item.getName(), mb, fileNameWithPath.str());
+        winfo.getWorkunitThorMasterLog(nullptr, file, mb, fileNameWithPath.str());
         break;
+    }
     case CWUFileType_ThorSlaveLog:
     {
         fileName.set("ThorSlave.log");
@@ -4081,12 +4106,17 @@ void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, Ws
         break;
     }
     case CWUFileType_EclAgentLog:
+    {
+        const char *file=item.getName();
+        validateFilePath(file, true, "log", nullptr, nullptr);
+
         fileName.set("eclagent.log");
         fileMimeType.set(HTTP_TYPE_TEXT_PLAIN);
         fileNameWithPath.set(workingFolder).append(PATHSEPCHAR).append(fileName.str());
-        winfo.getWorkunitEclAgentLog(nullptr, item.getName(), item.getProcess(), mb, fileNameWithPath.str());
+        winfo.getWorkunitEclAgentLog(nullptr, file, item.getProcess(), mb, fileNameWithPath.str());
         break;
 #endif
+    }
     case CWUFileType_XML:
     {
         StringBuffer name(item.getName());

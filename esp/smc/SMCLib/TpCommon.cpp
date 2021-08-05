@@ -104,3 +104,41 @@ extern TPWRAPPER_API bool matchNetAddressRequest(const char* netAddressReg, bool
         return streq(netAddressReg, tpMachine.getNetaddress());
     return streq(netAddressReg, tpMachine.getConfigNetaddress());
 }
+
+extern TPWRAPPER_API bool validateDropZonePath(const char* dropZoneName, const char* netAddr, const char* pathToCheck)
+{
+    if (isEmptyString(netAddr))
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "NetworkAddress not defined.");
+
+    if (isEmptyString(pathToCheck))
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "Path not defined.");
+
+    if (containsRelPaths(pathToCheck)) //Detect a path like: /home/lexis/runtime/var/lib/HPCCSystems/mydropzone/../../../
+        return false;
+
+    bool isIPAddressReq = isIPAddress(netAddr);
+    IArrayOf<IConstTpDropZone> allTpDropZones;
+    CTpWrapper tpWrapper;
+    tpWrapper.getTpDropZones(9999, nullptr, false, allTpDropZones); //version 9999: get the latest information about dropzone
+    ForEachItemIn(i, allTpDropZones)
+    {
+        IConstTpDropZone& dropZone = allTpDropZones.item(i);
+        if (!isEmptyString(dropZoneName) && !streq(dropZoneName, dropZone.getName()))
+            continue;
+
+        StringBuffer directory(dropZone.getPath());
+        addPathSepChar(directory);
+
+        if (!hasPrefix(pathToCheck, directory, true))
+            continue;
+
+        IArrayOf<IConstTpMachine>& tpMachines = dropZone.getTpMachines();
+        ForEachItemIn(ii, tpMachines)
+        {
+            if (matchNetAddressRequest(netAddr, isIPAddressReq, tpMachines.item(ii)))
+                return true;
+        }
+    }
+    return false;
+}
+
