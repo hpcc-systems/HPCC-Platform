@@ -2502,7 +2502,6 @@ extern TPWRAPPER_API bool validateDropZonePath(const char* dropZoneName, const c
     if (containsRelPaths(pathToCheck)) //Detect a path like: /home/lexis/runtime/var/lib/HPCCSystems/mydropzone/../../../
         return false;
 
-#ifdef _CONTAINERIZED
     bool isIPAddressReq = isIPAddress(netAddr);
     IArrayOf<IConstTpDropZone> allTpDropZones;
     CTpWrapper tpWrapper;
@@ -2526,31 +2525,5 @@ extern TPWRAPPER_API bool validateDropZonePath(const char* dropZoneName, const c
                 return true;
         }
     }
-#else
-    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
-    Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-    Owned<IConstDropZoneInfoIterator> dropZoneItr = constEnv->getDropZoneIteratorByAddress(netAddr);
-    ForEach(*dropZoneItr)
-    {
-        SCMStringBuffer directoryBuf, name;
-        IConstDropZoneInfo& dropZoneInfo = dropZoneItr->query();
-        dropZoneInfo.getDirectory(directoryBuf);
-        if (!directoryBuf.length())
-            continue;
-
-        StringBuffer directory(directoryBuf.str());
-        addPathSepChar(directory);
-
-        if (!hasPrefix(pathToCheck, directory, true))
-            continue;
-
-        if (isEmptyString(dropZoneName))
-            return true;
-
-        dropZoneInfo.getName(name);
-        if (strieq(name.str(), dropZoneName))
-            return true;
-    }
-#endif
     return false;
 } 
