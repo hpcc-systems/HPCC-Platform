@@ -39,6 +39,9 @@ bool CWsFileIOEx::CheckServerAccess(const char* targetDZNameOrAddress, const cha
     if (!targetDZNameOrAddress || (targetDZNameOrAddress[0] == 0) || !relPath || (relPath[0] == 0))
         return false;
 
+    if (containsRelPaths(relPath)) //Detect a path like: a/../../../f
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid file path %s", relPath);
+
 #ifdef _CONTAINERIZED
     bool isIp4Req = isIPAddress(netAddrReq);
     ForEachItemIn(i, allTpDropZones)

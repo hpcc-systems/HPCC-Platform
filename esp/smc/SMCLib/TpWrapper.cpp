@@ -2175,3 +2175,4 @@ StringBuffer & getRoxieDefaultPlane(StringBuffer & plane, const char * roxieName
         clusterInfo->getRoxieProcess(process);
     return plane;
 }
+

@@ -1087,11 +1087,30 @@ Pass in dict with root, category.  optional name to restrict it to a single name
 
 {{/*
 Create placement related settings
-Pass in dict with placement
+Pass in dict with me for current placements and dict with new for the new placements
+*/}}
+{{- define "hpcc.mergePlacementSetting" -}}
+{{- if .me.placement.nodeSelector }}
+{{- $_ := set .new "nodeSelector" (mergeOverwrite (.new.nodeSelector | default dict ) .me.placement.nodeSelector)  }}
+{{- end -}}
+{{- if .me.placement.tolerations }}
+{{- $_ := set .new "tolerations" (concat (.new.tolerations | default list ) .me.placement.tolerations)  }}
+{{- end -}}
+{{- if .me.placement.affinity }}
+{{- $_ := set .new "affinity" .me.placement.affinity  }}
+{{- end -}}
+{{- if .me.placement.schedulerName }}
+{{- $_ := set .new "schedulerName" .me.placement.schedulerName }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Add placement related settings
+Pass in dict with me, that contains all placements for this entity.
 */}}
 {{- define "hpcc.doPlacement" -}}
-{{- if .me.placement }}
-{{ toYaml .me.placement }}
+{{- if len .me }}
+{{ toYaml .me }}
 {{- end -}}
 {{- end -}}
 
@@ -1104,17 +1123,19 @@ Pass in dict with root, job, target and type
 {{- $job := .job -}}
 {{- $target := (printf "target:%s" .target | default "") -}}
 {{- $type := printf "type:%s" .type -}}
+{{- $placementsDict := dict -}}
 {{- range $placement := .root.Values.placements -}}
 {{- if or (has $target $placement.pods) (has $type $placement.pods) (has "all" $placement.pods) -}}
-{{ include "hpcc.doPlacement" (dict "me" $placement) -}}
+{{ include "hpcc.mergePlacementSetting" (dict "me" $placement "new" $placementsDict) -}}
 {{- else -}}
 {{- range $jobPattern := $placement.pods -}}
 {{- if mustRegexMatch $jobPattern $job -}}
-{{ include "hpcc.doPlacement" (dict "me" $placement) -}}
+{{ include "hpcc.mergePlacementSetting" (dict "me" $placement "new" $placementsDict) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
+{{ include "hpcc.doPlacement" (dict "me" $placementsDict) -}}
 {{- end -}}
 {{- end -}}
 
@@ -1127,11 +1148,13 @@ Pass in dict with root, pod, target and type
 {{- $pod := .pod -}}
 {{- $target := (printf "target:%s" .target | default "") -}}
 {{- $type := printf "type:%s" .type -}}
+{{- $placementsDict := dict  -}}
 {{- range $placement := .root.Values.placements -}}
 {{- if or (has $pod $placement.pods) (has $target $placement.pods) (has $type $placement.pods) (has "all"  $placement.pods) -}}
-{{ include "hpcc.doPlacement" (dict "me" $placement) -}}
+{{ include "hpcc.mergePlacementSetting" (dict "me" $placement "new" $placementsDict) -}}
 {{- end -}}
 {{- end -}}
+{{ include "hpcc.doPlacement" (dict "me" $placementsDict) -}}
 {{- end -}}
 {{- end -}}
 

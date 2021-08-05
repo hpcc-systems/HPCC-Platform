@@ -236,6 +236,16 @@ bool CWsTopologyEx::onTpLogFile(IEspContext &context,IEspTpLogFileRequest  &req,
     return true;
 }
 
+void CWsTopologyEx::validateFilePath(const char *file, const char *fileType, const char *compType, const char *compName)
+{
+    StringBuffer actualPath;
+    splitUNCFilename(file, nullptr, &actualPath, nullptr, nullptr);
+    if (containsRelPaths(actualPath)) //Detect a path like: /home/lexis/runtime/var/log/HPCCSystems/myesp/../../../
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid file path %s", actualPath.str());
+    if (!validateConfigurationDirectory(nullptr, fileType, compType, compName, actualPath))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid file path %s", actualPath.str());
+}
+
 bool CWsTopologyEx::onSystemLog(IEspContext &context,IEspSystemLogRequest  &req, IEspSystemLogResponse &resp)
 {
     try
@@ -254,6 +264,7 @@ bool CWsTopologyEx::onSystemLog(IEspContext &context,IEspSystemLogRequest  &req,
         }
         else
         {
+            validateFilePath(name, "log", nullptr, nullptr);
             logname = name;
         }
 
@@ -1117,7 +1128,10 @@ void CWsTopologyEx::readTpLogFile(IEspContext &context,const char* fileName, con
 {
     StringBuffer logname;
     if (strcmp(fileType,"thormaster_log"))
+    {
+        validateFilePath(fileName, "log", nullptr, nullptr);
         logname = fileName;
+    }
     else
         logname.append(CCluster(fileName)->queryRoot()->queryProp("LogFile"));
 
@@ -1751,6 +1765,8 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context, IEspTpGetComponen
 
         StringBuffer uncPath;
         uncPath.append(pathSepChar).append(pathSepChar).append(netAddress).append(sDir).append(fileName);
+
+        validateFilePath(uncPath, (stricmp(fileType, "log") == 0) ? "log" : "run", nullptr, nullptr);
 
         if (stricmp(fileType, "log") == 0)
         {

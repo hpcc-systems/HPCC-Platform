@@ -398,7 +398,7 @@ int CFileSpraySoapBindingEx::downloadFile(IEspContext &context, CHttpRequest* re
         request->getParameter("OS", osStr);
         request->getParameter("Path", pathStr);
         request->getParameter("Name", nameStr);
-        
+
 #if 0
         StringArray files;
         IProperties* params = request->queryParameters();
@@ -436,6 +436,9 @@ int CFileSpraySoapBindingEx::downloadFile(IEspContext &context, CHttpRequest* re
         if (*(pathStr.str() + pathStr.length() -1) != pathSep)
             pathStr.append( pathSep );
 
+        if (!validateDropZonePath(nullptr, netAddressStr, pathStr)) //The pathStr should be the absolute path for the dropzone.
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid file path %s", pathStr.str());
+
         StringBuffer fullName;
         fullName.appendf("%s%s", pathStr.str(), nameStr.str());
 
@@ -472,6 +475,17 @@ int CFileSpraySoapBindingEx::downloadFile(IEspContext &context, CHttpRequest* re
         response->handleExceptions(xslp, me, "FileSpray", "DownloadFile", StringBuffer(getCFD()).append("./smc_xslt/exceptions.xslt"));
     }
     return 0;
+}
+
+int CFileSpraySoapBindingEx::onStartUpload(IEspContext& ctx, CHttpRequest* request, CHttpResponse* response, const char* serv, const char* method)
+{
+    StringBuffer netAddress, path;
+    request->getParameter("NetAddress", netAddress);
+    request->getParameter("Path", path);
+    if (!validateDropZonePath(nullptr, netAddress, path)) //The path should be the absolute path for the dropzone.
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid Landing Zone path %s", path.str());
+
+    return EspHttpBinding::onStartUpload(ctx, request, response, serv, method);
 }
 
 int CFileSpraySoapBindingEx::onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response,   const char *service, const char *method, StringArray& fileNames, StringArray& files, IMultiException *me)

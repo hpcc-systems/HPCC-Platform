@@ -8492,8 +8492,20 @@ static void applyCommandLineOption(IPropertyTree * config, const char * option, 
     }
     else
     {
-        //MORE: Support --x- and --x+?
-        val = "1";
+        unsigned len = strlen(option);
+        if (len == 0)
+            return;
+
+        //support --option+ as --option=1 and --option- as --option=0 for eclcc compatibility
+        char last = option[len-1];
+        if ((last == '+') || (last == '-'))
+        {
+            name.append(len-1, option);
+            option = name;
+            val = (last == '+') ? "1" : "0";
+        }
+        else
+            val = "1";
     }
     if (stdContains(ignoreOptions, option))
         return;
