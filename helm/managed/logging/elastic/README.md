@@ -21,7 +21,7 @@ Otherwise, provide the "--dependency-update" argument in the helm install comman
 For example:
 > helm install myelastic <HPCC-Systems Git clone location>/helm/managed/logging/elastic/ --dependency-update
 
-##### Log Query Improvements
+### Log Query Improvements
 User are encouraged to make use of Elsatic Search "Ingest Pipelines" to improve log query performance and tailor the structure of the log record to meet their needs. The pipelines can be applied to specific indices via Elastic Search API, or via Kibana's UI.
 
 > further reading here: https://www.elastic.co/blog/structuring-elasticsearch-data-with-grok-on-ingest-for-faster-analytics
@@ -110,6 +110,32 @@ For example, search all HPCC component reported errors:
 }
 ```
 
+### Kibana Service Access
 
-##### Cleanup
+The Managed Kibana service is declared as type LoadBalancer for convenience to the user. However it is imperative to control external access to the service.
+The service is defaulted to "internal load balancer" on Azure, the user is encouraged to set similar values on the target cloud provider. See the kibana.service.annotations section:
+
+```yaml
+kibana:
+  enabled: true
+  description: "HPCC Managed Kibana"
+  ##See https://github.com/elastic/helm-charts/blob/master/kibana/values.yaml for all available options
+  labels: {"managedby" : "HPCC"}
+  stedkey: value
+  service:
+    type: "LoadBalancer"
+    annotations:
+      # This annotation delcares the Azure load balancer for the service as internal rather than internet-visible
+      service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+
+      # Enable appropriate annotation for target cloud provider to ensure Kibana access is internal
+      #
+      #service.beta.kubernetes.io/cce-load-balancer-internal-vpc: "true"
+      #cloud.google.com/load-balancer-type: "Internal"
+      #service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+      #service.beta.kubernetes.io/openstack-internal-load-balancer: "true"
+```
+
+
+### Cleanup
 The Elastic Search chart will declare a PVC which is used to persist data related to its indexes, and thus, the HPCC Component logs. The PVCs by nature can outlive the HPCC and Elastic deployments, it is up to the user to manage the PVC appropriately, which includes deleting the PVC when they are no longer needed.
