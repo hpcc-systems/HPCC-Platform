@@ -491,6 +491,22 @@ inline char getPathSepChar(const char *dir)
     return s?(*s):((*dir&&(dir[1]==':'))?'\\':PATHSEPCHAR);
 }
 
+inline char getPathSepCharEx(const char *s)
+{
+    if (!s)
+        return '/';
+
+    bool foundBackslash=false;
+    while (*s) {
+        if (s[0]=='/')
+            return '/';
+        if (s[0]=='\\')
+            foundBackslash=true;
+        s++;
+    }
+    return foundBackslash?'\\':'/';
+}
+
 inline bool containsPathSepChar(const char *s)
 {
     return findPathSepChar(s)!=NULL;    
@@ -546,6 +562,7 @@ inline const char *splitDirTail(const char *path,StringBuffer &dir)
 extern jlib_decl bool isUrl(const char *path);
 extern jlib_decl bool isRemotePath(const char *path);
 extern jlib_decl bool isAbsolutePath(const char *path);
+extern jlib_decl bool containsRelPaths(const char *path);
 
 // NOTE - makeAbsolutePath also normalizes the supplied path to remove . and .. references
 extern jlib_decl StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out,bool mustExist=false);

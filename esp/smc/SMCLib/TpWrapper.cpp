@@ -2192,3 +2192,74 @@ extern TPWRAPPER_API unsigned getContainerWUClusterInfo(CConstWUClusterInfoArray
 
     return clusters.ordinality();
 }
+
+extern TPWRAPPER_API bool matchNetAddressRequest(const char* netAddressReg, bool ipReq, IConstTpMachine& tpMachine)
+{
+    if (ipReq)
+        return streq(netAddressReg, tpMachine.getNetaddress());
+    return streq(netAddressReg, tpMachine.getConfigNetaddress());
+}
+
+extern TPWRAPPER_API bool validateDropZonePath(const char* dropZoneName, const char* netAddr, const char* pathToCheck)
+{
+    if (isEmptyString(netAddr))
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "NetworkAddress not defined.");
+
+    if (isEmptyString(pathToCheck))
+        throw makeStringException(ECLWATCH_INVALID_INPUT, "Path not defined.");
+
+    if (containsRelPaths(pathToCheck)) //Detect a path like: /home/lexis/runtime/var/lib/HPCCSystems/mydropzone/../../../
+        return false;
+
+#ifdef _CONTAINERIZED
+    bool isIPAddressReq = isIPAddress(netAddr);
+    IArrayOf<IConstTpDropZone> allTpDropZones;
+    CTpWrapper tpWrapper;
+    tpWrapper.getTpDropZones(9999, nullptr, false, allTpDropZones); //version 9999: get the latest information about dropzone
+    ForEachItemIn(i, allTpDropZones)
+    {
+        IConstTpDropZone& dropZone = allTpDropZones.item(i);
+        if (!isEmptyString(dropZoneName) && !streq(dropZoneName, dropZone.getName()))
+            continue;
+
+        StringBuffer directory(dropZone.getPath());
+        addPathSepChar(directory);
+
+        if (!hasPrefix(pathToCheck, directory, true))
+            continue;
+
+        IArrayOf<IConstTpMachine>& tpMachines = dropZone.getTpMachines();
+        ForEachItemIn(ii, tpMachines)
+        {
+            if (matchNetAddressRequest(netAddr, isIPAddressReq, tpMachines.item(ii)))
+                return true;
+        }
+    }
+#else
+    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
+    Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
+    Owned<IConstDropZoneInfoIterator> dropZoneItr = constEnv->getDropZoneIteratorByAddress(netAddr);
+    ForEach(*dropZoneItr)
+    {
+        SCMStringBuffer directoryBuf, name;
+        IConstDropZoneInfo& dropZoneInfo = dropZoneItr->query();
+        dropZoneInfo.getDirectory(directoryBuf);
+        if (!directoryBuf.length())
+            continue;
+
+        StringBuffer directory(directoryBuf.str());
+        addPathSepChar(directory);
+
+        if (!hasPrefix(pathToCheck, directory, true))
+            continue;
+
+        if (isEmptyString(dropZoneName))
+            return true;
+
+        dropZoneInfo.getName(name);
+        if (strieq(name.str(), dropZoneName))
+            return true;
+    }
+#endif
+    return false;
+}

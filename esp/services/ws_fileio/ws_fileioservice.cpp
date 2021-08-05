@@ -37,6 +37,9 @@ bool CWsFileIOEx::CheckServerAccess(const char* targetDZNameOrAddress, const cha
     if (!targetDZNameOrAddress || (targetDZNameOrAddress[0] == 0) || !relPath || (relPath[0] == 0))
         return false;
 
+    if (containsRelPaths(relPath)) //Detect a path like: a/../../../f
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid file path %s", relPath);
+
     netAddr.clear();
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> env = factory->openEnvironment();

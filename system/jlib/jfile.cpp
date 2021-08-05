@@ -5248,6 +5248,46 @@ bool isRemotePath(const char *path)
     }
 }
 
+bool containsRelPaths(const char *path)
+{
+    if (isEmptyString(path))
+        return false;
+    if (*path == '~')
+        return true;
+
+    const char *cur = path;
+    char sepChar = getPathSepCharEx(path);
+    char previousChar = sepChar;
+    for (;;)
+    {
+        switch (*cur)
+        {
+        case '.':
+        {
+            if (previousChar == sepChar)
+            {
+                cur++;
+                if ((*cur == sepChar) || (*cur == '\0')) // '.'
+                    return true;
+                    
+                if ('.' == *cur)
+                {
+                    cur++;
+                    if ((*cur == sepChar) || (*cur == '\0')) // '..'
+                        return true;
+                }
+            }
+            break;
+        }
+        case '\0':
+            return false;
+        }
+
+        previousChar = *cur;
+        cur++;
+    }
+}
+
 StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustExist)
 {
     // NOTE - this function also normalizes the supplied path to remove . and .. references
