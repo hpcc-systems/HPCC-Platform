@@ -969,7 +969,7 @@ public:
     {
     }
 
-    virtual void onQueryMsg(IHpccProtocolMsgContext *msgctx, IPropertyTree *msg, IHpccProtocolResponse *protocol, unsigned flags, PTreeReaderOptions readFlags, const char *target, unsigned idx, unsigned &memused, unsigned &agentReplyLen, unsigned &agentsDuplicates, unsigned &agentsResends)
+    virtual void onQueryMsg(IHpccProtocolMsgContext *msgctx, IPropertyTree *msg, IHpccProtocolResponse *protocol, unsigned flags, PTreeReaderOptions readFlags, const char *target, unsigned idx, unsigned &memused, unsigned &agentReplyLen, unsigned &agentsDuplicates, unsigned &agentsResends, StringAttr &statsWuid)
     {
         UNIMPLEMENTED;
     }
@@ -1756,7 +1756,7 @@ public:
     }
 
     virtual void onQueryMsg(IHpccProtocolMsgContext *msgctx, IPropertyTree *msg, IHpccProtocolResponse *protocol, unsigned flags, PTreeReaderOptions xmlReadFlags,
-                            const char *target, unsigned idx, unsigned &memused, unsigned &agentsReplyLen, unsigned &agentsDuplicates, unsigned &agentsResends)
+                            const char *target, unsigned idx, unsigned &memused, unsigned &agentsReplyLen, unsigned &agentsDuplicates, unsigned &agentsResends, StringAttr &statsWuid)
     {
         RoxieProtocolMsgContext *roxieMsgCtx = checkGetRoxieMsgContext(msgctx, msg);
         IQueryFactory *f = roxieMsgCtx->queryQueryFactory();
@@ -1764,10 +1764,18 @@ public:
         if (!(flags & HPCC_PROTOCOL_NATIVE))
         {
             ctx->process();
+            statsWuid.set(ctx->queryStatsWuid());
             if (msgctx->getIntercept())
             {
                 Owned<IXmlWriter> logwriter = protocol->writeAppendContent(nullptr);
                 msgctx->writeLogXML(*logwriter);
+            }
+            if (statsWuid.length())
+            {
+                Owned<IXmlWriter> wuwriter = protocol->writeAppendContent(nullptr);
+                wuwriter->outputBeginNested("StatsWorkUnit", true);
+                wuwriter->outputCString(statsWuid.str(), "wuid");
+                wuwriter->outputEndNested("StatsWorkUnit");
             }
 
             protocol->finalize(idx);
@@ -1781,6 +1789,7 @@ public:
             try
             {
                 ctx->process();
+                statsWuid.set(ctx->queryStatsWuid());
                 memused = (unsigned)(ctx->getMemoryUsage() / 0x100000);
                 agentsReplyLen = ctx->getAgentsReplyLen();
                 agentsDuplicates = ctx->getAgentsDuplicates();

@@ -110,6 +110,7 @@ public:
     bool collectFactoryStatistics;
     bool noSeekBuildIndex;
     bool parallelWorkflow;
+    bool statsToWorkunit = false;
     SinkMode sinkMode;
     unsigned numWorkflowThreads;
 

@@ -7,6 +7,7 @@
 rtl := SERVICE
  unsigned4 msTick() :       eclrtl,library='eclrtl',entrypoint='rtlTick';
  unsigned4 sleep(unsigned4 _delay) : eclrtl,action,library='eclrtl',entrypoint='rtlSleep';
+ printStackReport(integer startIP) : cpp,action,library='jlib';
 END;
 
 import lib_parselib;
@@ -44,5 +45,11 @@ EXPORT STRING getParseTree() := lib_parselib.ParseLib.getParseTree();
  */
 
 EXPORT STRING getXmlParseTree() := lib_parselib.ParseLib.getXmlParseTree();
+
+/*
+ * Cause the current stack to be traced to the logging.  Used for debugging platform issues.
+ */
+
+EXPORT PrintStackReport() := rtl.printStackReport(0);
 
 END;

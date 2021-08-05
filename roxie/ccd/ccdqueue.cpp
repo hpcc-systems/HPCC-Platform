@@ -876,7 +876,7 @@ void AgentContextLogger::set(ISerializedRoxieQueryPacket *packet)
         if (intercept || mergeAgentStatistics)
         {
             RoxiePacketHeader newHeader(header, ROXIE_TRACEINFO, 0);  // subchannel not relevant
-            output.setown(ROQ->createOutputStream(newHeader, true, *this));
+            output.setown(ROQ->createOutputStream(newHeader, false, *this));
         }
     }
     else
