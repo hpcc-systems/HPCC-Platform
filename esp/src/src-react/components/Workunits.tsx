@@ -12,6 +12,9 @@ import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
 import { DojoGrid, selector } from "./DojoGrid";
+import { scopedLogger } from "@hpcc-js/util";
+
+const logger = scopedLogger("src-react/components/Workunits.tsx");
 
 const FilterFields: Fields = {
     "Type": { type: "checkbox", label: nlsHPCC.ArchivedOnly },
@@ -45,6 +48,7 @@ function formatQuery(_filter) {
             filter.EndDate = new Date(filter.StartDate).toISOString();
         }
     }
+    logger.debug(filter);
     return filter;
 }
 

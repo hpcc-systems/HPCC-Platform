@@ -1,10 +1,13 @@
 import * as React from "react";
 import { ContextualMenu, Dropdown, IconButton, IDragOptions, mergeStyleSets, Modal, PrimaryButton, Stack, TextField, } from "@fluentui/react";
 import { useId } from "@fluentui/react-hooks";
+import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
 import * as FormStyles from "./landing-zone/styles";
 import { useWorkunit } from "../../hooks/Workunit";
+
+const logger = scopedLogger("src-react/components/forms/SlaveLogs.tsx");
 
 interface SlaveLogsValues {
     ThorProcess: string;
@@ -53,9 +56,7 @@ export const SlaveLogs: React.FunctionComponent<SlaveLogsProps> = ({
                 closeForm();
                 reset(defaultValues);
             },
-            err => {
-                console.log(err);
-            }
+            logger.info
         )();
     }, [closeForm, clusterGroup, handleSubmit, reset, thorLogDate, wuid]);
 
@@ -111,15 +112,15 @@ export const SlaveLogs: React.FunctionComponent<SlaveLogsProps> = ({
                         field: { onChange, name: fieldName, value },
                         fieldState: { error }
                     }) => <Dropdown
-                        key={fieldName}
-                        label={nlsHPCC.ThorProcess}
-                        options={thorProcesses}
-                        required={true}
-                        onChange={(evt, option) => {
-                            onChange(option.key);
-                        }}
-                        errorMessage={ error && error.message }
-                    /> }
+                            key={fieldName}
+                            label={nlsHPCC.ThorProcess}
+                            options={thorProcesses}
+                            required={true}
+                            onChange={(evt, option) => {
+                                onChange(option.key);
+                            }}
+                            errorMessage={error && error.message}
+                        />}
                     rules={{
                         required: nlsHPCC.ValidationErrorRequired
                     }}
@@ -127,15 +128,15 @@ export const SlaveLogs: React.FunctionComponent<SlaveLogsProps> = ({
                 <Controller
                     control={control} name="SlaveNumber"
                     render={({
-                        field: { onChange, name: fieldName, value},
+                        field: { onChange, name: fieldName, value },
                         fieldState: { error }
                     }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        label={nlsHPCC.SlaveNumber}
-                        value={value}
-                        errorMessage={ error && error.message }
-                    /> }
+                            name={fieldName}
+                            onChange={onChange}
+                            label={nlsHPCC.SlaveNumber}
+                            value={value}
+                            errorMessage={error && error.message}
+                        />}
                     rules={{
                         pattern: {
                             value: /^[1-9]+$/i,
@@ -157,18 +158,18 @@ export const SlaveLogs: React.FunctionComponent<SlaveLogsProps> = ({
                         field: { onChange, name: fieldName, value },
                         fieldState: { error }
                     }) => <Dropdown
-                        key={fieldName}
-                        label={nlsHPCC.File}
-                        options={[
-                            { key: "1", text: nlsHPCC.OriginalFile },
-                            { key: "2", text: nlsHPCC.Zip },
-                            { key: "3", text: nlsHPCC.GZip },
-                        ]}
-                        defaultSelectedKey="1"
-                        onChange={(evt, option) => {
-                            onChange(option.key);
-                        }}
-                    /> }
+                            key={fieldName}
+                            label={nlsHPCC.File}
+                            options={[
+                                { key: "1", text: nlsHPCC.OriginalFile },
+                                { key: "2", text: nlsHPCC.Zip },
+                                { key: "3", text: nlsHPCC.GZip },
+                            ]}
+                            defaultSelectedKey="1"
+                            onChange={(evt, option) => {
+                                onChange(option.key);
+                            }}
+                        />}
                 />
             </Stack>
             <Stack horizontal horizontalAlign="space-between" verticalAlign="end" styles={FormStyles.buttonStackStyles}>

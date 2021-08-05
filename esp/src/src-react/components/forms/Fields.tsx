@@ -163,7 +163,7 @@ export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFi
     const [targetClusters, setTargetClusters] = React.useState<IDropdownOption[]>([]);
 
     React.useEffect(() => {
-        const topology = new Topology({ baseUrl: "" });
+        const topology = Topology.attach({ baseUrl: "" });
         topology.fetchLogicalClusters().then((response: TpLogicalClusterQuery.TpLogicalCluster[]) => {
             setTargetClusters(response
                 .map((n, i) => {
@@ -176,7 +176,7 @@ export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFi
         });
     }, []);
 
-    return <Dropdown { ...props } options={targetClusters} />;
+    return <Dropdown {...props} options={targetClusters} />;
 };
 
 export interface TargetGroupTextFieldProps {

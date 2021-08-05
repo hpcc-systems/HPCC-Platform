@@ -5,7 +5,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { MainNav, routes } from "../routes";
 import { pushUrl } from "../util/history";
 import { Breadcrumbs } from "./Breadcrumbs";
-import { useFavorites, useHistory } from "src-react/hooks/favorite";
+import { useFavorites, useHistory } from "../hooks/favorite";
 
 //  Top Level Nav  ---
 const navLinkGroups: INavLinkGroup[] = [

@@ -1,5 +1,6 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Pivot, PivotItem, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
+import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import { WUStatus } from "src/react/index";
@@ -24,6 +25,8 @@ import { Resources } from "./Resources";
 import { WUXMLSourceEditor } from "./SourceEditor";
 import { Workflows } from "./Workflows";
 import { WorkunitPersona } from "./controls/StateIcon";
+
+const logger = scopedLogger("src-react/components/WorkunitDetails.tsx");
 
 interface WorkunitDetailsProps {
     wuid: string;
@@ -84,48 +87,49 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                     Jobname: jobname,
                     Description: description,
                     Protected: _protected
-                });
+                }).catch(logger.error);
             }
         },
         {
             key: "delete", text: nlsHPCC.Delete, iconProps: { iconName: "Delete" }, disabled: !canDelete,
             onClick: () => {
                 if (confirm(nlsHPCC.YouAreAboutToDeleteThisWorkunit)) {
-                    workunit?.delete();
+                    workunit?.delete().catch(logger.error);
                     pushUrl("/workunits");
                 }
             }
         },
         {
             key: "restore", text: nlsHPCC.Restore, disabled: !workunit?.Archived,
-            onClick: () => workunit?.restore()
+            onClick: () => workunit?.restore().catch(logger.error)
+
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "reschedule", text: nlsHPCC.Reschedule, disabled: !canReschedule,
-            onClick: () => workunit?.reschedule()
+            onClick: () => workunit?.reschedule().catch(logger.error)
         },
         {
             key: "deschedule", text: nlsHPCC.Deschedule, disabled: !canDeschedule,
-            onClick: () => workunit?.deschedule()
+            onClick: () => workunit?.deschedule().catch(logger.error)
         },
         { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "setToFailed", text: nlsHPCC.SetToFailed, disabled: workunit?.Archived || workunit?.isComplete() || workunit?.isDeleted(),
-            onClick: () => workunit?.setToFailed()
+            onClick: () => workunit?.setToFailed().catch(logger.error)
         },
         {
             key: "abort", text: nlsHPCC.Abort, disabled: workunit?.Archived || workunit?.isComplete() || workunit?.isDeleted(),
-            onClick: () => workunit?.abort()
+            onClick: () => workunit?.abort().catch(logger.error)
         },
         { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "recover", text: nlsHPCC.Recover, disabled: workunit?.Archived || !workunit?.isComplete() || workunit?.isDeleted(),
-            onClick: () => workunit?.resubmit()
+            onClick: () => workunit?.resubmit().catch(logger.error)
         },
         {
             key: "resubmit", text: nlsHPCC.Resubmit, disabled: workunit?.Archived || !workunit?.isComplete() || workunit?.isDeleted(),
-            onClick: () => workunit?.resubmit()
+            onClick: () => workunit?.resubmit().catch(logger.error)
         },
         {
             key: "clone", text: nlsHPCC.Clone, disabled: workunit?.Archived || !workunit?.isComplete() || workunit?.isDeleted(),
@@ -134,7 +138,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                     if (wu && wu.Wuid) {
                         pushUrl(`/workunits/${wu?.Wuid}`);
                     }
-                });
+                }).catch(logger.error);
             }
         },
         { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
@@ -213,7 +217,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                                                     setProtected(value);
                                                     break;
                                                 default:
-                                                    console.log(id, value);
+                                                    logger.debug(`${id}:  ${value}`);
                                             }
                                         }} />
                                     </ScrollablePane>

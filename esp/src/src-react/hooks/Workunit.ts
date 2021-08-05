@@ -1,8 +1,11 @@
 import * as React from "react";
 import { useConst } from "@fluentui/react-hooks";
 import { Workunit, Result, WUStateID, WUInfo, WorkunitsService } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
+
+const logger = scopedLogger("src-react/hooks/workunit.ts");
 
 export function useCounter(): [number, () => void] {
 
@@ -26,7 +29,7 @@ export function useWorkunit(wuid: string, full: boolean = false): [Workunit, WUS
                     wu.refresh(true).then(() => {
                         setWorkunit(wu);
                         setState(wu.StateID);
-                    });
+                    }).catch(logger.error);
                 } else {
                     setState(wu.StateID);
                 }
@@ -51,7 +54,7 @@ export function useWorkunitResults(wuid: string): [Result[], Workunit, WUStateID
     React.useEffect(() => {
         workunit?.fetchResults().then(results => {
             setResults(results);
-        });
+        }).catch(logger.error);
     }, [workunit, state]);
 
     return [results, workunit, state];
@@ -108,7 +111,7 @@ export function useWorkunitVariables(wuid: string): [Variable[], Workunit, WUSta
                 };
             }) || [];
             setVariables([...vars, ...appData, ...debugData]);
-        });
+        }).catch(logger.error);
     }, [workunit, state]);
 
     return [variables, workunit, state];
@@ -141,7 +144,7 @@ export function useWorkunitSourceFiles(wuid: string): [SourceFile[], Workunit, W
                 });
             });
             setSourceFiles(sourceFiles);
-        });
+        }).catch(logger.error);
     }, [workunit, state]);
 
     return [sourceFiles, workunit, state];
@@ -158,7 +161,7 @@ export function useWorkunitWorkflows(wuid: string): [WUInfo.ECLWorkflow[], Worku
             IncludeWorkflows: true
         }).then(response => {
             setWorkflows(response?.Workunit?.Workflows?.ECLWorkflow || []);
-        });
+        }).catch(logger.error);
     }, [workunit, state, count]);
 
     return [workflows, workunit, increment];
@@ -176,7 +179,7 @@ export function useWorkunitXML(wuid: string): [string] {
             Type: "XML"
         }).then(response => {
             setXML(response);
-        });
+        }).catch(logger.error);
     }, [wuid, service]);
 
     return [xml];
@@ -194,7 +197,7 @@ export function useWorkunitExceptions(wuid: string): [WUInfo.ECLException[], Wor
             IncludeExceptions: true
         }).then(response => {
             setExceptions(response?.Workunit?.Exceptions?.ECLException || []);
-        });
+        }).catch(logger.error);
     }, [workunit, state, count]);
 
     return [exceptions, workunit, increment];
@@ -210,7 +213,7 @@ export function useWorkunitResources(wuid: string): [string[], Workunit, WUState
             IncludeResourceURLs: true
         }).then(response => {
             setResources(response?.Workunit?.ResourceURLs?.URL || []);
-        });
+        }).catch(logger.error);
     }, [workunit, state]);
 
     return [resources, workunit, state];
@@ -282,7 +285,7 @@ export function useWorkunitHelpers(wuid: string): [HelperRow[]] {
             ...mapHelpers(workunit, response?.Workunit?.Helpers?.ECLHelpFile),
             ...mapThorLogInfo(workunit, response?.Workunit?.ThorLogList?.ThorLogInfo)
             ]);
-        });
+        }).catch(logger.error);
     }, [workunit, state]);
 
     return [helpers];

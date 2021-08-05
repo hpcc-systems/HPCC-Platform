@@ -1,7 +1,9 @@
 import UniversalRouter, { ResolveContext } from "universal-router";
 import { parse, ParsedQuery, stringify } from "query-string";
-import { hashSum } from "@hpcc-js/util";
+import { hashSum, scopedLogger } from "@hpcc-js/util";
 import { userKeyValStore } from "src/KeyValStore";
+
+const logger = scopedLogger("src-react/util/history.ts");
 
 let g_router: UniversalRouter;
 
@@ -74,7 +76,7 @@ class History<S extends object = object> {
         });
 
         window.addEventListener("popstate", ev => {
-            console.log("popstate: " + document.location + ", state: " + JSON.stringify(ev.state));
+            logger.debug("popstate: " + document.location + ", state: " + JSON.stringify(ev.state));
             this.state = ev.state;
         });
 
@@ -85,8 +87,7 @@ class History<S extends object = object> {
                     this._recent = retVal;
                 }
             }
-        }).catch(e => {
-        }).finally(() => {
+        }).catch(logger.error).finally(() => {
             this._recent = this._recent === undefined ? [] : this._recent;
         });
     }
@@ -122,12 +123,12 @@ class History<S extends object = object> {
 
     updateRecent() {
         if (this._recent !== undefined) {
-        this._recent = this._recent?.filter(row => row.id !== this.location.id) || [];
-        this._recent.unshift(this.location);
-        if (this._recent.length > 10) {
-            this._recent.length = 10;
-        }
-            this._store.set(STORE_HISTORY_ID, JSON.stringify(this._recent));
+            this._recent = this._recent?.filter(row => row.id !== this.location.id) || [];
+            this._recent.unshift(this.location);
+            if (this._recent.length > 10) {
+                this._recent.length = 10;
+            }
+            this._store.set(STORE_HISTORY_ID, JSON.stringify(this._recent)).catch(logger.error);
         }
     }
 
