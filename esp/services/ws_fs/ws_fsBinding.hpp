@@ -74,8 +74,9 @@ public:
         ensureNavLink(*folder, "XRef", "/WsDFUXRef/DFUXRefList", "View Xref result details or run the Xref utility", NULL, NULL, 12);
     }
 
-    int onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);
-    int onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method, StringArray& fileNames, StringArray& files, IMultiException *me);
+    virtual int onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method) override;
+    virtual int onStartUpload(IEspContext& ctx, CHttpRequest* request, CHttpResponse* response, const char* serv, const char* method) override;
+    virtual int onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method, StringArray& fileNames, StringArray& files, IMultiException *me) override;
     virtual bool canDetachFromDali() override
     {
         return false;

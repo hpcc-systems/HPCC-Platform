@@ -7983,18 +7983,9 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool a
     query.clear();
     updateProp(p, fromP, "@jobName");
     copyTree(p, fromP, "Query");
-    pt = fromP->getBranch("Application/LibraryModule");
+    pt = fromP->getBranch("Application");
     if (pt)
-    {
-        ensurePTree(p, "Application");
-        p->setPropTree("Application/LibraryModule", pt);
-    }
-    pt = fromP->getBranch("Application/prefix");
-    if (pt)
-    {
-        ensurePTree(p, "Application");
-        p->setPropTree("Application/prefix", pt);
-    }
+        synchronizePTree(ensurePTree(p, "Application"), pt, false, false);
 
     pt = fromP->queryBranch("Debug");
     if (pt)

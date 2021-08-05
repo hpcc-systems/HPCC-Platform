@@ -2749,6 +2749,19 @@ bool replaceConfigurationDirectoryEntry(const char *path,const char *frommask,co
     return true;
 }
 
+bool validateConfigurationDirectory(const IPropertyTree* useTree, const char* category, const char* component, const char* instance, const char* dirToValidate)
+{
+    if (isEmptyString(dirToValidate))
+        return false;
+
+    StringBuffer configDir;
+    if (!getConfigurationDirectory(useTree, category, component, instance, configDir))
+        return false;
+    
+    addPathSepChar(configDir);
+    return hasPrefix(dirToValidate, configDir, true);
+}
+
 static CriticalSection sect;
 static StringAttr processPath;
 const char * queryCurrentProcessPath()

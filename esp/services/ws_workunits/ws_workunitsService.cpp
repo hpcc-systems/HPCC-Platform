@@ -3027,6 +3027,8 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                 logMsg.append(", download");
             PROGLOG("%s", logMsg.str());
 
+            CWsWuFileHelper helper(directories);
+
             resp.setWuid(wuid.get());
             MemoryBuffer mb;
             WsWuInfo winfo(context, wuid);
@@ -3037,7 +3039,13 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             }
             else if ((strieq(File_Cpp,req.getType()) || strieq(File_Log,req.getType())) && notEmpty(req.getName()))
             {
-                winfo.getWorkunitCpp(req.getName(), req.getDescription(), req.getIPAddress(),mb, opt > 0, nullptr);
+                const char* file = req.getName();
+#ifndef _CONTAINERIZED
+                helper.validateFilePath(file, false, "run", nullptr, nullptr);
+#else
+                helper.validateFilePath(file, false, "query", nullptr, nullptr);
+#endif
+                winfo.getWorkunitCpp(file, req.getDescription(), req.getIPAddress(),mb, opt > 0, nullptr);
                 openSaveFile(context, opt, req.getSizeLimit(), req.getName(), HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_DLL,req.getType()))
@@ -3055,7 +3063,9 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             }
             else if (strncmp(req.getType(), File_ThorLog, 7) == 0)
             {
-                winfo.getWorkunitThorMasterLog(nullptr, req.getName(), mb, nullptr);
+                const char* file = req.getName();
+                helper.validateFilePath(file, true, "log", nullptr, nullptr);
+                winfo.getWorkunitThorMasterLog(nullptr, file, mb, nullptr);
                 openSaveFile(context, opt, req.getSizeLimit(), "thormaster.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_ThorSlaveLog,req.getType()))
@@ -3066,12 +3076,19 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             }
             else if (strieq(File_EclAgentLog,req.getType()))
             {
-                winfo.getWorkunitEclAgentLog(nullptr, req.getName(), req.getProcess(), mb, nullptr);
+                const char* file = req.getName();
+                helper.validateFilePath(file, true, "log", nullptr, nullptr);
+                winfo.getWorkunitEclAgentLog(nullptr, file, req.getProcess(), mb, nullptr);
                 openSaveFile(context, opt, req.getSizeLimit(), "eclagent.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_XML,req.getType()) && notEmpty(req.getName()))
             {
                 const char* name  = req.getName();
+#ifndef _CONTAINERIZED
+                helper.validateFilePath(name, false, "run", nullptr, nullptr);
+#else
+                helper.validateFilePath(name, false, "query", nullptr, nullptr);
+#endif
                 const char* ptr = strrchr(name, '/');
                 if (ptr)
                     ptr++;

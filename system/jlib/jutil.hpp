@@ -449,6 +449,7 @@ extern jlib_decl bool queryHPCCPKIKeyFiles(const char * *  _certificate,//HPCCCe
 
 extern jlib_decl const char * matchConfigurationDirectoryEntry(const char *path,const char *mask,StringBuffer &name, StringBuffer &component, StringBuffer &instance);
 extern jlib_decl bool replaceConfigurationDirectoryEntry(const char *path,const char *frommask,const char *tomask,StringBuffer &out);
+extern jlib_decl bool validateConfigurationDirectory(const IPropertyTree* useTree, const char* category, const char* component, const char* instance, const char* dirToValidate);
 
 extern jlib_decl const char *queryCurrentProcessPath();
 

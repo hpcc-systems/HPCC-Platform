@@ -2867,6 +2867,9 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
                 throw MakeStringException(ECLWATCH_ACCESS_TO_FILE_DENIED, "Only cfg or log file allowed.");
         }
 
+        if (!validateDropZonePath(nullptr, netaddr, sPath) && !validateConfigurationDirectory(nullptr, "log", nullptr, nullptr, sPath)) //The path should be the absolute path for the dropzone or log file.
+            throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid file path %s", sPath.str());
+
         RemoteFilename rfn;
         SocketEndpoint ep;
 #ifdef MACHINE_IP

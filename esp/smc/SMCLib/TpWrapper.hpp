@@ -225,5 +225,7 @@ extern TPWRAPPER_API void validateTargetName(const char* target);
 extern TPWRAPPER_API bool getSashaService(StringBuffer &serviceAddress, const char *service, bool failIfNotFound);
 extern TPWRAPPER_API bool getSashaServiceEP(SocketEndpoint &serviceEndpoint, const char *service, bool failIfNotFound);
 
+extern TPWRAPPER_API bool validateDropZonePath(const char* dropZoneName, const char* netAddr, const char* pathToCheck);
+
 #endif //_ESPWIZ_TpWrapper_HPP__
 
