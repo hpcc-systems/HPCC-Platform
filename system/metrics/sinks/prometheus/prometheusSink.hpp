@@ -59,7 +59,7 @@ public:
     void startServer();
 private:
     std::thread       m_collectThread;
-    MetricsReporter * m_metricsReporter;
+    MetricsManager * m_metricsManager;
     StringBuffer      m_metricsSinkName;
 
     std::atomic<bool>               m_processing{false};
@@ -92,7 +92,7 @@ protected:
 
     Server m_server;
 
-    virtual void startCollection(MetricsReporter * pReporter) override;
+    virtual void startCollection(MetricsManager * pReporter) override;
     virtual void stopCollection() override;
 
     static const char * mapHPCCMetricTypeToPrometheusStr(MetricType type);

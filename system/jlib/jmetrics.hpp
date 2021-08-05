@@ -30,9 +30,9 @@
 
 namespace hpccMetrics {
 
-class MetricsReporter;
+class MetricsManager;
 
-MetricsReporter jlib_decl &queryMetricsReporter();
+MetricsManager jlib_decl &queryMetricsManager();
 
 /*
  * Enumerates the metric type.
@@ -172,7 +172,7 @@ class jlib_decl MetricSink
 {
 public:
     virtual ~MetricSink() = default;
-    virtual void startCollection(MetricsReporter *pReporter) = 0;
+    virtual void startCollection(MetricsManager *pManager) = 0;
     virtual void stopCollection() = 0;
     const std::string &queryName() const { return name; }
     const std::string &queryType() const { return type; }
@@ -185,7 +185,7 @@ protected:
 protected:
     std::string name;
     std::string type;
-    MetricsReporter *pReporter = nullptr;
+    MetricsManager *pManager = nullptr;
 };
 
 
@@ -193,7 +193,7 @@ class jlib_decl PeriodicMetricSink : public MetricSink
 {
 public:
     virtual ~PeriodicMetricSink() override;
-    virtual void startCollection(MetricsReporter *pReporter) override;
+    virtual void startCollection(MetricsManager *pManager) override;
     virtual void stopCollection() override;
 
 protected:
@@ -222,11 +222,11 @@ struct SinkInfo
     std::vector<std::string> reportMetrics;   // vector of metrics to report (empty for none)
 };
 
-class jlib_decl MetricsReporter
+class jlib_decl MetricsManager
 {
 public:
-    MetricsReporter() = default;
-    ~MetricsReporter();
+    MetricsManager() = default;
+    ~MetricsManager();
     void init(IPropertyTree *pMetricsTree);
     void addSink(MetricSink *pSink, const char *name);  // for use by unit tests
     void addMetric(const std::shared_ptr<IMetric> &pMetric);
@@ -248,20 +248,20 @@ protected:
 
 
 //
-// Convenience function templates to create metrics and add to the reporter
+// Convenience function templates to create metrics and add to the manager
 template <typename T>
-std::shared_ptr<T> createMetricAndAddToReporter(const char *name, const char* desc)
+std::shared_ptr<T> createMetricAndAddToManager(const char *name, const char* desc)
 {
     std::shared_ptr<T> pMetric = std::make_shared<T>(name, desc);
-    queryMetricsReporter().addMetric(pMetric);
+    queryMetricsManager().addMetric(pMetric);
     return pMetric;
 }
 
 template <typename T>
-std::shared_ptr<CustomMetric<T>> createCustomMetricAndAddToReporter(const char *name, const char *desc, MetricType metricType, T &value)
+std::shared_ptr<CustomMetric<T>> createCustomMetricAndAddToManager(const char *name, const char *desc, MetricType metricType, T &value)
 {
     std::shared_ptr<CustomMetric<T>> pMetric = std::make_shared<CustomMetric<T>>(name, desc, metricType, value);
-    queryMetricsReporter().addMetric(pMetric);
+    queryMetricsManager().addMetric(pMetric);
     return pMetric;
 }
 

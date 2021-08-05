@@ -183,7 +183,7 @@ framework is independent of those dependencies. Sinks:
 * Convert metric native values into collection system specific measurements and reports
 * Drive the collection and reporting processes
 
-The third area of the framework is the glue logic, referred to as the *MetricsReporter*. It manages
+The third area of the framework is the glue logic, referred to as the *MetricsManager*. It manages
 the metrics system for the component. It provides the following:
 
 * Handles framework initialization
@@ -348,7 +348,7 @@ must obtain a reference to the reporter. Use the following example:
 ::
 
     using namespace hpccMetrics;
-    MetricsReporter &metricsReporter = queryMetricsReporter();
+    MetricsManager &metricsManager = queryMetricsManager();
 
 Metrics are wrapped by a standard C++ shared pointer. The component is responsible for maintaining a reference to
 each shared pointer during the lifetime of the metric. The framework keeps a weak pointer to each metric and thus
@@ -359,7 +359,7 @@ is assumed for all code examples that follow.
 ::
 
     std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("metricName", "description");
-    metricsReporter.add(pCounter);
+    metricsManager.add(pCounter);
 
 Note the metric type for both the shared pointer variable and in the *make_shared* template that creates the
 metric and returns a shared pointer. Simply substitute other metric types and handle any differences in the
@@ -383,7 +383,7 @@ added it, can be replaced by the following:
 
 ::
 
-    auto pCount = createMetricAndAddToReporter<CounterMetric>("metricName", "description");
+    auto pCount = createMetricAndAddToManager<CounterMetric>("metricName", "description");
 
 For convenience a similar function template exists for creating custom metrics. For a custom metric the framework
 must know the metric type and have a reference to the underlying state variable. The following template function
@@ -391,7 +391,7 @@ handles creating a custom metric and adding it to the reporter (which is created
 
 ::
 
-    auto pCustomMetric = createCustomMetricAndAddToReporter("customName", "description", metricType, value);
+    auto pCustomMetric = createCustomMetricAndAddToManager("customName", "description", metricType, value);
 
 
 Where:
