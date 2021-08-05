@@ -806,6 +806,8 @@ StatsMergeAction queryMergeMode(StatisticMeasure measure)
 //#define TIMESTAT(y) STAT(Time, y, SMeasureTimeNs)
 #define TIMESTAT(y) St##Time##y, SMeasureTimeNs, StatsMergeSum, St##Time##y, St##Cycle##y##Cycles, { NAMES(Time, y) }, { TAGS(Time, y) }
 #define WHENSTAT(y) St##When##y, SMeasureTimestampUs, StatsMergeKeepNonZero, St##When##y, St##When##y, { WHENNAMES(When, y) }, { WHENTAGS(When, y) }
+#define WHENFIRSTSTAT(y) St##When##y, SMeasureTimestampUs, StatsMergeMin, St##When##y, St##When##y, { WHENNAMES(When, y) }, { WHENTAGS(When, y) }
+#define WHENLASTSTAT(y) St##When##y, SMeasureTimestampUs, StatsMergeMax, St##When##y, St##When##y, { WHENNAMES(When, y) }, { WHENTAGS(When, y) }
 #define NUMSTAT(y) STAT(Num, y, SMeasureCount, StatsMergeSum)
 #define SIZESTAT(y) STAT(Size, y, SMeasureSize, StatsMergeSum)
 #define LOADSTAT(y) STAT(Load, y, SMeasureLoad, StatsMergeMax)
@@ -834,14 +836,14 @@ public:
 static const StatisticMeta statsMetaData[StMax] = {
     { StKindNone, SMeasureNone, StatsMergeKeepNonZero, StKindNone, StKindNone, { "none" }, { "@none" } },
     { StKindAll, SMeasureAll, StatsMergeKeepNonZero, StKindAll, StKindAll, { "all" }, { "@all" } },
-    { WHENSTAT(GraphStarted) }, // Deprecated - use WhenStart
-    { WHENSTAT(GraphFinished) }, // Deprecated - use WhenFinished
-    { WHENSTAT(FirstRow) },
-    { WHENSTAT(QueryStarted) }, // Deprecated - use WhenStart
-    { WHENSTAT(QueryFinished) }, // Deprecated - use WhenFinished
+    { WHENFIRSTSTAT(GraphStarted) }, // Deprecated - use WhenStarted
+    { WHENLASTSTAT(GraphFinished) }, // Deprecated - use WhenFinished
+    { WHENFIRSTSTAT(FirstRow) },
+    { WHENFIRSTSTAT(QueryStarted) }, // Deprecated - use WhenStarted
+    { WHENLASTSTAT(QueryFinished) }, // Deprecated - use WhenFinished
     { WHENSTAT(Created) },
     { WHENSTAT(Compiled) },
-    { WHENSTAT(WorkunitModified) },
+    { WHENLASTSTAT(WorkunitModified) },
     { TIMESTAT(Elapsed) },
     { TIMESTAT(LocalExecute) },
     { TIMESTAT(TotalExecute) },
@@ -919,8 +921,8 @@ static const StatisticMeta statsMetaData[StMax] = {
     { CYCLESTAT(TotalNested) },
     { TIMESTAT(Generate) },
     { CYCLESTAT(Generate) },
-    { WHENSTAT(Started) },
-    { WHENSTAT(Finished) },
+    { WHENFIRSTSTAT(Started) },
+    { WHENLASTSTAT(Finished) },
     { NUMSTAT(AnalyseExprs) },
     { NUMSTAT(TransformExprs) },
     { NUMSTAT(UniqueAnalyseExprs) },
