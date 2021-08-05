@@ -4115,8 +4115,8 @@ void CWsWuFileHelper::readWUFile(const char* wuid, const char* workingFolder, Ws
         fileNameWithPath.set(workingFolder).append(PATHSEPCHAR).append(fileName.str());
         winfo.getWorkunitEclAgentLog(nullptr, file, item.getProcess(), mb, fileNameWithPath.str());
         break;
-#endif
     }
+#endif
     case CWUFileType_XML:
     {
         StringBuffer name(item.getName());
