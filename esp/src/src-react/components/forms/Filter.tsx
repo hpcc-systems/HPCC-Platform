@@ -45,7 +45,6 @@ export const Filter: React.FunctionComponent<FilterProps> = ({
             {
                 flex: "1 1 auto",
                 borderTop: `4px solid ${theme.palette.themePrimary}`,
-                color: theme.palette.neutralPrimary,
                 display: "flex",
                 alignItems: "center",
                 fontWeight: FontWeights.semibold,
@@ -67,13 +66,9 @@ export const Filter: React.FunctionComponent<FilterProps> = ({
     const cancelIcon: IIconProps = { iconName: "Cancel" };
     const iconButtonStyles = {
         root: {
-            color: theme.palette.neutralPrimary,
             marginLeft: "auto",
             marginTop: "4px",
             marginRight: "2px",
-        },
-        rootHovered: {
-            color: theme.palette.neutralDark,
         },
     };
     const buttonStackStyles: IStackStyles = {

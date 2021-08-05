@@ -31,6 +31,7 @@ define([
     "hpcc/TargetComboBoxWidget",
     "hpcc/SelectionGridWidget",
     "hpcc/FilterDropDownWidget",
+    "dijit/Dialog",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",

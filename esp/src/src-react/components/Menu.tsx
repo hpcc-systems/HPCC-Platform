@@ -133,6 +133,7 @@ const subMenuItems: SubMenuItems = {
         { headerText: nlsHPCC.LogicalFiles, itemKey: "/files" },
         { headerText: nlsHPCC.LogicalFiles + " (L)", itemKey: "/files/legacy" },
         { headerText: nlsHPCC.LandingZones, itemKey: "/landingzone" },
+        { headerText: nlsHPCC.LandingZones + " (L)", itemKey: "/landingzone/legacy" },
         { headerText: nlsHPCC.Workunits, itemKey: "/dfuworkunits" },
         { headerText: nlsHPCC.Workunits + " (L)", itemKey: "/dfuworkunits/legacy" },
         { headerText: nlsHPCC.XRef, itemKey: "/xref" },

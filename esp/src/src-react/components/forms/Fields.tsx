@@ -2,9 +2,9 @@ import * as React from "react";
 import { Checkbox, Dropdown as DropdownBase, TextField, IDropdownOption, Link, ProgressIndicator } from "@fluentui/react";
 import { TextField as MaterialUITextField } from "@material-ui/core";
 import { Topology, TpLogicalClusterQuery } from "@hpcc-js/comms";
-import { TpGroupQuery } from "src/WsTopology";
+import { TpDropZoneQuery, TpGroupQuery, TpServiceQuery } from "src/WsTopology";
 import { States } from "src/WsWorkunits";
-import { States as DFUStates } from "src/FileSpray";
+import { FileList, States as DFUStates } from "src/FileSpray";
 import nlsHPCC from "src/nlsHPCC";
 
 interface DropdownProps {
@@ -13,6 +13,8 @@ interface DropdownProps {
     options?: IDropdownOption[];
     selectedKey?: string;
     optional?: boolean;
+    required?: boolean;
+    errorMessage?: string;
     onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
     placeholder?: string;
     className?: string;
@@ -23,7 +25,9 @@ const Dropdown: React.FunctionComponent<DropdownProps> = ({
     label,
     options = [],
     selectedKey,
+    required = false,
     optional = false,
+    errorMessage,
     onChange,
     placeholder,
     className
@@ -35,14 +39,15 @@ const Dropdown: React.FunctionComponent<DropdownProps> = ({
         setSelOptions(optional ? [{ key: "", text: "" }, ...options] : [...options]);
     }, [optional, options, selectedKey]);
 
-    return <DropdownBase key={key} label={label} className={className} defaultSelectedKey={selectedKey} onChange={onChange} placeholder={placeholder} options={selOptions} />;
+    return <DropdownBase key={key} label={label} errorMessage={errorMessage} required={required} className={className} defaultSelectedKey={selectedKey} onChange={onChange} placeholder={placeholder} options={selOptions} />;
 };
 
-export type FieldType = "string" | "number" | "checkbox" | "datetime" | "link" | "links" | "progress" |
+export type FieldType = "string" | "number" | "checkbox" | "datetime" | "dropdown" | "link" | "links" | "progress" |
     "workunit-state" |
     "file-type" | "file-sortby" |
     "queries-suspend-state" | "queries-active-state" |
-    "target-cluster" | "target-group" |
+    "target-cluster" | "target-dropzone" | "target-server" | "target-group" |
+    "target-dfuqueue" |
     "logicalfile-type" | "dfuworkunit-state";
 
 export type Values = { [name: string]: string | number | boolean | (string | number | boolean)[] };
@@ -53,6 +58,7 @@ interface BaseField {
     disabled?: (params) => boolean;
     placeholder?: string;
     readonly?: boolean;
+    required?: boolean;
 }
 
 interface StringField extends BaseField {
@@ -75,6 +81,12 @@ interface DateTimeField extends BaseField {
 interface CheckboxField extends BaseField {
     type: "checkbox";
     value?: boolean;
+}
+
+interface DropdownField extends BaseField {
+    type: "dropdown";
+    value?: string;
+    options: IDropdownOption[];
 }
 
 interface WorkunitStateField extends BaseField {
@@ -112,6 +124,21 @@ interface TargetGroupField extends BaseField {
     value?: string;
 }
 
+interface TargetServerField extends BaseField {
+    type: "target-server";
+    value?: string;
+}
+
+interface TargetDropzoneField extends BaseField {
+    type: "target-dropzone";
+    value?: string;
+}
+
+interface TargetDfuSprayQueueField extends BaseField {
+    type: "target-dfuqueue";
+    value?: string;
+}
+
 interface LogicalFileType extends BaseField {
     type: "logicalfile-type";
     value?: string;
@@ -140,11 +167,12 @@ interface ProgressField extends BaseField {
     value?: string;
 }
 
-type Field = StringField | NumericField | CheckboxField | DateTimeField | LinkField | LinksField | ProgressField |
+type Field = StringField | NumericField | CheckboxField | DateTimeField | DropdownField | LinkField | LinksField | ProgressField |
     WorkunitStateField |
     FileTypeField | FileSortByField |
     QueriesSuspendStateField | QueriesActiveStateField |
-    TargetClusterField | TargetGroupField |
+    TargetClusterField | TargetDropzoneField | TargetServerField | TargetGroupField |
+    TargetDfuSprayQueueField |
     LogicalFileType | DFUWorkunitStateField;
 
 export type Fields = { [id: string]: Field };
@@ -179,23 +207,94 @@ export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFi
     return <Dropdown { ...props } options={targetClusters} />;
 };
 
+export interface TargetDropzoneTextFieldProps extends DropdownProps {
+    key: string;
+    label?: string;
+    selectedKey?: string;
+    optional?: boolean;
+    className?: string;
+    onChange?: (event?: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
+    placeholder?: string;
+}
+
+export const TargetDropzoneTextField: React.FunctionComponent<TargetDropzoneTextFieldProps> = (props) => {
+
+    const [targetDropzones, setTargetDropzones] = React.useState<IDropdownOption[]>([]);
+
+    React.useEffect(() => {
+        TpDropZoneQuery({}).then(({ TpDropZoneQueryResponse }) => {
+            let selected: IDropdownOption;
+            let selectedIdx: number;
+            setTargetDropzones(
+                TpDropZoneQueryResponse?.TpDropZones?.TpDropZone?.map((row, idx) => {
+                    const retVal = {
+                        key: row.Name,
+                        text: row.Name,
+                        path: row.Path
+                    };
+                    if (retVal.key === props.selectedKey) {
+                        selected = retVal;
+                        selectedIdx = idx;
+                    }
+                    return retVal;
+                }) || []
+            );
+            if (selected) {
+                props.onChange(undefined, selected, selectedIdx);
+            }
+        });
+    }, [props]);
+
+    return <Dropdown {...props} options={targetDropzones} />;
+};
+
+export interface TargetServerTextFieldProps extends DropdownProps {
+    key: string;
+    label?: string;
+    className?: string;
+    optional?: boolean;
+    onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
+    placeholder?: string;
+    setSetDropzone?: (setDropzone: (dropzone: string) => void) => void;
+}
+
+export const TargetServerTextField: React.FunctionComponent<TargetServerTextFieldProps> = (props) => {
+
+    const [targetServers, setTargetServers] = React.useState<IDropdownOption[]>([]);
+    const [dropzone, setDropzone] = React.useState("");
+
+    props.setSetDropzone && props.setSetDropzone(setDropzone);
+
+    React.useEffect(() => {
+        TpDropZoneQuery({ Name: "" }).then(({ TpDropZoneQueryResponse }) => {
+            setTargetServers(
+                TpDropZoneQueryResponse?.TpDropZones?.TpDropZone?.filter(row => row.Name === dropzone)[0]?.TpMachines?.TpMachine?.map(n => {
+                    return {
+                        key: n.ConfigNetaddress,
+                        text: n.Netaddress,
+                        OS: n.OS
+                    };
+                }) || []
+            );
+        });
+    }, [props.selectedKey, dropzone]);
+
+    return <Dropdown {...props} options={targetServers} />;
+};
+
 export interface TargetGroupTextFieldProps {
     key: string;
     label?: string;
     selectedKey?: string;
     className?: string;
+    required?: boolean;
+    optional?: boolean;
+    errorMessage?: string;
     onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
     placeholder?: string;
 }
 
-export const TargetGroupTextField: React.FunctionComponent<TargetGroupTextFieldProps> = ({
-    key,
-    label,
-    selectedKey,
-    className,
-    onChange,
-    placeholder
-}) => {
+export const TargetGroupTextField: React.FunctionComponent<TargetGroupTextFieldProps> = (props) => {
 
     const [targetGroups, setTargetGroups] = React.useState<IDropdownOption[]>([]);
 
@@ -212,7 +311,118 @@ export const TargetGroupTextField: React.FunctionComponent<TargetGroupTextFieldP
         });
     }, []);
 
-    return <Dropdown key={key} label={label} selectedKey={selectedKey} className={className} onChange={onChange} placeholder={placeholder} options={targetGroups} />;
+    return <Dropdown {...props} options={targetGroups} />;
+};
+
+export interface TargetDfuSprayQueueTextFieldProps {
+    key: string;
+    label?: string;
+    selectedKey?: string;
+    className?: string;
+    required?: boolean;
+    optional?: boolean;
+    errorMessage?: string;
+    onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
+    placeholder?: string;
+}
+
+export const TargetDfuSprayQueueTextField: React.FunctionComponent<TargetDfuSprayQueueTextFieldProps> = (props) => {
+
+    const [dfuSprayQueues, setDfuSprayQueues] = React.useState<IDropdownOption[]>([]);
+
+    React.useEffect(() => {
+        TpServiceQuery({}).then(({ TpServiceQueryResponse }) => {
+            setDfuSprayQueues(
+                TpServiceQueryResponse.ServiceList.TpDfuServers.TpDfuServer.map(n => {
+                    return {
+                        key: n.Queue,
+                        text: n.Queue
+                    };
+                })
+            );
+        });
+    }, []);
+
+    return <Dropdown {...props} options={dfuSprayQueues} />;
+};
+
+export interface TargetFolderTextFieldProps {
+    key: string;
+    label?: string;
+    selectedKey?: string;
+    pathSepChar?: string;
+    machineAddress?: string;
+    machineDirectory?: string;
+    machineOS?: number;
+    className?: string;
+    required?: boolean;
+    optional?: boolean;
+    errorMessage?: string;
+    onChange?: (event?: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
+    placeholder?: string;
+}
+
+export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFieldProps> = (props) => {
+
+    const [folders, setFolders] = React.useState<IDropdownOption[]>([]);
+
+    const { pathSepChar, machineAddress, machineDirectory, machineOS } = { ...props };
+
+    const fetchFolders = React.useCallback((
+        pathSepChar: string, Netaddr: string, Path: string, OS: number, depth: number
+    ): Promise<IDropdownOption[]> => {
+        depth = depth || 0;
+        let retVal: IDropdownOption[] = [];
+        if (props.optional) {
+            retVal.push({ key: "", text: "" });
+        }
+        let _path = [Path, ""].join(pathSepChar).replace(machineDirectory, "");
+        _path = (_path.length > 1 && _path.substr(-1) === "/") ? _path.substr(0, _path.length - 1) : _path;
+        retVal.push({ key: Path, text: _path });
+        return new Promise((resolve, reject) => {
+            if (depth > 2) {
+                resolve(retVal);
+            } else {
+                FileList({
+                    request: {
+                        Netaddr: Netaddr,
+                        Path: Path,
+                        OS: OS
+                    },
+                    suppressExceptionToaster: true
+                }).then(({ FileListResponse }) => {
+                    const requests = [];
+                    FileListResponse.files.PhysicalFileStruct.forEach(file => {
+                        if (file.isDir) {
+                            if (Path + pathSepChar === "//") {
+                                requests.push(fetchFolders(pathSepChar, Netaddr, Path + file.name, OS, ++depth));
+                            } else {
+                                requests.push(fetchFolders(pathSepChar, Netaddr, [Path, file.name].join(pathSepChar), OS, ++depth));
+                            }
+                        }
+                    });
+                    Promise.all(requests).then(responses => {
+                        responses.forEach(response => {
+                            retVal = retVal.concat(response);
+                        });
+                        resolve(retVal);
+                    });
+                });
+            }
+        });
+    }, [machineDirectory, props.optional]);
+
+    React.useEffect(() => {
+        const _fetchFolders = async () => {
+            const folders = await fetchFolders(pathSepChar, machineAddress, machineDirectory, machineOS, 0);
+            setFolders(folders);
+        };
+        if (machineAddress && machineDirectory && machineOS) {
+            _fetchFolders();
+        }
+    }, [pathSepChar, machineAddress, machineDirectory, machineOS, fetchFolders]);
+
+    return <Dropdown {...props} options={folders} />;
 };
 
 const states = Object.keys(States).map(s => States[s]);
@@ -220,6 +430,7 @@ const dfustates = Object.keys(DFUStates).map(s => DFUStates[s]);
 
 export function createInputs(fields: Fields, onChange?: (id: string, newValue: any) => void) {
     const retVal: { id: string, label: string, field: any }[] = [];
+    let setDropzone = (dropzone: string) => { };
     for (const fieldID in fields) {
         const field = fields[fieldID];
         if (!field.disabled) {
@@ -227,7 +438,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
         }
         switch (field.type) {
             case "string":
-                field.value = field.value || "";
+                field.value = field.value !== undefined ? field.value : "";
                 retVal.push({
                     id: fieldID,
                     label: field.label,
@@ -240,6 +451,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         onChange={(evt, newValue) => onChange(fieldID, newValue)}
                         borderless={field.readonly && !field.multiline}
                         readOnly={field.readonly}
+                        required={field.required}
                         multiline={field.multiline}
                     />
                 });
@@ -252,13 +464,28 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     field: <Checkbox
                         key={fieldID}
                         name={fieldID}
+                        disabled={field.disabled("") ? true : false}
                         checked={field.value === true ? true : false}
                         onChange={(evt, newValue) => onChange(fieldID, newValue)}
                     />
                 });
                 break;
+            case "dropdown":
+                field.value = field.value !== undefined ? field.value : "";
+                retVal.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: <Dropdown
+                        key={fieldID}
+                        selectedKey={field.value}
+                        options={field.options}
+                        onChange={(ev, row) => onChange(fieldID, row.key)}
+                        placeholder={field.placeholder}
+                    />
+                });
+                break;
             case "datetime":
-                field.value = field.value || "";
+                field.value = field.value !== undefined ? field.value : "";
                 retVal.push({
                     id: fieldID,
                     label: field.label,
@@ -310,7 +537,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                 });
                 break;
             case "workunit-state":
-                field.value = field.value || "";
+                field.value = field.value !== undefined ? field.value : "";
                 retVal.push({
                     id: fieldID,
                     label: field.label,
@@ -330,7 +557,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                 });
                 break;
             case "file-type":
-                field.value = field.value || "";
+                field.value = field.value !== undefined ? field.value : "";
                 retVal.push({
                     id: fieldID,
                     label: field.label,
@@ -349,7 +576,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                 });
                 break;
             case "file-sortby":
-                field.value = field.value || "";
+                field.value = field.value !== undefined ? field.value : "";
                 retVal.push({
                     id: fieldID,
                     label: field.label,
@@ -369,7 +596,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                 });
                 break;
             case "queries-suspend-state":
-                field.value = field.value || "";
+                field.value = field.value !== undefined ? field.value : "";
                 retVal.push({
                     id: fieldID,
                     label: field.label,
@@ -390,7 +617,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                 });
                 break;
             case "queries-active-state":
-                field.value = field.value || "";
+                field.value = field.value !== undefined ? field.value : "";
                 retVal.push({
                     id: fieldID,
                     label: field.label,
@@ -408,7 +635,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                 });
                 break;
             case "target-cluster":
-                field.value = field.value || "";
+                field.value = field.value !== undefined ? field.value : "";
                 retVal.push({
                     id: fieldID,
                     label: field.label,
@@ -420,8 +647,38 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     />
                 });
                 break;
+            case "target-dropzone":
+                field.value = field.value !== undefined ? field.value : "";
+                retVal.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: <TargetDropzoneTextField
+                        key={fieldID}
+                        selectedKey={field.value}
+                        onChange={(ev, row) => {
+                            onChange(fieldID, row.key);
+                            setDropzone(row.key as string);
+                        }}
+                        placeholder={field.placeholder}
+                    />
+                });
+                break;
+            case "target-server":
+                field.value = field.value !== undefined ? field.value : "";
+                retVal.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: <TargetServerTextField
+                        key={fieldID}
+                        selectedKey={field.value}
+                        onChange={(ev, row) => onChange(fieldID, row.key)}
+                        placeholder={field.placeholder}
+                        setSetDropzone={_ => setDropzone = _}
+                    />
+                });
+                break;
             case "target-group":
-                field.value = field.value || "";
+                field.value = field.value !== undefined ? field.value : "";
                 retVal.push({
                     id: fieldID,
                     label: field.label,
@@ -433,8 +690,21 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     />
                 });
                 break;
+            case "target-dfuqueue":
+                field.value = field.value !== undefined ? field.value : "";
+                retVal.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: <TargetDfuSprayQueueTextField
+                        key={fieldID}
+                        selectedKey={field.value}
+                        onChange={(ev, row) => onChange(fieldID, row.key)}
+                        placeholder={field.placeholder}
+                    />
+                });
+                break;
             case "dfuworkunit-state":
-                field.value = field.value || "";
+                field.value = field.value !== undefined ? field.value : "";
                 retVal.push({
                     id: fieldID,
                     label: field.label,
@@ -453,7 +723,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                 });
                 break;
             case "logicalfile-type":
-                field.value = field.value || "Created";
+                field.value = field.value !== undefined ? field.value : "Created";
                 retVal.push({
                     id: fieldID,
                     label: field.label,
