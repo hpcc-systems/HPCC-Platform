@@ -1326,6 +1326,7 @@ class JlibIPTTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testArrayMarkup);
         CPPUNIT_TEST(testMergeConfig);
         CPPUNIT_TEST(testRemoveReuse);
+        CPPUNIT_TEST(testSpecialTags);
     CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -1885,7 +1886,9 @@ subX:
                 "cpptestval"
                 "</cpptest>");
         MemoryBuffer mb;
-        mb.reserveTruncate(4*1024+1); // Must be > PTREE_COMPRESS_THRESHOLD (see top of jptree.cpp)
+        byte * data = (byte *)mb.reserveTruncate(4*1024+1); // Must be > PTREE_COMPRESS_THRESHOLD (see top of jptree.cpp)
+        for (unsigned i=0; i < mb.length(); i++)
+            data[i] = (byte)i;
 
         testTree->addProp("binprop/subbinprop", "nonbinval1");
         testTree->addPropBin("binprop/subbinprop", mb.length(), mb.toByteArray());
@@ -2045,6 +2048,21 @@ subX:
         IPropertyTree *na1 = t->addPropTree("na", a1.getClear());
         CPPUNIT_ASSERT(na1->isArray(nullptr));
         CPPUNIT_ASSERT(na2->isArray(nullptr));
+    }
+    void testSpecialTags()
+    {
+        //Check a null tag is supported and preserved.
+        static constexpr const char * jsonMarkup = R"!!({
+   "": "default",
+   "end": "x"
+  })!!";
+
+        Owned<IPropertyTree> json = createPTreeFromJSONString(jsonMarkup, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+
+        //if we want the final compares to be less fragile (test will have to be updated if formatting changes) we could reparse and compare trees again
+        StringBuffer ml;
+        toJSON(json, ml.clear(), 2, JSON_Format|JSON_SortTags|JSON_HideRootArrayObject);
+        CPPUNIT_ASSERT(streq(ml, jsonMarkup));
     }
 };
 

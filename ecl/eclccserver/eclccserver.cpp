@@ -326,7 +326,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
         else if (!alreadyFailed)
         {
             DBGLOG("Executing %s", line);
-            unsigned retcode = runExternalCommand(nullptr, output, output, line, nullptr);
+            unsigned retcode = runExternalCommand(nullptr, output, output, line, nullptr, nullptr);
             if (retcode)
                 DBGLOG("Error: retcode=%u executing %s", retcode, line);
             return retcode;

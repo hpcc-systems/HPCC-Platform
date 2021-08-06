@@ -60,9 +60,10 @@ public:
     CEclSource(IIdAtom * _eclId, EclSourceType _type) : type(_type), eclId(_eclId)  { }
 
 //interface IEclSource
-    virtual IProperties * getProperties() { return NULL; }
-    virtual IIdAtom * queryEclId() const { return eclId; }
-    virtual EclSourceType queryType() const { return type; }
+    virtual IProperties * getProperties() override { return NULL; }
+    virtual IIdAtom * queryEclId() const override { return eclId; }
+    virtual EclSourceType queryType() const override { return type; }
+    virtual const char * queryPath() const override { return nullptr; }
 
 // new virtuals implemented by the child classes
     virtual IEclSource * getSource(IIdAtom * searchName) = 0;
@@ -80,11 +81,11 @@ public:
     CEclCollection(IIdAtom * _eclName, EclSourceType _type) : CEclSource(_eclName, _type) { expandedChildren = false; fullyDefined = false; }
 
 //interface IEclSource
-    virtual IFileContents * queryFileContents() { return NULL; }
+    virtual IFileContents * queryFileContents() override { return NULL; }
 
 //CEclSource virtuals
-    virtual IEclSource * getSource(IIdAtom * searchName);
-    virtual IEclSourceIterator * getContained();
+    virtual IEclSource * getSource(IIdAtom * searchName) override;
+    virtual IEclSourceIterator * getContained() override;
     virtual void populateChildren() {}
     virtual void populateDefinition() {}
 
@@ -153,12 +154,12 @@ public:
     FileSystemFile(const char * eclName, IFileContents * _fileContents);
 
 //interface IEclSource
-    virtual IProperties * getProperties();
-    virtual IFileContents * queryFileContents() { return fileContents; }
+    virtual IProperties * getProperties() override;
+    virtual IFileContents * queryFileContents() override { return fileContents; }
 
 //CEclSource virtuals
-    virtual IEclSource * getSource(IIdAtom * searchName) { return NULL; }
-    virtual IEclSourceIterator * getContained() { return NULL; }
+    virtual IEclSource * getSource(IIdAtom * searchName) override { return NULL; }
+    virtual IEclSourceIterator * getContained() override { return NULL; }
 
     bool checkValid();
 
@@ -184,14 +185,27 @@ public:
 
     void addFile(const char * eclName, IFileContents * fileContents);
     FileSystemDirectory * addDirectory(const char * name);
+    void processDependencies(IPropertyTree * dependTree, const char * path);
 
 protected:
-    virtual void populateChildren();
+    virtual void populateChildren() override;
 
 public:
     Linked<IFile> directory;
 };
 
+class PackageDependency : public CEclCollection
+{
+public:
+    PackageDependency(IIdAtom * _eclName, const char * _url) : CEclCollection(_eclName, ESTdependency), url(_url)
+    {
+    }
+
+    virtual const char * queryPath() const override { return url; }
+
+public:
+    StringBuffer url;
+};
 
 //MORE: Create a base class for some of this code.
 class FileSystemEclCollection : public CEclSourceCollection
@@ -207,7 +221,7 @@ public:
     virtual IEclSourceIterator * getContained(IEclSource * optParent);
     virtual void checkCacheValid();
 
-    void processFilePath(IErrorReceiver * errs, const char * sourceSearchPath, bool allowPlugins);
+    void processFilePath(IErrorReceiver * errs, const char * sourceSearchPath, bool allowPlugins, bool complainIfMissing);
     void processSingle(const char * attrName, IFileContents * contents);
 
 public:
@@ -455,6 +469,23 @@ void FileSystemDirectory::populateChildren()
 }
 
 
+void FileSystemDirectory::processDependencies(IPropertyTree * dependTree, const char * path)
+{
+    Owned<IPropertyTreeIterator> depends = dependTree->getElements(path);
+    ForEach(*depends)
+    {
+        IPropertyTree & cur = depends->query();
+        const char * name = cur.queryName();
+        // The special node __empty__ is added for an emptry string mapping "" =>, which is the entry for this package
+        if (isEmptyString(name) || strieq(name, "__empty__"))
+            continue;
+
+        const char * url = cur.queryProp("resolved");
+        PackageDependency * depend = new PackageDependency(createIdAtom(name), url);
+        contents.append(*depend);
+    }
+}
+
 //---------------------------------------------------------------------------------------
 
 IEclSource * FileSystemEclCollection::getSource(IEclSource * optParent, IIdAtom * searchName)
@@ -473,7 +504,7 @@ IEclSourceIterator * FileSystemEclCollection::getContained(IEclSource * optParen
     return parent->getContained();
 }
 
-void FileSystemEclCollection::processFilePath(IErrorReceiver * errs, const char * sourceSearchPath, bool allowPlugins)
+void FileSystemEclCollection::processFilePath(IErrorReceiver * errs, const char * sourceSearchPath, bool allowPlugins, bool complainIfMissing)
 {
     if (!sourceSearchPath)
         return;
@@ -501,11 +532,36 @@ void FileSystemEclCollection::processFilePath(IErrorReceiver * errs, const char 
             {
                 Owned<IDirectoryIterator> dir = file->directoryFiles(NULL, false, true);
                 root.expandDirectoryTree(dir, allowPlugins);
+
+                StringBuffer dependencyFilename(absolutePath);
+                addPathSepChar(dependencyFilename).append("package-lock.json");
+
+                Owned<IFile> dependencies = createIFile(dependencyFilename);
+                if (dependencies->isFile() == fileBool::foundYes)
+                {
+                    try
+                    {
+                        StringBuffer jsonText;
+                        jsonText.loadFile(dependencies);
+
+                        Owned<IPropertyTree> dependTree = createPTreeFromJSONString(jsonText);
+                        root.processDependencies(dependTree, "packages/*");
+                        root.processDependencies(dependTree, "packages/node_modules/*");
+                    }
+                    catch (IException * e)
+                    {
+                        StringBuffer errMsg;
+                        e->errorMessage(errMsg);
+                        errs->reportError(e->errorCode(), errMsg, dependencyFilename.str(), 0, 0, 0);
+                    }
+                }
             }
             else if (file->isFile() == fileBool::foundYes)
             {
                 root.addFile(*file, allowPlugins);
             }
+            else if (complainIfMissing)
+                ERRLOG("Path '%s' in search path not found", absolutePath.str());
         }
         else
         {
@@ -539,7 +595,7 @@ void FileSystemEclCollection::checkCacheValid()
 extern HQL_API IEclSourceCollection * createFileSystemEclCollection(IErrorReceiver *errs, const char * path, unsigned flags, unsigned trace)
 {
     Owned<FileSystemEclCollection> collection = new FileSystemEclCollection(trace);
-    collection->processFilePath(errs, path, (flags & ESFallowplugins) != 0);
+    collection->processFilePath(errs, path, (flags & ESFallowplugins) != 0, !(flags & ESFoptional));
     return collection.getClear();
 }
 
@@ -940,8 +996,8 @@ public:
         updateKey();
     }
 
-    virtual void populateChildren();
-    virtual void populateDefinition();
+    virtual void populateChildren() override;
+    virtual void populateDefinition() override;
 
     inline const char * queryName() { return elemTree ? elemTree->queryProp("@name") : NULL; }
 

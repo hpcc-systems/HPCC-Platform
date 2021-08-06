@@ -295,12 +295,14 @@ void ViewTransformerRegistry::addPlugins(const char * name)
     loadedPlugins->loadFromList(name);
 
     Owned<IErrorReceiver> errorReporter = createThrowingErrorReceiver();
-    dataServer.setown(createNewSourceFileEclRepository(errorReporter, name, ESFallowplugins, 0, false));
+    EclRepositoryManager collection;
+    collection.addSharedSourceFileEclRepository(errorReporter, name, ESFallowplugins, 0, false);
+    dataServer.setown(collection.createCompoundRepository());
 
     NullStatisticTarget nullStats;
     HqlScopeArray scopes;
-    HqlParseContext parseCtx(dataServer, NULL, NULL, nullStats);
-    HqlLookupContext ctx(parseCtx, errorReporter);
+    HqlParseContext parseCtx(NULL, NULL, nullStats);
+    HqlLookupContext ctx(parseCtx, errorReporter, dataServer);
     getRootScopes(scopes, dataServer, ctx);
 
     ForEachItemIn(i, scopes)

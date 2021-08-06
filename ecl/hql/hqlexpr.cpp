@@ -8705,7 +8705,7 @@ void CHqlRemoteScope::defineSymbol(IHqlExpression * expr)
         //remote scopes should possibly be held on a separate list, but that would require extra lookups in ::lookupSymbol
         //If this expression is defining a remote scope then it (currently) needs to be added to the symbols as well.
         //Don't add other symbols so we don't lose the original text (e.g., if syntax errors in dependent attributes)
-        if (dynamic_cast<IHqlRemoteScope *>(body) != NULL)
+        if ((dynamic_cast<IHqlRemoteScope *>(body) != NULL) || (dynamic_cast<CHqlMergedScope *>(body) != NULL))
             addToSymbols = true;
     }
 
@@ -9100,6 +9100,12 @@ inline bool canMergeDefinition(IHqlExpression * expr)
 
 IHqlExpression * CHqlMergedScope::lookupSymbol(IIdAtom * searchId, unsigned lookupFlags, HqlLookupContext & ctx)
 {
+    if (rootRepository != ctx.queryRepository())
+    {
+        HqlLookupContext childCtx(ctx);
+        childCtx.rootRepository = rootRepository;
+        return lookupSymbol(searchId, lookupFlags, childCtx);
+    }
     HqlCriticalBlock block(cs);
     OwnedHqlExpr resolved = CHqlScope::lookupSymbol(searchId, lookupFlags, ctx);
     if (resolved)
@@ -9148,7 +9154,7 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(IIdAtom * searchId, unsigned look
             if (previousMatch)
             {
                 IHqlScope * previousScope = previousMatch->queryScope();
-                mergeScope.setown(new CHqlMergedScope(searchId, previousScope->queryFullName()));
+                mergeScope.setown(new CHqlMergedScope(searchId, previousScope->queryFullName(), this, rootRepository));
                 mergeScope->addScope(previousScope);
             }
 
@@ -9169,18 +9175,27 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(IIdAtom * searchId, unsigned look
                 break;
         }
     }
-    if (mergeScope)
-    {
-        OwnedHqlExpr newScope = mergeScope.getClear()->closeExpr();
-        IHqlExpression * symbol = createSymbol(searchId, id, LINK(newScope), true, false, symbolFlags);
-        defineSymbol(symbol);
-        return LINK(symbol);
-    }
+
     if (previousMatch)
     {
+        IHqlScope * previousScope = previousMatch->queryScope();
+        if (!mergeScope && previousScope && previousScope->isRemoteScope())
+        {
+            mergeScope.setown(new CHqlMergedScope(searchId, previousScope->queryFullName(), this, rootRepository));
+            mergeScope->addScope(previousScope);
+        }
+
+        if (mergeScope)
+        {
+            OwnedHqlExpr newScope = mergeScope.getClear()->closeExpr();
+            IHqlExpression * symbol = createSymbol(searchId, id, LINK(newScope), true, false, symbolFlags);
+            defineSymbol(symbol);
+            return LINK(symbol);
+        }
         defineSymbol(LINK(previousMatch));
         return previousMatch.getClear();
     }
+
     //Indicate that no match was found to save work next time.
     defineSymbol(createSymbol(searchId, LINK(mergeNoMatchMarker), ob_exported));
     return NULL;
@@ -9211,26 +9226,27 @@ void CHqlMergedScope::ensureSymbolsDefined(HqlLookupContext & ctx)
             IIdAtom * curName = cur.queryId();
 
             OwnedHqlExpr prev = symbols.getLinkedValue(lower(curName));
-            if (prev)
+            //Unusual - check that this hasn't already been resolved by a call to lookupSymbol()
+            if (!prev)
             {
-                //Unusual - check that this hasn't already been resolved by a call to lookupSymbol()
-                //otherwise recreating a merged scope can cause problems.
-                if ((prev->getOperator() != no_mergedscope) && (prev != &cur))
+                //This is horrible... implicit plugins need to be defined in the merged scope so that getImplicitScopes()
+                //tell they should be implicitly imported.  But other symbols need to be marked with a placeholder so they
+                //are parsed later.
+                if (!canMergeDefinition(&cur))
                 {
-                    if (canMergeDefinition(prev))
-                    {
-                        //no_nobody means it need to be resolve - either because multiple matches, or because
-                        //a child scope hasn't resolved it yet.
-                        if (prev->getOperator() != no_nobody)
-                        {
-                            IHqlExpression * newSymbol = createSymbol(curName, id, NULL, true, false, 0);
-                            defineSymbol(newSymbol);
-                        }
-                    }
+                    defineSymbol(&OLINK(cur));
+                }
+                else
+                {
+                    //Add a symbol - which means it need to be resolved later
+                    IHqlExpression * newSymbol = createSymbol(curName, id, NULL, true, false, 0);
+                    defineSymbol(newSymbol);
                 }
             }
             else
-                defineSymbol(LINK(&cur));
+            {
+                //Definition of cur is hidden by prev.  Could consider reporting a warning in verbose mode
+            }
         }
     }
 
@@ -9266,6 +9282,18 @@ bool CHqlMergedScope::isEquivalentScope(const IHqlScope & other) const
     return false;
 }
 
+
+bool CHqlMergedScope::isRemoteScope() const
+{
+    if (!parent)
+        return false; // debatable - backward compatibility for the moment
+    ForEachItemIn(i, mergedScopes)
+    {
+        if (mergedScopes.item(i).isRemoteScope())
+            return true;
+    }
+    return false;
+}
 
 
 //==============================================================================================================
@@ -16369,11 +16397,6 @@ IHqlScope * queryScope(ITypeInfo * type)
     return queryUnqualifiedType(type)->castToScope();
 }
 
-IHqlRemoteScope * queryRemoteScope(IHqlScope * scope)
-{
-    return dynamic_cast<IHqlRemoteScope *>(scope);
-}
-
 IHqlAlienTypeInfo * queryAlienType(ITypeInfo * type)
 {
     return QUERYINTERFACE(queryUnqualifiedType(type), IHqlAlienTypeInfo);
@@ -16974,11 +16997,11 @@ static void gatherAttributeDependencies(HqlLookupContext & ctx, const char * ite
 extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * dataServer, const char * items)
 {
     NullStatisticTarget nullStats;
-    HqlParseContext parseCtx(dataServer, NULL, NULL, nullStats);
+    HqlParseContext parseCtx(nullptr, nullptr, nullStats);
     parseCtx.nestedDependTree.setown(createPTree("Dependencies"));
 
     Owned<IErrorReceiver> errorHandler = createNullErrorReceiver();
-    HqlLookupContext ctx(parseCtx, errorHandler);
+    HqlLookupContext ctx(parseCtx, errorHandler, dataServer);
     if (items && *items)
     {
         for (;;)

@@ -22,13 +22,72 @@
 #include "hqlcollect.hpp"
 
 typedef IArrayOf<IEclRepository> EclRepositoryArray;
+class EclRepositoryMapping : public CInterface
+{
+public:
+    EclRepositoryMapping(const char * _url, const char * _version, const char * _path)
+    : url(_url), version(_version), path(_path)
+    {
+    }
 
-extern HQL_API IEclRepository * createNewSourceFileEclRepository(IErrorReceiver *err, const char * pluginPath, unsigned flags, unsigned traceMask, bool includeInArchive);
-extern HQL_API IEclRepository * createSingleDefinitionEclRepository(const char * moduleName, const char * attrName, IFileContents * contents, bool includeInArchive);
+    StringAttr url;
+    StringAttr version;
+    StringAttr path;
+};
+
+class HQL_API EclRepositoryManager
+{
+public:
+    EclRepositoryManager() = default;
+    EclRepositoryManager(const EclRepositoryManager & other) = delete;
+
+    void addNestedRepository(IIdAtom * scopeId, IEclSourceCollection * source, bool includeInArchive);
+    void addQuerySourceFileEclRepository(IErrorReceiver *errs, const char * path, unsigned flags, unsigned trace);
+    void addSharedSourceFileEclRepository(IErrorReceiver *errs, const char * path, unsigned flags, unsigned trace, bool includeInArchive);
+    void addSingleDefinitionEclRepository(const char * moduleName, const char * attrName, IFileContents * contents, bool includeInArchive);
+    void addRepository(IEclSourceCollection * source, const char * rootScopeFullName, bool includeInArchive);
+
+    void addMapping(const char * url, const char * path);
+
+    IEclRepository * createCompoundRepository();
+    void inherit(const EclRepositoryManager & other);
+    void kill();
+
+    IEclRepository * resolveDependentRepository(IIdAtom * name, const char * defaultUrl, bool requireSHA);
+    void setOptions(const char * _eclRepoPath, bool _fetchRepos, bool _updateRepos, bool _verbose)
+    {
+        options.eclRepoPath.set(_eclRepoPath);
+        options.fetchRepos = _fetchRepos;
+        options.updateRepos = _updateRepos;
+        options.optVerbose = _verbose;
+    }
+
+protected:
+    IEclRepository * createNewSourceFileEclRepository(IErrorReceiver *errs, const char * path, unsigned flags, unsigned trace, bool includeInArchive);
+    IEclRepository * createSingleDefinitionEclRepository(const char * moduleName, const char * attrName, IFileContents * contents, bool includeInArchive);
+    IEclRepository * createRepository(IEclSourceCollection * source, const char * rootScopeFullName, bool includeInArchive);
+
+    unsigned runGitCommand(StringBuffer * output, const char *args, const char * cwd);
+
+private:
+    using DependencyInfo = std::pair<std::string, Shared<IEclRepository>>;
+    CIArrayOf<EclRepositoryMapping> repos;
+    std::vector<DependencyInfo> dependencies;
+    IArrayOf<IEclRepository> sharedSources;     // plugins, std library, bundles
+    IArrayOf<IEclRepository> allSources;        // also includes -D options
+
+    //Include all options in a nested struct to make it easy to ensure they are cloned
+    struct {
+        StringAttr eclRepoPath;
+        bool fetchRepos = false;
+        bool updateRepos = false;
+        bool optVerbose = false;
+    } options;
+};
+
 
 extern HQL_API IEclRepository * createCompoundRepositoryF(IEclRepository * repository, ...);
 extern HQL_API IEclRepository * createCompoundRepository(EclRepositoryArray & repositories);
-extern HQL_API IEclRepository * createRepository(IEclSourceCollection * source, const char * rootScopeFullName, bool includeInArchive);
 extern HQL_API IEclRepository * createNestedRepository(IIdAtom * name, IEclRepository * root);
 
 extern HQL_API void getRootScopes(HqlScopeArray & rootScopes, IHqlScope * scope, HqlLookupContext & ctx);

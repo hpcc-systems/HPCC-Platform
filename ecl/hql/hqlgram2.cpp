@@ -3733,7 +3733,7 @@ IHqlExpression *HqlGram::lookupSymbol(IHqlScope * scope, IIdAtom * searchName)
 
 unsigned HqlGram::getExtraLookupFlags(IHqlScope * scope)
 {
-    if (scope == containerScope)
+    if (scope->isEquivalentScope(*containerScope))
         return LSFsharedOK;
     return 0;
 }
@@ -10577,6 +10577,7 @@ void HqlGram::cloneInheritedAttributes(IHqlScope * scope, const attribute & errp
         IHqlScope * curBase = cur->queryScope();
         if (curBase)
         {
+            curBase->ensureSymbolsDefined(lookupCtx);
             IHqlExpression * baseVirtualAttr = cur->queryAttribute(_virtualSeq_Atom);
             bool baseIsLibrary = cur->getOperator() == no_libraryscopeinstance;
 
@@ -12733,6 +12734,7 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
         //NOTE: The container scope needs to be re-resolved globally so merged file trees are supported
         const char * moduleName = scope->queryFullName();
         Owned<IHqlScope> globalScope = getResolveDottedScope(moduleName, LSFpublic, ctx);
+        assertex(globalScope);
         HqlGram parser(globalScope, scope, contents, attrCtx, NULL, false, true);
         parser.setExpectedAttribute(name);
         parser.setAssociateWarnings(true);

@@ -39,7 +39,8 @@ public:
 enum EclSourceType { ESTnone,
                      ESTdefinition, ESTmodule,
                      ESTlibrary, ESTplugin,
-                     ESTcontainer = 0x10 };
+                     ESTcontainer = 0x10,
+                     ESTdependency };
 
 interface IProperties;
 interface IFileContents;
@@ -49,6 +50,7 @@ interface IEclSource : public IInterface
     virtual IProperties * getProperties() = 0;
     virtual IIdAtom * queryEclId() const = 0;
     virtual EclSourceType queryType() const = 0;
+    virtual const char * queryPath() const = 0;
 
     inline bool isImplicitModule() const
     {
@@ -72,6 +74,7 @@ typedef IArrayOf<IEclSourceCollection> EclSourceCollectionArray;
 enum EclSourceCollectionFlags {
     ESFnone = 0,
     ESFallowplugins = 0x0001,
+    ESFoptional = 0x0002,
 };
 
 extern HQL_API IEclSourceCollection * createFileSystemEclCollection(IErrorReceiver *errs, const char * path, unsigned flags, unsigned trace);
