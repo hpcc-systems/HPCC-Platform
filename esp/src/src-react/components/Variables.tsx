@@ -4,7 +4,7 @@ import { useConst } from "@fluentui/react-hooks";
 import * as Observable from "dojo/store/Observable";
 import { AlphaNumSortMemory } from "src/Memory";
 import nlsHPCC from "src/nlsHPCC";
-import { useWorkunitVariables } from "../hooks/Workunit";
+import { useWorkunitVariables } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
 import { DojoGrid } from "./DojoGrid";

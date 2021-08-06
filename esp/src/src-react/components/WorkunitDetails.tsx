@@ -4,7 +4,7 @@ import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import { WUStatus } from "src/react/index";
-import { useWorkunit } from "../hooks/Workunit";
+import { useWorkunit } from "../hooks/workunit";
 import { useFavorite } from "../hooks/favorite";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { pivotItemStyle } from "../layouts/pivot";
@@ -24,6 +24,7 @@ import { Queries } from "./Queries";
 import { Resources } from "./Resources";
 import { WUXMLSourceEditor } from "./SourceEditor";
 import { Workflows } from "./Workflows";
+import { Metrics } from "./Metrics";
 import { WorkunitPersona } from "./controls/StateIcon";
 
 const logger = scopedLogger("src-react/components/WorkunitDetails.tsx");
@@ -240,6 +241,9 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 </PivotItem>
                 <PivotItem headerText={nlsHPCC.Inputs} itemKey="inputs" itemCount={workunit?.SourceFileCount} style={pivotItemStyle(size, 0)}>
                     <SourceFiles wuid={wuid} />
+                </PivotItem>
+                <PivotItem headerText={nlsHPCC.Metrics} itemKey="metrics" itemCount={workunit?.TimerCount} style={pivotItemStyle(size, 0)}>
+                    <Metrics wuid={wuid} filter={{}} />
                 </PivotItem>
                 <PivotItem headerText={nlsHPCC.Timers} itemKey="timers" itemCount={workunit?.TimerCount} style={pivotItemStyle(size, 0)}>
                     <DojoAdapter widgetClassID="TimingPageWidget" params={{ Wuid: wuid }} />

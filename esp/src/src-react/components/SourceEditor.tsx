@@ -5,7 +5,7 @@ import { Editor, ECLEditor, XMLEditor } from "@hpcc-js/codemirror";
 import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
-import { useWorkunitXML } from "../hooks/Workunit";
+import { useWorkunitXML } from "../hooks/workunit";
 import { darkTheme } from "../themes";
 import { ShortVerticalDivider } from "./Common";
 import "eclwatch/css/cmDarcula.css";

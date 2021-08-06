@@ -1,7 +1,7 @@
 import * as React from "react";
 import { FontIcon, mergeStyleSets, Text, ThemeProvider, useTheme } from "@fluentui/react";
 import { Palette } from "@hpcc-js/common";
-import { useWorkunit } from "../../hooks/Workunit";
+import { useWorkunit } from "../../hooks/workunit";
 import { WUStateID } from "@hpcc-js/comms";
 
 const GOLDEN_RATIO = 1.618033988749894;

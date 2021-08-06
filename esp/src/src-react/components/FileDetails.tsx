@@ -5,7 +5,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { FileParts } from "./FileParts";
 import * as Utility from "src/Utility";
 import { getStateImageName, IFile } from "src/ESPLogicalFile";
-import { useFile, useDefFile } from "../hooks/File";
+import { useFile, useDefFile } from "../hooks/file";
 import { pivotItemStyle } from "../layouts/pivot";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { pushUrl } from "../util/history";

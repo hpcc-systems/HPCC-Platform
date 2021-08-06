@@ -14,6 +14,22 @@ import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { Workunits } from "./Workunits";
 import { useConst } from "@fluentui/react-hooks";
 
+const stackStyles: IStackStyles = {
+    root: {
+        height: "100%",
+    },
+};
+const stackItemStyles: IStackItemStyles = {
+    root: {
+        minHeight: 240
+    },
+};
+const outerStackTokens: IStackTokens = { childrenGap: 5 };
+const innerStackTokens: IStackTokens = {
+    childrenGap: 5,
+    padding: 10,
+};
+
 const service = new WorkunitsService({ baseUrl: "" });
 
 const wuidToDate = (wuid: string) => `${wuid.substr(1, 4)}-${wuid.substr(5, 2)}-${wuid.substr(7, 2)}`;
@@ -178,23 +194,6 @@ export const WorkunitsDashboard: React.FunctionComponent<WorkunitsDashboardProps
         map(row => ESPWorkunit.Get(row.Wuid, row))
     );
     workunitsStore.setData([...tablePipeline(workunits)]);
-
-    //  --- --- ---
-    const stackStyles: IStackStyles = {
-        root: {
-            height: "100%",
-        },
-    };
-    const stackItemStyles: IStackItemStyles = {
-        root: {
-            minHeight: 240
-        },
-    };
-    const outerStackTokens: IStackTokens = { childrenGap: 5 };
-    const innerStackTokens: IStackTokens = {
-        childrenGap: 5,
-        padding: 10,
-    };
 
     return <>
         <Stack tokens={outerStackTokens} styles={{ root: { height: "100%" } }}>

@@ -6,7 +6,7 @@ import * as Observable from "dojo/store/Observable";
 import { Memory } from "src/Memory";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
-import { useWorkunitExceptions } from "../hooks/Workunit";
+import { useWorkunitExceptions } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { DojoGrid } from "./DojoGrid";
 import { createCopyDownloadSelection } from "./Common";

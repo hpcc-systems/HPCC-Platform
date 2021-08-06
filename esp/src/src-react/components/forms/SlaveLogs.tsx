@@ -5,7 +5,7 @@ import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
 import * as FormStyles from "./landing-zone/styles";
-import { useWorkunit } from "../../hooks/Workunit";
+import { useWorkunit } from "../../hooks/workunit";
 
 const logger = scopedLogger("src-react/components/forms/SlaveLogs.tsx");
 

@@ -7,7 +7,7 @@ import * as ESPRequest from "src/ESPRequest";
 import { Memory } from "src/Memory";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
-import { HelperRow, useWorkunitHelpers } from "../hooks/Workunit";
+import { HelperRow, useWorkunitHelpers } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
 import { DojoGrid, selector } from "./DojoGrid";
