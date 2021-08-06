@@ -83,7 +83,7 @@ RUN apt-get install -y \
   jq
 
 RUN curl https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -
-RUN apt-add-repository "deb https://deb.nodesource.com/node_12.x $(lsb_release -sc) main"
+RUN apt-add-repository "deb https://deb.nodesource.com/node_14.x $(lsb_release -sc) main"
 RUN apt-get update -y
 RUN apt-get install -y nodejs
 
