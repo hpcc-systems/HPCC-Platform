@@ -2,7 +2,7 @@ import * as React from "react";
 import { CallbackFunction, Observable } from "@hpcc-js/util";
 import { userKeyValStore } from "src/KeyValStore";
 import { IContextualMenuItem } from "@fluentui/react";
-import { hashHistory } from "src-react/util/history";
+import { hashHistory } from "../util/history";
 
 const STORE_FAVORITES_ID = "favorites";
 const STORE_CACHE_TIMEOUT = 10000;

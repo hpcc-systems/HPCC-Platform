@@ -180,13 +180,16 @@ const Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], { // jshint ignor
     },
     submit(target) {
     },
-    fetchXML(onFetchXML) {
-        FileSpray.DFUWUFile({
+    fetchXML(onFetchXML?) {
+        return FileSpray.DFUWUFile({
             request: {
                 Wuid: this.Wuid
             }
         }).then(function (response) {
-            onFetchXML(response);
+            if (onFetchXML) {
+                onFetchXML(response);
+            }
+            return response;
         });
     },
     _resubmit(clone, resetWorkflow, callback) {

@@ -1,5 +1,6 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Pivot, PivotItem, Sticky, StickyPositionType } from "@fluentui/react";
+import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import * as FileSpray from "src/FileSpray";
@@ -10,6 +11,8 @@ import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { TableGroup } from "./forms/Groups";
 import { XMLSourceEditor } from "./SourceEditor";
+
+const logger = scopedLogger("src-react/components/DFUWorkunitDetails.tsx");
 
 interface DFUWorkunitDetailsProps {
     wuid: string;
@@ -30,9 +33,9 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
 
     React.useEffect(() => {
         setWorkunit(ESPDFUWorkunit.Get(wuid));
-        FileSpray.GetDFUWorkunit({ request: { wuid }}).then(response => {
+        FileSpray.GetDFUWorkunit({ request: { wuid } }).then(response => {
             setDfuWuData(response?.GetDFUWorkunitResponse?.result);
-        });
+        }).catch(logger.error);
     }, [wuid]);
 
     React.useEffect(() => {
@@ -43,9 +46,9 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
 
     React.useEffect(() => {
         if (!workunit) return;
-        workunit?.fetchXML(function (response) {
+        workunit?.fetchXML().then(response => {
             setWuXML(response);
-        });
+        }).catch(logger.error);
     }, [workunit]);
 
     const canSave = dfuWuData && (
@@ -146,7 +149,7 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
                             setProtected(value);
                             break;
                         default:
-                            console.log(id, value);
+                            logger.debug(`${id}:  ${value}`);
                     }
                 }} />
                 <hr />

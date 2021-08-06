@@ -1,12 +1,15 @@
 import * as React from "react";
 import { ThemeProvider } from "@fluentui/react";
 import { select as d3Select } from "@hpcc-js/common";
+import { scopedLogger } from "@hpcc-js/util";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { hashHistory } from "../util/history";
 import { router } from "../routes";
 import { darkTheme, lightTheme } from "../themes";
 import { DevTitle } from "./Title";
 import { MainNavigation, SubNavigation } from "./Menu";
+
+const logger = scopedLogger("src-react/components/Frame.tsx");
 
 interface DevFrameProps {
 }
@@ -20,7 +23,7 @@ export const DevFrame: React.FunctionComponent<DevFrameProps> = () => {
     React.useEffect(() => {
 
         const unlisten = hashHistory.listen(async (location, action) => {
-            console.log(location.pathname);
+            logger.debug(location.pathname);
             setLocation(location.pathname);
             document.title = `ECL Watch${location.pathname.split("/").join(" | ")}`;
             setBody(await router.resolve(location));

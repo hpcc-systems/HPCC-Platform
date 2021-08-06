@@ -2,9 +2,12 @@ import * as React from "react";
 import { Checkbox, ContextualMenu, IconButton, IDragOptions, mergeStyleSets, Modal, PrimaryButton, Stack, TextField, } from "@fluentui/react";
 import { useId } from "@fluentui/react-hooks";
 import { useForm, Controller } from "react-hook-form";
+import { scopedLogger } from "@hpcc-js/util";
 import * as WsWorkunits from "src/WsWorkunits";
 import * as FormStyles from "./landing-zone/styles";
 import nlsHPCC from "src/nlsHPCC";
+
+const logger = scopedLogger("src-react/components/forms/ZAPDialog.tsx");
 
 interface ZAPDialogValues {
     ZAPFileName: string;
@@ -76,33 +79,33 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                     method: "POST",
                     body: formData
                 })
-                .then(async response => ({
-                    filename: response.headers.get("Content-Disposition"),
-                    blob: await response.blob()
-                }))
-                .then(file => {
-                    let filename = "";
-                    const headers = file.filename.split(";");
-                    for (const header of headers) {
-                        if (header.trim().indexOf("filename=") > -1) {
-                            filename = header.replace("filename=", "");
+                    .then(async response => ({
+                        filename: response.headers.get("Content-Disposition"),
+                        blob: await response.blob()
+                    }))
+                    .then(file => {
+                        let filename = "";
+                        const headers = file.filename.split(";");
+                        for (const header of headers) {
+                            if (header.trim().indexOf("filename=") > -1) {
+                                filename = header.replace("filename=", "");
+                            }
                         }
-                    }
-                    const urlObj = window.URL.createObjectURL(file.blob);
+                        const urlObj = window.URL.createObjectURL(file.blob);
 
-                    const link = document.createElement("a");
-                    link.href = urlObj;
-                    link.download = filename;
-                    link.click();
-                    link.remove();
+                        const link = document.createElement("a");
+                        link.href = urlObj;
+                        link.download = filename;
+                        link.click();
+                        link.remove();
 
-                    closeForm();
-                    reset(defaultValues);
-                });
+                        closeForm();
+                        reset(defaultValues);
+                    })
+                    .catch(logger.error)
+                    ;
             },
-            err => {
-                console.log(err);
-            }
+            logger.info
         )();
     }, [closeForm, handleSubmit, reset]);
 
@@ -133,7 +136,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 }
             }
             reset(newValues);
-        });
+        }).catch(logger.error);
     }, [wuid, reset]);
 
     return <Modal
@@ -160,33 +163,33 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                     render={({
                         field: { onChange, name: fieldName, value }
                     }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        label={nlsHPCC.FileName}
-                        value={value}
-                    /> }
+                            name={fieldName}
+                            onChange={onChange}
+                            label={nlsHPCC.FileName}
+                            value={value}
+                        />}
                 />
                 <Controller
                     control={control} name="Wuid"
                     render={({
                         field: { onChange, name: fieldName, value }
                     }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        label={nlsHPCC.WUID}
-                        value={value}
-                    /> }
+                            name={fieldName}
+                            onChange={onChange}
+                            label={nlsHPCC.WUID}
+                            value={value}
+                        />}
                 />
                 <Controller
                     control={control} name="BuildVersion"
                     render={({
                         field: { onChange, name: fieldName, value }
                     }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        label={nlsHPCC.ESPBuildVersion}
-                        value={value}
-                    /> }
+                            name={fieldName}
+                            onChange={onChange}
+                            label={nlsHPCC.ESPBuildVersion}
+                            value={value}
+                        />}
                 />
                 <Controller
                     control={control} name="ESPIPAddress"
@@ -194,11 +197,11 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                         field: { onChange, name: fieldName, value },
                         fieldState: { error }
                     }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        label={nlsHPCC.ESPNetworkAddress}
-                        value={value}
-                    /> }
+                            name={fieldName}
+                            onChange={onChange}
+                            label={nlsHPCC.ESPNetworkAddress}
+                            value={value}
+                        />}
                 />
                 <Controller
                     control={control} name="ThorIPAddress"
@@ -206,83 +209,83 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                         field: { onChange, name: fieldName, value },
                         fieldState: { error }
                     }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        label={nlsHPCC.ThorNetworkAddress}
-                        value={value}
-                    /> }
+                            name={fieldName}
+                            onChange={onChange}
+                            label={nlsHPCC.ThorNetworkAddress}
+                            value={value}
+                        />}
                 />
                 <Controller
                     control={control} name="ProblemDescription"
                     render={({
                         field: { onChange, name: fieldName, value }
                     }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        label={nlsHPCC.Description}
-                        multiline={true}
-                        value={value}
-                    /> }
+                            name={fieldName}
+                            onChange={onChange}
+                            label={nlsHPCC.Description}
+                            multiline={true}
+                            value={value}
+                        />}
                 />
                 <Controller
                     control={control} name="WhatChanged"
                     render={({
                         field: { onChange, name: fieldName, value }
                     }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        label={nlsHPCC.History}
-                        multiline={true}
-                        value={value}
-                    /> }
+                            name={fieldName}
+                            onChange={onChange}
+                            label={nlsHPCC.History}
+                            multiline={true}
+                            value={value}
+                        />}
                 />
                 <Controller
                     control={control} name="WhereSlow"
                     render={({
                         field: { onChange, name: fieldName, value }
                     }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        label={nlsHPCC.Timings}
-                        multiline={true}
-                        value={value}
-                    /> }
+                            name={fieldName}
+                            onChange={onChange}
+                            label={nlsHPCC.Timings}
+                            multiline={true}
+                            value={value}
+                        />}
                 />
                 <Controller
                     control={control} name="Password"
                     render={({
                         field: { onChange, name: fieldName, value }
                     }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        label={nlsHPCC.PasswordOpenZAP}
-                        value={value}
-                        type="password"
-                        canRevealPassword={true}
-                        revealPasswordAriaLabel={nlsHPCC.ShowPassword}
-                    /> }
+                            name={fieldName}
+                            onChange={onChange}
+                            label={nlsHPCC.PasswordOpenZAP}
+                            value={value}
+                            type="password"
+                            canRevealPassword={true}
+                            revealPasswordAriaLabel={nlsHPCC.ShowPassword}
+                        />}
                 />
                 <div style={{ padding: "15px 0 7px 0" }}>
                     <div>
                         <Controller
                             control={control} name="IncludeThorSlaveLog"
                             render={({
-                                field : { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.IncludeSlaveLogs} /> }
+                                field: { onChange, name: fieldName, value }
+                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.IncludeSlaveLogs} />}
                         />
                     </div>
                     <div style={{ paddingTop: "10px" }}>
                         <Controller
                             control={control} name="SendEmail"
                             render={({
-                                field : { onChange, name: fieldName, value }
+                                field: { onChange, name: fieldName, value }
                             }) => <Checkbox
-                                name={fieldName}
-                                checked={value}
-                                onChange={onChange}
-                                label={nlsHPCC.SendEmail}
-                                disabled={emailDisabled}
-                            /> }
+                                    name={fieldName}
+                                    checked={value}
+                                    onChange={onChange}
+                                    label={nlsHPCC.SendEmail}
+                                    disabled={emailDisabled}
+                                />}
                         />
                     </div>
 
@@ -292,51 +295,51 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                     render={({
                         field: { onChange, name: fieldName, value }
                     }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        label={nlsHPCC.EmailTo}
-                        value={value}
-                        placeholder={nlsHPCC.SeeConfigurationManager}
-                        disabled={emailDisabled}
-                    /> }
+                            name={fieldName}
+                            onChange={onChange}
+                            label={nlsHPCC.EmailTo}
+                            value={value}
+                            placeholder={nlsHPCC.SeeConfigurationManager}
+                            disabled={emailDisabled}
+                        />}
                 />
                 <Controller
                     control={control} name="EmailFrom"
                     render={({
                         field: { onChange, name: fieldName, value }
                     }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        label={nlsHPCC.EmailFrom}
-                        value={value}
-                        placeholder={nlsHPCC.SeeConfigurationManager}
-                        disabled={emailDisabled}
-                    /> }
+                            name={fieldName}
+                            onChange={onChange}
+                            label={nlsHPCC.EmailFrom}
+                            value={value}
+                            placeholder={nlsHPCC.SeeConfigurationManager}
+                            disabled={emailDisabled}
+                        />}
                 />
                 <Controller
                     control={control} name="EmailSubject"
                     render={({
                         field: { onChange, name: fieldName, value }
                     }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        label={nlsHPCC.EmailSubject}
-                        value={value}
-                        disabled={emailDisabled}
-                    /> }
+                            name={fieldName}
+                            onChange={onChange}
+                            label={nlsHPCC.EmailSubject}
+                            value={value}
+                            disabled={emailDisabled}
+                        />}
                 />
                 <Controller
                     control={control} name="EmailBody"
                     render={({
                         field: { onChange, name: fieldName, value }
                     }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        label={nlsHPCC.EmailBody}
-                        multiline={true}
-                        value={value}
-                        disabled={emailDisabled}
-                    /> }
+                            name={fieldName}
+                            onChange={onChange}
+                            label={nlsHPCC.EmailBody}
+                            multiline={true}
+                            value={value}
+                            disabled={emailDisabled}
+                        />}
                 />
             </Stack>
             <Stack horizontal horizontalAlign="space-between" verticalAlign="end" styles={FormStyles.buttonStackStyles}>

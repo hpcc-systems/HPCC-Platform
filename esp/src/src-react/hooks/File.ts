@@ -1,7 +1,10 @@
 import * as React from "react";
 import { LogicalFile } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 import * as WsDfu from "src/WsDfu";
 import { useCounter } from "./Workunit";
+
+const logger = scopedLogger("src-react/hooks/file.ts");
 
 export function useFile(cluster: string, name: string): [LogicalFile, number, () => void] {
 
@@ -14,7 +17,7 @@ export function useFile(cluster: string, name: string): [LogicalFile, number, ()
         file.fetchInfo().then(response => {
             setFile(file);
             setLastUpdate(Date.now());
-        });
+        }).catch(logger.error);
     }, [cluster, name, count]);
 
     return [file, lastUpdate, increment];
@@ -29,10 +32,9 @@ export function useDefFile(cluster: string, name: string, format: "def" | "xml")
                 { "request": { "Name": name, "Format": format }
             }).then(response => {
                 setFile(response);
-            });
+            }).catch(logger.error);
         }
-    }, [cluster, name]);
+    }, [cluster, format, name]);
 
     return [file];
 }
-
