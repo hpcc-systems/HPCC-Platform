@@ -45,7 +45,7 @@ const Dropdown: React.FunctionComponent<DropdownProps> = ({
 export type FieldType = "string" | "number" | "checkbox" | "datetime" | "dropdown" | "link" | "links" | "progress" |
     "workunit-state" |
     "file-type" | "file-sortby" |
-    "queries-suspend-state" | "queries-active-state" |
+    "queries-priority" | "queries-suspend-state" | "queries-active-state" |
     "target-cluster" | "target-dropzone" | "target-server" | "target-group" |
     "target-dfuqueue" |
     "logicalfile-type" | "dfuworkunit-state";
@@ -101,6 +101,11 @@ interface FileTypeField extends BaseField {
 
 interface FileSortByField extends BaseField {
     type: "file-sortby";
+    value?: string;
+}
+
+interface QueriesPriorityField extends BaseField {
+    type: "queries-priority";
     value?: string;
 }
 
@@ -170,7 +175,7 @@ interface ProgressField extends BaseField {
 type Field = StringField | NumericField | CheckboxField | DateTimeField | DropdownField | LinkField | LinksField | ProgressField |
     WorkunitStateField |
     FileTypeField | FileSortByField |
-    QueriesSuspendStateField | QueriesActiveStateField |
+    QueriesPriorityField | QueriesSuspendStateField | QueriesActiveStateField |
     TargetClusterField | TargetDropzoneField | TargetServerField | TargetGroupField |
     TargetDfuSprayQueueField |
     LogicalFileType | DFUWorkunitStateField;
@@ -589,6 +594,25 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                             { key: "Oldest", text: nlsHPCC.Oldest },
                             { key: "Smallest", text: nlsHPCC.Smallest },
                             { key: "Largest", text: nlsHPCC.Largest }
+                        ]}
+                        onChange={(ev, row) => onChange(fieldID, row.key)}
+                        placeholder={field.placeholder}
+                    />
+                });
+                break;
+            case "queries-priority":
+                field.value = field.value === undefined ? "" : field.value;
+                retVal.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: <Dropdown
+                        key={fieldID}
+                        selectedKey={field.value.toString()}
+                        options={[
+                            { key: "", text: nlsHPCC.None },
+                            { key: "0", text: nlsHPCC.Low },
+                            { key: "1", text: nlsHPCC.High },
+                            { key: "2", text: nlsHPCC.SLA }
                         ]}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
