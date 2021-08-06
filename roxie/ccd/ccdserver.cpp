@@ -392,19 +392,38 @@ static const StatisticsMapping keyedJoinStatistics({ StNumServerCacheHits, StNum
                                                     StNumIndexRowsRead, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
                                                     StNumBlobCacheHits, StNumLeafCacheHits, StNumNodeCacheHits,
                                                     StNumBlobCacheAdds, StNumLeafCacheAdds, StNumNodeCacheAdds,
-                                                    StNumDiskRejected, StSizeAgentReply}, joinStatistics);
+                                                    StNumDiskRejected, StSizeAgentReply, StTimeAgentWait}, joinStatistics);
 static const StatisticsMapping indexStatistics({StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
                                                 StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
                                                 StNumPreFiltered, StNumPostFiltered, StNumIndexAccepted, StNumIndexRejected,
                                                 StNumBlobCacheHits, StNumLeafCacheHits, StNumNodeCacheHits,
                                                 StNumBlobCacheAdds, StNumLeafCacheAdds, StNumNodeCacheAdds,
-                                                StNumIndexRowsRead, StSizeAgentReply}, actStatistics);
+                                                StNumIndexRowsRead, StSizeAgentReply, StTimeAgentWait}, actStatistics);
 static const StatisticsMapping diskStatistics({StNumServerCacheHits, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
-                                               StNumDiskRejected, StSizeAgentReply }, actStatistics);
+                                               StNumDiskRejected, StSizeAgentReply, StTimeAgentWait }, actStatistics);
 static const StatisticsMapping soapStatistics({ StTimeSoapcall }, actStatistics);
 static const StatisticsMapping groupStatistics({ StNumGroups, StNumGroupMax }, actStatistics);
 static const StatisticsMapping sortStatistics({ StTimeSortElapsed }, actStatistics);
 static const StatisticsMapping indexWriteStatistics({ StNumDuplicateKeys }, actStatistics);
+
+// These ones get accumulated and reported in COMPLETE: line (and workunit). Excludes ones that are not sensible to sum across activities
+
+extern const StatisticsMapping globalStatistics({StWhenFirstRow, StTimeLocalExecute, StSizeMaxRowSize,
+                                                 StNumRowsProcessed, StNumSlaves, StNumStarts, StNumStops, StNumStrands,
+                                                 StNumScansPerRow, StNumAllocations, StNumAllocationScans,
+                                                 StTimeFirstExecute, StCycleLocalExecuteCycles,
+                                                 StNumAtmostTriggered,
+                                                 StNumServerCacheHits, StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
+                                                 StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
+                                                 StNumPreFiltered, StNumPostFiltered, StNumIndexAccepted, StNumIndexRejected,
+                                                 StNumIndexRowsRead, StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted,
+                                                 StNumBlobCacheHits, StNumLeafCacheHits, StNumNodeCacheHits,
+                                                 StNumBlobCacheAdds, StNumLeafCacheAdds, StNumNodeCacheAdds,
+                                                 StNumDiskRejected, StSizeAgentReply, StTimeAgentWait,
+                                                 StTimeSoapcall,
+                                                 StNumGroups,
+                                                 StTimeSortElapsed,
+                                                 StNumDuplicateKeys});
 
 //=================================================================================
 
@@ -3957,6 +3976,7 @@ public:
     mutable CriticalSection buffersCrit;
     unsigned processed;
     cycle_t totalCycles;
+    cycle_t unpackerWaitCycles;
     bool timeActivities;
 
 //private:   //vc6 doesn't like this being private yet accessed by nested class...
@@ -4086,6 +4106,7 @@ public:
         sentSequence = 0;
         resendSequence = 0;
         totalCycles = 0;
+        unpackerWaitCycles = 0;
         bufferStream.setown(createMemoryBufferSerialStream(tempRowBuffer));
         rowSource.setStream(bufferStream);
         timeActivities = defaultTimeActivities;
@@ -4406,6 +4427,7 @@ public:
         if (mc)
         {
             activity.noteStatistic(StSizeAgentReply, mc->queryBytesReceived());
+            activity.noteStatistic(StTimeAgentWait, cycle_to_nanosec(unpackerWaitCycles));
             if (ctx)
                 ctx->addAgentsReplyLen(mc->queryBytesReceived(), mc->queryDuplicates(), mc->queryResends());
         }
@@ -4594,6 +4616,7 @@ public:
     void getNextUnpacker()
     {
         mu.clear();
+        SimpleActivityTimer t(unpackerWaitCycles, timeActivities);
         unsigned ctxTraceLevel = activity.queryLogCtx().queryTraceLevel();
         unsigned timeout = remoteId.isSLAPriority() ? slaTimeout : (remoteId.isHighPriority() ? highTimeout : lowTimeout);
         unsigned checkInterval = activity.queryContext()->checkInterval();

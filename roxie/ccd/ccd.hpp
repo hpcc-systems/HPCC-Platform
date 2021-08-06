@@ -552,6 +552,8 @@ public:
 extern void putStatsValue(IPropertyTree *node, const char *statName, const char *statType, unsigned __int64 val);
 extern void putStatsValue(StringBuffer &reply, const char *statName, const char *statType, unsigned __int64 val);
 
+extern const StatisticsMapping globalStatistics;
+
 class ContextLogger : implements IRoxieContextLogger, public CInterface
 {
 protected:
@@ -576,7 +578,7 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
 
-    ContextLogger() : stats(allStatistics)
+    ContextLogger() : stats(globalStatistics, true)
     {
         ctxTraceLevel = traceLevel;
         intercept = false;
