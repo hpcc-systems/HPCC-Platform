@@ -35,6 +35,8 @@ server := '127.0.0.1' : STORED('CouchbaseServerIp');
 thebucket := 'travel-sample';
 user := 'traveluser' : STORED('CouchbaseBucketUser');
 password := 'travelpass' : STORED('CouchbaseBucketPass');
+operationTimeoutMs := 15.0 : STORED('CouchbaseOperationTimeoutMs');
+configTotalTimeoutMs := 45.0 : STORED('CouchbaseConfigTotalTimeoutMs');
 
 namerec := RECORD
   string name;
@@ -174,55 +176,55 @@ END;
 
 /* Due to inconsistencies found in couchbase travel-sample, some queries explicitly omit records of type landmark and hotel */
 
-integer countAllRecords() := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(5.5), config_total_timeout(15))
+integer countAllRecords() := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(operationTimeoutMs), config_total_timeout(configTotalTimeoutMs))
   SELECT count(*) from `travel-sample` as mybucketalias where mybucketalias.type != 'landmark' and mybucketalias.type != 'hotel';
 ENDEMBED;
 
-integer countTypes() := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(5.5), config_total_timeout(15))
+integer countTypes() := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(operationTimeoutMs), config_total_timeout(configTotalTimeoutMs))
   SELECT COUNT(DISTINCT mybucketalias.type) from `travel-sample` as mybucketalias where mybucketalias.type != 'landmark' and mybucketalias.type != 'hotel';
 ENDEMBED;
 
-dataset(typerec) allTypes() := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(5.5), config_total_timeout(15))
+dataset(typerec) allTypes() := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(operationTimeoutMs), config_total_timeout(configTotalTimeoutMs))
   SELECT DISTINCT mybucketalias.type from `travel-sample` as mybucketalias where mybucketalias.type IS NOT NULL and mybucketalias.type != 'landmark' and mybucketalias.type != 'hotel';
 ENDEMBED;
 
-dataset(travelrec) fulltravelrecords() := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(5.5), config_total_timeout(15))
+dataset(travelrec) fulltravelrecords() := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(operationTimeoutMs), config_total_timeout(configTotalTimeoutMs))
   select mybucketalias.* from `travel-sample` as mybucketalias where callsign = 'MILE-AIR' limit 1;
 ENDEMBED;
 
-dataset(namerec) airlinenames() := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(5.5), config_total_timeout(15))
+dataset(namerec) airlinenames() := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(operationTimeoutMs), config_total_timeout(configTotalTimeoutMs))
   select mybucketalias.name from `travel-sample` as mybucketalias where mybucketalias.type = 'airline' limit 1;
 ENDEMBED;
 
-dataset(airportrec) airportrecords() := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(5.5), config_total_timeout(15))
+dataset(airportrec) airportrecords() := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(operationTimeoutMs), config_total_timeout(configTotalTimeoutMs))
   select mybucketalias.* from `travel-sample` as mybucketalias where mybucketalias.type = 'airport' limit 1;
 ENDEMBED;
 
-dataset(airportrec) usairportrecords() := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(5.5), config_total_timeout(15))
+dataset(airportrec) usairportrecords() := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(operationTimeoutMs), config_total_timeout(configTotalTimeoutMs))
   select mybucketalias.* from `travel-sample` as mybucketalias where mybucketalias.type = 'airport' and country = 'United States' limit 1;
 ENDEMBED;
 
-dataset(airportrec) airportrecordsbycountry(string m) := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(5.5), config_total_timeout(15))
+dataset(airportrec) airportrecordsbycountry(string m) := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(operationTimeoutMs), config_total_timeout(configTotalTimeoutMs))
   select mybucketalias.* from `travel-sample` as mybucketalias where mybucketalias.type = 'airport' and country = $m limit 1;
 ENDEMBED;
 
-dataset(airportrec) airportrecordsbyid(integer id) := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(5.5), config_total_timeout(15))
+dataset(airportrec) airportrecordsbyid(integer id) := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(operationTimeoutMs), config_total_timeout(configTotalTimeoutMs))
   select mybucketalias.* from `travel-sample` as mybucketalias where mybucketalias.type = 'airport' and id = $id limit 1;
 ENDEMBED;
 
-dataset(airportrec) airportrecordsbyaltitude(integer alt) := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(5.5), config_total_timeout(15))
+dataset(airportrec) airportrecordsbyaltitude(integer alt) := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(operationTimeoutMs), config_total_timeout(configTotalTimeoutMs))
   select mybucketalias.* from `travel-sample` as mybucketalias where mybucketalias.type = 'airport' and geo.alt >= $alt limit 1;
 ENDEMBED;
 
-dataset(airportrec) airportrecordsbycoordinates(row(georec) values) := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(5.5), config_total_timeout(15))
+dataset(airportrec) airportrecordsbycoordinates(row(georec) values) := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(operationTimeoutMs), config_total_timeout(configTotalTimeoutMs))
   select mybucketalias.* from `travel-sample` as mybucketalias where mybucketalias.type = 'airport' and geo.lat = $lat and geo.lon = $lon limit 10;
 ENDEMBED;
 
-dataset(routerec) fullroute()  := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(5.5), config_total_timeout(15))
+dataset(routerec) fullroute()  := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(operationTimeoutMs), config_total_timeout(configTotalTimeoutMs))
   SELECT mybucketalias.* FROM `travel-sample` as mybucketalias WHERE type = 'route' and sourceairport IS NOT NULL LIMIT 1
 ENDEMBED;
 
-dataset(routerec) routeschedule(string sair, string dair)  := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(5.5), config_total_timeout(15))
+dataset(routerec) routeschedule(string sair, string dair)  := EMBED(couchbase : server(server), user(user), password(password), bucket(thebucket), detailed_errcodes(1), operation_timeout(operationTimeoutMs), config_total_timeout(configTotalTimeoutMs))
   SELECT mybucketalias.schedule  FROM `travel-sample` as mybucketalias WHERE type = 'route' and sourceairport = $sair and destinationairport = $dair  LIMIT 1
 ENDEMBED;
 
