@@ -82,8 +82,8 @@ build_image() {
        --build-arg BUILD_THREADS=${BUILD_THREADS} \
        --build-arg GITHUB_TOKEN=${GITHUB_TOKEN} \
        ${rest} ${name}/
+    push_image $name $label
   fi
-  push_image $name $label
 }
 
 push_image() {
