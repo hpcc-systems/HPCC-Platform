@@ -71,6 +71,7 @@ public:
         CPPUNIT_TEST(Test_custom_metric);
         CPPUNIT_TEST(Test_manager_calls_sink_to_start_and_stop_collection);
         CPPUNIT_TEST(Test_manager_manages_metrics_properly);
+        CPPUNIT_TEST(Test_scoped_gauge_updater_classes);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -175,6 +176,40 @@ protected:
         CPPUNIT_ASSERT_EQUAL(numAdded, numMetrics);
 
         frameworkTestManager.stopCollecting();
+    }
+
+
+    void Test_scoped_gauge_updater_classes()
+    {
+        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("test-gauge", "description");
+        CPPUNIT_ASSERT_EQUAL(0, static_cast<int>(pGauge->queryValue()));
+
+        //
+        // Test the scoped updater with a value of 1. Should increment in the block, and return
+        // to 0 when exiting the block
+        {
+            ScopedGaugeUpdater gaugeUpdater(*pGauge, 1);
+            CPPUNIT_ASSERT_EQUAL(1, static_cast<int>(pGauge->queryValue()));
+        }
+        CPPUNIT_ASSERT_EQUAL(0, static_cast<int>(pGauge->queryValue()));
+
+        //
+        // Same test, but a value > 1
+        {
+            ScopedGaugeUpdater gaugeUpdater(*pGauge, 3);
+            CPPUNIT_ASSERT_EQUAL(3, static_cast<int>(pGauge->queryValue()));
+        }
+        CPPUNIT_ASSERT_EQUAL(0, static_cast<int>(pGauge->queryValue()));
+
+        //
+        // Test the scoped decrementer
+        pGauge->adjust(1);
+        CPPUNIT_ASSERT_EQUAL(1, static_cast<int>(pGauge->queryValue()));
+        {
+            ScopedGaugeDecrementer gaugeDecrementer(*pGauge, 1);
+        }
+        CPPUNIT_ASSERT_EQUAL(0, static_cast<int>(pGauge->queryValue()));
+
     }
 
 protected:
