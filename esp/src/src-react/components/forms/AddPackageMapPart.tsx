@@ -1,13 +1,12 @@
 import * as React from "react";
-import { Checkbox, ContextualMenu, IconButton, IDragOptions, mergeStyleSets, Modal, PrimaryButton, Stack, TextField, } from "@fluentui/react";
-import { useId } from "@fluentui/react-hooks";
+import { Checkbox, DefaultButton, PrimaryButton, Stack, TextField, } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsPackageMaps from "src/WsPackageMaps";
 import nlsHPCC from "src/nlsHPCC";
-import * as FormStyles from "./landing-zone/styles";
+import { MessageBox } from "../../layouts/MessageBox";
 
-const logger = scopedLogger("src-react/components/forms/AddPackageMapPart.tsx");
+const logger = scopedLogger("../components/forms/AddPackageMapPart.tsx");
 
 interface AddPackageMapPartValues {
     PartName: string;
@@ -84,157 +83,123 @@ export const AddPackageMapPart: React.FunctionComponent<AddPackageMapPartProps> 
         )();
     }, [closeForm, handleSubmit, packageMap, refreshTable, reset, store, target]);
 
-    const titleId = useId("title");
-
-    const dragOptions: IDragOptions = {
-        moveMenuItemText: nlsHPCC.Move,
-        closeMenuItemText: nlsHPCC.Close,
-        menu: ContextualMenu,
-    };
-
-    const componentStyles = mergeStyleSets(
-        FormStyles.componentStyles,
-        {
-            container: {
-                minWidth: 620,
-            }
-        }
-    );
-
-    return <Modal
-        titleAriaId={titleId}
-        isOpen={showForm}
-        onDismiss={closeForm}
-        isBlocking={false}
-        containerClassName={componentStyles.container}
-        dragOptions={dragOptions}
-    >
-        <div className={componentStyles.header}>
-            <span id={titleId}>{nlsHPCC.AddProcessMap}</span>
-            <IconButton
-                styles={FormStyles.iconButtonStyles}
-                iconProps={FormStyles.cancelIcon}
-                ariaLabel={nlsHPCC.CloseModal}
-                onClick={closeForm}
+    return <MessageBox title={nlsHPCC.AddProcessMap} show={showForm} setShow={closeForm}
+        footer={<>
+            <PrimaryButton text={nlsHPCC.Submit} onClick={handleSubmit(onSubmit)} />
+            <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
+        </>}>
+        <Stack>
+            <Controller
+                control={control} name="PartName"
+                render={({
+                    field: { onChange, name: fieldName, value },
+                    fieldState: { error }
+                }) => <TextField
+                        name={fieldName}
+                        onChange={onChange}
+                        placeholder={nlsHPCC.PartName}
+                        required={true}
+                        label={nlsHPCC.PartName}
+                        value={value}
+                        errorMessage={error && error?.message}
+                    />}
+                rules={{
+                    required: nlsHPCC.ValidationErrorRequired
+                }}
             />
-        </div>
-        <div className={componentStyles.body}>
-            <Stack>
+            <Controller
+                control={control} name="Content"
+                render={({
+                    field: { onChange, name: fieldName, value },
+                    fieldState: { error }
+                }) => <TextField
+                        name={fieldName}
+                        onChange={onChange}
+                        required={true}
+                        label={nlsHPCC.Content}
+                        value={value}
+                        multiline={true}
+                        rows={16}
+                        errorMessage={error && error?.message}
+                    />}
+                rules={{
+                    required: nlsHPCC.ValidationErrorRequired
+                }}
+            />
+            <Controller
+                control={control} name="DaliIp"
+                render={({
+                    field: { onChange, name: fieldName, value },
+                    fieldState: { error }
+                }) => <TextField
+                        name={fieldName}
+                        onChange={onChange}
+                        placeholder={nlsHPCC.DaliIP}
+                        label={nlsHPCC.DaliIP}
+                        value={value}
+                    />}
+            />
+            <Controller
+                control={control} name="SourceProcess"
+                render={({
+                    field: { onChange, name: fieldName, value },
+                    fieldState: { error }
+                }) => <TextField
+                        name={fieldName}
+                        onChange={onChange}
+                        placeholder={nlsHPCC.SourceProcess}
+                        label={nlsHPCC.SourceProcess}
+                        value={value}
+                    />}
+            />
+            <div style={{ paddingTop: "15px" }}>
                 <Controller
-                    control={control} name="PartName"
+                    control={control} name="DeletePrevious"
                     render={({
-                        field: { onChange, name: fieldName, value },
-                        fieldState: { error }
-                    }) => <TextField
-                            name={fieldName}
-                            onChange={onChange}
-                            placeholder={nlsHPCC.PartName}
-                            required={true}
-                            label={nlsHPCC.PartName}
-                            value={value}
-                            errorMessage={error && error?.message}
-                        />}
-                    rules={{
-                        required: nlsHPCC.ValidationErrorRequired
-                    }}
+                        field: { onChange, name: fieldName, value }
+                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.DeletePrevious} />}
                 />
+            </div>
+            <div style={{ paddingTop: "10px" }}>
                 <Controller
-                    control={control} name="Content"
+                    control={control} name="AllowForeignFiles"
                     render={({
-                        field: { onChange, name: fieldName, value },
-                        fieldState: { error }
-                    }) => <TextField
-                            name={fieldName}
-                            onChange={onChange}
-                            required={true}
-                            label={nlsHPCC.Content}
-                            value={value}
-                            multiline={true}
-                            rows={16}
-                            errorMessage={error && error?.message}
-                        />}
-                    rules={{
-                        required: nlsHPCC.ValidationErrorRequired
-                    }}
+                        field: { onChange, name: fieldName, value }
+                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.AllowForeignFiles} />}
                 />
+            </div>
+            <div style={{ paddingTop: "10px" }}>
                 <Controller
-                    control={control} name="DaliIp"
+                    control={control} name="PreloadAllPackages"
                     render={({
-                        field: { onChange, name: fieldName, value },
-                        fieldState: { error }
-                    }) => <TextField
-                            name={fieldName}
-                            onChange={onChange}
-                            placeholder={nlsHPCC.DaliIP}
-                            label={nlsHPCC.DaliIP}
-                            value={value}
-                        />}
+                        field: { onChange, name: fieldName, value }
+                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.PreloadAllPackages} />}
                 />
+            </div>
+            <div style={{ paddingTop: "10px" }}>
                 <Controller
-                    control={control} name="SourceProcess"
+                    control={control} name="UpdateSuperFiles"
                     render={({
-                        field: { onChange, name: fieldName, value },
-                        fieldState: { error }
-                    }) => <TextField
-                            name={fieldName}
-                            onChange={onChange}
-                            placeholder={nlsHPCC.SourceProcess}
-                            label={nlsHPCC.SourceProcess}
-                            value={value}
-                        />}
+                        field: { onChange, name: fieldName, value }
+                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.UpdateSuperFiles} />}
                 />
-                <div style={{ paddingTop: "15px" }}>
-                    <Controller
-                        control={control} name="DeletePrevious"
-                        render={({
-                            field: { onChange, name: fieldName, value }
-                        }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.DeletePrevious} />}
-                    />
-                </div>
-                <div style={{ paddingTop: "10px" }}>
-                    <Controller
-                        control={control} name="AllowForeignFiles"
-                        render={({
-                            field: { onChange, name: fieldName, value }
-                        }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.AllowForeignFiles} />}
-                    />
-                </div>
-                <div style={{ paddingTop: "10px" }}>
-                    <Controller
-                        control={control} name="PreloadAllPackages"
-                        render={({
-                            field: { onChange, name: fieldName, value }
-                        }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.PreloadAllPackages} />}
-                    />
-                </div>
-                <div style={{ paddingTop: "10px" }}>
-                    <Controller
-                        control={control} name="UpdateSuperFiles"
-                        render={({
-                            field: { onChange, name: fieldName, value }
-                        }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.UpdateSuperFiles} />}
-                    />
-                </div>
-                <div style={{ paddingTop: "10px" }}>
-                    <Controller
-                        control={control} name="UpdateCloneFrom"
-                        render={({
-                            field: { onChange, name: fieldName, value }
-                        }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.UpdateCloneFrom} />}
-                    />
-                </div>
-                <div style={{ paddingTop: "10px" }}>
-                    <Controller
-                        control={control} name="AppendCluster"
-                        render={({
-                            field: { onChange, name: fieldName, value }
-                        }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.AppendCluster} />}
-                    />
-                </div>
-            </Stack>
-            <Stack horizontal horizontalAlign="space-between" verticalAlign="end" styles={FormStyles.buttonStackStyles}>
-                <PrimaryButton text={nlsHPCC.Submit} onClick={handleSubmit(onSubmit)} />
-            </Stack>
-        </div>
-    </Modal>;
+            </div>
+            <div style={{ paddingTop: "10px" }}>
+                <Controller
+                    control={control} name="UpdateCloneFrom"
+                    render={({
+                        field: { onChange, name: fieldName, value }
+                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.UpdateCloneFrom} />}
+                />
+            </div>
+            <div style={{ paddingTop: "10px" }}>
+                <Controller
+                    control={control} name="AppendCluster"
+                    render={({
+                        field: { onChange, name: fieldName, value }
+                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.AppendCluster} />}
+                />
+            </div>
+        </Stack>
+    </MessageBox>;
 };

@@ -9,7 +9,7 @@ import { darkTheme, lightTheme } from "../themes";
 import { DevTitle } from "./Title";
 import { MainNavigation, SubNavigation } from "./Menu";
 
-const logger = scopedLogger("src-react/components/Frame.tsx");
+const logger = scopedLogger("../components/Frame.tsx");
 
 interface DevFrameProps {
 }

@@ -15,7 +15,7 @@ import { QueryLogicalFiles } from "./QueryLogicalFiles";
 import { Resources } from "./Resources";
 import { TableGroup } from "./forms/Groups";
 
-const logger = scopedLogger("src-react/components/QueryDetails.tsx");
+const logger = scopedLogger("../components/QueryDetails.tsx");
 
 interface QueryDetailsProps {
     querySet: string;

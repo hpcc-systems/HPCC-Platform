@@ -12,9 +12,9 @@ import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { AddPackageMapPart } from "./forms/AddPackageMapPart";
 import { DojoGrid, selector } from "./DojoGrid";
-import { HolyGrail } from "src-react/layouts/HolyGrail";
+import { HolyGrail } from "../layouts/HolyGrail";
 
-const logger = scopedLogger("src-react/components/PackageMapParts.tsx");
+const logger = scopedLogger("../components/PackageMapParts.tsx");
 
 const defaultUIState = {
     hasSelection: false

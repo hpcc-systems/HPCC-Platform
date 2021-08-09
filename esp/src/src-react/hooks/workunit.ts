@@ -5,7 +5,7 @@ import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
 
-const logger = scopedLogger("src-react/hooks/workunit.ts");
+const logger = scopedLogger("../hooks/workunit.ts");
 
 export function useCounter(): [number, () => void] {
 

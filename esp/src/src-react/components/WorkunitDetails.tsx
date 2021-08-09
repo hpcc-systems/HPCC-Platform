@@ -27,7 +27,7 @@ import { Workflows } from "./Workflows";
 import { Metrics } from "./Metrics";
 import { WorkunitPersona } from "./controls/StateIcon";
 
-const logger = scopedLogger("src-react/components/WorkunitDetails.tsx");
+const logger = scopedLogger("../components/WorkunitDetails.tsx");
 
 interface WorkunitDetailsProps {
     wuid: string;

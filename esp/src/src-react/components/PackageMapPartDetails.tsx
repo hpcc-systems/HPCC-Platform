@@ -3,7 +3,7 @@ import { scopedLogger } from "@hpcc-js/util";
 import * as WsPackageMaps from "src/WsPackageMaps";
 import { XMLSourceEditor } from "./SourceEditor";
 
-const logger = scopedLogger("src-react/components/PackageMapPartDetails.tsx");
+const logger = scopedLogger("../components/PackageMapPartDetails.tsx");
 
 interface PackageMapPartDetailsProps {
     name: string;

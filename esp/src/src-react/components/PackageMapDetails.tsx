@@ -10,7 +10,7 @@ import { PackageMapParts } from "./PackageMapParts";
 import { TableGroup } from "./forms/Groups";
 import { XMLSourceEditor } from "./SourceEditor";
 
-const logger = scopedLogger("src-react/components/PackageMapDetails.tsx");
+const logger = scopedLogger("../components/PackageMapDetails.tsx");
 
 interface PackageMapDetailsProps {
     name: string;

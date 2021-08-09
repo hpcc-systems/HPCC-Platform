@@ -1,13 +1,12 @@
 import * as React from "react";
-import { Checkbox, ContextualMenu, IconButton, IDragOptions, mergeStyleSets, Modal, PrimaryButton, Stack, TextField, } from "@fluentui/react";
-import { useId } from "@fluentui/react-hooks";
+import { Checkbox, DefaultButton, PrimaryButton, TextField, } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsWorkunits from "src/WsWorkunits";
-import * as FormStyles from "./landing-zone/styles";
+import { MessageBox } from "../../layouts/MessageBox";
 import nlsHPCC from "src/nlsHPCC";
 
-const logger = scopedLogger("src-react/components/forms/ZAPDialog.tsx");
+const logger = scopedLogger("../components/forms/ZAPDialog.tsx");
 
 interface ZAPDialogValues {
     ZAPFileName: string;
@@ -109,23 +108,6 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
         )();
     }, [closeForm, handleSubmit, reset]);
 
-    const titleId = useId("title");
-
-    const dragOptions: IDragOptions = {
-        moveMenuItemText: nlsHPCC.Move,
-        closeMenuItemText: nlsHPCC.Close,
-        menu: ContextualMenu,
-    };
-
-    const componentStyles = mergeStyleSets(
-        FormStyles.componentStyles,
-        {
-            container: {
-                minWidth: 440,
-            }
-        }
-    );
-
     React.useEffect(() => {
         WsWorkunits.WUGetZAPInfo({ request: { WUID: wuid } }).then(response => {
             setEmailDisabled(response?.WUGetZAPInfoResponse?.EmailTo === null);
@@ -139,212 +121,193 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
         }).catch(logger.error);
     }, [wuid, reset]);
 
-    return <Modal
-        titleAriaId={titleId}
-        isOpen={showForm}
-        onDismiss={closeForm}
-        isBlocking={false}
-        containerClassName={componentStyles.container}
-        dragOptions={dragOptions}
-    >
-        <div className={componentStyles.header}>
-            <span id={titleId}>{nlsHPCC.ZippedAnalysisPackage}</span>
-            <IconButton
-                styles={FormStyles.iconButtonStyles}
-                iconProps={FormStyles.cancelIcon}
-                ariaLabel={nlsHPCC.CloseModal}
-                onClick={closeForm}
-            />
-        </div>
-        <div className={componentStyles.body}>
-            <Stack>
+    return <MessageBox title={nlsHPCC.ZippedAnalysisPackage} show={showForm} setShow={closeForm}
+        footer={<>
+            <PrimaryButton text={nlsHPCC.Submit} onClick={handleSubmit(onSubmit)} />
+            <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
+        </>}>
+        <Controller
+            control={control} name="ZAPFileName"
+            render={({
+                field: { onChange, name: fieldName, value }
+            }) => <TextField
+                    name={fieldName}
+                    onChange={onChange}
+                    label={nlsHPCC.FileName}
+                    value={value}
+                />}
+        />
+        <Controller
+            control={control} name="Wuid"
+            render={({
+                field: { onChange, name: fieldName, value }
+            }) => <TextField
+                    name={fieldName}
+                    onChange={onChange}
+                    label={nlsHPCC.WUID}
+                    value={value}
+                />}
+        />
+        <Controller
+            control={control} name="BuildVersion"
+            render={({
+                field: { onChange, name: fieldName, value }
+            }) => <TextField
+                    name={fieldName}
+                    onChange={onChange}
+                    label={nlsHPCC.ESPBuildVersion}
+                    value={value}
+                />}
+        />
+        <Controller
+            control={control} name="ESPIPAddress"
+            render={({
+                field: { onChange, name: fieldName, value },
+                fieldState: { error }
+            }) => <TextField
+                    name={fieldName}
+                    onChange={onChange}
+                    label={nlsHPCC.ESPNetworkAddress}
+                    value={value}
+                />}
+        />
+        <Controller
+            control={control} name="ThorIPAddress"
+            render={({
+                field: { onChange, name: fieldName, value },
+                fieldState: { error }
+            }) => <TextField
+                    name={fieldName}
+                    onChange={onChange}
+                    label={nlsHPCC.ThorNetworkAddress}
+                    value={value}
+                />}
+        />
+        <Controller
+            control={control} name="ProblemDescription"
+            render={({
+                field: { onChange, name: fieldName, value }
+            }) => <TextField
+                    name={fieldName}
+                    onChange={onChange}
+                    label={nlsHPCC.Description}
+                    multiline={true}
+                    value={value}
+                />}
+        />
+        <Controller
+            control={control} name="WhatChanged"
+            render={({
+                field: { onChange, name: fieldName, value }
+            }) => <TextField
+                    name={fieldName}
+                    onChange={onChange}
+                    label={nlsHPCC.History}
+                    multiline={true}
+                    value={value}
+                />}
+        />
+        <Controller
+            control={control} name="WhereSlow"
+            render={({
+                field: { onChange, name: fieldName, value }
+            }) => <TextField
+                    name={fieldName}
+                    onChange={onChange}
+                    label={nlsHPCC.Timings}
+                    multiline={true}
+                    value={value}
+                />}
+        />
+        <Controller
+            control={control} name="Password"
+            render={({
+                field: { onChange, name: fieldName, value }
+            }) => <TextField
+                    name={fieldName}
+                    onChange={onChange}
+                    label={nlsHPCC.PasswordOpenZAP}
+                    value={value}
+                    type="password"
+                    canRevealPassword={true}
+                    revealPasswordAriaLabel={nlsHPCC.ShowPassword}
+                />}
+        />
+        <div style={{ padding: "15px 0 7px 0" }}>
+            <div>
                 <Controller
-                    control={control} name="ZAPFileName"
+                    control={control} name="IncludeThorSlaveLog"
                     render={({
                         field: { onChange, name: fieldName, value }
-                    }) => <TextField
-                            name={fieldName}
-                            onChange={onChange}
-                            label={nlsHPCC.FileName}
-                            value={value}
-                        />}
+                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.IncludeSlaveLogs} />}
                 />
+            </div>
+            <div style={{ paddingTop: "10px" }}>
                 <Controller
-                    control={control} name="Wuid"
+                    control={control} name="SendEmail"
                     render={({
                         field: { onChange, name: fieldName, value }
-                    }) => <TextField
+                    }) => <Checkbox
                             name={fieldName}
+                            checked={value}
                             onChange={onChange}
-                            label={nlsHPCC.WUID}
-                            value={value}
+                            label={nlsHPCC.SendEmail}
+                            disabled={emailDisabled}
                         />}
                 />
-                <Controller
-                    control={control} name="BuildVersion"
-                    render={({
-                        field: { onChange, name: fieldName, value }
-                    }) => <TextField
-                            name={fieldName}
-                            onChange={onChange}
-                            label={nlsHPCC.ESPBuildVersion}
-                            value={value}
-                        />}
-                />
-                <Controller
-                    control={control} name="ESPIPAddress"
-                    render={({
-                        field: { onChange, name: fieldName, value },
-                        fieldState: { error }
-                    }) => <TextField
-                            name={fieldName}
-                            onChange={onChange}
-                            label={nlsHPCC.ESPNetworkAddress}
-                            value={value}
-                        />}
-                />
-                <Controller
-                    control={control} name="ThorIPAddress"
-                    render={({
-                        field: { onChange, name: fieldName, value },
-                        fieldState: { error }
-                    }) => <TextField
-                            name={fieldName}
-                            onChange={onChange}
-                            label={nlsHPCC.ThorNetworkAddress}
-                            value={value}
-                        />}
-                />
-                <Controller
-                    control={control} name="ProblemDescription"
-                    render={({
-                        field: { onChange, name: fieldName, value }
-                    }) => <TextField
-                            name={fieldName}
-                            onChange={onChange}
-                            label={nlsHPCC.Description}
-                            multiline={true}
-                            value={value}
-                        />}
-                />
-                <Controller
-                    control={control} name="WhatChanged"
-                    render={({
-                        field: { onChange, name: fieldName, value }
-                    }) => <TextField
-                            name={fieldName}
-                            onChange={onChange}
-                            label={nlsHPCC.History}
-                            multiline={true}
-                            value={value}
-                        />}
-                />
-                <Controller
-                    control={control} name="WhereSlow"
-                    render={({
-                        field: { onChange, name: fieldName, value }
-                    }) => <TextField
-                            name={fieldName}
-                            onChange={onChange}
-                            label={nlsHPCC.Timings}
-                            multiline={true}
-                            value={value}
-                        />}
-                />
-                <Controller
-                    control={control} name="Password"
-                    render={({
-                        field: { onChange, name: fieldName, value }
-                    }) => <TextField
-                            name={fieldName}
-                            onChange={onChange}
-                            label={nlsHPCC.PasswordOpenZAP}
-                            value={value}
-                            type="password"
-                            canRevealPassword={true}
-                            revealPasswordAriaLabel={nlsHPCC.ShowPassword}
-                        />}
-                />
-                <div style={{ padding: "15px 0 7px 0" }}>
-                    <div>
-                        <Controller
-                            control={control} name="IncludeThorSlaveLog"
-                            render={({
-                                field: { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.IncludeSlaveLogs} />}
-                        />
-                    </div>
-                    <div style={{ paddingTop: "10px" }}>
-                        <Controller
-                            control={control} name="SendEmail"
-                            render={({
-                                field: { onChange, name: fieldName, value }
-                            }) => <Checkbox
-                                    name={fieldName}
-                                    checked={value}
-                                    onChange={onChange}
-                                    label={nlsHPCC.SendEmail}
-                                    disabled={emailDisabled}
-                                />}
-                        />
-                    </div>
+            </div>
 
-                </div>
-                <Controller
-                    control={control} name="EmailTo"
-                    render={({
-                        field: { onChange, name: fieldName, value }
-                    }) => <TextField
-                            name={fieldName}
-                            onChange={onChange}
-                            label={nlsHPCC.EmailTo}
-                            value={value}
-                            placeholder={nlsHPCC.SeeConfigurationManager}
-                            disabled={emailDisabled}
-                        />}
-                />
-                <Controller
-                    control={control} name="EmailFrom"
-                    render={({
-                        field: { onChange, name: fieldName, value }
-                    }) => <TextField
-                            name={fieldName}
-                            onChange={onChange}
-                            label={nlsHPCC.EmailFrom}
-                            value={value}
-                            placeholder={nlsHPCC.SeeConfigurationManager}
-                            disabled={emailDisabled}
-                        />}
-                />
-                <Controller
-                    control={control} name="EmailSubject"
-                    render={({
-                        field: { onChange, name: fieldName, value }
-                    }) => <TextField
-                            name={fieldName}
-                            onChange={onChange}
-                            label={nlsHPCC.EmailSubject}
-                            value={value}
-                            disabled={emailDisabled}
-                        />}
-                />
-                <Controller
-                    control={control} name="EmailBody"
-                    render={({
-                        field: { onChange, name: fieldName, value }
-                    }) => <TextField
-                            name={fieldName}
-                            onChange={onChange}
-                            label={nlsHPCC.EmailBody}
-                            multiline={true}
-                            value={value}
-                            disabled={emailDisabled}
-                        />}
-                />
-            </Stack>
-            <Stack horizontal horizontalAlign="space-between" verticalAlign="end" styles={FormStyles.buttonStackStyles}>
-                <PrimaryButton text={nlsHPCC.Submit} onClick={handleSubmit(onSubmit)} />
-            </Stack>
         </div>
-    </Modal>;
+        <Controller
+            control={control} name="EmailTo"
+            render={({
+                field: { onChange, name: fieldName, value }
+            }) => <TextField
+                    name={fieldName}
+                    onChange={onChange}
+                    label={nlsHPCC.EmailTo}
+                    value={value}
+                    placeholder={nlsHPCC.SeeConfigurationManager}
+                    disabled={emailDisabled}
+                />}
+        />
+        <Controller
+            control={control} name="EmailFrom"
+            render={({
+                field: { onChange, name: fieldName, value }
+            }) => <TextField
+                    name={fieldName}
+                    onChange={onChange}
+                    label={nlsHPCC.EmailFrom}
+                    value={value}
+                    placeholder={nlsHPCC.SeeConfigurationManager}
+                    disabled={emailDisabled}
+                />}
+        />
+        <Controller
+            control={control} name="EmailSubject"
+            render={({
+                field: { onChange, name: fieldName, value }
+            }) => <TextField
+                    name={fieldName}
+                    onChange={onChange}
+                    label={nlsHPCC.EmailSubject}
+                    value={value}
+                    disabled={emailDisabled}
+                />}
+        />
+        <Controller
+            control={control} name="EmailBody"
+            render={({
+                field: { onChange, name: fieldName, value }
+            }) => <TextField
+                    name={fieldName}
+                    onChange={onChange}
+                    label={nlsHPCC.EmailBody}
+                    multiline={true}
+                    value={value}
+                    disabled={emailDisabled}
+                />}
+        />
+    </MessageBox>;
 };

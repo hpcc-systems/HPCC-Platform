@@ -4,7 +4,7 @@ import { scopedLogger } from "@hpcc-js/util";
 import * as WsDfu from "src/WsDfu";
 import { useCounter } from "./workunit";
 
-const logger = scopedLogger("src-react/hooks/file.ts");
+const logger = scopedLogger("../hooks/file.ts");
 
 export function useFile(cluster: string, name: string): [LogicalFile, number, () => void] {
 
