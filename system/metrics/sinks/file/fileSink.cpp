@@ -37,13 +37,14 @@ void FileMetricSink::prepareToStartCollecting()
     fhandle = fopen(fileName.str(), clearFileOnStartCollecting ? "w" : "a");
 }
 
+
 void FileMetricSink::doCollection()
 {
     auto reportMetrics = pManager->queryMetricsForReport(name);
     writeReportHeaderToFile();
     for (auto &pMetric: reportMetrics)
     {
-        writeMeasurementToFile(pMetric->queryName(), pMetric->queryValue(), pMetric->queryDescription());
+        writeMeasurementToFile(pMetric);
     }
 }
 
@@ -54,9 +55,22 @@ void FileMetricSink::collectingHasStopped()
 }
 
 
-void FileMetricSink::writeMeasurementToFile(const std::string &metricName, __uint64 value, const std::string &metricDescription) const
+void FileMetricSink::writeMeasurementToFile(const std::shared_ptr<IMetric> &pMetric) const
 {
-    fprintf(fhandle, "  %s -> %" I64F "d, %s\n", metricName.c_str(), value, metricDescription.c_str());
+    std::string name = pMetric->queryName();
+    auto metaData = pMetric->queryMetaData();
+    for (auto &metaDataIt: metaData)
+    {
+        name.append(".").append(metaDataIt.value);
+    }
+
+    const char *unitsStr = pManager->queryUnitsString(pMetric->queryUnits());
+    if (unitsStr)
+    {
+        name.append(".").append(unitsStr);
+    }
+
+    fprintf(fhandle, "  %s -> %" I64F "d, %s\n", name.c_str(), pMetric->queryValue(), pMetric->queryDescription().c_str());
     fflush(fhandle);
 }
 

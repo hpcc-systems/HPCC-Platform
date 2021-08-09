@@ -26,6 +26,7 @@
 #include "jiface.hpp"
 #include "jptree.hpp"
 #include "platform.h"
+#include "jstatcodes.h"
 
 
 namespace hpccMetrics {
@@ -43,6 +44,17 @@ enum MetricType
     METRICS_GAUGE
 };
 
+
+struct MetricMetaDataItem
+{
+    MetricMetaDataItem(const char *_key, const char *_value)
+        : key{_key}, value{_value} {}
+    std::string key;
+    std::string value;
+};
+
+
+typedef std::vector<MetricMetaDataItem> MetricMetaData;
 
 /*
  * IMetric
@@ -70,6 +82,17 @@ interface IMetric
      * Get current measurement
      */
     virtual __uint64 queryValue() const = 0;
+
+
+    /*
+     * Query the meta data for the metric
+     */
+    virtual const MetricMetaData &queryMetaData() const = 0;
+
+    /*
+     * Get the units for the metric
+     */
+    virtual StatisticMeasure queryUnits() const = 0;
 };
 
 
@@ -84,18 +107,25 @@ public:
     virtual const std::string &queryName() const override { return name; }
     virtual const std::string &queryDescription() const override { return description; }
     virtual MetricType queryMetricType() const override { return metricType; }
+    const MetricMetaData &queryMetaData() const { return metaData; }
+    StatisticMeasure queryUnits() const override { return units; }
+
 
 protected:
     // No one should be able to create one of these
-    MetricBase(const char *_name, const char *_desc, MetricType _metricType) :
+    MetricBase(const char *_name, const char *_desc, MetricType _metricType, StatisticMeasure _units, const MetricMetaData &_metaData) :
         name{_name},
         description{_desc},
-        metricType{_metricType} { }
+        metricType{_metricType},
+        units{_units},
+        metaData{_metaData} { }
 
 protected:
     std::string name;
     std::string description;
     MetricType metricType;
+    StatisticMeasure units;
+    MetricMetaData metaData;
 };
 
 
@@ -105,8 +135,8 @@ public:
     virtual __uint64 queryValue() const override { return value; }
 
 protected:
-    MetricVal(const char *name, const char *desc, MetricType metricType) :
-        MetricBase(name, desc, metricType) {}
+    MetricVal(const char *name, const char *desc, MetricType metricType, StatisticMeasure _units, const MetricMetaData &_metaData) :
+        MetricBase(name, desc, metricType, _units, _metaData) {}
 
     std::atomic<__uint64> value{0};
 };
@@ -118,8 +148,8 @@ protected:
 class jlib_decl CounterMetric : public MetricVal
 {
 public:
-    CounterMetric(const char *name, const char *description) :
-        MetricVal{name, description, MetricType::METRICS_COUNTER}  { }
+    CounterMetric(const char *name, const char *description, StatisticMeasure _units, const MetricMetaData &_metaData = MetricMetaData()) :
+        MetricVal{name, description, MetricType::METRICS_COUNTER, _units, _metaData}  { }
     void inc(uint64_t val = 1)
     {
         value.fetch_add(val);
@@ -133,8 +163,8 @@ public:
 class jlib_decl GaugeMetric : public MetricVal
 {
 public:
-    GaugeMetric(const char *name, const char *description) :
-        MetricVal{name, description, MetricType::METRICS_GAUGE}  { }
+    GaugeMetric(const char *name, const char *description, StatisticMeasure _units, const MetricMetaData &_metaData = MetricMetaData()) :
+        MetricVal{name, description, MetricType::METRICS_GAUGE, _units, _metaData}  { }
 
     void adjust(int64_t delta)
     {
@@ -154,8 +184,8 @@ template<typename T>
 class CustomMetric : public MetricBase
 {
 public:
-    CustomMetric(const char *name, const char *desc, MetricType metricType, T &_value) :
-        MetricBase(name, desc, metricType),
+    CustomMetric(const char *name, const char *desc, MetricType metricType, T &_value, StatisticMeasure _units, const MetricMetaData &_metaData = MetricMetaData()) :
+        MetricBase(name, desc, metricType, _units, _metaData),
         value{_value} { }
 
     virtual __uint64 queryValue() const override
@@ -225,14 +255,15 @@ struct SinkInfo
 class jlib_decl MetricsManager
 {
 public:
-    MetricsManager() = default;
+    MetricsManager() {}
     ~MetricsManager();
     void init(IPropertyTree *pMetricsTree);
     void addSink(MetricSink *pSink, const char *name);  // for use by unit tests
-    void addMetric(const std::shared_ptr<IMetric> &pMetric);
+    bool addMetric(const std::shared_ptr<IMetric> &pMetric);
     void startCollecting();
     void stopCollecting();
     std::vector<std::shared_ptr<IMetric>> queryMetricsForReport(const std::string &sinkName);
+    const char * queryUnitsString(StatisticMeasure units) const;
 
 protected:
     void initializeSinks(IPropertyTreeIterator *pSinkIt);
@@ -250,17 +281,18 @@ protected:
 //
 // Convenience function templates to create metrics and add to the manager
 template <typename T>
-std::shared_ptr<T> createMetricAndAddToManager(const char *name, const char* desc)
+std::shared_ptr<T> createMetricAndAddToManager(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData())
 {
-    std::shared_ptr<T> pMetric = std::make_shared<T>(name, desc);
+    std::shared_ptr<T> pMetric = std::make_shared<T>(name, desc, units, metaData);
     queryMetricsManager().addMetric(pMetric);
     return pMetric;
 }
 
+
 template <typename T>
-std::shared_ptr<CustomMetric<T>> createCustomMetricAndAddToManager(const char *name, const char *desc, MetricType metricType, T &value)
+std::shared_ptr<CustomMetric<T>> createCustomMetricAndAddToManager(const char *name, const char *desc, MetricType metricType, T &value, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData())
 {
-    std::shared_ptr<CustomMetric<T>> pMetric = std::make_shared<CustomMetric<T>>(name, desc, metricType, value);
+    std::shared_ptr<CustomMetric<T>> pMetric = std::make_shared<CustomMetric<T>>(name, desc, metricType, value, units, metaData);
     queryMetricsManager().addMetric(pMetric);
     return pMetric;
 }
