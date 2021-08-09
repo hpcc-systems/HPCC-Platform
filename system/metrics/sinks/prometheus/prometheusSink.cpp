@@ -144,5 +144,5 @@ void PrometheusMetricSink::stopCollection()
 void PrometheusMetricSink::startServer()
 {
     LOG(MCoperatorProgress, "PrometheusMetricsService started:  port: '%i' uri: '%s' sinkname: '%s'\n", m_port, m_metricsServiceName.str(), m_metricsSinkName.str());
-    m_server.listen("localhost", m_port);
+    m_server.listen(BIND_ALL_LOCAL_NICS, m_port);
 }

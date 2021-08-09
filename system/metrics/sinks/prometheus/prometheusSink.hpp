@@ -67,6 +67,7 @@ private:
     StringBuffer                    m_metricsServiceName;
     bool                            m_verbose;
 
+    static constexpr const char * BIND_ALL_LOCAL_NICS = "0.0.0.0";
     static constexpr const char * PROMETHEUS_REPORTER_TYPE = "prometheus";
     static constexpr const char * PROMETHEUS_METRICS_HTTP_PAGE_TITLE = "HPCC Systems - Prometheus Metrics Service";
     static constexpr const char * PROMETHEUS_METRICS_SERVICE_RESP_TYPE = "text/html; charset=UTF-8";
