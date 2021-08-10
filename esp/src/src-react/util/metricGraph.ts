@@ -36,13 +36,22 @@ function shape(kind: string) {
     return KindShape[kind] || "rectangle";
 }
 
+function encodeID(id: string): string {
+    return id.split(":").join("-");
+}
+
+function decodeID(id: string): string {
+    return id.split("-").join(":");
+}
+
 export interface IScope {
-    __parentID: string;
-    __children: IScope[];
-    __functions: IScope[];
+    __parentName?: string;
+    __children?: IScope[];
     id: string;
     name: string;
     type: string;
+    Kind: string;
+    Label: string;
     [key: string]: any;
 }
 
@@ -53,71 +62,98 @@ interface IScopeEdge extends IScope {
 
 export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
 
+    protected _index: { [name: string]: IScope } = {};
+    protected _activityIndex: { [id: string]: string } = {};
+
     constructor() {
         super();
-        this.idFunc(scope => scope.id);
-        this.sourceFunc(scope => scope.IdSource);
-        this.targetFunc(scope => scope.IdTarget);
+        this.idFunc(scope => scope.name);
+        this.sourceFunc(scope => this._activityIndex[scope.IdSource]);
+        this.targetFunc(scope => this._activityIndex[scope.IdTarget]);
         this.load([]);
+    }
+
+    clear(): this {
+        super.clear();
+        this._index = {};
+        this._activityIndex = {};
+        return this;
+    }
+
+    protected parentName(scopeName: string): string {
+        const lastIdx = scopeName.lastIndexOf(":");
+        if (lastIdx >= 0) {
+            return scopeName.substring(0, lastIdx);
+        }
+        return !scopeName ? undefined : "";
+    }
+
+    protected scopeID(scopeName: string): string {
+        const lastIdx = scopeName.lastIndexOf(":");
+        if (lastIdx >= 0) {
+            return scopeName.substring(lastIdx + 1);
+        }
+        return scopeName;
+    }
+
+    protected ensureLineage(_scope: IScope): IScope {
+        let scope = this._index[_scope.name];
+        if (!scope) {
+            scope = _scope;
+            scope.__children = scope.__children || [];
+            scope.__parentName = scope.__parentName || this.parentName(scope.name);
+            this._index[scope.name] = scope;
+        }
+        if (scope.__parentName !== undefined) {
+            let parent = this._index[scope.__parentName];
+            if (!parent) {
+                parent = this.ensureLineage({
+                    id: this.scopeID(scope.__parentName),
+                    name: scope.__parentName,
+                    type: "unknown",
+                    Kind: "-1",
+                    Label: "unknown"
+                });
+            }
+            parent.__children.push(scope);
+        }
+        return scope;
+    }
+
+    protected ensureGraphLineage(scope: IScope) {
+        let parent = this._index[scope.__parentName];
+        if (parent === scope) {
+            parent = undefined;
+        }
+        if (parent && !this.subgraphExists(parent.name)) {
+            this.ensureGraphLineage(parent);
+        }
+        if (!this.subgraphExists(scope.name)) {
+            this.addSubgraph(scope, parent);
+        }
     }
 
     load(data: any[]): this {
         this.clear();
 
-        const index: { [id: string]: IScope } = {};
-        data.forEach((scope: IScope, idx) => {
-            index[scope.id] = scope;
-        });
-
-        for (let i = 0; i < data.length; ++i) {
-            const scope = data[i];
-            const parents = scope.name.split(":");
-            parents.pop();
-            let parentID = parents.pop();
-            while (parentID && (parentID[0] === "a" || parentID[0] === "c")) {
-                parentID = parents.pop();
-            }
-            scope.__children = [];
-            scope.__functions = [];
-            scope.__parentID = parentID;
-            if (parentID && !index[parentID]) {
-                index[parentID] = {
-                    id: parentID,
-                    type: "unknown",
-                    name: parents.length ? parents.join(":") + ":" + parentID : parentID,
-                } as IScope;
-                data.splice(i, 0, index[parentID]);
-                --i;
-            }
-        }
-
+        //  Index all items  ---
         data.forEach((scope: IScope) => {
-            const parent = index[scope.__parentID];
-            if (parent) {
-                if (scope.type === "function") {
-                    parent.__functions.push(scope);
-                } else {
-                    parent.__children.push(scope);
-                }
-            }
+            this.ensureLineage(scope);
         });
 
         data.forEach((scope: IScope) => {
-            const parentScope = index[scope.__parentID];
+            const parentScope = this._index[scope.__parentName];
+            this.ensureGraphLineage(scope);
             switch (scope.type) {
-                case "function":
-                    break;
                 case "activity":
+                    this._activityIndex[scope.id] = scope.name;
                     this.addVertex(scope, parentScope);
                     break;
                 case "edge":
                     break;
                 default:
-                    if (scope.__children.length) {
-                        if (!this.subgraphExists(scope.id)) {
-                            this.addSubgraph(scope, parentScope);
-                        }
-                    } else {
+                    if (!scope.__children.length) {
+                        this._activityIndex[scope.id] = scope.name;
                         this.addVertex(scope, parentScope);
                     }
             }
@@ -125,16 +161,16 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
 
         data.forEach((scope: IScope) => {
             if (scope.type === "edge") {
-                if (!this.vertexExists((scope as IScopeEdge).IdSource))
+                if (!this.vertexExists(this._activityIndex[(scope as IScopeEdge).IdSource]))
                     console.warn(`Missing vertex:  ${(scope as IScopeEdge).IdSource}`);
-                else if (!this.vertexExists((scope as IScopeEdge).IdTarget)) {
+                else if (!this.vertexExists(this._activityIndex[(scope as IScopeEdge).IdTarget])) {
                     console.warn(`Missing vertex:  ${(scope as IScopeEdge).IdTarget}`);
                 } else {
-                    if (scope.__parentID && !this.subgraphExists(scope.__parentID)) {
-                        console.warn(`Edge missing subgraph:  ${scope.__parentID}`);
+                    if (scope.__parentName && !this.subgraphExists(scope.__parentName)) {
+                        console.warn(`Edge missing subgraph:  ${scope.__parentName}`);
                     }
-                    if (this.subgraphExists(scope.__parentID)) {
-                        this.addEdge(scope as IScopeEdge, this.subgraph(scope.__parentID));
+                    if (this.subgraphExists(scope.__parentName)) {
+                        this.addEdge(scope as IScopeEdge, this.subgraph(scope.__parentName));
                     } else {
                         this.addEdge(scope as IScopeEdge);
                     }
@@ -150,29 +186,41 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
     }
 
     vertexTpl(v: IScope, options: MetricsOptions): string {
-        return `"${v.id}" [id="${v.id}" label="[${decodeHTML(v.Kind)}]\n${decodeHTML(v.Label) || v.id}" shape="${shape(v.Kind)}"]`;
+        return `"${v.id}" [id="${encodeID(v.name)}" label="[${decodeHTML(v.Kind)}]\n${decodeHTML(v.Label) || v.id}" shape="${shape(v.Kind)}"]`;
     }
 
     protected _dedupEdges: { [id: string]: boolean } = {};
 
+    findFirstVertex(scopeName: string) {
+        if (this.vertexExists(scopeName)) {
+            return this.vertex(scopeName).id;
+        }
+        for (const child of this.item(scopeName).__children) {
+            const childID = this.findFirstVertex(child.name);
+            if (childID) {
+                return childID;
+            }
+        }
+    }
+
     edgeTpl(e: IScopeEdge, options: MetricsOptions) {
         if (this._dedupEdges[e.id] === true) return "";
         this._dedupEdges[e.id] = true;
-        if (options.ignoreGlobalStoreOutEdges && this.vertex(e.IdSource).Kind === "22") {
+        if (options.ignoreGlobalStoreOutEdges && this.vertex(this._activityIndex[e.IdSource]).Kind === "22") {
             return "";
         }
-        return `\"${e.IdSource}" -> "${e.IdTarget}" [id="${e.id}" label="" style="${this.vertexParent(e.IdSource) === this.vertexParent(e.IdTarget) ? "solid" : "dashed"}"]`;
+        return `"${e.IdSource}" -> "${e.IdTarget}" [id="${encodeID(e.name)}" label="" style="${this.vertexParent(this._activityIndex[e.IdSource]) === this.vertexParent(this._activityIndex[e.IdTarget]) ? "solid" : "dashed"}"]`;
     }
 
     subgraphTpl(sg: IScope, options: MetricsOptions): string {
         const childTpls: string[] = [];
-        this.subgraphSubgraphs(sg.id).forEach(child => {
+        this.subgraphSubgraphs(sg.name).forEach(child => {
             childTpls.push(this.subgraphTpl(child, options));
         });
-        this.subgraphVertices(sg.id).forEach(child => {
+        this.subgraphVertices(sg.name).forEach(child => {
             childTpls.push(this.vertexTpl(child, options));
         });
-        this.subgraphEdges(sg.id).forEach(child => {
+        this.subgraphEdges(sg.name).forEach(child => {
             childTpls.push(this.edgeTpl(child, options));
         });
         return `\
@@ -180,7 +228,7 @@ subgraph cluster_${sg.id} {
     color="darkgrey";
     fillcolor="white";
     style="filled";
-    id="${sg.id}";
+    id="${encodeID(sg.name)}";
     label="${sg.id}";
 
     ${childTpls.join("\n")}
@@ -193,18 +241,21 @@ subgraph cluster_${sg.id} {
         this._dedupEdges = {};
         const childTpls: string[] = [];
         if (items?.length) {
-            items.forEach(item => {
+            items.map(item => {
                 if (this.subgraphExists(item.id)) {
-                    childTpls.push(this.subgraphTpl(item, options));
+                    return item;
                 } else {
-                    if (item?.__parentID && this.subgraphExists(item?.__parentID)) {
-                        childTpls.push(this.subgraphTpl(this.subgraph(item.__parentID), options));
+                    if (item?.__parentName && this.subgraphExists(item?.__parentName)) {
+                        return this.subgraph(item.__parentName);
                     }
                 }
+            }).filter(subgraph => !!subgraph).map(subgraph => {
+                childTpls.push(this.subgraphTpl(subgraph, options));
+                return subgraph;
             });
             this.allEdges().filter(e => {
-                const sV = this.vertex(e.IdSource);
-                const tV = this.vertex(e.IdTarget);
+                const sV = this.vertex(this._activityIndex[e.IdSource]);
+                const tV = this.vertex(this._activityIndex[e.IdTarget]);
                 return sV.__parentID !== tV.__parentID && items.indexOf(this.subgraph(sV.__parentID)) >= 0 && items.indexOf(this.subgraph(tV.__parentID)) >= 0;
             }).forEach(e => {
                 childTpls.push(this.edgeTpl(e, options));
@@ -228,7 +279,7 @@ digraph G {
     node [color="darkgrey" fontname="arial" fillcolor="whitesmoke" style="filled" margin=0.2]
     edge [color="darkgrey"]
     // edge [fontname=arial fontsize=11.0];
-    
+
     ${childTpls.join("\n")}
 
 }`;
@@ -264,7 +315,7 @@ export class MetricGraphWidget extends SVGZoomWidget {
 
     clearSelection(broadcast: boolean = false) {
         Object.keys(this._selection).forEach(id => {
-            d3Select(`#${id}`).classed("selected", false);
+            d3Select(`#${encodeID(id)}`).classed("selected", false);
         });
         this._selection = {};
         this._selectionChanged(broadcast);
@@ -308,7 +359,7 @@ export class MetricGraphWidget extends SVGZoomWidget {
             .each(function () {
                 d3Select(this).selectAll("path,polygon")
                     .style("stroke", () => {
-                        return context._selection[this.id] ? "red" : "darkgrey";
+                        return context._selection[decodeID(this.id)] ? "red" : "darkgrey";
                     })
                     ;
             })
@@ -340,7 +391,7 @@ export class MetricGraphWidget extends SVGZoomWidget {
                                     if (!event.ctrlKey) {
                                         context.clearSelection();
                                     }
-                                    context.toggleSelection(this.id, true);
+                                    context.toggleSelection(decodeID(this.id), true);
                                 });
                             if (callback) {
                                 callback(this);
