@@ -230,8 +230,19 @@ spec:
       containers:
       - name: {{ $servername | quote }}
         workingDir: /var/lib/HPCCSystems
+{{- if $roxie.valgrind }}
+        command: [ valgrind ] 
+        args: [
+                "--leak-check=full",
+                "--show-leak-kinds=all",
+                "--track-origins=yes",
+                "--num-callers=8",
+                "--log-fd=1",
+                "roxie",
+{{- else }}
         command: [ roxie ] 
         args: [
+{{- end }}
                 {{ include "hpcc.configArg" . }},
                 {{ include "hpcc.daliArg" $ }},
                 "--server=true" 
@@ -321,8 +332,19 @@ spec:
       containers:
       - name: {{ $name | quote}}
         workingDir: /var/lib/HPCCSystems
-        command: [ roxie ]
-        args: [ 
+{{- if $roxie.valgrind }}
+        command: [ valgrind ] 
+        args: [
+                "--leak-check=full",
+                "--show-leak-kinds=all",
+                "--track-origins=yes",
+                "--num-callers=8",
+                "--log-fd=1",
+                "roxie",
+{{- else }}
+        command: [ roxie ] 
+        args: [
+{{- end }}
                 {{ include "hpcc.configArg" $roxie }},
                 {{ include "hpcc.daliArg" $ }},
                 "--channels={{ $channel }}", 

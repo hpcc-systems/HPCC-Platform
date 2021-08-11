@@ -133,6 +133,11 @@ void RoxiePacketHeader::init(const RemoteActivityId &_remoteId, ruid_t _uid, uns
 #ifdef SUBCHANNELS_IN_HEADER
     clearSubChannels();
 #endif
+#ifdef TIME_PACKETS
+    tick = 0;
+#else
+    filler = 0; // keeps valgrind happy
+#endif
 }
 
 #ifdef SUBCHANNELS_IN_HEADER
@@ -1044,6 +1049,10 @@ public:
         assertex(numOrphans);
         orphans = new RoxiePacketHeader[numOrphans];
         tail = 0;
+    }
+    ~IBYTIbuffer()
+    {
+        delete [] orphans;
     }
     void noteOrphan(const RoxiePacketHeader &hdr)
     {
@@ -2417,8 +2426,16 @@ public:
         {
             StringBuffer s; logctx.CTXLOG("Sending ABORT packet %s", abortHeader.toString(s).str());
         }
-        if (!channelWrite(abortHeader, true))
-            logctx.CTXLOG("sendAbort wrote too little");
+        try
+        {
+            if (!channelWrite(abortHeader, true))
+                logctx.CTXLOG("sendAbort wrote too little");
+        }
+        catch (IException *E)
+        {
+            EXCLOG(E);
+            E->Release();
+        }
         abortsSent++;
     }
 
