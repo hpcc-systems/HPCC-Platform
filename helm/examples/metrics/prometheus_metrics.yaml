@@ -12,6 +12,8 @@ global:
     - type: prometheus
       name: prometheussink
       settings:
+        autodiscovery: true #disable if Prometheus cannot access hpcc pods
         port: 8767
         serviceName: metrics
         verbose: true
+        path: "/metrics"
