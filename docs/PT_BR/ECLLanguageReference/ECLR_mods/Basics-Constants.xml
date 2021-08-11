@@ -252,6 +252,15 @@ MyDec2  := 3.14159265358979323846d // value of MyDec2 is the DECIMAL
                              consulta será executada. Os valores possíveis
               são: 'roxie', 'hthor' , 'thor', or 'thorlcr'.</entry>
             </row>
+
+            <row>
+              <entry><emphasis>__CONTAINERIZED__<indexterm>
+                  <primary>__CONTAINERIZED__</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Um valor BOOLEANO que indica se a plataforma é uma versão
+              em contêiner.</entry>
+            </row>
           </tbody>
         </tgroup>
       </informaltable>Exemplo:</para>

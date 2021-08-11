@@ -90,11 +90,14 @@
     mesmas técnicas na nuvem.</para>
 
     <para>Para pequenas implantações locais (para desenvolvimento e teste),
-    sugerimos o uso de Docker Desktop e Helm. Para implantações em nuvem, você
-    pode usar qualquer tipo de serviço em nuvem, se for compatível com Docker,
-    Kubernetes e Helm. Este livro, no entanto, se concentrará no Microsoft
-    Azure para serviços em nuvem. As versões futuras podem incluir
-    especificações para outros provedores de nuvem.</para>
+    sugerimos o uso de Docker Desktop e Helm. Isto é útil para aprendizagem,
+    desenvolvimento e teste.</para>
+
+    <para>Para implantações em nuvem, você pode usar qualquer tipo de serviço
+    em nuvem, se for compatível com Docker, Kubernetes e Helm. Este livro, no
+    entanto, se concentrará no Microsoft Azure para serviços em nuvem. As
+    versões futuras podem incluir especificações para outros provedores de
+    nuvem.</para>
 
     <para>Se você deseja gerenciar manualmente sua implantação local ou na
     nuvem, ainda pode usar os instaladores tradicionais e o Configuration

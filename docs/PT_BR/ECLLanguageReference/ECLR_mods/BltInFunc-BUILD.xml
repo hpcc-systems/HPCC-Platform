@@ -71,7 +71,7 @@
             presentes no <emphasis>baserecset</emphasis> Se omitido, todos os
             campos em <emphasis>baserecset</emphasis> serão usados. O último
             campo deve ter o nome de um campo UNSIGNED8 definido usando a
-            função {virtual(filepposition)} na declaração DATASET do
+            função {VIRTUAL(filepposition)} na declaração DATASET do
             <emphasis>baserecset</emphasis>.</entry>
           </row>
 
@@ -623,7 +623,7 @@
      {STRING2 st,
       STRING20 city,
       STRING20 lname,
-      UNSIGNED8 filepos{virtual(fileposition)}},
+      UNSIGNED8 filepos{VIRTUAL(fileposition)}},
      FLAT);
 BUILD(Vehicles,{lname,filepos},'vkey::lname');
  //build key into Vehicles dataset on last name
@@ -661,7 +661,7 @@ BUILD(Vehicles,{lname,filepos},'vkey::lname');
      {STRING2 st,
       STRING20 city,
       STRING20 lname,
-      UNSIGNED8 filepos{virtual(fileposition)}},
+      UNSIGNED8 filepos{VIRTUAL(fileposition)}},
       FLAT);
 BUILD(Vehicles,{st,city},{lname},'vkey::st.city');
  //build key into Vehicles dataset on state and city
