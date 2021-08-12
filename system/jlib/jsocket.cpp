@@ -6148,7 +6148,7 @@ inline void flushText(StringBuffer &text,unsigned short port,unsigned &rep,unsig
 
 
 
-StringBuffer &SocketEndpointArray::getText(StringBuffer &text)
+StringBuffer &SocketEndpointArray::getText(StringBuffer &text) const
 {
     unsigned count = ordinality();
     if (!count)

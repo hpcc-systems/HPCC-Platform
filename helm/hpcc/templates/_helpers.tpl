@@ -194,22 +194,21 @@ storage:
   dataPlane: {{ include "hpcc.getDefaultDataPlane" . }}
   planes:
 {{- /*Generate entries for each data plane (removing the pvc).  Exclude the planes used for dlls and dali.*/ -}}
-{{- range $plane := $planes -}}
- {{- if or (eq "data" $plane.category) (eq "lz" $plane.category) }}
+{{- range $plane := $planes }}
   - name: {{ $plane.name | quote }}
-  {{- $planeYaml := omit $plane "name" "pvc" "storageClass" "storageSize" "subPath" -}}
-  {{- if $plane.subPath -}}
-   {{- $_ := set $planeYaml "prefix" (printf "%s/%s" $planeYaml.prefix $plane.subPath) -}}
-  {{- end -}}
-  {{- if and (eq "data" $plane.category) (not $plane.defaultSprayParts) -}}
-   {{- $_ := set $planeYaml "defaultSprayParts" (include "hpcc.getMaxNumWorkers" $ | int) -}}
-  {{- end -}}
-  {{- toYaml $planeYaml | nindent 4 }}
- {{- end }}
+ {{- $planeYaml := omit $plane "name" "pvc" "storageClass" "storageSize" "subPath" -}}
+ {{- if $plane.subPath -}}
+  {{- $_ := set $planeYaml "prefix" (printf "%s/%s" $planeYaml.prefix $plane.subPath) -}}
+ {{- end -}}
+ {{- if and (eq "data" $plane.category) (not $plane.defaultSprayParts) -}}
+  {{- $_ := set $planeYaml "defaultSprayParts" (include "hpcc.getMaxNumWorkers" $ | int) -}}
+ {{- end -}}
+ {{- toYaml $planeYaml | nindent 4 }}
 {{- end }}
 {{- if not (include "hpcc.hasPlaneForCategory" (dict "root" $ "category" "spill")) }}
   - name: hpcc-spill-plane
     prefix: {{ .Values.global.defaultSpillPath | default "/var/lib/HPCCSystems/hpcc-spill" | quote }}
+    category: spill
 {{- end }}
 {{- if .Values.global.cost }}
 cost:

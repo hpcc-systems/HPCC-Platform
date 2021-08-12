@@ -408,7 +408,7 @@ public:
     {
         for (auto kind : kinds)
         {
-            assert((kind != StKindNone) && (kind != StKindAll));
+            assert((kind != StKindNone) && (kind != StKindAll) && (kind < StMax));
             assert(!indexToKind.contains(kind));
             indexToKind.append(kind);
         }
@@ -423,7 +423,7 @@ public:
         }
         else
         {
-            assert(kind != StKindNone);
+            assert(kind != StKindNone && kind < StMax);
             indexToKind.append(kind);
         }
         createMappings();

@@ -10727,7 +10727,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
 
     OwnedHqlExpr rawRecord;
     doBuildIndexOutputTransform(instance->startctx, record, rawRecord, hasFileposition, expr->queryAttribute(maxLengthAtom));
-    buildFormatCrcFunction(instance->classctx, "getFormatCrc", false, rawRecord, expr, 0);
+
+    //Remove any lingering payload attribute to ensure the different varieties of BUILD() produce consistent formatCRCs
+    OwnedHqlExpr noPayloadRawRecord = removeAttribute(rawRecord, _payload_Atom);
+    buildFormatCrcFunction(instance->classctx, "getFormatCrc", false, noPayloadRawRecord, expr, 0);
 
     if (compressAttr && compressAttr->hasAttribute(rowAtom))
     {

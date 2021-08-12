@@ -723,7 +723,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
 #ifdef _CONTAINERIZED
         getDefaultStoragePlane(defaultPlane);
         {
-            Owned<IStoragePlane> plane = getStoragePlane(defaultPlane, true);
+            Owned<IStoragePlane> plane = getDataStoragePlane(defaultPlane, true);
             defaultPlaneDirPrefix.set(plane->queryPrefix());
         }
 #endif

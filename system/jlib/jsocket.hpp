@@ -184,7 +184,7 @@ public:
 class jlib_decl SocketEndpointArray : public StructArrayOf<SocketEndpoint>
 { 
 public:
-    StringBuffer &getText(StringBuffer &text);
+    StringBuffer &getText(StringBuffer &text) const;
     bool fromName(const char *name, unsigned defport);
     void fromText(const char *s,unsigned defport);
 };

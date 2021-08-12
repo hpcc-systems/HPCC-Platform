@@ -13341,9 +13341,10 @@ extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, c
     makeAbsolutePath(name, fullPathName);
     if (isContainerized())
     {
-        const char *dllserver_root = getenv("HPCC_DLLSERVER_PATH");
-        assertex(dllserver_root != nullptr);
-        StringBuffer destPathName(dllserver_root);
+        StringBuffer dllDirectory;
+        if (!getConfigurationDirectory(nullptr, "query", nullptr, nullptr, dllDirectory))
+            throwUnexpected();
+        StringBuffer destPathName(dllDirectory);
         addNonEmptyPathSepChar(destPathName);
         splitFilename(fullPathName.str(), nullptr, nullptr, &destPathName, &destPathName);
         OwnedIFile source = createIFile(fullPathName);
