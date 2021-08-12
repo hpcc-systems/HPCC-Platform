@@ -515,7 +515,7 @@ public:
 #ifdef _CONTAINERIZED
                     if (!globals->getPropBool("@_dafsStorage"))
                     {
-                        Owned<IStoragePlane> plane = getStoragePlane(groupNames.item(gn), true);
+                        Owned<IStoragePlane> plane = getDataStoragePlane(groupNames.item(gn), true);
                         curDir.append(plane->queryPrefix());
                     }
 #else

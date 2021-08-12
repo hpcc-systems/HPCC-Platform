@@ -1070,7 +1070,7 @@ public:
                 //replace @directory with a directory calculated from the storage plane
                 //prefix and the scope of the logical filename
                 //MORE: This could should be commoned up with similar code elsewhere
-                Owned<IStoragePlane> plane = getStoragePlane(cluster, true);
+                Owned<IStoragePlane> plane = getDataStoragePlane(cluster, true);
                 StringBuffer location(plane->queryPrefix());
                 const char * temp = lfn;
                 for (;;)
