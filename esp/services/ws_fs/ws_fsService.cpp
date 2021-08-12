@@ -611,9 +611,10 @@ bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, StringBuffer &tit
 void setRoxieClusterPartDiskMapping(const char *clusterName, const char *defaultFolder, const char *defaultReplicateFolder,
                                bool supercopy, IDFUfileSpec *wuFSpecDest, IDFUoptions *wuOptions)
 {
-#ifdef _CONTAINERIZED
-    UNIMPLEMENTED_X("CONTAINERIZED(setRoxieClusterPartDiskMapping)");
-#else
+    ClusterPartDiskMapSpec spec;
+    spec.setDefaultBaseDir(defaultFolder);
+#ifndef _CONTAINERIZED
+    //In containerized mode, there is no need to replicate files to the local disks of the roxie cluster.
     Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
 
@@ -641,8 +642,6 @@ void setRoxieClusterPartDiskMapping(const char *clusterName, const char *default
 
     unsigned numDataCopies = process.getPropInt("@numDataCopies", 1);
 
-    ClusterPartDiskMapSpec spec;
-    spec.setDefaultBaseDir(defaultFolder);
     if (strieq(slaveConfig, "overloaded"))
     {
         channelsPerNode = process.getPropInt("@channelsPernode", 1);
@@ -663,11 +662,11 @@ void setRoxieClusterPartDiskMapping(const char *clusterName, const char *default
         replicate = true;
     }
     spec.setRoxie (redundancy, channelsPerNode, replicateOffset);
+    wuOptions->setReplicate(replicate);
+#endif
     if (!supercopy)
         spec.setRepeatedCopies(CPDMSRP_lastRepeated,false);
     wuFSpecDest->setClusterPartDiskMapSpec(clusterName,spec);
-    wuOptions->setReplicate(replicate);
-#endif
 }
 
 StringBuffer& constructFileMask(const char* filename, StringBuffer& filemask)
@@ -964,14 +963,14 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
             clusterReq.append(clusterName);
         }
 
-        StringArray targetClusters, clusterProcesses;
-#ifdef _CONTAINERIZED
-        IERRLOG("CONTAINERIZED(CFileSprayEx::onGetDFUWorkunits)");
-#else
+#ifndef _CONTAINERIZED
+        //The code is used to find out a target cluster from a process cluster.
+        //It is not needed for containerized environment.
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> root = &constEnv->getPTree();
 
+        StringArray targetClusters, clusterProcesses;
         Owned<IPropertyTreeIterator> clusters= root->getElements("Software/Topology/Cluster");
         if (clusters->first())
         {
@@ -1019,7 +1018,6 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
             } while (clusters->next());
         }
 #endif
-
         __int64 pagesize = req.getPageSize();
         __int64 pagefrom = req.getPageStartFrom();
         __int64 displayFrom = 0;
@@ -1132,8 +1130,13 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
             resultWU->setUser(wu->getUser(user).str());
 
             const char* clusterName = wu->getClusterName(cluster).str();
-            if (clusterName)
+            if (!isEmptyString(clusterName))
             {
+#ifdef _CONTAINERIZED
+                resultWU->setClusterName(clusterName);
+#else
+                //For bare metal environment, the wu->getClusterName() may return a process
+                //cluster. It has to be converted to a target cluster.
                 StringBuffer clusterForDisplay(clusterName);
 
                 if (clusterProcesses.ordinality())
@@ -1149,6 +1152,7 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
                     }
                 }
                 resultWU->setClusterName(clusterForDisplay.str());
+#endif
             }
 
             resultWU->setIsProtected(wu->isProtected());
@@ -3040,33 +3044,31 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
 
 bool CFileSprayEx::checkDropZoneIPAndPath(double clientVersion, const char* dropZoneName, const char* netAddr, const char* path)
 {
-#ifdef _CONTAINERIZED
-    IERRLOG("CONTAINERIZED(CFileSprayEx::checkDropZoneIPAndPath)");
-    return false;
-#else
     if (isEmptyString(netAddr) || isEmptyString(path))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "NetworkAddress or Path not defined.");
 
-    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
-    Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-    Owned<IConstDropZoneInfoIterator> dropZoneItr = constEnv->getDropZoneIteratorByAddress(netAddr);
-    ForEach(*dropZoneItr)
+    bool isIPAddressReq = isIPAddress(netAddr);
+    IArrayOf<IConstTpDropZone> allTpDropZones;
+    CTpWrapper tpWrapper;
+    tpWrapper.getTpDropZones(9999, nullptr, false, allTpDropZones); //version 9999: get the latest information about dropzone
+    ForEachItemIn(i, allTpDropZones)
     {
-        SCMStringBuffer directory, name;
-        IConstDropZoneInfo& dropZoneInfo = dropZoneItr->query();
-        dropZoneInfo.getDirectory(directory);
-        if (directory.length() && (strnicmp(path, directory.str(), directory.length()) == 0))
-        {
-            if (isEmptyString(dropZoneName))
-                return true;
+        IConstTpDropZone& dropZone = allTpDropZones.item(i);
+        if (!isEmptyString(dropZoneName) && !streq(dropZoneName, dropZone.getName()))
+            continue;
 
-            dropZoneInfo.getName(name);
-            if (strieq(name.str(), dropZoneName))
+        const char* prefix = dropZone.getPath();
+        if (strnicmp(path, prefix, strlen(prefix)) != 0)
+            continue;
+
+        IArrayOf<IConstTpMachine>& tpMachines = dropZone.getTpMachines();
+        ForEachItemIn(ii, tpMachines)
+        {
+            if (matchNetAddressRequest(netAddr, isIPAddressReq, tpMachines.item(ii)))
                 return true;
         }
     }
     return false;
-#endif
 }
 
 void CFileSprayEx::addDropZoneFile(IEspContext& context, IDirectoryIterator* di, const char* name, const char pathSep, IArrayOf<IEspPhysicalFileStruct>& files)
@@ -3156,47 +3158,36 @@ bool CFileSprayEx::onDropZoneFileSearch(IEspContext &context, IEspDropZoneFileSe
         if (!validNameFilter)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Name Filter '*'");
 
-#ifdef _CONTAINERIZED
-        UNIMPLEMENTED_X("CONTAINERIZED(CFileSprayEx::onDropZoneFileSearch)");
-#else
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
-        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-        Owned<IConstDropZoneInfo> dropZoneInfo = constEnv->getDropZone(dropZoneName);
-        if (!dropZoneInfo || (req.getECLWatchVisibleOnly() && !dropZoneInfo->isECLWatchVisible()))
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "DropZone %s not found.", dropZoneName);
-
-        SCMStringBuffer directory, computer;
-        dropZoneInfo->getDirectory(directory);
-        if (!directory.length())
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "DropZone Directory not found for %s.", dropZoneName);
-
-        IpAddress ipAddress;
-        ipAddress.ipset(dropZoneServerReq);
-        if (ipAddress.isNull())
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid server %s specified.", dropZoneServerReq);
-
         double version = context.getClientVersion();
         bool serverFound = false;
         unsigned filesFound = 0;
         IArrayOf<IEspPhysicalFileStruct> files;
-        Owned<IConstDropZoneServerInfoIterator> dropZoneServerItr = dropZoneInfo->getServers();
-        ForEach(*dropZoneServerItr)
+        bool isIPAddressReq = isIPAddress(dropZoneServerReq);
+        IArrayOf<IConstTpDropZone> allTpDropZones;
+        CTpWrapper tpWrapper;
+        tpWrapper.getTpDropZones(9999, nullptr, false, allTpDropZones); //version 9999: get the latest information about dropzone
+        ForEachItemIn(i, allTpDropZones)
         {
-            StringBuffer server, networkAddress;
-            IConstDropZoneServerInfo& dropZoneServer = dropZoneServerItr->query();
-            dropZoneServer.getServer(server);
-            if (server.isEmpty())
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid server for dropzone %s.", dropZoneName);
+            IConstTpDropZone& dropZone = allTpDropZones.item(i);
+            const char* name = dropZone.getName();
+            if (!streq(dropZoneName, name))
+                continue;
+            if (req.getECLWatchVisibleOnly() && !dropZone.getECLWatchVisible())
+                continue;
 
-            //Do string compare here because the server could be a pseudo-host name.
-            if (strieq(dropZoneServerReq, server))
+            IArrayOf<IConstTpMachine>& tpMachines = dropZone.getTpMachines();
+            ForEachItemIn(ii, tpMachines)
             {
+                IConstTpMachine& tpMachine = tpMachines.item(ii);
+                if (!matchNetAddressRequest(dropZoneServerReq, isIPAddressReq, tpMachine))
+                    continue;
+
+                IpAddress ipAddress;
+                ipAddress.ipset(tpMachine.getNetaddress());
+                searchDropZoneFiles(context, ipAddress, dropZone.getPath(), nameFilter, files, filesFound);
                 serverFound = true;
-                searchDropZoneFiles(context, ipAddress, directory.str(), nameFilter, files, filesFound);
-                break;
             }
         }
-
         if (!serverFound)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Server %s not found in dropzone %s.", dropZoneServerReq, dropZoneName);
 
@@ -3206,7 +3197,6 @@ bool CFileSprayEx::onDropZoneFileSearch(IEspContext &context, IEspDropZoneFileSe
             resp.setWarning(msg.str());
         }
         resp.setFiles(files);
-#endif
     }
     catch(IException* e)
     {
@@ -3383,53 +3373,42 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
         bool filesFromALinux = false;
         IArrayOf<IEspDropZone> dropZoneList;
         bool ECLWatchVisibleOnly = req.getECLWatchVisibleOnly();
-
-#ifdef _CONTAINERIZED
-        IERRLOG("CONTAINERIZED(CFileSprayEx::onDropZoneFileSearch)");
-#else
-        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
-        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-        Owned<IConstDropZoneInfoIterator> dropZoneItr = constEnv->getDropZoneIterator();
-        ForEach(*dropZoneItr)
+        bool isIPAddressReq = !isEmptyString(netAddress) && isIPAddress(netAddress);
+        IArrayOf<IConstTpDropZone> allTpDropZones;
+        CTpWrapper tpWrapper;
+        tpWrapper.getTpDropZones(9999, nullptr, false, allTpDropZones); //version 9999: get the latest information about dropzone
+        ForEachItemIn(i, allTpDropZones)
         {
-            IConstDropZoneInfo& dropZoneInfo = dropZoneItr->query();
-            if (ECLWatchVisibleOnly && !dropZoneInfo.isECLWatchVisible())
+            IConstTpDropZone& dropZone = allTpDropZones.item(i);
+            if (ECLWatchVisibleOnly && !dropZone.getECLWatchVisible())
                 continue;
 
-            SCMStringBuffer dropZoneName, directory, computerName;
-            dropZoneInfo.getName(dropZoneName);
-            dropZoneInfo.getDirectory(directory);
-            dropZoneInfo.getComputerName(computerName); //legacy env
-            if (!dropZoneName.length() || !directory.length())
-                continue;
+            const char* dropZoneName = dropZone.getName();
+            const char* prefix = dropZone.getPath();
+            bool isLinux = getPathSepChar(prefix) == '/' ? true : false;
 
-            bool isLinux = getPathSepChar(directory.str()) == '/' ? true : false;
-            Owned<IConstDropZoneServerInfoIterator> dropZoneServerItr = dropZoneInfo.getServers();
-            ForEach(*dropZoneServerItr)
+            IArrayOf<IConstTpMachine>& tpMachines = dropZone.getTpMachines();
+            ForEachItemIn(ii, tpMachines)
             {
-                IConstDropZoneServerInfo& dropZoneServer = dropZoneServerItr->query();
-
-                StringBuffer name, server, networkAddress;
-                dropZoneServer.getName(name);
-                dropZoneServer.getServer(server);
-                if (name.isEmpty() || server.isEmpty())
+                const char* machineName = tpMachines.item(ii).getName();
+                const char* netAddr = tpMachines.item(ii).getNetaddress();
+                if (isEmptyString(machineName) || isEmptyString(netAddr))
                     continue;
 
-                Owned<IEspDropZone> aDropZone = createDropZone();
-                aDropZone->setName(dropZoneName.str());
-                aDropZone->setComputer(name.str());
-                aDropZone->setNetAddress(server);
-
-                aDropZone->setPath(directory.str());
+                Owned<IEspDropZone> dropZone = createDropZone();
+                dropZone->setName(dropZoneName);
+                dropZone->setPath(prefix);
+                dropZone->setComputer(machineName);
+                dropZone->setNetAddress(netAddr);
                 if (isLinux)
-                    aDropZone->setLinux("true");
-                if (!isEmptyString(netAddress) && strieq(netAddress, server))
-                    filesFromALinux = isLinux;
+                    dropZone->setLinux("true");
 
-                dropZoneList.append(*aDropZone.getClear());
+                dropZoneList.append(*dropZone.getClear());
+
+                if (!isEmptyString(netAddress) && matchNetAddressRequest(netAddress, isIPAddressReq, tpMachines.item(ii)))
+                    filesFromALinux = isLinux;
             }
         }
-#endif
 
         if (dropZoneList.ordinality())
             resp.setDropZones(dropZoneList);
@@ -3664,15 +3643,24 @@ bool CFileSprayEx::onGetDFUServerQueues(IEspContext &context, IEspGetDFUServerQu
 {
     try
     {
-#ifdef _CONTAINERIZED
-        UNIMPLEMENTED_X("CONTAINERIZED(CFileSprayEx::onGetDFUServerQueues)");
-#else
         context.ensureFeatureAccess(FILE_SPRAY_URL, SecAccess_Read, ECLWATCH_FILE_SPRAY_ACCESS_DENIED, "Permission denied.");
 
         StringArray qlist;
+#ifdef _CONTAINERIZED
+        Owned<IPropertyTreeIterator> dfuQueues = getComponentConfigSP()->getElements("dfuQueues");
+        ForEach(*dfuQueues)
+        {
+            IPropertyTree &dfuQueue = dfuQueues->query();
+            const char *dfuName = dfuQueue.queryProp("@name");
+            assertex(!isEmptyString(dfuName));
+            StringBuffer queueLabel;
+            getDfuQueueName(queueLabel, dfuName);
+            qlist.append(queueLabel);
+        }
+#else
         getDFUServerQueueNames(qlist, req.getDFUServerName());
-        resp.setNames(qlist);
 #endif
+        resp.setNames(qlist);
     }
     catch(IException* e)
     {
