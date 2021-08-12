@@ -89,6 +89,19 @@ public:
     IpMapOf<T>(std::function<T *(const ServerIdentifier)> _tfunc) : tfunc(_tfunc)
     {
     }
+    ~IpMapOf<T>()
+    {
+        for (unsigned idx = 0; idx < 256; idx++)
+        {
+            const list *head = table[idx].load(std::memory_order_acquire);
+            while (head)
+            {
+                const list *next = head->next;
+                delete head;
+                head = next;
+            }
+        }
+    }
     T &lookup(const ServerIdentifier &) const;
     inline T &operator[](const ServerIdentifier &ip) const { return lookup(ip); }
     myIterator begin()

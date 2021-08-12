@@ -52,6 +52,9 @@
   especificado. Essa função é semelhante à função incorporada PIPE, mas
   limitada à entrada e saída de texto simples.</para>
 
+  <para><emphasis role="bold">Esta função foi descontinuada e será removida na
+  versão 8.4.0.</emphasis></para>
+
   <para>Exemplo:</para>
 
   <programlisting format="linespecific">IMPORT STD;

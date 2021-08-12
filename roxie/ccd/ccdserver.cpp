@@ -1490,7 +1490,15 @@ public:
     {
         aborted = true;
         // MORE - should abort dependencies here?
-        stop();
+        try
+        {
+            stop();
+        }
+        catch (IException *E)
+        {
+            EXCLOG(E);
+            ::Release(E);
+        }
     }
 
     inline void reset()

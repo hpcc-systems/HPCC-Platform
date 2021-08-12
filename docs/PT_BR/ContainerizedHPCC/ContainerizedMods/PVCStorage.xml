@@ -28,11 +28,12 @@
 mkdir c:\hpccdata\dalistorage
 mkdir c:\hpccdata\queries
 mkdir c:\hpccdata\sasha
-mkdir c:\hpccdata\hpcc-data</programlisting></para>
+mkdir c:\hpccdata\hpcc-data
+mkdir c:\hpccdata\mydropzone</programlisting></para>
 
         <para>Para macOS, use este comando:</para>
 
-        <para><programlisting>mkdir -p /Users/myUser/hpccdata/{dalistorage,queries,sasha,hpcc-data}</programlisting></para>
+        <para><programlisting>mkdir -p /Users/myUser/hpccdata/{dalistorage,queries,sasha,hpcc-data,mydropzone}</programlisting></para>
       </listitem>
 
       <listitem>
@@ -59,14 +60,14 @@ mkdir c:\hpccdata\hpcc-data</programlisting></para>
 
         <para>Este chart cria volumes persistents baseada nos diretórios host
         que você criou anteriormente.<programlisting># for a WSL2 deployment:
-helm install localfile examples/local/hpcc-localfile 
+helm install hpcc-localfile examples/local/hpcc-localfile 
            --set common.hostpath=/run/desktop/mnt/host/c/hpccdata
 
 # for a Hyper-V deployment:
-helm install localfile examples/local/hpcc-localfile --set common.hostpath=/c/hpccdata
+helm install hpcc-localfile examples/local/hpcc-localfile --set common.hostpath=/c/hpccdata
 
 # for a macOS deployment:
-helm install localfile examples/local/hpcc-localfile --set common.hostpath=/Users/myUser/hpccdata
+helm install hpcc-localfile examples/local/hpcc-localfile --set common.hostpath=/Users/myUser/hpccdata
 </programlisting></para>
 
         <para>A opção <emphasis role="bold">--set common.hostpath=
@@ -106,8 +107,14 @@ helm install localfile examples/local/hpcc-localfile --set common.hostpath=/User
         <para>O diretório de exemplo contém um arquivo yaml de amostra que
         pode ser usado neste caso:</para>
 
-        <programlisting>helm install mycluster hpcc/ --set global.image.version=latest 
+        <programlisting>helm install mycluster hpcc/ --version=8.2.2  
              -f examples/local/values-localfile.yaml</programlisting>
+
+        <para><emphasis role="bold">O argumento --version é opcional, mas
+        recomendado. Ele garante que você saiba a versão que você está
+        instalando. Se omitido, a última versão não-desenvolvimento será
+        instalada. Este exemplo usa 8.2.2, mas você deve usar a versão que
+        deseja. </emphasis></para>
       </listitem>
 
       <listitem>

@@ -470,8 +470,8 @@
     do layout especificado na <emphasis>struct</emphasis> do RECORD.</para>
 
     <para>A <emphasis>struct</emphasis> pode conter um campo UNSIGNED8
-    contendo <emphasis>{virtual(fileposition)}</emphasis> ou
-    <emphasis>{virtual(localfileposition)}</emphasis> acrescentado ao nome do
+    contendo <emphasis>{VIRTUAL(fileposition)}</emphasis> ou
+    <emphasis>{VIRTUAL(localfileposition)}</emphasis> acrescentado ao nome do
     campo. Isso indica que o campo possui a posição do registro dentro do
     arquivo (ou parte), e é usado em instâncias onde é necessário um ponteiro
     para o registro, como a função BUILD.</para>
@@ -491,7 +491,7 @@ PtblOut := OUTPUT(Tbl,,'RTTEMP::TestFile');
           //write a THOR file
          
 Ptbl := DATASET('~Thor400::RTTEMP::TestFile',
-                {PtblRec,UNSIGNED8 __fpos {virtual(fileposition)}},
+                {PtblRec,UNSIGNED8 __fpos {VIRTUAL(fileposition)}},
                 THOR,OPT);
              // __fpos contains the "pointer" to each record
              // Thor400 is the scope name and RTTEMP is the

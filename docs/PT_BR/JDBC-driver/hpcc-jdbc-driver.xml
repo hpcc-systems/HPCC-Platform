@@ -1,0 +1,1402 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US" xml:base="../">
+  <bookinfo>
+    <title>HPCC JDBC Driver</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg"/>
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Equipe de documentação de Boca Raton</surname>
+    </author>
+
+    <legalnotice>
+      <para>Sua opinião e comentários sobre este documento são muito
+      bem-vindos e podem ser enviados por e-mail para
+      <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Inclua a frase <emphasis role="bold">Feedback sobre
+      documentação</emphasis> na linha de assunto e indique o nome do
+      documento, o número das páginas e número da versão atual no corpo da
+      mensagem.</para>
+
+      <para>LexisNexis e o logotipo Knowledge Burst são marcas comerciais
+      registradas da Reed Elsevier Properties Inc., usadas sob licença.</para>
+
+      <para>HPCC Systems<superscript>®</superscript> é uma marca registrada da
+      LexisNexis Risk Data Management Inc.</para>
+
+      <para>Os demais produtos, logotipos e serviços podem ser marcas
+      comerciais ou registradas de suas respectivas empresas.</para>
+
+      <para>Todos os nomes e dados de exemplo usados neste manual são
+      fictícios. Qualquer semelhança com pessoas reais, vivas ou mortas, é
+      mera coincidência.</para>
+
+      <para>
+        <!--Release Information is used for running footers only. The ID attribute in version.xml is FooterInfo
+Date is used as the dateline/version number in the title page. The ID attribute in version.xml is DateVer-->
+
+        <!--
+Copyright is used for the copyright line on title page. The ID attribute is CopyRight-->
+      </para>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='FooterInfo'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='DateVer'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <corpname>HPCC Systems<superscript>®</superscript></corpname>
+
+    <xi:include href="common/Version.xml"
+                xpointer="xpointer(//*[@id='Copyright'])"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg"/>
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter>
+    <title>Introdução</title>
+
+    <para>Java Database Connectivity (<emphasis role="bold">JDBC</emphasis>) é
+    uma API Java padrão que permite que aplicativos Java ou ferramentas de
+    cliente que suportam JDBC acessem dados de uma fonte de dados
+    <emphasis>presumivelmente</emphasis>emphasis&gt; compatível com SQL por
+    meio da linguagem SQL.</para>
+
+    <para><emphasis role="bold">JDBC</emphasis> torna possível escrever uma
+    única aplicação de banco de dados que pode ser executada em diferentes
+    plataformas e interagir com diferentes sistemas de gerenciamento de banco
+    de dados.</para>
+
+    <para>Atualmente, existem drivers JDBC disponíveis para interação com
+    muitas fontes de dados populares; agora, a plataforma HPCC está d
+    isponível como fonte de dados.</para>
+
+    <para>O driver HPCC JDBC expõe arquivos lógicos HPCC como tabelas
+    RDB.</para>
+
+    <para><itemizedlist mark="bullet">
+        <listitem>
+          <para>Arquivo Lógico HPCC &lt;-&gt; Tabela RDB</para>
+        </listitem>
+
+        <listitem>
+          <para>Definição de Campos de Registros HPCC Record &lt;-&gt;
+          Coulunas da Tabela RDB</para>
+        </listitem>
+
+        <listitem>
+          <para>Consulta HPCC publicada &lt;-&gt; Stored Procedure RDB</para>
+        </listitem>
+
+        <listitem>
+          <para>Fornece acesso aos dados do HPCC Systems data e aos metadados
+          do RDB</para>
+        </listitem>
+
+        <listitem>
+          <para>Suporta o subset da sintaxe do SQL</para>
+        </listitem>
+
+        <listitem>
+          <para>Operações Read-only suportadas</para>
+        </listitem>
+
+        <listitem>
+          <para>Não transacional</para>
+        </listitem>
+
+        <listitem>
+          <para>Fornece meios para utilizar arquivos de índice HPCC para
+          leituras mais rápidas.</para>
+        </listitem>
+      </itemizedlist><figure>
+        <title>Um exemplo de interface de cliente SQL conectada a uma
+        plataforma HPCC com o driver JDBC</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/jdbc01.jpg"/>
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+  </chapter>
+
+  <chapter>
+    <title>Instalação</title>
+
+    <para>O driver HPCC JDBC é distribuído em um arquivo jar JAVA
+    independente.</para>
+
+    <para>Siga as instruções do seu cliente SQL para instalação.</para>
+
+    <para>Para utilizar sua plataforma HPCC, use as definições de configuração
+    na próxima seção. A maneira como você define essas configurações depende
+    do seu cliente SQL.</para>
+
+    <para>O caminho completo da classe do driver:</para>
+
+    <para><emphasis
+    role="bold">org.hpccsystems.jdbcdriver.HPCCDriver</emphasis></para>
+
+    <variablelist>
+      <varlistentry>
+        <term>Nota:</term>
+
+        <listitem>
+          <para>O WsSQL deve ser instalado na plataforma HPCC de destino para
+          utilizar uma conexão JDBC. Veja <ulink
+          url="???">http://hpccsystems.com/permlink/wssql</ulink> para
+          detalhes.</para>
+
+          <para/>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </chapter>
+
+  <chapter>
+    <title>Configuration</title>
+
+    <para>O driver HPCC JDBC oferece suporte aos seguintes atributos de
+    configuração:</para>
+
+    <para><informaltable align="left" colsep="1" frame="all" rowsep="1">
+        <tgroup cols="4">
+          <colspec colwidth="120pt"/>
+
+          <colspec colwidth="3*"/>
+
+          <colspec colwidth="1*"/>
+
+          <colspec colwidth="35pt"/>
+
+          <thead>
+            <row>
+              <entry>Propietário</entry>
+
+              <entry>Descrição</entry>
+
+              <entry>Valor Padrão</entry>
+
+              <entry>Req.</entry>
+            </row>
+          </thead>
+
+          <tbody>
+            <row>
+              <entry>ServerAddress</entry>
+
+              <entry>Endereço do Target HPCC ESP (utilizado no contato com
+              WsSQL).</entry>
+
+              <entry>“localhost”</entry>
+
+              <entry>Yes</entry>
+            </row>
+
+            <row>
+              <entry>WsSQLPort:</entry>
+
+              <entry>Porta WsSQL (WsSQL é um serviço da web que deve ser
+              instalado com a plataforma HPCC. Normalmente é executado na
+              porta 8015).</entry>
+
+              <entry>8015</entry>
+
+              <entry>Yes</entry>
+            </row>
+
+            <row>
+              <entry>WsECLWatchAddress</entry>
+
+              <entry>Endereço do Target HPCC WsECLWatch</entry>
+
+              <entry>ServerAddress Value</entry>
+
+              <entry>No</entry>
+            </row>
+
+            <row>
+              <entry>WsECLWatchPort</entry>
+
+              <entry>Porta do Target HPCC WsECLWatch</entry>
+
+              <entry>8010</entry>
+
+              <entry>No</entry>
+            </row>
+
+            <row>
+              <entry>username</entry>
+
+              <entry>Nome de usuário no Target HPCC, se necessário</entry>
+
+              <entry>“”</entry>
+
+              <entry>No</entry>
+            </row>
+
+            <row>
+              <entry>password</entry>
+
+              <entry>Password no Target HPCC, se necessário</entry>
+
+              <entry>“”</entry>
+
+              <entry>No</entry>
+            </row>
+
+            <row>
+              <entry>PageSize</entry>
+
+              <entry>Número máximo de arquivos HPCC ou consultas HPCC
+              publicadas relatadas como resultado de GetTables ou
+              GetProcs\</entry>
+
+              <entry>100</entry>
+
+              <entry>No</entry>
+            </row>
+
+            <row>
+              <entry>ConnectTimeoutMilli</entry>
+
+              <entry align="left">Valor do tempo limite para estabelecer
+              conexão com HPCC (em milissegundos)</entry>
+
+              <entry>1000</entry>
+
+              <entry>No</entry>
+            </row>
+
+            <row>
+              <entry>ReadTimeoutMilli</entry>
+
+              <entry align="left">HPCC Connection <emphasis
+              role="bold">read</emphasis> timeout (em milissegundos)</entry>
+
+              <entry>1500</entry>
+
+              <entry>No</entry>
+            </row>
+
+            <row>
+              <entry>EclResultLimit</entry>
+
+              <entry>Máximo de registros de resultados retornados (use ALL
+              para retornar todos os registros)</entry>
+
+              <entry>100</entry>
+
+              <entry>No</entry>
+            </row>
+
+            <row>
+              <entry>LazyLoad</entry>
+
+              <entry>Fetch no arquivo HPCC e consultar metadados sob demanda
+              (não no momento da conexão)</entry>
+
+              <entry>“true”</entry>
+
+              <entry>No</entry>
+            </row>
+
+            <row>
+              <entry>TargetCluster</entry>
+
+              <entry>ECLDirect target cluster</entry>
+
+              <entry>“hthor”</entry>
+
+              <entry>No</entry>
+            </row>
+
+            <row>
+              <entry>QuerySet</entry>
+
+              <entry>Consulta publicada no destino (stored procedure)
+              QuerySet</entry>
+
+              <entry>“hthor”</entry>
+
+              <entry>No</entry>
+            </row>
+
+            <row>
+              <entry>TraceToFile</entry>
+
+              <entry align="left">Quando true, rastreamento é direcionado ao
+              arquivo <emphasis role="bold">./HPCCJDBC.log</emphasis>, caso
+              contrário, o rastreamento é enviado para a saída padrão
+              (stdout)</entry>
+
+              <entry>"false"</entry>
+
+              <entry>No</entry>
+            </row>
+
+            <row>
+              <entry>TraceLevel</entry>
+
+              <entry align="left">Nível de registro de rastreamento, conforme
+              definido em java.util.logging.level. Valores válidos: ALL,
+              SEVERE, WARNING, INFO, FINEST, OFF</entry>
+
+              <entry>INFO</entry>
+
+              <entry>No</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>Essas definições de configuração são usadas ao criar uma conexão
+    HPCC JDBC.</para>
+
+    <para>Eles podem ser passados para o driver JDBC usando a URL da conexão
+    JDBC ou como parte do objeto de propriedades da conexão. Quando passados
+    pela URL da conexão, os valores devem ser URL-encoded.</para>
+
+    <para>A sintaxe da URL de conexão é a seguinte:</para>
+
+    <programlisting>jdbc:hpcc[;urlencodedkey=urlencodedvalue]*</programlisting>
+
+    <variablelist>
+      <varlistentry>
+        <term>Nota:</term>
+
+        <listitem>
+          <para>O prefixo <emphasis role="bluebold">jdbc:hpcc</emphasis> é
+          requerido.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </chapter>
+
+  <chapter>
+    <title>Utilizando HPCC como um data source JDBC</title>
+
+    <para>Uma vez conectado, o driver HPCC JDBC processará as instruções SQL
+    enviadas e gerará o código ECL dinâmico. O código é enviado e executado
+    por sua plataforma HPCC.</para>
+
+    <para><variablelist>
+        <varlistentry>
+          <term>Nota:</term>
+
+          <listitem>
+            <para>O driver HPCC JDBC <emphasis role="bold">suporta apenas
+            arquivos que contêm a definição de registro nos metadados do
+            arquivo lógico.</emphasis> Os arquivos que passaram pelo spray não
+            contêm esses metadados. Esses metadados existem em qualquer
+            arquivo ou índice gravado no HPCC Distributed File System. Os
+            arquivos de dados que passaram pelo spraying normalmente passam
+            por algum processamento e um OUTPUT dos dados transformados para o
+            disco antes do uso, portanto, isso não deve interferir na
+            utilidade do driver.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist></para>
+
+    <para/>
+
+    <para>Além disso, você pode utilizar índices no HPCC de duas
+    maneiras:</para>
+
+    <orderedlist numeration="arabic">
+      <listitem>
+        <para>Fornece hints SQL para dizer ao driver para usar um índice
+        específico para sua consulta.</para>
+
+        <para>Por exemplo:</para>
+
+        <programlisting>USEINDEX(TutorialPersonByZipIndex)</programlisting>
+      </listitem>
+
+      <listitem>
+        <para>Especifique os índices relacionados na descrição do arquivo
+        lógico HPCC.</para>
+      </listitem>
+    </orderedlist>
+
+    <sect1 role="nobrk">
+      <title>Anotações de Índice</title>
+
+      <para>O driver JDBC tenta realizar leituras baseadas em índice sempre
+      que possível. No entanto, para tirar proveito das leituras de índice, os
+      arquivos HPCC de destino precisam ser anotados com os nomes de arquivo
+      de índice pertinentes. Isso é feito adicionando a seguinte entrada de
+      key/value na descrição do arquivo usando ECL Watch.</para>
+
+      <para>Na página de detalhes de um arquivo lógico, insira as informações
+      na caixa de entrada Description e em seguida clique no botão <emphasis
+      role="bold">Save Description</emphasis>.</para>
+
+      <para>Esta informação é usada pelo driver para decidir se uma busca de
+      índice é possível para uma consulta no arquivo base.</para>
+
+      <sect2>
+        <title><emphasis role="bold">No arquivo fonte:</emphasis></title>
+
+        <para><emphasis role="bold">XDBC:RelIndexes=
+        [</emphasis><emphasis><emphasis
+        role="bold"><emphasis>fullLogicalFilename1</emphasis></emphasis></emphasis><emphasis
+        role="bold">;<emphasis>
+        fullLogicalFilename2</emphasis></emphasis><emphasis
+        role="bold">]</emphasis></para>
+
+        <para/>
+
+        <para>Exemplo:</para>
+
+        <programlisting>XDBC:RelIndexes=[tutorial::yn::peoplebyzipindex;
+                 tutorial::yn::peoplebyzipindex2;
+                 tutorial::yn::peoplebyzipindex3]</programlisting>
+
+        <para>Neste exemplo, o arquivo de origem possui três índices
+        disponíveis.</para>
+
+        <para/>
+      </sect2>
+
+      <sect2>
+        <title><emphasis role="bold">No arquivo de índice:</emphasis></title>
+
+        <para><emphasis
+        role="bold">XDBC:PosField=[</emphasis><emphasis>indexPositionFieldName</emphasis><emphasis
+        role="bold">]</emphasis></para>
+
+        <para/>
+
+        <para>Exemplo:</para>
+
+        <programlisting>XDBC:PosField=[fpos]</programlisting>
+
+        <para>O campo FilePosition (fpos) pode ter qualquer nome, então deve
+        ser especificado nos metadados para que o driver saiba qual campo é o
+        fileposition.</para>
+
+        <para>Basta inserir as informações na caixa de entrada Description,
+        então clique no botão <emphasis role="bold">Save
+        Description</emphasis>.</para>
+
+        <para><emphasis role="bold">Nota:</emphasis> Você deve inserir essas
+        informações ANTES de publicar qualquer consulta usando o arquivo de
+        dados ou índices. As consultas publicadas bloqueiam o arquivo e evitam
+        a edição dos metadados.</para>
+
+        <para/>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Suporte a SQL</title>
+
+    <sect1 role="nobrk">
+      <title>CALL</title>
+
+      <para><emphasis role="bold">Call
+      </emphasis><emphasis>queryname</emphasis><emphasis role="bold">
+      ([</emphasis><emphasis>param list</emphasis><emphasis
+      role="bold">])</emphasis></para>
+
+      <para><informaltable colsep="0" frame="none" rowsep="0">
+          <tgroup cols="2">
+            <colspec colwidth="113.65pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry>queryName</entry>
+
+                <entry>Nome ou alias da consulta publicada</entry>
+              </row>
+
+              <row>
+                <entry>paramList</entry>
+
+                <entry>Os parâmetros expostos pela consulta publicada
+                (separados por vírgula)</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para>Call executa uma consulta ECL publicada como se fosse uma store
+      procedure.</para>
+
+      <para>Exemplo:</para>
+
+      <programlisting>Call SearchPeopleByZipService (‘33024’)</programlisting>
+
+      <para/>
+    </sect1>
+
+    <sect1>
+      <title>SELECT</title>
+
+      <para><emphasis role="bold">select [</emphasis>distinct<emphasis
+      role="bold">]</emphasis> <emphasis>colummList</emphasis> <emphasis
+      role="bold">from</emphasis> <emphasis>tableList </emphasis><emphasis>
+      </emphasis><emphasis role="bold">[</emphasis>USE
+      INDEX<emphasis>(indexFileName</emphasis> | 0
+      <emphasis>)</emphasis><emphasis role="bold">]</emphasis></para>
+
+      <para><emphasis role="bold">[where</emphasis>
+      <emphasis>logicalExpression</emphasis><emphasis role="bold">]</emphasis>
+      <emphasis role="bold">[group by</emphasis>
+      <emphasis>columnList<superscript>1</superscript></emphasis><emphasis
+      role="bold">]</emphasis> <emphasis role="bold">[having</emphasis>
+      <emphasis>logicalExpression<superscript>2</superscript></emphasis><emphasis
+      role="bold">]</emphasis></para>
+
+      <para><emphasis role="bold">[order by</emphasis>
+      <emphasis>columnList<superscript>1</superscript> </emphasis>[asc |
+      desc]<emphasis> </emphasis>] <emphasis
+      role="bold">[LIMIT</emphasis><emphasis> limitNumber</emphasis><emphasis
+      role="bold">]</emphasis></para>
+
+      <variablelist>
+        <varlistentry>
+          <term>NOTA:</term>
+
+          <listitem>
+            <para>Os identificadores podem estar sem aspas ou entre aspas
+            duplas, os valores de string literais devem estar entre aspas
+            simples.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+
+      <para><informaltable colsep="0" frame="none" rowsep="0">
+          <tgroup cols="2">
+            <colspec colwidth="123.45pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry><emphasis>columnList</emphasis></entry>
+
+                <entry>columnreference1[,columnreference2,columnreference3,...,columnreference<emphasis>n</emphasis>]</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>As colunas a serem retornadas (lista separada por
+                vírgulas). Além disso, essas funções agregadas são suportadas:
+                COUNT, SUM, MIN, MAX e AVG. Estes funcionam de forma
+                semelhante aos seus homólogos ECL.</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry>columnreference</entry>
+
+                <entry>[tablename.]columnname[ [AS] alias ]</entry>
+              </row>
+
+              <row>
+                <entry><emphasis/></entry>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry><emphasis>distinct</emphasis></entry>
+
+                <entry>[distinct] col1, col2,...
+                col<emphasis>n</emphasis></entry>
+              </row>
+
+              <row>
+                <entry><emphasis/></entry>
+
+                <entry>O conjunto de resultados conterá apenas valores
+                distintos (únicos).</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry><emphasis>tableList</emphasis></entry>
+
+                <entry>tableref1[,tableref2,tableref3,...,tableref<emphasis>n</emphasis>]</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>Uma ou mais tabela, separados por vírgulas.</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry><emphasis role="bold">NOTA: </emphasis>Uma lista de
+                tabelas com várias tabelas cria uma (uma ou mais) inner join
+                implícita usando a expressão lógica da cláusula where como a
+                condição do join que deve conter uma condição de
+                igualdade.</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry>tableref</entry>
+
+                <entry>tableName[ [AS] alias ]</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>O nome da tabela como referenciado, opcionalmente
+                definindo seu alias.</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry><emphasis>alias</emphasis></entry>
+
+                <entry>O alias usado para se referir à tabela ou referência de
+                campo correspondente.</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry><emphasis>logicalExpression</emphasis></entry>
+
+                <entry>Expressão lógica baseada na sintaxe de filtragem SQL
+                padrão. Operadores compostos como NOT IN ou IS NULL devem
+                estar em MAIÚSCULO ou em minúsculo e podem ter um e apenas um
+                espaço entre as palavras. (NOT IN, não está em, IS NULL, é
+                nulo, etc.)</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>BOOLEAN suporta somente <emphasis>True</emphasis> ou
+                <emphasis>False</emphasis>, não use Y, N, 0, ou 1.</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry><emphasis role="bold">Operadores
+                válidos:</emphasis></entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>= Igual a (e.g., age=33)</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>&lt;&gt; Diferente de (e.g., age &lt;&gt;33)</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>&gt; Maior que (e.g., age &gt;55)</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>&lt; Menor que (e.g., age &lt; 18)</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>&gt;= Maior ou igual a (e.g., age &gt;=21)</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>&lt;= Menor ou igual (e.g., age &lt;=21)</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>IN(value1,value2,...,value<emphasis>n</emphasis>) onde
+                os valores são tipos homogêneos separados por
+                vírgulas.</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>NOT IN(value1,value2,...,value<emphasis>n</emphasis>)
+                onde os valores são tipos homogêneos separados por
+                vírgulas.</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>IS NULL</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>limitNumber</emphasis></entry>
+
+                <entry>O número de linhas retornadas. Isto sobrepõem a
+                configuração do atributo do drive (EclResultLimit ) mas não
+                pode configurado para ALL.</entry>
+              </row>
+
+              <row>
+                <entry/>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry><superscript>1</superscript>Aliasing não
+                suportado</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry><superscript>2</superscript>Pode conter somente
+                referências para funções agregadas<superscript>
+                </superscript>se utilizado com
+                cláusula<emphasis>having</emphasis>.</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>A função Aggregate só pode ser usada em
+                logicalExpressions utilizando <emphasis>Group by
+                </emphasis>and <emphasis>having</emphasis></entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry><emphasis role="bold">Exemplos:</emphasis></entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>Select * from tableList where Sum(F1 &gt; 100) /* is
+                NOT SUPPORTED */</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>Select * from tableList Group byF1 Haveing Sum (F1 &gt;
+                100) /* IS SUPPORTED */</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry/>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para>Exemplo:</para>
+
+      <programlisting>Select fname, lname, state from TutorialPerson where 
+   state=’FL’ OR (lname='Smith' and fname='Joe') 
+//returns data that looks like this:
+John Doe FL 
+Jim Smith FL 
+Jane Row FL
+Joe Smith CA
+
+Select fname, lname, state from TutorialPerson where state=’FL’ AND lname &lt;&gt; ‘Smith’
+//returns data that looks like this:
+John Doe FL 
+Jane Row FL </programlisting>
+
+      <para>O driver oferece suporte a dicas de índice SQL, o que dá ao
+      usuário SQL a opção de especificar o índice HPCC mais apropriado para a
+      consulta SQL atual. Isso também permite que você desative o uso de um
+      índice.</para>
+
+      <para><emphasis role="bold">select
+      </emphasis><emphasis>columnList</emphasis> <emphasis role="bold"> from
+      </emphasis><emphasis>tableName </emphasis><emphasis role="bold">USE
+      INDEX(</emphasis><emphasis>hpcc::index::file::name</emphasis><emphasis
+      role="bold">) where </emphasis><emphasis>logicalExprssions
+      </emphasis></para>
+
+      <para><emphasis role="bold">USE INDEX(0) </emphasis>força o sistema para
+      evitar busca de um índice para a consulta atual.</para>
+
+      <para>Exemplo:</para>
+
+      <programlisting>Select fname, lname, zip, state de TutorialPerson 
+USEINDEX(TutorialPersonByZipIndex)where zip=’33024’
+
+//returns data that looks like this:
+John Doe FL 33024
+Jim Smith FL 33024
+Jane Row FL 33024
+</programlisting>
+
+      <para/>
+    </sect1>
+
+    <sect1>
+      <title>SELECT JOIN</title>
+
+      <para><emphasis role="bold">select
+      </emphasis><emphasis>colummList</emphasis> <emphasis
+      role="bold">from</emphasis> <emphasis>tableName <emphasis
+      role="bold">[</emphasis></emphasis><emphasis
+      role="bold">as</emphasis><emphasis> alias<emphasis
+      role="bold">]</emphasis></emphasis><emphasis role="bold">
+      </emphasis></para>
+
+      <para><emphasis role="bold">[</emphasis>&lt;outer | inner &gt; <emphasis
+      role="bold">JOIN </emphasis><emphasis>join TableName
+      </emphasis><emphasis role="bold">[ as
+      </emphasis><emphasis>alias</emphasis><emphasis role="bold">] on
+      </emphasis><emphasis>joinCondition</emphasis><emphasis
+      role="bold">]</emphasis></para>
+
+      <para>[USE INDEX<emphasis>(</emphasis>indexFileName | 0
+      <emphasis>)</emphasis>]</para>
+
+      <para>[<emphasis role="bold">where</emphasis>
+      <emphasis>logicalExpression] </emphasis>[<emphasis role="bold">group
+      by</emphasis> <emphasis>fieldName</emphasis>]</para>
+
+      <para>[<emphasis role="bold">order by</emphasis> <emphasis>columnNames
+      </emphasis>[asc | desc]<emphasis> </emphasis>] [<emphasis
+      role="bold">LIMIT</emphasis><emphasis> limitNumber</emphasis>]</para>
+
+      <para><informaltable colsep="0" frame="none" rowsep="0">
+          <tgroup cols="2">
+            <colspec colwidth="123.45pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry><emphasis>columnList</emphasis></entry>
+
+                <entry>columnreference1[,columnreference2,columnreference3,...,columnreference<emphasis>n</emphasis>]</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>As colunas a serem retornadas (lista separada por
+                vírgulas). Além disso, essas funções agregadas são suportadas:
+                COUNT, SUM, MIN, MAX e AVG. Estes funcionam de forma
+                semelhante aos seus homólogos ECL.</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry>columnreference</entry>
+
+                <entry>[tablename.]columnname[ [AS] alias ]</entry>
+              </row>
+
+              <row>
+                <entry><emphasis/></entry>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry><emphasis>distinct</emphasis></entry>
+
+                <entry>[distinct] col1, col2,...
+                col<emphasis>n</emphasis></entry>
+              </row>
+
+              <row>
+                <entry><emphasis/></entry>
+
+                <entry>O conjunto de resultados conterá apenas valores
+                distintos (únicos).</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry><emphasis>alias</emphasis></entry>
+
+                <entry>O alias usado para se referir à tabela ou referência de
+                campo correspondente.</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry><emphasis role="bold">outer | inner</emphasis></entry>
+
+                <entry>O tipo de JOIN a ser utilizado.</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry><emphasis>joinTableName</emphasis></entry>
+
+                <entry>O tipo de JOIN a ser utilizado.</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry><emphasis>joinCondition</emphasis></entry>
+
+                <entry>Especifica a relação entre colunas nas tabelas unidas
+                usando expressão lógica.</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry/>
+              </row>
+
+              <row>
+                <entry><emphasis>logicalExpression</emphasis></entry>
+
+                <entry>Expressão lógica baseada na sintaxe de filtragem SQL
+                padrão. Operadores compostos como NOT IN ou IS NULL devem
+                estar em MAIÚSCULO ou em minúsculo e podem ter um e apenas um
+                espaço entre as palavras. (NOT IN, não está em, IS NULL, é
+                nulo, etc.)</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>BOOLEAN somente suporta <emphasis>True</emphasis> ou
+                <emphasis>False</emphasis>, não use Y, N, 0, ou 1.</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry><emphasis role="bold">Valid
+                operators:</emphasis></entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>= Igual (e.g., age=33)</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>&lt;&gt; Diferente de (e.g., age &lt;&gt;33)</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>&gt; Maior que (e.g., age &gt;55)</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>&lt; Menor que (e.g., age &lt; 18)</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>&gt;= Maior ou igual (e.g., age &gt;=21)</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>&lt;= Menor ou igual (e.g., age &lt;=21)</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>IN(value1,value2,...,value<emphasis>n</emphasis>) onde
+                os valores são tipos homogêneos separados por
+                vírgulas.</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>NOT IN(value1,value2,...,value<emphasis>n</emphasis>)
+                onde os valores são tipos homogêneos separados por
+                vírgulas.</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>IS NULL</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>limitNumber</emphasis></entry>
+
+                <entry>Opcional. O número de linhas a serem retornadas. Isso
+                substitui o atributo de configuração do drive (<emphasis
+                role="code">EclResultLimit </emphasis>) mas não pode ser
+                configurado para ALL.</entry>
+              </row>
+
+              <row>
+                <entry/>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry><superscript>1</superscript>Aliasing não
+                suportado</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry><superscript>2</superscript>Só pode conter referências
+                a funções agregadas <superscript> </superscript>se usado com a
+                cláusula <emphasis>having</emphasis>.</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>A função Aggregate só pode ser usada em
+                logicalExpressions utilizando <emphasis>Group by
+                </emphasis>and <emphasis>having</emphasis></entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry><emphasis role="bold">Exemplos:</emphasis></entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>Select * from tableList where Sum(F1 &gt; 100) /* is
+                NOT SUPPORTED */</entry>
+              </row>
+
+              <row>
+                <entry/>
+
+                <entry>Select * from tableList Group byF1 Having Sum (F1 &gt;
+                100) /* IS SUPPORTED */</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para>Exemplo:</para>
+
+      <para><programlisting>Select t1.personname, t2.address 
+       from persontable as t1 inner join addresstable as t2 
+       on (t1.personid = t2.personid AND
+           (t1.firstname = 'jim' AND
+            t1.lastname  = 'smith' )) </programlisting></para>
+
+      <para/>
+
+      <para>O JDBC driver não converte os valores da listas de parâmetros ou
+      de colunas em strings literais.</para>
+
+      <para>Os valores da string devem ser encapsulados em aspas simples. O
+      identificador de campo pode ser deixado sem aspas ou entre aspas.</para>
+
+      <para>Para este exemplo, a tabela <emphasis
+      role="bold">persons</emphasis> tem colunas Firstname(String) e Zip
+      (numeric)</para>
+
+      <para><programlisting>Select Firstname from persons where Firstname = ‘Jim’ and zip &gt; 33445    /* works  */ 
+
+Select Firstname from persons where Firstname = ‘Jim’ and "zip" &gt; 33445    /* also works  */ 
+
+Select Firstname from persons where Firstname = Jim and zip &gt; 33445     /* doesn’t work */
+
+Select Firstname from persons where Firstname = ‘Jim’ and zip &gt; ‘33445’   /* doesn’t work */</programlisting></para>
+
+      <para/>
+    </sect1>
+
+    <sect1>
+      <title>Funções Agregadas Suportadas</title>
+
+      <para><emphasis
+      role="bold">COUNT</emphasis>([DISTINCT]<emphasis>columnName</emphasis>)</para>
+
+      <para><emphasis
+      role="bold">DISTINCT</emphasis>(<emphasis>columnName</emphasis>)</para>
+
+      <para><emphasis
+      role="bold">SUM</emphasis>(<emphasis>columnName</emphasis>)</para>
+
+      <para><emphasis
+      role="bold">MIN</emphasis>(<emphasis>columnName</emphasis>)</para>
+
+      <para><emphasis
+      role="bold">MAX</emphasis>(<emphasis>columnName</emphasis>)</para>
+
+      <para><emphasis
+      role="bold">AVG</emphasis>(<emphasis>columnName</emphasis>)</para>
+
+      <para>Essas funções agregadas são suportadas. Eles se comportam como
+      suas contrapartes ECL. Veja o <emphasis role="bold">Referência a
+      Linguagem ECL</emphasis> para maiores detalhes.</para>
+
+      <para><informaltable colsep="0" frame="none" rowsep="0">
+          <tgroup cols="2">
+            <colspec colwidth="119.65pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry>COUNT</entry>
+
+                <entry>Conta as ocorrências da columnName no resultado, sempre
+                um inteiro.</entry>
+              </row>
+
+              <row>
+                <entry>DISTINCT</entry>
+
+                <entry>Retorna apenas valores distintos de columnName no
+                resultado, o tipo de saída depende do tipo de entrada.</entry>
+              </row>
+
+              <row>
+                <entry>SUM</entry>
+
+                <entry>Retorna a soma dos valores de columnName no resultado,
+                o tipo de saída depende do tipo de entrada.</entry>
+              </row>
+
+              <row>
+                <entry>MIN</entry>
+
+                <entry>Retorna o valor mínimo de columnName no resultado, o
+                tipo de saída depende do tipo de entrada.</entry>
+              </row>
+
+              <row>
+                <entry>MAX</entry>
+
+                <entry>Retorna o valor mínimo de columnName no resultado, o
+                tipo de saída depende do tipo de entrada.</entry>
+              </row>
+
+              <row>
+                <entry>AVG</entry>
+
+                <entry>Retorna a média dos valores da coluna Nome no
+                resultado, sempre um número real.</entry>
+              </row>
+
+              <row>
+                <entry>columnName</entry>
+
+                <entry>A coluna para agregação.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para>Exemplo:</para>
+
+      <para><programlisting>Select fname, lname, state, COUNT(zip) from TutorialPerson where zip=’33024’</programlisting></para>
+
+      <sect2>
+        <title>Modificadores de Strings suportados</title>
+
+        <para><emphasis
+        role="bold">UPPER</emphasis>(<emphasis>columnName</emphasis>)</para>
+
+        <para><emphasis
+        role="bold">LOWER</emphasis>(<emphasis>columnName</emphasis>)</para>
+
+        <para/>
+
+        <informaltable colsep="0" frame="none" rowsep="0">
+          <tgroup cols="2">
+            <colspec colwidth="119.65pt"/>
+
+            <colspec/>
+
+            <tbody>
+              <row>
+                <entry>UPPER</entry>
+
+                <entry>Retorna com todos os caracteres que estavam em caixa
+                baixa convertidos para caixa alta.</entry>
+              </row>
+
+              <row>
+                <entry>LOWER</entry>
+
+                <entry>Retorna com todos os caracteres que estavam em caixa
+                alta convertidos para caixa baixa.</entry>
+              </row>
+
+              <row>
+                <entry>columnName</entry>
+
+                <entry>A coluna para agregação</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Exemplo Java</title>
+
+    <para><programlisting>/* Obtém instância para JDBC Driver */
+Driver jdbcdriver = DriverManager.getDriver("jdbc:hpcc");
+        
+/* Establish Connection */
+       
+HPCCConnection connection = null;
+ try
+ {
+        
+/*populate JAVA properties object with pertinent connection options */
+   Properties connprops = new Properties();
+   connprops.put("ServerAddress", "192.168.124.128");
+
+/*or create JDBC connection url string with pertinent connection options*/
+/* the connection values must be URL-encoded */
+   String jdbcurl = "jdbc:hpcc;ServerAddress=HTTP%3A%2F%2F192.168.124.128";
+
+/*provide all necessary connection properties either by URL, or props object */
+    connection = (HPCCConnection) driver.connect(jdbcurl, connprops);
+  }
+ 
+   catch (Exception e) { System.out.println("Error");}
+/* create HPCCStatement object for single use SQL query execution */
+
+   HPCCStatement stmt = (HPCCStatement) connection.createStatement();
+
+/* Create your SQL query */
+   String mysql = "select * from tablename as mytab limit 10";
+
+/* Execute your SQL query */
+   HPCCResultSet res1 = (HPCCResultSet) stmt.executeQuery(mysql);
+
+/*Do something with your results */
+   printOutResultSet(res1);
+
+/* Or create a prepared statement for multiple execution and parameterization */
+   String myprepsql = "select * from persons_table persons where zip= ? limit 100";
+   HPCCPreparedStatement prepstmt =
+(HPCCPreparedStatement)createPrepStatement(connection, myprepsql);
+
+/* provide parameter values and execute */
+   for (int i = 33445; i &lt; 33448; i++)
+   {
+    prepstmt.clearParameters();
+    prepstmt.setString(1, "'" + Integer.toString(i, 10) + "'");
+    HPCCResultSet qrs = (HPCCResultSet) ((HPCCPreparedStatement) prepstmt).executeQuery();
+
+/*Do something with your results */
+    printOutResultSet(qrs);
+   }
+
+
+</programlisting>Mais amostras de códigos estão disponíveis em:</para>
+
+    <para><ulink
+    url="https://github.com/hpcc-systems/hpcc-jdbc/tree/master/src/test/java/org/hpccsystems/jdbcdriver/tests">https://github.com/hpcc-systems/hpcc-jdbc/tree/master/src/test/java/org/hpccsystems/jdbcdriver/tests</ulink></para>
+  </chapter>
+</book>

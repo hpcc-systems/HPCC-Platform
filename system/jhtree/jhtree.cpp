@@ -83,6 +83,7 @@ MODULE_EXIT()
     delete initCrit;
     delete keyStore.load(std::memory_order_relaxed);
     ::Release((CInterface*)nodeCache);
+    nodeCache = nullptr;
 }
 
 //#define DUMP_NODES

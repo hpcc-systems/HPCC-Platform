@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="generateGloballyUniqueID">
+  <title>generateGloballyUniqueID</title>
+
+  <para><emphasis
+  role="bold">STD.System.Log.generateGloballyUniqueID<indexterm>
+      <primary>STD.System.Log.generateGloballyUniqueID</primary>
+    </indexterm> <indexterm>
+      <primary>System.Log.generateGloballyUniqueID</primary>
+    </indexterm> <indexterm>
+      <primary>Log.generateGloballyUniqueID</primary>
+    </indexterm> <indexterm>
+      <primary>generateGloballyUniqueID</primary>
+    </indexterm></emphasis><emphasis role="bold">()</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt"/>
+
+      <colspec/>
+
+      <tbody>
+        <row>
+          <entry>Retorno:</entry>
+
+          <entry>generateGloballyUniqueID returns a globally unique
+          identifier.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para><emphasis role="bold">generateGloballyUniqueID </emphasis>retorna um
+  identificador global único (GUID<indexterm>
+      <primary>GUID</primary>
+    </indexterm><indexterm>
+      <primary>UUID</primary>
+    </indexterm>) com codificação base58. Condificação base58 é similar a
+  base64 mas evita encoding mas evita caracteres não alfanuméricos e letras
+  visualmente ambíguas. Ele foi projetado para evitar erros por usuários
+  humanos que inserem manualmente os dados copiando de alguma fonte visual.
+  Ele permite copiar/colar facilmente porque um clique duplo geralmente
+  seleciona a string inteira.</para>
+
+  <para/>
+
+  <programlisting format="linespecific">IMPORT STD;
+
+value1 := std.system.log.generateGloballyUniqueId() : INDEPENDENT;
+value2 := NOFOLD(std.system.log.generateGloballyUniqueId()) : INDEPENDENT;
+
+OUTPUT(value1);
+OUTPUT(value2);
+OUTPUT(IF (value1 = value2, 'Values are not unique', 'Values are unique'));</programlisting>
+
+  <para/>
+</sect1>

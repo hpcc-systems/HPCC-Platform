@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="IntroHPCC4J" role="nobrk">
+  <title>Introdução ao HPCC4J</title>
+
+  <para>O HPCC Systems for Java é uma coleção de APIs e ferramentas baseadas
+  em Java que ajudam os desenvolvedores a interagir com os servidores e
+  ferramentas dos sistemas HPCC de maneira relativamente simples e
+  padronizada.</para>
+
+  <para>O projeto abriga várias APIs e ferramentas baseadas em Java centradas
+  no HPCC Systems.</para>
+
+  <para>O projeto está disponível no Github no respoitório do hpcc4j.</para>
+
+  <para><ulink
+  url="https://github.com/hpcc-systems/hpcc4j">https://github.com/hpcc-systems/hpcc4j</ulink></para>
+
+  <sect2>
+    <title>wsclient</title>
+
+    <para>A API que padroniza e facilita a interação com HPCC Systems Web
+    based Services (ESP Web services).</para>
+
+    <para>O projeto é baseado em código stub gerado a partir de WSDL usando
+    ferramentas Eclipse baseadas no Apache Axis.</para>
+
+    <para>Fornece um mecanismo para ativar os métodos do Web Service do HPCC
+    Systems.</para>
+  </sect2>
+
+  <sect2>
+    <title>clienttools</title>
+
+    <para>Interface baseada em Java para ferramentas de cliente HPCC Systems.
+    Atualmente apenas faz interface com o servidor ECLCC.</para>
+  </sect2>
+
+  <sect2>
+    <title>rdf2hpcc</title>
+
+    <para>Ferramenta de ingestão de dados RDF para HPCC Systems com base em
+    Apache Jena e é dependente de wsclient.</para>
+  </sect2>
+
+  <sect2>
+    <title>dfsclient</title>
+
+    <para>Ingestão distribuída de dados &amp; biblioteca de extração. Usa-se
+    binários internos do HPCC Systems para ler e gravar dados remotamente em
+    paralelo e com eficiência. Oferece suporte à criação e tradução de
+    datasets genéricos e personalizados por meio de
+    interfaces<emphasis>IRecordBuilder</emphasis> &amp;
+    <emphasis>IRecordAccessor</emphasis></para>
+  </sect2>
+
+  <sect2>
+    <title>commons-hpcc</title>
+
+    <para>Conjunto de bibliotecas de uso comum usadas em conjunto com uma
+    ampla variedade de clientes Java relacionados ao HPCC System.</para>
+  </sect2>
+
+  <sect2>
+    <title>NOTA:</title>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <?dbfo keep-together="always"?>
+
+      <tgroup cols="2">
+        <colspec colwidth="49.50pt"/>
+
+        <colspec/>
+
+        <tbody>
+          <row>
+            <entry><graphic fileref="../../images/tip.jpg"/></entry>
+
+            <entry><para>Como é comum na comunicação do cliente Java por TLS,
+            os clientes baseados em HPCC4J direcionados a um cluster HPCC por
+            TLS precisarão importar os certificados apropriados para seu
+            keystore Java local.</para><para> </para><para>*Uma maneira de
+            fazer isso é usar o keytool fornecido com as instalações Java.
+            Consulte a documentação do keytool para uso. </para></entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para/>
+  </sect2>
+</sect1>

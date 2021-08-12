@@ -169,7 +169,10 @@ public:
 #endif
 #ifdef TIME_PACKETS
     unsigned tick = 0;
+#else
+    unsigned filler = 0; // keeps valgrind happy
 #endif
+
     RoxiePacketHeader() = default;
 
     RoxiePacketHeader(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence);
