@@ -1397,7 +1397,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                         }
                         const char *soname =  roxieFarm.queryProp("@so");
                         const char *config  = roxieFarm.queryProp("@config");
-                        IHpccProtocolPlugin *protocolPlugin = ensureProtocolPlugin(*protocolCtx, soname);
+                        Owned<IHpccProtocolPlugin> protocolPlugin = ensureProtocolPlugin(*protocolCtx, soname);
                         roxieServer.setown(protocolPlugin->createListener(protocol ? protocol : "native", createRoxieProtocolMsgSink(ip, port, numThreads, suspended), port, listenQueue, config, certFileName.str(), keyFileName.str(), passPhraseStr.str()));
                     }
                     else
@@ -1465,6 +1465,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
         packetDiscarder->stop();
         packetDiscarder.clear();
+        stopTopoThread();
         ROQ->stop();
         ROQ->join();
         ROQ->Release();
@@ -1497,7 +1498,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
     perfMonHook.clear();
 #endif
     stopAeronDriver();
-    stopTopoThread();
 
     strdup("Make sure leak checking is working");
     roxiemem::releaseRoxieHeap();
