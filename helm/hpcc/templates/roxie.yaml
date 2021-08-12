@@ -36,6 +36,7 @@ data:
 {{ toYaml ( omit .me "logging" "topoServer" "encryptInTransit" "env") | indent 6 }}
       numChannels: {{ .numChannels }}
       topologyServers: "{{ .toponame }}:{{ .topoport }}"
+      heartbeatInterval: {{ .heartbeatInterval }}
       resolveLocally: false
 {{- $mtlsEnabled := (eq (include "hpcc.isMtlsEnabled" (dict "root" .root)) "true") -}}
 {{/* By default use encryption if local certificates are enabled, but allow it to be turned off via roxie .encryptInTransit value */}}
@@ -61,8 +62,7 @@ data:
   {{ .toponame }}.yaml:
     version: 1.0
     toposerver:
-      port: {{ .topoport }}
-      traceLevel: {{ .toposerver.traceLevel | default 1 }}
+{{ toYaml ( omit .toposerver "logging" "env") | indent 6 }}
 {{- include "hpcc.generateLoggingConfig" (dict "root" .root "me" .toposerver) | indent 6 }}
 {{- end -}}
 
@@ -75,6 +75,7 @@ data:
 {{- $_ := set $commonCtx "toponame" (printf "%s-toposerver" $roxie.name) -}}
 {{- $_ := set $commonCtx "numChannels" ($roxie.numChannels | int | default 1) -}}
 {{- $_ := set $commonCtx "topoport" ($toposerver.port | int | default 9004) -}}
+{{- $_ := set $commonCtx "heartbeatInterval" ($toposerver.heartbeatInterval | int | default 10000) -}}
 {{- $_ := set $toposerver "name" $commonCtx.toponame -}}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.roxieConfigMap" "component" "roxie" "excludeKeys" "global")) }}
 {{- $topoconfigSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.roxieTopoConfigMap" "component" "toposerver" "excludeKeys" "global")) }}

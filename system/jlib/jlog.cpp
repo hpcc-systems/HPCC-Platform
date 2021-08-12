@@ -1747,7 +1747,8 @@ void CLogMsgManager::mreport_direct(unsigned compo, const LogMsgCategory & cat, 
         switch (*cursor)
         {
             case '\0':
-                pushMsg(new LogMsg(cat, getNextID(), job, NoLogMsgCode, (int)(cursor-lineStart), lineStart, compo, port, session));
+                if (cursor != lineStart || cursor==msg)
+                    pushMsg(new LogMsg(cat, getNextID(), job, NoLogMsgCode, (int)(cursor-lineStart), lineStart, compo, port, session));
                 return;
             case '\r':
                 // NB: \r or \r\n translated into newline
