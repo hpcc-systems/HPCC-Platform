@@ -233,7 +233,9 @@ define([
             var context = this;
             WsAccess.GroupMemberQuery({
                 request: {
-                    GroupName: context.params.groupname
+                    GroupName: context.params.groupname,
+                    PageSize: 3000,
+                    PageStartFrom: 0
                 }
             }).then(function (response) {
                 var results = [];
