@@ -72,7 +72,7 @@ void setStatisticsComponentName(StatisticCreatorType processType, const char * p
 // Textual forms of the different enumerations, first items are for none and all.
 static constexpr const char * const measureNames[] = { "", "all", "ns", "ts", "cnt", "sz", "cpu", "skw", "node", "ppm", "ip", "cy", "en", "txt", "bool", "id", "fname", "cost", NULL };
 static constexpr const char * const creatorTypeNames[]= { "", "all", "unknown", "hthor", "roxie", "roxie:s", "thor", "thor:m", "thor:s", "eclcc", "esp", "summary", NULL };
-static constexpr const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", "function", "workflow", "child", "file", "unknown", nullptr };
+static constexpr const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", "function", "workflow", "child", "file", "channel", "unknown", nullptr };
 
 static unsigned matchString(const char * const * names, const char * search, unsigned dft)
 {
@@ -112,6 +112,7 @@ static const StatisticScopeType scoreOrder[] = {
     SSTworkflow,
     SSTchildgraph,
     SSTfile,
+    SSTchannel,  // MORE - not sure what this means!
     SSTunknown
 };
 static int scopePriority[SSTmax];
@@ -1354,6 +1355,10 @@ StringBuffer & StatsScopeId::getScopeText(StringBuffer & out) const
         return out.append(WorkflowScopePrefix).append(id);
     case SSTchildgraph:
         return out.append(ChildGraphScopePrefix).append(id);
+    case SSTfile:
+        return out.append(FileScopePrefix).append(name);
+    case SSTchannel:
+        return out.append(ChannelScopePrefix).append(id);
     case SSTunknown:
         return out.append(name);
     default:
@@ -1411,6 +1416,7 @@ void StatsScopeId::describe(StringBuffer & description) const
     case SSTactivity:
     case SSTworkflow:
     case SSTchildgraph:
+    case SSTchannel:
         description.append(' ').append(id);
         break;
     case SSTedge:
@@ -1457,12 +1463,14 @@ void StatsScopeId::deserialize(MemoryBuffer & in, unsigned version)
     case SSTactivity:
     case SSTworkflow:
     case SSTchildgraph:
+    case SSTchannel:
         in.read(id);
         break;
     case SSTedge:
         in.read(id);
         in.read(extra);
         break;
+    case SSTfile:
     case SSTfunction:
         in.read(name);
         break;
@@ -1482,6 +1490,7 @@ void StatsScopeId::serialize(MemoryBuffer & out) const
     case SSTactivity:
     case SSTworkflow:
     case SSTchildgraph:
+    case SSTchannel:
         out.append(id);
         break;
     case SSTedge:
@@ -1587,6 +1596,13 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
             return true;
         }
         break;
+    case ChannelScopePrefix[0]:
+        if (MATCHES_CONST_PREFIX(text, ChannelScopePrefix) && isdigit(text[strlen(ChannelScopePrefix)]))
+        {
+            setChannelId(strtoul(text+ strlen(ChannelScopePrefix), next, 10));
+            return true;
+        }
+        break;
     case '\0':
         setId(SSTglobal, 0);
         return true;
@@ -1639,6 +1655,10 @@ void StatsScopeId::setFileId(const char * _name)
 {
     scopeType = SSTfile;
     name.set(_name);
+}
+void StatsScopeId::setChannelId(unsigned _id)
+{
+    setId(SSTchannel, _id);
 }
 void StatsScopeId::setWorkflowId(unsigned _id)
 {
@@ -1724,9 +1744,9 @@ public:
 
     virtual byte getCollectionType() const { return SCintermediate; }
 
-    StringBuffer &toXML(StringBuffer &out) const;
 
 //interface IStatisticCollection:
+    virtual StringBuffer &toXML(StringBuffer &out) const override;
     virtual StatisticScopeType queryScopeType() const override
     {
         return id.queryScopeType();
@@ -1894,6 +1914,7 @@ public:
 private:
     StatsScopeId id;
     CStatisticCollection * parent;
+protected:
     CollectionHashTable children;
     StatsArray stats;
 };
@@ -1994,6 +2015,15 @@ public:
         out.append(creator);
         out.append(whenCreated);
     }
+    virtual void mergeInto(IStatisticGatherer & target) const override
+    {
+        // Similar to CStatisticCollection::mergeInfo but do not add the root scope.
+        ForEachItemIn(iStat, stats)
+            stats.item(iStat).mergeInto(target);
+
+        for (auto const & cur : children)
+            cur.mergeInto(target);
+    }
 public:
     StatisticCreatorType creatorType;
     StringAttr creator;
@@ -2070,6 +2100,12 @@ public:
         CStatisticCollection & tos = scopes.tos();
         scopes.append(*tos.ensureSubScope(scopeId, true));
     }
+    virtual void beginChannelScope(unsigned id) override
+    {
+        StatsScopeId scopeId(SSTchannel, id);
+        CStatisticCollection & tos = scopes.tos();
+        scopes.append(*tos.ensureSubScope(scopeId, true));
+    }
     virtual void endScope() override
     {
         scopes.pop();
@@ -2138,6 +2174,7 @@ public:
     virtual void beginChildGraphScope(unsigned id) { throwUnexpected(); }
     virtual void beginActivityScope(unsigned id) { throwUnexpected(); }
     virtual void beginEdgeScope(unsigned id, unsigned oid) { throwUnexpected(); }
+    virtual void beginChannelScope(unsigned id) { throwUnexpected(); }
     virtual void endScope()
     {
         node = &stack.popGet();
@@ -2345,12 +2382,12 @@ void CRuntimeStatisticCollection::rollupStatistics(unsigned numTargets, IContext
     reportIgnoredStats();
 }
 
-void CRuntimeStatisticCollection::recordStatistics(IStatisticGatherer & target) const
+void CRuntimeStatisticCollection::recordStatistics(IStatisticGatherer & target, bool clear) const
 {
     ForEachItem(i)
     {
         StatisticKind kind = getKind(i);
-        unsigned __int64 value = values[i].get();
+        unsigned __int64 value = clear ? values[i].getClearAtomic() : values[i].get();
         if (value || includeStatisticIfZero(kind))
         {
             StatisticKind serialKind= querySerializedKind(kind);
@@ -2363,7 +2400,7 @@ void CRuntimeStatisticCollection::recordStatistics(IStatisticGatherer & target) 
     reportIgnoredStats();
     CNestedRuntimeStatisticMap *qn = queryNested();
     if (qn)
-        qn->recordStatistics(target);
+        qn->recordStatistics(target, clear);
 }
 
 void CRuntimeStatisticCollection::reportIgnoredStats() const
@@ -2452,12 +2489,6 @@ void CRuntimeStatisticCollection::deserializeMerge(MemoryBuffer& in)
     {
         ensureNested().deserializeMerge(in);
     }
-}
-
-void CRuntimeStatisticCollection::getNodeProgressInfo(IPropertyTree &node) const
-{
-    TreeNodeStatisticGatherer gatherer(node);
-    recordStatistics(gatherer);
 }
 
 bool CRuntimeStatisticCollection::serialize(MemoryBuffer& out) const
@@ -2616,7 +2647,7 @@ static bool isWorthReportingMergedValue(StatisticKind kind)
 }
 
 
-void CRuntimeSummaryStatisticCollection::recordStatistics(IStatisticGatherer & target) const
+void CRuntimeSummaryStatisticCollection::recordStatistics(IStatisticGatherer & target, bool clear) const
 {
     for (unsigned i = 0; i < ordinality(); i++)
     {
@@ -2628,7 +2659,7 @@ void CRuntimeSummaryStatisticCollection::recordStatistics(IStatisticGatherer & t
             //Thor should always publish the average value for a stat, and the merged value if it makes sense.
             //So that it is easy to analyse graphs independent of the number of slave nodes it is executed on.
 
-            unsigned __int64 mergedValue = convertMeasure(kind, serialKind, values[i].get());
+            unsigned __int64 mergedValue = convertMeasure(kind, serialKind, clear ? values[i].getClearAtomic() : values[i].get());
             if (isWorthReportingMergedValue(serialKind))
             {
                 if (mergedValue || includeStatisticIfZero(serialKind))
@@ -2697,7 +2728,7 @@ void CRuntimeSummaryStatisticCollection::recordStatistics(IStatisticGatherer & t
     reportIgnoredStats();
     CNestedRuntimeStatisticMap *qn = queryNested();
     if (qn)
-        qn->recordStatistics(target);
+        qn->recordStatistics(target, clear);
 }
 
 bool CRuntimeSummaryStatisticCollection::serialize(MemoryBuffer & out) const
@@ -2745,10 +2776,10 @@ bool CNestedRuntimeStatisticCollection::serialize(MemoryBuffer& out) const
     return stats->serialize(out);
 }
 
-void CNestedRuntimeStatisticCollection::recordStatistics(IStatisticGatherer & target) const
+void CNestedRuntimeStatisticCollection::recordStatistics(IStatisticGatherer & target, bool clear) const
 {
     target.beginScope(scope);
-    stats->recordStatistics(target);
+    stats->recordStatistics(target, clear);
     target.endScope();
 }
 
@@ -2871,11 +2902,11 @@ bool CNestedRuntimeStatisticMap::serialize(MemoryBuffer& out) const
     return nonEmpty;
 }
 
-void CNestedRuntimeStatisticMap::recordStatistics(IStatisticGatherer & target) const
+void CNestedRuntimeStatisticMap::recordStatistics(IStatisticGatherer & target, bool clear) const
 {
     ReadLockBlock b(lock);
     ForEachItemIn(i, map)
-        map.item(i).recordStatistics(target);
+        map.item(i).recordStatistics(target, clear);
 }
 
 StringBuffer & CNestedRuntimeStatisticMap::toStr(StringBuffer &str) const

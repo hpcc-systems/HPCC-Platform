@@ -367,7 +367,6 @@ extern HardwareInfo hdwInfo;
 extern unsigned parallelAggregate;
 extern bool inMemoryKeysEnabled;
 extern unsigned __int64 minFreeDiskSpace;
-extern bool probeAllRows;
 extern bool steppingEnabled;
 extern bool simpleLocalKeyedJoins;
 extern bool enableKeyDiff;
@@ -555,7 +554,7 @@ public:
 extern void putStatsValue(IPropertyTree *node, const char *statName, const char *statType, unsigned __int64 val);
 extern void putStatsValue(StringBuffer &reply, const char *statName, const char *statType, unsigned __int64 val);
 
-extern const StatisticsMapping globalStatistics;
+extern const StatisticsMapping accumulatedStatistics;
 
 class ContextLogger : implements IRoxieContextLogger, public CInterface
 {
@@ -581,7 +580,7 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
 
-    ContextLogger() : stats(globalStatistics, true)
+    ContextLogger() : stats(accumulatedStatistics, true)
     {
         ctxTraceLevel = traceLevel;
         intercept = false;
@@ -689,6 +688,11 @@ public:
         if (aborted)
             throw MakeStringException(ROXIE_ABORT_ERROR, "Roxie server requested abort for running activity");
         stats.addStatisticAtomic(kind, value);
+    }
+
+    virtual void setStatistic(StatisticKind kind, unsigned __int64 value) const
+    {
+        stats.setStatistic(kind, value);
     }
 
     virtual void mergeStats(const CRuntimeStatisticCollection &from) const

@@ -140,7 +140,7 @@ private:
                 ForEachItemIn (g, activeGraphs)
                 {
                     CGraphBase &graph = activeGraphs.item(g);
-                    Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph.queryGraphId());
+                    Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph.queryGraphId(), false);
                     reportGraph(stats->queryStatsBuilder(), &graph);
                 }
                 Owned<IWorkUnit> wu = &currentWU.lock();
@@ -168,7 +168,7 @@ private:
             const char *graphName = ((CJobMaster &)activeGraphs.item(0).queryJob()).queryGraphName();
             unsigned wfid = graph->queryJob().getWfid();
             {
-                Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph->queryGraphId());
+                Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph->queryGraphId(), false);
                 reportGraph(stats->queryStatsBuilder(), graph);
             }
 

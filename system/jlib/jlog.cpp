@@ -3055,6 +3055,9 @@ public:
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const
     {
     }
+    virtual void setStatistic(StatisticKind kind, unsigned __int64 value) const
+    {
+    }
     virtual void mergeStats(const CRuntimeStatisticCollection &from) const
     {
     }

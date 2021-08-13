@@ -83,6 +83,7 @@ public:
     void setEdgeId(unsigned _id, unsigned _output);
     void setFunctionId(const char * _name);
     void setFileId(const char * _name);
+    void setChannelId(unsigned id);
     void setSubgraphId(unsigned _id);
     void setWorkflowId(unsigned _id);
     void setChildGraphId(unsigned _id);
@@ -117,6 +118,7 @@ public:
     virtual void serialize(MemoryBuffer & out) const = 0;
     virtual unsigned __int64 queryWhenCreated() const = 0;
     virtual void mergeInto(IStatisticGatherer & target) const = 0;
+    virtual StringBuffer &toXML(StringBuffer &out) const = 0;
 };
 
 interface IStatisticCollectionIterator : public IIteratorOf<IStatisticCollection>
@@ -141,6 +143,7 @@ public:
     virtual void beginActivityScope(unsigned id) = 0;
     virtual void beginEdgeScope(unsigned id, unsigned oid) = 0;
     virtual void beginChildGraphScope(unsigned id) = 0;
+    virtual void beginChannelScope(unsigned id) = 0;
     virtual void endScope() = 0;
     virtual void addStatistic(StatisticKind kind, unsigned __int64 value) = 0;
     virtual void updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction) = 0;
@@ -208,6 +211,15 @@ public:
     inline StatsActivityScope(IStatisticGatherer & _gatherer, unsigned id) : StatsScopeBlock(_gatherer)
     {
         gatherer.beginActivityScope(id);
+    }
+};
+
+class ChannelActivityScope : public StatsScopeBlock
+{
+public:
+    inline ChannelActivityScope(IStatisticGatherer & _gatherer, unsigned id) : StatsScopeBlock(_gatherer)
+    {
+        gatherer.beginChannelScope(id);
     }
 };
 
@@ -583,9 +595,7 @@ public:
     void rollupStatistics(IContextLogger * target) { rollupStatistics(1, &target); }
     void rollupStatistics(unsigned num, IContextLogger * const * targets) const;
 
-
-    virtual void recordStatistics(IStatisticGatherer & target) const;
-    void getNodeProgressInfo(IPropertyTree &node) const;
+    virtual void recordStatistics(IStatisticGatherer & target, bool clear) const;
 
     // Print out collected stats to string
     StringBuffer &toStr(StringBuffer &str) const;
@@ -626,7 +636,7 @@ public:
     CRuntimeSummaryStatisticCollection(const StatisticsMapping & _mapping);
     ~CRuntimeSummaryStatisticCollection();
 
-    virtual void recordStatistics(IStatisticGatherer & target) const override;
+    virtual void recordStatistics(IStatisticGatherer & target, bool clear = false) const override;
     virtual bool serialize(MemoryBuffer & out) const override;  // Returns true if any non-zero
     virtual void deserialize(MemoryBuffer & in) override;
     virtual void deserializeMerge(MemoryBuffer& in) override;
@@ -674,7 +684,7 @@ public:
     void deserialize(MemoryBuffer & in);
     void deserializeMerge(MemoryBuffer& in);
     void merge(const CNestedRuntimeStatisticCollection & other, unsigned node);
-    void recordStatistics(IStatisticGatherer & target) const;
+    void recordStatistics(IStatisticGatherer & target, bool clear) const;
     StringBuffer & toStr(StringBuffer &str) const;
     StringBuffer & toXML(StringBuffer &str) const;
     void updateDelta(CNestedRuntimeStatisticCollection & target, const CNestedRuntimeStatisticCollection & source);
@@ -695,7 +705,7 @@ public:
     void deserialize(MemoryBuffer & in);
     void deserializeMerge(MemoryBuffer& in);
     void merge(const CNestedRuntimeStatisticMap & other, unsigned node);
-    void recordStatistics(IStatisticGatherer & target) const;
+    void recordStatistics(IStatisticGatherer & target, bool clear) const;
     StringBuffer & toStr(StringBuffer &str) const;
     StringBuffer & toXML(StringBuffer &str) const;
     void updateDelta(CNestedRuntimeStatisticMap & target, const CNestedRuntimeStatisticMap & source);

@@ -412,9 +412,9 @@ public:
         // So do the query ourselves and in all child threads;
         const char *name = xml->queryName();
         CascadeMergeType mergeType=CascadeMergeNone;
-        if (strstr(name, "querystats"))
+        if (strieq(name, "control:querystats"))
             mergeType=CascadeMergeStats;
-        else if (strstr(name, "queries"))
+        else if (strieq(name, "control:queries"))
             mergeType=CascadeMergeQueries;
         Owned<IPropertyTree> mergedReply;
         if (mergeType!=CascadeMergeNone)

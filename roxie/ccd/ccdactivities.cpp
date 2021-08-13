@@ -100,13 +100,16 @@ extern void putStatsValue(StringBuffer &reply, const char *statName, const char 
     }
 }
 
-CActivityFactory::CActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
+static const StatisticsMapping edgeStatistics({StNumRowsProcessed, StNumStarts, StNumStops, StNumSlaves});
+
+CActivityFactory::CActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, const StatisticsMapping &_factoryStats)
   : queryFactory(_queryFactory),
     helperFactory(_helperFactory),
     id(_id),
     subgraphId(_subgraphId),
     kind(_kind),
-    mystats(allStatistics)  // We COULD cut down this list but it would complicate the structure, and we do actually track more in the factory than in the activity
+    mystats(_factoryStats),
+    myedgestats(edgeStatistics)
 {
     if (helperFactory)
     {
@@ -142,8 +145,8 @@ class CAgentActivityFactory : public CActivityFactory, implements IAgentActivity
 public:
     IMPLEMENT_IINTERFACE
 
-    CAgentActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory) 
-        : CActivityFactory(_graphNode.getPropInt("@id", 0), _subgraphId, _queryFactory, _helperFactory, getActivityKind(_graphNode), _graphNode)
+    CAgentActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, const StatisticsMapping &_factoryStats)
+        : CActivityFactory(_graphNode.getPropInt("@id", 0), _subgraphId, _queryFactory, _helperFactory, getActivityKind(_graphNode), _graphNode, _factoryStats)
     {
     }
 
@@ -186,15 +189,11 @@ public:
     {
         return CActivityFactory::getKind();
     }
+    virtual const StatisticsMapping &queryStatsMapping() const
+    {
+        return mystats.queryMapping();
+    }
 
-    virtual void getEdgeProgressInfo(unsigned idx, IPropertyTree &edge) const
-    {
-        CActivityFactory::getEdgeProgressInfo(idx, edge);
-    }
-    virtual void getNodeProgressInfo(IPropertyTree &node) const
-    {
-        CActivityFactory::getNodeProgressInfo(node);
-    }
     virtual void resetNodeProgressInfo()
     {
         CActivityFactory::resetNodeProgressInfo();
@@ -202,6 +201,23 @@ public:
     virtual void getActivityMetrics(StringBuffer &reply) const
     {
         CActivityFactory::getActivityMetrics(reply);
+    }
+    virtual void gatherStats(IStatisticGatherer &builder, int channel, bool reset) const override
+    {
+        //Because subgraphs are flattened in roxie the subgraph needs to be selected for each activity
+        assertex(channel != -1);
+        StatsSubgraphScope sg(builder, subgraphId);
+        StatsActivityScope ac(builder, id);
+        {
+            ChannelActivityScope ch(builder, channel);
+            mystats.recordStatistics(builder, reset);
+        }
+        ForEachItemIn(i, childQueries)
+        {
+            auto child = childQueries.item(i);
+            StatsChildGraphScope cc(builder, childQueryIndexes.item(i));
+            child.gatherStats(builder, channel, reset);
+        }
     }
     IRoxieAgentContext *createAgentContext(const AgentContextLogger &logctx, IRoxieQueryPacket *packet) const
     {
@@ -218,7 +234,7 @@ public:
         {
             ForEachItemIn(idx, childQueries)
             {
-                if (!_probeManager) // MORE - the probeAllRows is a hack!
+                if (!_probeManager)
                     _probeManager = queryContext->queryProbeManager();
                 IActivityGraph *childGraph = createActivityGraph(ctx, NULL, childQueryIndexes.item(idx), childQueries.item(idx), NULL, _probeManager, logctx, 1); // MORE - the parent is wrong!
                 childGraphs.append(*childGraph);
@@ -331,14 +347,7 @@ protected:
     virtual void onCreate()
     {
         queryContext.setown(basefactory->createAgentContext(logctx, packet));
-#ifdef _DEBUG
-        // MORE - need to consider debugging....
-        if (probeAllRows)
-            probeManager.setown(createProbeManager());
-        basefactory->createChildQueries(queryContext, childGraphs, basehelper, probeManager, queryContext, logctx);
-#else
         basefactory->createChildQueries(queryContext, childGraphs, basehelper, NULL, queryContext, logctx);
-#endif
         if (meta.needsSerializeDisk())
             serializer.setown(meta.createDiskSerializer(queryContext->queryCodeContext(), basefactory->queryId()));
         if (needsRowAllocator())
@@ -388,10 +397,12 @@ protected:
 
     virtual void beforeDispose() override
     {
-        CRuntimeStatisticCollection merged(allStatistics);
-        logctx.gatherStats(merged);
         if (defaultCollectFactoryStatistics)
+        {
+            CRuntimeStatisticCollection merged(basefactory->queryStatsMapping());
+            logctx.gatherStats(merged);
             basefactory->mergeStats(merged);
+        }
     }
 
 public:
@@ -984,6 +995,8 @@ public:
 
 };
 
+static const StatisticsMapping diskAgentStatistics({StNumDiskRowsRead, StNumDiskSeeks, StNumDiskAccepted, StNumDiskRejected });
+
 class CRoxieDiskBaseActivityFactory : public CAgentActivityFactory
 {
 protected:
@@ -991,7 +1004,7 @@ protected:
     Owned<IInMemoryIndexManager> manager;
 public:
     CRoxieDiskBaseActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
-        : CAgentActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
+        : CAgentActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory, diskAgentStatistics)
     {
         Owned<IHThorDiskReadBaseArg> helper = (IHThorDiskReadBaseArg *) helperFactory();
         bool variableFileName = allFilesDynamic || queryFactory.isDynamic() || ((helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0);
@@ -2402,17 +2415,24 @@ protected:
     IOutputMetaData *projectedMeta = nullptr;
     IOutputMetaData *expectedMeta = nullptr;
 
-    CRoxieKeyedActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
-        : CAgentActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
+    CRoxieKeyedActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, const StatisticsMapping &_factoryStats)
+        : CAgentActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory, _factoryStats)
     {
     }
 };
+
+static const StatisticsMapping indexAgentStats({StNumIndexSeeks, StNumIndexScans, StNumIndexWildSeeks,
+                                                StNumIndexSkips, StNumIndexNullSkips, StNumIndexMerges, StNumIndexMergeCompares,
+                                                StNumPreFiltered, StNumPostFiltered, StNumIndexAccepted, StNumIndexRejected,
+                                                StNumBlobCacheHits, StNumLeafCacheHits, StNumNodeCacheHits,
+                                                StNumBlobCacheAdds, StNumLeafCacheAdds, StNumNodeCacheAdds,
+                                                StNumIndexRowsRead});
 
 class CRoxieIndexActivityFactory : public CRoxieKeyedActivityFactory
 {
 public:
     CRoxieIndexActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
-        : CRoxieKeyedActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
+        : CRoxieKeyedActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory, indexAgentStats)
     {
     }
 
@@ -3635,7 +3655,7 @@ public:
     Owned<IFileIOArray> fileArray;
 
     CRoxieFetchActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
-        : CAgentActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
+        : CAgentActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory, diskAgentStatistics)
     {
         Owned<IHThorFetchBaseArg> helper = (IHThorFetchBaseArg *) helperFactory();
         bool variableFileName = allFilesDynamic || queryFactory.isDynamic() || ((helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
@@ -4029,7 +4049,7 @@ class CRoxieKeyedJoinIndexActivityFactory : public CRoxieKeyedActivityFactory
 {
 public:
     CRoxieKeyedJoinIndexActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
-        : CRoxieKeyedActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
+        : CRoxieKeyedActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory, indexAgentStats)
     {
         Owned<IHThorKeyedJoinArg> helper = (IHThorKeyedJoinArg *) helperFactory();
         bool variableFileName = allFilesDynamic || queryFactory.isDynamic() || ((helper->getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename|JFindexfromactivity)) != 0);
@@ -4415,7 +4435,7 @@ public:
     Owned<IFileIOArray> files;
 
     CRoxieKeyedJoinFetchActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
-        : CAgentActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
+        : CAgentActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory, diskAgentStatistics)
     {
         Owned<IHThorKeyedJoinArg> helper = (IHThorKeyedJoinArg *) helperFactory();
         assertex(helper->diskAccessRequired());
@@ -4724,7 +4744,7 @@ class CRoxieRemoteActivityFactory : public CAgentActivityFactory
 
 public:
     CRoxieRemoteActivityFactory(IPropertyTree &graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, unsigned _remoteId)
-        : CAgentActivityFactory(graphNode, _subgraphId, _queryFactory, _helperFactory), remoteId(_remoteId)
+        : CAgentActivityFactory(graphNode, _subgraphId, _queryFactory, _helperFactory, allStatistics), remoteId(_remoteId)  // MORE is all statistics right? Or is it none?
     {
     }
 
@@ -4756,7 +4776,7 @@ protected:
 
 public:
     CRoxieDummyActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, bool isLoadDataOnly)
-        : CAgentActivityFactory(_graphNode, _subgraphId, _queryFactory, NULL)
+        : CAgentActivityFactory(_graphNode, _subgraphId, _queryFactory, NULL, allStatistics)
     {
         if (_graphNode.getPropBool("att[@name='_isSpill']/@value", false) || _graphNode.getPropBool("att[@name='_isSpillGlobal']/@value", false))
             return;  // ignore 'spills'

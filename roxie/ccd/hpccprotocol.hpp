@@ -71,7 +71,6 @@ interface IHpccProtocolResponse : extends IInterface
 
     virtual void appendContent(TextMarkupFormat mlFmt, const char *content, const char *name=NULL) = 0; //will be transformed
     virtual IXmlWriter *writeAppendContent(const char *name = NULL) = 0;
-    virtual void appendProbeGraph(const char *xml) = 0;
 
     virtual void finalize(unsigned seqNo) = 0;
 
