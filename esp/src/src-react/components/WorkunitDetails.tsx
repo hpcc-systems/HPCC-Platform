@@ -242,13 +242,13 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
                 <PivotItem headerText={nlsHPCC.Inputs} itemKey="inputs" itemCount={workunit?.SourceFileCount} style={pivotItemStyle(size, 0)}>
                     <SourceFiles wuid={wuid} />
                 </PivotItem>
-                <PivotItem headerText={nlsHPCC.Metrics} itemKey="metrics" itemCount={workunit?.TimerCount} style={pivotItemStyle(size, 0)}>
+                <PivotItem headerText={nlsHPCC.Metrics} itemKey="metrics" style={pivotItemStyle(size, 0)}>
                     <Metrics wuid={wuid} filter={{}} />
                 </PivotItem>
-                <PivotItem headerText={nlsHPCC.Timers} itemKey="timers" itemCount={workunit?.TimerCount} style={pivotItemStyle(size, 0)}>
+                <PivotItem headerText={nlsHPCC.Timers + " (L)"} itemKey="timers" itemCount={workunit?.TimerCount} style={pivotItemStyle(size, 0)}>
                     <DojoAdapter widgetClassID="TimingPageWidget" params={{ Wuid: wuid }} />
                 </PivotItem>
-                <PivotItem headerText={nlsHPCC.Graphs} itemKey="graphs" itemCount={workunit?.GraphCount} style={pivotItemStyle(size, 0)}>
+                <PivotItem headerText={nlsHPCC.Graphs + " (L)"} itemKey="graphs" itemCount={workunit?.GraphCount} style={pivotItemStyle(size, 0)}>
                     <DojoAdapter widgetClassID="GraphsWUWidget" params={{ Wuid: wuid }} />
                 </PivotItem>
                 <PivotItem headerText={nlsHPCC.Workflows} itemKey="workflows" itemCount={workunit?.WorkflowCount} style={pivotItemStyle(size, 0)}>
