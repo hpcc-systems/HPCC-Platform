@@ -2,7 +2,7 @@ import * as React from "react";
 import { useConst } from "@fluentui/react-hooks";
 import { userKeyValStore } from "src/KeyValStore";
 
-export function useUserStore(key: string, defaultValue?: string): [value: string, setValue: (value: string) => void] {
+export function useUserStore(key: string, defaultValue?: string, monitor: boolean = false): [value: string, setValue: (value: string) => void] {
 
     const store = useConst(() => userKeyValStore());
     const [value, setValue] = React.useState<string>();
@@ -16,9 +16,17 @@ export function useUserStore(key: string, defaultValue?: string): [value: string
         });
     }, [defaultValue, key, store]);
 
+    React.useEffect(() => {
+        if (!store || !monitor) return;
+        const handle = store.monitor((messages) => {
+            setValue(messages[0].value);
+        });
+        return () => handle.release();
+    }, [store, monitor]);
+
     const extSetValue = useConst(() => {
         return (value: string) => {
-            store.set(key, value).then(() => {
+            store.set(key, value, monitor).then(() => {
                 setValue(value);
             });
         };

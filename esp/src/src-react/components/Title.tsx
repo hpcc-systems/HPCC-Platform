@@ -18,8 +18,6 @@ const examplePersona: IPersonaSharedProps = {
 };
 
 interface DevTitleProps {
-    useDarkMode: boolean,
-    setUseDarkMode: (_: boolean) => void;
 }
 
 export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
