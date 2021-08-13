@@ -302,6 +302,8 @@ protected:
                 expandProcessTreeFromStats(rootTarget, target, &cur);
                 continue;
             case SSTfunction:
+            case SSTchannel:
+            case SSTglobal:
                 //MORE:Should function scopes be included in the graph scope somehow, and if so how?
                 continue;
             default:
@@ -13492,6 +13494,11 @@ public:
     virtual void beginChildGraphScope(unsigned id)
     {
         StatsScopeId scopeId(SSTchildgraph, id);
+        beginScope(scopeId);
+    }
+    virtual void beginChannelScope(unsigned id)
+    {
+        StatsScopeId scopeId(SSTchannel, id);
         beginScope(scopeId);
     }
     virtual void endScope()
