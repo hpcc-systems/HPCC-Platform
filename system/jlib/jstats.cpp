@@ -72,7 +72,7 @@ void setStatisticsComponentName(StatisticCreatorType processType, const char * p
 // Textual forms of the different enumerations, first items are for none and all.
 static constexpr const char * const measureNames[] = { "", "all", "ns", "ts", "cnt", "sz", "cpu", "skw", "node", "ppm", "ip", "cy", "en", "txt", "bool", "id", "fname", "cost", NULL };
 static constexpr const char * const creatorTypeNames[]= { "", "all", "unknown", "hthor", "roxie", "roxie:s", "thor", "thor:m", "thor:s", "eclcc", "esp", "summary", NULL };
-static constexpr const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", "function", "workflow", "child", "file", "unknown", nullptr };
+static constexpr const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", "function", "workflow", "child", "file", "channel", "unknown", nullptr };
 
 static unsigned matchString(const char * const * names, const char * search, unsigned dft)
 {
@@ -112,6 +112,7 @@ static const StatisticScopeType scoreOrder[] = {
     SSTworkflow,
     SSTchildgraph,
     SSTfile,
+    SSTchannel,  // MORE - not sure what this means!
     SSTunknown
 };
 static int scopePriority[SSTmax];
@@ -1354,6 +1355,10 @@ StringBuffer & StatsScopeId::getScopeText(StringBuffer & out) const
         return out.append(WorkflowScopePrefix).append(id);
     case SSTchildgraph:
         return out.append(ChildGraphScopePrefix).append(id);
+    case SSTfile:
+        return out.append(FileScopePrefix).append(name);
+    case SSTchannel:
+        return out.append(ChannelScopePrefix).append(id);
     case SSTunknown:
         return out.append(name);
     default:
@@ -1411,6 +1416,7 @@ void StatsScopeId::describe(StringBuffer & description) const
     case SSTactivity:
     case SSTworkflow:
     case SSTchildgraph:
+    case SSTchannel:
         description.append(' ').append(id);
         break;
     case SSTedge:
@@ -1457,12 +1463,14 @@ void StatsScopeId::deserialize(MemoryBuffer & in, unsigned version)
     case SSTactivity:
     case SSTworkflow:
     case SSTchildgraph:
+    case SSTchannel:
         in.read(id);
         break;
     case SSTedge:
         in.read(id);
         in.read(extra);
         break;
+    case SSTfile:
     case SSTfunction:
         in.read(name);
         break;
@@ -1482,6 +1490,7 @@ void StatsScopeId::serialize(MemoryBuffer & out) const
     case SSTactivity:
     case SSTworkflow:
     case SSTchildgraph:
+    case SSTchannel:
         out.append(id);
         break;
     case SSTedge:
@@ -1587,6 +1596,13 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
             return true;
         }
         break;
+    case ChannelScopePrefix[0]:
+        if (MATCHES_CONST_PREFIX(text, ChannelScopePrefix) && isdigit(text[strlen(ChannelScopePrefix)]))
+        {
+            setChannelId(strtoul(text+ strlen(ChannelScopePrefix), next, 10));
+            return true;
+        }
+        break;
     case '\0':
         setId(SSTglobal, 0);
         return true;
@@ -1639,6 +1655,10 @@ void StatsScopeId::setFileId(const char * _name)
 {
     scopeType = SSTfile;
     name.set(_name);
+}
+void StatsScopeId::setChannelId(unsigned _id)
+{
+    setId(SSTchannel, _id);
 }
 void StatsScopeId::setWorkflowId(unsigned _id)
 {
@@ -2070,6 +2090,12 @@ public:
         CStatisticCollection & tos = scopes.tos();
         scopes.append(*tos.ensureSubScope(scopeId, true));
     }
+    virtual void beginChannelScope(unsigned id) override
+    {
+        StatsScopeId scopeId(SSTchannel, id);
+        CStatisticCollection & tos = scopes.tos();
+        scopes.append(*tos.ensureSubScope(scopeId, true));
+    }
     virtual void endScope() override
     {
         scopes.pop();
@@ -2138,6 +2164,7 @@ public:
     virtual void beginChildGraphScope(unsigned id) { throwUnexpected(); }
     virtual void beginActivityScope(unsigned id) { throwUnexpected(); }
     virtual void beginEdgeScope(unsigned id, unsigned oid) { throwUnexpected(); }
+    virtual void beginChannelScope(unsigned id) { throwUnexpected(); }
     virtual void endScope()
     {
         node = &stack.popGet();

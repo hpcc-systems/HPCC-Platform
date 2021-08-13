@@ -83,6 +83,7 @@ public:
     void setEdgeId(unsigned _id, unsigned _output);
     void setFunctionId(const char * _name);
     void setFileId(const char * _name);
+    void setChannelId(unsigned id);
     void setSubgraphId(unsigned _id);
     void setWorkflowId(unsigned _id);
     void setChildGraphId(unsigned _id);
@@ -141,6 +142,7 @@ public:
     virtual void beginActivityScope(unsigned id) = 0;
     virtual void beginEdgeScope(unsigned id, unsigned oid) = 0;
     virtual void beginChildGraphScope(unsigned id) = 0;
+    virtual void beginChannelScope(unsigned id) = 0;
     virtual void endScope() = 0;
     virtual void addStatistic(StatisticKind kind, unsigned __int64 value) = 0;
     virtual void updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction) = 0;
@@ -208,6 +210,15 @@ public:
     inline StatsActivityScope(IStatisticGatherer & _gatherer, unsigned id) : StatsScopeBlock(_gatherer)
     {
         gatherer.beginActivityScope(id);
+    }
+};
+
+class ChannelActivityScope : public StatsScopeBlock
+{
+public:
+    inline ChannelActivityScope(IStatisticGatherer & _gatherer, unsigned id) : StatsScopeBlock(_gatherer)
+    {
+        gatherer.beginChannelScope(id);
     }
 };
 
