@@ -820,8 +820,7 @@ Pass in a dictionary with me defined
 {{- define "hpcc.addResources" }}
 {{- if .me  }}
 resources:
-  limits:
-{{ toYaml .me | indent 4 }}
+{{ toYaml .me | indent 2 }}
 {{- end }}
 {{- end -}}
 

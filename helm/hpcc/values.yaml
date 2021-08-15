@@ -498,14 +498,26 @@ thor:
   maxJobs: 4
   maxGraphs: 2
   #managerResources:
-  #  cpu: "1"
-  #  memory: "2G"
+  #  requests:
+  #    cpu: "1"
+  #    memory: "2G"
+  #  limits:
+  #    cpu: "2"
+  #    memory: "4G"
   #workerResources:
-  #  cpu: "4"
-  #  memory: "4G"
+  #  requests:
+  #    cpu: "4"
+  #    memory: "4G"
+  #  limits:
+  #    cpu: "8"
+  #    memory: "8G"
   #eclAgentResources:
-  #  cpu: "1"
-  #  memory: "2G"
+  #  requests:
+  #    cpu: "1"
+  #    memory: "2G"
+  #  limits:
+  #    cpu: "2"
+  #    memory: "4G"
 
 eclscheduler:
 - name: eclscheduler
