@@ -679,9 +679,8 @@ bool CFileSprayEx::onDFUWUSearch(IEspContext &context, IEspDFUWUSearchRequest & 
 {
     try
     {
-#ifdef _CONTAINERIZED
-        UNIMPLEMENTED_X("CONTAINERIZED(CFileSprayEx::onDFUWUSearch)");
-#else
+#ifndef _CONTAINERIZED
+        //The code below should be only for legacy ECLWatch.
         context.ensureFeatureAccess(DFU_WU_URL, SecAccess_Read, ECLWATCH_DFU_WU_ACCESS_DENIED, "Access to DFU workunit is denied.");
 
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
