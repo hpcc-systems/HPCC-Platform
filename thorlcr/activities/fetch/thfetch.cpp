@@ -75,12 +75,12 @@ public:
             }
             else if (encrypted)
                 throw MakeActivityException(this, 0, "File '%s' was published as encrypted but no encryption key provided", fetchFile->queryLogicalName());
-            IDistributedSuperFile *super = fetchFile->querySuperFile();
-            unsigned numsubs = super?super->numSubFiles(true):0;
+            ISuperFileDescriptor *superDesc = fileDesc->querySuperFileDescriptor();
+            unsigned numsubs = superDesc?superDesc->querySubFiles():0;
             for (unsigned i=0; i<numsubs; i++)
                 subFileStats.push_back(new CThorStatsCollection(diskReadActivityStatistics));
 
-            mapping.setown(getFileSlaveMaps(fetchFile->queryLogicalName(), *fileDesc, container.queryJob().queryUserDescriptor(), container.queryJob().querySlaveGroup(), container.queryLocalOrGrouped(), false, NULL, super));
+            mapping.setown(getFileSlaveMaps(fetchFile->queryLogicalName(), *fileDesc, container.queryJob().queryUserDescriptor(), container.queryJob().querySlaveGroup(), container.queryLocalOrGrouped(), false, NULL, fetchFile->querySuperFile()));
             mapping->serializeFileOffsetMap(offsetMapMb);
             addReadFile(fetchFile);
         }

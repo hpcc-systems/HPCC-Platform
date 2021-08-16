@@ -243,8 +243,11 @@ public:
                 if (super)
                 {
                     unsigned numSubFiles = super->numSubFiles();
-                    for (unsigned i=0; i<numSubFiles; i++)
-                        subIndexFileStats.push_back(new CThorStatsCollection(indexReadActivityStatistics));
+                    if (numSubFiles>1)
+                    {
+                        for (unsigned i=0; i<numSubFiles; i++)
+                            subIndexFileStats.push_back(new CThorStatsCollection(indexReadActivityStatistics));
+                    }
                 }
             }
             //MORE: Change index getFormatCrc once we support projected rows for indexes.

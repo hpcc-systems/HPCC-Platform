@@ -68,10 +68,10 @@ void CDiskReadMasterBase::init()
             mapping.setown(getFileSlaveMaps(file->queryLogicalName(), *fileDesc, container.queryJob().queryUserDescriptor(), container.queryJob().querySlaveGroup(), local, false, hash, file->querySuperFile()));
             addReadFile(file, temp);
         }
-        IDistributedSuperFile *super = file->querySuperFile();
-        unsigned numsubs = super?super->numSubFiles(true):0;
         if (0 != (helper->getFlags() & TDRfilenamecallback)) // only get/serialize if using virtual file name fields
         {
+            IDistributedSuperFile *super = file->querySuperFile();
+            unsigned numsubs = super?super->numSubFiles(true):0;
             for (unsigned s=0; s<numsubs; s++)
             {
                 IDistributedFile &subfile = super->querySubFile(s, true);
@@ -80,6 +80,10 @@ void CDiskReadMasterBase::init()
         }
         if (0==(helper->getFlags() & TDXtemporary))
         {
+            // Use the querySubFiles() from ISuperFileDescriptor to ensure that the same subfile count as used in the slaves
+            // (fileDesc->querySuperFileDescriptor() returns nullptr if subfile==0, which is ok as some is used in slaves)
+            ISuperFileDescriptor *superDesc = fileDesc->querySuperFileDescriptor();
+            unsigned numsubs = superDesc?superDesc->querySubFiles():0;
             for (unsigned i=0; i<numsubs; i++)
                 subFileStats.push_back(new CThorStatsCollection(diskReadRemoteStatistics));
         }
