@@ -1,7 +1,7 @@
 import { Button, d3Event, select as d3Select, Spacer, SVGZoomWidget } from "@hpcc-js/common";
 import { graphviz } from "@hpcc-js/graph";
 import { Graph2 } from "@hpcc-js/util";
-import { decodeHTML } from "src/Utility";
+import { format } from "src/Utility";
 import { MetricsOptions } from "../hooks/metrics";
 
 declare const dojoConfig;
@@ -186,7 +186,7 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
     }
 
     vertexTpl(v: IScope, options: MetricsOptions): string {
-        return `"${v.id}" [id="${encodeID(v.name)}" label="[${decodeHTML(v.Kind)}]\n${decodeHTML(v.Label) || v.id}" shape="${shape(v.Kind)}"]`;
+        return `"${v.id}" [id="${encodeID(v.name)}" label="${format(options.activityTpl, v)}" shape="${shape(v.Kind)}"]`;
     }
 
     protected _dedupEdges: { [id: string]: boolean } = {};
@@ -209,7 +209,7 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         if (options.ignoreGlobalStoreOutEdges && this.vertex(this._activityIndex[e.IdSource]).Kind === "22") {
             return "";
         }
-        return `"${e.IdSource}" -> "${e.IdTarget}" [id="${encodeID(e.name)}" label="" style="${this.vertexParent(this._activityIndex[e.IdSource]) === this.vertexParent(this._activityIndex[e.IdTarget]) ? "solid" : "dashed"}"]`;
+        return `\"${e.IdSource}" -> "${e.IdTarget}" [id="${encodeID(e.name)}" label="${format(options.edgeTpl, e)}" style="${this.vertexParent(e.IdSource) === this.vertexParent(e.IdTarget) ? "solid" : "dashed"}"]`;
     }
 
     subgraphTpl(sg: IScope, options: MetricsOptions): string {
@@ -229,7 +229,7 @@ subgraph cluster_${sg.id} {
     fillcolor="white";
     style="filled";
     id="${encodeID(sg.name)}";
-    label="${sg.id}";
+    label="${format(options.subgraphTpl, sg)}";
 
     ${childTpls.join("\n")}
 

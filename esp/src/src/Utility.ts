@@ -1,4 +1,4 @@
-﻿import { Palette } from "@hpcc-js/common";
+﻿import { format as d3Format, Palette } from "@hpcc-js/common";
 import * as arrayUtil from "dojo/_base/array";
 import * as domConstruct from "dojo/dom-construct";
 import * as entities from "dojox/html/entities";
@@ -1032,4 +1032,56 @@ export function downloadText(content: string, fileName: string) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+const d3FormatNum = d3Format(",");
+
+export function formatNum(str): string {
+    if (isNaN(str)) {
+        return str;
+    }
+    return d3FormatNum(str);
+}
+
+export function formatNums(obj) {
+    for (const key in obj) {
+        obj[key] = formatNum(obj[key]);
+    }
+    return obj;
+}
+
+export function formatLine(labelTpl, obj): string {
+    let retVal = "";
+    let lpos = labelTpl.indexOf("%");
+    let rpos = -1;
+    let replacementFound = lpos >= 0 ? false : true;  //  If a line has no symbols always include it, otherwise only include that line IF a replacement was found  ---
+    while (lpos >= 0) {
+        retVal += labelTpl.substring(rpos + 1, lpos);
+        rpos = labelTpl.indexOf("%", lpos + 1);
+        if (rpos < 0) {
+            console.log("Invalid Label Template");
+            break;
+        }
+        const key = labelTpl.substring(lpos + 1, rpos);
+        replacementFound = replacementFound || !!obj[labelTpl.substring(lpos + 1, rpos)];
+        retVal += !key ? "%" : (obj[labelTpl.substring(lpos + 1, rpos)] || "");
+        lpos = labelTpl.indexOf("%", rpos + 1);
+    }
+    retVal += labelTpl.substring(rpos + 1, labelTpl.length);
+    return replacementFound ? retVal : "";
+}
+
+export function format(labelTpl, obj) {
+    labelTpl = labelTpl.split("\\n").join("\n");
+    return labelTpl
+        .split("\n")
+        .map(line => formatLine(line, obj))
+        .filter(d => d.trim().length > 0)
+        .map(decodeHtml)
+        .join("\n")
+        ;
+}
+
+export function isSpill(sourceKind: string, targetKind: string): boolean {
+    return sourceKind === "2" || targetKind === "71";
 }

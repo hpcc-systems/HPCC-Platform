@@ -1,5 +1,5 @@
 import * as React from "react";
-import { IDragOptions, ContextualMenu, DialogType, Dialog, DialogFooter, DefaultButton, PrimaryButton, Checkbox, Pivot, PivotItem } from "@fluentui/react";
+import { IDragOptions, ContextualMenu, DialogType, Dialog, DialogFooter, DefaultButton, PrimaryButton, Checkbox, Pivot, PivotItem, TextField } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
 import { useMetricMeta, useMetricsOptions } from "../hooks/metrics";
 
@@ -72,6 +72,15 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
             <PivotItem headerText={nlsHPCC.Graph}>
                 <Checkbox label={nlsHPCC.IgnoreGlobalStoreOutEdges} checked={options.ignoreGlobalStoreOutEdges} onChange={(ev, checked) => {
                     setOptions({ ...options, ignoreGlobalStoreOutEdges: !!checked });
+                }} />
+                <TextField label={nlsHPCC.SubgraphLabel} value={options.subgraphTpl} multiline autoAdjustHeight onChange={(evt, newValue) => {
+                    setOptions({ ...options, subgraphTpl: newValue });
+                }} />
+                <TextField label={nlsHPCC.ActivityLabel} value={options.activityTpl} multiline autoAdjustHeight onChange={(evt, newValue) => {
+                    setOptions({ ...options, activityTpl: newValue });
+                }} />
+                <TextField label={nlsHPCC.EdgeLabel} value={options.edgeTpl} multiline autoAdjustHeight onChange={(evt, newValue) => {
+                    setOptions({ ...options, edgeTpl: newValue });
                 }} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Layout}>
