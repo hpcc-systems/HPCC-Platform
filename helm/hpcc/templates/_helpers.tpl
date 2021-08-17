@@ -811,6 +811,14 @@ Generate list of available services
 {{ end -}}
 {{ end -}}
 {{- end -}}
+{{- range $.Values.dafilesrv -}}
+ {{- if not .disabled -}}
+- name: {{ .name }}
+  type: dafilesrv
+  port: {{ .servicePort | default 7600 }}
+  public: {{ (ne ( include "hpcc.isVisibilityPublic" (dict "root" $ "visibility" .service.visibility))  "") | ternary "true" "false" }}
+ {{- end -}}
+{{- end -}}
 {{- end -}}
 
 {{/*

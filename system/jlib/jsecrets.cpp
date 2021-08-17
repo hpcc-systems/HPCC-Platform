@@ -764,7 +764,7 @@ const MemoryAttr &getSecretUdpKey(bool required)
     return udpKey;
 }
 
-IPropertyTree *queryMtlsSecretInfo(const char *name)
+IPropertyTree *queryTlsSecretInfo(const char *name)
 {
     if (isEmptyString(name))
         return nullptr;

@@ -52,6 +52,9 @@ public:
 
 jlib_decl CLoadedKey *loadPublicKeyFromFile(const char *keyFile);
 jlib_decl CLoadedKey *loadPublicKeyFromMemory(const char *key);
+jlib_decl CLoadedKey *loadPublicKeyFromCertFile(const char *certFile);
+jlib_decl CLoadedKey *loadPublicKeyFromCertMemory(const char *certMemory);
+
 jlib_decl CLoadedKey *loadPrivateKeyFromFile(const char *keyFile, const char *passPhrase);
 jlib_decl CLoadedKey *loadPrivateKeyFromMemory(const char *key, const char *passPhrase);
 

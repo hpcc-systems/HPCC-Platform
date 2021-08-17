@@ -58,8 +58,8 @@ ulimit -Sn hard
 [[ $? -ne 0 ]] && log "Failed to set file descriptor limit"
 
 trap "killed" SIGINT SIGTERM SIGKILL
-log "Calling dafilesrv -L $log -I $component &"
-dafilesrv -L $log -I $component &
+log "Calling dafilesrv --logDir=$log --name=$component &"
+dafilesrv --logDir=$log --name=$component &
 echo $! > $PID_NAME
 wait
 log "Removing $PID_NAME"
@@ -68,8 +68,8 @@ rm $PID_NAME
 while [[ -e ${SENTINEL} ]]; do
     sleep 5
     if [[ -e ${SENTINEL} ]]; then
-        log "Calling dafilesrv -L $log -I $component &"
-        dafilesrv -L $log -I $component &
+        log "Calling dafilesrv --logDir=$log --name=$component &"
+        dafilesrv --logDir=$log --name=$component &
         echo $! > $PID_NAME
         wait
         log "Removing $PID_NAME"

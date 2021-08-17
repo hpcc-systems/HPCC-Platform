@@ -2366,6 +2366,29 @@ IFileDescriptor *createFileDescriptor(const char *lname, const char *clusterType
     return fileDesc.getClear();
 }
 
+IFileDescriptor *createFileDescriptor(const char *lname, const char *planeName, unsigned numParts)
+{
+    Owned<IStoragePlane> plane = getDataStoragePlane(planeName, true);
+    if (!numParts)
+        numParts = plane->numDefaultSprayParts();
+
+    StringBuffer partMask, dir;
+    getPartMask(partMask, lname, numParts);
+    makePhysicalPartName(lname, 0, 0, dir, false, DFD_OSdefault, plane->queryPrefix());
+
+    Owned<IFileDescriptor> fileDesc = createFileDescriptor();
+    fileDesc->setNumParts(numParts);
+    fileDesc->setPartMask(partMask);
+    fileDesc->setDefaultDir(dir);
+
+    ClusterPartDiskMapSpec mspec;
+    mspec.defaultCopies = DFD_NoCopies;
+    Owned<IGroup> group = queryNamedGroupStore().lookup(planeName);
+    fileDesc->addCluster(planeName, group, mspec);
+
+    return fileDesc.getClear();
+}
+
 IFileDescriptor *deserializeFileDescriptor(MemoryBuffer &mb)
 {
     return doDeserializePartFileDescriptors(mb,NULL);
@@ -3482,6 +3505,7 @@ public:
     virtual unsigned numDevices() const override { return xml->getPropInt("@numDevices", 1); }
     virtual const char * queryHosts() const override { return xml->queryProp("@hosts"); }
     virtual const char * querySingleHost() const override { return xml->queryProp("@host"); }   // MORE: Likely to be changed to resolve hosts
+    virtual unsigned numDefaultSprayParts() const override { return xml->getPropInt("@defaultSprayParts", 1); }
 
 private:
     Linked<IPropertyTree> xml;

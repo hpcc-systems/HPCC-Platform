@@ -209,6 +209,11 @@
       "description": "sasha services",
       "type": "object",
       "$ref": "#/definitions/sashaservice"
+    },
+    "dafilesrv": {
+      "description": "dafilesrv process",
+      "type": "array",
+      "items": { "$ref": "#/definitions/dafilesrv" }
     }
   },
   "required": [
@@ -634,6 +639,34 @@
       },
       "additionalProperties": false
     },
+    "service": {
+      "description": "Service properties",
+      "type": "object",
+      "required": [ "servicePort", "visibility" ],
+      "properties": {
+        "port": {
+          "type": "integer",
+          "description": "The local port used by the pod",
+          "default": 8880
+        },
+        "servicePort": {
+          "type": "integer",
+          "description": "The port that this service will be exposed on"
+        },
+        "visibility": {
+          "type": "string",
+          "description": "Should this service be exposed outside the cluster, locally or to the internet"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
     "dali": {
       "type": "object",
       "required": [ "name" ],
@@ -786,32 +819,7 @@
           "additionalProperties": { "type": "string" }
         },
         "service": {
-          "description": "Service properties",
-          "type": "object",
-          "required": [ "servicePort", "visibility" ],
-          "properties": {
-            "port": {
-              "type": "integer",
-              "description": "The local port used by the pod",
-              "default": 8880
-            },
-            "servicePort": {
-              "type": "integer",
-              "description": "The port that this service will be exposed on"
-            },
-            "visibility": {
-              "type": "string",
-              "description": "Should this service be exposed outside the cluster, locally or to the internet"
-            },
-            "annotations": {
-              "type": "object",
-              "additionalProperties": { "type": "string" }
-            },
-            "labels": {
-              "type": "object",
-              "additionalProperties": { "type": "string" }
-            }
-          }
+          "$ref": "#/definitions/service"
         }
       }
     },
@@ -1410,6 +1418,36 @@
           "type": "null"
         }
       ]
+    },
+    "dafilesrv": {
+      "type": "object",
+      "required": [ "name", "service" ],
+      "additionalProperties": { "type": ["integer", "string", "boolean"] },
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the dafilesrv process"
+        },
+        "service": {
+          "$ref": "#/definitions/service"
+        },
+        "parallelRequestLimit": {
+          "type": "integer",
+          "default": "20"
+        },
+        "replicas": {
+          "type": "integer"
+        },
+        "image": {
+          "$ref": "#/definitions/image"
+        },
+        "logging": {
+          "$ref": "#/definitions/logging"
+        },
+        "resources": {
+          "$ref": "#/definitions/resources"
+        }
+      }
     },
     "placement": {
       "type": "object",

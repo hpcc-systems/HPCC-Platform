@@ -30,6 +30,7 @@
 #include "jmisc.hpp"
 #include "jthread.hpp"
 #include "jqueue.tpp"
+#include "jsecrets.hpp"
 
 #include "securesocket.hpp"
 #include "portlist.h"
@@ -92,6 +93,7 @@ enum OutputFormat:byte { outFmt_Binary, outFmt_Xml, outFmt_Json };
 static unsigned maxConnectTime = 0;
 static unsigned maxReceiveTime = 0;
 
+#ifndef _CONTAINERIZED
 //Security and default port attributes
 static class _securitySettings
 {
@@ -108,36 +110,46 @@ public:
         queryDafsSecSettings(&connectMethod, &daFileSrvPort, &daFileSrvSSLPort, &certificate, &privateKey, &passPhrase);
     }
 } securitySettings;
-
+#endif
 
 static CriticalSection              secureContextCrit;
 static Owned<ISecureSocketContext>  secureContextServer;
-static Owned<ISecureSocketContext>  secureContextClient;
 
 #ifdef _USE_OPENSSL
-static ISecureSocket *createSecureSocket(ISocket *sock, SecureSocketType type)
+static ISecureSocket *createSecureSocket(ISocket *sock)
 {
     {
         CriticalBlock b(secureContextCrit);
-        if (type == ServerSocket)
+        if (!secureContextServer)
         {
-            if (!secureContextServer)
-                secureContextServer.setown(createSecureSocketContextEx(securitySettings.certificate, securitySettings.privateKey, securitySettings.passPhrase, type));
+#ifdef _CONTAINERIZED
+            /* Connections are expected from 3rd parties via TLS,
+             * we do not expect them to provide a valid certificate for verification.
+             * Currently the server (this dafilesrv), will use either the "public" certificate issuer,
+             * unless it's visibility is "cluster" (meaning internal only)
+             */
+
+            const char *certScope = strsame("cluster", getComponentConfigSP()->queryProp("service/@visibility")) ? "local" : "public";
+            IPropertyTree *info = queryTlsSecretInfo(certScope);
+            if (!info)
+                throw makeStringException(-1, "createSecureSocket() : missing MTLS configuration");
+            Owned<IPropertyTree> cloneInfo = createPTreeFromIPT(info);
+            // we do not want to insist clients provide a cerificate for verification.
+            cloneInfo->setPropBool("verify/@enable", false);
+            secureContextServer.setown(createSecureSocketContextEx2(cloneInfo, ServerSocket));
+#else
+            secureContextServer.setown(createSecureSocketContextEx(securitySettings.certificate, securitySettings.privateKey, securitySettings.passPhrase, ServerSocket));
+#endif
         }
-        else if (!secureContextClient)
-            secureContextClient.setown(createSecureSocketContext(type));
     }
     int loglevel = SSLogNormal;
 #ifdef _DEBUG
     loglevel = SSLogMax;
 #endif
-    if (type == ServerSocket)
-        return secureContextServer->createSecureSocket(sock, loglevel);
-    else
-        return secureContextClient->createSecureSocket(sock, loglevel);
+    return secureContextServer->createSecureSocket(sock, loglevel);
 }
 #else
-static ISecureSocket *createSecureSocket(ISocket *sock, SecureSocketType type)
+static ISecureSocket *createSecureSocket(ISocket *sock)
 {
     throwUnexpected();
 }
@@ -2561,12 +2573,20 @@ IFileDescriptor *verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, con
     if (isSigned)
     {
         metaInfo.setown(createPTree(metaInfoBlob));
-
-        const char *keyPairName = metaInfo->queryProp("keyPairName");
-
         StringBuffer metaInfoSignature;
         if (!metaInfoEnvelope->getProp("signature", metaInfoSignature))
             throw createDafsException(DAFSERR_cmdstream_unauthorized, "createRemoteActivity: missing signature");
+
+#ifdef _CONTAINERIZED
+        /* This public key that is sent with request will be verified as being issued by same CA
+         * and used to verify the meta info signature.
+         */
+        const char *certificate = metaInfoEnvelope->queryProp("certificate");
+        if (isEmptyString(certificate))
+            throw createDafsException(DAFSERR_cmdstream_unauthorized, "createRemoteActivity: missing certificate");
+        Owned<CLoadedKey> publicKey = loadPublicKeyFromCertMemory(certificate);
+#else
+        const char *keyPairName = metaInfo->queryProp("keyPairName");
 
         VStringBuffer keyPairPath("KeyPair[@name=\"%s\"]", keyPairName);
         IPropertyTree *keyPair = keyPairInfo->queryPropTree(keyPairPath);
@@ -2576,9 +2596,9 @@ IFileDescriptor *verifyMetaInfo(IPropertyTree &actNode, bool authorizedOnly, con
         if (isEmptyString(publicKeyFName))
             throw createDafsException(DAFSERR_cmdstream_unauthorized, "createRemoteActivity: missing public key definition");
         Owned<CLoadedKey> publicKey = loadPublicKeyFromFile(publicKeyFName); // NB: if cared could cache loaded keys
+#endif
         if (!digiVerify(metaInfoSignature, metaInfoBlob.length(), metaInfoBlob.bytes(), *publicKey))
             throw createDafsException(DAFSERR_cmdstream_unauthorized, "createRemoteActivity: signature verification failed");
-
         checkExpiryTime(*metaInfo);
     }
     else
@@ -3597,6 +3617,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
 
     IArrayOf<CRemoteClientHandler> clients;
 
+#ifndef _CONTAINERIZED
     void validateSSLSetup()
     {
         if (!securitySettings.certificate)
@@ -3608,6 +3629,7 @@ class CRemoteFileServer : implements IRemoteFileServer, public CInterface
         if (!checkFileExists(securitySettings.privateKey))
             throw createDafsException(DAFSERR_serverinit_failed, "SSL Key File not found in environment.conf");
     }
+#endif
 public:
 
     IMPLEMENT_IINTERFACE
@@ -4763,10 +4785,14 @@ public:
                     WARNLOG("Communication protocol compression not supported for format: %s", outputFmtStr);
             }
 
-            /* NB: unless client call is on dedicated service, allow non-authorized requests through, e.g. from engines talking to unsecured port
-             * In a secure setup, this service will be configured on a dedicated port, and the std. insecure dafilesrv will be unreachable.
+#ifdef _CONTAINERIZED
+            bool authorizedOnly = true;
+#else
+            /* NB: In bare-metal, unless client call is on dedicated service, allow non-authorized requests through, e.g. from engines talking to unsecured port
+             * In a locked down secure setup, this service will be configured on a dedicated port, and the std. insecure dafilesrv will be unreachable.
              */
             bool authorizedOnly = rowServiceSock && client.isRowServiceClient();
+#endif
 
             // In future this may be passed the request and build a chain of activities and return sink.
             outputActivity.setown(createOutputActivity(*requestTree, authorizedOnly, keyPairInfo));
@@ -4993,6 +5019,7 @@ public:
         {
             switch(cmd)
             {
+#ifndef _CONTAINERIZED // only bare-metal for now
                 MAPCOMMANDSTATS(RFCread, cmdRead, *stats);
                 MAPCOMMANDSTATS(RFCwrite, cmdWrite, *stats);
                 MAPCOMMANDCLIENTSTATS(RFCappend, cmdAppend, *client, *stats);
@@ -5028,6 +5055,14 @@ public:
                 MAPCOMMANDCLIENTTHROTTLE(RFCtreecopytmp, cmdTreeCopyTmp, *client, &slowCmdThrottler);
                 MAPCOMMAND(RFCsetthrottle, cmdSetThrottle); // legacy version
                 MAPCOMMAND(RFCsetthrottle2, cmdSetThrottle2);
+                case RFCStreamReadTestSocket:
+                {
+                    testSocketFlag = true;
+                    checkAuthorizedStreamCommand(*client);
+                    cmdStreamReadTestSocket(msg, reply, *client, *stats);
+                    break;
+                }
+#endif
                 // row service commands
                 case RFCStreamGeneral:
                 {
@@ -5046,13 +5081,6 @@ public:
                 {
                     checkAuthorizedStreamCommand(*client);
                     cmdStreamReadJSON(msg, reply, *client, *stats);
-                    break;
-                }
-                case RFCStreamReadTestSocket:
-                {
-                    testSocketFlag = true;
-                    checkAuthorizedStreamCommand(*client);
-                    cmdStreamReadTestSocket(msg, reply, *client, *stats);
                     break;
                 }
             default:
@@ -5084,10 +5112,12 @@ public:
     virtual void run(DAFSConnectCfg _connectMethod, const SocketEndpoint &listenep, unsigned sslPort, const SocketEndpoint *rowServiceEp, bool _rowServiceSSL, bool _rowServiceOnStdPort) override
     {
         SocketEndpoint sslep(listenep);
+#ifndef _CONTAINERIZED
         if (sslPort)
             sslep.port = sslPort;
         else
             sslep.port = securitySettings.daFileSrvSSLPort;
+#endif
 
         Owned<ISocket> acceptSock, secureSock, rowServiceSock;
         if (_connectMethod != SSLOnly)
@@ -5109,7 +5139,7 @@ public:
         {
             if (sslep.port == 0)
                 throw createDafsException(DAFSERR_serverinit_failed, "Secure dafilesrv port not specified");
-
+#ifndef _CONTAINERIZED
             if (_connectMethod == UnsecureFirst)
             {
                 // don't fail, but warn - this allows for fast SSL client rejections
@@ -5130,6 +5160,7 @@ public:
             }
             else
                 validateSSLSetup();
+#endif
 
             if (sslep.isNull())
                 secureSock.setown(ISocket::create(sslep.port));
@@ -5155,11 +5186,13 @@ public:
                 rowServiceSock.setown(ISocket::create_ip(rowServiceEp->port, ips.str()));
             }
 
-#ifdef _USE_OPENSSL
+#ifndef _CONTAINERIZED
+# ifdef _USE_OPENSSL
             if (rowServiceSSL)
                 validateSSLSetup();
-#else
+# else
             rowServiceSSL = false;
+# endif
 #endif
         }
 
@@ -5269,6 +5302,7 @@ public:
                         if (!sockSSL||stopping)
                             break;
 
+#ifndef _CONTAINERIZED
                         if ( (_connectMethod == UnsecureFirst) && (!securitySettings.certificate || !securitySettings.privateKey) )
                         {
                             // for client secure_connect() to fail quickly ...
@@ -5277,8 +5311,9 @@ public:
                             securesockavail = false;
                         }
                         else
+#endif
                         {
-                            ssock.setown(createSecureSocket(sockSSL.getClear(), ServerSocket));
+                            ssock.setown(createSecureSocket(sockSSL.getClear()));
                             int status = ssock->secure_accept();
                             if (status < 0)
                                 throw createDafsException(DAFSERR_serveraccept_failed,"Failure to establish secure connection");
@@ -5313,7 +5348,7 @@ public:
 
                         if (rowServiceSSL) // NB: will be disabled if !_USE_OPENSLL
                         {
-                            ssock.setown(createSecureSocket(acceptedRSSock.getClear(), ServerSocket));
+                            ssock.setown(createSecureSocket(acceptedRSSock.getClear()));
                             int status = ssock->secure_accept();
                             if (status < 0)
                                 throw createDafsException(DAFSERR_serveraccept_failed,"Failure to establish SSL row service connection");
