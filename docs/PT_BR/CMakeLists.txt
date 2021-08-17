@@ -19,7 +19,7 @@
 #    Refactored for internationalization
 ###
 # Last Mod GP 8/2021
-#  Removed Running HPCC in a VM
+#  Removed Report-Monitoring
 ####################
 #
 # Doc dirs to include.
@@ -70,15 +70,14 @@ add_subdirectory(HPCCClientTools)
 add_subdirectory(HPCCCertify)
 add_subdirectory(HPCCDataHandling)
 add_subdirectory(HPCCDataTutorial)
-add_subdirectory(HPCCMonitoring)
+
 add_subdirectory(HPCCSystemAdmin)
 add_subdirectory(HPCCSpark)
 add_subdirectory(IMDB)
 add_subdirectory(InstantCloud)
 add_subdirectory(Installing_and_RunningTheHPCCPlatform)
 add_subdirectory(RoxieReference)
-#add_subdirectory(RunningHPCCinaVirtualMachine)
-#add_subdirectory(ECLPluginForEclipse)
+
 add_subdirectory(ECLScheduler)
 add_subdirectory(ECLWatch)
 add_subdirectory(VisualizingECL)
