@@ -36,7 +36,6 @@ protected:
     bool localKey = false;
     bool partitionKey = false;
     StringBuffer fileName;
-    std::vector<OwnedPtr<CThorStatsCollection>> subIndexFileStats;
 
     rowcount_t aggregateToLimit()
     {
@@ -240,12 +239,6 @@ public:
                 IDistributedFile *sub = super ? &super->querySubFile(0,true) : index.get();
                 if (sub && 1 == sub->numParts())
                     nofilter = true;
-                if (super)
-                {
-                    unsigned numSubFiles = super->numSubFiles();
-                    for (unsigned i=0; i<numSubFiles; i++)
-                        subIndexFileStats.push_back(new CThorStatsCollection(indexReadActivityStatistics));
-                }
             }
             //MORE: Change index getFormatCrc once we support projected rows for indexes.
             checkFormatCrc(this, index, indexBaseHelper->getDiskFormatCrc(), indexBaseHelper->queryDiskRecordSize(), indexBaseHelper->getProjectedFormatCrc(), indexBaseHelper->queryProjectedDiskRecordSize(), true);
@@ -290,32 +283,6 @@ public:
     {
         CMasterActivity::abort();
         cancelReceiveMsg(RANK_ALL, mpTag);
-    }
-    virtual void deserializeStats(unsigned node, MemoryBuffer &mb) override
-    {
-        CMasterActivity::deserializeStats(node, mb);
-        for (auto &indexFileStats: subIndexFileStats)
-            indexFileStats->deserialize(node, mb);
-    }
-    virtual void done() override
-    {
-        if (!subIndexFileStats.empty())
-        {
-            unsigned numSubFiles = subIndexFileStats.size();
-            for (unsigned i=0; i<numSubFiles; i++)
-            {
-                IDistributedFile *file = queryReadFile(i);
-                if (file)
-                    file->addAttrValue("@numDiskReads", subIndexFileStats[i]->getStatisticSum(StNumDiskReads));
-            }
-        }
-        else
-        {
-            IDistributedFile *file = queryReadFile(0);
-            if (file)
-                file->addAttrValue("@numDiskReads", statsCollection.getStatisticSum(StNumDiskReads));
-        }
-        CMasterActivity::done();
     }
 };
 

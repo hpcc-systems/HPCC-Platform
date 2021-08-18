@@ -92,13 +92,11 @@ protected:
     Owned<CDiskPartHandlerBase> partHandler;
     Owned<IExpander> eexp;
     rowcount_t diskProgress = 0;
-    std::vector<OwnedPtr<CRuntimeStatisticCollection>> subFileStats;
 
 public:
     CDiskReadSlaveActivityBase(CGraphElementBase *_container, IHThorArg *_helper);
     const char *queryLogicalFilename(unsigned index);
     IThorRowInterfaces * queryProjectedDiskRowInterfaces();
-    void mergeSubFileStats(IPartDescriptor *partDesc, IExtRowStream *partStream);
     virtual void start() override;
 
 // IThorSlaveActivity

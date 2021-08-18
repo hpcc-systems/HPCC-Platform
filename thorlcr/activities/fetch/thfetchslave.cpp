@@ -159,7 +159,7 @@ public:
                 e->base = part.queryProperties().getPropInt64("@offset");
                 e->top = e->base + part.queryProperties().getPropInt64("@size");
                 e->index = f;
-                e->file = queryThor().queryFileCache().lookupIFileIO(owner, logicalFilename, part, nullptr, diskReadActivityStatistics); // NB: freed by FPosTableEntryIFileIO dtor
+                e->file = queryThor().queryFileCache().lookupIFileIO(owner, logicalFilename, part); // NB: freed by FPosTableEntryIFileIO dtor
             }
         }
     }
@@ -262,32 +262,6 @@ public:
         }
         return NULL;
     }
-    virtual void getFileStats(CRuntimeStatisticCollection & stats) override
-    {
-        for (unsigned f=0; f<files; f++)
-        {
-            IFileIO *file = fPosMultiPartTable[f].file;
-            mergeStats(stats, file);
-        }
-    }
-    virtual void getSubFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & subFileStats) override
-    {
-        if (subFileStats.size()>0)
-        {
-            ISuperFileDescriptor *super = parts.item(0).queryOwner().querySuperFileDescriptor();
-            dbgassertex(super);
-            for (unsigned f=0; f<files; f++)
-            {
-                IPartDescriptor &part = parts.item(f);
-                unsigned subfile, lnum;
-                if(super->mapSubPart(part.queryPartIndex(), subfile, lnum))
-                {
-                    IFileIO *file = fPosMultiPartTable[f].file;
-                    mergeStats(*subFileStats[subfile], file);
-                }
-            }
-        }
-    }
 };
 
 
@@ -307,7 +281,6 @@ class CFetchSlaveBase : public CSlaveActivity, implements IFetchHandler
     MemoryBuffer offsetMapBytes;
     Owned<IExpander> eexp;
     Owned<IEngineRowAllocator> keyRowAllocator;
-    std::vector<OwnedPtr<CRuntimeStatisticCollection>> subFileStats;
 
 protected:
     Owned<IThorRowInterfaces> fetchDiskRowIf;
@@ -326,7 +299,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CSlaveActivity);
 
-    CFetchSlaveBase(CGraphElementBase *_container) : CSlaveActivity(_container, diskReadActivityStatistics)
+    CFetchSlaveBase(CGraphElementBase *_container) : CSlaveActivity(_container)
     {
         fetchBaseHelper = (IHThorFetchBaseArg *)queryHelper();
         reInit = 0 != (fetchBaseHelper->getFetchFlags() & (FFvarfilename|FFdynamicfilename));
@@ -386,10 +359,6 @@ public:
                     prefetchers.append(prefetcher.getClear());
                 }
             }
-            ISuperFileDescriptor *super = parts.item(0).queryOwner().querySuperFileDescriptor();
-            if (super)
-                for (unsigned i=0; i<files; i++)
-                    subFileStats.push_back(new CRuntimeStatisticCollection(diskReadActivityStatistics));
         }
 
         unsigned encryptedKeyLen;
@@ -571,17 +540,6 @@ public:
             memcpy(&fpos, key, sizeof(fpos));
             return fpos;
         }
-    }
-    virtual void serializeStats(MemoryBuffer &mb) override
-    {
-        if (fetchStream)
-        {
-            fetchStream->getFileStats(stats);
-            fetchStream->getSubFileStats(subFileStats);
-        }
-        PARENT::serializeStats(mb);
-        for (auto &stats: subFileStats)
-            stats->serialize(mb);
     }
     virtual void onLimitExceeded() = 0;
 };

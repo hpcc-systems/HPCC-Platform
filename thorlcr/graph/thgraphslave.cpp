@@ -1985,8 +1985,8 @@ class CLazyFileIO : public CInterfaceOf<IFileIO>
         return iFileIO.getClear();
     }
 public:
-    CLazyFileIO(CFileCache &_cache, const char *_filename, const char *_id, IActivityReplicatedFile *_repFile, bool _compressed, IExpander *_expander, const StatisticsMapping & _statMapping=diskLocalStatistics)
-        : cache(_cache), filename(_filename), id(_id), repFile(_repFile), compressed(_compressed), expander(_expander), fileStats(_statMapping)
+    CLazyFileIO(CFileCache &_cache, const char *_filename, const char *_id, IActivityReplicatedFile *_repFile, bool _compressed, IExpander *_expander)
+        : cache(_cache), filename(_filename), id(_id), repFile(_repFile), compressed(_compressed), expander(_expander), fileStats(diskLocalStatistics)
     {
     }
     virtual void beforeDispose() override;
@@ -2119,7 +2119,7 @@ public:
         CriticalBlock b(crit);
         return _remove(id);
     }
-    virtual IFileIO *lookupIFileIO(CActivityBase &activity, const char *logicalFilename, IPartDescriptor &partDesc, IExpander *expander, const StatisticsMapping & _statMapping) override
+    virtual IFileIO *lookupIFileIO(CActivityBase &activity, const char *logicalFilename, IPartDescriptor &partDesc, IExpander *expander) override
     {
         StringBuffer filename;
         RemoteFilename rfn;
@@ -2135,7 +2135,7 @@ public:
         {
             Owned<IActivityReplicatedFile> repFile = createEnsurePrimaryPartFile(logicalFilename, &partDesc);
             bool compressed = partDesc.queryOwner().isCompressed();
-            file = new CLazyFileIO(*this, filename, id, repFile.getClear(), compressed, expander, _statMapping);
+            file = new CLazyFileIO(*this, filename, id, repFile.getClear(), compressed, expander);
             files.replace(* file); // NB: files does not own 'file', CLazyFileIO will remove itself from cache on destruction
 
             /* NB: there will be 1 CLazyFileIO per physical file part name

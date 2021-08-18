@@ -32,15 +32,12 @@ protected:
     Owned<CSlavePartMapping> mapping;
     IHash *hash;
     StringAttr fileName;
-    std::vector<OwnedPtr<CThorStatsCollection>> subFileStats;
 
 public:
     CDiskReadMasterBase(CMasterGraphElement *info);
     virtual void init() override;
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave) override;
-    virtual void done() override;
     virtual void validateFile(IDistributedFile *file) { }
-    virtual void deserializeStats(unsigned node, MemoryBuffer &mb) override;
 };
 
 class CWriteMasterBase : public CMasterActivity
