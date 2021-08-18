@@ -59,42 +59,25 @@ PUT _ingest/pipeline/hpccpipeline
 }
 ```
 
-Once you've verified your request was applied successfully, the target Elastic Search index should be associated with this pipeline. In the managed Elastic Stack values.yml file, set "filebeat.pipeline.filebeatConfig.filebeat.yml.output.elasticsearch.pipeline" to 'hpccpipeline':
+Once you've verified your pipeline was created successfully, the target Elastic Search index should be associated with this pipeline.
+This is done by adding the option "filebeat.pipeline.filebeatConfig.filebeat.yml.output.elasticsearch.pipeline:'hpccpipeline'"
 
-```yaml
-filebeat:
-  description: "HPCC Managed filebeat"
-  filebeatConfig:
-    filebeat.yml: |
-      filebeat.inputs:
-      - type: container
-        paths:
-          - /var/log/containers/esdl-sandbox-*.log
-          - /var/log/containers/eclwatch-*.log
-          - /var/log/containers/mydali-*.log
-          - /var/log/containers/eclqueries-*.log
-          - /var/log/containers/sql2ecl-*.log
-          - /var/log/containers/eclservices-*.log
-          - /var/log/containers/dfuserver-*.log
-          - /var/log/containers/eclscheduler-*.log
-          - /var/log/containers/hthor-*.log
-          - /var/log/containers/myeclccserver-*.log
-          - /var/log/containers/roxie-*.log
-          - /var/log/containers/sasha-*.log
-          - /var/log/containers/thor-*.log
-        processors:
-        - add_kubernetes_metadata:
-            host: ${NODE_NAME}
-            matchers:
-            - logs_path:
-                logs_path: "/var/log/containers/"
-      output.elasticsearch:
-        host: '${NODE_NAME}'
-        hosts: '${ELASTICSEARCH_HOSTS:elasticsearch-master:9200}'
-        pipeline: 'hpccpipeline'
+For convenience a values file with that option is provided here: [HPCC-Platform github repo](https://raw.githubusercontent.com/hpcc-systems/HPCC-Platform/master/helm/managed/logging/elastic/filebeat-filebeatConfig-hpccpipeline.yaml)
+Which allows users to deploy elastic4hpcclogs with the hpccpipeline setting with out the need to edit the chart.
+
+For example:
+```bash
+helm install myelk hpcc/elastic4hpcclogs -f https://raw.githubusercontent.com/hpcc-systems/HPCC-Platform/master/helm/managed/logging/elastic/filebeat-filebeatConfig-hpccpipeline.yaml
 ```
 
-Warning: if the named pipeline is not found, the filebeat component might not deploy successfully.
+Or the user can choose to upgrade a deployed elastic4hpcclogs
+
+for example:
+```bash
+helm upgrade -f https://raw.githubusercontent.com/hpcc-systems/HPCC-Platform/master/helm/managed/logging/elastic/filebeat-filebeatConfig-hpccpipeline.yaml myelk hpcc/elastic4hpcclogs
+```
+
+Warning: if the named pipeline is not found, the filebeat component might not function correctly.
 
 The targeted index should now contain a series of "hpcc.log.*" fields which can be used to query and extract specific HPCC component log data.
 
