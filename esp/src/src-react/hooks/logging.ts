@@ -21,10 +21,12 @@ export class ECLWatchLogger implements Writer {
     protected _observable = new Observable("added");
 
     static init(): ECLWatchLogger {
-        if (g_logger) {
+        if (!g_logger) {
+            g_logger = new ECLWatchLogger();
+        } else {
             logger.error("ECLWatchLogger singleton already initialised.");
         }
-        return ECLWatchLogger.attach();
+        return g_logger;
     }
 
     static attach(): ECLWatchLogger {

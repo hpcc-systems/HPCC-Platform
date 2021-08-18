@@ -31,14 +31,16 @@ export const HpccJSComponent: React.FunctionComponent<HpccJSComponentProps> = ({
         };
     }, [divID, widget]);
 
-    if (widget.target()) {
-        widget.resize({ width, height });
-        if (debounce) {
-            widget.lazyRender();
-        } else {
-            widget.render();
+    React.useEffect(() => {
+        if (widget.target()) {
+            widget.resize({ width, height });
+            if (debounce) {
+                widget.lazyRender();
+            } else {
+                widget.render();
+            }
         }
-    }
+    }, [debounce, height, widget, width]);
 
     return <div id={divID} className="hpcc-js-component" style={{ width, height }}>
     </div>;

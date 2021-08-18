@@ -953,7 +953,7 @@ export = {
         ValidateResultHere: "(Validation result)",
         ValidationErrorEnterNumber: "Enter a valid number",
         ValidationErrorExpireDaysMinimum: "Should not be less than 1 day",
-        ValidationErrorNamePrefix: `Should match pattern "some::prefix"`,
+        ValidationErrorNamePrefix: "Should match pattern \"some::prefix\"",
         ValidationErrorNumberGreater: "Cannot be greater than",
         ValidationErrorNumberLess: "Cannot be less than",
         ValidationErrorRequired: "This field is required",
@@ -1015,6 +1015,7 @@ export = {
         ZoomMinus: "Zoom -",
         Zoom100Pct: "Zoom 100%",
         ZoomAll: "Zoom All",
+        ZoomSelection: "Zoom Selection",
         ZoomWidth: "Zoom Width"
     },
     "bs": true,

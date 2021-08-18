@@ -32,6 +32,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 }) => {
     const [_uiState, _setUIState] = React.useState({ ...defaultUIState });
     const [timelineFilter, setTimelineFilter] = React.useState("");
+    const [selectedMetrics, setSelectedMetrics] = React.useState([]);
     const [metrics, _columns, _activities, _properties, _measures, _scopeTypes] = useWorkunitMetrics(wuid);
     const [showMetricOptions, setShowMetricOptions] = React.useState(false);
     const [options] = useMetricsOptions();
@@ -141,12 +142,8 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         .columns(["##", nlsHPCC.Type, nlsHPCC.Scope, ...options.properties])
         .sortable(true)
         .on("click", (row, col, sel) => {
-            const rows = scopesTable.selection().map(row => row.__lparam);
-            if (rows.length) {
-                updatePropsTable(rows);
-                updatePropsTable2(rows);
-                updateMetricGraph(rows);
-            }
+            const selection = scopesTable.selection();
+            setSelectedMetrics(selection.map(row => row.__lparam));
         })
     );
 
@@ -167,7 +164,6 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     //  Graph  ---
     const metricGraph = useConst(() => new MetricGraph());
     const metricGraphWidget = useConst(() => new MetricGraphWidget()
-        .id("metricGraph")
         .zoomToFitLimit(1)
         .on("selectionChanged", () => {
             const items = metricGraphWidget.selection().map(id => {
@@ -187,15 +183,59 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 
     const updateMetricGraph = React.useCallback((selection: IScope[]) => {
         if (selection.length) {
-            metricGraphWidget
-                .dot(metricGraph.graphTpl(selection, options))
-                .resize()
-                .render(() => {
-                    metricGraphWidget.selection(selection.map(s => s.name));
-                })
-                ;
+            //  Check if selection is already visible  ---
+            if (selection.every(row => metricGraphWidget.exists(row.name))) {
+                metricGraphWidget
+                    .selection(selection.map(s => s.name))
+                    .render(() => {
+                        metricGraphWidget.zoomToSelection();
+                    })
+                    ;
+            } else {
+                metricGraphWidget
+                    .dot(metricGraph.graphTpl(selection, options))
+                    .resize()
+                    .render(() => {
+                        metricGraphWidget.selection(selection.map(s => s.name));
+                    })
+                    ;
+            }
         }
     }, [metricGraph, metricGraphWidget, options]);
+
+    const graphButtons = React.useMemo((): ICommandBarItemProps[] => [
+        {
+            key: "reset", text: nlsHPCC.Reset, iconProps: { iconName: "Undo" },
+            onClick: () => {
+                metricGraphWidget.reset();
+                updateMetricGraph(selectedMetrics);
+            }
+        }
+    ], [metricGraphWidget, selectedMetrics, updateMetricGraph]);
+
+    const graphRightButtons = React.useMemo((): ICommandBarItemProps[] => [
+        {
+            key: "toSel", title: nlsHPCC.ZoomSelection, iconProps: { iconName: "FitPage" },
+            onClick: () => metricGraphWidget.zoomToSelection()
+        }, {
+            key: "tofit", title: nlsHPCC.ZoomAll, iconProps: { iconName: "ScaleVolume" },
+            onClick: () => metricGraphWidget.zoomToFit()
+        }, {
+            key: "tofitWidth", title: nlsHPCC.ZoomWidth, iconProps: { iconName: "FitWidth" },
+            onClick: () => metricGraphWidget.zoomToWidth()
+        }, {
+            key: "100%", title: nlsHPCC.Zoom100Pct, iconProps: { iconName: "ZoomToFit" },
+            onClick: () => metricGraphWidget.zoomToScale(1)
+        }, {
+            key: "plus", title: nlsHPCC.ZoomPlus, iconProps: { iconName: "ZoomIn" },
+            onClick: () => metricGraphWidget.zoomPlus()
+        }, {
+            key: "minus", title: nlsHPCC.ZoomMinus, iconProps: { iconName: "ZoomOut" },
+            onClick: () => metricGraphWidget.zoomMinus()
+        }
+
+        // { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+    ], [metricGraphWidget]);
 
     //  Props Table  ---
     const propsTable = useConst(() => new Table()
@@ -260,7 +300,15 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         portal.children(<h1>{timelineFilter}</h1>).lazyRender();
     }, [portal, timelineFilter]);
 
-    const items = React.useMemo<DockPanelItems>(() => [
+    React.useEffect(() => {
+        if (selectedMetrics.length) {
+            updatePropsTable(selectedMetrics);
+            updatePropsTable2(selectedMetrics);
+            updateMetricGraph(selectedMetrics);
+        }
+    }, [selectedMetrics, updateMetricGraph, updatePropsTable, updatePropsTable2]);
+
+    const items: DockPanelItems = React.useMemo<DockPanelItems>((): DockPanelItems => [
         {
             key: "scopesTable",
             title: nlsHPCC.Metrics,
@@ -270,8 +318,12 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             />
         },
         {
+            key: "metricGraph",
             title: nlsHPCC.Graph,
-            widget: metricGraphWidget,
+            component: <HolyGrail
+                header={<CommandBar items={graphButtons} farItems={graphRightButtons} />}
+                main={<AutosizeHpccJSComponent widget={metricGraphWidget} ></AutosizeHpccJSComponent>}
+            />,
             location: "split-right",
             ref: "scopesTable"
         },
@@ -287,7 +339,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             location: "tab-after",
             ref: propsTable.id()
         }
-    ], [metricGraphWidget, onChangeScopeFilter, propsTable, propsTable2, scopeFilter, scopesTable]);
+    ], [graphButtons, graphRightButtons, metricGraphWidget, onChangeScopeFilter, propsTable, propsTable2, scopeFilter, scopesTable]);
 
     return <HolyGrail
         header={<>

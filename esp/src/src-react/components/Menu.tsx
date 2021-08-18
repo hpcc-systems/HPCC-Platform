@@ -219,7 +219,7 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
                 <Stack horizontal >
                     <Stack.Item grow={0} >
                         <Pivot selectedKey={subNav || altSubNav} onLinkClick={handleLinkClick} headersOnly={true} linkFormat="tabs" styles={{ root: { marginLeft: 4 }, text: { lineHeight: 20 }, link: { maxHeight: 20, marginRight: 4 }, linkContent: { maxHeight: 20 } }} >
-                            {subMenuItems[mainNav]?.map(row => <PivotItem headerText={row.headerText} itemKey={row.itemKey} />)}
+                            {subMenuItems[mainNav]?.map(row => <PivotItem headerText={row.headerText} itemKey={row.itemKey} key={row.itemKey} />)}
                         </Pivot>
                     </Stack.Item>
                     {!subNav &&
