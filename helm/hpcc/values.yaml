@@ -459,9 +459,20 @@ esp:
     ## Annotations can be specified on a service - for example to specify provider-specific information such as service.beta.kubernetes.io/azure-load-balancer-internal-subnet
     #annotations:
     #  service.beta.kubernetes.io/azure-load-balancer-internal-subnet: "mysubnet"
+    #  The service.annotations prefixed with hpcc.eclwatch.io should not be declared here. They can be declared
+    #  in other services in order to be exposed in the ECLWatch interface. Similar function can be used by other 
+    #  applications. For other applications, the "eclwatch" inside the service.annotations should be replaced by
+    #  their application names. 
+    #  hpcc.eclwatch.io/enabled: "true"
+    #  hpcc.eclwatch.io/description: "some description"
     ## You can also specify labels on a service
     #labels:
     #  mylabel: "3"
+    ## Links specify the web links for a service. The web links may be shown on ECLWatch.
+    #links:
+    #- name: linkname
+    #  description: "some description"
+    #  url: "http://abc.com/def?g=1"
   #resources:
   #  cpu: "1"
   #  memory: "2G"
@@ -482,6 +493,10 @@ esp:
   service:
     visibility: local
     servicePort: 8002
+    #annotations:
+    #  hpcc.eclwatch.io/enabled: "true"
+    #  hpcc.eclwatch.io/description: "Roxie Test page"
+    #  hpcc.eclwatch.io/port: "8002"
   #resources:
   #  cpu: "250m"
   #  memory: "1G"
