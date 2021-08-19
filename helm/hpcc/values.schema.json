@@ -65,6 +65,9 @@
         "storage": {
           "$ref": "#/definitions/secrets"
         },
+        "authn": {
+          "$ref": "#/definitions/secrets"
+        },
         "ecl": {
           "$ref": "#/definitions/secrets"
         },
@@ -88,6 +91,9 @@
           "type": "integer"
         },
         "storage": {
+          "$ref": "#/definitions/vaultCategory"
+        },
+        "authn": {
           "$ref": "#/definitions/vaultCategory"
         },
         "esp": {
@@ -564,6 +570,88 @@
         }
       }
     },
+    "ldap": {
+      "type": "object",
+      "additionalProperties": { "type": ["integer", "string", "boolean"] },
+      "properties": {
+        "ldapProtocol": {
+          "type": "string",
+          "description": "The protocol to use - standard \"LDAP\" or secure \"LDAPS\" over SSL"
+        },
+        "servertype": {
+          "type": "string",
+          "description": "LDAP Server Implementation Type (\"ActiveDirectory\", \"AzureActiveDirectory\")"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of this Active Directory Server component"
+        },
+        "adminGroupName": {
+          "type": "string",
+          "description": "The Active Directory group containing HPCC Administrators"
+        },
+        "filesBasedn": {
+          "type": "string",
+          "description": "The base distinguished name that should be used when looking up HPCC file scopes on the Active Directory server"
+        },
+        "groupsBasedn": {
+          "type": "string",
+          "description": "The base distinguished name that should be used when looking up HPCC groups on the Active Directory server"
+        },
+        "usersBasedn": {
+          "type": "string",
+          "description": "The base distinguished name that should be used when looking up HPCC users on the Active Directory server"
+        },
+        "systemBasedn": {
+          "type": "string",
+          "description": "The base distinguished name of the Active Directory systemUser"
+        },
+        "resourcesBasedn": {
+          "type": "string",
+          "description": "The base distinguished name that should be used when looking up HPCC feature resources on the Active Directory server"
+        },
+        "workunitsBasedn": {
+          "type": "string",
+          "description": "The base distinguished name that should be used when looking up workunit scopes on the Active Directory server"
+        },
+        "ldapAdminSecretKey": {
+          "type": "string",
+          "description": "The key name to be used to look up the Active Directory system administrator account Username/Password"
+        },
+        "ldapAdminVaultId": {
+          "type": "string",
+          "description": "The optional vault name to be used to look up the Active Directory system administrator account Username/Password, using ldapAdminSecretKey"
+        },
+        "ldapPort": {
+          "type": "integer",
+          "description": "The port of the nonsecure Active Directory server"
+        },
+        "ldapSecurePort": {
+          "type": "integer",
+          "description": "The secure port of the secure Active Directory server"
+        },
+        "maxConnections": {
+          "type": "integer",
+          "description": "The maximum number of concurrent LDAP connections to the Active Directory server (default 10)"
+        },
+        "passwordExpirationWarningDays": {
+          "type": "integer",
+          "description": "Within this time period, ECLWatch displays a warning about pending password expiration"
+        },
+        "cacheTimeout": {
+          "type": "integer",
+          "description": "Time in minutes after which the cached security information should be reloaded"
+        },
+        "ldapTimeoutSecs": {
+          "type": "integer",
+          "description": "The maximum number of seconds to wait for most Active Directory calls"
+        },
+        "sharedCache": {
+          "type": "boolean",
+          "description": "Use a single, shared LDAP cache"
+        }
+      }
+    },
     "logging": {
       "type": "object",
       "properties": {
@@ -817,6 +905,9 @@
         "labels": {
           "type": "object",
           "additionalProperties": { "type": "string" }
+        },
+        "ldap": {
+          "$ref": "#/definitions/ldap"
         },
         "service": {
           "$ref": "#/definitions/service"

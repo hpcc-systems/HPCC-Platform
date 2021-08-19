@@ -54,6 +54,10 @@ filebeat:
             matchers:
             - logs_path:
                 logs_path: "/var/log/containers/"
+        multiline.type: pattern
+        multiline.pattern: '^([A-Z-0-9]{8})\s+'
+        multiline.negate: true
+        multiline.match: after
       #Required if targeting non-default index (filebeat-%{[agent.version]}-%{+yyyy.MM.dd}) such as hpccsystems-%{[fields.log_type]}-%{[agent.version]}-%{+yyyy.MM.dd}, etc.
        #setup.ilm.enabled: false
        #setup.template.overwrite: true
