@@ -62,7 +62,6 @@
 #include "eclhelper.hpp"
 
 #include "thorplugin.hpp"
-#include "jstats.h"
 
 #define THORDATALINK_STOPPED            (RCMAX&~(RCMAX>>1))                         // dataLinkStop() was called
 #define THORDATALINK_STARTED            (RCMAX&~THORDATALINK_STOPPED&~(RCMAX>>2))   // dataLinkStart() was called
@@ -1199,7 +1198,7 @@ interface IExpander;
 interface IThorFileCache : extends IInterface
 {
     virtual bool remove(const char *filename, unsigned crc) = 0;
-    virtual IFileIO *lookupIFileIO(CActivityBase &activity, const char *logicalFilenae, IPartDescriptor &partDesc, IExpander *expander=nullptr, const StatisticsMapping & _statMapping=diskLocalStatistics) = 0;
+    virtual IFileIO *lookupIFileIO(CActivityBase &activity, const char *logicalFilenae, IPartDescriptor &partDesc, IExpander *expander=nullptr) = 0;
 };
 
 class graph_decl CThorResourceBase : implements IThorResource, public CInterface

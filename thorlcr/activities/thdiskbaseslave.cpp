@@ -234,36 +234,13 @@ void CDiskReadSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveDat
     {
         deserializePartFileDescriptors(data, partDescs);
 
-        if (helper->getFlags() & TDXtemporary)
-        {
-            // put temp files in individual slave temp dirs (incl port)
-            if (!container.queryJob().queryUseCheckpoints())
-                partDescs.item(0).queryOwner().setDefaultDir(queryTempDir());
-        }
-        else
-        {
-            ISuperFileDescriptor *super = partDescs.item(0).queryOwner().querySuperFileDescriptor();
-            if (super)
-            {
-                unsigned numSubFiles = super->querySubFiles();
-                for (unsigned i=0; i<numSubFiles; i++)
-                    subFileStats.push_back(new CRuntimeStatisticCollection(diskReadRemoteStatistics));
-            }
-        }
+        // put temp files in individual slave temp dirs (incl port)
+        if ((helper->getFlags() & TDXtemporary) && (!container.queryJob().queryUseCheckpoints()))
+            partDescs.item(0).queryOwner().setDefaultDir(queryTempDir());
     }
     gotMeta = false; // if variable filename and inside loop, need to invalidate cached meta
 }
-void CDiskReadSlaveActivityBase::mergeSubFileStats(IPartDescriptor *partDesc, IExtRowStream *partStream)
-{
-    if (subFileStats.size()>0)
-    {
-        ISuperFileDescriptor * superFDesc = partDesc->queryOwner().querySuperFileDescriptor();
-        dbgassertex(superFDesc);
-        unsigned subfile, lnum;
-        if(superFDesc->mapSubPart(partDesc->queryPartIndex(), subfile, lnum))
-            mergeStats(*subFileStats[subfile], partStream);
-    }
-}
+
 const char *CDiskReadSlaveActivityBase::queryLogicalFilename(unsigned index)
 {
     return subfileLogicalFilenames.item(index);
@@ -322,8 +299,6 @@ void CDiskReadSlaveActivityBase::serializeStats(MemoryBuffer &mb)
     }
     stats.setStatistic(StNumDiskRowsRead, diskProgress);
     PARENT::serializeStats(mb);
-    for (auto &stats: subFileStats)
-        stats->serialize(mb);
 }
 
 
