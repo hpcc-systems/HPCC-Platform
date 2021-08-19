@@ -131,7 +131,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 return (timelineFilter === "" || row.name?.indexOf(timelineFilter) === 0) &&
                     (options.scopeTypes.indexOf(row.type) >= 0);
             }).map((row, idx) => {
-                row.__hpcc_id = row.id;
+                row.__hpcc_id = row.name;
                 return [idx, row.type, row.name, ...options.properties.map(p => row[p] !== undefined ? row[p] : ""), row];
             }))
             .lazyRender()
@@ -165,7 +165,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 .dot(metricGraph.graphTpl(selection, options))
                 .resize()
                 .render(() => {
-                    metricGraphWidget.selection(selection.map(s => s.id));
+                    metricGraphWidget.selection(selection.map(s => s.name));
                 })
                 ;
         }
