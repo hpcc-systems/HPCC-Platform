@@ -20,6 +20,8 @@ define([
         gridTitle: nlsHPCC.title_QuerySetErrors,
         idProperty: "__hpcc_id",
 
+        displayOpenButton: false,
+
         queryId: null,
         querySet: null,
 

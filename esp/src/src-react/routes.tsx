@@ -143,7 +143,8 @@ export const routes: RoutesEx = [
         children: [
             { path: "", action: (context) => import("./components/Queries").then(_ => <_.Queries filter={parseSearch(context.search) as any} />) },
             { path: "/legacy", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="QuerySetQueryWidget" />) },
-            { path: "/:QuerySetId/:Id", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="QuerySetDetailsWidget" params={params} />) }
+            { path: "/:QuerySetId/:Id", action: (ctx, params) => import("./components/QueryDetails").then(_ => <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} />) },
+            { path: "/:QuerySetId/:Id/:Tab", action: (ctx, params) => import("./components/QueryDetails").then(_ => <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} tab={params.Tab as string} />) }
         ]
     },
     {
