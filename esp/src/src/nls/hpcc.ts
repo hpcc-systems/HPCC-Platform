@@ -719,6 +719,7 @@ export = {
         SelectA: "Select a",
         SelectValue: "Select a value",
         SeeConfigurationManager: "See Configuration Manager",
+        SelectEllipsis: "Select...",
         SelectPackageFile: "Select Package File",
         SendEmail: "Send Email",
         Separators: "Separators",
