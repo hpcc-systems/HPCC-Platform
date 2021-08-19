@@ -84,8 +84,8 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
     }, [selection]);
 
     React.useEffect(() => {
-        if (file) {
-            gridStore.setData(file?.Superfiles?.DFULogicalFile);
+        if (file?.Superfiles?.DFULogicalFile) {
+            gridStore?.setData(file?.Superfiles?.DFULogicalFile);
             refreshTable();
         }
     }, [file, gridStore, refreshTable]);
