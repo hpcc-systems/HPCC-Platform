@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Checkbox, DefaultButton, keyframes, mergeStyleSets, PrimaryButton, Stack } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
-import { TargetDropzoneTextField, TargetFolderTextField, TargetServerTextField } from "../Fields";
+import { TargetDropzoneTextField, TargetFolderTextField, TargetServerTextLinkedField } from "../Fields";
 import * as FileSpray from "src/FileSpray";
 import nlsHPCC from "src/nlsHPCC";
 import { MessageBox } from "../../../layouts/MessageBox";
@@ -192,7 +192,7 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                 render={({
                     field: { onChange, name: fieldName, value },
                     fieldState: { error }
-                }) => <TargetServerTextField
+                }) => <TargetServerTextLinkedField
                         key="machines"
                         label={nlsHPCC.Machines}
                         required={true}

@@ -3,7 +3,7 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Pivot, PivotI
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import { FileParts } from "./FileParts";
-import * as WsDfu  from "src/WsDfu";
+import * as WsDfu from "src/WsDfu";
 import * as Utility from "src/Utility";
 import { getStateImageName, IFile } from "src/ESPLogicalFile";
 import { useFile, useDefFile } from "../hooks/file";

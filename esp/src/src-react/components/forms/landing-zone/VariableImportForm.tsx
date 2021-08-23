@@ -133,7 +133,6 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                         key="destGroup"
                         label={nlsHPCC.Group}
                         required={true}
-                        optional={true}
                         selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
@@ -154,7 +153,6 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                         key="DFUServerQueue"
                         label={nlsHPCC.Queue}
                         required={true}
-                        optional={true}
                         selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {

@@ -135,7 +135,6 @@ export const FixedImportForm: React.FunctionComponent<FixedImportFormProps> = ({
                         key="destGroup"
                         label={nlsHPCC.Group}
                         required={true}
-                        optional={true}
                         selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
@@ -156,7 +155,6 @@ export const FixedImportForm: React.FunctionComponent<FixedImportFormProps> = ({
                         key="DFUServerQueue"
                         label={nlsHPCC.Queue}
                         required={true}
-                        optional={true}
                         selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
