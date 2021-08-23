@@ -42,7 +42,7 @@ const Dropdown: React.FunctionComponent<DropdownProps> = ({
     }, [key, label, optional, required]);
 
     const [selOptions, setSelOptions] = React.useState<IDropdownOption[]>([]);
-    const [selectedKey, setSelectedKey] = React.useState<string | number | undefined>();
+    const [selectedKey, setSelectedKey] = React.useState<string | number | undefined>(defaultSelectedKey);
 
     const handleOnChange = React.useCallback((evt, row) => {
         if (onChange) {
@@ -208,22 +208,41 @@ export interface TargetClusterTextFieldProps extends DropdownProps {
 export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFieldProps> = (props) => {
 
     const [targetClusters, setTargetClusters] = React.useState<IDropdownOption[]>([]);
+    const [defaultSelectedKey, setDefaultSelectedKey] = React.useState<string>(props.defaultSelectedKey);
 
     React.useEffect(() => {
         const topology = Topology.attach({ baseUrl: "" });
         topology.fetchLogicalClusters().then((response: TpLogicalClusterQuery.TpLogicalCluster[]) => {
-            setTargetClusters(response
-                .map((n, i) => {
-                    return {
-                        key: n.Name || "unknown",
-                        text: n.Name + (n.Name !== n.Type ? ` (${n.Type})` : ""),
-                    };
-                })
-            );
+            let firstRow: IDropdownOption;
+            let firstHThor: IDropdownOption;
+            let firstThor: IDropdownOption;
+            const options = response.map((n, i) => {
+                const retVal = {
+                    key: n.Name || "unknown",
+                    text: n.Name + (n.Name !== n.Type ? ` (${n.Type})` : ""),
+                };
+                if (firstRow === undefined) {
+                    firstRow = retVal;
+                }
+                if (firstHThor === undefined && n.Type === "hthor") {
+                    firstHThor = retVal;
+                }
+                if (firstThor === undefined && n.Type === "thor") {
+                    firstThor = retVal;
+                }
+                return retVal;
+            });
+            if (props.defaultSelectedKey === undefined && (props.required === true || props.optional === false)) {
+                const selRow = firstThor || firstHThor || firstRow;
+                if (selRow) {
+                    setDefaultSelectedKey(selRow?.key as string);
+                }
+            }
+            setTargetClusters(options);
         });
-    }, []);
+    }, [props.defaultSelectedKey, props.optional, props.required]);
 
-    return <Dropdown {...props} options={targetClusters} />;
+    return <Dropdown {...props} defaultSelectedKey={defaultSelectedKey} options={targetClusters} />;
 };
 
 export interface TargetDropzoneTextFieldProps extends DropdownProps {
@@ -294,7 +313,11 @@ export const TargetServerTextLinkedField: React.FunctionComponent<TargetServerTe
 
     const [dropzone, setDropzone] = React.useState("");
 
-    props.setSetDropzone && props.setSetDropzone(setDropzone);
+    React.useEffect(() => {
+        if (props.setSetDropzone) {
+            props.setSetDropzone(setDropzone);
+        }
+    }, [props]);
 
     return <TargetServerTextField {...props} dropzone={dropzone} />;
 };
