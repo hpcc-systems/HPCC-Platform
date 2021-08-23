@@ -4,7 +4,7 @@ import { useConst } from "@fluentui/react-hooks";
 import nlsHPCC from "src/nlsHPCC";
 import { MainNav, routes } from "../routes";
 import { pushUrl } from "../util/history";
-import { useFavorites, useHistory } from "../hooks/favorite";
+import { useFavorite, useFavorites, useHistory } from "../hooks/favorite";
 import { useUserTheme } from "../hooks/theme";
 import { Breadcrumbs } from "./Breadcrumbs";
 
@@ -185,6 +185,7 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
     const theme = useTheme();
 
     const [favorites] = useFavorites();
+    const [isFavorite, addFavorite, removeFavorite] = useFavorite(window.location.hash);
     const [history] = useHistory();
 
     const mainNav = React.useMemo(() => {
@@ -231,7 +232,13 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
             </Stack.Item>
             <Stack.Item align="center" grow={0}>
                 <IconButton title={nlsHPCC.Advanced} iconProps={{ iconName: "History" }} menuProps={{ items: history }} />
-                <IconButton title={nlsHPCC.Advanced} iconProps={{ iconName: favoriteMenu.length === 0 ? "FavoriteStar" : "FavoriteStarFill" }} menuProps={{ items: favoriteMenu }} />
+                <IconButton title={nlsHPCC.Advanced} iconProps={{ iconName: isFavorite ? "FavoriteStarFill" : "FavoriteStar" }} menuProps={{ items: favoriteMenu }} split onClick={() => {
+                    if (isFavorite) {
+                        removeFavorite();
+                    } else {
+                        addFavorite();
+                    }
+                }} styles={{ splitButtonMenuButton: { backgroundColor: theme.palette.themeLighter, border: "none" } }} />
             </Stack.Item>
         </Stack>
     </div>;

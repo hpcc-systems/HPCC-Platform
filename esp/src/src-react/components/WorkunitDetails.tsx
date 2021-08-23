@@ -5,7 +5,6 @@ import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import { WUStatus } from "src/react/index";
 import { useWorkunit } from "../hooks/workunit";
-import { useFavorite } from "../hooks/favorite";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { pivotItemStyle } from "../layouts/pivot";
 import { ReflexContainer, ReflexElement, ReflexSplitter, classNames, styles } from "../layouts/react-reflex";
@@ -43,7 +42,6 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     const [jobname, setJobname] = React.useState("");
     const [description, setDescription] = React.useState("");
     const [_protected, setProtected] = React.useState(false);
-    const [isFavorite, addFavorite, removeFavorite] = useFavorite(window.location.hash);
     const [showPublishForm, setShowPublishForm] = React.useState(false);
     const [showZapForm, setShowZapForm] = React.useState(false);
     const [showThorSlaveLogs, setShowThorSlaveLogs] = React.useState(false);
@@ -160,17 +158,7 @@ export const WorkunitDetails: React.FunctionComponent<WorkunitDetailsProps> = ({
     ], [_protected, canDelete, canDeschedule, canReschedule, canSave, description, jobname, workunit, wuid]);
 
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
-        {
-            key: "star", iconProps: { iconName: isFavorite ? "FavoriteStarFill" : "FavoriteStar" },
-            onClick: () => {
-                if (isFavorite) {
-                    removeFavorite();
-                } else {
-                    addFavorite();
-                }
-            }
-        }
-    ], [addFavorite, isFavorite, removeFavorite]);
+    ], []);
 
     const serviceNames = workunit?.ServiceNames?.Item?.join("\n") || "";
     const resourceCount = workunit?.ResourceURLCount > 1 ? workunit?.ResourceURLCount - 1 : undefined;

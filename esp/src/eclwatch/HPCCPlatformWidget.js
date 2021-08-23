@@ -441,7 +441,7 @@ define([
         },
 
         _onOpenModernECLWatch: function (evt) {
-            window.open("/esp/files/index.html");
+            window.location.href = "/esp/files/index.html";
         },
 
         _onOpenErrWarn: function (evt) {

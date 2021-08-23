@@ -18,7 +18,6 @@ export const HpccJSComponent: React.FunctionComponent<HpccJSComponentProps> = ({
     height,
     debounce = true
 }) => {
-
     const divID = useId("viz-component-");
 
     React.useEffect(() => {
@@ -41,8 +40,10 @@ export const HpccJSComponent: React.FunctionComponent<HpccJSComponentProps> = ({
         }
     }, [debounce, height, widget, width]);
 
-    return <div id={divID} className="hpcc-js-component" style={{ width, height }}>
-    </div>;
+    return (isNaN(width) || isNaN(height)) ?
+        <></> :
+        <div id={divID} className="hpcc-js-component" style={{ width, height }}>
+        </div>;
 };
 
 export interface AutosizeHpccJSComponentProps {
