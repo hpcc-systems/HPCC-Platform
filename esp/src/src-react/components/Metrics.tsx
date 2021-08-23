@@ -1,29 +1,30 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IIconProps, SearchBox } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
-import { DockPanel } from "@hpcc-js/phosphor";
 import { Table } from "@hpcc-js/dgrid";
 import nlsHPCC from "src/nlsHPCC";
 import { WUTimelinePatched } from "src/Timings";
 import { useMetricsOptions, useWorkunitMetrics } from "../hooks/metrics";
 import { useFavorite } from "../hooks/favorite";
-import { useUserStore } from "../hooks/store";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
+import { DockPanel, DockPanelItems, ReactWidget } from "../layouts/DockPanel";
 import { IScope, MetricGraph, MetricGraphWidget } from "../util/metricGraph";
 import { ShortVerticalDivider } from "./Common";
 import { MetricsOptions } from "./MetricsOptions";
+
+const filterIcon: IIconProps = { iconName: "Filter" };
 
 const defaultUIState = {
     hasSelection: false
 };
 
+const emptyFilter = {};
+
 interface MetricsProps {
     wuid: string;
     filter?: object;
 }
-
-const emptyFilter = {};
 
 export const Metrics: React.FunctionComponent<MetricsProps> = ({
     wuid,
@@ -109,8 +110,33 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     //  Scopes Table  ---
     const hasFilter = Object.keys(filter).length > 0;
 
+    const [scopeFilter, setScopeFilter] = React.useState("");
+    const onChangeScopeFilter = React.useCallback((event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
+        setScopeFilter(newValue || "");
+    }, []);
+
+    const scopeFilterFunc = React.useCallback((row: object): boolean => {
+        const filter = scopeFilter.trim();
+        if (filter) {
+            let field = "";
+            const colonIdx = filter.indexOf(":");
+            if (colonIdx > 0) {
+                field = filter.substring(0, colonIdx);
+            }
+            if (field) {
+                return row[field]?.indexOf && row[field]?.indexOf(filter.substring(colonIdx + 1)) >= 0;
+            }
+            for (const key in row) {
+                if (row[key]?.indexOf && row[key]?.indexOf(filter) >= 0) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return true;
+    }, [scopeFilter]);
+
     const scopesTable = useConst(() => new Table()
-        .id("scopesTable")
         .multiSelect(true)
         .columns(["##", nlsHPCC.Type, nlsHPCC.Scope, ...options.properties])
         .sortable(true)
@@ -127,7 +153,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     React.useEffect(() => {
         scopesTable
             .columns(["##", nlsHPCC.Type, nlsHPCC.Scope, ...options.properties])
-            .data(metrics.filter(row => {
+            .data(metrics.filter(scopeFilterFunc).filter(row => {
                 return (timelineFilter === "" || row.name?.indexOf(timelineFilter) === 0) &&
                     (options.scopeTypes.indexOf(row.type) >= 0);
             }).map((row, idx) => {
@@ -136,7 +162,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             }))
             .lazyRender()
             ;
-    }, [hasFilter, metrics, scopesTable, timelineFilter, filter, options.properties, options.scopeTypes]);
+    }, [hasFilter, metrics, scopesTable, timelineFilter, filter, options.properties, options.scopeTypes, scopeFilterFunc]);
 
     //  Graph  ---
     const metricGraph = useConst(() => new MetricGraph());
@@ -226,36 +252,42 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             ;
     }, [propsTable2]);
 
-    //  DockPanel ---
-    const dockPanel = useConst(() => {
-        return new DockPanel()
-            .addWidget(scopesTable, nlsHPCC.Metrics)
-            .addWidget(metricGraphWidget, nlsHPCC.Graph, "split-right", scopesTable)
-            .addWidget(propsTable, nlsHPCC.Properties, "split-bottom", scopesTable)
-            .addWidget(propsTable2, nlsHPCC.CrossTab, "tab-after", propsTable)
-            ;
-    });
-
-    const [layout, setLayout] = useUserStore("metrics-layout", "");
-    const [ready, setReady] = React.useState(false);
+    const portal = useConst(() => new ReactWidget()
+        .id("portal")
+    );
 
     React.useEffect(() => {
-        if (layout !== undefined) {
-            try {
-                const obj = JSON.parse(layout);
-                dockPanel.layout(obj);
-            } catch (e) {
+        portal.children(<h1>{timelineFilter}</h1>).lazyRender();
+    }, [portal, timelineFilter]);
 
-            }
-            setReady(true);
+    const items = React.useMemo<DockPanelItems>(() => [
+        {
+            key: "scopesTable",
+            title: nlsHPCC.Metrics,
+            component: <HolyGrail
+                header={<SearchBox value={scopeFilter} onChange={onChangeScopeFilter} iconProps={filterIcon} placeholder={nlsHPCC.Filter} />}
+                main={<AutosizeHpccJSComponent widget={scopesTable} ></AutosizeHpccJSComponent>}
+            />
+        },
+        {
+            title: nlsHPCC.Graph,
+            widget: metricGraphWidget,
+            location: "split-right",
+            ref: "scopesTable"
+        },
+        {
+            title: nlsHPCC.Properties,
+            widget: propsTable,
+            location: "split-bottom",
+            ref: "scopesTable"
+        },
+        {
+            title: nlsHPCC.CrossTab,
+            widget: propsTable2,
+            location: "tab-after",
+            ref: propsTable.id()
         }
-    }, [dockPanel, layout]);
-
-    React.useEffect(() => {
-        return () => {
-            setLayout(JSON.stringify(dockPanel?.layout()));
-        };
-    }, [dockPanel, setLayout]);
+    ], [metricGraphWidget, onChangeScopeFilter, propsTable, propsTable2, scopeFilter, scopesTable]);
 
     return <HolyGrail
         header={<>
@@ -264,8 +296,8 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         </>}
         main={
             <>
-                {ready && <AutosizeHpccJSComponent widget={dockPanel} padding={4} debounce={false} />}
-                <MetricsOptions show={showMetricOptions} setShow={setShowMetricOptions} layout={dockPanel?.layout()} />
+                <DockPanel storeID="metrics-layout" items={items}></DockPanel>
+                <MetricsOptions show={showMetricOptions} setShow={setShowMetricOptions} layout={undefined/*dockPanel?.layout()*/} />
             </>}
     />;
 };

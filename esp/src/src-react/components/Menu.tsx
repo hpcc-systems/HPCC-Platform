@@ -4,8 +4,9 @@ import { useConst } from "@fluentui/react-hooks";
 import nlsHPCC from "src/nlsHPCC";
 import { MainNav, routes } from "../routes";
 import { pushUrl } from "../util/history";
-import { Breadcrumbs } from "./Breadcrumbs";
 import { useFavorites, useHistory } from "../hooks/favorite";
+import { useUserTheme } from "../hooks/theme";
+import { Breadcrumbs } from "./Breadcrumbs";
 
 //  Top Level Nav  ---
 const navLinkGroups: INavLinkGroup[] = [
@@ -78,19 +79,14 @@ const FIXED_WIDTH = 38;
 
 interface MainNavigationProps {
     hashPath: string;
-    useDarkMode: boolean;
-    setUseDarkMode: (_: boolean) => void;
 }
 
 export const MainNavigation: React.FunctionComponent<MainNavigationProps> = ({
-    hashPath,
-    useDarkMode,
-    setUseDarkMode
+    hashPath
 }) => {
 
-    const theme = useTheme();
-
     const menu = useConst([...navLinkGroups]);
+    const [theme, setTheme, isDark] = useUserTheme();
 
     const selKey = React.useMemo(() => {
         return navSelectedKey(hashPath);
@@ -101,7 +97,7 @@ export const MainNavigation: React.FunctionComponent<MainNavigationProps> = ({
             <Nav selectedKey={selKey} groups={menu} />
         </Stack.Item>
         <Stack.Item>
-            <IconButton iconProps={{ iconName: useDarkMode ? "Sunny" : "ClearNight" }} onClick={() => setUseDarkMode(!useDarkMode)} />
+            <IconButton iconProps={{ iconName: isDark ? "Sunny" : "ClearNight" }} onClick={() => setTheme(isDark ? "light" : "dark")} />
             <IconButton iconProps={{ iconName: "Settings" }} onClick={() => { }} />
         </Stack.Item>
     </Stack>;
