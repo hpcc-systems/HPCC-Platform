@@ -12,7 +12,7 @@ import { ShortVerticalDivider } from "./Common";
 import { TableGroup } from "./forms/Groups";
 import { XMLSourceEditor } from "./SourceEditor";
 
-const logger = scopedLogger("src-react/components/DFUWorkunitDetails.tsx");
+const logger = scopedLogger("../components/DFUWorkunitDetails.tsx");
 
 interface DFUWorkunitDetailsProps {
     wuid: string;

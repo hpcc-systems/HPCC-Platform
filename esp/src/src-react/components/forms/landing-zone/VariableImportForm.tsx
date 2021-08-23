@@ -1,12 +1,12 @@
 import * as React from "react";
-import { Checkbox, ContextualMenu, Dropdown, IconButton, IDragOptions, mergeStyleSets, Modal, PrimaryButton, Stack, TextField } from "@fluentui/react";
-import { useId } from "@fluentui/react-hooks";
+import { Checkbox, DefaultButton, Dropdown, mergeStyleSets, PrimaryButton, Stack, TextField } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
 import * as FileSpray from "src/FileSpray";
 import { TargetDfuSprayQueueTextField, TargetGroupTextField } from "../Fields";
 import nlsHPCC from "src/nlsHPCC";
-import * as FormStyles from "./styles";
+import { MessageBox } from "../../../layouts/MessageBox";
 import { pushUrl } from "../../../util/history";
+import * as FormStyles from "./styles";
 
 interface VariableImportFormValues {
     destGroup: string;
@@ -76,9 +76,9 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                     request["sourceIP"] = file.SourceIP;
                     request["sourcePath"] = file.SourceFile;
                     request["destLogicalName"] = data.namePrefix + ((
-                            data.namePrefix && data.namePrefix.substr(-2) !== "::" &&
-                            file.TargetName && file.TargetName.substr(0, 2) !== "::"
-                        ) ? "::" : "") + file.TargetName;
+                        data.namePrefix && data.namePrefix.substr(-2) !== "::" &&
+                        file.TargetName && file.TargetName.substr(0, 2) !== "::"
+                    ) ? "::" : "") + file.TargetName;
                     FileSpray.SprayFixed({
                         request: request
                     }).then((response) => {
@@ -93,14 +93,6 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
             }
         )();
     }, [handleSubmit]);
-
-    const titleId = useId("title");
-
-    const dragOptions: IDragOptions = {
-        moveMenuItemText: nlsHPCC.Move,
-        closeMenuItemText: nlsHPCC.Close,
-        menu: ContextualMenu,
-    };
 
     const componentStyles = mergeStyleSets(
         FormStyles.componentStyles,
@@ -126,31 +118,18 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
         }
     }, [selection, reset]);
 
-    return <Modal
-        titleAriaId={titleId}
-        isOpen={showForm}
-        onDismiss={closeForm}
-        isBlocking={false}
-        containerClassName={componentStyles.container}
-        dragOptions={dragOptions}
-    >
-        <div className={componentStyles.header}>
-            <span id={titleId}>{`${nlsHPCC.Import} ${nlsHPCC.Variable}`}</span>
-            <IconButton
-                styles={FormStyles.iconButtonStyles}
-                iconProps={FormStyles.cancelIcon}
-                ariaLabel={nlsHPCC.CloseModal}
-                onClick={closeForm}
-            />
-        </div>
-        <div className={componentStyles.body}>
-            <Stack>
-                <Controller
-                    control={control} name="destGroup"
-                    render={({
-                        field: { onChange, name: fieldName, value },
-                        fieldState: { error }
-                    }) => <TargetGroupTextField
+    return <MessageBox title={nlsHPCC.Import} show={showForm} setShow={closeForm}
+        footer={<>
+            <PrimaryButton text={nlsHPCC.Import} onClick={handleSubmit(onSubmit)} />
+            <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
+        </>}>
+        <Stack>
+            <Controller
+                control={control} name="destGroup"
+                render={({
+                    field: { onChange, name: fieldName, value },
+                    fieldState: { error }
+                }) => <TargetGroupTextField
                         key="destGroup"
                         label={nlsHPCC.Group}
                         required={true}
@@ -160,18 +139,18 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                         onChange={(evt, option) => {
                             onChange(option.key);
                         }}
-                        errorMessage={ error && error?.message }
-                    /> }
-                    rules={{
-                        required: `${nlsHPCC.SelectA} ${nlsHPCC.Group}`
-                    }}
-                />
-                <Controller
-                    control={control} name="DFUServerQueue"
-                    render={({
-                        field: { onChange, name: fieldName, value },
-                        fieldState: { error }
-                    }) => <TargetDfuSprayQueueTextField
+                        errorMessage={error && error?.message}
+                    />}
+                rules={{
+                    required: `${nlsHPCC.SelectA} ${nlsHPCC.Group}`
+                }}
+            />
+            <Controller
+                control={control} name="DFUServerQueue"
+                render={({
+                    field: { onChange, name: fieldName, value },
+                    fieldState: { error }
+                }) => <TargetDfuSprayQueueTextField
                         key="DFUServerQueue"
                         label={nlsHPCC.Queue}
                         required={true}
@@ -181,42 +160,42 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                         onChange={(evt, option) => {
                             onChange(option.key);
                         }}
-                        errorMessage={ error && error?.message }
-                    /> }
-                    rules={{
-                        required: `${nlsHPCC.SelectA} ${nlsHPCC.Queue}`
-                    }}
-                />
-                <Controller
-                    control={control} name="namePrefix"
-                    render={({
-                        field: { onChange, name: fieldName, value },
-                        fieldState: { error }
-                    }) => <TextField
+                        errorMessage={error && error?.message}
+                    />}
+                rules={{
+                    required: `${nlsHPCC.SelectA} ${nlsHPCC.Queue}`
+                }}
+            />
+            <Controller
+                control={control} name="namePrefix"
+                render={({
+                    field: { onChange, name: fieldName, value },
+                    fieldState: { error }
+                }) => <TextField
                         name={fieldName}
                         onChange={onChange}
                         label={nlsHPCC.TargetScope}
                         value={value}
                         placeholder={nlsHPCC.NamePrefixPlaceholder}
-                        errorMessage={ error && error?.message }
-                    /> }
-                    rules={{
-                        pattern: {
-                            value: /^([a-z0-9]+(::)?)+$/i,
-                            message: nlsHPCC.ValidationErrorNamePrefix
-                        }
-                    }}
-                />
-            </Stack>
-            <Stack>
-                <table className={`${componentStyles.twoColumnTable} ${componentStyles.selectionTable}`}>
-                    <thead>
-                        <tr>
-                            <th>{nlsHPCC.TargetName}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    { selection && selection.map((file, idx) => {
+                        errorMessage={error && error?.message}
+                    />}
+                rules={{
+                    pattern: {
+                        value: /^([a-z0-9]+(::)?)+$/i,
+                        message: nlsHPCC.ValidationErrorNamePrefix
+                    }
+                }}
+            />
+        </Stack>
+        <Stack>
+            <table className={`${componentStyles.twoColumnTable} ${componentStyles.selectionTable}`}>
+                <thead>
+                    <tr>
+                        <th>{nlsHPCC.TargetName}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {selection && selection.map((file, idx) => {
                         return <tr key={`File-${idx}`}>
                             <td>
                                 <Controller
@@ -225,11 +204,11 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                                         field: { onChange, name: fieldName, value },
                                         fieldState: { error }
                                     }) => <TextField
-                                        name={fieldName}
-                                        onChange={onChange}
-                                        value={value}
-                                        errorMessage={ error && error?.message }
-                                    /> }
+                                            name={fieldName}
+                                            onChange={onChange}
+                                            value={value}
+                                            errorMessage={error && error?.message}
+                                        />}
                                     rules={{
                                         required: nlsHPCC.ValidationErrorTargetNameRequired,
                                         pattern: {
@@ -242,17 +221,17 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                                 <input type="hidden" name={`selectedFiles.${idx}.SourceIP` as const} value={file["NetAddress"]} />
                             </td>
                         </tr>;
-                    }) }
-                    </tbody>
-                </table>
-            </Stack>
-            <Stack>
-                <Controller
-                    control={control} name="sourceFormat"
-                    render={({
-                        field: { onChange, name: fieldName, value },
-                        fieldState: { error }
-                    }) => <Dropdown
+                    })}
+                </tbody>
+            </table>
+        </Stack>
+        <Stack>
+            <Controller
+                control={control} name="sourceFormat"
+                render={({
+                    field: { onChange, name: fieldName, value },
+                    fieldState: { error }
+                }) => <Dropdown
                         key="sourceFormat"
                         label={nlsHPCC.Format}
                         options={[
@@ -265,55 +244,55 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                         onChange={(evt, option) => {
                             onChange(option.key);
                         }}
-                        errorMessage={ error && error?.message }
-                    /> }
-                    rules={{
-                        required: `${nlsHPCC.SelectA} ${nlsHPCC.Format}`
-                    }}
-                />
-            </Stack>
-            <Stack>
-                <table className={componentStyles.twoColumnTable}>
-                    <tbody><tr>
-                        <td><Controller
-                            control={control} name="overwrite"
-                            render={({
-                                field : { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Overwrite} /> }
-                        /></td>
-                        <td><Controller
-                            control={control} name="replicate"
-                            render={({
-                                field : { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Replicate} /> }
-                        /></td>
-                    </tr>
+                        errorMessage={error && error?.message}
+                    />}
+                rules={{
+                    required: `${nlsHPCC.SelectA} ${nlsHPCC.Format}`
+                }}
+            />
+        </Stack>
+        <Stack>
+            <table className={componentStyles.twoColumnTable}>
+                <tbody><tr>
+                    <td><Controller
+                        control={control} name="overwrite"
+                        render={({
+                            field: { onChange, name: fieldName, value }
+                        }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Overwrite} />}
+                    /></td>
+                    <td><Controller
+                        control={control} name="replicate"
+                        render={({
+                            field: { onChange, name: fieldName, value }
+                        }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Replicate} />}
+                    /></td>
+                </tr>
                     <tr>
                         <td><Controller
                             control={control} name="nosplit"
                             render={({
-                                field : { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.NoSplit} /> }
+                                field: { onChange, name: fieldName, value }
+                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.NoSplit} />}
                         /></td>
                         <td><Controller
                             control={control} name="noCommon"
                             render={({
-                                field : { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.NoCommon} /> }
+                                field: { onChange, name: fieldName, value }
+                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.NoCommon} />}
                         /></td>
                     </tr>
                     <tr>
                         <td><Controller
                             control={control} name="compress"
                             render={({
-                                field : { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Compress} /> }
+                                field: { onChange, name: fieldName, value }
+                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Compress} />}
                         /></td>
                         <td><Controller
                             control={control} name="failIfNoSourceFile"
                             render={({
-                                field : { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.FailIfNoSourceFile} /> }
+                                field: { onChange, name: fieldName, value }
+                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.FailIfNoSourceFile} />}
                         /></td>
                     </tr>
                     <tr>
@@ -323,12 +302,12 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                                 field: { onChange, name: fieldName, value },
                                 fieldState: { error }
                             }) => <TextField
-                                name={fieldName}
-                                onChange={onChange}
-                                label={nlsHPCC.ExpireDays}
-                                value={value}
-                                errorMessage={ error && error?.message }
-                            />}
+                                    name={fieldName}
+                                    onChange={onChange}
+                                    label={nlsHPCC.ExpireDays}
+                                    value={value}
+                                    errorMessage={error && error?.message}
+                                />}
                             rules={{
                                 min: {
                                     value: 1,
@@ -339,15 +318,11 @@ export const VariableImportForm: React.FunctionComponent<VariableImportFormProps
                         <td><Controller
                             control={control} name="delayedReplication"
                             render={({
-                                field : { onChange, name: fieldName, value }
-                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.DelayedReplication} disabled={true} /> }
+                                field: { onChange, name: fieldName, value }
+                            }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.DelayedReplication} disabled={true} />}
                         /></td>
                     </tr></tbody>
-                </table>
-            </Stack>
-            <Stack horizontal horizontalAlign="space-between" verticalAlign="end" styles={FormStyles.buttonStackStyles}>
-                <PrimaryButton text={nlsHPCC.Import} onClick={handleSubmit(onSubmit)} />
-            </Stack>
-        </div>
-    </Modal>;
+            </table>
+        </Stack>
+    </MessageBox>;
 };

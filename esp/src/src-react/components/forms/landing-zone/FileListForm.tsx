@@ -1,10 +1,10 @@
 import * as React from "react";
-import { Checkbox, ContextualMenu, IconButton, IDragOptions, keyframes, mergeStyleSets, Modal, PrimaryButton, Stack } from "@fluentui/react";
-import { useId } from "@fluentui/react-hooks";
+import { Checkbox, DefaultButton, keyframes, mergeStyleSets, PrimaryButton, Stack } from "@fluentui/react";
 import { useForm, Controller } from "react-hook-form";
 import { TargetDropzoneTextField, TargetFolderTextField, TargetServerTextField } from "../Fields";
 import * as FileSpray from "src/FileSpray";
 import nlsHPCC from "src/nlsHPCC";
+import { MessageBox } from "../../../layouts/MessageBox";
 import * as FormStyles from "./styles";
 import { ProgressRingDotsIcon } from "@fluentui/react-icons-mdl2";
 
@@ -71,20 +71,20 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                 method: "POST",
                 body: formData,
             })
-            .then(response => response.json())
-            .then(response => {
-                setSubmitDisabled(false);
-                const DFUActionResult = response?.UploadFilesResponse?.UploadFileResults?.DFUActionResult;
-                if (DFUActionResult.filter(result => result.Result !== "Success").length > 0) {
-                    console.log("upload failed");
-                } else {
-                    closeForm();
-                    if (typeof onSubmit === "function") {
-                        onSubmit();
+                .then(response => response.json())
+                .then(response => {
+                    setSubmitDisabled(false);
+                    const DFUActionResult = response?.UploadFilesResponse?.UploadFileResults?.DFUActionResult;
+                    if (DFUActionResult.filter(result => result.Result !== "Success").length > 0) {
+                        console.log("upload failed");
+                    } else {
+                        closeForm();
+                        if (typeof onSubmit === "function") {
+                            onSubmit();
+                        }
+                        reset(defaultValues);
                     }
-                    reset(defaultValues);
-                }
-            });
+                });
         };
 
         handleSubmit(
@@ -98,7 +98,7 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                             Netaddr: machine,
                             Path: data.path
                         }
-                    }).then(({FileListResponse}) => {
+                    }).then(({ FileListResponse }) => {
                         let fileName = "";
                         FileListResponse?.files?.PhysicalFileStruct.forEach(file => {
                             if (fileNames.indexOf(file.name) > -1) {
@@ -120,14 +120,6 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
             }
         )();
     }, [closeForm, handleSubmit, machine, onSubmit, os, reset, selection]);
-
-    const titleId = useId("title");
-
-    const dragOptions: IDragOptions = {
-        moveMenuItemText: nlsHPCC.Move,
-        closeMenuItemText: nlsHPCC.Close,
-        menu: ContextualMenu,
-    };
 
     const progressIconSpin = keyframes({
         "0%": {
@@ -158,31 +150,25 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
 
     let setDropzone = React.useCallback((dropzone: string) => { }, []);
 
-    return <Modal
-        titleAriaId={titleId}
-        isOpen={showForm}
-        onDismiss={closeForm}
-        isBlocking={false}
-        containerClassName={componentStyles.container}
-        dragOptions={dragOptions}
-    >
-        <div className={componentStyles.header}>
-            <span id={titleId}>{`${nlsHPCC.FileUploader}`}</span>
-            <IconButton
-                styles={FormStyles.iconButtonStyles}
-                iconProps={FormStyles.cancelIcon}
-                ariaLabel={nlsHPCC.CloseModal}
-                onClick={closeForm}
-            />
-        </div>
-        <div className={componentStyles.body}>
-            <Stack>
-                <Controller
-                    control={control} name="dropzone"
-                    render={({
-                        field: { onChange, name: fieldName, value },
-                        fieldState: { error }
-                    }) => <TargetDropzoneTextField
+    return <MessageBox title={nlsHPCC.FileUploader} show={showForm} setShow={closeForm}
+        footer={<>
+            {submitDisabled &&
+                <span className={componentStyles.progressMessage}>
+                    {nlsHPCC.Uploading}... <ProgressRingDotsIcon className={componentStyles.progressIcon} />
+                </span>
+            }
+            <PrimaryButton text={nlsHPCC.Upload} onClick={handleSubmit(doSubmit)} disabled={submitDisabled} />
+            {submitDisabled &&
+                <DefaultButton text={nlsHPCC.Cancel} onClick={() => closeForm()} />
+            }
+        </>}>
+        <Stack>
+            <Controller
+                control={control} name="dropzone"
+                render={({
+                    field: { onChange, name: fieldName, value },
+                    fieldState: { error }
+                }) => <TargetDropzoneTextField
                         key="dropzone"
                         label={nlsHPCC.LandingZone}
                         required={true}
@@ -195,18 +181,18 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                             setDropzone(option.key as string);
                             onChange(option.key);
                         }}
-                        errorMessage={ error && error?.message }
-                    /> }
-                    rules={{
-                        required: nlsHPCC.ValidationErrorRequired
-                    }}
-                />
-                <Controller
-                    control={control} name="machines"
-                    render={({
-                        field: { onChange, name: fieldName, value },
-                        fieldState: { error }
-                    }) => <TargetServerTextField
+                        errorMessage={error && error?.message}
+                    />}
+                rules={{
+                    required: nlsHPCC.ValidationErrorRequired
+                }}
+            />
+            <Controller
+                control={control} name="machines"
+                render={({
+                    field: { onChange, name: fieldName, value },
+                    fieldState: { error }
+                }) => <TargetServerTextField
                         key="machines"
                         label={nlsHPCC.Machines}
                         required={true}
@@ -217,18 +203,18 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                             onChange(option.key);
                         }}
                         setSetDropzone={_ => setDropzone = _}
-                        errorMessage={ error && error?.message }
-                    /> }
-                    rules={{
-                        required: nlsHPCC.ValidationErrorRequired
-                    }}
-                />
-                <Controller
-                    control={control} name="path"
-                    render={({
-                        field: { onChange, name: fieldName, value },
-                        fieldState: { error }
-                    }) => <TargetFolderTextField
+                        errorMessage={error && error?.message}
+                    />}
+                rules={{
+                    required: nlsHPCC.ValidationErrorRequired
+                }}
+            />
+            <Controller
+                control={control} name="path"
+                render={({
+                    field: { onChange, name: fieldName, value },
+                    fieldState: { error }
+                }) => <TargetFolderTextField
                         key="path"
                         label={nlsHPCC.Folder}
                         pathSepChar={pathSep}
@@ -240,53 +226,44 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                         onChange={(evt, option) => {
                             onChange(option.key);
                         }}
-                        errorMessage={ error && error?.message }
-                    /> }
-                    rules={{
-                        required: nlsHPCC.ValidationErrorRequired,
-                        pattern: {
-                            value: /^(\/[a-z0-9]*)+$/i,
-                            message: nlsHPCC.ValidationErrorTargetNameRequired
-                        }
-                    }}
-                />
-            </Stack>
-            <Stack>
-                <table className={`${componentStyles.twoColumnTable} ${componentStyles.selectionTable}`}>
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>{nlsHPCC.Type}</th>
-                            <th>{nlsHPCC.FileName}</th>
-                            <th>{nlsHPCC.Size}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    { selection && selection.map((file, idx) => {
+                        errorMessage={error && error?.message}
+                    />}
+                rules={{
+                    required: nlsHPCC.ValidationErrorRequired,
+                    pattern: {
+                        value: /^(\/[a-z0-9]*)+$/i,
+                        message: nlsHPCC.ValidationErrorTargetNameRequired
+                    }
+                }}
+            />
+        </Stack>
+        <Stack>
+            <table className={`${componentStyles.twoColumnTable} ${componentStyles.selectionTable}`}>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>{nlsHPCC.Type}</th>
+                        <th>{nlsHPCC.FileName}</th>
+                        <th>{nlsHPCC.Size}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {selection && selection.map((file, idx) => {
                         return <tr key={`File-${idx}`}>
                             <td>{idx + 1}</td>
                             <td>{file["name"].substr(file["name"].lastIndexOf(".") + 1).toUpperCase()}</td>
                             <td>{file["name"]}</td>
                             <td>{`${(parseInt(file["size"], 10) / 1024).toFixed(2)} kb`}</td>
                         </tr>;
-                    }) }
-                    </tbody>
-                </table>
-                <Controller
-                    control={control} name="overwrite"
-                    render={({
-                        field : { onChange, name: fieldName, value }
-                    }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Overwrite} /> }
-                />
-            </Stack>
-            <Stack horizontal horizontalAlign="space-between" verticalAlign="end" styles={FormStyles.buttonStackStyles}>
-                { submitDisabled &&
-                <span className={componentStyles.progressMessage}>
-                    {nlsHPCC.Uploading}... <ProgressRingDotsIcon className={componentStyles.progressIcon} />
-                </span>
-                }
-                <PrimaryButton text={nlsHPCC.Upload} onClick={handleSubmit(doSubmit)} disabled={submitDisabled}/>
-            </Stack>
-        </div>
-    </Modal>;
+                    })}
+                </tbody>
+            </table>
+            <Controller
+                control={control} name="overwrite"
+                render={({
+                    field: { onChange, name: fieldName, value }
+                }) => <Checkbox name={fieldName} checked={value} onChange={onChange} label={nlsHPCC.Overwrite} />}
+            />
+        </Stack>
+    </MessageBox>;
 };

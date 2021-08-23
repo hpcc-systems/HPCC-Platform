@@ -49,7 +49,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
             onClick: () => {
                 setShowMetricOptions(true);
             }
-        },
+        }
     ], []);
 
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [

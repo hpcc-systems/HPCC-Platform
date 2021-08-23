@@ -1,13 +1,8 @@
 import * as React from "react";
-import { IDragOptions, ContextualMenu, DialogType, Dialog, DialogFooter, DefaultButton, PrimaryButton, Checkbox, Pivot, PivotItem, TextField } from "@fluentui/react";
+import { DefaultButton, PrimaryButton, Checkbox, Pivot, PivotItem, TextField } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
 import { useMetricMeta, useMetricsOptions } from "../hooks/metrics";
-
-const dragOptions: IDragOptions = {
-    moveMenuItemText: "Move",
-    closeMenuItemText: "Close",
-    menu: ContextualMenu,
-};
+import { MessageBox } from "../layouts/MessageBox";
 
 interface MetricsOptionsProps {
     show: boolean;
@@ -28,17 +23,29 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
 
     const allChecked = scopeTypes.length === options.scopeTypes.length;
 
-    return <Dialog
-        hidden={!show}
-        onDismiss={closeOptions}
-        dialogContentProps={{
-            type: DialogType.close,
-            title: nlsHPCC.Options,
-        }}
-        modalProps={{
-            isBlocking: false,
-            dragOptions,
-        }}>
+    return <MessageBox title={nlsHPCC.Options} show={show} setShow={setShow}
+        footer={<>
+            <PrimaryButton
+                text={nlsHPCC.OK}
+                onClick={() => {
+                    save();
+                    closeOptions();
+                }}
+            />
+            <DefaultButton
+                text={nlsHPCC.Cancel}
+                onClick={() => {
+                    reset();
+                    closeOptions();
+                }}
+            />
+            <DefaultButton
+                text={nlsHPCC.Defaults}
+                onClick={() => {
+                    reset(true);
+                }}
+            />
+        </>} >
         <Pivot>
             <PivotItem headerText={nlsHPCC.Metrics}>
                 <Checkbox key="all" label={nlsHPCC.All} checked={allChecked} onChange={(ev, checked) => {
@@ -86,27 +93,5 @@ export const MetricsOptions: React.FunctionComponent<MetricsOptionsProps> = ({
             <PivotItem headerText={nlsHPCC.Layout}>
             </PivotItem>
         </Pivot>
-        <DialogFooter>
-            <PrimaryButton
-                text={nlsHPCC.OK}
-                onClick={() => {
-                    save();
-                    closeOptions();
-                }}
-            />
-            <DefaultButton
-                text={nlsHPCC.Cancel}
-                onClick={() => {
-                    reset();
-                    closeOptions();
-                }}
-            />
-            <DefaultButton
-                text={nlsHPCC.Defaults}
-                onClick={() => {
-                    reset(true);
-                }}
-            />
-        </DialogFooter>
-    </Dialog>;
+    </MessageBox>;
 };

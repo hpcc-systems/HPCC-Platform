@@ -3,7 +3,7 @@ import { parse, ParsedQuery, stringify } from "query-string";
 import { hashSum, scopedLogger } from "@hpcc-js/util";
 import { userKeyValStore } from "src/KeyValStore";
 
-const logger = scopedLogger("src-react/util/history.ts");
+const logger = scopedLogger("../util/history.ts");
 
 let g_router: UniversalRouter;
 

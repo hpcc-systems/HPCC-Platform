@@ -14,7 +14,7 @@ import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
 import { DojoGrid, selector } from "./DojoGrid";
 import { scopedLogger } from "@hpcc-js/util";
 
-const logger = scopedLogger("src-react/components/Workunits.tsx");
+const logger = scopedLogger("../components/Workunits.tsx");
 
 const FilterFields: Fields = {
     "Type": { type: "checkbox", label: nlsHPCC.ArchivedOnly },

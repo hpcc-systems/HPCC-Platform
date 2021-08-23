@@ -4,7 +4,7 @@ import { About } from "./About";
 import { useBoolean } from "@fluentui/react-hooks";
 
 import nlsHPCC from "src/nlsHPCC";
-import { useECLWatchLogger } from "src-react/hooks/logging";
+import { useECLWatchLogger } from "../hooks/logging";
 
 const collapseMenuIcon: IIconProps = { iconName: "CollapseMenu" };
 

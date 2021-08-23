@@ -13,7 +13,7 @@ import "src-react-css/index.css";
 ECLWatchLogger.init();
 initializeIcons();
 
-const logger = scopedLogger("src-react/index.tsx");
+const logger = scopedLogger("../index.tsx");
 
 declare const dojoConfig: any;
 

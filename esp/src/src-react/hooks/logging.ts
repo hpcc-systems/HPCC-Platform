@@ -3,7 +3,7 @@ import { useConst } from "@fluentui/react-hooks";
 import { ESPExceptions, isExceptions } from "@hpcc-js/comms";
 import { Observable, Level, logger as utilLogger, scopedLogger, Writer, CallbackFunction } from "@hpcc-js/util";
 
-const logger = scopedLogger("src-react/util/logging.ts");
+const logger = scopedLogger("../util/logging.ts");
 
 let g_logger: ECLWatchLogger;
 

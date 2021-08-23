@@ -17,7 +17,7 @@ import { HolyGrail } from "../layouts/HolyGrail";
 import { ReflexContainer, ReflexElement, ReflexSplitter } from "../layouts/react-reflex";
 import { TextSourceEditor, XMLSourceEditor } from "./SourceEditor";
 
-const logger = scopedLogger("src-react/components/PackageMaps.tsx");
+const logger = scopedLogger("../components/PackageMaps.tsx");
 
 const FilterFields: Fields = {
     "Target": { type: "dropdown", label: nlsHPCC.Target, options: [], value: "*" },

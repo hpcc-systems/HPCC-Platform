@@ -11,7 +11,7 @@ import { pushUrl } from "../util/history";
 import { DojoGrid, selector } from "./DojoGrid";
 import { ShortVerticalDivider } from "./Common";
 
-const logger = scopedLogger("src-react/components/QueryLogicalFiles.tsx");
+const logger = scopedLogger("../components/QueryLogicalFiles.tsx");
 
 const defaultUIState = {
     hasSelection: false

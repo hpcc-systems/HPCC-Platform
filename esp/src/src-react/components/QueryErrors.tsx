@@ -9,7 +9,7 @@ import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { DojoGrid } from "./DojoGrid";
 
-const logger = scopedLogger("src-react/components/QueryErrors.tsx");
+const logger = scopedLogger("../components/QueryErrors.tsx");
 
 interface QueryErrorsProps {
     querySet?: string;
