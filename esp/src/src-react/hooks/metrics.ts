@@ -5,16 +5,22 @@ import { userKeyValStore } from "src/KeyValStore";
 import { useCounter, useWorkunit } from "./workunit";
 
 const defaults = {
-    ignoreGlobalStoreOutEdges: true,
     scopeTypes: ["graph", "subgraph", "activity", "edge"],
     properties: ["TimeElapsed"],
+    ignoreGlobalStoreOutEdges: true,
+    subgraphTpl: "%id% - %TimeElapsed%",
+    activityTpl: "%Label%",
+    edgeTpl: "%Label%\n%NumRowsProcessed%\n%SkewMinRowsProcessed% / %SkewMaxRowsProcessed%",
     layout: undefined
 };
 
 export interface MetricsOptions {
-    ignoreGlobalStoreOutEdges: boolean;
     scopeTypes: string[];
     properties: string[];
+    ignoreGlobalStoreOutEdges: boolean;
+    subgraphTpl;
+    activityTpl;
+    edgeTpl;
     layout: object
 }
 
