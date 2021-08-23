@@ -944,7 +944,7 @@ void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * cont
     if (queryNestedDependTree())
         createDependencyEntry(scope, name);
 
-    if (queryArchive())
+    if (includeInArchive(scope))
     {
         const char * moduleName = scope->queryFullName();
 
@@ -979,7 +979,7 @@ void HqlParseContext::noteBeginQuery(IHqlScope * scope, IFileContents * contents
     if (queryNestedDependTree())
         createDependencyEntry(NULL, NULL);
 
-    if (queryArchive())
+    if (includeInArchive(scope))
     {
         const char * moduleName = scope->queryFullName();
         if (moduleName && *moduleName)
@@ -1005,7 +1005,7 @@ void HqlParseContext::noteBeginModule(IHqlScope * scope, IFileContents * content
     if (queryNestedDependTree())
         createDependencyEntry(scope, NULL);
 
-    if (queryArchive())
+    if (includeInArchive(scope))
     {
         const char * moduleName = scope->queryFullName();
         if (moduleName && *moduleName)
@@ -1182,22 +1182,25 @@ void HqlParseContext::finishMeta(bool isSeparateFile, bool success, bool generat
     }
 }
 
+bool HqlParseContext::includeInArchive(IHqlScope * scope) const
+{
+    return archive && (!scope || scope->includeInArchive());
+}
+
 void HqlParseContext::noteExternalLookup(IHqlScope * parentScope, IHqlExpression * expr)
 {
     //metaStack can be empty if we are resolving the main attribute within the repository
     if (!metaStack)
         return;
 
-    if (queryArchive())
+    node_operator op = expr->getOperator();
+    if ((op == no_remotescope) || (op == no_mergedscope))
     {
-        node_operator op = expr->getOperator();
-        if ((op == no_remotescope) || (op == no_mergedscope))
-        {
-            //Ensure the archive contains entries for each module - even if nothing is accessed from it
-            //It would be preferrable to only check once, but adds very little time anyway.
-            IHqlScope * resolvedScope = expr->queryScope();
+        //Ensure the archive contains entries for each module - even if nothing is accessed from it
+        //It would be preferrable to only check once, but adds very little time anyway.
+        IHqlScope * resolvedScope = expr->queryScope();
+        if (includeInArchive(resolvedScope))
             queryEnsureArchiveModule(resolvedScope->queryFullName(), resolvedScope);
-        }
     }
 
     FileParseMeta & meta = metaStack.tos();
@@ -8917,6 +8920,11 @@ void CHqlRemoteScope::setProp(IAtom * a, const char * val)
 }
 
 
+bool CHqlRemoteScope::includeInArchive() const
+{
+    return ownerRepository ? ownerRepository->includeInArchive() : true;
+}
+
 void CHqlRemoteScope::repositoryLoadModule(HqlLookupContext & ctx, bool forceAll)
 {
     if (ownerRepository->loadModule(this, ctx.errs, forceAll))
@@ -9052,7 +9060,7 @@ a) Don't support legacy any more.
    Nice idea, but not for a couple of years.
 b) only gather implicit modules from the first repository.
    Unfortunately this means archives containing plugins not registered with eclcc no longer compile, which causes
-   problems regression testing.w
+   problems regression testing.
 c) Ensure all system plugins are parsed (so that (d) works, and allows the parsing short-circuiting to work).
    A bit ugly that you need to remember to do it, but has the advantage of ensuring plugins have no dependencies on
    anything else.

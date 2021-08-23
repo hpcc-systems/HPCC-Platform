@@ -153,6 +153,7 @@ public:
 
     virtual IHqlScope * queryRootScope() { return rootScope; }
     virtual IEclSource * getSource(const char * eclFullname) override;
+    virtual bool includeInArchive() const override { return true; }
 
 protected:
     IArrayOf<IEclRepository> repositories;
@@ -226,6 +227,7 @@ public:
 
     virtual IHqlScope * queryRootScope() { return rootScope; }
     virtual IEclSource * getSource(const char * path) override { return nullptr; }
+    virtual bool includeInArchive() const override { return repository->includeInArchive(); }
 
 protected:
     Linked<IEclRepository> repository;
@@ -256,7 +258,8 @@ static IIdAtom * queryModuleIdFromFullName(const char * name)
 class HQL_API CNewEclRepository : implements IEclRepositoryCallback, public CInterface
 {
 public:
-    CNewEclRepository(IEclSourceCollection * _collection, const char * rootScopeFullName) : collection(_collection)
+    CNewEclRepository(IEclSourceCollection * _collection, const char * rootScopeFullName, bool _addToArchive) :
+        collection(_collection), addToArchive(_addToArchive)
     {
         rootScope.setown(createRemoteScope(queryModuleIdFromFullName(rootScopeFullName), rootScopeFullName, this, NULL, NULL, true, NULL));
     }
@@ -264,6 +267,7 @@ public:
 
     virtual IHqlScope * queryRootScope() override { return rootScope->queryScope(); }
     virtual IEclSource * getSource(const char * eclFullname) override;
+    virtual bool includeInArchive() const override { return addToArchive; }
 
 //interface IEclRepositoryCallback
     virtual bool loadModule(IHqlRemoteScope *scope, IErrorReceiver *errs, bool forceAll) override;
@@ -277,6 +281,7 @@ protected:
     Linked<IEclSourceCollection> collection;
     Owned<IHqlRemoteScope> rootScope;
     CriticalSection cs;
+    bool addToArchive;
 };
 
 
@@ -381,10 +386,9 @@ IHqlExpression * CNewEclRepository::createSymbol(IHqlRemoteScope * rScope, IEclS
     case ESTmodule:
     case ESTlibrary:
         {
-            //Slightly ugly create a "delayed" nested scope instead.  But with a NULL owner - so will never be called back
-            //Probably should be a difference class instance
+            //Slightly ugly create a "delayed" nested scope instead.
             Owned<IProperties> props = source->getProperties();
-            Owned<IHqlRemoteScope> childScope = createRemoteScope(eclId, fullName.str(), NULL, props, contents, true, source);
+            Owned<IHqlRemoteScope> childScope = createRemoteScope(eclId, fullName.str(), this, props, contents, true, source);
             body.set(queryExpression(childScope->queryScope()));
             break;
         }
@@ -402,36 +406,23 @@ IHqlExpression * CNewEclRepository::createSymbol(IHqlRemoteScope * rScope, IEclS
 }
 
 
-extern HQL_API IEclRepository * createRepository(IEclSourceCollection * source, const char * rootScopeFullName)
+extern HQL_API IEclRepository * createRepository(IEclSourceCollection * source, const char * rootScopeFullName, bool includeInArchive)
 {
-    return new CNewEclRepository(source, rootScopeFullName);
-}
-
-extern HQL_API IEclRepository * createRepository(EclSourceCollectionArray & sources)
-{
-    if (sources.ordinality() == 0)
-        return NULL;
-    if (sources.ordinality() == 1)
-        return createRepository(&sources.item(0));
-
-    EclRepositoryArray repositories;
-    ForEachItemIn(i, sources)
-        repositories.append(*createRepository(&sources.item(i)));
-    return createCompoundRepository(repositories);
+    return new CNewEclRepository(source, rootScopeFullName, includeInArchive);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 #include "hqlcollect.hpp"
 
-extern HQL_API IEclRepository * createNewSourceFileEclRepository(IErrorReceiver *errs, const char * path, unsigned flags, unsigned trace)
+extern HQL_API IEclRepository * createNewSourceFileEclRepository(IErrorReceiver *errs, const char * path, unsigned flags, unsigned trace, bool includeInArchive)
 {
     Owned<IEclSourceCollection> source = createFileSystemEclCollection(errs, path, flags, trace);
-    return createRepository(source);
+    return createRepository(source, nullptr, includeInArchive);
 }
 
-extern HQL_API IEclRepository * createSingleDefinitionEclRepository(const char * moduleName, const char * attrName, IFileContents * contents)
+extern HQL_API IEclRepository * createSingleDefinitionEclRepository(const char * moduleName, const char * attrName, IFileContents * contents, bool includeInArchive)
 {
     Owned<IEclSourceCollection> source = createSingleDefinitionEclCollection(moduleName, attrName, contents);
-    return createRepository(source);
+    return createRepository(source, nullptr, includeInArchive);
 }
