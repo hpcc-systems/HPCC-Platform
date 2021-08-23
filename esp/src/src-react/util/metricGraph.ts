@@ -1,4 +1,4 @@
-import { Button, d3Event, select as d3Select, Spacer, SVGZoomWidget } from "@hpcc-js/common";
+import { d3Event, select as d3Select, SVGZoomWidget } from "@hpcc-js/common";
 import { graphviz } from "@hpcc-js/graph";
 import { Graph2 } from "@hpcc-js/util";
 import { format } from "src/Utility";
@@ -286,6 +286,33 @@ digraph G {
     }
 }
 
+export class Rect {
+
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+
+    toStruct() {
+        return { x: this.left, y: this.top, width: this.right - this.left, height: this.bottom - this.top };
+    }
+
+    extend(rect: SVGRect) {
+        if (this.left === undefined || this.left > rect.x) {
+            this.left = rect.x;
+        }
+        if (this.top === undefined || this.top > rect.y + rect.height) {
+            this.top = rect.y + rect.height;
+        }
+        if (this.right === undefined || this.right < rect.x + rect.width) {
+            this.right = rect.x + rect.width;
+        }
+        if (this.bottom === undefined || this.bottom < rect.y) {
+            this.bottom = rect.y;
+        }
+    }
+}
+
 export class MetricGraphWidget extends SVGZoomWidget {
 
     protected _selection: { [id: string]: boolean } = {};
@@ -293,24 +320,14 @@ export class MetricGraphWidget extends SVGZoomWidget {
     constructor() {
         super();
         this._drawStartPos = "origin";
+        this.showToolbar(false);
         this._iconBar
-            .buttons([
-                new Button().faChar("fa-arrows-alt").tooltip("Zoom to fit")
-                    .on("click", () => {
-                        this.zoomToFit();
-                    }),
-                new Spacer().vline(false),
-                new Button().faChar("fa-plus").tooltip("Zoom in")
-                    .on("click", () => {
-                        this.zoomPlus();
-                    }),
-                new Button().faChar("fa-minus").tooltip("Zoom out")
-                    .on("click", () => {
-                        this.zoomMinus();
-                    })
-            ])
+            .buttons([])
             ;
+    }
 
+    exists(id: string) {
+        return !this._renderElement.select(`#${id}`).empty();
     }
 
     clearSelection(broadcast: boolean = false) {
@@ -341,16 +358,16 @@ export class MetricGraphWidget extends SVGZoomWidget {
         return this;
     }
 
-    protected _dot = "";
-    dot(_: string): this {
-        this._dot = _;
-        return this;
-    }
-
-    protected _prevDot;
-    _prevGV;
-    update(domNode, element) {
-        super.update(domNode, element);
+    selectionBBox() {
+        const rect = new Rect();
+        this.selection().forEach(sel => {
+            const elem = this._renderElement.select(`#${sel}`);
+            rect.extend((elem.node() as SVGGraphicsElement).getBBox());
+        });
+        const bbox = rect.toStruct();
+        const renderBBox = this._renderElement.node().getBBox();
+        bbox.y += renderBBox.height;
+        return bbox;
     }
 
     _selectionChanged(broadcast = false) {
@@ -369,7 +386,29 @@ export class MetricGraphWidget extends SVGZoomWidget {
         }
     }
 
-    render(callback) {
+    protected _prevDot;
+    protected _dot = "";
+    reset() {
+        this._prevDot = "";
+        return this;
+    }
+
+    dot(_: string): this {
+        this._dot = _;
+        return this;
+    }
+
+    zoomToSelection() {
+        this.zoomToBBox(this.selectionBBox());
+        return this;
+    }
+
+    update(domNode, element) {
+        super.update(domNode, element);
+    }
+
+    protected _prevGV;
+    render(callback?) {
         return super.render(w => {
             if (this._prevDot !== this._dot) {
                 this._prevDot = this._dot;

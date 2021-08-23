@@ -40,6 +40,8 @@ export class ReactWidget extends HTMLWidget {
         this._div = element.append("div");
     }
 
+    private _prevWidth;
+    private _prevHeight;
     update(domNode, element) {
         super.update(domNode, element);
         this._div
@@ -51,6 +53,13 @@ export class ReactWidget extends HTMLWidget {
             <ThemeProvider theme={this._theme} style={{ height: "100%" }}>{this._children}</ThemeProvider>,
             this._div.node()
         );
+
+        //  TODO:  Hack to make command bar resize...
+        if (this._prevWidth !== this.width() || this._prevHeight !== this.height()) {
+            this._prevWidth = this.width();
+            this._prevHeight = this.height();
+            window.dispatchEvent(new Event("resize"));
+        }
     }
 
     exit(domNode, element) {
