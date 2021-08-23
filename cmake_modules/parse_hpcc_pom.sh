@@ -97,7 +97,7 @@ function update_version_file()
     if [ $_mvn_return_value -eq 0 ]; then
         local version_update_cmd="mvn versions:set -DnewVersion=$_v"
     else
-        local version_update_cmd="sed -i .old 's/${HPCC_VERSION}/${_v}/' pom.xml"
+        local version_update_cmd="sed -i.old 's/${HPCC_VERSION}/${_v}/' pom.xml"
     fi
     if [ -n "$VERBOSE" ] ; then
       echo  "$version_update_cmd"
