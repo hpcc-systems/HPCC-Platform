@@ -47,7 +47,7 @@ static void splitGitFileName(const char *fullName, StringAttr &gitDir, StringAtt
         throw MakeStringException(0, "Invalid git repository filename - no matching } found");
     revision.set(tail, end - tail);
     tail = end+1;
-    if (*tail==PATHSEPCHAR)
+    if (*tail==PATHSEPCHAR || *tail == '/')
         tail++;
     else if (*tail != 0)
         throw MakeStringException(0, "Invalid git repository filename - " PATHSEPSTR " expected after }");
@@ -69,7 +69,7 @@ static void splitGitFileName(const char *fullName, StringAttr &gitDir, StringAtt
 static StringBuffer & buildGitFileName(StringBuffer &fullname, const char *gitDir, const char *revision, const char *relPath)
 {
     fullname.append(gitDir);
-    fullname.append('{').append(revision).append('}').append(PATHSEPCHAR);
+    fullname.append('{').append(revision).append('}').append('/');
     if (relPath && *relPath)
         fullname.append(relPath);
     return fullname;
@@ -396,7 +396,9 @@ protected:
             // With /, it gets all files in that directory
             // Without, it will return just a single match (for the file or dir with that name)
             // So we are effectively in two different modes according to which we used.
-            if (gitFileName.charAt(gitFileName.length()-1)=='/')   // NOTE: / not PATHSEPCHAR - we translated to git representation
+            char lastChar = gitFileName.charAt(gitFileName.length()-1);
+            // NOTE: / or PATHSEPCHAR - we translated to git representation, but root directory is .git{x}<pathsep>
+            if ((lastChar == '/') || (lastChar == PATHSEPCHAR))
                 gitFileName.append(filename);
             if (size==(offset_t) -1)
                 curFile.setown(new GitRepositoryFile(gitFileName, 0, true, true));
