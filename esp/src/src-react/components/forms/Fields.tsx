@@ -61,7 +61,7 @@ const Dropdown: React.FunctionComponent<DropdownProps> = ({
         setSelOptions(selOptions);
     }, [optional, options, defaultSelectedKey, handleOnChange]);
 
-    return <DropdownBase key={key} label={label} errorMessage={errorMessage} required={required} className={className} defaultSelectedKey={defaultSelectedKey} selectedKey={selectedKey} onChange={handleOnChange} placeholder={placeholder} disabled={disabled} options={selOptions} />;
+    return <DropdownBase key={key} label={label} errorMessage={errorMessage} required={required} className={className} defaultSelectedKey={defaultSelectedKey} selectedKey={selectedKey} onChange={handleOnChange} placeholder={placeholder} options={selOptions} disabled={disabled} />;
 };
 
 export type FieldType = "string" | "number" | "checkbox" | "datetime" | "dropdown" | "link" | "links" | "progress" |

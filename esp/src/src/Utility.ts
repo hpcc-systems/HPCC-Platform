@@ -292,7 +292,9 @@ export function downloadToCSV(grid, rows, fileName) {
         const a = document.createElement("a");
         mimeType = mimeType || "application/octet-stream";
 
+        // @ts-ignore
         if (navigator.msSaveBlob) { // IE10
+            // @ts-ignore
             return navigator.msSaveBlob(new Blob([content], { type: mimeType }), fileName);
         } else if ("download" in a) {
             a.href = "data:" + mimeType + "," + encodeURIComponent(content);
@@ -436,7 +438,7 @@ export function alphanumCase(a, b) {
 
 export function onDomMutate(domNode, callback, observerOpts) {
     observerOpts = observerOpts || { attributes: true, attributeFilter: ["style"] };
-    var observer = new MutationObserver(mutations => {
+    const observer = new MutationObserver(mutations => {
         if (domNode.offsetParent === null) return;
         observer.disconnect();
         if (typeof callback === "function") {
