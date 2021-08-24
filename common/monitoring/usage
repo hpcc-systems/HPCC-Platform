@@ -18,6 +18,7 @@
 
 declare -a arr1
 declare -a arr2
+declare -a arr3
 declare -a arrDiscPath
 
 if [ "${1:0:1}" == '-' ]; then
@@ -50,13 +51,15 @@ if [ "${1:0:1}" == '-' ]; then
 
             if [ "$dirp" != "/" ] ; then
                 dfout=$(df $dirp | tail -n +2 | awk '{if(NF>=4) print $(NF-3) " " $(NF-2)}')
+                duout=$(du -sk $dirp)
                 if [ -n "$dfout" ] ; then
                     arr1[$index]=$(echo $dfout | awk '{print $1}')
                     arr2[$index]=$(echo $dfout | awk '{print $2}')
+                    arr3[$index]=$(echo $duout | awk '{print $1}')
                     if [ "$dirp" != "$i" ] ; then
-                        echo "$i: ${arr1[$index]} ${arr2[$index]} $dirp"
+                        echo "$i: ${arr1[$index]} ${arr2[$index]} ${arr3[$index]} $dirp"
                     else
-                        echo "$i: ${arr1[$index]} ${arr2[$index]}"
+                        echo "$i: ${arr1[$index]} ${arr2[$index]} ${arr3[$index]}"
                     fi
                 fi
             fi

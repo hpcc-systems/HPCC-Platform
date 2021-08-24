@@ -1495,11 +1495,24 @@ bool CStorageData::read(const char* s)
     if (m_diskSpaceTotal > 0)
         m_diskSpacePercentAvail = round((float)m_diskSpaceAvailable*100/m_diskSpaceTotal);
 
-    //If a given path (ex. /var/lib/HPCCSystems/hpcc-mirror/thor) in the usage request does not exist,
-    //the data.item(2) is the path (ex. /var/lib/HPCCSystems/hpcc-mirror/) the usage script is used
-    //to read the DiskSpace.
-    if (m_readPath && (data.length() > 2))
-        m_path.set(data.item(2));
+    if (data.length() > 2)
+    {
+        pStr = data.item(2);
+        if (isdigit(*pStr))
+        {
+            m_diskSpaceActualSize = atol(pStr);
+            if (m_toMByte)
+                m_diskSpaceActualSize = llround((double)m_diskSpaceActualSize/1024);
+
+            //If a given path (ex. /var/lib/HPCCSystems/hpcc-mirror/thor) in the usage request does not exist,
+            //the data.item(2) is the path (ex. /var/lib/HPCCSystems/hpcc-mirror/) the usage script is used
+            //to read the DiskSpace.
+            if (m_readPath && (data.length() > 3))
+                m_path.set(data.item(3));
+        }
+        else if (m_readPath)
+            m_path.set(pStr);
+    }
 
     return true;
 }
@@ -2715,6 +2728,7 @@ void Cws_machineEx::getMachineUsage(IEspContext& context, CGetMachineUsageThread
         diskPathTree.addPropInt64("@used", sData.getDiskSpaceUsed());
         diskPathTree.addPropInt64("@available", sData.getDiskSpaceAvailable());
         diskPathTree.addPropInt("@percentAvail", sData.getDiskSpacePercentAvail());
+        diskPathTree.addPropInt64("@size", sData.getDiskSpaceActualSize());
         const char* pathUsed = sData.getDiskSpacePath();
         if (!isEmptyString(pathUsed))
             diskPathTree.addProp("@pathUsed", pathUsed);
@@ -2808,6 +2822,8 @@ void Cws_machineEx::readComponentUsageResult(IEspContext& context, IPropertyTree
                             VStringBuffer desc("%s not found. Read disk usage from %s", aDiskPath, pathUsed);
                             diskUsage->setDescription(desc);
                         }
+                        if ((version >= 1.18) && folderTree->hasProp("@size"))
+                            diskUsage->setActualSize(folderTree->getPropInt64("@size"));
                     }
                 }
                 diskUsages.append(*diskUsage.getClear());
