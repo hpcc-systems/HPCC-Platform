@@ -117,6 +117,26 @@ public:
         remove(element);
     }
     inline unsigned ordinality() const { return numEntries; }
+    unsigned validate() const
+    {
+        ELEMENT * prev = nullptr;
+        ELEMENT * cur = pHead;
+        unsigned ready = 0;
+        unsigned count = 0;
+        while (cur)
+        {
+            if (cur->queryElement().isReady())
+                ready++;
+            assertex(cur->prev == prev);
+            prev = cur;
+            cur = cur->next;
+            count++;
+        }
+        assertex(prev == pTail);
+        assertex(count == numEntries);
+
+        return ready;
+    }
 };
 
 

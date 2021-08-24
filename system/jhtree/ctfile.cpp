@@ -551,9 +551,13 @@ size32_t CJHTreeNode::getNodeSize() const
 
 void CJHTreeNode::unpack(const void *node, bool needCopy)
 {
+    assertex(!keyBuf && (expandedSize == 0));
     memcpy(&hdr, node, sizeof(hdr));
     SwapBigEndian(hdr);
     __int64 maxsib = keyHdr->getHdrStruct()->phyrec;
+
+    // DBGLOG("mck - unpack(): %lld : %lld : %lld", keyHdr->getHdrStruct()->sernum, keyHdr->getHdrStruct()->servid, keyHdr->getHdrStruct()->fileid);
+
     if (!hdr.isValid(keyHdr->getNodeSize()))
     {
         PROGLOG("hdr.leafFlag=%d",(int)hdr.leafFlag);

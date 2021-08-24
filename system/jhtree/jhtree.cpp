@@ -614,8 +614,10 @@ public:
             makeSpace();
         return oldMemLimit;
     }
-    virtual void makeSpace()
+    virtual void makeSpace() override
     {
+        unsigned long br1 = 0;
+
         // remove LRU until !full
         do
         {
@@ -625,9 +627,16 @@ public:
             if (!tail->queryElement().isReady() )
                 break;
 
+            br1++;
             clear(1);
         }
         while (full());
+
+        if (br1 == 0)
+        {
+            unsigned ready = mruList.validate();
+            DBGLOG("mck - makeSpace: br1 = %lu, mruList = %u, ready = %u, memLimit = %u, sizeInMem = %u", br1, mruList.ordinality(), ready, memLimit, sizeInMem.load(std::memory_order_acquire));
+        }
     }
     virtual bool full()
     {
@@ -2470,6 +2479,7 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t po
                 alreadyExists = false;
             }
             node->Link();
+            DBGLOG("mck - 1node = %p %u", node, node->isReady());
         }
 
         //Move the atomic increments out of the critical section - they can be relatively expensive
@@ -2495,20 +2505,39 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t po
         unsigned whichCs = hashcode % numLoadCritSects;
         Owned<CJHTreeNode> ownedNode(node); // ensure node gets cleaned up if it fails to load
 
-        //Actually load the information outside the critical section
-        CriticalBlock loadBlock(loadCs[whichCs]);
-        if (!node->isReady())
+        // mck - does this help debug or throw us off the trail ?
+        whichCs = 1;
         {
-            keyIndex->loadNode(node, pos);
+            //Actually load the information outside the critical section
+            CriticalBlock loadBlock(loadCs[whichCs]);
+            DBGLOG("mck - have loadCS lock");
+            try
+            {
+                DBGLOG("mck - 2node = %p %u", node, node->isReady());
+                if (!node->isReady())
+                {
+                    keyIndex->loadNode(node, pos);
 
-            //Update the associated size of the entry in the hash table before setting isReady (never evicted until isReady is set)
-            cache[cacheType].noteReady(*node);
-            node->noteReady();
+                    //Update the associated size of the entry in the hash table before setting isReady (never evicted until isReady is set)
+                    cache[cacheType].noteReady(*node);
+                    node->noteReady();
+                    DBGLOG("mck - 33ode = %p %u", node, node->isReady());
+                }
+                else
+                    (*dupMetric[cacheType])++; // Would have previously loaded the page twice
+
+                DBGLOG("mck - release loadCS lock");
+                return ownedNode.getClear();
+            }
+            catch (IException * e)
+            {
+                DBGLOG("mck - Exception while loading index node %u:%" I64F "u", iD, pos);
+                CriticalBlock block(cacheLock);
+                cache[cacheType].remove(key);
+                throw;
+            }
         }
-        else
-            (*dupMetric[cacheType])++; // Would have previously loaded the page twice
-
-        return ownedNode.getClear();
+        DBGLOG("mck - release loadCS lock");
     }
 }
 
