@@ -88,6 +88,22 @@ kibana:
   service:
     type: "LoadBalancer"
     annotations:
+#We want to expose Kibana's UI via link on ECLWATCH...
+#Kibana's default back-end FQDN: http://<releasename>-kibana.default.svc.cluster.local:5601
+#Exact back-end and/or front-end FQDN should be determined using k8s API, not static info in annotations
+      #Required
+      hpcc.eclwatch.io/enabled: "true"
+      #Optional but informative
+      hpcc.eclwatch.io/description: "Provides log management for HPCC component logs"
+      hpcc.eclwatch.io/label : "HPCC Logs on Kibana"
+
+      #Optional if targeting custom Kibana UI (different than service defined in this yaml)
+      #"hpcc.eclwatch.io/protocol"
+      #"hpcc.eclwatch.io/host"
+      #"hpcc.eclwatch.io/port"
+#Routes landing page to Kibana's discover section
+      hpcc.eclwatch.io/path: "/app/discover"
+
       # This annotation delcares the Azure load balancer for the service as internal rather than internet-visible
       service.beta.kubernetes.io/azure-load-balancer-internal: "true"
 
