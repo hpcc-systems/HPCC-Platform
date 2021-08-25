@@ -59,7 +59,8 @@ class CDaliLdapConnection: implements IDaliLdapConnection, public CInterface
     void createDefaultScopes()
     {
         try {
-            ISecUser* user = NULL;
+            Owned<ISecUser> user;
+            user.setown(ldapsecurity->createUser(nullptr));
             StringBuffer userTempFileScope(queryDfsXmlBranchName(DXB_Internal));
             if (ldapsecurity->addResourceEx(RT_FILE_SCOPE, *user, userTempFileScope.str(),PT_ADMINISTRATORS_ONLY, NULL))
                 PROGLOG("LDAP: Created default '%s' scope", userTempFileScope.str());
