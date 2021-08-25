@@ -590,13 +590,16 @@ public:
 class CNodeMapping : public HTMapping<CJHTreeNode, CKeyIdAndPos>
 {
 public:
-    CNodeMapping(CKeyIdAndPos &fp, CJHTreeNode &et) : HTMapping<CJHTreeNode, CKeyIdAndPos>(et, fp) { }
+    CNodeMapping(CKeyIdAndPos &fp, CJHTreeNode &et) : HTMapping<CJHTreeNode, CKeyIdAndPos>(et, fp), saved(&et) { }
+    CNodeMapping(const CNodeMapping & other) = delete;
+    CNodeMapping(CNodeMapping && other) = delete;
     ~CNodeMapping() { this->et.Release(); }
     CJHTreeNode &query() { return queryElement(); }
 
 //The following pointers are used to maintain the position in the LRU cache
     CNodeMapping * prev = nullptr;
     CNodeMapping * next = nullptr;
+    CJHTreeNode * saved;
 };
 
 typedef OwningSimpleHashTableOf<CNodeMapping, CKeyIdAndPos> CNodeTable;
@@ -625,18 +628,24 @@ public:
             CNodeMapping *tail = mruList.tail();
             assertex(tail);
             if (!tail->queryElement().isReady() )
+            {
+                DBGLOG("mck - not ready tail = %p saved = %p", &(tail->queryElement()), tail->saved);
                 break;
+            }
 
             br1++;
+            DBGLOG("mck - remove tail = %p", &(tail->queryElement()));
             clear(1);
         }
         while (full());
 
+#if 0
         if (br1 == 0)
         {
             unsigned ready = mruList.validate();
             DBGLOG("mck - makeSpace: br1 = %lu, mruList = %u, ready = %u, memLimit = %u, sizeInMem = %u", br1, mruList.ordinality(), ready, memLimit, sizeInMem.load(std::memory_order_acquire));
         }
+#endif
     }
     virtual bool full()
     {
@@ -893,6 +902,8 @@ void CKeyStore::resetMetrics()
 void CKeyStore::clearCache(bool killAll)
 {
     synchronized block(mutex);
+
+    DBGLOG("mck - clearCache %u", killAll);
 
     if (killAll)
     {
@@ -2521,7 +2532,7 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t po
                     //Update the associated size of the entry in the hash table before setting isReady (never evicted until isReady is set)
                     cache[cacheType].noteReady(*node);
                     node->noteReady();
-                    DBGLOG("mck - 33ode = %p %u", node, node->isReady());
+                    DBGLOG("mck - 3node = %p %u", node, node->isReady());
                 }
                 else
                     (*dupMetric[cacheType])++; // Would have previously loaded the page twice
