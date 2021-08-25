@@ -72,6 +72,7 @@ public:
         CPPUNIT_TEST(Test_manager_calls_sink_to_start_and_stop_collection);
         CPPUNIT_TEST(Test_manager_manages_metrics_properly);
         CPPUNIT_TEST(Test_scoped_gauge_updater_classes);
+        CPPUNIT_TEST(Test_metric_meta_data);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -79,7 +80,7 @@ protected:
 
     void Test_counter_metric_increments_properly()
     {
-        std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("test-counter", "description");
+        std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("test-counter", "description", SMeasureCount);
         CPPUNIT_ASSERT_EQUAL(0, static_cast<int>(pCounter->queryValue()));
 
         //
@@ -98,7 +99,7 @@ protected:
 
     void Test_gauge_metric_updates_properly()
     {
-        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("test-gauge", "description");
+        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("test-gauge", "description", SMeasureCount);
         int gaugeValue = pGauge->queryValue();
         CPPUNIT_ASSERT_EQUAL(0, gaugeValue);
 
@@ -123,7 +124,7 @@ protected:
     void Test_custom_metric()
     {
         int customCounter = 0;
-        std::shared_ptr<CustomMetric<int>> pCustomCounter = std::make_shared<CustomMetric<int>>("custom-counter", "description", METRICS_COUNTER, customCounter);
+        std::shared_ptr<CustomMetric<int>> pCustomCounter = std::make_shared<CustomMetric<int>>("custom-counter", "description", METRICS_COUNTER, customCounter, SMeasureCount);
         int customCounterValue = pCustomCounter->queryValue();
         CPPUNIT_ASSERT_EQUAL(0, customCounterValue);
 
@@ -145,8 +146,8 @@ protected:
     void Test_manager_manages_metrics_properly()
     {
         int numAdded;
-        std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("test-counter", "description");
-        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("test-gauge", "description");
+        std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("test-counter", "description", SMeasureCount);
+        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("test-gauge", "description", SMeasureCount);
         frameworkTestManager.addMetric(pCounter);
         frameworkTestManager.addMetric(pGauge);
         numAdded = 2;
@@ -160,7 +161,7 @@ protected:
 
         //
         // Add a metric while reporting is enabled and make sure it is returned
-        std::shared_ptr<CounterMetric> pNewCounter = std::make_shared<CounterMetric>("test-newcounter", "description");
+        std::shared_ptr<CounterMetric> pNewCounter = std::make_shared<CounterMetric>("test-newcounter", "description", SMeasureCount);
         frameworkTestManager.addMetric(pNewCounter);
         numAdded++;
 
@@ -181,7 +182,7 @@ protected:
 
     void Test_scoped_gauge_updater_classes()
     {
-        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("test-gauge", "description");
+        std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("test-gauge", "description", SMeasureCount);
         CPPUNIT_ASSERT_EQUAL(0, static_cast<int>(pGauge->queryValue()));
 
         //
@@ -209,13 +210,77 @@ protected:
             ScopedGaugeDecrementer gaugeDecrementer(*pGauge, 1);
         }
         CPPUNIT_ASSERT_EQUAL(0, static_cast<int>(pGauge->queryValue()));
+    }
 
+    void Test_metric_meta_data()
+    {
+
+        //
+        // Test that two metrics with the same base name, but differing meta data are added w/o error. Note code shows passing meta data as an externally
+        // constructed vector and as a vector constructed in place.
+        MetricMetaData metaData1{{"key1", "value1"}};
+        std::shared_ptr<CounterMetric> pCounter1 = std::make_shared<CounterMetric>("requests.completed", "description", SMeasureCount, metaData1);
+        std::shared_ptr<CounterMetric> pCounter2 = std::make_shared<CounterMetric>("requests.completed", "description", SMeasureCount,
+                                                                                   MetricMetaData{{"key1", "value2"}});
+
+        frameworkTestManager.addMetric(pCounter1);
+
+        bool success = false;
+        try
+        {
+            success = frameworkTestManager.addMetric(pCounter2);
+        }
+        catch (IException *e)
+        {
+            success = false;
+            e->Release();
+        }
+        CPPUNIT_ASSERT(success);
+
+        //
+        // Test that two metrics with the same base name and meta data returns a false when adding to indicate a non-unique name
+        MetricMetaData metaData2{{"key1", "value1"}};
+        std::shared_ptr<CounterMetric> pCounter3 = std::make_shared<CounterMetric>("requests.queued", "description", SMeasureCount, metaData2);
+        std::shared_ptr<CounterMetric> pCounter4 = std::make_shared<CounterMetric>("requests.queued", "description", SMeasureCount,
+                                                                                   MetricMetaData{{"key1", "value1"}});
+        frameworkTestManager.addMetric(pCounter3);
+        success = false;
+        try
+        {
+            // Expect a return of false if not debug (not a unique named metric)
+            success = !frameworkTestManager.addMetric(pCounter4);
+        }
+        catch (IException *e)
+        {
+            success = true;  // exception expected in debug mode
+            e->Release();
+        }
+        CPPUNIT_ASSERT(success);
+
+
+        //
+        // Delete a metric and try to add a like named metric to ensure it does not report an existing metric
+        std::shared_ptr<CounterMetric> pCounter5 = std::make_shared<CounterMetric>("dup-requests.queued", "description", SMeasureCount);
+        std::shared_ptr<CounterMetric> pCounter6 = std::make_shared<CounterMetric>("dup-requests.queued", "description", SMeasureCount);
+        frameworkTestManager.addMetric(pCounter5);
+        pCounter5.reset();
+        success = false;
+        try
+        {
+            // Expect a return of true since the like named metric was deleted
+            success = frameworkTestManager.addMetric(pCounter6);
+        }
+        catch (IException *e)
+        {
+            success = false;
+            e->Release();
+        }
+        CPPUNIT_ASSERT(success);
     }
 
 protected:
     MetricsManager frameworkTestManager;
     MetricFrameworkTestSink *pTestSink;
-
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION( MetricFrameworkTests );

@@ -33,6 +33,7 @@ MetricsManager &hpccMetrics::queryMetricsManager()
     return *metricsManager.query([] { return new MetricsManager; });
 }
 
+
 MetricsManager::~MetricsManager()
 {
     for (auto const &sinkIt : sinks)
@@ -50,28 +51,43 @@ void MetricsManager::init(IPropertyTree *pMetricsTree)
 }
 
 
-void MetricsManager::addMetric(const std::shared_ptr<IMetric> &pMetric)
+// returns true if the metric was unique when added, false if an existing metric was found.
+bool MetricsManager::addMetric(const std::shared_ptr<IMetric> &pMetric)
 {
+    bool rc = false;
     std::unique_lock<std::mutex> lock(metricVectorMutex);
-    auto it = metrics.find(pMetric->queryName());
+    std::string name = pMetric->queryName();
+    auto metaData = pMetric->queryMetaData();
+    for (auto &metaDataIt: metaData)
+    {
+        name.append(".").append(metaDataIt.value);
+    }
+
+    auto it = metrics.find(name);
     if (it == metrics.end())
     {
-        metrics.insert({pMetric->queryName(), pMetric});
+        metrics.insert({name, pMetric});
+        rc = true;
     }
     else
     {
-        //If there is a match only report an error if the metric has not been destroyed in the meantime
+        // If there is a match only report an error if the metric has not been destroyed in the meantime
         auto match = it->second.lock();
         if (match)
         {
 #ifdef _DEBUG
-            throw MakeStringException(MSGAUD_operator, "addMetric - Attempted to add duplicate named metric with name '%s'", pMetric->queryName().c_str());
+            throw MakeStringException(MSGAUD_operator, "addMetric - Attempted to add duplicate named metric with name '%s'", name.c_str());
 #else
-            OERRLOG("addMetric - Adding a duplicate named metric '%s', old metric replaced", pMetric->queryName().c_str());
+            OERRLOG("addMetric - Adding a duplicate named metric '%s', old metric replaced", name.c_str());
 #endif
+        }
+        else
+        {
+            rc = true;  // old metric no longer present, so it's considered unique
         }
         it->second = pMetric;
     }
+    return rc;
 }
 
 
@@ -209,6 +225,18 @@ void MetricsManager::addSink(MetricSink *pSink, const char *name)
     {
         delete pSink;
     }
+}
+
+
+const char *MetricsManager::queryUnitsString(StatisticMeasure units) const
+{
+    switch (units)
+    {
+    case SMeasureCount:  return "count";
+    case SMeasureTimeNs: return "ns";
+    case SMeasureSize:   return "bytes";
+    }
+    return nullptr;
 }
 
 

@@ -38,7 +38,7 @@ protected:
     virtual void collectingHasStopped() override;
     void doCollection() override;
     virtual void writeReportHeaderToFile() const;
-    void writeMeasurementToFile(const std::string &metricName, __uint64 value, const std::string &metricDescription) const;
+    void writeMeasurementToFile(const std::shared_ptr<IMetric> &pMetric) const;
 
 protected:
     StringBuffer fileName;

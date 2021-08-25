@@ -41,5 +41,17 @@ void LogMetricSink::doCollection()
 
 void LogMetricSink::writeLogEntry(const std::shared_ptr<IMetric> &pMetric)
 {
-    LOG(MCmetrics, "name=%s,value=%" I64F "d", pMetric->queryName().c_str(), pMetric->queryValue());
+    std::string name = pMetric->queryName();
+    auto metaData = pMetric->queryMetaData();
+    for (auto &metaDataIt: metaData)
+    {
+        name.append(".").append(metaDataIt.value);
+    }
+
+    const char *unitsStr = pManager->queryUnitsString(pMetric->queryUnits());
+    if (unitsStr)
+    {
+        name.append(".").append(unitsStr);
+    }
+    LOG(MCmetrics, "name=%s,value=%" I64F "d", name.c_str(), pMetric->queryValue());
 }

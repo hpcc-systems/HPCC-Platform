@@ -328,6 +328,50 @@ metrics.sinks[].settings
     necessary for the operation of the sink. Nested YML is supported. Example settings are the
     prometheus server name, or the collection period for a periodic sink.
 
+*************
+Metric Naming
+*************
+
+Metric names shall follow a convention as outlined in this section. Because different collection systems
+have different requirements for how metric value reports are generated, naming is split into two parts.
+
+First, each metric is given a base name that describes what the underlying value is. Second, meta data
+is assigned to each metric to further qualify the value. For example, a set of metrics may count the
+number of requests a component has received. Each metric would have the same base name, but meta data would
+separate types of request (GET vs POST), or disposition such as pass or fail.
+
+Base Name
+=========
+The following convention defines how metric names are formed:
+
+* Names consist of parts separated by a period (.)
+* Each part shall use snake case (allows for compound names in each part)
+* Names for metric types shall be named as follows:
+
+  Gauges: <plural-noun>.<state>   requests.waiting, status_requests.waiting
+
+  Counters:  <plural-noun>.<past-tense-verb>   requests.failed, gateway_requests.queued
+
+  Time:    <singular-noun>.<state or active-verb>.time  request.blocked.time, request.process.time
+
+Meta Data
+=========
+Meta data further qualifies a metric value. This allows metrics to have the same name, but different scopes
+or categories. Generally, meta data is only used to furher qualify metrics that would have the same base
+name, but need further distinction. An example best describes a use case for meta data. Consider a
+component that accepts HTTP requests, but needs to track GET and POST requests separately. Instead of
+defining metrics with names *post_requests.received* and *get_requests.received*, the component creates two
+metrics with the base name *requests.received* and attaches meta data describing the request type of
+POST to one and GET to the other.
+
+Use of meta data allows aggregating both types of requests into a single combined count of received
+requests while allowing a breakdown by type.
+
+Meta data is represented as a key/value pair and is attached to the metric by the component during
+metric creation. The sink is responsible for converting meta data into useful information for the
+collection system during reporting.
+
+The *Component Instrumentation* section covers how meta data is added to a metric.
 
 *************************
 Component Instrumentation
@@ -404,3 +448,38 @@ Where:
 
   A reference to the underlying event state which must be a scalar value convertable to a 64bit unsigned
   integer (__uint64)
+
+Adding Metric Meta Data
+=======================
+A component, depending on requirements, may attach meta data to further qualify created metrics.
+Meta data takes the form of key value pairs. The base metric class *MetricBase* constructor defines
+a parameter for a vector of meta data. Metric subclasses also define meta data as a constructor parameter,
+however an empty vector is the default. The *IMetric* interface defines a method for retrieving the meta data.
+
+Meta data is order dependent.
+
+Below are two examples of constructing a metric with meta data. One creates the vector and passes it as a
+parameter, the other constructs the vector in place.
+
+::
+
+    MetricMetaData metaData1{{"key1", "value1"}};
+    std::shared_ptr<CounterMetric> pCounter1 =
+        std::make_shared<CounterMetric>("requests.completed", "description", SMeasureCount, metaData1);
+
+    std::shared_ptr<CounterMetric> pCounter2 =
+        std::make_shared<CounterMetric>("requests.completed", "description", SMeasureCount, MetricMetaData{{"key1", "value2"}});
+
+Metric Units
+============
+Metric units are treated separately from the base name and meta data. The reason is to allow the sink to
+translate based on collection system requirements. The base framework provides a convenience method for
+converting units into a string. However, the sink is free to do any conversions, both actual units and
+the string representation, as needed.
+
+Metric units are defined using a subset of the *StaticsMeasure*  enumeration values defined
+in **jstatscodes.h**. The current values are used:
+
+* SMeasureTimeNs - A time measurement in nanoseconds
+* SMeasureCount - A count of events
+* SMeasureSize - Size in bytes
