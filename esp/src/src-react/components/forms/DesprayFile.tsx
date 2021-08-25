@@ -49,6 +49,7 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
     const [file] = useFile(cluster, logicalFile);
     const [machine, setMachine] = React.useState<string>("");
     const [directory, setDirectory] = React.useState<string>("/");
+    const [dropzone, setDropzone] = React.useState<string>("");
     const [pathSep, setPathSep] = React.useState<string>("/");
     const [os, setOs] = React.useState<number>();
 
@@ -106,9 +107,10 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                         key={fieldName}
                         label={nlsHPCC.DropZone}
                         required={true}
-                        selectedKey={value}
+                        defaultSelectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
+                            setDropzone(option.key as string);
                             setDirectory(option["path"] as string);
                             if (option["path"].indexOf("\\") > -1) {
                                 setPathSep("\\");
@@ -128,9 +130,10 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                     fieldState: { error }
                 }) => <TargetServerTextField
                         key={fieldName}
+                        dropzone={dropzone}
                         required={true}
                         label={nlsHPCC.IPAddress}
-                        selectedKey={value}
+                        defaultSelectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
                             setMachine(option.key as string);

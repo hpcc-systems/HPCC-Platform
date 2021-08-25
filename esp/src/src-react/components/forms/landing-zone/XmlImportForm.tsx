@@ -138,7 +138,6 @@ export const XmlImportForm: React.FunctionComponent<XmlImportFormProps> = ({
                         key="destGroup"
                         label={nlsHPCC.Group}
                         required={true}
-                        optional={true}
                         selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
@@ -159,7 +158,6 @@ export const XmlImportForm: React.FunctionComponent<XmlImportFormProps> = ({
                         key="DFUServerQueue"
                         label={nlsHPCC.Queue}
                         required={true}
-                        optional={true}
                         selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {

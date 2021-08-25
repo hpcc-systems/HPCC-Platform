@@ -54,7 +54,7 @@ export const MessageBox: React.FunctionComponent<MessageBoxProps> = ({
     const close = React.useCallback(() => setShow(false), [setShow]);
 
     return <Modal isOpen={show} onDismiss={close} dragOptions={dragOptions}
-        isBlocking={false} containerClassName={contentStyles.container}>
+        isBlocking={true} containerClassName={contentStyles.container}>
         <Stack tokens={headerTokens} horizontal horizontalAlign="space-between" verticalAlign="center" styles={{ root: contentStyles.header }}>
             <h2>{title}</h2>
             <IconButton iconProps={cancelIcon} ariaLabel={nlsHPCC.CloseModal} onClick={close} styles={iconButtonStyles} />

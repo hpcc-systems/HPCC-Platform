@@ -150,7 +150,6 @@ export const DelimitedImportForm: React.FunctionComponent<DelimitedImportFormPro
                         key="destGroup"
                         label={nlsHPCC.Group}
                         required={true}
-                        optional={true}
                         selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
@@ -171,7 +170,6 @@ export const DelimitedImportForm: React.FunctionComponent<DelimitedImportFormPro
                         key="DFUServerQueue"
                         label={nlsHPCC.Queue}
                         required={true}
-                        optional={true}
                         selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {

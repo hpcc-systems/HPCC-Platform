@@ -2,16 +2,19 @@ import * as React from "react";
 import { Checkbox, Dropdown as DropdownBase, TextField, IDropdownOption, Link, ProgressIndicator } from "@fluentui/react";
 import { TextField as MaterialUITextField } from "@material-ui/core";
 import { Topology, TpLogicalClusterQuery } from "@hpcc-js/comms";
+import { scopedLogger } from "@hpcc-js/util";
 import { TpDropZoneQuery, TpGroupQuery, TpServiceQuery } from "src/WsTopology";
 import { States } from "src/WsWorkunits";
 import { FileList, States as DFUStates } from "src/FileSpray";
 import nlsHPCC from "src/nlsHPCC";
 
+const logger = scopedLogger("src-react/components/forms/Fields.tsx");
+
 interface DropdownProps {
-    key?: string;
+    key: string;
     label?: string;
     options?: IDropdownOption[];
-    selectedKey?: string;
+    defaultSelectedKey?: string;
     optional?: boolean;
     required?: boolean;
     errorMessage?: string;
@@ -24,22 +27,39 @@ const Dropdown: React.FunctionComponent<DropdownProps> = ({
     key,
     label,
     options = [],
-    selectedKey,
+    defaultSelectedKey,
     required = false,
-    optional = false,
+    optional = !required,
     errorMessage,
     onChange,
     placeholder,
     className
 }) => {
+    React.useEffect(() => {
+        if (required === true && optional == false) {
+            logger.error(`${label} (${key}):  required == true and optional == false is illogical`);
+        }
+    }, [key, label, optional, required]);
 
     const [selOptions, setSelOptions] = React.useState<IDropdownOption[]>([]);
+    const [selectedKey, setSelectedKey] = React.useState<string | number | undefined>();
+
+    const handleOnChange = React.useCallback((evt, row) => {
+        if (onChange) {
+            onChange(evt, row);
+        }
+        setSelectedKey(row.key);
+    }, [onChange]);
 
     React.useEffect(() => {
-        setSelOptions(optional ? [{ key: "", text: "" }, ...options] : [...options]);
-    }, [optional, options, selectedKey]);
+        const selOptions = (optional ? [{ key: "", text: "" }, ...options] : [...options]);
+        if (!optional && !defaultSelectedKey && selOptions.length) {
+            handleOnChange(undefined, selOptions[0]);
+        }
+        setSelOptions(selOptions);
+    }, [optional, options, defaultSelectedKey, handleOnChange]);
 
-    return <DropdownBase key={key} label={label} errorMessage={errorMessage} required={required} className={className} defaultSelectedKey={selectedKey} onChange={onChange} placeholder={placeholder} options={selOptions} />;
+    return <DropdownBase key={key} label={label} errorMessage={errorMessage} required={required} className={className} defaultSelectedKey={defaultSelectedKey} selectedKey={selectedKey} onChange={handleOnChange} placeholder={placeholder} options={selOptions} />;
 };
 
 export type FieldType = "string" | "number" | "checkbox" | "datetime" | "dropdown" | "link" | "links" | "progress" |
@@ -183,12 +203,6 @@ type Field = StringField | NumericField | CheckboxField | DateTimeField | Dropdo
 export type Fields = { [id: string]: Field };
 
 export interface TargetClusterTextFieldProps extends DropdownProps {
-    key: string;
-    label?: string;
-    selectedKey?: string;
-    className?: string;
-    onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
-    placeholder?: string;
 }
 
 export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFieldProps> = (props) => {
@@ -213,13 +227,6 @@ export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFi
 };
 
 export interface TargetDropzoneTextFieldProps extends DropdownProps {
-    key: string;
-    label?: string;
-    selectedKey?: string;
-    optional?: boolean;
-    className?: string;
-    onChange?: (event?: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
-    placeholder?: string;
 }
 
 export const TargetDropzoneTextField: React.FunctionComponent<TargetDropzoneTextFieldProps> = (props) => {
@@ -237,7 +244,7 @@ export const TargetDropzoneTextField: React.FunctionComponent<TargetDropzoneText
                         text: row.Name,
                         path: row.Path
                     };
-                    if (retVal.key === props.selectedKey) {
+                    if (retVal.key === props.defaultSelectedKey) {
                         selected = retVal;
                         selectedIdx = idx;
                     }
@@ -254,26 +261,18 @@ export const TargetDropzoneTextField: React.FunctionComponent<TargetDropzoneText
 };
 
 export interface TargetServerTextFieldProps extends DropdownProps {
-    key: string;
-    label?: string;
-    className?: string;
-    optional?: boolean;
-    onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
-    placeholder?: string;
-    setSetDropzone?: (setDropzone: (dropzone: string) => void) => void;
+    dropzone: string;
 }
 
 export const TargetServerTextField: React.FunctionComponent<TargetServerTextFieldProps> = (props) => {
 
     const [targetServers, setTargetServers] = React.useState<IDropdownOption[]>([]);
-    const [dropzone, setDropzone] = React.useState("");
-
-    props.setSetDropzone && props.setSetDropzone(setDropzone);
 
     React.useEffect(() => {
-        TpDropZoneQuery({ Name: "" }).then(({ TpDropZoneQueryResponse }) => {
+        TpDropZoneQuery({ Name: "" }).then(response => {
+            const { TpDropZoneQueryResponse } = response;
             setTargetServers(
-                TpDropZoneQueryResponse?.TpDropZones?.TpDropZone?.filter(row => row.Name === dropzone)[0]?.TpMachines?.TpMachine?.map(n => {
+                TpDropZoneQueryResponse?.TpDropZones?.TpDropZone?.filter(row => row.Name === props.dropzone)[0]?.TpMachines?.TpMachine?.map(n => {
                     return {
                         key: n.ConfigNetaddress,
                         text: n.Netaddress,
@@ -282,9 +281,22 @@ export const TargetServerTextField: React.FunctionComponent<TargetServerTextFiel
                 }) || []
             );
         });
-    }, [props.selectedKey, dropzone]);
+    }, [props.defaultSelectedKey, props.dropzone]);
 
     return <Dropdown {...props} options={targetServers} />;
+};
+
+export interface TargetServerTextFieldLinkedProps extends DropdownProps {
+    setSetDropzone?: (setDropzone: (dropzone: string) => void) => void;
+}
+
+export const TargetServerTextLinkedField: React.FunctionComponent<TargetServerTextFieldLinkedProps> = (props) => {
+
+    const [dropzone, setDropzone] = React.useState("");
+
+    props.setSetDropzone && props.setSetDropzone(setDropzone);
+
+    return <TargetServerTextField {...props} dropzone={dropzone} />;
 };
 
 export interface TargetGroupTextFieldProps {
@@ -482,7 +494,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        selectedKey={field.value}
+                        defaultSelectedKey={field.value}
                         options={field.options}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
@@ -548,7 +560,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        selectedKey={field.value}
+                        defaultSelectedKey={field.value}
                         optional
                         options={states.map(state => {
                             return {
@@ -568,7 +580,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        selectedKey={field.value}
+                        defaultSelectedKey={field.value}
                         options={[
                             { key: "", text: nlsHPCC.LogicalFilesAndSuperfiles },
                             { key: "Logical Files Only", text: nlsHPCC.LogicalFilesOnly },
@@ -587,7 +599,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        selectedKey={field.value}
+                        defaultSelectedKey={field.value}
                         optional
                         options={[
                             { key: "Newest", text: nlsHPCC.Newest },
@@ -607,7 +619,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        selectedKey={field.value.toString()}
+                        defaultSelectedKey={field.value.toString()}
                         options={[
                             { key: "", text: nlsHPCC.None },
                             { key: "0", text: nlsHPCC.Low },
@@ -626,7 +638,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        selectedKey={field.value}
+                        defaultSelectedKey={field.value}
                         optional
                         options={[
                             { key: "Not suspended", text: nlsHPCC.NotSuspended },
@@ -647,7 +659,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        selectedKey={field.value}
+                        defaultSelectedKey={field.value}
                         optional
                         options={[
                             { key: "1", text: nlsHPCC.Active },
@@ -665,7 +677,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <TargetClusterTextField
                         key={fieldID}
-                        selectedKey={field.value}
+                        defaultSelectedKey={field.value}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                     />
@@ -678,7 +690,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <TargetDropzoneTextField
                         key={fieldID}
-                        selectedKey={field.value}
+                        defaultSelectedKey={field.value}
                         onChange={(ev, row) => {
                             onChange(fieldID, row.key);
                             setDropzone(row.key as string);
@@ -692,9 +704,9 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                 retVal.push({
                     id: fieldID,
                     label: field.label,
-                    field: <TargetServerTextField
+                    field: <TargetServerTextLinkedField
                         key={fieldID}
-                        selectedKey={field.value}
+                        defaultSelectedKey={field.value}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                         setSetDropzone={_ => setDropzone = _}

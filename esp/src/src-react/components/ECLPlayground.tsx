@@ -236,8 +236,8 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
                 label={nlsHPCC.Target}
                 className={playgroundStyles.inlineDropdown}
                 onChange={React.useCallback((evt, option) => setCluster(option.key.toString()), [setCluster])}
-                optional={false}
-                selectedKey={cluster ? cluster : undefined}
+                required={true}
+                defaultSelectedKey={cluster ? cluster : undefined}
                 options={[]}
             />
             <div className={playgroundStyles.outputButtons}>
