@@ -28,19 +28,13 @@
 #include "mputil.hpp"
 #include "daserver.hpp"
 #include "danqs.hpp"
+#include "jmetrics.hpp"
 
 #ifdef _MSC_VER
 #pragma warning (disable : 4355)
 #endif
 
-// # HELP nq_requests The total number of Dali NQ requests handled
-// # TYPE nq_requests counter
-// Probably requires this counter to be held in a __int64 scalar.
-
-// # HELP nq_active_requests Current number of active NQ requests being handled.
-// # TYPE nq_active_requests gauge
-// A unsigned scalar should suffice, i.e. never going to have that many active transactions
-
+static auto pNqRequestsCount = hpccMetrics::registerCounterMetric("dali.nq_requests.received", "The total number of Dali NQ requests received", SMeasureCount);
 
 enum MQueueRequestKind { 
     MQR_ADD_QUEUE,
@@ -529,14 +523,6 @@ public:
         stopped = false;
         while (!stopped) {
             try {
-                // 1) Need to increment nq_requests here
-                // NB: it will never be decremented. This is total for life of this instance.
-
-                // 2) Need to increment nq_active_requests here
-                // and ensure it's scoped, such that it is guaranteed
-                // to decrement when processMessage() is complete.
-                // NB: NQ activeRequests are always synchronously handled by processMessage()
-
                 mb.clear();
                 if (coven.recv(mb,RANK_ALL,MPTAG_DALI_NAMED_QUEUE_REQUEST,NULL)) {
                     processMessage(mb); // synchronous to ensure queue operations handled in correct order
@@ -556,6 +542,8 @@ public:
 
     void processMessage(CMessageBuffer &mb)
     {
+        pNqRequestsCount->fastInc(1);
+
         // single threaded by caller
         ICoven &coven=queryCoven();
         mb.read(fn);
@@ -1010,5 +998,3 @@ IDaliServer *createDaliNamedQueueServer()
     daliNamedQueueServer = new CDaliNamedQueueServer();
     return daliNamedQueueServer;
 }
-
-

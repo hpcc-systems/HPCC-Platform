@@ -71,8 +71,9 @@ public:
         CPPUNIT_TEST(Test_custom_metric);
         CPPUNIT_TEST(Test_manager_calls_sink_to_start_and_stop_collection);
         CPPUNIT_TEST(Test_manager_manages_metrics_properly);
-        CPPUNIT_TEST(Test_scoped_gauge_updater_classes);
+        CPPUNIT_TEST(Test_scoped_updater_classes);
         CPPUNIT_TEST(Test_metric_meta_data);
+        CPPUNIT_TEST(Test_gauge_by_counters_metric);
     CPPUNIT_TEST_SUITE_END();
 
 protected:
@@ -82,18 +83,28 @@ protected:
     {
         std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("test-counter", "description", SMeasureCount);
         CPPUNIT_ASSERT_EQUAL(0, static_cast<int>(pCounter->queryValue()));
+        int expectedValue = 0;
 
         //
         // Test default increment (by 1)
         pCounter->inc();
+        expectedValue++;
         int counterValue = pCounter->queryValue();
-        CPPUNIT_ASSERT_EQUAL(1, counterValue);
+        CPPUNIT_ASSERT_EQUAL(expectedValue, counterValue);
 
         //
         // Test increment by > 1
         pCounter->inc(2);
+        expectedValue += 2;
         counterValue = pCounter->queryValue();
-        CPPUNIT_ASSERT_EQUAL(3, counterValue);
+        CPPUNIT_ASSERT_EQUAL(expectedValue, counterValue);
+
+        //
+        // Test fast increment
+        pCounter->fastInc(3);
+        expectedValue += 3;
+        counterValue = pCounter->queryValue();
+        CPPUNIT_ASSERT_EQUAL(expectedValue, counterValue);
     }
 
 
@@ -180,7 +191,7 @@ protected:
     }
 
 
-    void Test_scoped_gauge_updater_classes()
+    void Test_scoped_updater_classes()
     {
         std::shared_ptr<GaugeMetric> pGauge = std::make_shared<GaugeMetric>("test-gauge", "description", SMeasureCount);
         CPPUNIT_ASSERT_EQUAL(0, static_cast<int>(pGauge->queryValue()));
@@ -208,9 +219,12 @@ protected:
         CPPUNIT_ASSERT_EQUAL(1, static_cast<int>(pGauge->queryValue()));
         {
             ScopedGaugeDecrementer gaugeDecrementer(*pGauge, 1);
+            CPPUNIT_ASSERT_EQUAL(1, static_cast<int>(pGauge->queryValue()));
         }
         CPPUNIT_ASSERT_EQUAL(0, static_cast<int>(pGauge->queryValue()));
+
     }
+
 
     void Test_metric_meta_data()
     {
@@ -276,6 +290,22 @@ protected:
             e->Release();
         }
         CPPUNIT_ASSERT(success);
+    }
+
+
+    void Test_gauge_by_counters_metric()
+    {
+        std::shared_ptr<CounterMetric> pCounterTotal = std::make_shared<CounterMetric>("requests.received", "description", SMeasureCount);
+        std::shared_ptr<CounterMetric> pCounterStarted = std::make_shared<CounterMetric>("requests.started", "description", SMeasureCount);
+
+        std::shared_ptr<GaugeMetricFromCounters> pCounterGauge = std::make_shared<GaugeMetricFromCounters>("requests.waiting", "description", SMeasureCount, pCounterTotal, pCounterStarted);
+
+        pCounterTotal->inc(4);
+        pCounterStarted->inc(2);
+        CPPUNIT_ASSERT_EQUAL(2, static_cast<int>(pCounterGauge->queryValue()));
+
+        pCounterStarted->inc(2);
+        CPPUNIT_ASSERT_EQUAL(0, static_cast<int>(pCounterGauge->queryValue()));
     }
 
 protected:

@@ -327,6 +327,7 @@
         </xsl:if>
       </xsl:element>
     </DALI>
+    <xsl:call-template name="addMetricsConfig"/>
   </xsl:template>
 
   <xsl:template name="makeAbsolutePath">
@@ -360,6 +361,10 @@
       </xsl:otherwise>
 
     </xsl:choose>
+  </xsl:template>
+
+  <xsl:template name="addMetricsConfig">
+    <xsl:copy-of select="/Environment/Software/metrics"/>
   </xsl:template>
 
 </xsl:stylesheet>

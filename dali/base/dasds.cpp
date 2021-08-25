@@ -31,6 +31,7 @@
 #include "jqueue.tpp"
 #include "dautils.hpp"
 #include "dadfs.hpp"
+#include "jmetrics.hpp"
 
 #define DEBUG_DIR "debug"
 #define DEFAULT_KEEP_LASTN_STORES 10 // should match default in dali.xsd
@@ -80,19 +81,10 @@ static unsigned readWriteTimeout = 60000;
 #define DEFAULT_LCIDLE_RATE 1          // 1 write transactions per idle period. <= this rate is deemed idle (suitable for save)
 #define STORENOTSAVE_WARNING_PERIOD 72 // hours
 
-static unsigned msgCount=(unsigned)-1;
-
-// # HELP sds_requests The total number of Dali SDS requests handled
-// # TYPE sds_requests counter
-// Probably requires this counter to be held in a __int64 scalar.
-
-// # HELP sds_active_requests Current number of active SDS requests being handled.
-// # TYPE sds_active_requests gauge
-// A unsigned scalar should suffice, i.e. never going to have that many active transactions
-
-// # HELP sds_pending_requests Current number of pending SDS requests.
-// # TYPE sds_pending_requests gauge
-// A unsigned scalar should suffice, i.e. never going to have that many pending transactions
+static auto pSdsRequestsReceived = hpccMetrics::registerCounterMetric("dali.sds_requests.received", "The total number of Dali SDS requests received", SMeasureCount);
+static auto pSdsRequestsStarted = hpccMetrics::registerCounterMetric("dali.sds_requests.started", "The total number of Dali SDS requests started", SMeasureCount);
+static auto pSdsRequestsCompleted = hpccMetrics::registerCounterMetric("dali.sds_requests.completed", "The total number of Dali SDS requests completed", SMeasureCount);
+static auto pSdsRequestsPending = hpccMetrics::registerGaugeFromCountersMetric("dali.sds_requests.pending", "Current number of pending SDS requests", SMeasureCount, pSdsRequestsReceived, pSdsRequestsStarted);
 
 // #define TEST_NOTIFY_HANDLER
 
@@ -3747,15 +3739,7 @@ int CSDSTransactionServer::run()
             mb.clear();
             if (coven.recv(mb, RANK_ALL, MPTAG_DALI_SDS_REQUEST, NULL))
             {
-                // 1) Need to increment sds_requests here
-                // NB: it will never be decremented. This is total for life of this instance.
-                
-                // 2) Need to increment sds_active_requests here
-                // and ensure it's scoped, such that it is guaranteed
-                // to decrement when handling is complete.
-                // NB: most transactions are handled asynchronously, so decrement will need to happen on another thread
-
-                msgCount++;
+                pSdsRequestsReceived->fastInc(1);
                 try
                 {
                     SdsCommand action;
@@ -3778,11 +3762,6 @@ int CSDSTransactionServer::run()
                         case DAMP_SDSCMD_GETELEMENTSRAW:
                         case DAMP_SDSCMD_GETCOUNT:
                         {
-                            // 1) Need to increment sds_pending_requests here.
-                            // NB: pending requests are those received, but not yet being handled (not active)
-                            // e.g. because thread pool limits are blocking them.
-                            // sds_pending_requests should be decremented, when the transactions starts in processMessage()
-
                             mb.reset();
                             handler.handleMessage(mb);
                             mb.clear(); // ^ has copied mb
@@ -4091,12 +4070,9 @@ bool translateOldFormat(CServerRemoteTree *parentServerTree, IPropertyTree *pare
 
 void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
 {
-    // 1) Decrement sds_pending_requests here.
-    // NB: request has started, no longer pending
-    // See CSDSTransactionServer::run() for where needs to be incremented. 
-
-    // 2) Ensure sds_active_requests is decremented, when processMessage() is finished
-    // e.g. use a scoped object here, and decrement in dtor.
+    pSdsRequestsStarted->inc(1);
+    // Ensure that number of completed requests is incremented when the function completes.
+    COnScopeExit incCompletedOnExit([&](){ pSdsRequestsCompleted->inc(1); });
 
     TimingBlock xactTimingBlock(xactTimingStats);
     ICoven &coven = queryCoven();

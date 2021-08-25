@@ -25,6 +25,7 @@
 #include "jptree.hpp"
 #include "jmisc.hpp"
 #include "jutil.hpp"
+#include "jmetrics.hpp"
 
 #include "mpbase.hpp"
 #include "mpcomm.hpp"
@@ -53,8 +54,6 @@
 #ifndef _NO_LDAP
 #include "daldap.hpp"
 #endif
-
-
 
 Owned<IPropertyTree> serverConfig;
 static IArrayOf<IDaliServer> servers;
@@ -400,6 +399,21 @@ dali:
   dataPath: "/var/lib/HPCCSystems/dalistorage"
 )!!";
 
+//
+// Initialize metrics
+static void initializeMetrics(IPropertyTree *pConfig)
+{
+    //
+    // Initialize metrics if present
+    Owned<IPropertyTree> pMetricsTree = pConfig->getPropTree("metrics");
+    if (pMetricsTree != nullptr)
+    {
+        PROGLOG("Metrics initializing...");
+        hpccMetrics::MetricsManager &metricsManager = hpccMetrics::queryMetricsManager();
+        metricsManager.init(pMetricsTree);
+        metricsManager.startCollecting();
+    }
+}
 
 int main(int argc, const char* argv[])
 {
@@ -751,6 +765,7 @@ int main(int argc, const char* argv[])
         }
         if (ok) {
             writeSentinelFile(sentinelFile);
+            initializeMetrics(serverConfig);
             covenMain();
             removeAbortHandler(actionOnAbort);
         }

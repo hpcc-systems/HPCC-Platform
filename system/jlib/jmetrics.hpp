@@ -27,6 +27,7 @@
 #include "jptree.hpp"
 #include "platform.h"
 #include "jstatcodes.h"
+#include "jatomic.hpp"
 
 
 namespace hpccMetrics {
@@ -138,7 +139,7 @@ protected:
     MetricVal(const char *name, const char *desc, MetricType metricType, StatisticMeasure _units, const MetricMetaData &_metaData) :
         MetricBase(name, desc, metricType, _units, _metaData) {}
 
-    std::atomic<__uint64> value{0};
+    RelaxedAtomic<__uint64> value{0};
 };
 
 
@@ -153,6 +154,11 @@ public:
     void inc(uint64_t val = 1)
     {
         value.fetch_add(val);
+    }
+
+    void fastInc(uint16_t val = 1)
+    {
+        value.fastAdd(val);
     }
 };
 
@@ -171,6 +177,11 @@ public:
         value += delta;
     }
 
+    void fastAdjust(int64_t delta)
+    {
+        value.fastAdd(delta);
+    }
+
     /*
      * Set the value
      */
@@ -179,6 +190,32 @@ public:
         value = val;
     }
 };
+
+
+class jlib_decl GaugeMetricFromCounters : public MetricVal
+{
+public:
+    GaugeMetricFromCounters(const char *name, const char *description, StatisticMeasure _units,
+                            const std::shared_ptr<CounterMetric> &_pBeginCounter, const std::shared_ptr<CounterMetric> &_pEndCounter,
+                            const MetricMetaData &_metaData = MetricMetaData()) :
+        MetricVal{name, description, MetricType::METRICS_GAUGE, _units, _metaData},
+        pBeginCounter{_pBeginCounter},
+        pEndCounter{_pEndCounter}
+    {
+        assert(pBeginCounter->queryUnits() == pEndCounter->queryUnits());
+    }
+
+    virtual __uint64 queryValue() const override
+    {
+        auto endValue = pEndCounter->queryValue();
+        return pBeginCounter->queryValue() - endValue;
+    }
+
+protected:
+    std::shared_ptr<CounterMetric> pBeginCounter;
+    std::shared_ptr<CounterMetric> pEndCounter;
+};
+
 
 template<typename T>
 class CustomMetric : public MetricBase
@@ -289,8 +326,30 @@ std::shared_ptr<T> createMetricAndAddToManager(const char *name, const char* des
 }
 
 
+inline std::shared_ptr<CounterMetric> registerCounterMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData())
+{
+    return createMetricAndAddToManager<CounterMetric>(name, desc, units, metaData);
+}
+
+
+inline std::shared_ptr<GaugeMetric> registerGaugeMetric(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData())
+{
+    return createMetricAndAddToManager<GaugeMetric>(name, desc, units, metaData);
+}
+
+
+inline std::shared_ptr<GaugeMetricFromCounters> registerGaugeFromCountersMetric(const char *name, const char* desc, StatisticMeasure units,
+                                                                                const std::shared_ptr<CounterMetric> &pBeginCounter, const std::shared_ptr<CounterMetric> &pEndCounter,
+                                                                                const MetricMetaData &metaData = MetricMetaData())
+{
+    std::shared_ptr<GaugeMetricFromCounters> pMetric = std::make_shared<GaugeMetricFromCounters>(name, desc, units, pBeginCounter, pEndCounter, metaData);
+    queryMetricsManager().addMetric(pMetric);
+    return pMetric;
+}
+
+
 template <typename T>
-std::shared_ptr<CustomMetric<T>> createCustomMetricAndAddToManager(const char *name, const char *desc, MetricType metricType, T &value, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData())
+std::shared_ptr<CustomMetric<T>> registerCustomMetric(const char *name, const char *desc, MetricType metricType, T &value, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData())
 {
     std::shared_ptr<CustomMetric<T>> pMetric = std::make_shared<CustomMetric<T>>(name, desc, metricType, value, units, metaData);
     queryMetricsManager().addMetric(pMetric);
@@ -328,9 +387,10 @@ public:
         : gauge{_pGauge}, amount{_amount}
     { }
     ScopedGaugeDecrementer(const ScopedGaugeDecrementer&) = delete;
-    ScopedGaugeDecrementer(ScopedGaugeDecrementer&) = delete;
+    ScopedGaugeDecrementer(ScopedGaugeDecrementer&&) = delete;
     ScopedGaugeDecrementer& operator=(const ScopedGaugeDecrementer&) = delete;
-    ScopedGaugeDecrementer& operator=(ScopedGaugeDecrementer&) = delete;
+    ScopedGaugeDecrementer& operator=(ScopedGaugeDecrementer&&) = delete;
+
     ~ScopedGaugeDecrementer()
     {
         gauge.adjust(-amount);
