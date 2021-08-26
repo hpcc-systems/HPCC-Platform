@@ -908,9 +908,9 @@ void HqlParseContext::addForwardReference(IHqlScope * owner, IHasUnlinkedOwnerRe
     forwardLinks.append(*new ForwardScopeItem(owner, child));
 }
 
-IPropertyTree * HqlParseContext::queryEnsureArchiveModule(const char * name, IHqlScope * scope)
+IPropertyTree * HqlParseContext::queryEnsureArchiveModule(const char * package, const char * name, IHqlScope * scope)
 {
-    return ::queryEnsureArchiveModule(archive, name, scope);
+    return ::queryEnsureArchiveModule(archive, package, name, scope);
 }
 
 void HqlParseContext::setGatherMeta(const MetaOptions & options)
@@ -938,7 +938,7 @@ IPropertyTree * HqlParseContext::beginMetaSource(IFileContents * contents)
     return attr;
 }
 
-void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * contents, IIdAtom * name)
+void HqlParseContext::noteBeginAttribute(const char * package, IHqlScope * scope, IFileContents * contents, IIdAtom * name)
 {
     beginMetaScope();
     if (queryNestedDependTree())
@@ -948,7 +948,7 @@ void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * cont
     {
         const char * moduleName = scope->queryFullName();
 
-        IPropertyTree * module = queryEnsureArchiveModule(moduleName, scope);
+        IPropertyTree * module = queryEnsureArchiveModule(package, moduleName, scope);
         IPropertyTree * attr = queryArchiveAttribute(module, str(name));
         if (!attr)
             attr = createArchiveAttribute(module, str(name));
@@ -984,7 +984,7 @@ void HqlParseContext::noteBeginQuery(IHqlScope * scope, IFileContents * contents
         const char * moduleName = scope->queryFullName();
         if (moduleName && *moduleName)
         {
-            IPropertyTree * module = queryEnsureArchiveModule(moduleName, scope);
+            IPropertyTree * module = queryEnsureArchiveModule(nullptr, moduleName, scope);
             setDefinitionText(module, "Text", contents, checkDirty);
         }
     }
@@ -999,7 +999,7 @@ void HqlParseContext::noteBeginQuery(IHqlScope * scope, IFileContents * contents
     }
 }
 
-void HqlParseContext::noteBeginModule(IHqlScope * scope, IFileContents * contents)
+void HqlParseContext::noteBeginModule(const char * package, IHqlScope * scope, IFileContents * contents)
 {
     beginMetaScope();
     if (queryNestedDependTree())
@@ -1010,7 +1010,7 @@ void HqlParseContext::noteBeginModule(IHqlScope * scope, IFileContents * content
         const char * moduleName = scope->queryFullName();
         if (moduleName && *moduleName)
         {
-            IPropertyTree * module = queryEnsureArchiveModule(moduleName, scope);
+            IPropertyTree * module = queryEnsureArchiveModule(package, moduleName, scope);
             setDefinitionText(module, "Text", contents, checkDirty);
         }
     }
@@ -1187,7 +1187,7 @@ bool HqlParseContext::includeInArchive(IHqlScope * scope) const
     return archive && (!scope || scope->includeInArchive());
 }
 
-void HqlParseContext::noteExternalLookup(IHqlScope * parentScope, IHqlExpression * expr)
+void HqlParseContext::noteExternalLookup(const char * package, IHqlScope * parentScope, IIdAtom * id, IHqlExpression * expr)
 {
     //metaStack can be empty if we are resolving the main attribute within the repository
     if (!metaStack)
@@ -1200,7 +1200,13 @@ void HqlParseContext::noteExternalLookup(IHqlScope * parentScope, IHqlExpression
         //It would be preferrable to only check once, but adds very little time anyway.
         IHqlScope * resolvedScope = expr->queryScope();
         if (includeInArchive(resolvedScope))
-            queryEnsureArchiveModule(resolvedScope->queryFullName(), resolvedScope);
+        {
+            const char * fullname =  resolvedScope->queryFullName();
+            if (fullname)
+                queryEnsureArchiveModule(package, fullname, resolvedScope);
+            else
+                ensureArchiveImport(archive, package, id, resolvedScope);
+        }
     }
 
     FileParseMeta & meta = metaStack.tos();
@@ -1305,8 +1311,28 @@ extern HQL_API IPropertyTree * createAttributeArchive()
     return archive.getClear();
 }
 
-IPropertyTree * queryEnsureArchiveModule(IPropertyTree * archive, const char * name, IHqlScope * scope)
+static IPropertyTree * querySelectPackage(IPropertyTree * archive, const char * package)
 {
+    if (package)
+    {
+        VStringBuffer xpath("Archive[@package='%s']", package);
+        IPropertyTree * nested = archive->queryPropTree(xpath);
+        if (!nested)
+        {
+            nested = archive->addPropTree("Archive");
+            nested->setProp("@package", package);
+        }
+        archive = nested;
+    }
+    return archive;
+}
+
+//This function ensures that there is an iniitailised <Module> tag within the appropriate <Archive>
+IPropertyTree * queryEnsureArchiveModule(IPropertyTree * archive, const char * package, const char * name, IHqlScope * scope)
+{
+    archive = querySelectPackage(archive, package);
+
+    //Note: name can be null if this is a source file in the root of the repository
     //MORE: Move this into a member of the parse context to also handle dependencies.
     StringBuffer lowerName;
     lowerName.append(name).toLowerCase();
@@ -1339,6 +1365,24 @@ IPropertyTree * queryEnsureArchiveModule(IPropertyTree * archive, const char * n
         }
     }
     return module;
+}
+
+void ensureArchiveImport(IPropertyTree * archive, const char * package, IIdAtom * id, IHqlScope * scope)
+{
+    archive = querySelectPackage(archive, package);
+
+    const char * name = str(id);
+    const char * lowerName = str(lower(id));
+    StringBuffer xpath,s;
+    xpath.append("Module[@key=\"").append(lowerName).append("\"]");
+    IPropertyTree * module = archive->queryPropTree(xpath);
+    if (!module)
+    {
+        module = archive->addPropTree("Module");
+        module->setProp("@name", name);
+        module->setProp("@key", lowerName);
+        module->setProp("@package", scope->queryPackageName());
+    }
 }
 
 extern HQL_API IPropertyTree * queryArchiveAttribute(IPropertyTree * module, const char * name)
@@ -1395,7 +1439,7 @@ HqlLookupContext::~HqlLookupContext()
 
 void HqlLookupContext::noteBeginAttribute(IHqlScope * scope, IFileContents * contents, IIdAtom * name)
 {
-    parseCtx.noteBeginAttribute(scope, contents, name);
+    parseCtx.noteBeginAttribute(rootPackage->queryPackageName(), scope, contents, name);
 }
 
 
@@ -1407,7 +1451,7 @@ void HqlLookupContext::noteBeginQuery(IHqlScope * scope, IFileContents * content
 
 void HqlLookupContext::noteBeginModule(IHqlScope * scope, IFileContents * contents)
 {
-    parseCtx.noteBeginModule(scope, contents);
+    parseCtx.noteBeginModule(rootPackage->queryPackageName(), scope, contents);
 }
 
 
@@ -8751,12 +8795,12 @@ IHqlExpression *CHqlRemoteScope::clone(HqlExprArray &newkids)
 }
 
 
-void CHqlRemoteScope::noteExternalLookup(HqlLookupContext & ctx, IHqlExpression * expr)
+void CHqlRemoteScope::noteExternalLookup(HqlLookupContext & ctx, IIdAtom * searchId, IHqlExpression * expr)
 {
     if (!text)
-        ctx.noteExternalLookup(this, expr);
+        ctx.noteExternalLookup(this, searchId, expr);
     else
-        ctx.noteExternalLookup(nullptr, this);
+        ctx.noteExternalLookup(nullptr, searchId, this);
 }
 
 IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
@@ -8776,7 +8820,7 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
         if (resolvedSym)
         {
             if (!(lookupFlags & LSFnoreport))
-                noteExternalLookup(ctx, resolvedSym);
+                noteExternalLookup(ctx, searchName, resolvedSym);
             return resolvedSym.getClear();
         }
     }
@@ -8802,7 +8846,7 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
     if ((lookupFlags & LSFignoreBase))
     {
         if (!(lookupFlags & LSFnoreport))
-            noteExternalLookup(ctx, ret);
+            noteExternalLookup(ctx, searchName, ret);
         return ret.getClear();
     }
 
@@ -8864,7 +8908,7 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
         return NULL;
 
     if (!(lookupFlags & LSFnoreport))
-        noteExternalLookup(ctx, newSymbol);
+        noteExternalLookup(ctx, searchName, newSymbol);
     return newSymbol.getClear();
 }
 
@@ -9100,10 +9144,10 @@ inline bool canMergeDefinition(IHqlExpression * expr)
 
 IHqlExpression * CHqlMergedScope::lookupSymbol(IIdAtom * searchId, unsigned lookupFlags, HqlLookupContext & ctx)
 {
-    if (rootRepository != ctx.queryRepository())
+    if (rootRepository != ctx.queryPackage())
     {
         HqlLookupContext childCtx(ctx);
-        childCtx.rootRepository = rootRepository;
+        childCtx.rootPackage = rootRepository;
         return lookupSymbol(searchId, lookupFlags, childCtx);
     }
     HqlCriticalBlock block(cs);
@@ -9122,7 +9166,7 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(IIdAtom * searchId, unsigned look
         if (resolvedOp != no_nobody)
         {
             //Resolving from a merged scope, means that the resolved item will be a global symbol
-            ctx.noteExternalLookup(this, resolved);
+            ctx.noteExternalLookup(this, searchId, resolved);
             return resolved.getClear();
         }
     }
@@ -9295,6 +9339,11 @@ bool CHqlMergedScope::isRemoteScope() const
     return false;
 }
 
+
+const char * CHqlMergedScope::queryPackageName() const
+{
+    return rootRepository->queryPackageName();
+}
 
 //==============================================================================================================
 
@@ -16975,7 +17024,7 @@ static void gatherAttributeDependencies(HqlLookupContext & ctx, const char * ite
         else
             moduleName = createIdAtom(item);
 
-        OwnedHqlExpr resolved = ctx.queryRepository()->queryRootScope()->lookupSymbol(moduleName, LSFpublic, ctx);
+        OwnedHqlExpr resolved = ctx.queryPackage()->queryRootScope()->lookupSymbol(moduleName, LSFpublic, ctx);
         if (resolved)
         {
             IHqlScope * scope = resolved->queryScope();
@@ -16994,7 +17043,7 @@ static void gatherAttributeDependencies(HqlLookupContext & ctx, const char * ite
     }
 }
 
-extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * dataServer, const char * items)
+extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclPackage * dataServer, const char * items)
 {
     NullStatisticTarget nullStats;
     HqlParseContext parseCtx(nullptr, nullptr, nullStats);

@@ -425,7 +425,7 @@ void ArchiveCreator::createArchiveItem(const char * fullName, IEclSource * origi
         StringBuffer moduleName;
         const char * attrName = splitFullname(moduleName, fullName);
 
-        IPropertyTree * module = queryEnsureArchiveModule(archive, moduleName, nullptr);
+        IPropertyTree * module = queryEnsureArchiveModule(archive, nullptr, moduleName, nullptr);
         assertex(!queryArchiveAttribute(module, attrName));
         IPropertyTree * attr = createArchiveAttribute(module, attrName);
         setDefinitionText(attr, "", original->queryFileContents(), false);
@@ -433,7 +433,7 @@ void ArchiveCreator::createArchiveItem(const char * fullName, IEclSource * origi
     else
     {
         Owned<IProperties> properties = original->getProperties();
-        IPropertyTree * module = queryEnsureArchiveModule(archive, fullName, nullptr);
+        IPropertyTree * module = queryEnsureArchiveModule(archive, nullptr, fullName, nullptr);
         IFileContents * contents = original->queryFileContents();
         setDefinitionText(module, "Text", contents, false);
 

@@ -360,8 +360,8 @@ HqlGram::HqlGram(IHqlScope * _globalScope, IHqlScope * _containerScope, IFileCon
     lexObject->setLegacyWhen(queryLegacyWhenSemantics());
 
     //MORE: This should be in the parseContext calculated once
-    if (lookupCtx.queryRepository() && loadImplicit)
-        getImplicitScopes(implicitScopes, lookupCtx.queryRepository(), _containerScope, lookupCtx);
+    if (lookupCtx.queryPackage() && loadImplicit)
+        getImplicitScopes(implicitScopes, lookupCtx.queryPackage(), _containerScope, lookupCtx);
 }
 
 
@@ -455,7 +455,7 @@ IHqlScope * HqlGram::queryMacroScope()
     const char * scopeName = lexObject->queryMacroScopeName();
     if (scopeName)
     {
-        OwnedHqlExpr matched = getResolveAttributeFullPath(scopeName, LSFpublic, lookupCtx);
+        OwnedHqlExpr matched = getResolveAttributeFullPath(scopeName, LSFpublic, lookupCtx, nullptr);
         if (matched && matched->queryScope())
             return matched->queryScope();
     }
@@ -11061,12 +11061,12 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
     if (isHashDollarModule(expr))
         return LINK(queryExpression(queryMacroScope()));
     if (isRootModule(expr))
-        return LINK(queryExpression(lookupCtx.queryRepository()->queryRootScope()));
+        return LINK(queryExpression(lookupCtx.queryPackage()->queryRootScope()));
 
     IAtom * name = expr->queryName();
     if ((name != _dot_Atom) && (name != _container_Atom))
     {
-        if (!lookupCtx.queryRepository())
+        if (!lookupCtx.queryPackage())
         {
             //This never happens in practice since a null repository is generally passed.
             reportError(ERR_MODULE_UNKNOWN, "Import not supported with no repository specified",  
@@ -11077,7 +11077,8 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
         }
 
         IIdAtom * id = expr->queryId();
-        OwnedHqlExpr importMatch = lookupCtx.queryRepository()->queryRootScope()->lookupSymbol(id, LSFimport, lookupCtx);
+        IHqlScope * rootScope = lookupCtx.queryPackage()->queryRootScope();
+        OwnedHqlExpr importMatch = rootScope->lookupSymbol(id, LSFimport, lookupCtx);
         if (!importMatch)
             importMatch.setown(lookupParseSymbol(id));
 
@@ -11114,7 +11115,7 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
         //scope as the parent, rather than the merged scope...
         if (containerName)
         {
-            OwnedHqlExpr matched = getResolveAttributeFullPath(containerName, LSFpublic, lookupCtx);
+            OwnedHqlExpr matched = getResolveAttributeFullPath(containerName, LSFpublic, lookupCtx, nullptr);
             if (matched)
                 return matched.getClear();
         }
@@ -11122,7 +11123,7 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
         {
             //A null parent must be because it is within the global scope, or is the global scope
             if (parentName)
-                return LINK(lookupCtx.queryRepository()->queryRootScope()->queryExpression());
+                return LINK(lookupCtx.queryPackage()->queryRootScope()->queryExpression());
         }
 
         if (parentName)

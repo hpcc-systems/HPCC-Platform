@@ -755,10 +755,11 @@ extern HQL_API IHqlExpression * normalizeDatasetAlias(IHqlExpression * expr);
 extern HQL_API IHqlExpression * normalizeAnyDatasetAliases(IHqlExpression * expr);
 
 //In hqlgram2.cpp
-extern HQL_API IPropertyTree * queryEnsureArchiveModule(IPropertyTree * archive, const char * name, IHqlScope * rScope);
+extern HQL_API IPropertyTree * queryEnsureArchiveModule(IPropertyTree * archive, const char * package, const char * name, IHqlScope * rScope);
 extern HQL_API IPropertyTree * queryArchiveAttribute(IPropertyTree * module, const char * name);
 extern HQL_API IPropertyTree * createArchiveAttribute(IPropertyTree * module, const char * name);
 extern HQL_API IPropertyTree * queryArchiveEntry(IPropertyTree * archive, const char * name);
+extern HQL_API void ensureArchiveImport(IPropertyTree * archive, const char * package, IIdAtom * id, IHqlScope * scope);
 
 extern HQL_API IError * annotateExceptionWithLocation(IException * e, IHqlExpression * location);
 extern HQL_API IHqlExpression * expandMacroDefinition(IHqlExpression * expr, HqlLookupContext & ctx, bool reportError);

@@ -642,6 +642,7 @@ public:
     }
 
     virtual void populateChildren();
+    virtual const char * queryPath() const override { return elemTree->queryProp("@package"); }
     virtual void setTree(IPropertyTree * _elemTree) { elemTree.set(_elemTree); }
 
     CXmlEclElement * find(IIdAtom * searchName) { return static_cast<CXmlEclElement *>(CEclCollection::find(searchName)); }
@@ -651,6 +652,7 @@ public:
 protected:
     void expandAttribute(const char * modname, IPropertyTree * tree);
     void expandChildren(IPropertyTree * xml);
+    void expandDependency(const char * modname, const char * package, IPropertyTree * tree);
     void expandModule(const char * modname, IPropertyTree * tree);
     void getFullName(StringBuffer & target);
 
@@ -691,7 +693,12 @@ void CXmlEclElement::expandChildren(IPropertyTree * xml)
     {
         IPropertyTree & cur = modit->query();
         const char* modname = cur.queryProp("@name");
-        expandModule(modname, &cur);
+        const char* package = cur.queryProp("@package");
+
+        if (!package)
+            expandModule(modname, &cur);
+        else
+            expandDependency(modname, package, &cur);
     }
 
     Owned<IPropertyTreeIterator> attrit = xml->getElements("Attribute");
@@ -744,6 +751,21 @@ void CXmlEclElement::expandModule(const char * modname, IPropertyTree * tree)
         expandChildren(tree);
 }
 
+
+void CXmlEclElement::expandDependency(const char * modname, const char * package, IPropertyTree * tree)
+{
+    assertex(modname && package);
+    const char * dot = strchr(modname, '.');
+    if (dot)
+    {
+        IIdAtom * name = createIdAtom(modname, dot-modname);
+        select(name, ESTcontainer, NULL)->expandModule(dot+1, tree);
+        return;
+    }
+
+    IIdAtom * thisName = createIdAtom(modname);
+    select(thisName, ESTdependency, tree);
+}
 
 void CXmlEclElement::expandAttribute(const char * modname, IPropertyTree * tree)
 {

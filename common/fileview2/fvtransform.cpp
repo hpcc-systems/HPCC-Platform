@@ -297,7 +297,7 @@ void ViewTransformerRegistry::addPlugins(const char * name)
     Owned<IErrorReceiver> errorReporter = createThrowingErrorReceiver();
     EclRepositoryManager collection;
     collection.addSharedSourceFileEclRepository(errorReporter, name, ESFallowplugins, 0, false);
-    dataServer.setown(collection.createCompoundRepository());
+    dataServer.setown(collection.createPackage(nullptr));
 
     NullStatisticTarget nullStats;
     HqlScopeArray scopes;

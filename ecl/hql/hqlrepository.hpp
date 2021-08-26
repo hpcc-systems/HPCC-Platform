@@ -49,11 +49,12 @@ public:
 
     void addMapping(const char * url, const char * path);
 
-    IEclRepository * createCompoundRepository();
+    IEclPackage * createPackage(const char * packageName);
     void inherit(const EclRepositoryManager & other);
     void kill();
 
-    IEclRepository * resolveDependentRepository(IIdAtom * name, const char * defaultUrl, bool requireSHA);
+    void processArchive(IPropertyTree * archiveTree);
+    IEclPackage * resolveDependentRepository(IIdAtom * name, const char * defaultUrl, bool requireSHA);
     void setOptions(const char * _eclRepoPath, bool _fetchRepos, bool _updateRepos, bool _verbose)
     {
         options.eclRepoPath.set(_eclRepoPath);
@@ -70,7 +71,7 @@ protected:
     unsigned runGitCommand(StringBuffer * output, const char *args, const char * cwd);
 
 private:
-    using DependencyInfo = std::pair<std::string, Shared<IEclRepository>>;
+    using DependencyInfo = std::pair<std::string, Shared<IEclPackage>>;
     CIArrayOf<EclRepositoryMapping> repos;
     std::vector<DependencyInfo> dependencies;
     IArrayOf<IEclRepository> sharedSources;     // plugins, std library, bundles
@@ -86,8 +87,8 @@ private:
 };
 
 
-extern HQL_API IEclRepository * createCompoundRepositoryF(IEclRepository * repository, ...);
-extern HQL_API IEclRepository * createCompoundRepository(EclRepositoryArray & repositories);
+extern HQL_API IEclPackage * createCompoundRepositoryF(const char * packageName, IEclRepository * repository, ...);
+extern HQL_API IEclPackage * createCompoundRepository(const char * packageName, EclRepositoryArray & repositories);
 extern HQL_API IEclRepository * createNestedRepository(IIdAtom * name, IEclRepository * root);
 
 extern HQL_API void getRootScopes(HqlScopeArray & rootScopes, IHqlScope * scope, HqlLookupContext & ctx);
@@ -96,6 +97,7 @@ extern HQL_API void getImplicitScopes(HqlScopeArray & implicitScopes, IEclReposi
 extern HQL_API void importRootModulesToScope(IHqlScope * scope, HqlLookupContext & ctx);
 
 extern HQL_API IHqlScope * getResolveDottedScope(const char * modname, unsigned lookupFlags, HqlLookupContext & ctx);
-extern HQL_API IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned lookupFlags, HqlLookupContext & ctx);
+extern HQL_API IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned lookupFlags, HqlLookupContext & ctx, IEclPackage * optPackage);
+extern HQL_API bool looksLikeGitPackage(const char * urn);
 
 #endif

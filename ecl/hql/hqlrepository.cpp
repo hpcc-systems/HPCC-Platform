@@ -39,9 +39,16 @@ static const char * queryExtractFilename(const char * urn)
     return nullptr;
 }
 
-bool looksLikeGitUrl(const char * urn)
+bool startsWithGitProtocol(const char * urn)
 {
     if (startsWith(urn, "git+") || startsWith(urn, "git:"))
+        return true;
+    return false;
+}
+
+bool looksLikeGitPackage(const char * urn)
+{
+    if (startsWithGitProtocol(urn))
         return true;
     if (strstr(urn, ".git#"))
         return true;
@@ -52,7 +59,7 @@ static bool splitRepoVersion(StringBuffer & repoUrn, StringBuffer & repo, String
 {
     const char * cur = urn;
     //Allow either protocol://<server>/<user>/<repo>[#version] or <user>/<repo>[#version]
-    if (startsWith(urn, "git+") || startsWith(urn, "git:"))
+    if (startsWithGitProtocol(urn))
     {
         //skip to the end of the protocol
         const char * colon = strchr(urn, ':');
@@ -144,7 +151,7 @@ void getImplicitScopes(HqlScopeArray& implicitScopes, IEclRepository * repositor
 
 extern HQL_API void importRootModulesToScope(IHqlScope * scope, HqlLookupContext & ctx)
 {
-    IEclRepository * eclRepository = ctx.queryRepository();
+    IEclRepository * eclRepository = ctx.queryPackage();
     if (eclRepository)
     {
         HqlExprArray rootSymbols;
@@ -164,9 +171,10 @@ extern HQL_API void importRootModulesToScope(IHqlScope * scope, HqlLookupContext
 
 //-------------------------------------------------------------------------------------------------------------------
 
-IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned lookupFlags, HqlLookupContext & ctx, IEclPackage * optPackage)
 {
-    Linked<IHqlScope> parentScope = ctx.queryRepository()->queryRootScope();
+    IEclPackage * package = optPackage ? optPackage : ctx.queryPackage();
+    Linked<IHqlScope> parentScope = package->queryRootScope();
     const char * item = attrname;
     for (;;)
     {
@@ -202,8 +210,8 @@ IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned loo
 IHqlScope * getResolveDottedScope(const char * modname, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     if (!modname || !*modname)
-        return LINK(ctx.queryRepository()->queryRootScope());
-    OwnedHqlExpr matched = getResolveAttributeFullPath(modname, lookupFlags, ctx);
+        return LINK(ctx.queryPackage()->queryRootScope());
+    OwnedHqlExpr matched = getResolveAttributeFullPath(modname, lookupFlags, ctx, nullptr);
     if (matched)
         return LINK(matched->queryScope());
     return NULL;
@@ -212,20 +220,26 @@ IHqlScope * getResolveDottedScope(const char * modname, unsigned lookupFlags, Hq
 
 //-------------------------------------------------------------------------------------------------------------------
 
-class HQL_API CompoundEclRepository : implements CInterfaceOf<IEclRepository>
+class HQL_API CompoundEclRepository : implements CInterfaceOf<IEclPackage>
 {
 public:
-    CompoundEclRepository() { rootScope.setown(new CHqlMergedScope(nullptr, nullptr, nullptr, this)); }
+    CompoundEclRepository(const char * _packageName)
+    : packageName(_packageName)
+    {
+        rootScope.setown(new CHqlMergedScope(nullptr, nullptr, nullptr, this));
+    }
 
     void addRepository(IEclRepository & _repository);
 
     virtual IHqlScope * queryRootScope() { return rootScope; }
     virtual IEclSource * getSource(const char * eclFullname) override;
     virtual bool includeInArchive() const override { return true; }
+    virtual const char * queryPackageName() { return packageName; }
 
 protected:
     IArrayOf<IEclRepository> repositories;
     Owned<CHqlMergedScope> rootScope;
+    StringAttr packageName;
 };
 
 void CompoundEclRepository::addRepository(IEclRepository & _repository)
@@ -248,9 +262,9 @@ IEclSource * CompoundEclRepository::getSource(const char * eclFullname)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-extern HQL_API IEclRepository * createCompoundRepositoryF(IEclRepository * repository, ...)
+extern HQL_API IEclPackage * createCompoundRepositoryF(const char * packageName, IEclRepository * repository, ...)
 {
-    Owned<CompoundEclRepository> compound = new CompoundEclRepository;
+    Owned<CompoundEclRepository> compound = new CompoundEclRepository(packageName);
     compound->addRepository(*repository);
     va_list args;
     va_start(args, repository);
@@ -266,9 +280,9 @@ extern HQL_API IEclRepository * createCompoundRepositoryF(IEclRepository * repos
 }
 
 
-extern HQL_API IEclRepository * createCompoundRepository(EclRepositoryArray & repositories)
+extern HQL_API IEclPackage * createCompoundRepository(const char * packageName, EclRepositoryArray & repositories)
 {
-    Owned<CompoundEclRepository> compound = new CompoundEclRepository;
+    Owned<CompoundEclRepository> compound = new CompoundEclRepository(packageName);
     ForEachItemIn(i, repositories)
         compound->addRepository(repositories.item(i));
     return compound.getClear();
@@ -535,7 +549,6 @@ void EclRepositoryManager::addRepository(IEclSourceCollection * source, const ch
     allSources.append(*repo.getClear());
 }
 
-
 void EclRepositoryManager::addMapping(const char * url, const char * path)
 {
     StringBuffer repoUrn, repo, version;
@@ -544,7 +557,31 @@ void EclRepositoryManager::addMapping(const char * url, const char * path)
     repos.append(*new EclRepositoryMapping(repo, version, path));
 }
 
-IEclRepository * EclRepositoryManager::resolveDependentRepository(IIdAtom * name, const char * defaultUrl, bool requireSHA)
+void EclRepositoryManager::processArchive(IPropertyTree * archiveTree)
+{
+    IArrayOf<IEclRepository> savedSources;        // also includes -D options
+    savedSources.swapWith(allSources);
+
+    Owned<IPropertyTreeIterator> subArchives = archiveTree->getElements("Archive");
+    ForEach(*subArchives)
+    {
+        IPropertyTree & cur = subArchives->query();
+        const char * defaultUrl = cur.queryProp("@package");
+        const char * repoKey = defaultUrl;
+        Owned<IEclSourceCollection> archiveCollection(createArchiveEclCollection(&cur));
+        ForEachItemIn(iShared, sharedSources)
+            allSources.append(OLINK(sharedSources.item(iShared)));
+        allSources.append(*createRepository(archiveCollection, nullptr, true));
+        Owned<IEclPackage> compound = createPackage(defaultUrl);
+        dependencies.emplace_back(repoKey, compound);
+    }
+
+    allSources.swapWith(savedSources);
+    Owned<IEclSourceCollection> archiveCollection(createArchiveEclCollection(archiveTree));
+    addRepository(archiveCollection, nullptr, true);
+}
+
+IEclPackage * EclRepositoryManager::resolveDependentRepository(IIdAtom * name, const char * defaultUrl, bool requireSHA)
 {
     //Check to see if the reference is to a filename.  Should possibly be disabled on a switch.
     const char * filename = queryExtractFilename(defaultUrl);
@@ -659,7 +696,7 @@ IEclRepository * EclRepositoryManager::resolveDependentRepository(IIdAtom * name
     unsigned flags = 0;
     Owned<IEclRepository> repo = createNewSourceFileEclRepository(errs, filename, flags, 0, true);
     allSources.append(*repo.getClear());
-    Owned<IEclRepository> compound = createCompoundRepository();
+    Owned<IEclPackage> compound = createPackage(defaultUrl);
     dependencies.emplace_back(repoKey, compound);
     return compound;
 }
@@ -667,14 +704,6 @@ IEclRepository * EclRepositoryManager::resolveDependentRepository(IIdAtom * name
 
 IEclRepository * EclRepositoryManager::createNewSourceFileEclRepository(IErrorReceiver *errs, const char * path, unsigned flags, unsigned trace, bool includeInArchive)
 {
-    if (*path == ENVSEPCHAR)
-        path++;
-
-    if (looksLikeGitUrl(path))
-    {
-        IEclRepository * match = EclRepositoryManager::resolveDependentRepository(nullptr, path, false);
-        return LINK(match);
-    }
     Owned<IEclSourceCollection> source = createFileSystemEclCollection(errs, path, flags, trace);
     return createRepository(source, nullptr, includeInArchive);
 }
@@ -685,9 +714,9 @@ IEclRepository * EclRepositoryManager::createSingleDefinitionEclRepository(const
     return createRepository(source, nullptr, includeInArchive);
 }
 
-IEclRepository * EclRepositoryManager::createCompoundRepository()
+IEclPackage * EclRepositoryManager::createPackage(const char * packageName)
 {
-    Owned<IEclRepository> compound = ::createCompoundRepository(allSources);
+    Owned<IEclPackage> compound = ::createCompoundRepository(packageName, allSources);
     dependencies.emplace_back("", compound);
     allSources.kill();
     return compound.getClear();
