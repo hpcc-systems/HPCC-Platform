@@ -22,12 +22,11 @@ export const HpccJSComponent: React.FunctionComponent<HpccJSComponentProps> = ({
     const divID = useId("viz-component-");
 
     React.useEffect(() => {
-        widget
-            .target(divID)
+        const w = widget?.target(divID)
             .render()
             ;
         return () => {
-            widget.target(null);
+            w?.target(null);
         };
     }, [divID, widget]);
 
