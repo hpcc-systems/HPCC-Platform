@@ -14,20 +14,23 @@ export function useCounter(): [number, () => void] {
     return [counter, () => setCounter(counter + 1)];
 }
 
-export function useWorkunit(wuid: string, full: boolean = false): [Workunit, WUStateID, number] {
+export function useWorkunit(wuid: string, full: boolean = false): [Workunit, WUStateID, number, boolean] {
 
-    const [retVal, setRetVal] = React.useState<{ workunit: Workunit, state: number, lastUpdate: number }>();
+    const [retVal, setRetVal] = React.useState<{ workunit: Workunit, state: number, lastUpdate: number, isComplete: boolean }>();
 
     React.useEffect(() => {
-        if (!wuid) return;
+        if (!wuid) {
+            setRetVal({ workunit: undefined, state: WUStateID.NotFound, lastUpdate: Date.now(), isComplete: undefined });
+            return;
+        }
         const wu = Workunit.attach({ baseUrl: "" }, wuid);
         let active = true;
         let handle;
         wu.refresh(full).then(() => {
             if (active) {
-                setRetVal({ workunit: wu, state: wu.StateID, lastUpdate: Date.now() });
+                setRetVal({ workunit: wu, state: wu.StateID, lastUpdate: Date.now(), isComplete: wu.isComplete() });
                 handle = wu.watch(() => {
-                    setRetVal({ workunit: wu, state: wu.StateID, lastUpdate: Date.now() });
+                    setRetVal({ workunit: wu, state: wu.StateID, lastUpdate: Date.now(), isComplete: wu.isComplete() });
                 });
             }
                     }).catch(logger.error);
@@ -37,7 +40,7 @@ export function useWorkunit(wuid: string, full: boolean = false): [Workunit, WUS
         };
     }, [wuid, full]);
 
-    return [retVal?.workunit, retVal?.state, retVal?.lastUpdate];
+    return [retVal?.workunit, retVal?.state, retVal?.lastUpdate, retVal?.isComplete];
 }
 
 export function useWorkunitResults(wuid: string): [Result[], Workunit, WUStateID] {
