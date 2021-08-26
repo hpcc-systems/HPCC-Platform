@@ -5,12 +5,14 @@ import * as declare from "dojo/_base/declare";
 import * as selector from "dgrid/selector";
 // @ts-ignore
 import * as tree from "dgrid/tree";
+// @ts-ignore
+import * as editor from "dgrid/editor";
 import * as ESPUtil from "src/ESPUtil";
 import { DojoComponent } from "../layouts/DojoAdapter";
 
 import "src-react-css/components/DojoGrid.css";
 
-export { selector, tree };
+export { editor, selector, tree };
 
 const SimpleGrid = declare([ESPUtil.Grid(false, false, undefined, false, "SimpleGrid")]);
 const PageSelGrid = declare([ESPUtil.Grid(true, true, undefined, false, "PageSelGrid")]);

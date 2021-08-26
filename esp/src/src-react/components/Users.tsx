@@ -12,7 +12,7 @@ import { Fields } from "./forms/Fields";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams, pushUrl } from "../util/history";
 
-const logger = scopedLogger("../components/Users.tsx");
+const logger = scopedLogger("src-react/components/Users.tsx");
 
 const FilterFields: Fields = {
     "username": { type: "string", label: nlsHPCC.User }
@@ -115,7 +115,7 @@ export const Users: React.FunctionComponent<UsersProps> = ({
                     pushUrl(`/security/users/${selection[0].username}`);
                 } else {
                     selection.forEach(user => {
-                        window.open(`#/security/users/${user.username}`, "_blank");
+                        window.open(`#/security/users/${user?.username}`, "_blank");
                     });
                 }
             }
