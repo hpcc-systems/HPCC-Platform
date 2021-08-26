@@ -604,6 +604,70 @@ CPPUNIT_TEST_SUITE_REGISTRATION( JlibFileIOTestStress );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( JlibFileIOTestTiming, "JlibFileIOTestStress" );
 
 /* =========================================================== */
+class JlibContainsRelPathsTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(JlibContainsRelPathsTest);
+        CPPUNIT_TEST(testWindowsPaths);
+        CPPUNIT_TEST(testPosixPaths);
+    CPPUNIT_TEST_SUITE_END();
+
+    bool testContainsRelPaths(const char * path)
+    {
+        return containsRelPaths(path);
+    };
+public:
+    void testWindowsPaths()
+    {
+        CPPUNIT_ASSERT(testContainsRelPaths("a\\b\\c") == false);
+        CPPUNIT_ASSERT(testContainsRelPaths("\\a\\b\\c") == false);
+        CPPUNIT_ASSERT(testContainsRelPaths(".\\a\\b\\c") == true);
+        CPPUNIT_ASSERT(testContainsRelPaths("..\\a\\b\\c") == true);
+        CPPUNIT_ASSERT(testContainsRelPaths("...\\a\\b\\c") == false);
+        CPPUNIT_ASSERT(testContainsRelPaths("\\.\\a\\b\\c") == true);
+        CPPUNIT_ASSERT(testContainsRelPaths("\\..\\a\\b\\c") == true);
+        CPPUNIT_ASSERT(testContainsRelPaths("\\...\\a\\b\\c") == false);
+        CPPUNIT_ASSERT(testContainsRelPaths("\\a\\b\\c\\.") == true);
+        CPPUNIT_ASSERT(testContainsRelPaths("\\a\\b\\c\\..") == true);
+        CPPUNIT_ASSERT(testContainsRelPaths("\\a\\b\\c\\...") == false);
+        CPPUNIT_ASSERT(testContainsRelPaths("\\a\\.\\b\\c") == true);
+        CPPUNIT_ASSERT(testContainsRelPaths("\\a\\..\\b\\c") == true);
+        CPPUNIT_ASSERT(testContainsRelPaths("\\a\\...\\b\\c") == false);
+        CPPUNIT_ASSERT(testContainsRelPaths("\\a\\b\\c.d\\e") == false);
+        CPPUNIT_ASSERT(testContainsRelPaths("\\a\\b\\c..d\e") == false);
+        CPPUNIT_ASSERT(testContainsRelPaths("\\a\\b\\c...d\\e") == false);
+        CPPUNIT_ASSERT(testContainsRelPaths("\\a\\b\\c.d.e\\f") == false);
+    }
+    void testPosixPaths()
+    {
+        CPPUNIT_ASSERT(testContainsRelPaths("a/b/c") == false);
+        CPPUNIT_ASSERT(testContainsRelPaths("/a/b/c") == false);
+        CPPUNIT_ASSERT(testContainsRelPaths("~/a/b/c") == true);
+        CPPUNIT_ASSERT(testContainsRelPaths("/a~/b/c") == false);
+        CPPUNIT_ASSERT(testContainsRelPaths("/a/b/c~") == false);
+        CPPUNIT_ASSERT(testContainsRelPaths("./a/b/c") == true);
+        CPPUNIT_ASSERT(testContainsRelPaths("../a/b/c") == true);
+        CPPUNIT_ASSERT(testContainsRelPaths(".../a/b/c") == false);
+        CPPUNIT_ASSERT(testContainsRelPaths("/./a/b/c") == true);
+        CPPUNIT_ASSERT(testContainsRelPaths("/../a/b/c") == true);
+        CPPUNIT_ASSERT(testContainsRelPaths("/.../a/b/c") == false);
+        CPPUNIT_ASSERT(testContainsRelPaths("/a/b/c/.") == true);
+        CPPUNIT_ASSERT(testContainsRelPaths("/a/b/c/..") == true);
+        CPPUNIT_ASSERT(testContainsRelPaths("/a/b/c/...") == false);
+        CPPUNIT_ASSERT(testContainsRelPaths("/a/b/./c") == true);
+        CPPUNIT_ASSERT(testContainsRelPaths("/a/b/../c") == true);
+        CPPUNIT_ASSERT(testContainsRelPaths("/a/b/.../c") == false);
+        CPPUNIT_ASSERT(testContainsRelPaths("/a/b/c.d/e") == false);
+        CPPUNIT_ASSERT(testContainsRelPaths("/a/b/c..d/e") == false);
+        CPPUNIT_ASSERT(testContainsRelPaths("/a/b/c...d/e") == false);
+        CPPUNIT_ASSERT(testContainsRelPaths("/a/b/c.d.e/f") == false);
+        CPPUNIT_ASSERT(testContainsRelPaths("abc\\def/../g/h") == true); // The PathSepChar should be '/'.
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION(JlibContainsRelPathsTest);
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(JlibContainsRelPathsTest, "JlibContainsRelPathsTest");
+
+/* =========================================================== */
 
 class JlibStringBufferTiming : public CppUnit::TestFixture
 {
