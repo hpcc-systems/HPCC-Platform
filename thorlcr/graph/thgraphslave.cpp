@@ -1686,7 +1686,27 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
         pluginMap->loadFromList(pluginsList.str());
     }
     tmpHandler.setown(createTempHandler(true));
-    sharedAllocator.setown(::createThorAllocator(globalMemoryMB, sharedMemoryMB, numChannels, memorySpillAtPercentage, *logctx, crcChecking, usePackedAllocator));
+
+    float recommendReservePercentage = roxieMemPercentage;
+#ifndef _CONTAINERIZED
+    unsigned numWorkers = globals->getPropInt("@slavesPerNode", 1);
+
+    // Weird @localThor mode, where <roxieMemPercentage>(25%) of memory is reserved for OS, <roxieMemPercentage>(25%) is reserved for master, and reset fo slaves
+    if (globals->getPropBool("@localThor") && (0 == globals->getPropInt("@masterMemorySize")))
+    {
+        // reserve is <roxieMemPercentage>% (for OS) + <roxieMemPercentage>% (for manager) + [other workers * slave of rest(50%)]
+        recommendReservePercentage = roxieMemPercentage + roxieMemPercentage + ((numWorkers-1) * ((100-roxieMemPercentage-roxieMemPercentage) / ((float)numWorkers)));
+    }
+    else
+        recommendReservePercentage = roxieMemPercentage + ((numWorkers-1) * ((100-roxieMemPercentage) / ((float)numWorkers)));
+#endif
+    applyMemorySettings(recommendReservePercentage, "worker");
+
+    unsigned sharedMemoryLimitPercentage = (unsigned)getWorkUnitValueInt("globalMemoryLimitPC", globals->getPropInt("@sharedMemoryLimit", 90));
+    unsigned sharedMemoryMB = queryMemoryMB*sharedMemoryLimitPercentage/100;
+    PROGLOG("Shared memory = %d%%", sharedMemoryLimitPercentage);
+
+    sharedAllocator.setown(::createThorAllocator(queryMemoryMB, sharedMemoryMB, numChannels, memorySpillAtPercentage, *logctx, crcChecking, usePackedAllocator));
 
     StringBuffer remoteCompressedOutput;
     getOpt("remoteCompressedOutput", remoteCompressedOutput);

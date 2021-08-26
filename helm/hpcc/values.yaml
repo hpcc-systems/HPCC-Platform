@@ -526,6 +526,9 @@ thor:
   #workerResources:
   #  cpu: "4"
   #  memory: "4G"
+  #workerMemory:
+  #  query: "3G"
+  #  thirdParty: "500M"
   #eclAgentResources:
   #  cpu: "1"
   #  memory: "2G"

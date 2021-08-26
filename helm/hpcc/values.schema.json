@@ -473,6 +473,19 @@
     "resources": {
       "type": "object"
     },
+    "memory": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "The amount of overall resourced memory to dedicate to the query"
+        },
+        "thirdParties": {
+          "type": "string",
+          "description": "The amount of overall resource memory to reserve for 3rd party use"
+        }
+      }
+    },
     "secrets": {
       "oneOf": [
         {
@@ -1191,6 +1204,12 @@
         "labels": {
           "type": "object",
           "additionalProperties": { "type": "string" }
+        },
+        "workerMemory": {
+          "$ref": "#/definitions/memory"
+        },
+        "managerMemory": {
+          "$ref": "#/definitions/memory"
         },
         "managerResources": {
           "$ref": "#/definitions/resources"

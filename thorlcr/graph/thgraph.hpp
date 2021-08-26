@@ -69,6 +69,23 @@
 #define THORDATALINK_COUNT_MASK         (RCMAX>>2)                                  // mask to extract count value only
 
 
+/* These percentages are used to determine the amount roxiemem allocated
+ * from total system memory.
+ *
+ * For historical reasons the default in bare-metal has always been a
+ * conservative reserve of 25%.
+ *
+ * NB: These percentages do not apply if the memory amount has been configured
+ * manually via 'globalMemorySize' and 'masterMemorySize'
+ */
+
+#ifdef _CONTAINERIZED
+constexpr float roxieMemPercentage = 10.0;
+#else
+constexpr float roxieMemPercentage = 25.0;
+#endif
+
+
 
 enum ActivityAttributes { ActAttr_Source=1, ActAttr_Sink=2 };
 const static roxiemem::RoxieHeapFlags defaultHeapFlags = roxiemem::RHFscanning;
@@ -829,7 +846,7 @@ protected:
     bool timeActivities;
     unsigned channelsPerSlave;
     unsigned numChannels;
-    unsigned maxActivityCores, globalMemoryMB, sharedMemoryMB;
+    unsigned maxActivityCores, queryMemoryMB, sharedMemoryMB;
     unsigned forceLogGraphIdMin, forceLogGraphIdMax;
     Owned<IContextLogger> logctx;
     Owned<IPerfMonHook> perfmonhook;
@@ -840,7 +857,7 @@ protected:
     bool usePackedAllocator;
     rank_t myNodeRank;
     Owned<IPropertyTree> graphXGMML;
-    unsigned memorySpillAtPercentage, sharedMemoryLimitPercentage;
+    unsigned memorySpillAtPercentage;
     CriticalSection sharedAllocatorCrit;
     Owned<IThorAllocator> sharedAllocator;
     bool jobEnded = false;
@@ -899,6 +916,7 @@ public:
     virtual IGraphTempHandler *createTempHandler(bool errorOnMissing) = 0;
     void addDependencies(IPropertyTree *xgmml, bool failIfMissing=true);
     void addSubGraph(IPropertyTree &xgmml);
+    void applyMemorySettings(float recommendReservePercentage, const char *context);
 
     void checkAndReportLeaks(roxiemem::IRowManager *rowManager);
     bool queryUseCheckpoints() const;
