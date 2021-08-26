@@ -411,10 +411,11 @@
             <entry><emphasis role="bold">KEEP(n)</emphasis></entry>
 
             <entry>Specifies the maximum number of matching records (n) to
-            generate into the result set. If omitted, all matches are kept.
-            This is useful where there may be many matching pairs and you need
-            to limit the number in the result set. KEEP is not supported for
-            RIGHT OUTER, RIGHT ONLY, LEFT ONLY, or FULL ONLY
+            generate into the result set from each
+            <emphasis>leftrecset</emphasis> record. If omitted, all matches
+            are kept. This is useful where there may be many matching pairs
+            and you need to limit the number in the result set. KEEP is not
+            supported for RIGHT OUTER, RIGHT ONLY, LEFT ONLY, or FULL ONLY
             <emphasis>jointypes</emphasis>.</entry>
           </row>
 

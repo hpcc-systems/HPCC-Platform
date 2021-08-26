@@ -7189,7 +7189,7 @@ BoundRow * HqlCppTranslator::bindTableCursor(BuildCtx & ctx, IHqlExpression * da
 BoundRow * HqlCppTranslator::bindTableCursor(BuildCtx & ctx, IHqlExpression * dataset, const char * name, bool isLinkCounted, node_operator side, IHqlExpression * selSeq)
 {
     Owned<ITypeInfo> type = makeRowReferenceType(dataset);
-    if (isLinkCounted)
+    if (isLinkCounted && !hasLinkCountedModifier(type))
         type.setown(makeAttributeModifier(type.getClear(), getLinkCountedAttr()));
 
     Owned<IHqlExpression> bound = createVariable(name, type.getClear());
