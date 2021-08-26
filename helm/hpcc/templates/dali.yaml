@@ -152,7 +152,7 @@ data:
 kind: ConfigMap
 {{- with ($sasha | merge (pick $dali "logging") | merge (dict "inDaliPod" true "access" (splitList " " (include "hpcc.getSashaServiceAccess" $sasha)))) -}}
 {{- $sashaSecretsCategories := append ((or (has "data" .access) (has "dalidata" .access)) | ternary (list "storage") list) "system" -}}
-{{ include "hpcc.generateConfig" (dict "root" $ "me" . "secretsCategories" $sashaSecretsCategories "configMapHelper" "hpcc.sashaConfigMap") }}
+{{ include "hpcc.generateConfig" (dict "root" $ "me" . "configMapHelper" "hpcc.sashaConfigMap") }}
 {{- end }}
 ---
 {{- if hasKey $sasha "service" -}}
