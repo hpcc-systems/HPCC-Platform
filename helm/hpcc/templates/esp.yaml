@@ -99,7 +99,7 @@ spec:
         server: {{ .name | quote }}
         accessDali: "yes"
         app: {{ $application }}
-        helmVersion: 8.2.14-rc2
+        helmVersion: 8.2.14
 {{- if hasKey . "labels" }}
 {{ toYaml .labels | indent 8 }}
 {{- end }}

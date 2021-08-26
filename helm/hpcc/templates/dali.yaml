@@ -45,7 +45,7 @@ spec:
         run: {{ $dali.name | quote }}
         server: {{ $dali.name | quote }}
         app: dali
-        helmVersion: 8.2.14-rc2
+        helmVersion: 8.2.14
 {{- if hasKey $dali "labels" }}
 {{ toYaml $dali.labels | indent 8 }}
 {{- end }}
