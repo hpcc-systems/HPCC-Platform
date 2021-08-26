@@ -30,6 +30,7 @@ const iconButtonStyles = {
 
 interface MessageBoxProps {
     title: string;
+    width?: number;
     show: boolean;
     setShow: (_: boolean) => void;
     footer?: React.ReactNode;
@@ -38,6 +39,7 @@ interface MessageBoxProps {
 
 export const MessageBox: React.FunctionComponent<MessageBoxProps> = ({
     title,
+    width = 300,
     show,
     setShow,
     footer,
@@ -46,10 +48,10 @@ export const MessageBox: React.FunctionComponent<MessageBoxProps> = ({
 
     const theme = useTheme();
     const contentStyles = React.useMemo(() => mergeStyleSets({
-        container: { overflowY: "hidden" },
+        container: { overflowY: "hidden", width: width },
         header: { borderTop: `4px solid ${theme.palette.themePrimary}` },
         body: { padding: "12px 24px 12px 24px", overflowY: "hidden" },
-    }), [theme.palette.themePrimary]);
+    }), [theme.palette.themePrimary, width]);
 
     const close = React.useCallback(() => setShow(false), [setShow]);
 
