@@ -331,8 +331,8 @@ export class MetricGraphWidget extends SVGZoomWidget {
     }
 
     clearSelection(broadcast: boolean = false) {
-        Object.keys(this._selection).forEach(id => {
-            d3Select(`#${encodeID(id)}`).classed("selected", false);
+        Object.keys(this._selection).forEach(name => {
+            d3Select(`#${encodeID(name)}`).classed("selected", false);
         });
         this._selection = {};
         this._selectionChanged(broadcast);
