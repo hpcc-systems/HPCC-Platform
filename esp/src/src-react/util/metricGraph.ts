@@ -37,11 +37,11 @@ function shape(kind: string) {
 }
 
 function encodeID(id: string): string {
-    return id.split(":").join("-");
+    return id.split(":").join("__colon__").split(" ").join("__space__").split("+").join("__plus__");
 }
 
 function decodeID(id: string): string {
-    return id.split("-").join(":");
+    return id.split("__plus__").join("+").split("__space__").join(" ").split("__colon__").join(":");
 }
 
 export interface IScope {
@@ -189,7 +189,7 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         return `"${v.id}" [id="${encodeID(v.name)}" label="${format(options.activityTpl, v)}" shape="${shape(v.Kind)}"]`;
     }
 
-    protected _dedupEdges: { [id: string]: boolean } = {};
+    protected _dedupEdges: { [scopeName: string]: boolean } = {};
 
     findFirstVertex(scopeName: string) {
         if (this.vertexExists(scopeName)) {
@@ -209,7 +209,7 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         if (options.ignoreGlobalStoreOutEdges && this.vertex(this._activityIndex[e.IdSource]).Kind === "22") {
             return "";
         }
-        return `\"${e.IdSource}" -> "${e.IdTarget}" [id="${encodeID(e.name)}" label="${format(options.edgeTpl, e)}" style="${this.vertexParent(e.IdSource) === this.vertexParent(e.IdTarget) ? "solid" : "dashed"}"]`;
+        return `"${e.IdSource}" -> "${e.IdTarget}" [id="${encodeID(e.name)}" label="${format(options.edgeTpl, e)}" style="${this.vertexParent(this._activityIndex[e.IdSource]) === this.vertexParent(this._activityIndex[e.IdTarget]) ? "solid" : "dashed"}"]`;
     }
 
     subgraphTpl(sg: IScope, options: MetricsOptions): string {
@@ -224,7 +224,7 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
             childTpls.push(this.edgeTpl(child, options));
         });
         return `\
-subgraph cluster_${sg.id} {
+subgraph cluster_${encodeID(sg.id)} {
     color="darkgrey";
     fillcolor="white";
     style="filled";
@@ -327,7 +327,7 @@ export class MetricGraphWidget extends SVGZoomWidget {
     }
 
     exists(id: string) {
-        return !this._renderElement.select(`#${id}`).empty();
+        return !this._renderElement.select(`#${encodeID(id)}`).empty();
     }
 
     clearSelection(broadcast: boolean = false) {
@@ -361,7 +361,7 @@ export class MetricGraphWidget extends SVGZoomWidget {
     selectionBBox() {
         const rect = new Rect();
         this.selection().forEach(sel => {
-            const elem = this._renderElement.select(`#${sel}`);
+            const elem = this._renderElement.select(`#${encodeID(sel)}`);
             rect.extend((elem.node() as SVGGraphicsElement).getBBox());
         });
         const bbox = rect.toStruct();
