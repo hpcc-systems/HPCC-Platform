@@ -392,29 +392,24 @@ static StringBuffer &formatDaliRole(StringBuffer &out, unsigned __int64 role)
     return out.append(queryRoleName((DaliClientRole)role));
 }
 
-static IPropertyTree * getHelmLDAPConfiguration(const char * authMethod, IPropertyTree *appConfig)
+#ifdef _CONTAINERIZED
+static IPropertyTree * getContainerLDAPConfiguration(const char * authMethod, IPropertyTree *appConfig)
 {
     if (streq(authMethod, "none"))
         return nullptr; //no security manager
 
     const char *ldapAddress = appConfig->queryProp("@ldapAddress");
     if (isEmptyString(ldapAddress))
-        throw MakeStringException(-1, "LDAP not configured (missing 'ldapAddress').  To run without security set auth=none");
+        throw makeStringExceptionV(-1, "LDAP not configured (missing 'ldapAddress').  To run without security set auth=none");
 
-    //Get LDAP attributes from helm config
+    //Get LDAP attributes from container config
     Owned<IPropertyTree> ldapConfig = appConfig->getPropTree("ldap");
     ldapConfig->addProp("@ldapAddress", ldapAddress);
 
-    //Get default LDAP attributes from (azure_)ldap.yaml
+    //Get default LDAP attributes from ldap.yaml
     StringBuffer ldapDefaultsFile(hpccBuildInfo.componentDir);
     char sepchar = getPathSepChar(ldapDefaultsFile.str());
-    addPathSepChar(ldapDefaultsFile, sepchar).append("applications").append(sepchar).append("dali").append(sepchar).append("ldap").append(sepchar);
-    if (streq(authMethod, "ldap"))
-        ldapDefaultsFile.append("ldap.yaml");
-    else if (streq(authMethod, "azureldap"))
-        ldapDefaultsFile.append("azure_ldap.yaml");
-    else
-        throw MakeStringException(-1, "LDAP not configured (unrecognized 'auth=%s').  Set auth=none, ldap, or azureldap", authMethod);
+    addPathSepChar(ldapDefaultsFile, sepchar).append("applications").append(sepchar).append("common").append(sepchar).append("ldap").append(sepchar).append("ldap.yaml");
 
     //read properties from defaults file
     Owned<IPropertyTree> ldapDefaults;
@@ -424,20 +419,21 @@ static IPropertyTree * getHelmLDAPConfiguration(const char * authMethod, IProper
     //Append items from defaults file, but only if not already specified in app config
     if (ldapDefaults)
     {
-        Owned<IAttributeIterator> aiter = ldapDefaults->getPropTree("ldap")->getAttributes();
+        Owned<IAttributeIterator> aiter = ldapDefaults->queryPropTree("ldap")->getAttributes();
         ForEach (*aiter)
         {
             if (!ldapConfig->hasProp(aiter->queryName()))
             {
-                DBGLOG("Adding default attribute %s=%s", aiter->queryName(), aiter->queryValue());
+                DBGLOG("LDAP:Adding default attribute %s=%s", aiter->queryName(), aiter->queryValue());
                 ldapConfig->addProp(aiter->queryName(), aiter->queryValue());
             }
             else
-                DBGLOG("Overriding default attribute %s=%s", aiter->queryName(), aiter->queryValue());
+                DBGLOG("LDAP:Overriding default attribute %s=%s", aiter->queryName(), aiter->queryValue());
         }
     }
-    return LINK(ldapConfig);
+    return ldapConfig.getClear();
 }
+#endif
 
 static constexpr const char * defaultYaml = R"!!(
 version: 1.0
@@ -783,10 +779,12 @@ int main(int argc, const char* argv[])
             }
             else
             {
+#ifdef _CONTAINERIZED
                 const char *authMethod = serverConfig->queryProp("@auth");
                 if (!isEmptyString(authMethod))
-                    setLDAPconnection(createDaliLdapConnection(getHelmLDAPConfiguration(authMethod, serverConfig)));//helm configuration
+                    setLDAPconnection(createDaliLdapConnection(getContainerLDAPConfiguration(authMethod, serverConfig)));//container configuration
                 else
+#endif
                     setLDAPconnection(createDaliLdapConnection(serverConfig->getPropTree("Coven/ldapSecurity")));//legacy configuration
             }
 #endif

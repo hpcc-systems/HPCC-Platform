@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2020 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2021 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -14,11 +14,10 @@
 #    limitations under the License.
 ################################################################################
 
-set ( DALI_LDAP_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/ldap.yaml
-    ${CMAKE_CURRENT_SOURCE_DIR}/azure_ldap.yaml
+set ( COMMON_LDAP_FILES
+    ./../../esp/applications/common/ldap/ldap.yaml
 )
 
-FOREACH( iFile ${DALI_LDAP_FILES} )
-    Install( FILES ${iFile} DESTINATION componentfiles/applications/dali/ldap COMPONENT Runtime )
+FOREACH( iFile ${COMMON_LDAP_FILES} )
+    Install( FILES ${iFile} DESTINATION componentfiles/applications/common/ldap COMPONENT Runtime )
 ENDFOREACH ( iFile )

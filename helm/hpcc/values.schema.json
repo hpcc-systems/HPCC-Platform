@@ -577,6 +577,11 @@
         }
       }
     },
+    "auth": {
+      "type": "string",
+      "description": "Authentication method",
+      "enum": ["none", "ldap" ]
+    },
     "ldap": {
       "type": "object",
       "additionalProperties": { "type": ["integer", "string", "boolean"] },
@@ -656,14 +661,6 @@
         "sharedCache": {
           "type": "boolean",
           "description": "Use a single, shared LDAP cache"
-        },
-        "filesDefaultUser": {
-          "type": "string",
-          "description": "The Active Directory UserID to be used for checking file scopes when no UserID is present (Deprecated)"
-        },
-        "filesDefaultPassword": {
-          "type": "string",
-          "description": "The Active Directory Password to be used for checking file scopes when no UserID is present (Deprecated)"
         },
         "checkScopeScans": {
           "type": "boolean",
@@ -776,7 +773,7 @@
     },
     "dali": {
       "type": "object",
-      "required": [ "name" ],
+      "required": [ "name", "auth" ],
       "additionalProperties": { "type": ["integer", "string", "boolean"] },
       "properties": {
         "name": {
@@ -791,6 +788,9 @@
         },
         "logging": {
           "$ref": "#/definitions/logging"
+        },
+        "auth": {
+          "$ref": "#/definitions/auth"
         },
         "ldap": {
           "$ref": "#/definitions/ldap"
@@ -904,7 +904,7 @@
     },
     "esp": {
       "type": "object",
-      "required": [ "name", "service" ],
+      "required": [ "name", "service", "auth" ],
       "additionalProperties": { "type": ["integer", "string", "boolean"] },
       "properties": {
         "name": {
@@ -933,6 +933,9 @@
         "labels": {
           "type": "object",
           "additionalProperties": { "type": "string" }
+        },
+        "auth": {
+          "$ref": "#/definitions/auth"
         },
         "ldap": {
           "$ref": "#/definitions/ldap"

@@ -308,6 +308,7 @@ dafilesrv:
 
 dali:
 - name: mydali
+  auth: none
   services: # internal house keeping services
     coalescer:
       service:
