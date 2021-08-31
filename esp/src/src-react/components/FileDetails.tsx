@@ -12,6 +12,7 @@ import { DojoAdapter } from "../layouts/DojoAdapter";
 import { pushUrl } from "../util/history";
 import { FileBlooms } from "./FileBlooms";
 import { FileHistory } from "./FileHistory";
+import { ProtectedBy } from "./ProtectedBy";
 import { SuperFiles } from "./SuperFiles";
 import { ECLSourceEditor, XMLSourceEditor } from "./SourceEditor";
 import { ShortVerticalDivider } from "./Common";
@@ -239,6 +240,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
                     <FileBlooms cluster={cluster} logicalFile={logicalFile} />
                 </PivotItem>
                 <PivotItem headerText={nlsHPCC.ProtectBy} itemKey="ProtectBy" style={pivotItemStyle(size, 0)}>
+                    <ProtectedBy cluster={cluster} logicalFile={logicalFile} />
                 </PivotItem>
             </Pivot>
         }</SizeMe>
