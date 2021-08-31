@@ -865,7 +865,7 @@ public:
         int point = 0;
         bool useCompression = false;
         checkFeatures(client, useCompression, major, minor, point, optWaitTime, optWaitConnectMs, optWaitReadSec);
-        bool optimized = !optPre64 && (major>=6 && minor>=3);
+        bool optimized = !optPre64 && ((major>=7) || (major==6 && minor>=3));
 
         try
         {
