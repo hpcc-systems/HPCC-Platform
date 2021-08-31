@@ -1101,10 +1101,10 @@ void CSlaveGraph::start()
 void CSlaveGraph::connect()
 {
     CriticalBlock b(progressCrit);
-    Owned<IThorActivityIterator> iter = getConnectedIterator(false);
-    ForEach(*iter)
-        iter->query().doconnect();
-    iter.setown(getSinkIterator());
+    if (connected)
+        return;
+    connected = true;
+    Owned<IThorActivityIterator> iter = getSinkIterator();
     ForEach(*iter)
     {
         CGraphElementBase &container = iter->query();
@@ -1166,8 +1166,8 @@ void CSlaveGraph::executeSubGraph(size32_t parentExtractSz, const byte *parentEx
         // could still request 1 off, onCreate serialization from master 1st.
                 }
             }
-            connect(); // only now do slave acts. have all their outputs prepared.
         }
+        connect(); // only now do slave acts. have all their outputs prepared.
         CGraphBase::executeSubGraph(parentExtractSz, parentExtract);
     }
     catch (IException *e)

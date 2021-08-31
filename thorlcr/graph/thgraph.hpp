@@ -415,7 +415,6 @@ public:
     CGraphElementBase(CGraphBase &_owner, IPropertyTree &_xgmml, CGraphBase *resultsGraph);
     ~CGraphElementBase();
 
-    void doconnect();
     void addInput(unsigned input, CGraphElementBase *inputAct, unsigned inputOutIdx);
     void clearConnections();
     virtual void connectInput(unsigned which, CGraphElementBase *input, unsigned inputOutIdx);
@@ -486,7 +485,7 @@ public:
         dst.append(eclText.get());
         return dst;
     }
-    virtual bool prepareContext(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool shortCircuit, bool async, bool connectOnly);
+    virtual bool prepareContext(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool shortCircuit, bool async);
     void createActivity();
     CActivityBase *queryActivity() { return activity; }
 //
@@ -657,6 +656,7 @@ public:
     void setCompleteEx(bool tf=true) { complete = tf; }
     void setGlobal(bool tf) { global = tf; }
     void setLogging(bool tf);
+    void setConnected(bool _connected) { connected = _connected; }
     const byte *setParentCtx(size32_t _parentExtractSz, const byte *parentExtract)
     {
         parentExtractSz = _parentExtractSz;
