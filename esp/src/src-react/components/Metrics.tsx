@@ -5,7 +5,6 @@ import { Table } from "@hpcc-js/dgrid";
 import nlsHPCC from "src/nlsHPCC";
 import { WUTimelinePatched } from "src/Timings";
 import { useMetricsOptions, useWorkunitMetrics } from "../hooks/metrics";
-import { useFavorite } from "../hooks/favorite";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { DockPanel, DockPanelItems, ReactWidget } from "../layouts/DockPanel";
@@ -36,7 +35,6 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const [metrics, _columns, _activities, _properties, _measures, _scopeTypes] = useWorkunitMetrics(wuid);
     const [showMetricOptions, setShowMetricOptions] = React.useState(false);
     const [options] = useMetricsOptions();
-    const [isFavorite, addFavorite, removeFavorite] = useFavorite(window.location.hash);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -54,17 +52,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     ], []);
 
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
-        {
-            key: "star", iconProps: { iconName: isFavorite ? "FavoriteStarFill" : "FavoriteStar" },
-            onClick: () => {
-                if (isFavorite) {
-                    removeFavorite();
-                } else {
-                    addFavorite();
-                }
-            }
-        },
-    ], [addFavorite, isFavorite, removeFavorite]);
+    ], []);
 
     //  Timeline ---
     const timeline = useConst(() => new WUTimelinePatched()

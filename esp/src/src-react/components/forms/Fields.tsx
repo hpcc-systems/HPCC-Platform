@@ -15,8 +15,9 @@ interface DropdownProps {
     label?: string;
     options?: IDropdownOption[];
     defaultSelectedKey?: string;
-    optional?: boolean;
     required?: boolean;
+    optional?: boolean;
+    disabled?: boolean;
     errorMessage?: string;
     onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
     placeholder?: string;
@@ -30,6 +31,7 @@ const Dropdown: React.FunctionComponent<DropdownProps> = ({
     defaultSelectedKey,
     required = false,
     optional = !required,
+    disabled,
     errorMessage,
     onChange,
     placeholder,
@@ -59,7 +61,7 @@ const Dropdown: React.FunctionComponent<DropdownProps> = ({
         setSelOptions(selOptions);
     }, [optional, options, defaultSelectedKey, handleOnChange]);
 
-    return <DropdownBase key={key} label={label} errorMessage={errorMessage} required={required} className={className} defaultSelectedKey={defaultSelectedKey} selectedKey={selectedKey} onChange={handleOnChange} placeholder={placeholder} options={selOptions} />;
+    return <DropdownBase key={key} label={label} errorMessage={errorMessage} required={required} className={className} defaultSelectedKey={defaultSelectedKey} selectedKey={selectedKey} onChange={handleOnChange} placeholder={placeholder} disabled={disabled} options={selOptions} />;
 };
 
 export type FieldType = "string" | "number" | "checkbox" | "datetime" | "dropdown" | "link" | "links" | "progress" |
@@ -212,35 +214,46 @@ export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFi
 
     React.useEffect(() => {
         const topology = Topology.attach({ baseUrl: "" });
+        let active = true;
         topology.fetchLogicalClusters().then((response: TpLogicalClusterQuery.TpLogicalCluster[]) => {
-            let firstRow: IDropdownOption;
-            let firstHThor: IDropdownOption;
-            let firstThor: IDropdownOption;
-            const options = response.map((n, i) => {
-                const retVal = {
-                    key: n.Name || "unknown",
-                    text: n.Name + (n.Name !== n.Type ? ` (${n.Type})` : ""),
-                };
-                if (firstRow === undefined) {
-                    firstRow = retVal;
-                }
-                if (firstHThor === undefined && n.Type === "hthor") {
-                    firstHThor = retVal;
-                }
-                if (firstThor === undefined && n.Type === "thor") {
-                    firstThor = retVal;
-                }
-                return retVal;
-            });
-            if (props.defaultSelectedKey === undefined && (props.required === true || props.optional === false)) {
-                const selRow = firstThor || firstHThor || firstRow;
-                if (selRow) {
-                    setDefaultSelectedKey(selRow?.key as string);
-                }
+            if (active) {
+                const options = response.map((n, i) => {
+                    return {
+                        key: n.Name || "unknown",
+                        text: n.Name + (n.Name !== n.Type ? ` (${n.Type})` : ""),
+                        type: n.Type
+                    };
+                });
+                setTargetClusters(options);
             }
-            setTargetClusters(options);
         });
-    }, [props.defaultSelectedKey, props.optional, props.required]);
+        return () => { active = false; };
+    }, []);
+
+    React.useEffect(() => {
+        let firstRow: IDropdownOption;
+        let firstHThor: IDropdownOption;
+        let firstThor: IDropdownOption;
+        targetClusters.forEach(row => {
+            if (firstRow === undefined) {
+                firstRow = row;
+            }
+            if (firstHThor === undefined && (row as any).type === "hthor") {
+                firstHThor = row;
+            }
+            if (firstThor === undefined && (row as any).type === "thor") {
+                firstThor = row;
+            }
+            return row;
+        });
+        if (props.defaultSelectedKey === undefined && (props.required === true || props.optional === false)) {
+            const selRow = firstThor || firstHThor || firstRow;
+            if (selRow) {
+                setDefaultSelectedKey(selRow?.key as string);
+                props.onChange && props.onChange(undefined, selRow);
+            }
+        }
+    }, [props, targetClusters]);
 
     return <Dropdown {...props} defaultSelectedKey={defaultSelectedKey} options={targetClusters} />;
 };

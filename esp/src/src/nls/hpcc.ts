@@ -276,6 +276,7 @@ export = {
         ExpireDays: "Expire in (days)",
         FailIfNoSourceFile: "Fail If No Source File",
         Fatal: "Fatal",
+        Favorites: "Favorites",
         Fetched: "Fetched",
         FetchingData: "Fetching Data...",
         fetchingresults: "fetching results",

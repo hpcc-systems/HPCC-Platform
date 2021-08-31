@@ -5,7 +5,6 @@ import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import * as FileSpray from "src/FileSpray";
 import * as ESPDFUWorkunit from "src/ESPDFUWorkunit";
-import { useFavorite } from "../hooks/favorite";
 import { pivotItemStyle } from "../layouts/pivot";
 import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
@@ -29,7 +28,6 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
     const [wuXML, setWuXML] = React.useState("");
     const [jobname, setJobname] = React.useState("");
     const [_protected, setProtected] = React.useState(false);
-    const [isFavorite, addFavorite, removeFavorite] = useFavorite(window.location.hash);
 
     React.useEffect(() => {
         setWorkunit(ESPDFUWorkunit.Get(wuid));
@@ -98,17 +96,7 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
     ], [_protected, canAbort, canDelete, canSave, jobname, workunit, wuid]);
 
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
-        {
-            key: "star", iconProps: { iconName: isFavorite ? "FavoriteStarFill" : "FavoriteStar" },
-            onClick: () => {
-                if (isFavorite) {
-                    removeFavorite();
-                } else {
-                    addFavorite();
-                }
-            }
-        }
-    ], [addFavorite, isFavorite, removeFavorite]);
+    ], []);
 
     return <SizeMe monitorHeight>{({ size }) =>
         <Pivot

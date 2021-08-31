@@ -5,7 +5,6 @@ import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import * as WsWorkunits from "src/WsWorkunits";
 import * as ESPQuery from "src/ESPQuery";
-import { useFavorite } from "../hooks/favorite";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { pivotItemStyle } from "../layouts/pivot";
 import { pushUrl } from "../util/history";
@@ -32,7 +31,6 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
     const [query, setQuery] = React.useState<any>();
     const [suspended, setSuspended] = React.useState(false);
     const [activated, setActivated] = React.useState(false);
-    const [isFavorite, addFavorite, removeFavorite] = useFavorite(window.location.hash);
 
     const canSave = query && (
         suspended !== query?.Suspended ||
@@ -86,17 +84,7 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
     ], [activated, canSave, query, queryId, querySet, suspended]);
 
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
-        {
-            key: "star", iconProps: { iconName: isFavorite ? "FavoriteStarFill" : "FavoriteStar" },
-            onClick: () => {
-                if (isFavorite) {
-                    removeFavorite();
-                } else {
-                    addFavorite();
-                }
-            }
-        }
-    ], [addFavorite, isFavorite, removeFavorite]);
+    ], []);
 
     React.useEffect(() => {
         setQuery(ESPQuery.Get(querySet, queryId));
