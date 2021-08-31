@@ -11,6 +11,7 @@ import { pivotItemStyle } from "../layouts/pivot";
 import { DojoAdapter } from "../layouts/DojoAdapter";
 import { pushUrl } from "../util/history";
 import { FileBlooms } from "./FileBlooms";
+import { FileHistory } from "./FileHistory";
 import { SuperFiles } from "./SuperFiles";
 import { ECLSourceEditor, XMLSourceEditor } from "./SourceEditor";
 import { ShortVerticalDivider } from "./Common";
@@ -232,6 +233,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
                     {isDFUWorkunit ? <DojoAdapter widgetClassID="DFUWUDetailsWidget" params={{ Wuid: file?.Wuid }} /> : <WorkunitDetails wuid={file?.Wuid} />}
                 </PivotItem>
                 <PivotItem headerText={nlsHPCC.History} itemKey="History" style={pivotItemStyle(size, 0)}>
+                    <FileHistory cluster={cluster} logicalFile={logicalFile} />
                 </PivotItem>
                 <PivotItem headerText={nlsHPCC.Blooms} itemKey="Blooms" itemCount={file?.Blooms?.DFUFileBloom?.length} style={pivotItemStyle(size, 0)}>
                     <FileBlooms cluster={cluster} logicalFile={logicalFile} />
