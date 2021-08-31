@@ -23,6 +23,7 @@
 */}}
 {{- $egress := (.Values.global.egress | default dict) -}}
 {{- $egressRestricted := $egress.restricted | default false -}}
+{{- $metrics := .Values.global.metrics -}}
 ---
 ##
 ## Default to no ingress, and egress only to dns servers
@@ -155,3 +156,29 @@ spec:
     - podSelector:
         matchLabels:
           app: eclservices
+---
+##
+## Provides access to pods labeled prometheusMetricsReporter: "yes"
+## onto port declared in global.metrics.sinks[type=prometheus].configuration.port
+## Only created if global.metrics.sinks[type=prometheus].settings.autodiscovery true
+{{- if hasKey $metrics "sinks" }}
+ {{ range $sink := $metrics.sinks -}}
+  {{- if eq (get $sink "type") "prometheus" }}
+   {{- if and (hasKey $sink "settings") (hasKey $sink.settings "autodiscovery") }}
+    {{- if (eq $sink.settings.autodiscovery true ) }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: hpcc-metrics-prometheus
+spec:
+  podSelector:
+    matchLabels:
+      prometheusMetricsReporter: "yes"
+  ingress:
+  - ports:
+    - port: {{ $sink.settings.port | default 8767 }}
+     {{ end }}
+    {{ end }}
+   {{ end }}
+  {{ end }}
+{{ end}}

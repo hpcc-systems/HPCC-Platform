@@ -429,6 +429,28 @@ Pass in dict with root and secretsCategories
 {{- end -}}
 
 {{/*
+Generate Prometheus scrape annotations
+Enables selfdiscovery of metrics service on configured path/port
+Requires sinks[type=prometheus]
+Pass in dict with sinks
+*/}}
+{{- define "hpcc.addPrometheusScrapeAnnotations" -}}
+{{- if hasKey . "sinks" }}
+ {{ range $sink := .sinks -}}
+  {{- if eq (get $sink "type") "prometheus" }}
+   {{- if and (hasKey $sink "settings") ( hasKey $sink.settings "autodiscovery") }}
+    {{- if (eq $sink.settings.autodiscovery true ) }}
+prometheus.io/scrape: 'true'
+prometheus.io/path: {{ $sink.settings.path | default "/metrics" }}
+prometheus.io/port: {{ $sink.settings.port | default 8767 | quote }}
+    {{ end }}
+   {{ end }}
+  {{ end }}
+ {{ end}}
+{{ end}}
+{{- end -}}
+
+{{/*
 Add Secret volume for a component
 Pass in dict with root and secretsCategories
 */}}
@@ -1023,7 +1045,22 @@ spec:
   type: {{ $lvars.type }}
 {{- end -}}
 
-
+{{/*
+Generate prometheusMetricsReporter label if metrics.sinks[type=prometheus].
+Ranges over metric sinks map
+Pass in dict with sinks
+*/}}
+{{- define "hpcc.generateMetricsReporterLabel" }}
+ {{ range $sink := .sinks -}}
+  {{- if eq (get $sink "type") "prometheus" }}
+   {{- if and (hasKey $sink "settings") ( hasKey $sink.settings "autodiscovery") }}
+    {{- if (eq $sink.settings.autodiscovery true ) }}
+prometheusMetricsReporter: "yes"
+    {{ end }}
+   {{ end }}
+  {{ end }}
+ {{ end }}
+{{- end -}}
 {{/*
 Return access permssions for a given service
 */}}

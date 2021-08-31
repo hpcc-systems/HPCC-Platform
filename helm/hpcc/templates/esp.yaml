@@ -102,11 +102,17 @@ spec:
         accessDali: "yes"
         app: {{ $application }}
         helmVersion: 8.3.0-trunk0
+{{- if hasKey $.Values.global "metrics" }}
+ {{- include "hpcc.generateMetricsReporterLabel" $.Values.global.metrics | nindent 8 }}
+{{- end }}
 {{- if hasKey . "labels" }}
 {{ toYaml .labels | indent 8 }}
 {{- end }}
       annotations:
         checksum/config: {{ $configSHA }}
+{{- if hasKey  $.Values.global "metrics" }}
+ {{- include "hpcc.addPrometheusScrapeAnnotations" $.Values.global.metrics | nindent 8 }}
+{{- end }}
 {{- if hasKey . "annotations" }}
 {{ toYaml .annotations | indent 8 }}
 {{- end }}

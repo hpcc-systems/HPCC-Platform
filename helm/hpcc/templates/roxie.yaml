@@ -105,11 +105,17 @@ spec:
         run: {{ $commonCtx.toponame | quote }}
         roxie-cluster: {{ $roxie.name | quote }}
         helmVersion: 8.3.0-trunk0
+{{- if hasKey $.Values.global "metrics" }}
+ {{- include "hpcc.generateMetricsReporterLabel"  $.Values.global.metrics | nindent 8}}
+{{- end }}
 {{- if hasKey $toposerver "labels" }}
 {{ toYaml $toposerver.labels | indent 8 }}
 {{- end }}
       annotations:
         checksum/config: {{ $topoconfigSHA }}
+{{- if hasKey $.Values.global "metrics" }}
+ {{- include "hpcc.addPrometheusScrapeAnnotations"  $.Values.global.metrics | nindent 8 }}
+{{- end }}
 {{- if hasKey $toposerver "annotations" }}
 {{ toYaml $toposerver.annotations | indent 8 }}
 {{- end }}
@@ -215,11 +221,17 @@ spec:
         accessDali: "yes"
         accessEsp: "yes"
         helmVersion: 8.3.0-trunk0
+{{- if hasKey $.Values.global "metrics" }}
+ {{- include "hpcc.generateMetricsReporterLabel" $.Values.global.metrics | nindent 8}}
+{{- end }}
 {{- if hasKey $roxie "labels" }}
 {{ toYaml $roxie.labels | indent 8 }}
 {{- end }}
       annotations:
         checksum/config: {{ $configSHA }}
+{{- if hasKey $.Values.global "metrics" }}
+ {{- include "hpcc.addPrometheusScrapeAnnotations" $.Values.global.metrics | nindent 8 }}
+{{- end }}
 {{- if hasKey $roxie "annotations" }}
 {{ toYaml $roxie.annotations | indent 8 }}
 {{- end }}
@@ -317,11 +329,17 @@ spec:
         accessDali: "yes"
         accessEsp: "yes"
         helmVersion: 8.3.0-trunk0
+{{- if hasKey $.Values.global "metrics" }}
+ {{- include "hpcc.generateMetricsReporterLabel" $.Values.global.metrics | nindent 8}}
+{{- end }}
 {{- if hasKey $roxie "labels" }}
 {{ toYaml $roxie.labels | indent 8 }}
 {{- end }}
       annotations:
         checksum/config: {{ $configSHA }}
+{{- if hasKey $.Values.global "metrics" }}
+ {{- include "hpcc.addPrometheusScrapeAnnotations" $.Values.global.metrics | nindent 8 }}
+{{- end }}
 {{- if hasKey $roxie "annotations" }}
 {{ toYaml $roxie.annotations | indent 8 }}
 {{- end }}
