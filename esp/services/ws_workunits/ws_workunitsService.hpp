@@ -404,6 +404,8 @@ private:
     void readPluginFolders(StringBuffer &eclccPaths, StringArray &pluginFolders);
     void findPlugins(const char *pluginFolder, bool dotSoFile, StringArray &plugins);
     bool checkPluginECLAttr(const char *fileNameWithPath);
+    __int64 getWUResultMaxSize(IConstWorkUnit *cw);
+    __int64 getWUResultMaxSize(IEspContext &context, const char *logicalName);
 
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;

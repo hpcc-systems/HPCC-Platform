@@ -2845,6 +2845,7 @@ void CWsWorkunitsEx::getWsWuResult(IEspContext &context, const char *wuid, const
     if(!cw)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid);
     Owned<IConstWUResult> result;
+    __uint64 resultMaxSize = getWUResultMaxSize(cw);
 
     if (notEmpty(name))
         result.setown(cw->getResultByName(name));
@@ -2880,11 +2881,11 @@ void CWsWorkunitsEx::getWsWuResult(IEspContext &context, const char *wuid, const
     else
         rs.setown(resultSetFactory->createNewResultSet(result, wuid));
     if (!filterBy || !filterBy->length())
-        appendResultSet(context, mb, rs, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns(), wuResultMaxSize);
+        appendResultSet(context, mb, rs, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns(), resultMaxSize);
     else
     {
         Owned<INewResultSet> filteredResult = createFilteredResultSet(rs, filterBy);
-        appendResultSet(context, mb, filteredResult, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns(), wuResultMaxSize);
+        appendResultSet(context, mb, filteredResult, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns(), resultMaxSize);
     }
 
     wuState = cw->getState();
@@ -3198,14 +3199,48 @@ void CWsWorkunitsEx::getFileResults(IEspContext &context, const char *logicalNam
     if (!df)
         throw makeStringExceptionV(ECLWATCH_FILE_NOT_EXIST, "Cannot find file %s.", logicalName);
 
+    __uint64 resultMaxSize = getWUResultMaxSize(context, logicalName);
     Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
     Owned<INewResultSet> result(resultSetFactory->createNewFileResultSet(df, cluster));
     if (!filterBy || !filterBy->length())
-        appendResultSet(context, buf, result, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), nullptr, wuResultMaxSize);
+        appendResultSet(context, buf, result, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), nullptr, resultMaxSize);
     else
     {
         Owned<INewResultSet> filteredResult = createFilteredResultSet(result, filterBy);
-        appendResultSet(context, buf, filteredResult, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), nullptr, wuResultMaxSize);
+        appendResultSet(context, buf, filteredResult, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), nullptr, resultMaxSize);
+    }
+}
+
+__int64 CWsWorkunitsEx::getWUResultMaxSize(IConstWorkUnit *cw)
+{
+    if (!cw) //ECL WU does not exist.
+        return wuResultMaxSize; //Use the default.
+
+    __int64 wuResultMaxSizeMB = cw->getDebugValueInt64("wuresultmaxsizemb", 0);
+    if (wuResultMaxSizeMB > 0)
+        return wuResultMaxSizeMB * 0x100000;
+    else
+        return wuResultMaxSize;
+}
+
+__int64 CWsWorkunitsEx::getWUResultMaxSize(IEspContext &context, const char *logicalName)
+{
+    StringBuffer wuid;
+    getWuidFromLogicalFileName(context, logicalName, wuid);
+    if ('W' != wuid[0]) //Not an ECL WU.
+        return wuResultMaxSize; //Use the default.
+
+    try
+    {
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid);
+        return getWUResultMaxSize(cw);
+    }
+    catch (IException * e)
+    {
+        DBGLOG(e, "getWUResultMaxSize");
+        e->Release();
+        return wuResultMaxSize; //Use the default.
     }
 }
 
