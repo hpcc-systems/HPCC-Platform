@@ -76,9 +76,8 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
     React.useEffect(() => {
         const state = { ...defaultUIState };
 
-        for (let i = 0; i < selection.length; ++i) {
+        if (selection.length) {
             state.hasSelection = true;
-            break;
         }
         setUIState(state);
     }, [selection]);

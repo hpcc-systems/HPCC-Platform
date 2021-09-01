@@ -14,6 +14,7 @@ import { QueryGraphs } from "./QueryGraphs";
 import { QueryLibrariesUsed } from "./QueryLibrariesUsed";
 import { QueryLogicalFiles } from "./QueryLogicalFiles";
 import { QuerySummaryStats } from "./QuerySummaryStats";
+import { QuerySuperFiles } from "./QuerySuperFiles";
 import { Resources } from "./Resources";
 import { TableGroup } from "./forms/Groups";
 
@@ -153,8 +154,8 @@ export const QueryDetails: React.FunctionComponent<QueryDetailsProps> = ({
             <PivotItem headerText={nlsHPCC.LogicalFiles} itemKey="logicalFiles" itemCount={query?.LogicalFiles?.Item?.length || 0} style={pivotItemStyle(size, 0)}>
                 <QueryLogicalFiles queryId={queryId} querySet={querySet} />
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.SuperFiles} itemKey="superfiles" itemCount={0} style={pivotItemStyle(size, 0)}>
-                <DojoAdapter widgetClassID="QuerySetSuperFilesWidget" params={{ Id: queryId, QuerySetId: querySet }} />
+            <PivotItem headerText={nlsHPCC.SuperFiles} itemKey="superfiles" itemCount={query?.SuperFiles?.SuperFile.length || 0} style={pivotItemStyle(size, 0)}>
+                <QuerySuperFiles queryId={queryId} querySet={querySet} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.LibrariesUsed} itemKey="librariesUsed" itemCount={query?.LibrariesUsed?.Item?.length || 0} style={pivotItemStyle(size, 0)}>
                 <QueryLibrariesUsed queryId={queryId} querySet={querySet} />
