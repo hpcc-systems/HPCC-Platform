@@ -186,8 +186,8 @@ export const routes: RoutesEx = [
         mainNav: ["topology"],
         path: "/security",
         children: [
-            { path: "", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="UserQueryWidget" />) },
-            { path: "/:Users", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="UserDetailsWidget" params={params} />) }
+            { path: "", action: (ctx, params) => import("./components/Security").then(_ => <_.Security filter={parseSearch(ctx.search) as any} />) },
+            { path: "/:Tab", action: (ctx, params) => import("./components/Security").then(_ => <_.Security filter={parseSearch(ctx.search) as any} tab={params.Tab as string} />) },
         ]
     },
     {
