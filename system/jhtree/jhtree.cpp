@@ -847,7 +847,7 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
                 else
                     throw MakeStringException(0, "Failed to open index file %s", fileName);
             }
-            keyIndexCache.add(fname, *LINK(keyIndex));
+            keyIndexCache.replace(fname, *LINK(keyIndex));
         }
         else
         {
@@ -2474,7 +2474,7 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t po
         }
         if (ctx) ctx->noteStatistic(addStatId[cacheType], 1);
         (*addMetric[cacheType])++;
-        cache[cacheType].add(key, *LINK(node));
+        cache[cacheType].replace(key, *LINK(node));
         return node.getClear();
     }
     else
@@ -2490,7 +2490,7 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t po
             {
                 node = keyIndex->createNode(type);
                 assertex(node->getMemSize() == 0);   // check the reported size is 0 so that the updated size is correct
-                cache[cacheType].add(key, *node);
+                cache[cacheType].replace(key, *node);
                 alreadyExists = false;
             }
 
