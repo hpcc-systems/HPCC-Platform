@@ -27,7 +27,7 @@ class CWorkUnitReadMaster : public CMasterActivity
 public:
     CWorkUnitReadMaster(CMasterGraphElement * info) : CMasterActivity(info) { }
 
-    virtual void handleSlaveMessage(CMessageBuffer &msg)
+    virtual void handleSlaveMessage(CMessageBuffer &msg) override
     {
         IHThorWorkunitReadArg *helper = (IHThorWorkunitReadArg *)queryHelper();
         size32_t lenData;
@@ -43,49 +43,7 @@ public:
     }
 };
 
-static bool getWorkunitResultFilename(CGraphElementBase &container, StringBuffer & diskFilename, const char * wuid, const char * stepname, int sequence)
-{
-    try
-    {
-        Owned<IConstWUResult> result;
-        if (wuid)
-            result.setown(container.queryCodeContext()->getExternalResult(wuid, stepname, sequence));
-        else
-            result.setown(container.queryCodeContext()->getResultForGet(stepname, sequence));
-        if (!result)
-            throw MakeThorException(TE_FailedToRetrieveWorkunitValue, "Failed to find value %s:%d in workunit %s", stepname?stepname:"(null)", sequence, wuid?wuid:"(null)");
-
-        SCMStringBuffer tempFilename;
-        result->getResultFilename(tempFilename);
-        if (tempFilename.length() == 0)
-            return false;
-
-        diskFilename.append("~").append(tempFilename.str());
-        return true;
-    }
-    catch (IException * e) 
-    {
-        StringBuffer text; 
-        e->errorMessage(text); 
-        e->Release();
-        throw MakeThorException(TE_FailedToRetrieveWorkunitValue, "Failed to find value %s:%d in workunit %s [%s]", stepname?stepname:"(null)", sequence, wuid?wuid:"(null)", text.str());
-    }
-    return false;
-}
-
-
 CActivityBase *createWorkUnitActivityMaster(CMasterGraphElement *container)
 {
-    StringBuffer diskFilename;
-    IHThorWorkunitReadArg *wuReadHelper = (IHThorWorkunitReadArg *)container->queryHelper();
-    wuReadHelper->onCreate(container->queryCodeContext(), NULL, NULL);
-    OwnedRoxieString fromWuid(wuReadHelper->getWUID());
-    if (getWorkunitResultFilename(*container, diskFilename, fromWuid, wuReadHelper->queryName(), wuReadHelper->querySequence()))
-    {
-        Owned<IHThorDiskReadArg> diskReadHelper = createWorkUnitReadArg(diskFilename, LINK(wuReadHelper));
-        Owned<CActivityBase> retAct = createDiskReadActivityMaster(container, diskReadHelper);
-        return retAct.getClear();
-    }
-    else
-        return new CWorkUnitReadMaster(container);
+    return new CWorkUnitReadMaster(container);
 }
