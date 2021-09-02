@@ -2656,7 +2656,7 @@ class HashTableTests : public CppUnit::TestFixture
             hv = hashc((const byte *)&i,sizeof(i), hv);
             inputHvSum += hv;
             cache.add(i, hv);
-            unsigned lookupHv;
+            unsigned lookupHv = 0;
             CPPUNIT_ASSERT(cache.get(i, lookupHv));
             lookupHvSum += lookupHv;
         }
@@ -2673,6 +2673,138 @@ class HashTableTests : public CppUnit::TestFixture
 
 CPPUNIT_TEST_SUITE_REGISTRATION( HashTableTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( HashTableTests, "HashTableTests" );
+
+class BlockedTimingTests : public CppUnit::TestFixture
+{
+    static constexpr bool trace = false;
+
+    CPPUNIT_TEST_SUITE( BlockedTimingTests );
+        CPPUNIT_TEST(testStandard);
+        CPPUNIT_TEST(testStandard2);
+        CPPUNIT_TEST(testStandard3);
+        CPPUNIT_TEST(testLightweight);
+        CPPUNIT_TEST(testLightweight2);
+    CPPUNIT_TEST_SUITE_END();
+
+    void testStandard()
+    {
+        BlockedTimeTracker tracker;
+
+        __uint64 blockTime;
+        {
+            BlockedSection block(tracker);
+            MilliSleep(15);
+            blockTime = tracker.getWaitingNs();
+        }
+        __uint64 postBlockTime = tracker.getWaitingNs();
+        __uint64 expected = 15000000;
+        CPPUNIT_ASSERT(blockTime >= expected);
+        CPPUNIT_ASSERT(blockTime <= expected + 2000000);
+        CPPUNIT_ASSERT(postBlockTime - blockTime <= 1000000);
+        if (trace)
+            printf("%" I64F "u %" I64F "u\n", blockTime-50000000, postBlockTime-blockTime);
+    }
+
+    void testStandard2()
+    {
+        BlockedTimeTracker tracker;
+
+        __uint64 blockTime;
+        {
+            BlockedSection block3(tracker);
+            MilliSleep(10);
+            {
+                BlockedSection block2(tracker);
+                MilliSleep(20);
+                {
+                    BlockedSection block2(tracker);
+                    MilliSleep(3);
+                    blockTime = tracker.getWaitingNs();
+                }
+            }
+        }
+        __uint64 postBlockTime = tracker.getWaitingNs();
+        __uint64 expected = 10000000 + 2 * 20000000 + 3 * 3000000;
+        CPPUNIT_ASSERT(blockTime >= expected);
+        CPPUNIT_ASSERT(blockTime <= expected + 2000000);
+        CPPUNIT_ASSERT(postBlockTime - blockTime <= 1000000);
+        if (trace)
+            printf("%" I64F "u %" I64F "u\n", blockTime-expected, postBlockTime-blockTime);
+    }
+
+    void testStandard3()
+    {
+        BlockedTimeTracker tracker;
+
+        __uint64 blockTime;
+        {
+            auto action = COnScopeExit([&](){ tracker.noteComplete(); });
+            auto action2(COnScopeExit([&](){ tracker.noteComplete(); }));
+            tracker.noteWaiting();
+            tracker.noteWaiting();
+
+            MilliSleep(15);
+            blockTime = tracker.getWaitingNs();
+        }
+        __uint64 postBlockTime = tracker.getWaitingNs();
+        __uint64 expected = 15000000 * 2;
+        CPPUNIT_ASSERT(blockTime >= expected);
+        CPPUNIT_ASSERT(blockTime <= expected + 2000000);
+        CPPUNIT_ASSERT(postBlockTime - blockTime <= 1000000);
+        if (trace)
+            printf("%" I64F "u %" I64F "u\n", blockTime-50000000, postBlockTime-blockTime);
+    }
+
+    void testLightweight()
+    {
+        LightweightBlockedTimeTracker tracker;
+
+        __uint64 blockTime;
+        {
+            LightweightBlockedSection block(tracker);
+            MilliSleep(50);
+            blockTime = tracker.getWaitingNs();
+        }
+        __uint64 postBlockTime = tracker.getWaitingNs();
+        __uint64 expected = 50000000;
+        CPPUNIT_ASSERT(blockTime >= expected);
+        CPPUNIT_ASSERT(blockTime <= expected + 2000000);
+        CPPUNIT_ASSERT(postBlockTime - blockTime <= 1000000);
+        if (trace)
+            printf("%" I64F "u %" I64F "u\n", blockTime-50000000, postBlockTime-blockTime);
+    }
+
+    void testLightweight2()
+    {
+        LightweightBlockedTimeTracker tracker;
+
+        __uint64 blockTime;
+        {
+            LightweightBlockedSection block3(tracker);
+            MilliSleep(10);
+            {
+                LightweightBlockedSection block2(tracker);
+                MilliSleep(20);
+                {
+                    LightweightBlockedSection block2(tracker);
+                    MilliSleep(3);
+                    blockTime = tracker.getWaitingNs();
+                }
+            }
+        }
+        __uint64 postBlockTime = tracker.getWaitingNs();
+        __uint64 expected = 10000000 + 2 * 20000000 + 3 * 3000000;
+        CPPUNIT_ASSERT(blockTime >= expected);
+        CPPUNIT_ASSERT(blockTime <= expected + 2000000);
+        CPPUNIT_ASSERT(postBlockTime - blockTime <= 1000000);
+        if (trace)
+            printf("%" I64F "u %" I64F "u\n", blockTime-expected, postBlockTime-blockTime);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( BlockedTimingTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( BlockedTimingTests, "BlockedTimingTests" );
+
 
 
 #endif // _USE_CPPUNIT
