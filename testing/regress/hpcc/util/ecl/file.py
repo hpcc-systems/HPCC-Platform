@@ -60,6 +60,7 @@ class ECLFile:
 
     def __init__(self, ecl, dir_a, dir_ex, dir_r, dir_inc, cluster, args):
         logger.debug("%3d. ECLFile(ecl: '%s', cluster: '%s').", self.taskId, ecl,  cluster)
+        self.config = getConfig()
         self.dir_ec = os.path.dirname(ecl)
         self.dir_ex = dir_ex
         self.dir_r = dir_r
@@ -87,6 +88,8 @@ class ECLFile:
         self.version=''
         self.versionId=0
         self.timeout = self.checkFileTimeout(int(args.timeout))
+        if self.timeout == -1:
+            self.timeout = int(self.config.timeout) # use default from config
         self.args = args
         self.eclccWarning = ''
         self.eclccWarningChanges = ''
@@ -110,7 +113,6 @@ class ECLFile:
         # -X in the CLI is the highest.
         self.optXHash=self.checkQueryxmlFile()
 
-        self.config = getConfig()
         try:
             # Process definitions of stored input value(s) from config
             for param in self.config.Params:
