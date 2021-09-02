@@ -1072,10 +1072,6 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
     IArrayOf<IConstThorLogInfo> thorLogList;
     if (cw->getWuidVersion() > 0)
     {
-#ifdef _CONTAINERIZED
-        IERRLOG("CONTAINERIZED(WsWuInfo::getWorkunitThorLogInfo) not fully implemented");
-        return countThorLog;
-#else
         StringAttr clusterName(cw->queryClusterName());
         if (!clusterName.length()) //Cluster name may not be set yet
             return countThorLog;
@@ -1161,14 +1157,9 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
                 thorLogList.append(*thorLog.getLink());
             }
         }
-#endif
     }
     else //legacy wuid
     {
-#ifdef _CONTAINERIZED
-        IERRLOG("CONTAINERIZED(WsWuInfo::getWorkunitThorLogInfo) not fully implemented");
-        return countThorLog;
-#else
         Owned<IStringIterator> thorLogs = cw->getLogs("Thor");
         ForEach (*thorLogs)
         {
@@ -1252,7 +1243,6 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
                 thorLogList.append(*thorLog.getLink());
             }
         }
-#endif
     }
 
     if (thorLogList.length() > 0)
@@ -2054,9 +2044,6 @@ void WsWuInfo::getWorkunitThorSlaveLog(IPropertyTree* directories, const char *p
     const char* instanceName, const char *ipAddress, const char* logDate, int slaveNum,
     MemoryBuffer& buf, const char* outFile, bool forDownload)
 {
-#ifdef _CONTAINERIZED
-    UNIMPLEMENTED_X("CONTAINERIZED(WsWuInfo::getWorkunitThorLogInfo)");
-#else
     StringBuffer logDir, groupName;
     getConfigurationDirectory(directories, "log", "thor", process, logDir);
     getClusterThorGroupName(groupName, instanceName);
@@ -2068,7 +2055,6 @@ void WsWuInfo::getWorkunitThorSlaveLog(IPropertyTree* directories, const char *p
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Node group %s not found", groupName.str());
 
     getWorkunitThorSlaveLog(nodeGroup, ipAddress, process, logDate, logDir.str(), slaveNum, buf, outFile, forDownload);
-#endif
 }
 
 void WsWuInfo::readWorkunitThorLog(const char* processName, const char* log, const char* slaveIPAddress, unsigned slaveNum, MemoryBuffer& buf, const char* outFile)
@@ -3555,10 +3541,7 @@ void CWsWuFileHelper::createThorSlaveLogfile(IConstWorkUnit* cwu, WsWuInfo& winf
     const char* clusterName = cwu->queryClusterName();
     if (isEmptyString(clusterName)) //Cluster name may not be set yet
         return;
-#ifdef _CONTAINERIZED
-    UNIMPLEMENTED_X("CONTAINERIZED(CWsWuFileHelper::createThorSlaveLogfile)");
-    return;
-#else
+
     Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName);
     if (!clusterInfo)
     {
@@ -3604,7 +3587,6 @@ void CWsWuFileHelper::createThorSlaveLogfile(IConstWorkUnit* cwu, WsWuInfo& winf
         }
     }
     threadPool->joinAll();
-#endif
 }
 #endif
 
