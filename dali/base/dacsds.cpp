@@ -860,9 +860,9 @@ void CClientRemoteTree::removingElement(IPropertyTree *tree, unsigned pos)
     PARENT::removingElement(tree, pos);
 }
 
-void CClientRemoteTree::setAttribute(const char *attr, const char *val)
+void CClientRemoteTree::setAttribute(const char *attr, const char *val, bool encoded)
 {
-    PARENT::setAttribute(attr, val);
+    PARENT::setAttribute(attr, val, encoded);
     mergeState(CPS_AttrChanges);
     registerAttrChange(attr);
 }

@@ -2113,20 +2113,167 @@ subX:
         CPPUNIT_ASSERT(na1->isArray(nullptr));
         CPPUNIT_ASSERT(na2->isArray(nullptr));
     }
+    void testPtreeEncode(const char *input, const char *expected=nullptr)
+    {
+        static unsigned id = 0;
+        StringBuffer encoded;
+        encodePTreeName(encoded, input);
+        StringBuffer decoded;
+        decodePtreeName(decoded, encoded.str());
+        //printf("\nptree name[%d]: %s --> %s --> %s\n", id++, input, encoded.str(), decoded.str());
+        CPPUNIT_ASSERT(streq(input, decoded.str()));
+        if (expected)
+        {
+            CPPUNIT_ASSERT(streq(expected, encoded.str()));
+        }
+    }
     void testSpecialTags()
     {
+        try {
         //Check a null tag is supported and preserved.
-        static constexpr const char * jsonMarkup = R"!!({
+        static constexpr const char * jsonEmptyNameMarkup = R"!!({
    "": "default",
    "end": "x"
   })!!";
 
-        Owned<IPropertyTree> json = createPTreeFromJSONString(jsonMarkup, ipt_none, ptr_ignoreWhiteSpace, nullptr);
+            Owned<IPropertyTree> json = createPTreeFromJSONString(jsonEmptyNameMarkup, ipt_none, ptr_ignoreWhiteSpace, nullptr);
 
-        //if we want the final compares to be less fragile (test will have to be updated if formatting changes) we could reparse and compare trees again
-        StringBuffer ml;
-        toJSON(json, ml.clear(), 2, JSON_Format|JSON_SortTags|JSON_HideRootArrayObject);
-        CPPUNIT_ASSERT(streq(ml, jsonMarkup));
+            //if we want the final compares to be less fragile (test will have to be updated if formatting changes) we could reparse and compare trees again
+            StringBuffer ml;
+            toJSON(json, ml.clear(), 2, JSON_Format|JSON_SortTags|JSON_HideRootArrayObject);
+            CPPUNIT_ASSERT(streq(ml, jsonEmptyNameMarkup));
+
+            testPtreeEncode("@a/b*c=d\\e.f", "@a_fb_x2A_c_x3D_d_be.f");
+            testPtreeEncode("A/B*C=D\\E.F", "A_fB_x2A_C_x3D_D_bE.F");
+            testPtreeEncode("_x123_blue.berry", "__x123__blue.berry");
+            testPtreeEncode("_>>_here_**", "___x3E3E___here___x2A2A_");
+            testPtreeEncode("出/售\\耐\"'久", "出_f售_b耐_Q_q久");
+            testPtreeEncode("@出售'\"耐久", "@_xE587BAE594AE__q_Q_xE88090E4B985_");
+            testPtreeEncode("出售耐久", "出售耐久");
+            testPtreeEncode("@出/售\\耐'久", "@_xE587BA__f_xE594AE__b_xE88090__q_xE4B985_");
+            testPtreeEncode("出/售\\耐'久", "出_f售_b耐_q久");
+            testPtreeEncode("space space", "space_sspace");
+
+            static constexpr const char * jsonMarkup = R"!!(
+{
+    "Nothing_toEncodeHere": {
+        "@attributes_need_unicode_encoded_出售耐久": "encode",
+        "but_elements_support_it_出售耐久": "no encode",
+        "e出\\n售耐/久@Aa_a": {
+        "@\\naa_bb食品并/林": "atvalue",
+        "abc/d @ \"e'f": ["value"],
+        "": "noname"
+        }
+    }
+}
+)!!";
+
+            static constexpr const char * yamlMarkup = R"!!(
+Nothing_toEncodeHere:
+  attributes_need_unicode_encoded_出售耐久: "encode"
+  but_elements_support_it_出售耐久: ["no encode"]
+  "e出\\n售耐/久@Aa_a":
+    "\\naa_bb食品并/林": "atvalue"
+    "abc/d @ \"e'f": ["value"]
+    "": [noname]
+)!!";
+
+            static constexpr const char * toXMLOutput = R"!!(<Nothing_toEncodeHere attributes__need__unicode__encoded___xE587BAE594AEE88090E4B985_="encode">
+ <but_elements_support_it_出售耐久>no encode</but_elements_support_it_出售耐久>
+ <e出_bn售耐_f久_aAa__a _bnaa__bb_xE9A39FE59381E5B9B6__f_xE69E97_="atvalue">
+  <_0>noname</_0>
+  <abc_fd_s_a_s_Qe_qf>value</abc_fd_s_a_s_Qe_qf>
+ </e出_bn售耐_f久_aAa__a>
+</Nothing_toEncodeHere>
+)!!";
+
+            static constexpr const char * toJSONOutput = R"!!({
+ "Nothing_toEncodeHere": {
+  "@attributes_need_unicode_encoded_出售耐久": "encode",
+  "but_elements_support_it_出售耐久": "no encode",
+  "e出\n售耐/久@Aa_a": {
+   "@\naa_bb食品并/林": "atvalue",
+   "": "noname",
+   "abc/d @ "e'f": "value"
+  }
+ }
+})!!";
+
+            static constexpr const char * toYAMLOutput = R"!!(Nothing_toEncodeHere:
+  attributes_need_unicode_encoded_出售耐久: encode
+  but_elements_support_it_出售耐久:
+  - no encode
+  e出\n售耐/久@Aa_a:
+    \naa_bb食品并/林: atvalue
+    '':
+    - noname
+    abc/d @ "e'f:
+    - value
+)!!";
+
+            Owned<IPropertyTree> jsonTree = createPTreeFromJSONString(jsonMarkup);
+            IPropertyTree *xmlRoot = jsonTree->queryPropTree("*[1]");
+            toXML(xmlRoot, ml.clear(), 0, XML_SortTags|XML_Format);
+            //printf("\nJSONXML:\n%s\n", ml.str());
+            CPPUNIT_ASSERT(streq(toXMLOutput, ml.str()));
+            toJSON(jsonTree, ml.clear(), 0, JSON_SortTags|JSON_HideRootArrayObject|JSON_Format);
+            //printf("\nJSON:\n%s\n", ml.str());
+            CPPUNIT_ASSERT(streq(toJSONOutput, ml.str()));
+
+            Owned<IPropertyTree> yamlTree = createPTreeFromYAMLString(yamlMarkup);
+            xmlRoot = jsonTree->queryPropTree("*[1]");
+            toXML(xmlRoot, ml.clear(), 0, XML_SortTags|XML_Format);
+            //printf("\nYAMLXML:\n%s\n", ml.str());
+            CPPUNIT_ASSERT(streq(toXMLOutput, ml.str()));
+            toYAML(yamlTree, ml.clear(), 0, YAML_SortTags|YAML_HideRootArrayObject);
+            //printf("\nYAML:\n%s\n", ml.str());
+            CPPUNIT_ASSERT(streq(toYAMLOutput, ml.str()));
+
+//build xpath test
+            static constexpr const char * jsonMarkupForXpathTest = R"!!(
+{
+  "A": {
+    "B": {
+      "@a/b.@100": "encoded attribute found",
+      "x\\y~Z@W": "encoded element found",
+      "rst": "element found",
+      "q_n_a": "underscore element found",
+      "element出": "xpath does not support unicode?"
+        }
+    }
+}
+)!!";
+
+            Owned<IPropertyTree> jsonTreeForXpathTest = createPTreeFromJSONString(jsonMarkupForXpathTest);
+
+            StringBuffer xpath;
+            appendPTreeXPathName(xpath.set("A/B/"), "@a/b.@100"); //attribute will be encoded
+            const char *val = jsonTreeForXpathTest->queryProp(xpath);
+            CPPUNIT_ASSERT(val && streq(val, "encoded attribute found")); //xpath works for unicode here because for attributes it gets encoded
+
+            appendPTreeXPathName(xpath.set("A/B/"), "x\\y~Z@W"); //element will be encoded
+            val = jsonTreeForXpathTest->queryProp(xpath);
+            CPPUNIT_ASSERT(val && streq(val, "encoded element found"));
+
+            appendPTreeXPathName(xpath.set("A/B/"), "rst"); //will not be encoded
+            val = jsonTreeForXpathTest->queryProp(xpath);
+            CPPUNIT_ASSERT(val && streq(val, "element found"));
+
+            appendPTreeXPathName(xpath.set("A/B/"), "q_n_a"); //will not be encoded
+            val = jsonTreeForXpathTest->queryProp(xpath);
+            CPPUNIT_ASSERT(val && streq(val, "underscore element found"));
+
+            appendPTreeXPathName(xpath.set("A/B/"), "element出"); //will not be encoded (elements support unicode)
+            val = jsonTreeForXpathTest->queryProp(xpath);
+            CPPUNIT_ASSERT(!val); //PTree can hold unicode in element names but perhaps xpath can not access it?
+        }
+        catch (IException *e)
+        {
+            StringBuffer msg;
+            printf("\nPTREE: Exception %d - %s\n", e->errorCode(), e->errorMessage(msg).str());
+            EXCLOG(e, nullptr);
+            throw;
+        }
     }
 };
 
