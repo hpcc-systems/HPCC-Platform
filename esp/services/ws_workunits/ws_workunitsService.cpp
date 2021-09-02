@@ -4407,9 +4407,6 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
         {
             if(strieq(method,"WUQuery"))
             {
-#ifdef _CONTAINERIZED
-                UNIMPLEMENTED_X("CONTAINERIZED(CWsWorkunitsSoapBindingEx::onGetForm)");
-#else
                 Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
                 Owned<IConstEnvironment> environment = factory->openEnvironment();
                 Owned<IPropertyTree> root = &environment->getPTree();
@@ -4439,7 +4436,6 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
                 }
                 xml.append("</WUQuery>");
                 xslt.append(getCFD()).append("./smc_xslt/wuid_search.xslt");
-#endif
             }
             else if (strieq(method,"WUJobList"))
             {

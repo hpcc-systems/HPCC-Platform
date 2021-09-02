@@ -21,29 +21,32 @@
         "Engines": [
             "hthor",
             "thor",
-            "roxie"
+            "roxie-workunit"
         ],
         "Clusters": {
             "hthor" : "hthor",
             "thor"  : "thor",
-            "roxie" : "roxie"
+            "roxie-workunit" : "roxie-workunit"
         },
         "ClusterNames": {
             "hthor" : "myhthor",
             "thor"  : "mythor",
-            "roxie" : "myroxie"
+            "roxie-workunit" : "myroxie"
         },
-        "timeout":"720",
-        "maxAttemptCount":"3",
-        "wuStatusTimeout":"30",
-        "wuAbortTimeout":"30",
-        "usePoll":"False",
+        "timeout":"3600",
+        "maxAttemptCount":"1",
+        "wuStatusTimeout":"3600",
+        "wuAbortTimeout":"720",
+        "usePoll":"True",
         "defaultSetupTargets": [
+            "hthor",
             "thor",
-            "roxie"
+            "roxie-workunit"
         ],
         "defaultTargets": [
-            "all"
+            "hthor",
+            "thor",
+            "roxie-workunit"
         ],
         "Params":[
             "PassTest.ecl:bla='A value'",
@@ -52,7 +55,8 @@
         ],
         "engineParams":[
             "failOnLeaks",
-            "disableLocalOptimizations"
+            "disableLocalOptimizations",
+            "thorConnectTimeout=36000"
         ],
         "setupExtraParams":{
             "OriginalTextFilesOsPath" : "/opt/HPCCSystems/testing/regress",

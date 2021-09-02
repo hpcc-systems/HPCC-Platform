@@ -857,12 +857,13 @@ resources:
 
 {{/*
 Add resources object for stub pods
+Pass in dict with instances defined
 */}}
 {{- define "hpcc.addStubResources" }}
 resources:
   limits:
     cpu: "50m"
-    memory: "100M"
+    memory: {{ (printf "%dM" (mul .instances 100)) | quote }}
 {{- end -}}
 
 {{/*

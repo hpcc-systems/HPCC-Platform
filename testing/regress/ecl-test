@@ -368,10 +368,13 @@ class RegressMain:
         self.config.set('preAbort', self.args.preAbort)
 
         if not self.config.has('wuStatusTimeout'):
-            self.config.set('wuStatusTimeout', 30)
+            self.config.set('wuStatusTimeout', "30")
 
         if not self.config.has('wuAbortTimeout'):
-            self.config.set('wuAbortTimeout', 30)
+            self.config.set('wuAbortTimeout', "30")
+
+        if not self.config.has('usePoll'):
+            self.config.set('usePoll', "False")
 
         self.config.set('log',  self.log)
         setConfig(self.config)

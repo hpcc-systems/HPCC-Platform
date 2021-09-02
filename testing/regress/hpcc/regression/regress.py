@@ -251,7 +251,7 @@ class Regression:
                     query.setIgnoreResult(self.args.ignoreResult)
                     query.setJobname(time.strftime("%y%m%d-%H%M%S"))
                     timeout = query.getTimeout()
-                    logger.debug("Query timeout:%d", -1, timeout)
+                    logger.debug("%3d. Query timeout:%d", -1, timeout)
                     oldCnt = cnt
 
                 started = False

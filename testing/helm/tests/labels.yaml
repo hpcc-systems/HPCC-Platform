@@ -44,6 +44,7 @@ dfuserver:
     
 eclagent:
 - name: eclagent
+  maxActive: 1
   annotations:
     eaa1: eaav1
   labels:
@@ -67,6 +68,7 @@ thor:
 
 eclccserver: 
 - name: eclccserver
+  maxActive: 1
   annotations:
     esa1: esav1
   labels:
@@ -89,4 +91,3 @@ dali:
     dl1: dlv1
   services: # internal house keeping services
     coalescer:
-      
