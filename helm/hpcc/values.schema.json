@@ -766,12 +766,18 @@
     },
     "eclccserver": {
       "type": "object",
-      "required": [ "name" ],
+      "required": [ "name", "maxActive" ],
       "additionalProperties": { "type": ["integer", "string", "boolean"] },
       "properties": {
         "name": {
           "type": "string",
           "description": "The name of the eclccserver process"
+        },
+        "maxActive": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum number of compile jobs that can be active simultaneously",
+          "default": 4
         },
         "replicas": {
           "type": "integer"
@@ -909,6 +915,7 @@
     "eclagent": {
       "type": "object",
       "additionalProperties": { "type": ["integer", "string", "boolean"] },
+      "required": [ "maxActive" ],
       "properties": {
         "replicas": {
           "type": "integer"
