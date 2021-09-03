@@ -552,10 +552,20 @@ static int getClusterPriority(const char *clusterName)
     return priority ? *priority : 100;
 }
 
-static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations, const char *localFileName, const char *fromCluster, bool includeFromCluster)
+static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations, const char *localFileName, const StringArray &fromClusters, bool includeFromCluster)
 {
     if (traceRemoteFiles)
-        DBGLOG("appendRemoteLocations lfn=%s fromCluster=%s, includeFromCluster=%s", nullText(localFileName), nullText(fromCluster), boolToStr(includeFromCluster));
+    {
+        StringBuffer s;
+        ForEachItemIn(ifc, fromClusters)
+        {
+            const char *fromCluster = fromClusters.item(ifc);
+            if (s.length())
+                s.append('/');
+            s.append(fromCluster);
+        }
+        DBGLOG("appendRemoteLocations lfn=%s fromCluster=%s, includeFromCluster=%s", nullText(localFileName), s.str(), boolToStr(includeFromCluster));
+    }
     IFileDescriptor &fdesc = pdesc->queryOwner();
     unsigned numCopies = pdesc->numCopies();
     unsigned lastClusterNo = (unsigned) -1;
@@ -570,9 +580,9 @@ static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations
         fdesc.getClusterGroupName(clusterNo, clusterName);
         if (traceRemoteFiles)
            DBGLOG("appendRemoteLocations found entry in cluster %s", clusterName.str());
-        if (fromCluster && *fromCluster)
+        if (fromClusters.length())
         {
-            bool matches = strieq(clusterName.str(), fromCluster);
+            bool matches = fromClusters.contains(clusterName);
             if (matches!=includeFromCluster)
                 continue;
         }
@@ -617,6 +627,14 @@ static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations
                 DBGLOG("appendRemoteLocations adding location %s at position %u", path.str(), idx+initialSize);
         }
     }
+}
+
+static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations, const char *localFileName, const char *fromCluster, bool includeFromCluster)
+{
+    StringArray fromClusters;
+    if (!isEmptyString(fromCluster))
+        fromClusters.append(fromCluster);
+    appendRemoteLocations(pdesc, locations, localFileName, fromClusters, includeFromCluster);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -987,6 +1005,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
 
     ILazyFileIO *openFile(const char *lfn, unsigned partNo, unsigned channel, const char *localLocation,
                            IPartDescriptor *pdesc,
+                           const StringArray &localEnoughLocationInfo,
                            const StringArray &remoteLocationInfo,
                            offset_t size, const CDateTime &modified)
     {
@@ -1010,7 +1029,35 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
         {
             bool addedOne = false;
 
-#ifndef _CONTAINERIZED
+#ifdef _CONTAINERIZED
+            // put the localEnoughLocations next in the list
+            ForEachItemIn(plane_idx, localEnoughLocationInfo)
+            {
+                try
+                {
+                    const char *localEnoughName = localEnoughLocationInfo.item(plane_idx);
+                    Owned<IFile> localEnoughFile = createIFile(localEnoughName);
+                    RoxieFileStatus status = fileUpToDate(localEnoughFile, size, modified, isCompressed);
+                    if (status==FileIsValid)
+                    {
+                        if (miscDebugTraceLevel > 5)
+                            DBGLOG("adding local enough location %s", localEnoughName);
+                        ret->addSource(localEnoughFile.getClear());
+                        addedOne = true;
+                        //do not set ret->setRemote(true) these locations are treated as if found locally, and not copied to the default plane
+                    }
+                    else if (localEnoughFile->exists() && !ignoreOrphans)  // Implies local dali and local enough file out of sync
+                        throw MakeStringException(ROXIE_FILE_ERROR, "Direct access (local enough) file %s does not match DFS information", localEnoughName);
+                    else if (miscDebugTraceLevel > 10)
+                        DBGLOG("Checked local enough data plane location %s, status=%d", localEnoughName, (int) status);
+                }
+                catch (IException *E)
+                {
+                    EXCLOG(MCoperatorError, E, "While creating local enough file reference");
+                    E->Release();
+                }
+            }
+#else
             // put the peerRoxieLocations next in the list
             StringArray localLocations;
             if (selfTestMode)
@@ -1628,6 +1675,7 @@ public:
 
     virtual ILazyFileIO *lookupFile(const char *lfn, RoxieFileType fileType,
                                      IPartDescriptor *pdesc, unsigned numParts, unsigned channel,
+                                     const StringArray &localEnoughLocationInfo,
                                      const StringArray &deployedLocationInfo, bool startFileCopy)
     {
         unsigned replicationLevel = getReplicationLevel(channel);
@@ -1706,7 +1754,7 @@ public:
                     return f.getClear();
             }
 
-            ret.setown(openFile(lfn, partNo, channel, localLocation, pdesc, deployedLocationInfo, dfsSize, dfsDate));
+            ret.setown(openFile(lfn, partNo, channel, localLocation, pdesc, localEnoughLocationInfo, deployedLocationInfo, dfsSize, dfsDate));
 
             if (startFileCopy)
             {
@@ -2064,6 +2112,21 @@ public:
     }
 };
 
+#ifdef _CONTAINERIZED
+static bool getDirectAccessStoragePlanes(StringArray &planes)
+{
+    Owned<IPropertyTreeIterator> iter = getComponentConfigSP()->getElements("directAccessPlanes");
+    ForEach(*iter)
+    {
+        const char *plane = iter->query().queryProp("");
+        if (!isEmptyString(plane))
+            planes.appendUniq(plane);
+    }
+
+    return !planes.empty();
+}
+#endif
+
 ILazyFileIO *createPhysicalFile(const char *id, IPartDescriptor *pdesc, IPartDescriptor *remotePDesc, RoxieFileType fileType, int numParts, bool startCopy, unsigned channel)
 {
 #ifdef _CONTAINERIZED
@@ -2071,6 +2134,7 @@ ILazyFileIO *createPhysicalFile(const char *id, IPartDescriptor *pdesc, IPartDes
 #else
     const char *myCluster = roxieName.str();
 #endif
+    StringArray localEnoughLocations; //files from these locations won't be copied to the default plane
     StringArray remoteLocations;
     const char *peerCluster = pdesc->queryOwner().queryProperties().queryProp("@cloneFromPeerCluster");
     if (peerCluster)
@@ -2079,11 +2143,21 @@ ILazyFileIO *createPhysicalFile(const char *id, IPartDescriptor *pdesc, IPartDes
             appendRemoteLocations(pdesc, remoteLocations, NULL, peerCluster, true);  // Add only from specified cluster
     }
     else
+    {
+#ifdef _CONTAINERIZED
+        StringArray localEnoughPlanes;
+        if (getDirectAccessStoragePlanes(localEnoughPlanes))
+            appendRemoteLocations(pdesc, localEnoughLocations, NULL, localEnoughPlanes, true);
+        localEnoughPlanes.append(myCluster);
+        appendRemoteLocations(pdesc, remoteLocations, NULL, localEnoughPlanes, false);      // Add from any plane on same dali, other than default or loacal enough
+#else
         appendRemoteLocations(pdesc, remoteLocations, NULL, myCluster, false);      // Add from any cluster on same dali, other than mine
+#endif
+    }
     if (remotePDesc)
         appendRemoteLocations(remotePDesc, remoteLocations, NULL, NULL, false);    // Then any remote on remote dali
 
-    return queryFileCache().lookupFile(id, fileType, pdesc, numParts, channel, remoteLocations, startCopy);
+    return queryFileCache().lookupFile(id, fileType, pdesc, numParts, channel, localEnoughLocations, remoteLocations, startCopy);
 }
 
 //====================================================================================================
@@ -3712,6 +3786,7 @@ protected:
         remove("test.local");
         remove("test.remote");
         remove("test.buddy");
+        StringArray localEnough;
         StringArray remotes;
         DummyPartDescriptor pdesc;
         CDateTime dummy;
@@ -3725,7 +3800,7 @@ protected:
         close(f);
         CRoxieFileCache &cache = static_cast<CRoxieFileCache &>(queryFileCache());
 
-        Owned<ILazyFileIO> io = cache.openFile("test.local", 0, 0, "test.local", NULL, remotes, sizeof(int), dummy);
+        Owned<ILazyFileIO> io = cache.openFile("test.local", 0, 0, "test.local", NULL, localEnough, remotes, sizeof(int), dummy);
         CPPUNIT_ASSERT(io != NULL);
 
         // Reading it should read 1

@@ -1014,8 +1014,8 @@
           "description": "The default storage plane to write data files to",
           "type": "string"
         },
-        "storagePlanes": {
-          "description": "A list of storage planes suitable for storing roxie data",
+        "directAccessPlanes": {
+          "description": "A list of storage planes suitable for roxie to read from directly and not have roxie copy the data to roxie's default plane",
           "type": "array",
           "items": { "type": "string" }
         },

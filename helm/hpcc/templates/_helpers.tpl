@@ -761,6 +761,9 @@ Generate instance queue names
   prefix: {{ .prefix | default "null" }}
   queriesOnly: true
   dataPlane: {{ .dataPlane | default (include "hpcc.getDefaultDataPlane" $) }}
+  {{- if hasKey . "directAccessPlanes" }}
+  directAccessPlanes: {{ .directAccessPlanes }}
+  {{- end }}
  {{- end }}
 {{ end -}}
 {{- range $.Values.thor -}}

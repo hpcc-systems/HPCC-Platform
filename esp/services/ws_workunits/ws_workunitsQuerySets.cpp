@@ -366,7 +366,9 @@ void QueryFilesInUse::loadTarget(IPropertyTree *t, const char *target, unsigned 
         wufiles->addFilesFromQuery(cw, pm, queryid);
         if (aborting)
             return;
-        wufiles->resolveFiles(process.str(), NULL, NULL, NULL, true, true, false, false);
+        StringArray locations;
+        locations.append(process.str());
+        wufiles->resolveFiles(locations, NULL, NULL, NULL, true, true, false, false);
 
         Owned<IReferencedFileIterator> files = wufiles->getFiles();
         ForEach(*files)
@@ -753,21 +755,23 @@ public:
             queryname = queryid.append(queryname).append(".0").str(); //prepublish dummy version number to support fuzzy match like queries="myquery.*" in package
         files->addFilesFromQuery(cw, pm, queryname);
 
+        StringArray locations;
 #ifdef _CONTAINERIZED
         StringBuffer targetPlane;
-        getRoxieDefaultPlane(targetPlane, target);
+        getRoxieDirectAccessPlanes(locations, targetPlane, target, true);
         const char * targetPlaneOrGroup = targetPlane;
 #else
         const char * targetPlaneOrGroup = process;
+        locations.append(targetPlaneOrGroup);
 #endif
-        files->resolveFiles(targetPlaneOrGroup, remoteIP, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM | DALI_UPDATEF_SUPERFILES)), true, false, true);
+        files->resolveFiles(locations, remoteIP, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM | DALI_UPDATEF_SUPERFILES)), true, false, true);
         Owned<IDFUhelper> helper = createIDFUhelper();
 #ifdef _CONTAINERIZED
-        files->cloneAllInfo(updateFlags, helper, true, true, 0, 1, 0, nullptr);
+        files->cloneAllInfo(targetPlaneOrGroup, updateFlags, helper, true, true, 0, 1, 0, nullptr);
 #else
         StringBuffer defReplicateFolder;
         getConfigurationDirectory(NULL, "data2", "roxie", process.str(), defReplicateFolder);
-        files->cloneAllInfo(updateFlags, helper, true, true, clusterInfo->getRoxieRedundancy(), clusterInfo->getChannelsPerNode(), clusterInfo->getRoxieReplicateOffset(), defReplicateFolder);
+        files->cloneAllInfo(targetPlaneOrGroup, updateFlags, helper, true, true, clusterInfo->getRoxieRedundancy(), clusterInfo->getChannelsPerNode(), clusterInfo->getRoxieReplicateOffset(), defReplicateFolder);
 #endif
     }
 
@@ -2405,7 +2409,9 @@ bool CWsWorkunitsEx::getQueryFiles(IEspContext &context, const char* wuid, const
         Owned<IReferencedFileList> wufiles = createReferencedFileList(context.queryUserId(),
             context.queryPassword(), true, true);
         wufiles->addFilesFromQuery(cw, (ps) ? ps->queryActiveMap(target) : NULL, query);
-        wufiles->resolveFiles(process.str(), NULL, NULL, NULL, true, true, true, true);
+        StringArray locations;
+        locations.append(process.str());
+        wufiles->resolveFiles(locations, NULL, NULL, NULL, true, true, true, true);
         Owned<IReferencedFileIterator> refFileItr = wufiles->getFiles();
         ForEach(*refFileItr)
         {
@@ -2962,7 +2968,7 @@ public:
         if (isContainerized())
         {
             StringAttrBuilder builder(process);
-            getRoxieDefaultPlane(builder, target);
+            getRoxieDirectAccessPlanes(locations, builder, target, true);
         }
         else
             process.set(destProcess);
@@ -2972,18 +2978,18 @@ public:
     {
         if (cloneFilesEnabled)
         {
-            wufiles->resolveFiles(process, dfsIP, srcPrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM)), true, false, true);
+            wufiles->resolveFiles(locations, dfsIP, srcPrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM)), true, false, true);
             Owned<IDFUhelper> helper = createIDFUhelper();
             Owned <IConstWUClusterInfo> cl = getWUClusterInfoByName(target);
             if (cl)
             {
 #ifdef _CONTAINERIZED
-                wufiles->cloneAllInfo(updateFlags, helper, true, true, 0, 1, 0, nullptr);
+                wufiles->cloneAllInfo(process.str(), updateFlags, helper, true, true, 0, 1, 0, nullptr);
 #else
                 SCMStringBuffer process;
                 StringBuffer defReplicateFolder;
                 getConfigurationDirectory(NULL, "data2", "roxie", cl->getRoxieProcess(process).str(), defReplicateFolder);
-                wufiles->cloneAllInfo(updateFlags, helper, true, true, cl->getRoxieRedundancy(), cl->getChannelsPerNode(), cl->getRoxieReplicateOffset(), defReplicateFolder);
+                wufiles->cloneAllInfo(process.str(), updateFlags, helper, true, true, cl->getRoxieRedundancy(), cl->getChannelsPerNode(), cl->getRoxieReplicateOffset(), defReplicateFolder);
 #endif
             }
         }
@@ -3010,6 +3016,7 @@ private:
     StringAttr queryDirectory;
     bool cloneFilesEnabled = false;
     unsigned updateFlags = 0;
+    StringArray locations;
 
 public:
     StringArray existingQueryIds;
