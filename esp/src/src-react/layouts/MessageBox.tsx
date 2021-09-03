@@ -39,7 +39,7 @@ interface MessageBoxProps {
 
 export const MessageBox: React.FunctionComponent<MessageBoxProps> = ({
     title,
-    width = 300,
+    width = 360,
     show,
     setShow,
     footer,
