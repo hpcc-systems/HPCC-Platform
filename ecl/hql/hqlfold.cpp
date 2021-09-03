@@ -5454,6 +5454,8 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
             if (newTransform)
                 args.replace(*newTransform.getClear(), 1);
             removeAttribute(args, _selectorSequence_Atom);
+            //local is a nop for NORMALIZE, but would modify the meaning of the DATASET
+            removeAttribute(args, localAtom);
 
             return createDataset(no_dataset_from_transform, args);
         }
