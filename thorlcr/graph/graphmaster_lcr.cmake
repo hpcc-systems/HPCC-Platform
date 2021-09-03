@@ -69,7 +69,6 @@ target_link_libraries ( graphmaster_lcr
          workunit 
          thorcodectx_lcr 
          graph_lcr 
-         dalift 
          mfilemanager_lcr 
     )
 

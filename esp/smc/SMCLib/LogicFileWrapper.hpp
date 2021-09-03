@@ -44,7 +44,6 @@ public:
     LogicFileWrapper();
     virtual ~LogicFileWrapper();
     bool doDeleteFile(const char* name, const char *cluster, StringBuffer& returnStr, IUserDescriptor* udesc = NULL);
-    bool doCompressFile(const char* name,StringBuffer& returnStr, IUserDescriptor* udesc = 0);
     void FindClusterName(const char* logicalName,StringBuffer& returnCluster, IUserDescriptor* udesc = 0);
 
 };
@@ -115,40 +114,6 @@ struct DeleteTask: public CInterface, implements ITask
         if(errs.length())
             throw MakeStringException(0, "%s", errs.str());
 
-        return 0;
-    }
-
-    virtual bool stop()
-    {
-        return false;
-    }
-
-    Linked<IDistributedFilePart> part;
-};
-struct CompressTask: public CInterface, implements ITask
-{
-    IMPLEMENT_IINTERFACE;    
-    CompressTask(IDistributedFilePart* _part): part(_part)
-    {
-    }
-
-    virtual int run()
-    {
-        try
-        {
-            queryDistributedFileSystem().compress(part);
-        }
-        catch(IException* e)
-        {
-            StringBuffer err;
-            e->errorMessage(err);
-            LOG(MCerror, unknownJob, "%s", err.str());
-            e->Release();
-        }
-        catch(...)
-        {
-            IERRLOG("Unknown Exception thrown\n");
-        }
         return 0;
     }
 

@@ -82,7 +82,6 @@ target_link_libraries ( ws_smc
          hrpc 
          remote 
          dalibase 
-         dalift 
          dllserver 
          nbcd 
          eclrtl 

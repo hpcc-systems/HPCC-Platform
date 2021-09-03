@@ -95,39 +95,6 @@ bool LogicFileWrapper::doDeleteFile(const char* logicalName,const char *cluster,
     return false;
 }
 
-bool LogicFileWrapper::doCompressFile(const char* name,StringBuffer& returnStr, IUserDescriptor* udesc)
-{
-    try
-    {
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(name, udesc, false, false, false, nullptr, defaultPrivilegedUser) ;
-        if(!df)
-            return false;
-
-        ErrorReceiver err;
-        TaskQueue tq(200,&err);
-
-        Owned<IDistributedFilePartIterator> pi = df->getIterator();
-        ForEach(*pi)
-        {
-            tq.put(new CompressTask(&pi->query()));
-        }
-
-        tq.join();
-        err.getErrors(returnStr);
-    }
-    catch(IException* e){   
-      StringBuffer msg;
-      e->errorMessage(msg);
-        IWARNLOG("%s", msg.str());
-        e->Release();
-    }
-    catch(...){
-        IWARNLOG("Unknown Exception caught within doCompressFile");
-    }
-
-    return true; 
-}
-
 IDistributedFile* lookupLogicalName(IEspContext& context, const char* logicalName, bool writeattr, bool hold,
     bool lockSuperOwner, IDistributedFileTransaction* transaction, bool privilegedUser, unsigned timeout)
 {

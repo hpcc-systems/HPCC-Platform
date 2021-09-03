@@ -83,7 +83,6 @@ target_link_libraries (  thormaster_lcr
          thorsort_lcr 
          thorhelper 
          thorcodectx_lcr 
-         dalift 
          mfilemanager_lcr 
          graphmaster_lcr 
          activitymasters_lcr 
