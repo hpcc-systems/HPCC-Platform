@@ -29,7 +29,6 @@
 #include "fterror.hpp"
 #include "dadfs.hpp"
 #include "filecopy.ipp"
-#include "daftdir.hpp"
 #include "jptree.hpp"
 #include "dalienv.hpp"
 

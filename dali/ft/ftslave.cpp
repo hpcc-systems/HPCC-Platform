@@ -30,8 +30,6 @@
 #include "filecopy.hpp"
 #include "fttransform.ipp"
 #include "daftformat.hpp"
-#include "daftdir.hpp"
-#include "daftsize.hpp"
 #include "daftcfg.hpp"
 #include "mptag.hpp"
 
@@ -123,12 +121,6 @@ public:
             return processPullCommand(masterSocket, msg);
         case FTactionpush:
             return processPushCommand(masterSocket, msg);
-        case FTactiondirectory:
-            return processDirCommand(masterSocket, msg, results);
-        case FTactionsize:
-            return processSizesCommand(masterSocket, msg, results);
-        case FTactionpcopy:
-            return processPhysicalCopyCommand(masterSocket, msg, results);
         default:
             UNIMPLEMENTED;
         }
