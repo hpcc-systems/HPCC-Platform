@@ -289,12 +289,14 @@ public:
                         {
                             if (traceLevel > 5)
                                 DBGLOG("Opening %s", sourceName);
-                            disconnectRemoteIoOnExit(current);
+                            if (useRemoteResources)
+                                disconnectRemoteIoOnExit(current);
                             break;
                         }
     //                  throwUnexpected();  - try another location if this one has the wrong version of the file
                     }
-                    disconnectRemoteFile(f);
+                    if (useRemoteResources)
+                        disconnectRemoteFile(f);
                 }
                 catch (IException *E)
                 {
@@ -887,7 +889,9 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
 
     RoxieFileStatus fileUpToDate(IFile *f, offset_t size, const CDateTime &modified, bool isCompressed, bool autoDisconnect=true)
     {
-        // Ensure that SockFile does not keep these sockets open (or we will run out)
+        // Ensure that SockFile does not keep these sockets open (or we will run out, or at least empty our LRU cache)
+        // If useRemoteResources is not set, all checks for fileUpToDate are likely to be followed quickly by calls to copy,
+        // so autoclosing is unnecessary and undesireable.
         class AutoDisconnector
         {
         public:
@@ -895,7 +899,7 @@ class CRoxieFileCache : implements IRoxieFileCache, implements ICopyFileProgress
             ~AutoDisconnector() { if (f) disconnectRemoteFile(f); }
         private:
             IFile *f;
-        } autoDisconnector(f, autoDisconnect);
+        } autoDisconnector(f, autoDisconnect && useRemoteResources);
 
         offset_t fileSize = f->size();
         if (fileSize != (offset_t) -1)
@@ -1786,6 +1790,14 @@ public:
                         reportedFilesToCopy = true;
                         if (iShouldCopy)
                         {
+                            if (!useRemoteResources)
+                            {
+                                b.leave();
+                                ret->checkOpen();
+                                doCopy(ret, false, CFflush_rdwr);
+                                return ret.getLink();
+                            }
+
                             todo.append(*ret);
                             numFilesToProcess++;  // must increment counter for SNMP accuracy
                             toCopy.signal();
@@ -1799,7 +1811,7 @@ public:
 #else
                         // Single-part files and top-level keys are copied immediately rather than being read remotely while background copying
                         // This is to avoid huge contention on the source dafilesrv if the Roxie is live.
-                        if (numParts==1 || (partNo==numParts && fileType==ROXIE_KEY))
+                        if (numParts==1 || (partNo==numParts && fileType==ROXIE_KEY) || !useRemoteResources)
                         {
                             b.leave();
                             ret->checkOpen();

@@ -896,7 +896,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         parallelLoopFlowLimit = topology->getPropInt("@parallelLoopFlowLimit", 100);
         perChannelFlowLimit = topology->getPropInt("@perChannelFlowLimit", 10);
         copyResources = topology->getPropBool("@copyResources", true);
-        useRemoteResources = topology->getPropBool("@useRemoteResources", true);
+        useRemoteResources = topology->getPropBool("@useRemoteResources", !isContainerized());
         checkFileDate = topology->getPropBool("@checkFileDate", true);
         const char *lazyOpenMode = topology->queryProp("@lazyOpen");
         if (!lazyOpenMode || stricmp(lazyOpenMode, "smart")==0)
