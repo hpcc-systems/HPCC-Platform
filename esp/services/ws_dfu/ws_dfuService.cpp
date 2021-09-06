@@ -2230,7 +2230,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
         df->setRestrictedAccess(changeRestriction==CDFUChangeRestriction_Restrict);
     }
 
-    offset_t size=queryDistributedFileSystem().getSize(df), recordSize=df->queryAttributes().getPropInt64("@recordSize",0);
+    offset_t size=df->getFileSize(true, false), recordSize=df->queryAttributes().getPropInt64("@recordSize",0);
 
     CDateTime dt;
     df->getModificationTime(dt);
@@ -2537,7 +2537,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
 
                 try
                 {
-                    offset_t size = queryDistributedFileSystem().getSize(part);
+                    offset_t size = part->getFileSize(true, false);
                     if (version >= 1.38)
                         FilePart->setPartSizeInt64(size);
 
@@ -2549,12 +2549,12 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
                 catch(IException *e)
                 {
                     StringBuffer msg;
-                    IERRLOG("Exception %d:%s in WS_DFU queryDistributedFileSystem().getSize()", e->errorCode(), e->errorMessage(msg).str());
+                    IERRLOG("Exception %d:%s in WS_DFU getFileSize()", e->errorCode(), e->errorMessage(msg).str());
                     e->Release();
                 }
                 catch(...)
                 {
-                    IERRLOG("Unknown exception in WS_DFU queryDistributedFileSystem().getSize()");
+                    IERRLOG("Unknown exception in WS_DFU getFileSize");
                 }
 
                 PartList.append(*FilePart.getClear());

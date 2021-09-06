@@ -79,7 +79,6 @@ target_link_libraries ( SMCLib
          xmllib 
          esphttp 
          dalibase 
-         dalift 
          dllserver 
          nbcd 
          eclrtl 

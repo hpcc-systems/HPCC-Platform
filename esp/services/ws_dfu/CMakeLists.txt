@@ -98,11 +98,10 @@ target_link_libraries ( ws_dfu
          dllserver 
          deftype 
          workunit 
-         hql   
+         hql
          fileview2 
          xmllib 
          esphttp 
-         dalift 
          SMCLib 
          dfuXRefLib 
          dfuwu 

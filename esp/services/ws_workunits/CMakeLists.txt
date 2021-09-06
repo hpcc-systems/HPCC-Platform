@@ -107,7 +107,6 @@ target_link_libraries ( ws_workunits
          xmllib
          esphttp
          dalibase
-         dalift
          dllserver
          nbcd
          eclrtl

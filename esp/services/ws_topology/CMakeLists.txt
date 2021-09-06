@@ -70,7 +70,6 @@ target_link_libraries ( ws_topology
          xmllib 
          esphttp 
          dalibase 
-         dalift 
          dllserver 
          nbcd 
          eclrtl 

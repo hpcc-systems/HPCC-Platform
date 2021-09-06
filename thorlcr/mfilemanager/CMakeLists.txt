@@ -60,7 +60,6 @@ target_link_libraries ( mfilemanager_lcr
          jlib
          remote 
          dalibase 
-         dalift 
          dllserver 
          nbcd 
          eclrtl 

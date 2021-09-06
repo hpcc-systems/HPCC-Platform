@@ -36,10 +36,6 @@ public:
     virtual void replicate(IFileDescriptor * fd, DaftReplicateMode mode, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid);
     virtual void transfer(IFileDescriptor * from, IFileDescriptor * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid);
 
-    virtual void directory(const char * directory, IGroup * machines, IPropertyTree * options, IPropertyTree * result);
-    virtual void physicalCopy(const char * source, const char * target, IPropertyTree * options, IDaftCopyProgress * progress);
-    virtual void physicalCopy(IPropertyTree * source, const char * target, IPropertyTree * options, IDaftCopyProgress * progress);
-
 //operations on a single file.
     virtual offset_t getSize(IDistributedFile * file,bool forceget,bool dontsetattr);
     virtual bool compress(IDistributedFile * file);                                                  

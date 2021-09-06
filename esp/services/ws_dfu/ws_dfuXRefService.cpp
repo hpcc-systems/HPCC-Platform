@@ -232,8 +232,8 @@ void CWsDfuXRefEx::readLostFileQueryResult(IEspContext &context, StringBuffer &b
         try
         {
             Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(fileName, userDesc, false, false, false, NULL, defaultPrivilegedUser, 0);
-            if(df)
-                item.addPropInt64("Size", queryDistributedFileSystem().getSize(df));
+            if (df)
+                item.addPropInt64("Size", df->getFileSize(true, false));
         }
         catch(IException *e)
         {
