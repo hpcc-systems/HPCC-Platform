@@ -19,6 +19,7 @@ import { ShortVerticalDivider } from "./Common";
 import { FileDetailsGraph } from "./FileDetailsGraph";
 import { TableGroup } from "./forms/Groups";
 import { CopyFile } from "./forms/CopyFile";
+import { DataPatterns } from "./DataPatterns";
 import { DesprayFile } from "./forms/DesprayFile";
 import { RenameFile } from "./forms/RenameFile";
 import { ReplicateFile } from "./forms/ReplicateFile";
@@ -208,6 +209,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
                     <Result cluster={cluster} logicalFile={logicalFile} />
                 </PivotItem>
                 <PivotItem headerText={nlsHPCC.DataPatterns} itemKey="DataPatterns" style={pivotItemStyle(size, 0)}>
+                    <DataPatterns cluster={cluster} logicalFile={logicalFile} />
                 </PivotItem>
                 <PivotItem headerText={nlsHPCC.ECL} itemKey="ECL" style={pivotItemStyle(size, 0)}>
                     <ECLSourceEditor text={file?.Ecl} readonly={true} />
