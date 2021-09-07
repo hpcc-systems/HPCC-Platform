@@ -99,7 +99,7 @@ interface ISortSlaveBase  // for global merging
     virtual unsigned getTransferPort() = 0;
     virtual void startMerging(IArrayOf<IRowStream> &readers, rowcount_t _totalrows) = 0;
     virtual bool queryTLS() const = 0;
-    virtual bool queryTraceLevel() const = 0;
+    virtual unsigned queryTraceLevel() const = 0;
 };
 
 
