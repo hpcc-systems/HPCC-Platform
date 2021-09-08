@@ -2,6 +2,7 @@ import * as React from "react";
 import { Pivot, PivotItem } from "@fluentui/react";
 import { SizeMe } from "react-sizeme";
 import { pushUrl } from "../util/history";
+import { Groups } from "./Groups";
 import { Users } from "./Users";
 import { pivotItemStyle } from "../layouts/pivot";
 import nlsHPCC from "src/nlsHPCC";
@@ -26,6 +27,7 @@ export const Security: React.FunctionComponent<SecurityProps> = ({
                     <Users filter={filter} />
                 </PivotItem>
                 <PivotItem headerText={nlsHPCC.Groups} itemKey="groups" style={pivotItemStyle(size)}>
+                    <Groups filter={filter} />
                 </PivotItem>
                 <PivotItem headerText={nlsHPCC.Permissions} itemKey="permissions" style={pivotItemStyle(size)}>
                 </PivotItem>

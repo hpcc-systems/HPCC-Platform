@@ -181,6 +181,7 @@ export const routes: RoutesEx = [
         children: [
             { path: "", action: (ctx, params) => import("./components/Security").then(_ => <_.Security filter={parseSearch(ctx.search) as any} />) },
             { path: "/:Tab", action: (ctx, params) => import("./components/Security").then(_ => <_.Security filter={parseSearch(ctx.search) as any} tab={params.Tab as string} />) },
+            { path: "/groups/:id", action: (ctx, params) => import("./components/GroupDetails").then(_ => <_.GroupDetails id={params.id as string} />) },
         ]
     },
     {
