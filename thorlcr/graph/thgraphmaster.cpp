@@ -1575,6 +1575,7 @@ void CJobMaster::sendQuery()
     const char *soName = queryDllEntry().queryName();
     PROGLOG("Query dll: %s", soName);
     tmp.append(soName);
+#ifndef _CONTAINERIZED
     tmp.append(sendSo);
     if (sendSo)
     {
@@ -1586,6 +1587,8 @@ void CJobMaster::sendQuery()
         read(iFileIO, 0, sz, tmp);
         PROGLOG("Loading query for serialization to slaves took %d ms", atimer.elapsed());
     }
+    queryJobManager().addCachedSo(soName);
+#endif
     Owned<IPropertyTree> deps = createPTree(queryXGMML()->queryName());
     Owned<IPropertyTreeIterator> edgeIter = queryXGMML()->getElements("edge"); // JCSMORE trim to those actually needed
     ForEach (*edgeIter)
@@ -1604,7 +1607,6 @@ void CJobMaster::sendQuery()
     CTimeMon queryToSlavesTimer;
     broadcast(queryNodeComm(), msg, masterSlaveMpTag, LONGTIMEOUT, "sendQuery");
     PROGLOG("Serialization of query init info (%d bytes) to slaves took %d ms", msg.length(), queryToSlavesTimer.elapsed());
-    queryJobManager().addCachedSo(soName);
     querySent = true;
 }
 
