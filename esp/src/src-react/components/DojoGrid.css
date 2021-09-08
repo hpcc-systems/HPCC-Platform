@@ -96,3 +96,21 @@
     border-width: 1px;
     color: inherit;
 }
+
+.dgrid-resize-header-container {
+    display: flex;
+    height: auto;
+}
+
+.dgrid-sort-arrow {
+    float: none;
+    align-self: center;
+}
+
+.dgrid-cell {
+    vertical-align: inherit;
+}
+
+th.dgrid-cell [type="checkbox"] {
+    margin-top: 5px;
+}
