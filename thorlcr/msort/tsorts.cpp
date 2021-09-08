@@ -1352,7 +1352,7 @@ public:
     {
         return useTLS;
     }
-    virtual bool queryTraceLevel() const override
+    virtual unsigned queryTraceLevel() const override
     {
         return traceLevel;
     }
