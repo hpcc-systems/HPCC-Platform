@@ -83,7 +83,6 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
         {
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection,
             onClick: () => {
-                console.log(selection);
                 if (selection.length === 1) {
                     pushUrl(`/security/groups/${selection[0].name}`);
                 } else {
