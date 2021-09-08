@@ -6293,7 +6293,9 @@ static void writeJSONNameToStream(IIOStream &out, const char *name, unsigned ind
         writeCharToStream(out, ' ');
 
     writeCharToStream(out, '"');
-    writeStringToStream(out, name);
+    //Expand any specially encoded names for strings that cannot be stored in the PTree implementation
+    if (!streq(name, "__empty__"))
+        writeStringToStream(out, name);
     writeStringToStream(out, "\": ");
     delimit = false;
 }
@@ -7201,8 +7203,10 @@ protected:
         if ('\"'!=nextChar)
             expecting("\"");
         readString(name);
+        //A blank mapping is legal in json, map it to a well defined internal value so external files can be parsed. (E.g. package-lock.json)
         if (!name.length())
-            error("empty JSON id");
+            name.append("__empty__");
+
         readNext();
         skipWS();
         if (':'!=nextChar)

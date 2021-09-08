@@ -1936,7 +1936,7 @@ public:
 #ifndef _WIN32
                 StringBuffer output;
                 VStringBuffer command("ccdcache %s -t %u", cacheFileName.str(), cacheWarmTraceLevel);
-                unsigned retcode = runExternalCommand(nullptr, output, output, command, nullptr);
+                unsigned retcode = runExternalCommand(nullptr, output, output, command, nullptr, ".");
                 if (output.length())
                 {
                     StringArray outputLines;
