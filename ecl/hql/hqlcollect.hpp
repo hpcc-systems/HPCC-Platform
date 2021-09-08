@@ -75,6 +75,8 @@ enum EclSourceCollectionFlags {
     ESFnone = 0,
     ESFallowplugins = 0x0001,
     ESFoptional = 0x0002,
+    ESFdependencies = 0x0004,
+    ESFnodependencies = 0x0000,  // Used as documentation - not strictly required
 };
 
 extern HQL_API IEclSourceCollection * createFileSystemEclCollection(IErrorReceiver *errs, const char * path, unsigned flags, unsigned trace);

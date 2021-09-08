@@ -30,7 +30,7 @@ IEclPackage * loadPlugins(const char * pluginPath)
 {
     MultiErrorReceiver errs;
     EclRepositoryManager collection;
-    collection.addQuerySourceFileEclRepository(&errs, pluginPath, ESFallowplugins, (unsigned) -1);//Preload implicits/dlls
+    collection.addQuerySourceFileEclRepository(&errs, pluginPath, ESFallowplugins|ESFnodependencies, (unsigned) -1);//Preload implicits/dlls
     if (errs.errCount())
     {
         StringBuffer s;

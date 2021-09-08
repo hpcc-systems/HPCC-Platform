@@ -50,6 +50,8 @@ public:
     IMPLEMENT_IINTERFACE
 };
 
+static constexpr const char * specialDependencyDirectory = "node_modules";
+static bool isSpecialDependencyDirectory(const char * tail) { return streq(tail, specialDependencyDirectory); }
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -185,10 +187,12 @@ public:
 
     void addFile(const char * eclName, IFileContents * fileContents);
     FileSystemDirectory * addDirectory(const char * name);
-    void processDependencies(IPropertyTree * dependTree, const char * path);
+    void processDependencies(IPropertyTree * dependTree, const char * path, bool isPackageLock);
+    void processDependencies(const char * rootPath);
 
 protected:
     virtual void populateChildren() override;
+    void processDependencies(IDirectoryIterator * dir);
 
 public:
     Linked<IFile> directory;
@@ -197,7 +201,8 @@ public:
 class PackageDependency : public CEclCollection
 {
 public:
-    PackageDependency(IIdAtom * _eclName, const char * _url) : CEclCollection(_eclName, ESTdependency), url(_url)
+    PackageDependency(IIdAtom * _eclName, const char * _url, bool _onlyAllowSHA)
+    : CEclCollection(_eclName, ESTdependency), url(_url), onlyAllowSHA(_onlyAllowSHA)
     {
     }
 
@@ -205,6 +210,7 @@ public:
 
 public:
     StringBuffer url;
+    bool onlyAllowSHA;
 };
 
 //MORE: Create a base class for some of this code.
@@ -221,7 +227,7 @@ public:
     virtual IEclSourceIterator * getContained(IEclSource * optParent);
     virtual void checkCacheValid();
 
-    void processFilePath(IErrorReceiver * errs, const char * sourceSearchPath, bool allowPlugins, bool complainIfMissing);
+    void processFilePath(IErrorReceiver * errs, const char * sourceSearchPath, bool allowPlugins, bool processDependencies, bool complainIfMissing);
     void processSingle(const char * attrName, IFileContents * contents);
 
 public:
@@ -454,6 +460,12 @@ void FileSystemDirectory::expandDirectoryTree(IDirectoryIterator * dir, bool all
     ForEach (*dir)
     {
         IFile &file = dir->query();
+        const char * filename = file.queryFilename();
+        const char * tail = pathTail(filename);
+        //Ignore the special directory created by npm when it installs dependencies
+        //This allows the source control to be separated from compiling if desired...
+        if (isSpecialDependencyDirectory(tail))
+            continue;
         addFile(file, allowPlugins);
     }
     expandedChildren = true;
@@ -468,9 +480,69 @@ void FileSystemDirectory::populateChildren()
     }
 }
 
-
-void FileSystemDirectory::processDependencies(IPropertyTree * dependTree, const char * path)
+void FileSystemDirectory::processDependencies(const char * rootPath)
 {
+    StringBuffer fullname;
+    StringBuffer searchPath(rootPath);
+    //Implement the node import rules.  Allow node_modules in this directory, or any parent directory
+    //and if present include the contents as dependencies.
+    for (;;)
+    {
+        addPathSepChar(fullname.clear().append(searchPath)).append(specialDependencyDirectory);
+        Owned<IFile> file = createIFile(fullname);
+        if (file->isDirectory() == fileBool::foundYes)
+        {
+            Owned<IDirectoryIterator> dir = file->directoryFiles(NULL, false, true);
+            processDependencies(dir);
+        }
+
+        //Now check if there is a node_modules directory in the parent directory
+        StringBuffer parentPath;
+        splitFilename(searchPath, &parentPath, &parentPath, nullptr, nullptr);
+
+        removeTrailingPathSepChar(parentPath);
+        if (parentPath.isEmpty() || isRootDirectory(parentPath))
+            return;
+
+        searchPath.set(parentPath);
+    }
+}
+
+void FileSystemDirectory::processDependencies(IDirectoryIterator * dir)
+{
+    ForEach (*dir)
+    {
+        IFile &file = dir->query();
+        const char * filename = file.queryFilename();
+        const char * tail = pathTail(filename);
+        if (file.isDirectory() == fileBool::foundYes)
+        {
+            //If there is a directory within node_module, then treat that directory as a package
+            PackageDependency * depend = new PackageDependency(createIdAtom(tail), filename, false);
+            contents.append(*depend);
+        }
+        else if (file.isFile() == fileBool::foundYes)
+        {
+            //MORE: Possible future feature - see HPCC-26523
+#if 0
+            if (endsWith(filename, ".eclxml"))
+            {
+                //MORE: Add the archive as a package
+            }
+            else if (endsWith(filename, ".link"))
+            {
+                //Read the contents of the file, and use that as a link to a url etc.
+            }
+#endif
+        }
+    }
+    expandedChildren = true;
+}
+
+
+void FileSystemDirectory::processDependencies(IPropertyTree * dependTree, const char * path, bool isPackageLock)
+{
+    bool onlyAllowSHA = isPackageLock;
     Owned<IPropertyTreeIterator> depends = dependTree->getElements(path);
     ForEach(*depends)
     {
@@ -480,8 +552,13 @@ void FileSystemDirectory::processDependencies(IPropertyTree * dependTree, const 
         if (isEmptyString(name) || strieq(name, "__empty__"))
             continue;
 
-        const char * url = cur.queryProp("resolved");
-        PackageDependency * depend = new PackageDependency(createIdAtom(name), url);
+        //Ignore the entry if it has already been defined (node_modules has precedence over package-lock.json over package.json)
+        IIdAtom * id = createIdAtom(name);
+        if (find(id))
+            continue;
+
+        const char * url = isPackageLock ? cur.queryProp("resolved") : cur.queryProp(nullptr);
+        PackageDependency * depend = new PackageDependency(id, url, onlyAllowSHA);
         contents.append(*depend);
     }
 }
@@ -504,7 +581,7 @@ IEclSourceIterator * FileSystemEclCollection::getContained(IEclSource * optParen
     return parent->getContained();
 }
 
-void FileSystemEclCollection::processFilePath(IErrorReceiver * errs, const char * sourceSearchPath, bool allowPlugins, bool complainIfMissing)
+void FileSystemEclCollection::processFilePath(IErrorReceiver * errs, const char * sourceSearchPath, bool allowPlugins, bool processDependencies, bool complainIfMissing)
 {
     if (!sourceSearchPath)
         return;
@@ -533,26 +610,62 @@ void FileSystemEclCollection::processFilePath(IErrorReceiver * errs, const char 
                 Owned<IDirectoryIterator> dir = file->directoryFiles(NULL, false, true);
                 root.expandDirectoryTree(dir, allowPlugins);
 
-                StringBuffer dependencyFilename(absolutePath);
-                addPathSepChar(dependencyFilename).append("package-lock.json");
-
-                Owned<IFile> dependencies = createIFile(dependencyFilename);
-                if (dependencies->isFile() == fileBool::foundYes)
+                if (processDependencies)
                 {
-                    try
-                    {
-                        StringBuffer jsonText;
-                        jsonText.loadFile(dependencies);
+                    //Support dependencies in 3 different ways (processed in order of precedence)
+                    //a) node_modules directories (in this directory and parents)
+                    root.processDependencies(absolutePath);
 
-                        Owned<IPropertyTree> dependTree = createPTreeFromJSONString(jsonText);
-                        root.processDependencies(dependTree, "packages/*");
-                        root.processDependencies(dependTree, "packages/node_modules/*");
-                    }
-                    catch (IException * e)
+                    //b) A package-lock.json file which ties down the package to a particular SHA
                     {
-                        StringBuffer errMsg;
-                        e->errorMessage(errMsg);
-                        errs->reportError(e->errorCode(), errMsg, dependencyFilename.str(), 0, 0, 0);
+                        StringBuffer dependencyFilename(absolutePath);
+                        addPathSepChar(dependencyFilename).append("package-lock.json");
+
+                        Owned<IFile> dependencies = createIFile(dependencyFilename);
+                        if (dependencies->isFile() == fileBool::foundYes)
+                        {
+                            try
+                            {
+                                StringBuffer jsonText;
+                                jsonText.loadFile(dependencies);
+
+                                Owned<IPropertyTree> dependTree = createPTreeFromJSONString(jsonText);
+                                root.processDependencies(dependTree, "packages/*", true);
+                                //MORE: This needs re-implementing once Tony has added support for more general tags to json parsing
+                                //root.processDependencies(dependTree, "packages/node_modules/*", true);
+                            }
+                            catch (IException * e)
+                            {
+                                StringBuffer errMsg;
+                                e->errorMessage(errMsg);
+                                errs->reportError(e->errorCode(), errMsg, dependencyFilename.str(), 0, 0, 0);
+                            }
+                        }
+                    }
+
+                    //c) A package.json file which allows branches/tags or semantic versioning (once supported)
+                    {
+                        StringBuffer dependencyFilename(absolutePath);
+                        addPathSepChar(dependencyFilename).append("package.json");
+
+                        Owned<IFile> dependencies = createIFile(dependencyFilename);
+                        if (dependencies->isFile() == fileBool::foundYes)
+                        {
+                            try
+                            {
+                                StringBuffer jsonText;
+                                jsonText.loadFile(dependencies);
+
+                                Owned<IPropertyTree> dependTree = createPTreeFromJSONString(jsonText);
+                                root.processDependencies(dependTree, "dependencies/*", false);
+                            }
+                            catch (IException * e)
+                            {
+                                StringBuffer errMsg;
+                                e->errorMessage(errMsg);
+                                errs->reportError(e->errorCode(), errMsg, dependencyFilename.str(), 0, 0, 0);
+                            }
+                        }
                     }
                 }
             }
@@ -595,7 +708,7 @@ void FileSystemEclCollection::checkCacheValid()
 extern HQL_API IEclSourceCollection * createFileSystemEclCollection(IErrorReceiver *errs, const char * path, unsigned flags, unsigned trace)
 {
     Owned<FileSystemEclCollection> collection = new FileSystemEclCollection(trace);
-    collection->processFilePath(errs, path, (flags & ESFallowplugins) != 0, !(flags & ESFoptional));
+    collection->processFilePath(errs, path, (flags & ESFallowplugins) != 0, (flags & ESFdependencies) != 0, !(flags & ESFoptional));
     return collection.getClear();
 }
 

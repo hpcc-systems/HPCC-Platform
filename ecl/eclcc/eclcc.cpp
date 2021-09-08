@@ -1782,7 +1782,7 @@ void EclCC::processFile(EclCompileInstance & instance)
         processDefinitions(localRepositoryManager);
         localRepositoryManager.inherit(repositoryManager); // don't include -I
         if (!optNoBundles)
-            localRepositoryManager.addQuerySourceFileEclRepository(&instance.queryErrorProcessor(), eclBundlePath.str(), ESFoptional, 0);
+            localRepositoryManager.addQuerySourceFileEclRepository(&instance.queryErrorProcessor(), eclBundlePath.str(), ESFoptional|ESFnodependencies, 0);
 
         //Ensure that this source file is used as the definition (in case there are potential clashes)
         //Note, this will not override standard library files.
@@ -1814,7 +1814,7 @@ void EclCC::processFile(EclCompileInstance & instance)
                 Owned<IEclSourceCollection> inputFileCollection = createSingleDefinitionEclCollection(attributePath, queryText);
                 localRepositoryManager.addRepository(inputFileCollection, nullptr, true);
 
-                Owned<IEclSourceCollection> directory = createFileSystemEclCollection(&instance.queryErrorProcessor(), thisDirectory, 0, 0);
+                Owned<IEclSourceCollection> directory = createFileSystemEclCollection(&instance.queryErrorProcessor(), thisDirectory, ESFnone, 0);
                 localRepositoryManager.addNestedRepository(moduleNameId, directory, true);
             }
         }
@@ -1826,7 +1826,7 @@ void EclCC::processFile(EclCompileInstance & instance)
         }
         else
         {
-            localRepositoryManager.addQuerySourceFileEclRepository(&instance.queryErrorProcessor(), querySearchPath.str(), 0, 0);
+            localRepositoryManager.addQuerySourceFileEclRepository(&instance.queryErrorProcessor(), querySearchPath.str(), ESFdependencies, 0);
 
             instance.dataServer.setown(localRepositoryManager.createPackage(nullptr));
         }
@@ -2006,7 +2006,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
     processDefinitions(localRepositoryManager);
     localRepositoryManager.inherit(repositoryManager);
     if (!optNoBundles)
-        localRepositoryManager.addQuerySourceFileEclRepository(&instance.queryErrorProcessor(), eclBundlePath.str(), ESFoptional, 0);
+        localRepositoryManager.addQuerySourceFileEclRepository(&instance.queryErrorProcessor(), eclBundlePath.str(), ESFoptional|ESFnodependencies, 0);
 
     if (queryAttributePackage)
     {
@@ -2024,7 +2024,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
         }
         else
         {
-            localRepositoryManager.addQuerySourceFileEclRepository(&instance.queryErrorProcessor(), searchPath, 0, 0);
+            localRepositoryManager.addQuerySourceFileEclRepository(&instance.queryErrorProcessor(), searchPath, ESFdependencies, 0);
             instance.dataServer.setown(localRepositoryManager.createPackage(nullptr));
         }
     }
@@ -2176,8 +2176,8 @@ bool EclCC::processFiles()
     }
 
     //Items first in the list have priority -Dxxx=y overrides all
-    repositoryManager.addSharedSourceFileEclRepository(errs, pluginsPath.str(), ESFallowplugins, logVerbose ? PLUGIN_DLL_MODULE : 0, includePluginsInArchive);
-    repositoryManager.addSharedSourceFileEclRepository(errs, eclLibraryPath.str(), 0, 0, includeLibraryInArchive);
+    repositoryManager.addSharedSourceFileEclRepository(errs, pluginsPath.str(), ESFallowplugins|ESFnodependencies, logVerbose ? PLUGIN_DLL_MODULE : 0, includePluginsInArchive);
+    repositoryManager.addSharedSourceFileEclRepository(errs, eclLibraryPath.str(), ESFnodependencies, 0, includeLibraryInArchive);
     //Bundles are not included in other repos.  Should eventually be replaced by dependent repos
 
     //Ensure symbols for plugins are initialised - see comment before CHqlMergedScope...
