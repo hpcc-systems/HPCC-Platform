@@ -71,7 +71,7 @@ public:
         {
             Owned<ISecureSocket> ssock = secureContextClient->createSecureSocket(socket.getClear());
             int tlsTraceLevel = SSLogMin;
-            if (sortTraceLevel >= MPVerboseMsgThreshold)
+            if (sortTraceLevel >= ExtraneousMsgThreshold)
                 tlsTraceLevel = SSLogMax;
             int status = ssock->secure_connect(tlsTraceLevel);
             if (status < 0)
@@ -371,7 +371,7 @@ public:
                     Owned<ISecureSocket> ssock = secureContextServer->createSecureSocket(socket.getClear());
                     int tlsTraceLevel = SSLogMin;
                     unsigned sortTraceLevel = slave.queryTraceLevel();
-                    if (sortTraceLevel >= MPVerboseMsgThreshold)
+                    if (sortTraceLevel >= ExtraneousMsgThreshold)
                         tlsTraceLevel = SSLogMax;
                     int status = ssock->secure_accept(tlsTraceLevel);
                     if (status < 0)
