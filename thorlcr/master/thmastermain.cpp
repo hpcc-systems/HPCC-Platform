@@ -66,7 +66,9 @@
 #include "thexception.hpp"
 #include "thmem.hpp"
 
+#ifndef _CONTAINERIED
 #define DEFAULT_QUERY_SO_DIR "sodir"
+#endif
 #define MAX_SLAVEREG_DELAY 60*1000*15 // 15 mins
 #define SLAVEREG_VERIFY_DELAY 5*1000
 #define SHUTDOWN_IN_PARALLEL 20
@@ -836,6 +838,16 @@ int main( int argc, const char *argv[]  )
         PROGLOG("Global memory size = %d MB", mmemSize);
         roxiemem::setTotalMemoryLimit(gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, ((memsize_t)mmemSize) * 0x100000, 0, thorAllocSizes, NULL);
 
+        char thorPath[1024];
+        if (!GetCurrentDirectory(1024, thorPath))
+        {
+            OERRLOG("ThorMaster::main: Current directory path too big, setting it to null");
+            thorPath[0] = 0;
+        }
+        unsigned l = strlen(thorPath);
+        if (l) { thorPath[l] = PATHSEPCHAR; thorPath[l+1] = '\0'; }
+        globals->setProp("@thorPath", thorPath);
+
 #ifndef _CONTAINERIZED
         const char * overrideBaseDirectory = globals->queryProp("@thorDataDirectory");
         const char * overrideReplicateDirectory = globals->queryProp("@thorReplicateDirectory");
@@ -849,6 +861,25 @@ int main( int argc, const char *argv[]  )
             setBaseDirectory(overrideBaseDirectory, false);
         if (overrideReplicateDirectory&&*overrideBaseDirectory)
             setBaseDirectory(overrideReplicateDirectory, true);
+
+        StringBuffer soDir, soPath;
+        if (getConfigurationDirectory(globals->queryPropTree("Directories"),"query","thor",globals->queryProp("@name"),soDir))
+            globals->setProp("@query_so_dir", soDir.str());
+        else if (!globals->getProp("@query_so_dir", soDir)) {
+            globals->setProp("@query_so_dir", DEFAULT_QUERY_SO_DIR); 
+            soDir.append(DEFAULT_QUERY_SO_DIR);
+        }
+        if (isAbsolutePath(soDir.str()))
+            soPath.append(soDir);
+        else
+        {
+            soPath.append(thorPath);
+            addPathSepChar(soPath);
+            soPath.append(soDir);
+        }
+        addPathSepChar(soPath);
+        globals->setProp("@query_so_dir", soPath.str());
+        recursiveCreateDirectory(soPath.str());
 #endif
 
         StringBuffer tempDirStr;
@@ -869,35 +900,6 @@ int main( int argc, const char *argv[]  )
         tempPrefix.append(getMasterPortBase()).append("_");
         SetTempDir(0, tempDirStr.str(), tempPrefix.str(), true);
         DBGLOG("Temp directory: %s", queryTempDir());
-
-        char thorPath[1024];
-        if (!GetCurrentDirectory(1024, thorPath))
-        {
-            OERRLOG("ThorMaster::main: Current directory path too big, setting it to null");
-            thorPath[0] = 0;
-        }
-        unsigned l = strlen(thorPath);
-        if (l) { thorPath[l] = PATHSEPCHAR; thorPath[l+1] = '\0'; }
-        globals->setProp("@thorPath", thorPath);
-
-        StringBuffer soDir, soPath;
-        if (getConfigurationDirectory(globals->queryPropTree("Directories"),"query","thor",globals->queryProp("@name"),soDir))
-            globals->setProp("@query_so_dir", soDir.str());
-        else if (!globals->getProp("@query_so_dir", soDir)) {
-            globals->setProp("@query_so_dir", DEFAULT_QUERY_SO_DIR); 
-            soDir.append(DEFAULT_QUERY_SO_DIR);
-        }
-        if (isAbsolutePath(soDir.str()))
-            soPath.append(soDir);
-        else
-        {
-            soPath.append(thorPath);
-            addPathSepChar(soPath);
-            soPath.append(soDir);
-        }
-        addPathSepChar(soPath);
-        globals->setProp("@query_so_dir", soPath.str());
-        recursiveCreateDirectory(soPath.str());
 
         startLogMsgParentReceiver();    
         connectLogMsgManagerToDali();
