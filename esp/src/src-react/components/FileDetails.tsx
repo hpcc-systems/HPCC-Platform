@@ -73,8 +73,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
             setReplicateFlag(_replicate);
         }
 
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [_protected, description, file?.Description, file?.ProtectList?.DFUFileProtect, file?.IsRestricted, file?.DFUFilePartsOnClusters, isProtected, restricted]);
+    }, [_protected, description, file?.DFUFilePartsOnClusters?.DFUFilePartsOnCluster, file?.Description, file?.IsRestricted, isProtected, restricted]);
 
     const canSave = file && (
         description !== file.Description ||

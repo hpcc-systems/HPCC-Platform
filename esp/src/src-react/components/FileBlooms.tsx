@@ -31,12 +31,12 @@ export const FileBlooms: React.FunctionComponent<FileBloomsProps> = ({
         Probability: { label: nlsHPCC.Probability, sortable: true, },
     });
 
-    const refreshTable = (clearSelection = false) => {
+    const refreshTable = React.useCallback((clearSelection = false) => {
         grid?.set("query", gridQuery);
         if (clearSelection) {
             grid?.clearSelection();
         }
-    };
+    }, [grid, gridQuery]);
 
     React.useEffect(() => {
         if (file?.Blooms) {
@@ -51,8 +51,7 @@ export const FileBlooms: React.FunctionComponent<FileBloomsProps> = ({
                 refreshTable();
             }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [gridStore, file?.Blooms]);
+    }, [file?.Blooms, gridStore, refreshTable]);
 
     return <HolyGrail
         main={

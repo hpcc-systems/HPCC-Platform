@@ -114,41 +114,32 @@ type SubMenuItems = { [nav: string]: SubMenu[] };
 const subMenuItems: SubMenuItems = {
     "activities": [
         { headerText: nlsHPCC.Activities, itemKey: "/activities" },
-        { headerText: nlsHPCC.Activities + " (L)", itemKey: "/activities/legacy" },
-        { headerText: nlsHPCC.TargetClusters, itemKey: "/clusters" },
         { headerText: nlsHPCC.EventScheduler + " (L)", itemKey: "/events" }
     ],
     "workunits": [
         { headerText: nlsHPCC.Workunits, itemKey: "/workunits" },
         { headerText: nlsHPCC.Dashboard, itemKey: "/workunits/dashboard" },
-        { headerText: nlsHPCC.Workunits + " (L)", itemKey: "/workunits/legacy" },
         { headerText: nlsHPCC.Playground, itemKey: "/play" },
-        { headerText: nlsHPCC.Playground + " (L)", itemKey: "/play/legacy" },
     ],
     "files": [
         { headerText: nlsHPCC.LogicalFiles, itemKey: "/files" },
-        { headerText: nlsHPCC.LogicalFiles + " (L)", itemKey: "/files/legacy" },
         { headerText: nlsHPCC.LandingZones, itemKey: "/landingzone" },
-        { headerText: nlsHPCC.LandingZones + " (L)", itemKey: "/landingzone/legacy" },
         { headerText: nlsHPCC.Workunits, itemKey: "/dfuworkunits" },
-        { headerText: nlsHPCC.Workunits + " (L)", itemKey: "/dfuworkunits/legacy" },
-        { headerText: nlsHPCC.XRef, itemKey: "/xref" },
+        { headerText: nlsHPCC.XRef + " (L)", itemKey: "/xref" },
     ],
     "queries": [
         { headerText: nlsHPCC.Queries, itemKey: "/queries" },
-        { headerText: nlsHPCC.Queries + " (L)", itemKey: "/queries/legacy" },
         { headerText: nlsHPCC.PackageMaps, itemKey: "/packagemaps" }
     ],
     "topology": [
-        { headerText: nlsHPCC.Topology, itemKey: "/topology" },
-        { headerText: nlsHPCC.DiskUsage, itemKey: "/diskusage" },
-        { headerText: nlsHPCC.TargetClusters, itemKey: "/clusters2" },
-        { headerText: nlsHPCC.ClusterProcesses, itemKey: "/processes" },
-        { headerText: nlsHPCC.SystemServers, itemKey: "/servers" },
-        { headerText: nlsHPCC.Security, itemKey: "/security" },
-        { headerText: nlsHPCC.Monitoring, itemKey: "/monitoring" },
-        { headerText: nlsHPCC.DESDL, itemKey: "/esdl" },
-        { headerText: nlsHPCC.LogVisualization, itemKey: "/elk" },
+        { headerText: nlsHPCC.Topology + " (L)", itemKey: "/topology" },
+        { headerText: nlsHPCC.DiskUsage + " (L)", itemKey: "/diskusage" },
+        { headerText: nlsHPCC.TargetClusters + " (L)", itemKey: "/clusters" },
+        { headerText: nlsHPCC.ClusterProcesses + " (L)", itemKey: "/processes" },
+        { headerText: nlsHPCC.SystemServers + " (L)", itemKey: "/servers" },
+        { headerText: nlsHPCC.Security + " (L)", itemKey: "/security" },
+        { headerText: nlsHPCC.Monitoring + " (L)", itemKey: "/monitoring" },
+        { headerText: nlsHPCC.DESDL + " (L)", itemKey: "/esdl" },
     ],
 };
 

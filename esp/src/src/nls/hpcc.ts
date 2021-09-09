@@ -466,6 +466,7 @@ export = {
         Message: "Message",
         Methods: "Methods",
         Metrics: "Metrics",
+        MetricsGraph: "Metrics/Graph",
         Min: "Min",
         Mine: "Mine",
         MinNode: "Min Node",

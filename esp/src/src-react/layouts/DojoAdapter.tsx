@@ -33,7 +33,6 @@ export const DojoAdapter: React.FunctionComponent<DojoAdapterProps> = ({
     const [widget, setWidget] = React.useState<any>();
 
     React.useEffect(() => {
-
         const elem = document.createElement("div");
         const divRef = myRef.current;
         divRef.innerText = "";
@@ -142,8 +141,7 @@ export const DojoComponent: React.FunctionComponent<DojoComponentProps> = ({
         return () => {
             w.destroyRecursive();
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [Widget, WidgetParams, divID, id, postCreate]);
 
     return <div style={{ width: "100%", height: "100%", position: "relative" }}>
         <div id={divID} className="dojo-component">
