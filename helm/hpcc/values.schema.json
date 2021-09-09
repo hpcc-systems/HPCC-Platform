@@ -484,7 +484,8 @@
           "type": "string",
           "description": "The amount of overall resource memory to reserve for 3rd party use"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "secrets": {
       "oneOf": [

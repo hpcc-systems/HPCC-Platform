@@ -2740,32 +2740,33 @@ CJobBase::CJobBase(ILoadedDllEntry *_querySo, const char *_graphName) : querySo(
         throwUnexpected();
 }
 
-void CJobBase::applyMemorySettings(float recommendReservePercentage, const char *context)
+void CJobBase::applyMemorySettings(float recommendedMaxPercentage, const char *context)
 {
+    // NB: 'total' memory has been calculated in advance from either resource settings or from system memory.
     VStringBuffer totalMemorySetting("%sMemory/@total", context);
     unsigned totalMemoryMB = globals->getPropInt(totalMemorySetting);
 
-    unsigned recommendReservedMemoryMB = totalMemoryMB * recommendReservePercentage / 100;
+    unsigned recommendedMaxMemoryMB = totalMemoryMB * recommendedMaxPercentage / 100;
 #ifdef _CONTAINERIZED
-    /* only "query" memory is actually used (if set configures Thor roxiemem limit)
-     * others are only advisory, but totalled and checked if within the total limit.
+    /* only "query" memory is actually used (if set, configures Thor roxiemem limit)
+     * others are only advisory, but totalled and checked to ensure within the total limit.
      */
-    std::vector<std::string> memorySettings = { "query", "thirdParty" };
+    std::initializer_list<const char *> memorySettings = { "query", "thirdParty" };
     offset_t totalRequirements = 0;
-    for (const auto &setting : memorySettings)
+    for (auto setting : memorySettings)
     {
-        VStringBuffer workunitSettingName("%smemory.%s", context, setting.c_str()); // NB: workunit options are case insensitive
+        VStringBuffer workunitSettingName("%smemory.%s", context, setting); // NB: workunit options are case insensitive
         StringBuffer memString;
         getWorkUnitValue(workunitSettingName, memString);
         if (0 == memString.length())
         {
-            VStringBuffer globalSettingName("%sMemory/@%s", context, setting.c_str());
+            VStringBuffer globalSettingName("%sMemory/@%s", context, setting);
             globals->getProp(globalSettingName, memString);
         }
         if (memString.length())
         {
             offset_t memBytes = friendlyStringToSize(memString);
-            if (streq("query", setting.c_str()))
+            if (streq("query", setting))
                 queryMemoryMB = (unsigned)(memBytes / 0x100000);
             totalRequirements += memBytes;
         }
@@ -2774,21 +2775,18 @@ void CJobBase::applyMemorySettings(float recommendReservePercentage, const char 
     if (totalRequirementsMB > totalMemoryMB)
         throw makeStringExceptionV(0, "The total memory requirements of the query (%u MB) exceeds the %s memory limit (%u MB)", totalRequirementsMB, context, totalMemoryMB);
 
-    unsigned remainingMB = totalMemoryMB - totalRequirementsMB;
-    if (remainingMB < recommendReservedMemoryMB)
+    if (totalRequirementsMB > recommendedMaxMemoryMB)
     {
-        WARNLOG("The total memory requirements of the query (%u MB) exceed the recommended reserve limits for %s (total memory: %u MB, reserve recommendation: %.2f%%)", totalRequirementsMB, context, totalMemoryMB, recommendReservePercentage);
+        WARNLOG("The total memory requirements of the query (%u MB) exceed the recommended reserve limits for %s (total memory: %u MB, recommended max percentage : %.2f%%)", totalRequirementsMB, context, totalMemoryMB, recommendedMaxPercentage);
+    
+        // if "query" memory has not been defined, then use the remaining memory
         if (0 == queryMemoryMB)
-            queryMemoryMB = remainingMB; // probably not recommended - use all of remaining in this case for query memory.
+            queryMemoryMB = totalMemoryMB - totalRequirementsMB;
     }
     else if (0 == queryMemoryMB)
-        queryMemoryMB = remainingMB - recommendReservedMemoryMB;
+        queryMemoryMB = recommendedMaxMemoryMB - totalRequirementsMB;
 #else
-    if (totalMemoryMB < recommendReservedMemoryMB)
-        throw makeStringExceptionV(0, "The total memory (%u MB) is less than recommendReservedMemoryMB (%u MB), recommendReservePercentage (%.2f%%)", totalMemoryMB, recommendReservedMemoryMB, recommendReservePercentage);
-
-    unsigned remainingMB = totalMemoryMB;
-    queryMemoryMB = totalMemoryMB - recommendReservedMemoryMB;
+    queryMemoryMB = recommendedMaxMemoryMB;
 #endif
 
     bool gmemAllowHugePages = globals->getPropBool("@heapUseHugePages", false);
@@ -2797,7 +2795,7 @@ void CJobBase::applyMemorySettings(float recommendReservePercentage, const char 
     bool gmemRetainMemory = globals->getPropBool("@heapRetainMemory", false);
     roxiemem::setTotalMemoryLimit(gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, ((memsize_t)queryMemoryMB) * 0x100000, 0, thorAllocSizes, NULL);
 
-    PROGLOG("Total memory = %u MB, query memory = %u MB, memory spill at = %u (reserve = %.2f%%, reserveMB = %u, remainingMB = %u)", totalMemoryMB, queryMemoryMB, memorySpillAtPercentage, recommendReservePercentage, recommendReservedMemoryMB, remainingMB);
+    PROGLOG("Total memory = %u MB, query memory = %u MB, memory spill at = %u", totalMemoryMB, queryMemoryMB, memorySpillAtPercentage);
 }
 
 void CJobBase::init()

@@ -1687,20 +1687,41 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
     }
     tmpHandler.setown(createTempHandler(true));
 
-    float recommendReservePercentage = roxieMemPercentage;
-#ifndef _CONTAINERIZED
-    unsigned numWorkers = globals->getPropInt("@slavesPerNode", 1);
+    /*
+     * Calculate maximum recommeded memory for this worker.
+     * In container mode, there is only ever 1 worker per container,
+     * recommendedMaxPercentage = defaultPctSysMemForRoxie
+     * In bare-metal slavesPerNode is taken into account and @localThor if used.
+     * 
+     * recommendedMaxPercentage is used by applyMemorySettings to calculate the
+     * max amount of meemory that should be used (allowing enough left for heap/OS etc.)
+     */
+#ifdef _CONTAINERIZED
+    float recommendedMaxPercentage = defaultPctSysMemForRoxie;
+#else
+    // bare-metal only
 
-    // Weird @localThor mode, where <roxieMemPercentage>(25%) of memory is reserved for OS, <roxieMemPercentage>(25%) is reserved for master, and reset fo slaves
+    float recommendedMaxPercentage = defaultPctSysMemForRoxie;
+    unsigned numWorkersPerNode = globals->getPropInt("@slavesPerNode", 1);
+
+    // @localThor mode - 25% is used for manager and 50% is used for workers
     if (globals->getPropBool("@localThor") && (0 == globals->getPropInt("@masterMemorySize")))
     {
-        // reserve is <roxieMemPercentage>% (for OS) + <roxieMemPercentage>% (for manager) + [other workers * slave of rest(50%)]
-        recommendReservePercentage = roxieMemPercentage + roxieMemPercentage + ((numWorkers-1) * ((100-roxieMemPercentage-roxieMemPercentage) / ((float)numWorkers)));
+        /* In this mode, 25% is reserved for manager,
+         * 50% for the workers.
+         * Meaning this workers' recommendedMaxPercentage is remaining percentage */
+        recommendedMaxPercentage -= 25.0; // for manager
+        float pctPerWorker = 50.0 / numWorkersPerNode;
+        recommendedMaxPercentage -= pctPerWorker * (numWorkersPerNode-1);
     }
     else
-        recommendReservePercentage = roxieMemPercentage + ((numWorkers-1) * ((100-roxieMemPercentage) / ((float)numWorkers)));
+    {
+        // deduct percentage for all other workers from max percentage
+        float pctPerWorker = defaultPctSysMemForRoxie / numWorkersPerNode;
+        recommendedMaxPercentage -= pctPerWorker * (numWorkersPerNode-1);
+    }
 #endif
-    applyMemorySettings(recommendReservePercentage, "worker");
+    applyMemorySettings(recommendedMaxPercentage, "worker");
 
     unsigned sharedMemoryLimitPercentage = (unsigned)getWorkUnitValueInt("globalMemoryLimitPC", globals->getPropInt("@sharedMemoryLimit", 90));
     unsigned sharedMemoryMB = queryMemoryMB*sharedMemoryLimitPercentage/100;

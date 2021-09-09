@@ -73,16 +73,22 @@
  * from total system memory.
  *
  * For historical reasons the default in bare-metal has always been a
- * conservative reserve of 25%.
+ * conservative 75% of system memory, leaving 25% free for the heap/OS etc.
+ * In container mode a more aggresive default of 90% is used.
  *
- * NB: These percentages do not apply if the memory amount has been configured
- * manually via 'globalMemorySize' and 'masterMemorySize'
+ * In bare-metal, these percentages do not apply if
+ * 'globalMemorySize' and/or 'masterMemorySize' are configured.
+ * 
+ * In container mode, workerMemory and/or masterMemory can be used to override
+ * these default percentages. However, the defaults percentages will stil be
+ * used to give a warning if the workerMemory or masterMemory totals exceed the
+ * defaults.
  */
 
 #ifdef _CONTAINERIZED
-constexpr float roxieMemPercentage = 10.0;
+constexpr float defaultPctSysMemForRoxie = 90.0;
 #else
-constexpr float roxieMemPercentage = 25.0;
+constexpr float defaultPctSysMemForRoxie = 75.0;
 #endif
 
 
