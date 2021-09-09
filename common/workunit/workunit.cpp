@@ -8360,7 +8360,7 @@ IConstWUQuery* CLocalWorkUnit::getQuery() const
     CriticalBlock block(crit);
     if (!query)
     {
-        IPropertyTree *s = p->getPropTree("Query");
+        IPropertyTree *s = queryMergedTree()->getPropTree("Query");
         if (s)
             query.setown(new CLocalWUQuery(s)); // NB takes ownership of 's'
     }
@@ -8373,7 +8373,7 @@ IWUQuery* CLocalWorkUnit::updateQuery()
     CriticalBlock block(crit);
     if (!query)
     {
-        IPropertyTree *s = p->queryPropTree("Query");
+        IPropertyTree *s = queryMergedTree()->queryPropTree("Query");
         if (!s)
             s = p->addPropTree("Query", createPTreeFromXMLString("<Query fetchEntire='1'/>")); // Is this really desirable (the fetchEntire) ?
         s->Link();
@@ -9558,7 +9558,10 @@ IPropertyTree *CLocalWorkUnit::queryMergedTree() const
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
         Owned<IConstWorkUnit> donor = factory->openWorkUnit(p->queryProp("@clonedFromWorkunit"));
         if (donor)
+        {
             copyTree(indirectTree, queryExtendedWU(donor)->queryPTree(), "Graphs");
+            copyTree(indirectTree, queryExtendedWU(donor)->queryPTree(), "Query");
+        }
         return indirectTree;
     }
 }
