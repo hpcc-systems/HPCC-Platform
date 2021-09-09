@@ -1783,6 +1783,7 @@ public:
             agentsReplyLen += ctx->getAgentsReplyLen();
             agentsDuplicates += ctx->getAgentsDuplicates();
             agentsResends += ctx->getAgentsResends();
+            ctx->done(false);
         }
         else
         {
