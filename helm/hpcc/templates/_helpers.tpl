@@ -313,14 +313,6 @@ to addVolumeMounts so that if a plane can be used for multiple purposes then dup
 {{- end -}}
 
 {{/*
-Add data volume mount
-Pass in root
-*/}}
-{{- define "hpcc.addDataVolumeMount" -}}
-{{- include "hpcc.addVolumeMounts" (dict "root" .root "includeCategories" (list "data" "lz")) -}}
-{{- end -}}
-
-{{/*
 Add volumes
 Pass in root, includeCategories (optional) and includeNames (optional)
 The plane will generate a volume if it matches either an includeLabel or an includeName
@@ -358,14 +350,6 @@ The plane will generate a volume if it matches either an includeLabel or an incl
 {{- end -}}
 
 {{/*
-Add data volume
-Pass in dict with root
-*/}}
-{{- define "hpcc.addDataVolume" -}}
-{{- include "hpcc.addVolumes" (dict "root" .root "includeCategories" (list "data" "lz") ) -}}
-{{- end -}}
-
-{{/*
 Add a volume mount - if default plane is used, or the storage plane specifies a pvc
 Pass in dict with root, planeName
 */}}
@@ -381,38 +365,6 @@ Pass in dict with root, planeName
 {{- end -}}
 
 {{/*
-Add dll volume mount - if default plane is used, or the dll storage plane specifies a pvc
-Pass in dict with root
-*/}}
-{{- define "hpcc.addDllVolumeMount" -}}
-{{- include "hpcc.addVolumeMounts" (dict "root" .root "includeCategories" (list "dll")) -}}
-{{- end -}}
-
-{{/*
-Add dali volume mount - if default plane is used, or the dali storage plane specifies a pvc
-Pass in dict with root
-*/}}
-{{- define "hpcc.addDaliVolumeMount" -}}
-{{- include "hpcc.addVolumeMounts" (dict "root" .root "includeCategories" (list "dali")) -}}
-{{- end -}}
-
-{{/*
-Add dll volume - if default plane is used, or the dll storage plane specifies a pvc
-Pass in dict with root
-*/}}
-{{- define "hpcc.addDllVolume" -}}
-{{- include "hpcc.addVolumes" (dict "root" .root "includeCategories" (list "dll") ) }}
-{{- end -}}
-
-{{/*
-Add dali volume - if default plane is used, or the dali storage plane specifies a pvc
-Pass in dict with root
-*/}}
-{{- define "hpcc.addDaliVolume" -}}
-{{- include "hpcc.addVolumes" (dict "root" .root "includeCategories" (list "dali") ) }}
-{{- end -}}
-
-{{/*
 Add the secret volume mounts for a component
 Pass in dict with root and secretsCategories
 */}}
@@ -420,10 +372,10 @@ Pass in dict with root and secretsCategories
 {{- $secretsCategories := .secretsCategories -}}
 {{- range $category, $key := .root.Values.secrets -}}
  {{- if (has $category $secretsCategories) -}}
-{{- range $secretid, $secretname := $key -}}
+  {{- range $secretid, $secretname := $key }}
 - name: secret-{{ $secretid }}
   mountPath: /opt/HPCCSystems/secrets/{{ $category }}/{{ $secretid }}
-{{ end -}}
+  {{ end -}}
  {{- end -}}
 {{- end -}}
 {{- end -}}
@@ -610,6 +562,7 @@ A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop
       mountPath: {{ .volumePath | quote }}
 {{- end }}
 
+
 {{/*
 A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop) has correct permissions for PV
 */}}
@@ -621,13 +574,13 @@ A kludge to ensure mounted storage (e.g. for nfs, minikube or docker for desktop
 {{- range $plane := $planes -}}
  {{- if and ($plane.forcePermissions) (or ($plane.pvc) (hasKey $plane "storageClass")) -}}
   {{- $mountpath := $plane.prefix -}}
-  {{- if or (has $plane.category $includeCategories) (has $plane.name $includeNames) }}
-{{- $volumeName := (printf "%s-pv" $plane.name) -}}
-{{ include "hpcc.changeMountPerms" (dict "root" .root "volumeName" $volumeName "volumePath" $plane.prefix) }}
-{{- end }}
-{{- end }}
-{{- end }}
-{{- end }}
+  {{- if or (has $plane.category $includeCategories) (has $plane.name $includeNames) -}}
+   {{- $volumeName := (printf "%s-pv" $plane.name) -}}
+   {{- include "hpcc.changeMountPerms" (dict "root" .root "volumeName" $volumeName "volumePath" $plane.prefix) | nindent 0 }}
+  {{- end -}}
+ {{- end -}}
+{{- end -}}
+{{- end -}}
 
 
 {{/*
@@ -674,29 +627,6 @@ Add wait-and-run shared inter container volume
 - name: wait-and-run
   emptyDir: {}
 {{- end }}
-
-{{/*
-Check dll mount point, using hpcc.changeMountPerms
-*/}}
-{{- define "hpcc.checkDllMount" -}}
-{{ include "hpcc.changePlaneMountPerms" (dict "root" .root "includeCategories" (list "dll")) }}
-{{- end }}
-
-{{/*
-Check datastorage mount point, using hpcc.changeMountPerms
-Pass in a dictionary with root
-*/}}
-{{- define "hpcc.checkDataMount" -}}
-{{ include "hpcc.changePlaneMountPerms" (dict "root" .root "includeCategories" (list "data" "lz")) }}
-{{- end }}
-
-{{/*
-Check dalistorage mount point, using hpcc.changeMountPerms
-*/}}
-{{- define "hpcc.checkDaliMount" -}}
-{{ include "hpcc.changePlaneMountPerms" (dict "root" .root "includeCategories" (list "dali")) }}
-{{- end }}
-
 
 {{/*
 Add any bundles
@@ -938,54 +868,25 @@ Pass in dict with root, me and dali if container in dali pod
 {{ include "hpcc.addImageAttrs" (dict "root" .root "me" (.dali | default .me)) | indent 2 }}
 {{- end -}}
 
-{{/*
-A template to generate Sasha service
-Pass in dict with root and me
-*/}}
-{{- define "hpcc.addSashaVolumeMounts" }}
-{{- $serviceName := printf "sasha-%s" .me.name -}}
-{{- if hasKey .me "plane" }}
-{{- $sashaStoragePlane := .me.plane | default (include "hpcc.getFirstPlaneForCategory" (dict "root" .root "category" "sasha")) }}
-{{ include "hpcc.addVolumeMounts" (dict "root" .root "includeNames" (list $sashaStoragePlane)) -}}
-{{- end }}
-{{ with (dict "name" $serviceName ) -}}
-{{ include "hpcc.addConfigMapVolumeMount" . }}
-{{- end }}
-{{- if has "dalidata" .me.access }}
-{{ include "hpcc.addDaliVolumeMount" . -}}
-{{- end }}
-{{- if has "data" .me.access }}
-{{ include "hpcc.addDataVolumeMount" . }}
-{{- end }}
-{{- if has "dll" .me.access }}
-{{ include "hpcc.addDllVolumeMount" . -}}
-{{- end -}}
-{{- end }}
-
 
 {{/*
-A template to generate Sasha service
-Pass in dict with root and me
+A template to translate dali access types into required planes
+Pass in dict with access
 */}}
-{{- define "hpcc.addSashaVolumes" }}
-{{- $serviceName := printf "sasha-%s" .me.name -}}
-{{- if hasKey .me "plane" }}
-{{- $sashaStoragePlane := .me.plane | default (include "hpcc.getFirstPlaneForCategory" (dict "root" .root "category" "sasha")) }}
-{{ include "hpcc.addVolumes" (dict "root" .root "includeNames" (list $sashaStoragePlane) ) }}
+{{- define "hpcc.getSashaPlanesFromAccess" }}
+{{- $tmpCtx := dict "planeTypes" list -}}
+{{- if has "dalidata" .access -}}
+ {{- $_ := set $tmpCtx "planeTypes" (append $tmpCtx.planeTypes "dali" ) -}}
 {{- end }}
-{{ with (dict "name" $serviceName) -}}
-{{ include "hpcc.addConfigMapVolume" . }}
+{{- if has "data" .access }}
+ {{- $_ := set $tmpCtx "planeTypes" (append $tmpCtx.planeTypes "data" ) -}}
 {{- end }}
-{{- if has "dalidata" .me.access }}
-{{ include "hpcc.addDaliVolume" . -}}
-{{- end }}
-{{- if has "data" .me.access }}
-{{ include "hpcc.addDataVolume" . }}
-{{- end }}
-{{- if has "dll" .me.access }}
-{{ include "hpcc.addDllVolume" . -}}
-{{- end }}
+{{- if has "dll" .access }}
+ {{- $_ := set $tmpCtx "planeTypes" (append $tmpCtx.planeTypes "dll" ) -}}
 {{- end -}}
+{{- join " " $tmpCtx.planeTypes -}}
+{{- end }}
+
 
 {{/*
 A template to generate the type of a service based on the visibility setting
@@ -1071,6 +972,7 @@ prometheusMetricsReporter: "yes"
   {{ end }}
  {{ end }}
 {{- end -}}
+
 {{/*
 Return access permssions for a given service
 */}}

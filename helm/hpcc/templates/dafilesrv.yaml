@@ -20,7 +20,7 @@ data:
 {{ range $.Values.dafilesrv -}}
 {{- if not .disabled -}}
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
-{{- $commonCtx := dict "root" $ "me" . "env" $env "exposure" "local" "visibility" .service.visibility -}}
+{{- $commonCtx := dict "root" $ "me" . "env" $env "exposure" "local" "visibility" .service.visibility "includeCategories" (list "data") -}}
 {{- if ($.Values.certificates | default dict).enabled -}}
  {{- $externalCert := ne (include "hpcc.isVisibilityPublic" $commonCtx) "" -}}
  {{- $issuerName := ternary "public" "local" $externalCert -}}
@@ -52,7 +52,7 @@ spec:
     spec:
       serviceAccountName: "hpcc-default"
       initContainers:
-        {{- include "hpcc.checkDataMount" $commonCtx | indent 6 }}
+      {{- include "hpcc.changePlaneMountPerms" $commonCtx | indent 6 }}
       containers:
       - name: {{ .name | quote }}
         workingDir: /var/lib/HPCCSystems
@@ -70,11 +70,11 @@ spec:
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
-{{ include "hpcc.addDataVolumeMount" $commonCtx | indent 8 }}
+{{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" .name "component" "dafilesrv" "certificate" .certificate "visibility" .service.visibility) | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
-{{ include "hpcc.addDataVolume" $commonCtx | indent 6 }}
+{{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" "dafilesrv" "certificate" .certificate "visibility" .service.visibility) | indent 6 }}
 ---
 kind: ConfigMap 

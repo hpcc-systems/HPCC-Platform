@@ -71,7 +71,7 @@ data:
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $secretsCategories := list "system" "ecl-user" "ecl" "storage" }}
 {{- $toposerver := ($roxie.topoServer | default dict) -}}
-{{- $commonCtx := dict "root" $ "me" $roxie "secretsCategories" $secretsCategories "toposerver" $toposerver "env" $env }}
+{{- $commonCtx := dict "root" $ "me" $roxie "includeCategories" (list "lz" "data" "spill" "dll") "secretsCategories" $secretsCategories "toposerver" $toposerver "env" $env }}
 {{- $_ := set $commonCtx "toponame" (printf "%s-toposerver" $roxie.name) -}}
 {{- $_ := set $commonCtx "numChannels" ($roxie.numChannels | int | default 1) -}}
 {{- $_ := set $commonCtx "topoport" ($toposerver.port | int | default 9004) -}}
@@ -239,7 +239,7 @@ spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $servername "target" $roxie.name "type" "roxie") | indent 6 }}
       serviceAccountName: "hpcc-default"
       initContainers:
-        {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
+      {{- include "hpcc.changePlaneMountPerms" $commonCtx | indent 6 }}
       containers:
       - name: {{ $servername | quote }}
         workingDir: /var/lib/HPCCSystems
@@ -281,16 +281,14 @@ spec:
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" $roxie | indent 8 }}
-{{ include "hpcc.addDataVolumeMount" $commonCtx | indent 8 }}
-{{ include "hpcc.addDllVolumeMount" $commonCtx | indent 8 }}
+{{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" "roxie-server" "name" $servername "external" false) | indent 8 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" "roxie-server" "name" $servername "external" true) | indent 8 }}
 {{ include "hpcc.addUDPCertificateVolumeMount" (dict "root" $ "component" "udpkey" "name" $udpkeyname ) | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" $roxie | indent 6 }}
-{{ include "hpcc.addDataVolume" $commonCtx | indent 6 }}
-{{ include "hpcc.addDllVolume" $commonCtx | indent 6 }}
+{{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "component" "roxie-server" "name" $servername "external" false) | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "component" "roxie-server" "name" $servername "external" true) | indent 6 }}
@@ -347,7 +345,7 @@ spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" $name "target" $roxie.name "type" "roxie") | indent 6 }}
       serviceAccountName: "hpcc-default"
       initContainers:
-        {{- include "hpcc.checkDataMount" (dict "root" $) | indent 6 }}
+      {{- include "hpcc.changePlaneMountPerms" $commonCtx | indent 6 }}
       containers:
       - name: {{ $name | quote}}
         workingDir: /var/lib/HPCCSystems
@@ -392,8 +390,7 @@ spec:
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" $roxie | indent 8 }}
-{{ include "hpcc.addDataVolumeMount" $commonCtx | indent 8 }}
-{{ include "hpcc.addDllVolumeMount" $commonCtx | indent 8 }}
+{{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
 {{- if not $roxie.serverReplicas }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "component" "roxie-agent" "name" $name "external" false) | indent 8 }}
@@ -403,8 +400,7 @@ spec:
 
       volumes:
 {{ include "hpcc.addConfigMapVolume" $roxie | indent 6 }}
-{{ include "hpcc.addDataVolume" $commonCtx | indent 6 }}
-{{ include "hpcc.addDllVolume" $commonCtx | indent 6 }}
+{{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
 {{- if not $roxie.serverReplicas }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "component" "roxie-agent" "name" $name "external" false) | indent 6 }}
