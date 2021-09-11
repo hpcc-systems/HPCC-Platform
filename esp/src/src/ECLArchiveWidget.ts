@@ -18,6 +18,8 @@ import * as template from "dojo/text!hpcc/templates/ECLArchiveWidget.html";
 import * as _Widget from "hpcc/_Widget";
 import { declareDecorator } from "./DeclareDecorator";
 
+const TIME_NAMES = ["TimeMaxLocalExecute", "TimeAvgLocalExecute", "TimeLocalExecute"];
+
 class DirectoryTreeEx extends DirectoryTree {
     calcWidth() {
         return this.calcRequiredWidth();
@@ -403,14 +405,18 @@ export class ECLArchiveWidget {
         function buildMarkerData(scopesArr) {
             const markers = {};
 
-            const timeName = "TimeMaxLocalExecute";
-
             scopesArr.forEach(scope => {
                 const definitionList = scope.Properties.Property.find(n => n.Name === "DefinitionList");
 
                 const tableData = tableDataTransformer(scope.Properties.Property);
 
-                const timeEntry = tableData.find(n => n[0] === timeName);
+                let timeEntry;
+                for (const timeName of TIME_NAMES) {
+                    timeEntry = tableData.find(n => n[0] === timeName);
+                    if (timeEntry) {
+                        break;
+                    }
+                }
 
                 if (definitionList !== undefined && timeEntry !== undefined) {
                     const label = timeEntry[1];
@@ -426,12 +432,18 @@ export class ECLArchiveWidget {
                         if (!markers[filePath]) {
                             markers[filePath] = [];
                         }
-                        const rawTime = {};
-                        scope.Properties.Property.forEach(n => {
-                            if (n.Name === timeName) {
-                                Object.assign(rawTime, n);
+                        let rawTime;
+                        for (const timeName of TIME_NAMES) {
+                            for (const n of scope.Properties.Property) {
+                                if (n.Name === timeName) {
+                                    rawTime = { ...n };
+                                    break;
+                                }
                             }
-                        });
+                            if (rawTime) {
+                                break;
+                            }
+                        }
                         markers[filePath].push({
                             lineNum,
                             charNum,
@@ -439,7 +451,7 @@ export class ECLArchiveWidget {
                             color,
                             definitionList,
                             tableData,
-                            rawTime,
+                            rawTime: rawTime || {},
                             properties: scope.Properties.Property
                         });
                     });
