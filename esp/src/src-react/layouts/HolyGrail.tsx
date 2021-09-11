@@ -20,7 +20,7 @@ export const HolyGrail: React.FunctionComponent<HolyGrailProps> = ({
         <header style={{ flex: "0 0", minWidth: 0 }}>{header}</header>
         <div style={{ flex: "1 1", display: "flex", minWidth: 0 }} >
             <div style={{ flex: "0 2" }}>{left}</div>
-            <div style={{ flex: "1 1 auto", minWidth: 0 }}>{main}</div>
+            <div style={{ flex: "1 1 auto", minWidth: 1, minHeight: 1 }}>{main}</div>
             <div style={{ flex: "0 2" }}>{right}</div>
         </div>
         <footer style={{ flex: "0 0", minWidth: 0 }}>{footer}</footer>
