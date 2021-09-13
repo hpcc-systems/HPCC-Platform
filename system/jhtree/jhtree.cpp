@@ -2306,9 +2306,11 @@ public:
     virtual bool prewarmPage(offset_t offset, NodeType type) { return checkOpen().prewarmPage(offset, type); }
     virtual void mergeStats(CRuntimeStatisticCollection & stats) const override
     {
-        CriticalBlock b(c);
-        if (!realKey) return;
-        checkOpen().mergeStats(stats);
+        {
+            CriticalBlock b(c);
+            if (!realKey) return;
+        }
+        realKey->mergeStats(stats);
     }
 };
 

@@ -312,7 +312,7 @@ public:
             // One entry for each subfile (unless it is not a superfile => then add one entry for index data file stats)
             unsigned numSuperIndexSubs = superIndex?superIndex->numSubFiles(true):1;
             for (unsigned i=0; i<numSuperIndexSubs; i++)
-                fileStats.push_back(new CThorStatsCollection(indexReadActivityStatistics));
+                fileStats.push_back(new CThorStatsCollection(indexReadStatistics));
 
             if (helper->diskAccessRequired())
             {
@@ -361,7 +361,7 @@ public:
                         // One entry for each subfile (unless it is not a superfile => then have 1 entry for data file stats)
                         unsigned numsubs = super?super->numSubFiles(true):1;
                         for (unsigned i=0; i<numsubs; i++)
-                            fileStats.push_back(new CThorStatsCollection(diskReadActivityStatistics));
+                            fileStats.push_back(new CThorStatsCollection(diskReadRemoteStatistics));
                     }
                 }
             }
@@ -467,10 +467,7 @@ public:
                     initMb.append(keyHasTlk);
                     if (keyHasTlk)
                     {
-                        if (numSuperIndexSubs)
-                            initMb.append(numSuperIndexSubs);
-                        else
-                            initMb.append((unsigned)1);
+                        initMb.append(numSuperIndexSubs);
 
                         Owned<IDistributedFileIterator> iter;
                         IDistributedFile *f;
@@ -573,7 +570,7 @@ public:
         for (unsigned i=0; i<numSubFiles; i++)
         {
             IDistributedFile *file = queryReadFile(i);
-            if (file)
+            if (file) //publish the number of disk reads for indexes and disk fetches.
                 file->addAttrValue("@numDiskReads", fileStats[i]->getStatisticSum(StNumDiskReads));
         }
         CMasterActivity::done();

@@ -1348,8 +1348,9 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     {
         typedef CKeyLookupLocalBase PARENT;
 
-        std::vector<IKeyManager *> keyManagers;
-        std::unique_ptr<std::vector<std::atomic_bool>> keyManagersCreated; // used to ensure IKeyManager * is not used before it has fully written
+        //Need ptr to std::vector as std::atomic's are not constructable(doesn't have copy constructor)
+        std::unique_ptr<std::vector<std::atomic<IKeyManager *>>> keyManagers;
+        CriticalSection cs;
 
     public:
         CKeyLookupLocalHandler(CKeyedJoinSlave &_activity) : CKeyLookupLocalBase(_activity)
@@ -1357,24 +1358,23 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         }
         ~CKeyLookupLocalHandler()
         {
-            for (auto &km : keyManagers)
+            for (auto &km : *keyManagers)
             {
                 if (km)
-                    km->Release();
+                    (*km).Release();
             }
         }
         virtual void init() override
         {
             PARENT::init();
-            keyManagersCreated.reset(new std::vector<std::atomic_bool>(parts.size()));
-            for (auto & k: *keyManagersCreated)
-                k = false;
+            keyManagers.reset(new std::vector<std::atomic<IKeyManager *>>(parts.size()));
+            for (auto & k: *keyManagers)
+                k.store(nullptr);
 
         }
         virtual void addPartNum(unsigned partNum) override
         {
             PARENT::addPartNum(partNum);
-            keyManagers.push_back(nullptr);
             translators.push_back(nullptr);
         }
         virtual void process(CThorExpandingRowArray &processing, unsigned selected) override
@@ -1382,13 +1382,18 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             unsigned partCopy = parts[selected];
             unsigned partNo = partCopy & partMask;
             unsigned copy = partCopy >> partBits;
-            IKeyManager *&keyManager = keyManagers[selected];
+            IKeyManager *keyManager = (*keyManagers)[selected];
             if (!keyManager) // delayed until actually needed
             {
-                keyManager = activity.createPartKeyManager(partNo, copy);
-                // NB: potentially translation per part could be different if dealing with superkeys
-                setupTranslation(partNo, selected, *keyManager);
-                (*keyManagersCreated)[selected] = true;
+                CriticalBlock b(cs);
+                keyManager = (*keyManagers)[selected];
+                if (!keyManager) // delayed until actually needed
+                {
+                    keyManager = activity.createPartKeyManager(partNo, copy);
+                    (*keyManagers)[selected] = keyManager;
+                    // NB: potentially translation per part could be different if dealing with superkeys
+                    setupTranslation(partNo, selected, *keyManager);
+                }
             }
             processRows(processing, partNo, keyManager);
         }
@@ -1396,9 +1401,9 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         {
             for (size_t i=0; i<parts.size(); i++)
             {
-                if (!(*keyManagersCreated)[i])
+                IKeyManager *keyManager = (*keyManagers)[i].load();
+                if (!keyManager)
                     continue;
-                IKeyManager *&keyManager = keyManagers[i];
                 if (isSuper)
                 {
                     unsigned subfile = subFileNum[i];
@@ -1413,13 +1418,17 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
     {
         typedef CKeyLookupLocalBase PARENT;
 
-        Owned<IKeyManager> keyManager;
-        std::atomic_bool keyManagerCreated{false}; // used to ensure keyManager is not used before it has fully written
+        std::atomic<IKeyManager *> keyManager{nullptr};
     public:
         CKeyLookupMergeHandler(CKeyedJoinSlave &_activity) : CKeyLookupLocalBase(_activity)
         {
             limiter = &activity.lookupThreadLimiter;
             translators.push_back(nullptr);
+        }
+        ~CKeyLookupMergeHandler()
+        {
+            if (keyManager)
+                (*keyManager).Release();
         }
         virtual void process(CThorExpandingRowArray &processing, unsigned __unused) override
         {
@@ -1433,25 +1442,24 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                     Owned<IKeyIndex> keyIndex = activity.createPartKeyIndex(partNo, copy, false);
                     partKeySet->addIndex(keyIndex.getClear());
                 }
-                keyManager.setown(createKeyMerger(helper->queryIndexRecordSize()->queryRecordAccessor(true), partKeySet, 0, nullptr, helper->hasNewSegmentMonitors(), false));
-                keyManagerCreated = true;
+                keyManager = createKeyMerger(helper->queryIndexRecordSize()->queryRecordAccessor(true), partKeySet, 0, nullptr, helper->hasNewSegmentMonitors(), false);
                 setupTranslation(0, 0, *keyManager);
             }
             processRows(processing, 0, keyManager);
         }
         virtual void getSubFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & subFileStats) override
         {
-            if (keyManagerCreated)
+            if (keyManager)
             {
                 for (size_t i=0; i<parts.size(); i++)
                 {
                     if (isSuper)
                     {
                         unsigned subfile = subFileNum[i];
-                        keyManager->mergeStats(*subFileStats[subfile]);
+                        (*keyManager).mergeStats(*subFileStats[subfile]);
                     }
                     else
-                        keyManager->mergeStats(*subFileStats[0]);
+                        (*keyManager).mergeStats(*subFileStats[0]);
                 }
             }
         }
@@ -1770,17 +1778,14 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         bool compressed = false;
         Owned<IEngineRowAllocator> fetchDiskAllocator;
         CThorContiguousRowBuffer prefetchSource;
-        std::vector<PartIO> partIOs;
-        std::unique_ptr<std::vector<std::atomic_bool>> partIOCreated;
+        //Need ptr to std::vector as std::atomic's are not constructable(doesn't have copy constructor)
+        std::unique_ptr<std::vector<std::atomic<PartIO *>>> partIOs;
 
         inline const PartIO &queryFetchPartIO(unsigned selected, unsigned partNo, unsigned copy, bool compressed, bool encrypted)
         {
-            PartIO &partIO = partIOs[selected];
+            PartIO &partIO = *(*partIOs)[selected];
             if (!partIO.stream)
-            {
                 partIO = activity.getFetchPartIO(partNo, copy, compressed, encrypted);
-                (*partIOCreated)[selected] = true;
-            }
             return partIO;
         }
     public:
@@ -1792,15 +1797,19 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
             limiter = &activity.fetchThreadLimiter;
             allParts = &activity.allDataParts;
         }
+        ~CFetchLocalLookupHandler()
+        {
+            for (auto & p: *partIOs)
+                delete p;
+        }
         virtual void init() override
         {
             PARENT::init();
             encrypted = activity.allDataParts.item(0).queryOwner().queryProperties().getPropBool("@encrypted");
             compressed = isCompressed(activity.allDataParts.item(0).queryOwner().queryProperties());
-            partIOs.resize(parts.size());
-            partIOCreated.reset(new std::vector<std::atomic_bool>(parts.size()));
-            for (auto & p: *partIOCreated)
-                p = false;
+            partIOs.reset(new std::vector<std::atomic<PartIO *>>(parts.size()));
+            for (auto & p: *partIOs)
+                p = new PartIO;
 
         }
         virtual void process(CThorExpandingRowArray &processing, unsigned selected) override
@@ -1869,9 +1878,9 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         {
             for (size_t i=0; i<parts.size(); i++)
             {
-                if ((*partIOCreated)[i])
+                PartIO &partIO = *(*partIOs)[i];
+                if (partIO.stream)
                 {
-                    PartIO & partIO = partIOs[i];
                     if (isSuper)
                     {
                         unsigned subfile = subFileNum[i];
@@ -2430,7 +2439,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
 
         if (delayed)
         {
-            Owned<IFileIO> lazyIFileIO = queryThor().queryFileCache().lookupIFileIO(*this, indexName, filePart, nullptr, indexReadActivityStatistics);
+            Owned<IFileIO> lazyIFileIO = queryThor().queryFileCache().lookupIFileIO(*this, indexName, filePart, nullptr, indexReadStatistics);
             Owned<IDelayedFile> delayedFile = createDelayedFile(lazyIFileIO);
             return createKeyIndex(filename, crc, *delayedFile, (unsigned) -1, false);
         }
@@ -2440,7 +2449,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
              * But that's okay, because we are only here on demand.
              * The underlying IFileIO can later be closed by fhe file caching mechanism.
              */
-            Owned<IFileIO> lazyIFileIO = queryThor().queryFileCache().lookupIFileIO(*this, indexName, filePart, nullptr, indexReadActivityStatistics);
+            Owned<IFileIO> lazyIFileIO = queryThor().queryFileCache().lookupIFileIO(*this, indexName, filePart, nullptr, indexReadStatistics);
             return createKeyIndex(filename, crc, *lazyIFileIO, (unsigned) -1, false);
         }
     }
@@ -3107,7 +3116,7 @@ public:
             // Unless it is not a superfile => then the indexFileStats[0] will be used for the index file's stats
             unsigned numIndexSubFiles = superFdesc?superFdesc->querySubFiles():1;
             for (unsigned n=0; n<numIndexSubFiles; ++n)
-                indexFileStats.push_back(new CRuntimeStatisticCollection(indexReadActivityStatistics));
+                indexFileStats.push_back(new CRuntimeStatisticCollection(indexReadStatistics));
 
             setupLookupHandlers(keyLookupHandlers, totalIndexParts, superFdesc, localIndexParts, indexPartToSlaveMap, localKey, forceRemoteKeyedLookup ? ht_remotekeylookup : ht_localkeylookup, ht_remotekeylookup);
             data.read(totalDataParts);
@@ -3148,7 +3157,7 @@ public:
                 // Unless it is not a superfile => then the dataFileStats[0] will be used for the data file's stats
                 unsigned numDataSubFiles = superFdesc?superFdesc->querySubFiles():1;
                 for (unsigned n=0; n<numDataSubFiles; ++n)
-                    dataFileStats.push_back(new CRuntimeStatisticCollection(diskReadActivityStatistics));
+                    dataFileStats.push_back(new CRuntimeStatisticCollection(diskReadRemoteStatistics));
 #ifdef _DEBUG
                 for (unsigned c=0; c<totalDataParts; c++)
                 {
