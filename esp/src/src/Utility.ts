@@ -849,11 +849,11 @@ export function pathTail(path: string) {
 }
 
 export function getImageURL(name) {
-    return this.getURL("img/" + name);
+    return getURL("img/" + name);
 }
 
 export function getImageHTML(name, tooltip?) {
-    return "<img src='" + this.getImageURL(name) + "'" + (tooltip ? " title='" + tooltip + "'" : "") + " class='iconAlign'/>";
+    return "<img src='" + getImageURL(name) + "'" + (tooltip ? " title='" + tooltip + "'" : "") + " class='iconAlign'/>";
 }
 
 export function debounce(func, threshold, execAsap) {
