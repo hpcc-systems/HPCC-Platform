@@ -1977,6 +1977,16 @@ readAnother:
                                     {
                                         fixedreq->addPropTree(iter->query().queryName(), LINK(&iter->query()));
                                     }
+                                    Owned<IAttributeIterator> aiter = queryPT->getAttributes();
+                                    ForEach(*aiter)
+                                    {
+                                        fixedreq->setProp(aiter->queryName(), aiter->queryValue());
+                                    }
+                                    Owned<IAttributeIterator> aiter2 = reqIter->query().getAttributes();
+                                    ForEach(*aiter2)
+                                    {
+                                        fixedreq->setProp(aiter2->queryName(), aiter2->queryValue());
+                                    }
                                     requestArray.append(*fixedreq);
                                     requestArraySize++;
                                 }
@@ -1988,6 +1998,11 @@ readAnother:
                                 ForEach(*iter)
                                 {
                                     fixedreq->addPropTree(iter->query().queryName(), LINK(&iter->query()));
+                                }
+                                Owned<IAttributeIterator> aiter = queryPT->getAttributes();
+                                ForEach(*aiter)
+                                {
+                                    fixedreq->setProp(aiter->queryName(), aiter->queryValue());
                                 }
                                 requestArray.append(*fixedreq);
                                 requestArraySize = 1;
