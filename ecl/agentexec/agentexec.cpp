@@ -276,6 +276,7 @@ public:
                 if (isThorJob)
                     exec.appendf(" --graphName=%s", graphName.get());
                 Owned<IPipeProcess> pipe = createPipeProcess();
+                pipe->setenv("SENTINEL", nullptr);
                 if (!pipe->run(apptype.str(), exec.str(), ".", false, true, false, 0, false))
                     throw makeStringExceptionV(0, "Failed to run \"%s\"", exec.str());
                 unsigned retCode = pipe->wait();

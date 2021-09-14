@@ -6954,7 +6954,7 @@ IFileIOCache* createFileIOCache(unsigned max)
 extern jlib_decl IFile * createSentinelTarget()
 {
     const char * sentinelFilename = getenv("SENTINEL");
-    if (sentinelFilename)
+    if (sentinelFilename && *sentinelFilename)
         return createIFile(sentinelFilename);
     else
         return NULL;
