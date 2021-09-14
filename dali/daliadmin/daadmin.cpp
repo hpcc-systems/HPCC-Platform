@@ -514,7 +514,7 @@ bool dfspart(const char *lname, IUserDescriptor *userDesc, unsigned partnum, Str
 
 //=============================================================================
 
-void dfsmeta(const char *filename,IUserDescriptor *userDesc, bool includeStorage)
+void dfsmeta(const char *filename,IUserDescriptor *userDesc, bool includeStorage, StringBuffer &out)
 {
     //This function isn't going to work on a container system because it won't have access to the storage planes
     initializeStorageGroups(true);
@@ -522,7 +522,7 @@ void dfsmeta(const char *filename,IUserDescriptor *userDesc, bool includeStorage
     if (includeStorage)
         options = options | ROincludeLocation;
     Owned<IPropertyTree> meta = resolveLogicalFilenameFromDali(filename, userDesc, options);
-    printYAML(meta);
+    toYAML(meta, out, 0U, 4U);
 }
 
 //=============================================================================
@@ -616,7 +616,7 @@ void dfscsv(const char *logicalNameMask,IUserDescriptor *udesc,StringBuffer &out
 
 //=============================================================================
 
-static void writeGroup(IGroup *group, const char *name, const char *outputFilename)
+static void writeGroup(IGroup *group, const char *name, const char *outputFilename, StringBuffer &out)
 {
     Owned<IFileIOStream> io;
     if (outputFilename)
@@ -635,7 +635,7 @@ static void writeGroup(IGroup *group, const char *name, const char *outputFilena
             io->write(eps.length(), eps.str());
         }
         else
-            OUTLOG("%s",eps.str());
+            out.appendf("%s",eps.str());
     }
 }
 
@@ -676,18 +676,18 @@ bool dfsCheck(StringBuffer &out)
 }
 
 
-void dfsGroup(const char *name, const char *outputFilename)
+void dfsGroup(const char *name, const char *outputFilename, StringBuffer &out)
 {
     Owned<IGroup> group = queryNamedGroupStore().lookup(name);
     if (!group)
     {
-        UERRLOG("cannot find group %s",name);
+        out.appendf("cannot find group %s",name);
         return;
     }
-    writeGroup(group, name, outputFilename);
+    writeGroup(group, name, outputFilename, out);
 }
 
-int clusterGroup(const char *name, const char *outputFilename)
+int clusterGroup(const char *name, const char *outputFilename, StringBuffer &out)
 {
     StringBuffer errStr;
     try
@@ -695,7 +695,7 @@ int clusterGroup(const char *name, const char *outputFilename)
         Owned<IGroup> group = getClusterNodeGroup(name, "ThorCluster");
         if (group)
         {
-            writeGroup(group, name, outputFilename);
+            writeGroup(group, name, outputFilename, out);
             return 0; // success
         }
         errStr.appendf("cannot find group %s", name);
@@ -705,7 +705,7 @@ int clusterGroup(const char *name, const char *outputFilename)
         e->errorMessage(errStr);
         e->Release();
     }
-    UERRLOG("%s", errStr.str());
+    out.appendf("%s", errStr.str());
     return 1;
 }
 
@@ -855,7 +855,7 @@ void dfsparents(const char *lname, IUserDescriptor *user, StringBuffer &out)
 
 //=============================================================================
 
-void dfsunlink(const char *lname, IUserDescriptor *user)
+void dfsunlink(const char *lname, IUserDescriptor *user, StringBuffer &out)
 {
     for (;;)
     {
@@ -863,6 +863,7 @@ void dfsunlink(const char *lname, IUserDescriptor *user)
         if (!file)
         {
             UERRLOG("File '%s' not found", lname);
+            out.appendf("File '%s' not found", lname);
             break;
         }
         Owned<IDistributedSuperFileIterator> iter = file->getOwningSuperFiles();
@@ -872,9 +873,12 @@ void dfsunlink(const char *lname, IUserDescriptor *user)
         Owned<IDistributedSuperFile> sf = &iter->get();
         iter.clear();
         if (sf->removeSubFile(lname,false))
-            OUTLOG("removed %s from %s",lname,sf->queryLogicalName());
+            out.appendf("removed %s from %s",lname,sf->queryLogicalName());
         else
+        {
             UERRLOG("FAILED to remove %s from %s",lname,sf->queryLogicalName());
+            out.appendf("FAILED to remove %s from %s",lname,sf->queryLogicalName());
+        }
     }
 }
 
@@ -983,12 +987,13 @@ public:
 };
 
 
-int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user)
+int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user, StringBuffer &out)
 {
     static CIpTable dafilesrvips;
     Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(name,user,false,false,false,nullptr,defaultPrivilegedUser);
     if (!file) {
         UERRLOG("VERIFY: cannot find %s",name);
+        out.appendf("VERIFY: cannot find %s",name);
         return 1;
     }
     CDateTime filetime;
@@ -1016,6 +1021,7 @@ int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user)
                     StringBuffer ips;
                     ep.getIpText(ips);
                     UERRLOG("VERIFY: file %s, cannot run DAFILESRV on %s",name,ips.str());
+                    out.appendf("VERIFY: file %s, cannot run DAFILESRV on %s",name,ips.str());
                     return 4;
                 }
                 RemoteFilename rfn;
@@ -1035,7 +1041,7 @@ int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user)
     }
     if (list.ordinality()==0)
         return 0;
-    OUTLOG("VERIFY: start file %s",name);
+    out.appendf("VERIFY: start file %s",name);
     file.clear();
     CriticalSection crit;
     class casyncfor: public CAsyncFor
@@ -1091,11 +1097,12 @@ int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user)
         if (item.crc!=item.requiredcrc) {
             StringBuffer rfs;
             UERRLOG("VERIFY: FAILED %s (%x,%x) file %s",name,item.crc,item.requiredcrc,item.filename.getRemotePath(rfs).str());
+            out.appendf("VERIFY: FAILED %s (%x,%x) file %s",name,item.crc,item.requiredcrc,item.filename.getRemotePath(rfs).str());
             afor.ok = false;
         }
     }
     if (afor.ok) {
-        OUTLOG("VERIFY: OK file %s",name);
+        out.appendf("VERIFY: OK file %s",name);
         return 0;
     }
     return 3;
@@ -1160,7 +1167,7 @@ static bool doFix()
     return getResponse();
 }
 
-void checksuperfile(const char *lfn,bool fix=false)
+void checksuperfile(const char *lfn,StringBuffer &out,bool fix=false)
 {
     if (strcmp(lfn,"*")==0) {
         class csuperfilescan: public CSDSFileScanner
@@ -1172,10 +1179,10 @@ void checksuperfile(const char *lfn,bool fix=false)
                 return true;
             }
 
-            void processSuperFile(IPropertyTree &superfile,StringBuffer &name)
+            void processSuperFile(IPropertyTree &superfile,StringBuffer &name,StringBuffer &output)
             {
                 try {
-                    checksuperfile(name.str(),fix);
+                    checksuperfile(name.str(),output,fix);
                 }
                 catch (IException *e) {
                     EXCLOG(e,"processSuperFiles");
@@ -1202,6 +1209,7 @@ void checksuperfile(const char *lfn,bool fix=false)
     if (!conn) {
         UERRLOG("Could not connect to %s",lfn);
         UERRLOG("Superfile %s FAILED",lname.get());
+        out.appendf("Could not connect to %s\nSuperfile %s FAILED",lfn,lname.get());
         return;
     }
     Owned<IPropertyTree> root = conn->getRoot();
@@ -1217,9 +1225,11 @@ void checksuperfile(const char *lfn,bool fix=false)
                 break;
             StringBuffer s;
             s.appendf("SuperFile %s: corrupt, subfile file part %d is duplicated",lname.get(),i+1);
+            out.appendf("%s\n",s.str());
             UERRLOG("%s",s.str());
             if (!fix||!doFix()) {
                 UERRLOG("Superfile %s FAILED",lname.get());
+                out.appendf("Superfile %s FAILED\n",lname.get());
                 return;
             }
             root->removeProp(path.str());
@@ -1229,8 +1239,10 @@ void checksuperfile(const char *lfn,bool fix=false)
             StringBuffer s;
             s.appendf("SuperFile %s: corrupt, subfile file part %d cannot be found",lname.get(),i+1);
             UERRLOG("%s",s.str());
+            out.appendf("%s\n",s.str());
             if (!fix||!doFix()) {
                 UERRLOG("Superfile %s FAILED",lname.get());
+                out.appendf("Superfile %s FAILED\n",lname.get());
                 return;
             }
             fixed = true;
@@ -1248,6 +1260,7 @@ void checksuperfile(const char *lfn,bool fix=false)
                 subconn.setown(querySDS().connect(subquery.str(),myProcessSession(),0, daliConnectTimeoutMs));
             }
             if (!subconn) {
+                out.appendf("SuperFile %s is missing sub-file file %s\n",lname.get(),subname.str());
                 UERRLOG("SuperFile %s is missing sub-file file %s",lname.get(),subname.str());
                 if (!fix||!doFix()) {
                     UERRLOG("Superfile %s FAILED",lname.get());
@@ -1282,6 +1295,7 @@ void checksuperfile(const char *lfn,bool fix=false)
                     Owned<IRemoteConnection> sdconn = querySDS().connect(sdquery.str(),myProcessSession(),0, daliConnectTimeoutMs);
                     if (!conn) {
                         UWARNLOG("SubFile %s has missing owner superfile %s",sublname.get(),sdlname.get());
+                        out.appendf("SubFile %s has missing owner superfile %s\n",sublname.get(),sdlname.get());
                     }
                     // make sure superfile exists
                 }
@@ -1290,7 +1304,7 @@ void checksuperfile(const char *lfn,bool fix=false)
                 UWARNLOG("SubFile %s is missing link to Superfile %s",sublname.get(),lname.get());
                 ForEach(*iter) {
                     iter->query().getProp("@name",pname.clear());
-                    OUTLOG("Candidate %s",pname.str());
+                    out.appendf("Candidate %s\n",pname.str());
                 }
                 if (fix&&doFix()) {
                     Owned<IPropertyTree> t = createPTree("SuperOwner");
@@ -1314,6 +1328,7 @@ void checksuperfile(const char *lfn,bool fix=false)
             unsigned pn = sub->getPropInt("@num");
             if (pn>subnum) {
                 UERRLOG("SuperFile %s: corrupt, subfile file part %d spurious",lname.get(),pn);
+                out.appendf("SuperFile %s: corrupt, subfile file part %d spurious\n",lname.get(),pn);
                 if (fixstate==0)
                 {
                     if (fix&&doFix())
@@ -1338,22 +1353,24 @@ void checksuperfile(const char *lfn,bool fix=false)
             if (fix) {
                 if (!fixed)
                     UERRLOG("FIX Empty Superfile %s contains non-empty Attr",lname.get());
+                    out.appendf("FIX Empty Superfile %s contains non-empty Attr\n",lname.get());
                 root->removeTree(sub);
             }
             else if (sub->getPropInt64("@recordCount")||sub->getPropInt64("@size"))
                 UERRLOG("FAIL Empty Superfile %s contains non-empty Attr sz=%" I64F "d rc=%" I64F "d",lname.get(),sub->getPropInt64("@recordCount"),sub->getPropInt64("@size"));
+                out.appendf("FAIL Empty Superfile %s contains non-empty Attr sz=%" I64F "d rc=%" I64F "d\n",lname.get(),sub->getPropInt64("@recordCount"),sub->getPropInt64("@size"));
 
         }
     }
     if (fixed)
-        OUTLOG("Superfile %s FIXED - from %d to %d subfiles",lname.get(),n,subnum);
+        out.appendf("Superfile %s FIXED - from %d to %d subfiles\n",lname.get(),n,subnum);
     else
-        OUTLOG("Superfile %s OK - contains %d subfiles",lname.get(),n);
+        out.appendf("Superfile %s OK - contains %d subfiles\n",lname.get(),n);
 }
 
 //=============================================================================
 
-void checksubfile(const char *lfn)
+void checksubfile(const char *lfn, StringBuffer &out)
 {
     if (strcmp(lfn,"*")==0) {
         class csubfilescan: public CSDSFileScanner
@@ -1375,10 +1392,10 @@ void checksubfile(const char *lfn)
                 return true;
             }
 
-            void processFile(IPropertyTree &root,StringBuffer &name)
+            void processFile(IPropertyTree &root,StringBuffer &name,StringBuffer &output)
             {
                 try {
-                    checksubfile(name.str());
+                    checksubfile(name.str(), output);
                 }
                 catch (IException *e) {
                     EXCLOG(e,"processSuperFiles");
@@ -1386,10 +1403,10 @@ void checksubfile(const char *lfn)
                 }
             }
 
-            void processSuperFile(IPropertyTree &root,StringBuffer &name)
+            void processSuperFile(IPropertyTree &root,StringBuffer &name,StringBuffer &output)
             {
                 try {
-                    checksubfile(name.str());
+                    checksubfile(name.str(), output);
                 }
                 catch (IException *e) {
                     EXCLOG(e,"processSuperFiles");
@@ -1419,6 +1436,7 @@ void checksubfile(const char *lfn)
     if (!conn) {
         UERRLOG("Could not connect to %s",lfn);
         UERRLOG("Subfile %s FAILED",lname.get());
+        out.appendf("Could not connect to %s\nSubfile %s FAILED", lfn, lname.get());
         return;
     }
     Owned<IPropertyTree> root = conn->getRoot();
@@ -1434,6 +1452,7 @@ void checksubfile(const char *lfn)
         Owned<IRemoteConnection> sdconn = querySDS().connect(sdquery.str(),myProcessSession(),0, daliConnectTimeoutMs);
         if (!conn) {
             UERRLOG("SubFile %s has missing owner superfile %s",lname.get(),sdlname.get());
+            out.appendf("Subfile %s has missing owner superfile %s\n", lname.get(), sdlname.get());
             ok = false;
         }
         else {
@@ -1441,17 +1460,18 @@ void checksubfile(const char *lfn)
             IPropertyTree *sub = sdconn->queryRoot()->queryPropTree(path.clear().appendf("SubFile[@name=\"%s\"]",lname.get()).str());
             if (!sub) {
                 UERRLOG("Superfile %s is not linked to %s",sdlname.get(),lname.get());
+                out.appendf("Superfile %s is not linked to %s\n",sdlname.get(),lname.get());
                 ok = false;
             }
         }
     }
     if (ok)
-        OUTLOG("SubFile %s OK",lname.get());
+        out.appendf("SubFile %s OK\n",lname.get());
 }
 
 //=============================================================================
 
-void listexpires(const char * lfnmask, IUserDescriptor *user)
+void listexpires(const char * lfnmask, IUserDescriptor *user, StringBuffer &out)
 {
     IDFAttributesIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator(lfnmask,user,true,false);
     ForEach(*iter) {
@@ -1474,7 +1494,7 @@ void listexpires(const char * lfnmask, IUserDescriptor *user)
                     else
                         days.append(" day");
                 }
-                OUTLOG("%s, last accessed = %s, set to expire %s after last accessed", name, lastAccessed, days.str());
+                out.appendf("%s, last accessed = %s, set to expire %s after last accessed\n", name, lastAccessed, days.str());
             }
         }
     }
@@ -1482,11 +1502,11 @@ void listexpires(const char * lfnmask, IUserDescriptor *user)
 
 //=============================================================================
 
-void listrelationships(const char *primary,const char *secondary)
+void listrelationships(const char *primary,const char *secondary, StringBuffer &out)
 {
     Owned<IFileRelationshipIterator> iter = queryDistributedFileDirectory().lookupFileRelationships(primary,secondary,NULL,NULL,S_LINK_RELATIONSHIP_KIND,NULL,NULL,NULL);
     ForEach(*iter) {
-        OUTLOG("%s,%s,%s,%s,%s,%s,%s,%s",
+        out.appendf("%s,%s,%s,%s,%s,%s,%s,%s\n",
             iter->query().queryKind(),
             iter->query().queryPrimaryFilename(),
             iter->query().querySecondaryFilename(),
@@ -1501,7 +1521,7 @@ void listrelationships(const char *primary,const char *secondary)
 
 //=============================================================================
 
-int dfsperm(const char *obj,IUserDescriptor *user)
+int dfsperm(const char *obj,IUserDescriptor *user, StringBuffer &out)
 {
     SecAccessFlags perm = SecAccess_None;
     if (strchr(obj,'\\')||strchr(obj,'/')) {
@@ -1514,7 +1534,7 @@ int dfsperm(const char *obj,IUserDescriptor *user)
     else {
         perm = queryDistributedFileDirectory().getFilePermissions(obj,user,0);
     }
-    OUTLOG("perm %s = %d",obj,perm);
+    out.appendf("perm %s = %d",obj,perm);
     return perm;
 }
 
@@ -1566,10 +1586,9 @@ static offset_t getCompressedSize(IDistributedFile *file)
     return ret;
 }
 
-void dfscompratio (const char *lname, IUserDescriptor *user)
+void dfscompratio (const char *lname, IUserDescriptor *user, StringBuffer &out)
 {
     Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,false,false,false,nullptr,defaultPrivilegedUser);
-    StringBuffer out;
     out.appendf("File %s ",lname);
     if (file) {
         bool compressed = file->isCompressed();
@@ -1646,7 +1665,7 @@ static bool countScopeChildren(IPropertyTree *t,unsigned &files, unsigned &sfile
     return (other!=0)||(files!=0)||(sfiles!=0)||(scopes!=0)||(!onlyNamePtree(t));
 }
 
-void dfsscopes(const char *name, IUserDescriptor *user)
+void dfsscopes(const char *name, IUserDescriptor *user, StringBuffer &out)
 {
     bool wild = isWild(name);
     Owned<IDFScopeIterator> iter = queryDistributedFileDirectory().getScopeIterator(user,wild?NULL:name,true,true);
@@ -1675,10 +1694,10 @@ void dfsscopes(const char *name, IUserDescriptor *user)
                 ln.appendf(" Files=%d SuperFiles=%d Scopes=%d",files,sfiles,scopes);
                 if (other)
                     ln.appendf(" others=%d",other);
-                OUTLOG("%s",ln.str());
+                out.appendf("%s",ln.str());
             }
             else
-                OUTLOG("%s EMPTY",ln.str());
+                out.appendf("%s EMPTY",ln.str());
         }
     }
 }
@@ -1700,7 +1719,7 @@ static bool recursiveCheckEmptyScope(IPropertyTree &ct)
 }
 
 
-void cleanscopes(IUserDescriptor *user)
+void cleanscopes(IUserDescriptor *user, StringBuffer &out)
 {
     Owned<IDFScopeIterator> iter = queryDistributedFileDirectory().getScopeIterator(user, NULL,true,true);
     CDfsLogicalFileName dlfn;
@@ -1718,13 +1737,13 @@ void cleanscopes(IUserDescriptor *user)
         else {
             if (recursiveCheckEmptyScope(*conn->queryRoot())) {
                 toremove.append(iter->query());
-                PROGLOG("EMPTY %s, %s",iter->query(),s.str());
+                out.appendf("EMPTY %s, %s",iter->query(),s.str());
             }
         }
     }
     iter.clear();
     ForEachItemIn(i,toremove) {
-        PROGLOG("REMOVE %s",toremove.item(i));
+        out.appendf("REMOVE %s",toremove.item(i));
         try {
             queryDistributedFileDirectory().removeEmptyScope(toremove.item(i));
         }
@@ -1735,7 +1754,7 @@ void cleanscopes(IUserDescriptor *user)
     }
 }
 
-void normalizeFileNames(IUserDescriptor *user, const char *name)
+void normalizeFileNames(IUserDescriptor *user, const char *name, StringBuffer &out)
 {
     if (!name)
         name = "*";
@@ -1753,7 +1772,10 @@ void normalizeFileNames(IUserDescriptor *user, const char *name)
         {
             dFile.setown(queryDistributedFileDirectory().lookup(dlfn, user, true, false, false, nullptr, defaultPrivilegedUser, 30000)); // 30 sec timeout
             if (!dFile)
+            {
+                out.appendf("Could not find file lfn = %s", dlfn.get());
                 UWARNLOG("Could not find file lfn = %s", dlfn.get());
+            }
         }
         catch (IException *e)
         {
@@ -1769,7 +1791,7 @@ void normalizeFileNames(IUserDescriptor *user, const char *name)
             newDlfn.set(lfn);
             if (!streq(newDlfn.get(), dlfn.get()))
             {
-                PROGLOG("File: '%s', renaming to: '%s'", dlfn.get(), newDlfn.get());
+                out.appendf("File: '%s', renaming to: '%s'", dlfn.get(), newDlfn.get());
                 try
                 {
                     dFile->rename(newDlfn.get(), user);
@@ -1867,7 +1889,7 @@ void listmatches(const char *path, const char *match, const char *pval)
 //=============================================================================
 
 
-void dfsreplication(const char *clusterMask, const char *lfnMask, unsigned redundancy, bool dryRun)
+void dfsreplication(const char *clusterMask, const char *lfnMask, unsigned redundancy, bool dryRun, StringBuffer &out)
 {
     StringBuffer findXPath("//File");
     if (clusterMask && !streq("*", clusterMask))
@@ -1899,10 +1921,9 @@ void dfsreplication(const char *clusterMask, const char *lfnMask, unsigned redun
             {
                 const char *fileName = file.queryProp("OrigName");
                 const char *clusterName = cluster.queryProp("@name");
-                VStringBuffer msg("File=%s on cluster=%s - %s %s to %s", fileName, clusterName, dryRun?"Would set":"Setting", propToSet, value.str());
+                out.appendf("File=%s on cluster=%s - %s %s to %s", fileName, clusterName, dryRun?"Would set":"Setting", propToSet, value.str());
                 if (oldValue)
-                    msg.appendf(" [old value = %s]", oldValue);
-                PROGLOG("%s", msg.str());
+                    out.appendf(" [old value = %s]", oldValue);
                 if (!dryRun)
                 {
                     if (!streq(value, defVal))

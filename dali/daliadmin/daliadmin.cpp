@@ -319,7 +319,8 @@ int main(int argc, const char* argv[])
                     else if (strieq(cmd,"dfsmeta")) {
                         CHECKPARAMS(1,3);
                         bool includeStorage = (np < 2) || strToBool(params.item(2));
-                        dfsmeta(params.item(1),userDesc,includeStorage);
+                        dfsmeta(params.item(1),userDesc,includeStorage,out);
+                        PROGLOG("%s", out.str());
                     }
                     else if (strieq(cmd,"dfspart")) {
                         CHECKPARAMS(2,2);
@@ -341,11 +342,13 @@ int main(int argc, const char* argv[])
                     }
                     else if (strieq(cmd,"dfsgroup")) {
                         CHECKPARAMS(1,2);
-                        dfsGroup(params.item(1),(np>1)?params.item(2):NULL);
+                        dfsGroup(params.item(1),(np>1)?params.item(2):NULL,out);
+                        PROGLOG("%s", out.str());
                     }
                     else if (strieq(cmd,"clusternodes")) {
                         CHECKPARAMS(1,2);
-                        ret = clusterGroup(params.item(1),(np>1)?params.item(2):NULL);
+                        ret = clusterGroup(params.item(1),(np>1)?params.item(2):NULL,out);
+                        PROGLOG("%s", out.str());
                     }
                     else if (strieq(cmd,"dfsls")) {
                         CHECKPARAMS(0,2);
@@ -367,11 +370,13 @@ int main(int argc, const char* argv[])
                     }
                     else if (strieq(cmd,"dfsunlink")) {
                         CHECKPARAMS(1,1);
-                        dfsunlink(params.item(1),userDesc);
+                        dfsunlink(params.item(1),userDesc,out);
+                        PROGLOG("%s", out.str());
                     }
                     else if (strieq(cmd,"dfsverify")) {
                         CHECKPARAMS(1,1);
-                        ret = dfsverify(params.item(1),NULL,userDesc);
+                        ret = dfsverify(params.item(1),NULL,userDesc,out);
+                        PROGLOG("%s", out.str());
                     }
                     else if (strieq(cmd,"setprotect")) {
                         CHECKPARAMS(2,2);
@@ -391,41 +396,50 @@ int main(int argc, const char* argv[])
                     else if (strieq(cmd,"checksuperfile")) {
                         CHECKPARAMS(1,1);
                         bool fix = props->getPropBool("fix");
-                        checksuperfile(params.item(1),fix);
+                        checksuperfile(params.item(1),out,fix);
+                        PROGLOG("%s", out.str());
                     }
                     else if (strieq(cmd,"checksubfile")) {
                         CHECKPARAMS(1,1);
-                        checksubfile(params.item(1));
+                        checksubfile(params.item(1),out);
+                        PROGLOG("%s", out.str());
                     }
                     else if (strieq(cmd,"listexpires")) {
                         CHECKPARAMS(0,1);
-                        listexpires((np>1)?params.item(1):"*",userDesc);
+                        listexpires((np>1)?params.item(1):"*",userDesc,out);
+                        PROGLOG("%s", out.str());
                     }
                     else if (strieq(cmd,"listrelationships")) {
                         CHECKPARAMS(2,2);
-                        listrelationships(params.item(1),params.item(2));
+                        listrelationships(params.item(1),params.item(2),out);
+                        PROGLOG("%s", out.str());
                     }
                     else if (strieq(cmd,"dfsperm")) {
                         if (!userDesc.get())
                             throw MakeStringException(-1,"dfsperm requires username to be set (user=)");
                         CHECKPARAMS(1,1);
-                        ret = dfsperm(params.item(1),userDesc);
+                        ret = dfsperm(params.item(1),userDesc,out);
+                        PROGLOG("%s", out.str());
                     }
                     else if (strieq(cmd,"dfscompratio")) {
                         CHECKPARAMS(1,1);
-                        dfscompratio(params.item(1),userDesc);
+                        dfscompratio(params.item(1),userDesc,out);
+                        PROGLOG("%s", out.str());
                     }
                     else if (strieq(cmd,"dfsscopes")) {
                         CHECKPARAMS(0,1);
-                        dfsscopes((np>0)?params.item(1):"*",userDesc);
+                        dfsscopes((np>0)?params.item(1):"*",userDesc,out);
+                        PROGLOG("%s",out.str());
                     }
                     else if (strieq(cmd,"cleanscopes")) {
                         CHECKPARAMS(0,0);
-                        cleanscopes(userDesc);
+                        cleanscopes(userDesc,out);
+                        PROGLOG("%s",out.str());
                     }
                     else if (strieq(cmd,"normalizefilenames")) {
                         CHECKPARAMS(0,1);
-                        normalizeFileNames(userDesc, np>0 ? params.item(1) : nullptr);
+                        normalizeFileNames(userDesc, np>0 ? params.item(1) : nullptr, out);
+                        PROGLOG("%s",out.str());
                     }
                     else if (strieq(cmd,"listworkunits")) {
                         CHECKPARAMS(0,3);
@@ -511,7 +525,8 @@ int main(int argc, const char* argv[])
                     else if (strieq(cmd,"dfsreplication")) {
                         CHECKPARAMS(3,4);
                         bool dryRun = np>3 && strieq("dryrun", params.item(4));
-                        dfsreplication(params.item(1), params.item(2), atoi(params.item(3)), dryRun);
+                        dfsreplication(params.item(1), params.item(2), atoi(params.item(3)), dryRun, out);
+                        PROGLOG("%s",out.str());
                     }
                     else if (strieq(cmd,"holdlock")) {
                         CHECKPARAMS(2,2);

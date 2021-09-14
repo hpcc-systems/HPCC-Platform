@@ -539,3 +539,370 @@ bool CWSDaliEx::onGetProtectedList(IEspContext& context, IEspGetProtectedListReq
     }
     return true;
 }
+
+bool CWSDaliEx::onDFSReplication(IEspContext& context, IEspDFSReplicationRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        const char* clusterMask = req.getClusterMask();
+        if (isEmptyString(clusterMask))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Cluster Mask not specified.");
+
+        const char* lfnMask = req.getLogicalNameMask();
+        if (isEmptyString(lfnMask))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Logical File Mask not specified.");
+
+        if (req.getRedundancyCount_isNull())
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Redundancy Count not specified");
+        unsigned redundancy = req.getRedundancyCount();
+        
+        if (req.getDryRun_isNull())
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Dryrun not set");
+        bool dryrun = req.getDryRun();
+
+        StringBuffer result;
+        dfsreplication(clusterMask, lfnMask, redundancy, dryrun, result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onNormalizeFileNames(IEspContext& context, IEspNormalizeFileNamesRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        Owned<IUserDescriptor> userDesc = createUserDesc(context);
+
+        const char* name = req.getName();
+        if (isEmptyString(name))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Name not specified.");
+
+        StringBuffer result;
+        normalizeFileNames(userDesc, name, result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onCleanScopes(IEspContext& context, IEspCleanScopesRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        Owned<IUserDescriptor> userDesc = createUserDesc(context);
+
+        StringBuffer result;
+        cleanscopes(userDesc, result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onDFSScopes(IEspContext& context, IEspDFSScopesRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        Owned<IUserDescriptor> userDesc = createUserDesc(context);
+
+        const char* name = req.getName();
+        if (isEmptyString(name))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Name not specified.");
+
+
+        StringBuffer result;
+        dfsscopes(name, userDesc, result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onDFSMeta(IEspContext& context, IEspDFSMetaRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        Owned<IUserDescriptor> userDesc = createUserDesc(context);
+
+        const char* name = req.getFileName();
+        if (isEmptyString(name))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "FileName not specified.");
+
+        bool includeStorage = req.getIncludeStorage();
+        if (req.getIncludeStorage_isNull())
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Include Storage not specified.");
+
+        StringBuffer result;
+        dfsmeta(name,userDesc,includeStorage,result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onDFSGroup(IEspContext& context, IEspDFSGroupRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+
+        const char* name = req.getName();
+        if (isEmptyString(name))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Name not specified.");
+
+
+        const char* outputFilename = req.getOutputFileName();
+        if (isEmptyString(outputFilename))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Output File Name not specified.");
+
+        StringBuffer result;
+        dfsGroup(name,outputFilename,result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onClusterGroup(IEspContext& context, IEspClusterGroupRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+
+        const char* name = req.getName();
+        if (isEmptyString(name))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Name not specified.");
+
+
+        const char* outputFilename = req.getOutputFileName();
+        if (isEmptyString(outputFilename))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Output File Name not specified.");
+
+        StringBuffer result;
+        clusterGroup(name,outputFilename,result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onDFSUnlink(IEspContext& context, IEspDFSUnlinkRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        Owned<IUserDescriptor> userDesc = createUserDesc(context);
+
+        const char* name = req.getLinkName();
+        if (isEmptyString(name))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Link Name not specified.");
+
+        StringBuffer result;
+        dfsunlink(name,userDesc,result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onDFSVerify(IEspContext& context, IEspDFSVerifyRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        Owned<IUserDescriptor> userDesc = createUserDesc(context);
+
+        const char* name = req.getName();
+        if (isEmptyString(name))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Link Name not specified.");
+
+        StringBuffer result;
+        dfsverify(name,NULL,userDesc,result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onCheckSuperFile(IEspContext& context, IEspCheckSuperFileRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        const char* name = req.getName();
+        if (isEmptyString(name))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Name not specified.");
+
+        bool fix = req.getFix();
+        if (req.getFix_isNull())
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Fix not specified.");
+
+        StringBuffer result;
+        checksuperfile(name,result,fix);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onCheckSubFile(IEspContext& context, IEspCheckSubFileRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        const char* name = req.getName();
+        if (isEmptyString(name))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Name not specified.");
+
+        StringBuffer result;
+        checksubfile(name,result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onListExpires(IEspContext& context, IEspListExpiresRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        Owned<IUserDescriptor> userDesc = createUserDesc(context);
+
+        const char* name = req.getLinkedFileNameMask();
+        if (isEmptyString(name))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Linked File Name Mask not specified.");
+
+        StringBuffer result;
+        listexpires(name,userDesc,result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onListRelationships(IEspContext& context, IEspListRelationshipsRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        const char* primary = req.getPrimary();
+        if (isEmptyString(primary))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Primary not specified.");
+
+        const char* secondary = req.getSecondary();
+        if (isEmptyString(secondary))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Secondary not specified.");
+
+
+        StringBuffer result;
+        listrelationships(primary,secondary,result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onDFSPerm(IEspContext& context, IEspDFSPermRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        Owned<IUserDescriptor> userDesc = createUserDesc(context);
+
+        const char* name = req.getName();
+        if (isEmptyString(name))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Name not specified.");
+
+        StringBuffer result;
+        dfsperm(name,userDesc,result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onDFSCompRatio(IEspContext& context, IEspDFSCompRatioRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        Owned<IUserDescriptor> userDesc = createUserDesc(context);
+
+        const char* name = req.getName();
+        if (isEmptyString(name))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Name not specified.");
+
+        StringBuffer result;
+        dfscompratio(name,userDesc,result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}

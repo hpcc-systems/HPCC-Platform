@@ -135,6 +135,86 @@ ESPrequest [nil_remove] GetProtectedListRequest
     string CallerId;
 };
 
+ESPrequest [nil_remove] DFSScopesRequest
+{
+    string Name;
+};
+
+ESPrequest [nil_remove] CleanScopesRequest {};
+
+ESPrequest [nil_remove] DFSReplicationRequest
+{
+    string ClusterMask;
+    string LogicalNameMask;
+    unsigned RedundancyCount;
+    bool DryRun;
+};
+
+ESPrequest [nil_remove] NormalizeFileNamesRequest
+{
+    string Name;
+};
+
+ESPrequest [nil_remove] DFSMetaRequest
+{
+    string FileName;
+    bool IncludeStorage;
+};
+
+ESPrequest [nil_remove] DFSGroupRequest
+{
+    string Name;
+    string OutputFileName;
+};
+
+ESPrequest [nil_remove] ClusterGroupRequest
+{
+    string Name;
+    string OutputFileName;
+};
+
+ESPrequest [nil_remove] DFSUnlinkRequest
+{
+    string LinkName;
+};
+
+ESPrequest [nil_remove] DFSVerifyRequest
+{
+    string Name;
+};
+
+ESPrequest [nil_remove] CheckSuperFileRequest
+{
+    string Name;
+    bool Fix;
+};
+
+ESPrequest [nil_remove] CheckSubFileRequest
+{
+    string Name;
+};
+
+ESPrequest [nil_remove] ListExpiresRequest
+{
+    string LinkedFileNameMask;
+};
+
+ESPrequest [nil_remove] ListRelationshipsRequest
+{
+    string Primary;
+    string Secondary;
+};
+
+ESPrequest [nil_remove] DFSPermRequest
+{
+    string Name;
+};
+
+ESPrequest [nil_remove] DFSCompRatioRequest
+{
+    string Name;
+};
+
 ESPservice [auth_feature("NONE"), //This declares that the method logic handles feature level authorization
     version("1.04"), default_client_version("1.04"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSDali
 {
@@ -156,6 +236,23 @@ ESPservice [auth_feature("NONE"), //This declares that the method logic handles 
     ESPmethod [min_ver("1.04")] SetProtected(SetProtectedRequest, ResultResponse);
     ESPmethod [min_ver("1.04")] SetUnprotected(SetUnprotectedRequest, ResultResponse);
     ESPmethod [min_ver("1.04")] GetProtectedList(GetProtectedListRequest, ResultResponse);
+
+    ESPmethod [min_ver("1.04")] DFSMeta(DFSMetaRequest, ResultResponse);
+    ESPmethod [min_ver("1.04")] DFSGroup(DFSGroupRequest, ResultResponse);
+    ESPmethod [min_ver("1.04")] ClusterGroup(ClusterGroupRequest, ResultResponse);
+    ESPmethod [min_ver("1.04")] DFSUnlink(DFSUnlinkRequest, ResultResponse);
+    ESPmethod [min_ver("1.04")] DFSVerify(DFSVerifyRequest, ResultResponse);
+    ESPmethod [min_ver("1.04")] CheckSuperFile(CheckSuperFileRequest, ResultResponse);
+    ESPmethod [min_ver("1.04")] CheckSubFile(CheckSubFileRequest,ResultResponse);
+    ESPmethod [min_ver("1.04")] ListExpires(ListExpiresRequest,ResultResponse);
+    ESPmethod [min_ver("1.04")] ListRelationships(ListRelationshipsRequest,ResultResponse);
+    ESPmethod [min_ver("1.04")] DFSPerm(DFSPermRequest,ResultResponse);
+    ESPmethod [min_ver("1.04")] DFSCompRatio(DFSCompRatioRequest,ResultResponse);
+
+    ESPmethod [min_ver("1.04")] DFSScopes(DFSScopesRequest, ResultResponse);
+    ESPmethod [min_ver("1.04")] CleanScopes(CleanScopesRequest, ResultResponse);
+    ESPmethod [min_ver("1.04")] DFSReplication(DFSReplicationRequest, ResultResponse);
+    ESPmethod [min_ver("1.04")] NormalizeFileNames(NormalizeFileNamesRequest, ResultResponse);
 };
 
 SCMexportdef(WSDali);

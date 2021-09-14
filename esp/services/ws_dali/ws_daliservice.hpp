@@ -68,6 +68,23 @@ public:
     virtual bool onSetProtected(IEspContext& context, IEspSetProtectedRequest& req, IEspResultResponse& resp) override;
     virtual bool onSetUnprotected(IEspContext& context, IEspSetUnprotectedRequest& req, IEspResultResponse& resp) override;
     virtual bool onGetProtectedList(IEspContext& context, IEspGetProtectedListRequest& req, IEspResultResponse& resp) override;
+
+    virtual bool onDFSMeta(IEspContext& context, IEspDFSMetaRequest& req, IEspResultResponse& resp) override;
+    virtual bool onDFSGroup(IEspContext& context, IEspDFSGroupRequest& req, IEspResultResponse& resp) override;
+    virtual bool onClusterGroup(IEspContext& context, IEspClusterGroupRequest& req, IEspResultResponse& resp) override;
+    virtual bool onDFSUnlink(IEspContext& context, IEspDFSUnlinkRequest& req, IEspResultResponse& resp) override;
+    virtual bool onDFSVerify(IEspContext& context, IEspDFSVerifyRequest& req, IEspResultResponse& resp) override;
+    virtual bool onCheckSuperFile(IEspContext& context, IEspCheckSuperFileRequest& req, IEspResultResponse& resp) override;
+    virtual bool onCheckSubFile(IEspContext& context, IEspCheckSubFileRequest& req, IEspResultResponse& resp) override;
+    virtual bool onListExpires(IEspContext& context, IEspListExpiresRequest& req, IEspResultResponse& resp) override;
+    virtual bool onListRelationships(IEspContext& context, IEspListRelationshipsRequest& req, IEspResultResponse& resp) override;
+    virtual bool onDFSPerm(IEspContext& context, IEspDFSPermRequest& req, IEspResultResponse& resp) override;
+    virtual bool onDFSCompRatio(IEspContext& context, IEspDFSCompRatioRequest& req, IEspResultResponse& resp) override;
+
+    virtual bool onDFSScopes(IEspContext& context, IEspDFSScopesRequest& req, IEspResultResponse& resp) override;
+    virtual bool onCleanScopes(IEspContext& context, IEspCleanScopesRequest& req, IEspResultResponse& resp) override;
+    virtual bool onDFSReplication(IEspContext& context, IEspDFSReplicationRequest& req, IEspResultResponse& resp) override;
+    virtual bool onNormalizeFileNames(IEspContext& context, IEspNormalizeFileNamesRequest& req, IEspResultResponse& resp) override;
 };
 
 class CWSDaliSoapBindingEx : public CWSDaliSoapBinding
