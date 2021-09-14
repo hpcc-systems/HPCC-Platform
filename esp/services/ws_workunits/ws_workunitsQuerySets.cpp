@@ -501,6 +501,8 @@ bool reloadCluster(MapStringToMyClass<ISmartSocketFactory> &roxieConnMap, const 
     ISmartSocketFactory *conn = roxieConnMap.getValue(target);
     if (!conn)
         return true;
+    if (!isActiveK8sService(target))
+        return true;
 #endif
     try
     {
@@ -818,6 +820,8 @@ bool CWsWorkunitsEx::isQuerySuspended(const char* query, const char* target, uns
             return false;
         ISmartSocketFactory *conn = roxieConnMap.getValue(target);
         if (!conn)
+            return false;
+        if (!isActiveK8sService(target))
             return false;
 #endif
         StringBuffer control;
@@ -1253,6 +1257,8 @@ IPropertyTree *getQueriesOnCluster(const char *target, const char *queryset, Str
     ISmartSocketFactory *conn = roxieConnMap.getValue(target);
     if (!conn)
         return nullptr;
+    if (!isActiveK8sService(target))
+        return nullptr;
 #endif
 
     try
@@ -1441,6 +1447,8 @@ unsigned CWsWorkunitsEx::getGraphIdsByQueryId(const char *target, const char *qu
 #else
     ISmartSocketFactory *conn = roxieConnMap.getValue(target);
     if (!conn)
+        return 0;
+    if (!isActiveK8sService(target))
         return 0;
 #endif
 
@@ -3691,6 +3699,8 @@ bool CWsWorkunitsEx::onWUQueryGetSummaryStats(IEspContext& context, IEspWUQueryG
         ISmartSocketFactory *conn = roxieConnMap.getValue(target);
         if (!conn)
             throw makeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Roxie name not found");
+        if (!isActiveK8sService(target))
+            throw makeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Roxie cluster has no active servers");
 #endif
 
         double version = context.getClientVersion();

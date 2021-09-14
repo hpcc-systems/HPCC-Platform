@@ -2226,6 +2226,8 @@ bool CWsSMCEx::onRoxieControlCmd(IEspContext &context, IEspRoxieControlCmdReques
     ISmartSocketFactory *conn = roxieConnMap.getValue(target);
     if (!conn)
         throw makeStringExceptionV(ECLWATCH_CANNOT_GET_ENV_INFO, "roxie target cluster not mapped: %s", target);
+    if (!isActiveK8sService(target))
+        throw makeStringExceptionV(ECLWATCH_CANNOT_GET_ENV_INFO, "roxie target cluster has no active servers: %s", target);
 
     Owned<IPropertyTree> controlResp = sendRoxieControlAllNodes(conn->nextEndpoint(), controlReq, true, req.getWait());
 #endif

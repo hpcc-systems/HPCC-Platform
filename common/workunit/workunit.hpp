@@ -1758,6 +1758,7 @@ extern WORKUNIT_API void executeThorGraph(const char * graphName, IConstWorkUnit
 enum class KeepK8sJobs { none, podfailures, all };
 extern WORKUNIT_API KeepK8sJobs translateKeepJobs(const char *keepJobs);
 
+extern WORKUNIT_API bool isActiveK8sService(const char *serviceName);
 extern WORKUNIT_API bool executeGraphOnLingeringThor(IConstWorkUnit &workunit, const char *graphName, const char *multiJobLingerQueueName);
 extern WORKUNIT_API void deleteK8sResource(const char *componentName, const char *job, const char *resource);
 extern WORKUNIT_API void waitK8sJob(const char *componentName, const char *job, unsigned pendingTimeoutSecs, KeepK8sJobs keepJob);
