@@ -47,6 +47,7 @@ function decodeID(id: string): string {
 export interface IScope {
     __parentName?: string;
     __children?: IScope[];
+    __formattedProps: { [key: string]: any };
     id: string;
     name: string;
     type: string;
@@ -108,6 +109,7 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
             let parent = this._index[scope.__parentName];
             if (!parent) {
                 parent = this.ensureLineage({
+                    __formattedProps: {},
                     id: this.scopeID(scope.__parentName),
                     name: scope.__parentName,
                     type: "unknown",
@@ -209,7 +211,7 @@ export class MetricGraph extends Graph2<IScope, IScopeEdge, IScope> {
         if (options.ignoreGlobalStoreOutEdges && this.vertex(this._activityIndex[e.IdSource]).Kind === "22") {
             return "";
         }
-        return `"${e.IdSource}" -> "${e.IdTarget}" [id="${encodeID(e.name)}" label="${format(options.edgeTpl, e)}" style="${this.vertexParent(this._activityIndex[e.IdSource]) === this.vertexParent(this._activityIndex[e.IdTarget]) ? "solid" : "dashed"}"]`;
+        return `"${e.IdSource}" -> "${e.IdTarget}" [id="${encodeID(e.name)}" label="${format(options.edgeTpl, { ...e, ...e.__formattedProps })}" style="${this.vertexParent(this._activityIndex[e.IdSource]) === this.vertexParent(this._activityIndex[e.IdTarget]) ? "solid" : "dashed"}"]`;
     }
 
     subgraphTpl(sg: IScope, options: MetricsOptions): string {
