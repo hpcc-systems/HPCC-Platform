@@ -197,6 +197,12 @@ interface IEclRepositoryCallback : public IEclRepository
     virtual IEclSource * getSource(IEclSource * parent, IIdAtom * searchName) = 0;
 };
 
+interface IEclPackage: public IEclRepository
+{
+    virtual const char * queryPackageName() = 0;
+};
+
+
 interface ICodegenContextCallback : public IInterface
 {
     virtual void noteCluster(const char *clusterName) = 0;

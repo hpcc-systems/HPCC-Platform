@@ -185,7 +185,7 @@ void WebServicesExtractor::getAttributeText(StringBuffer & text, const char* att
     if(!dot || !dot[1])
         throw MakeStringException(3, "Please specify both module and attribute");
 
-    OwnedHqlExpr symbol = getResolveAttributeFullPath(attributeName, LSFpublic, lookupCtx); 
+    OwnedHqlExpr symbol = getResolveAttributeFullPath(attributeName, LSFpublic, lookupCtx, nullptr);
     if (!symbol || !hasNamedSymbol(symbol) || !symbol->hasText()) 
     {
         StringBuffer txt;
@@ -199,8 +199,9 @@ void WebServicesExtractor::getAttributeText(StringBuffer & text, const char* att
     /* MORE: It would be preferable if this was better integrated with hqlgram2.cpp.  It's a reasonable stopgap */
     if (archive)
     {
+        const char * package = nullptr;     //MORE: GCH->AF not sure how this fits in...
         StringAttr moduleName(attributeName, dot-attributeName);
-        IPropertyTree * moduleTree = queryEnsureArchiveModule(archive, moduleName, NULL);
+        IPropertyTree * moduleTree = queryEnsureArchiveModule(archive, package, moduleName, nullptr);
         IPropertyTree * attrTree = queryArchiveAttribute(moduleTree, dot+1);
         if (!attrTree)
         {
@@ -364,7 +365,7 @@ bool retrieveWebServicesInfo(IWorkUnit *workunit, HqlLookupContext & ctx)
     }
 
     //Names are currently stored case insensitively, we want the case sensitive variant.
-    OwnedHqlExpr s1 = ctx.queryRepository()->queryRootScope()->lookupSymbol(createIdAtom(moduleName.str()), LSFpublic, ctx);
+    OwnedHqlExpr s1 = ctx.queryPackage()->queryRootScope()->lookupSymbol(createIdAtom(moduleName.str()), LSFpublic, ctx);
     if (s1 && s1->queryScope())
     {
         const char *caseSensitiveModuleName = s1->queryScope()->queryFullName();

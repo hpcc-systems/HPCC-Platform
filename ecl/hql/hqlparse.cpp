@@ -1396,7 +1396,7 @@ void HqlLex::doInModule(attribute & returnToken)
 
 static bool isInModule(HqlLookupContext & ctx, const char* moduleName, const char* attrName)
 {
-    if (!ctx.queryRepository())
+    if (!ctx.queryPackage())
         return false;
 
     try
@@ -1408,7 +1408,7 @@ static bool isInModule(HqlLookupContext & ctx, const char* moduleName, const cha
         const char* pAttr = attrName;
         while(*pAttr==' ') pAttr++;
 
-        OwnedHqlExpr match = ctx.queryRepository()->queryRootScope()->lookupSymbol(createIdAtom(pModule), LSFpublic, ctx);
+        OwnedHqlExpr match = ctx.queryPackage()->queryRootScope()->lookupSymbol(createIdAtom(pModule), LSFpublic, ctx);
         IHqlScope * scope = match ? match->queryScope() : NULL;
         if (scope)
         {

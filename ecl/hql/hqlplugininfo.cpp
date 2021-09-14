@@ -26,7 +26,7 @@
 
 namespace repositoryCommon {
 
-IEclRepository * loadPlugins(const char * pluginPath)
+IEclPackage * loadPlugins(const char * pluginPath)
 {
     MultiErrorReceiver errs;
     EclRepositoryManager collection;
@@ -36,7 +36,7 @@ IEclRepository * loadPlugins(const char * pluginPath)
         StringBuffer s;
         DBGLOG(0,"Errors in plugins: %s", errs.toString(s).str());
     }
-    return collection.createCompoundRepository();
+    return collection.createPackage(nullptr);
 }
 
 static void expandPluginPropertyTree(IPropertyTree * target, HqlLookupContext & ctx, IHqlScope * scope, bool includeModuleText)
@@ -85,7 +85,7 @@ static void expandPluginPropertyTree(IPropertyTree * target, HqlLookupContext & 
     }
 }
 
-IPropertyTree * createPluginPropertyTree(IEclRepository * plugins, bool includeModuleText)
+IPropertyTree * createPluginPropertyTree(IEclPackage * plugins, bool includeModuleText)
 {
     NullStatisticTarget nullStats;
     HqlParseContext parseCtx(nullptr, nullptr, nullStats);
@@ -98,7 +98,7 @@ IPropertyTree * createPluginPropertyTree(IEclRepository * plugins, bool includeM
 
 //-------------------------------------------------------------------------------------------------
 
-IPropertyTree * getPlugin(IPropertyTree * p, IEclRepository * plugins, const char* modname, bool load)
+IPropertyTree * getPlugin(IPropertyTree * p, IEclPackage * plugins, const char* modname, bool load)
 {
     if (!p)
         return NULL;

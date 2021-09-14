@@ -1166,6 +1166,7 @@ public:
     virtual bool getProp(IAtom * a, StringBuffer &ret) const override { return false; }
     virtual bool includeInArchive() const override { return false; }
     virtual bool isRemoteScope() const override { return false; }
+    virtual const char * queryPackageName() const override { return nullptr; }
 
     using CHqlDelayedCall::clone;
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols) override { throwUnexpected(); }
@@ -1231,6 +1232,7 @@ public:
     virtual bool includeInArchive() const override { return true; }
     virtual bool isContainerScope() const override { return false; }
     virtual bool isRemoteScope() const override { return false; }
+    virtual const char * queryPackageName() const override { return nullptr; }
 
     virtual void    getSymbols(HqlExprArray& exprs) const override;
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols) override { throwUnexpected(); }
@@ -1295,7 +1297,7 @@ protected:
     void doParseScopeText(HqlLookupContext & ctx);
     IHqlExpression * repositoryLoadSymbol(IIdAtom * attrName);
     void repositoryLoadModule(HqlLookupContext & ctx, bool forceAll);
-    void noteExternalLookup(HqlLookupContext & ctx, IHqlExpression * expr);
+    void noteExternalLookup(HqlLookupContext & ctx, IIdAtom * searchId, IHqlExpression * expr);
 
     virtual bool equals(const IHqlExpression & other) const override;
 
@@ -1333,6 +1335,7 @@ public:
     virtual bool includeInArchive() const override;
     virtual IEclSource * queryEclSource() const override { return eclSource; }
     virtual bool isRemoteScope() const override { return true; }
+    virtual const char * queryPackageName() const override { throwUnexpected(); }
 };
 
 class HQL_API CHqlLocalScope : public CHqlScope
@@ -1392,7 +1395,7 @@ public:
 class HQL_API CHqlMergedScope : public CHqlScope
 {
 public:
-    CHqlMergedScope(IIdAtom * _id, const char * _fullName, CHqlMergedScope * _parent, IEclRepository * _rootRepository)
+    CHqlMergedScope(IIdAtom * _id, const char * _fullName, CHqlMergedScope * _parent, IEclPackage * _rootRepository)
      : CHqlScope(no_mergedscope, _id, _fullName), parent(_parent), rootRepository(_rootRepository)
     {
     }
@@ -1408,12 +1411,13 @@ public:
     virtual bool isContainerScope() const override { return true; }
     virtual IHqlScope * queryConcreteScope() override { return this; }
     virtual bool isRemoteScope() const override;
+    virtual const char * queryPackageName() const override;
 
 protected:
     CriticalSection cs;
     HqlScopeArray mergedScopes;
     CHqlMergedScope * parent;
-    IEclRepository * rootRepository;
+    IEclPackage * rootRepository;
     bool mergedAll = false;
 };
 
@@ -1647,6 +1651,7 @@ public:
     virtual bool getProp(IAtom *, StringBuffer &) const override { return false; }
     virtual bool includeInArchive() const override { return false; }
     virtual bool isRemoteScope() const override { return false; }
+    virtual const char * queryPackageName() const override { return nullptr; }
 
 //IHqlCreateScope
     virtual void defineSymbol(IIdAtom * id, IIdAtom * moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int lineno, int column, int _startpos, int _bodypos, int _endpos) override { throwUnexpected(); }

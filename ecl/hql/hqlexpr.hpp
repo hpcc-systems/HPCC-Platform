@@ -883,8 +883,8 @@ public:
     }
 
     void addForwardReference(IHqlScope * owner, IHasUnlinkedOwnerReference * child);
-    void noteBeginAttribute(IHqlScope * scope, IFileContents * contents, IIdAtom * name);
-    void noteBeginModule(IHqlScope * scope, IFileContents * contents);
+    void noteBeginAttribute(const char * package, IHqlScope * scope, IFileContents * contents, IIdAtom * name);
+    void noteBeginModule(const char * package, IHqlScope * scope, IFileContents * contents);
     void noteBeginQuery(IHqlScope * scope, IFileContents * contents);
     void noteBeginMacro(IHqlScope * scope, IIdAtom * name);
     void noteEndAttribute(bool success);
@@ -893,9 +893,9 @@ public:
     void noteFinishedParse(IHqlScope * scope);
     void noteEndMacro();
     void notePrivateSymbols(IHqlScope * scope);
-    IPropertyTree * queryEnsureArchiveModule(const char * name, IHqlScope * scope);
+    IPropertyTree * queryEnsureArchiveModule(const char * package, const char * name, IHqlScope * scope);
 
-    void noteExternalLookup(IHqlScope * parentScope, IHqlExpression * expr);
+    void noteExternalLookup(const char * package, IHqlScope * parentScope, IIdAtom * name, IHqlExpression * expr);
 
     void setGatherMeta(const MetaOptions & options);
     void setCacheLocation(const char * path);
@@ -986,10 +986,10 @@ public:
         container = &other;
         if (parseCtx.timeParser)
             startCycles = get_cycles_now();
-        rootRepository = other.rootRepository;
+        rootPackage = other.rootPackage;
     }
-    HqlLookupContext(HqlParseContext & _parseCtx, IErrorReceiver * _errs, IEclRepository * _rootRepository)
-    : parseCtx(_parseCtx), errs(_errs), rootRepository(_rootRepository)
+    HqlLookupContext(HqlParseContext & _parseCtx, IErrorReceiver * _errs, IEclPackage * _rootRepository)
+    : parseCtx(_parseCtx), errs(_errs), rootPackage(_rootRepository)
     {
         functionCache = &parseCtx.defaultFunctionCache;
         if (parseCtx.timeParser)
@@ -1008,10 +1008,13 @@ public:
     inline void noteEndMacro() { parseCtx.noteEndMacro(); }
 
     inline void noteFinishedParse(IHqlScope * scope) { parseCtx.noteFinishedParse(scope); }
-    inline void noteExternalLookup(IHqlScope * parentScope, IHqlExpression * expr) { parseCtx.noteExternalLookup(parentScope, expr); }
+    inline void noteExternalLookup(IHqlScope * parentScope, IIdAtom * id, IHqlExpression * expr)
+    {
+        parseCtx.noteExternalLookup(rootPackage->queryPackageName(), parentScope, id, expr);
+    }
     inline void notePrivateSymbols(IHqlScope * scope) { parseCtx.notePrivateSymbols(scope); }
 
-    inline IEclRepository * queryRepository() const { return rootRepository; }
+    inline IEclPackage * queryPackage() const { return rootPackage; }
     inline bool queryExpandCallsWhenBound() const { return parseCtx.expandCallsWhenBound; }
     inline HqlParseContext & queryParseContext() const { return parseCtx; }
     inline unsigned numErrors() const { return errs ? errs->errCount() : 0; }
@@ -1039,7 +1042,7 @@ private:
 public:
     Linked<IErrorReceiver> errs;
     HqlExprArray * functionCache;
-    IEclRepository * rootRepository;
+    IEclPackage * rootPackage;
     cycle_t startCycles = 0;
     cycle_t childCycles = 0;
     HqlLookupContext * container = nullptr;
@@ -1107,6 +1110,7 @@ interface IHqlScope : public IInterface
     virtual bool getProp(IAtom *, StringBuffer &) const = 0;
     virtual bool includeInArchive() const = 0;
     virtual bool isRemoteScope() const = 0;
+    virtual const char * queryPackageName() const = 0;
 
     //IHqlCreateScope
     virtual void defineSymbol(IIdAtom * name, IIdAtom * moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int lineno, int column, int _startpos, int _bodypos, int _endpos) = 0;
@@ -1476,7 +1480,7 @@ extern HQL_API IHqlExpression *parseQuery(IHqlScope *scope, IFileContents * cont
                                           HqlLookupContext & ctx, IXmlScope *xmlScope, IProperties * macroParams, bool loadImplicit, bool isRoot);
 extern HQL_API IHqlExpression *parseQuery(const char *in, IErrorReceiver * errs);
 
-extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * dataServer, const char * items = NULL);
+extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclPackage * dataServer, const char * items = NULL);
 
 extern HQL_API IHqlScope *createService();
 extern HQL_API IHqlScope *createDatabase(IHqlExpression * name);
