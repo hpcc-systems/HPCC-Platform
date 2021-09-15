@@ -2157,9 +2157,14 @@ public:
                 close(errpipe[1]);
             }
 
-            if (dir.get()) {
-                if (chdir(dir) == -1)
-                    throw MakeStringException(-1, "CLinuxPipeProcess::run: could not change dir to %s", dir.get());
+            if (dir.get() && chdir(dir) == -1)
+            {
+                if (haserror)
+                {
+                    fprintf(stderr, "ERROR: CLinuxPipeProcess::run: could not change dir to %s", dir.str());
+                    fflush(stderr);
+                }
+                _exit(START_FAILURE);    // must be _exit!!
             }
             if (envp.length())
                 execve(argv[0], argv, (char *const *) envp.detach());
@@ -2167,9 +2172,7 @@ public:
                 execvp(argv[0], argv);
             if (haserror)
             {
-                Owned<IException> e = createPipeErrnoExceptionV(errno, "exec failed: %s", prog.get());
-                StringBuffer eStr;
-                fprintf(stderr, "ERROR: %d: %s", e->errorCode(), e->errorMessage(eStr).str());
+                fprintf(stderr, "ERROR: %d: exec failed: %s, %s", errno, prog.str(), strerror(errno));
                 fflush(stderr);
             }
             _exit(START_FAILURE);    // must be _exit!!
