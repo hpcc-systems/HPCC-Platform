@@ -10,6 +10,7 @@ elasticsearch:
   minimumMasterNodes: 1 #default is 2, for minimal systems 1 master node should be adequate
   labels: {"managedby" : "HPCC"}
   clusterHealthCheckParams: "local=true" #local node health status
+  #clusterHealthCheckParams: "wait_for_status=yellow&timeout=1s"
   volumeClaimTemplate:
     accessModes: [ "ReadWriteOnce" ]
     resources:
@@ -21,6 +22,45 @@ elasticsearch:
       # Add default labels for the volumeClaimTemplate fo the StatefulSet
       #enabled: false
     #annotations: {}
+  extraEnvs:
+    # Increase WAIT_ES_READY_IN_SEC if get 'Cluster health check is unknown' message in log
+    - name: WAIT_ES_READY_IN_SEC
+      value: "120"
+  lifecycle:
+    postStart:
+      exec:
+        command:
+          - bash
+          - -c
+          - |
+            PIPELINE_NAME=hpccpipeline
+            ES_URL=http://localhost:9200
+            PIPELINE_REQ_PATH=_ingest/pipeline
+            [ -z ${WAIT_ES_READY_IN_SEC} ] && WAIT_ES_READY_IN_SEC=120
+            END_TIME=$(expr $(date +%s) \+ ${WAIT_ES_READY_IN_SEC})
+            START_FILE=/tmp/.es_start_file
+            while [[ $(date +%s) -le ${END_TIME} ]]; do
+              [ -f "${START_FILE}" ] && break
+              sleep 1
+            done
+            if [ -f "${START_FILE}" ]; then
+              echo 'Cluster is ready to add hpccpipeline'
+            else
+              echo 'Cluster health check timeout. Will try to add hpccpipeline anyway.'
+            fi
+            # Need wait elasticsearch container ready to test the hostname with ordinal
+            # Only add pipeline in the first elasticsearch master
+            if [ ${HOSTNAME##*-} -eq 0 ]; then
+              curl -s -X PUT "$ES_URL/$PIPELINE_REQ_PATH/$PIPELINE_NAME/" -H 'Content-Type: application/json' \
+                -d'{ "description": "Parses and formats HPCC Systems component log entries", "processors": [{ "grok": { "field": "message", "patterns": ["%{BASE16NUM:hpcc.log.sequence}\\s+%{HPCC_LOG_AUDIENCE:hpcc.log.audience}\\s+%{HPCC_LOG_CLASS:hpcc.log.class}\\s+%{TIMESTAMP_ISO8601:hpcc.log.timestamp}\\s+%{POSINT:hpcc.log.procid}\\s+%{POSINT:hpcc.log.threadid}\\s+%{HPCC_LOG_WUID:hpcc.log.jobid}\\s+%{QUOTEDSTRING:hpcc.log.message}"], "pattern_definitions": { "HPCC_LOG_WUID": "([A-Z][0-9]{8}-[0-9]{6})|(UNK)", "HPCC_LOG_CLASS": "DIS|ERR|WRN|INF|PRO|MET|UNK", "HPCC_LOG_AUDIENCE": "OPR|USR|PRG|AUD|UNK" } } }], "on_failure": [{ "set": { "field": "error.message", "value": "{{ _ingest.on_failure_message }}" } }] }'
+              rc=$?
+              if [ ${rc} -eq 0 ]; then
+                echo 'Successfully added hpccpipeline !'
+              else
+                echo 'Failed to add hpccpipeline.'
+                exit $rc
+              fi
+            fi
 
 ##The filebeat component can be customized by modifying helm chart values here.
 filebeat:
@@ -67,7 +107,7 @@ filebeat:
       #NOTE: Pipeline could be used to provide Log structure and therefore enhance search capabilities of HPCC component log entries
       #      Pipeline must be manually inserted either via Elastic Search API, or Kibana Pipeline ingest UI.
       #      See https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/managed/logging/elastic/README.md
-      #  pipeline: 'hpccpipeline'
+        pipeline: 'hpccpipeline'
       #  index: "hpccsystems-%{[fields.log_type]}-%{[agent.version]}-%{+yyyy.MM.dd}"
       #setup.template.name: hpccsystems
       #setup.template.pattern: hpccsystems-*
