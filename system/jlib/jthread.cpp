@@ -1878,6 +1878,10 @@ static unsigned dowaitpid(HANDLE pid, int mode)
     return 0;
 }
 
+#ifdef __APPLE__
+extern char **environ;
+#endif
+
 static CriticalSection runsect; // single thread process start to avoid forked handle open/closes interleaving
 class CLinuxPipeProcess: implements IPipeProcess, public CInterface
 {
@@ -2162,9 +2166,8 @@ public:
                     throw MakeStringException(-1, "CLinuxPipeProcess::run: could not change dir to %s", dir.get());
             }
             if (envp.length())
-                execve(argv[0], argv, (char *const *) envp.detach());
-            else
-                execvp(argv[0], argv);
+                environ = (char **) envp.detach();
+            execvp(argv[0], argv);
             if (haserror)
             {
                 Owned<IException> e = createPipeErrnoExceptionV(errno, "exec failed: %s", prog.get());
