@@ -15,6 +15,11 @@ global:
   logging:
     detail: 80
 
+  ## resource settings for stub components
+  #stubInstanceResources:
+  #  memory: "200Mi"
+  #  cpu: "20m"
+
   ## env adds default environment variables for all components. Environment settings can also be added or overridden locally
   #env:
   #- name: SMTPserver

@@ -860,13 +860,19 @@ resources:
 
 {{/*
 Add resources object for stub pods
-Pass in dict with instances defined
+Pass in dict with root, me and instances defined
 */}}
-{{- define "hpcc.addStubResources" }}
+{{- define "hpcc.addStubResources" -}}
+{{- $stubInstanceResources := .root.Values.global.stubInstanceResources | default dict -}}
+{{- $milliCPUPerInstance := $stubInstanceResources.cpu | default "50m" -}}
+{{- $memPerInstance := $stubInstanceResources.memory | default "200Mi" -}}
+{{- $milliCPUs := int (include "hpcc.k8sCPUStringToMilliCPU" $milliCPUPerInstance) -}}
+{{- $bytes := int64 (include "hpcc.k8sMemoryStringToBytes" $memPerInstance) -}}
+{{- $totalBytes := mul .instances $bytes }}
 resources:
   limits:
-    cpu: "50m"
-    memory: {{ (printf "%dM" (mul .instances 100)) | quote }}
+    cpu: {{ printf "%dm" (mul .instances $milliCPUs) | quote }}
+    memory: {{ include "hpcc.bytesToK8sMemoryString" $totalBytes | quote }}
 {{- end -}}
 
 {{/*
@@ -1547,4 +1553,83 @@ A template to output a merged environment. Pass in a list with global then local
 - name: {{ $key }}
   value: {{ $value }}
 {{ end -}}
+{{- end -}}
+
+
+{{/*
+A template to convert a human readable K8s memory string to bytes
+Pass in value
+*/}}
+{{- define "hpcc.k8sMemoryStringToBytes" -}}
+{{- $ctx := dict -}}
+{{- if hasSuffix "i" . -}}
+ {{- if hasSuffix "Ki" . -}}
+  {{- $_ := set $ctx "scale" 1024 -}}
+ {{- else if hasSuffix "Mi" . -}}
+  {{- $_ := set $ctx "scale" 1048576 -}}
+ {{- else if hasSuffix "Gi" . -}}
+  {{- $_ := set $ctx "scale" 1073741824 -}}
+ {{- else if hasSuffix "Ti" . -}}
+  {{- $_ := set $ctx "scale" 1099511627776 -}}
+ {{- else if hasSuffix "Pi" . -}}
+  {{- $_ := set $ctx "scale" 1125899906842624 -}}
+ {{- else if hasSuffix "Ei" . -}}
+  {{- $_ := set $ctx "scale" 1152921504606846976 -}}
+ {{- else -}}
+  {{- $_ := fail (printf "Invalid size suffix on memory resoure specification: %s" .) -}}
+ {{- end -}}
+ {{- $_ := set $ctx "number" (substr 0 (int (sub (len .) 2)) .) -}}
+{{- else -}}
+ {{- if hasSuffix "K" . -}}
+  {{- $_ := set $ctx "scale" 100 -}}
+ {{- else if hasSuffix "M" . -}}
+  {{- $_ := set $ctx "scale" 1000000 -}}
+ {{- else if hasSuffix "G" . -}}
+  {{- $_ := set $ctx "scale" 1000000000 -}}
+ {{- else if hasSuffix "T" . -}}
+  {{- $_ := set $ctx "scale" 1000000000000 -}}
+ {{- else if hasSuffix "P" . -}}
+  {{- $_ := set $ctx "scale" 1000000000000000 -}}
+ {{- else if hasSuffix "E" . -}}
+  {{- $_ := set $ctx "scale" 1000000000000000000 -}}
+ {{- else -}}
+  {{- $_ := fail (printf "Invalid size suffix on memory resoure specification: %s" .) -}}
+ {{- end -}}
+ {{- $_ := set $ctx "number" (substr 0 (sub (len .) 1) .) -}}
+{{- end -}}
+{{- printf "%d" (mul $ctx.number $ctx.scale) -}}
+{{- end -}}
+
+{{/*
+A template to convert a human readable K8s cpu string to milli cpu units
+Pass in value
+*/}}
+{{- define "hpcc.k8sCPUStringToMilliCPU" -}}
+{{- if hasSuffix "m" . -}}
+ {{- $number := (substr 0 (int (sub (len .) 1)) .) -}}
+ {{- printf "%d" (int $number) -}}
+{{- else -}}
+ {{- printf "%d" (int (mulf (float64 .) 1000.0)) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+A template to convert bytes into a k8s human friendly string
+Pass in value
+*/}}
+{{- define "hpcc.bytesToK8sMemoryString" -}}
+{{- /* NB: Rounds down to units that are a 1000th of unit that value is larger than */ -}}
+{{- if ge . 1152921504606846976 -}}{{- /* >= 1Ei */ -}}
+ {{- printf "%dPi" (int (div . 1125899906842624)) -}}
+{{- else if ge . 1125899906842624 -}}{{- /* >= 1Pi */ -}}
+ {{- printf "%dTi" (int (div . 1099511627776)) -}}
+{{- else if ge . 1099511627776 -}}{{- /* >= 1Ti */ -}}
+ {{- printf "%dGi" (int (div . 1073741824)) -}}
+{{- else if ge . 1073741824 -}}{{- /* >= 1Gi */ -}}
+ {{- printf "%dMi" (int (div . 1048576)) -}}
+{{- else if ge . 1048576 -}}{{- /* >= 1Mi */ -}}
+ {{- printf "%dKi" (int (div . 1024)) -}}
+{{- else -}}
+ {{- printf "%d" (int .) -}}
+{{- end -}}
 {{- end -}}
