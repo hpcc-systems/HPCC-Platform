@@ -291,6 +291,7 @@ interface IStoragePlane: extends IInterface
     virtual const char * queryHosts() const = 0;
     virtual const char * querySingleHost() const = 0;
     virtual unsigned numDefaultSprayParts() const = 0 ;
+    virtual bool queryDirPerPart() const = 0;
 };
 
 IClusterInfo *createClusterInfo(const char *grpname,                  // NULL if roxie label set

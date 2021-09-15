@@ -3506,6 +3506,7 @@ public:
     virtual const char * queryHosts() const override { return xml->queryProp("@hosts"); }
     virtual const char * querySingleHost() const override { return xml->queryProp("@host"); }   // MORE: Likely to be changed to resolve hosts
     virtual unsigned numDefaultSprayParts() const override { return xml->getPropInt("@defaultSprayParts", 1); }
+    virtual bool queryDirPerPart() const override { return xml->getPropBool("@subDirPerFilePart", isContainerized()); } // default to dir. per part in containerized mode
 
 private:
     Linked<IPropertyTree> xml;

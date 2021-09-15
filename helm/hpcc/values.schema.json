@@ -464,8 +464,12 @@
               "type": "number"
             }
           }
+        },
+        "subDirPerFilePart" : {
+          "description": "Place each logical file part in its own subdirectory",
+          "type": "boolean",
+          "default": true
         }
-
       },
       "required": [ "name", "prefix", "category" ],
       "additionalProperties": false
