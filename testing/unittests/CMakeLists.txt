@@ -39,6 +39,7 @@ set (    SRCS
          hqltests.cpp
          esdltests.cpp
          txSummarytests.cpp
+         accessmaptests.cpp
     )
 
 if (NOT CONTAINERIZED)
@@ -75,6 +76,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/esdllib
          ${HPCC_SOURCE_DIR}/esp/platform
          ${HPCC_SOURCE_DIR}/esp/services/common
+         ${HPCC_SOURCE_DIR}/tools/hidl
          ${CMAKE_BINARY_DIR}/generated
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
