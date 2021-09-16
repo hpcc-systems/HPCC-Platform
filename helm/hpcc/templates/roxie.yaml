@@ -314,7 +314,7 @@ kind: Deployment
 metadata:
   name: {{ $name | quote}}
 spec:
-  replicas: {{ $roxie.replicas | default 1 }}
+  replicas: {{ (hasKey $roxie "replicas") | ternary $roxie.replicas 1 }}
   selector:
     matchLabels:
       run: {{ $name | quote}}

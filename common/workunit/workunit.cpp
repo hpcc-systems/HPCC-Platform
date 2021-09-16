@@ -14243,6 +14243,15 @@ static void runKubectlCommand(const char *title, const char *cmd, const char *in
     }
 }
 
+bool isActiveK8sService(const char *serviceName)
+{
+    VStringBuffer getEndpoints("kubectl get endpoints %s \"--output=jsonpath={range .subsets[*].addresses[*]}{.ip}{'\\n'}{end}\"", serviceName);
+    StringBuffer output;
+    runKubectlCommand("checkEndpoints", getEndpoints.str(), nullptr, &output);
+    // Output should be zero or more lines each with an IP
+    return (output.length() && output.charAt(0) != '\n');
+}
+
 void deleteK8sResource(const char *componentName, const char *job, const char *resource)
 {
     VStringBuffer jobname("%s-%s", componentName, job);

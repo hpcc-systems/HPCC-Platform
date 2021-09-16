@@ -118,7 +118,7 @@ spec:
 {{- end }}
     spec:
       {{- include "hpcc.placementsByPodTargetType" (dict "root" $ "pod" .name "type" "esp") | indent 6 }}
-      serviceAccountName: "hpcc-default"
+      serviceAccountName: "hpcc-esp-service"
       containers:
       - name: {{ .name | quote }}
         workingDir: /var/lib/HPCCSystems
