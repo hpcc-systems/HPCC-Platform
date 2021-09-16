@@ -137,7 +137,7 @@ extern graph_decl const StatisticsMapping diskWriteActivityStatistics;
 extern graph_decl const StatisticsMapping sortActivityStatistics;
 
 extern graph_decl const StatisticsMapping graphStatistics;
-
+extern graph_decl const StatisticsMapping indexReadStatistics;
 
 class BooleanOnOff
 {
