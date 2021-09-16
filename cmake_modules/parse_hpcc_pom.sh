@@ -54,13 +54,16 @@ function parse_cmake()
     # branch on gold release
     HPCC_MATURITY=release
   elif [ "$HPCC_MATURITY" == "SNAPSHOT" ] ; then
-    if (( "$HPCC_POINT" % 2 != 1 )) ; then
-      HPCC_MATURITY=rc
+    if (( "$HPCC_MINOR" % 2 == 1 )) ; then
+      HPCC_MATURITY=trunk
     else
-      HPCC_MATURITY=closedown
+      if (( "$HPCC_POINT" % 2 != 1 )) ; then
+        HPCC_MATURITY=rc
+      else
+        HPCC_MATURITY=closedown
+      fi
     fi
   fi
-
 }
 
 function set_tag()
@@ -85,6 +88,8 @@ function update_version_file()
     if [ -z "$_new_minor" ] ; then
       _new_minor=$HPCC_MINOR
     fi
+    if [ "$_new_maturity" == "trunk" ]; then
+      _new_maturity=-SNAPSHOT
     if [ "$_new_maturity" == "rc" ]; then
       _new_maturity=-SNAPSHOT
     elif [ "$_new_maturity" == "closedown" ]; then
