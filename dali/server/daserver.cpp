@@ -393,45 +393,38 @@ static StringBuffer &formatDaliRole(StringBuffer &out, unsigned __int64 role)
 }
 
 #ifdef _CONTAINERIZED
-static IPropertyTree * getContainerLDAPConfiguration(const char * authMethod, IPropertyTree *appConfig)
+static IPropertyTree * getContainerLDAPConfiguration(const IPropertyTree *appConfig)
 {
+    const char * authMethod = appConfig->queryProp("@auth");
     if (streq(authMethod, "none"))
+    {
+        WARNLOG("ECLWatch is unsafe, no security manager specified in configuration (auth: none)");
         return nullptr; //no security manager
+    }
+
+    if (!streq(authMethod, "ldap"))
+    {
+        throw makeStringExceptionV(-1, "Unrecognized auth method specified, (auth: %s)", authMethod);
+    }
 
     const char *ldapAddress = appConfig->queryProp("@ldapAddress");
     if (isEmptyString(ldapAddress))
-        throw makeStringExceptionV(-1, "LDAP not configured (missing 'ldapAddress').  To run without security set auth=none");
-
-    //Get LDAP attributes from container config
-    Owned<IPropertyTree> ldapConfig = appConfig->getPropTree("ldap");
-    ldapConfig->addProp("@ldapAddress", ldapAddress);
+        throw makeStringException(-1, "LDAP not configured (missing 'ldapAddress').  To run without security set 'auth: none'");
 
     //Get default LDAP attributes from ldap.yaml
     StringBuffer ldapDefaultsFile(hpccBuildInfo.componentDir);
     char sepchar = getPathSepChar(ldapDefaultsFile.str());
     addPathSepChar(ldapDefaultsFile, sepchar).append("applications").append(sepchar).append("common").append(sepchar).append("ldap").append(sepchar).append("ldap.yaml");
-
-    //read properties from defaults file
-    Owned<IPropertyTree> ldapDefaults;
+    Owned<IPropertyTree> defaults;
     if (checkFileExists(ldapDefaultsFile))
-        ldapDefaults.setown(createPTreeFromYAMLFile(ldapDefaultsFile.str()));
+        defaults.setown(createPTreeFromYAMLFile(ldapDefaultsFile.str()));
 
-    //Append items from defaults file, but only if not already specified in app config
-    if (ldapDefaults)
-    {
-        Owned<IAttributeIterator> aiter = ldapDefaults->queryPropTree("ldap")->getAttributes();
-        ForEach (*aiter)
-        {
-            if (!ldapConfig->hasProp(aiter->queryName()))
-            {
-                DBGLOG("LDAP:Adding default attribute %s=%s", aiter->queryName(), aiter->queryValue());
-                ldapConfig->addProp(aiter->queryName(), aiter->queryValue());
-            }
-            else
-                DBGLOG("LDAP:Overriding default attribute %s=%s", aiter->queryName(), aiter->queryValue());
-        }
-    }
-    return ldapConfig.getClear();
+    //Build merged configuration
+    Owned<IPropertyTree> mergedConfig = defaults->getPropTree("ldap");
+    mergePTree(mergedConfig, appConfig->queryPropTree("ldap"));//overlay defaults with config settings
+    mergedConfig->addProp("@ldapAddress", ldapAddress);
+
+    return LINK(mergedConfig);
 }
 #endif
 
@@ -780,13 +773,9 @@ int main(int argc, const char* argv[])
             else
             {
 #ifdef _CONTAINERIZED
-                const char *authMethod = serverConfig->queryProp("@auth");
-                if (!isEmptyString(authMethod))
-                    setLDAPconnection(createDaliLdapConnection(getContainerLDAPConfiguration(authMethod, serverConfig)));//container configuration
-                else
-#endif
+                    setLDAPconnection(createDaliLdapConnection(getContainerLDAPConfiguration(serverConfig)));//container configuration
+#else
                     setLDAPconnection(createDaliLdapConnection(serverConfig->getPropTree("Coven/ldapSecurity")));//legacy configuration
-            }
 #endif
         }
         catch (IException *e) {
