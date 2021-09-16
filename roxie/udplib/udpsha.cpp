@@ -448,6 +448,7 @@ class PacketTrackerTest : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE(PacketTrackerTest);
     CPPUNIT_TEST(testNoteSeen);
     CPPUNIT_TEST(testReplay);
+    CPPUNIT_TEST(testQueue);
     CPPUNIT_TEST_SUITE_END();
 
     void testNoteSeen()
@@ -617,6 +618,34 @@ class PacketTrackerTest : public CppUnit::TestFixture
         t(p,27,0x4000001b);
         t(p,28,0x4000001c);
         t(p,29,0x4000001d);
+    }
+
+    void testQueue()
+    {
+        udpTraceLevel=1;
+        roxiemem::setTotalMemoryLimit(false, false, false, 20*1024*1024, 0, NULL, NULL);
+        Owned<IDataBufferManager> dbm = roxiemem::createDataBufferManager(roxiemem::DATA_ALIGNMENT_SIZE);
+        queue_t q(5);
+        asyncFor(5, [&q, &dbm](int tno){
+            if (tno)
+            {
+                for (int i = 0; i < 10000; i++)
+                {
+                    q.free_slots();
+                    q.pushOwn(dbm->allocate());
+                }
+            }
+            else
+            {
+                for (int i = 0; i < 10000; i++)
+                {
+                    for (int j = 0; j < 4; j++)
+                        q.pop(true)->Release();
+                    Sleep(1);
+                }
+            }
+
+        });
     }
 };
 
