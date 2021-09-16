@@ -24,9 +24,7 @@
 
 #define MATCH_ENTRY [&](const EntryValue& e) {return strieq(e.get()->name, pathPart);}
 
-static auto pRequestCount = hpccMetrics::createMetricAndAddToManager<hpccMetrics::CounterMetric>("requests",
-                                                                                                 "Number of Requests",
-                                                                                                 SMeasureCount);
+static auto pRequestCount = hpccMetrics::registerCounterMetric("esp.requests.received", "Number of requests received", SMeasureCount);
 
 inline bool validate(const char* k)
 {

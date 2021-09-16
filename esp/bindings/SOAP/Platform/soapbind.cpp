@@ -37,9 +37,7 @@
 #include "jmetrics.hpp"
 
 
-static auto pSoapRequestCount = hpccMetrics::createMetricAndAddToManager<hpccMetrics::CounterMetric>("soaprequests",
-                                                                                                     "JSON and SOAP POST requests",
-                                                                                                     SMeasureCount);
+static auto pSoapRequestCount = hpccMetrics::registerCounterMetric("esp.soap_requests.received", "Number of JSON and SOAP POST requests received", SMeasureCount);
 
 
 #define ESP_FACTORY DECL_EXPORT

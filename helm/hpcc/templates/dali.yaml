@@ -148,6 +148,7 @@ data:
 {{ toYaml (omit $dali "logging" "services" "env") | indent 6 }}
       dataPath: {{ include "hpcc.getPlanePrefix" (dict "root" $ "planeName" $daliStoragePlane) }}
 {{- include "hpcc.generateLoggingConfig" $commonCtx | indent 6 }}
+{{- include "hpcc.generateMetricsConfig" $commonCtx | indent 6 }}
 {{ include "hpcc.generateVaultConfig" (dict "root" $ "secretsCategories" $daliSecretsCategories ) | indent 6 }}
     global:
 {{ include "hpcc.generateGlobalConfigMap" $ | indent 6 }}
