@@ -312,7 +312,8 @@ class RegressMain:
         self.config = Config(self.args.config).configObj
         if ('server' in self.args) and (self.args.server != None):
             if ':' in self.args.server:
-                ip, port = self.args.server.split(':')
+                ipAndPort =  self.args.server.split('//')[-1]     #Remove any prefix like 'http://' if the seerver address is something like tthis: 'http://192.168.1.54:30521'
+                ip, port =ipAndPort.split(':')
                 if isPositiveIntNum(port):
                     self.config.set('espSocket', port)
                 else:

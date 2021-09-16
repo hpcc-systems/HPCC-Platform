@@ -25,7 +25,7 @@ import traceback
 
 from ...common.shell import Shell
 from ...common.error import Error
-from ...util.util import queryWuid, getConfig, clearOSCache
+from ...util.util import queryWuid, getConfig, clearOSCache, printException
 
 import xml.etree.ElementTree as ET
 
@@ -133,19 +133,21 @@ class ECLcmd(Shell):
                 if "aborted" in i:
                     state = "aborted"
                 if cnt > 4:
-                    if i.startswith('<Warning>') or i.startswith('<Exception>'):
+                    if (i.startswith('<Warning>') or i.startswith('<Exception>')) and ('Filename' in i ):
                         # Remove absolute path from filename to 
                         # enable to compare it with same part of keyfile
-                        xml = ET.fromstring(i)
                         try:
+                            xml = ET.fromstring(i)
                             path = xml.find('.//Filename').text
                             logger.debug("%3d. path:'%s'", eclfile.getTaskId(),  path )
                             filename = os.path.basename(path)
                             xml.find('.//Filename').text = filename
-                        except:
-                            logger.debug("%3d. Unexpected error: %s (line: %s) ", eclfile.getTaskId(), str(sys.exc_info()[0]), str(inspect.stack()[0][2]))
+                        except Exception as e: 
+                            logger.debug("%3d. Unexpected error: %s - %s (line: %s) ", eclfile.getTaskId(), str(sys.exc_info()[0]), str(e), str(inspect.stack()[0][2]))
+                            printException(repr(e) + " runCmd()",  debug=False)
+                            
                         finally:
-                            i = ET.tostring(xml).decode("utf-8")
+                            i = ET.tostring(xml, short_empty_elements=False).decode("utf-8")
                         logger.debug("%3d. ret:'%s'", eclfile.getTaskId(),  i )
                         pass
                     try:
@@ -236,17 +238,21 @@ class ECLcmd(Shell):
                 elif (res['state'] == 'failed'):
                     logger.debug("%3d. in state == failed 'wuid':'%s', 'state':'%s', data':'%s', ", eclfile.getTaskId(), res['wuid'], res['state'], data)
                     resultLines = data.strip().split('\n')
+                    resultLinesLen = len(resultLines)
                     resultLineIndex = 0;
-                    #                                                   It has some output what should compare    
-                    while resultLineIndex < len(resultLines) and not resultLines[resultLineIndex].startswith('<'):
+                    #                                                 It has some output what should compare
+                    while resultLineIndex <resultLinesLen and not resultLines[resultLineIndex].startswith('<'):
                         resultLineIndex += 1
-                    logger.debug("%3d. State is fail (resultLineIndex:%d, resultLines:'%s' )", eclfile.getTaskId(), resultLineIndex,  resultLines)
+                    logger.debug("%3d. State is fail (resultLineIndex:%d, resultLinesLen:%d, resultLines:'%s' )", eclfile.getTaskId(), resultLineIndex, resultLinesLen, resultLines)
                     data = '\n'.join(resultLines[resultLineIndex:])+ "\n"
                     eclfile.addResults(data, wuid)
                     logger.debug("%3d. State is fail (resultLineIndex:%d, data:'%s' )", eclfile.getTaskId(), resultLineIndex,  data)
-                    test = False
-                    if not resultLines[resultLineIndex].startswith('Error ('):
+                    if ( resultLinesLen > 0 ) and ( resultLineIndex < resultLinesLen ) and ( not resultLines[resultLineIndex].startswith('Error (') ) and resultLines[resultLineIndex].startswith('<') and True :
                         test = eclfile.testResults()
+                    else:
+                        test = False
+                        eclfile.diff = ("%3d. Test: %s\n") % (eclfile.taskId, eclfile.getBaseEclRealName())
+                        eclfile.diff += '\tNo output\n'
                 else:
                     test = eclfile.testResults()
             report.addResult(eclfile)
