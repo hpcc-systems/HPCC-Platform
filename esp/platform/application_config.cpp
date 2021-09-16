@@ -97,11 +97,7 @@ bool addLdapSecurity(IPropertyTree *legacyEsp, IPropertyTree *appEsp, StringBuff
 
     StringBuffer path(hpccBuildInfo.componentDir);
     char sepchar = getPathSepChar(hpccBuildInfo.componentDir);
-    addPathSepChar(path, sepchar).append("applications").append(sepchar).append("common").append(sepchar).append("ldap").append(sepchar);
-    if (ldapType == LdapType::LegacyAD)
-        path.append("ldap.yaml");
-    else
-        path.append("azure_ldap.yaml");
+    addPathSepChar(path, sepchar).append("applications").append(sepchar).append("common").append(sepchar).append("ldap").append(sepchar).append("ldap.yaml");
     if (checkFileExists(path))
         appendPTreeFromYamlFile(appEsp, path.str(), false);
 
