@@ -1025,7 +1025,7 @@ Pass in dict with .root, .name, .service, .defaultPort, .selector defined
    {{- required "global visibilities section not found" nil -}}
   {{- end -}}
  {{- end -}}
-{{- end -}}
+{{- end }}
 apiVersion: v1
 kind: Service
 metadata:
