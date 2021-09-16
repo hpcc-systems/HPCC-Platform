@@ -310,7 +310,6 @@ void CJobManager::fatal(IException *e)
         if (globals->getPropBool("@watchdogProgressEnabled"))
             queryDeMonServer()->endGraphs();
         setWuid(NULL); // deactivate workunit status (Shouldn't this logic belong outside of thor?)
-
     }
     catch (IException *e)
     {
@@ -328,11 +327,9 @@ void CJobManager::fatal(IException *e)
 
     queryLogMsgManager()->flushQueue(10*1000);
 
-#ifdef _WIN32
-    TerminateProcess(GetCurrentProcess(), 1);
-#else
-    kill(getpid(), SIGKILL);
-#endif
+    // exit code -1 in bare-metal to recycle
+    // exit code 0 to prevent unwanted pod Error status
+    _exit(isContainerized() ? 0 : -1);
 }
 
 void CJobManager::updateWorkUnitLog(IWorkUnit &workunit)
