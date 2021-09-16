@@ -26,6 +26,12 @@ Configuring a supported service module implicitly enables that service. Alternat
 
 Of the defined log agent services, only one - UpdateLog - is supported. Support for the remaining services will be added in future updates.
 
+##### "mock"
+
+A mocked agent can be configured to produce any response that another agent may produce, with no depenencies on input or external sources. Each service for which the configuration defines a response is enabled. Each service for which the configuration does not define a response is disabled.
+
+Although intended primarily for use with unit tests, exposing the module through the plugin causes no harm and may provide value for testing that is not part of the unit tests.
+
 #### UpdateLog
 
 Implementations of the **UpdateLog** service module provide log update request processing. Implementations may be monolithic, handling update requests from end to end. Alternate implementations may themselves be modular, separating generic functionality from implementation details associated with various forms of persistence (e.g., database, file, or web service updates).
@@ -315,6 +321,21 @@ The default **UpdateLog** does add value in development and testing environments
 If one assumes that an empty **UpdateLog** element implies the default behavior, because it contains no directions to deviate from its default behavior, one could also assume that including an empty element is sufficient to request the default behavior. This assumption is valid with XML markup. YAML markup doesn't handle empty elements, at least not well.
 
 For YAML compatibility, an **@UpdateLog** scalar value is defined. A YAML property file may specify *UpdateLog: true* to enable the default behavior. A property file may specify either **@UpdateLog** or **UpdateLog**, but not both. Including both is an error and the log update service will not be available.
+
+#### "mock" Implementation
+
+| XPath | Description |
+| ----- | ----------- |
+| GetTransactionSeed | Optional element to enable the *GetTransactionSeed* service. The return value of `getTransactionSeed` is derived from the value of `@status-code`. |
+| GetTransactionSeed/@seed-id | Optional value to populate IEspGetTransactionSeedResponse::SeedId. |
+| GetTransactionSeed/@status-code | Optional value to populate IEspGetTransactionSeedResponse::StatusCode. |
+| GetTransactionSeed/@status-message | Optional value to populate IEspGetTransactionSeedResponse::StatusMessage |
+| GetTransactionId | Optional element to enable the *GetTransactionID* service. |
+| GetTransactionId/@id | Optional value to populate the `transactionID` parameter. |
+| UpdateLog | Optioonal element to enable the *UpdateLOG* service. |
+| UpdateLog/@response | Optional value to populate IEspUpdateLogResponse::Response. |
+| UpdateLog/@status-code | Optional value to populate IEspUpdateLogResponse::StatusCode. |
+| UpdateLog/@status-message | Optional value to populate IEspUpdateLogResponse::StatusMessage. |
 
 ### //LogAgent/UpdateLog
 

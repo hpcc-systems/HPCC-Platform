@@ -390,7 +390,32 @@ unsigned CLoggingManager::serializeLogRequestContent(IEspUpdateLogRequestWrap* r
     return logData.length();
 }
 
-bool CLoggingManager::getTransactionSeed(StringBuffer& transactionSeed, StringBuffer& status)
+bool CLoggingManager::hasFilteredService(LOGServiceType service, EspLogAgentIdFilter agentIdFilter) const
+{
+    if (!initialized)
+        throw MakeStringException(-1,"LoggingManager not initialized");
+    if (!agentIdFilter)
+        agentIdFilter = defaultIdFilter;
+
+    try
+    {
+        for (IUpdateLogThread* lat : loggingAgentThreads)
+        {
+            if (lat->hasService(service) && checkAgentIdFilter(lat->getLogAgent(), agentIdFilter))
+                return true;
+        }
+    }
+    catch (IException* e)
+    {
+        StringBuffer errorStr;
+        e->errorMessage(errorStr);
+        OERRLOG("Failed to test service availability: %s",errorStr.str());
+        e->Release();
+    }
+    return false;
+}
+
+bool CLoggingManager::getFilteredTransactionSeed(StringBuffer& transactionSeed, StringBuffer& status, EspLogAgentIdFilter agentIdFilter)
 {
     if (!initialized)
         throw MakeStringException(-1,"LoggingManager not initialized");
@@ -402,7 +427,7 @@ bool CLoggingManager::getTransactionSeed(StringBuffer& transactionSeed, StringBu
         Owned<IEspGetTransactionSeedResponse> resp =  createGetTransactionSeedResponse();
         transactionSeed.set("Seed");
 
-        bRet = getTransactionSeed(*req, *resp);
+        bRet = getFilteredTransactionSeed(*req, *resp, agentIdFilter);
         if (bRet && !resp->getStatusCode())
         {
             const char* seed = resp->getSeedId();
@@ -435,25 +460,23 @@ bool CLoggingManager::getTransactionSeed(StringBuffer& transactionSeed, StringBu
     return bRet;
 }
 
-
-bool CLoggingManager::getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp)
+bool CLoggingManager::getFilteredTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp, EspLogAgentIdFilter agentIdFilter)
 {
     if (!initialized)
         throw MakeStringException(-1,"LoggingManager not initialized");
+    if (!agentIdFilter)
+        agentIdFilter = defaultIdFilter;
 
-    bool bRet = false;
     try
     {
-        for (unsigned int x = 0; x < loggingAgentThreads.size(); x++)
+        for (IUpdateLogThread* lat : loggingAgentThreads)
         {
-            IUpdateLogThread* loggingThread = loggingAgentThreads[x];
-            if (!loggingThread->hasService(LGSTGetTransactionSeed))
+            if (!lat->hasService(LGSTGetTransactionSeed))
                 continue;
 
-            IEspLogAgent* loggingAgent = loggingThread->getLogAgent();
-            bRet = loggingAgent->getTransactionSeed(req, resp);
-            if (bRet)
-                break;
+            IEspLogAgent* agent = lat->getLogAgent();
+            if (checkAgentIdFilter(agent, agentIdFilter) && agent->getTransactionSeed(req, resp))
+                return true;
         }
     }
     catch (IException* e)
@@ -465,28 +488,33 @@ bool CLoggingManager::getTransactionSeed(IEspGetTransactionSeedRequest& req, IEs
         resp.setStatusMessage(errorStr.str());
         e->Release();
     }
-
-    return bRet;
+    return false;
 }
 
-bool CLoggingManager::getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID, StringBuffer& status)
+bool CLoggingManager::getFilteredTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID, StringBuffer& status, EspLogAgentIdFilter agentIdFilter)
 {
     if (!initialized)
         throw MakeStringException(-1,"LoggingManager not initialized");
+    if (!agentIdFilter)
+        agentIdFilter = defaultIdFilter;
 
     try
     {
-        for (unsigned int x = 0; x < loggingAgentThreads.size(); x++)
+        for (IUpdateLogThread* lat : loggingAgentThreads)
         {
-            IUpdateLogThread* loggingThread = loggingAgentThreads[x];
-            if (!loggingThread->hasService(LGSTGetTransactionID))
+            if (!lat->hasService(LGSTGetTransactionID))
                 continue;
 
-            IEspLogAgent* loggingAgent = loggingThread->getLogAgent();
-            loggingAgent->getTransactionID(transFields, transactionID);
-            if (!transactionID.isEmpty())
-                ESPLOG(LogMax, "Got TransactionID '%s'", transactionID.str());
-            return true;
+            IEspLogAgent* agent = lat->getLogAgent();
+            if (checkAgentIdFilter(agent, agentIdFilter))
+            {
+                agent->getTransactionID(transFields, transactionID);
+                if (!transactionID.isEmpty())
+                {
+                    ESPLOG(LogMax, "Got TransactionID '%s'", transactionID.str());
+                    return true;
+                }
+            }
         }
     }
     catch (IException* e)
@@ -495,6 +523,38 @@ bool CLoggingManager::getTransactionID(StringAttrMapping* transFields, StringBuf
         e->Release();
     }
 
+    return false;
+}
+
+bool CLoggingManager::checkAgentIdFilter(const IEspLogAgent* agent, EspLogAgentIdFilter agentIdFilter) const
+{
+    if (!agent)
+        return false;
+    if (!agentIdFilter)
+        return true;
+    const char* agentName = nullptr; // used for error reporting
+    try
+    {
+        Owned<IEspLogAgentVariantIterator> variants(agent->getVariants());
+        ForEach(*variants)
+        {
+            const IEspLogAgentVariant& variant = variants->query();
+            if (!agentName)
+                agentName = variant.getName();
+            if (agentIdFilter(variant))
+                return true;
+        }
+    }
+    catch (IException* e)
+    {
+        StringBuffer msg;
+        IERRLOG("variant predicate exception evaluating agent '%s': %s", agentName, e->errorMessage(msg).str());
+        e->Release();
+    }
+    catch(...)
+    {
+        IERRLOG("variant predicate exception evaluating agent '%s'", agentName);
+    }
     return false;
 }
 

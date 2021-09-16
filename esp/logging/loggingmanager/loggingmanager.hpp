@@ -96,21 +96,38 @@ class CLoggingManager : implements ILoggingManager, public CInterface
     bool updateLog(IEspContext* espContext, const char* option, const char* logContent, StringBuffer& status);
     bool updateLog(IEspContext* espContext, const char* option, IPropertyTree* logInfo, IInterface* extraLog, StringBuffer& status);
 
+    bool checkAgentIdFilter(const IEspLogAgent* agent, EspLogAgentIdFilter agentIdFilter) const;
+    static bool defaultIdFilter(const IEspLogAgentVariant&) { return true; }
 public:
     IMPLEMENT_IINTERFACE;
 
     CLoggingManager(void) { initialized = false; };
     virtual ~CLoggingManager(void);
 
-    virtual bool init(IPropertyTree* cfg, const char* service);
+    virtual bool init(IPropertyTree* cfg, const char* service) override;
 
-    virtual IEspLogEntry* createLogEntry();
-    bool hasService(LOGServiceType service) const override;
-    virtual bool updateLog(IEspContext* espContext, IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp);
-    virtual bool updateLog(IEspLogEntry* entry, StringBuffer& status);
-    virtual bool getTransactionSeed(StringBuffer& transactionSeed, StringBuffer& status);
-    virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp);
-    virtual bool getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID, StringBuffer& status);
+    virtual IEspLogEntry* createLogEntry() override;
+    virtual bool hasService(LOGServiceType service) const override;
+    virtual bool updateLog(IEspContext* espContext, IEspUpdateLogRequestWrap& req, IEspUpdateLogResponse& resp) override;;
+    virtual bool updateLog(IEspLogEntry* entry, StringBuffer& status) override;
+    virtual bool getTransactionSeed(StringBuffer& transactionSeed, StringBuffer& status) override { return getFilteredTransactionSeed(transactionSeed, status, defaultIdFilter); }
+    virtual bool getTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp) override { return getFilteredTransactionSeed(req, resp, defaultIdFilter); }
+    virtual bool getTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID, StringBuffer& status) override { return getFilteredTransactionID(transFields, transactionID, status, defaultIdFilter); }
+    virtual bool hasFilteredService(LOGServiceType service, EspLogAgentIdFilter agentIdFilter) const override;
+    virtual bool getFilteredTransactionSeed(StringBuffer& transactionSeed, StringBuffer& status, EspLogAgentIdFilter agentIdFilter) override;
+    virtual bool getFilteredTransactionSeed(IEspGetTransactionSeedRequest& req, IEspGetTransactionSeedResponse& resp, EspLogAgentIdFilter agentIdFilter) override;
+    virtual bool getFilteredTransactionID(StringAttrMapping* transFields, StringBuffer& transactionID, StringBuffer& status, EspLogAgentIdFilter agentIdFilter) override;
+};
+
+/**
+ * This is an example of a predicate that tests group values. It is not meant to represent the only
+ * way to test group values.
+ */
+struct VariantGroupFilter
+{
+    StringBuffer group;
+    VariantGroupFilter(const char* _group) : group(_group) {}
+    bool operator () (const IEspLogAgentVariant& variant) { return strieq(group, variant.getGroup()); }
 };
 
 #endif // !defined(__LOGGINGMANAGER_HPP__)
