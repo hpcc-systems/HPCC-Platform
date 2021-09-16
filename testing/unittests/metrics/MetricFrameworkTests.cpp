@@ -87,7 +87,7 @@ protected:
 
         //
         // Test default increment (by 1)
-        pCounter->inc();
+        pCounter->inc(1);
         expectedValue++;
         int counterValue = pCounter->queryValue();
         CPPUNIT_ASSERT_EQUAL(expectedValue, counterValue);
