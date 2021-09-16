@@ -82,8 +82,6 @@ target_link_libraries ( ws_smc
          hrpc 
          remote 
          dalibase 
-         environment 
-         dalift 
          dllserver 
          nbcd 
          eclrtl 
@@ -106,6 +104,7 @@ target_link_libraries ( ws_smc
 if (NOT CONTAINERIZED)
     target_link_libraries ( ws_smc
         ws_machine
+        environment
     )
 endif()
 

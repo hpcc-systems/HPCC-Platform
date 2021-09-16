@@ -29,6 +29,10 @@
 #include "dautils.hpp"
 #include "dameta.hpp"
 
+#ifdef _CONTAINERIZED
+#error "Should not be compiled in the container build"
+#endif
+
 const char* MSG_FAILED_GET_ENVIRONMENT_INFO = "Failed to get environment information.";
 
 //////////////////////////////////////////////////////////////////////
@@ -47,27 +51,6 @@ IPropertyTree* CTpWrapper::getEnvironment(const char* xpath)
         return LINK(pSubTree);
 
     return NULL;
-}
-
-bool CTpWrapper::getClusterLCR(const char* clusterType, const char* clusterName)
-{
-    bool bLCR = false;
-    if (!clusterType || !*clusterType || !clusterName || !*clusterName)
-        return bLCR;
-
-    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
-    Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
-    Owned<IPropertyTree> root = &constEnv->getPTree();
-
-    StringBuffer xpath;
-    xpath.appendf("Software/%s[@name='%s']", clusterType, clusterName);
-    IPropertyTree* pCluster = root->queryPropTree( xpath.str() );
-    if (!pCluster)
-        throw MakeStringException(ECLWATCH_CLUSTER_NOT_IN_ENV_INFO, "'%s %s' is not defined.", clusterType, clusterName);
-
-    bLCR = !pCluster->getPropBool("@Legacy");
-
-    return bLCR;
 }
 
 void CTpWrapper::getClusterMachineList(double clientVersion,
@@ -465,73 +448,8 @@ void CTpWrapper::getTpEspServers(IArrayOf<IConstTpEspServer>& list)
     }
 }
 
-#ifdef _CONTAINERIZED
-static IEspTpMachine * createHostTpMachine(const char * hostname, const char *path)
-{
-    Owned<IEspTpMachine> machine = createTpMachine();
-    IpAddress ipAddr;
-    ipAddr.ipset(hostname);
-    StringBuffer localHost;
-    ipAddr.getIpText(localHost);
-    machine->setName(localHost.str());
-    machine->setNetaddress(localHost.str());
-    machine->setConfigNetaddress(hostname);
-    machine->setDirectory(path);
-    machine->setOS(getPathSepChar(path) == '/' ? MachineOsLinux : MachineOsW2K);
-    return machine.getClear();
-}
-
-static void gatherDropZoneMachinesFromHosts(IArrayOf<IEspTpMachine> & tpMachines, IPropertyTree & planeOrGroup, const char * prefix)
-{
-    Owned<IPropertyTreeIterator> iter = planeOrGroup.getElements("hosts");
-    ForEach(*iter)
-    {
-        const char * host = iter->query().queryProp(nullptr);
-        tpMachines.append(*createHostTpMachine(host, prefix));
-    }
-}
-
-static void gatherDropZoneMachines(IArrayOf<IEspTpMachine> & tpMachines, IPropertyTree & plane)
-{
-    const char * prefix = plane.queryProp("@prefix");
-    if (plane.hasProp("hosts"))
-    {
-        gatherDropZoneMachinesFromHosts(tpMachines, plane, prefix);
-    }
-    else if (plane.hasProp("@hostGroup"))
-    {
-        Owned<IPropertyTree> hostGroup = getHostGroup(plane.queryProp("@hostGroup"), true);
-        gatherDropZoneMachinesFromHosts(tpMachines, *hostGroup, prefix);
-    }
-    else
-        tpMachines.append(*createHostTpMachine("localhost", prefix));
-}
-#endif
-
-
 void CTpWrapper::getTpDfuServers(IArrayOf<IConstTpDfuServer>& list)
 {
-#ifdef _CONTAINERIZED
-    Owned<IPropertyTreeIterator> dfuQueues = getComponentConfigSP()->getElements("dfuQueues");
-    ForEach(*dfuQueues)
-    {
-        IPropertyTree & dfuQueue = dfuQueues->query();
-        const char * dfuName = dfuQueue.queryProp("@name");
-        StringBuffer queue;
-        getDfuQueueName(queue, dfuName);
-        Owned<IEspTpDfuServer> pService = createTpDfuServer("","");
-        pService->setName(dfuName);
-        pService->setDescription(dfuName);
-        pService->setBuild("");
-        pService->setQueue(queue);
-        pService->setType(eqDfu);
-        IArrayOf<IEspTpMachine> tpMachines;
-        //MORE: The ip and directory don't make any sense on the cloud version
-        tpMachines.append(*createHostTpMachine("localhost", "/var/lib/HPCCSystems"));
-        pService->setTpMachines(tpMachines);
-        list.append(*pService.getClear());
-    }
-#else
     Owned<IPropertyTree> root = getEnvironment("Software");
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
@@ -565,7 +483,6 @@ void CTpWrapper::getTpDfuServers(IArrayOf<IConstTpDfuServer>& list)
 
         list.append(*pService.getClear());
     }
-#endif
 }
 
 
@@ -673,30 +590,6 @@ void CTpWrapper::getTpFTSlaves(IArrayOf<IConstTpFTSlave>& list)
 
         IArrayOf<IEspTpMachine> tpMachines;
         fetchInstances(eqFTSlave, serviceTree, tpMachines);
-        pService->setTpMachines(tpMachines);
-
-        list.append(*pService.getLink());
-    }
-}
-
-void CTpWrapper::getTpDkcSlaves(IArrayOf<IConstTpDkcSlave>& list)
-{
-    Owned<IPropertyTree> root = getEnvironment("Software");
-    if (!root)
-        throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
-
-    Owned<IPropertyTreeIterator> services= root->getElements(eqDkcSlave);
-    ForEach(*services)
-    {
-        IPropertyTree& serviceTree = services->query();
-
-        Owned<IEspTpDkcSlave> pService =createTpDkcSlave("","");
-        pService->setName(serviceTree.queryProp("@name"));
-        pService->setDescription(serviceTree.queryProp("@description"));
-        pService->setBuild(serviceTree.queryProp("@build"));
-
-        IArrayOf<IEspTpMachine> tpMachines;
-        fetchInstances(eqDkcSlave, serviceTree, tpMachines);
         pService->setTpMachines(tpMachines);
 
         list.append(*pService.getLink());
@@ -1315,22 +1208,6 @@ void CTpWrapper::getGroupList(double espVersion, const char* kindReq, IArrayOf<I
 {
     try
     {
-#ifdef _CONTAINERIZED
-        Owned<IPropertyTreeIterator> dataPlanes = getGlobalConfigSP()->getElements("storage/planes[labels='data']");
-        ForEach(*dataPlanes)
-        {
-            IPropertyTree & plane = dataPlanes->query();
-            const char * name = plane.queryProp("@name");
-            IEspTpGroup* pGroup = createTpGroup("","");
-            pGroup->setName(name);
-            if (espVersion >= 1.21)
-            {
-                pGroup->setKind("Plane");
-                pGroup->setReplicateOutputs(false);
-            }
-            GroupList.append(*pGroup);
-        }
-#else
         Owned<IRemoteConnection> conn = querySDS().connect("/Groups", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
         Owned<IPropertyTreeIterator> groups= conn->queryRoot()->getElements("Group");
         if (groups->first())
@@ -1338,11 +1215,7 @@ void CTpWrapper::getGroupList(double espVersion, const char* kindReq, IArrayOf<I
             do
             {
                 IPropertyTree &group = groups->query();
-#ifdef _CONTAINERIZED
-                const char * kind = "Plane";
-#else
                 const char* kind = group.queryProp("@kind");
-#endif
                 if (kindReq && *kindReq && !strieq(kindReq, kind))
                     continue;
 
@@ -1357,7 +1230,6 @@ void CTpWrapper::getGroupList(double espVersion, const char* kindReq, IArrayOf<I
                 GroupList.append(*pGroup);
             } while (groups->next());
         }
-#endif
     }
     catch(IException* e)
     {
@@ -1392,64 +1264,6 @@ bool CTpWrapper::checkGroupReplicateOutputs(const char* groupName, const char* k
     }
     return false;
 }
-
-void CTpWrapper::resolveGroupInfo(const char* groupName,StringBuffer& Cluster, StringBuffer& ClusterPrefix)
-{
-    if(*groupName == 0)
-    {
-        DBGLOG("NULL PARAMETER groupName");
-        return;
-    }
-    //There is a big estimate here.... namely that one group can only be associated with one cluster.......
-    // if this changes then this code may be invalidated....
-    try
-    {
-        Owned<IPropertyTree> pTopology = getEnvironment("Software/Topology");
-        if (!pTopology)
-            throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
-
-        Owned<IPropertyTreeIterator> nodes=  pTopology->getElements("//Cluster");
-        if (nodes->first()) 
-        {
-            do 
-            {
-
-                IPropertyTree &node = nodes->query();
-                if (ContainsProcessDefinition(node,groupName)==true)
-                {
-                    //the prefix info is contained within the parent
-                    ClusterPrefix.append(node.queryProp("@prefix"));
-                    Cluster.append(node.queryProp("@name"));
-                    break;
-                }
-            } while (nodes->next());
-        }
-    }
-    catch(IException* e){   
-      StringBuffer msg;
-      e->errorMessage(msg);
-        IWARNLOG("%s", msg.str());
-        e->Release();
-    }
-    catch(...){
-        IWARNLOG("Unknown Exception caught within CTpWrapper::resolveGroupInfo");
-    }
-}
-
-bool CTpWrapper::ContainsProcessDefinition(IPropertyTree& clusterNode,const char* clusterName)
-{
-    Owned<IPropertyTreeIterator> processNodes = clusterNode.getElements("*");
-    if (processNodes->first()) {
-        do {
-            IPropertyTree &node = processNodes->query();
-            const char* processName = node.queryProp("@process");
-            if (*processName > 0 && (strcmp(processName,clusterName) == 0))
-                return true;
-        } while (processNodes->next());
-        }
-    return false;
-}
-
 
 void CTpWrapper::getMachineInfo(double clientVersion, const char* name, const char* netAddress, IEspTpMachine& machineInfo)
 {
@@ -1762,25 +1576,6 @@ void CTpWrapper::getDropZoneMachineList(double clientVersion, bool ECLWatchVisib
 
 void CTpWrapper::getTpDropZones(double clientVersion, const char* name, bool ECLWatchVisibleOnly, IArrayOf<IConstTpDropZone>& list)
 {
-#ifdef _CONTAINERIZED
-    Owned<IPropertyTreeIterator> planes = getDropZonePlanesIterator(name);
-    ForEach(*planes)
-    {
-        IPropertyTree & plane = planes->query();
-        const char * dropzonename = plane.queryProp("@name");
-        const char * path = plane.queryProp("@prefix");
-        Owned<IEspTpDropZone> dropZone = createTpDropZone();
-        dropZone->setName(dropzonename);
-        dropZone->setDescription("");
-        dropZone->setPath(path);
-        dropZone->setBuild("");
-        dropZone->setECLWatchVisible(true);
-        IArrayOf<IEspTpMachine> tpMachines;
-        gatherDropZoneMachines(tpMachines, plane);
-        dropZone->setTpMachines(tpMachines);
-        list.append(*dropZone.getClear());
-    }
-#else
     Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory(true);
     Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
     if (!isEmptyString(name))
@@ -1799,7 +1594,6 @@ void CTpWrapper::getTpDropZones(double clientVersion, const char* name, bool ECL
                 appendTpDropZone(clientVersion, constEnv, dropZoneInfo, list);
         }
     }
-#endif
 }
 
 
@@ -2108,74 +1902,6 @@ void CTpWrapper::getServices(double version, const char* serviceType, const char
     }
 }
 
-extern TPWRAPPER_API ISashaCommand* archiveOrRestoreWorkunits(StringArray& wuids, IProperties* params, bool archive, bool dfu)
-{
-    StringBuffer sashaAddress;
-    if (params && params->hasProp("sashaServerIP"))
-    {
-        sashaAddress.set(params->queryProp("sashaServerIP"));
-        sashaAddress.append(':').append(params->getPropInt("sashaServerPort", DEFAULT_SASHA_PORT));
-    }
-    else
-        getSashaService(sashaAddress, "sasha-wu-archiver", true);
-
-    SocketEndpoint ep(sashaAddress);
-    Owned<INode> node = createINode(ep);
-    Owned<ISashaCommand> cmd = createSashaCommand();
-    cmd->setAction(archive ? SCA_ARCHIVE : SCA_RESTORE);
-    if (dfu)
-        cmd->setDFU(true);
-
-    ForEachItemIn(i, wuids)
-        cmd->addId(wuids.item(i));
-
-    if (!cmd->send(node, 1*60*1000))
-        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,
-            "Sasha (%s) took too long to respond for Archive/restore workunit.",
-            sashaAddress.str());
-    return cmd.getClear();
-}
-
-extern TPWRAPPER_API IStringIterator* getContainerTargetClusters(const char* processType, const char* processName)
-{
-    Owned<CStringArrayIterator> ret = new CStringArrayIterator;
-    Owned<IPropertyTreeIterator> queues = getComponentConfigSP()->getElements("queues");
-    ForEach(*queues)
-    {
-        IPropertyTree& queue = queues->query();
-        if (!isEmptyString(processType))
-        {
-            const char* type = queue.queryProp("@type");
-            if (isEmptyString(type) || !strieq(type, processType))
-                continue;
-        }
-        const char* qName = queue.queryProp("@name");
-        if (isEmptyString(qName))
-            continue;
-
-        if (!isEmptyString(processName) && !strieq(qName, processName))
-            continue;
-
-        ret->append_unique(qName);
-    }
-    if (!isEmptyString(processType) && !strieq("roxie", processType))
-        return ret.getClear();
-
-    Owned<IPropertyTreeIterator> services = getComponentConfigSP()->getElements("services[@type='roxie']");
-    ForEach(*services)
-    {
-        IPropertyTree& service = services->query();
-        const char* targetName = service.queryProp("@target");
-        if (isEmptyString(targetName))
-            continue;
-
-        if (!isEmptyString(processName) && !strieq(targetName, processName))
-            continue;
-
-        ret->append_unique(targetName);
-    }
-    return ret.getClear();
-}
 
 class CContainerWUClusterInfo : public CSimpleInterfaceOf<IConstWUClusterInfo>
 {
@@ -2323,11 +2049,7 @@ extern TPWRAPPER_API unsigned getContainerWUClusterInfo(CConstWUClusterInfoArray
 
 extern TPWRAPPER_API unsigned getWUClusterInfo(CConstWUClusterInfoArray& clusters)
 {
-#ifndef _CONTAINERIZED
     return getEnvironmentClusterInfo(clusters);
-#else
-    return getContainerWUClusterInfo(clusters);
-#endif
 }
 
 static IPropertyTree * getContainerClusterConfig(const char * clusterName)
@@ -2338,21 +2060,12 @@ static IPropertyTree * getContainerClusterConfig(const char * clusterName)
 
 extern TPWRAPPER_API IConstWUClusterInfo* getWUClusterInfoByName(const char* clusterName)
 {
-#ifndef _CONTAINERIZED
     return getTargetClusterInfo(clusterName);
-#else
-    Owned<IPropertyTree> queue = getContainerClusterConfig(clusterName);
-    if (!queue)
-        return nullptr;
-
-    return new CContainerWUClusterInfo(queue->queryProp("@name"), queue->queryProp("@type"),
-        (unsigned) queue->getPropInt("@width", 1));
-#endif
 }
 
 extern TPWRAPPER_API void initContainerRoxieTargets(MapStringToMyClass<ISmartSocketFactory>& connMap)
 {
-    Owned<IPropertyTreeIterator> services = getComponentConfigSP()->getElements("services[@type='roxie']");
+    Owned<IPropertyTreeIterator> services = getGlobalConfigSP()->getElements("services[@type='roxie']");
     ForEach(*services)
     {
         IPropertyTree& service = services->query();
@@ -2372,37 +2085,19 @@ extern TPWRAPPER_API void initContainerRoxieTargets(MapStringToMyClass<ISmartSoc
 
 extern TPWRAPPER_API unsigned getThorClusterNames(StringArray& targetNames, StringArray& queueNames)
 {
-#ifndef _CONTAINERIZED
     StringArray thorNames, groupNames;
     getEnvironmentThorClusterNames(thorNames, groupNames, targetNames, queueNames);
-#else
-    Owned<IStringIterator> targets = getContainerTargetClusters("thor", nullptr);
-    ForEach(*targets)
-    {
-        SCMStringBuffer target;
-        targets->str(target);
-        targetNames.append(target.str());
-
-        StringBuffer qName;
-        queueNames.append(getClusterThorQueueName(qName, target.str()));
-    }
-#endif
     return targetNames.ordinality();
 }
 
 static std::set<std::string> validTargets;
 static CriticalSection validTargetSect;
-static bool targetsDirty = true;
 
+// called within validTargetSect lock
 static void refreshValidTargets()
 {
     validTargets.clear();
-#ifdef _CONTAINERIZED
-    // discovered from generated cluster names
-    Owned<IStringIterator> it = getContainerTargetClusters(nullptr, nullptr);
-#else
     Owned<IStringIterator> it = getTargetClusters(nullptr, nullptr);
-#endif
     ForEach(*it)
     {
         SCMStringBuffer s;
@@ -2421,39 +2116,24 @@ extern TPWRAPPER_API void validateTargetName(const char* target)
         throw makeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Empty target name.");
 
     CriticalBlock block(validTargetSect);
-    if (targetsDirty)
+    if (validTargets.find(target) == validTargets.end())
     {
+        // bare metal rechecks in case env. changed since target list built
+        if (!validateTargetClusterName(target))
+            throw makeStringExceptionV(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid target name: %s", target);
         refreshValidTargets();
-        targetsDirty = false;
     }
+}
 
-    if (validTargets.find(target) != validTargets.end())
-        return;
-
-#ifdef _CONTAINERIZED
-    //Currently, if there's any change to the target queues, esp will be auto restarted by K8s.
-    throw makeStringExceptionV(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid target name: %s", target);
-#else
-    if (!validateTargetClusterName(target))
-        throw makeStringExceptionV(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid target name: %s", target);
-
-    targetsDirty = true;
-#endif
+extern TPWRAPPER_API bool validateDataPlaneName(const char * remoteDali, const char * name)
+{
+    return isProcessCluster(remoteDali, name);
 }
 
 bool getSashaService(StringBuffer &serviceAddress, const char *serviceName, bool failIfNotFound)
 {
     if (!isEmptyString(serviceName))
     {
-#ifdef _CONTAINERIZED
-        VStringBuffer serviceQualifier("services[@type='sasha'][@name='%s']", serviceName);
-        Owned<IPropertyTree> serviceTree = getComponentConfigSP()->getPropTree(serviceQualifier);
-        if (serviceTree)
-        {
-            serviceAddress.append(serviceName).append(':').append(serviceTree->queryProp("@port"));
-            return true;
-        }
-#else
         // all services are on same sasha on bare-metal as far as esp services are concerned
         StringBuffer sashaAddress;
         IArrayOf<IConstTpSashaServer> sashaservers;
@@ -2472,7 +2152,6 @@ bool getSashaService(StringBuffer &serviceAddress, const char *serviceName, bool
                 return true;
             }
         }
-#endif
     }
     if (failIfNotFound)
         throw makeStringExceptionV(ECLWATCH_ARCHIVE_SERVER_NOT_FOUND, "Sasha '%s' server not found", serviceName);
@@ -2490,24 +2169,17 @@ bool getSashaServiceEP(SocketEndpoint &serviceEndpoint, const char *service, boo
 
 StringBuffer & getRoxieDefaultPlane(StringBuffer & plane, const char * roxieName)
 {
-#ifdef _CONTAINERIZED
-    Owned<IPropertyTree> queue = getContainerClusterConfig(roxieName);
-    if (!queue)
-        throw makeStringExceptionV(ECLWATCH_INVALID_CLUSTER_NAME, "Unknown queue name %s", roxieName);
-
-    if (queue->getProp("@storagePlane", plane))
-        return plane;
-
-    //Find the first data plane - better if it was retrieved from roxie config
-    Owned<IPropertyTreeIterator> dataPlanes = getGlobalConfigSP()->getElements("storage/planes[labels='data']");
-    if (!dataPlanes->first())
-        throwUnexpectedX("No default data plane defined");
-    return plane.append(dataPlanes->query().queryProp("@name"));
-#else
     Owned <IConstWUClusterInfo> clusterInfo(getTargetClusterInfo(roxieName));
     StringBufferAdaptor process(plane);
     if (clusterInfo && clusterInfo->getPlatform()==RoxieCluster)
         clusterInfo->getRoxieProcess(process);
     return plane;
-#endif
+}
+
+StringArray & getRoxieDirectAccessPlanes(StringArray & planes, StringBuffer &defaultPlane, const char * roxieName, bool includeDefaultPlane)
+{
+    getRoxieDefaultPlane(defaultPlane, roxieName);
+    if (defaultPlane.length() && includeDefaultPlane)
+        planes.append(defaultPlane);
+    return planes;
 }

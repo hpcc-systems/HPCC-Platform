@@ -31,6 +31,7 @@ define([
     "hpcc/TargetComboBoxWidget",
     "hpcc/SelectionGridWidget",
     "hpcc/FilterDropDownWidget",
+    "dijit/Dialog",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -141,7 +142,7 @@ define([
 
             this.dropZoneTarget2Select.on("change", function (evt) {
                 if (evt) {
-                    context.serverFilterSelect.loadDropZoneMachines(evt);
+                    context.serverFilterSelect.loadDropZoneMachines(evt, true);
                 }
             });
         },

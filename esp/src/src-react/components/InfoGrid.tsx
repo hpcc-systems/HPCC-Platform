@@ -6,7 +6,7 @@ import * as Observable from "dojo/store/Observable";
 import { Memory } from "src/Memory";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
-import { useWorkunitExceptions } from "../hooks/Workunit";
+import { useWorkunitExceptions } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { DojoGrid } from "./DojoGrid";
 import { createCopyDownloadSelection } from "./Common";
@@ -52,16 +52,16 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     const [selection, setSelection] = React.useState([]);
 
     //  Command Bar  ---
-    const buttons: ICommandBarItemProps[] = [
+    const buttons = React.useMemo((): ICommandBarItemProps[] => [
         { key: "errors", onRender: () => <Checkbox defaultChecked label={`${filterCounts.error || 0} ${nlsHPCC.Errors}`} onChange={(ev, value) => setErrorChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> },
         { key: "warnings", onRender: () => <Checkbox defaultChecked label={`${filterCounts.warning || 0} ${nlsHPCC.Warnings}`} onChange={(ev, value) => setWarningChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> },
         { key: "infos", onRender: () => <Checkbox defaultChecked label={`${filterCounts.info || 0} ${nlsHPCC.Infos}`} onChange={(ev, value) => setInfoChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> },
         { key: "others", onRender: () => <Checkbox defaultChecked label={`${filterCounts.other || 0} ${nlsHPCC.Others}`} onChange={(ev, value) => setOtherChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> }
-    ];
+    ], [filterCounts.error, filterCounts.info, filterCounts.other, filterCounts.warning]);
 
-    const rightButtons: ICommandBarItemProps[] = [
+    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
         ...createCopyDownloadSelection(grid, selection, "errorwarnings.csv")
-    ];
+    ], [grid, selection]);
 
     //  Grid ---
     const gridStore = useConst(new Observable(new Memory("id")));
@@ -107,12 +107,12 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
         FileName: { label: nlsHPCC.FileName, field: "", width: 360, sortable: false }
     });
 
-    const refreshTable = (clearSelection = false) => {
+    const refreshTable = React.useCallback((clearSelection = false) => {
         grid?.set("query", {});
         if (clearSelection) {
             grid?.clearSelection();
         }
-    };
+    }, [grid]);
 
     React.useEffect(() => {
         const filterCounts = {
@@ -172,13 +172,12 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
         gridStore.setData(filteredExceptions);
         refreshTable();
         setFilterCounts(filterCounts);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [gridStore, exceptions, errorChecked, warningChecked, infoChecked, otherChecked]);
+    }, [errorChecked, exceptions, gridStore, infoChecked, otherChecked, refreshTable, warningChecked]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
         main={
-            <DojoGrid type={"SimpleGrid"} store={gridStore} query={{}} sort={{}} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
+            <DojoGrid type={"SimpleGrid"} store={gridStore} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
         }
     />;
 };

@@ -38,6 +38,7 @@ include_directories (
          ./..
          ./../slave 
          ./../../system/mp 
+         ./../../system/security/securesocket
          ./../graph 
          ./../../rtl/include 
          ./../../rtl/eclrtl 
@@ -68,4 +69,6 @@ target_link_libraries ( thorsort_lcr
         graph_lcr
         roxiemem
 )
-
+if (USE_OPENSSL)
+    target_link_libraries(thorsort_lcr securesocket)
+endif()

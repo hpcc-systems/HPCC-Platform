@@ -16,7 +16,7 @@
 
 using namespace hpccMetrics;
 
-static Singleton<MetricsReporter> metricsReporter;
+static Singleton<MetricsManager> metricsManager;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     return true;
@@ -24,24 +24,17 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 
 MODULE_EXIT()
 {
-    delete metricsReporter.queryExisting();
+    delete metricsManager.queryExisting();
 }
 
 
-struct hpccMetrics::SinkInfo
+MetricsManager &hpccMetrics::queryMetricsManager()
 {
-    explicit SinkInfo(MetricSink *_pSink) : pSink{_pSink} {}
-    MetricSink *pSink = nullptr;             // ptr to the sink
-    std::vector<std::string> reportMetrics;   // vector of metrics to report (empty for none)
-};
-
-MetricsReporter &hpccMetrics::queryMetricsReporter()
-{
-    return *metricsReporter.query([] { return new MetricsReporter; });
+    return *metricsManager.query([] { return new MetricsManager; });
 }
 
 
-MetricsReporter::~MetricsReporter()
+MetricsManager::~MetricsManager()
 {
     for (auto const &sinkIt : sinks)
     {
@@ -51,39 +44,54 @@ MetricsReporter::~MetricsReporter()
 }
 
 
-void MetricsReporter::init(IPropertyTree *pMetricsTree)
+void MetricsManager::init(IPropertyTree *pMetricsTree)
 {
     Owned<IPropertyTreeIterator> sinkElementsIt = pMetricsTree->getElements("sinks");
     initializeSinks(sinkElementsIt);
 }
 
 
-void MetricsReporter::addMetric(const std::shared_ptr<IMetric> &pMetric)
+// returns true if the metric was unique when added, false if an existing metric was found.
+bool MetricsManager::addMetric(const std::shared_ptr<IMetric> &pMetric)
 {
+    bool rc = false;
     std::unique_lock<std::mutex> lock(metricVectorMutex);
-    auto it = metrics.find(pMetric->queryName());
+    std::string name = pMetric->queryName();
+    auto metaData = pMetric->queryMetaData();
+    for (auto &metaDataIt: metaData)
+    {
+        name.append(".").append(metaDataIt.value);
+    }
+
+    auto it = metrics.find(name);
     if (it == metrics.end())
     {
-        metrics.insert({pMetric->queryName(), pMetric});
+        metrics.insert({name, pMetric});
+        rc = true;
     }
     else
     {
-        //If there is a match only report an error if the metric has not been destroyed in the meantime
+        // If there is a match only report an error if the metric has not been destroyed in the meantime
         auto match = it->second.lock();
         if (match)
         {
 #ifdef _DEBUG
-            throw MakeStringException(MSGAUD_operator, "addMetric - Attempted to add duplicate named metric with name '%s'", pMetric->queryName().c_str());
+            throw MakeStringException(MSGAUD_operator, "addMetric - Attempted to add duplicate named metric with name '%s'", name.c_str());
 #else
-            OERRLOG("addMetric - Adding a duplicate named metric '%s', old metric replaced", pMetric->queryName().c_str());
+            OERRLOG("addMetric - Adding a duplicate named metric '%s', old metric replaced", name.c_str());
 #endif
+        }
+        else
+        {
+            rc = true;  // old metric no longer present, so it's considered unique
         }
         it->second = pMetric;
     }
+    return rc;
 }
 
 
-void MetricsReporter::startCollecting()
+void MetricsManager::startCollecting()
 {
     for (auto const &sinkIt : sinks)
     {
@@ -92,7 +100,7 @@ void MetricsReporter::startCollecting()
 }
 
 
-void MetricsReporter::stopCollecting()
+void MetricsManager::stopCollecting()
 {
     for (auto const &sinkIt : sinks)
     {
@@ -101,7 +109,7 @@ void MetricsReporter::stopCollecting()
 }
 
 
-std::vector<std::shared_ptr<IMetric>> MetricsReporter::queryMetricsForReport(const std::string &sinkName)
+std::vector<std::shared_ptr<IMetric>> MetricsManager::queryMetricsForReport(const std::string &sinkName)
 {
     std::vector<std::shared_ptr<IMetric>> reportMetrics;
     reportMetrics.reserve(metrics.size());
@@ -138,7 +146,7 @@ std::vector<std::shared_ptr<IMetric>> MetricsReporter::queryMetricsForReport(con
 }
 
 
-void MetricsReporter::initializeSinks(IPropertyTreeIterator *pSinkIt)
+void MetricsManager::initializeSinks(IPropertyTreeIterator *pSinkIt)
 {
     for (pSinkIt->first(); pSinkIt->isValid(); pSinkIt->next())
     {
@@ -168,7 +176,7 @@ void MetricsReporter::initializeSinks(IPropertyTreeIterator *pSinkIt)
 }
 
 
-MetricSink *MetricsReporter::getSinkFromLib(const char *type, const char *sinkName, const IPropertyTree *pSettingsTree)
+MetricSink *MetricsManager::getSinkFromLib(const char *type, const char *sinkName, const IPropertyTree *pSettingsTree)
 {
     std::string libName;
 
@@ -202,6 +210,35 @@ MetricSink *MetricsReporter::getSinkFromLib(const char *type, const char *sinkNa
     return pSink;
 }
 
+// Method for use when testing
+void MetricsManager::addSink(MetricSink *pSink, const char *name)
+{
+    //
+    // Add the sink if it does not already exist, otherwise delete the sink because
+    // we are taking ownership.
+    auto sinkIt = sinks.find(name);
+    if (sinkIt == sinks.end())
+    {
+        sinks.insert({std::string(name), std::unique_ptr<SinkInfo>(new SinkInfo(pSink))});
+    }
+    else
+    {
+        delete pSink;
+    }
+}
+
+
+const char *MetricsManager::queryUnitsString(StatisticMeasure units) const
+{
+    switch (units)
+    {
+    case SMeasureCount:  return "count";
+    case SMeasureTimeNs: return "ns";
+    case SMeasureSize:   return "bytes";
+    }
+    return nullptr;
+}
+
 
 PeriodicMetricSink::PeriodicMetricSink(const char *name, const char *type, const IPropertyTree *pSettingsTree) :
     MetricSink(name, type),
@@ -223,9 +260,9 @@ PeriodicMetricSink::~PeriodicMetricSink()
 }
 
 
-void PeriodicMetricSink::startCollection(MetricsReporter *_pReporter)
+void PeriodicMetricSink::startCollection(MetricsManager *_pManager)
 {
-    pReporter = _pReporter;
+    pManager = _pManager;
     prepareToStartCollecting();
     isCollecting = true;
     collectThread = std::thread(&PeriodicMetricSink::collectionThread, this);

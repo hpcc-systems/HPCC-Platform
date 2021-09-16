@@ -22,6 +22,7 @@
 
 #include "jiface.hpp"
 #include "jstats.h"
+#include <atomic>
 
 #define TIMING
 
@@ -222,6 +223,90 @@ public:
 
 private:
     unsigned start;
+};
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+/*
+There are several situations where we want to record the time spent waiting for items to be processed - time an item
+is queued before processing, time spent calling LDAP from within esp etc.. Gathering the metric has a few complications:
+* The metric gathering needs to have minimal impact
+* The waiting time needs to include items that are currently waiting as well completed
+* Multiple items can be being waited for at the same time, and complete at different times.
+
+    waitingTime = sum(itemTime)
+    = sum(completedItemTime) + sum(inflightItemTime)
+    = sum(endCompletedTime-startCompletedTime) + sum(currentTime-startInflightTime))
+    = sumEndCompletedTime - sumStartCompletedTime + sum(currentTime) - sumStartInflightTime
+    = sumEndCompletedTime + num*current - sumStartTime
+
+The following pattern efficiently solves the problem:
+
+ * When an item is queued/started atomically increment a counter, and add the current timestamp to the accumulated start time stamps.
+ * When an items is dequeued/complete atomically decrement a counter and add the current timestamp to the accumulated end time stamps.
+ * To calculate the waiting time use (sumEndTimestamps + numWaiting * currentTimeStamp) - sumStartTimestamps.
+
+
+At first glance this appears to have a problem because sumEndTimestamps will quickly overflow, but because of the
+properties of modulo arithmetic, the final result will be correct even if it has overflowed!
+Also since you are only ever interested in (sumEndTimestamps - sumStartTimestamps) the same field can be used for both.
+
+There are two versions, one that uses a critical section, and a second that uses atomics, but is limited to the number
+of active blocked items.
+*/
+
+class jlib_decl BlockedTimeTracker
+{
+public:
+    BlockedTimeTracker() = default;
+    BlockedTimeTracker(const BlockedTimeTracker &) = delete;
+
+    void noteWaiting();
+    void noteComplete();
+    __uint64 getWaitingNs() const;
+
+private:
+    mutable CriticalSection cs;
+    unsigned numWaiting = 0;
+    cycle_t timeStampTally = 0;
+};
+
+class jlib_decl BlockedSection
+{
+public:
+    BlockedSection(BlockedTimeTracker & _tracker) : tracker(_tracker) { tracker.noteWaiting(); }
+    ~BlockedSection() { tracker.noteComplete(); }
+private:
+    BlockedTimeTracker & tracker;
+};
+
+//Lightweight version that uses a single atomic, but has a limit on the number of active blocked items
+//Easier to understand by looking at the code for the BlockedTimeTracker class
+//Could be a template class (for MAX_ACTIVE), but I doubt it is worth it.
+class jlib_decl LightweightBlockedTimeTracker
+{
+    //MAX_ACTIVE should be a power of 2 for efficiency, 256 gives a max blocked time of about half a year before wrapping.
+    static constexpr unsigned MAX_ACTIVE = 256;
+public:
+    LightweightBlockedTimeTracker() = default;
+    LightweightBlockedTimeTracker(const LightweightBlockedTimeTracker &) = delete;
+
+    void noteWaiting()                  { timeStampTally.fetch_sub((get_cycles_now() * MAX_ACTIVE) - 1); } // i.e. add 1 and subtract the time
+    void noteComplete()                 { timeStampTally.fetch_add((get_cycles_now() * MAX_ACTIVE) - 1); }
+    __uint64 getWaitingNs() const;
+
+private:
+    std::atomic<__uint64> timeStampTally{0};            // timestamp * MAX_ACTIVE + active
+};
+
+class jlib_decl LightweightBlockedSection
+{
+public:
+    LightweightBlockedSection(LightweightBlockedTimeTracker & _tracker) : tracker(_tracker) { tracker.noteWaiting(); }
+    ~LightweightBlockedSection() { tracker.noteComplete(); }
+private:
+    LightweightBlockedTimeTracker & tracker;
 };
 
 

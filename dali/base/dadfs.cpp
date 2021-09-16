@@ -2785,6 +2785,18 @@ public:
         DistributedFilePropertyLock lock(this);
         queryAttributes().removeTree(queryHistory());
     }
+    void lockFileAttrLock(CFileAttrLock & attrLock)
+    {
+        if (!attrLock.init(logicalName, DXB_File, RTM_LOCK_WRITE, conn, defaultTimeout, "CDistributedFile::lockFileAttrLock"))
+        {
+            // In unlikely event File/Attr doesn't exist, must ensure created, commited and root connection is reloaded.
+            verifyex(attrLock.init(logicalName, DXB_File, RTM_LOCK_WRITE|RTM_CREATE_QUERY, conn, defaultTimeout, "CDistributedFile::lockFileAttrLock"));
+            attrLock.commit();
+            conn->commit();
+            conn->reload();
+            root.setown(conn->getRoot());
+        }
+    }
 
 protected:
     class CFileChangeWriteLock
@@ -3143,6 +3155,24 @@ public:
         setAccessedTime(dt);
     }
 
+    virtual void addAttrValue(const char *attr, unsigned __int64 value) override
+    {
+        if (0==value)
+            return;
+        if (logicalName.isForeign())
+        {
+            // Note: it is not possible to update foreign attributes at the moment, so ignoring
+        }
+        else
+        {
+            CFileAttrLock attrLock;
+            if (conn)
+                lockFileAttrLock(attrLock);
+            unsigned __int64 currentVal = queryAttributes().getPropInt64(attr);
+            queryAttributes().setPropInt64(attr, currentVal+value);
+        }
+    }
+
     virtual StringBuffer &getColumnMapping(StringBuffer &mapping)
     {
         queryAttributes().getProp("@columnMapping",mapping);
@@ -3257,6 +3287,7 @@ protected:
     StringAttr directory;
     StringAttr partmask;
     FileClusterInfoArray clusters;
+    FileDescriptorFlags fileFlags = FileDescriptorFlags::none;
 
     void savePartsAttr(bool force) override
     {
@@ -3582,6 +3613,11 @@ public:
         clusters.kill();
     }
 
+    bool hasDirPerPart() const
+    {
+        return FileDescriptorFlags::none != (fileFlags & FileDescriptorFlags::dirperpart);
+    }
+
     IFileDescriptor *getFileDescriptor(const char *_clusterName) override
     {
         CriticalBlock block (sect);
@@ -3612,21 +3648,23 @@ public:
                 partmask.set(mask);
             }
         }
-        if (!save)
-            return;
-        if (directory.isEmpty())
-            root->removeProp("@directory");
-        else
-            root->setProp("@directory",directory);
-        if (partmask.isEmpty())
-            root->removeProp("@partmask");
-        else
-            root->setProp("@partmask",partmask);
-        IPropertyTree *t = &fdesc->queryProperties();
-        if (isEmptyPTree(t))
-            resetFileAttr();
-        else
-            resetFileAttr(createPTreeFromIPT(t));
+        if (save)
+        {
+            if (directory.isEmpty())
+                root->removeProp("@directory");
+            else
+                root->setProp("@directory",directory);
+            if (partmask.isEmpty())
+                root->removeProp("@partmask");
+            else
+                root->setProp("@partmask",partmask);
+            IPropertyTree *t = &fdesc->queryProperties();
+            if (isEmptyPTree(t))
+                resetFileAttr();
+            else
+                resetFileAttr(createPTreeFromIPT(t));
+        }
+        fileFlags = static_cast<FileDescriptorFlags>(root->getPropInt("Attr/@flags"));
     }
 
     void setClusters(IFileDescriptor *fdesc)
@@ -4044,20 +4082,29 @@ public:
         PROGLOG("CDistributedFile::attach(%s)",_logicalname);
         LOGPTREE("CDistributedFile::attach root.1",root);
 #endif
-        calculateSkew();
-        parent->addEntry(logicalName,root.getClear(),false,false);
-        killParts();
-        clusters.kill();
-        CFileLock fcl;
-        verifyex(fcl.init(logicalName, DXB_File, RTM_LOCK_READ, defaultTimeout, "CDistributedFile::attach"));
-        conn.setown(fcl.detach());
-        root.setown(conn->getRoot());
-        root->queryBranch(".");     // load branch
-        Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(root,&queryNamedGroupStore(),0);
-        setFileAttrs(fdesc,false);
-        setClusters(fdesc);
-        setParts(fdesc,false);
-        setUserDescriptor(udesc, user);
+        try
+        {
+            calculateSkew();
+            parent->addEntry(logicalName,root.getClear(),false,false);
+            killParts();
+            clusters.kill();
+            CFileLock fcl;
+            verifyex(fcl.init(logicalName, DXB_File, RTM_LOCK_READ, defaultTimeout, "CDistributedFile::attach"));
+            conn.setown(fcl.detach());
+            root.setown(conn->getRoot());
+            root->queryBranch(".");     // load branch
+            Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(root,&queryNamedGroupStore(),0);
+            setFileAttrs(fdesc,false);
+            setClusters(fdesc);
+            setParts(fdesc,false);
+            setUserDescriptor(udesc, user);
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "CDistributedFile::attach");
+            logicalName.clear();
+            throw;
+        }
 #ifdef EXTRA_LOGGING
         LOGFDESC("CDistributedFile::attach fdesc",fdesc);
         LOGPTREE("CDistributedFile::attach root.2",root);
@@ -4663,17 +4710,8 @@ public:
         {
             CFileAttrLock attrLock;
             if (conn)
-            {
-                if (!attrLock.init(logicalName, DXB_File, RTM_LOCK_WRITE, conn, defaultTimeout, "CDistributedFile::setAccessedTime"))
-                {
-                    // In unlikely event File/Attr doesn't exist, must ensure created, commited and root connection is reloaded.
-                    verifyex(attrLock.init(logicalName, DXB_File, RTM_LOCK_WRITE|RTM_CREATE_QUERY, conn, defaultTimeout, "CDistributedFile::setAccessedTime"));
-                    attrLock.commit();
-                    conn->commit();
-                    conn->reload();
-                    root.setown(conn->getRoot());
-                }
-            }
+                lockFileAttrLock(attrLock);
+
             if (dt.isNull())
                 queryAttributes().removeProp("@accessed");
             else
@@ -5538,8 +5576,6 @@ public:
     virtual IFileDescriptor *getFileDescriptor(const char *clustername) override
     {
         CriticalBlock block (sect);
-        if (subfiles.ordinality()==1)
-            return subfiles.item(0).getFileDescriptor(clustername);
         // superfiles assume consistant replication & compression
         UnsignedArray subcounts;
         bool mixedwidth = false;
@@ -5755,15 +5791,24 @@ public:
         StringBuffer tail;
         StringBuffer lfn;
         logicalName.set(_logicalname);
-        checkLogicalName(logicalName,user,true,true,false,"attach");
-        parent->addEntry(logicalName,root.getClear(),true,false);
-        conn.clear();
-        CFileLock fcl;
-        verifyex(fcl.init(logicalName, DXB_SuperFile, RTM_LOCK_READ, defaultTimeout, "CDistributedSuperFile::attach"));
-        conn.setown(fcl.detach());
-        assertex(conn.get()); // must have been attached
-        root.setown(conn->getRoot());
-        loadSubFiles(NULL, 0, true);
+        try
+        {
+            checkLogicalName(logicalName,user,true,true,false,"attach");
+            parent->addEntry(logicalName,root.getClear(),true,false);
+            conn.clear();
+            CFileLock fcl;
+            verifyex(fcl.init(logicalName, DXB_SuperFile, RTM_LOCK_READ, defaultTimeout, "CDistributedSuperFile::attach"));
+            conn.setown(fcl.detach());
+            assertex(conn.get()); // must have been attached
+            root.setown(conn->getRoot());
+            loadSubFiles(NULL, 0, true);
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "CDistributedSuperFile::attach");
+            logicalName.clear();
+            throw;
+        }
     }
 
     virtual void detach(unsigned timeoutMs=INFINITE, ICodeContext *ctx=NULL) override
@@ -6866,6 +6911,8 @@ StringBuffer &CDistributedFilePart::getPartDirectory(StringBuffer &ret,unsigned 
         parent.adjustClusterDir(partIndex,copy,dir);
         ret.append(dir);
     }
+    if (parent.hasDirPerPart())
+        addPathSepChar(ret).append(partIndex+1); // part subdir 1 based
     return ret;
 }
 

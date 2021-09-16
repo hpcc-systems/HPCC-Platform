@@ -283,7 +283,7 @@ mainRecord := RECORD
   INTEGER8 sequence;
   STRING20 forename; 
   STRING20 surname;
-  UNSIGNED8 filepos{virtual(fileposition)};
+  UNSIGNED8 filepos{VIRTUAL(fileposition)};
 END;
 mainTable := DATASET('~keyed.d00',mainRecord,THOR);
 nameKey := INDEX(mainTable, {surname,forename,filepos}, 'name.idx');

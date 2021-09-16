@@ -26,7 +26,6 @@ interface IProbeManager;
 interface IDebuggableContext;
 
 extern void doDebugRequest(IRoxieQueryPacket *packet, const IRoxieContextLogger &logctx);
-extern IProbeManager *createProbeManager();
 extern IProbeManager *createDebugManager(IDebuggableContext *debugContext, const char *graphName);
 
 #endif

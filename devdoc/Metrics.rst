@@ -183,7 +183,7 @@ framework is independent of those dependencies. Sinks:
 * Convert metric native values into collection system specific measurements and reports
 * Drive the collection and reporting processes
 
-The third area of the framework is the glue logic, referred to as the *MetricsReporter*. It manages
+The third area of the framework is the glue logic, referred to as the *MetricsManager*. It manages
 the metrics system for the component. It provides the following:
 
 * Handles framework initialization
@@ -199,22 +199,26 @@ arise in the implementation of a sink shall be the sole responsibility of the si
 ************************
 Framework Implementation
 ************************
-This section describe the implementation of each area of the framework.
+The framework is implemented within jlib. The following sections describe each area of the
+framework.
 
 Metrics
 =======
 Components use metrics to measure their internal state. Metrics can represent everything from the
-number of requests received to the average length some value remains cached. The point is that the
-component is responsible for creating and updating the metric. The framework shall provide a set of
+number of requests received to the average length some value remains cached. Components are responsible
+for creating and updating metrics for each measured state. The framework shall provide a set of
 metrics designed to cover the majority of component measurement requirements. All metrics share a
 common interface to allow the framework to manage them in a common way.
 
 To meet the requirement to manage metrics independent of the underlying metric state, all metrics
 implement a common interface. All metrics then add their specific methods to update and retrieve
-internal state. Generally the component uses the update method(s) to change metric state whenever
-an event or other process dictates. The sink, described later, is generally the consumer of the
-retrieval methods. Components create and update metrics and sinks retrieve and consume the values.
-The metric is responsible for synchronizing access between update and retrieval.
+internal state. Generally the component uses the update method(s) to update state and the framework
+uses retrieval methods to get current state when reporting. The metric insures synchronized access.
+
+For components that already have an implementation that tracks a metric, the framework provides a way
+to instantiate a custom metric. The custom metric allows the component to leverage the existing
+implementation and give the framework access to the metric value for collection and reporting. Note
+that custom metrics only support simple scalar metrics such as a counter or a gauge.
 
 Sinks
 =====
@@ -276,6 +280,15 @@ Once created, the component shall update the gauge anytime the state of what is 
 The metric shall provide methods to increase and decrease the value. The sink reads the value during
 collection and reporting.
 
+Custom Metric
+-------------
+A custom metric is a class that allows a component to leverage existing metrics. The component creates
+an instance of a custom metric (a templated class) and passes a reference to the underlying metric
+value. When collection is performed, the custom metric simply reads the value of the metric using the
+reference provided during construction. The component maintains full responsibility for updating the
+metric value as the custom metric class provides no update methods. The component is also responsible
+for ensuring atomic access to the value if necessary.
+
 
 *************
 Configuration
@@ -289,14 +302,11 @@ form as shown below. Note that as the design progresses it is expected that ther
   component:
     metrics:
       sinks:
-        sink:
-          - type: <sink_type>
-            name: <sink name>
-            settings:
-              sink_setting1: sink_setting_value1
-              sink_setting2: sink_setting_value2
-            metrics:
-              - name: <metric_name>
+      - type: <sink_type>
+        name: <sink name>
+        settings:
+          sink_setting1: sink_setting_value1
+          sink_setting2: sink_setting_value2
 
 Where (based on being a child of the current *component*):
 
@@ -306,29 +316,170 @@ metrics
 metrics.sinks
     List of sinks defined for the component (may have been combined with global config)
 
-metrics.sinks.sink
-    The repeating element
-
-metrics.sinks.sink.type
+metrics.sinks[].type
     The type for the sink. The type is substituted into the following pattern to determine the lib to load:
     libhpccmetrics<type><shared_object_extension>
 
-metrics.sinks.sink.name
-    A name for the sink. Note this may not be needed, but can provide a way to combine global and
-    component config based on value
+metrics.sinks[].name
+    A name for the sink.
 
-metrics.sinks.sink.settings
-    A set of key/value pairs that passed to the sink when initialized. It should contain information
+metrics.sinks[].settings
+    A set of key/value pairs passed to the sink when initialized. It should contain information
     necessary for the operation of the sink. Nested YML is supported. Example settings are the
     prometheus server name, or the collection period for a periodic sink.
 
-metrics.sinks.sink.metrics
-    Optional list of component-defined metrics reported by the sink to the backend during collection
-    and reporting. If no list if given, all component metrics are reported by default.
+*************
+Metric Naming
+*************
 
+Metric names shall follow a convention as outlined in this section. Because different collection systems
+have different requirements for how metric value reports are generated, naming is split into two parts.
+
+First, each metric is given a base name that describes what the underlying value is. Second, meta data
+is assigned to each metric to further qualify the value. For example, a set of metrics may count the
+number of requests a component has received. Each metric would have the same base name, but meta data would
+separate types of request (GET vs POST), or disposition such as pass or fail.
+
+Base Name
+=========
+The following convention defines how metric names are formed:
+
+* Names consist of parts separated by a period (.)
+* Each part shall use snake case (allows for compound names in each part)
+* Names for metric types shall be named as follows:
+
+  Gauges: <plural-noun>.<state>   requests.waiting, status_requests.waiting
+
+  Counters:  <plural-noun>.<past-tense-verb>   requests.failed, gateway_requests.queued
+
+  Time:    <singular-noun>.<state or active-verb>.time  request.blocked.time, request.process.time
+
+Meta Data
+=========
+Meta data further qualifies a metric value. This allows metrics to have the same name, but different scopes
+or categories. Generally, meta data is only used to furher qualify metrics that would have the same base
+name, but need further distinction. An example best describes a use case for meta data. Consider a
+component that accepts HTTP requests, but needs to track GET and POST requests separately. Instead of
+defining metrics with names *post_requests.received* and *get_requests.received*, the component creates two
+metrics with the base name *requests.received* and attaches meta data describing the request type of
+POST to one and GET to the other.
+
+Use of meta data allows aggregating both types of requests into a single combined count of received
+requests while allowing a breakdown by type.
+
+Meta data is represented as a key/value pair and is attached to the metric by the component during
+metric creation. The sink is responsible for converting meta data into useful information for the
+collection system during reporting.
+
+The *Component Instrumentation* section covers how meta data is added to a metric.
 
 *************************
 Component Instrumentation
 *************************
 
-This section describes component instrumentation. Will be filled in later.
+In order to instrument a component for metrics using the framework, a component must include the metrics
+header from jlib (*jmetrics.hpp*) and add jlib as a dependent lib (if not already doing so).
+
+The general steps for instrumentation are
+
+1. Create a metrics reporter object
+2. Create metric objects for each internal state to measure and add each to the reporter
+3. Add updates to each metric throughout the component wherever metric state changes
+
+The *metrics reporter* is a singleton created using the platform defined singleton pattern template. The component
+must obtain a reference to the reporter. Use the following example:
+
+::
+
+    using namespace hpccMetrics;
+    MetricsManager &metricsManager = queryMetricsManager();
+
+Metrics are wrapped by a standard C++ shared pointer. The component is responsible for maintaining a reference to
+each shared pointer during the lifetime of the metric. The framework keeps a weak pointer to each metric and thus
+does not maintain a reference. The following is an example of creating a counter metric and adding it to the
+reporter. The *using namespace* eliminates the need to prefix all metrics types with *hpccMetrics*. Its use
+is assumed for all code examples that follow.
+
+::
+
+    std::shared_ptr<CounterMetric> pCounter = std::make_shared<CounterMetric>("metricName", "description");
+    metricsManager.add(pCounter);
+
+Note the metric type for both the shared pointer variable and in the *make_shared* template that creates the
+metric and returns a shared pointer. Simply substitute other metric types and handle any differences in the
+constructor arguments as needed.
+
+Once created, add updates to the metric state throughout the component code where required. Using the above
+example, the following line of code increments the counter metric by 1.
+
+::
+
+    pCounter->inc(1);
+
+Note that only a single line of code is required to update the metric.
+
+That's it! There are no component requirements related to collection or reporting of metric values. That is
+handled by the framework and loaded sinks.
+
+For convenience, there are function templates that handle creating the reporter, creating a metric, and adding
+the metric to the reporter. For example, the above three lines of code that created the reporter, a metric, and
+added it, can be replaced by the following:
+
+::
+
+    auto pCount = createMetricAndAddToManager<CounterMetric>("metricName", "description");
+
+For convenience a similar function template exists for creating custom metrics. For a custom metric the framework
+must know the metric type and have a reference to the underlying state variable. The following template function
+handles creating a custom metric and adding it to the reporter (which is created if needed as well):
+
+::
+
+    auto pCustomMetric = createCustomMetricAndAddToManager("customName", "description", metricType, value);
+
+
+Where:
+
+* metricType
+
+  A defined metric type as defined by the *MetricType* enum.
+
+* value
+
+  A reference to the underlying event state which must be a scalar value convertable to a 64bit unsigned
+  integer (__uint64)
+
+Adding Metric Meta Data
+=======================
+A component, depending on requirements, may attach meta data to further qualify created metrics.
+Meta data takes the form of key value pairs. The base metric class *MetricBase* constructor defines
+a parameter for a vector of meta data. Metric subclasses also define meta data as a constructor parameter,
+however an empty vector is the default. The *IMetric* interface defines a method for retrieving the meta data.
+
+Meta data is order dependent.
+
+Below are two examples of constructing a metric with meta data. One creates the vector and passes it as a
+parameter, the other constructs the vector in place.
+
+::
+
+    MetricMetaData metaData1{{"key1", "value1"}};
+    std::shared_ptr<CounterMetric> pCounter1 =
+        std::make_shared<CounterMetric>("requests.completed", "description", SMeasureCount, metaData1);
+
+    std::shared_ptr<CounterMetric> pCounter2 =
+        std::make_shared<CounterMetric>("requests.completed", "description", SMeasureCount, MetricMetaData{{"key1", "value2"}});
+
+Metric Units
+============
+Metric units are treated separately from the base name and meta data. The reason is to allow the sink to
+translate based on collection system requirements. The base framework provides a convenience method for
+converting units into a string. However, the sink is free to do any conversions, both actual units and
+the string representation, as needed.
+
+Metric units are defined using a subset of the *StaticsMeasure*  enumeration values defined
+in **jstatscodes.h**. The current values are used:
+
+* SMeasureTimeNs - A time measurement in nanoseconds
+* SMeasureCount - A count of events
+* SMeasureSize - Size in bytes

@@ -19,8 +19,8 @@ class CSashaCommand: public CInterface, implements ISashaCommand
 {
     SashaCommandAction action;
     StringAttrArray ids;
-    CDateTime *dts;
-    unsigned numdts;
+    CDateTime *dts = nullptr;
+    unsigned numdts = 0;
 
     StringAttr after; //datetime
     StringAttr before; //datetime
@@ -43,8 +43,8 @@ class CSashaCommand: public CInterface, implements ISashaCommand
 #endif
     StringAttr xslt;
     StringAttrArray results;
-    unsigned resultsize;
-    bool resultoverflow;
+    unsigned resultsize = 0;
+    bool resultoverflow = false;
     bool online;
     bool archived;
     bool dfu;
@@ -73,13 +73,10 @@ public:
         dfu = false;
         start = 0;
         limit = 0x7fffffff;
-        resultoverflow = false;
-        resultsize = 0;
         wuservices = false;
-        dts = NULL;
-        numdts = 0;
     }
 
+    //Never called - could possibly remove serialization support
     CSashaCommand(MemoryBuffer &mb)
     {
         deserialize(mb);

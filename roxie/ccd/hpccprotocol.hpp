@@ -71,7 +71,6 @@ interface IHpccProtocolResponse : extends IInterface
 
     virtual void appendContent(TextMarkupFormat mlFmt, const char *content, const char *name=NULL) = 0; //will be transformed
     virtual IXmlWriter *writeAppendContent(const char *name = NULL) = 0;
-    virtual void appendProbeGraph(const char *xml) = 0;
 
     virtual void finalize(unsigned seqNo) = 0;
 
@@ -98,8 +97,8 @@ interface IHpccProtocolMsgSink : extends IInterface
     virtual IHpccProtocolMsgContext *createMsgContext(time_t startTime) = 0;
     virtual StringArray &getTargetNames(StringArray &targets) = 0;
 
-    virtual void noteQuery(IHpccProtocolMsgContext *msgctx, const char *peer, bool failed, unsigned bytesOut, unsigned elapsed, unsigned memused, unsigned agentsReplyLen, unsigned agentDuplicates, unsigned agentResends, bool continuationNeeded) = 0;
-    virtual void onQueryMsg(IHpccProtocolMsgContext *msgctx, IPropertyTree *msg, IHpccProtocolResponse *protocol, unsigned flags, PTreeReaderOptions readFlags, const char *target, unsigned idx, unsigned &memused, unsigned &agentReplyLen, unsigned &agentDuplicates, unsigned &agentResends) = 0;
+    virtual void noteQuery(IHpccProtocolMsgContext *msgctx, const char *peer, bool failed, unsigned bytesOut, unsigned elapsed, unsigned memused, unsigned agentsReplyLen, unsigned agentDuplicates, unsigned agentResends, bool continuationNeeded, unsigned requestArraySize) = 0;
+    virtual void onQueryMsg(IHpccProtocolMsgContext *msgctx, IPropertyTree *msg, IHpccProtocolResponse *protocol, unsigned flags, PTreeReaderOptions readFlags, const char *target, unsigned idx, unsigned &memused, unsigned &agentReplyLen, unsigned &agentDuplicates, unsigned &agentResends, StringAttr &statsWuid) = 0;
 };
 
 interface IHpccProtocolListener : extends IInterface

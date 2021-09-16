@@ -7,16 +7,12 @@
   <para>In this example, we will download an open source data file of
   dictionary words, spray that file to our Thor cluster, then validate our
   anagrams against that file so that we determine which are valid words. The
-  validation step uses a JOIN of the anagram
-  list to the dictionary file. Using an index and a keyed join would be more
-  efficient, but this serves as a simple example.</para>
+  validation step uses a JOIN of the anagram list to the dictionary file.
+  Using an index and a keyed join would be more efficient, but this serves as
+  a simple example.</para>
 
   <sect3 id="RoxieExample_DownloadWordList">
-    
-
     <title>Download the word list</title>
-
-    
 
     <para>We will download the word list from <ulink
     url="http://wordlist.aspell.net/12dicts">http://wordlist.aspell.net/12dicts</ulink></para>
@@ -24,8 +20,7 @@
     <para><orderedlist>
         <listitem>
           <para>Download the <emphasis>Official 12 Dicts </emphasis>Package.
-          The files are available in tar.gz or ZIP
-          format.</para>
+          The files are available in tar.gz or ZIP format.</para>
         </listitem>
 
         <listitem>
@@ -37,34 +32,28 @@
   </sect3>
 
   <sect3 id="Load_the_Incoming_Data">
-    
-
     <title>Load the Dictionary File to your Landing Zone</title>
 
-    
-
     <para>In this step, you will copy the data files to a location from which
-    it can be sprayed to your HPCC Systems cluster.
-    A Landing Zone is a storage location attached to your HPCC Systems platform.
-    It has a utility running to facilitate file spraying to a cluster.</para>
+    it can be sprayed to your HPCC Systems cluster. A Landing Zone is a
+    storage location attached to your HPCC Systems platform. It has a utility
+    running to facilitate file spraying to a cluster.</para>
 
-    <para>For smaller data files, maximum of 2GB,
-    you can use the upload/download file utility in ECL
-    Watch. This data file is only ~400 kb.</para>
+    <para>For smaller data files, maximum of 2GB, you can use the
+    upload/download file utility in ECL Watch. This data file is only ~400
+    kb.</para>
 
     <para>Next you will distribute (or Spray) the dataset to all the nodes in
-    the HPCC Systems cluster. The power of HPCC Systems 
-    comes from its ability to assign multiple processors to work on different
-    portions of the data file in parallel. Even though the VM
-    Edition only has a single node, the data must be sprayed to the
-    cluster.</para>
+    the HPCC Systems cluster. The power of HPCC Systems comes from its ability
+    to assign multiple processors to work on different portions of the data
+    file in parallel. Even if your deployment only has a single node, the data
+    must be sprayed to the cluster.</para>
 
     <orderedlist>
       <listitem>
         <para>In your browser, go to the <emphasis role="bold">ECL
-        Watch</emphasis> URL. For example,
-        http://nnn.nnn.nnn.nnn:8010, where nnn.nnn.nnn.nnn is your ESP
-        Server's IP address.</para>
+        Watch</emphasis> URL. For example, http://nnn.nnn.nnn.nnn:8010, where
+        nnn.nnn.nnn.nnn is your ESP Server's IP address.</para>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <?dbfo keep-together="always"?>
@@ -79,10 +68,9 @@
                   <entry><inlinegraphic
                   fileref="../../images/caution.png" /></entry>
 
-                  <entry>Your IP address
-                  could be different from the ones provided in the example
-                  images. Please use the IP
-                  address provided by <emphasis role="bold">your</emphasis>
+                  <entry>Your IP address could be different from the ones
+                  provided in the example images. Please use the IP address
+                  provided by <emphasis role="bold">your</emphasis>
                   installation.</entry>
                 </row>
               </tbody>
@@ -93,8 +81,8 @@
       <listitem>
         <?dbfo keep-together="always"?>
 
-        <para>From ECL Watch click on the
-        <emphasis role="bold">Files</emphasis> icon, then click the <emphasis
+        <para>From ECL Watch click on the <emphasis
+        role="bold">Files</emphasis> icon, then click the <emphasis
         role="bold">Landing Zones</emphasis> link from the navigation
         sub-menu.</para>
 
@@ -142,16 +130,12 @@
   </sect3>
 
   <sect3 id="Spray_the_Data_to_THOR">
-    
-
     <title>Spray the Data File to your <emphasis>Data Refinery (Thor)
     Cluster</emphasis></title>
 
-    
-
-    <para>To use the data file in our HPCC
-    Systems cluster, we must "spray" it to all the nodes. A <emphasis>spray</emphasis>
-    or <emphasis>import</emphasis> is the relocation of a data file from one
+    <para>To use the data file in our HPCC Systems cluster, we must "spray" it
+    to all the nodes. A <emphasis>spray</emphasis> or
+    <emphasis>import</emphasis> is the relocation of a data file from one
     location (such as a Landing Zone) to multiple file parts on nodes in a
     cluster.</para>
 
@@ -163,13 +147,11 @@
 
     <orderedlist>
       <listitem>
-        <para>Open ECL Watch using the
-        following URL:</para>
+        <para>Open ECL Watch using the following URL:</para>
 
         <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp(where
-        nnn.nnn.nnn.nnn is your ESP Server's
-        IP Address and pppp is the port. The
-        default port is 8010)</emphasis></para>
+        nnn.nnn.nnn.nnn is your ESP Server's IP Address and pppp is the port.
+        The default port is 8010)</emphasis></para>
       </listitem>
 
       <listitem>
@@ -202,8 +184,8 @@
             </mediaobject>
           </figure></para>
 
-        <para>The <emphasis role="bold">DFU
-        Spray Delimited</emphasis> page displays.</para>
+        <para>The <emphasis role="bold">DFU Spray Delimited</emphasis> page
+        displays.</para>
       </listitem>
 
       <listitem>
@@ -260,24 +242,19 @@
         <para>Press the <emphasis role="bold">Spray</emphasis><emphasis
         role="bold"> </emphasis>button.</para>
 
-        <para>A tab displays the DFU
-        Workunit where you can see the progress of the spray.</para>
+        <para>A tab displays the DFU Workunit where you can see the progress
+        of the spray.</para>
       </listitem>
     </orderedlist>
   </sect3>
 
   <sect3 id="RunTheQueryOnThor">
-    
-
     <title>Run the query on Thor</title>
-
-    
 
     <para><orderedlist>
         <listitem>
           <para>Open a new <emphasis role="bold">Builder Window</emphasis>
-          (CTRL+N) and write the following
-          code:<programlisting>IMPORT Std;
+          (CTRL+N) and write the following code:<programlisting>IMPORT Std;
 layout_word_list := record
   string word;
 end;
@@ -353,11 +330,7 @@ OUTPUT(ValidWords)
   </sect3>
 
   <sect3 id="RoxieExample_CompileAndPublishtheQuery">
-    
-
     <title>Compile and Publish the query to Roxie</title>
-
-    
 
     <para><orderedlist>
         <listitem>
@@ -405,8 +378,7 @@ OUTPUT(ValidWords)
           <?dbfo keep-together="always"?>
 
           <para>Enter <emphasis role="bold">ValidateAnagrams</emphasis> for
-          the label, then press the OK
-          button.</para>
+          the label, then press the OK button.</para>
 
           <para>A Builder Window opens.</para>
 
@@ -487,15 +459,11 @@ OUTPUT(ValidWords)
 
           <para>In the Builder window, in the upper left corner the <emphasis
           role="bold">Submit</emphasis> button has a drop down arrow next to
-          it. Select the arrow to expose the <emphasis role="bold">Compile</emphasis>
-          option.</para>
+          it. Select the arrow to expose the <emphasis
+          role="bold">Compile</emphasis> option.</para>
 
           <figure>
-            
-
             <title>Compile</title>
-
-            
 
             <mediaobject>
               <imageobject>
@@ -534,11 +502,7 @@ OUTPUT(ValidWords)
   </sect3>
 
   <sect3 id="Deploy_the_Query_to_Roxie">
-    
-
     <title>Publish the Roxie query</title>
-
-    
 
     <para>Next we will publish the query to a Roxie Cluster.</para>
 
@@ -549,8 +513,7 @@ OUTPUT(ValidWords)
       </listitem>
 
       <listitem>
-        <para>Select the ECL Watch
-        tab.</para>
+        <para>Select the ECL Watch tab.</para>
       </listitem>
 
       <listitem>
@@ -575,19 +538,14 @@ OUTPUT(ValidWords)
   </sect3>
 
   <sect3 id="Run_the_Roxie_Query">
-    
-
     <title>Run the Roxie Query in WsECL</title>
-
-    
 
     <para>Now that the query is published to a Roxie cluster, we can run it
     using the WsECL service. WsECL is a web-based interface to queries on an
     HPCC Systems platform. Use the following URL:</para>
 
     <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (where
-    nnn.nnn.nnn.nnn is your ESP Server's
-    IP address and pppp is the port. The
+    nnn.nnn.nnn.nnn is your ESP Server's IP address and pppp is the port. The
     default port is 8002)</emphasis></para>
 
     <orderedlist>
@@ -622,8 +580,8 @@ OUTPUT(ValidWords)
       <listitem>
         <?dbfo keep-together="always"?>
 
-        <para>Provide a word to make anagrams from (e.g., TEACHER),
-        then press the Submit button.</para>
+        <para>Provide a word to make anagrams from (e.g., TEACHER), then press
+        the Submit button.</para>
 
         <para>The results display.</para>
 

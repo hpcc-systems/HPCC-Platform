@@ -112,7 +112,7 @@ void setActionResult(const char* wuid, CECLWUActions action, const char* result,
 IPropertyTree *getArchivedWorkUnitProperties(const char *wuid, bool dfuWU)
 {
     SocketEndpoint ep;
-    getSashaServiceEP(ep, "sasha-wu-archiver", true);
+    getSashaServiceEP(ep, "wu-archiver", true);
     Owned<INode> node = createINode(ep);
     if (!node)
         throw MakeStringException(ECLWATCH_INODE_NOT_FOUND, "INode not found.");
@@ -458,6 +458,7 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
 
     const char *name = cfg->queryProp("Software/EspProcess/@name");
     getConfigurationDirectory(directories, "query", "esp", name ? name : "esp", queryDirectory);
+
     recursiveCreateDirectory(queryDirectory.str());
 
     dataCache.setown(new DataCache(DATA_SIZE));
@@ -471,7 +472,7 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
 
     recursiveCreateDirectory(ESP_WORKUNIT_DIR);
 
-    getConfigurationDirectory(directories, "data", "esp", process, dataDirectory);
+    getConfigurationDirectory(directories, "temp", "esp", process, tempDirectory);
     wuFactory.setown(getWorkUnitFactory());
 
 #ifdef _CONTAINERIZED
@@ -1541,7 +1542,7 @@ void getArchivedWUInfo(IEspContext &context, const char* sashaServerIP, unsigned
     if (sashaServerIP && *sashaServerIP)
         ep.set(sashaServerIP, sashaServerPort);
     else
-        getSashaServiceEP(ep, "sasha-wu-archiver", true);
+        getSashaServiceEP(ep, "wu-archiver", true);
 
     if (getWsWuInfoFromSasha(context, ep, wuid, &resp.updateWorkunit()))
     {
@@ -2441,7 +2442,7 @@ public:
         if (sashaServerIP && *sashaServerIP)
             ep.set(sashaServerIP, sashaServerPort);
         else
-            getSashaServiceEP(ep, "sasha-wu-archiver", true);
+            getSashaServiceEP(ep, "wu-archiver", true);
 
         Owned<INode> sashaserver = createINode(ep);
 
@@ -2754,7 +2755,7 @@ void getCSVHeaders(const IResultSetMetaData& metaIn, CommonCSVWriter* writer, un
     }
 }
 
-unsigned getResultCSV(IStringVal& ret, INewResultSet* result, const char* name, __int64 start, unsigned& count, IAbortRequestCallback* abortCheck)
+unsigned getResultCSV(IStringVal& ret, INewResultSet* result, const char* name, __int64 start, unsigned& count, IAbortRequestCallback* abortCheck, __uint64 maxSize)
 {
     unsigned headerLayer = 0;
     CSVOptions csvOptions;
@@ -2767,12 +2768,12 @@ unsigned getResultCSV(IStringVal& ret, INewResultSet* result, const char* name, 
     writer->finishCSVHeaders();
 
     Owned<IResultSetCursor> cursor = result->createCursor();
-    count = writeResultCursorXml(*writer, cursor, name, start, count, nullptr, nullptr, false, abortCheck);
+    count = writeResultCursorXml(*writer, cursor, name, start, count, nullptr, nullptr, false, abortCheck, maxSize);
     ret.set(writer->str());
     return count;
 }
 
-void appendResultSet(IEspContext &context, MemoryBuffer& mb, INewResultSet* result, const char *name, __int64 start, unsigned& count, __int64& total, bool bin, bool xsd, ESPSerializationFormat fmt, const IProperties *xmlns)
+void appendResultSet(IEspContext &context, MemoryBuffer& mb, INewResultSet* result, const char *name, __int64 start, unsigned& count, __int64& total, bool bin, bool xsd, ESPSerializationFormat fmt, const IProperties *xmlns, __uint64 maxSize)
 {
     if (!result)
         return;
@@ -2780,7 +2781,7 @@ void appendResultSet(IEspContext &context, MemoryBuffer& mb, INewResultSet* resu
     total=result->getNumRows();
 
     if(bin)
-        count = getResultBin(mb, result, (unsigned)start, count);
+        count = getResultBin(mb, result, (unsigned)start, count, maxSize);
     else
     {
         struct MemoryBuffer2IStringVal : public CInterface, implements IStringVal
@@ -2798,11 +2799,11 @@ void appendResultSet(IEspContext &context, MemoryBuffer& mb, INewResultSet* resu
 
         CESPAbortRequestCallback abortCallback(&context);
         if (fmt==ESPSerializationCSV)
-            count = getResultCSV(adaptor, result, name, (unsigned) start, count, &abortCallback);
+            count = getResultCSV(adaptor, result, name, (unsigned) start, count, &abortCallback, maxSize);
         else if (fmt==ESPSerializationJSON)
-            count = getResultJSON(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL, &abortCallback);
+            count = getResultJSON(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL, &abortCallback, maxSize);
         else
-            count = getResultXml(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL, xmlns, &abortCallback);
+            count = getResultXml(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL, xmlns, &abortCallback, maxSize);
     }
 }
 
@@ -2834,21 +2835,6 @@ INewResultSet* createFilteredResultSet(INewResultSet* result, IArrayOf<IConstNam
         }
     }
     return filter->create();
-}
-
-
-static bool isResultRequestSzTooBig(unsigned __int64 start, unsigned requestCount, unsigned __int64 resultSz, unsigned resultRows, unsigned __int64 limitSz)
-{
-    if ((0 == requestCount) || (0 == resultRows))
-        return resultSz > limitSz;
-    else
-    {
-        if (start+requestCount > resultRows)
-            requestCount = resultRows-start;
-        unsigned __int64 avgRecSize = resultSz / resultRows;
-        unsigned __int64 estSize = requestCount * avgRecSize;
-        return estSize > limitSz;
-    }
 }
 
 void CWsWorkunitsEx::getWsWuResult(IEspContext &context, const char *wuid, const char *name, const char *logical, unsigned index, __int64 start,
@@ -2891,39 +2877,15 @@ void CWsWorkunitsEx::getWsWuResult(IEspContext &context, const char *wuid, const
     result->getResultLogicalName(logicalName);
     Owned<INewResultSet> rs;
     if (logicalName.length())
-    {
         rs.setown(resultSetFactory->createNewFileResultSet(logicalName.str(), cw->queryClusterName())); //MORE is this wrong cluster?
-    }
     else
         rs.setown(resultSetFactory->createNewResultSet(result, wuid));
     if (!filterBy || !filterBy->length())
-    {
-        unsigned __int64 resultSz;
-
-        if (0 == logicalName.length()) // could be a workunit owned file (OUTPUT, THOR)
-            result->getResultFilename(logicalName);
-        if (logicalName.length())
-        {
-            Owned<IDistributedFile> df = lookupLogicalName(context, logicalName.str(), false, false, false, nullptr, defaultPrivilegedUser);
-            if (!df)
-                throw makeStringExceptionV(ECLWATCH_FILE_NOT_EXIST, "Cannot find file %s.", logicalName.str());
-            resultSz = df->getDiskSize(true, false);
-        }
-        else
-            resultSz = result->getResultRawSize(nullptr, nullptr);
-
-        if (isResultRequestSzTooBig(start, count, resultSz, rs->getNumRows(), wuResultMaxSize))
-        {
-            throw makeStringExceptionV(ECLWATCH_INVALID_ACTION, "Failed to get the result for %s. The size is bigger than %lld MB.",
-                                       wuid, wuResultMaxSize/0x100000);
-        }
-
-        appendResultSet(context, mb, rs, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns());
-    }
+        appendResultSet(context, mb, rs, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns(), wuResultMaxSize);
     else
     {
         Owned<INewResultSet> filteredResult = createFilteredResultSet(rs, filterBy);
-        appendResultSet(context, mb, filteredResult, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns());
+        appendResultSet(context, mb, filteredResult, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryResultXmlns(), wuResultMaxSize);
     }
 
     wuState = cw->getState();
@@ -3066,6 +3028,8 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                 logMsg.append(", download");
             PROGLOG("%s", logMsg.str());
 
+            CWsWuFileHelper helper(directories);
+
             resp.setWuid(wuid.get());
             MemoryBuffer mb;
             WsWuInfo winfo(context, wuid);
@@ -3076,7 +3040,13 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             }
             else if ((strieq(File_Cpp,req.getType()) || strieq(File_Log,req.getType())) && notEmpty(req.getName()))
             {
-                winfo.getWorkunitCpp(req.getName(), req.getDescription(), req.getIPAddress(),mb, opt > 0, nullptr);
+                const char* file = req.getName();
+#ifndef _CONTAINERIZED
+                helper.validateFilePath(file, false, "run", nullptr, nullptr);
+#else
+                helper.validateFilePath(file, false, "query", nullptr, nullptr);
+#endif
+                winfo.getWorkunitCpp(file, req.getDescription(), req.getIPAddress(),mb, opt > 0, nullptr);
                 openSaveFile(context, opt, req.getSizeLimit(), req.getName(), HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_DLL,req.getType()))
@@ -3092,9 +3062,12 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                 winfo.getWorkunitResTxt(mb);
                 openSaveFile(context, opt, req.getSizeLimit(), "res.txt", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
+#ifndef _CONTAINERIZED
             else if (strncmp(req.getType(), File_ThorLog, 7) == 0)
             {
-                winfo.getWorkunitThorMasterLog(nullptr, req.getName(), mb, nullptr);
+                const char* file = req.getName();
+                helper.validateFilePath(file, true, "log", nullptr, nullptr);
+                winfo.getWorkunitThorMasterLog(nullptr, file, mb, nullptr);
                 openSaveFile(context, opt, req.getSizeLimit(), "thormaster.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_ThorSlaveLog,req.getType()))
@@ -3105,12 +3078,20 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             }
             else if (strieq(File_EclAgentLog,req.getType()))
             {
-                winfo.getWorkunitEclAgentLog(nullptr, req.getName(), req.getProcess(), mb, nullptr);
+                const char* file = req.getName();
+                helper.validateFilePath(file, true, "log", nullptr, nullptr);
+                winfo.getWorkunitEclAgentLog(nullptr, file, req.getProcess(), mb, nullptr);
                 openSaveFile(context, opt, req.getSizeLimit(), "eclagent.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
+#endif
             else if (strieq(File_XML,req.getType()) && notEmpty(req.getName()))
             {
                 const char* name  = req.getName();
+#ifndef _CONTAINERIZED
+                helper.validateFilePath(name, false, "run", nullptr, nullptr);
+#else
+                helper.validateFilePath(name, false, "query", nullptr, nullptr);
+#endif
                 const char* ptr = strrchr(name, '/');
                 if (ptr)
                     ptr++;
@@ -3221,20 +3202,11 @@ void CWsWorkunitsEx::getFileResults(IEspContext &context, const char *logicalNam
     Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
     Owned<INewResultSet> result(resultSetFactory->createNewFileResultSet(df, cluster));
     if (!filterBy || !filterBy->length())
-    {
-        if (isResultRequestSzTooBig(start, count, df->getDiskSize(true, false), result->getNumRows(), wuResultMaxSize))
-        {
-            throw makeStringExceptionV(ECLWATCH_INVALID_ACTION, "Failed to get the result from file %s. The size is bigger than %lld MB.",
-                                       logicalName, wuResultMaxSize/0x100000);
-        }
-    
-        appendResultSet(context, buf, result, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), nullptr);
-    }
+        appendResultSet(context, buf, result, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), nullptr, wuResultMaxSize);
     else
     {
-        // NB: this could be still be very big, appendResultSet should be changed to ensure filtered result doesn't grow bigger than wuResultMaxSize
         Owned<INewResultSet> filteredResult = createFilteredResultSet(result, filterBy);
-        appendResultSet(context, buf, filteredResult, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), nullptr);
+        appendResultSet(context, buf, filteredResult, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), nullptr, wuResultMaxSize);
     }
 }
 
@@ -4035,7 +4007,7 @@ bool CWsWorkunitsEx::onWUProcessGraph(IEspContext &context,IEspWUProcessGraphReq
 
         PROGLOG("WUProcessGraph: %s, Graph Name %s", wuid.str(), req.getName());
         StringBuffer xml;
-        Owned<IPropertyTree> xgmml = graph->getXGMMLTree(true); // merge in graph progress information
+        Owned<IPropertyTree> xgmml = graph->getXGMMLTree(true, true); // merge in graph progress information
         toXML(xgmml.get(), xml);
         resp.setTheGraph(xml.str());
     }
@@ -4088,7 +4060,7 @@ void CWsWorkunitsEx::readGraph(IEspContext& context, const char* subGraphId, WUG
             g->setFailed(true);
     }
 
-    Owned<IPropertyTree> xgmml = graph->getXGMMLTree(true);
+    Owned<IPropertyTree> xgmml = graph->getXGMMLTree(true, true);
 
     // New functionality, if a subgraph id is specified and we only want to load the xgmml for that subgraph
     // then we need to conditionally pull a propertytree from the xgmml graph one and use that for the xgmml.
@@ -4424,6 +4396,8 @@ bool CWsWorkunitsEx::onWUGraphTiming(IEspContext &context, IEspWUGraphTimingRequ
     return true;
 }
 
+#ifndef _CONTAINERIZED
+//The code here is for legacy ECLWatch only.
 int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method)
 {
     try
@@ -4432,11 +4406,11 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
         StringBuffer xslt;
         if(strieq(method,"WUQuery") || strieq(method,"WUJobList"))
         {
-            Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
-            Owned<IConstEnvironment> environment = factory->openEnvironment();
-            Owned<IPropertyTree> root = &environment->getPTree();
             if(strieq(method,"WUQuery"))
             {
+                Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
+                Owned<IConstEnvironment> environment = factory->openEnvironment();
+                Owned<IPropertyTree> root = &environment->getPTree();
                 SecAccessFlags accessOwn;
                 SecAccessFlags accessOthers;
                 getUserWuAccessFlags(context, accessOwn, accessOthers, false);
@@ -4520,6 +4494,7 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
     }
     return onGetNotFound(context, request, response, service);
 }
+#endif
 
 int CWsWorkunitsSoapBindingEx::onStartUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
 {
@@ -4549,7 +4524,7 @@ int CWsWorkunitsSoapBindingEx::onStartUpload(IEspContext &ctx, CHttpRequest* req
 
             VStringBuffer fileName("%s%s", zipFolder, fileNames.item(0));
             wswService->queryWUFactory()->importWorkUnit(fileName, password,
-                wswService->getDataDirectory(), "ws_workunits", ctx.queryUserId(), ctx.querySecManager(), ctx.queryUser());
+                wswService->getTempDirectory(), "ws_workunits", ctx.queryUserId(), ctx.querySecManager(), ctx.queryUser());
         }
         else
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "WsWorkunits::%s does not support the upload_ option.", method);

@@ -300,6 +300,7 @@ GetDFUExceptionsResponse
 ESPrequest [nil_remove] SprayFixed
 {
     string sourceIP;
+    [min_ver("1.22")] string sourcePlane;
     string sourcePath;
     binary srcxml;
     [min_ver("1.09")] string sourceFormat;
@@ -345,6 +346,7 @@ SprayFixedResponse
 ESPrequest [nil_remove] SprayVariable
 {
     string sourceIP;
+    [min_ver("1.22")] string sourcePlane;
     string sourcePath;
     binary srcxml;
 
@@ -420,6 +422,7 @@ ESPrequest Despray
 
     string destIP;
     string destPath;
+    [min_ver("1.22")] string destPlane;
     binary dstxml;
     bool   overwrite;
 
@@ -689,7 +692,7 @@ ESPresponse [exceptions_inline, nil_remove] GetDFUServerQueuesResponse
 
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.21"),
+    version("1.22"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPmethod EchoDateTime(EchoDateTime, EchoDateTimeResponse);

@@ -1402,17 +1402,25 @@ unsigned CommonCSVWriter::getChildrenMaxColumnID(CCSVItem* item, unsigned& maxCo
     return maxColumnID;
 }
 
-void CommonCSVWriter::escapeQuoted(unsigned len, char const* in, StringBuffer& out)
+void CommonCSVWriter::escapeString(unsigned len, char const* in, StringBuffer& out)
 {
     char const* finger = in;
     while (len--)
     {
-        //RFC-4180, paragraph "If double-quotes are used to enclose fields, then a double-quote
-        //appearing inside a field must be escaped by preceding it with another double quote."
-        //unsigned newLen = 0;
-        if (*finger == '"')
-            out.append('"');
-        out.append(*finger);
+        if (*finger != '\0')
+        {
+            //RFC-4180, paragraph "If double-quotes are used to enclose fields, then a double-quote
+            //appearing inside a field must be escaped by preceding it with another double quote."
+            if (*finger == '"')
+                out.append('"');
+            out.append(*finger);
+        }
+        else
+        {
+            //null bytes should not occur, but encode them if they do to prevent problems elsewhere
+            out.append("\000");
+        }
+
         finger++;
     }
 }
@@ -1544,7 +1552,7 @@ void CommonCSVWriter::addStringField(unsigned len, const char* field, const char
 {
     StringBuffer v;
     v.append(csvQuote);
-    escapeQuoted(len, field, v);
+    escapeString(len, field, v);
     v.append(csvQuote);
     addContentField(v.str(), fieldName);
 }

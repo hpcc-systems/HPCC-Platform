@@ -133,6 +133,11 @@ void RoxiePacketHeader::init(const RemoteActivityId &_remoteId, ruid_t _uid, uns
 #ifdef SUBCHANNELS_IN_HEADER
     clearSubChannels();
 #endif
+#ifdef TIME_PACKETS
+    tick = 0;
+#else
+    filler = 0; // keeps valgrind happy
+#endif
 }
 
 #ifdef SUBCHANNELS_IN_HEADER
@@ -876,7 +881,7 @@ void AgentContextLogger::set(ISerializedRoxieQueryPacket *packet)
         if (intercept || mergeAgentStatistics)
         {
             RoxiePacketHeader newHeader(header, ROXIE_TRACEINFO, 0);  // subchannel not relevant
-            output.setown(ROQ->createOutputStream(newHeader, true, *this));
+            output.setown(ROQ->createOutputStream(newHeader, false, *this));
         }
     }
     else
@@ -1044,6 +1049,10 @@ public:
         assertex(numOrphans);
         orphans = new RoxiePacketHeader[numOrphans];
         tail = 0;
+    }
+    ~IBYTIbuffer()
+    {
+        delete [] orphans;
     }
     void noteOrphan(const RoxiePacketHeader &hdr)
     {
@@ -2417,8 +2426,16 @@ public:
         {
             StringBuffer s; logctx.CTXLOG("Sending ABORT packet %s", abortHeader.toString(s).str());
         }
-        if (!channelWrite(abortHeader, true))
-            logctx.CTXLOG("sendAbort wrote too little");
+        try
+        {
+            if (!channelWrite(abortHeader, true))
+                logctx.CTXLOG("sendAbort wrote too little");
+        }
+        catch (IException *E)
+        {
+            EXCLOG(E);
+            E->Release();
+        }
         abortsSent++;
     }
 
@@ -2851,6 +2868,11 @@ public:
         sendManager.setown(createSendManager(serverFlowPort, dataPort, clientFlowPort, udpSendQueueSize, fastLaneQueue ? 3 : 2, bucket, encryptionInTransit));
     }
 
+    virtual void abortPendingData(const SocketEndpoint &ep) override
+    {
+        sendManager->abortAll(ep);
+    }
+
 };
 
 class RoxieAeronSocketQueueManager : public RoxieSocketQueueManager
@@ -2863,6 +2885,10 @@ public:
         receiveManager.setown(createAeronReceiveManager(ep, encryptionInTransit));
         assertex(!myNode.getIpAddress().isNull());
         sendManager.setown(createAeronSendManager(dataPort, fastLaneQueue ? 3 : 2, myNode.getIpAddress(), encryptionInTransit));
+    }
+
+    virtual void abortPendingData(const SocketEndpoint &ep) override
+    {
     }
 
 };
@@ -3258,9 +3284,13 @@ public:
         return false;
     }
 
+    virtual void abortPendingData(const SocketEndpoint &ep) override
+    {
+        // Shouldn't ever happen, I think
+    }
+
 };
 
-IRoxieOutputQueueManager *ROQ;
 
 extern IRoxieOutputQueueManager *createOutputQueueManager(unsigned numWorkers, bool encrypted)
 {

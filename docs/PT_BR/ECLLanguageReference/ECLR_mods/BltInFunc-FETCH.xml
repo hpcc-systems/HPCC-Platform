@@ -178,7 +178,7 @@ END;
 
 PtblOut := OUTPUT(TABLE( Person,PtblRec),,'RTTEMP::TestFetch');
 Ptbl := DATASET('RTTEMP::TestFetch',
-      {PtblRec,UNSIGNED8 __fpos {virtual(fileposition)}},
+      {PtblRec,UNSIGNED8 __fpos {VIRTUAL(fileposition)}},
       FLAT);
 
 Bld := BUILD(Ptbl,

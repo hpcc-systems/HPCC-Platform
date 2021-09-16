@@ -748,10 +748,8 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
                             //Check if all memory above this allocation is allocated - if so extend the HWM
                             if ((hbi == 0) && (i+1 == heapHWM))
                             {
-                                if (startHbi != 0)
-                                    heapHWM = start+1;
-                                else
-                                    heapHWM = start;
+                                //Could be some space in the first chunk - will be checked next time allocate is called.
+                                heapHWM = start+1;
                             }
 
                             if (memTraceLevel >= 2)
@@ -775,25 +773,25 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
     return NULL;
 }
 
-static void subfree_aligned(void *ptr, unsigned pages = 1)
+static bool subfree_aligned(void *ptr, unsigned pages = 1)
 {
     unsigned _pages = pages;
     memsize_t offset = (char *)ptr - heapBase;
     memsize_t pageOffset = offset / HEAP_ALIGNMENT_SIZE;
     if (!pages)
     {
-        DBGLOG("RoxieMemMgr: Invalid parameter (pages=%u) to subfree_aligned", pages);
-        HEAPERROR("RoxieMemMgr: Invalid parameter (num pages) to subfree_aligned");
+        IERRLOG("RoxieMemMgr: Invalid parameter (pages=%u) to subfree_aligned", pages);
+        return false;
     }
     if (pageOffset + pages > heapTotalPages)
     {
-        DBGLOG("RoxieMemMgr: Freed area not in heap (ptr=%p)", ptr);
-        HEAPERROR("RoxieMemMgr: Freed area not in heap");
+        IERRLOG("RoxieMemMgr: Freed area not in heap (ptr=%p)", ptr);
+        return false;
     }
     if (pageOffset*HEAP_ALIGNMENT_SIZE != offset)
     {
-        DBGLOG("RoxieMemMgr: Incorrect alignment of freed area (ptr=%p)", ptr);
-        HEAPERROR("RoxieMemMgr: Incorrect alignment of freed area");
+        IERRLOG("RoxieMemMgr: Incorrect alignment of freed area (ptr=%p)", ptr);
+        return false;
     }
     if (heapNotifyUnusedEachFree)
         notifyMemoryUnused(ptr, pages*HEAP_ALIGNMENT_SIZE);
@@ -829,7 +827,10 @@ static void subfree_aligned(void *ptr, unsigned pages = 1)
         {
             heap_t prev = heapBitmap[wordOffset];
             if (unlikely((prev & mask) != 0))
-                HEAPERROR("RoxieMemMgr: Page freed twice");
+            {
+                IERRLOG("RoxieMemMgr: Page freed twice (ptr=%p)", ptr);
+                return false;
+            }
 
             heap_t next = prev | mask;
             heapBitmap[wordOffset] = next;
@@ -859,6 +860,7 @@ static void subfree_aligned(void *ptr, unsigned pages = 1)
 
     if (memTraceLevel >= 2)
         DBGLOG("RoxieMemMgr: subfree_aligned() %u pages ok - addr=%p heapLWM=%u heapHWM=%u totalPages=%u", _pages, ptr, heapLWM, heapHWM, heapTotalPages);
+    return true;
 }
 
 static void clearBits(unsigned start, unsigned len)
@@ -2766,7 +2768,7 @@ public:
 
 protected:
     static const unsigned maxRows = 16; // Maximum number of rows to allocate at once.
-    char * rows[maxRows];
+    char * rows[maxRows]; // Deliberately uninitialized
     unsigned curRow = 0;
     unsigned numRows = 0;
 };
@@ -7091,64 +7093,21 @@ protected:
         r = subrealloc_aligned(t1, 20, 60);
         ASSERT(r==(void *)(memsize_t)(maxAddr - HEAP_ALIGNMENT_SIZE*60));
         subfree_aligned(r, 60);
-        subfree_aligned(t3, 20);
+        bool ok = subfree_aligned(t3, 20);
+        ASSERT(ok);
 
         // Check some error cases
-        try
-        {
-            subfree_aligned((void*)0, 1);
-            ASSERT(false);
-        }
-        catch (IException *E)
-        {
-            StringBuffer s;
-            ASSERT(strcmp(E->errorMessage(s).str(), "RoxieMemMgr: Freed area not in heap")==0);
-            E->Release();
-        }
-        try
-        {
-            subfree_aligned((void*)(minAddr + HEAP_ALIGNMENT_SIZE / 2), 1);
-            ASSERT(false);
-        }
-        catch (IException *E)
-        {
-            StringBuffer s;
-            ASSERT(strcmp(E->errorMessage(s).str(), "RoxieMemMgr: Incorrect alignment of freed area")==0);
-            E->Release();
-        }
-        try
-        {
-            subfree_aligned((void*)(memsize_t)(minAddr + 20 * HEAP_ALIGNMENT_SIZE), 1);
-            ASSERT(false);
-        }
-        catch (IException *E)
-        {
-            StringBuffer s;
-            ASSERT(strcmp(E->errorMessage(s).str(), "RoxieMemMgr: Page freed twice")==0);
-            E->Release();
-        }
-        try
-        {
-            subfree_aligned((void*)(memsize_t)(maxAddr - 2 * HEAP_ALIGNMENT_SIZE), 3);
-            ASSERT(false);
-        }
-        catch (IException *E)
-        {
-            StringBuffer s;
-            ASSERT(strcmp(E->errorMessage(s).str(), "RoxieMemMgr: Freed area not in heap")==0);
-            E->Release();
-        }
-        try
-        {
-            subfree_aligned((void*)(memsize_t)0xbfe00000, 0);
-            ASSERT(false);
-        }
-        catch (IException *E)
-        {
-            StringBuffer s;
-            ASSERT(strcmp(E->errorMessage(s).str(), "RoxieMemMgr: Invalid parameter (num pages) to subfree_aligned")==0);
-            E->Release();
-        }
+        ok = subfree_aligned((void*)0, 1);
+        ASSERT(!ok);
+        ok = subfree_aligned((void*)(minAddr + HEAP_ALIGNMENT_SIZE / 2), 1);
+        ASSERT(!ok);
+        ok = subfree_aligned((void*)(memsize_t)(minAddr + 20 * HEAP_ALIGNMENT_SIZE), 1);
+        ASSERT(!ok);
+        ok = subfree_aligned((void*)(memsize_t)(maxAddr - 2 * HEAP_ALIGNMENT_SIZE), 3);
+        ASSERT(!ok);
+        ok = subfree_aligned((void*)(memsize_t)0xbfe00000, 0);
+        ASSERT(!ok);
+
         delete[] heapBitmap;
     }
 
@@ -7448,7 +7407,8 @@ protected:
             unsigned i = 0;
             for (;;)
             {
-                ASSERT(rm1->allocate(i++, 0) != NULL);
+                void * ret = rm1->allocate(i++, 0);
+                ASSERT(ret != NULL);
             }
         }
         catch (IException *E)
@@ -7713,6 +7673,8 @@ protected:
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL, false);
         CountingRowAllocatorCache rowCache;
         void * memory = suballoc_aligned(1, true);
+        assertex(memory);
+
         unsigned heapFlags = 0;
         CFixedChunkedHeap dummyHeap((CChunkingRowManager*)rowManager.get(), logctx, &rowCache, 32, 0, SpillAllCost);
         FixedSizeHeaplet * heaplet = new (memory) FixedSizeHeaplet(&dummyHeap, &rowCache, 32, heapFlags);

@@ -56,7 +56,7 @@ public:
         defaultXmlReadFlags = ctx.ctxGetPropBool("@defaultStripLeadingWhitespace", true) ? ptr_ignoreWhiteSpace : ptr_none;
         trapTooManyActiveQueries = ctx.ctxGetPropBool("@trapTooManyActiveQueries", true);
         numRequestArrayThreads = ctx.ctxGetPropInt("@requestArrayThreads", 5);
-        maxHttpConnectionRequests = ctx.ctxGetPropInt("@maxHttpConnectionRequests", 10);
+        maxHttpConnectionRequests = ctx.ctxGetPropInt("@maxHttpConnectionRequests", 0);
         maxHttpKeepAliveWait = ctx.ctxGetPropInt("@maxHttpKeepAliveWait", 5000); // In milliseconds
     }
     IHpccProtocolListener *createListener(const char *protocol, IHpccProtocolMsgSink *sink, unsigned port, unsigned listenQueue, const char *config, const char *certFile=nullptr, const char *keyFile=nullptr, const char *passPhrase=nullptr)
@@ -69,7 +69,7 @@ public:
     PTreeReaderOptions defaultXmlReadFlags;
     unsigned maxBlockSize;
     unsigned numRequestArrayThreads;
-    unsigned maxHttpConnectionRequests = 10;
+    unsigned maxHttpConnectionRequests = 0;
     unsigned maxHttpKeepAliveWait = 5000;
     bool trapTooManyActiveQueries;
 };
@@ -314,9 +314,9 @@ public:
                         if (!secureContext)
                             secureContext.setown(createSecureSocketContextEx(certFile.get(), keyFile.get(), passPhrase.get(), ServerSocket));
                         ssock.setown(secureContext->createSecureSocket(client.getClear()));
-                        int loglevel = 0;
+                        int loglevel = SSLogMin;
                         if (traceLevel > 1)
-                            loglevel = traceLevel;
+                            loglevel = SSLogMax;
                         int status = ssock->secure_accept(loglevel);
                         if (status < 0)
                         {
@@ -859,24 +859,6 @@ public:
             }
         }
     }
-    virtual void appendProbeGraph(const char *xml)
-    {
-        if (!xml)
-        {
-            if (probe)
-                probe.clear();
-            return;
-        }
-        if (!probe)
-        {
-            probe.setown(new FlushingStringBuffer(client, isBlocked, MarkupFmt_XML, false, isHTTP, logctx));
-            probe->startDataset("_Probe", NULL, (unsigned) -1);  // initialize it
-        }
-
-        probe->append("\n");
-        probe->append(xml);
-    }
-
 };
 
 class CHpccXmlResultsWriter : public CHpccNativeResultsWriter
@@ -1114,11 +1096,6 @@ public:
             results->flush();
         ForEachItemIn(i, contentsMap)
             contentsMap.item(i)->flush(true);
-    }
-    virtual void appendProbeGraph(const char *xml)
-    {
-        if (results)
-            results->appendProbeGraph(xml);
     }
 };
 
@@ -1402,7 +1379,8 @@ public:
             IPropertyTree &request = requestArray.item(idx);
             Owned<IHpccProtocolResponse> protocol = createProtocolResponse(request.queryName(), &client, httpHelper, logctx, flags, xmlReadFlags);
             // MORE - agentReply etc should really be atomic
-            sink->onQueryMsg(msgctx, &request, protocol, flags, xmlReadFlags, querySetName, idx, memused, agentReplyLen, agentDuplicates, agentResends);
+            StringAttr statsWuid;
+            sink->onQueryMsg(msgctx, &request, protocol, flags, xmlReadFlags, querySetName, idx, memused, agentReplyLen, agentDuplicates, agentResends, statsWuid);
         }
         catch (IException * E)
         {
@@ -1657,7 +1635,7 @@ private:
             if (!uid)
                 uid = queryPT->queryProp("_TransactionId");
             isBlind = queryPT->getPropBool("@blind", false) || queryPT->getPropBool("_blind", false);
-            isDebug = queryPT->getPropBool("@debug") || queryPT->getPropBool("_Probe", false);
+            isDebug = queryPT->getPropBool("@debug");
             toXML(queryPT, saniText, 0, isBlind ? (XML_SingleQuoteAttributeValues | XML_Sanitize) : XML_SingleQuoteAttributeValues);
         }
     }
@@ -1732,12 +1710,12 @@ private:
         unsigned memused = 0;
         IpAddress peer;
         bool continuationNeeded = false;
+        bool resetQstart = false;
         bool isStatus = false;
         unsigned remainingHttpConnectionRequests = global->maxHttpConnectionRequests ? global->maxHttpConnectionRequests : 1;
         unsigned readWait = WAIT_FOREVER;
 
         Owned<IHpccProtocolMsgContext> msgctx = sink->createMsgContext(startTime);
-        IContextLogger &logctx = *msgctx->queryLogContext();
 
 readAnother:
         unsigned agentsReplyLen = 0;
@@ -1762,15 +1740,32 @@ readAnother:
                     return;
                 }
             }
-            if (continuationNeeded)
+            if (resetQstart)
             {
+                resetQstart = false;
                 qstart = msTick();
                 time(&startTime);
+                msgctx.setown(sink->createMsgContext(startTime));
             }
         }
         catch (IException * E)
         {
-            if (traceLevel > 0)
+            bool expectedError = false;
+            if (resetQstart) //persistent connection - initial request has already been processed
+            {
+                switch (E->errorCode())
+                {
+                    //closing of persistent socket is not an error
+                    case JSOCKERR_not_opened:
+                    case JSOCKERR_broken_pipe:
+                    case JSOCKERR_timeout_expired:
+                    case JSOCKERR_graceful_close:
+                        expectedError = true;
+                    default:
+                        break;
+                }
+            }
+            if (traceLevel > 0 && !expectedError)
             {
                 StringBuffer b;
                 IERRLOG("Error reading query from socket: %s", E->errorMessage(b).str());
@@ -1780,6 +1775,7 @@ readAnother:
             return;
         }
 
+        IContextLogger &logctx = *msgctx->queryLogContext();
         bool isHTTP = httpHelper.isHttp();
         if (isHTTP)
         {
@@ -1817,6 +1813,7 @@ readAnother:
         bool isBlind = false;
         bool isDebug = false;
         unsigned protocolFlags = isHTTP ? 0 : HPCC_PROTOCOL_NATIVE;
+        unsigned requestArraySize = 0; //for logging, considering all the ways requests can be counted this name seems least confusing
 
         Owned<IPropertyTree> queryPT;
         StringBuffer sanitizedText;
@@ -1826,6 +1823,7 @@ readAnother:
 
         StringAttr queryName;
         StringAttr queryPrefix;
+        StringAttr statsWuid;
         WhiteSpaceHandling whitespace = WhiteSpaceHandling::Default;
         try
         {
@@ -1866,7 +1864,7 @@ readAnother:
                 Owned<IHpccProtocolResponse> protocol = createProtocolResponse(queryPT->queryName(), client, httpHelper, logctx, protocolFlags | HPCC_PROTOCOL_CONTROL, global->defaultXmlReadFlags);
                 sink->onControlMsg(msgctx, queryPT, protocol);
                 protocol->finalize(0);
-                if (streq(queryName, "lock") || streq(queryName, "childlock"))
+                if (streq(queryName, "lock") || streq(queryName, "childlock")) //don't reset qstart, lock time should be included
                     goto readAnother;
             }
             else if (isStatus)
@@ -1979,7 +1977,18 @@ readAnother:
                                     {
                                         fixedreq->addPropTree(iter->query().queryName(), LINK(&iter->query()));
                                     }
+                                    Owned<IAttributeIterator> aiter = queryPT->getAttributes();
+                                    ForEach(*aiter)
+                                    {
+                                        fixedreq->setProp(aiter->queryName(), aiter->queryValue());
+                                    }
+                                    Owned<IAttributeIterator> aiter2 = reqIter->query().getAttributes();
+                                    ForEach(*aiter2)
+                                    {
+                                        fixedreq->setProp(aiter2->queryName(), aiter2->queryValue());
+                                    }
                                     requestArray.append(*fixedreq);
+                                    requestArraySize++;
                                 }
                             }
                             else
@@ -1990,7 +1999,13 @@ readAnother:
                                 {
                                     fixedreq->addPropTree(iter->query().queryName(), LINK(&iter->query()));
                                 }
+                                Owned<IAttributeIterator> aiter = queryPT->getAttributes();
+                                ForEach(*aiter)
+                                {
+                                    fixedreq->setProp(aiter->queryName(), aiter->queryValue());
+                                }
                                 requestArray.append(*fixedreq);
+                                requestArraySize = 1;
 
                                 msgctx->setIntercept(queryPT->getPropBool("@log", false));
                                 msgctx->setTraceLevel(queryPT->getPropInt("@traceLevel", logctx.queryTraceLevel()));
@@ -2039,7 +2054,7 @@ readAnother:
                         else
                         {
                             Owned<IHpccProtocolResponse> protocol = createProtocolResponse(queryPT->queryName(), client, httpHelper, logctx, protocolFlags, (PTreeReaderOptions)readFlags);
-                            sink->onQueryMsg(msgctx, queryPT, protocol, protocolFlags, (PTreeReaderOptions)readFlags, querySetName, 0, memused, agentsReplyLen, agentsDuplicates, agentsResends);
+                            sink->onQueryMsg(msgctx, queryPT, protocol, protocolFlags, (PTreeReaderOptions)readFlags, querySetName, 0, memused, agentsReplyLen, agentsDuplicates, agentsResends, statsWuid);
                         }
                     }
                 }
@@ -2108,10 +2123,11 @@ readAnother:
         }
         unsigned bytesOut = client? client->bytesOut() : 0;
         unsigned elapsed = msTick() - qstart;
-        sink->noteQuery(msgctx.get(), peerStr, failed, bytesOut, elapsed,  memused, agentsReplyLen, agentsDuplicates, agentsResends, continuationNeeded);
+        sink->noteQuery(msgctx.get(), peerStr, failed, bytesOut, elapsed,  memused, agentsReplyLen, agentsDuplicates, agentsResends, continuationNeeded, requestArraySize);
         if (continuationNeeded)
         {
             rawText.clear();
+            resetQstart = true;
             goto readAnother;
         }
         else
@@ -2126,12 +2142,20 @@ readAnother:
                         response.startDataset("Tracing", NULL, (unsigned) -1);
                         msgctx->outputLogXML(response);
                     }
+                    if (statsWuid.length())
+                    {
+                        FlushingStringBuffer response(client, (protocolFlags & HPCC_PROTOCOL_BLOCKED), mlResponseFmt, (protocolFlags & HPCC_PROTOCOL_NATIVE_RAW), false, logctx);
+                        response.startDataset("Statistics", NULL, (unsigned) -1);
+                        VStringBuffer xml(" <wuid>%s</wuid>\n", statsWuid.str());
+                        response.flushXML(xml, true);
+                    }
                     unsigned replyLen = 0;
                     client->write(&replyLen, sizeof(replyLen));
                 }
                 if (isHTTP && --remainingHttpConnectionRequests > 0)
                 {
                     readWait = global->maxHttpKeepAliveWait;
+                    resetQstart = true;
                     goto readAnother;
                 }
 

@@ -226,13 +226,6 @@ public:
     CFileManager()
     {
         replicateOutputs = globals->getPropBool("@replicateOutputs");
-
-        /* In nas/non-local storage mode, create a published named group for files to use
-         * that matches the width of the cluster.
-         * Also create a 1-way named group, that is used in special cases, e.g. BUILDINDEX,FEW
-         */
-        if (isContainerized())
-            queryNamedGroupStore().ensureNasGroup(queryClusterWidth());
     }
     StringBuffer &mangleLFN(CJobBase &job, const char *lfn, StringBuffer &out)
     {
@@ -509,38 +502,49 @@ public:
             if (nonLocalIndex)
                 ++total;
             StringBuffer dir;
+            bool dirPerPart = false;
             if (temporary && !job.queryUseCheckpoints()) 
                 dir.append(queryTempDir(false));
             else
             {
+                StringBuffer planeDir;
                 // NB: always >= 1 groupNames
-                StringBuffer curDir;
                 ForEachItemIn(gn, groupNames)
                 {
+                    StringBuffer thisPlaneDir;
+                    bool thisDirPerPart = false;
 #ifdef _CONTAINERIZED
                     if (!globals->getPropBool("@_dafsStorage"))
                     {
-                        Owned<IStoragePlane> plane = getStoragePlane(groupNames.item(gn), true);
-                        curDir.append(plane->queryPrefix());
+                        Owned<IStoragePlane> plane = getDataStoragePlane(groupNames.item(gn), true);
+                        thisPlaneDir.append(plane->queryPrefix());
+                        thisDirPerPart = plane->queryDirPerPart();
                     }
 #else
-                    if (!getConfigurationDirectory(globals->queryPropTree("Directories"), "data", "thor", groupNames.item(gn), curDir))
-                        makePhysicalPartName(logicalName, 0, 0, curDir, 0, os); // legacy
+                    if (!getConfigurationDirectory(globals->queryPropTree("Directories"), "data", "thor", groupNames.item(gn), thisPlaneDir))
+                        makePhysicalPartName(logicalName, 0, 0, thisPlaneDir, 0, os); // legacy
 #endif
-                    if (!dir.length())
-                        dir.swapWith(curDir);
+                    if (!planeDir.length()) // 1st output plane
+                    {
+                        planeDir.swapWith(thisPlaneDir);
+                        dirPerPart = thisDirPerPart;
+                    }
                     else
                     {
-                        if (!streq(curDir, dir))
-                            throw MakeStringException(0, "When targeting multiple clusters on a write, the clusters must have the same target directory");
-                        curDir.clear();
+                        // 2nd+ output plane
+                        if (!streq(thisPlaneDir, planeDir))
+                            throw makeStringException(0, "When targeting multiple clusters on a write, the clusters must have the same target directory");
+                        if (thisDirPerPart != dirPerPart)
+                            throw makeStringException(0, "When targeting multiple clusters on a write, all clusters must have the same subDirPerFilePart value");
                     }
                 }
-                curDir.swapWith(dir);
                 // places logical filename directory in 'dir'
-                makePhysicalPartName(logicalName, 0, 0, dir, false, os, curDir.str());
+                makePhysicalPartName(logicalName, 0, 0, dir, false, os, planeDir.str());
             }
             desc->setDefaultDir(dir.str());
+
+            if (job.getOptBool("subDirPerFilePart", dirPerPart))
+                desc->queryProperties().setPropInt("@flags", static_cast<int>(FileDescriptorFlags::dirperpart));
 
             StringBuffer partmask;
             getPartMask(partmask,logicalName,total);

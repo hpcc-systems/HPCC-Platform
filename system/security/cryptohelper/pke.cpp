@@ -113,6 +113,48 @@ public:
     }
 };
 
+class CLoadedPublicKeyFromCertFile : public CLoadedKey
+{
+public:
+    CLoadedPublicKeyFromCertFile(const char *certFile)
+    {
+        if (!loadKeyFromFile(certFile))
+            throwEVPExceptionV(0, "CLoadedPublicKeyFromCertFile: failed to open cert: %s", certFile);
+
+        OwnedX509 cert = PEM_read_bio_X509(keyBio, nullptr, nullptr, nullptr);
+        if (!cert)
+            throwEVPExceptionV(0, "Failed to read certificate: %s", certFile);
+        OwnedEVPPkey pubKey = X509_get_pubkey(cert);
+        if (!pubKey)
+            throwEVPExceptionV(0, "Failed to get key from public certificate: %s", certFile);
+        RSA *rsaKey = EVP_PKEY_get1_RSA(pubKey);
+        if (!rsaKey)
+            throwEVPExceptionV(0, "Failed to create rsa public key from cert: %s", certFile);
+        finalize(rsaKey, certFile);
+    }
+};
+
+class CLoadedPublicKeyFromCertMemory : public CLoadedKey
+{
+public:
+    CLoadedPublicKeyFromCertMemory(const char *certMem)
+    {
+        loadKeyFromMem(certMem);
+        OwnedX509 cert = PEM_read_bio_X509(keyBio, nullptr, nullptr, nullptr);
+        if (!cert)
+            throwEVPException(0, "Failed to create certificate");
+        OwnedEVPPkey pubKey = X509_get_pubkey(cert);
+        if (!pubKey)
+            throwEVPException(0, "Failed to get public key from public certificate");
+
+        RSA *rsaKey = EVP_PKEY_get1_RSA(pubKey);
+        if (!rsaKey)
+            throwEVPExceptionV(0, "Failed to create rsa public key");
+        finalize(rsaKey, "<inline>");
+    }
+};
+
+
 class CLoadedPrivateKeyFromFile : public CLoadedKey
 {
 public:
@@ -169,6 +211,16 @@ CLoadedKey *loadPublicKeyFromFile(const char *keyFile)
 CLoadedKey *loadPublicKeyFromMemory(const char *key)
 {
     return new CLoadedPublicKeyFromMemory(key);
+}
+
+CLoadedKey *loadPublicKeyFromCertFile(const char *certFile)
+{
+    return new CLoadedPublicKeyFromCertFile(certFile);
+}
+
+CLoadedKey *loadPublicKeyFromCertMemory(const char *certMem)
+{
+    return new CLoadedPublicKeyFromCertMemory(certMem);
 }
 
 CLoadedKey *loadPrivateKeyFromFile(const char *keyFile, const char *passPhrase)

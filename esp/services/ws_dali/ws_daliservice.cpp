@@ -460,3 +460,82 @@ bool CWSDaliEx::onDFSCheck(IEspContext& context, IEspDFSCheckRequest& req, IEspR
     }
     return true;
 }
+
+bool CWSDaliEx::onSetProtected(IEspContext& context, IEspSetProtectedRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+                
+        const char* fileName = req.getFileName();
+        if (isEmptyString(fileName))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "File name not specified.");
+
+        const char* callerId = req.getCallerId();
+        if (isEmptyString(callerId))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Caller Id not specified.");
+
+        Owned<IUserDescriptor> userDesc = createUserDesc(context);
+
+        StringBuffer result;
+        setprotect(fileName, callerId, userDesc, result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onSetUnprotected(IEspContext& context, IEspSetUnprotectedRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        const char* fileName = req.getFileName();
+        if (isEmptyString(fileName))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "File name not specified.");
+
+        const char* callerId = req.getCallerId();
+        if (isEmptyString(callerId))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Caller Id not specified.");
+
+        Owned<IUserDescriptor> userDesc = createUserDesc(context);
+
+        StringBuffer result;
+        unprotect(fileName, callerId, userDesc, result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWSDaliEx::onGetProtectedList(IEspContext& context, IEspGetProtectedListRequest& req, IEspResultResponse& resp)
+{
+    try
+    {
+        checkAccess(context);
+
+        const char* fileName = req.getFileName();
+        if (isEmptyString(fileName))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "File name not specified.");
+
+        const char* callerId = req.getCallerId();
+        if (isEmptyString(callerId))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Caller Id not specified.");
+
+        StringBuffer result;
+        listprotect(fileName, callerId, result);
+        resp.setResult(result);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}

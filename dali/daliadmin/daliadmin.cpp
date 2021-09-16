@@ -375,16 +375,18 @@ int main(int argc, const char* argv[])
                     }
                     else if (strieq(cmd,"setprotect")) {
                         CHECKPARAMS(2,2);
-                        setprotect(params.item(1),params.item(2),userDesc);
+                        setprotect(params.item(1),params.item(2),userDesc,out);
+                        PROGLOG("%s",out.str());
                     }
                     else if (strieq(cmd,"unprotect")) {
                         CHECKPARAMS(2,2);
-                        unprotect(params.item(1),params.item(2),userDesc);
+                        unprotect(params.item(1),params.item(2),userDesc,out);
+                        PROGLOG("%s",out.str());
                     }
                     else if (strieq(cmd,"listprotect")) {
                         CHECKPARAMS(0,2);
-                        listprotect((np>1)?params.item(1):"*",(np>2)?params.item(2):"*");
-
+                        listprotect((np>1)?params.item(1):"*",(np>2)?params.item(2):"*",out);
+                        PROGLOG("%s",out.str());
                     }
                     else if (strieq(cmd,"checksuperfile")) {
                         CHECKPARAMS(1,1);

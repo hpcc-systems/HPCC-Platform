@@ -4,9 +4,13 @@ import { useConst } from "@fluentui/react-hooks";
 import * as ESPActivity from "src/ESPActivity";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { ReflexContainer, ReflexElement, ReflexSplitter, classNames, styles } from "../layouts/react-reflex";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
 import { DojoGrid, selector, tree } from "./DojoGrid";
+import { Summary } from "./DiskUsage";
+
+declare const dojoConfig;
 
 class DelayedRefresh {
     _promises: Promise<any>[] = [];
@@ -51,8 +55,113 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
     const [selection, setSelection] = React.useState([]);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
+    //  Grid ---
+    const activity = useConst(ESPActivity.Get());
+    const gridParams = useConst({
+        store: activity.getStore({}),
+        query: {},
+        columns: {
+            col1: selector({
+                width: 27,
+                selectorType: "checkbox",
+                sortable: false
+            }),
+            Priority: {
+                renderHeaderCell: function (node) {
+                    node.innerHTML = Utility.getImageHTML("priority.png", nlsHPCC.Priority);
+                },
+                width: 25,
+                sortable: false,
+                formatter: function (Priority) {
+                    switch (Priority) {
+                        case "high":
+                            return Utility.getImageHTML("priority_high.png");
+                        case "low":
+                            return Utility.getImageHTML("priority_low.png");
+                    }
+                    return "";
+                }
+            },
+            DisplayName: tree({
+                label: nlsHPCC.TargetWuid,
+                width: 300,
+                sortable: true,
+                shouldExpand: function (row, level, previouslyExpanded) {
+                    if (level === 0) {
+                        return previouslyExpanded === undefined ? true : previouslyExpanded;
+                    }
+                    return previouslyExpanded;
+                },
+                formatter: function (_name, row) {
+                    const img = row.getStateImage();
+                    if (activity.isInstanceOfQueue(row)) {
+                        if (row.ClusterType === 3) {
+                            return `<img src='${img}'/>&nbsp;<a href='#/clusters/${row.ClusterName}' class='dgrid-row-url'>${_name}</a>`;
+                        } else {
+                            return `<img src='${img}'/>&nbsp;${_name}`;
+                        }
+                    }
+                    return `<img src='${img}'/>&nbsp;<a href='#/workunits/${row.Wuid}' class='dgrid-row-url'>${row.Wuid}</a>`;
+                }
+            }),
+            GID: {
+                label: nlsHPCC.Graph, width: 90, sortable: true,
+                formatter: function (_gid, row) {
+                    if (activity.isInstanceOfWorkunit(row)) {
+                        if (row.GraphName) {
+                            return `<a href='#/graphs/${row.GraphName}/${row.GID}' class='dgrid-row-url2'>${row.GraphName}-${row.GID}</a>`;
+                        }
+                    }
+                    return "";
+                }
+            },
+            State: {
+                label: nlsHPCC.State,
+                sortable: false,
+                formatter: function (state, row) {
+                    if (activity.isInstanceOfQueue(row)) {
+                        return row.isNormal() ? "" : row.StatusDetails;
+                    }
+                    if (row.Duration) {
+                        return state + " (" + row.Duration + ")";
+                    } else if (row.Instance && !(state.indexOf && state.indexOf(row.Instance) !== -1)) {
+                        return state + " [" + row.Instance + "]";
+                    }
+                    return state;
+                }
+            },
+            Owner: { label: nlsHPCC.Owner, width: 90, sortable: false },
+            Jobname: { label: nlsHPCC.JobName, sortable: false }
+        },
+        getSelected: function () {
+            const retVal = [];
+            for (const id in this.selection) {
+                const item = activity.resolve(id);
+                if (item) {
+                    retVal.push(item);
+                }
+            }
+            return retVal;
+        }
+    });
+
+    const refreshTable = React.useCallback((clearSelection = false) => {
+        grid?.set("query", {});
+        if (clearSelection) {
+            grid?.clearSelection();
+        }
+    }, [grid]);
+
+    React.useEffect(() => {
+        refreshTable();
+        const handle = activity.watch("__hpcc_changedCount", function (item, oldValue, newValue) {
+            refreshTable();
+        });
+        return () => handle.unwatch();
+    }, [activity, grid, refreshTable]);
+
     //  Command Bar  ---
-    const wuPriority = (priority) => {
+    const wuPriority = React.useCallback((priority) => {
         const promises = new DelayedRefresh(refreshTable);
         selection.forEach((item, idx) => {
             const queue = item.get("ESPQueue");
@@ -61,9 +170,9 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
             }
         });
         promises.refresh();
-    };
+    }, [refreshTable, selection]);
 
-    const buttons: ICommandBarItemProps[] = [
+    const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => activity.refresh()
@@ -243,117 +352,11 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
                 promises.refresh();
             }
         },
-    ];
+    ], [activity, refreshTable, selection, uiState.clusterNotPausedSelected, uiState.clusterPausedSelected, uiState.thorClusterSelected, uiState.wuCanDown, uiState.wuCanHigh, uiState.wuCanLow, uiState.wuCanNormal, uiState.wuCanUp, uiState.wuSelected, wuPriority]);
 
-    const rightButtons: ICommandBarItemProps[] = [
+    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
         ...createCopyDownloadSelection(grid, selection, "activities.csv")
-    ];
-
-    //  Grid ---
-    const activity = useConst(ESPActivity.Get());
-    const gridParams = useConst({
-        store: activity.getStore({}),
-        query: {},
-        columns: {
-            col1: selector({
-                width: 27,
-                selectorType: "checkbox",
-                sortable: false
-            }),
-            Priority: {
-                renderHeaderCell: function (node) {
-                    node.innerHTML = Utility.getImageHTML("priority.png", nlsHPCC.Priority);
-                },
-                width: 25,
-                sortable: false,
-                formatter: function (Priority) {
-                    switch (Priority) {
-                        case "high":
-                            return Utility.getImageHTML("priority_high.png");
-                        case "low":
-                            return Utility.getImageHTML("priority_low.png");
-                    }
-                    return "";
-                }
-            },
-            DisplayName: tree({
-                label: nlsHPCC.TargetWuid,
-                width: 300,
-                sortable: true,
-                shouldExpand: function (row, level, previouslyExpanded) {
-                    if (level === 0) {
-                        return previouslyExpanded === undefined ? true : previouslyExpanded;
-                    }
-                    return previouslyExpanded;
-                },
-                formatter: function (_name, row) {
-                    const img = row.getStateImage();
-                    if (activity.isInstanceOfQueue(row)) {
-                        if (row.ClusterType === 3) {
-                            return `<img src='${img}'/>&nbsp;<a href='#/clusters/${row.ClusterName}' class='dgrid-row-url'>${_name}</a>`;
-                        } else {
-                            return `<img src='${img}'/>&nbsp;${_name}`;
-                        }
-                    }
-                    return `<img src='${img}'/>&nbsp;<a href='#/workunits/${row.Wuid}' class='dgrid-row-url'>${row.Wuid}</a>`;
-                }
-            }),
-            GID: {
-                label: nlsHPCC.Graph, width: 90, sortable: true,
-                formatter: function (_gid, row) {
-                    if (activity.isInstanceOfWorkunit(row)) {
-                        if (row.GraphName) {
-                            return `<a href='#/graphs/${row.GraphName}/${row.GID}' class='dgrid-row-url2'>${row.GraphName}-${row.GID}</a>`;
-                        }
-                    }
-                    return "";
-                }
-            },
-            State: {
-                label: nlsHPCC.State,
-                sortable: false,
-                formatter: function (state, row) {
-                    if (activity.isInstanceOfQueue(row)) {
-                        return row.isNormal() ? "" : row.StatusDetails;
-                    }
-                    if (row.Duration) {
-                        return state + " (" + row.Duration + ")";
-                    } else if (row.Instance && !(state.indexOf && state.indexOf(row.Instance) !== -1)) {
-                        return state + " [" + row.Instance + "]";
-                    }
-                    return state;
-                }
-            },
-            Owner: { label: nlsHPCC.Owner, width: 90, sortable: false },
-            Jobname: { label: nlsHPCC.JobName, sortable: false }
-        },
-        getSelected: function () {
-            const retVal = [];
-            for (const id in this.selection) {
-                const item = activity.resolve(id);
-                if (item) {
-                    retVal.push(item);
-                }
-            }
-            return retVal;
-        }
-    });
-
-    const refreshTable = (clearSelection = false) => {
-        grid?.set("query", {});
-        if (clearSelection) {
-            grid?.clearSelection();
-        }
-    };
-
-    React.useEffect(() => {
-        refreshTable();
-        const handle = activity.watch("__hpcc_changedCount", function (item, oldValue, newValue) {
-            refreshTable();
-        });
-        return () => handle.unwatch();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [grid]);
+    ], [grid, selection]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -396,13 +399,30 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
             }
         });
         setUIState(state);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selection]);
+    }, [activity, selection]);
 
-    return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
-        main={
-            <DojoGrid type="Sel" store={gridParams.store} query={gridParams.query} columns={gridParams.columns} setGrid={setGrid} setSelection={setSelection} />
-        }
-    />;
+    if (dojoConfig.isContainer) {
+        return <HolyGrail
+            header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
+            main={
+                <DojoGrid type="Sel" store={gridParams.store} query={gridParams.query} columns={gridParams.columns} setGrid={setGrid} setSelection={setSelection} />
+            }
+        />;
+    }
+    return <ReflexContainer orientation="horizontal">
+        <ReflexElement minSize={100} style={{ overflow: "hidden" }}>
+            <Summary />
+        </ReflexElement>
+        <ReflexSplitter style={styles.reflexSplitter}>
+            <div className={classNames.reflexSplitterDiv}></div>
+        </ReflexSplitter>
+        <ReflexElement>
+            <HolyGrail
+                header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
+                main={
+                    <DojoGrid type="Sel" store={gridParams.store} query={gridParams.query} columns={gridParams.columns} setGrid={setGrid} setSelection={setSelection} />
+                }
+            />
+        </ReflexElement>
+    </ReflexContainer>;
 };

@@ -20,6 +20,7 @@
 #include "jfile.hpp"
 #include "jmutex.hpp"
 #include "jlog.hpp"
+#include "jsecrets.hpp"
 #include "rmtfile.hpp"
 
 #include "portlist.h"
@@ -45,6 +46,7 @@
 #include "thdemonserver.hpp"
 #include "thgraphmanager.hpp"
 #include "roxiehelper.hpp"
+#include "securesocket.hpp"
 #include "environment.hpp"
 
 class CJobManager : public CSimpleInterface, implements IJobManager, implements IExceptionHandler
@@ -53,7 +55,9 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
     Owned<IConversation> conversation;
     StringAttr queueName;
     CriticalSection replyCrit, jobCrit;
+#ifndef _CONTAINERIZED
     CFifoFileCache querySoCache;
+#endif
     Owned<IJobQueue> jobq;
     ICopyArrayOf<CJobMaster> jobs;
     Owned<IException> exitException;
@@ -175,6 +179,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
                 try
                 {
                     Owned<ISocket> client = sock->accept(true);
+                    // TLS TODO: secure_accept() on Thor debug socket if globally configured for mtls ...
                     if (client)
                     {
                         client->set_linger(-1);
@@ -245,7 +250,9 @@ public:
     virtual void setWuid(const char *wuid, const char *cluster=NULL);
     virtual IDeMonServer *queryDeMonServer() { return demonServer; }
     virtual void fatal(IException *e);
+#ifndef _CONTAINERIZED
     virtual void addCachedSo(const char *name);
+#endif
     virtual void updateWorkUnitLog(IWorkUnit &workunit);
 };
 
@@ -330,6 +337,7 @@ void CJobManager::fatal(IException *e)
 
 void CJobManager::updateWorkUnitLog(IWorkUnit &workunit)
 {
+#ifndef _CONTAINERIZED
     StringBuffer log, logUrl, slaveLogPattern;
     logHandler->getLogName(log);
     createUNCFilename(log, logUrl, false);
@@ -340,8 +348,8 @@ void CJobManager::updateWorkUnitLog(IWorkUnit &workunit)
     Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(workunit.queryClusterName());
     unsigned numberOfSlaves = clusterInfo->getNumberOfSlaveLogs();
     workunit.addProcess("Thor", globals->queryProp("@name"), 0, numberOfSlaves, slaveLogPattern, false, logUrl.str());
+#endif
 }
-
 
 
 
@@ -473,6 +481,7 @@ void CJobManager::run()
     LOG(MCdebugProgress, thorJob, "Listening for graph");
 
     setWuid(NULL);
+#ifndef _CONTAINERIZED
     StringBuffer soPath;
     globals->getProp("@query_so_dir", soPath);
     StringBuffer soPattern("*.");
@@ -488,6 +497,7 @@ void CJobManager::run()
     if (!thorName) thorName = "thor";
     getThorQueueNames(_queueNames, thorName);
     queueName.set(_queueNames.str());
+#endif
 
     jobq.setown(createJobQueue(queueName.get()));
     struct cdynprio: public IDynamicPriority
@@ -651,7 +661,13 @@ void CJobManager::run()
                                 {
                                     SocketEndpoint ep = _item->queryEndpoint();
                                     ep.port = _item->getPort();
-                                    Owned<IConversation> acceptconv = createSingletonSocketConnection(ep.port,&ep);
+                                    Owned<IConversation> acceptconv;
+#if defined(_USE_OPENSSL)
+                                    if (queryMtls())
+                                        acceptconv.setown(createSingletonSecureSocketConnection(ep.port,&ep));
+                                    else
+#endif
+                                        acceptconv.setown(createSingletonSocketConnection(ep.port,&ep));
                                     if (acceptconv->connect(60*1000)) // shouldn't need that long
                                     {
                                         acceptconv->set_keep_alive(true);
@@ -918,16 +934,24 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     Owned<IConstWUQuery> query = workunit.getQuery();
     SCMStringBuffer soName;
     query->getQueryDllName(soName);
+#ifndef _CONTAINERIZED
     unsigned version = query->getQueryDllCrc();
+#endif
     query.clear();
 
+    bool sendSo = false;
+    Owned<ILoadedDllEntry> querySo;
     StringBuffer soPath;
+#ifdef _CONTAINERIZED
+    PROGLOG("Loading query name: %s", soName.str());
+    querySo.setown(queryDllServer().loadDll(soName.str(), DllLocationLocal));
+    soPath.append(querySo->queryName());
+#else
     globals->getProp("@query_so_dir", soPath);
     StringBuffer compoundPath;
     compoundPath.append(soPath.str());
     soPath.append(soName.str());
     getCompoundQueryName(compoundPath, soName.str(), version);
-    bool sendSo = false;
     if (querySoCache.isAvailable(compoundPath.str()))
         PROGLOG("Using existing local dll: %s", compoundPath.str()); // It is assumed if present here then _still_ present on slaves from previous send.
     else
@@ -950,15 +974,16 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         }
         sendSo = globals->getPropBool("Debug/@dllsToSlaves", true);
     }
-
-    Owned<ILoadedDllEntry> querySo = createDllEntry(compoundPath.str(), false, NULL, false);
+    querySo.setown(createDllEntry(compoundPath.str(), false, NULL, false));
+    soPath.swapWith(compoundPath);
+#endif
 
     SCMStringBuffer eclstr;
     StringAttr user(workunit.queryUser());
 
     PROGLOG("Started wuid=%s, user=%s, graph=%s\n", wuid.str(), user.str(), graphName);
 
-    PROGLOG("Query %s loaded", compoundPath.str());
+    PROGLOG("Query %s loaded", soPath.str());
     Owned<CJobMaster> job = createThorGraph(graphName, workunit, querySo, sendSo, agentEp);
     unsigned wfid = job->getWfid();
     StringBuffer graphScope;
@@ -1026,10 +1051,12 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     return allDone;
 }
 
+#ifndef _CONTAINERIZED
 void CJobManager::addCachedSo(const char *name)
 {
     querySoCache.add(name);
 }
+#endif
 
 static int exitCode = -1;
 void setExitCode(int code) { exitCode = code; }

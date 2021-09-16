@@ -1,13 +1,19 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 import { initializeIcons } from "@fluentui/react";
+import { scopedLogger } from "@hpcc-js/util";
 import { initSession } from "src/Session";
+import { ECLWatchLogger } from "./hooks/logging";
 
 import "css!dojo-themes/flat/flat.css";
 import "css!hpcc/css/ecl.css";
 import "css!hpcc/css/hpcc.css";
+import "src-react-css/index.css";
 
+ECLWatchLogger.init();
 initializeIcons();
+
+const logger = scopedLogger("../index.tsx");
 
 declare const dojoConfig: any;
 
@@ -27,8 +33,12 @@ dojoConfig.disableLegacyHashing = true;
 initSession();
 
 import("./components/Frame").then(_ => {
-    ReactDOM.render(
-        <_.DevFrame />,
-        document.getElementById("placeholder")
-    );
+    try {
+        ReactDOM.render(
+            <_.DevFrame />,
+            document.getElementById("placeholder")
+        );
+    } catch (e) {
+        logger.error(e);
+    }
 });

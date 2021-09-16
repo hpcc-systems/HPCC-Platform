@@ -150,6 +150,7 @@ protected:
     mutable Owned<IWUQuery> query;
     mutable Owned<IWUWebServicesInfo> webServicesInfo;
     mutable Owned<IWorkflowItemIterator> workflowIterator;
+    mutable Owned<IPropertyTree> indirectTree;
     mutable bool workflowIteratorCached;
     mutable bool resultsCached;
     mutable unsigned char graphsCached;  // 0 means uncached, 1 means light, 2 means heavy
@@ -185,6 +186,7 @@ public:
     void beforeDispose();
     
     IPropertyTree *getUnpackedTree(bool includeProgress) const;
+    IPropertyTree *queryMergedTree() const;
 
     ISecManager *querySecMgr() { return secMgr.get(); }
     ISecUser *querySecUser() { return secUser.get(); }
@@ -229,7 +231,7 @@ public:
     virtual void setGraphState(const char *graphName, unsigned wfid, WUGraphState state) const;
     virtual void setNodeState(const char *graphName, WUGraphIDType nodeId, WUGraphState state) const;
     virtual WUGraphState queryNodeState(const char *graphName, WUGraphIDType nodeId) const;
-    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const override;
+    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph, bool merge) const override;
     void clearGraphProgress() const;
     virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree) {}; //No GraphProgressTree in CLocalWorkUnit.
 
@@ -278,6 +280,7 @@ public:
     virtual bool isProtected() const;
     virtual bool isPausing() const;
     virtual IWorkUnit& lock();
+    virtual IConstWorkUnit *unlock();
     virtual void requestAbort();
     virtual unsigned calculateHash(unsigned prevHash);
     virtual void copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool all);
@@ -635,14 +638,14 @@ public:
     IMPLEMENT_IINTERFACE;
     CLocalWUGraph(const CLocalWorkUnit &owner, IPropertyTree *p);
 
-    virtual IStringVal & getXGMML(IStringVal & ret, bool mergeProgress) const override;
+    virtual IStringVal & getXGMML(IStringVal & ret, bool mergeProgress, bool doFormatStats) const override;
     virtual IStringVal & getName(IStringVal & ret) const override;
     virtual IStringVal & getLabel(IStringVal & ret) const override;
     virtual IStringVal & getTypeName(IStringVal & ret) const override;
     virtual WUGraphType getType() const override;
     virtual WUGraphState getState() const override;
     virtual unsigned getWfid() const override;
-    virtual IPropertyTree * getXGMMLTree(bool mergeProgress) const override;
+    virtual IPropertyTree * getXGMMLTree(bool mergeProgress, bool doFormatStats) const override;
     virtual IPropertyTree * getXGMMLTreeRaw() const override;
 
     void setName(const char *str);
@@ -656,15 +659,16 @@ public:
 class WORKUNIT_API CWuGraphStats : public CInterfaceOf<IWUGraphStats>
 {
 public:
-    CWuGraphStats(IPropertyTree *_progress, StatisticCreatorType _creatorType, const char * _creator, unsigned wfid, const char * _rootScope, unsigned _id);
+    CWuGraphStats(StatisticCreatorType _creatorType, const char * _creator, unsigned wfid, const char * _rootScope, unsigned _id, bool _merge);
     virtual void beforeDispose();
     virtual IStatisticGatherer & queryStatsBuilder();
 protected:
-    Owned<IPropertyTree> progress;
+    virtual IPropertyTree &queryProgressTree() = 0;
     Owned<IStatisticGatherer> collector;
     StringAttr creator;
     StatisticCreatorType creatorType;
     unsigned id;
+    bool merge;
 };
 
 class WORKUNIT_API CWorkUnitWatcher : public CInterface, implements IWorkUnitWatcher, implements ISDSSubscription

@@ -62,18 +62,27 @@ static void topo_server_usage()
     printf("\n");
 }
 
+struct TopologyEntry
+{
+    unsigned lastSeen = 0;
+    time_t instance = 0;
+};
+
 unsigned traceLevel = 0;
 unsigned topoPort = TOPO_SERVER_PORT;
-std::map<std::string, unsigned> topology;
+std::map<std::string, TopologyEntry> topology;
 StringBuffer cachedResponse;
 StringBuffer cachedDigest;
 bool responseDirty = true;
 unsigned lastTimeoutCheck = 0;
 unsigned lastTopologyReport = 0;
-const unsigned timeoutCheckInterval = 1000;
-const unsigned heartbeatInterval = 5000;
-const unsigned timeoutHeartbeatInterval = 10000;
-const unsigned topologyReportInterval = 60000;
+
+unsigned timeoutCheckInterval = 1000;       // How often we check to see what has expired
+unsigned heartbeatInterval = 5000;          // How often nodes send heartbeats
+unsigned timeoutHeartbeatServer = 60000;    // How long before a server is marked as down
+unsigned timeoutHeartbeatAgent = 10000;     // How long before an agent is marked as down
+unsigned removeHeartbeatInterval = 120000;  // How long before a node is removed from list
+unsigned topologyReportInterval = 60000;    // How often topology is reported to logging (if traceLevel >= 2)
 bool aborted = false;
 Semaphore stopping;
 StringBuffer topologyFile;
@@ -121,20 +130,13 @@ void init_signals()
 #endif
 }
 
-void updateTopology(const std::string &newInfo)
+void updateTopology(const std::string &newInfo, time_t instance)
 {
-    if (newInfo[0]=='-')
-    {
-        if (topology.erase(newInfo.substr(1)))
-            responseDirty = true;
-    }
-    else
-    {
-        unsigned &found = topology[newInfo];
-        if (found==0)
-            responseDirty = true;
-        found = msTick();
-    }
+    TopologyEntry &found = topology[newInfo];
+    if (found.lastSeen==0 || found.instance != instance)
+        responseDirty = true;
+    found.lastSeen = msTick();
+    found.instance = instance;
 }
 
 void timeoutTopology()
@@ -142,22 +144,30 @@ void timeoutTopology()
     unsigned now = msTick();
     if (now - lastTimeoutCheck < timeoutCheckInterval)
         return;
-    for (auto it = topology.cbegin(); it != topology.cend(); /* no increment */)
+    for (auto it = topology.begin(); it != topology.end(); /* no increment */)
     {
-        unsigned lastSeen = it->second;
-        if (now-lastSeen > timeoutHeartbeatInterval)
+        bool isServer = it->first.rfind("server", 0)==0;
+        unsigned lastSeen = it->second.lastSeen;
+        unsigned timeout = isServer ? timeoutHeartbeatServer : timeoutHeartbeatAgent;
+        // If a server is missing a heartbeat for a while, we mark it as down. Queued packets for that server will get discarded, and
+        // it will be sorted to the end of the priority list for agent requests
+        // The timeout is different for server vs agent - for servers, we want to be sure it really is down, and there's no huge cost for waiting,
+        // while for agents we want to divert traffic away from it ASAP (so long as there are other destinations available
+        if (now-lastSeen > timeout)
         {
             if (traceLevel)
             {
                 DBGLOG("No heartbeat for %u ms for %s", now-lastSeen, it->first.c_str());
             }
-            it = topology.erase(it);
             responseDirty = true;
+            if (now-lastSeen > removeHeartbeatInterval)
+            {
+                it = topology.erase(it);
+                continue;
+            }
+            it->second.instance = 0;  // By leaving the entry present but with instance=0, we will ensure that all clients get to see that the machine is no longer present
         }
-        else
-        {
-            ++it;
-        }
+        ++it;
     }
     lastTimeoutCheck = now;
 }
@@ -170,7 +180,7 @@ void reportTopology()
     DBGLOG("Current state:");
     for (const auto& it : topology)
     {
-        DBGLOG(" %s - %ums", it.first.c_str(), now-it.second);
+        DBGLOG(" %s - %ums", it.first.c_str(), now-it.second.lastSeen);
     }
     lastTopologyReport = now;
 }
@@ -183,7 +193,7 @@ void regenerateResponse()
         cachedDigest.set("=");
         for (const auto& it : topology)
         {
-           cachedResponse.append(it.first.c_str()).append('\n');
+           cachedResponse.append(it.first.c_str()).append('\t').append((__uint64) it.second.instance).append('\n');
         }
         md5_string(cachedResponse, cachedDigest);
         cachedDigest.append('\n');
@@ -206,6 +216,7 @@ void doServer(ISocket *socket)
             try
             {
                 Owned<ISocket> p = ISocket::connect(me);
+                // TLS TODO: secure_connect() here if globally configured for mtls ...
                 p->write("\0\0\0\0", 4);
                 p->close();
             }
@@ -220,6 +231,7 @@ void doServer(ISocket *socket)
         try
         {
             Owned<ISocket> client = socket->accept();
+            // TLS TODO: secure_accept() here if globally configured for mtls ...
             timeoutTopology();
             unsigned packetLen;
             client->read(&packetLen, 4);
@@ -239,7 +251,27 @@ void doServer(ISocket *socket)
                     if (line[0]=='=')
                         suppliedDigest.swap(line);
                     else
-                        updateTopology(line);
+                    {
+                        time_t instance = 0;
+                        auto end = line.find('\t', 0);
+                        if (end != line.npos)
+                        {
+                            char *tail = nullptr;
+                            std::string instanceStr = line.substr(end+1);
+                            instance = strtoul(instanceStr.c_str(), &tail, 10);
+                            if (*tail)
+                                DBGLOG("Unexpected characters parsing instance value in topology entry %s", line.c_str());
+                            line = line.substr(0, end);
+                        }
+                        if (line[0]=='-')
+                        {
+                            line = line.substr(1);
+                            instance = 0;
+                        }
+                        if (traceLevel >= 6)
+                            DBGLOG("Adding entry %s instance %" I64F "u", line.c_str(), (__uint64) instance);
+                        updateTopology(line, instance);
+                    }
                 }
                 regenerateResponse();
                 bool match = suppliedDigest.append("\n").compare(cachedDigest) == 0;
@@ -310,10 +342,11 @@ int main(int argc, const char *argv[])
         E->Release();
         return EXIT_FAILURE;
     }
-    Owned<IFile> sentinelFile = createSentinelTarget();
-    removeSentinelFile(sentinelFile);
     try
     {
+        Owned<IFile> sentinelFile = createSentinelTarget();
+        removeSentinelFile(sentinelFile);
+
         for (unsigned i=0; i<(unsigned)argc; i++)
         {
             if (stricmp(argv[i], "--help")==0 ||
@@ -328,6 +361,14 @@ int main(int argc, const char *argv[])
         Owned<IPropertyTree> topology = loadConfiguration(defaultYaml, argv, "toposerver", "TOPOSERVER", nullptr, nullptr);
         traceLevel = topology->getPropInt("@traceLevel", 1);
         topoPort = topology->getPropInt("@port", TOPO_SERVER_PORT);
+
+        timeoutCheckInterval = topology->getPropInt("@timeoutCheckInterval", timeoutCheckInterval);
+        heartbeatInterval = topology->getPropInt("@heartbeatInterval", heartbeatInterval);
+        timeoutHeartbeatAgent = topology->getPropInt("@timeoutHeartbeatAgent", timeoutHeartbeatAgent);
+        timeoutHeartbeatServer = topology->getPropInt("@timeoutHeartbeatServer", timeoutHeartbeatServer);
+        removeHeartbeatInterval = topology->getPropInt("@removeHeartbeatInterval", removeHeartbeatInterval);
+        topologyReportInterval = topology->getPropInt("@topologyReportInterval", topologyReportInterval);
+
 #ifndef _CONTAINERIZED
         if (topology->getPropBool("@stdlog", traceLevel != 0))
             queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_thread | MSGFIELD_prefix);

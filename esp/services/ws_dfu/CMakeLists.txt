@@ -95,21 +95,23 @@ target_link_libraries ( ws_dfu
          eclrtl 
          jhtree 
          dalibase 
-         environment 
          dllserver 
          deftype 
          workunit 
-         hql   
+         hql
          fileview2 
          xmllib 
          esphttp 
-         dalift 
          SMCLib 
          dfuXRefLib 
          dfuwu 
          roxiecommlib 
          wsdfuaccess
     )
+
+if (NOT CONTAINERIZED)
+    target_link_libraries ( ws_dfu environment )
+endif()
 
 IF (USE_OPENSSL)
     target_link_libraries ( ws_dfu

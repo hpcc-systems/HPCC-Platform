@@ -126,8 +126,8 @@
 
                   <listitem>
                     <para>WsAttributes (default port is 8145) <emphasis
-                    role="bold">Note:</emphasis> Not part of VM or Community
-                    Edition</para>
+                    role="bold">Note:</emphasis> Not part of Community
+                    Edition. For legacy use only.</para>
                   </listitem>
 
                   <listitem>

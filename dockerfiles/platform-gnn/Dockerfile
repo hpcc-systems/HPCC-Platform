@@ -24,7 +24,7 @@ ARG DOCKER_REPO
 FROM ${DOCKER_REPO}/platform-core:${BUILD_LABEL}
 USER root
 
-RUN apt-get update && apt-get install -y python3-pip --fix-missing
+RUN apt-get update -y && apt-get install -y python3-pip --fix-missing
 RUN python3 -m pip install --upgrade pip
 
 RUN pip3 install       \
@@ -33,6 +33,6 @@ RUN pip3 install       \
     networkx           \
     setuptools==46.1.3 \
     scipy==1.4.1       \
-    tensorflow==2.2.0
+    tensorflow==2.6.0
 
 USER hpcc

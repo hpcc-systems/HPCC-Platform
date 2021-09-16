@@ -22,10 +22,15 @@ import std.system.thorlib;
 import Std.File AS FileServices;
 import $.setup;
 
-dropzonePath := '/var/lib/HPCCSystems/mydropzone/' : STORED('dropzonePath');
-espIpPort := 'http://127.0.0.1:8010/FileSpray' : STORED('espIpPort');
+dropzonePath := ''; // Use relative paths
 prefix := setup.Files(false, false).QueryFilePrefix;
+#if (__CONTAINERIZED__)
+defaultDfuQueueName := 'dfuserver.dfuserver';
+sprayDestGroup := 'data';
+#else
+defaultDfuQueueName := 'dfuserver_queue';
 sprayDestGroup := thorlib.group();
+#end
 
 unsigned VERBOSE := 0;
 
@@ -38,6 +43,8 @@ END;
 sprayPrepFileName := prefix + 'spray_prep';
 desprayOutFileName := dropzonePath + WORKUNIT + '-spray_input';
 sprayOutFileName := prefix + 'spray_test';
+
+
 
 allPeople := DATASET([ {'foo', 10, 1},
                        {'bar', 12, 0},
@@ -59,8 +66,8 @@ end;
 rec despray(rec l) := TRANSFORM
   SELF.msg := FileServices.fDespray(
                        LOGICALNAME := sprayPrepFileName+'_CSV'
-                      ,DESTINATIONIP := '.'
                       ,DESTINATIONPATH := desprayOutFileName+'_CSV'
+                      ,DESTINATIONPLANE := 'mydropzone'
                       ,ALLOWOVERWRITE := True
                       );
   SELF.result := 'Pass';
@@ -83,8 +90,8 @@ c1 := CATCH(NOFOLD(p1), ONFAIL(TRANSFORM(rec,
 rec desprayXml(rec l) := TRANSFORM
   SELF.msg := FileServices.fDespray(
                        LOGICALNAME := sprayPrepFileName+'_XML'
-                      ,DESTINATIONIP := '.'
                       ,DESTINATIONPATH := desprayOutFileName+'_XML'
+                      ,DESTINATIONPLANE := 'mydropzone'
                       ,ALLOWOVERWRITE := True
                       );
   SELF.result := 'Pass';
@@ -107,8 +114,8 @@ c2 := CATCH(NOFOLD(p2), ONFAIL(TRANSFORM(rec,
 rec desprayFix(rec l) := TRANSFORM
   SELF.msg := FileServices.fDespray(
                        LOGICALNAME := sprayPrepFileName+'_FIX'
-                      ,DESTINATIONIP := '.'
                       ,DESTINATIONPATH := desprayOutFileName+'_FIX'
+                      ,DESTINATIONPLANE := 'mydropzone'
                       ,ALLOWOVERWRITE := True
                       );
   SELF.result := 'Pass';
@@ -139,12 +146,11 @@ end;
 
 sprayRec sprayVariable(sprayRec l) := TRANSFORM
     SELF.msg := FileServices.fSprayVariable(
-                        SOURCEIP := '.',
+                        SOURCEPLANE := 'mydropzone',
                         SOURCEPATH := l.sourceFileName,
                         DESTINATIONGROUP := sprayDestGroup,
                         DESTINATIONLOGICALNAME := l.destFileName,
                         TIMEOUT := -1,
-                        ESPSERVERIPPORT := espIpPort,
                         ALLOWOVERWRITE := true,
                         DFUSERVERQUEUE := l.dfuQueue
                         );
@@ -173,12 +179,12 @@ sc1 := CATCH(NOFOLD(sp1), ONFAIL(TRANSFORM(sprayRec,
 
 
 // Spray variable with valid DFU queue
-sdst2 := NOFOLD(DATASET([{desprayOutFileName + '_CSV', sprayOutFileName + '_CSV', 'dfuserver_queue', 'Spray variable with default queue:', ''}], sprayRec));
+sdst2 := NOFOLD(DATASET([{desprayOutFileName + '_CSV', sprayOutFileName + '_CSV', defaultDfuQueueName, 'Spray variable with default queue:', ''}], sprayRec));
 sp2 := PROJECT(NOFOLD(sdst2), sprayVariable(LEFT));
 sc2 := CATCH(NOFOLD(sp2), ONFAIL(TRANSFORM(sprayRec,
                                  SELF.sourceFileName := desprayOutFileName + '_CSV',
                                  SELF.destFileName := sprayOutFileName + '_CSV',
-                                 SELF.dfuQueue := 'dfuserver_queue',
+                                 SELF.dfuQueue := defaultDfuQueueName,
                                  SELF.result := 'Spray variable with default queue: Fail',
                                  SELF.msg := FAILMESSAGE
                                 )));
@@ -209,13 +215,12 @@ sc3 := CATCH(NOFOLD(sp3), ONFAIL(TRANSFORM(sprayRec,
 
 sprayRec sprayXml(sprayRec l) := TRANSFORM
     SELF.msg := FileServices.fSprayXml(
-                            SOURCEIP := '.',
+                            SOURCEPLANE := 'mydropzone',
                             SOURCEPATH := l.sourceFileName,
                             SOURCEROWTAG := 'Rowtag',
                             DESTINATIONGROUP := sprayDestGroup,
                             DESTINATIONLOGICALNAME := l.destFileName,
                             TIMEOUT := -1,
-                            ESPSERVERIPPORT := espIpPort,
                             ALLOWOVERWRITE := true,
                             DFUSERVERQUEUE := l.dfuQueue
                             ); 
@@ -244,12 +249,12 @@ sxc1 := CATCH(NOFOLD(sxp1), ONFAIL(TRANSFORM(sprayRec,
 
 
 // Spray XML with valid DFU queue
-sxdst2 := NOFOLD(DATASET([{desprayOutFileName + '_XML', sprayOutFileName + '_XML', 'dfuserver_queue', 'Spray XML with default queue:', ''}], sprayRec));
+sxdst2 := NOFOLD(DATASET([{desprayOutFileName + '_XML', sprayOutFileName + '_XML', defaultDfuQueueName, 'Spray XML with default queue:', ''}], sprayRec));
 sxp2 := PROJECT(NOFOLD(sxdst2), sprayXml(LEFT));
 sxc2 := CATCH(NOFOLD(sxp2), ONFAIL(TRANSFORM(sprayRec,
                                  SELF.sourceFileName := desprayOutFileName + '_XML',
                                  SELF.destFileName := sprayOutFileName + '_XML',
-                                 SELF.dfuQueue := 'dfuserver_queue',
+                                 SELF.dfuQueue := defaultDfuQueueName,
                                  SELF.result := 'Spray XML with default queue: Fail',
                                  SELF.msg := FAILMESSAGE
                                 )));
@@ -280,13 +285,12 @@ sxc3 := CATCH(NOFOLD(sxp3), ONFAIL(TRANSFORM(sprayRec,
 
 sprayRec sprayFixed(sprayRec l) := TRANSFORM
     SELF.msg := FileServices.fSprayFixed(
-                            SOURCEIP := '.',
+                            SOURCEPLANE := 'mydropzone',
                             SOURCEPATH := l.sourceFileName,
                             RECORDSIZE := 9,
                             DESTINATIONGROUP := sprayDestGroup,
                             DESTINATIONLOGICALNAME := l.destFileName,
                             TIMEOUT := -1,
-                            ESPSERVERIPPORT := espIpPort,
                             ALLOWOVERWRITE := true,
                             DFUSERVERQUEUE := l.dfuQueue
                             ); 
@@ -313,14 +317,13 @@ sfc1 := CATCH(NOFOLD(sfp1), ONFAIL(TRANSFORM(sprayRec,
     sprayFixedOut1 := output(sfc1, {result},NAMED('sprayFixedOut1'));
 #end
 
-
 // Spray fixed with valid DFU queue
-sfdst2 := NOFOLD(DATASET([{desprayOutFileName + '_FIX', sprayOutFileName + '_FIX', 'dfuserver_queue', 'Spray fixed with default queue:', ''}], sprayRec));
+sfdst2 := NOFOLD(DATASET([{desprayOutFileName + '_FIX', sprayOutFileName + '_FIX', defaultDfuQueueName, 'Spray fixed with default queue:', ''}], sprayRec));
 sfp2 := PROJECT(NOFOLD(sfdst2), sprayFixed(LEFT));
 sfc2 := CATCH(NOFOLD(sfp2), ONFAIL(TRANSFORM(sprayRec,
                                  SELF.sourceFileName := desprayOutFileName + '_FIX',
                                  SELF.destFileName := sprayOutFileName + '_FIX',
-                                 SELF.dfuQueue := 'dfuserver_queue',
+                                 SELF.dfuQueue := defaultDfuQueueName,
                                  SELF.result := 'Spray fixed with default queue: Fail',
                                  SELF.msg := FAILMESSAGE
                                 )));

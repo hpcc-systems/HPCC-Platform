@@ -320,11 +320,8 @@ void expandSymbolMeta(IPropertyTree * metaTree, IHqlExpression * expr, InheritTy
         IHqlScope * scope = expr->queryScope();
         if(scope)
         {
-            IHqlRemoteScope * remoteScope = queryRemoteScope(scope);
-            if (remoteScope)
-            {
+            if (scope->isRemoteScope())
                 def->setPropBool("@remotescope", true);
-            }
         }
     }
     else

@@ -183,6 +183,7 @@ interface IEclRepository: public IInterface
 {
     virtual IHqlScope * queryRootScope() = 0;
     virtual IEclSource * getSource(const char * eclFullname) = 0;
+    virtual bool includeInArchive() const = 0;
 };
 
 //MORE: Make this more private
@@ -195,6 +196,12 @@ interface IEclRepositoryCallback : public IEclRepository
     virtual IHqlExpression * loadSymbol(IHqlRemoteScope *scope, IIdAtom * searchName) = 0;
     virtual IEclSource * getSource(IEclSource * parent, IIdAtom * searchName) = 0;
 };
+
+interface IEclPackage: public IEclRepository
+{
+    virtual const char * queryPackageName() = 0;
+};
+
 
 interface ICodegenContextCallback : public IInterface
 {

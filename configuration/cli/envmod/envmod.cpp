@@ -83,7 +83,7 @@ void usage()
     //
     // usage below documents options
     std::cout << std::endl;
-    std::cout << "envmod <options> envfile" << std::endl;
+    std::cout << "envmod <options>" << std::endl;
     std::cout << std::endl;
     std::cout << "  Configuration Options:" << std::endl;
     std::cout << "    -d --schema-dir <path>            : path to schema files. default (" << configSchemaDir << ")" << std::endl;
@@ -112,6 +112,7 @@ void usage()
 
 int main(int argc, char *argv[])
 {
+    InitModuleObjects();
     std::string modTemplateSchemaFile = std::string(hpccBuildInfo.componentDir) + PATHSEPSTR + "configschema" + PATHSEPSTR + "templates" + PATHSEPSTR + "schema" + PATHSEPSTR + "ModTemplateSchema.json";
     
     std::string processPath(queryCurrentProcessPath());

@@ -75,12 +75,14 @@ unsigned perChannelFlowLimit = 10;
 time_t startupTime;
 unsigned statsExpiryTime = 3600;
 unsigned miscDebugTraceLevel = 0;  // separate trace settings purely for debugging specific items (i.e. all possible locations to look for files at startup)
+bool traceRemoteFiles = false;
 unsigned readTimeout = 300;
 unsigned indexReadChunkSize = 60000;
 unsigned maxBlockSize = 10000000;
 unsigned maxLockAttempts = 5;
 bool pretendAllOpt = false;
 bool traceStartStop = false;
+unsigned actResetLogPeriod = 300;
 bool traceRoxiePackets = false;
 bool delaySubchannelPackets = false;    // For debugging/testing purposes only
 bool defaultTimeActivities = true;
@@ -101,6 +103,8 @@ bool oneShotRoxie = false;
 unsigned udpMulticastBufferSize = 262142;
 #ifndef _CONTAINERIZED
 bool roxieMulticastEnabled = true;
+#else
+unsigned myChannel;
 #endif
 
 IPropertyTree *topology;
@@ -173,10 +177,13 @@ bool fastLaneQueue;
 unsigned mtu_size = 1400; // upper limit on outbound buffer size - allow some header room too
 StringBuffer fileNameServiceDali;
 StringBuffer roxieName;
+#ifdef _CONTAINERIZED
+StringBuffer defaultPlane;
+StringBuffer defaultPlaneDirPrefix;
+#endif
 bool trapTooManyActiveQueries;
 unsigned maxEmptyLoopIterations;
 unsigned maxGraphLoopIterations;
-bool probeAllRows;
 bool steppingEnabled = true;
 bool simpleLocalKeyedJoins = true;
 bool adhocRoxie = false;
@@ -674,6 +681,13 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "Invalid channel specification %s", channels);
                 agentChannels.push_back(std::pair<unsigned, unsigned>(channel, repl));
             }
+#ifdef _CONTAINERIZED
+            if (agentChannels.size() != 1)
+                throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "Invalid channel specification %s - single channel expected", channels);
+            myChannel = agentChannels[0].first;
+            if (myChannel > numChannels)
+                throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "Invalid channel specification %s - value out of range", channels);
+#endif
         }
 #ifdef _CONTAINERIZED
         else if (localAgent)
@@ -705,7 +719,13 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             setStatisticsComponentName(SCTroxie, roxieName, true);
         else
             setStatisticsComponentName(SCTroxie, "roxie", true);
-
+#ifdef _CONTAINERIZED
+        getDefaultStoragePlane(defaultPlane);
+        {
+            Owned<IStoragePlane> plane = getDataStoragePlane(defaultPlane, true);
+            defaultPlaneDirPrefix.set(plane->queryPrefix());
+        }
+#endif
         installDefaultFileHooks(topology);
 
         Owned<const IQueryDll> standAloneDll;
@@ -738,7 +758,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     // Makes debugging easier...
                     IPropertyTree *service = topology->addPropTree("services");
                     service->setProp("@name", "query");
-                    service->setPropInt("@port", 9876);
+                    service->setPropInt("@port", ROXIE_SERVER_PORT);
                 }
 #else
                 if (!topology->getCount("RoxieFarmProcess"))
@@ -769,14 +789,17 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         roxiemem::setMemTraceLevel(topology->getPropInt("@memTraceLevel", runOnce ? 0 : 1));
         soapTraceLevel = topology->getPropInt("@soapTraceLevel", runOnce ? 0 : 1);
         miscDebugTraceLevel = topology->getPropInt("@miscDebugTraceLevel", 0);
+        traceRemoteFiles = topology->getPropBool("@traceRemoteFiles", false);
 
         Linked<IPropertyTree> directoryTree = topology->queryPropTree("Directories");
+#ifndef _CONTAINERIZED
         if (!directoryTree)
         {
             Owned<IPropertyTree> envFile = getHPCCEnvironment();
             if (envFile)
                 directoryTree.set(envFile->queryPropTree("Software/Directories"));
         }
+#endif
         if (directoryTree)
         {
             getConfigurationDirectory(directoryTree, "query", "roxie", roxieName, queryDirectory);
@@ -873,19 +896,21 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         parallelLoopFlowLimit = topology->getPropInt("@parallelLoopFlowLimit", 100);
         perChannelFlowLimit = topology->getPropInt("@perChannelFlowLimit", 10);
         copyResources = topology->getPropBool("@copyResources", true);
-        useRemoteResources = topology->getPropBool("@useRemoteResources", true);
+        useRemoteResources = topology->getPropBool("@useRemoteResources", !isContainerized());
         checkFileDate = topology->getPropBool("@checkFileDate", true);
         const char *lazyOpenMode = topology->queryProp("@lazyOpen");
         if (!lazyOpenMode || stricmp(lazyOpenMode, "smart")==0)
             lazyOpen = (restarts > 0);
         else
             lazyOpen = topology->getPropBool("@lazyOpen", false);
+#ifndef _CONTAINERIZED
         bool useNasTranslation = topology->getPropBool("@useNASTranslation", true);
         if (useNasTranslation)
         {
             Owned<IPropertyTree> nas = envGetNASConfiguration(topology);
             envInstallNASHooks(nas);
         }
+#endif
         useAeron = topology->getPropBool("@useAeron", false);
         doIbytiDelay = topology->getPropBool("@doIbytiDelay", true);
         minIbytiDelay = topology->getPropInt("@minIbytiDelay", 2);
@@ -1049,6 +1074,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         roxiemem::setTotalMemoryLimit(allowHugePages, allowTransparentHugePages, retainMemory, totalMemoryLimit, 0, NULL, NULL);
 
         traceStartStop = topology->getPropBool("@traceStartStop", false);
+        actResetLogPeriod = topology->getPropInt("@actResetLogPeriod", 300);
         watchActivityId = topology->getPropInt("@watchActivityId", 0);
         traceRoxiePackets = topology->getPropBool("@traceRoxiePackets", false);
         delaySubchannelPackets = topology->getPropBool("@delaySubchannelPackets", false);
@@ -1196,7 +1222,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             ForEach(*roxieFarms)
             {
                 IPropertyTree &roxieFarm = roxieFarms->query();
-                unsigned port = roxieFarm.getPropInt("@port", ROXIE_SERVER_PORT);
+                unsigned port = roxieFarm.getPropInt("@port", roxieFarm.getPropInt("@servicePort", ROXIE_SERVER_PORT));
                 RoxieEndpointInfo me = {RoxieEndpointInfo::RoxieServer, 0, { (unsigned short) port, myIP }, 0};
                 myRoles.push_back(me);
             }
@@ -1320,7 +1346,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     unsigned numThreads = roxieFarm.getPropInt("@numThreads", 0);
                     if (!numThreads)
                         numThreads = numServerThreads;
-                    unsigned port = roxieFarm.getPropInt("@port", ROXIE_SERVER_PORT);
+                    unsigned port = roxieFarm.getPropInt("@port", roxieFarm.getPropInt("@servicePort", ROXIE_SERVER_PORT));
                     //unsigned requestArrayThreads = roxieFarm.getPropInt("@requestArrayThreads", 5);
                     // NOTE: farmer name [@name=] is not copied into topology
                     const IpAddress ip = myNode.getIpAddress();
@@ -1370,7 +1396,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                         }
                         const char *soname =  roxieFarm.queryProp("@so");
                         const char *config  = roxieFarm.queryProp("@config");
-                        IHpccProtocolPlugin *protocolPlugin = ensureProtocolPlugin(*protocolCtx, soname);
+                        Owned<IHpccProtocolPlugin> protocolPlugin = ensureProtocolPlugin(*protocolCtx, soname);
                         roxieServer.setown(protocolPlugin->createListener(protocol ? protocol : "native", createRoxieProtocolMsgSink(ip, port, numThreads, suspended), port, listenQueue, config, certFileName.str(), keyFileName.str(), passPhraseStr.str()));
                     }
                     else
@@ -1405,10 +1431,11 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     roxieServer->start();
                 }
 
-                queryFileCache().loadSavedOsCacheInfo();
+                if (!topology->getPropBool("@disableCachePrewarming", false))
+                    queryFileCache().loadSavedOsCacheInfo();
                 queryFileCache().startCacheReporter();
 #ifdef _CONTAINERIZED
-                publishTopology(traceLevel);
+                publishTopology(traceLevel, myRoles);
 #endif
                 writeSentinelFile(sentinelFile);
                 DBGLOG("Startup completed - LPT=%u APT=%u", queryNumLocalTrees(), queryNumAtomTrees());
@@ -1437,6 +1464,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
         packetDiscarder->stop();
         packetDiscarder.clear();
+        stopTopoThread();
         ROQ->stop();
         ROQ->join();
         ROQ->Release();
@@ -1469,7 +1497,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
     perfMonHook.clear();
 #endif
     stopAeronDriver();
-    stopTopoThread();
 
     strdup("Make sure leak checking is working");
     roxiemem::releaseRoxieHeap();

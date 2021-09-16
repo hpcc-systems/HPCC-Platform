@@ -8,10 +8,11 @@ define([
 
     "dijit/registry",
 
-    "src/CodeMirror",
+    "@hpcc-js/codemirror",
 
     "hpcc/_Widget",
     "src/ESPWorkunit",
+    "src/Utility",
 
     "dojo/text!../templates/ECLSourceWidget.html",
 
@@ -24,7 +25,7 @@ define([
 ], function (declare, lang, nlsHPCCMod, dom, xhr, topic,
     registry,
     CodeMirror,
-    _Widget, ESPWorkunit,
+    _Widget, ESPWorkunit, Utility,
     template) {
 
     var nlsHPCC = nlsHPCCMod.default;
@@ -57,9 +58,6 @@ define([
         resize: function (args) {
             this.inherited(arguments);
             this.borderContainer.resize();
-            if (this.editor) {
-                this.editor.setSize("100%", "100%");
-            }
         },
 
         layout: function (args) {
@@ -81,17 +79,16 @@ define([
             if (params.readOnly !== undefined)
                 this.readOnly = params.readOnly;
 
-            this.editor = CodeMirror.fromTextArea(document.getElementById(this.id + "EclCode"), {
-                tabMode: "indent",
-                matchBrackets: true,
-                lineNumbers: true,
-                mode: mode,
-                readOnly: this.readOnly,
-                foldGutter: mode === "xml" ? true : false,
-                gutters: mode === "xml" ? ["CodeMirror-linenumbers", "CodeMirror-foldgutter"] : ["CodeMirror-linenumbers"]
+            var eclContent = dom.byId(this.id + "EclContent");
+            Utility.onDomMutate(eclContent, () => {
+                this.editor.target(this.id + "EclContent").lazyRender();
+                dom.byId(this.id + "EclCode").style.display = "none";
             });
-            dom.byId(this.id + "EclContent").style.backgroundColor = this.readOnly ? 0xd0d0d0 : 0xffffff;
-            this.editor.setSize("100%", "100%");
+
+            this.editor = new CodeMirror.ECLEditor();
+            eclContent.style.backgroundColor = this.readOnly ? 0xd0d0d0 : 0xffffff;
+            // force a style "change" to trigger the mutation observer
+            eclContent.style.cssText += " ";
 
             var context = this;
             if (params.Wuid) {
@@ -165,7 +162,7 @@ define([
 
         setText: function (text) {
             try {
-                this.editor.setValue(text);
+                this.editor.text(text);
             } catch (e) {
                 topic.publish("hpcc/brToaster", {
                     Severity: "Error",
@@ -183,7 +180,7 @@ define([
         },
 
         getText: function () {
-            return this.editor.getValue();
+            return this.editor.text();
         }
 
     });

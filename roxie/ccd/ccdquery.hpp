@@ -110,6 +110,7 @@ public:
     bool collectFactoryStatistics;
     bool noSeekBuildIndex;
     bool parallelWorkflow;
+    bool statsToWorkunit = false;
     SinkMode sinkMode;
     unsigned numWorkflowThreads;
 
@@ -139,7 +140,6 @@ interface IQueryFactory : extends IInterface
     virtual void suspend(const char *errMsg) = 0;
     virtual bool loadFailed() const = 0;
     virtual bool suspended() const = 0;
-    virtual void getStats(StringBuffer &reply, const char *graphName) const = 0;
     virtual void resetQueryTimings() = 0;
     virtual const QueryOptions &queryOptions() const = 0;
     virtual ActivityArray *lookupGraphActivities(const char *name) const = 0;
@@ -154,6 +154,9 @@ interface IQueryFactory : extends IInterface
 
     virtual const IRoxiePackage &queryPackage() const = 0;
     virtual void getActivityMetrics(StringBuffer &reply) const = 0;
+    virtual void gatherStats(IConstWorkUnit* statsWu, int channel, bool reset) const = 0;
+    virtual void mergeStats(const CRuntimeStatisticCollection &from) const = 0;
+    virtual void mergeStats(const IRoxieContextLogger &from) const = 0;
 
     virtual IPropertyTree *cloneQueryXGMML() const = 0;
     virtual CRoxieWorkflowMachine *createWorkflowMachine(IConstWorkUnit *wu, bool isOnce, const IRoxieContextLogger &logctx, const QueryOptions & options) const = 0;
@@ -168,6 +171,8 @@ interface IQueryFactory : extends IInterface
     virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
     virtual void getQueryInfo(StringBuffer &result, bool full, IArrayOf<IQueryFactory> *agentQueries,const IRoxieContextLogger &logctx) const = 0;
     virtual bool isDynamic() const = 0;
+    virtual unsigned getTimeActResetLastLogged() const = 0;
+    virtual void setTimeActResetLastLogged(unsigned _ntime) const = 0;
     virtual void checkSuspended() const = 0;
     virtual void onTermination(TerminationCallbackInfo *info) const= 0;
 };
@@ -196,6 +201,7 @@ public:
     inline IRoxieServerActivityFactory &serverItem(unsigned idx) const { return (IRoxieServerActivityFactory &) activities.item(idx); }
     void append(IActivityFactory &item);
     void setLibraryGraphId(unsigned value) { libraryGraphId = value; }
+    void gatherStats(IStatisticGatherer &builder, int channel, bool reset);
 
     inline unsigned ordinality() const { return activities.ordinality(); }
     inline bool isMultiInstance() const { return multiInstance; }
@@ -228,13 +234,11 @@ protected:
     ActivityArrayArray childQueries;
     UnsignedArray childQueryIndexes;
     CachedOutputMetaData meta;
-    mutable CriticalSection statsCrit;
     mutable CRuntimeStatisticCollection mystats;
-    // MORE: Could be CRuntimeSummaryStatisticCollection to include derived stats, but stats are currently converted
-    // to IPropertyTrees.  Would need to serialize/deserialize and then merge/derived so that they merged properly
+    mutable CRuntimeStatisticCollection myedgestats;
 
 public:
-    CActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode);
+    CActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, const StatisticsMapping &_factoryStats);
     ~CActivityFactory() 
     { 
         ForEachItemIn(idx, childQueries)
@@ -251,28 +255,19 @@ public:
 
     virtual void mergeStats(const CRuntimeStatisticCollection &from) const
     {
-        CriticalBlock b(statsCrit);
         mystats.merge(from);
-    }
-
-    virtual void getEdgeProgressInfo(unsigned idx, IPropertyTree &edge) const
-    {
-        // No meaningful edge info for remote agent activities...
-    }
-
-    virtual void getNodeProgressInfo(IPropertyTree &node) const
-    {
-        mystats.getNodeProgressInfo(node);
     }
 
     virtual void resetNodeProgressInfo()
     {
         mystats.reset();
+        myedgestats.reset();
     }
 
     virtual void getActivityMetrics(StringBuffer &reply) const
     {
-        mystats.toXML(reply);
+        mystats.toStr(reply);
+        myedgestats.toStr(reply);
     }
     virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
     {

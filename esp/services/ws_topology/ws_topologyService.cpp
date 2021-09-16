@@ -236,6 +236,16 @@ bool CWsTopologyEx::onTpLogFile(IEspContext &context,IEspTpLogFileRequest  &req,
     return true;
 }
 
+void CWsTopologyEx::validateFilePath(const char *file, const char *fileType, const char *compType, const char *compName)
+{
+    StringBuffer actualPath;
+    splitUNCFilename(file, nullptr, &actualPath, nullptr, nullptr);
+    if (containsRelPaths(actualPath)) //Detect a path like: /home/lexis/runtime/var/log/HPCCSystems/myesp/../../../
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid file path %s", actualPath.str());
+    if (!validateConfigurationDirectory(nullptr, fileType, compType, compName, actualPath))
+        throw makeStringExceptionV(ECLWATCH_INVALID_INPUT, "Invalid file path %s", actualPath.str());
+}
+
 bool CWsTopologyEx::onSystemLog(IEspContext &context,IEspSystemLogRequest  &req, IEspSystemLogResponse &resp)
 {
     try
@@ -254,6 +264,7 @@ bool CWsTopologyEx::onSystemLog(IEspContext &context,IEspSystemLogRequest  &req,
         }
         else
         {
+            validateFilePath(name, "log", nullptr, nullptr);
             logname = name;
         }
 
@@ -1117,7 +1128,10 @@ void CWsTopologyEx::readTpLogFile(IEspContext &context,const char* fileName, con
 {
     StringBuffer logname;
     if (strcmp(fileType,"thormaster_log"))
+    {
+        validateFilePath(fileName, "log", nullptr, nullptr);
         logname = fileName;
+    }
     else
         logname.append(CCluster(fileName)->queryRoot()->queryProp("LogFile"));
 
@@ -1181,6 +1195,9 @@ bool CWsTopologyEx::onTpListTargetClusters(IEspContext &context, IEspTpListTarge
     {
         context.ensureFeatureAccess(FEATURE_URL, SecAccess_Read, ECLWATCH_TOPOLOGY_ACCESS_DENIED, "WsTopology::TpListTargetClusters: Permission denied.");
 
+#ifdef _CONTAINERIZED
+        UNIMPLEMENTED_X("CONTAINERIZED(CWsTopologyEx::onTpListTargetClusters)");
+#else
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
         Owned<IConstEnvironment> env = factory->openEnvironment();
         Owned<IPropertyTree> root = &env->getPTree();
@@ -1256,6 +1273,7 @@ bool CWsTopologyEx::onTpListTargetClusters(IEspContext &context, IEspTpListTarge
             }
         }
         resp.setTargetClusters(clusters);
+#endif
     }
     catch(IException* e)
     {
@@ -1462,7 +1480,6 @@ bool CWsTopologyEx::onTpServiceQuery(IEspContext &context, IEspTpServiceQueryReq
             m_TpWrapper.getTpGenesisServers( ServiceList.getTpGenesisServers() );
             m_TpWrapper.getTpLdapServers( ServiceList.getTpLdapServers() );
             m_TpWrapper.getTpFTSlaves( ServiceList.getTpFTSlaves() );
-            m_TpWrapper.getTpDkcSlaves( ServiceList.getTpDkcSlaves() );
 
             if (version > 1.15)
             {
@@ -1666,6 +1683,9 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context, IEspTpGetComponen
         StringAttr      sDirectory;
         if (bCluster && !(netAddress && *netAddress))
         {
+#ifdef _CONTAINERIZED
+            UNIMPLEMENTED_X("CONTAINERIZED(CWsTopologyEx::onTpGetComponentFile)");
+#else
             Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
             Owned<IConstEnvironment> constEnv = factory->openEnvironment();
             Owned<IPropertyTree> pRoot = &constEnv->getPTree();
@@ -1713,6 +1733,7 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context, IEspTpGetComponen
                     }
                 }
             }
+#endif
         }
 
         if (netAddressStr.length() > 0)
@@ -1744,6 +1765,8 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context, IEspTpGetComponen
 
         StringBuffer uncPath;
         uncPath.append(pathSepChar).append(pathSepChar).append(netAddress).append(sDir).append(fileName);
+
+        validateFilePath(uncPath, (stricmp(fileType, "log") == 0) ? "log" : "run", nullptr, nullptr);
 
         if (stricmp(fileType, "log") == 0)
         {

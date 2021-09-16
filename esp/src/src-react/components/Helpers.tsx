@@ -7,9 +7,9 @@ import * as ESPRequest from "src/ESPRequest";
 import { Memory } from "src/Memory";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
-import { HelperRow, useWorkunitHelpers } from "../hooks/Workunit";
+import { HelperRow, useWorkunitHelpers } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { ShortVerticalDivider } from "./Common";
+import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
 import { DojoGrid, selector } from "./DojoGrid";
 
 function canShowContent(type: string) {
@@ -105,8 +105,47 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [helpers] = useWorkunitHelpers(wuid);
 
+    //  Grid ---
+    const gridStore = useConst(new Observable(new Memory("id")));
+    const gridQuery = useConst({});
+    const gridColumns = useConst({
+        sel: selector({
+            width: 27,
+            selectorType: "checkbox"
+        }),
+        Type: {
+            label: nlsHPCC.Type,
+            width: 160,
+            formatter: function (Type, row) {
+                const target = getTarget(row.id, row);
+                if (target) {
+                    return `<a href='#/text?mode=${target.sourceMode}&src=${encodeURIComponent(target.url)}'>${Type + (row?.Orig?.Description ? " (" + row.Orig.Description + ")" : "")}</a>`;
+                }
+                return Type;
+            }
+        },
+        Description: {
+            label: nlsHPCC.Description
+        },
+        FileSize: {
+            label: nlsHPCC.FileSize,
+            width: 90,
+            renderCell: function (object, value, node, options) {
+                domClass.add(node, "justify-right");
+                node.innerText = Utility.valueCleanUp(value);
+            },
+        }
+    });
+
+    const refreshTable = React.useCallback((clearSelection = false) => {
+        grid?.set("query", gridQuery);
+        if (clearSelection) {
+            grid?.clearSelection();
+        }
+    }, [grid, gridQuery]);
+
     //  Command Bar  ---
-    const buttons: ICommandBarItemProps[] = [
+    const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshTable()
@@ -156,61 +195,11 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
             }
         }
 
-    ];
+    ], [refreshTable, selection, uiState.canShowContent, uiState.hasSelection]);
 
-    const rightButtons: ICommandBarItemProps[] = [
-        {
-            key: "copy", text: nlsHPCC.CopyWUIDs, disabled: true, iconOnly: true, iconProps: { iconName: "Copy" },
-            onClick: () => {
-                //  TODO:  HPCC-25473
-            }
-        },
-        {
-            key: "download", text: nlsHPCC.DownloadToCSV, disabled: true, iconOnly: true, iconProps: { iconName: "Download" },
-            onClick: () => {
-                //  TODO:  HPCC-25473
-            }
-        }
-    ];
-
-    //  Grid ---
-    const gridStore = useConst(new Observable(new Memory("id")));
-    const gridQuery = useConst({});
-    const gridColumns = useConst({
-        sel: selector({
-            width: 27,
-            selectorType: "checkbox"
-        }),
-        Type: {
-            label: nlsHPCC.Type,
-            width: 160,
-            formatter: function (Type, row) {
-                const target = getTarget(row.id, row);
-                if (target) {
-                    return `<a href='#/text?mode=${target.sourceMode}&src=${encodeURIComponent(target.url)}'>${Type + (row?.Orig?.Description ? " (" + row.Orig.Description + ")" : "")}</a>`;
-                }
-                return Type;
-            }
-        },
-        Description: {
-            label: nlsHPCC.Description
-        },
-        FileSize: {
-            label: nlsHPCC.FileSize,
-            width: 90,
-            renderCell: function (object, value, node, options) {
-                domClass.add(node, "justify-right");
-                node.innerText = Utility.valueCleanUp(value);
-            },
-        }
-    });
-
-    const refreshTable = (clearSelection = false) => {
-        grid?.set("query", gridQuery);
-        if (clearSelection) {
-            grid?.clearSelection();
-        }
-    };
+    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
+        ...createCopyDownloadSelection(grid, selection, "logicalfiles.csv")
+    ], [grid, selection]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -228,8 +217,7 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
     React.useEffect(() => {
         gridStore.setData(helpers);
         refreshTable();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [gridStore, helpers]);
+    }, [gridStore, helpers, refreshTable]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}

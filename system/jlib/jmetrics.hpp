@@ -26,13 +26,14 @@
 #include "jiface.hpp"
 #include "jptree.hpp"
 #include "platform.h"
+#include "jstatcodes.h"
 
 
 namespace hpccMetrics {
 
-class MetricsReporter;
+class MetricsManager;
 
-MetricsReporter jlib_decl &queryMetricsReporter();
+MetricsManager jlib_decl &queryMetricsManager();
 
 /*
  * Enumerates the metric type.
@@ -43,6 +44,17 @@ enum MetricType
     METRICS_GAUGE
 };
 
+
+struct MetricMetaDataItem
+{
+    MetricMetaDataItem(const char *_key, const char *_value)
+        : key{_key}, value{_value} {}
+    std::string key;
+    std::string value;
+};
+
+
+typedef std::vector<MetricMetaDataItem> MetricMetaData;
 
 /*
  * IMetric
@@ -70,6 +82,17 @@ interface IMetric
      * Get current measurement
      */
     virtual __uint64 queryValue() const = 0;
+
+
+    /*
+     * Query the meta data for the metric
+     */
+    virtual const MetricMetaData &queryMetaData() const = 0;
+
+    /*
+     * Get the units for the metric
+     */
+    virtual StatisticMeasure queryUnits() const = 0;
 };
 
 
@@ -77,38 +100,57 @@ interface IMetric
  * Concrete base class implementation of the IMetric interface. All metrics inherit
  * from this class.
 */
-class jlib_decl Metric : public IMetric
+class jlib_decl MetricBase : public IMetric
 {
 public:
-    virtual ~Metric() = default;
+    virtual ~MetricBase() = default;
     virtual const std::string &queryName() const override { return name; }
     virtual const std::string &queryDescription() const override { return description; }
     virtual MetricType queryMetricType() const override { return metricType; }
-    virtual __uint64 queryValue() const override { return value; }
+    const MetricMetaData &queryMetaData() const { return metaData; }
+    StatisticMeasure queryUnits() const override { return units; }
+
 
 protected:
     // No one should be able to create one of these
-    Metric(const char *_name, const char *_desc, MetricType _metricType) :
+    MetricBase(const char *_name, const char *_desc, MetricType _metricType, StatisticMeasure _units, const MetricMetaData &_metaData) :
         name{_name},
         description{_desc},
-        metricType{_metricType} { }
+        metricType{_metricType},
+        units{_units},
+        metaData{_metaData} { }
 
 protected:
     std::string name;
     std::string description;
     MetricType metricType;
+    StatisticMeasure units;
+    MetricMetaData metaData;
+};
+
+
+class jlib_decl MetricVal : public MetricBase
+{
+public:
+    virtual __uint64 queryValue() const override { return value; }
+
+protected:
+    MetricVal(const char *name, const char *desc, MetricType metricType, StatisticMeasure _units, const MetricMetaData &_metaData) :
+        MetricBase(name, desc, metricType, _units, _metaData) {}
+
     std::atomic<__uint64> value{0};
 };
+
 
 /*
  * Metric used to count events. Count is a monotonically increasing value
  */
-class jlib_decl CounterMetric : public Metric
+class jlib_decl CounterMetric : public MetricVal
 {
 public:
-    CounterMetric(const char *name, const char *description) :
-            Metric{name, description, MetricType::METRICS_COUNTER}  { }
-    void inc(uint64_t val)
+    CounterMetric(const char *name, const char *description, StatisticMeasure _units, const MetricMetaData &_metaData = MetricMetaData()) :
+        MetricVal{name, description, MetricType::METRICS_COUNTER, _units, _metaData}  { }
+    void inc(uint64_t val = 1)
     {
         value.fetch_add(val);
     }
@@ -118,16 +160,13 @@ public:
 /*
  * Metric used to track the current state of some internal measurement.
  */
-class jlib_decl GaugeMetric : public Metric
+class jlib_decl GaugeMetric : public MetricVal
 {
 public:
-    GaugeMetric(const char *name, const char *description) :
-        Metric{name, description, MetricType::METRICS_GAUGE}  { }
+    GaugeMetric(const char *name, const char *description, StatisticMeasure _units, const MetricMetaData &_metaData = MetricMetaData()) :
+        MetricVal{name, description, MetricType::METRICS_GAUGE, _units, _metaData}  { }
 
-    /*
-     * Update the value as indicated
-     */
-    void add(int64_t delta)
+    void adjust(int64_t delta)
     {
         value += delta;
     }
@@ -141,13 +180,29 @@ public:
     }
 };
 
+template<typename T>
+class CustomMetric : public MetricBase
+{
+public:
+    CustomMetric(const char *name, const char *desc, MetricType metricType, T &_value, StatisticMeasure _units, const MetricMetaData &_metaData = MetricMetaData()) :
+        MetricBase(name, desc, metricType, _units, _metaData),
+        value{_value} { }
+
+    virtual __uint64 queryValue() const override
+    {
+        return static_cast<__uint64>(value);
+    }
+
+protected:
+    T &value;
+};
 
 
 class jlib_decl MetricSink
 {
 public:
     virtual ~MetricSink() = default;
-    virtual void startCollection(MetricsReporter *pReporter) = 0;
+    virtual void startCollection(MetricsManager *pManager) = 0;
     virtual void stopCollection() = 0;
     const std::string &queryName() const { return name; }
     const std::string &queryType() const { return type; }
@@ -160,7 +215,7 @@ protected:
 protected:
     std::string name;
     std::string type;
-    MetricsReporter *pReporter = nullptr;
+    MetricsManager *pManager = nullptr;
 };
 
 
@@ -168,7 +223,7 @@ class jlib_decl PeriodicMetricSink : public MetricSink
 {
 public:
     virtual ~PeriodicMetricSink() override;
-    virtual void startCollection(MetricsReporter *pReporter) override;
+    virtual void startCollection(MetricsManager *pManager) override;
     virtual void stopCollection() override;
 
 protected:
@@ -190,18 +245,25 @@ protected:
 
 extern "C" { typedef hpccMetrics::MetricSink* (*getSinkInstance)(const char *, const IPropertyTree *pSettingsTree); }
 
-struct SinkInfo;
+struct SinkInfo
+{
+    explicit SinkInfo(MetricSink *_pSink) : pSink{_pSink} {}
+    MetricSink *pSink = nullptr;             // ptr to the sink
+    std::vector<std::string> reportMetrics;   // vector of metrics to report (empty for none)
+};
 
-class jlib_decl MetricsReporter
+class jlib_decl MetricsManager
 {
 public:
-    MetricsReporter() = default;
-    ~MetricsReporter();
+    MetricsManager() {}
+    ~MetricsManager();
     void init(IPropertyTree *pMetricsTree);
-    void addMetric(const std::shared_ptr<IMetric> &pMetric);
+    void addSink(MetricSink *pSink, const char *name);  // for use by unit tests
+    bool addMetric(const std::shared_ptr<IMetric> &pMetric);
     void startCollecting();
     void stopCollecting();
     std::vector<std::shared_ptr<IMetric>> queryMetricsForReport(const std::string &sinkName);
+    const char * queryUnitsString(StatisticMeasure units) const;
 
 protected:
     void initializeSinks(IPropertyTreeIterator *pSinkIt);
@@ -217,13 +279,66 @@ protected:
 
 
 //
-// Convenience function template to create a metric and add it to the reporter
+// Convenience function templates to create metrics and add to the manager
 template <typename T>
-std::shared_ptr<T> createMetricAndAddToReporter(const char *name, const char* desc)
+std::shared_ptr<T> createMetricAndAddToManager(const char *name, const char* desc, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData())
 {
-    std::shared_ptr<T> pMetric = std::make_shared<T>(name, desc);
-    queryMetricsReporter().addMetric(pMetric);
+    std::shared_ptr<T> pMetric = std::make_shared<T>(name, desc, units, metaData);
+    queryMetricsManager().addMetric(pMetric);
     return pMetric;
 }
+
+
+template <typename T>
+std::shared_ptr<CustomMetric<T>> createCustomMetricAndAddToManager(const char *name, const char *desc, MetricType metricType, T &value, StatisticMeasure units, const MetricMetaData &metaData = MetricMetaData())
+{
+    std::shared_ptr<CustomMetric<T>> pMetric = std::make_shared<CustomMetric<T>>(name, desc, metricType, value, units, metaData);
+    queryMetricsManager().addMetric(pMetric);
+    return pMetric;
+}
+
+
+class jlib_decl ScopedGaugeUpdater
+{
+public:
+    explicit ScopedGaugeUpdater(GaugeMetric &_pGauge, int64_t _amount=1)
+        : gauge{_pGauge}, amount{_amount}
+    {
+        gauge.adjust(amount);
+    }
+    ScopedGaugeUpdater(const ScopedGaugeUpdater&) = delete;
+    ScopedGaugeUpdater(ScopedGaugeUpdater&) = delete;
+    ScopedGaugeUpdater& operator=(const ScopedGaugeUpdater&) = delete;
+    ScopedGaugeUpdater& operator=(ScopedGaugeUpdater&) = delete;
+    ~ScopedGaugeUpdater()
+    {
+        gauge.adjust(-amount);
+    }
+
+protected:
+    GaugeMetric &gauge;
+    int64_t amount;
+};
+
+
+class jlib_decl ScopedGaugeDecrementer
+{
+public:
+    explicit ScopedGaugeDecrementer(GaugeMetric &_pGauge, int64_t _amount=1)
+        : gauge{_pGauge}, amount{_amount}
+    { }
+    ScopedGaugeDecrementer(const ScopedGaugeDecrementer&) = delete;
+    ScopedGaugeDecrementer(ScopedGaugeDecrementer&) = delete;
+    ScopedGaugeDecrementer& operator=(const ScopedGaugeDecrementer&) = delete;
+    ScopedGaugeDecrementer& operator=(ScopedGaugeDecrementer&) = delete;
+    ~ScopedGaugeDecrementer()
+    {
+        gauge.adjust(-amount);
+    }
+
+protected:
+    GaugeMetric &gauge;
+    int64_t amount;
+};
 
 }

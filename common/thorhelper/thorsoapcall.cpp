@@ -33,6 +33,8 @@
 #include "zcrypt.hpp"
 #include "persistent.hpp"
 
+#include <memory>
+
 using roxiemem::OwnedRoxieString;
 
 #ifndef _WIN32
@@ -505,10 +507,10 @@ void initPersistentHandler()
     if (!persistentInitDone)
     {
 #ifndef _CONTAINERIZED
-        int maxPersistentRequests = queryEnvironmentConf().getPropInt("maxPersistentRequests", DEFAULT_MAX_PERSISTENT_REQUESTS);
+        int maxPersistentRequests = queryEnvironmentConf().getPropInt("maxHttpCallPersistentRequests", 0);
 #else
         Owned<IPropertyTree> conf = getComponentConfig();
-        int maxPersistentRequests = conf->getPropInt("@maxPersistentRequests", DEFAULT_MAX_PERSISTENT_REQUESTS);
+        int maxPersistentRequests = conf->getPropInt("@maxHttpCallPersistentRequests", 0);
 #endif
         if (maxPersistentRequests != 0)
             persistentHandler = createPersistentHandler(nullptr, DEFAULT_MAX_PERSISTENT_IDLE_TIME, maxPersistentRequests, PersistentLogLevel::PLogMin, true);
@@ -861,6 +863,7 @@ public:
         logMin = (flags & SOAPFlogmin) != 0;
         logXML = (flags & SOAPFlog) != 0;
         logUserMsg = (flags & SOAPFlogusermsg) != 0;
+        logUserTailMsg = (flags & SOAPFlogusertail) != 0;
 
         double dval = helper->getTimeout(); // In seconds, but may include fractions of a second...
         if (dval < 0.0) //not provided, or out of range
@@ -1168,6 +1171,16 @@ public:
             logctx.CTXLOG("%s: %.*s", wscCallTypeText(), lenText, text.getstr());
         }
     }
+    void addUserLogTailMsg(const byte * row, unsigned timeTaken)
+    {
+        if (logUserTailMsg)
+        {
+            size32_t lenText;
+            rtlDataAttr text;
+            helper->getLogTailText(lenText, text.refstr(), row);
+            logctx.CTXLOG("%s [time=%u]: %.*s", wscCallTypeText(), timeTaken, lenText, text.getstr());
+        }
+    }
     inline IXmlToRowTransformer * getRowTransformer() { return rowTransformer; }
     inline const char * wscCallTypeText() const { return wscType == STsoap ? "SOAPCALL" : "HTTPCALL"; }
 
@@ -1232,6 +1245,7 @@ protected:
     bool logXML;
     bool logMin;
     bool logUserMsg;
+    bool logUserTailMsg = false;
     bool aborted;
     const IContextLogger &logctx;
     unsigned flags;
@@ -1385,8 +1399,30 @@ void CWSCHelperThread::createXmlSoapQuery(IXmlWriterExt &xmlWriter, ConstPointer
     xmlWriter.outputEndNested("soap:Envelope");
 }
 
+class CWSUserLogCompletor
+{
+public:
+    CWSUserLogCompletor(CWSCHelper &wshelper, ConstPointerArray &rows) : helper(wshelper), inputRows(rows) {}
+    ~CWSUserLogCompletor()
+    {
+        //user log entries were output for the whole batch in the createXXXQuery routine above
+        //need to match each with a query complete log entry
+        unsigned timeTaken = msTick()-start;
+        ForEachItemIn(idx, inputRows)
+            helper.addUserLogTailMsg((const byte *)inputRows.item(idx), timeTaken);
+    }
+private:
+    unsigned start = msTick();
+    ConstPointerArray &inputRows;
+    CWSCHelper &helper;
+};
+
 void CWSCHelperThread::processQuery(ConstPointerArray &inputRows)
 {
+    std::unique_ptr<CWSUserLogCompletor> log;
+    if (master->logUserTailMsg)
+        log.reset(new CWSUserLogCompletor(*master, inputRows));
+
     unsigned xmlWriteFlags = 0;
     unsigned xmlReadFlags = ptr_ignoreNameSpaces;
     if (master->flags & SOAPFtrim)
@@ -1867,7 +1903,7 @@ private:
                                 chunkSize = (chunkSize*16) + 10 + (toupper(ch) - 'A');
                             dataProvider->getBytes(&ch, 1);
                         }
-                        while (chunkSize && ch != '\n')//consume chunk-extension and CRLF
+                        while (ch != '\n')//consume chunk-extension and CRLF
                             dataProvider->getBytes(&ch, 1);
                         while (chunkSize)
                         {
@@ -1894,9 +1930,20 @@ private:
                                     chunkSize = (chunkSize*16) + 10 + (toupper(ch) - 'A');
                                 dataProvider->getBytes(&ch, 1);
                             }
-                            while(chunkSize && ch != '\n')//consume chunk-extension and CRLF
+                            while(ch != '\n')//consume chunk-extension and CRLF
                                 dataProvider->getBytes(&ch, 1);
                         }
+                        //to support persistent connections we need to consume all trailing bytes for each message
+                        dataProvider->getBytes(&ch, 1);
+                        //the standard allows trailing HTTP headers to be included at the of the chunked message, the following loop will consume those
+                        while ( ch != '\r' ) //if there is content before the CRLF it is a trailing HTTP header
+                        {
+                            while (ch != '\n')//consume the CRLF of the trailing header
+                                dataProvider->getBytes(&ch, 1);
+                            dataProvider->getBytes(&ch, 1);
+                        }
+                        while (ch != '\n') //consume final CRLF
+                            dataProvider->getBytes(&ch, 1);
                     }
                     break;
                 }

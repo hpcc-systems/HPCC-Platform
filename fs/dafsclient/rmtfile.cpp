@@ -55,22 +55,21 @@
 
 //#define TEST_DAFILESRV_FOR_UNIX_PATHS     // probably not needed
 
-static class CSecuritySettings
-{
-    unsigned short daliServixPort;
-public:
-    CSecuritySettings()
-    {
-        querySecuritySettings(nullptr, &daliServixPort, nullptr, nullptr, nullptr);
-    }
-
-    unsigned short queryDaliServixPort() { return daliServixPort; }
-} securitySettings;
-
-
+static std::atomic<unsigned> dafilesrvPort{(unsigned)-1};
+static CriticalSection dafilesrvCs;
 unsigned short getDaliServixPort()
 {
-    return securitySettings.queryDaliServixPort();
+    if (dafilesrvPort == (unsigned)-1)
+    {
+        CriticalBlock block(dafilesrvCs);
+        if (dafilesrvPort == (unsigned) -1)
+        {
+            unsigned short daliServixPort;
+            querySecuritySettings(nullptr, &daliServixPort, nullptr, nullptr, nullptr);
+            dafilesrvPort = daliServixPort;
+        }
+    }
+    return dafilesrvPort;
 }
 
 
@@ -2138,15 +2137,21 @@ IDaFileSrvHook *queryDaFileSrvHook()
 
 void enableForceRemoteReads()
 {
+#ifndef _CONTAINERIZED
     const char *forceRemotePattern = queryEnvironmentConf().queryProp("forceRemotePattern");
     if (!isEmptyString(forceRemotePattern))
         queryDaFileSrvHook()->forceRemote(forceRemotePattern);
+#endif
 }
 
 bool testForceRemote(const char *path)
 {
+#ifndef _CONTAINERIZED
     const char *forceRemotePattern = queryEnvironmentConf().queryProp("forceRemotePattern");
     return !isEmptyString(forceRemotePattern) && WildMatch(path, forceRemotePattern, false);
+#else
+    return false;
+#endif
 }
 
 

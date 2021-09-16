@@ -298,8 +298,6 @@ static constexpr const char * defaultYaml = R"!!(
 version: 1.0
 sasha:
   name: sasha
-  logging:
-    detail: 100
 )!!";
 
 int main(int argc, const char* argv[])
@@ -362,7 +360,7 @@ int main(int argc, const char* argv[])
     #endif
         DBGLOG("Build %s", hpccBuildInfo.buildTag);
 
-        unsigned short port = serverConfig->getPropInt("@port");
+        unsigned short port = serverConfig->getPropInt("service/@port", serverConfig->getPropInt("@port"));
         if (!port)
         {
             if (!stop && !coalescer)

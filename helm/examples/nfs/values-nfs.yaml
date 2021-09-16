@@ -10,47 +10,26 @@ storage:
   - name: dali
     pvc: dali-nfsstorage-hpcc-nfs-pvc
     prefix: "/var/lib/HPCCSystems/dalistorage"
-    labels:
-    - dali
+    category: dali
 
   - name: dll
     pvc: dll-nfsstorage-hpcc-nfs-pvc
     prefix: "/var/lib/HPCCSystems/queries"
-    labels:
-    - dll
+    category: dll
 
   - name: sasha
     pvc: sasha-nfsstorage-hpcc-nfs-pvc
     prefix: "/var/lib/HPCCSystems/sasha"
-    labels:
-    - sasha
+    category: sasha
+    forcePermissions: true
 
   - name: data
     pvc: data-nfsstorage-hpcc-nfs-pvc
     prefix: "/var/lib/HPCCSystems/hpcc-data"
-    labels:
-    - data # NB: if not set, this would be the default
-
-
-  dllStorage:
-    plane: dll
-    forcePermissions: true
-
-  daliStorage:
-    plane: dali
-    forcePermissions: true
-
-  dataStorage:
-    plane: data
-    forcePermissions: true
-
+    category: data
 
 sasha:
   wu-archiver:
-    storage:
-      plane: sasha
-      forcePermissions: true
+    plane: sasha
   dfuwu-archiver:
-    storage:
-      plane: sasha
-      forcePermissions: true
+    plane: sasha

@@ -169,7 +169,10 @@ public:
 #endif
 #ifdef TIME_PACKETS
     unsigned tick = 0;
+#else
+    unsigned filler = 0; // keeps valgrind happy
 #endif
+
     RoxiePacketHeader() = default;
 
     RoxiePacketHeader(const RemoteActivityId &_remoteId, ruid_t _uid, unsigned _channel, unsigned _overflowSequence);
@@ -337,6 +340,7 @@ extern bool prestartAgentThreads;
 extern unsigned preabortKeyedJoinsThreshold;
 extern unsigned preabortIndexReadsThreshold;
 extern bool traceStartStop;
+extern unsigned actResetLogPeriod;
 extern bool traceRoxiePackets;
 extern bool delaySubchannelPackets;
 extern bool traceTranslations;
@@ -352,6 +356,10 @@ extern bool fastLaneQueue;
 extern unsigned mtu_size;
 extern StringBuffer fileNameServiceDali;
 extern StringBuffer roxieName;
+#ifdef _CONTAINERIZED
+extern StringBuffer defaultPlane;
+extern StringBuffer defaultPlaneDirPrefix;
+#endif
 extern bool trapTooManyActiveQueries;
 extern unsigned maxEmptyLoopIterations;
 extern unsigned maxGraphLoopIterations;
@@ -359,7 +367,6 @@ extern HardwareInfo hdwInfo;
 extern unsigned parallelAggregate;
 extern bool inMemoryKeysEnabled;
 extern unsigned __int64 minFreeDiskSpace;
-extern bool probeAllRows;
 extern bool steppingEnabled;
 extern bool simpleLocalKeyedJoins;
 extern bool enableKeyDiff;
@@ -373,6 +380,7 @@ extern SinkMode defaultSinkMode;
 
 #ifdef _CONTAINERIZED
 static constexpr bool roxieMulticastEnabled = false;
+extern unsigned myChannel;
 #else
 extern bool roxieMulticastEnabled;   // enable use of multicast for sending requests to agents
 #endif
@@ -405,6 +413,7 @@ struct PartNoType
 extern unsigned statsExpiryTime;
 extern time_t startupTime;
 extern unsigned miscDebugTraceLevel;
+extern bool traceRemoteFiles;
 extern RecordTranslationMode fieldTranslationEnabled;
 
 extern unsigned defaultParallelJoinPreload;
@@ -545,6 +554,8 @@ public:
 extern void putStatsValue(IPropertyTree *node, const char *statName, const char *statType, unsigned __int64 val);
 extern void putStatsValue(StringBuffer &reply, const char *statName, const char *statType, unsigned __int64 val);
 
+extern const StatisticsMapping accumulatedStatistics;
+
 class ContextLogger : implements IRoxieContextLogger, public CInterface
 {
 protected:
@@ -569,7 +580,7 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
 
-    ContextLogger() : stats(allStatistics)
+    ContextLogger() : stats(accumulatedStatistics, true)
     {
         ctxTraceLevel = traceLevel;
         intercept = false;
@@ -677,6 +688,11 @@ public:
         if (aborted)
             throw MakeStringException(ROXIE_ABORT_ERROR, "Roxie server requested abort for running activity");
         stats.addStatisticAtomic(kind, value);
+    }
+
+    virtual void setStatistic(StatisticKind kind, unsigned __int64 value) const
+    {
+        stats.setStatistic(kind, value);
     }
 
     virtual void mergeStats(const CRuntimeStatisticCollection &from) const

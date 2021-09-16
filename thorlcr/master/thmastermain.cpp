@@ -66,10 +66,26 @@
 #include "thexception.hpp"
 #include "thmem.hpp"
 
+#ifndef _CONTAINERIED
 #define DEFAULT_QUERY_SO_DIR "sodir"
+#endif
 #define MAX_SLAVEREG_DELAY 60*1000*15 // 15 mins
 #define SLAVEREG_VERIFY_DELAY 5*1000
 #define SHUTDOWN_IN_PARALLEL 20
+
+
+/* These percentages are used to determine the amount roxiemem allocated
+ * from total system memory.
+ *
+ * For historical reasons the default in bare-metal has always been a
+ * conservative 75%.
+ *
+ * NB: These percentages do not apply if the memory amount has been configured
+ * manually via 'globalMemorySize' and 'masterMemorySize'
+ */
+
+static constexpr unsigned bareMetalRoxieMemPC = 75;
+static constexpr unsigned containerRoxieMemPC = 90;
 
 
 class CThorEndHandler : implements IThreaded
@@ -719,6 +735,7 @@ int main( int argc, const char *argv[]  )
             globals->setProp("@nodeGroup", thorname);
         }
 
+#ifndef _CONTAINERIZED
         if (globals->getPropBool("@useNASTranslation", true))
         {
             Owned<IPropertyTree> nasConfig = envGetNASConfiguration();
@@ -726,6 +743,7 @@ int main( int argc, const char *argv[]  )
                 globals->setPropTree("NAS", nasConfig.getLink()); // for use by slaves
             Owned<IPropertyTree> masterNasFilters = envGetInstallNASHooks(nasConfig, &thorEp);
         }
+#endif
         
         HardwareInfo hdwInfo;
         getHardwareInfo(hdwInfo);
@@ -734,11 +752,13 @@ int main( int argc, const char *argv[]  )
         unsigned gmemSize = globals->getPropInt("@globalMemorySize"); // in MB
         if (0 == gmemSize)
         {
+            // NB: This could be in a isContainerized(), but the 'workerResources' section only applies to containerized setups
             const char *workerResourcedMemory = globals->queryProp("workerResources/@memory");
             if (!isEmptyString(workerResourcedMemory))
             {
                 offset_t sizeBytes = friendlyStringToSize(workerResourcedMemory);
                 gmemSize = (unsigned)(sizeBytes / 0x100000);
+                gmemSize = gmemSize * containerRoxieMemPC / 100;
             }
             else
             {
@@ -763,16 +783,17 @@ int main( int argc, const char *argv[]  )
 #endif            
 #endif
 #endif
-#ifndef _CONTAINERIZED
-                if (globals->getPropBool("@localThor") && 0 == mmemSize)
-                {
-                    gmemSize = maxMem / 2; // 50% of total for slaves
-                    mmemSize = maxMem / 4; // 25% of total for master
-                }
+                if (isContainerized())
+                    gmemSize = maxMem * containerRoxieMemPC / 100; // NB: MB's
                 else
-#endif
                 {
-                    gmemSize = maxMem * 3 / 4; // 75% of total for slaves
+                    if (globals->getPropBool("@localThor") && 0 == mmemSize)
+                    {
+                        gmemSize = maxMem / 2; // 50% of total for slaves
+                        mmemSize = maxMem / 4; // 25% of total for master
+                    }
+                    else
+                        gmemSize = maxMem * bareMetalRoxieMemPC / 100; // NB: MB's
                 }
             }
             unsigned perSlaveSize = gmemSize;
@@ -794,11 +815,13 @@ int main( int argc, const char *argv[]  )
         }
         if (0 == mmemSize)
         {
+            // NB: This could be in a isContainerized(), but the 'managerResources' section only applies to containerized setups
             const char *managerResourcedMemory = globals->queryProp("managerResources/@memory");
             if (!isEmptyString(managerResourcedMemory))
             {
                 offset_t sizeBytes = friendlyStringToSize(managerResourcedMemory);
                 mmemSize = (unsigned)(sizeBytes / 0x100000);
+                mmemSize = mmemSize * containerRoxieMemPC / 100;
             }
             else
                 mmemSize = gmemSize; // default to same as slaves
@@ -815,6 +838,17 @@ int main( int argc, const char *argv[]  )
         PROGLOG("Global memory size = %d MB", mmemSize);
         roxiemem::setTotalMemoryLimit(gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, ((memsize_t)mmemSize) * 0x100000, 0, thorAllocSizes, NULL);
 
+        char thorPath[1024];
+        if (!GetCurrentDirectory(1024, thorPath))
+        {
+            OERRLOG("ThorMaster::main: Current directory path too big, setting it to null");
+            thorPath[0] = 0;
+        }
+        unsigned l = strlen(thorPath);
+        if (l) { thorPath[l] = PATHSEPCHAR; thorPath[l+1] = '\0'; }
+        globals->setProp("@thorPath", thorPath);
+
+#ifndef _CONTAINERIZED
         const char * overrideBaseDirectory = globals->queryProp("@thorDataDirectory");
         const char * overrideReplicateDirectory = globals->queryProp("@thorReplicateDirectory");
         StringBuffer datadir;
@@ -827,34 +861,6 @@ int main( int argc, const char *argv[]  )
             setBaseDirectory(overrideBaseDirectory, false);
         if (overrideReplicateDirectory&&*overrideBaseDirectory)
             setBaseDirectory(overrideReplicateDirectory, true);
-        StringBuffer tempDirStr;
-        if (!getConfigurationDirectory(globals->queryPropTree("Directories"),"temp","thor",globals->queryProp("@name"), tempDirStr))
-        {
-            tempDirStr.append(globals->queryProp("@thorTempDirectory"));
-            if (0 == tempDirStr.length())
-            {
-                appendCurrentDirectory(tempDirStr, true);
-                if (tempDirStr.length())
-                    addPathSepChar(tempDirStr);
-                tempDirStr.append("temp");
-            }
-        }
-        globals->setProp("@thorTempDirectory", tempDirStr);
-        logDiskSpace(); // Log before temp space is cleared
-        StringBuffer tempPrefix("thtmp");
-        tempPrefix.append(getMasterPortBase()).append("_");
-        SetTempDir(0, tempDirStr.str(), tempPrefix.str(), true);
-        DBGLOG("Temp directory: %s", queryTempDir());
-
-        char thorPath[1024];
-        if (!GetCurrentDirectory(1024, thorPath))
-        {
-            OERRLOG("ThorMaster::main: Current directory path too big, setting it to null");
-            thorPath[0] = 0;
-        }
-        unsigned l = strlen(thorPath);
-        if (l) { thorPath[l] = PATHSEPCHAR; thorPath[l+1] = '\0'; }
-        globals->setProp("@thorPath", thorPath);
 
         StringBuffer soDir, soPath;
         if (getConfigurationDirectory(globals->queryPropTree("Directories"),"query","thor",globals->queryProp("@name"),soDir))
@@ -874,6 +880,26 @@ int main( int argc, const char *argv[]  )
         addPathSepChar(soPath);
         globals->setProp("@query_so_dir", soPath.str());
         recursiveCreateDirectory(soPath.str());
+#endif
+
+        StringBuffer tempDirStr;
+        if (!getConfigurationDirectory(globals->queryPropTree("Directories"),"temp","thor",globals->queryProp("@name"), tempDirStr))
+        {
+            tempDirStr.append(globals->queryProp("@thorTempDirectory"));
+            if (0 == tempDirStr.length())
+            {
+                appendCurrentDirectory(tempDirStr, true);
+                if (tempDirStr.length())
+                    addPathSepChar(tempDirStr);
+                tempDirStr.append("temp");
+            }
+        }
+        globals->setProp("@thorTempDirectory", tempDirStr);
+        logDiskSpace(); // Log before temp space is cleared
+        StringBuffer tempPrefix("thtmp");
+        tempPrefix.append(getMasterPortBase()).append("_");
+        SetTempDir(0, tempDirStr.str(), tempPrefix.str(), true);
+        DBGLOG("Temp directory: %s", queryTempDir());
 
         startLogMsgParentReceiver();    
         connectLogMsgManagerToDali();
@@ -886,12 +912,15 @@ int main( int argc, const char *argv[]  )
         e->Release();
         return -1;
     }
+
     StringBuffer queueName;
+#ifndef _CONTAINERIZED
     SCMStringBuffer _queueNames;
     const char *thorName = globals->queryProp("@name");
     if (!thorName) thorName = "thor";
     getThorQueueNames(_queueNames, thorName);
     queueName.set(_queueNames.str());
+#endif
 
     Owned<IException> exception;
     StringBuffer cloudJobName;
@@ -1017,7 +1046,7 @@ int main( int argc, const char *argv[]  )
                 StringBuffer uniqueGrpName;
                 queryNamedGroupStore().addUnique(&queryProcessGroup(), uniqueGrpName);
                 // change default plane
-                getComponentConfigSP()->setProp("storagePlane", uniqueGrpName);
+                getComponentConfigSP()->setProp("@dataPlane", uniqueGrpName);
                 PROGLOG("Persistent Thor group created with group name: %s", uniqueGrpName.str());
             }
 #endif

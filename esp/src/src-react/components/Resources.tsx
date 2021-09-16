@@ -4,9 +4,9 @@ import { useConst } from "@fluentui/react-hooks";
 import { AlphaNumSortMemory } from "src/Memory";
 import * as Observable from "dojo/store/Observable";
 import nlsHPCC from "src/nlsHPCC";
-import { useWorkunitResources } from "../hooks/Workunit";
+import { useWorkunitResources } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { ShortVerticalDivider } from "./Common";
+import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
 import { DojoGrid, selector } from "./DojoGrid";
 
 const defaultUIState = {
@@ -26,8 +26,32 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [resources] = useWorkunitResources(wuid);
 
+    //  Grid ---
+    const gridStore = useConst(new Observable(new AlphaNumSortMemory("DisplayPath", { Name: true, Value: true })));
+    const gridQuery = useConst({});
+    const gridSort = useConst([{ attribute: "Wuid", "descending": true }]);
+    const gridColumns = useConst({
+        col1: selector({
+            width: 27,
+            selectorType: "checkbox"
+        }),
+        DisplayPath: {
+            label: nlsHPCC.Name, sortable: true,
+            formatter: function (url, row) {
+                return `<a href='#/iframe?src=${encodeURIComponent(`WsWorkunits/${row.URL}`)}' class='dgrid-row-url'>${url}</a>`;
+            }
+        }
+    });
+
+    const refreshTable = React.useCallback((clearSelection = false) => {
+        grid?.set("query", gridQuery);
+        if (clearSelection) {
+            grid?.clearSelection();
+        }
+    }, [grid, gridQuery]);
+
     //  Command Bar  ---
-    const buttons: ICommandBarItemProps[] = [
+    const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
             onClick: () => refreshTable()
@@ -57,46 +81,11 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
                 }
             }
         },
-    ];
+    ], [refreshTable, selection, uiState.hasSelection]);
 
-    const rightButtons: ICommandBarItemProps[] = [
-        {
-            key: "copy", text: nlsHPCC.CopyWUIDs, disabled: true, iconOnly: true, iconProps: { iconName: "Copy" },
-            onClick: () => {
-                //  TODO:  HPCC-25473
-            }
-        },
-        {
-            key: "download", text: nlsHPCC.DownloadToCSV, disabled: true, iconOnly: true, iconProps: { iconName: "Download" },
-            onClick: () => {
-                //  TODO:  HPCC-25473
-            }
-        }
-    ];
-
-    //  Grid ---
-    const gridStore = useConst(new Observable(new AlphaNumSortMemory("DisplayPath", { Name: true, Value: true })));
-    const gridQuery = useConst({});
-    const gridSort = useConst([{ attribute: "Wuid", "descending": true }]);
-    const gridColumns = useConst({
-        col1: selector({
-            width: 27,
-            selectorType: "checkbox"
-        }),
-        DisplayPath: {
-            label: nlsHPCC.Name, sortable: true,
-            formatter: function (url, row) {
-                return `<a href='#/iframe?src=${encodeURIComponent(`WsWorkunits/${row.URL}`)}' class='dgrid-row-url'>${url}</a>`;
-            }
-        }
-    });
-
-    const refreshTable = (clearSelection = false) => {
-        grid?.set("query", gridQuery);
-        if (clearSelection) {
-            grid?.clearSelection();
-        }
-    };
+    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
+        ...createCopyDownloadSelection(grid, selection, "roxiequeries.csv")
+    ], [grid, selection]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -117,8 +106,7 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
             };
         }));
         refreshTable();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [gridStore, resources]);
+    }, [gridStore, refreshTable, resources, wuid]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}

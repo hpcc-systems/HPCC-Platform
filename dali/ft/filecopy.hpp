@@ -47,7 +47,7 @@ constexpr const char * FileFormatTypeStr[] =
         "FFTrecfmvb", "FFTrecfmv", "FFTvariablebigendian",
         "FFTlast"
 };
-enum { FTactionpull, FTactionpush, FTactionpartition, FTactiondirectory, FTactionsize, FTactionpcopy };
+enum { FTactionpull, FTactionpush, FTactionpartition };
 
 typedef enum
 {

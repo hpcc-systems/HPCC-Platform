@@ -8,6 +8,6 @@ export const useGet = (key: string, filter?: object) => {
         getRecentFilters(key).then(response => {
             setResponseState({ data: response, loading: false });
         });
-    }, [filter]);
+    }, [key, filter]);
     return responseState;
 };

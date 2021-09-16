@@ -29,22 +29,49 @@ filebeat:
   labels: {"managedby" : "HPCC"}
   ## Allows you to add any config files in /usr/share/filebeat
   ## such as filebeat.yml
-  #filebeatConfig:
-    #filebeat.yml: |
-      #filebeat.inputs:
-      #- type: container
-      #  paths:
-      #    - /var/log/containers/*.log
-        #processors:
-        #- add_kubernetes_metadata:
-            #host: ${NODE_NAME}
-            #matchers:
-            #- logs_path:
-                #logs_path: "/var/log/containers/"
-      #output.elasticsearch:
-      #  host: '${NODE_NAME}'
-      #  hosts: '${ELASTICSEARCH_HOSTS:elasticsearch-master:9200}'
-      #  index: "hpcc-%{[fields.log_type]}-%{[agent.version]}-%{+yyyy.MM.dd}"
+  filebeatConfig:
+    filebeat.yml: |
+      filebeat.inputs:
+      - type: container
+        paths:
+          - /var/log/containers/esdl-sandbox-*.log
+          - /var/log/containers/eclwatch-*.log
+          - /var/log/containers/mydali-*.log
+          - /var/log/containers/eclqueries-*.log
+          - /var/log/containers/sql2ecl-*.log
+          - /var/log/containers/eclservices-*.log
+          - /var/log/containers/dfuserver-*.log
+          - /var/log/containers/eclscheduler-*.log
+          - /var/log/containers/hthor-*.log
+          - /var/log/containers/myeclccserver-*.log
+          - /var/log/containers/roxie-*.log
+          - /var/log/containers/sasha-*.log
+          - /var/log/containers/thor-*.log
+        #exclude_files: ['(myelk-kibana|myelk-filebeat)+(.*).log']
+        processors:
+        - add_kubernetes_metadata:
+            host: ${NODE_NAME}
+            matchers:
+            - logs_path:
+                logs_path: "/var/log/containers/"
+        multiline.type: pattern
+        multiline.pattern: '^([A-Z-0-9]{8})\s+'
+        multiline.negate: true
+        multiline.match: after
+      #Required if targeting non-default index (filebeat-%{[agent.version]}-%{+yyyy.MM.dd}) such as hpccsystems-%{[fields.log_type]}-%{[agent.version]}-%{+yyyy.MM.dd}, etc.
+       #setup.ilm.enabled: false
+       #setup.template.overwrite: true
+      output.elasticsearch:
+        host: '${NODE_NAME}'
+        hosts: '${ELASTICSEARCH_HOSTS:elasticsearch-master:9200}'
+      #NOTE: Pipeline could be used to provide Log structure and therefore enhance search capabilities of HPCC component log entries
+      #      Pipeline must be manually inserted either via Elastic Search API, or Kibana Pipeline ingest UI.
+      #      See https://github.com/hpcc-systems/HPCC-Platform/blob/master/helm/managed/logging/elastic/README.md
+      #  pipeline: 'hpccpipeline'
+      #  index: "hpccsystems-%{[fields.log_type]}-%{[agent.version]}-%{+yyyy.MM.dd}"
+      #setup.template.name: hpccsystems
+      #setup.template.pattern: hpccsystems-*
+      #setup.template.enabled: true
 
 ##The kibana component can be customized by modifying helm chart values here.
 kibana:
@@ -58,3 +85,31 @@ kibana:
   #   kibana.yml: |
   #     key:
   #       nestedkey: value
+  service:
+    type: "LoadBalancer"
+    annotations:
+#We want to expose Kibana's UI via link on ECLWATCH...
+#Kibana's default back-end FQDN: http://<releasename>-kibana.default.svc.cluster.local:5601
+#Exact back-end and/or front-end FQDN should be determined using k8s API, not static info in annotations
+      #Required
+      hpcc.eclwatch.io/enabled: "true"
+      #Optional but informative
+      hpcc.eclwatch.io/description: "Provides log management for HPCC component logs"
+      hpcc.eclwatch.io/label : "HPCC Logs on Kibana"
+
+      #Optional if targeting custom Kibana UI (different than service defined in this yaml)
+      #"hpcc.eclwatch.io/protocol"
+      #"hpcc.eclwatch.io/host"
+      #"hpcc.eclwatch.io/port"
+#Routes landing page to Kibana's discover section
+      hpcc.eclwatch.io/path: "/app/discover"
+
+      # This annotation delcares the Azure load balancer for the service as internal rather than internet-visible
+      service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+
+      # Enable appropriate annotation for target cloud provider to ensure Kibana access is internal
+      #
+      #service.beta.kubernetes.io/cce-load-balancer-internal-vpc: "true"
+      #cloud.google.com/load-balancer-type: "Internal"
+      #service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+      #service.beta.kubernetes.io/openstack-internal-load-balancer: "true"

@@ -8,13 +8,13 @@ import nlsHPCC from "src/nlsHPCC";
 import { ESPBase } from "src/ESPBase";
 import { csvEncode } from "src/Utility";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { pushParams } from "../util/history";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
+import { pushParams } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 
-import "srcReact/components/DojoGrid.css";
+import "src-react-css/components/DojoGrid.css";
 
 function eclTypeTPL(type: string, isSet: boolean) {
     const prefix = isSet ? "SET OF " : "";
@@ -202,8 +202,10 @@ function doDownload(type: string, wuid: string, sequence?: number, logicalName?:
 }
 
 interface ResultProps {
-    wuid: string;
-    resultName: string;
+    wuid?: string;
+    resultName?: string;
+    logicalFile?: string;
+    cluster?: string;
     filter?: { [key: string]: any };
 }
 
@@ -212,6 +214,8 @@ const emptyFilter: { [key: string]: any } = {};
 export const Result: React.FunctionComponent<ResultProps> = ({
     wuid,
     resultName,
+    logicalFile,
+    cluster,
     filter = emptyFilter
 }) => {
 
@@ -219,6 +223,8 @@ export const Result: React.FunctionComponent<ResultProps> = ({
         .baseUrl("")
         .wuid(wuid)
         .resultName(resultName)
+        .nodeGroup(cluster)
+        .logicalFile(logicalFile)
         .pagination(true)
         .pageSize(50) as ResultWidget
     );

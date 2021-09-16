@@ -103,13 +103,6 @@
   static int dropCounter = 0;
 #endif
 
-#ifndef _WIN32 
-#define BLOCK_POLLED_SINGLE_CONNECTS  // NB this is much slower in windows
-#define CENTRAL_NODE_RANDOM_DELAY
-#else
-#define USERECVSEM      // to singlethread BF_SYNC_TRANSFER_PUSH 
-#endif
-
 #ifdef _DEBUG
 //#define SOCKTRACE
 //#define EPOLLTRACE
@@ -394,8 +387,8 @@ protected:
 
     MCASTREQ    *   mcastreq;
     size32_t        nextblocksize;
-    unsigned        blockflags;
-    unsigned        blocktimeoutms;
+    unsigned        blockflags = BF_ASYNC_TRANSFER;
+    unsigned        blocktimeoutms = WAIT_FOREVER;
     bool            owned;
     enum            {accept_not_cancelled, accept_cancel_pending, accept_cancelled} accept_cancel_state;
     bool            in_accept;
@@ -2404,37 +2397,6 @@ bool CSocket::send_block(const void *blk,size32_t sz)
     return true;
 }
 
-#ifdef USERECVSEM
-
-class CSemProtect
-{
-    Semaphore *sem;
-    bool *owned;
-public:
-    CSemProtect() { clear(); }
-    ~CSemProtect() 
-    { 
-        if (sem&&*owned) {
-            *owned = false;
-            sem->signal(); 
-        }
-    }
-    void set(Semaphore *_sem,bool *_owned)
-    {
-        sem = _sem;
-        owned = _owned;
-    }
-    bool wait(Semaphore *_sem,bool *_owned,unsigned timeout) {
-        if (!*_owned&&!_sem->wait(timeout))
-            return false;
-        *_owned = true;
-        set(_sem,_owned);
-        return true;
-    }
-    void clear() { sem = NULL; owned = NULL; }
-};
-#endif
-
 size32_t CSocket::receive_block_size()
 {
     // assumed always paired with receive_block
@@ -2512,9 +2474,8 @@ size32_t CSocket::receive_block(void *blk,size32_t maxsize)
         else { // truncate
             readtms(blk,maxsize,maxsize,rd,blocktimeoutms);
             sz -= maxsize;
-            void *tmp=malloc(sz);
+            OwnedMalloc<void> tmp = malloc(sz);
             readtms(tmp,sz,sz,rd,blocktimeoutms);
-            free(tmp);
             sz = maxsize;
         }
         if (blockflags&BF_RELIABLE_TRANSFER) {
@@ -3048,6 +3009,9 @@ const char * GetCachedHostName()
     if (!cachehostname.get())
     {
 #ifndef _WIN32
+#ifdef _CONTAINERIZED
+        //MORE: Does this need to be implemented a different way?
+#else
         IpAddress ip;
         const char *ifs = queryEnvironmentConf().queryProp("interface");
         if (getInterfaceIp(ip, ifs))
@@ -3061,6 +3025,7 @@ const char * GetCachedHostName()
                 return cachehostname.get();
             }
         }
+#endif
 #endif
         char temp[1024];
         if (gethostname(temp, sizeof(temp))==0)
@@ -3889,6 +3854,11 @@ unsigned SocketListParser::getSockets(SocketEndpointArray &array,unsigned defpor
         array.append(ep);
     }
     return array.ordinality();
+}
+
+jlib_decl JSocketStatistics *getSocketStatPtr()
+{
+    return &STATS;
 }
 
 void getSocketStatistics(JSocketStatistics &stats)
@@ -5414,6 +5384,11 @@ void check_epoll_cfg()
     // DBGLOG("check_epoll_cfg(): epoll_method = %d",epoll_method);
     if (epoll_method == EPOLL_INIT)
     {
+#ifdef _CONTAINERIZED
+//Does this need to be implemented a different way?
+        epoll_method = EPOLL_ENABLED;
+        epoll_hdlPerThrd = UINT_MAX;
+#else
         if (queryEnvironmentConf().getPropBool("use_epoll", true))
             epoll_method = EPOLL_ENABLED;
         else
@@ -5423,6 +5398,7 @@ void check_epoll_cfg()
         if (epoll_hdlPerThrd == 0)
             epoll_hdlPerThrd = UINT_MAX;
         // DBGLOG("check_epoll_cfg(): after reading conf file, epoll_hdlPerThrd = %u",epoll_hdlPerThrd);
+#endif
     }
 }
 #endif // _HAS_EPOLL_SUPPORT
@@ -5548,82 +5524,168 @@ bool catchWriteBuffer(ISocket * socket, MemoryBuffer & buffer)
     return false;
 }
 
-// utility interface for simple conversations 
-// conversation is always between two ends, 
-// at any given time one end must be receiving and other sending (though these may swap during the conversation)
-class CSingletonSocketConnection: implements IConversation, public CInterface
+CSingletonSocketConnection::CSingletonSocketConnection(SocketEndpoint &_ep)
 {
-    Owned<ISocket> sock;
-    Owned<ISocket> listensock;
-    enum { Snone, Saccept, Sconnect, Srecv, Ssend, Scancelled } state;
-    bool cancelling;
-    SocketEndpoint ep;
-    CriticalSection crit;
-public:
-    IMPLEMENT_IINTERFACE;
+    ep = _ep;
+    state = Snone;
+    cancelling = false;
+}
 
-    CSingletonSocketConnection(SocketEndpoint &_ep)
-    {
-        ep = _ep;
-        state = Snone;
-        cancelling = false;
+CSingletonSocketConnection::~CSingletonSocketConnection()
+{
+    try {
+        if (sock)
+            sock->close();
     }
+    catch (IException *e) {
+        if (e->errorCode()!=JSOCKERR_graceful_close)
+            EXCLOG(e,"CSingletonSocketConnection close");
+        e->Release();
+    }
+}
 
-    ~CSingletonSocketConnection()
-    {
+void CSingletonSocketConnection::set_keep_alive(bool keepalive)
+{
+    if (sock)
+        sock->set_keep_alive(keepalive);
+}
+
+bool CSingletonSocketConnection::connect(unsigned timeoutms)
+{
+    CriticalBlock block(crit);
+    if (cancelling)
+        state = Scancelled;
+    if (state==Scancelled)
+        return false;
+    assertex(!sock);
+    ISocket *newsock=NULL;
+    state = Sconnect;
+    unsigned start = 0;
+    if (timeoutms!=(unsigned)INFINITE)
+        start = msTick();
+    while (state==Sconnect) {
         try {
-            if (sock)
-                sock->close();
+            CriticalUnblock unblock(crit);
+            newsock = ISocket::connect_wait(ep,1000*60*4);
+            break;
+        }
+        catch (IException * e) {
+            if ((e->errorCode()==JSOCKERR_timeout_expired)||(e->errorCode()==JSOCKERR_connection_failed)) {
+                e->Release();
+                if ((state==Sconnect)&&(timeoutms!=(unsigned)INFINITE)&&(msTick()-start>timeoutms)) {
+                    state = Snone;
+                    return false;
+                }
+            }
+            else {
+                state = Scancelled;
+                EXCLOG(e,"CSingletonSocketConnection::connect");
+                e->Release();
+                return false;
+            }
+        }
+    }
+    if (state!=Sconnect) {
+        ::Release(newsock);
+        newsock = NULL;
+    }
+    if (!newsock) {
+        state = Scancelled;
+        return false;
+    }
+    sock.setown(newsock);
+    return true;
+}
+
+bool CSingletonSocketConnection::send(MemoryBuffer &mb)
+{
+    CriticalBlock block(crit);
+    if (cancelling)
+        state = Scancelled;
+    if (state==Scancelled)
+        return false;
+    assertex(sock);
+    state = Srecv;
+    try {
+        CriticalUnblock unblock(crit);
+        writeBuffer(sock,mb);
+    }
+    catch (IException * e) {
+        state = Scancelled;
+        EXCLOG(e,"CSingletonSocketConnection::send");
+        e->Release();
+        return false;
+    }
+    state = Snone;
+    return true;
+}
+
+unsigned short CSingletonSocketConnection::setRandomPort(unsigned short base, unsigned num)
+{
+    for (;;) {
+        try {
+            ep.port = base+(unsigned short)(getRandom()%num);
+            listensock.setown(ISocket::create(ep.port));
+            return ep.port;
         }
         catch (IException *e) {
-            if (e->errorCode()!=JSOCKERR_graceful_close)
-                EXCLOG(e,"CSingletonSocketConnection close");
+            if (e->errorCode()!=JSOCKERR_port_in_use) {
+                state = Scancelled;
+                EXCLOG(e,"CSingletonSocketConnection::setRandomPort");
+                e->Release();
+                break;
+            }
             e->Release();
         }
     }
+    return 0;
+}
 
-    void set_keep_alive(bool keepalive)
-    {
-        if (sock)
-            sock->set_keep_alive(keepalive);
-    }
 
-    bool connect(unsigned timeoutms)
-    {
-        CriticalBlock block(crit);
-        if (cancelling) 
-            state = Scancelled;
-        if (state==Scancelled)
-            return false;
-        assertex(!sock);
+bool CSingletonSocketConnection::accept(unsigned timeoutms)
+{
+    CriticalBlock block(crit);
+    if (cancelling)
+        state = Scancelled;
+    if (state==Scancelled)
+        return false;
+    if (!sock) {
         ISocket *newsock=NULL;
-        state = Sconnect;
-        unsigned start = 0;
-        if (timeoutms!=(unsigned)INFINITE)
-            start = msTick();
-        while (state==Sconnect) {
+        state = Saccept;
+        for (;;) {
             try {
-                CriticalUnblock unblock(crit);
-                newsock = ISocket::connect_wait(ep,1000*60*4);
-                break;
-            }
-            catch (IException * e) {
-                if ((e->errorCode()==JSOCKERR_timeout_expired)||(e->errorCode()==JSOCKERR_connection_failed)) {
-                    e->Release();
-                    if ((state==Sconnect)&&(timeoutms!=(unsigned)INFINITE)&&(msTick()-start>timeoutms)) {
+                {
+                    CriticalUnblock unblock(crit);
+                    if (!listensock)
+                        listensock.setown(ISocket::create(ep.port));
+                    if ((timeoutms!=(unsigned)INFINITE)&&(!listensock->wait_read(timeoutms))) {
                         state = Snone;
                         return false;
                     }
                 }
-                else {
+                if (cancelling)
                     state = Scancelled;
-                    EXCLOG(e,"CSingletonSocketConnection::connect");
-                    e->Release();
+                if (state==Scancelled)
                     return false;
+                {
+                    CriticalUnblock unblock(crit);
+                    newsock=listensock->accept(true);
+                    break;
                 }
             }
-        }   
-        if (state!=Sconnect) {
+            catch (IException *e) {
+                if (e->errorCode()==JSOCKERR_graceful_close)
+                    PROGLOG("CSingletonSocketConnection: Closed socket on accept - retrying...");
+                else {
+                    state = Scancelled;
+                    EXCLOG(e,"CSingletonSocketConnection::accept");
+                    e->Release();
+                    break;
+                }
+                e->Release();
+            }
+        }
+        if (state!=Saccept) {
             ::Release(newsock);
             newsock = NULL;
         }
@@ -5632,179 +5694,78 @@ public:
             return false;
         }
         sock.setown(newsock);
-        return true;
     }
+    return true;
+}
 
-    bool send(MemoryBuffer &mb)
-    {
-        CriticalBlock block(crit);
-        if (cancelling) 
+bool CSingletonSocketConnection::recv(MemoryBuffer &mb, unsigned timeoutms)
+{
+    CriticalBlock block(crit);
+    if (cancelling)
+        state = Scancelled;
+    if (state==Scancelled)
+        return false;
+    assertex(sock);
+    state = Srecv;
+    try {
+        CriticalUnblock unblock(crit);
+        readBuffer(sock,mb,timeoutms);
+    }
+    catch (IException *e) {
+        if (e->errorCode()==JSOCKERR_timeout_expired)
+            state = Snone;
+        else {
             state = Scancelled;
-        if (state==Scancelled)
-            return false;
-        assertex(sock);
-        state = Srecv;
+            if (e->errorCode()!=JSOCKERR_graceful_close)
+                EXCLOG(e,"CSingletonSocketConnection::recv");
+        }
+        e->Release();
+        return false;
+    }
+    state = Snone;
+    return true;
+}
+
+void CSingletonSocketConnection::cancel()
+{
+    CriticalBlock block(crit);
+    while (state!=Scancelled) {
+        cancelling = true;
         try {
-            CriticalUnblock unblock(crit);
-            writeBuffer(sock,mb);
-        }
-        catch (IException * e) {
-            state = Scancelled;
-            EXCLOG(e,"CSingletonSocketConnection::send");
-            e->Release();
-            return false;
-        }
-        state = Snone;
-        return true;
-    }
-
-    unsigned short setRandomPort(unsigned short base, unsigned num)
-    {
-        for (;;) {
-            try {
-                ep.port = base+(unsigned short)(getRandom()%num);
-                listensock.setown(ISocket::create(ep.port));
-                return ep.port;
-            }
-            catch (IException *e) {
-                if (e->errorCode()!=JSOCKERR_port_in_use) {
-                    state = Scancelled;
-                    EXCLOG(e,"CSingletonSocketConnection::setRandomPort");
-                    e->Release();
-                    break;
+            switch (state) {
+            case Saccept:
+                {
+                    if (listensock)
+                        listensock->cancel_accept();
                 }
-                e->Release();
-            }
-        }
-        return 0;
-    }
-
-
-    bool accept(unsigned timeoutms)
-    {
-        CriticalBlock block(crit);
-        if (cancelling) 
-            state = Scancelled;
-        if (state==Scancelled)
-            return false;
-        if (!sock) {
-            ISocket *newsock=NULL;
-            state = Saccept;
-            for (;;) {
-                try {
-                    { 
-                        CriticalUnblock unblock(crit);
-                        if (!listensock)
-                            listensock.setown(ISocket::create(ep.port));
-                        if ((timeoutms!=(unsigned)INFINITE)&&(!listensock->wait_read(timeoutms))) {
-                            state = Snone;
-                            return false;
-                        }
-                    }
-                    if (cancelling) 
-                        state = Scancelled;
-                    if (state==Scancelled)
-                        return false;
-                    {
-                        CriticalUnblock unblock(crit);
-                        newsock=listensock->accept(true);
-                        break;
-                    }
+                break;
+            case Sconnect:
+                // wait for timeout
+                break;
+            case Srecv:
+                {
+                    if (sock)
+                        sock->close();
                 }
-                catch (IException *e) {
-                    if (e->errorCode()==JSOCKERR_graceful_close) 
-                        PROGLOG("CSingletonSocketConnection: Closed socket on accept - retrying...");
-                    else {
-                        state = Scancelled;
-                        EXCLOG(e,"CSingletonSocketConnection::accept");
-                        e->Release();
-                        break;
-                    }
-                    e->Release();
-                }
-            }
-            if (state!=Saccept) {
-                ::Release(newsock);
-                newsock = NULL;
-            }
-            if (!newsock) {
+                break;
+            case Ssend:
+                // wait for finished
+                break;
+            default:
                 state = Scancelled;
-                return false;
+                break;
             }
-            sock.setown(newsock);
-        }
-        return true;
-    }
-
-    bool recv(MemoryBuffer &mb, unsigned timeoutms)
-    {
-        CriticalBlock block(crit);
-        if (cancelling) 
-            state = Scancelled;
-        if (state==Scancelled)
-            return false;
-        assertex(sock);
-        state = Srecv;
-        try {
-            CriticalUnblock unblock(crit);
-            readBuffer(sock,mb,timeoutms);
         }
         catch (IException *e) {
-            if (e->errorCode()==JSOCKERR_timeout_expired)
-                state = Snone;
-            else {
-                state = Scancelled;
-                if (e->errorCode()!=JSOCKERR_graceful_close)
-                    EXCLOG(e,"CSingletonSocketConnection::recv");
-            }
+            EXCLOG(e,"CSingletonSocketConnection::cancel");
             e->Release();
-            return false;
         }
-        state = Snone;
-        return true;
-    }
-
-    virtual void cancel()
-    {
-        CriticalBlock block(crit);
-        while (state!=Scancelled) {
-            cancelling = true;
-            try {
-                switch (state) {
-                case Saccept:
-                    {
-                        if (listensock)
-                            listensock->cancel_accept();
-                    }
-                    break;
-                case Sconnect:
-                    // wait for timeout
-                    break;
-                case Srecv:
-                    {
-                        if (sock)
-                            sock->close();
-                    }
-                    break;
-                case Ssend:
-                    // wait for finished
-                    break;
-                default:
-                    state = Scancelled;
-                    break;
-                }
-            }
-            catch (IException *e) {
-                EXCLOG(e,"CSingletonSocketConnection::cancel");
-                e->Release();
-            }
-            {
-                CriticalUnblock unblock(crit);
-                Sleep(1000);
-            }
+        {
+            CriticalUnblock unblock(crit);
+            Sleep(1000);
         }
     }
-};
+}
 
     
 IConversation *createSingletonSocketConnection(unsigned short port,SocketEndpoint *_ep)
@@ -6187,7 +6148,7 @@ inline void flushText(StringBuffer &text,unsigned short port,unsigned &rep,unsig
 
 
 
-StringBuffer &SocketEndpointArray::getText(StringBuffer &text)
+StringBuffer &SocketEndpointArray::getText(StringBuffer &text) const
 {
     unsigned count = ordinality();
     if (!count)

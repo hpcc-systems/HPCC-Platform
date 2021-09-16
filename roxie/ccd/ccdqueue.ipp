@@ -33,27 +33,6 @@ interface IPendingCallback : public IInterface
     virtual MemoryBuffer &queryData() = 0;
 };
 
-interface IRoxieOutputQueueManager : public IInterface
-{
-    virtual void sendPacket(IRoxieQueryPacket *x, const IRoxieContextLogger &logctx) = 0;
-    virtual void sendIbyti(RoxiePacketHeader &header, const IRoxieContextLogger &logctx, unsigned subChannel) = 0;
-    virtual void sendAbort(RoxiePacketHeader &header, const IRoxieContextLogger &logctx) = 0;
-    virtual void sendAbortCallback(const RoxiePacketHeader &header, const char *lfn, const IRoxieContextLogger &logctx) = 0;
-    virtual IMessagePacker *createOutputStream(RoxiePacketHeader &x, bool outOfBand, const IRoxieContextLogger &logctx) = 0;
-    virtual bool replyPending(RoxiePacketHeader &x) = 0;
-    virtual bool abortCompleted(RoxiePacketHeader &x) = 0;
-
-    virtual unsigned getHeadRegionSize() const = 0;
-    virtual void setHeadRegionSize(unsigned newsize) = 0;
-
-    virtual void start() = 0;
-    virtual void stop() = 0;
-    virtual void join() = 0;
-    virtual IReceiveManager *queryReceiveManager() = 0;
-
-    virtual IPendingCallback *notePendingCallback(const RoxiePacketHeader &header, const char *lfn) = 0;
-    virtual void removePendingCallback(IPendingCallback *x) = 0;
-};
 
 class CDummyMessagePacker : implements IMessagePacker, public CInterface
 {
@@ -105,7 +84,6 @@ interface IPacketDiscarder : public IInterface
     virtual void stop() = 0;
 };
 
-extern IRoxieOutputQueueManager *ROQ;
 extern IRoxieOutputQueueManager *createOutputQueueManager(unsigned numWorkers, bool encrypted);
 extern IReceiveManager *createLocalReceiveManager();
 extern IPacketDiscarder *createPacketDiscarder();

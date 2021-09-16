@@ -56,6 +56,7 @@
 #include "jthread.hpp"
 #include "jtime.hpp"
 #include "jutil.hpp"
+#include "jsecrets.hpp"
 
 #endif
 

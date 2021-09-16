@@ -133,7 +133,7 @@ class RequestHelper {
 
     send(service, action, params?): Promise<any> {
         if (!this.isSessionCall(service, action) && (!this.hasServerSetCookie() || (this.hasAuthentication() && !this.isAuthenticated()))) {
-            // tslint:disable-next-line: deprecation
+            // @ts-ignore
             window.location.reload(true);
             return new Promise((resolve, reject) => { });
         }

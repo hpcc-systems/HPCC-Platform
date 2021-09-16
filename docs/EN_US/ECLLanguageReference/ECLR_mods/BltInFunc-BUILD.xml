@@ -70,7 +70,7 @@
             <emphasis>baserecset</emphasis> (computed fields). If omitted, all
             fields in the <emphasis>baserecset</emphasis> are used. The last
             field must be the name of an UNSIGNED8 field defined using the
-            {virtual(filepposition)} function in the DATASET declaration of
+            {VIRTUAL(filepposition)} function in the DATASET declaration of
             the <emphasis>baserecset</emphasis>.</entry>
           </row>
 
@@ -608,7 +608,7 @@
      {STRING2 st,
       STRING20 city,
       STRING20 lname,
-      UNSIGNED8 filepos{virtual(fileposition)}},
+      UNSIGNED8 filepos{VIRTUAL(fileposition)}},
      FLAT);
 BUILD(Vehicles,{lname,filepos},'vkey::lname');
  //build key into Vehicles dataset on last name
@@ -645,7 +645,7 @@ BUILD(Vehicles,{lname,filepos},'vkey::lname');
      {STRING2 st,
       STRING20 city,
       STRING20 lname,
-      UNSIGNED8 filepos{virtual(fileposition)}},
+      UNSIGNED8 filepos{VIRTUAL(fileposition)}},
       FLAT);
 BUILD(Vehicles,{st,city},{lname},'vkey::st.city');
  //build key into Vehicles dataset on state and city

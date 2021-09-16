@@ -46,7 +46,9 @@ target_link_libraries ( ftslave
          hrpc 
          remote 
          dalibase 
-         environment 
          dalift 
     )
 
+if (NOT CONTAINERIZED)
+    target_link_libraries ( ftslave environment )
+endif()

@@ -26,11 +26,15 @@
 mkdir c:\hpccdata\dalistorage
 mkdir c:\hpccdata\queries
 mkdir c:\hpccdata\sasha
-mkdir c:\hpccdata\hpcc-data</programlisting></para>
+mkdir c:\hpccdata\hpcc-data
+mkdir c:\hpccdata\mydropzone</programlisting></para>
 
         <para>For macOS, use this command:</para>
 
-        <para><programlisting>mkdir -p /Users/myUser/hpccdata/{dalistorage,queries,sasha,hpcc-data}</programlisting></para>
+        <para><programlisting>mkdir -p /Users/myUser/hpccdata/{dalistorage,queries,sasha,hpcc-data,mydropzone}</programlisting></para>
+
+        <para><emphasis role="bold">Note:</emphasis> If all of these folders
+        do not exist, your cluster may not start. </para>
       </listitem>
 
       <listitem>
@@ -58,14 +62,14 @@ mkdir c:\hpccdata\hpcc-data</programlisting></para>
 
         <para>This chart creates persistent volumes based on host directories
         you created earlier.<programlisting># for a WSL2 deployment:
-helm install localfile examples/local/hpcc-localfile 
+helm install hpcc-localfile examples/local/hpcc-localfile 
            --set common.hostpath=/run/desktop/mnt/host/c/hpccdata
 
 # for a Hyper-V deployment:
-helm install localfile examples/local/hpcc-localfile --set common.hostpath=/c/hpccdata
+helm install hpcc-localfile examples/local/hpcc-localfile --set common.hostpath=/c/hpccdata
 
 # for a macOS deployment:
-helm install localfile examples/local/hpcc-localfile --set common.hostpath=/Users/myUser/hpccdata
+helm install hpcc-localfile examples/local/hpcc-localfile --set common.hostpath=/Users/myUser/hpccdata
 </programlisting></para>
 
         <para>The <emphasis role="bold">--set common.hostpath=
@@ -104,8 +108,14 @@ helm install localfile examples/local/hpcc-localfile --set common.hostpath=/User
         <para>The example directory contains a sample yaml file that can be
         used in this case:</para>
 
-        <programlisting>helm install mycluster hpcc/ --set global.image.version=latest 
+        <programlisting>helm install mycluster hpcc/ --version=8.2.2  
              -f examples/local/values-localfile.yaml</programlisting>
+
+        <para><emphasis role="bold">The --version argument is optional, but
+        recommended. It ensures that you know which version you are
+        installing. If omitted, the latest non-development version is
+        installed. This example uses 8.2.2, but you should use the version you
+        want. </emphasis></para>
       </listitem>
 
       <listitem>

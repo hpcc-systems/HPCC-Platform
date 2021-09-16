@@ -591,6 +591,7 @@ public:
     Owned<IPropertyTree> attr;
     StringAttr directory;
     StringAttr partmask;
+    FileDescriptorFlags fileFlags = FileDescriptorFlags::none;
     virtual unsigned numParts() = 0;                                            // number of parts
     virtual unsigned numCopies(unsigned partnum) = 0;                           // number of copies
     virtual INode *doQueryNode(unsigned partidx, unsigned copy, unsigned rn) = 0;               // query machine node
@@ -1179,6 +1180,8 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
                 buf.append(fullpath);
             else
                 buf.swapWith(fullpath);
+            if (FileDescriptorFlags::none != (fileFlags & FileDescriptorFlags::dirperpart))
+                addPathSepChar(buf).append(idx+1); // part subdir 1 based
         }
         return buf;
     }
@@ -1331,6 +1334,7 @@ public:
         attr.setown(createPTree(mb));
         if (!attr)
             attr.setown(createPTree("Attr")); // doubt can happen
+        fileFlags = static_cast<FileDescriptorFlags>(attr->getPropInt("@flags"));
         if (version == SERIALIZATION_VERSION2)
         {
             if (subcounts)
@@ -1374,6 +1378,7 @@ public:
         directory.set(pt.queryProp("@directory"));
         partmask.set(pt.queryProp("@partmask"));
         unsigned np = pt.getPropInt("@numparts");
+        fileFlags = static_cast<FileDescriptorFlags>(pt.getPropInt("@flags"));
         StringBuffer query;
         IPropertyTree **trees = NULL;
         Owned<IPropertyTreeIterator> piter;
@@ -2361,6 +2366,29 @@ IFileDescriptor *createFileDescriptor(const char *lname, const char *clusterType
     return fileDesc.getClear();
 }
 
+IFileDescriptor *createFileDescriptor(const char *lname, const char *planeName, unsigned numParts)
+{
+    Owned<IStoragePlane> plane = getDataStoragePlane(planeName, true);
+    if (!numParts)
+        numParts = plane->numDefaultSprayParts();
+
+    StringBuffer partMask, dir;
+    getPartMask(partMask, lname, numParts);
+    makePhysicalPartName(lname, 0, 0, dir, false, DFD_OSdefault, plane->queryPrefix());
+
+    Owned<IFileDescriptor> fileDesc = createFileDescriptor();
+    fileDesc->setNumParts(numParts);
+    fileDesc->setPartMask(partMask);
+    fileDesc->setDefaultDir(dir);
+
+    ClusterPartDiskMapSpec mspec;
+    mspec.defaultCopies = DFD_NoCopies;
+    Owned<IGroup> group = queryNamedGroupStore().lookup(planeName);
+    fileDesc->addCluster(planeName, group, mspec);
+
+    return fileDesc.getClear();
+}
+
 IFileDescriptor *deserializeFileDescriptor(MemoryBuffer &mb)
 {
     return doDeserializePartFileDescriptors(mb,NULL);
@@ -3171,7 +3199,7 @@ public:
     const GroupInformation * container = nullptr;
     unsigned containerOffset = 0;
     GroupType groupType = grp_unknown;
-    bool dropZone = false;
+    unsigned dropZoneIndex = 0;
 };
 
 using GroupInfoArray = CIArrayOf<GroupInformation>;
@@ -3232,7 +3260,11 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy
         }
 
         if (ordinality() > 1)
+        {
             plane->setPropInt("@numDevices", ordinality());
+            if (dropZoneIndex == 0)
+                plane->setPropInt("@defaultSprayParts", ordinality());
+        }
     }
 
     if (dir.length())
@@ -3240,8 +3272,8 @@ void GroupInformation::createStoragePlane(IPropertyTree * storage, unsigned copy
     else
         plane->setProp("@prefix", queryBaseDirectory(groupType, copy));
 
-    const char * label = dropZone ? "lz" : "data";
-    addPTreeItem(plane, "label", label);
+    const char * category = (dropZoneIndex != 0) ? "lz" : "data";
+    plane->setProp("@category", category);
 
     //MORE: If container is identical to this except for the name we could generate an information tag @alias
 }
@@ -3273,6 +3305,10 @@ static int compareGroupSize(CInterface * const * _left, CInterface * const * _ri
 {
     const GroupInformation * left = static_cast<const GroupInformation *>(*_left);
     const GroupInformation * right = static_cast<const GroupInformation *>(*_right);
+    //Ensure drop zones come after non drop zones, and the drop zone order is preserved
+    if (left->dropZoneIndex || right->dropZoneIndex)
+        return (int)(left->dropZoneIndex - right->dropZoneIndex);
+
     int ret = (int) (right->hosts.ordinality() - left->hosts.ordinality());
     if (ret)
         return ret;
@@ -3281,6 +3317,7 @@ static int compareGroupSize(CInterface * const * _left, CInterface * const * _ri
         return -1;
     if (right->groupType == grp_thor)
         return +1;
+
     return stricmp(left->name, right->name);
 }
 
@@ -3339,17 +3376,8 @@ static void generateHosts(IPropertyTree * storage, GroupInfoArray & groups)
     }
 }
 
-
+static CConfigUpdateHook configUpdateHook;
 static std::atomic<unsigned> normalizeHostGroupUpdateCBId{(unsigned)-1};
-MODULE_INIT(INIT_PRIORITY_STANDARD)
-{
-    return true;
-}
-MODULE_EXIT()
-{
-    if ((unsigned)-1 != normalizeHostGroupUpdateCBId)
-        removeConfigUpdateHook(normalizeHostGroupUpdateCBId);
-}
 static CriticalSection storageCS;
 static void doInitializeStorageGroups(bool createPlanesFromGroups)
 {
@@ -3388,6 +3416,7 @@ static void doInitializeStorageGroups(bool createPlanesFromGroups)
         Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), 0, 2000);
         if (conn)
         {
+            unsigned numDropZones = 0;
             Owned<IPropertyTreeIterator> dropzones = conn->queryRoot()->getElements("DropZone");
             ForEach(*dropzones)
             {
@@ -3401,7 +3430,7 @@ static void doInitializeStorageGroups(bool createPlanesFromGroups)
                     const char * ip = cur.queryProp("ServerList[1]/@server");
 
                     next->dir.set(cur.queryProp("@directory"));
-                    next->dropZone= true;
+                    next->dropZoneIndex = ++numDropZones;
                     if (ip && !strieq(ip, "localhost"))
                         next->hosts.append(ip);
                     appendGroup(allGroups, next.getClear());
@@ -3433,60 +3462,32 @@ static void doInitializeStorageGroups(bool createPlanesFromGroups)
     //Ensure that host groups that are defined in terms of other host groups are expanded out so they have an explicit list of hosts
     normalizeHostGroups();
 
-    //Groups are case insensitve, so add an extra key to the storage items to allow them to be
-    //searched by group name, and also check for duplicates.
-    Owned<IPropertyTreeIterator> iter = storage->getElements("planes");
-    StringBuffer group;
-    ForEach(*iter)
-    {
-        IPropertyTree & cur = iter->query();
-        //Check if this has already been done - so the function is safe to call more than once
-        const char * oldgroup = cur.queryProp("@group");
-        if (oldgroup)
-            continue;
-
-        const char * name = cur.queryProp("@name");
-        group.clear().append(name).toLowerCase();
-
-        //Check the storage plane does not match another one case-insensitiviely. (It is unlikely the Helm chart will have installed.)
-        VStringBuffer xpath("plane[@group='%s']", group.str());
-        IPropertyTree * match = storage->queryPropTree(xpath);
-        if (match)
-            throwStringExceptionV(DALI_DUPLICATE_STORAGE_PLANE, "Duplicate storage planes %s,%s (case insensitive)", name, match->queryProp("@name"));
-
-        cur.setProp("@group", group);
-    }
-
     //The following can be removed once the storage planes have better integration
     setupContainerizedStorageLocations();
 }
 
 void initializeStorageGroups(bool createPlanesFromGroups)
 {
-    doInitializeStorageGroups(createPlanesFromGroups);
-    unsigned uninitialized = (unsigned)-1;
-    if (normalizeHostGroupUpdateCBId.compare_exchange_strong(uninitialized, 0))
+    auto updateFunc = [createPlanesFromGroups](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
     {
-        auto updateFunc = [createPlanesFromGroups](const IPropertyTree *oldComponentConfiguration, const IPropertyTree *oldGlobalConfiguration)
-        {
-            PROGLOG("initializeStorageGroups update");
-            doInitializeStorageGroups(createPlanesFromGroups);
-        };
-        normalizeHostGroupUpdateCBId = installConfigUpdateHook(updateFunc);
-    }
+        PROGLOG("initializeStorageGroups update");
+        doInitializeStorageGroups(createPlanesFromGroups);
+    };
+    configUpdateHook.installOnce(updateFunc, true);
 }
 
 bool getDefaultStoragePlane(StringBuffer &ret)
 {
+#ifdef _CONTAINERIZED
     // If the plane is specified for the component, then use that
-    if (getComponentConfigSP()->getProp("@storagePlane", ret))
+    if (getComponentConfigSP()->getProp("@dataPlane", ret))
         return true;
 
     //Otherwise check what the default plane for data storage is configured to be
-    if (getGlobalConfigSP()->getProp("storage/@dataPlane", ret))
-        return true;
+    Owned<IPropertyTreeIterator> dataPlanes = getGlobalConfigSP()->getElements("storage/planes[@category='data']");
+    if (dataPlanes->first())
+        return dataPlanes->query().getProp("@name", ret);
 
-#ifdef _CONTAINERIZED
     throwUnexpectedX("Default data plane not specified"); // The default should always have been configured by the helm charts
 #else
     return false;
@@ -3504,6 +3505,8 @@ public:
     virtual unsigned numDevices() const override { return xml->getPropInt("@numDevices", 1); }
     virtual const char * queryHosts() const override { return xml->queryProp("@hosts"); }
     virtual const char * querySingleHost() const override { return xml->queryProp("@host"); }   // MORE: Likely to be changed to resolve hosts
+    virtual unsigned numDefaultSprayParts() const override { return xml->getPropInt("@defaultSprayParts", 1); }
+    virtual bool queryDirPerPart() const override { return xml->getPropBool("@subDirPerFilePart", isContainerized()); } // default to dir. per part in containerized mode
 
 private:
     Linked<IPropertyTree> xml;
@@ -3511,17 +3514,24 @@ private:
 
 
 //MORE: This could be cached
-IStoragePlane * getStoragePlane(const char * name, bool required)
+IStoragePlane * getDataStoragePlane(const char * name, bool required)
 {
     StringBuffer group;
     group.append(name).toLowerCase();
 
-    VStringBuffer xpath("storage/planes[@group='%s']", group.str());
+    VStringBuffer xpath("storage/planes[@name='%s']", group.str());
     Owned<IPropertyTree> match = getGlobalConfigSP()->getPropTree(xpath);
     if (!match)
     {
         if (required)
-            throw makeStringExceptionV(-1, "Scope contains unknown storage plane '%s'", name);
+            throw makeStringExceptionV(-1, "Unknown storage plane '%s'", name);
+        return nullptr;
+    }
+    const char * category = match->queryProp("@category");
+    if (!streq(category, "data") && !streq(category, "lz"))
+    {
+        if (required)
+            throw makeStringExceptionV(-1, "storage plane '%s' does not store data (category %s)", name, category);
         return nullptr;
     }
 

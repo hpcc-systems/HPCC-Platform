@@ -1,6 +1,12 @@
-//  https://fabricweb.z5.web.core.windows.net/pr-deploy-site/refs/heads/7.0/theming-designer/index.html
+/*
+ *  https://fabricweb.z5.web.core.windows.net/pr-deploy-site/refs/heads/7.0/theming-designer/index.html
+ *
+ *  Keep in sync with themes.css
+ */
 
-export const lightTheme = {
+import { PartialTheme } from "@fluentui/react";
+
+export const lightTheme: PartialTheme = {
     palette: {
         themePrimary: "#259ad6",
         themeLighterAlt: "#f5fbfd",
@@ -27,7 +33,7 @@ export const lightTheme = {
     }
 };
 
-export const darkTheme = {
+export const darkTheme: PartialTheme = {
     palette: {
         themePrimary: "#ff8600",
         themeLighterAlt: "#0a0500",

@@ -69,11 +69,19 @@
     <para>Para usar o helm charts do HPCC Systems, você deve adicioná-lo à
     lista de repositório do helm, conforme mostrado abaixo:</para>
 
-    <para><programlisting>&gt;helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting></para>
+    <para><programlisting>helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting></para>
 
     <para>Reposta esperada:</para>
 
     <para><programlisting>"hpcc" has been added to your repositories</programlisting></para>
+
+    <para>Para atualizar os último charts:</para>
+
+    <para><programlisting>helm repo update</programlisting></para>
+
+    <para>Resposta esperada:</para>
+
+    <para><programlisting>Update Complete. Happy Helming!</programlisting></para>
   </sect1>
 
   <sect1 id="startdefault">
@@ -86,7 +94,13 @@
     <para><emphasis role="bold">Para iniciar este sistema
     simples:</emphasis></para>
 
-    <para><programlisting>&gt;helm install mycluster hpcc/hpcc --set global.image.version=latest </programlisting></para>
+    <para><programlisting>helm install mycluster hpcc/hpcc --version=8.2.2 </programlisting></para>
+
+    <para><emphasis role="bold">O argumento --version é opcional, mas
+    recomendado. Ele garante que você saiba a versão que você está instalando.
+    Se omitido, a última versão não-desenvolvimento será instalada. Este
+    exemplo usa 8.2.2, mas você deve usar a versão que deseja.
+    </emphasis></para>
 
     <para>Resposta esperada:</para>
 
@@ -119,7 +133,7 @@ sasha.wu-archiver</programlisting></para>
 
     <para><emphasis role="bold">Para verificar o status:</emphasis></para>
 
-    <para><programlisting>&gt;kubectl get pods</programlisting></para>
+    <para><programlisting>kubectl get pods</programlisting></para>
 
     <para>Resposta esperada:</para>
 
@@ -179,7 +193,7 @@ thor-thoragent-56d788869f-7trxk               1/1     Running   0          2m6s<
     <para>Use este comando para obter uma lista de serviços em execução e
     endereços IP:</para>
 
-    <para><programlisting>&gt;kubectl get svc</programlisting></para>
+    <para><programlisting>kubectl get svc</programlisting></para>
 
     <para>Resposta esperada:</para>
 
@@ -214,12 +228,12 @@ sql2ecl               LoadBalancer 10.107.177.180  localhost    8510:30054/TCP  
     <para>Para verificar quais helm charts estão instalados atualmente,
     execute este comando:</para>
 
-    <para><programlisting>&gt;helm list</programlisting></para>
+    <para><programlisting>helm list</programlisting></para>
 
     <para>Para interromper os pods do HPCC Systems, use o helm para
     desinstalar:</para>
 
-    <para><programlisting>&gt;helm uninstall mycluster</programlisting></para>
+    <para><programlisting>helm uninstall mycluster</programlisting></para>
 
     <para>Isso interrompe o cluster, exclui os pods e, com as configurações
     padrão e os volumes persistentes, também exclui o armazenamento

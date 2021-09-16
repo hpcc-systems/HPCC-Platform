@@ -58,6 +58,7 @@ include_directories (
          ./../../smc/SMCLib 
          ./../../bindings/SOAP/xpp 
          ${HPCC_SOURCE_DIR}/common/thorhelper
+         ${HPCC_SOURCE_DIR}/dali/sasha
     )
 
 ADD_DEFINITIONS( -D_USRDLL )
@@ -71,8 +72,12 @@ target_link_libraries ( ws_fileio
          hrpc 
          remote 
          dalibase 
-         environment 
          ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
          xmllib 
          esphttp 
+         SMCLib
     )
+
+if (NOT CONTAINERIZED)
+    target_link_libraries ( ws_fileio environment )
+endif()

@@ -2397,7 +2397,7 @@ void Cws_machineEx::readThorUsageReq(const char* name, IConstEnvironment* constE
 
     Owned<IPropertyTree> machineReq = createMachineUsageReq(constEnv, computer);
     xpath.setf("Machine[@netAddress='%s']", machineReq->queryProp("@netAddress"));
-    if (componentReq->queryPropTree(xpath))
+    if (componentReq->hasProp(xpath))
     {   //ThorMasterProcess is running on one of the ThorSlaveProcess machines.
         //So, we do not add this machine again.
         usageReq->addPropTree(componentReq->queryName(), LINK(componentReq));

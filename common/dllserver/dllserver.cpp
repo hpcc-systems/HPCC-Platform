@@ -748,15 +748,16 @@ IDllServer & queryDllServer()
     if (!dllServer)
     {
 #ifdef _CONTAINERIZED
-        const char* dllserver_root = getenv("HPCC_DLLSERVER_PATH");
-        assertex(dllserver_root != nullptr);
-        dllServer = new SharedVolumeDllServer(dllserver_root);
+        StringBuffer dllDirectory;
+        if (!getConfigurationDirectory(nullptr, "query", nullptr, nullptr, dllDirectory))
+            throwUnexpected();
+        dllServer = new SharedVolumeDllServer(dllDirectory);
 #else
         const char* dllserver_root = getenv("DLLSERVER_ROOT");
         StringBuffer dir;
         if(dllserver_root == NULL)
         {
-            if (envGetConfigurationDirectory("temp","dllserver","dllserver",dir)) // not sure if different instance might be better but never separated in past
+            if (getConfigurationDirectory(nullptr, "temp","dllserver","dllserver",dir)) // not sure if different instance might be better but never separated in past
                 dllserver_root = dir.str();
             else
                 dllserver_root = DEFAULT_SERVER_ROOTDIR;

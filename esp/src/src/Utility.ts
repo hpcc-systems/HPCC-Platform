@@ -1,4 +1,4 @@
-﻿import { Palette } from "@hpcc-js/common";
+﻿import { format as d3Format, Palette } from "@hpcc-js/common";
 import * as arrayUtil from "dojo/_base/array";
 import * as domConstruct from "dojo/dom-construct";
 import * as entities from "dojox/html/entities";
@@ -24,10 +24,28 @@ export function xmlEncode2(str) {
         ;
 }
 
+export const encodeHTML = function (str?: string) {
+    return str?.replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&apos;");
+};
+
+export const decodeHTML = function (str?: string) {
+    return str?.replace(/&apos;/g, "'")
+        .replace(/&quot;/g, '"')
+        .replace(/&gt;/g, ">")
+        .replace(/&lt;/g, "<")
+        .replace(/&amp;/g, "&");
+};
+
 export function decodeHtml(html) {
     const txt = document.createElement("textarea");
     txt.innerHTML = html;
-    return txt.value;
+    const retVal = txt.value;
+    txt.remove();
+    return retVal;
 }
 
 export function parseXML(val) {
@@ -274,7 +292,9 @@ export function downloadToCSV(grid, rows, fileName) {
         const a = document.createElement("a");
         mimeType = mimeType || "application/octet-stream";
 
+        // @ts-ignore
         if (navigator.msSaveBlob) { // IE10
+            // @ts-ignore
             return navigator.msSaveBlob(new Blob([content], { type: mimeType }), fileName);
         } else if ("download" in a) {
             a.href = "data:" + mimeType + "," + encodeURIComponent(content);
@@ -414,6 +434,18 @@ export function alphanumCase(a, b) {
         }
     }
     return aa.length - bb.length;
+}
+
+export function onDomMutate(domNode, callback, observerOpts) {
+    observerOpts = observerOpts || { attributes: true, attributeFilter: ["style"] };
+    const observer = new MutationObserver(mutations => {
+        if (domNode.offsetParent === null) return;
+        observer.disconnect();
+        if (typeof callback === "function") {
+            callback();
+        }
+    });
+    observer.observe(domNode, observerOpts);
 }
 
 export function alphanumSort(arr, col, caseInsensitive, reverse: boolean = false) {
@@ -724,6 +756,9 @@ export function resolve(hpccWidget, callback) {
         case "SourceFilesWidget":
             require(["hpcc/SourceFilesWidget"], doLoad);
             break;
+        case "SummaryStatsQueryWidget":
+            require(["hpcc/SummaryStatsQueryWidget"], doLoad);
+            break;
         case "SystemServersQueryWidget":
             require(["hpcc/SystemServersQueryWidget"], doLoad);
             break;
@@ -814,11 +849,11 @@ export function pathTail(path: string) {
 }
 
 export function getImageURL(name) {
-    return this.getURL("img/" + name);
+    return getURL("img/" + name);
 }
 
 export function getImageHTML(name, tooltip?) {
-    return "<img src='" + this.getImageURL(name) + "'" + (tooltip ? " title='" + tooltip + "'" : "") + " class='iconAlign'/>";
+    return "<img src='" + getImageURL(name) + "'" + (tooltip ? " title='" + tooltip + "'" : "") + " class='iconAlign'/>";
 }
 
 export function debounce(func, threshold, execAsap) {
@@ -999,4 +1034,56 @@ export function downloadText(content: string, fileName: string) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+const d3FormatNum = d3Format(",");
+
+export function formatNum(str): string {
+    if (isNaN(str)) {
+        return str;
+    }
+    return d3FormatNum(str);
+}
+
+export function formatNums(obj) {
+    for (const key in obj) {
+        obj[key] = formatNum(obj[key]);
+    }
+    return obj;
+}
+
+export function formatLine(labelTpl, obj): string {
+    let retVal = "";
+    let lpos = labelTpl.indexOf("%");
+    let rpos = -1;
+    let replacementFound = lpos >= 0 ? false : true;  //  If a line has no symbols always include it, otherwise only include that line IF a replacement was found  ---
+    while (lpos >= 0) {
+        retVal += labelTpl.substring(rpos + 1, lpos);
+        rpos = labelTpl.indexOf("%", lpos + 1);
+        if (rpos < 0) {
+            console.log("Invalid Label Template");
+            break;
+        }
+        const key = labelTpl.substring(lpos + 1, rpos);
+        replacementFound = replacementFound || !!obj[labelTpl.substring(lpos + 1, rpos)];
+        retVal += !key ? "%" : (obj[labelTpl.substring(lpos + 1, rpos)] || "");
+        lpos = labelTpl.indexOf("%", rpos + 1);
+    }
+    retVal += labelTpl.substring(rpos + 1, labelTpl.length);
+    return replacementFound ? retVal : "";
+}
+
+export function format(labelTpl, obj) {
+    labelTpl = labelTpl.split("\\n").join("\n");
+    return labelTpl
+        .split("\n")
+        .map(line => formatLine(line, obj))
+        .filter(d => d.trim().length > 0)
+        .map(decodeHtml)
+        .join("\n")
+        ;
+}
+
+export function isSpill(sourceKind: string, targetKind: string): boolean {
+    return sourceKind === "2" || targetKind === "71";
 }

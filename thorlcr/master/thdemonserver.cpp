@@ -92,7 +92,7 @@ private:
         {
             const unsigned clusterWidth = queryNodeClusterWidth();
             const cost_type sgCost = money2cost_type(calcCost(thorManagerRate, duration) + calcCost(thorWorkerRate, duration) * clusterWidth);
-            if (finished)
+            if (finished && sgCost)
                 wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, graphScope, StCostExecute, NULL, sgCost, 1, 0, StatsMergeReplace);
 
             const cost_type totalCost = workunitCost + sgCost;
@@ -140,7 +140,7 @@ private:
                 ForEachItemIn (g, activeGraphs)
                 {
                     CGraphBase &graph = activeGraphs.item(g);
-                    Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph.queryGraphId());
+                    Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph.queryGraphId(), false);
                     reportGraph(stats->queryStatsBuilder(), &graph);
                 }
                 Owned<IWorkUnit> wu = &currentWU.lock();
@@ -168,7 +168,7 @@ private:
             const char *graphName = ((CJobMaster &)activeGraphs.item(0).queryJob()).queryGraphName();
             unsigned wfid = graph->queryJob().getWfid();
             {
-                Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph->queryGraphId());
+                Owned<IWUGraphStats> stats = currentWU.updateStats(graphName, SCTthor, queryStatisticsComponentName(), wfid, graph->queryGraphId(), false);
                 reportGraph(stats->queryStatsBuilder(), graph);
             }
 

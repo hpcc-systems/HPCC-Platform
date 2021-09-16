@@ -18,6 +18,10 @@
 #ifndef TXSUMMARY_HPP
 #define TXSUMMARY_HPP
 
+#include <string>
+#include <list>
+#include <map>
+
 #include "jiface.hpp"
 #include "jstring.hpp"
 #include "jmutex.hpp"
@@ -25,10 +29,6 @@
 #include "tokenserialization.hpp"
 #include "esp.hpp"
 #include "esphttp.hpp"
-#include <list>
-#include <map>
-#include "jmetrics.hpp"
-
 
 // Using the existing esp_cfg_decl in this package required including
 // espcfg.ipp which has additional includes that weren't found by all
@@ -112,8 +112,6 @@ public:
     // Take an ITxSummaryProfile instance that can rename entries and customize
     // the contents of the summary prior to serialization.
     virtual void setProfile(ITxSummaryProfile* profile);
-
-    static std::shared_ptr<hpccMetrics::CounterMetric> pRequestCount;
 
 protected:
     // Log the summary contents on destruction.

@@ -117,6 +117,24 @@ ESPrequest [nil_remove]  DFSExistsRequest
     string FileName;
 };
 
+ESPrequest [nil_remove] SetProtectedRequest
+{
+    string FileName;
+    string CallerId;
+};
+
+ESPrequest [nil_remove] SetUnprotectedRequest
+{
+    string FileName;
+    string CallerId;
+};
+
+ESPrequest [nil_remove] GetProtectedListRequest
+{
+    string FileName;
+    string CallerId;
+};
+
 ESPservice [auth_feature("NONE"), //This declares that the method logic handles feature level authorization
     version("1.04"), default_client_version("1.04"), exceptions_inline("./smc_xslt/exceptions.xslt")] WSDali
 {
@@ -135,6 +153,9 @@ ESPservice [auth_feature("NONE"), //This declares that the method logic handles 
     ESPmethod [min_ver("1.04")] DFSCheck(DFSCheckRequest, ResultResponse);
     ESPmethod [min_ver("1.04")] DFSLS(DFSLSRequest, ResultResponse);
     ESPmethod [min_ver("1.04")] DFSExists(DFSExistsRequest, BooleanResponse);
+    ESPmethod [min_ver("1.04")] SetProtected(SetProtectedRequest, ResultResponse);
+    ESPmethod [min_ver("1.04")] SetUnprotected(SetUnprotectedRequest, ResultResponse);
+    ESPmethod [min_ver("1.04")] GetProtectedList(GetProtectedListRequest, ResultResponse);
 };
 
 SCMexportdef(WSDali);

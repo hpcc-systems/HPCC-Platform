@@ -61,54 +61,6 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     const [selection, setSelection] = React.useState([]);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
-    //  Command Bar  ---
-    const buttons: ICommandBarItemProps[] = [
-        {
-            key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
-        },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-        {
-            key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
-            onClick: () => {
-                if (selection.length === 1) {
-                    window.location.href = `#/files/${selection[0].Name}`;
-                } else {
-                    for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/files/${selection[i].Name}`, "_blank");
-                    }
-                }
-            }
-        },
-        {
-            key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection, iconProps: { iconName: "Delete" },
-            onClick: () => {
-                const list = selection.map(s => s.Name);
-                if (confirm(nlsHPCC.DeleteSelectedFiles + "\n" + list)) {
-                    WsDfu.DFUArrayAction(selection, "Delete").then(() => refreshTable(true));
-                }
-            }
-        },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-        { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-        {
-            key: "filter", text: nlsHPCC.Filter, disabled: !!store, iconProps: { iconName: "Filter" },
-            onClick: () => {
-                setShowFilter(true);
-            }
-        },
-        {
-            key: "mine", text: nlsHPCC.Mine, disabled: true, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
-            onClick: () => {
-                setMine(!mine);
-            }
-        },
-    ];
-
-    const rightButtons: ICommandBarItemProps[] = [
-        ...createCopyDownloadSelection(grid, selection, "logicalfiles.csv")
-    ];
-
     //  Grid ---
     const gridStore = useConst(store || ESPLogicalFile.CreateLFQueryStore({}));
     const gridQuery = useConst(formatQuery(filter));
@@ -146,25 +98,13 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 return "";
             }
         },
-        IsKeyFile: {
-            width: 25, sortable: false,
-            renderHeaderCell: function (node) {
-                node.innerHTML = Utility.getImageHTML("index.png", nlsHPCC.Index);
-            },
-            formatter: function (keyfile, row) {
-                if (row.ContentType === "key") {
-                    return Utility.getImageHTML("index.png");
-                }
-                return "";
-            }
-        },
         __hpcc_displayName: tree({
             label: nlsHPCC.LogicalName, width: 600,
             formatter: function (name, row) {
                 if (row.__hpcc_isDir) {
                     return name;
                 }
-                return (row.getStateImageHTML ? row.getStateImageHTML() + "&nbsp;" : "") + "<a href='#/files/" + name + "' class='dgrid-row-url'>" + name + "</a>";
+                return (row.getStateImageHTML ? row.getStateImageHTML() + "&nbsp;" : "") + "<a href='#/files/" + row.NodeGroup + "/" + name + "' class='dgrid-row-url'>" + name + "</a>";
             },
             renderExpando: function (level, hasChildren, expanded, object) {
                 const dir = this.grid.isRTL ? "right" : "left";
@@ -206,12 +146,60 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         Modified: { label: nlsHPCC.ModifiedUTCGMT, width: 162 }
     });
 
-    const refreshTable = (clearSelection = false) => {
+    const refreshTable = React.useCallback((clearSelection = false) => {
         grid?.set("query", formatQuery(filter));
         if (clearSelection) {
             grid?.clearSelection();
         }
-    };
+    }, [filter, grid]);
+
+    //  Command Bar  ---
+    const buttons = React.useMemo((): ICommandBarItemProps[] => [
+        {
+            key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
+            onClick: () => refreshTable()
+        },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
+            onClick: () => {
+                if (selection.length === 1) {
+                    window.location.href = `#/files/${selection[0].NodeGroup}/${selection[0].Name}`;
+                } else {
+                    for (let i = selection.length - 1; i >= 0; --i) {
+                        window.open(`#/files/${selection[0].NodeGroup}/${selection[i].Name}`, "_blank");
+                    }
+                }
+            }
+        },
+        {
+            key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection, iconProps: { iconName: "Delete" },
+            onClick: () => {
+                const list = selection.map(s => s.Name);
+                if (confirm(nlsHPCC.DeleteSelectedFiles + "\n" + list)) {
+                    WsDfu.DFUArrayAction(selection, "Delete").then(() => refreshTable(true));
+                }
+            }
+        },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "filter", text: nlsHPCC.Filter, disabled: !!store, iconProps: { iconName: "Filter" },
+            onClick: () => {
+                setShowFilter(true);
+            }
+        },
+        {
+            key: "mine", text: nlsHPCC.Mine, disabled: true, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
+            onClick: () => {
+                setMine(!mine);
+            }
+        },
+    ], [mine, refreshTable, selection, store, uiState.hasSelection]);
+
+    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
+        ...createCopyDownloadSelection(grid, selection, "logicalfiles.csv")
+    ], [grid, selection]);
 
     //  Filter  ---
     const filterFields: Fields = {};
@@ -221,8 +209,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
 
     React.useEffect(() => {
         refreshTable();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filter]);
+    }, [filter, refreshTable]);
 
     //  Selection  ---
     React.useEffect(() => {

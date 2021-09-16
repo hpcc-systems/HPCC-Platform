@@ -5,8 +5,14 @@ import { Fields, Values } from "./Fields";
 const fieldsToRequest = (fields: Fields) => {
     const retVal: Values = {};
     for (const name in fields) {
-        if (!fields[name].disabled(fields)) {
-            retVal[name] = fields[name].value;
+        const field = fields[name];
+        if (!field.disabled(fields)) {
+            switch (field.type) {
+                case "links":
+                    break;
+                default:
+                    retVal[name] = field.value;
+            }
         }
     }
     return retVal;
@@ -33,21 +39,31 @@ export const TableForm: React.FunctionComponent<TableFormProps> = ({
     React.useEffect(() => {
         if (doSubmit === false) return;
         onSubmit(fieldsToRequest(localFields));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [doSubmit]);
+    }, [doSubmit, localFields, onSubmit]);
 
     React.useEffect(() => {
         if (doReset === false) return;
         for (const key in localFields) {
-            delete localFields[key].value;
+            const field = localFields[key];
+            switch (field.type) {
+                case "links":
+                    break;
+                default:
+                    delete field.value;
+            }
         }
         setLocalFields(localFields);
         onReset(fieldsToRequest(localFields));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [doReset]);
+    }, [doReset, localFields, onReset]);
 
     return <TableGroup fields={localFields} onChange={(id, value) => {
-        localFields[id].value = value;
+        const field = localFields[id];
+        switch (field.type) {
+            case "links":
+                break;
+            default:
+                field.value = value;
+        }
         setLocalFields({ ...localFields });
     }} />;
 };

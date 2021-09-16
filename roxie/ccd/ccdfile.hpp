@@ -30,7 +30,7 @@ interface IRoxieFileCache;
 
 interface ILazyFileIO : extends IFileIO
 {
-    virtual const char *queryFilename() = 0;
+    virtual const char *queryFilename() const = 0;
     virtual void checkOpen() = 0;
     virtual bool isAliveAndLink() const = 0;
     virtual void addSource(IFile *source) = 0;
@@ -54,12 +54,14 @@ interface ILazyFileIO : extends IFileIO
     virtual void removeCache(const IRoxieFileCache *) = 0;
     virtual unsigned getFileIdx() const = 0;
     virtual unsigned getCrc() const = 0;
+    virtual bool checkCopyComplete() = 0;
+    virtual void dump() const = 0;
 };
 
 interface IRoxieFileCache : extends IInterface
 {
     virtual ILazyFileIO *lookupFile(const char *lfn, RoxieFileType fileType, IPartDescriptor *pdesc, unsigned numParts,
-                                      unsigned channel, const StringArray &deployedLocationInfo, bool startFileCopy) = 0;
+                                      unsigned channel, const StringArray &localEnoughLocationInfo, const StringArray &deployedLocationInfo, bool startFileCopy) = 0;
     virtual RoxieFileStatus fileUpToDate(IFile *f, offset_t size, const CDateTime &modified, bool isCompressed, bool autoDisconnect=true) = 0;
     virtual int numFilesToCopy() = 0;
     virtual void closeExpired(bool remote) = 0;
@@ -73,6 +75,7 @@ interface IRoxieFileCache : extends IInterface
     virtual void loadSavedOsCacheInfo() = 0;
     virtual void noteRead(unsigned fileIdx, offset_t pos, unsigned len) = 0;
     virtual void startCacheReporter() = 0;
+    virtual ILazyFileIO *lookupLocalFile(const char *filename) = 0;
 };
 
 interface IDiffFileInfoCache : extends IInterface

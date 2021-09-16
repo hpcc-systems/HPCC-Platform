@@ -206,8 +206,8 @@ interface IConstWUGraphMeta : extends IInterface
 
 interface IConstWUGraph : extends IConstWUGraphMeta
 {
-    virtual IStringVal & getXGMML(IStringVal & ret, bool mergeProgress) const = 0;
-    virtual IPropertyTree * getXGMMLTree(bool mergeProgress) const = 0;
+    virtual IStringVal & getXGMML(IStringVal & ret, bool mergeProgress, bool doFormatStats) const = 0;
+    virtual IPropertyTree * getXGMMLTree(bool mergeProgress, bool doFormatStats) const = 0;
     virtual IPropertyTree * getXGMMLTreeRaw() const = 0;
 };
 
@@ -768,7 +768,7 @@ interface IWUGraphStats;
 interface IPropertyTree;
 interface IConstWUGraphProgress : extends IInterface
 {
-    virtual IPropertyTree * getProgressTree() = 0;
+    virtual IPropertyTree * getProgressTree(bool doFormat) = 0;
     virtual unsigned queryFormatVersion() = 0;
 };
 
@@ -1296,7 +1296,7 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual WUGraphState queryNodeState(const char *graphName, WUGraphIDType nodeId) const = 0;
     virtual void setGraphState(const char *graphName, unsigned wfid, WUGraphState state) const = 0;
     virtual void setNodeState(const char *graphName, WUGraphIDType nodeId, WUGraphState state) const = 0;
-    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const = 0;
+    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph, bool merge) const = 0;
     virtual void clearGraphProgress() const = 0;
     virtual IStringVal & getAbortBy(IStringVal & str) const = 0;
     virtual unsigned __int64 getAbortTimeStamp() const = 0;
@@ -1388,6 +1388,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setResultDecimal(const char *name, unsigned sequence, int len, int precision, bool isSigned, const void *val) = 0;
     virtual void setResultDataset(const char * name, unsigned sequence, size32_t len, const void *val, unsigned numRows, bool extend) = 0;
     virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree = nullptr) = 0;
+    virtual IConstWorkUnit * unlock() = 0;
 };
 
 
@@ -1419,7 +1420,6 @@ interface ILocalWorkUnit : extends IWorkUnit
 {
     virtual void serialize(MemoryBuffer & tgt) = 0;
     virtual void deserialize(MemoryBuffer & src) = 0;
-    virtual IConstWorkUnit * unlock() = 0;
 };
 
 
@@ -1597,6 +1597,7 @@ extern WORKUNIT_API void setWorkUnitFactory(IWorkUnitFactory *_factory);
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory();
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory(ISecManager *secmgr, ISecUser *secuser);
 extern WORKUNIT_API ILocalWorkUnit* createLocalWorkUnit(const char *XML);
+extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnitFromPTree(IPropertyTree *ptree);  // takes ownership of tree
 extern WORKUNIT_API IConstWorkUnitInfo *createConstWorkUnitInfo(IPropertyTree &p);
 extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool unpack, bool includeProgress, bool hidePasswords);
 extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack, bool includeProgress, bool hidePasswords, bool splitStats);
@@ -1762,6 +1763,9 @@ extern WORKUNIT_API void deleteK8sResource(const char *componentName, const char
 extern WORKUNIT_API void waitK8sJob(const char *componentName, const char *job, unsigned pendingTimeoutSecs, KeepK8sJobs keepJob);
 extern WORKUNIT_API bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, const char *suffix, const std::list<std::pair<std::string, std::string>> &extraParams, bool optional);
 extern WORKUNIT_API void runK8sJob(const char *componentName, const char *wuid, const char *job, const std::list<std::pair<std::string, std::string>> &extraParams={});
+
+// return the k8s external host and port for serviceName
+extern WORKUNIT_API std::pair<std::string, unsigned> getExternalService(const char *serviceName);
 #endif
 
 #endif

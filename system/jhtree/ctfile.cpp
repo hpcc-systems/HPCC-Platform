@@ -237,7 +237,7 @@ void CNodeBase::load(CKeyHdr *_keyHdr, offset_t _fpos)
 
 CNodeBase::~CNodeBase()
 {
-    keyHdr->Release();
+    ::Release(keyHdr);
 }
 
 
@@ -551,6 +551,7 @@ size32_t CJHTreeNode::getNodeSize() const
 
 void CJHTreeNode::unpack(const void *node, bool needCopy)
 {
+    assertex(!keyBuf && (expandedSize == 0));
     memcpy(&hdr, node, sizeof(hdr));
     SwapBigEndian(hdr);
     __int64 maxsib = keyHdr->getHdrStruct()->phyrec;

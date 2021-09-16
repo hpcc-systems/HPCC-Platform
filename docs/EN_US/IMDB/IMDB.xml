@@ -120,11 +120,12 @@
               <row>
                 <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
 
-                <entry>While this example will run on a single-node HPCC Systems platform, you
-                will see a dramatic difference in performance on a multi-node
-                system. The true power of an HPCC Systems<superscript>®</superscript> platform is its ability to work on
-                different portions of the data file in parallel. This is known
-                as Massively Parallel Processing (MPP).</entry>
+                <entry>While this example will run on a single-node HPCC
+                Systems platform, you will see a dramatic difference in
+                performance on a multi-node system. The true power of an HPCC
+                Systems<superscript>®</superscript> platform is its ability to
+                work on different portions of the data file in parallel. This
+                is known as Massively Parallel Processing (MPP).</entry>
               </row>
             </tbody>
           </tgroup>
@@ -240,18 +241,18 @@ Blankline</programlisting></para>
         Zone</emphasis></title>
 
         <para>In this step, you will copy the data files to a location from
-        which it can be sprayed to your HPCC Systems cluster. A Landing Zone is a
-        storage location attached to your HPCC Systems. It has a utility running to
-        facilitate file spraying to a cluster.</para>
+        which it can be sprayed to your HPCC Systems cluster. A Landing Zone
+        is a storage location attached to your HPCC Systems. It has a utility
+        running to facilitate file spraying to a cluster.</para>
 
         <para>For smaller data files, maximum of 2GB, you can use the
         upload/download file utility in ECL Watch. The sample data files are
         ~400 mb.</para>
 
         <para>Next you will distribute (or Spray) the dataset to all the nodes
-        in the HPCC Systems cluster. The power of the HPCC Systems comes from its ability to
-        assign multiple processors to work on different portions of the data
-        file in parallel.</para>
+        in the HPCC Systems cluster. The power of the HPCC Systems comes from
+        its ability to assign multiple processors to work on different
+        portions of the data file in parallel.</para>
 
         <orderedlist>
           <listitem>
@@ -363,8 +364,8 @@ Blankline</programlisting></para>
         <title>Spray the Data File to your <emphasis>Data Refinery (Thor)
         Cluster</emphasis></title>
 
-        <para>To use the data file in our HPCC Systems platform, we must "spray" it to
-        all the nodes. A <emphasis>spray</emphasis> or
+        <para>To use the data file in our HPCC Systems platform, we must
+        "spray" it to all the nodes. A <emphasis>spray</emphasis> or
         <emphasis>import</emphasis> is the relocation of a data file from one
         location (such as a Landing Zone) to multiple file parts on nodes in a
         cluster.</para>
@@ -419,8 +420,8 @@ Blankline</programlisting></para>
 
             <para>The IP Address is automatically filled and the Local Path is
             partially filled with the default folder on your landing zone.
-            Note: The VM and Community Edition typically only has one landing
-            zone defined.</para>
+            Note: Community Edition deployments typically only have one
+            landing zone defined.</para>
           </listitem>
 
           <listitem>
@@ -486,7 +487,8 @@ Blankline</programlisting></para>
 
           <listitem>
             <para>After both sprays are complete, we can query the logical
-            files on the HPCC Systems platform to see the files we sprayed.</para>
+            files on the HPCC Systems platform to see the files we
+            sprayed.</para>
           </listitem>
 
           <listitem>

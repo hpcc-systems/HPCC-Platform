@@ -60,10 +60,6 @@ interface IDistributedFileSystem : public IInterface
     virtual void replicate(IFileDescriptor * fd, DaftReplicateMode mode, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress , IAbortRequestCallback * abort=NULL , const char *wuid=NULL) = 0;  // create new set of copies (between copy 0 to copy 1 depending on the mode) @crc set in options to copy if crc differs @sizedate if size/date differ.
     virtual void transfer(IFileDescriptor * from, IFileDescriptor * to, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress , IAbortRequestCallback * abort=NULL , const char *wuid=NULL) = 0;       // copy between external files, must have 
 
-    virtual void directory(const char * directory, IGroup * machines, IPropertyTree * options, IPropertyTree * result) = 0;                 // @recurse=false @time=true @crc=false
-    virtual void physicalCopy(const char * source, const char * target, IPropertyTree * options, IDaftCopyProgress * progress = NULL) = 0;      // options can include @recurse @copyMissing @copyExisting @preserveTimes @preserveIfNewer @verboseFull @verbose
-    virtual void physicalCopy(IPropertyTree * source, const char * target, IPropertyTree * options, IDaftCopyProgress * progress = NULL) = 0;   // property tree is same structure as result of directory
-
 //operations on a single file.
     virtual offset_t getSize(IDistributedFile * file,
                              bool forceget=false,                               // if true gets physical size (ignores cached attribute)

@@ -8,7 +8,7 @@ import * as tree from "dgrid/tree";
 import * as ESPUtil from "src/ESPUtil";
 import { DojoComponent } from "../layouts/DojoAdapter";
 
-import "srcReact/components/DojoGrid.css";
+import "src-react-css/components/DojoGrid.css";
 
 export { selector, tree };
 
@@ -28,6 +28,7 @@ interface DojoGridProps {
     query?: any;
     sort?: any;
     columns: any;
+    getSelected?: () => any[];
     setGrid: (_: any) => void;
     setSelection: (_: any[]) => void;
 }
@@ -35,9 +36,10 @@ interface DojoGridProps {
 export const DojoGrid: React.FunctionComponent<DojoGridProps> = ({
     type = "PageSel",
     store,
-    query = {},
+    query,
     sort,
     columns,
+    getSelected,
     setGrid,
     setSelection
 }) => {
@@ -54,8 +56,26 @@ export const DojoGrid: React.FunctionComponent<DojoGridProps> = ({
         }
     });
 
-    return <DojoComponent Widget={Grid} WidgetParams={{ deselectOnRefresh: true, store, query, sort, columns: { ...columns } }} postCreate={grid => {
-        grid.onSelectionChanged(() => setSelection(grid.getSelected()));
+    const params = React.useMemo(() => {
+        const retVal: any = {
+            deselectOnRefresh: true,
+            columns: { ...columns }
+        };
+        if (getSelected !== undefined) retVal.getSelected = getSelected;
+        if (store !== undefined) retVal.store = store;
+        if (query !== undefined) retVal.query = query;
+        if (sort !== undefined) retVal.sort = sort;
+        if (columns !== undefined) retVal.columns = columns;
+        return retVal;
+    }, [columns, getSelected, query, sort, store]);
+
+    const gridSelInit = React.useCallback(grid => {
+        //setSelection prop is defined (grid has selectors for rows)
+        if (setSelection) {
+            grid.onSelectionChanged(() => setSelection(grid.getSelected()));
+        }
         setGrid(grid);
-    }} />;
+    }, [setGrid, setSelection]);
+
+    return <DojoComponent Widget={Grid} WidgetParams={params} postCreate={gridSelInit} />;
 };

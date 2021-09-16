@@ -65,6 +65,9 @@ public:
     virtual bool onGetDFSMap(IEspContext& context, IEspGetDFSMapRequest& req, IEspResultResponse& resp) override;
     virtual bool onGetDFSParents(IEspContext& context, IEspGetDFSParentsRequest& req, IEspResultResponse& resp) override;
     virtual bool onDFSCheck(IEspContext& context, IEspDFSCheckRequest& req, IEspResultResponse& resp) override;
+    virtual bool onSetProtected(IEspContext& context, IEspSetProtectedRequest& req, IEspResultResponse& resp) override;
+    virtual bool onSetUnprotected(IEspContext& context, IEspSetUnprotectedRequest& req, IEspResultResponse& resp) override;
+    virtual bool onGetProtectedList(IEspContext& context, IEspGetProtectedListRequest& req, IEspResultResponse& resp) override;
 };
 
 class CWSDaliSoapBindingEx : public CWSDaliSoapBinding

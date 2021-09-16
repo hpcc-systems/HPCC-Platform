@@ -499,7 +499,7 @@ void EclGraphElement::createActivity(IAgentContext & agent, EclSubGraph * owner)
             ForEachItemIn(i2, branches)
             {
                 EclGraphElement & input = branches.item(i2);
-                IHThorInput * probe = NULL;
+                IHThorInput * useInput = NULL;
 
                 if (probeManager)
                 {
@@ -512,18 +512,14 @@ void EclGraphElement::createActivity(IAgentContext & agent, EclSubGraph * owner)
                                                         0,//input.id,
                                                         0,//id,
                                                         0);
-                        probe = & dynamic_cast<IHThorInput &> (base->queryInput());
+                        useInput = & dynamic_cast<IHThorInput &> (base->queryInput());
                     }
                 }
                 else
                 {
-                    probe = subgraph->createLegacyProbe(input.queryOutput(branchIndexes.item(i2)),
-                                                    input.id,
-                                                    id,
-                                                    0,
-                                                    agent.queryWorkUnit());
+                    useInput = input.queryOutput(branchIndexes.item(i2));
                 }
-                activity->setInput(i2, probe);
+                activity->setInput(i2, useInput);
             }
             break;
         }
@@ -758,8 +754,8 @@ IHThorException * EclGraphElement::makeWrappedException(IException * e)
 
 //---------------------------------------------------------------------------
 
-EclSubGraph::EclSubGraph(IAgentContext & _agent, EclGraph & _parent, EclSubGraph * _owner, unsigned _seqNo, bool enableProbe, CHThorDebugContext * _debugContext, IProbeManager * _probeManager)
-    : probeEnabled(enableProbe), seqNo(_seqNo), parent(_parent), owner(_owner), debugContext(_debugContext), probeManager(_probeManager), isLoopBody(false)
+EclSubGraph::EclSubGraph(IAgentContext & _agent, EclGraph & _parent, EclSubGraph * _owner, unsigned _seqNo, CHThorDebugContext * _debugContext, IProbeManager * _probeManager)
+    : seqNo(_seqNo), parent(_parent), owner(_owner), debugContext(_debugContext), probeManager(_probeManager), isLoopBody(false)
 {
     executed = false;
     created = false;
@@ -805,7 +801,7 @@ void EclSubGraph::createFromXGMML(EclGraph * graph, ILoadedDllEntry * dll, IProp
             if (probeManager)
                 childProbe.setown(probeManager->startChildGraph(subGraphSeqNo, NULL));
 
-            Owned<EclSubGraph> subgraph = new EclSubGraph(*agent, *graph, this, subGraphSeqNo++, probeEnabled, debugContext, probeManager);
+            Owned<EclSubGraph> subgraph = new EclSubGraph(*agent, *graph, this, subGraphSeqNo++, debugContext, probeManager);
             subgraph->createFromXGMML(graph, dll, &cur, subGraphSeqNo, resultsGraph);
             if (probeManager)
                 probeManager->endChildGraph(childProbe, NULL);
@@ -1170,7 +1166,7 @@ void EclGraph::associateSubGraph(EclSubGraph * subgraph)
     subgraphMap.setValue(subgraph->id, subgraph);
 }
 
-void EclGraph::createFromXGMML(ILoadedDllEntry * dll, IPropertyTree * xgmml, bool enableProbe)
+void EclGraph::createFromXGMML(ILoadedDllEntry * dll, IPropertyTree * xgmml)
 {
     Owned<IPropertyTreeIterator> iter = xgmml->getElements("node");
     unsigned subGraphSeqNo = 0;
@@ -1181,7 +1177,7 @@ void EclGraph::createFromXGMML(ILoadedDllEntry * dll, IPropertyTree * xgmml, boo
         if (probeManager)
             childProbe.setown(probeManager->startChildGraph(subGraphSeqNo, NULL));
 
-        Owned<EclSubGraph> subgraph = new EclSubGraph(*agent, *this, NULL, subGraphSeqNo++, enableProbe, debugContext, probeManager);
+        Owned<EclSubGraph> subgraph = new EclSubGraph(*agent, *this, NULL, subGraphSeqNo++, debugContext, probeManager);
         subgraph->createFromXGMML(this, dll, &iter->query(), subGraphSeqNo, NULL);
         if (probeManager)
             probeManager->endChildGraph(childProbe, NULL);
@@ -1347,7 +1343,7 @@ void EclGraph::updateLibraryProgress()
     {
         EclSubGraph & cur = graphs.item(idx);
         unsigned wfid = cur.parent.queryWfid();
-        Owned<IWUGraphStats> progress = wu->updateStats(queryGraphName(), queryStatisticsComponentType(), queryStatisticsComponentName(), wfid, cur.id);
+        Owned<IWUGraphStats> progress = wu->updateStats(queryGraphName(), queryStatisticsComponentType(), queryStatisticsComponentName(), wfid, cur.id, false);
         cur.updateProgress(progress->queryStatsBuilder());
     }
 }
@@ -1490,7 +1486,7 @@ void GraphResults::setResult(unsigned id, IHThorGraphResult * result)
 
 IWUGraphStats *EclGraph::updateStats(StatisticCreatorType creatorType, const char * creator, unsigned activeWfid, unsigned subgraph)
 {
-    return wu->updateStats (queryGraphName(), creatorType, creator, activeWfid, subgraph);
+    return wu->updateStats (queryGraphName(), creatorType, creator, activeWfid, subgraph, false);
 }
 
 void EclGraph::updateWUStatistic(IWorkUnit *lockedwu, StatisticScopeType scopeType, const char * scope, StatisticKind kind, const char * descr, unsigned __int64 value)
@@ -1538,12 +1534,10 @@ EclGraph * EclAgent::loadGraph(const char * graphName, IConstWorkUnit * wu, ILoa
 {
     Owned<IConstWUGraph> wuGraph = wu->getGraph(graphName);
     assertex(wuGraph);
-    Owned<IPropertyTree> xgmml = wuGraph->getXGMMLTree(false);
-
-    bool probeEnabled = wuRead->getDebugValueBool("_Probe", false);
+    Owned<IPropertyTree> xgmml = wuGraph->getXGMMLTree(false, false);
 
     Owned<EclGraph> eclGraph = new EclGraph(*this, graphName, wu, isLibrary, debugContext, probeManager, wuGraph->getWfid());
-    eclGraph->createFromXGMML(dll, xgmml, probeEnabled);
+    eclGraph->createFromXGMML(dll, xgmml);
     return eclGraph.getClear();
 }
 

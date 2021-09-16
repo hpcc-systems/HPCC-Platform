@@ -5,15 +5,20 @@ global:
 
   image:
     ## It is recommended to name a specific version rather than latest, for any non-trivial deployment
-    ## For best results, the helm chart version and platform version should match. Leave this unset to use the
-    ## version that matches the version of the helm chart
-    #version: x.y.z 
+    ## For best results, the helm chart version and platform version should match, which is the default if version is
+    ## not specified. Do not override without good reason as undefined behavior may result. 
+    ## version: x.y.z
     root: "hpccsystems"    # change this if you want to pull your images from somewhere other than DockerHub hpccsystems
     pullPolicy: IfNotPresent
 
   # logging sets the default logging information for all components. Can be overridden locally
   logging:
-    detail: 100
+    detail: 80
+
+  ## env adds default environment variables for all components. Environment settings can also be added or overridden locally
+  #env:
+  #- name: SMTPserver
+  #  value: mysmtpserver
 
   # Specify a defaultEsp to control which eclservices service is returned from Std.File.GetEspURL, and other uses
   # If not specified, the first esp component that exposes eclservices application is assumed.
@@ -40,29 +45,37 @@ global:
     moneyLocale: "en_US.UTF-8"
     perCpu: 0.126
 
-  # postJobCommand will execute at the end of a dynamically lauched K8s job,
+  # postJobCommand will execute at the end of a dynamically launched K8s job,
   # when the main entrypoint process finishes, or if the readiness probes trigger a preStop event.
   # This can be useful if injected sidecars are installed that need to be told to stop.
   # If they are not stopped, the pod continues running with the side car container only, in a "NotReady" state.
   # An example of this is the Istio envoy side car. It can be stopped with the command below.
-  # Set postJobCommandViaSidecar to true, if the command needs to run with priviledge, this will enable the command
+  # Set postJobCommandViaSidecar to true, if the command needs to run with privilege, this will enable the command
   # to run as root in a sidecar in same process space as other containers, allowing it to for example send signals
   # to processes in sidecars
-
-  # Define global default metrics configuration for all components
-  metrics:
-    sinks:
-      - type: log
-        name: logging
-        settings:
-          period: 60
-
   # misc:
   #   postJobCommand: "curl -sf -XPOST http://127.0.0.1:15020/quitquitquit"
   # Or example for linkerd
   #   postJobCommand: "kill $(pgrep linkerd2-proxy)"
   #   postJobCommandViaSidecar: true
 
+  ## visibilities section can be used to set labels, annotations and service type for any service with the specified visibility
+  visibilities:
+    cluster:
+      type: ClusterIP
+    local:
+      annotations:
+        # This annotation will make azure load balancer use an internal rather than an internet-visible address
+        # May want different values on different cloud providers or use-cases. For example on AWS you may want to use
+        #service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+        service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+      type: LoadBalancer
+    global:
+      #labels:
+      #  mylabel: "4"
+      type: LoadBalancer
+      
+      
 
   # For pod placement instruction and examples please reference docs/placements.md
 
@@ -79,17 +92,18 @@ security:
 
 ## storage:
 ##
-## If storage.[type].existingClaim is defined, a Persistent Volume Claim must
-## exist with that name. If an existingClaim is specified, storageClass and
-## storageSize are not used.
+## 1. If an engine component has the dataPlane property set, then that plane will be the default data location for that component.
+## 2. If there is a plane definition with a category of "data" then the first matching plane will be the default data location
 ##
-## If storage.[type].storageClass is defined, storageClassName: <storageClass>
+## If a data plane contains the storageClass property then an implicit pvc will be created for that data plane.
+##
+## If plane.pvc is defined, a Persistent Volume Claim must exist with that name, storageClass and storageSize are not used.
+##
+## If plane.storageClass is defined, storageClassName: <storageClass>
 ## If set to "-", storageClassName: "", which disables dynamic provisioning
-## If undefined (the default) or set to null, no storageClassName spec is
-##   set, choosing the default provisioner.  (gp2 on AWS, standard on
-##   GKE, AWS & OpenStack)
+## If set to "", choosing the default provisioner.  (gp2 on AWS, standard on GKE, AWS & OpenStack)
 ##
-## storage.[type].forcePermissions=true is required by some types of provisioned
+## plane.forcePermissions=true is required by some types of provisioned
 ## storage, where the mounted filing system has insufficient permissions to be
 ## read by the hpcc pods. Examples include using hostpath storage (e.g. on
 ## minikube and docker for desktop), or using NFS mounted storage.
@@ -98,40 +112,58 @@ storage:
   planes:
   #   name: <required>
   #   prefix: <path>                        # Root directory for accessing the plane (if pvc defined), or url to access plane.
+  #   category: data|dali|lz|dll|spill|temp # What category of data is stored on this plane?
+  #
+  # For dynamic pvc creation:
+  #   storageClass: ''
+  #   storageSize: 1Gi
+  #
+  # For persistent storage:
+  #   pvc: <name>                           # The name of the persistant volume claim
+  #   forcePermissions: false
+  #   hosts: [ <host-list ]                 # Inline list of hosts
+  #   hostGroup: <name>                     # Name of the host group for bare metal - must match the name of the storage plane..
+  #
+  # Other options:
+  #   subPath: <relative-path>              # Optional sub directory within <prefix> to use as the root directory
   #   numDevices: 1                         # number of devices that are part of the plane
-  #   replication: nullptr                  # a list or single item indicating which planes the data should be replicated onto
-  #   includeDeviceInPath: false            # Is the device number appended to the mount for the physical path for a file?  (Only required in unusual situations)
-  #   hosts: <name>                         # Name of the host group for bare metal - must match the name of the storage plane..
   #   secret: <secret-id>                   # what secret is required to access the files.  This could optionally become a list if required (or add secrets:).
   #   defaultSprayParts: 4                  # The number of partitions created when spraying (default: 1)
   #   cost:                                 # The storage cost
   #     storageAtRest: 0.113                # Storage at rest cost: cost per GiB/month
-  #   options:                              # not sure if it is needed
 
-  dllStorage:
-    storageSize: 3Gi
+  - name: dali
     storageClass: ""
-    # existingClaim: ""
-    # forcePermissions: false
-
-  daliStorage:
     storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/dalistorage"
+    category: dali
+  - name: sasha
     storageClass: ""
-    # existingClaim: ""
-    # forcePermissions: false
-
-  dataStorage:
     storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/sashastorage"
+    category: sasha
+  - name: dll
     storageClass: ""
-    # existingClaim: ""
-    # forcePermissions: false
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/queries"
+    category: dll
+  - name: data
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/hpcc-data"
+    category: data
+  - name: mydropzone
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/mydropzone"
+    category: lz
 
 ## The certificates section can be used to enable cert-manager to generate TLS certificates for each component in the hpcc.
 ## You must first install cert-manager to use this feature.
 ## https://cert-manager.io/docs/installation/kubernetes/#installing-with-helm
 ##
 ## The Certificate issuers are divided into "local" (those which will be used for local mutual TLS) and "public" those
-## which will be publicly accesible and therefore need to be recognized by browsers and/or other entities.
+## which will be publicly accessible and therefore need to be recognized by browsers and/or other entities.
 ##
 ## Both public and local issuers have a spec section. The contents of the "spec" are documented in the cer-manager
 ## "Issuer configuration" documentation. https://cert-manager.io/docs/configuration/#supported-issuer-types
@@ -139,10 +171,10 @@ storage:
 ## The default configuration is meant to provide reasonable functionality without additional dependencies.
 ##
 ## Public issuers can be tricky if you want browsers to recognize the certificates.  This is a complex topic outside the scope
-## of this comment.  The default for the public issuer generates self signed certifiecates. The expectation is that this will be
-## overriden by the configuration of an external certificate authority or vault in QA and production environments.
+## of this comment.  The default for the public issuer generates self signed certificates. The expectation is that this will be
+## overridden by the configuration of an external certificate authority or vault in QA and production environments.
 ##
-## The default for the local (mTLS) issuer is designed to act as our own local certificate authority. We need only need to recognize
+## The default for the local (mTLS) issuer is designed to act as our own local certificate authority. We only need to recognize
 ## what a component is, and that it belongs to this cluster.
 ## But a kubernetes secret must be provided for the certificate authority key-pair.  The default name for the secret
 ## is "local-issuer-ca-key-pair". The secret is a standard kubernetes.io/tls secret and should provide data values for
@@ -172,11 +204,21 @@ certificates:
       ## for information on what spec should contain.
       spec:
         selfSigned: {}
+    signing: # intended to be used for signing/verification purposes only, e.g. by dafilesrv
+      name: hpcc-signing-issuer
+      ## kind can be changed to ClusterIssue to refer to a ClusterIssuer. https://cert-manager.io/docs/reference/api-docs/#cert-manager.io/v1.ClusterIssuer
+      kind: Issuer
+      ## do not define spec (set spec: null), to reference an Issuer resource that already exists in the cluster
+      ## change spec if you'd like to change how certificates get issued... see ## https://cert-manager.io/docs/configuration/#supported-issuer-types
+      ## for information on what spec should contain.
+      spec:
+        ca:
+          secretName: hpcc-signing-issuer-key-pair
 
-## The secrets section contains a set of categories, each of which contain a list of secrets.  The categories deterime which
+## The secrets section contains a set of categories, each of which contain a list of secrets.  The categories determine which
 ## components have access to the secrets.
 ## For each secret:
-##   name is the name that is is accessed by within the platform
+##   name is the name that it is accessed by within the platform
 ##   secret is the name of the secret that should be published
 secrets:
   #timeout: 300 # timeout period for cached secrets.  Should be similar to the k8s refresh period.
@@ -187,6 +229,10 @@ secrets:
     ## likely be restricted to esp (when it becomes the meta-data provider)
     ## For example, to set the secret associated with the azure storage account "mystorageaccount" use
     ##azure-mystorageaccount: storage-myazuresecret
+
+  authn: {}
+    ## Category to deploy authentication secrets to container, and to create a key name alias to reference those secrets
+    #ldapadmincredskey: "myk8sldapadmincreds"  ## Default k/v for LDAP authentication secrets
 
   ecl: {}
     ## Category for secrets published to all components that run ecl
@@ -208,7 +254,7 @@ secrets:
 ## by system components and not exposed directly to ECL code.
 ##
 ## For each vault:
-##   name is the name that is is accessed by within the platform
+##   name is the name that it is accessed by within the platform
 ##   url is the url used to read a secret from the vault.
 ##   kind is the type of vault being accessed, or the protocol to use to access the secrets
 ##   client_secret a kubernetes level secret that contains the client_token used to retrive secrets.
@@ -216,6 +262,8 @@ secrets:
 
 vaults:
   storage:
+
+  authn:
 
   ecl:
 
@@ -246,11 +294,19 @@ bundles: []
 # for example
 # - name: DataPatterns
 
+dafilesrv:
+- name: mydafilesrv
+  disabled: true # disabled by default because requires cert-manager etc. (see certificates section)
+  service:
+    servicePort: 7600
+    visibility: local
+
 dali:
 - name: mydali
   services: # internal house keeping services
     coalescer:
-      #servicePort: 8877
+      service:
+        servicePort: 8877
       #interval: 2 # (hours)
       #at: "* * * * *" # cron type schedule, i.e. Min(0-59) Hour(0-23) DayOfMonth(1-31) Month(1-12) DayOfWeek(0-6)
       #minDeltaSize: 50 # (Kb) will not start coalescing until delta log is above this threshold
@@ -268,12 +324,9 @@ sasha:
   #disabled: true # disable all services. Alternatively set sasha to null (sasha: null)
   wu-archiver:
     #disabled: true
-    servicePort: 8877
-    storage:
-      #existingClaim: pvc
-      storageSize: 1Gi
-      storageClass: ""
-      # forcePermissions: false
+    service:
+      servicePort: 8877
+    plane: sasha
     #interval: 6 # (hours)
     #limit: 1000 # threshold number of workunits before archiving starts (0 disables)
     #cutoff: 8 # minimum workunit age to archive (days)
@@ -286,11 +339,9 @@ sasha:
 
   dfuwu-archiver:
     #disabled: true
-    servicePort: 8877
-    storage:
-      #existingClaim: pvc
-      storageSize: 1Gi
-      storageClass: ""
+    service:
+      servicePort: 8877
+    plane: sasha
       #forcePermissions: false
     #limit: 1000 # threshold number of DFU workunits before archiving starts (0 disables)
     #cutoff: 14 # minimum DFU workunit age to archive (days)
@@ -354,6 +405,12 @@ eclccserver:
   maxActive: 4
   ## Specify a list of queues to listen on if you don't want this eclccserver listening on all queues. If empty or missing, listens on all queues
   listen: []
+  ## The following allows eclcc options (names start with a -) and debug options to be defined for each of the workunits that are compiled.
+  #options:
+  #- name: globalAutoHoist
+  #  value: false
+  #  cluster: name   # optional cluster this is applied to
+
   ## The following resources apply to child compile pods when useChildProcesses=false, otherwise they apply to eclccserver pod.
   #resources:
   #  cpu: "1"
@@ -365,12 +422,19 @@ esp:
   application: eclwatch
   auth: none
   replicas: 1
-  ## port can be used to change the local port used by the pod. If omitted, the default port (8880) is used
-  port: 8888
-  ## servicePort controls the port that this service will be exposed on, either internally to the cluster, or externally
-  servicePort: 8010
-  ## Specify public: true if you want the service available from outside the cluster. Typically, eclwatch and wsecl are published externally, while eclservices is designed for internal use.
-  public: true
+  service:
+    ## port can be used to change the local port used by the pod. If omitted, the default port (8880) is used
+    port: 8888
+    ## servicePort controls the port that this service will be exposed on, either internally to the cluster, or externally
+    servicePort: 8010
+    ## Specify visibility: local (or global) if you want the service available from outside the cluster. Typically, eclwatch and wsecl are published externally, while eclservices is designed for internal use.
+    visibility: local
+    ## Annotations can be specified on a service - for example to specify provider-specific information such as service.beta.kubernetes.io/azure-load-balancer-internal-subnet
+    #annotations:
+    #  service.beta.kubernetes.io/azure-load-balancer-internal-subnet: "mysubnet"
+    ## You can also specify labels on a service
+    #labels:
+    #  mylabel: "3"
   #resources:
   #  cpu: "1"
   #  memory: "2G"
@@ -378,8 +442,9 @@ esp:
   application: eclservices
   auth: none
   replicas: 1
-  servicePort: 8010
-  public: false
+  service:
+    servicePort: 8010
+    visibility: cluster
   #resources:
   #  cpu: "250m"
   #  memory: "1G"
@@ -387,8 +452,9 @@ esp:
   application: eclqueries
   auth: none
   replicas: 1
-  public: true
-  servicePort: 8002
+  service:
+    visibility: local
+    servicePort: 8002
   #resources:
   #  cpu: "250m"
   #  memory: "1G"
@@ -396,8 +462,9 @@ esp:
   application: esdl-sandbox
   auth: none
   replicas: 1
-  public: true
-  servicePort: 8899
+  service:
+    visibility: local
+    servicePort: 8899
   #resources:
   #  cpu: "250m"
   #  memory: "1G"
@@ -405,8 +472,9 @@ esp:
   application: sql2ecl
   auth: none
   replicas: 1
-  public: true
-  servicePort: 8510
+  service:
+    visibility: local
+    servicePort: 8510
   #domain: hpccsql.com
   #resources:
   #  cpu: "250m"
@@ -418,10 +486,10 @@ roxie:
   prefix: roxie
   services:
   - name: roxie
-    port: 9876
+    servicePort: 9876
     listenQueue: 200
     numThreads: 30
-    external: true
+    visibility: local
   ## replicas indicates the number of replicas per channel
   replicas: 2  
   numChannels: 2
@@ -429,7 +497,8 @@ roxie:
   serverReplicas: 0
   ## Set localAgent to true for a scalable cluster of "single-node" roxie servers, each implementing all channels locally
   localAgent: false
-  useAeron: false
+  ## Adjust traceLevel to taste (1 is default)
+  traceLevel: 1
   ## Set mtuPayload to the maximum amount of data Roxie will put in a single packet. This should be just less than the system MTU. Default is 1400
   # mtuPayload: 3800
   #channelResources:
@@ -438,9 +507,13 @@ roxie:
   #serverResources:
   #  cpu: "1"
   #  memory: "1G"
+  # Roxie may take a while to start up if there are a lot of queries to load. Yuo may need to 
+  #override the default startup/readiness probing by setting these values
+  #minStartupTime: 30      # How long to wait before initiating startup probing
+  #maxStartupTime: 600     # Maximum time to wait for startup to complete before failing
   topoServer:
     replicas: 1
-    #traceLevel: 1
+  #directAccessPlanes: []  #add direct access planes that roxie will read from without copying the data to its default data plane
 
 thor:
 - name: thor

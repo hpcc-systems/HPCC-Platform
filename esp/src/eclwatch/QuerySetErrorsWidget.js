@@ -18,7 +18,9 @@ define([
         i18n: nlsHPCC,
 
         gridTitle: nlsHPCC.title_QuerySetErrors,
-        idProperty: "Name",
+        idProperty: "__hpcc_id",
+
+        displayOpenButton: false,
 
         queryId: null,
         querySet: null,
@@ -33,9 +35,9 @@ define([
         },
 
         createGrid: function (domID) {
-            var context = this;
             var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
+                sort: [{ attribute: "__hpcc_id" }],
                 columns: {
                     col1: selector({ width: 27, selectorType: "checkbox" }),
                     Cluster: { label: this.i18n.Cluster, width: 108, sortable: false },
@@ -53,6 +55,7 @@ define([
                 if (lang.exists("query.Clusters.ClusterQueryState", context)) {
                     arrayUtil.forEach(context.query.Clusters.ClusterQueryState, function (item, idx) {
                         var error = {
+                            __hpcc_id: idx,
                             Cluster: item.Cluster,
                             Errors: item.Errors,
                             State: item.State

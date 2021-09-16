@@ -397,6 +397,13 @@ define([
                             return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + Id + "</a>";
                         }
                     },
+                    priority: {
+                        label: this.i18n.Priority,
+                        width: 80,
+                        formatter: function (priority, idx) {
+                            return priority === undefined ? "" : priority;
+                        }
+                    },
                     Name: {
                         label: this.i18n.Name
                     },
@@ -650,7 +657,9 @@ define([
             }
             var optionsForm = registry.byId(this.id + "OptionsForm");
             var optionsValues = optionsForm.getValues();
-            return lang.mixin(this.filter.toObject(), optionsValues);
+            const retVal = lang.mixin(this.filter.toObject(), optionsValues);
+            retVal.PriorityHigh = retVal.PriorityLow;
+            return retVal;
         },
 
         ensurePane: function (id, params, workunitTab) {

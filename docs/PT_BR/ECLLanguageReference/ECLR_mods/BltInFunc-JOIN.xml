@@ -684,7 +684,7 @@
     <emphasis>index</emphasis>. Na verdade, a junção é feita entre o
     <emphasis>leftrecset</emphasis> e o <emphasis>index </emphasis> no
     <emphasis>rightrecset </emphasis>– o <emphasis>index </emphasis> precisa
-    do campo de ponteiro de registro do dataset (virtual(fileposition)) para
+    do campo de ponteiro de registro do dataset (VIRTUAL(fileposition)) para
     buscar corretamente os registros do <emphasis>rightrecset</emphasis>. A
     operação join KEYED típica especifica apenas o <emphasis>rightrecset
     </emphasis> para o TRANSFORM.</para>
@@ -693,7 +693,7 @@
     uma JOIN “half-keyed”. Normalmente, o INDEX em uma JOIN de “half-keyed”
     contém campos de “payload", que frequentemente eliminam a necessidade de
     leitura do dataset de base. Se esse for o caso, o INDEX de “payload" não
-    precisa do campo de ponteiro de registro (virtual(fileposition)) do
+    precisa do campo de ponteiro de registro (VIRTUAL(fileposition)) do
     dataset declarado. Para uma JOIN de half-keyed, a
     <emphasis>joincondition</emphasis> pode usar apenas as palavras-chave
     KEYED e WILD que estão disponíveis para uso apenas nos filtros
@@ -914,7 +914,7 @@ Proj := PROJECT(Person(per_last_name[1]=per_first_name[1]),
 PtblOut := OUTPUT(Proj,,'~RTTEMP::TestKeyedJoin',OVERWRITE);
 
 Ptbl := DATASET('RTTEMP::TestKeyedJoin',
-                {PtblRec,UNSIGNED8 __fpos {virtual(fileposition)}},
+                {PtblRec,UNSIGNED8 __fpos {VIRTUAL(fileposition)}},
                 FLAT);
 AlphaKey := INDEX(Ptbl,{lname,fname,__fpos},
                   '~RTTEMPkey::lname.fname');

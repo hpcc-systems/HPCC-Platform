@@ -7,40 +7,16 @@ storage:
   - name: {{ $plane.name }}
     pvc: {{ printf "%s-%s-pvc" $plane.name (include "hpcc-nfs.fullname" $) }}
     prefix: {{ printf "%s%s%s" $.Values.common.mountPrefix (regexMatch ".*/$" $.Values.common.mountPrefix | ternary "" "/") $plane.subPath | quote }}
-{{- if hasKey $plane "labels" }}
-    labels:
-{{ toYaml $plane.labels | indent 4 }}
-{{ end -}}
+    category: {{ $plane.category }}
+    forcePermissions: true
 {{- end }}
-
-{{ range $plane := .Values.planes -}}
-{{- if eq "dali" $plane.name }}
-  daliStorage:
-    plane: {{ $plane.name }}
-    forcePermissions: true
-{{ end -}}
-{{- if eq "dll" $plane.name }}
-  dllStorage:
-    plane: {{ $plane.name }}
-    forcePermissions: true
-{{ end -}}
-{{- if eq "data" $plane.name }}
-  dataStorage:
-    plane: {{ $plane.name }}
-    forcePermissions: true
-{{ end -}}
-{{ end -}}
 
 {{ range $plane := .Values.planes -}}
 {{ if eq "sasha" $plane.name }}
 sasha:
   wu-archiver:
-    storage:
-      plane: {{ $plane.name }}
-      forcePermissions: true
+    plane: {{ $plane.name }}
   dfuwu-archiver:
-    storage:
-      plane: {{ $plane.name }}
-      forcePermissions: true
+    plane: {{ $plane.name }}
 {{ end -}}
 {{- end }}

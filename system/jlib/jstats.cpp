@@ -72,7 +72,7 @@ void setStatisticsComponentName(StatisticCreatorType processType, const char * p
 // Textual forms of the different enumerations, first items are for none and all.
 static constexpr const char * const measureNames[] = { "", "all", "ns", "ts", "cnt", "sz", "cpu", "skw", "node", "ppm", "ip", "cy", "en", "txt", "bool", "id", "fname", "cost", NULL };
 static constexpr const char * const creatorTypeNames[]= { "", "all", "unknown", "hthor", "roxie", "roxie:s", "thor", "thor:m", "thor:s", "eclcc", "esp", "summary", NULL };
-static constexpr const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", "function", "workflow", "child", "unknown", nullptr };
+static constexpr const char * const scopeTypeNames[] = { "", "all", "global", "graph", "subgraph", "activity", "allocator", "section", "compile", "dfu", "edge", "function", "workflow", "child", "file", "channel", "unknown", nullptr };
 
 static unsigned matchString(const char * const * names, const char * search, unsigned dft)
 {
@@ -111,6 +111,8 @@ static const StatisticScopeType scoreOrder[] = {
     SSTfunction,
     SSTworkflow,
     SSTchildgraph,
+    SSTfile,
+    SSTchannel,  // MORE - not sure what this means!
     SSTunknown
 };
 static int scopePriority[SSTmax];
@@ -177,45 +179,6 @@ extern jlib_decl unsigned __int64 getTimeStampNowValue()
     return (unsigned __int64)tm.tv_sec * I64C(1000000) + tm.tv_usec;
 #endif
 }
-
-const static unsigned __int64 msUntilResync = 1000; // resync every second ~= 1ms accuracy
-static cycle_t cyclesUntilResync;
-
-MODULE_INIT(INIT_PRIORITY_STANDARD)
-{
-    cyclesUntilResync = nanosec_to_cycle(msUntilResync * 1000000);
-    return true;
-}
-
-OptimizedTimestamp::OptimizedTimestamp()
-{
-    lastCycles = get_cycles_now();
-    lastTimestamp = ::getTimeStampNowValue();
-}
-
-#if 0
-//This version almost certainly has problems if the computer is suspended and cycles->nanoseconds is only accurate to
-//about 0.1% - so should only be used for relatively short periods
-unsigned __int64 OptimizedTimestamp::getTimeStampNowValue()
-{
-    cycle_t nowCycles = get_cycles_now();
-    return lastTimestamp + cycle_to_microsec(nowCycles - lastCycles);
-}
-#else
-//This version will resync every minute, but is not thread safe.  Adding a critical section makes it less efficient than recalculating
-unsigned __int64 OptimizedTimestamp::getTimeStampNowValue()
-{
-    cycle_t nowCycles = get_cycles_now();
-    if (nowCycles - lastCycles > cyclesUntilResync)
-    {
-        lastCycles = nowCycles;
-        lastTimestamp = ::getTimeStampNowValue();
-    }
-    return lastTimestamp + cycle_to_microsec(nowCycles - lastCycles);
-}
-#endif
-
-
 
 unsigned __int64 getIPV4StatsValue(const IpAddress & ip)
 {
@@ -295,23 +258,46 @@ extern void formatTimeCollatable(StringBuffer & out, unsigned __int64 value, boo
     // More than 999 days, I don't care that it goes wrong.
 }
 
-extern unsigned __int64 extractTimeCollatable(const char *s, bool nano)
+extern unsigned __int64 extractTimestamp(const char *s, const char * * end)
 {
     if (!s)
         return 0;
-    unsigned days,hours,mins,secs,fracs;
-    if (sscanf(s, " %ud %u:%u:%u.%u", &days, &hours, &mins, &secs, &fracs)!=5)
+    const char * next = nullptr;
+    CDateTime timestamp;
+    try
+    {
+        timestamp.setString(s, &next, false); // Sets to date and time given as yyyy-mm-ddThh:mm:ss[.nnnnnnnnn]
+    }
+    catch(IException * e)
+    {
+        e->Release();
+        return 0;
+    }
+    //Skip a trailing Z.  The setString function should really process it, but that may break other code in CScmDateTime.
+    if (*next == 'Z')
+        next++;
+    if (end)
+        *end = next;
+
+    return timestamp.getTimeStamp();
+}
+
+extern unsigned __int64 extractTimeCollatable(const char *s, const char * * end)
+{
+    if (!s)
+        return 0;
+    unsigned days,hours,mins;
+    double secs;
+    unsigned numRead = 0;
+    if (sscanf(s, " %ud %u:%u:%lf%n", &days, &hours, &mins, &secs, &numRead)!=4)
     {
         days = 0;
-        if (sscanf(s, " %u:%u:%u.%u", &hours, &mins, &secs, &fracs) != 4)
+        if (sscanf(s, " %u:%u:%lf%n", &hours, &mins, &secs, &numRead) != 3)
             return 0;
     }
-    unsigned __int64 ret = days*oneDay + hours*oneHour + mins*oneMinute + secs*oneSecond;
-    if (nano)
-        ret += fracs;
-    else
-        ret += milliToNano(fracs);
-    return ret;
+    if (end)
+        *end = s + numRead;
+    return days*oneDay + hours*oneHour + mins*oneMinute + secs*oneSecond;
 }
 
 static void formatTimeStamp(StringBuffer & out, unsigned __int64 value)
@@ -501,11 +487,20 @@ StringBuffer & formatStatistic(StringBuffer & out, unsigned __int64 value, Stati
 
 stat_type readStatisticValue(const char * cur, const char * * end, StatisticMeasure measure)
 {
-    char * next;
+    char * next = nullptr;
     stat_type value = strtoll(cur, &next, 10);
 
     switch (measure)
     {
+    case SMeasureTimestampUs:
+    {
+        //ignore value and check if it is a formatted timestamp
+        stat_type timestamp = extractTimestamp(cur, end);
+        if (timestamp)
+            return timestamp;
+        //Assume that it is a single number
+        break;
+    }
     case SMeasureTimeNs:
         //Allow s, ms and us as scaling suffixes
         if (next[0] == 's')
@@ -522,6 +517,17 @@ stat_type readStatisticValue(const char * cur, const char * * end, StatisticMeas
         {
             value *= 1000;
             next += 2;
+        }
+        else if ((next[0] == 'n') && (next[1] == 's'))
+        {
+            next += 2;
+        }
+        else
+        {
+            stat_type timestamp = extractTimeCollatable(cur, end);
+            if (timestamp)
+                return timestamp;
+            //Assume that it is a single number
         }
         break;
     case SMeasureCount:
@@ -951,6 +957,9 @@ static const StatisticMeta statsMetaData[StMax] = {
     { TIMESTAT(Blocked) },
     { CYCLESTAT(Blocked) },
     { STAT(Cost, Execute, SMeasureCost) },
+    { SIZESTAT(AgentReply) },
+    { TIMESTAT(AgentWait) },
+    { CYCLESTAT(AgentWait) },
 };
 
 //Is a 0 value likely, and useful to be reported if it does happen to be zero?
@@ -1263,8 +1272,8 @@ const StatisticsMapping allStatistics(StKindAll);
 const StatisticsMapping heapStatistics({StNumAllocations, StNumAllocationScans});
 const StatisticsMapping diskLocalStatistics({StCycleDiskReadIOCycles, StSizeDiskRead, StNumDiskReads, StCycleDiskWriteIOCycles, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries});
 const StatisticsMapping diskRemoteStatistics({StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries});
-const StatisticsMapping diskReadRemoteStatistics({StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StNumDiskRetries});
-const StatisticsMapping diskWriteRemoteStatistics({StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries});
+const StatisticsMapping diskReadRemoteStatistics({StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StNumDiskRetries, StCycleDiskReadIOCycles});
+const StatisticsMapping diskWriteRemoteStatistics({StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries, StCycleDiskWriteIOCycles});
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -1346,6 +1355,10 @@ StringBuffer & StatsScopeId::getScopeText(StringBuffer & out) const
         return out.append(WorkflowScopePrefix).append(id);
     case SSTchildgraph:
         return out.append(ChildGraphScopePrefix).append(id);
+    case SSTfile:
+        return out.append(FileScopePrefix).append(name);
+    case SSTchannel:
+        return out.append(ChannelScopePrefix).append(id);
     case SSTunknown:
         return out.append(name);
     default:
@@ -1403,11 +1416,13 @@ void StatsScopeId::describe(StringBuffer & description) const
     case SSTactivity:
     case SSTworkflow:
     case SSTchildgraph:
+    case SSTchannel:
         description.append(' ').append(id);
         break;
     case SSTedge:
         description.append(' ').append(id).append(',').append(extra);
         break;
+    case SSTfile:
     case SSTfunction:
         description.append(' ').append(name);
         break;
@@ -1448,12 +1463,14 @@ void StatsScopeId::deserialize(MemoryBuffer & in, unsigned version)
     case SSTactivity:
     case SSTworkflow:
     case SSTchildgraph:
+    case SSTchannel:
         in.read(id);
         break;
     case SSTedge:
         in.read(id);
         in.read(extra);
         break;
+    case SSTfile:
     case SSTfunction:
         in.read(name);
         break;
@@ -1473,12 +1490,14 @@ void StatsScopeId::serialize(MemoryBuffer & out) const
     case SSTactivity:
     case SSTworkflow:
     case SSTchildgraph:
+    case SSTchannel:
         out.append(id);
         break;
     case SSTedge:
         out.append(id);
         out.append(extra);
         break;
+    case SSTfile:
     case SSTfunction:
         out.append(name);
         break;
@@ -1554,6 +1573,15 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
             return true;
         }
         break;
+    case FileScopePrefix[0]:
+        if (MATCHES_CONST_PREFIX(text, FileScopePrefix))
+        {
+            setFileId(text+strlen(FileScopePrefix));
+            if (_next)
+                *_next = text + strlen(text);
+            return true;
+        }
+        break;
     case WorkflowScopePrefix[0]:
         if (MATCHES_CONST_PREFIX(text, WorkflowScopePrefix) && isdigit(text[strlen(WorkflowScopePrefix)]))
         {
@@ -1565,6 +1593,13 @@ bool StatsScopeId::setScopeText(const char * text, const char * * _next)
         if (MATCHES_CONST_PREFIX(text, ChildGraphScopePrefix))
         {
             setChildGraphId(strtoul(text+ strlen(ChildGraphScopePrefix), next, 10));
+            return true;
+        }
+        break;
+    case ChannelScopePrefix[0]:
+        if (MATCHES_CONST_PREFIX(text, ChannelScopePrefix) && isdigit(text[strlen(ChannelScopePrefix)]))
+        {
+            setChannelId(strtoul(text+ strlen(ChannelScopePrefix), next, 10));
             return true;
         }
         break;
@@ -1615,6 +1650,15 @@ void StatsScopeId::setFunctionId(const char * _name)
 {
     scopeType = SSTfunction;
     name.set(_name);
+}
+void StatsScopeId::setFileId(const char * _name)
+{
+    scopeType = SSTfile;
+    name.set(_name);
+}
+void StatsScopeId::setChannelId(unsigned _id)
+{
+    setId(SSTchannel, _id);
 }
 void StatsScopeId::setWorkflowId(unsigned _id)
 {
@@ -1700,9 +1744,9 @@ public:
 
     virtual byte getCollectionType() const { return SCintermediate; }
 
-    StringBuffer &toXML(StringBuffer &out) const;
 
 //interface IStatisticCollection:
+    virtual StringBuffer &toXML(StringBuffer &out) const override;
     virtual StatisticScopeType queryScopeType() const override
     {
         return id.queryScopeType();
@@ -1870,6 +1914,7 @@ public:
 private:
     StatsScopeId id;
     CStatisticCollection * parent;
+protected:
     CollectionHashTable children;
     StatsArray stats;
 };
@@ -1970,6 +2015,15 @@ public:
         out.append(creator);
         out.append(whenCreated);
     }
+    virtual void mergeInto(IStatisticGatherer & target) const override
+    {
+        // Similar to CStatisticCollection::mergeInfo but do not add the root scope.
+        ForEachItemIn(iStat, stats)
+            stats.item(iStat).mergeInto(target);
+
+        for (auto const & cur : children)
+            cur.mergeInto(target);
+    }
 public:
     StatisticCreatorType creatorType;
     StringAttr creator;
@@ -2046,6 +2100,12 @@ public:
         CStatisticCollection & tos = scopes.tos();
         scopes.append(*tos.ensureSubScope(scopeId, true));
     }
+    virtual void beginChannelScope(unsigned id) override
+    {
+        StatsScopeId scopeId(SSTchannel, id);
+        CStatisticCollection & tos = scopes.tos();
+        scopes.append(*tos.ensureSubScope(scopeId, true));
+    }
     virtual void endScope() override
     {
         scopes.pop();
@@ -2114,6 +2174,7 @@ public:
     virtual void beginChildGraphScope(unsigned id) { throwUnexpected(); }
     virtual void beginActivityScope(unsigned id) { throwUnexpected(); }
     virtual void beginEdgeScope(unsigned id, unsigned oid) { throwUnexpected(); }
+    virtual void beginChannelScope(unsigned id) { throwUnexpected(); }
     virtual void endScope()
     {
         node = &stack.popGet();
@@ -2321,12 +2382,12 @@ void CRuntimeStatisticCollection::rollupStatistics(unsigned numTargets, IContext
     reportIgnoredStats();
 }
 
-void CRuntimeStatisticCollection::recordStatistics(IStatisticGatherer & target) const
+void CRuntimeStatisticCollection::recordStatistics(IStatisticGatherer & target, bool clear) const
 {
     ForEachItem(i)
     {
         StatisticKind kind = getKind(i);
-        unsigned __int64 value = values[i].get();
+        unsigned __int64 value = clear ? values[i].getClearAtomic() : values[i].get();
         if (value || includeStatisticIfZero(kind))
         {
             StatisticKind serialKind= querySerializedKind(kind);
@@ -2339,7 +2400,7 @@ void CRuntimeStatisticCollection::recordStatistics(IStatisticGatherer & target) 
     reportIgnoredStats();
     CNestedRuntimeStatisticMap *qn = queryNested();
     if (qn)
-        qn->recordStatistics(target);
+        qn->recordStatistics(target, clear);
 }
 
 void CRuntimeStatisticCollection::reportIgnoredStats() const
@@ -2428,12 +2489,6 @@ void CRuntimeStatisticCollection::deserializeMerge(MemoryBuffer& in)
     {
         ensureNested().deserializeMerge(in);
     }
-}
-
-void CRuntimeStatisticCollection::getNodeProgressInfo(IPropertyTree &node) const
-{
-    TreeNodeStatisticGatherer gatherer(node);
-    recordStatistics(gatherer);
 }
 
 bool CRuntimeStatisticCollection::serialize(MemoryBuffer& out) const
@@ -2592,7 +2647,7 @@ static bool isWorthReportingMergedValue(StatisticKind kind)
 }
 
 
-void CRuntimeSummaryStatisticCollection::recordStatistics(IStatisticGatherer & target) const
+void CRuntimeSummaryStatisticCollection::recordStatistics(IStatisticGatherer & target, bool clear) const
 {
     for (unsigned i = 0; i < ordinality(); i++)
     {
@@ -2604,7 +2659,7 @@ void CRuntimeSummaryStatisticCollection::recordStatistics(IStatisticGatherer & t
             //Thor should always publish the average value for a stat, and the merged value if it makes sense.
             //So that it is easy to analyse graphs independent of the number of slave nodes it is executed on.
 
-            unsigned __int64 mergedValue = convertMeasure(kind, serialKind, values[i].get());
+            unsigned __int64 mergedValue = convertMeasure(kind, serialKind, clear ? values[i].getClearAtomic() : values[i].get());
             if (isWorthReportingMergedValue(serialKind))
             {
                 if (mergedValue || includeStatisticIfZero(serialKind))
@@ -2673,7 +2728,7 @@ void CRuntimeSummaryStatisticCollection::recordStatistics(IStatisticGatherer & t
     reportIgnoredStats();
     CNestedRuntimeStatisticMap *qn = queryNested();
     if (qn)
-        qn->recordStatistics(target);
+        qn->recordStatistics(target, clear);
 }
 
 bool CRuntimeSummaryStatisticCollection::serialize(MemoryBuffer & out) const
@@ -2721,10 +2776,10 @@ bool CNestedRuntimeStatisticCollection::serialize(MemoryBuffer& out) const
     return stats->serialize(out);
 }
 
-void CNestedRuntimeStatisticCollection::recordStatistics(IStatisticGatherer & target) const
+void CNestedRuntimeStatisticCollection::recordStatistics(IStatisticGatherer & target, bool clear) const
 {
     target.beginScope(scope);
-    stats->recordStatistics(target);
+    stats->recordStatistics(target, clear);
     target.endScope();
 }
 
@@ -2847,11 +2902,11 @@ bool CNestedRuntimeStatisticMap::serialize(MemoryBuffer& out) const
     return nonEmpty;
 }
 
-void CNestedRuntimeStatisticMap::recordStatistics(IStatisticGatherer & target) const
+void CNestedRuntimeStatisticMap::recordStatistics(IStatisticGatherer & target, bool clear) const
 {
     ReadLockBlock b(lock);
     ForEachItemIn(i, map)
-        map.item(i).recordStatistics(target);
+        map.item(i).recordStatistics(target, clear);
 }
 
 StringBuffer & CNestedRuntimeStatisticMap::toStr(StringBuffer &str) const

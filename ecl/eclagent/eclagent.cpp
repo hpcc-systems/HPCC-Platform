@@ -231,6 +231,7 @@ public:
         while (running)
         {
             ISocket *client = socket->accept(true);
+            // TLS TODO: secure_accept() on hThor debug socket if globally configured for mtls ...
             if (client)
             {
                 client->set_linger(-1);
@@ -542,7 +543,7 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
             Owned<IPropertyTree> graphTree = createPTree("Graph");
             graphTree->addProp("@id", graphName.str());
             Owned<IPropertyTree> xgmmlTree = createPTree("xgmml");
-            Owned<IPropertyTree> graphXgmml = graphs->query().getXGMMLTree(false);
+            Owned<IPropertyTree> graphXgmml = graphs->query().getXGMMLTree(false, false);
             xgmmlTree->addPropTree("graph", graphXgmml.getClear());
             graphTree->addPropTree("xgmml", xgmmlTree.getClear());
             destTree->addPropTree("Graph", graphTree.getClear());
@@ -3059,7 +3060,7 @@ char * EclAgent::getGroupName()
 #ifdef _CONTAINERIZED
     // in a containerized setup, the group is moving..
     return strdup("unknown");
-#endif
+#else
     StringBuffer groupName;
     if (!isStandAloneExe)
     {
@@ -3103,6 +3104,7 @@ char * EclAgent::getGroupName()
         }
     }
     return groupName.detach();
+#endif
 }
 
 char * EclAgent::queryIndexMetaData(char const * lfn, char const * xpath)
@@ -3657,6 +3659,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             startLogMsgParentReceiver();
             connectLogMsgManagerToDali();
 
+#ifndef _CONTAINERIZED
             StringBuffer baseDir;
             if (getConfigurationDirectory(agentTopology->queryPropTree("Directories"),"data","eclagent",agentTopology->queryProp("@name"),baseDir.clear()))
                 setBaseDirectory(baseDir.str(), false);
@@ -3665,6 +3668,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
 
             if (agentTopology->getPropBool("@useNASTranslation", true))
                 envInstallNASHooks();
+#endif
 
             if (standAloneWorkUnit)
             {

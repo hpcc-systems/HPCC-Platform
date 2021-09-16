@@ -239,7 +239,7 @@ inline unsigned LogMsgClassFromAbbrev(char const * abbrev)
 }
 
 typedef unsigned LogMsgDetail;
-#define DefaultDetail   100
+#define DefaultDetail   DebugMsgThreshold
 #define TopDetail (LogMsgDetail)-1
 
 /*
@@ -312,7 +312,7 @@ typedef enum
 #else
 
 #ifdef _CONTAINERIZED
-#define MSGFIELD_STANDARD LogMsgField(MSGFIELD_timeDate | MSGFIELD_milliTime | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code | MSGFIELD_quote | MSGFIELD_class | MSGFIELD_audience)
+#define MSGFIELD_STANDARD LogMsgField(MSGFIELD_job | MSGFIELD_timeDate | MSGFIELD_milliTime | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code | MSGFIELD_quote | MSGFIELD_class | MSGFIELD_audience)
 #else
 #define MSGFIELD_STANDARD LogMsgField(MSGFIELD_timeDate | MSGFIELD_milliTime | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code | MSGFIELD_quote | MSGFIELD_prefix | MSGFIELD_audience)
 #endif
@@ -730,6 +730,7 @@ interface jlib_decl ILogMsgManager : public ILogMsgListener
     virtual offset_t          getLogPosition(StringBuffer &logFileName, const ILogMsgHandler * handler) const = 0;
     virtual LogMsgJobId       addJobId(const char *job) = 0;
     virtual void              removeJobId(LogMsgJobId) = 0;
+    virtual const char *      queryJobId(LogMsgJobId id) const = 0;
 };
 
 // CONCRETE CLASSES
@@ -855,6 +856,7 @@ constexpr LogMsgCategory MCauditInfo(MSGAUD_audit, MSGCLS_information, AudMsgThr
 constexpr LogMsgCategory MCstats(MSGAUD_operator, MSGCLS_progress, ProgressMsgThreshold);
 constexpr LogMsgCategory MCoperatorInfo(MSGAUD_operator, MSGCLS_information, InfoMsgThreshold);
 constexpr LogMsgCategory MCmetrics(MSGAUD_operator, MSGCLS_metric, ErrMsgThreshold);
+constexpr LogMsgCategory MCExtraneousInfo(MSGAUD_programmer, MSGCLS_information, ExtraneousMsgThreshold);
 
 /*
  * Function to determine log level (detail) for exceptions, based on log message class
@@ -1284,6 +1286,7 @@ interface jlib_decl IContextLogger : extends IInterface
     void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const  __attribute__((format(printf, 5, 6)));
     virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const __attribute__((format(printf,5,0))) = 0;
     virtual void noteStatistic(StatisticKind kind, unsigned __int64 value) const = 0;
+    virtual void setStatistic(StatisticKind kind, unsigned __int64 value) const = 0;
     virtual void mergeStats(const CRuntimeStatisticCollection &from) const = 0;
     virtual unsigned queryTraceLevel() const = 0;
 

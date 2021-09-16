@@ -1018,7 +1018,7 @@ ecl run thor findperson.ecl -I C:\MyECL\
                 </row>
 
                 <row>
-                  <entry>-X&lt;name&gt;</entry>
+                  <entry>-X&lt;name&gt;=&lt;value&gt;</entry>
 
                   <entry>Define o valor de entrada armazenado
                   (stored('name'))</entry>

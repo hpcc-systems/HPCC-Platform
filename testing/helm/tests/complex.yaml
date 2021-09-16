@@ -5,22 +5,27 @@ storage:
   - name: azureBlobPlane
     prefix: azure://ghallidaystorage      # Not sure if this should be different from the mount.
     secret: azure-ghallidaystorage
+    category: data
 
   #Store data on aws s3 buckets
   - name: s3BucketPlane
     prefix: s3://...
+    category: data
 
   #Single node with data mounted, and mirror mounted at a different locations (could be a different disk)
   - name: localDataPlane
     prefix: /var/lib/hpccsystems/hpcc-data
     replication: [ localMirrorPlane, localMirror2Plane ]
     pvc: local-data-pvc
+    category: data
   - name: localMirrorPlane
     prefix: /var/lib/hpccsystems/hpcc-mirror
     pvc: local-mirror-pvc
+    category: data
   - name: localMirror2Plane
     prefix: /var/lib/hpccsystems/hpcc-mirror2
     pvc: local-mirror2-pvc
+    category: data
 
   #Multiple nodes, data on a local mounts (all nodes mount the same logical file system).
   #Essentially identical to localDataPlane above
@@ -28,9 +33,11 @@ storage:
     prefix: /var/lib/hpccsystems/hpcc-data
     replication: [ nasMirrorPlane ]
     pvc: nas-data-pvc
+    category: data
   - name: nasMirrorPlane
     prefix: /var/lib/hpccsystems/hpcc-mirror
     pvc: nas-mirror-pvc
+    category: data
 
   #Multiple nodes, data on multiple local mounts (all nodes mount the same logical file system).
   #Allows an array of NFS servers to be used to store the data.  Would also potentially work for
@@ -41,3 +48,10 @@ storage:
     pvc: nas-array-data-pvc
     numDevices: 100
     includeDeviceInPath: true
+    category: data
+
+  - name: sasha
+    storageClass: ""
+    storageSize: 1Gi
+    prefix: "/var/lib/HPCCSystems/sashastorage"
+    category: sasha

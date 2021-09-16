@@ -142,19 +142,23 @@ void cloneFileInfoToDali(unsigned updateFlags, StringArray &notFound, IPropertyT
 #ifdef _CONTAINERIZED
     SCMStringBuffer clusterName;
     dstInfo->getName(clusterName);
-    StringBuffer targetPlane;
-    getRoxieDefaultPlane(targetPlane, clusterName.str());
-    wufiles->resolveFiles(targetPlane, lookupDaliIp, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM)), false, false);
-    wufiles->cloneAllInfo(updateFlags, helper, true, false, 0, 1, 0, nullptr);
+    StringArray locations; //roxie won't make local copies of files on these planes
+    StringBuffer targetPlane; //roxies default plane, where files will be copied if not found in locations
+    getRoxieDirectAccessPlanes(locations, targetPlane, clusterName.str(), true);
+
+    wufiles->resolveFiles(locations, lookupDaliIp, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM)), false, false);
+    wufiles->cloneAllInfo(targetPlane, updateFlags, helper, true, false, 0, 1, 0, nullptr);
 #else
+    StringArray locations;
     SCMStringBuffer processName;
     dstInfo->getRoxieProcess(processName);
-    wufiles->resolveFiles(processName.str(), lookupDaliIp, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM)), false, false);
+    locations.append(processName.str());
+    wufiles->resolveFiles(locations, lookupDaliIp, remotePrefix, srcCluster, !(updateFlags & (DALI_UPDATEF_REPLACE_FILE | DALI_UPDATEF_CLONE_FROM)), false, false);
 
     StringBuffer defReplicateFolder;
     getConfigurationDirectory(NULL, "data2", "roxie", processName.str(), defReplicateFolder);
 
-    wufiles->cloneAllInfo(updateFlags, helper, true, false, dstInfo->getRoxieRedundancy(), dstInfo->getChannelsPerNode(), dstInfo->getRoxieReplicateOffset(), defReplicateFolder);
+    wufiles->cloneAllInfo(processName.str(), updateFlags, helper, true, false, dstInfo->getRoxieRedundancy(), dstInfo->getChannelsPerNode(), dstInfo->getRoxieReplicateOffset(), defReplicateFolder);
 #endif
 
     Owned<IReferencedFileIterator> iter = wufiles->getFiles();
@@ -324,10 +328,9 @@ public:
     void setDerivedDfsLocation(const char *dfsLocation, const char *srcProcess)
     {
         splitDerivedDfsLocation(dfsLocation, srcCluster, daliIP, prefix, srcProcess, srcProcess, NULL, NULL);
-
         if (srcCluster.length())
         {
-            if (!isProcessCluster(daliIP, srcCluster))
+            if (!validateDataPlaneName(daliIP, srcCluster))
                 throw MakeStringException(PKG_INVALID_CLUSTER_TYPE, "Process cluster %s not found on %s DALI", srcCluster.str(), daliIP.length() ? daliIP.str() : "local");
         }
     }
@@ -1206,7 +1209,9 @@ void CWsPackageProcessEx::validatePackage(IEspContext &context, IEspValidatePack
     {
         Owned<IReferencedFileList> pmfiles = createReferencedFileList(context.queryUserId(), context.queryPassword(), true, false);
         pmfiles->addFilesFromPackageMap(mapTree);
-        pmfiles->resolveFiles(process.str(), nullptr, nullptr, nullptr, true, false, false);
+        StringArray locations;
+        locations.append(process.str());
+        pmfiles->resolveFiles(locations, nullptr, nullptr, nullptr, true, false, false);
         Owned<IReferencedFileIterator> files = pmfiles->getFiles();
         ForEach(*files)
         {

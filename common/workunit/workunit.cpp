@@ -182,8 +182,8 @@ void doDescheduleWorkkunit(char const * wuid)
  * Graph progress support
  */
 
-CWuGraphStats::CWuGraphStats(IPropertyTree *_progress, StatisticCreatorType _creatorType, const char * _creator, unsigned wfid, const char * _rootScope, unsigned _id)
-    : progress(_progress), creatorType(_creatorType), creator(_creator), id(_id)
+CWuGraphStats::CWuGraphStats(StatisticCreatorType _creatorType, const char * _creator, unsigned wfid, const char * _rootScope, unsigned _id, bool _merge)
+    : creatorType(_creatorType), creator(_creator), id(_id), merge(_merge)
 {
     StatsScopeId graphScopeId;
     verifyex(graphScopeId.setScopeText(_rootScope));
@@ -195,8 +195,25 @@ CWuGraphStats::CWuGraphStats(IPropertyTree *_progress, StatisticCreatorType _cre
 
 void CWuGraphStats::beforeDispose()
 {
-    Owned<IStatisticCollection> stats = collector->getResult();
+    collector->endScope();
+    StringBuffer tag;
+    tag.append("sg").append(id);
 
+    IPropertyTree &progress = queryProgressTree();
+    if (merge && progress.hasProp(tag))
+    {
+        VStringBuffer statsPath("%s/Stats", tag.str());
+        MemoryBuffer compressed;
+        progress.getPropBin(statsPath, compressed);
+        if (compressed.length())
+        {
+            MemoryBuffer serialized;
+            decompressToBuffer(serialized, compressed);
+            Owned<IStatisticCollection> prevCollection = createStatisticCollection(serialized);
+            prevCollection->mergeInto(*collector);
+        }
+    }
+    Owned<IStatisticCollection> stats = collector->getResult();
     MemoryBuffer compressed;
     {
         MemoryBuffer serialized;
@@ -208,18 +225,15 @@ void CWuGraphStats::beforeDispose()
     unsigned maxActivity = 0;
     stats->getMinMaxActivity(minActivity, maxActivity);
 
-    StringBuffer tag;
-    tag.append("sg").append(id);
-
     //Replace the particular subgraph statistics added by this creator
-    IPropertyTree * subgraph = progress->setPropTree(tag);
+    IPropertyTree * subgraph = progress.setPropTree(tag);
     subgraph->setProp("@c", queryCreatorTypeName(creatorType));
     subgraph->setProp("@creator", creator);
     subgraph->setPropInt("@minActivity", minActivity);
     subgraph->setPropInt("@maxActivity", maxActivity);
     subgraph->setPropBin("Stats", compressed.length(), compressed.toByteArray());
-    if (!progress->getPropBool("@stats", false))
-        progress->setPropBool("@stats", true);
+    if (!progress.getPropBool("@stats", false))
+        progress.setPropBool("@stats", true);
 }
 
 IStatisticGatherer & CWuGraphStats::queryStatsBuilder()
@@ -237,10 +251,10 @@ public:
             progress.setown(createPTree());
         formatVersion = progress->getPropInt("@format", PROGRESS_FORMAT_V);
     }
-    virtual IPropertyTree * getProgressTree()
+    virtual IPropertyTree * getProgressTree(bool doFormat) override
     {
         if (progress->getPropBool("@stats"))
-            return createProcessTreeFromStats(); // Should we cache that?
+            return createProcessTreeFromStats(doFormat); // Should we cache that?
         return LINK(progress);
     }
     virtual unsigned queryFormatVersion()
@@ -253,7 +267,7 @@ protected:
     {
         formatVersion = PROGRESS_FORMAT_V;
     }
-    static void expandStats(IPropertyTree * target, IStatisticCollection & collection)
+    static void expandStats(IPropertyTree * target, IStatisticCollection & collection, bool doFormat)
     {
         StringBuffer formattedValue;
         unsigned numStats = collection.getNumStatistics();
@@ -262,13 +276,20 @@ protected:
             StatisticKind kind;
             unsigned __int64 value;
             collection.getStatistic(kind, value, i);
-            formatStatistic(formattedValue.clear(), value, kind);
-            target->setProp(queryTreeTag(kind), formattedValue);
+            if (doFormat)
+            {
+                formatStatistic(formattedValue.clear(), value, kind);
+                target->setProp(queryTreeTag(kind), formattedValue);
+            }
+            else
+            {
+                target->setPropInt64(queryTreeTag(kind), value);
+            }
         }
     }
-    void expandProcessTreeFromStats(IPropertyTree * rootTarget, IPropertyTree * target, IStatisticCollection * collection)
+    void expandProcessTreeFromStats(IPropertyTree * rootTarget, IPropertyTree * target, IStatisticCollection * collection, bool doFormat)
     {
-        expandStats(target, *collection);
+        expandStats(target, *collection, doFormat);
 
         StringBuffer scopeName;
         Owned<IStatisticCollectionIterator> activityIter = &collection->getScopes(NULL, false);
@@ -299,9 +320,11 @@ protected:
             case SSTworkflow:
             case SSTgraph:
                 // SSTworkflow and SSTgraph may be safely ignored.  They are not required to produce the statistics.
-                expandProcessTreeFromStats(rootTarget, target, &cur);
+                expandProcessTreeFromStats(rootTarget, target, &cur, doFormat);
                 continue;
             case SSTfunction:
+            case SSTchannel:
+            case SSTglobal:
                 //MORE:Should function scopes be included in the graph scope somehow, and if so how?
                 continue;
             default:
@@ -310,11 +333,11 @@ protected:
 
             IPropertyTree * next = curTarget->addPropTree(tag);
             next->setProp("@id", id);
-            expandProcessTreeFromStats(rootTarget, next, &cur);
+            expandProcessTreeFromStats(rootTarget, next, &cur, doFormat);
         }
     }
 
-    IPropertyTree * createProcessTreeFromStats()
+    IPropertyTree * createProcessTreeFromStats(bool doFormat)
     {
         MemoryBuffer compressed;
         MemoryBuffer serialized;
@@ -330,7 +353,7 @@ protected:
                 decompressToBuffer(serialized.clear(), compressed);
                 Owned<IStatisticCollection> collection = createStatisticCollection(serialized);
 
-                expandProcessTreeFromStats(progressTree, progressTree, collection);
+                expandProcessTreeFromStats(progressTree, progressTree, collection, doFormat);
             }
         }
         return progressTree.getClear();
@@ -1608,7 +1631,7 @@ private:
             {
                 //Walk dependencies - should possibly have a different SST e.g., SSTdependency since they do not
                 //share many characteristics with edges - e.g. no flowing records => few/no stats.
-                curGraph.setown(graphIter->query().getXGMMLTree(false));
+                curGraph.setown(graphIter->query().getXGMMLTree(false, false));
                 Owned<IPropertyTreeIterator> treeIter = curGraph->getElements("edge");
                 if (treeIter && treeIter->first())
                 {
@@ -3597,7 +3620,7 @@ public:
         priorityLevel = calcPriorityValue(&p);
         wuscope.set(p.queryProp("@scope"));
         appvalues.loadBranch(&p,"Application");
-        totalThorTime = (unsigned)nanoToMilli(extractTimeCollatable(p.queryProp("@totalThorTime"), false));
+        totalThorTime = (unsigned)nanoToMilli(extractTimeCollatable(p.queryProp("@totalThorTime"), nullptr));
         _isProtected = p.getPropBool("@protected", false);
     }
     virtual const char *queryWuid() const { return wuid.str(); }
@@ -3638,15 +3661,42 @@ extern IConstWorkUnitInfo *createConstWorkUnitInfo(IPropertyTree &p)
     return new CLightweightWorkunitInfo(p);
 }
 
+class CDaliWorkUnit;
 class CDaliWuGraphStats : public CWuGraphStats
 {
 public:
-    CDaliWuGraphStats(IRemoteConnection *_conn, StatisticCreatorType _creatorType, const char * _creator, unsigned _wfid, const char * _rootScope, unsigned _id)
-        : CWuGraphStats(LINK(_conn->queryRoot()), _creatorType, _creator, _wfid, _rootScope, _id), conn(_conn)
+    CDaliWuGraphStats(const CDaliWorkUnit* _owner, StatisticCreatorType _creatorType, const char * _creator, unsigned _wfid, const char * _rootScope, unsigned _id, bool _merge)
+        : CWuGraphStats(_creatorType, _creator, _wfid, _rootScope, _id, _merge), owner(_owner), graphName(_rootScope), wfid(_wfid)
     {
     }
 protected:
+    virtual IPropertyTree &queryProgressTree() override;
+    const CDaliWorkUnit *owner;
     Owned<IRemoteConnection> conn;
+    StringAttr graphName;
+    unsigned wfid;
+};
+
+class CLocalWuGraphStats : public CWuGraphStats
+{
+public:
+    CLocalWuGraphStats(IPropertyTree *_p, StatisticCreatorType _creatorType, const char * _creator, unsigned _wfid, const char * _rootScope, unsigned _id, bool _merge)
+        : CWuGraphStats(_creatorType, _creator, _wfid, _rootScope, _id, _merge), graphName(_rootScope), p(_p)
+    {
+    }
+protected:
+    virtual IPropertyTree &queryProgressTree() override
+    {
+        IPropertyTree *progress = p->queryPropTree("GraphProgress");
+        if (!progress)
+            progress = p->addPropTree("GraphProgress");
+        IPropertyTree *graph = progress->queryPropTree(graphName);
+        if (!graph)
+            graph = progress->addPropTree(graphName);
+        return *graph;
+    }
+    StringAttr graphName;
+    Owned<IPropertyTree> p;
 };
 
 CWorkUnitWatcher::CWorkUnitWatcher(IWorkUnitSubscriber *_subscriber, WUSubscribeOptions flags, const char *wuid) : subscriber(_subscriber)
@@ -3751,6 +3801,7 @@ bool CPersistedWorkUnit::aborting() const
 
 class CDaliWorkUnit : public CPersistedWorkUnit
 {
+    friend class CDaliWuGraphStats;
 public:
     CDaliWorkUnit(IRemoteConnection *_conn, ISecManager *secmgr, ISecUser *secuser)
         : connection(_conn), CPersistedWorkUnit(secmgr, secuser)
@@ -3934,9 +3985,9 @@ public:
             }
         }
     }
-    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const override
+    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph, bool merge) const override
     {
-        return new CDaliWuGraphStats(getWritableProgressConnection(graphName, _wfid), creatorType, creator, _wfid, graphName, subgraph);
+        return new CDaliWuGraphStats(this, creatorType, creator, _wfid, graphName, subgraph, merge);
     }
     virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree)
     {
@@ -4031,7 +4082,7 @@ public:
         }
     }
 
-    virtual IConstWorkUnit * unlock()
+    virtual IConstWorkUnit * unlock() override
     {
         c->unlockRemote();
         return c.getClear();
@@ -4246,8 +4297,8 @@ public:
             { c->setGraphState(graphName, wfid, state); }
     virtual void setNodeState(const char *graphName, WUGraphIDType nodeId, WUGraphState state) const
             { c->setNodeState(graphName, nodeId, state); }
-    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const override
-            { return c->updateStats(graphName, creatorType, creator, _wfid, subgraph); }
+    virtual IWUGraphStats *updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph, bool merge) const override
+            { return c->updateStats(graphName, creatorType, creator, _wfid, subgraph, merge); }
     virtual void clearGraphProgress() const
             { c->clearGraphProgress(); }
     virtual IStringVal & getAbortBy(IStringVal & str) const
@@ -4439,6 +4490,12 @@ public:
     virtual void setResultDataset(const char * name, unsigned sequence, size32_t len, const void *val, unsigned numRows, bool extend)
             { c->setResultDataset(name, sequence, len, val, numRows, extend); }
 };
+
+IPropertyTree &CDaliWuGraphStats::queryProgressTree()
+{
+    conn.setown(owner->getWritableProgressConnection(graphName, wfid));
+    return *conn->queryRoot();
+}
 
 class CLocalWUAssociated : implements IConstWUAssociatedFile, public CInterface
 {
@@ -7009,6 +7066,12 @@ IWorkUnit& CLocalWorkUnit::lock()
     return lockRemote(true);
 }
 
+IConstWorkUnit *CLocalWorkUnit::unlock()
+{
+    unlockRemote();
+    return this;
+}
+
 const char *CLocalWorkUnit::queryWuid() const
 {
     CriticalBlock block(crit);
@@ -7025,7 +7088,7 @@ unsigned CLocalWorkUnit::getTotalThorTime() const
 {
     CriticalBlock block(crit);
     if (p->hasProp("@totalThorTime"))
-        return (unsigned)nanoToMilli(extractTimeCollatable(p->queryProp("@totalThorTime"), false));
+        return (unsigned)nanoToMilli(extractTimeCollatable(p->queryProp("@totalThorTime"), nullptr));
 
     const WuScopeFilter filter("stype[graph],nested[0],stat[TimeElapsed]");
     StatsAggregation summary;
@@ -7983,18 +8046,9 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool a
     query.clear();
     updateProp(p, fromP, "@jobName");
     copyTree(p, fromP, "Query");
-    pt = fromP->getBranch("Application/LibraryModule");
+    pt = fromP->getBranch("Application");
     if (pt)
-    {
-        ensurePTree(p, "Application");
-        p->setPropTree("Application/LibraryModule", pt);
-    }
-    pt = fromP->getBranch("Application/prefix");
-    if (pt)
-    {
-        ensurePTree(p, "Application");
-        p->setPropTree("Application/prefix", pt);
-    }
+        synchronizePTree(ensurePTree(p, "Application"), pt, false, false);
 
     pt = fromP->queryBranch("Debug");
     if (pt)
@@ -8306,7 +8360,7 @@ IConstWUQuery* CLocalWorkUnit::getQuery() const
     CriticalBlock block(crit);
     if (!query)
     {
-        IPropertyTree *s = p->getPropTree("Query");
+        IPropertyTree *s = queryMergedTree()->getPropTree("Query");
         if (s)
             query.setown(new CLocalWUQuery(s)); // NB takes ownership of 's'
     }
@@ -8319,7 +8373,7 @@ IWUQuery* CLocalWorkUnit::updateQuery()
     CriticalBlock block(crit);
     if (!query)
     {
-        IPropertyTree *s = p->queryPropTree("Query");
+        IPropertyTree *s = queryMergedTree()->queryPropTree("Query");
         if (!s)
             s = p->addPropTree("Query", createPTreeFromXMLString("<Query fetchEntire='1'/>")); // Is this really desirable (the fetchEntire) ?
         s->Link();
@@ -9472,12 +9526,12 @@ bool CLocalWorkUnit::switchThorQueue(const char *cluster, IQueueSwitcher *qs)
 
 IPropertyTree *CLocalWorkUnit::getUnpackedTree(bool includeProgress) const
 {
-    Owned<IPropertyTree> ret = createPTreeFromIPT(p);
+    Owned<IPropertyTree> ret = createPTreeFromIPT(queryMergedTree());
     Owned<IConstWUGraphIterator> graphIter = &getGraphs(GraphTypeAny);
     ForEach(*graphIter)
     {
         IConstWUGraph &graph  = graphIter->query();
-        Owned<IPropertyTree> graphTree = graph.getXGMMLTree(includeProgress);
+        Owned<IPropertyTree> graphTree = graph.getXGMMLTree(includeProgress, false);
         SCMStringBuffer gName;
         graph.getName(gName);
         StringBuffer xpath("Graphs/Graph[@name=\"");
@@ -9492,9 +9546,29 @@ IPropertyTree *CLocalWorkUnit::getUnpackedTree(bool includeProgress) const
     return ret.getClear();
 }
 
+IPropertyTree *CLocalWorkUnit::queryMergedTree() const
+{
+    if (indirectTree)
+        return indirectTree;
+    if (!p->hasProp("@clonedFromWorkunit"))
+        return p;
+    else
+    {
+        indirectTree.setown(createPTreeFromIPT(p));
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        Owned<IConstWorkUnit> donor = factory->openWorkUnit(p->queryProp("@clonedFromWorkunit"));
+        if (donor)
+        {
+            copyTree(indirectTree, queryExtendedWU(donor)->queryPTree(), "Graphs");
+            copyTree(indirectTree, queryExtendedWU(donor)->queryPTree(), "Query");
+        }
+        return indirectTree;
+    }
+}
+
 void CLocalWorkUnit::_loadGraphs(bool heavy) const
 {
-    Owned<IPropertyTreeIterator> iter = p->getElements("Graphs/Graph");
+    Owned<IPropertyTreeIterator> iter = queryMergedTree()->getElements("Graphs/Graph");
     ForEach(*iter)
     {
         IPropertyTree &graph = iter->query();
@@ -9546,7 +9620,7 @@ IStringVal& CLocalWUGraph::getLabel(IStringVal &str) const
     }
     else
     {
-        Owned<IPropertyTree> xgmml = getXGMMLTree(false);
+        Owned<IPropertyTree> xgmml = getXGMMLTree(false, false);
         str.set(xgmml->queryProp("@label"));
         return str;
     }
@@ -9558,9 +9632,9 @@ WUGraphState CLocalWUGraph::getState() const
 }
 
 
-IStringVal& CLocalWUGraph::getXGMML(IStringVal &str, bool mergeProgress) const
+IStringVal& CLocalWUGraph::getXGMML(IStringVal &str, bool mergeProgress, bool doFormatStats) const
 {
-    Owned<IPropertyTree> xgmml = getXGMMLTree(mergeProgress);
+    Owned<IPropertyTree> xgmml = getXGMMLTree(mergeProgress, doFormatStats);
     if (xgmml)
     {
         StringBuffer x;
@@ -9573,9 +9647,9 @@ IStringVal& CLocalWUGraph::getXGMML(IStringVal &str, bool mergeProgress) const
 unsigned CLocalWorkUnit::getGraphCount() const
 {
     CriticalBlock block(crit);
-    if (p->hasProp("Graphs"))
+    if (queryMergedTree()->hasProp("Graphs"))
     {
-        return p->queryPropTree("Graphs")->numChildren();
+        return queryMergedTree()->queryPropTree("Graphs")->numChildren();
     }
     return 0;
 }
@@ -9784,7 +9858,7 @@ IConstWUGraph* CLocalWorkUnit::getGraph(const char *qname) const
     CriticalBlock block(crit);
     VStringBuffer xpath("Graphs/Graph[@name='%s']", qname);
     // NOTE - this would go wrong if we had other graphs of same name but different type. Ignore for now.
-    IPTree *graph = p->queryPropTree(xpath);
+    IPTree *graph = queryMergedTree()->queryPropTree(xpath);
     if (graph)
         return new CLocalWUGraph(*this, LINK(graph));
     return NULL;
@@ -9806,17 +9880,16 @@ void CLocalWorkUnit::createGraph(const char * name, const char *label, WUGraphTy
     graphs.append(*q);
 }
 
-IConstWUGraphProgress *CLocalWorkUnit::getGraphProgress(const char *name) const
+IConstWUGraphProgress *CLocalWorkUnit::getGraphProgress(const char *graphName) const
 {
-/*    Owned<IRemoteConnection> conn = getProgressConnection();
-    if (conn)
+    IPTree *graphProgress = p->queryPropTree("GraphProgress");
+    if (graphProgress)
     {
-        IPTree *progress = conn->queryRoot()->queryPropTree(graphName);
+        IPTree *progress = graphProgress->queryPropTree(graphName);
         if (progress)
-            return new CConstGraphProgress(p->queryName(), graphName, progress);
+            return new CConstGraphProgress(queryWuid(), graphName, progress);
     }
-    */
-    return NULL;
+    return nullptr;
 }
 WUGraphState CLocalWorkUnit::queryGraphState(const char *graphName) const
 {
@@ -9834,9 +9907,9 @@ void CLocalWorkUnit::setNodeState(const char *graphName, WUGraphIDType nodeId, W
 {
     throwUnexpected();   // Should only be used for persisted workunits
 }
-IWUGraphStats *CLocalWorkUnit::updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph) const
+IWUGraphStats *CLocalWorkUnit::updateStats(const char *graphName, StatisticCreatorType creatorType, const char * creator, unsigned _wfid, unsigned subgraph, bool merge) const
 {
-    return new CWuGraphStats(LINK(p), creatorType, creator, _wfid, graphName, subgraph);
+    return new CLocalWuGraphStats(LINK(p), creatorType, creator, _wfid, graphName, subgraph, merge);
 }
 
 void CLocalWUGraph::setName(const char *str)
@@ -9953,7 +10026,7 @@ IPropertyTree * CLocalWUGraph::getXGMMLTreeRaw() const
     return p->getPropTree("xgmml");
 }
 
-IPropertyTree * CLocalWUGraph::getXGMMLTree(bool doMergeProgress) const
+IPropertyTree * CLocalWUGraph::getXGMMLTree(bool doMergeProgress, bool doFormatStats) const
 {
     if (!graph)
     {
@@ -9977,7 +10050,7 @@ IPropertyTree * CLocalWUGraph::getXGMMLTree(bool doMergeProgress) const
         {
             //MORE: Eventually this should directly access the new stats structure
             unsigned progressV = progress->queryFormatVersion();
-            Owned<IPropertyTree> progressTree = progress->getProgressTree();
+            Owned<IPropertyTree> progressTree = progress->getProgressTree(doFormatStats);
             Owned<IPropertyTreeIterator> nodeIterator = copy->getElements("node");
             ForEach (*nodeIterator)
                 mergeProgress(nodeIterator->query(), *progressTree, progressV);
@@ -11684,6 +11757,14 @@ extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnit(const char *xml)
     return ret;
 }
 
+extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnitFromPTree(IPropertyTree *ptree)
+{
+    Owned<CLocalWorkUnit> cw = new CLocalWorkUnit((ISecManager *) NULL, NULL);
+    cw->loadPTree(ptree);
+    ILocalWorkUnit* ret = QUERYINTERFACE(&cw->lockRemote(false), ILocalWorkUnit);
+    return ret;
+}
+
 void exportWorkUnitToXMLWithHiddenPasswords(IPropertyTree *p, IIOStream &out, unsigned extraXmlFlags)
 {
     const char *name = p->queryName();
@@ -13333,9 +13414,10 @@ extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, c
     makeAbsolutePath(name, fullPathName);
     if (isContainerized())
     {
-        const char *dllserver_root = getenv("HPCC_DLLSERVER_PATH");
-        assertex(dllserver_root != nullptr);
-        StringBuffer destPathName(dllserver_root);
+        StringBuffer dllDirectory;
+        if (!getConfigurationDirectory(nullptr, "query", nullptr, nullptr, dllDirectory))
+            throwUnexpected();
+        StringBuffer destPathName(dllDirectory);
         addNonEmptyPathSepChar(destPathName);
         splitFilename(fullPathName.str(), nullptr, nullptr, &destPathName, &destPathName);
         OwnedIFile source = createIFile(fullPathName);
@@ -13501,6 +13583,11 @@ public:
     virtual void beginChildGraphScope(unsigned id)
     {
         StatsScopeId scopeId(SSTchildgraph, id);
+        beginScope(scopeId);
+    }
+    virtual void beginChannelScope(unsigned id)
+    {
+        StatsScopeId scopeId(SSTchannel, id);
         beginScope(scopeId);
     }
     virtual void endScope()
@@ -14137,18 +14224,31 @@ KeepK8sJobs translateKeepJobs(const char *keepJob)
     return KeepK8sJobs::none;
 }
 
+// NB: will fire an exception if command fails (returns non-zero exit code)
+static void runKubectlCommand(const char *title, const char *cmd, const char *input, StringBuffer *output)
+{
+    StringBuffer _output, error;
+    if (!output)
+        output = &_output;
+    unsigned ret = runExternalCommand(title, *output, error, cmd, input, ".");
+    if (output->length())
+        MLOG(MCExtraneousInfo, unknownJob, "%s: ret=%u, stdout=%s", cmd, ret, output->trimRight().str());
+    if (error.length())
+        MLOG(MCinternalError, unknownJob, "%s: ret=%u, stderr=%s", cmd, ret, error.trimRight().str());
+    if (ret)
+    {
+        if (input)
+            MLOG(MCinternalError, unknownJob, "Using input %s", input);
+        throw makeStringExceptionV(0, "Failed to run %s: error %u: %s", cmd, ret, error.str());
+    }
+}
+
 void deleteK8sResource(const char *componentName, const char *job, const char *resource)
 {
     VStringBuffer jobname("%s-%s", componentName, job);
     jobname.toLowerCase();
     VStringBuffer deleteResource("kubectl delete %s/%s", resource, jobname.str());
-    StringBuffer output, error;
-    bool ret = runExternalCommand(componentName, output, error, deleteResource.str(), nullptr);
-    DBGLOG("kubectl delete output: %s", output.trimRight().str());
-    if (error.length())
-        DBGLOG("kubectl delete error: %s", error.trimRight().str());
-    if (ret)
-        throw makeStringException(0, "Failed to run kubectl delete");
+    runKubectlCommand(componentName, deleteResource, nullptr, nullptr);
 }
 
 void waitK8sJob(const char *componentName, const char *job, unsigned pendingTimeoutSecs, KeepK8sJobs keepJob)
@@ -14168,27 +14268,19 @@ void waitK8sJob(const char *componentName, const char *job, unsigned pendingTime
     {
         for (;;)
         {
-            StringBuffer output, error;
-            unsigned ret = runExternalCommand(nullptr, output, error, waitJob.str(), nullptr);
-            if (ret || error.length())
-                throw makeStringExceptionV(0, "Failed to run %s: error %u: %s", waitJob.str(), ret, error.str());
+            StringBuffer output;
+            runKubectlCommand(componentName, waitJob, nullptr, &output);
             if (!streq(output, "1"))  // status.active value
             {
                 // Job is no longer active - we can terminate
                 DBGLOG("kubectl jobs output: %s", output.str());
-                unsigned ret = runExternalCommand(nullptr, output.clear(), error.clear(), checkJobExitCode.str(), nullptr);
-                if (ret || error.length())
-                    throw makeStringExceptionV(0, "Failed to run %s: error %u: %s", checkJobExitCode.str(), ret, error.str());
+                runKubectlCommand(componentName, checkJobExitCode, nullptr, &output.clear());
                 if (output.length() && !streq(output, "0"))  // state.terminated.exitCode
                     throw makeStringExceptionV(0, "Failed to run %s: pod exited with error: %s", jobname.str(), output.str());
                 break;
             }
-            ret = runExternalCommand(nullptr, output.clear(), error.clear(), getScheduleStatus.str(), nullptr);
-            if (error.length())
-            {
-                DBGLOG("kubectl get schedule status error: %s", error.str());
-                break;
-            }
+            runKubectlCommand(nullptr, getScheduleStatus, nullptr, &output.clear());
+
             // Check whether pod has been scheduled yet - if resources are not available pods may block indefinitely waiting to be scheduled, and
             // we would prefer them to fail instead.
             bool pending = streq(output, "False");
@@ -14196,7 +14288,7 @@ void waitK8sJob(const char *componentName, const char *job, unsigned pendingTime
             {
                 schedulingTimeout = true;
                 VStringBuffer getReason("kubectl get pods --selector=job-name=%s \"--output=jsonpath={range .items[*].status.conditions[?(@.type=='PodScheduled')]}{.reason}{': '}{.message}{end}\"", jobname.str());
-                runExternalCommand(componentName, output.clear(), error.clear(), getReason.str(), nullptr);
+                runKubectlCommand(componentName, getReason, nullptr, &output.clear());
                 throw makeStringExceptionV(0, "Failed to run %s - pod not scheduled after %u seconds: %s ", jobname.str(), pendingTimeoutSecs, output.str());
             }
             MilliSleep(delay);
@@ -14266,16 +14358,7 @@ bool applyK8sYaml(const char *componentName, const char *wuid, const char *job, 
     }
 #endif
 
-    StringBuffer output, error;
-    unsigned ret = runExternalCommand(componentName, output, error, "kubectl replace --force -f -", jobYaml.str());
-    DBGLOG("kubectl output: %s", output.trimRight().str());
-    if (error.length())
-        DBGLOG("kubectl error: %s", error.trimRight().str());
-    if (ret)
-    {
-        DBGLOG("Using yaml %s", jobYaml.str());
-        throw makeStringException(0, "Failed to replace k8s resource");
-    }
+    runKubectlCommand(componentName, "kubectl replace --force -f -", jobYaml, nullptr);
     return true;
 }
 
@@ -14302,6 +14385,50 @@ void runK8sJob(const char *componentName, const char *wuid, const char *job, con
         deleteK8sResource(componentName, job, "networkpolicy");
     if (exception)
         throw exception.getClear();
+}
+
+
+std::pair<std::string, unsigned> getExternalService(const char *serviceName)
+{
+    static CTimeLimitedCache<std::string, std::pair<std::string, unsigned>> externalServiceCache;
+    static CriticalSection externalServiceCacheCrit;
+
+    {
+        CriticalBlock b(externalServiceCacheCrit);
+        std::pair<std::string, unsigned> cachedExternalSevice;
+        if (externalServiceCache.get(serviceName, cachedExternalSevice))
+            return cachedExternalSevice;
+    }
+
+    StringBuffer output;
+    try
+    {
+        VStringBuffer getServiceCmd("kubectl get svc --selector=server=%s --output=jsonpath={.items[0].status.loadBalancer.ingress[0].hostname},{.items[0].spec.ports[0].port}", serviceName);
+        runKubectlCommand("get-external-service", getServiceCmd, nullptr, &output);
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e);
+        VStringBuffer exceptionText("Failed to get external service for '%s'. Error: [%d, ", serviceName, e->errorCode());
+        e->errorMessage(exceptionText).append("]");
+        e->Release();
+        throw makeStringException(-1, exceptionText);
+    }
+    StringArray fields;
+    fields.appendList(output, ",");
+
+    // NB: add even if no result, want non-result to be cached too
+    std::string host;
+    unsigned port = 0;
+    if (fields.ordinality())
+    {
+        host = fields.item(0);
+        if (fields.ordinality()>1)
+            port = atoi(fields.item(1));
+    }
+    auto servicePair = std::make_pair(host, port);
+    externalServiceCache.add(serviceName, servicePair);
+    return servicePair;
 }
 
 #endif

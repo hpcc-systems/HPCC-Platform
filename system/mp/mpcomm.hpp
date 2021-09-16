@@ -26,10 +26,11 @@
 #include "mpbuff.hpp"
 #include "mptag.hpp"
 
+const unsigned MPVerboseMsgThreshold = 110; // greater than default logging detail
+
 // timeout values
 #define MP_WAIT_FOREVER ((unsigned)-1)
 #define MP_ASYNC_SEND   ((unsigned)-2)
-
 
 interface ICommunicator: extends IInterface
 {

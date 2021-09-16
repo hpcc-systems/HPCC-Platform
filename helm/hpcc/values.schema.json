@@ -26,25 +26,6 @@
     "storage": {
       "type": "object",
       "properties": {
-        "dllStorage": {
-          "$ref": "#/definitions/storageType"
-        },
-        "dataStorage": {
-          "$ref": "#/definitions/storageType"
-        },
-        "daliStorage": {
-          "$ref": "#/definitions/storageType"
-        },
-        "spillStorage": {
-          "oneOf": [
-            {
-              "$ref": "#/definitions/storageType"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "hostGroups": {
           "$ref": "#/definitions/hostGroups"
         },
@@ -84,6 +65,9 @@
         "storage": {
           "$ref": "#/definitions/secrets"
         },
+        "authn": {
+          "$ref": "#/definitions/secrets"
+        },
         "ecl": {
           "$ref": "#/definitions/secrets"
         },
@@ -107,6 +91,9 @@
           "type": "integer"
         },
         "storage": {
+          "$ref": "#/definitions/vaultCategory"
+        },
+        "authn": {
           "$ref": "#/definitions/vaultCategory"
         },
         "esp": {
@@ -135,6 +122,8 @@
     "dali": {
       "description": "dali process",
       "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
       "items": { "$ref": "#/definitions/dali" }
     },
     "eclccserver": {
@@ -167,7 +156,7 @@
               "type": "string",
               "description": "The (optional) file prefix to add to relative filenames"
             },
-            "storagePlane": {
+            "dataPlane": {
               "description": "The default storage plane to write data files to",
               "type": "string"
             },
@@ -184,25 +173,36 @@
       "description": "dfuserver process",
       "type": "array",
       "items": {
-        "allOf": [
-          {
-            "name": {
-              "type": "string",
-              "description": "The name of the dfuserver process"
-            },
-            "disabled": {
-              "type": "boolean"
-            },
-            "maxJobs": {
-              "type": "integer"
-            },
-            "required": [ "name" ]
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the dfuserver process"
+          },
+          "disabled": {
+            "type": "boolean"
+          },
+          "maxJobs": {
+            "type": "integer"
+          },
+          "env": {
+            "$ref": "#/definitions/env"
+          },
+          "annotations": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
           }
-        ]
+        },
+        "additionalProperties": { "type": ["integer", "string", "boolean"] },
+        "required": [ "name" ]
       }
     },
     "roxie": {
-      "description": "eclagent process",
+      "description": "roxie process",
       "type": "array",
       "items": { "$ref": "#/definitions/roxie" }
     },
@@ -215,6 +215,11 @@
       "description": "sasha services",
       "type": "object",
       "$ref": "#/definitions/sashaservice"
+    },
+    "dafilesrv": {
+      "description": "dafilesrv process",
+      "type": "array",
+      "items": { "$ref": "#/definitions/dafilesrv" }
     }
   },
   "required": [
@@ -234,6 +239,9 @@
         },
         "image": {
           "$ref": "#/definitions/image"
+        },
+        "env": {
+          "$ref": "#/definitions/env"
         },
         "logging": {
           "$ref": "#/definitions/logging"
@@ -289,6 +297,29 @@
               "$ref" : "#/definitions/sinks"
             }
           }
+        },
+        "visibilities": {
+          "type": "object",
+          "description" : "Global visibilities configuration",
+          "additionalProperties": {
+            "type": "object",
+            "required": [ "type" ],
+            "properties":
+            {
+              "annotations": {
+                "type": "object",
+                "additionalProperties": { "type": "string" }
+              },
+              "labels": {
+                "type": "object",
+                "additionalProperties": { "type": "string" }
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -296,6 +327,11 @@
     "security": {
       "type": "object",
       "properties": {
+        "mtls": {
+          "description": "enable global mtls between clients (except roxie which has own setting). NB: requires certificates.enabled=true",
+          "type": "boolean",
+          "default": true
+        },
         "eclSecurity": {
           "$ref": "#/definitions/eclSecurity"
         }
@@ -343,46 +379,10 @@
       },
       "additionalProperties": false
     },
-    "storageType": {
-      "type": "object",
-      "properties": {
-        "storageSize": {
-          "type": "string"
-        },
-        "storageClass": {
-          "type": "string"
-        },
-        "plane": {
-          "type": "string"
-        },
-        "existingClaim": {
-          "type": "string"
-        },
-        "forcePermissions": {
-          "type": "boolean"
-        }
-      },
-      "anyOf": [
-        {
-          "required": [ "storageSize" ]
-        },
-        {
-          "required": [ "plane" ]
-        }
-      ],
-      "additionalProperties": false
-    },
     "storagePlanes": {
       "description": "storage plane definitions",
-      "oneOf": [
-        {
-          "type": "array",
-          "items": { "$ref": "#/definitions/storagePlane" }
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "type": "array",
+      "items": { "$ref": "#/definitions/storagePlane" }
     },
     "storagePlane": {
       "description": "information about an individual storage plane",
@@ -394,6 +394,10 @@
         },
         "prefix": {
           "description": "either the path for a local mount, or the url prefix",
+          "type": "string"
+        },
+        "subPath": {
+          "description": "optional subdirectory within the mount directory",
           "type": "string"
         },
         "secret": {
@@ -426,10 +430,10 @@
           "type": "array",
           "items": { "type": "string" }
         },
-        "labels": {
-          "description": "a list of labels associated with this plane, e.g. lz, data. NB: if blank/unset, treated as if 'data'",
-          "type": "array",
-          "items": { "type": "string" }
+        "category": {
+          "description": "the category this plane is usd for, e.g. lz, data",
+          "type": "string",
+          "enum": ["data", "lz", "dali", "sasha", "dll", "spill" ]
         },
         "umask" : {
           "description": "file creation mask (used by despray)",
@@ -438,6 +442,18 @@
         "defaultSprayParts" : {
           "description": "Number of parts sprayed by default",
           "type" : "integer"
+        },
+        "storageSize": {
+          "type": "string"
+        },
+        "storageClass": {
+          "type": "string"
+        },
+        "storageMode": {
+          "type": "string"
+        },
+        "forcePermissions": {
+          "type": "boolean"
         },
         "cost" : {
           "description": "Costs associated with the storage and use of the plane",
@@ -448,10 +464,14 @@
               "type": "number"
             }
           }
+        },
+        "subDirPerFilePart" : {
+          "description": "Place each logical file part in its own subdirectory",
+          "type": "boolean",
+          "default": true
         }
-
       },
-      "required": [ "name", "prefix" ],
+      "required": [ "name", "prefix", "category" ],
       "additionalProperties": false
     },
     "resources": {
@@ -554,6 +574,88 @@
         }
       }
     },
+    "ldap": {
+      "type": "object",
+      "additionalProperties": { "type": ["integer", "string", "boolean"] },
+      "properties": {
+        "ldapProtocol": {
+          "type": "string",
+          "description": "The protocol to use - standard \"LDAP\" or secure \"LDAPS\" over SSL"
+        },
+        "servertype": {
+          "type": "string",
+          "description": "LDAP Server Implementation Type (\"ActiveDirectory\", \"AzureActiveDirectory\")"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of this Active Directory Server component"
+        },
+        "adminGroupName": {
+          "type": "string",
+          "description": "The Active Directory group containing HPCC Administrators"
+        },
+        "filesBasedn": {
+          "type": "string",
+          "description": "The base distinguished name that should be used when looking up HPCC file scopes on the Active Directory server"
+        },
+        "groupsBasedn": {
+          "type": "string",
+          "description": "The base distinguished name that should be used when looking up HPCC groups on the Active Directory server"
+        },
+        "usersBasedn": {
+          "type": "string",
+          "description": "The base distinguished name that should be used when looking up HPCC users on the Active Directory server"
+        },
+        "systemBasedn": {
+          "type": "string",
+          "description": "The base distinguished name of the Active Directory systemUser"
+        },
+        "resourcesBasedn": {
+          "type": "string",
+          "description": "The base distinguished name that should be used when looking up HPCC feature resources on the Active Directory server"
+        },
+        "workunitsBasedn": {
+          "type": "string",
+          "description": "The base distinguished name that should be used when looking up workunit scopes on the Active Directory server"
+        },
+        "ldapAdminSecretKey": {
+          "type": "string",
+          "description": "The key name to be used to look up the Active Directory system administrator account Username/Password"
+        },
+        "ldapAdminVaultId": {
+          "type": "string",
+          "description": "The optional vault name to be used to look up the Active Directory system administrator account Username/Password, using ldapAdminSecretKey"
+        },
+        "ldapPort": {
+          "type": "integer",
+          "description": "The port of the nonsecure Active Directory server"
+        },
+        "ldapSecurePort": {
+          "type": "integer",
+          "description": "The secure port of the secure Active Directory server"
+        },
+        "maxConnections": {
+          "type": "integer",
+          "description": "The maximum number of concurrent LDAP connections to the Active Directory server (default 10)"
+        },
+        "passwordExpirationWarningDays": {
+          "type": "integer",
+          "description": "Within this time period, ECLWatch displays a warning about pending password expiration"
+        },
+        "cacheTimeout": {
+          "type": "integer",
+          "description": "Time in minutes after which the cached security information should be reloaded"
+        },
+        "ldapTimeoutSecs": {
+          "type": "integer",
+          "description": "The maximum number of seconds to wait for most Active Directory calls"
+        },
+        "sharedCache": {
+          "type": "boolean",
+          "description": "Use a single, shared LDAP cache"
+        }
+      }
+    },
     "logging": {
       "type": "object",
       "properties": {
@@ -571,6 +673,41 @@
         }
       },
       "additionalProperties": { "type": ["integer", "string", "boolean"] }
+    },
+    "compileOption": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Compiler option name"
+        },
+        "value": {
+          "type": ["number", "string", "boolean"],
+          "description": "Compiler option  value"
+        },
+        "cluster": {
+          "type": "string",
+          "description": "Cluster to apply option to"
+        }
+      },
+      "required": [ "name", "value" ],
+      "additionalProperties": false
+    },
+    "env": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Environment variable name"
+          },
+          "value": {
+            "type": ["number", "string", "boolean"],
+            "description": "Environment variable value"
+          }
+        }
+      }
     },
     "egress": {
       "type": "object",
@@ -594,6 +731,34 @@
       },
       "additionalProperties": false
     },
+    "service": {
+      "description": "Service properties",
+      "type": "object",
+      "required": [ "servicePort", "visibility" ],
+      "properties": {
+        "port": {
+          "type": "integer",
+          "description": "The local port used by the pod",
+          "default": 8880
+        },
+        "servicePort": {
+          "type": "integer",
+          "description": "The port that this service will be exposed on"
+        },
+        "visibility": {
+          "type": "string",
+          "description": "Should this service be exposed outside the cluster, locally or to the internet"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
     "dali": {
       "type": "object",
       "required": [ "name" ],
@@ -606,11 +771,28 @@
         "image": {
           "$ref": "#/definitions/image"
         },
+        "env": {
+          "$ref": "#/definitions/env"
+        },
         "logging": {
           "$ref": "#/definitions/logging"
         },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
         "resources": {
           "$ref": "#/definitions/resources"
+        },
+        "minStartupTime": {
+          "$ref": "#/definitions/minStartupTime"
+        },
+        "maxStartupTime": {
+          "$ref": "#/definitions/maxStartupTime"
         },
         "services": {
           "description": "sasha services",
@@ -621,12 +803,18 @@
     },
     "eclccserver": {
       "type": "object",
-      "required": [ "name" ],
+      "required": [ "name", "maxActive" ],
       "additionalProperties": { "type": ["integer", "string", "boolean"] },
       "properties": {
         "name": {
           "type": "string",
           "description": "The name of the eclccserver process"
+        },
+        "maxActive": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum number of compile jobs that can be active simultaneously",
+          "default": 4
         },
         "replicas": {
           "type": "integer"
@@ -642,8 +830,23 @@
         "image": {
           "$ref": "#/definitions/image"
         },
+        "env": {
+          "$ref": "#/definitions/env"
+        },
         "logging": {
           "$ref": "#/definitions/logging"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "options": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/compileOption" }
         },
         "resources": {
           "$ref": "#/definitions/resources"
@@ -662,8 +865,19 @@
         "image": {
           "$ref": "#/definitions/image"
         },
+        "env": {
+          "$ref": "#/definitions/env"
+        },
         "logging": {
           "$ref": "#/definitions/logging"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
         },
         "resources": {
           "$ref": "#/definitions/resources"
@@ -672,7 +886,7 @@
     },
     "esp": {
       "type": "object",
-      "required": [ "name" ],
+      "required": [ "name", "service" ],
       "additionalProperties": { "type": ["integer", "string", "boolean"] },
       "properties": {
         "name": {
@@ -685,17 +899,35 @@
         "image": {
           "$ref": "#/definitions/image"
         },
+        "env": {
+          "$ref": "#/definitions/env"
+        },
         "logging": {
           "$ref": "#/definitions/logging"
         },
         "resources": {
           "$ref": "#/definitions/resources"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "ldap": {
+          "$ref": "#/definitions/ldap"
+        },
+        "service": {
+          "$ref": "#/definitions/service"
         }
       }
     },
     "eclagent": {
       "type": "object",
       "additionalProperties": { "type": ["integer", "string", "boolean"] },
+      "required": [ "maxActive" ],
       "properties": {
         "replicas": {
           "type": "integer"
@@ -718,12 +950,23 @@
         "image": {
           "$ref": "#/definitions/image"
         },
+        "env": {
+          "$ref": "#/definitions/env"
+        },
         "logging": {
           "$ref": "#/definitions/logging"
         },
-        "storagePlane": {
+        "dataPlane": {
           "description": "The default storage plane to write data files to",
           "type": "string"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
         },
         "resources": {
           "$ref": "#/definitions/resources"
@@ -743,11 +986,20 @@
           "type": "string",
           "description": "The (optional) file prefix to add to relative filenames"
         },
+        "minStartupTime": {
+          "$ref": "#/definitions/minStartupTime"
+        },
+        "maxStartupTime": {
+          "$ref": "#/definitions/maxStartupTime"
+        },
         "image": {
           "$ref": "#/definitions/image"
         },
         "topoServer": {
           "$ref": "#/definitions/toposerver"
+        },
+        "env": {
+          "$ref": "#/definitions/env"
         },
         "logging": {
           "$ref": "#/definitions/logging"
@@ -762,12 +1014,12 @@
           "type": "array",
           "items": { "$ref": "#/definitions/roxieservice" }
         },
-        "storagePlane": {
+        "dataPlane": {
           "description": "The default storage plane to write data files to",
           "type": "string"
         },
-        "storagePlanes": {
-          "description": "A list of storage planes suitable for storing roxie data",
+        "directAccessPlanes": {
+          "description": "A list of storage planes suitable for roxie to read from directly and not have roxie copy the data to roxie's default plane",
           "type": "array",
           "items": { "type": "string" }
         },
@@ -780,11 +1032,20 @@
         },
         "channelResources": {
           "$ref": "#/definitions/resources"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
         }
       }
     },
     "toposerver": {
       "type": "object",
+      "additionalProperties": { "type": ["integer", "string", "boolean"] },
       "properties": {
         "port": {
           "type": "integer"
@@ -795,8 +1056,19 @@
         "replicas": {
           "type": "integer"
         },
+        "env": {
+          "$ref": "#/definitions/env"
+        },
         "logging": {
           "$ref": "#/definitions/logging"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
         }
       }
     },
@@ -807,7 +1079,12 @@
           "type": "string"
         },
         "port": {
-          "type": "integer"
+          "type": "integer",
+          "description": "The local port used by the pod (same as servicePort if not specified)"
+        },
+        "servicePort": {
+          "type": "integer",
+          "description": "The port that this service will be exposed on"
         },
         "numThreads": {
           "type": "integer"
@@ -815,11 +1092,20 @@
         "listenQueue": {
           "type": "integer"
         },
-        "external": {
-          "type": "boolean"
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "visibility": {
+          "type": "string",
+          "description": "Should this service be exposed outside the cluster, locally or to the internet"
         }
       },
-      "required": [ "name", "port" ],
+      "required": [ "name", "servicePort" ],
       "additionalProperties": false
     },
     "bundle": {
@@ -895,16 +1181,27 @@
         "image": {
           "$ref": "#/definitions/image"
         },
+        "env": {
+          "$ref": "#/definitions/env"
+        },
         "logging": {
           "$ref": "#/definitions/logging"
         },
-        "storagePlane": {
+        "dataPlane": {
           "description": "The default storage plane to write data files to",
           "type": "string"
         },
         "spillPlane": {
           "description": "The storage plane to write spill files to",
           "type": "string"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
         },
         "managerResources": {
           "$ref": "#/definitions/resources"
@@ -914,6 +1211,10 @@
         },
         "eclAgentResources": {
           "$ref": "#/definitions/resources"
+        },
+        "expert": {
+          "description": "Custom internal options usually reserved for internal testing",
+          "type": "object"
         }
       }
     },
@@ -927,11 +1228,40 @@
           "type": "integer",
           "default": 1
         },
-        "servicePort": {
-          "type": "integer"
+        "env": {
+          "$ref": "#/definitions/env"
         },
-        "port": {
-          "type": "integer"
+        "annotations": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "service": {
+          "description": "Service properties",
+          "type": "object",
+          "required": [ "servicePort" ],
+          "properties": {
+            "port": {
+              "type": "integer",
+              "description": "The local port used by the pod",
+              "default": 8880
+            },
+            "servicePort": {
+              "type": "integer",
+              "description": "The port that this service will be exposed on"
+            },
+            "annotations": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            },
+            "labels": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            }
+          }
         },
         "at" : {
           "type": "string",
@@ -941,8 +1271,12 @@
           "type": "integer",
           "description": "throttle ratio percentage (0-99, 0 no throttling, 50 is half speed)"
         },
-        "storage": {
-          "$ref": "#/definitions/storageType"
+        "image": {
+          "$ref": "#/definitions/image"
+        },
+        "plane": {
+          "type": "string",
+          "description": "which storage plane to store the sasha data on"
         },
         "resources": {
           "$ref": "#/definitions/resources"
@@ -974,16 +1308,19 @@
               "properties": {
                 "minDeltaSize": {
                   "type": "integer",
-                  "description": "Coalescing will only begin, if the delta size is above this threashold (K)"
+                  "description": "Coalescing will only begin, if the delta size is above this threshold (K)"
                 },
                 "disabled": {},
                 "interval": {},
-                "servicePort": {},
-                "port": {},
+                "service": {},
                 "at" : {},
                 "throttle": {},
-                "storage": {},
-                "resources": {}    
+                "image": {},
+                "plane": {},
+                "resources": {},
+                "env": {},
+                "annotations": {},
+                "labels": {}
               },
               "additionalProperties": false
             }
@@ -998,6 +1335,7 @@
       "oneOf": [
         {
           "type": "object",
+          "required": [ "plane" ],
           "allOf": [
             { "$ref": "#/definitions/sashacommon" },
             { "$ref": "#/definitions/sasha-limitcutoff" },
@@ -1026,12 +1364,15 @@
                 },
                 "disabled": {},
                 "interval": {},
-                "servicePort": {},
-                "port": {},
+                "service": {},
                 "at" : {},
                 "throttle": {},
-                "storage": {},
+                "image": {},
+                "plane": {},
                 "resources": {},
+                "env": {},
+                "annotations": {},
+                "labels": {},
                 "limit": {},
                 "cutoff": {}    
               },
@@ -1048,6 +1389,7 @@
       "oneOf": [
         {
           "type": "object",
+          "required": [ "plane" ],
           "allOf": [ 
             { "$ref": "#/definitions/sashacommon" },
             { "$ref": "#/definitions/sasha-limitcutoff" },
@@ -1056,12 +1398,15 @@
               {
                 "disabled": {},
                 "interval": {},
-                "servicePort": {},
-                "port": {},
+                "service": {},
                 "at" : {},
                 "throttle": {},
-                "storage": {},
+                "image": {},
+                "plane": {},
                 "resources": {},
+                "env": {},
+                "annotations": {},
+                "labels": {},
                 "limit": {},
                 "cutoff": {}
               },
@@ -1085,12 +1430,15 @@
               "properties": {
                 "disabled": {},
                 "interval": {},
-                "servicePort": {},
-                "port": {},
+                "service": {},
                 "at" : {},
                 "throttle": {},
-                "storage": {},
+                "image": {},
+                "plane": {},
                 "resources": {},
+                "env": {},
+                "annotations": {},
+                "labels": {},
                 "limit": {},
                 "cutoff": {}    
               },
@@ -1125,12 +1473,14 @@
             },
             "disabled": {},
             "interval": {},
-            "servicePort": {},
-            "port": {},
+            "service": {},
             "at" : {},
             "throttle": {},
-            "storage": {},
-            "resources": {}
+            "image": {},
+            "plane": {},
+            "resources": {},
+            "annotations": {},
+            "labels": {}
           },
           "additionalProperties": false
         },
@@ -1170,6 +1520,36 @@
           "type": "null"
         }
       ]
+    },
+    "dafilesrv": {
+      "type": "object",
+      "required": [ "name", "service" ],
+      "additionalProperties": { "type": ["integer", "string", "boolean"] },
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the dafilesrv process"
+        },
+        "service": {
+          "$ref": "#/definitions/service"
+        },
+        "parallelRequestLimit": {
+          "type": "integer",
+          "default": "20"
+        },
+        "replicas": {
+          "type": "integer"
+        },
+        "image": {
+          "$ref": "#/definitions/image"
+        },
+        "logging": {
+          "$ref": "#/definitions/logging"
+        },
+        "resources": {
+          "$ref": "#/definitions/resources"
+        }
+      }
     },
     "placement": {
       "type": "object",
@@ -1238,6 +1618,14 @@
           "type": "object"
         }
       }
+    },
+    "minStartupTime": {
+      "description": "The time to wait before initiating startup probing (in seconds). Default 0",
+      "type": "integer"
+    },
+    "maxStartupTime": {
+      "description": "The time to wait before startup probing fails (in seconds). Default 300",
+      "type": "integer"
     },
     "sinks": {
       "type": "array",

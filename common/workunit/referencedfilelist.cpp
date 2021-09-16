@@ -150,11 +150,17 @@ public:
     IPropertyTree *getRemoteFileTree(IUserDescriptor *user, INode *remote, const char *remotePrefix);
     IPropertyTree *getSpecifiedOrRemoteFileTree(IUserDescriptor *user, INode *remote, const char *remotePrefix);
 
+    void processLocalFileInfo(IDistributedFile *df, const StringArray &locations, const char *srcCluster, StringArray *subfiles);
     void processLocalFileInfo(IDistributedFile *df, const char *dstCluster, const char *srcCluster, StringArray *subfiles);
     void processRemoteFileTree(IPropertyTree *tree, const char *srcCluster, StringArray *subfiles);
 
+    void resolveLocal(const StringArray &locations, const char *srcCluster, IUserDescriptor *user, StringArray *subfiles);
     void resolveLocal(const char *dstCluster, const char *srcCluster, IUserDescriptor *user, StringArray *subfiles);
+
+    void resolveRemote(IUserDescriptor *user, INode *remote, const char *remotePrefix, const StringArray &locations, const char *srcCluster, bool checkLocalFirst, StringArray *subfiles, bool resolveForeign=false);
     void resolveRemote(IUserDescriptor *user, INode *remote, const char *remotePrefix, const char *dstCluster, const char *srcCluster, bool checkLocalFirst, StringArray *subfiles, bool resolveForeign=false);
+
+    void resolve(const StringArray &locations, const char *srcCluster, IUserDescriptor *user, INode *remote, const char *remotePrefix, bool checkLocalFirst, StringArray *subfiles, bool trackSubFiles, bool resolveForeign=false);
     void resolve(const char *dstCluster, const char *srcCluster, IUserDescriptor *user, INode *remote, const char *remotePrefix, bool checkLocalFirst, StringArray *subfiles, bool trackSubFiles, bool resolveForeign=false);
 
     virtual const char *getLogicalName() const {return logicalName.str();}
@@ -234,29 +240,42 @@ public:
     void addFilesFromPackage(IPropertyTree &package, const char *_daliip, const char *srcCluster, const char *_remotePrefix);
 
     virtual IReferencedFileIterator *getFiles();
-    virtual void cloneFileInfo(unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder);
+    virtual void cloneFileInfo(const char *dstCluster, unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder);
 
     virtual void cloneRelationships();
-    virtual void cloneAllInfo(unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder)
+    virtual void cloneAllInfo(const char *dstCluster, unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder)
     {
-        cloneFileInfo(updateFlags, helper, cloneSuperInfo, cloneForeign, redundancy, channelsPerNode, replicateOffset, defReplicateFolder);
+        cloneFileInfo(dstCluster, updateFlags, helper, cloneSuperInfo, cloneForeign, redundancy, channelsPerNode, replicateOffset, defReplicateFolder);
         cloneRelationships();
     }
-    virtual void resolveFiles(const char *process, const char *remoteIP, const char *_remotePrefix, const char *srcCluster, bool checkLocalFirst, bool addSubFiles, bool trackSubFiles, bool resolveForeign=false);
-    void resolveSubFiles(StringArray &subfiles, bool checkLocalFirst, bool trackSubFiles, bool resolveForeign);
+    virtual void resolveFiles(const StringArray &locations, const char *remoteIP, const char *_remotePrefix, const char *srcCluster, bool checkLocalFirst, bool addSubFiles, bool trackSubFiles, bool resolveForeign=false) override;
+
+    void resolveSubFiles(StringArray &subfiles, const StringArray &locations, bool checkLocalFirst, bool trackSubFiles, bool resolveForeign);
 
 public:
     Owned<IUserDescriptor> user;
     Owned<INode> remote;
     MapStringToMyClass<ReferencedFile> map;
-    StringAttr process;
     StringAttr srcCluster;
     StringAttr remotePrefix;
     bool allowForeign;
     bool allowSizeCalc;
 };
 
-void ReferencedFile::processLocalFileInfo(IDistributedFile *df, const char *dstCluster, const char *srcCluster, StringArray *subfiles)
+bool fileExistsWithinLocations(IDistributedFile *df, const StringArray &locations)
+{
+    if (!df)
+        return false;
+    ForEachItemIn(i, locations)
+    {
+        const char *name = locations.item(i);
+        if (df->findCluster(name)!=NotFound)
+            return true;
+    }
+    return false;
+}
+
+void ReferencedFile::processLocalFileInfo(IDistributedFile *df, const StringArray &locations, const char *srcCluster, StringArray *subfiles)
 {
     IDistributedSuperFile *super = df->querySuperFile();
     if (super)
@@ -279,9 +298,9 @@ void ReferencedFile::processLocalFileInfo(IDistributedFile *df, const char *dstC
     else
     {
         flags |= RefSubFile;
-        if (!dstCluster || !*dstCluster)
+        if (!locations.length())
             return;
-        if (df->findCluster(dstCluster)==NotFound)
+        if (!fileExistsWithinLocations(df, locations))
             flags |= RefFileNotOnCluster;
         if (fileSrcCluster.length())
             srcCluster=fileSrcCluster;
@@ -291,6 +310,13 @@ void ReferencedFile::processLocalFileInfo(IDistributedFile *df, const char *dstC
         fileSize = df->getFileSize(calcFileSize, false);
         numParts = df->numParts();
     }
+}
+
+void ReferencedFile::processLocalFileInfo(IDistributedFile *df, const char *dstCluster, const char *srcCluster, StringArray *subfiles)
+{
+    StringArray locations;
+    locations.append(dstCluster);
+    processLocalFileInfo(df, locations, srcCluster, subfiles);
 }
 
 void ReferencedFile::processRemoteFileTree(IPropertyTree *tree, const char *srcCluster, StringArray *subfiles)
@@ -328,7 +354,7 @@ void ReferencedFile::processRemoteFileTree(IPropertyTree *tree, const char *srcC
 
 }
 
-void ReferencedFile::resolveLocal(const char *dstCluster, const char *srcCluster, IUserDescriptor *user, StringArray *subfiles)
+void ReferencedFile::resolveLocal(const StringArray &locations, const char *srcCluster, IUserDescriptor *user, StringArray *subfiles)
 {
     if (flags & RefFileInPackage)
         return;
@@ -340,12 +366,20 @@ void ReferencedFile::resolveLocal(const char *dstCluster, const char *srcCluster
     reset();
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName.str(), user, false, false, false, nullptr, defaultPrivilegedUser);
     if(df)
-        processLocalFileInfo(df, dstCluster, srcCluster, subfiles);
+        processLocalFileInfo(df, locations, srcCluster, subfiles);
     else
     {
         flags |= RefFileNotFound;
         DBGLOG("ReferencedFile not found (local) %s", logicalName.str());
     }
+}
+
+void ReferencedFile::resolveLocal(const char *dstCluster, const char *srcCluster, IUserDescriptor *user, StringArray *subfiles)
+{
+    StringArray locations;
+    if (!isEmptyString(dstCluster))
+        locations.append(dstCluster);
+    resolveLocal(locations, srcCluster, user, subfiles);
 }
 
 IPropertyTree *ReferencedFile::getRemoteFileTree(IUserDescriptor *user, INode *remote, const char *remotePrefix)
@@ -380,6 +414,13 @@ IPropertyTree *ReferencedFile::getSpecifiedOrRemoteFileTree(IUserDescriptor *use
 
 void ReferencedFile::resolveRemote(IUserDescriptor *user, INode *remote, const char *remotePrefix, const char *dstCluster, const char *srcCluster, bool checkLocalFirst, StringArray *subfiles, bool resolveForeign)
 {
+    StringArray locations;
+    if (!isEmptyString(dstCluster))
+        locations.append(dstCluster);
+    resolveRemote(user, remote, remotePrefix, locations, srcCluster, checkLocalFirst, subfiles, resolveForeign);
+}
+void ReferencedFile::resolveRemote(IUserDescriptor *user, INode *remote, const char *remotePrefix, const StringArray &locations, const char *srcCluster, bool checkLocalFirst, StringArray *subfiles, bool resolveForeign)
+{
     if ((flags & RefFileForeign) && !resolveForeign && !trackSubFiles)
         return;
     if (flags & RefFileInPackage)
@@ -395,7 +436,7 @@ void ReferencedFile::resolveRemote(IUserDescriptor *user, INode *remote, const c
         Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName.str(), user, false, false, false, nullptr, defaultPrivilegedUser);
         if(df)
         {
-            processLocalFileInfo(df, dstCluster, NULL, subfiles);
+            processLocalFileInfo(df, locations, NULL, subfiles);
             return;
         }
     }
@@ -407,7 +448,7 @@ void ReferencedFile::resolveRemote(IUserDescriptor *user, INode *remote, const c
     }
     else if (!checkLocalFirst && (!srcCluster || !*srcCluster)) //haven't already checked and not told to use a specific copy
     {
-        resolveLocal(dstCluster, srcCluster, user, subfiles);
+        resolveLocal(locations, srcCluster, user, subfiles);
         return;
     }
 
@@ -417,13 +458,20 @@ void ReferencedFile::resolveRemote(IUserDescriptor *user, INode *remote, const c
     DBGLOG("Remote ReferencedFile not found %s [dali=%s, remote=%s, prefix=%s]", logicalName.str(), daliip.get(), remote ? remote->endpoint().getUrlStr(dest).str() : nullptr, remotePrefix);
 }
 
-void ReferencedFile::resolve(const char *dstCluster, const char *srcCluster, IUserDescriptor *user, INode *remote, const char *remotePrefix, bool checkLocalFirst, StringArray *subfiles, bool _trackSubFiles, bool resolveForeign)
+void ReferencedFile::resolve(const StringArray &locations, const char *srcCluster, IUserDescriptor *user, INode *remote, const char *remotePrefix, bool checkLocalFirst, StringArray *subfiles, bool _trackSubFiles, bool resolveForeign)
 {
     trackSubFiles = _trackSubFiles;
     if (daliip.length() || remote)
-        resolveRemote(user, remote, remotePrefix, dstCluster, srcCluster, checkLocalFirst, subfiles, resolveForeign);
+        resolveRemote(user, remote, remotePrefix, locations, srcCluster, checkLocalFirst, subfiles, resolveForeign);
     else
-        resolveLocal(dstCluster, srcCluster, user, subfiles);
+        resolveLocal(locations, srcCluster, user, subfiles);
+}
+
+void ReferencedFile::resolve(const char *dstCluster, const char *srcCluster, IUserDescriptor *user, INode *remote, const char *remotePrefix, bool checkLocalFirst, StringArray *subfiles, bool _trackSubFiles, bool resolveForeign)
+{
+    StringArray locations;
+    if (!isEmptyString(dstCluster))
+        locations.append(dstCluster);
 }
 
 void ReferencedFile::cloneInfo(unsigned updateFlags, IDFUhelper *helper, IUserDescriptor *user, const char *dstCluster, const char *srcCluster, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder)
@@ -633,7 +681,7 @@ bool ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackag
     Owned<IConstWUGraphIterator> graphs = &cw->getGraphs(GraphTypeActivities);
     ForEach(*graphs)
     {
-        Owned <IPropertyTree> xgmml = graphs->query().getXGMMLTree(false);
+        Owned <IPropertyTree> xgmml = graphs->query().getXGMMLTree(false, false);
         Owned<IPropertyTreeIterator> iter = xgmml->getElements("//node[att/@name='_*ileName']");
         ForEach(*iter)
         {
@@ -701,7 +749,7 @@ void ReferencedFileList::addFilesFromWorkUnit(IConstWorkUnit *cw)
     addFilesFromQuery(cw, NULL, NULL);
 }
 
-void ReferencedFileList::resolveSubFiles(StringArray &subfiles, bool checkLocalFirst, bool trackSubFiles, bool resolveForeign)
+void ReferencedFileList::resolveSubFiles(StringArray &subfiles, const StringArray &locations, bool checkLocalFirst, bool trackSubFiles, bool resolveForeign)
 {
     StringArray childSubFiles;
     ForEachItemIn(i, subfiles)
@@ -713,19 +761,18 @@ void ReferencedFileList::resolveSubFiles(StringArray &subfiles, bool checkLocalF
         Owned<ReferencedFile> file = new ReferencedFile(lfn, NULL, NULL, NULL, true, 0, NULL, false, allowSizeCalc);
         if (file->logicalName.length() && !map.getValue(file->getLogicalName()))
         {
-            file->resolve(process.get(), srcCluster, user, remote, remotePrefix, checkLocalFirst, &childSubFiles, trackSubFiles, resolveForeign);
+            file->resolve(locations, srcCluster, user, remote, remotePrefix, checkLocalFirst, &childSubFiles, trackSubFiles, resolveForeign);
             const char *ln = file->getLogicalName();
             // NOTE: setValue links its parameter
             map.setValue(ln, file);
         }
     }
     if (childSubFiles.length())
-        resolveSubFiles(childSubFiles, checkLocalFirst, trackSubFiles, resolveForeign);
+        resolveSubFiles(childSubFiles, locations, checkLocalFirst, trackSubFiles, resolveForeign);
 }
 
-void ReferencedFileList::resolveFiles(const char *_process, const char *remoteIP, const char *_remotePrefix, const char *_srcCluster, bool checkLocalFirst, bool expandSuperFiles, bool trackSubFiles, bool resolveForeign)
+void ReferencedFileList::resolveFiles(const StringArray &locations, const char *remoteIP, const char *_remotePrefix, const char *_srcCluster, bool checkLocalFirst, bool expandSuperFiles, bool trackSubFiles, bool resolveForeign)
 {
-    process.set(_process);
     remote.setown((remoteIP && *remoteIP) ? createINode(remoteIP, 7070) : NULL);
     srcCluster.set(_srcCluster);
     remotePrefix.set(_remotePrefix);
@@ -734,17 +781,17 @@ void ReferencedFileList::resolveFiles(const char *_process, const char *remoteIP
     {
         ReferencedFileIterator files(this);
         ForEach(files)
-            files.queryObject().resolve(process, srcCluster, user, remote, remotePrefix, checkLocalFirst, expandSuperFiles ? &subfiles : NULL, trackSubFiles, resolveForeign);
+            files.queryObject().resolve(locations, srcCluster, user, remote, remotePrefix, checkLocalFirst, expandSuperFiles ? &subfiles : NULL, trackSubFiles, resolveForeign);
     }
     if (expandSuperFiles)
-        resolveSubFiles(subfiles, checkLocalFirst, trackSubFiles, resolveForeign);
+        resolveSubFiles(subfiles, locations, checkLocalFirst, trackSubFiles, resolveForeign);
 }
 
-void ReferencedFileList::cloneFileInfo(unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder)
+void ReferencedFileList::cloneFileInfo(const char *dstCluster, unsigned updateFlags, IDFUhelper *helper, bool cloneSuperInfo, bool cloneForeign, unsigned redundancy, unsigned channelsPerNode, int replicateOffset, const char *defReplicateFolder)
 {
     ReferencedFileIterator files(this);
     ForEach(files)
-        files.queryObject().cloneInfo(updateFlags, helper, user, process, srcCluster, cloneForeign, redundancy, channelsPerNode, replicateOffset, defReplicateFolder);
+        files.queryObject().cloneInfo(updateFlags, helper, user, dstCluster, srcCluster, cloneForeign, redundancy, channelsPerNode, replicateOffset, defReplicateFolder);
     if (cloneSuperInfo)
         ForEach(files)
             files.queryObject().cloneSuperInfo(updateFlags, this, user, remote);

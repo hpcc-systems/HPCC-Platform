@@ -69,7 +69,6 @@ target_link_libraries (  thorslave_lcr
          jlib
          dafsclient 
          dalibase 
-         environment 
          dllserver 
          nbcd 
          hql
@@ -84,6 +83,10 @@ target_link_libraries (  thorslave_lcr
          thorsort_lcr 
          activityslaves_lcr 
     )
+
+if (NOT CONTAINERIZED)
+    target_link_libraries ( thorslave_lcr environment )
+endif()
 
 if (CONTAINERIZED) # only used when dev. option _dafsStorage is enabled
 target_link_libraries (  thorslave_lcr 

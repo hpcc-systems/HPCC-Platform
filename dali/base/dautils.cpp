@@ -48,7 +48,7 @@
 #define MIN_REDIRECTION_LOAD_INTERVAL 1000
 
 
-constexpr const char * lz_plane_path = "storage/planes[labels='lz']";
+constexpr const char * lz_plane_path = "storage/planes[@category='lz']";
 
 IPropertyTreeIterator * getDropZonePlanesIterator(const char * name)
 {
@@ -732,7 +732,7 @@ bool CDfsLogicalFileName::normalizeExternal(const char * name, StringAttr &res, 
         StringBuffer planeName;
         normalizeScope(s1, s1, ns1-s1, planeName, strict);
 
-        Owned<IStoragePlane> plane = getStoragePlane(planeName, true);
+        Owned<IStoragePlane> plane = getDataStoragePlane(planeName, true);
         if (plane->numDevices() == 0)
             throw makeStringExceptionV(-1, "Scope contains invalid storage plane '%s'", planeName.str());
             
@@ -1248,7 +1248,7 @@ bool CDfsLogicalFileName::getEp(SocketEndpoint &ep) const
 
             //Resolve the plane, and return the ip if it is a bare metal zone (or a legacy drop zone)
             StringBuffer planeName(end - startPlane, startPlane);
-            Owned<IStoragePlane> plane = getStoragePlane(planeName, false);
+            Owned<IStoragePlane> plane = getDataStoragePlane(planeName, false);
             if (!plane)
                 return false;
 
@@ -1319,7 +1319,7 @@ bool CDfsLogicalFileName::getExternalPath(StringBuffer &dir, StringBuffer &tail,
             if (s)
             {
                 StringBuffer planeName(s - startPlane, startPlane);
-                Owned<IStoragePlane> plane = getStoragePlane(planeName, false);
+                Owned<IStoragePlane> plane = getDataStoragePlane(planeName, false);
                 if (!plane)
                 {
                     if (e)
@@ -3257,7 +3257,7 @@ public:
             }
             else
                 getDefaultStoragePlane(cluster);
-            Owned<IStoragePlane> plane = getStoragePlane(cluster, true);
+            Owned<IStoragePlane> plane = getDataStoragePlane(cluster, true);
             dir.append(plane->queryPrefix());
 #endif
             // MORE - should we create the IDistributedFile here ready for publishing (and/or to make sure it's locked while we write)?

@@ -333,21 +333,6 @@ bool getRemoteRunInfo(const char * keyName, const char * exeName, const char * v
     return false;
 }
 
-bool envGetConfigurationDirectory(const char *category, const char *component,const char *instance, StringBuffer &dirout)
-{
-    SessionId sessid = myProcessSession();
-    if (!sessid)
-        return false;
-
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory(true);
-    Owned<IConstEnvironment> env = factory->openEnvironment();
-    Owned<IPropertyTree> root = &env->getPTree();
-    IPropertyTree * child = root->queryPropTree("Software/Directories");
-    if (child)
-        return getConfigurationDirectory(child,category,component,instance,dirout);
-    return false;
-}
-
 IPropertyTree *envGetNASConfiguration(IPropertyTree *source)
 {
     if ((NULL==source) || !source->hasProp("NAS"))

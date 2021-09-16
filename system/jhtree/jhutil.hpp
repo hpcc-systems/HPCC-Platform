@@ -117,6 +117,22 @@ public:
         remove(element);
     }
     inline unsigned ordinality() const { return numEntries; }
+    //Check that the linked list is self-consistent.  For debugging potential issues.
+    void validate() const
+    {
+        ELEMENT * prev = nullptr;
+        ELEMENT * cur = pHead;
+        unsigned count = 0;
+        while (cur)
+        {
+            assertex(cur->prev == prev);
+            prev = cur;
+            cur = cur->next;
+            count++;
+        }
+        assertex(prev == pTail);
+        assertex(count == numEntries);
+    }
 };
 
 
@@ -153,23 +169,14 @@ public:
     typedef SuperHashIteratorOf<MAPPING> CMRUIterator;
 
     CMRUCacheOf<KEY, ENTRY, MAPPING, TABLE>() : table(*this) { }
-    void add(KEY key, ENTRY &entry, bool promoteIfAlreadyPresent=true)
+    void replace(KEY key, ENTRY &entry)
     {
         if (full())
             makeSpace();
 
-        MAPPING *mapping = table.find(key);
-        if (mapping)
-        {
-            if (promoteIfAlreadyPresent)
-                promote(mapping);
-        }
-        else
-        {
-            mapping = new MAPPING(key, entry); // owns entry
-            table.replace(*mapping);
-            mruList.enqueueHead(mapping);
-        }
+        MAPPING * mapping = new MAPPING(key, entry); // owns entry
+        table.replace(*mapping);
+        mruList.enqueueHead(mapping);
     }
     ENTRY *query(KEY key, bool doPromote=true)
     {

@@ -11,7 +11,7 @@ define([
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
 
-    "src/CodeMirror",
+    "@hpcc-js/codemirror",
 
     "src/WsPackageMaps",
 
@@ -66,25 +66,18 @@ define([
                     return;
 
                 this.initalized = true;
-                this.editor = CodeMirror.fromTextArea(document.getElementById(this.id + "XMLCode"), {
-                    tabMode: "indent",
-                    matchBrackets: true,
-                    lineNumbers: true,
-                    mode: this.isXmlContent ? "xml" : "ecl",
-                    readOnly: this.readOnly,
-                    foldGutter: this.isXmlContent ? true : false,
-                    gutters: this.isXmlContent ? ["CodeMirror-linenumbers", "CodeMirror-foldgutter"] : ["CodeMirror-linenumbers"]
-                });
+                this.editor = new CodeMirror.XMLEditor();
+                this.editor.target(this.id + "XMLContent").render();
+                dom.byId(this.id + "XMLCode").style.display = "none";
                 dom.byId(this.id + "XMLContent").style.backgroundColor = this.readOnly ? 0xd0d0d0 : 0xffffff;
-                this.editor.setSize("100%", "100%");
 
                 var context = this;
                 if (this.isXmlContent) {
                     WsPackageMaps.getPackageMapById(params).then(function (response) {
                         if (!lang.exists("GetPackageMapByIdResponse.Info", response))
-                            context.editor.setValue(i18n.NoContent);
+                            context.editor.text(i18n.NoContent);
                         else
-                            context.editor.setValue(response.GetPackageMapByIdResponse.Info);
+                            context.editor.text(response.GetPackageMapByIdResponse.Info);
                     }, function (err) {
                         context.showErrors(err);
                     });
@@ -93,9 +86,9 @@ define([
                     WsPackageMaps.validatePackage(params).then(function (response) {
                         var responseText = context.validateResponseToText(response.ValidatePackageResponse);
                         if (responseText === "")
-                            context.editor.setValue("(Empty)");
+                            context.editor.text("(Empty)");
                         else
-                            context.editor.setValue(responseText);
+                            context.editor.text(responseText);
                     }, function (err) {
                         context.showErrors(err);
                     });

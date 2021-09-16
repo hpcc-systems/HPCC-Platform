@@ -62,6 +62,7 @@ interface IRoxieDaliHelper : extends IInterface
     virtual void noteWorkunitRunning(const char *wu, bool running) = 0;
     virtual StringBuffer &getDaliIp(StringBuffer &ip) const = 0;
     virtual IUserDescriptor *queryUserDescriptor() = 0;
+    virtual IConstWorkUnit *createStatsWorkUnit(const char *wuid, const char *dllName) const = 0;
 };
 
 

@@ -83,6 +83,7 @@ MODULE_EXIT()
     delete initCrit;
     delete keyStore.load(std::memory_order_relaxed);
     ::Release((CInterface*)nodeCache);
+    nodeCache = nullptr;
 }
 
 //#define DUMP_NODES
@@ -652,13 +653,19 @@ public:
             CNodeMapping &mapping = iter->query();
             const CKeyIdAndPos &key = mapping.queryFindValue();
             const CJHTreeNode &node = mapping.queryElement();
-            cacheInfo.noteWarm(key.keyId, key.pos, node.getNodeSize(), node.getNodeType());
+            if (node.isReady())
+                cacheInfo.noteWarm(key.keyId, key.pos, node.getNodeSize(), node.getNodeType());
         }
     }
     void noteReady(CJHTreeNode &node)
     {
         //On the previous call node.getMemSize() will have returned 0 if it has not been loaded
         sizeInMem += node.getMemSize();
+    }
+    void traceState(StringBuffer & out)
+    {
+        //Should be safe to call outside of a critical section, but values may be inconsistent
+        out.append(table.ordinality()).append(":").append(sizeInMem);
     }
 };
 
@@ -670,6 +677,8 @@ enum CacheType : unsigned
     //CacheTLK?
     CacheMax = 3
 };
+static constexpr const char * cacheTypeText[CacheMax]  = { "branch", "leaf", "blob" };
+
 static_assert((unsigned)CacheBranch == (unsigned)NodeBranch, "Mismatch Cache Branch");
 static_assert((unsigned)CacheLeaf == (unsigned)NodeLeaf, "Mismatch Cache Leaf");
 static_assert((unsigned)CacheBlob == (unsigned)NodeBlob, "Mismatch Cache Blob");
@@ -716,6 +725,21 @@ public:
             CriticalBlock block(lock[i]);
             cache[i].kill();
         }
+    }
+    void traceState(StringBuffer & out)
+    {
+        for (unsigned i=0; i < CacheMax; i++)
+        {
+            out.append(cacheTypeText[i]).append('(');
+            cache[i].traceState(out);
+            out.append(") ");
+        }
+    }
+    void logState()
+    {
+        StringBuffer state;
+        traceState(state);
+        DBGLOG("NodeCache: %s", state.str());
     }
 
 protected:
@@ -823,7 +847,7 @@ IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile
                 else
                     throw MakeStringException(0, "Failed to open index file %s", fileName);
             }
-            keyIndexCache.add(fname, *LINK(keyIndex));
+            keyIndexCache.replace(fname, *LINK(keyIndex));
         }
         else
         {
@@ -2430,10 +2454,11 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t po
             return LINK(cacheNode);
         }
 
-        CJHTreeNode *node;
+        //Ensure node gets cleaned up (noteStatistic() can throw an exception if a worker has been aborted...)
+        Owned<CJHTreeNode> node;
         {
             CriticalUnblock block(cacheLock);
-            node = keyIndex->loadNode(pos);  // NOTE - don't want cache locked while we load!
+            node.setown(keyIndex->loadNode(pos));  // NOTE - don't want cache locked while we load!
             node->noteReady();
         }
 
@@ -2441,7 +2466,6 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t po
         cacheNode = cache[cacheType].query(key); // check if added to cache while we were reading
         if (cacheNode)
         {
-            ::Release(node);
             cacheHits++;
             if (ctx) ctx->noteStatistic(hitStatId[cacheType], 1);
             (*hitMetric[cacheType])++;
@@ -2450,14 +2474,15 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t po
         }
         if (ctx) ctx->noteStatistic(addStatId[cacheType], 1);
         (*addMetric[cacheType])++;
-        cache[cacheType].add(key, *LINK(node));
-        return node;
+        cache[cacheType].replace(key, *LINK(node));
+        return node.getClear();
     }
     else
     {
-        CJHTreeNode * node;
+        Owned<CJHTreeNode> ownedNode; // ensure node gets cleaned up if it fails to load
         bool alreadyExists = true;
         {
+            CJHTreeNode * node;
             CriticalBlock block(cacheLock);
 
             node = cache[cacheType].query(key);
@@ -2465,49 +2490,70 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, unsigned iD, offset_t po
             {
                 node = keyIndex->createNode(type);
                 assertex(node->getMemSize() == 0);   // check the reported size is 0 so that the updated size is correct
-                cache[cacheType].add(key, *node);
+                cache[cacheType].replace(key, *node);
                 alreadyExists = false;
             }
+
+            //same as ownedNode.set(node), but avoids a null check or two
             node->Link();
+            ownedNode.setown(node);
         }
 
-        //Move the atomic increments out of the critical section - they can be relatively expensive
-        if (likely(alreadyExists))
+        //If an exception is thrown before the node is cleanly loaded we need to remove the partially constructed
+        //node from the cache otherwise it may never get loaded, and can prevent items being removed from the cache
+        //note: noteStatistic() can throw an exception if a worker has been aborted...
+        try
         {
-            cacheHits++;
-            if (ctx) ctx->noteStatistic(hitStatId[cacheType], 1);
-            (*hitMetric[cacheType])++;
+            //Move the atomic increments out of the critical section - they can be relatively expensive
+            if (likely(alreadyExists))
+            {
+                cacheHits++;
+                if (ctx) ctx->noteStatistic(hitStatId[cacheType], 1);
+                (*hitMetric[cacheType])++;
+            }
+            else
+            {
+                cacheAdds++;
+                if (ctx) ctx->noteStatistic(addStatId[cacheType], 1);
+                (*addMetric[cacheType])++;
+            }
+
+            //The common case is that this flag has already been set (by a previous add).
+            if (likely(ownedNode->isReady()))
+                return ownedNode.getClear();
+
+            //Shame that the hash code is recalculated - it might be possible to remove this.
+            unsigned hashcode = hashc(reinterpret_cast<const byte *>(&key), sizeof(key), 0x811C9DC5);
+            unsigned whichCs = hashcode % numLoadCritSects;
+
+            //Protect loading the node contants with a different critical section - so that the node will only be loaded by one thread.
+            //MORE: If this was called by high and low priority threads then there is an outside possibility that it could take a
+            //long time for the low priority thread to progress.  That might cause the cache to be temporarily unbounded.  Unlikely in practice.
+            CriticalBlock loadBlock(loadCs[whichCs]);
+            if (!ownedNode->isReady())
+            {
+                keyIndex->loadNode(ownedNode, pos);
+
+                //Update the associated size of the entry in the hash table before setting isReady (never evicted until isReady is set)
+                cache[cacheType].noteReady(*ownedNode);
+                ownedNode->noteReady();
+            }
+            else
+                (*dupMetric[cacheType])++; // Would have previously loaded the page twice
+
+            return ownedNode.getClear();
         }
-        else
+        catch (...)
         {
-            cacheAdds++;
-            if (ctx) ctx->noteStatistic(addStatId[cacheType], 1);
-            (*addMetric[cacheType])++;
+            //Ensure any partially constructed nodes are removed from the cache
+            if (!ownedNode->isReady())
+            {
+                CriticalBlock block(cacheLock);
+                if (!ownedNode->isReady())
+                    cache[cacheType].remove(key);
+            }
+            throw;
         }
-
-        //The common case is that this flag has already been set (by a previous add).
-        if (likely(node->isReady()))
-            return node;
-
-        //Shame that the hash code is recalculated - it might be possible to remove this.
-        unsigned hashcode = hashc(reinterpret_cast<const byte *>(&key), sizeof(key), 0x811C9DC5);
-        unsigned whichCs = hashcode % numLoadCritSects;
-        Owned<CJHTreeNode> ownedNode(node); // ensure node gets cleaned up if it fails to load
-
-        //Actually load the information outside the critical section
-        CriticalBlock loadBlock(loadCs[whichCs]);
-        if (!node->isReady())
-        {
-            keyIndex->loadNode(node, pos);
-
-            //Update the associated size of the entry in the hash table before setting isReady (never evicted until isReady is set)
-            cache[cacheType].noteReady(*node);
-            node->noteReady();
-        }
-        else
-            (*dupMetric[cacheType])++; // Would have previously loaded the page twice
-
-        return ownedNode.getClear();
     }
 }
 

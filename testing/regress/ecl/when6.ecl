@@ -17,6 +17,8 @@
 
 //skip type==thorlcr TBD
 
+import Std;
+
 r := {unsigned f1, unsigned f2, unsigned f3, unsigned f4 };
 
 r t(unsigned a, unsigned b, unsigned c, unsigned d) := TRANSFORM
@@ -35,8 +37,10 @@ ds := dataset([
 simple := dedup(nofold(ds), f1);
 
 osum := output(TABLE(simple, { s := sum(group, f1) }, f3));
+dumpStack := STD.System.Debug.PrintStackReport();
+action := parallel(osum, dumpStack);
 
-x1 := when(simple, osum, parallel);
+x1 := when(simple, action, parallel);
 
 o1 := output(TABLE(x1, { f1 }));
 o2 := output(TABLE(simple, { c := count(group) }, f3));

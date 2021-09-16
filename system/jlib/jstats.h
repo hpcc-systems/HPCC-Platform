@@ -82,6 +82,8 @@ public:
     void setActivityId(unsigned _id);
     void setEdgeId(unsigned _id, unsigned _output);
     void setFunctionId(const char * _name);
+    void setFileId(const char * _name);
+    void setChannelId(unsigned id);
     void setSubgraphId(unsigned _id);
     void setWorkflowId(unsigned _id);
     void setChildGraphId(unsigned _id);
@@ -116,6 +118,7 @@ public:
     virtual void serialize(MemoryBuffer & out) const = 0;
     virtual unsigned __int64 queryWhenCreated() const = 0;
     virtual void mergeInto(IStatisticGatherer & target) const = 0;
+    virtual StringBuffer &toXML(StringBuffer &out) const = 0;
 };
 
 interface IStatisticCollectionIterator : public IIteratorOf<IStatisticCollection>
@@ -140,6 +143,7 @@ public:
     virtual void beginActivityScope(unsigned id) = 0;
     virtual void beginEdgeScope(unsigned id, unsigned oid) = 0;
     virtual void beginChildGraphScope(unsigned id) = 0;
+    virtual void beginChannelScope(unsigned id) = 0;
     virtual void endScope() = 0;
     virtual void addStatistic(StatisticKind kind, unsigned __int64 value) = 0;
     virtual void updateStatistic(StatisticKind kind, unsigned __int64 value, StatsMergeAction mergeAction) = 0;
@@ -207,6 +211,15 @@ public:
     inline StatsActivityScope(IStatisticGatherer & _gatherer, unsigned id) : StatsScopeBlock(_gatherer)
     {
         gatherer.beginActivityScope(id);
+    }
+};
+
+class ChannelActivityScope : public StatsScopeBlock
+{
+public:
+    inline ChannelActivityScope(IStatisticGatherer & _gatherer, unsigned id) : StatsScopeBlock(_gatherer)
+    {
+        gatherer.beginChannelScope(id);
     }
 };
 
@@ -407,7 +420,7 @@ public:
     {
         for (auto kind : kinds)
         {
-            assert((kind != StKindNone) && (kind != StKindAll));
+            assert((kind != StKindNone) && (kind != StKindAll) && (kind < StMax));
             assert(!indexToKind.contains(kind));
             indexToKind.append(kind);
         }
@@ -422,7 +435,7 @@ public:
         }
         else
         {
-            assert(kind != StKindNone);
+            assert(kind != StKindNone && kind < StMax);
             indexToKind.append(kind);
         }
         createMappings();
@@ -509,12 +522,18 @@ class CNestedRuntimeStatisticMap;
 class jlib_decl CRuntimeStatisticCollection
 {
 public:
-    CRuntimeStatisticCollection(const StatisticsMapping & _mapping) : mapping(_mapping)
-    {
+    CRuntimeStatisticCollection(const StatisticsMapping & _mapping, bool _ignoreUnknown = false) : mapping(_mapping)
+#ifdef _DEBUG
+    ,ignoreUnknown(_ignoreUnknown)
+#endif
+{
         unsigned num = mapping.numStatistics();
         values = new CRuntimeStatistic[num+1]; // extra entry is to gather unexpected stats
     }
     CRuntimeStatisticCollection(const CRuntimeStatisticCollection & _other) : mapping(_other.mapping)
+#ifdef _DEBUG
+    , ignoreUnknown(_other.ignoreUnknown)
+#endif
     {
         unsigned num = mapping.numStatistics();
         values = new CRuntimeStatistic[num+1];
@@ -526,13 +545,19 @@ public:
     inline CRuntimeStatistic & queryStatistic(StatisticKind kind)
     {
         unsigned index = queryMapping().getIndex(kind);
-        dbgassertex(index < mapping.numStatistics());
+#ifdef _DEBUG
+        if (!ignoreUnknown)
+            dbgassertex(index < mapping.numStatistics());
+#endif
         return values[index];
     }
     inline const CRuntimeStatistic & queryStatistic(StatisticKind kind) const
     {
         unsigned index = queryMapping().getIndex(kind);
-        dbgassertex(index < mapping.numStatistics());
+#ifdef _DEBUG
+        if (!ignoreUnknown)
+            dbgassertex(index < mapping.numStatistics());
+#endif
         return values[index];
     }
 
@@ -570,9 +595,7 @@ public:
     void rollupStatistics(IContextLogger * target) { rollupStatistics(1, &target); }
     void rollupStatistics(unsigned num, IContextLogger * const * targets) const;
 
-
-    virtual void recordStatistics(IStatisticGatherer & target) const;
-    void getNodeProgressInfo(IPropertyTree &node) const;
+    virtual void recordStatistics(IStatisticGatherer & target, bool clear) const;
 
     // Print out collected stats to string
     StringBuffer &toStr(StringBuffer &str) const;
@@ -601,6 +624,9 @@ protected:
     CRuntimeStatistic * values;
     std::atomic<CNestedRuntimeStatisticMap *> nested {nullptr};
     static CriticalSection nestlock;
+#ifdef _DEBUG
+    bool ignoreUnknown = false;
+#endif
 };
 
 //NB: Serialize and deserialize are not currently implemented.
@@ -610,7 +636,7 @@ public:
     CRuntimeSummaryStatisticCollection(const StatisticsMapping & _mapping);
     ~CRuntimeSummaryStatisticCollection();
 
-    virtual void recordStatistics(IStatisticGatherer & target) const override;
+    virtual void recordStatistics(IStatisticGatherer & target, bool clear = false) const override;
     virtual bool serialize(MemoryBuffer & out) const override;  // Returns true if any non-zero
     virtual void deserialize(MemoryBuffer & in) override;
     virtual void deserializeMerge(MemoryBuffer& in) override;
@@ -658,7 +684,7 @@ public:
     void deserialize(MemoryBuffer & in);
     void deserializeMerge(MemoryBuffer& in);
     void merge(const CNestedRuntimeStatisticCollection & other, unsigned node);
-    void recordStatistics(IStatisticGatherer & target) const;
+    void recordStatistics(IStatisticGatherer & target, bool clear) const;
     StringBuffer & toStr(StringBuffer &str) const;
     StringBuffer & toXML(StringBuffer &str) const;
     void updateDelta(CNestedRuntimeStatisticCollection & target, const CNestedRuntimeStatisticCollection & source);
@@ -679,7 +705,7 @@ public:
     void deserialize(MemoryBuffer & in);
     void deserializeMerge(MemoryBuffer& in);
     void merge(const CNestedRuntimeStatisticMap & other, unsigned node);
-    void recordStatistics(IStatisticGatherer & target) const;
+    void recordStatistics(IStatisticGatherer & target, bool clear) const;
     StringBuffer & toStr(StringBuffer &str) const;
     StringBuffer & toXML(StringBuffer &str) const;
     void updateDelta(CNestedRuntimeStatisticMap & target, const CNestedRuntimeStatisticMap & source);
@@ -739,18 +765,6 @@ void mergeStat(CRuntimeStatisticCollection & stats, Shared<INTERFACE> source, St
 //---------------------------------------------------------------------------------------------------------------------
 
 //A class for minimizing the overhead of collecting timestamps.
-class jlib_decl OptimizedTimestamp
-{
-public:
-    OptimizedTimestamp();
-
-    unsigned __int64 getTimeStampNowValue();
-
-protected:
-    cycle_t lastCycles;
-    unsigned __int64 lastTimestamp;
-};
-
 class IpAddress;
 
 extern jlib_decl unsigned __int64 getTimeStampNowValue();
@@ -795,7 +809,7 @@ extern jlib_decl void setStatisticsComponentName(StatisticCreatorType processTyp
 
 extern jlib_decl void verifyStatisticFunctions();
 extern jlib_decl void formatTimeCollatable(StringBuffer & out, unsigned __int64 value, bool nano);
-extern jlib_decl unsigned __int64 extractTimeCollatable(const char *s, bool nano);
+extern jlib_decl unsigned __int64 extractTimeCollatable(const char *s, const char * * end);
 
 extern jlib_decl void validateScopeId(const char * idText);
 extern jlib_decl void validateScope(const char * scopeText);

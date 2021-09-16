@@ -26,16 +26,17 @@
 
 namespace repositoryCommon {
 
-IEclRepository * loadPlugins(const char * pluginPath)
+IEclPackage * loadPlugins(const char * pluginPath)
 {
     MultiErrorReceiver errs;
-    IEclRepository * plugins = createNewSourceFileEclRepository(&errs, pluginPath, ESFallowplugins, (unsigned) -1);//Preload implicits/dlls
+    EclRepositoryManager collection;
+    collection.addQuerySourceFileEclRepository(&errs, pluginPath, ESFallowplugins, (unsigned) -1);//Preload implicits/dlls
     if (errs.errCount())
     {
         StringBuffer s;
         DBGLOG(0,"Errors in plugins: %s", errs.toString(s).str());
     }
-    return plugins;
+    return collection.createPackage(nullptr);
 }
 
 static void expandPluginPropertyTree(IPropertyTree * target, HqlLookupContext & ctx, IHqlScope * scope, bool includeModuleText)
@@ -84,11 +85,11 @@ static void expandPluginPropertyTree(IPropertyTree * target, HqlLookupContext & 
     }
 }
 
-IPropertyTree * createPluginPropertyTree(IEclRepository * plugins, bool includeModuleText)
+IPropertyTree * createPluginPropertyTree(IEclPackage * plugins, bool includeModuleText)
 {
     NullStatisticTarget nullStats;
-    HqlParseContext parseCtx(plugins, NULL, NULL, nullStats);
-    HqlLookupContext ctx(parseCtx, NULL);
+    HqlParseContext parseCtx(nullptr, nullptr, nullStats);
+    HqlLookupContext ctx(parseCtx, nullptr, plugins);
 
     Owned<IPropertyTree> map = createPTree("Plugins", ipt_caseInsensitive);
     expandPluginPropertyTree(map, ctx, plugins->queryRootScope(), includeModuleText);
@@ -97,7 +98,7 @@ IPropertyTree * createPluginPropertyTree(IEclRepository * plugins, bool includeM
 
 //-------------------------------------------------------------------------------------------------
 
-IPropertyTree * getPlugin(IPropertyTree * p, IEclRepository * plugins, const char* modname, bool load)
+IPropertyTree * getPlugin(IPropertyTree * p, IEclPackage * plugins, const char* modname, bool load)
 {
     if (!p)
         return NULL;
@@ -109,8 +110,8 @@ IPropertyTree * getPlugin(IPropertyTree * p, IEclRepository * plugins, const cha
     if(load && !plugin->getPropInt("@loaded",0))
     {
         NullStatisticTarget nullStats;
-        HqlParseContext parseCtx(plugins, NULL, NULL, nullStats);
-        HqlLookupContext GHMOREctx(parseCtx, NULL);
+        HqlParseContext parseCtx(nullptr, nullptr, nullStats);
+        HqlLookupContext GHMOREctx(parseCtx, nullptr, plugins);
         Owned<IHqlScope> resolved = getResolveDottedScope(modname, LSFpublic, GHMOREctx);
         if (resolved)
             exportSymbols(plugin, resolved, GHMOREctx);

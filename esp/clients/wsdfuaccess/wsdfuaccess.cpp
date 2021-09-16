@@ -19,6 +19,7 @@
 
 #include "jliball.hpp"
 #include "jflz.hpp"
+#include "jsecrets.hpp"
 #include "daclient.hpp"
 #include "dautils.hpp"
 #include "seclib.hpp"
@@ -50,8 +51,11 @@ static CriticalSection dfuServiceUrlCrit;
 static std::atomic<unsigned> currentDfuServiceUrl{0};
 static std::atomic<bool> dfuServiceUrlsDiscovered{false};
 
-void ensureAccessibleDfuServiceURLList()
+static void ensureAccessibleDfuServiceURLList()
 {
+#ifdef _CONTAINERIZED
+    UNIMPLEMENTED_X("CONTAINERIZED(ensureAccessibleDfuServiceURLList)");
+#else
     bool expected = false;
     if (dfuServiceUrlsDiscovered.compare_exchange_strong(expected, true))
     {
@@ -62,6 +66,7 @@ void ensureAccessibleDfuServiceURLList()
         for (auto &s: dfuServiceUrls)
             s = s + "/WsDfu/";
     }
+#endif
 }
 
 static unsigned getNumDfuServiceURL()
@@ -489,16 +494,21 @@ IPropertyTree *createDFUFileMetaInfo(const char *fileName, IFileDescriptor *file
         metaInfo->setPropBin("binLayout", binLayout.length(), binLayout.toByteArray());
 
     // file meta info
-    INode *node1 = fileDesc->queryNode(0);
-    SocketEndpoint ep = node1->endpoint();
-    unsigned dafilesrvVersion = getCachedRemoteVersion(node1->endpoint(), secure);
-
-    if (dafilesrvVersion < DAFILESRV_STREAMGENERAL_MINVERSION)
+    bool legacyDafileSrv = false;
+    if (!isContainerized())
     {
-        metaInfo->setPropInt("version", 1); // legacy format
-        extractFilePartInfo(*metaInfo, *fileDesc);
+        INode *node1 = fileDesc->queryNode(0);
+        SocketEndpoint ep = node1->endpoint();
+        unsigned dafilesrvVersion = getCachedRemoteVersion(node1->endpoint(), secure);
+
+        if (dafilesrvVersion < DAFILESRV_STREAMGENERAL_MINVERSION)
+        {
+            metaInfo->setPropInt("version", 1); // legacy format
+            extractFilePartInfo(*metaInfo, *fileDesc);
+            legacyDafileSrv = true;
+        }
     }
-    else
+    if (!legacyDafileSrv)
     {
         metaInfo->setPropInt("version", DAFILESRV_METAINFOVERSION);
         IPropertyTree *fileInfoTree = metaInfo->setPropTree("FileInfo");
@@ -518,20 +528,42 @@ StringBuffer &encodeDFUFileMeta(StringBuffer &metaInfoBlob, IPropertyTree *metaI
      * Should be part of the same configuration setup.
      */
 #ifdef _USE_OPENSSL
-    if (metaInfo->hasProp("keyPairName") && environment) // without it, meta data is not encrypted
+    if (metaInfo->hasProp("keyPairName") && (isContainerized() || environment)) // without it, meta data is not encrypted
     {
         MemoryBuffer metaInfoBlob;
         metaInfo->serialize(metaInfoBlob);
+        const char *keyPairName = metaInfo->queryProp("keyPairName"); // NB: in container mode, this is the name of the secret containing the cert.
 
-        const char *keyPairName = metaInfo->queryProp("keyPairName");
-        const char *privateKeyFName = environment->getPrivateKeyPath(keyPairName);
+        const char *privateKeyFName = nullptr;
+        Owned<IPropertyTree> metaInfoEnvelope = createPTree();
+#ifdef _CONTAINERIZED
+        /* Encode the public certificate in the request. NB: this is an approach used for JWT token delegation.
+         * The delegated service (dafilesrv) will only trust this cert. if from our CA.
+         * It will then use it to verify the signature.
+         * If the size of this initial request was ever a concern, we could consider other ways to ensure a one-off
+         * delivery of this esp public signing cert. to dafilesrv, e.g. by dafilesrv reaching out to esp to request it.
+         */
+        IPropertyTree *info = queryTlsSecretInfo(keyPairName);
+        if (!info)
+            throw makeStringExceptionV(-1, "encodeDFUFileMeta: No '%s' MTLS certificate detected.", keyPairName);
+        privateKeyFName = info->queryProp("privatekey");
+        if (isEmptyString(privateKeyFName))
+            throw makeStringException(-1, "encodeDFUFileMeta: MTLS - private path missing");
+        const char *certPath = info->queryProp("certificate");
+        verifyex(certPath);
+        StringBuffer certificate;
+        certificate.loadFile(certPath);
+        verifyex(certificate.length());
+        metaInfoEnvelope->setProp("certificate", certificate);
+#else
+        privateKeyFName = environment->getPrivateKeyPath(keyPairName);
         if (isEmptyString(privateKeyFName))
             throw makeStringExceptionV(-1, "Key name '%s' is not found in environment settings: /EnvSettings/Keys/KeyPair.", keyPairName);
+#endif
         Owned<CLoadedKey> privateKey = loadPrivateKeyFromFile(privateKeyFName, nullptr);
         StringBuffer metaInfoSignature;
         digiSign(metaInfoSignature, metaInfoBlob.length(), metaInfoBlob.bytes(), *privateKey);
 
-        Owned<IPropertyTree> metaInfoEnvelope = createPTree();
         metaInfoEnvelope->setProp("signature", metaInfoSignature);
         metaInfoEnvelope->setPropBin("metaInfoBlob", metaInfoBlob.length(), metaInfoBlob.bytes());
         metaInfoEnvelope->serialize(metaInfoMb.clear());

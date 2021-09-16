@@ -501,7 +501,7 @@ class ECLRTL_API CommonCSVWriter: public CInterface, implements IXmlWriterExt
     CIArrayOf<CCSVRow> contentRowsBuffer;
     CIArrayOf<CXPathItem> dataXPath;//xpath in caller
 
-    void escapeQuoted(unsigned len, char const* in, StringBuffer& out);
+    void escapeString(unsigned len, char const* in, StringBuffer& out);
     bool checkHeaderName(const char* name);
     CCSVItem* getParentCSVItem();
     CCSVItem* getCSVItemByFieldName(const char* name);

@@ -70,7 +70,6 @@ target_link_libraries ( fileservices
          jlib
          remote 
          dalibase 
-         environment 
          esphttp
          dllserver 
          nbcd 
@@ -79,4 +78,7 @@ target_link_libraries ( fileservices
          workunit 
     )
 
+if (NOT CONTAINERIZED)
+    target_link_libraries ( fileservices environment )
+endif()
 

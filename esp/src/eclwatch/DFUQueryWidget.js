@@ -629,18 +629,6 @@ define([
                             return "";
                         }
                     },
-                    IsKeyFile: {
-                        width: 25, sortable: false,
-                        renderHeaderCell: function (node) {
-                            node.innerHTML = Utility.getImageHTML("index.png", context.i18n.Index);
-                        },
-                        formatter: function (keyfile, row) {
-                            if (row.ContentType === "key") {
-                                return Utility.getImageHTML("index.png");
-                            }
-                            return "";
-                        }
-                    },
                     __hpcc_displayName: tree({
                         label: this.i18n.LogicalName, width: 600,
                         formatter: function (name, row) {

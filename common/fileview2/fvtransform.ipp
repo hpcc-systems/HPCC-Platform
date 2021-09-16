@@ -228,7 +228,7 @@ protected:
     ViewFieldTransformerArray transformers;
     CIArrayOf<ViewServiceEntry> plugins;
     Owned<SafePluginMap> loadedPlugins;
-    Owned<IEclRepository> dataServer;
+    Owned<IEclPackage> dataServer;
     SimplePluginCtx pluginCtx;
 };
 

@@ -60,7 +60,6 @@ target_link_libraries ( thorcodectx_lcr
         thorhelper 
         remote 
         dalibase 
-        environment 
         dllserver 
         workunit 
         )

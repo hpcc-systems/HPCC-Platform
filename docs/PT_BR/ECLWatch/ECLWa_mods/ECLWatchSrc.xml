@@ -462,7 +462,10 @@
           </listitem>
         </itemizedlist>
 
-        <!-- added WU Details stuff here -->
+        <para>Na aba guia de detalhes da workunit, há ícones próximos ao ID da
+        workunit (WUID) que permitem copiar o WUID ou a URL. O primeiro ícone
+        copia o WUID para a área de transferência. O segundo ícone copia o
+        URL.</para>
 
         <sect3 id="ECLWatch_PublishActionButton" role="brk">
           <title>Botão Publish</title>

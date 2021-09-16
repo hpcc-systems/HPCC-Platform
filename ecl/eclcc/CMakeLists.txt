@@ -74,7 +74,7 @@ target_link_libraries ( eclcc
          dllserver
     )
 
-if (CONTAINERIZED)
+if (NOT CONTAINERIZED)
   target_link_libraries ( eclcc environment )
 endif()
 

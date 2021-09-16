@@ -308,7 +308,7 @@ inline constexpr bool isContainerized() { return false; }
 #endif
 
 extern jlib_decl unsigned runExternalCommand(StringBuffer &output, StringBuffer &error, const char *cmd, const char *input);
-extern jlib_decl unsigned runExternalCommand(const char *title, StringBuffer &output, StringBuffer &error, const char *cmd, const char *input);
+extern jlib_decl unsigned runExternalCommand(const char *title, StringBuffer &output, StringBuffer &error, const char *cmd, const char *input, const char * cwd);
 
 extern jlib_decl unsigned __int64 greatestCommonDivisor(unsigned __int64 left, unsigned __int64 right);
 
@@ -447,8 +447,13 @@ extern jlib_decl bool queryHPCCPKIKeyFiles(const char * *  _certificate,//HPCCCe
                                            const char * *  _privateKey, //HPCCPrivateKeyFile
                                            const char * *  _passPhrase);//HPCCPassPhrase, encrypted
 
+#ifndef _CONTAINERIZED
+extern jlib_decl bool queryMtlsBareMetalConfig();
+#endif
+
 extern jlib_decl const char * matchConfigurationDirectoryEntry(const char *path,const char *mask,StringBuffer &name, StringBuffer &component, StringBuffer &instance);
 extern jlib_decl bool replaceConfigurationDirectoryEntry(const char *path,const char *frommask,const char *tomask,StringBuffer &out);
+extern jlib_decl bool validateConfigurationDirectory(const IPropertyTree* useTree, const char* category, const char* component, const char* instance, const char* dirToValidate);
 
 extern jlib_decl const char *queryCurrentProcessPath();
 

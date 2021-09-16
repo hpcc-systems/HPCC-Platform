@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="HPCC4J_Build">
+  <title>Buids</title>
+
+  <para>Para construir os projetos usando Maven, navegue até o diretório base
+  do projeto e emita o seguinte comando:</para>
+
+  <programlisting>mvn install</programlisting>
+
+  <para><variablelist>
+      <varlistentry>
+        <term>NOTA:</term>
+
+        <listitem>
+          <para>hpcccommons, wsclient e dfsclient são controlados por meio do
+          arquivo top-level maven pom e podem ser construídos com um único
+          comando. Todos os sub-projects podem ser construídos individualmente
+          usando o arquivo pom em cada diretório de sub-project.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist></para>
+
+  <para>Para maiores informações sobre como utilizar Maven veja <ulink
+  url="http://maven.apache.org">http://maven.apache.org</ulink></para>
+
+  <sect2>
+    <title>Código Fonte HPCC4J</title>
+
+    <para>A fonte pode ser encontrada na conta github da plataforma HPCC no
+    repositório hpcc4j.</para>
+
+    <para><ulink
+    url="https://github.com/hpcc-systems/hpcc4j">https://github.com/hpcc-systems/hpcc4j</ulink></para>
+
+    <para>Para utilizar esta biblioteca como uma dependência em seu próprio
+    projeto maven, adicione a seguinte definição ao seu pom.xml.</para>
+
+    <programlisting>
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.hpccsystems&lt;/groupId&gt;
+        &lt;artifactId&gt;wsclient&lt;/artifactId&gt;
+        &lt;version&gt;7.8.2-1&lt;/version&gt;
+    &lt;/dependency&gt;
+    </programlisting>
+
+    <para>As contribuições para a fonte são aceitas e incentivadas. Tudo as
+    contribuições devem seguir o formato de origem JAVA descrito no arquivo
+    HPCC-JAVA-Formatter.xml, que pode ser encontrado em pcc4j/eclipse. Este
+    formatador pode ser usado pelo Eclipse IDE para formatar automaticamente o
+    código-fonte JAV.</para>
+
+    <para><itemizedlist>
+        <listitem>
+          <para>Para eclipse, escolha Window-&gt;Preferences-&gt;Java-&gt;Code
+          Stype-&gt;Formatter.</para>
+
+          <para>Importe o arquivo HPCC-JAVA-Formatter.xml e configure como
+          perfil ativo.</para>
+        </listitem>
+
+        <listitem>
+          <para>No editor JAVA, selecione Source-&gt;Format</para>
+        </listitem>
+      </itemizedlist></para>
+  </sect2>
+</sect1>

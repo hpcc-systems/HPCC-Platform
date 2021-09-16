@@ -32,6 +32,8 @@
 #include <algorithm>
 #include <string>
 #include <map>
+#include <atomic>
+
 using namespace std;
 
 //A helper class for tracking the number of active requests

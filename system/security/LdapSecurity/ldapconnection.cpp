@@ -30,6 +30,7 @@
 #include "dautils.hpp"
 #include "dasds.hpp"
 #include "workunit.hpp"
+#include "jsecrets.hpp"
 
 #include <map>
 #include <string>
@@ -162,7 +163,7 @@ public:
         {
             char *copyFullText = strdup(addrlist);
             char *saveptr;
-            char *ip = strtok_r(copyFullText, "|", &saveptr);
+            char *ip = strtok_r(copyFullText, "|,", &saveptr);//multiple LDAP IP separators ("ldapAddress=x.x.x.x,y.y.y.y")
             while (ip != NULL)
             {
                 if (isdigit(*ip))
@@ -192,7 +193,7 @@ public:
                     m_hostArray.append(ip);
                 }
                 DBGLOG("Added ldap server %s", m_hostArray.item(m_hostArray.ordinality()-1));
-                ip = strtok_r(NULL, "|", &saveptr);
+                ip = strtok_r(NULL, "|,", &saveptr);
             }
             free(copyFullText);
 
@@ -351,6 +352,62 @@ public:
 
         m_timeout = cfg->getPropInt(".//@ldapTimeoutSecs", LDAPTIMEOUT);
 
+        //------------------------------------------------
+        //Get LDAP Admin account username (m_sysuser_commonname) and password (m_sysuser_password)
+        // Can be specified as
+        //  - Kubernetes secret : lookup key value ldapAdminSecretKey
+        //  - Vault secret : lookup key value ldapAdminVaultId, ldapAdminSecretKey
+        //  - Hardcoded : systemCommonName, systemPassword (legacy environment.xml)
+        //------------------------------------------------
+
+        StringBuffer systemUserSecretKey;
+        cfg->getProp(".//@ldapAdminSecretKey", systemUserSecretKey);//vault/secrets LDAP username key
+        if (!systemUserSecretKey.isEmpty())
+        {
+            StringBuffer vaultId;
+            cfg->getProp(".//@ldapAdminVaultId", vaultId);//optional HashiCorp vault ID
+
+            DBGLOG("Retrieving LDAP Admin username/password from secrets repo: %s %s", !vaultId.isEmpty() ? vaultId.str() : "", systemUserSecretKey.str());
+            Owned<IPropertyTree> secretTree;
+            if (!isEmptyString(vaultId.str()))
+                secretTree.setown(getVaultSecret("authn", vaultId, systemUserSecretKey.str(), nullptr));
+            else
+                secretTree.setown(getSecret("authn", systemUserSecretKey.str()));
+            if (!secretTree)
+                throw MakeStringException(-1, "Error retrieving LDAP Admin username/password");
+
+            getSecretKeyValue(m_sysuser_commonname, secretTree, "username");
+            getSecretKeyValue(m_sysuser_password, secretTree, "password");
+
+            if (m_sysuser_commonname.isEmpty() || m_sysuser_password.isEmpty())
+            {
+                throw MakeStringException(-1, "Error extracting LDAP Admin username/password");
+            }
+            m_sysuser.set(m_sysuser_commonname);
+        }
+        else
+        {
+            //Legacy component config from environment.xml configuration
+            cfg->getProp(".//@systemCommonName", m_sysuser_commonname);
+            if (m_sysuser_commonname.isEmpty())
+                throw MakeStringException(-1, "systemCommonName is empty");
+
+            StringBuffer pwd;
+            cfg->getProp(".//@systemPassword", pwd);
+            if (pwd.isEmpty())
+                throw MakeStringException(-1, "systemPassword is empty");
+            decrypt(m_sysuser_password, pwd.str());//MD5 encrypted in config
+        }
+
+        StringBuffer sysBasedn;
+        cfg->getProp(".//@systemBasedn", sysBasedn);
+        if (sysBasedn.isEmpty())
+            throw MakeStringException(-1, "systemBasedn is empty");
+
+        //----------------------------------------------------
+        //Ensure at least one specified LDAP host is available
+        //----------------------------------------------------
+
         int rc = LDAP_OTHER;
         StringBuffer hostbuf, dcbuf;
         const char * ldapDomain = cfg->queryProp(".//@ldapDomain");
@@ -358,32 +415,14 @@ public:
         {
             getLdapHost(hostbuf);
             unsigned port = strieq("ldaps",m_protocol) ? m_ldap_secure_port : m_ldapport;
-            StringBuffer sysUserDN, decPwd;
 
-            {
-                StringBuffer pwd;
-                cfg->getProp(".//@systemPassword", pwd);
-                if (pwd.isEmpty())
-                    throw MakeStringException(-1, "systemPassword is empty");
-                decrypt(decPwd, pwd.str());
-
-                StringBuffer sysUserCN;
-                cfg->getProp(".//@systemCommonName", sysUserCN);
-                if (sysUserCN.isEmpty())
-                    throw MakeStringException(-1, "systemCommonName is empty");
-
-                StringBuffer sysBasedn;
-                cfg->getProp(".//@systemBasedn", sysBasedn);
-                if (sysBasedn.isEmpty())
-                    throw MakeStringException(-1, "systemBasedn is empty");
-
-                //Guesstimate system user baseDN based on config settings. It will be used if anonymous bind fails
-                sysUserDN.append("cn=").append(sysUserCN.str()).append(",").append(sysBasedn.str());
-            }
+            //Guesstimate system user baseDN based on config settings. It will be used if anonymous bind fails
+            StringBuffer sysUserDN;
+            sysUserDN.append("cn=").append(m_sysuser_commonname.str()).append(",").append(sysBasedn.str());
 
             for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
             {
-                rc = LdapUtils::getServerInfo(hostbuf.str(), sysUserDN.str(), decPwd.str(), m_protocol, port, dcbuf, m_serverType, ldapDomain, m_timeout);
+                rc = LdapUtils::getServerInfo(hostbuf.str(), sysUserDN.str(), m_sysuser_password.str(), m_protocol, port, dcbuf, m_serverType, ldapDomain, m_timeout);
                 if(!LdapServerDown(rc) || retries >= LDAPSEC_MAX_RETRIES)
                     break;
                 sleep(LDAPSEC_RETRY_WAIT);
@@ -511,21 +550,12 @@ public:
         }
 
         m_sysuser_specified = true;
-        cfg->getProp(".//@systemUser", m_sysuser);
         if(m_sysuser.length() == 0)
         {
-            m_sysuser_specified = false;
+            cfg->getProp(".//@systemUser", m_sysuser);
+            if(m_sysuser.length() == 0)
+                m_sysuser_specified = false;
         }
-
-        cfg->getProp(".//@systemCommonName", m_sysuser_commonname);
-        if(m_sysuser_specified && (m_sysuser_commonname.length() == 0))
-        {
-            throw MakeStringException(-1, "SystemUser commonname is empty");
-        }
-
-        StringBuffer passbuf;
-        cfg->getProp(".//@systemPassword", passbuf);
-        decrypt(m_sysuser_password, passbuf.str());
 
         StringBuffer sysuser_basedn;
         cfg->getProp(".//@systemBasedn", sysuser_basedn);
@@ -3400,6 +3430,12 @@ public:
             return false;
         }
 
+        if(isEmptyString(newPassword))
+        {
+            DBGLOG("CLdapClient::updateUserPassword password must be provided");
+            return false;
+        }
+
         if (currPassword)
         {
             //User will not be authenticated if their password was expired,
@@ -3418,6 +3454,12 @@ public:
         if(!username || !*username)
         {
             DBGLOG("CLdapClient::updateUserPassword username must be provided");
+            return false;
+        }
+
+        if(isEmptyString(newPassword))
+        {
+            DBGLOG("CLdapClient::updateUserPassword password must be provided");
             return false;
         }
 
@@ -6020,15 +6062,29 @@ private:
 
         // set the password.
         Owned<ISecUser> tmpuser = new CLdapSecUser(user->getName(), "");
-        const char* passwd = user->credentials().getPassword();
-        if(passwd == NULL || *passwd == '\0')
-            passwd = "password";
-
-        if (!updateUserPassword(*tmpuser, passwd, NULL))
+        if (!updateUserPassword(*tmpuser, user->credentials().getPassword(), nullptr))
         {
             DBGLOG("Error updating password for %s",username);
             throw MakeStringException(-1, "Error updating password for %s",username);
         }
+
+        //Now that the password is set, we can ensure passwords are always required
+
+        act_ctrl_val &= ~(0x20);// UF_PASSWD_NOTREQD 0x0020
+        new_act_ctrl.clear().append(act_ctrl_val);
+        LDAPMod attr = {
+            LDAP_MOD_REPLACE,
+            "userAccountControl",
+            ctrl_values
+        };
+        cattrs[0] = &attr;
+        cattrs[1] = NULL;
+        rc = ldap_modify_ext_s(ld, (char*)dn, cattrs, NULL, NULL);
+        if ( rc != LDAP_SUCCESS )
+        {
+            throw MakeStringException(-1, "error enableUser2 %s, ldap_modify_ext_s error2: %s", username, ldap_err2string( rc ));
+        }
+
     }
 
 
@@ -6039,6 +6095,12 @@ private:
         {
             DBGLOG("Can't add user, username not set");
             throw MakeStringException(-1, "Can't add user, username not set");
+        }
+
+        const char* userPassword = user.credentials().getPassword();
+        if(isEmptyString(userPassword))
+        {
+            throw MakeStringException(-1, "Can't add user, password not set");
         }
 
         const char* fname = user.getFirstName();
@@ -6131,10 +6193,7 @@ private:
             actname_values
         };
 
-        const char* passwd = user.credentials().getPassword();
-        if(passwd == NULL || *passwd == '\0')
-            passwd = "password";
-        char* passwd_values[] = {(char*)passwd, NULL};
+        char* passwd_values[] = {(char*)userPassword, nullptr};//password is set later (in enableUser) if ACTIVE_DIRECTORY
         LDAPMod passwd_attr =
         {
             LDAP_MOD_ADD,

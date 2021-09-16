@@ -1601,7 +1601,9 @@ class CJobListener : public CSimpleInterface
     bool &stopped;
     CriticalSection crit;
     OwningStringSuperHashTableOf<CJobSlave> jobs;
+#ifndef _CONTAINERIZED
     CFifoFileCache querySoCache; // used to mirror master cache
+#endif
     IArrayOf<IMPServer> mpServers;
     unsigned channelsPerSlave;
 
@@ -1748,6 +1750,7 @@ public:
                 verifyThreads.append(*new CVerifyThread(*this, c));
         }
 
+#ifndef _CONTAINERIZED
         StringBuffer soPath;
         globals->getProp("@query_so_dir", soPath);
         StringBuffer soPattern("*.");
@@ -1758,6 +1761,7 @@ public:
 #endif
         if (globals->getPropBool("Debug/@dllsToSlaves",true))
             querySoCache.init(soPath.str(), DEFAULT_QUERYSO_LIMIT, soPattern);
+#endif
         Owned<ISlaveWatchdog> watchdog;
         if (globals->getPropBool("@watchdogEnabled"))
             watchdog.setown(createProgressHandler(globals->getPropBool("@useUDPWatchdog")));
@@ -1782,10 +1786,20 @@ public:
                         mptag_t slaveMsgTag;
                         deserializeMPtag(msg, slaveMsgTag);
                         queryNodeComm().flush(slaveMsgTag);
-                        StringBuffer soPath, soPathTail;
-                        StringAttr wuid, graphName, remoteSoPath;
+                        StringAttr wuid, graphName;
+                        StringBuffer soPath;
                         msg.read(wuid);
                         msg.read(graphName);
+
+                        Owned<ILoadedDllEntry> querySo;
+#ifdef _CONTAINERIZED
+                        StringAttr soName;
+                        msg.read(soName);
+                        querySo.setown(createDllEntry(soName.str(), false, NULL, false));
+                        soPath.append(soName);
+#else
+                        StringBuffer soPathTail;
+                        StringAttr remoteSoPath;
                         msg.read(remoteSoPath);
                         bool sendSo;
                         msg.read(sendSo);
@@ -1857,7 +1871,8 @@ public:
                             soPath.clear().append(tempSo.str());
                         }
 #endif
-                        Owned<ILoadedDllEntry> querySo = createDllEntry(soPath.str(), false, NULL, false);
+                        querySo.setown(createDllEntry(soPath.str(), false, NULL, false));
+#endif
 
                         Owned<IPropertyTree> workUnitInfo = createPTree(msg);
                         StringBuffer user;

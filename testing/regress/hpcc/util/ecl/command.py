@@ -83,6 +83,9 @@ class ECLcmd(Shell):
             args.append('--exception-level=warning')
             args.append('--noroot')
 
+            if self.config.usePoll.lower() == 'true':
+                args.append('--poll')
+                
             name = kwargs.pop('name', False)
             if not name:
                 name = eclfile.getJobname()
@@ -145,8 +148,10 @@ class ECLcmd(Shell):
                             i = ET.tostring(xml).decode("utf-8")
                         logger.debug("%3d. ret:'%s'", eclfile.getTaskId(),  i )
                         pass
-                    try:    
-                        result += i + "\n"
+                    try:
+                        # "ecl run .... --poll" inserts 2 or 3 more lines and <Result> and </Result> tags into the result, filter them out
+                        if not ( i.startswith("Polling for") or i.startswith("Getting Workunit") or i.startswith("Getting Results") or i.startswith("Retrieving Results") or i.startswith("<Result>") or i.startswith("</Result>")):
+                            result += i + "\n"
                     except:
                         logger.error("%3d. type of i: '%s', i: '%s'", eclfile.getTaskId(), type(i), i )
                 cnt += 1
@@ -164,6 +169,15 @@ class ECLcmd(Shell):
             raise err
         finally:
             res = queryWuid(eclfile.getJobname(), eclfile.getTaskId())
+            if not res['wuid'].strip().startswith('W'):
+                tryCount = 5
+                while  tryCount > 0:
+                    tryCount -= 1
+                    res = queryWuid(eclfile.getJobname(), eclfile.getTaskId())
+                    if res['wuid'].strip().startswith('W'):
+                        break
+                    logger.debug("%3d. in finally -> 'wuid':'%s', 'state':'%s', attempt: %d, ", eclfile.getTaskId(), res['wuid'], res['state'],  tryCount)
+
             logger.debug("%3d. in finally -> 'wuid':'%s', 'state':'%s', data':'%s', ", eclfile.getTaskId(), res['wuid'], res['state'], data)
             if wuid ==  'N/A':
                 logger.debug("%3d. in finally queryWuid() -> 'result':'%s', 'wuid':'%s', 'state':'%s'", eclfile.getTaskId(),  res['result'],  res['wuid'],  res['state'])
@@ -223,13 +237,16 @@ class ECLcmd(Shell):
                     logger.debug("%3d. in state == failed 'wuid':'%s', 'state':'%s', data':'%s', ", eclfile.getTaskId(), res['wuid'], res['state'], data)
                     resultLines = data.strip().split('\n')
                     resultLineIndex = 0;
+                    #                                                   It has some output what should compare    
                     while resultLineIndex < len(resultLines) and not resultLines[resultLineIndex].startswith('<'):
                         resultLineIndex += 1
                     logger.debug("%3d. State is fail (resultLineIndex:%d, resultLines:'%s' )", eclfile.getTaskId(), resultLineIndex,  resultLines)
                     data = '\n'.join(resultLines[resultLineIndex:])+ "\n"
                     eclfile.addResults(data, wuid)
                     logger.debug("%3d. State is fail (resultLineIndex:%d, data:'%s' )", eclfile.getTaskId(), resultLineIndex,  data)
-                    test = eclfile.testResults()
+                    test = False
+                    if not resultLines[resultLineIndex].startswith('Error ('):
+                        test = eclfile.testResults()
                 else:
                     test = eclfile.testResults()
             report.addResult(eclfile)

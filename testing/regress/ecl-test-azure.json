@@ -1,0 +1,72 @@
+{
+    "Regress":{
+        "roxieTestSocket": ":9876",
+        "espIp" : "127.0.0.1",
+        "espSocket": "8010",
+        "dropzoneIp" : "127.0.0.1",
+        "dropzonePath" : "/var/lib/HPCCSystems/mydropzone/",
+        "espFileSprayService" : "FileSpray",
+        "useSsl" : "False",
+        "username": "regress",
+        "password": "regress",
+        "suiteDir": "",
+        "eclDir": "ecl",
+        "setupDir": "ecl/setup",
+        "keyDir": "ecl/key",
+        "archiveDir": "archives",
+        "resultDir": "results",
+        "zapDir":"zap",
+        "regressionDir": "~/HPCCSystems-regression",
+        "logDir": "~/HPCCSystems-regression/log",
+        "Engines": [
+            "hthor",
+            "thor",
+            "roxie-workunit"
+        ],
+        "Clusters": {
+            "hthor" : "hthor",
+            "thor"  : "thor",
+            "roxie-workunit" : "roxie-workunit"
+        },
+        "ClusterNames": {
+            "hthor" : "myhthor",
+            "thor"  : "mythor",
+            "roxie-workunit" : "myroxie"
+        },
+        "timeout":"3600",
+        "maxAttemptCount":"1",
+        "wuStatusTimeout":"3600",
+        "wuAbortTimeout":"720",
+        "usePoll":"True",
+        "defaultSetupTargets": [
+            "hthor",
+            "thor",
+            "roxie-workunit"
+        ],
+        "defaultTargets": [
+            "hthor",
+            "thor",
+            "roxie-workunit"
+        ],
+        "Params":[
+            "PassTest.ecl:bla='A value'",
+            "httpcall_multiheader.ecl:TargetIP=.",
+            "soapcall_multihttpheader.ecl:TargetIP=."
+        ],
+        "engineParams":[
+            "failOnLeaks",
+            "disableLocalOptimizations",
+            "thorConnectTimeout=36000"
+        ],
+        "setupExtraParams":{
+            "OriginalTextFilesOsPath" : "/opt/HPCCSystems/testing/regress",
+            "OriginalTextFilesIp" : "127.0.0.1"
+        },
+        "setupExtraDParams":{
+            "HPCCBaseDir" : "/opt/HPCCSystems/"
+        },
+        "FileExclusion":[
+            "*_blahblah.ecl"
+        ]
+    }
+}

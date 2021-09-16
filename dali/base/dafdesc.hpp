@@ -146,6 +146,13 @@ typedef IIteratorOf<IPartDescriptor> IPartDescriptorIterator;
 #define IFDSF_EXCLUDE_CLUSTERNAMES  0x08
 #define IFDSF_FOREIGN_GROUP   0x10
 
+enum class FileDescriptorFlags
+{
+    none          = 0x00,
+    dirperpart    = 0x01
+};
+BITMASK_ENUM(FileDescriptorFlags);
+
 // ==FILE DESCRIPTOR ==============================================================================================
 interface ISuperFileDescriptor;
 
@@ -283,6 +290,8 @@ interface IStoragePlane: extends IInterface
     virtual unsigned numDevices() const = 0;
     virtual const char * queryHosts() const = 0;
     virtual const char * querySingleHost() const = 0;
+    virtual unsigned numDefaultSprayParts() const = 0 ;
+    virtual bool queryDirPerPart() const = 0;
 };
 
 IClusterInfo *createClusterInfo(const char *grpname,                  // NULL if roxie label set
@@ -333,7 +342,7 @@ extern da_decl bool setReplicateDir(const char *name,StringBuffer &out, bool isr
 
 extern da_decl void initializeStorageGroups(bool createPlanesFromGroups);
 extern da_decl bool getDefaultStoragePlane(StringBuffer &ret);
-extern da_decl IStoragePlane * getStoragePlane(const char * name, bool required);
+extern da_decl IStoragePlane * getDataStoragePlane(const char * name, bool required);
 
 extern da_decl IFileDescriptor *createFileDescriptor();
 extern da_decl IFileDescriptor *createFileDescriptor(IPropertyTree *attr);      // ownership of attr tree is taken
@@ -346,6 +355,7 @@ extern da_decl IFileDescriptor *deserializeFileDescriptorTree(IPropertyTree *tre
 extern da_decl IFileDescriptor *createFileDescriptor(const char *lname,IGroup *grp,IPropertyTree *tree,DFD_OS os=DFD_OSdefault,unsigned width=0);  // creates default
 extern da_decl IPartDescriptor *deserializePartFileDescriptor(MemoryBuffer &mb);
 extern da_decl void deserializePartFileDescriptors(MemoryBuffer &mb,IArrayOf<IPartDescriptor> &parts);
+extern da_decl IFileDescriptor *createFileDescriptor(const char *lname, const char *planeName, unsigned numParts);
 
 extern da_decl IFileDescriptor *createMultiCopyFileDescriptor(IFileDescriptor *in,unsigned num);
 

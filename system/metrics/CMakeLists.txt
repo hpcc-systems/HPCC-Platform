@@ -15,6 +15,3 @@
 ################################################################################
 
 HPCC_ADD_SUBDIRECTORY (sinks)
-if ("${CMAKE_BUILD_TYPE}" MATCHES "Debug")
-    HPCC_ADD_SUBDIRECTORY (testing)
-endif()

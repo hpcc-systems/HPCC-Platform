@@ -31,7 +31,7 @@
       fictitious. Any similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para></para>
+      <para />
     </legalnotice>
 
     <xi:include href="../../common/Version.xml" xpointer="FooterInfo"
@@ -75,21 +75,22 @@
 
     <para>This document depicts details about the newly redesigned ECL Watch.
     The new design is more practical and offers many new features and
-    functionality. The new ECL Watch is bundled with the 4.x HPCC Systems platform
-    software.</para>
+    functionality. The new ECL Watch is bundled with the 4.x HPCC Systems
+    platform software.</para>
 
     <sect1 id="ECLWatch4x">
       <title>ECL Watch 4.x</title>
 
-      <para>ECL Watch provides an interface to the HPCC Systems platform and allows you
-      to view information and interrogate nodes to confirm all expected
-      processes are running. This provides a simple view into the system and a
-      means to perform Work Unit and data files maintenance.***</para>
+      <para>ECL Watch provides an interface to the HPCC Systems platform and
+      allows you to view information and interrogate nodes to confirm all
+      expected processes are running. This provides a simple view into the
+      system and a means to perform Work Unit and data files
+      maintenance.***</para>
 
-      <para>Using ECL watch assumes your HPCC Systems platform is up and running, able
-      to process jobs, and workunits. You would use the ECL Watch interface to
-      both check the status of your jobs, and perform operations on those
-      jobs.***</para>
+      <para>Using ECL watch assumes your HPCC Systems platform is up and
+      running, able to process jobs, and workunits. You would use the ECL
+      Watch interface to both check the status of your jobs, and perform
+      operations on those jobs.***</para>
     </sect1>
 
     <sect1 id="ECLWorkunits" role="brk">
@@ -462,7 +463,10 @@
           </listitem>
         </itemizedlist>
 
-        <!-- added WU Details stuff here -->
+        <para>On the workunit details tab, there are icons next to the
+        workunit ID (WUID) that allow you to copy either the WUID or the URL.
+        The first icon copies the WUID to the clipboard. The second icon
+        copies the URL.</para>
 
         <sect3 id="ECLWatch_PublishActionButton" role="brk">
           <title>Publish Action Button</title>
@@ -1317,8 +1321,8 @@
             <listitem>
               <para>Press the <emphasis role="bold">Remote Copy</emphasis>
               button to open the dialog where you can copy files from a
-              foreign HPCC Systems platform. You will need premission to access the
-              foreign Dali server.</para>
+              foreign HPCC Systems platform. You will need premission to
+              access the foreign Dali server.</para>
             </listitem>
 
             <listitem>
@@ -1981,9 +1985,9 @@
       <title>Operations</title>
 
       <para>The Operations page provides access to several system
-      administrator tasks you can perform on your HPCC Systems platform. To access the
-      Operations page click the Operations link from the Navigation pane in
-      ECL Watch.</para>
+      administrator tasks you can perform on your HPCC Systems platform. To
+      access the Operations page click the Operations link from the Navigation
+      pane in ECL Watch.</para>
 
       <para>More to come...</para>
     </sect1>

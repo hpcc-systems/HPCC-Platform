@@ -20,8 +20,9 @@ define([
     "dojox/widget/UpgradeBar",
     "dojox/widget/ColorPicker",
 
-    "src/CodeMirror",
+    "@hpcc-js/codemirror",
     "src/react/index",
+    "src-react/components/About",
 
     "hpcc/_TabContainerWidget",
     "src/ESPRequest",
@@ -34,6 +35,7 @@ define([
     "src/ws_machine",
     "hpcc/LockDialogWidget",
     "src/UserPreferences/EnvironmentTheme",
+    "src/Utility",
 
     "dojo/text!../templates/HPCCPlatformWidget.html",
 
@@ -60,8 +62,8 @@ define([
 ], function (declare, lang, nlsHPCCMod, arrayUtil, dom, domConstruct, domClass, domForm, domStyle, domGeo, cookie, query, topic, xhr,
     registry, Tooltip,
     UpgradeBar, ColorPicker,
-    CodeMirror, srcReact,
-    _TabContainerWidget, ESPRequest, ESPActivity, ESPUtil, WsAccount, WsAccess, WsSMC, WsTopology, WsMachine, LockDialogWidget, EnvironmentTheme,
+    CodeMirror, srcReact, AboutModule,
+    _TabContainerWidget, ESPRequest, ESPActivity, ESPUtil, WsAccount, WsAccess, WsSMC, WsTopology, WsMachine, LockDialogWidget, EnvironmentTheme, Utility,
     template) {
 
     declare("HPCCColorPicker", [ColorPicker], {
@@ -71,6 +73,13 @@ define([
         _huePickerPointer: "/esp/files/eclwatch/img/hueHandle.png",
         _huePickerPointerAlly: "/esp/files/eclwatch/img/hueHandleA11y.png"
     });
+
+    function encodeHTML(str) {
+        if (typeof str === "string") {
+            return Utility.encodeHTML(str);
+        }
+        return str;
+    }
 
     var nlsHPCC = nlsHPCCMod.default;
     return declare("HPCCPlatformWidget", [_TabContainerWidget], {
@@ -139,7 +148,7 @@ define([
                 this.bannerColor = activity.BannerColor;
                 this.bannerSize = activity.BannerSize;
                 if (this.showBanner) {
-                    var msg = "<marquee id='" + this.id + "Marquee' width='100%' direction='left' scrollamount='" + activity.BannerScroll + "' style='color:" + activity.BannerColor + ";font-size:" + ((activity.BannerSize / 2) * 100) + "%'>" + activity.BannerContent + "</marquee>";
+                    var msg = "<marquee id='" + this.id + "Marquee' width='100%' direction='left' scrollamount='" + encodeHTML(activity.BannerScroll) + "' style='color:" + encodeHTML(activity.BannerColor) + ";font-size:" + encodeHTML((activity.BannerSize / 2) * 100) + "%'>" + encodeHTML(activity.BannerContent) + "</marquee>";
                     this.upgradeBar.notify(msg);
                     var marquee = dom.byId(this.id + "Marquee");
                     var height = domGeo.getContentBox(marquee).h;
@@ -418,20 +427,21 @@ define([
                     handleAs: "text"
                 }).then(function (response) {
                     context.configText = context.formatXml(response);
-                    context.configSourceCM = CodeMirror.fromTextArea(dom.byId(context.id + "ConfigTextArea"), {
-                        tabMode: "indent",
-                        matchBrackets: true,
-                        lineNumbers: true,
-                        mode: "xml",
-                        readOnly: true,
-                        foldGutter: true,
-                        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"]
-                    });
-                    context.configSourceCM.setSize("100%", "100%");
-                    context.configSourceCM.setValue(context.configText);
+                    context.configSourceCM = new CodeMirror.XMLEditor();
+
+                    var t = window.setTimeout(() => {
+                        context.configSourceCM.target(dom.byId(context.id + "_Config")).render();
+                        dom.byId(context.id + "ConfigTextArea").style.display = "none";
+                        window.clearTimeout(t);
+                    }, 50);
+                    context.configSourceCM.text(context.configText);
                 });
             }
             this.stackContainer.selectChild(this.widget._Config);
+        },
+
+        _onOpenModernECLWatch: function (evt) {
+            window.location.href = "/esp/files/index.html";
         },
 
         _onOpenErrWarn: function (evt) {
@@ -488,9 +498,9 @@ define([
         _onAboutLoaded: false,
         _onAbout: function (evt) {
             var aboutNode = dom.byId(this.id + "AboutDialog");
-            srcReact.render(srcReact.AboutDialog, {
-                version: this.build.orig,
-                handleClose: function () {
+            srcReact.render(AboutModule.About, {
+                show: true,
+                onClose: function () {
                     srcReact.unrender(aboutNode);
                 }
             }, aboutNode);

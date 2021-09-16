@@ -1,28 +1,41 @@
 # Default values for hpcc-azurelfile.
 common:
   mountPrefix: "/var/lib/HPCCSystems"
+  #secretName: "azure-secret"
+  #secretNamespace: "default"
 
 planes:
 - name: dali
   subPath: dalistorage
   size: 1Gi
-  labels: [ "dali" ]
+  category: dali
   #sku: "Standard_LRS"
+  #shareName: dalishare
 - name: dll
   subPath: queries # cannot currently be changed
   size: 1Gi
-  labels: [ "dll" ]
+  category: dll
   rwmany: true
   #sku: "Standard_LRS"
+  #shareName: dllsshare
 - name: sasha
   subPath: sasha
   size: 1Gi
   rwmany: true
-  labels: [ "sasha" ]
+  category: sasha
   #sku: "Standard_LRS"
+  #shareName: sashashare
 - name: data
   subPath: hpcc-data # cannot currently be changed
   size: 3Gi
-  labels: [ "data" ] # NB: all "data" planes will be auto mounted by engine components and others that require access to data
+  category: data # NB: all "data" planes will be auto mounted by engine components and others that require access to data
   rwmany: true
   #sku: "Standard_LRS"
+  #shareName: datashare
+- name: mydropzone
+  subPath: dropzone
+  size: 1Gi
+  rwmany: true
+  category: lz
+  #sku: "Standard_LRS"
+  #shareName: lzshare

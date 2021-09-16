@@ -1874,16 +1874,19 @@ static const char *findExtension(const char *fn)
 
 unsigned runExternalCommand(StringBuffer &output, StringBuffer &error, const char *cmd, const char *input)
 {
-    return runExternalCommand(cmd, output, error, cmd, input);
+    return runExternalCommand(cmd, output, error, cmd, input, ".");
 }
 
-unsigned runExternalCommand(const char *title, StringBuffer &output, StringBuffer &error, const char *cmd, const char *input)
+unsigned runExternalCommand(const char *title, StringBuffer &output, StringBuffer &error, const char *cmd, const char *input, const char * cwd)
 {
     try
     {
+        if (!cwd)
+            cwd = ".";
+
         Owned<IPipeProcess> pipe = createPipeProcess();
         int ret = START_FAILURE;
-        if (pipe->run(title, cmd, ".", input != NULL, true, true, 1024*1024))
+        if (pipe->run(title, cmd, cwd, input != NULL, true, true, 1024*1024))
         {
             if (input)
             {
@@ -2421,6 +2424,14 @@ StringBuffer & fillConfigurationDirectoryEntry(const char *dir,const char *name,
 
 IPropertyTree *getHPCCEnvironment()
 {
+#ifdef _CONTAINERIZED
+#ifdef _DEBUG
+    throwUnexpectedX("getHPCCEnvironment() called from container system");
+#else
+    IERRLOG("getHPCCEnvironment() called from container system");
+#endif
+#endif
+
     StringBuffer envfile;
     if (queryEnvironmentConf().getProp("environment",envfile) && envfile.length())
     {
@@ -2444,6 +2455,12 @@ static CriticalSection envConfCrit;
 
 jlib_decl const IProperties &queryEnvironmentConf()
 {
+#if defined(_CONTAINERIZED) && defined(_DEBUG)
+    //The following line is currently hit by too many examples.  Re-enable the exception when more
+    //work has been done removing calls to getConfigurationDirectory() and other related functions.
+    //throwUnexpectedX("queryEnvironmentConf() callled from container system");
+    IERRLOG("queryEnvironmentConf() callled from container system");
+#endif
     CriticalBlock b(envConfCrit);
     if (!envConfFile)
         envConfFile.setown(createProperties(CONFIG_DIR PATHSEPSTR ENV_CONF_FILE, true));
@@ -2466,6 +2483,18 @@ jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
     if (_port)
         *_port = DAFILESRV_PORT;//default
 
+    // TLS TODO: could share mtls setting and cert/config for secure dafilesrv
+    //           but note remote cluster configs should then match this one
+
+#ifdef _CONTAINERIZED
+    //MORE: If these come from the component configuration they will need to clone the strings
+    if (_certificate)
+        *_certificate = nullptr;
+    if (_privateKey)
+        *_privateKey = nullptr;
+    if (_passPhrase)
+        *_passPhrase = nullptr;
+#else
     const IProperties & conf = queryEnvironmentConf();
     StringAttr sslMethod;
     sslMethod.set(conf.queryProp("dfsUseSSL"));
@@ -2542,6 +2571,7 @@ jlib_decl bool querySecuritySettings(DAFSConnectCfg *_connectMethod,
             *_passPhrase = DAFSpassPhraseDec.str();//return decrypted password. Note the preferred queryHPCCPKIKeyFiles() method returns it encrypted
         }
     }
+#endif
 
     return true;
 }
@@ -2582,6 +2612,22 @@ jlib_decl bool queryHPCCPKIKeyFiles(const char * *  _certificate,//HPCCCertifica
     return true;
 }
 
+#ifndef _CONTAINERIZED
+jlib_decl bool queryMtlsBareMetalConfig()
+{
+    const IProperties &conf = queryEnvironmentConf();
+    if (conf.queryProp("mtls"))
+        return conf.getPropBool("mtls", false);
+    // not in conf, check xml, since all other mp settings are checked there
+    Owned<IPropertyTree> env = getHPCCEnvironment();
+    if (env)
+        return env->getPropBool("EnvSettings/mtls", false);
+
+    return false;
+}
+#endif
+
+#ifndef _CONTAINERIZED
 static IPropertyTree *getOSSdirTree()
 {
     Owned<IPropertyTree> envtree = getHPCCEnvironment();
@@ -2592,6 +2638,8 @@ static IPropertyTree *getOSSdirTree()
     }
     return NULL;
 }
+#endif
+
 
 StringBuffer &getFileAccessUrl(StringBuffer &out)
 {
@@ -2617,8 +2665,86 @@ StringBuffer &getFileAccessUrl(StringBuffer &out)
     return out;
 }
 
+
+#ifdef _CONTAINERIZED
+static bool getDefaultPlane(StringBuffer &ret, const char * componentOption, const char * category)
+{
+    // If the plane is specified for the component, then use that
+    if (getComponentConfigSP()->getProp(componentOption, ret))
+        return true;
+
+    //Otherwise check what the default plane for data storage is configured to be
+    //Iterator needed because "storage/planes[@category='%s'][1]/@name" generates an ambiguous error
+    VStringBuffer xpath("storage/planes[@category='%s']", category);
+    Owned<IPropertyTreeIterator> iter = getGlobalConfigSP()->getElements(xpath);
+    if (iter->first())
+    {
+        iter->query().getProp("@name", ret);
+        return true;
+    }
+
+    return false;
+}
+
+static bool getDefaultPlaneDirectory(StringBuffer &ret, const char * componentOption, const char * category)
+{
+    StringBuffer planeName;
+    if (!getDefaultPlane(planeName, componentOption, category))
+        return false;
+
+    Owned<IPropertyTree> storagePlane = getStoragePlane(planeName);
+    return storagePlane->getProp("@prefix", ret);
+}
+#endif
+
 bool getConfigurationDirectory(const IPropertyTree *useTree, const char *category, const char *component, const char *instance, StringBuffer &dirout)
 {
+#ifdef _CONTAINERIZED
+    if (streq(category, "data"))
+    {
+        Owned<IPropertyTree> storagePlane = getStoragePlane(instance);
+        if (!storagePlane)
+            throw makeStringExceptionV(-1, "no default directory available for plane '%s'", instance);
+        return storagePlane->getProp("@prefix", dirout);
+    }
+    if (streq(category, "data2") || streq(category, "data3") || streq(category, "data4") || streq(category, "mirror"))
+        return false;
+    if (streq(category, "spill"))
+    {
+        return getDefaultPlaneDirectory(dirout, "@spillPlane", "spill");
+    }
+    if (streq(category, "temp"))
+    {
+        if (getDefaultPlaneDirectory(dirout, "@tempPlane", "temp"))
+            return true;
+        return getDefaultPlaneDirectory(dirout, "@spillPlane", "spill");
+    }
+    if (streq(category, "log"))
+    {
+        return false;
+    }
+    if (streq(category, "dali"))
+    {
+        //Not used... the dataPath configuration property is used instead
+        return getDefaultPlaneDirectory(dirout, "@daliPlane", "dali");
+    }
+    if (streq(category, "query"))
+    {
+        return getDefaultPlaneDirectory(dirout, "@dllPlane", "dll");
+    }
+    if (streq(category, "lock"))
+    {
+        //Called by NamedMutex.  Currently unused in the containerized system.
+        dirout.append("/var/lib/HPCCSystems/lock");
+        return true;
+    }
+    if (streq(category, "key") || streq(category, "run"))
+    {
+        throw makeStringExceptionV(-1, "Unexpected category '%s' requested in containerized mode", category);
+    }
+
+    throw makeStringExceptionV(-1, "Unrecognised configuration category %s", category);
+#else
     Linked<const IPropertyTree> dirtree = useTree;
     if (!dirtree)
         dirtree.setown(getOSSdirTree());
@@ -2680,6 +2806,7 @@ bool getConfigurationDirectory(const IPropertyTree *useTree, const char *categor
         }
     }
     return false;
+#endif
 }
 
 
@@ -2747,6 +2874,19 @@ bool replaceConfigurationDirectoryEntry(const char *path,const char *frommask,co
     if (*tail)
         addPathSepChar(out).append(tail);
     return true;
+}
+
+bool validateConfigurationDirectory(const IPropertyTree* useTree, const char* category, const char* component, const char* instance, const char* dirToValidate)
+{
+    if (isEmptyString(dirToValidate))
+        return false;
+
+    StringBuffer configDir;
+    if (!getConfigurationDirectory(useTree, category, component, instance, configDir))
+        return false;
+    
+    addPathSepChar(configDir);
+    return hasPrefix(dirToValidate, configDir, true);
 }
 
 static CriticalSection sect;

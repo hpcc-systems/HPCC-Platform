@@ -37,6 +37,7 @@
         "maxAttemptCount":"3",
         "wuStatusTimeout":"30",
         "wuAbortTimeout":"30",
+        "usePoll":"False",
         "defaultSetupTargets": [
             "thor",
             "roxie"

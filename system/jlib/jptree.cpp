@@ -6293,7 +6293,9 @@ static void writeJSONNameToStream(IIOStream &out, const char *name, unsigned ind
         writeCharToStream(out, ' ');
 
     writeCharToStream(out, '"');
-    writeStringToStream(out, name);
+    //Expand any specially encoded names for strings that cannot be stored in the PTree implementation
+    if (!streq(name, "__empty__"))
+        writeStringToStream(out, name);
     writeStringToStream(out, "\": ");
     delimit = false;
 }
@@ -7201,8 +7203,10 @@ protected:
         if ('\"'!=nextChar)
             expecting("\"");
         readString(name);
+        //A blank mapping is legal in json, map it to a well defined internal value so external files can be parsed. (E.g. package-lock.json)
         if (!name.length())
-            error("empty JSON id");
+            name.append("__empty__");
+
         readNext();
         skipWS();
         if (':'!=nextChar)
@@ -8492,8 +8496,20 @@ static void applyCommandLineOption(IPropertyTree * config, const char * option, 
     }
     else
     {
-        //MORE: Support --x- and --x+?
-        val = "1";
+        unsigned len = strlen(option);
+        if (len == 0)
+            return;
+
+        //support --option+ as --option=1 and --option- as --option=0 for eclcc compatibility
+        char last = option[len-1];
+        if ((last == '+') || (last == '-'))
+        {
+            name.append(len-1, option);
+            option = name;
+            val = (last == '+') ? "1" : "0";
+        }
+        else
+            val = "1";
     }
     if (stdContains(ignoreOptions, option))
         return;
@@ -8612,7 +8628,17 @@ public:
                 /* NB: we are still holding 'configCS' at this point, blocking all other thread access.
                    However code in callbacks may call e.g. getComponentConfig() and re-enter the crit */
                 for (const auto &item: notifyConfigUpdates)
-                    item.second(oldComponentConfiguration, oldGlobalConfiguration);
+                {
+                    try
+                    {
+                        item.second(oldComponentConfiguration, oldGlobalConfiguration);
+                    }
+                    catch (IException *e)
+                    {
+                        EXCLOG(e, "CConfigUpdater callback");
+                        e->Release();
+                    }
+                }
 
                 absoluteConfigFilename.set(std::get<0>(result).c_str());
             }
@@ -8656,6 +8682,8 @@ unsigned installConfigUpdateHook(ConfigUpdateFunc notifyFunc)
 
 void removeConfigUpdateHook(unsigned notifyFuncId)
 {
+    if (0 == notifyFuncId)
+        return;
 #ifdef _CONTAINERIZED
     if (!configFileUpdater)
     {
@@ -8676,6 +8704,31 @@ void removeConfigUpdateHook(unsigned notifyFuncId)
 {
 }
 #endif // __linux__
+
+void CConfigUpdateHook::clear()
+{
+    unsigned id = configCBId.exchange((unsigned)-1);
+    if ((unsigned)-1 != id)
+        removeConfigUpdateHook(id);
+}
+
+void CConfigUpdateHook::installOnce(ConfigUpdateFunc callbackFunc, bool callWhenInstalled)
+{
+    unsigned id = configCBId.load(std::memory_order_acquire);
+    if ((unsigned)-1 == id) // avoid CS in common case
+    {
+        CriticalBlock b(crit);
+        // check again now in CS
+        id = configCBId.load(std::memory_order_acquire);
+        if ((unsigned)-1 == id)
+        {
+            if (callWhenInstalled)
+                callbackFunc(getComponentConfigSP(), getGlobalConfigSP());
+            id = installConfigUpdateHook(callbackFunc);
+            configCBId.store(id, std::memory_order_release);
+        }
+    }
+}
 
 
 static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfiguration(IPropertyTree *componentDefault, const char * * argv, const char * componentTag, const char * envPrefix, const char * legacyFilename, IPropertyTree * (mapper)(IPropertyTree *), const char *altNameAttribute)

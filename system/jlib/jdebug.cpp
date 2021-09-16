@@ -645,6 +645,56 @@ MODULE_EXIT()
 
 //===========================================================================
 
+
+void BlockedTimeTracker::noteWaiting()
+{
+    CriticalBlock block(cs);
+    numWaiting++;
+    timeStampTally -= get_cycles_now();
+}
+
+void BlockedTimeTracker::noteComplete()
+{
+    CriticalBlock block(cs);
+    numWaiting--;
+    timeStampTally += get_cycles_now();
+}
+
+__uint64 BlockedTimeTracker::getWaitingNs() const
+{
+    unsigned active;
+    cycle_t tally;
+    {
+        CriticalBlock block(cs);
+        active = numWaiting;
+        tally = timeStampTally;
+    }
+
+    if (active != 0)
+    {
+        cycle_t now = get_cycles_now();
+        tally += active * now;
+    }
+
+    return cycle_to_nanosec(tally);
+}
+
+
+__uint64 LightweightBlockedTimeTracker::getWaitingNs() const
+{
+    __uint64 tally = timeStampTally.load(std::memory_order_acquire); // read the value once atomically
+    unsigned active = tally % MAX_ACTIVE;
+    if (active != 0)
+    {
+        cycle_t now = get_cycles_now();
+        tally += active * now * MAX_ACTIVE;
+    }
+
+    return cycle_to_nanosec(tally / MAX_ACTIVE);
+}
+
+//===========================================================================
+
 #ifdef _WIN32
 
 typedef enum _PROCESSINFOCLASS {

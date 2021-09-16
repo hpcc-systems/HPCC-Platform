@@ -447,6 +447,7 @@ int main( int argc, const char *argv[]  )
             else
                 globals->setProp("@externalProgDir", thorPath);
 
+#ifndef _CONTAINERIZED
             const char * overrideBaseDirectory = globals->queryProp("@thorDataDirectory");
             const char * overrideReplicateDirectory = globals->queryProp("@thorReplicateDirectory");
             StringBuffer datadir;
@@ -459,6 +460,29 @@ int main( int argc, const char *argv[]  )
                 setBaseDirectory(overrideBaseDirectory, false);
             if (!isEmptyString(overrideReplicateDirectory))
                 setBaseDirectory(overrideReplicateDirectory, true);
+
+            if (getConfigurationDirectory(globals->queryPropTree("Directories"),"query","thor",globals->queryProp("@name"),str.clear()))
+                globals->setProp("@query_so_dir", str.str());
+            else
+                globals->getProp("@query_so_dir", str.clear());
+            if (str.length())
+            {
+                if (globals->getPropBool("Debug/@dllsToSlaves", true))
+                {
+                    StringBuffer uniqSoPath;
+                    if (PATHSEPCHAR == str.charAt(str.length()-1))
+                        uniqSoPath.append(str.length()-1, str.str());
+                    else
+                        uniqSoPath.append(str);
+                    uniqSoPath.append("_").append(getMachinePortBase());
+                    str.swapWith(uniqSoPath);
+                    globals->setProp("@query_so_dir", str.str());
+                }
+                PROGLOG("Using querySo directory: %s", str.str());
+                recursiveCreateDirectory(str.str());
+            }
+#endif
+
             StringBuffer tempDirStr;
             if (getConfigurationDirectory(globals->queryPropTree("Directories"),"temp","thor",globals->queryProp("@name"), tempDirStr))
                 globals->setProp("@thorTempDirectory", tempDirStr.str());
@@ -485,26 +509,6 @@ int main( int argc, const char *argv[]  )
                 LOG(MCdebugProgress, thorJob, "%d%% disk free\n",pc);
             }
 #endif
-            if (getConfigurationDirectory(globals->queryPropTree("Directories"),"query","thor",globals->queryProp("@name"),str.clear()))
-                globals->setProp("@query_so_dir", str.str());
-            else
-                globals->getProp("@query_so_dir", str.clear());
-            if (str.length())
-            {
-                if (globals->getPropBool("Debug/@dllsToSlaves", true))
-                {
-                    StringBuffer uniqSoPath;
-                    if (PATHSEPCHAR == str.charAt(str.length()-1))
-                        uniqSoPath.append(str.length()-1, str.str());
-                    else
-                        uniqSoPath.append(str);
-                    uniqSoPath.append("_").append(getMachinePortBase());
-                    str.swapWith(uniqSoPath);
-                    globals->setProp("@query_so_dir", str.str());
-                }
-                PROGLOG("Using querySo directory: %s", str.str());
-                recursiveCreateDirectory(str.str());
-            }
      
             multiThorMemoryThreshold = globals->getPropInt("@multiThorMemoryThreshold")*0x100000;
             if (multiThorMemoryThreshold) {

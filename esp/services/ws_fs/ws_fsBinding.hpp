@@ -74,8 +74,9 @@ public:
         ensureNavLink(*folder, "XRef", "/WsDFUXRef/DFUXRefList", "View Xref result details or run the Xref utility", NULL, NULL, 12);
     }
 
-    int onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);
-    int onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method, StringArray& fileNames, StringArray& files, IMultiException *me);
+    virtual int onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method) override;
+    virtual int onStartUpload(IEspContext& ctx, CHttpRequest* request, CHttpResponse* response, const char* serv, const char* method) override;
+    virtual int onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method, StringArray& fileNames, StringArray& files, IMultiException *me) override;
     virtual bool canDetachFromDali() override
     {
         return false;
@@ -90,10 +91,12 @@ public:
     }
 
 private:
+#ifndef _CONTAINERIZED //The code here is used by legacy ECLWatch.
     IPropertyTree* createPTreeForXslt(double clientVersion, const char* method, const char* dfuwuid);
     static void xsltTransform(const char* xml, const char* sheet, IProperties *params, StringBuffer& ret);
-    int downloadFile(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response);
     void appendDropZones(double clientVersion, IConstEnvironment* env, const char* dfuwuidSourcePartIP, IPropertyTree* softwareTree);
+#endif
+    int downloadFile(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response);
 };
 
 

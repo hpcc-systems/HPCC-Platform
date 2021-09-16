@@ -5346,6 +5346,46 @@ bool isRemotePath(const char *path)
     }
 }
 
+bool containsRelPaths(const char *path)
+{
+    if (isEmptyString(path))
+        return false;
+    if (*path == '~')
+        return true;
+
+    const char *cur = path;
+    char sepChar = getPathSepCharEx(path);
+    char previousChar = sepChar;
+    for (;;)
+    {
+        switch (*cur)
+        {
+        case '.':
+        {
+            if (previousChar == sepChar)
+            {
+                cur++;
+                if ((*cur == sepChar) || (*cur == '\0')) // '.'
+                    return true;
+                    
+                if ('.' == *cur)
+                {
+                    cur++;
+                    if ((*cur == sepChar) || (*cur == '\0')) // '..'
+                        return true;
+                }
+            }
+            break;
+        }
+        case '\0':
+            return false;
+        }
+
+        previousChar = *cur;
+        cur++;
+    }
+}
+
 StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustExist)
 {
     // NOTE - this function also normalizes the supplied path to remove . and .. references
@@ -6914,7 +6954,7 @@ IFileIOCache* createFileIOCache(unsigned max)
 extern jlib_decl IFile * createSentinelTarget()
 {
     const char * sentinelFilename = getenv("SENTINEL");
-    if (sentinelFilename)
+    if (sentinelFilename && *sentinelFilename)
         return createIFile(sentinelFilename);
     else
         return NULL;
@@ -7350,3 +7390,26 @@ IFileEventWatcher *createFileEventWatcher(FileWatchFunc callback)
 #endif // __linux__
 
 
+//---- Storage plane related functions ----------------------------------------------------
+
+IPropertyTree * getHostGroup(const char * name, bool required)
+{
+    if (!isEmptyString(name))
+    {
+        VStringBuffer xpath("storage/hostGroups[@name='%s']", name);
+        Owned<IPropertyTree> global = getGlobalConfig();
+        IPropertyTree * match = global->getPropTree(xpath);
+        if (match)
+            return match;
+    }
+    if (required)
+        throw makeStringExceptionV(-1, "No entry found for hostGroup: '%s'", name ? name : "<null>");
+    return nullptr;
+}
+
+IPropertyTree * getStoragePlane(const char * name)
+{
+    VStringBuffer xpath("storage/planes[@name='%s']", name);
+    Owned<IPropertyTree> global = getGlobalConfig();
+    return global->getPropTree(xpath);
+}

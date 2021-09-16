@@ -221,6 +221,7 @@ public:
     void noteLinked(const void *ptr);
 public:
     std::atomic_uint count;
+    unsigned filler = 0; // keeps valgrind happy
     IRowManager *mgr = nullptr;
     DataBuffer *next = nullptr;   // Used when chaining them together in rowMgr
     DataBuffer *msgNext = nullptr;    // Next databuffer in same slave message

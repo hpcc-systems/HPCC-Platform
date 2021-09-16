@@ -14,6 +14,7 @@ import { DojoGrid, selector } from "./DojoGrid";
 
 const FilterFields: Fields = {
     "QueryID": { type: "string", label: nlsHPCC.ID, placeholder: nlsHPCC.QueryIDPlaceholder },
+    "Priority": { type: "queries-priority", label: nlsHPCC.Priority },
     "QueryName": { type: "string", label: nlsHPCC.Name, placeholder: nlsHPCC.QueryNamePlaceholder },
     "PublishedBy": { type: "string", label: nlsHPCC.PublishedBy, placeholder: nlsHPCC.PublishedBy },
     "WUID": { type: "string", label: nlsHPCC.WUID, placeholder: "W20130222-171723" },
@@ -24,19 +25,13 @@ const FilterFields: Fields = {
     "Activated": { type: "queries-active-state", label: nlsHPCC.Activated }
 };
 
-function formatQuery(filter: any, wuid?: string) {
-    if (wuid !== undefined) {
-        return {
-            WUID: wuid
-        };
-    }
-    const retVal = { ...filter };
-    if (filter.StartDate) {
-        retVal.StartDate = new Date(filter.StartDate).toISOString();
-    }
-    if (filter.EndDate) {
-        retVal.EndDate = new Date(filter.StartDate).toISOString();
-    }
+function formatQuery(filter: any) {
+    const retVal = {
+        ...filter,
+        PriorityLow: filter.Priority,
+        PriorityHigh: filter.Priority
+    };
+    delete retVal.Priority;
     return retVal;
 }
 
@@ -68,73 +63,9 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
     const [selection, setSelection] = React.useState([]);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
-    //  Command Bar  ---
-    const buttons: ICommandBarItemProps[] = [
-        {
-            key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
-        },
-        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-        {
-            key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
-            onClick: () => {
-                if (selection.length === 1) {
-                    window.location.href = `#/queries/${selection[0].QuerySetId}/${selection[0].Id}`;
-                } else {
-                    for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/queries/${selection[i].QuerySetId}/${selection[i].Id}`, "_blank");
-                    }
-                }
-            }
-        },
-        {
-            key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection, iconProps: { iconName: "Delete" },
-            onClick: () => {
-                const list = selection.map(s => s.Id);
-                if (confirm(nlsHPCC.DeleteSelectedWorkunits + "\n" + list)) {
-                    WsWorkunits.WUQuerysetQueryAction(selection, "Delete").then(() => refreshTable(true));
-                }
-            }
-        },
-        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-        {
-            key: "Suspend", text: nlsHPCC.Suspend, disabled: !uiState.isSuspended,
-            onClick: () => { WsWorkunits.WUQuerysetQueryAction(selection, "Suspend"); }
-        },
-        {
-            key: "Unsuspend", text: nlsHPCC.Unsuspend, disabled: !uiState.isNotSuspended,
-            onClick: () => { WsWorkunits.WUQuerysetQueryAction(selection, "Unsuspend"); }
-        },
-        {
-            key: "Activate", text: nlsHPCC.Activate, disabled: !uiState.isActive,
-            onClick: () => { WsWorkunits.WUQuerysetQueryAction(selection, "Activate"); }
-        },
-        {
-            key: "Deactivate", text: nlsHPCC.Deactivate, disabled: !uiState.isNotActive,
-            onClick: () => { WsWorkunits.WUQuerysetQueryAction(selection, "Deactivate"); }
-        },
-        { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-        {
-            key: "filter", text: nlsHPCC.Filter, disabled: store !== undefined || wuid !== undefined, iconProps: { iconName: "Filter" },
-            onClick: () => {
-                setShowFilter(true);
-            }
-        },
-        {
-            key: "mine", text: nlsHPCC.Mine, disabled: true, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
-            onClick: () => {
-                setMine(!mine);
-            }
-        },
-    ];
-
-    const rightButtons: ICommandBarItemProps[] = [
-        ...createCopyDownloadSelection(grid, selection, "roxiequeries.csv")
-    ];
-
     //  Grid ---
     const gridStore = useConst(store || ESPQuery.CreateQueryStore({}));
-    const gridQuery = useConst(formatQuery(filter, wuid));
+    const gridQuery = useConst(formatQuery(filter));
     const gridSort = useConst([{ attribute: "Id" }]);
     const gridColumns = useConst({
         col1: selector({
@@ -200,6 +131,13 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 return `<a href='#/queries/${row.QuerySetId}/${Id}' class='dgrid-row-url'>${Id}</a>`;
             }
         },
+        priority: {
+            label: nlsHPCC.Priority,
+            width: 80,
+            formatter: function (priority, row) {
+                return priority === undefined ? "" : priority;
+            }
+        },
         Name: {
             label: nlsHPCC.Name
         },
@@ -231,12 +169,76 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
         }
     });
 
-    const refreshTable = (clearSelection = false) => {
-        grid?.set("query", formatQuery(filter, wuid));
+    const refreshTable = React.useCallback((clearSelection = false) => {
+        grid?.set("query", formatQuery(filter));
         if (clearSelection) {
             grid?.clearSelection();
         }
-    };
+    }, [filter, grid]);
+
+    //  Command Bar  ---
+    const buttons = React.useMemo((): ICommandBarItemProps[] => [
+        {
+            key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
+            onClick: () => refreshTable()
+        },
+        { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
+            onClick: () => {
+                if (selection.length === 1) {
+                    window.location.href = `#/queries/${selection[0].QuerySetId}/${selection[0].Id}`;
+                } else {
+                    for (let i = selection.length - 1; i >= 0; --i) {
+                        window.open(`#/queries/${selection[i].QuerySetId}/${selection[i].Id}`, "_blank");
+                    }
+                }
+            }
+        },
+        {
+            key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection, iconProps: { iconName: "Delete" },
+            onClick: () => {
+                const list = selection.map(s => s.Id);
+                if (confirm(nlsHPCC.DeleteSelectedWorkunits + "\n" + list)) {
+                    WsWorkunits.WUQuerysetQueryAction(selection, "Delete").then(() => refreshTable(true));
+                }
+            }
+        },
+        { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "Suspend", text: nlsHPCC.Suspend, disabled: !uiState.isSuspended,
+            onClick: () => { WsWorkunits.WUQuerysetQueryAction(selection, "Suspend"); }
+        },
+        {
+            key: "Unsuspend", text: nlsHPCC.Unsuspend, disabled: !uiState.isNotSuspended,
+            onClick: () => { WsWorkunits.WUQuerysetQueryAction(selection, "Unsuspend"); }
+        },
+        {
+            key: "Activate", text: nlsHPCC.Activate, disabled: !uiState.isActive,
+            onClick: () => { WsWorkunits.WUQuerysetQueryAction(selection, "Activate"); }
+        },
+        {
+            key: "Deactivate", text: nlsHPCC.Deactivate, disabled: !uiState.isNotActive,
+            onClick: () => { WsWorkunits.WUQuerysetQueryAction(selection, "Deactivate"); }
+        },
+        { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "filter", text: nlsHPCC.Filter, disabled: store !== undefined || wuid !== undefined, iconProps: { iconName: "Filter" },
+            onClick: () => {
+                setShowFilter(true);
+            }
+        },
+        {
+            key: "mine", text: nlsHPCC.Mine, disabled: true, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
+            onClick: () => {
+                setMine(!mine);
+            }
+        },
+    ], [mine, refreshTable, selection, store, uiState.hasSelection, uiState.isActive, uiState.isNotActive, uiState.isNotSuspended, uiState.isSuspended, wuid]);
+
+    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
+        ...createCopyDownloadSelection(grid, selection, "roxiequeries.csv")
+    ], [grid, selection]);
 
     //  Filter  ---
     const filterFields: Fields = {};
@@ -246,8 +248,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
 
     React.useEffect(() => {
         refreshTable();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filter]);
+    }, [filter, refreshTable]);
 
     //  Selection  ---
     React.useEffect(() => {

@@ -38,9 +38,13 @@ namespace ws_workunits {
 
 #define    File_Cpp "cpp"
 #define    File_Log "log"
+
+#ifndef _CONTAINERIZED
 #define    File_ThorLog "ThorLog"
 #define    File_ThorSlaveLog "ThorSlaveLog"
 #define    File_EclAgentLog "EclAgentLog"
+#endif
+
 #define    File_XML "XML"
 #define    File_Res "res"
 #define    File_DLL "dll"
@@ -143,10 +147,13 @@ class WsWuInfo
     IEspWUArchiveFile* readArchiveFileAttr(IPropertyTree& fileTree, const char* path);
     IEspWUArchiveModule* readArchiveModuleAttr(IPropertyTree& moduleTree, const char* path);
     void readArchiveFiles(IPropertyTree* archiveTree, const char* path, IArrayOf<IEspWUArchiveFile>& files);
+#ifndef _CONTAINERIZED
     void outputALine(size32_t len, const char* content, MemoryBuffer& outputBuf, IFileIOStream* outIOS);
     bool parseLogLine(const char* line, const char* endWUID, unsigned& processID, const unsigned columnNumPID);
     void readWorkunitThorLog(const char* processName, const char* logSpec, const char* slaveIPAddress, unsigned slaveNum, MemoryBuffer& buf, const char* outFile);
     void readWorkunitThorLogOneDay(IFile* ios, unsigned& processID, MemoryBuffer& buf, IFileIOStream* outIOS);
+#endif
+
     void readFileContent(const char* sourceFileName, const char* sourceIPAddress,
         const char* sourceAlias, MemoryBuffer &mb, bool forDownload);
     void copyContentFromRemoteFile(const char* sourceFileName, const char* sourceIPAddress,
@@ -204,6 +211,7 @@ public:
     void getStats(const WuScopeFilter & filter, const StatisticsFilter& statsFilter, bool createDescriptions, IArrayOf<IEspWUStatisticItem>& statistics);
     void getServiceNames(IEspECLWorkunit &info, unsigned long flags);
 
+#ifndef _CONTAINERIZED
     void getWUProcessLogSpecs(const char* processName, const char* logSpec, const char* logDir, bool eclAgent, StringArray& logSpecs);
     void getWorkunitEclAgentLog(const char *processName, const char* eclAgentInstance, const char* agentPid, MemoryBuffer& buf, const char* outFile);
     void getWorkunitThorMasterLog(const char *processName, const char* fileName, MemoryBuffer& buf, const char* outFile);
@@ -212,6 +220,8 @@ public:
     void getWorkunitThorSlaveLog(IPropertyTree* directories, const char *process,
         const char* instanceName, const char *ipAddress, const char* logDate, int slaveNum,
         MemoryBuffer& buf, const char* outFile, bool forDownload);
+#endif
+
     void getWorkunitResTxt(MemoryBuffer& buf);
     void getWorkunitArchiveQuery(StringBuffer& str);
     void getWorkunitArchiveQuery(MemoryBuffer& mb);
@@ -222,7 +232,9 @@ public:
         bool forDownload, bool addXMLDeclaration, MemoryBuffer& buf, const char* outFile);
     void getWorkunitCpp(const char* cppname, const char* description, const char* ipAddress, MemoryBuffer& buf, bool forDownload, const char* outFile);
     void getEventScheduleFlag(IEspECLWorkunit &info);
+#ifndef _CONTAINERIZED
     unsigned getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IEspECLWorkunit &info, unsigned long flags, unsigned& helpersCount);
+#endif
     IDistributedFile* getLogicalFileData(IEspContext& context, const char* logicalName, bool& showFileContent);
 
     IPropertyTree* getWorkunitArchive();
@@ -624,8 +636,10 @@ class CWsWuFileHelper
     void createZAPECLQueryArchiveFiles(IConstWorkUnit *cwu, const char *pathNameStr);
     void createZAPWUQueryAssociatedFiles(IConstWorkUnit *cwu, const char *pathToCreate);
     void createZAPWUGraphProgressFile(const char *wuid, const char *pathNameStr);
+#ifndef _CONTAINERIZED
     void createProcessLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *process, const char *path);
     void createThorSlaveLogfile(IConstWorkUnit *cwu, WsWuInfo &winfo, const char *path);
+#endif
     void writeZAPWUInfoToIOStream(IFileIOStream *outFile, const char *name, SCMStringBuffer &value);
     void writeZAPWUInfoToIOStream(IFileIOStream *outFile, const char *name, const char *value);
 public:
@@ -640,6 +654,7 @@ public:
         CWUFileDownloadOption &downloadOptions, StringBuffer &contentType);
 
     IFileIOStream* createIOStreamWithFileName(const char *fileNameWithPath, IFOmode mode);
+    void validateFilePath(const char *file, bool UNCFileName, const char *fileType, const char *compType, const char *compName);
 };
 
 class CWsWuEmailHelper
@@ -658,6 +673,7 @@ public:
     void send(const char *body, const void *attachment, size32_t lenAttachment, StringArray &warnings);
 };
 
+#ifndef _CONTAINERIZED
 class CGetThorSlaveLogToFileThreadParam : public CInterface
 {
     WsWuInfo* wuInfo;
@@ -717,7 +733,7 @@ public:
         return new CGetThorSlaveLogToFileThread();
     }
 };
-
+#endif
 
 }
 #endif

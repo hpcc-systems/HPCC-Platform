@@ -14,6 +14,7 @@ import * as _Widget from "hpcc/_Widget";
 // @ts-ignore
 import * as template from "dojo/text!hpcc/templates/Graph7Widget.html";
 
+import "dijit/form/Button";
 import "dijit/layout/BorderContainer";
 import "dijit/layout/ContentPane";
 import "dijit/Toolbar";
@@ -185,7 +186,7 @@ export class Graph7Widget {
 
         this.initGraph();
 
-        this.doInit(params);
+        this.doInit(params.Wuid);
     }
 
     clear() {
@@ -196,7 +197,7 @@ export class Graph7Widget {
     }
 
     doInit(wuid: string) {
-        this.wuid = wuid;
+        this.wuid = this.params.Wuid = wuid;
 
         this.refreshData();
     }
