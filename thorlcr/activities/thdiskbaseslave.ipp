@@ -38,7 +38,7 @@ protected:
     StringAttr filename, logicalFilename;
     unsigned __int64 fileBaseOffset;
     const char *kindStr;
-    CRuntimeStatisticCollection fileStats;
+    CRuntimeStatisticCollection closedPartFileStats;
     CDiskReadSlaveActivityBase &activity;
     CriticalSection inputCs; // Prevent input from being changed while mergeStats() or other functions are executing
 
@@ -54,7 +54,7 @@ public:
     virtual const void *nextRow() = 0;
     virtual void gatherStats(CRuntimeStatisticCollection & merged)
     {
-        merged.merge(fileStats);
+        merged.merge(closedPartFileStats);
     }
     virtual unsigned __int64 queryProgress() { return 0; }
 
@@ -128,6 +128,7 @@ protected:
     CDfsLogicalFileName dlfn;
     StringBuffer tempExternalName;
     CriticalSection outputCs;  // Ensure outputIO remains valid for the duration of mergeStats()
+    CRuntimeStatisticCollection closedPartFileStats;
 
     void open();
     void removeFiles();

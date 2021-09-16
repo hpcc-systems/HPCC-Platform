@@ -2288,6 +2288,23 @@ unsigned __int64 CRuntimeStatisticCollection::getSerialStatisticValue(StatisticK
     return value + convertMeasure(rawKind, kind, rawValue);
 }
 
+void CRuntimeStatisticCollection::set(const CRuntimeStatisticCollection & other, unsigned node)
+{
+    ForEachItemIn(i, other)
+    {
+        StatisticKind kind = other.getKind(i);
+        unsigned __int64 value = other.getStatisticValue(kind);
+        if (value)
+            setStatistic(kind, value, node);
+    }
+
+    CNestedRuntimeStatisticMap *otherNested = other.queryNested();
+    if (otherNested)
+    {
+        ensureNested().set(*otherNested, node);
+    }
+}
+
 void CRuntimeStatisticCollection::merge(const CRuntimeStatisticCollection & other, unsigned node)
 {
     ForEachItemIn(i, other)
@@ -2346,6 +2363,11 @@ void CRuntimeStatisticCollection::sumStatistic(StatisticKind kind, unsigned __in
 void CRuntimeStatisticCollection::mergeStatistic(StatisticKind kind, unsigned __int64 value, unsigned node)
 {
     mergeStatistic(kind, value);
+}
+
+void CRuntimeStatisticCollection::setStatistic(StatisticKind kind, unsigned __int64 value, unsigned node)
+{
+    setStatistic(kind, value);
 }
 
 void CRuntimeStatisticCollection::reset()
@@ -2558,6 +2580,34 @@ void CRuntimeSummaryStatisticCollection::DerivedStats::mergeStatistic(unsigned _
     sumSquares += dvalue * dvalue;
 }
 
+void CRuntimeSummaryStatisticCollection::DerivedStats::setStatistic(unsigned __int64 value, unsigned node)
+{
+    if (count == 0)
+    {
+        min = value;
+        max = value;
+        minNode = node;
+        maxNode = node;
+    }
+    else
+    {
+        if (value < min)
+        {
+            min = value;
+            minNode = node;
+        }
+        if (value > max)
+        {
+            max = value;
+            maxNode = node;
+        }
+    }
+    count++;
+    sum = value;
+    double dvalue = (double)value;
+    sumSquares = dvalue * dvalue;
+}
+
 CRuntimeSummaryStatisticCollection::CRuntimeSummaryStatisticCollection(const StatisticsMapping & _mapping) : CRuntimeStatisticCollection(_mapping)
 {
     derived = new DerivedStats[ordinality()+1];
@@ -2578,6 +2628,13 @@ void CRuntimeSummaryStatisticCollection::mergeStatistic(StatisticKind kind, unsi
     CRuntimeStatisticCollection::mergeStatistic(kind, value);
     unsigned index = queryMapping().getIndex(kind);
     derived[index].mergeStatistic(value, node);
+}
+
+void CRuntimeSummaryStatisticCollection::setStatistic(StatisticKind kind, unsigned __int64 value, unsigned node)
+{
+    CRuntimeStatisticCollection::setStatistic(kind, value);
+    unsigned index = queryMapping().getIndex(kind);
+    derived[index].setStatistic(value, node);
 }
 
 static bool skewHasMeaning(StatisticKind kind)
@@ -2770,6 +2827,11 @@ void CNestedRuntimeStatisticCollection::merge(const CNestedRuntimeStatisticColle
     stats->merge(other.queryStats(), node);
 }
 
+void CNestedRuntimeStatisticCollection::set(const CNestedRuntimeStatisticCollection & other, unsigned node)
+{
+    stats->set(other.queryStats(), node);
+}
+
 bool CNestedRuntimeStatisticCollection::serialize(MemoryBuffer& out) const
 {
     scope.serialize(out);
@@ -2874,6 +2936,17 @@ void CNestedRuntimeStatisticMap::merge(const CNestedRuntimeStatisticMap & other,
         CNestedRuntimeStatisticCollection & cur = other.map.item(i);
         CNestedRuntimeStatisticCollection & target = addNested(cur.scope, cur.queryMapping());
         target.merge(cur, node);
+    }
+}
+
+void CNestedRuntimeStatisticMap::set(const CNestedRuntimeStatisticMap & other, unsigned node)
+{
+    ReadLockBlock b(other.lock);
+    ForEachItemIn(i, other.map)
+    {
+        CNestedRuntimeStatisticCollection & cur = other.map.item(i);
+        CNestedRuntimeStatisticCollection & target = addNested(cur.scope, cur.queryMapping());
+        target.set(cur, node);
     }
 }
 
