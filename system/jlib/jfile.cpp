@@ -177,6 +177,18 @@ StringBuffer &getStandardPosixPath(StringBuffer &result, const char *path)
     return result;
 }
 
+bool isRootDirectory(const char * path)
+{
+    char c = path[0];
+    //Check for linux root directory
+    if (isPathSepChar(c))
+        return path[1] == '\0';
+    //Also check for windows drive:
+    if (c && (path[1] == ':') && isPathSepChar(path[2]))
+        return path[3] == '\0';
+    return false;
+}
+
 const char *pathTail(const char *path)
 {
     if (!path)

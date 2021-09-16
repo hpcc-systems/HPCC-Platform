@@ -77,7 +77,7 @@ static bool splitRepoVersion(StringBuffer & repoUrn, StringBuffer & repo, String
         return false;
     else
         //MORE: Pass this in as a defaultGitPrefix so gitlab can also be used by default. HPCC-26423
-        repoUrn.append("git+ssh://git@github.com/");
+        repoUrn.append("git+ssh://github.com/");
 
     const char * hash = strchr(cur, '#');
     if (hash)
@@ -652,6 +652,9 @@ IEclPackage * EclRepositoryManager::resolveDependentRepository(IIdAtom * name, c
             if (!ok)
                 throw makeStringExceptionV(99, "Cannot locate the source code for dependency '%s'.  --fetchrepos not enabled", defaultUrl);
 
+            if (startsWith(version, "semver:"))
+                throw makeStringExceptionV(99, "Semantic versioning not yet supported for dependency '%s'.", defaultUrl);
+
             // Really the version should be a SHA, but for flexibility version could be a sha, a tag or a branch (on origin).
             // Check for a sha/tag and map it to a version.  If that does not work see if it is a branch.
             VStringBuffer params("rev-parse --short %s", version.str());
@@ -693,7 +696,7 @@ IEclPackage * EclRepositoryManager::resolveDependentRepository(IIdAtom * name, c
     Owned<IErrorReceiver> errs = createThrowingErrorReceiver();
     ForEachItemIn(iShared, sharedSources)
         allSources.append(OLINK(sharedSources.item(iShared)));
-    unsigned flags = 0;
+    unsigned flags = ESFdependencies;
     Owned<IEclRepository> repo = createNewSourceFileEclRepository(errs, filename, flags, 0, true);
     allSources.append(*repo.getClear());
     Owned<IEclPackage> compound = createPackage(defaultUrl);

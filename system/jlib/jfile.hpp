@@ -537,6 +537,8 @@ inline StringBuffer &removeTrailingPathSepChar(StringBuffer &path)
     return path;
 }
 
+extern jlib_decl bool isRootDirectory(const char * path);
+
 inline StringBuffer &addNonEmptyPathSepChar(StringBuffer &path,char sepchar=0)
 {
     size32_t len = path.length();
