@@ -237,6 +237,9 @@
         "noResourceValidation": {
           "type": "boolean"
         },
+        "stubInstanceResources": {
+          "$ref": "#/definitions/stubInstanceResources"
+        },
         "image": {
           "$ref": "#/definitions/image"
         },
@@ -1654,6 +1657,23 @@
         "type",
         "name"
       ]
+    },
+    "stubInstanceResources": {
+      "type": "object",
+      "description" : "resource definitions per instance for stub components",
+      "properties": {
+        "memory": {
+          "description": "default per stub instance memory requirements",
+          "type": "string",
+          "default": "200Mi"
+        },
+        "cpu": {
+          "description": "default per stub instance milli cpu requirements",
+          "type": "string",
+          "default": "50m"
+        },
+        "additionalProperties": false
+      }
     }
   }
 }
