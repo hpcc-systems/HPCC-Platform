@@ -1688,7 +1688,7 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
     tmpHandler.setown(createTempHandler(true));
 
     /*
-     * Calculate maximum recommeded memory for this worker.
+     * Calculate maximum recommended memory for this worker.
      * In container mode, there is only ever 1 worker per container,
      * recommendedMaxPercentage = defaultPctSysMemForRoxie
      * In bare-metal slavesPerNode is taken into account and @localThor if used.
@@ -1710,15 +1710,14 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
         /* In this mode, 25% is reserved for manager,
          * 50% for the workers.
          * Meaning this workers' recommendedMaxPercentage is remaining percentage */
-        recommendedMaxPercentage -= 25.0; // for manager
         float pctPerWorker = 50.0 / numWorkersPerNode;
-        recommendedMaxPercentage -= pctPerWorker * (numWorkersPerNode-1);
+        recommendedMaxPercentage = pctPerWorker;
     }
     else
     {
         // deduct percentage for all other workers from max percentage
         float pctPerWorker = defaultPctSysMemForRoxie / numWorkersPerNode;
-        recommendedMaxPercentage -= pctPerWorker * (numWorkersPerNode-1);
+        recommendedMaxPercentage = pctPerWorker;
     }
 #endif
     applyMemorySettings(recommendedMaxPercentage, "worker");
