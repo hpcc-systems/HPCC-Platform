@@ -616,6 +616,7 @@ void FileSystemEclCollection::processFilePath(IErrorReceiver * errs, const char 
                     //a) node_modules directories (in this directory and parents)
                     root.processDependencies(absolutePath);
 
+                    bool lockProcessed = false;
                     //b) A package-lock.json file which ties down the package to a particular SHA
                     {
                         StringBuffer dependencyFilename(absolutePath);
@@ -633,6 +634,7 @@ void FileSystemEclCollection::processFilePath(IErrorReceiver * errs, const char 
                                 root.processDependencies(dependTree, "packages/*", true);
                                 //MORE: This needs re-implementing once Tony has added support for more general tags to json parsing
                                 //root.processDependencies(dependTree, "packages/node_modules/*", true);
+                                lockProcessed = true;
                             }
                             catch (IException * e)
                             {
@@ -644,6 +646,7 @@ void FileSystemEclCollection::processFilePath(IErrorReceiver * errs, const char 
                     }
 
                     //c) A package.json file which allows branches/tags or semantic versioning (once supported)
+                    if (!lockProcessed)
                     {
                         StringBuffer dependencyFilename(absolutePath);
                         addPathSepChar(dependencyFilename).append("package.json");
