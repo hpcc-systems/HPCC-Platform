@@ -60,7 +60,7 @@ jobs:
       - name: Check out source code
         uses: actions/checkout@v2
         with:
-          submodules: true
+          submodules: recursive
       - name: Windows compilation
         working-directory: .
         run: |
