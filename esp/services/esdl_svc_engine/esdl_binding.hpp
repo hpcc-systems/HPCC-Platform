@@ -109,6 +109,7 @@ public:
     StringBuffer                m_serviceNameSpaceBase;
     StringAttr                  m_namespaceScheme;
     bool                        m_usesURLNameSpace;
+    bool                        m_returnSchemaLocationOnOK{false};
 
     using TransformErrorMap = MapStringTo<StringAttr, const char *>;
     TransformErrorMap m_methodScriptErrors;

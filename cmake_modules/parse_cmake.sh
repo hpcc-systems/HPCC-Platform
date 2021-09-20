@@ -16,9 +16,6 @@ IGNORE=
 RETAG=
 VERBOSE=
 VERSIONFILE=version.cmake
-if [ ! -f $VERSIONFILE ]; then
-  VERSIONFILE=$SCRIPT_DIR/../version.cmake
-fi
 
 POSITIONAL=()
 while [[ $# -gt 0 ]]
@@ -66,10 +63,6 @@ if [ "$#" -ge 1 ] ; then
   VERSIONFILE=$1
   shift 1
 fi
-if [ ! -f $VERSIONFILE ]; then
-  echo "File $VERSIONFILE not found"
-  exit 2
-fi
 
 GIT_BRANCH=$(git rev-parse --symbolic-full-name --abbrev-ref HEAD)
 
@@ -87,6 +80,10 @@ function extract()
 
 function parse_cmake()
 {
+    if [ ! -f $VERSIONFILE ]; then
+      echo "File $VERSIONFILE not found"
+      exit 2
+    fi
     extract $VERSIONFILE HPCC_NAME
     extract $VERSIONFILE HPCC_PROJECT
     extract $VERSIONFILE HPCC_MAJOR

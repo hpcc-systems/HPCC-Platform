@@ -80,6 +80,9 @@ static const char* Var_Service = "service";
 static const char* Var_Method = "method";
 #define ANNOTATION_AUTH_FEATURE "auth_feature"
 
+// Config flag to return the schemaLocation on non-Soap Fault method responses
+#define ANNOTATION_RETURNSCHEMALOCATION_ONOK "returnSchemaLocationOnOK"
+
 // The scope mapper and level mapper instances could be static service members, but enabling the
 // declaration of these types in the header requires inclusion of headers that unnecessarily affect
 // other projects that include this class' header.
@@ -605,6 +608,8 @@ void EsdlServiceImpl::configureTargets(IPropertyTree *cfg, const char *service)
         const char*      svcAuthDef  = svcDef->queryProp(ANNOTATION_AUTH_FEATURE);
         const char*      svcAuthBnd  = definition_cfg->queryProp("@" ANNOTATION_AUTH_FEATURE);
         m_methodAccessMaps.kill();
+
+        m_returnSchemaLocationOnOK = definition_cfg->getPropBool("@" ANNOTATION_RETURNSCHEMALOCATION_ONOK);
 
         Owned<IPropertyTreeIterator> iter = m_pServiceMethodTargets->getElements("Target");
         ForEach(*iter)
@@ -2262,7 +2267,9 @@ int EsdlBindingImpl::onGetInstantQuery(IEspContext &context,
                     StringBuffer ns, schemaLocation;
                     generateNamespace(context, request, srvdef->queryName(), mthdef->queryName(), ns);
 
-                    getSchemaLocation(context, request, schemaLocation);
+                    if(m_pESDLService->m_returnSchemaLocationOnOK)
+                        getSchemaLocation(context, request, ns, schemaLocation);
+
                     context.setESDLBindingID(m_bindingId.get());
 
                     StringBuffer origResp;
@@ -2582,7 +2589,8 @@ int EsdlBindingImpl::HandleSoapRequest(CHttpRequest* request,
             Owned<IPropertyTree> tgtctx;
 
             // Echo back the reqeust namespace, don't generate it here
-            getSchemaLocation(*ctx, request, schemaLocation);
+            if(m_pESDLService->m_returnSchemaLocationOnOK)
+                getSchemaLocation(*ctx, request, ns, schemaLocation);
 
             ctx->setESDLBindingID(m_bindingId.get());
 
@@ -3402,7 +3410,8 @@ void EsdlBindingImpl::handleJSONPost(CHttpRequest *request, CHttpResponse *respo
 
         StringBuffer ns, schemaLocation;
         generateNamespace(*ctx, request, serviceName, methodName, ns);
-        getSchemaLocation(*ctx, request, schemaLocation);
+        if(m_pESDLService->m_returnSchemaLocationOnOK)
+            getSchemaLocation(*ctx, request, ns, schemaLocation);
 
         ctx->setESDLBindingID(m_bindingId.get());
         StringBuffer origResp;

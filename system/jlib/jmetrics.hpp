@@ -151,12 +151,12 @@ class jlib_decl CounterMetric : public MetricVal
 public:
     CounterMetric(const char *name, const char *description, StatisticMeasure _units, const MetricMetaData &_metaData = MetricMetaData()) :
         MetricVal{name, description, MetricType::METRICS_COUNTER, _units, _metaData}  { }
-    void inc(uint64_t val = 1)
+    void inc(uint64_t val)
     {
         value.fetch_add(val);
     }
 
-    void fastInc(uint16_t val = 1)
+    void fastInc(uint16_t val)
     {
         value.fastAdd(val);
     }

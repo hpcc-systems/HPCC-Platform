@@ -74,19 +74,6 @@
 #define SHUTDOWN_IN_PARALLEL 20
 
 
-/* These percentages are used to determine the amount roxiemem allocated
- * from total system memory.
- *
- * For historical reasons the default in bare-metal has always been a
- * conservative 75%.
- *
- * NB: These percentages do not apply if the memory amount has been configured
- * manually via 'globalMemorySize' and 'masterMemorySize'
- */
-
-static constexpr unsigned bareMetalRoxieMemPC = 75;
-static constexpr unsigned containerRoxieMemPC = 90;
-
 
 class CThorEndHandler : implements IThreaded
 {
@@ -744,7 +731,8 @@ int main( int argc, const char *argv[]  )
             Owned<IPropertyTree> masterNasFilters = envGetInstallNASHooks(nasConfig, &thorEp);
         }
 #endif
-        
+
+
         HardwareInfo hdwInfo;
         getHardwareInfo(hdwInfo);
         globals->setPropInt("@masterTotalMem", hdwInfo.totalMemory);
@@ -758,62 +746,41 @@ int main( int argc, const char *argv[]  )
             {
                 offset_t sizeBytes = friendlyStringToSize(workerResourcedMemory);
                 gmemSize = (unsigned)(sizeBytes / 0x100000);
-                gmemSize = gmemSize * containerRoxieMemPC / 100;
             }
             else
             {
-                unsigned maxMem = hdwInfo.totalMemory;
+                gmemSize = hdwInfo.totalMemory;
 #ifdef _WIN32
-                if (maxMem > 2048)
-                    maxMem = 2048;
+                if (gmemSize > 2048)
+                    gmemSize = 2048;
 #else
 #ifndef __64BIT__
-                if (maxMem > 2048)
+                if (gmemSize > 2048)
                 {
                     // 32 bit OS doesn't handle whole physically installed RAM
-                    maxMem = 2048;
+                    gmemSize = 2048;
                 }
 #ifdef __ARM_ARCH_7A__
                 // For ChromeBook with 2GB RAM
-                if (maxMem <= 2048)
+                if (gmemSize <= 2048)
                 {
                     // Decrease max memory to 2/3 
-                    maxMem = maxMem * 2 / 3; 
+                    gmemSize = gmemSize * 2 / 3; 
                 }
 #endif            
 #endif
 #endif
-                if (isContainerized())
-                    gmemSize = maxMem * containerRoxieMemPC / 100; // NB: MB's
-                else
-                {
-                    if (globals->getPropBool("@localThor") && 0 == mmemSize)
-                    {
-                        gmemSize = maxMem / 2; // 50% of total for slaves
-                        mmemSize = maxMem / 4; // 25% of total for master
-                    }
-                    else
-                        gmemSize = maxMem * bareMetalRoxieMemPC / 100; // NB: MB's
-                }
             }
-            unsigned perSlaveSize = gmemSize;
-#ifndef _CONTAINERIZED
-            if (slavesPerNode>1)
-            {
-                PROGLOG("Sharing globalMemorySize(%d MB), between %d slave processes. %d MB each", perSlaveSize, slavesPerNode, perSlaveSize / slavesPerNode);
-                perSlaveSize /= slavesPerNode;
-            }
-#endif
-            globals->setPropInt("@globalMemorySize", perSlaveSize);
+        }
+        IPropertyTree *workerMemory = ensurePTree(globals, "workerMemory");
+        workerMemory->setPropInt("@total", gmemSize);
+
+        if (mmemSize)
+        {
+            if (mmemSize > hdwInfo.totalMemory)
+                OWARNLOG("Configured manager memory size (%u MB) is greater than total hardware memory (%u MB)", mmemSize, hdwInfo.totalMemory);
         }
         else
-        {
-            if (gmemSize >= hdwInfo.totalMemory)
-            {
-                // should prob. error here
-            }
-        }
-        if (0 == mmemSize)
         {
             // NB: This could be in a isContainerized(), but the 'managerResources' section only applies to containerized setups
             const char *managerResourcedMemory = globals->queryProp("managerResources/@memory");
@@ -821,22 +788,13 @@ int main( int argc, const char *argv[]  )
             {
                 offset_t sizeBytes = friendlyStringToSize(managerResourcedMemory);
                 mmemSize = (unsigned)(sizeBytes / 0x100000);
-                mmemSize = mmemSize * containerRoxieMemPC / 100;
             }
             else
                 mmemSize = gmemSize; // default to same as slaves
         }
 
-        bool gmemAllowHugePages = globals->getPropBool("@heapUseHugePages", false);
-        gmemAllowHugePages = globals->getPropBool("@heapMasterUseHugePages", gmemAllowHugePages);
-        bool gmemAllowTransparentHugePages = globals->getPropBool("@heapUseTransparentHugePages", true);
-        bool gmemRetainMemory = globals->getPropBool("@heapRetainMemory", false);
-
-        // if @masterMemorySize and @globalMemorySize unspecified gmemSize will be default based on h/w
-        globals->setPropInt("@masterMemorySize", mmemSize);
-
-        PROGLOG("Global memory size = %d MB", mmemSize);
-        roxiemem::setTotalMemoryLimit(gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, ((memsize_t)mmemSize) * 0x100000, 0, thorAllocSizes, NULL);
+        IPropertyTree *managerMemory = ensurePTree(globals, "managerMemory");
+        managerMemory->setPropInt("@total", mmemSize);
 
         char thorPath[1024];
         if (!GetCurrentDirectory(1024, thorPath))

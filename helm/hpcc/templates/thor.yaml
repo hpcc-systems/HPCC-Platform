@@ -90,7 +90,7 @@ data:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $eclAgentJobName "target" .me.name "type" "thor") | indent 10 }}
           serviceAccountName: "hpcc-agent"
           initContainers: 
-            {{- include "hpcc.checkDataMount" . | indent 10 }}
+          {{- include "hpcc.changePlaneMountPerms" . | indent 10 }}
 {{- if $misc.postJobCommandViaSidecar }}
           shareProcessNamespace: true
 {{- end }}            
@@ -111,8 +111,7 @@ data:
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
-{{ include "hpcc.addDataVolumeMount" . | indent 12 }}
-{{ include "hpcc.addDllVolumeMount" . | indent 12 }}
+{{ include "hpcc.addVolumeMounts" . | indent 12 }}
 {{ include "hpcc.addSecretVolumeMounts" . | indent 12 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" .root "name" .me.name "component" "eclagent") | indent 12 }}
 {{- if $misc.postJobCommandViaSidecar }}
@@ -120,8 +119,7 @@ data:
 {{- end }}
           volumes:
 {{ include "hpcc.addConfigMapVolume" .me | indent 10 }}
-{{ include "hpcc.addDataVolume" . | indent 10 }}
-{{ include "hpcc.addDllVolume" . | indent 10 }}
+{{ include "hpcc.addVolumes" . | indent 10 }}
 {{ include "hpcc.addSecretVolumes" . | indent 10 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" .root "name" .me.name "component" "eclagent") | indent 10 }}
 {{- if $misc.postJobCommandViaSidecar }}
@@ -157,7 +155,7 @@ data:
           {{- include "hpcc.placementsByJobTargetType" (dict "root" .root "job" $thorManagerJobName "target" .me.name "type" "thor") | indent 10 }}
           serviceAccountName: hpcc-agent
           initContainers:
-            {{- include "hpcc.checkDataMount" . | indent 10 }}
+          {{- include "hpcc.changePlaneMountPerms" . | indent 10 }}
 {{- if $misc.postJobCommandViaSidecar }}
           shareProcessNamespace: true
 {{- end }}            
@@ -178,8 +176,7 @@ data:
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
-{{ include "hpcc.addDataVolumeMount" . | indent 12 }}
-{{ include "hpcc.addDllVolumeMount" . | indent 12 }}
+{{ include "hpcc.addVolumeMounts" . | indent 12 }}
 {{ include "hpcc.addSecretVolumeMounts" . | indent 12 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" .root "name" .me.name "component" "thormanager") | indent 12 }}
 {{- if $misc.postJobCommandViaSidecar }}
@@ -187,8 +184,7 @@ data:
 {{- end }}
           volumes:
 {{ include "hpcc.addConfigMapVolume" .me | indent 10 }}
-{{ include "hpcc.addDataVolume" . | indent 10 }}
-{{ include "hpcc.addDllVolume" . | indent 10 }}
+{{ include "hpcc.addVolumes" . | indent 10 }}
 {{ include "hpcc.addSecretVolumes" . | indent 10 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" .root "name" .me.name "component" "thormanager") | indent 10 }}
 {{- if $misc.postJobCommandViaSidecar }}
@@ -242,8 +238,7 @@ data:
             workingDir: /var/lib/HPCCSystems
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
-{{ include "hpcc.addDataVolumeMount" . | indent 12 }}
-{{ include "hpcc.addDllVolumeMount" . | indent 12 }}
+{{ include "hpcc.addVolumeMounts" . | indent 12 }}
 {{ include "hpcc.addSecretVolumeMounts" . | indent 12 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" .root "name" .me.name "component" "thorworker") | indent 12 }}
 {{- if $misc.postJobCommandViaSidecar }}
@@ -251,8 +246,7 @@ data:
 {{- end }}
           volumes:
 {{ include "hpcc.addConfigMapVolume" .me | indent 10 }}
-{{ include "hpcc.addDataVolume" . | indent 10 }}
-{{ include "hpcc.addDllVolume" . | indent 10 }}
+{{ include "hpcc.addVolumes" . | indent 10 }}
 {{ include "hpcc.addSecretVolumes" . | indent 10 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" .root "name" .me.name "component" "thorworker") | indent 10 }}
 {{- if $misc.postJobCommandViaSidecar }}
@@ -290,7 +284,7 @@ data:
 {{- if not .disabled -}}
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $secretsCategories := list "system" "ecl-user" "ecl" "storage" }}
-{{- $commonCtx := dict "root" $ "me" .  "secretsCategories" $secretsCategories "env" $env -}}
+{{- $commonCtx := dict "root" $ "me" . "includeCategories" (list "lz" "data" "spill" "dll") "secretsCategories" $secretsCategories "env" $env -}}
 {{- $_ := set $commonCtx "eclAgentName" (printf "%s-eclagent" .name) -}}
 {{- $_ := set $commonCtx "thorAgentName" (printf "%s-thoragent" .name) -}}
 {{- $_ := set $commonCtx "eclAgentUseChildProcesses" (hasKey . "eclAgentUseChildProcesses" | ternary .eclAgentUseChildProcesses true) }}
@@ -347,14 +341,12 @@ spec:
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
-{{ include "hpcc.addDataVolumeMount" $commonCtx | indent 8 }}
-{{ include "hpcc.addDllVolumeMount" $commonCtx | indent 8 }}
+{{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" $commonCtx.eclAgentName "component" "eclagent") | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
-{{ include "hpcc.addDataVolume" $commonCtx | indent 6 }}
-{{ include "hpcc.addDllVolume" $commonCtx | indent 6 }}
+{{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" $commonCtx.eclAgentName "component" "eclagent") | indent 6 }}
 ---
@@ -406,14 +398,12 @@ spec:
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
-{{ include "hpcc.addDataVolumeMount" $commonCtx | indent 8 }}
-{{ include "hpcc.addDllVolumeMount" $commonCtx | indent 8 }}
+{{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" $commonCtx.thorAgentName "component" "thoragent") | indent 8 }}
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
-{{ include "hpcc.addDataVolume" $commonCtx | indent 6 }}
-{{ include "hpcc.addDllVolume" $commonCtx | indent 6 }}
+{{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" $commonCtx.thorAgentName "component" "thoragent") | indent 6 }}
 ---
