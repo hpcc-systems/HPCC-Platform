@@ -393,6 +393,8 @@ extern int backgroundCopyClass;
 extern int backgroundCopyPrio;
 
 extern unsigned roxiePort;     // If listening on multiple, this is the first. Used for lock cascading
+extern IPropertyTree *roxiePortTlsClientConfig;
+
 
 extern unsigned udpMulticastBufferSize;
 extern size32_t diskReadBufferSize;

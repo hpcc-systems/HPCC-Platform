@@ -36,7 +36,8 @@ extern jlib_decl bool getSecretValue(StringBuffer & result, const char *category
 extern jlib_decl void initSecretUdpKey();
 extern jlib_decl const MemoryAttr &getSecretUdpKey(bool required);
 
-extern jlib_decl IPropertyTree *queryTlsSecretInfo(const char *name);
+extern jlib_decl IPropertyTree *queryTlsSecretInfo(const char *issuer);
+extern jlib_decl IPropertyTree *createTlsClientSecretInfo(const char *issuer, bool mutual, bool acceptSelfSigned, bool addCACert=true);
 
 extern jlib_decl  void splitFullUrl(const char *url, bool &https, StringBuffer &user, StringBuffer &password, StringBuffer &host, StringBuffer &port, StringBuffer &fullpath);
 extern jlib_decl void splitUrlSchemeHostPort(const char *url, StringBuffer &user, StringBuffer &password, StringBuffer &schemeHostPort, StringBuffer &path);

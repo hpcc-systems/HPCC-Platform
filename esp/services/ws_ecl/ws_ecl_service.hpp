@@ -87,17 +87,6 @@ typedef enum wsEclTypes_
 
 } wsEclType;
 
-class RoxieSocketFactory : public CSmartSocketFactory
-{
-public:
-    bool includeTargetInURL;
-    StringAttr alias;
-
-    RoxieSocketFactory(const char *_socklist, bool _retry, bool includeTarget, const char *_alias, unsigned _dnsInterval) : CSmartSocketFactory(_socklist, _retry, 60, _dnsInterval), includeTargetInURL(includeTarget), alias(_alias)
-    {
-    }
-};
-
 class CWsEclService : public CInterface,
     implements IEspService
 {

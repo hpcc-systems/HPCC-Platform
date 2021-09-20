@@ -83,8 +83,9 @@ data:
 {{- else -}}
  {{- $_ := set $commonCtx "externalCert" false -}}
 {{- end -}}
-{{- $generateSigningCert := and (eq $application "eclwatch") (hasKey $.Values.certificates.issuers "signing") -}}
-{{- $signingCertGenerator := or ($generateSigningCert) (has $application (list "eclservices")) | ternary "eclwatch" "" -}}
+{{- $signingEnabled := eq (include "hpcc.isIssuerEnabled" (dict "root" $ "issuer" "signing")) "true" -}}
+{{- $generateSigningCert := and ($signingEnabled) (eq $application "eclwatch") -}}
+{{- $signingCertGenerator := and ($signingEnabled) (has $application (list "eclwatch" "eclservices")) | ternary "eclwatch" "" -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

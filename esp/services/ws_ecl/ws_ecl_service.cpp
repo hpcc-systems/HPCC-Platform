@@ -196,22 +196,33 @@ static void appendServerAddress(StringBuffer &s, IPropertyTree &env, IPropertyTr
     s.append(netAddress).append(':').append(port ? port : "9876");
 }
 
+class WsEclSocketFactory : public CSmartSocketFactory
+{
+public:
+    bool includeTargetInURL;
+    StringAttr alias;
+
+    WsEclSocketFactory(IPropertyTree &service, bool _retry, bool includeTarget, const char *_alias, unsigned _dnsInterval) : CSmartSocketFactory(service, _retry, 60, _dnsInterval), includeTargetInURL(includeTarget), alias(_alias)
+    {
+    }
+
+    WsEclSocketFactory(const char *_socklist, bool _retry, bool includeTarget, const char *_alias, unsigned _dnsInterval) : CSmartSocketFactory(_socklist, _retry, 60, _dnsInterval), includeTargetInURL(includeTarget), alias(_alias)
+    {
+    }
+};
+
 void initContainerRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap)
 {
     Owned<IPropertyTreeIterator> services = getGlobalConfigSP()->getElements("services[@type='roxie']");
     ForEach(*services)
     {
         IPropertyTree &service = services->query();
-        const char *name = service.queryProp("@name");
-        const char *target = service.queryProp("@target");
-        const char *port = service.queryProp("@port");
 
-        if (isEmptyString(target) || isEmptyString(name)) //bad config?
+        const char *target = service.queryProp("@target");
+        if (isEmptyString(target) || isEmptyString(service.queryProp("@name"))) //bad config?
             continue;
 
-        StringBuffer s;
-        s.append(name).append(':').append(port ? port : "9876");
-        Owned<ISmartSocketFactory> sf = new RoxieSocketFactory(s.str(), false, true, nullptr, (unsigned) -1);
+        Owned<ISmartSocketFactory> sf = new WsEclSocketFactory(service, false, true, nullptr, (unsigned) -1);
         connMap.setValue(target, sf.get());
     }
 }
@@ -275,7 +286,7 @@ void initBareMetalRoxieTargets(MapStringToMyClass<ISmartSocketFactory> &connMap,
         if (list.length())
         {
             StringAttr alias(clusterInfo->getAlias());
-            Owned<ISmartSocketFactory> sf = new RoxieSocketFactory(list.str(), !loadBalanced, includeTargetInURL, loadBalanced ? alias.str() : NULL, dnsInterval);
+            Owned<ISmartSocketFactory> sf = new WsEclSocketFactory(list.str(), !loadBalanced, includeTargetInURL, loadBalanced ? alias.str() : NULL, dnsInterval);
             connMap.setValue(target.str(), sf.get());
             if (alias.length() && !connMap.getValue(alias.str())) //only need one vip per alias for routing purposes
                 connMap.setValue(alias.str(), sf.get());
@@ -2051,9 +2062,9 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
         ep = conn->nextEndpoint();
 
         Owned<IHttpClientContext> httpctx = getHttpClientContext();
-        StringBuffer url("http://");
+        WsEclSocketFactory *roxieConn = static_cast<WsEclSocketFactory*>(conn);
+        StringBuffer url(roxieConn->isTlsService() ? "https://" : "http://");
         ep.getIpText(url).append(':').append(ep.port ? ep.port : 9876).append('/');
-        RoxieSocketFactory *roxieConn = static_cast<RoxieSocketFactory*>(conn);
         if (roxieConn->includeTargetInURL)
             url.append(roxieConn->alias.isEmpty() ? target : roxieConn->alias.str());
         if (!trim)

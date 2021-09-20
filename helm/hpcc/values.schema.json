@@ -1003,6 +1003,10 @@
         },
         "service": {
           "$ref": "#/definitions/service"
+        },
+        "certificate": {
+          "type": "string",
+          "description": "Name of the secret which contains the TLS certificate.  Custom configuration instead of using, or overriding cert-manager certificate."
         }
       }
     },
@@ -1125,6 +1129,10 @@
         "labels": {
           "type": "object",
           "additionalProperties": { "type": "string" }
+        },
+        "certificate": {
+          "type": "string",
+          "description": "Name of the secret which contains the TLS certificate.  Custom configuration instead of using, or overriding cert-manager certificate."
         }
       }
     },
@@ -1191,6 +1199,10 @@
         "visibility": {
           "type": "string",
           "description": "Should this service be exposed outside the cluster, locally or to the internet"
+        },
+        "tls": {
+          "type": "boolean",
+          "description": "Whether the roxie service uses tls.  Requires cert-manager or custom certificate."
         }
       },
       "required": [ "name", "servicePort" ],

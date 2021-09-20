@@ -2305,7 +2305,7 @@ bool CWsSMCEx::onRoxieControlCmd(IEspContext &context, IEspRoxieControlCmdReques
     if (!isActiveK8sService(target))
         throw makeStringExceptionV(ECLWATCH_CANNOT_GET_ENV_INFO, "roxie target cluster has no active servers: %s", target);
 
-    Owned<IPropertyTree> controlResp = sendRoxieControlAllNodes(conn->nextEndpoint(), controlReq, true, req.getWait());
+    Owned<IPropertyTree> controlResp = sendRoxieControlAllNodes(conn, controlReq, true, req.getWait(), ROXIECONNECTIONTIMEOUT);
 #endif
     if (!controlResp)
         throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to get control response from roxie.");

@@ -19,6 +19,7 @@
 #include "jlib.hpp"
 #include "jthread.hpp"
 #include "jregexp.hpp"
+#include "securesocket.hpp"
 
 #include "wujobq.hpp"
 #include "thorplugin.hpp"
@@ -77,6 +78,7 @@ class CascadeManager : public CInterface
     CriticalSection revisionCrit;
     int myEndpoint;
     const IRoxieContextLogger &logctx;
+    IPropertyTree *tlsConfig = nullptr;
 
     void unlockChildren()
     {
@@ -129,9 +131,29 @@ class CascadeManager : public CInterface
                     ep.getUrlStr(epStr);
                     DBGLOG("connectChild connecting to %s", epStr.str());
                 }
-                ISocket *sock = ISocket::connect_timeout(ep, 2000);
+                Owned<ISocket> sock = ISocket::connect_timeout(ep, 2000);
                 assertex(sock);
-                activeChildren.append(*sock);
+                if (tlsConfig)
+                {
+                    Owned<ISecureSocketContext> secureCtx = createSecureSocketContextEx2(tlsConfig, ClientSocket);
+                    if (!secureCtx)
+                        throw makeStringException(ROXIE_TLS_ERROR, "Roxie CascadeManager failed creating secure context for roxie control message");
+                    Owned<ISecureSocket> ssock = secureCtx->createSecureSocket(sock.getClear());
+                    if (!ssock)
+                        throw makeStringException(ROXIE_TLS_ERROR, "Roxie CascadeManager failed creating secure socket for roxie control message");
+
+                    int status = ssock->secure_connect();
+                    if (status < 0)
+                    {
+                        StringBuffer err;
+                        err.append("Roxie CascadeManager failed to establish secure connection to ");
+                        ep.getUrlStr(err);
+                        err.append(": returned ").append(status);
+                        throw makeStringException(ROXIE_TLS_ERROR, err.str());
+                    }
+                    sock.setown(ssock.getClear());
+                }
+                activeChildren.append(*sock.getClear());
                 activeIdxes.append(idx);
                 if (traceLevel)
                 {
@@ -289,7 +311,7 @@ private:
 
 
 public:
-    CascadeManager(const IRoxieContextLogger &_logctx, const ITopologyServer *_topology) : topology(_topology), servers(_topology->queryServers(roxiePort)), logctx(_logctx)
+    CascadeManager(const IRoxieContextLogger &_logctx, const ITopologyServer *_topology) : topology(_topology), servers(_topology->queryServers(roxiePort)), logctx(_logctx), tlsConfig(roxiePortTlsClientConfig)
     {
         entered = false;
         connected = false;
