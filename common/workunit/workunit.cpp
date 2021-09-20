@@ -13531,17 +13531,31 @@ static double getCostCpuHour()
 
 extern WORKUNIT_API double getMachineCostRate()
 {
+#ifndef _CONTAINERIZED
+    return getCostCpuHour(); // For bare-metal, full CPU used per machine
+#else
     return getCostCpuHour() * getCpuSize("resources/@cpu") ;
+#endif
 };
 
 extern WORKUNIT_API double getThorManagerRate()
 {
+#ifndef _CONTAINERIZED
+    return getCostCpuHour(); // For bare-metal, full CPU used per machine
+#else
     return getCostCpuHour() * getCpuSize("managerResources/@cpu");
+#endif
 }
 
 extern WORKUNIT_API double getThorWorkerRate()
 {
+#ifndef _CONTAINERIZED
+    Owned<IPropertyTree> compConfig = getComponentConfig();
+    int slavesPerNode = compConfig->getPropInt("@slavesPerNode", 1);
+    return 1/slavesPerNode;
+#else
     return getCostCpuHour() * getCpuSize("workerResources/@cpu");
+#endif
 }
 
 extern WORKUNIT_API double calculateThorCost(unsigned __int64 ms, unsigned clusterWidth)
