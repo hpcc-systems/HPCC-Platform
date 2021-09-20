@@ -97,20 +97,23 @@
     color: inherit;
 }
 
-.dgrid-resize-header-container {
+.dgrid-selector .dgrid-resize-header-container {
     display: flex;
     height: auto;
 }
 
-.dgrid-sort-arrow {
-    float: none;
-    align-self: center;
+.dgrid-cell .dgrid-sort-arrow {
+    margin-top: 9px;
 }
 
-.dgrid-cell {
-    vertical-align: inherit;
+.dgrid-header .dgrid-cell {
+    vertical-align: middle;
+}
+
+.dgrid-cell .iconAlign {
+    vertical-align: text-bottom;
 }
 
 th.dgrid-cell [type="checkbox"] {
-    margin-top: 5px;
+    vertical-align: text-bottom;
 }
