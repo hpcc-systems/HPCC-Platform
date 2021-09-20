@@ -6,9 +6,9 @@
 
 using namespace xpp;
 
-IMultiException *xppMakeException(XmlPullParser &xppx);
+IMultiException *xppMakeException(IXmlPullParser &xppx);
 
-void xppToXmlString(XmlPullParser &xpp, StartTag &stag, StringBuffer & buffer);
-bool xppGotoTag(XmlPullParser &xppx, const char *tagname, StartTag &stag);
+void xppToXmlString(IXmlPullParser &xpp, StartTag &stag, StringBuffer & buffer);
+bool xppGotoTag(IXmlPullParser &xppx, const char *tagname, StartTag &stag);
 
 #endif // XPP_UTILS_H_

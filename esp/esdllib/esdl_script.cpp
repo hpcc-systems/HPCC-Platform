@@ -26,7 +26,7 @@
 #include "jsecrets.hpp"
 #include "esdl_script.hpp"
 
-#include <xpp/XmlPullParser.h>
+#include <fxpp/FragmentedXmlPullParser.hpp>
 using namespace xpp;
 
 interface IEsdlTransformOperation : public IInterface
@@ -35,10 +35,10 @@ interface IEsdlTransformOperation : public IInterface
     virtual void toDBGLog() = 0;
 };
 
-IEsdlTransformOperation *createEsdlTransformOperation(XmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors);
-void createEsdlTransformOperations(IArrayOf<IEsdlTransformOperation> &operations, XmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors);
-void createEsdlTransformChooseOperations(IArrayOf<IEsdlTransformOperation> &operations, XmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors);
-typedef void (*esdlOperationsFactory_t)(IArrayOf<IEsdlTransformOperation> &operations, XmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors);
+IEsdlTransformOperation *createEsdlTransformOperation(IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors);
+void createEsdlTransformOperations(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors);
+void createEsdlTransformChooseOperations(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors);
+typedef void (*esdlOperationsFactory_t)(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors);
 
 bool getStartTagValueBool(StartTag &stag, const char *name, bool defaultValue)
 {
@@ -95,7 +95,7 @@ protected:
     bool m_ignoreCodingErrors = false; //ideally used only for debugging
 
 public:
-    CEsdlTransformOperationBase(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix)
+    CEsdlTransformOperationBase(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix)
     {
         m_tagname.set(stag.getLocalName());
         m_traceName.set(stag.getValue("trace"));
@@ -110,7 +110,7 @@ protected:
     bool m_withVariables = false;
 
 public:
-    CEsdlTransformOperationWithChildren(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, bool withVariables, esdlOperationsFactory_t factory) : CEsdlTransformOperationBase(xpp, stag, prefix), m_withVariables(withVariables)
+    CEsdlTransformOperationWithChildren(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, bool withVariables, esdlOperationsFactory_t factory) : CEsdlTransformOperationBase(xpp, stag, prefix), m_withVariables(withVariables)
     {
         //load children
         if (factory)
@@ -148,7 +148,7 @@ public:
 class CEsdlTransformOperationWithoutChildren : public CEsdlTransformOperationBase
 {
 public:
-    CEsdlTransformOperationWithoutChildren(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationBase(xpp, stag, prefix)
+    CEsdlTransformOperationWithoutChildren(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationBase(xpp, stag, prefix)
     {
         if (xpp.skipSubTreeEx())
             esdlOperationError(ESDL_SCRIPT_Error, m_tagname, "should not have child tags", m_traceName, !m_ignoreCodingErrors);
@@ -165,7 +165,7 @@ protected:
     Owned<ICompiledXpath> m_select;
 
 public:
-    CEsdlTransformOperationVariable(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
+    CEsdlTransformOperationVariable(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
     {
         if (m_traceName.isEmpty())
             m_traceName.set(stag.getValue("name"));
@@ -211,7 +211,7 @@ class CEsdlTransformOperationHttpContentXml : public CEsdlTransformOperationWith
 {
 
 public:
-    CEsdlTransformOperationHttpContentXml(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
+    CEsdlTransformOperationHttpContentXml(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
     {
     }
 
@@ -268,7 +268,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CEsdlTransformOperationWithoutChildren)
 
-    CEsdlTransformOperationMySqlBindParmeter(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
+    CEsdlTransformOperationMySqlBindParmeter(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
     {
         m_name.set(stag.getValue("name"));
         if (m_name.isEmpty())
@@ -367,7 +367,7 @@ protected:
     IArrayOf<CEsdlTransformOperationMySqlBindParmeter> m_parameters;
 
 public:
-    CEsdlTransformOperationMySqlCall(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationBase(xpp, stag, prefix)
+    CEsdlTransformOperationMySqlCall(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationBase(xpp, stag, prefix)
     {
         ensureMysqlEmbed();
 
@@ -654,7 +654,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CEsdlTransformOperationWithoutChildren)
 
-    CEsdlTransformOperationHttpHeader(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
+    CEsdlTransformOperationHttpHeader(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
     {
         m_name.set(stag.getValue("name"));
         const char *xpath_name = stag.getValue("xpath_name");
@@ -717,7 +717,7 @@ protected:
     Owned<IEsdlTransformOperation> m_content;
 
 public:
-    CEsdlTransformOperationHttpPostXml(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationBase(xpp, stag, prefix)
+    CEsdlTransformOperationHttpPostXml(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationBase(xpp, stag, prefix)
     {
         m_name.set(stag.getValue("name"));
         if (m_traceName.isEmpty())
@@ -892,7 +892,7 @@ public:
 class CEsdlTransformOperationParameter : public CEsdlTransformOperationVariable
 {
 public:
-    CEsdlTransformOperationParameter(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationVariable(xpp, stag, prefix)
+    CEsdlTransformOperationParameter(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationVariable(xpp, stag, prefix)
     {
     }
 
@@ -916,7 +916,7 @@ protected:
     Owned<ICompiledXpath> m_select;
 
 public:
-    CEsdlTransformOperationSetSectionAttributeBase(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, const char *attrName) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
+    CEsdlTransformOperationSetSectionAttributeBase(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix, const char *attrName) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
     {
         if (m_traceName.isEmpty())
             m_traceName.set(stag.getValue("name"));
@@ -985,7 +985,7 @@ public:
 class CEsdlTransformOperationStoreValue : public CEsdlTransformOperationSetSectionAttributeBase
 {
 public:
-    CEsdlTransformOperationStoreValue(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationSetSectionAttributeBase(xpp, stag, prefix, nullptr)
+    CEsdlTransformOperationStoreValue(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationSetSectionAttributeBase(xpp, stag, prefix, nullptr)
     {
     }
 
@@ -996,7 +996,7 @@ public:
 class CEsdlTransformOperationSetLogProfile : public CEsdlTransformOperationSetSectionAttributeBase
 {
 public:
-    CEsdlTransformOperationSetLogProfile(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationSetSectionAttributeBase(xpp, stag, prefix, "profile")
+    CEsdlTransformOperationSetLogProfile(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationSetSectionAttributeBase(xpp, stag, prefix, "profile")
     {
     }
 
@@ -1007,7 +1007,7 @@ public:
 class CEsdlTransformOperationSetLogOption : public CEsdlTransformOperationSetSectionAttributeBase
 {
 public:
-    CEsdlTransformOperationSetLogOption(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationSetSectionAttributeBase(xpp, stag, prefix, nullptr)
+    CEsdlTransformOperationSetLogOption(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationSetSectionAttributeBase(xpp, stag, prefix, nullptr)
     {
     }
 
@@ -1024,7 +1024,7 @@ protected:
     bool m_required = true;
 
 public:
-    CEsdlTransformOperationSetValue(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
+    CEsdlTransformOperationSetValue(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
     {
         if (m_traceName.isEmpty())
             m_traceName.set(stag.getValue("name"));
@@ -1109,7 +1109,7 @@ protected:
     bool m_current = false;
 
 public:
-    CEsdlTransformOperationNamespace(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
+    CEsdlTransformOperationNamespace(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
     {
         const char *pfx = stag.getValue("prefix");
         const char *uri = stag.getValue("uri");
@@ -1149,7 +1149,7 @@ protected:
     bool m_all = false;
 
 public:
-    CEsdlTransformOperationRenameNode(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
+    CEsdlTransformOperationRenameNode(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
     {
         const char *new_name = stag.getValue("new_name");
         const char *xpath_new_name = stag.getValue("xpath_new_name");
@@ -1229,7 +1229,7 @@ protected:
     StringAttr m_new_name;
 
 public:
-    CEsdlTransformOperationCopyOf(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
+    CEsdlTransformOperationCopyOf(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
     {
         const char *select = stag.getValue("select");
         if (isEmptyString(select))
@@ -1278,7 +1278,7 @@ protected:
     bool m_all = false;
 
 public:
-    CEsdlTransformOperationRemoveNode(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
+    CEsdlTransformOperationRemoveNode(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
     {
         const char *target = stag.getValue("target");
         const char *xpath_target = stag.getValue("xpath_target");
@@ -1337,7 +1337,7 @@ public:
 class CEsdlTransformOperationAppendValue : public CEsdlTransformOperationSetValue
 {
 public:
-    CEsdlTransformOperationAppendValue(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationSetValue(xpp, stag, prefix){}
+    CEsdlTransformOperationAppendValue(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationSetValue(xpp, stag, prefix){}
 
     virtual ~CEsdlTransformOperationAppendValue(){}
 
@@ -1353,7 +1353,7 @@ public:
 class CEsdlTransformOperationAddValue : public CEsdlTransformOperationSetValue
 {
 public:
-    CEsdlTransformOperationAddValue(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationSetValue(xpp, stag, prefix){}
+    CEsdlTransformOperationAddValue(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationSetValue(xpp, stag, prefix){}
 
     virtual ~CEsdlTransformOperationAddValue(){}
 
@@ -1373,7 +1373,7 @@ protected:
     Owned<ICompiledXpath> m_code;
 
 public:
-    CEsdlTransformOperationFail(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
+    CEsdlTransformOperationFail(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithoutChildren(xpp, stag, prefix)
     {
         if (m_traceName.isEmpty())
             m_traceName.set(stag.getValue("name"));
@@ -1417,7 +1417,7 @@ private:
     Owned<ICompiledXpath> m_test; //assert is like a conditional fail
 
 public:
-    CEsdlTransformOperationAssert(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationFail(xpp, stag, prefix)
+    CEsdlTransformOperationAssert(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationFail(xpp, stag, prefix)
     {
         const char *test = stag.getValue("test");
         if (isEmptyString(test))
@@ -1451,7 +1451,7 @@ protected:
     Owned<ICompiledXpath> m_select;
 
 public:
-    CEsdlTransformOperationForEach(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
+    CEsdlTransformOperationForEach(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
     {
         const char *select = stag.getValue("select");
         if (isEmptyString(select))
@@ -1514,7 +1514,7 @@ private:
     char m_op = 'i'; //'i'=if, 'w'=when, 'o'=otherwise
 
 public:
-    CEsdlTransformOperationConditional(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
+    CEsdlTransformOperationConditional(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
     {
         const char *op = stag.getLocalName();
         if (isEmptyString(op)) //should never get here, we checked already, but
@@ -1584,7 +1584,7 @@ private:
     }
 };
 
-void loadChooseChildren(IArrayOf<IEsdlTransformOperation> &operations, XmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors)
+void loadChooseChildren(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors)
 {
     Owned<CEsdlTransformOperationConditional> otherwise;
 
@@ -1622,7 +1622,7 @@ void loadChooseChildren(IArrayOf<IEsdlTransformOperation> &operations, XmlPullPa
 class CEsdlTransformOperationChoose : public CEsdlTransformOperationWithChildren
 {
 public:
-    CEsdlTransformOperationChoose(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, false, loadChooseChildren)
+    CEsdlTransformOperationChoose(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, false, loadChooseChildren)
     {
     }
 
@@ -1665,7 +1665,7 @@ protected:
     bool m_ensure = false;
 
 public:
-    CEsdlTransformOperationTarget(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
+    CEsdlTransformOperationTarget(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
     {
         const char *xpath = stag.getValue("xpath");
         if (isEmptyString(xpath))
@@ -1704,7 +1704,7 @@ public:
 class CEsdlTransformOperationIfTarget : public CEsdlTransformOperationTarget
 {
 public:
-    CEsdlTransformOperationIfTarget(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationTarget(xpp, stag, prefix)
+    CEsdlTransformOperationIfTarget(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationTarget(xpp, stag, prefix)
     {
         m_required = false;
     }
@@ -1715,7 +1715,7 @@ public:
 class CEsdlTransformOperationEnsureTarget : public CEsdlTransformOperationTarget
 {
 public:
-    CEsdlTransformOperationEnsureTarget(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationTarget(xpp, stag, prefix)
+    CEsdlTransformOperationEnsureTarget(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationTarget(xpp, stag, prefix)
     {
         m_ensure = true;
     }
@@ -1730,7 +1730,7 @@ protected:
     bool m_required = true;
 
 public:
-    CEsdlTransformOperationSource(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
+    CEsdlTransformOperationSource(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
     {
         const char *xpath = stag.getValue("xpath");
         if (isEmptyString(xpath))
@@ -1763,7 +1763,7 @@ public:
 class CEsdlTransformOperationIfSource : public CEsdlTransformOperationSource
 {
 public:
-    CEsdlTransformOperationIfSource(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationSource(xpp, stag, prefix)
+    CEsdlTransformOperationIfSource(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationSource(xpp, stag, prefix)
     {
         m_required = false;
     }
@@ -1779,7 +1779,7 @@ protected:
     StringBuffer m_nsuri;
 
 public:
-    CEsdlTransformOperationElement(XmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
+    CEsdlTransformOperationElement(IXmlPullParser &xpp, StartTag &stag, const StringBuffer &prefix) : CEsdlTransformOperationWithChildren(xpp, stag, prefix, true, nullptr)
     {
         m_name.set(stag.getValue("name"));
         if (m_name.isEmpty())
@@ -1815,7 +1815,7 @@ public:
     }
 };
 
-void createEsdlTransformOperations(IArrayOf<IEsdlTransformOperation> &operations, XmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors)
+void createEsdlTransformOperations(IArrayOf<IEsdlTransformOperation> &operations, IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors)
 {
     int type = 0;
     while((type = xpp.next()) != XmlPullParser::END_DOCUMENT)
@@ -1837,7 +1837,7 @@ void createEsdlTransformOperations(IArrayOf<IEsdlTransformOperation> &operations
     }
 }
 
-IEsdlTransformOperation *createEsdlTransformOperation(XmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors)
+IEsdlTransformOperation *createEsdlTransformOperation(IXmlPullParser &xpp, const StringBuffer &prefix, bool withVariables, bool ignoreCodingErrors)
 {
     StartTag stag;
     xpp.readStartTag(stag);
@@ -1924,7 +1924,7 @@ private:
 public:
     CEsdlCustomTransform(){}
 
-    CEsdlCustomTransform(XmlPullParser &xpp, StartTag &stag, const char *ns_prefix) : m_prefix(ns_prefix)
+    CEsdlCustomTransform(IXmlPullParser &xpp, StartTag &stag, const char *ns_prefix) : m_prefix(ns_prefix)
     {
         const char *tag = stag.getLocalName();
 
@@ -1934,7 +1934,7 @@ public:
 
         DBGLOG("Compiling ESDL Transform: '%s'", m_name.str());
 
-        map< string, const SXT_CHAR* >::iterator it = xpp.getNsBegin();
+        map< string, const SXT_CHAR* >::const_iterator it = xpp.getNsBegin();
         while (it != xpp.getNsEnd())
         {
             if (it->first.compare("xml")!=0)
@@ -2174,7 +2174,7 @@ IEsdlCustomTransform *createEsdlCustomTransform(const char *scriptXml, const cha
 {
     if (isEmptyString(scriptXml))
         return nullptr;
-    std::unique_ptr<XmlPullParser> xpp(new XmlPullParser());
+    std::unique_ptr<fxpp::IFragmentedXmlPullParser> xpp(fxpp::createParser());
     int bufSize = strlen(scriptXml);
     xpp->setSupportNamespaces(true);
     xpp->setInput(scriptXml, bufSize);
@@ -2217,7 +2217,7 @@ public:
         ForEachItemIn(i, transforms)
             transforms.item(i).processTransformImpl(scriptContext, srcSection, tgtSection, sourceContext, target);
     }
-    virtual void add(XmlPullParser &xpp, StartTag &stag)
+    virtual void add(IXmlPullParser &xpp, StartTag &stag)
     {
         transforms.append(*new CEsdlCustomTransform(xpp, stag, nullptr));
     }
@@ -2236,7 +2236,7 @@ public:
     {
     }
 
-    virtual void addChild(XmlPullParser &xpp, StartTag &childTag, bool &foundNonLegacyTransforms)
+    virtual void addChild(IXmlPullParser &xpp, StartTag &childTag, bool &foundNonLegacyTransforms)
     {
         const char *tagname = childTag.getLocalName();
         if (streq("Scripts", tagname) || streq("Transforms", tagname)) //allow nesting of root structure
@@ -2259,7 +2259,7 @@ public:
         }
     }
 
-    virtual void add(XmlPullParser &xpp, StartTag &stag, bool &foundNonLegacyTransforms)
+    virtual void add(IXmlPullParser &xpp, StartTag &stag, bool &foundNonLegacyTransforms)
     {
         int type;
         StartTag childTag;

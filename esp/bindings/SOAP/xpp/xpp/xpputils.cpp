@@ -4,7 +4,7 @@
 
 using namespace xpp;
 
-IMultiException *xppMakeException(XmlPullParser &xppx)
+IMultiException *xppMakeException(IXmlPullParser &xppx)
 {
     StringBuffer msg;
     StringBuffer sourcestr;
@@ -58,7 +58,7 @@ IMultiException *xppMakeException(XmlPullParser &xppx)
 }
 
 
-void xppToXmlString(XmlPullParser &xpp, StartTag &stag, StringBuffer & buffer)
+void xppToXmlString(IXmlPullParser &xpp, StartTag &stag, StringBuffer & buffer)
 {
     int level = 1; //assumed due to the way gotonextdataset works.
     int type = XmlPullParser::END_TAG;
@@ -123,7 +123,7 @@ void xppToXmlString(XmlPullParser &xpp, StartTag &stag, StringBuffer & buffer)
     while (level > 0);
 }
 
-bool xppGotoTag(XmlPullParser &xppx, const char *tagname, StartTag &stag)
+bool xppGotoTag(IXmlPullParser &xppx, const char *tagname, StartTag &stag)
 {
     int level = 1;
     int type = XmlPullParser::END_TAG;

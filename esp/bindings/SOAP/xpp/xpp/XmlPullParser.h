@@ -76,17 +76,36 @@ using namespace sxt;
 #define XPP_DEBUG false
 
 namespace xpp {
-  class XmlPullParser : implements XJXPullParser {
-    
-      
-  // public 
-  public:
+  interface IXmlPullParser : extends XJXPullParser
+  {
     enum {
       END_DOCUMENT = 1,
       START_TAG = 2,
       END_TAG = 3,
       CONTENT = 4
     };
+
+    using XJXPullParser::setInput;
+
+    virtual ~IXmlPullParser() {}
+    virtual void setInput(const SXT_CHAR* prefix, int prefixLength, const SXT_CHAR* body, int bodyLength, const SXT_CHAR* suffix, int suffixLength) = 0;
+    virtual void setMixedContent(bool enable) = 0;
+    virtual const SXT_CHAR* getQNameLocal(const SXT_CHAR* qName) const = 0;
+    virtual const SXT_CHAR* getQNameUri(const SXT_CHAR* qName) const = 0;
+    virtual int getNsCount() const = 0;
+    virtual map<string, const SXT_CHAR*>::const_iterator getNsBegin() const = 0;
+    virtual map<string, const SXT_CHAR*>::const_iterator getNsEnd() const = 0;
+    virtual void setSupportNamespaces(bool enable) = 0;
+    virtual bool skipSubTreeEx() = 0;
+    virtual int skipSubTree() = 0;
+    virtual const SXT_STRING getPosDesc() const = 0;
+    virtual int getLineNumber() const = 0;
+    virtual int getColumnNumber() const = 0;
+    virtual const bool whitespaceContent() const = 0;
+ };
+
+  class XmlPullParser : implements IXmlPullParser {
+  public:
 
     XmlPullParser() 
     {
@@ -107,26 +126,36 @@ namespace xpp {
       done();
     }
 
-    void setInput(const SXT_CHAR* buf, int bufSize) {
-      reset();      
-      if(nsBufSize - 1 < bufSize) {
-        int newSize = bufSize + 1;
-        SXT_CHAR* newNsBuf = new SXT_CHAR[newSize];
-        if(nsBuf != NULL) {
-          delete [] nsBuf;
-        }
-        nsBuf = newNsBuf;
-        nsBufSize = newSize;
-      }
-      tokenizer.setInput(buf, bufSize);
+    virtual void setInput(const SXT_CHAR* buf, int bufSize) override {
+      setInput(nullptr, 0, buf, bufSize, nullptr, 0);
     }
 
+    virtual void setInput(const SXT_CHAR* prefix, int prefixLength, const SXT_CHAR* body, int bodyLength, const SXT_CHAR* suffix, int suffixLength) override
+    {
+      if (-1 == prefixLength)
+        prefixLength = int(strlen(prefix));
+      if (-1 == bodyLength)
+        bodyLength = int(strlen(body));
+      if (-1 == suffixLength)
+        suffixLength = int(strlen(suffix));
+      int bufSize = prefixLength + bodyLength + suffixLength;
+      reset();
+      if (nsBufSize <= bufSize)
+      {
+        SXT_CHAR* newNsBuf = new SXT_CHAR[bufSize + 1];
+        if (nsBuf != NULL)
+          delete [] nsBuf;
+        nsBuf = newNsBuf;
+        nsBufSize = bufSize + 1;
+      }
+      tokenizer.setInput(prefix, prefixLength, body, bodyLength, suffix, suffixLength);
+    }
 
-    void setMixedContent(bool enable) { 
+    virtual void setMixedContent(bool enable) override {
       tokenizer.setMixedContent(enable);
     }
 
-    const SXT_CHAR* getQNameLocal(const SXT_CHAR* qName) const {
+    virtual const SXT_CHAR* getQNameLocal(const SXT_CHAR* qName) const override {
       int i = 0;
       while(qName[i] != _MYT('\0')) {
         if(qName[i] == _MYT(':'))
@@ -136,8 +165,7 @@ namespace xpp {
       return qName;
     }
 
-    const SXT_CHAR* getQNameUri(const SXT_CHAR* qName) 
-       
+    virtual const SXT_CHAR* getQNameUri(const SXT_CHAR* qName) const override
     {
       if(elStackDepth == 0) {
         throw XmlPullParserException(
@@ -152,20 +180,21 @@ namespace xpp {
       if(qName[i] == _MYT('\0'))   //current default namespace 
         return elStack[elStackDepth-1].defaultNs; 
       string prefix = string(qName, i);
-      if(prefix2Ns.find(prefix) != prefix2Ns.end())
-        return prefix2Ns[ prefix ];
+      map<string, const SXT_CHAR*>::const_iterator match = prefix2Ns.find(prefix);
+      if(match != prefix2Ns.end())
+        return match->second;
       else
         return NULL;
     }
 
-    int getNsCount(){return prefix2Ns.size();}
-    map< string, const SXT_CHAR* >::iterator getNsBegin(){return prefix2Ns.begin();}
-    map< string, const SXT_CHAR* >::iterator getNsEnd(){return prefix2Ns.end();}
+    virtual int getNsCount() const override {return prefix2Ns.size();}
+    virtual map< string, const SXT_CHAR* >::const_iterator getNsBegin() const override {return prefix2Ns.begin();}
+    virtual map< string, const SXT_CHAR* >::const_iterator getNsEnd() const override {return prefix2Ns.end();}
 
     /** 
      * Set support of namespaces. Enabled by default.
      */
-    void setSupportNamespaces(bool enable)  {
+    virtual void setSupportNamespaces(bool enable) override {
       if(elStackDepth > 0 || seenRootElement) {
         throw XmlPullParserException(string(
       "namespace support can only be set before parsing element markup"));
@@ -174,7 +203,7 @@ namespace xpp {
     }
 
 
-    bool skipSubTreeEx()  {
+    virtual bool skipSubTreeEx() override {
       bool hasChildren = false;
       int level = 1;
       StartTag stag;
@@ -196,19 +225,19 @@ namespace xpp {
     }
 
     //backward compatability
-    int skipSubTree() {
+    virtual int skipSubTree() override {
       skipSubTreeEx();
       return XmlPullParser::END_TAG;
     }
 
-    const SXT_STRING getPosDesc() const {
+    virtual const SXT_STRING getPosDesc() const override {
       return tokenizer.getPosDesc();
     }
 
-    int getLineNumber() { return tokenizer.getLineNumber(); }
-    int getColumnNumber() { return tokenizer.getColumnNumber(); }
+    virtual int getLineNumber() const override { return tokenizer.getLineNumber(); }
+    virtual int getColumnNumber() const override { return tokenizer.getColumnNumber(); }
    
-    int next()  {
+    virtual int next() override {
      if(mustReadNamespaces) {
        throw XmlPullParserException(
          string("start tag must be read to declare namespaces")
@@ -349,7 +378,7 @@ namespace xpp {
    }
 
 
-    const bool whitespaceContent()  {
+    virtual const bool whitespaceContent() const override {
       if(eventType != CONTENT) {
         throw XmlPullParserException("no content available to read");
       }
@@ -357,7 +386,7 @@ namespace xpp {
     }  
   
 
-    const SXT_CHAR* readContent()  {
+    virtual const SXT_CHAR* readContent() override {
       if(eventType != CONTENT) {
         throw XmlPullParserException("no content available to read");
       }
@@ -381,7 +410,7 @@ namespace xpp {
     }
   
   
-    void readEndTag(EndTag& etag)  {
+    virtual void readEndTag(EndTag& etag) override {
       if(eventType != END_TAG)
         throw XmlPullParserException("no end tag available to read");
       etag.qName = elStack[elStackDepth].qName;
@@ -393,7 +422,7 @@ namespace xpp {
       etag.localName = elStack[elStackDepth].localName;
     }
   
-    void readStartTag(StartTag& stag)  {
+    virtual void readStartTag(StartTag& stag) override {
       if(eventType != START_TAG)
         throw XmlPullParserException(string(
           "no start tag available to read"));
@@ -901,7 +930,7 @@ inline bool isXppEndType(int type)
 {
     return (type==XmlPullParser::END_TAG || type==XmlPullParser::END_DOCUMENT);
 }
-inline void readFullContent(XmlPullParser &xppx, StringBuffer &content)
+inline void readFullContent(IXmlPullParser &xppx, StringBuffer &content)
 {
     StartTag stag;
     for(int type=xppx.next(); !isXppEndType(type); type=xppx.next())
