@@ -14,7 +14,7 @@ fi
 
 sync_git
 parse_cmake
-if [ "$HPCC_MATURITY" = "closedown" ] ; then
+if [ "$HPCC_MATURITY" = "closedown" ] || [ "$HPCC_MATURITY" = "trunk" ] ; then
   if (( "$HPCC_POINT" % 2 != 1 )) ; then
     if [ "$HPCC_POINT" = "0" ] ; then
       # special case when creating new minor release
@@ -33,19 +33,36 @@ if [ "$HPCC_MATURITY" = "closedown" ] ; then
     NEW_POINT=$((HPCC_POINT+1))
     NEW_MINOR=$HPCC_MINOR
   fi
-  if [ "$GIT_BRANCH" != "candidate-$HPCC_MAJOR.$NEW_MINOR.x" ]; then
-    echo "Current branch should be candidate-$HPCC_MAJOR.$NEW_MINOR.x"
-    exit 2
+  if [ "$HPCC_MATURITY" = "closedown" ] ; then
+    if [ "$GIT_BRANCH" != "candidate-$HPCC_MAJOR.$NEW_MINOR.x" ]; then
+      echo "Current branch should be candidate-$HPCC_MAJOR.$NEW_MINOR.x"
+      exit 2
+    fi
+  else
+    if [ "$GIT_BRANCH" != "master" ]; then
+      echo "Current branch should be master"
+      exit 2
+    fi
+  fi
+  if [ "$GIT_BRANCH" = "master" ]; then
+    doit "git checkout -b candidate-$HPCC_MAJOR.$NEW_MINOR.x"
   fi
   doit "git checkout -b candidate-$HPCC_MAJOR.$NEW_MINOR.$NEW_POINT"
   doit "git checkout $GIT_BRANCH"
   doit "git submodule update --init --recursive"
-  update_version_file closedown $((NEW_POINT+1)) 0 $NEW_MINOR
+  if [ "$GIT_BRANCH" = "master" ]; then
+    TRUNK_POINT=0
+    TRUNK_MINOR=$((NEW_MINOR+1))
+  else
+    TRUNK_POINT=$((NEW_POINT+1))
+    TRUNK_MINOR=$NEW_MINOR
+  fi
+  update_version_file $HPCC_MATURITY $TRUNK_POINT 0 $TRUNK_MINOR
   if [ -e helm/hpcc/Chart.yaml ] ; then
-    update_chart_file helm/hpcc/Chart.yaml closedown $((NEW_POINT+1)) 0 $NEW_MINOR 
+    update_chart_file helm/hpcc/Chart.yaml $HPCC_MATURITY $TRUNK_POINT 0 $TRUNK_MINOR 
     doit "git add helm/hpcc/Chart.yaml"
     for f in helm/hpcc/templates/* ; do
-      update_chart_file $f closedown $((NEW_POINT+1)) 0 $NEW_MINOR 
+      update_chart_file $f $HPCC_MATURITY $TRUNK_POINT 0 $TRUNK_MINOR 
     if [ "$CHART_CHANGED" != "0" ] ; then
         doit "git add $f"
       fi
@@ -54,6 +71,23 @@ if [ "$HPCC_MATURITY" = "closedown" ] ; then
   doit "git add $VERSIONFILE"
   doit "git commit -s -m \"Split off $HPCC_MAJOR.$NEW_MINOR.$NEW_POINT\""
   doit "git push $REMOTE"
+  if [ "$GIT_BRANCH" = "master" ]; then
+    doit "git checkout candidate-$HPCC_MAJOR.$NEW_MINOR.x"
+    update_version_file closedown 0 0 $NEW_MINOR
+    if [ -e helm/hpcc/Chart.yaml ] ; then
+      update_chart_file helm/hpcc/Chart.yaml closedown 0 0 $NEW_MINOR 
+      doit "git add helm/hpcc/Chart.yaml"
+      for f in helm/hpcc/templates/* ; do
+        update_chart_file $f closedown 0 0 $NEW_MINOR 
+        if [ "$CHART_CHANGED" != "0" ] ; then
+          doit "git add $f"
+        fi
+      done
+    fi
+    doit "git add $VERSIONFILE"
+    doit "git commit -s -m \"Split off $HPCC_MAJOR.$NEW_MINOR.$NEW_POINT\""
+    doit "git push $REMOTE"
+  fi
   GIT_BRANCH=candidate-$HPCC_MAJOR.$NEW_MINOR.$NEW_POINT
   doit "git checkout $GIT_BRANCH"
   doit "git submodule update --init --recursive"
