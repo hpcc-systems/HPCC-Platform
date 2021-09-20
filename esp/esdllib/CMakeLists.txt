@@ -43,6 +43,7 @@ set ( SRCS
     esdl_transformer2.cpp
     esdl_script.cpp
     params2xml.cpp
+    ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp/fxpp/FragmentedXmlPullParser.cpp;
     ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp/xpp/xpputils.cpp
     ${HPCC_SOURCE_DIR}/esp/services/common/wsexcept.cpp
 )

@@ -1479,7 +1479,7 @@ constexpr const char * result = R"!!(<soap:Envelope xmlns:soap="http://schemas.x
             <es:if test="es:storedValueExists('myvalue')">
               <es:set-value xpath_target="concat('check-value1-pass-', $testpass)" select="concat('already set as of pass-', $testpass)"/>
               <es:set-value target="myvalue" select="es:getStoredStringValue('myvalue')"/>
-              <es:remove-node target="Name/ID[1]"/> //removing first one changes the index count so each is 1
+              <es:remove-node target="Name/ID[1]"/> <!-- removing first one changes the index count so each is 1 -->
               <es:remove-node target="Name/ID[1]"/>
             </es:if>
             <es:if test="es:storedValueExists('myvalue2')">

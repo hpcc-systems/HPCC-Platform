@@ -39,11 +39,26 @@ namespace xpp {
   public:
     StartTag() { init(); }
 
+    StartTag(const StartTag& src) {
+      *this = src;
+    }
+
     ~StartTag() {
       if(attArr != NULL) {
         delete [] attArr;
       }
       attArr = NULL;
+    }
+
+    StartTag& operator = (const StartTag& src) {
+      uri = src.uri;
+      localName = src.localName;
+      qName = src.qName;
+      attEnd = attSize = src.attEnd;
+      attArr = new Attribute[attEnd];
+      for (int idx = 0; idx < attEnd; idx++)
+        attArr[idx] = src.attArr[idx];
+      return *this;
     }
 
     void clear () { 

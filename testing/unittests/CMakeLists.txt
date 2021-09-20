@@ -41,6 +41,9 @@ set (    SRCS
          loggingtests.cpp
          txSummarytests.cpp
          accessmaptests.cpp
+         fxpptests.cpp
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp/fxpp/FragmentedXmlPullParser.cpp;
+         ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp/fxpp/FragmentedXmlAssistant.cpp;
     )
 
 if (NOT CONTAINERIZED)
