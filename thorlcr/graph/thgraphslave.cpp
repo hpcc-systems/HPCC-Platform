@@ -1686,7 +1686,47 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
         pluginMap->loadFromList(pluginsList.str());
     }
     tmpHandler.setown(createTempHandler(true));
-    sharedAllocator.setown(::createThorAllocator(globalMemoryMB, sharedMemoryMB, numChannels, memorySpillAtPercentage, *logctx, crcChecking, usePackedAllocator));
+
+    /*
+     * Calculate maximum recommended memory for this worker.
+     * In container mode, there is only ever 1 worker per container,
+     * recommendedMaxPercentage = defaultPctSysMemForRoxie
+     * In bare-metal slavesPerNode is taken into account and @localThor if used.
+     * 
+     * recommendedMaxPercentage is used by applyMemorySettings to calculate the
+     * max amount of meemory that should be used (allowing enough left for heap/OS etc.)
+     */
+#ifdef _CONTAINERIZED
+    float recommendedMaxPercentage = defaultPctSysMemForRoxie;
+#else
+    // bare-metal only
+
+    float recommendedMaxPercentage = defaultPctSysMemForRoxie;
+    unsigned numWorkersPerNode = globals->getPropInt("@slavesPerNode", 1);
+
+    // @localThor mode - 25% is used for manager and 50% is used for workers
+    if (globals->getPropBool("@localThor") && (0 == globals->getPropInt("@masterMemorySize")))
+    {
+        /* In this mode, 25% is reserved for manager,
+         * 50% for the workers.
+         * Meaning this workers' recommendedMaxPercentage is remaining percentage */
+        float pctPerWorker = 50.0 / numWorkersPerNode;
+        recommendedMaxPercentage = pctPerWorker;
+    }
+    else
+    {
+        // deduct percentage for all other workers from max percentage
+        float pctPerWorker = defaultPctSysMemForRoxie / numWorkersPerNode;
+        recommendedMaxPercentage = pctPerWorker;
+    }
+#endif
+    applyMemorySettings(recommendedMaxPercentage, "worker");
+
+    unsigned sharedMemoryLimitPercentage = (unsigned)getWorkUnitValueInt("globalMemoryLimitPC", globals->getPropInt("@sharedMemoryLimit", 90));
+    unsigned sharedMemoryMB = queryMemoryMB*sharedMemoryLimitPercentage/100;
+    PROGLOG("Shared memory = %d%%", sharedMemoryLimitPercentage);
+
+    sharedAllocator.setown(::createThorAllocator(queryMemoryMB, sharedMemoryMB, numChannels, memorySpillAtPercentage, *logctx, crcChecking, usePackedAllocator));
 
     StringBuffer remoteCompressedOutput;
     getOpt("remoteCompressedOutput", remoteCompressedOutput);

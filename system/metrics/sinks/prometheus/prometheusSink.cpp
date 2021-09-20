@@ -119,7 +119,25 @@ void PrometheusMetricSink::toPrometheusMetrics(std::vector<std::shared_ptr<IMetr
                 out.append("# TYPE ").append(name.c_str()).append(" ").append(promtype).append("\n");
         }
 
-        out.append(name.c_str()).append(" ").append(pMetric->queryValue()).append("\n");
+        out.append(name.c_str());
+        auto metaData = pMetric->queryMetaData();
+        if (metaData.size()>0)
+        {
+            out.append(" {");
+            bool firstEntry = true;
+            for (auto &metaDataIt: metaData)
+            {
+                if (!firstEntry)
+                    out.append(",");
+                else
+                    firstEntry=false;
+
+                out.append(metaDataIt.key.c_str()).append("=\"").append(metaDataIt.value.c_str()).append("\"");
+            }
+            out.append("}");
+        }
+
+        out.append(" ").append(pMetric->queryValue()).append("\n");
     }
 }
 

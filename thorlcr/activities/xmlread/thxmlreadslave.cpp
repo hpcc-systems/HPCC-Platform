@@ -111,7 +111,7 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
                 CriticalBlock block(inputCs);
                 partFileIO.setown(iFileIO.getClear());
             }
-            mergeStats(fileStats, partFileIO);
+            mergeStats(closedPartFileStats, partFileIO);
         }
 
         const void *nextRow()

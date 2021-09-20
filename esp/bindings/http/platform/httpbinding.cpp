@@ -519,24 +519,26 @@ StringBuffer &EspHttpBinding::generateNamespace(IEspContext &context, CHttpReque
     return ns;
 }
 
-void EspHttpBinding::getSchemaLocation( IEspContext &context, CHttpRequest* request, StringBuffer &schemaLocation )
+void EspHttpBinding::getSchemaLocation( IEspContext &context, CHttpRequest* request, StringBuffer &ns, StringBuffer &schemaLocation )
 {
+    // Standards specify that schemaLocation is a list of pairs of URIs, where the
+    // the first of each pair is the namespace and the second is a hint where to
+    // find the schema associated with that namespace. Limited exceptions to that
+    // don't apply here.
+    //
+    // See https://www.w3.org/TR/xmlschema-1/#composition-instances
+
     const char* svcName = request->queryServiceName();
     const char* method = request->queryServiceMethod();
     if ( !svcName || !(*svcName) )
         return;
 
-    StringBuffer host;
     const char* wsdlAddr = request->queryParameters()->queryProp("__wsdl_address");
-    if (wsdlAddr && *wsdlAddr)
-        host.append(wsdlAddr);
-    else
-    {
-        host.append(request->queryHost());
-        if (request->getPort()>0)
-          host.append(":").append(request->getPort());
-    }
-    schemaLocation.appendf("%s/%s/%s?xsd&amp;ver_=%g", host.str(), svcName, method ? method : "", context.getClientVersion());
+
+    if (isEmptyString(wsdlAddr) || !(ns.length()) )
+        return;
+
+    schemaLocation.appendf("%s %s/%s/%s?xsd&ver_=%g", ns.str(), wsdlAddr, svcName, method ? method : "", context.getClientVersion());
 }
 
 int EspHttpBinding::getMethodDescription(IEspContext &context, const char *serv, const char *method, StringBuffer &page)

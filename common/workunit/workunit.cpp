@@ -13415,19 +13415,25 @@ extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, c
     if (isContainerized())
     {
         StringBuffer dllDirectory;
-        if (!getConfigurationDirectory(nullptr, "query", nullptr, nullptr, dllDirectory))
-            throwUnexpected();
-        StringBuffer destPathName(dllDirectory);
-        addNonEmptyPathSepChar(destPathName);
-        splitFilename(fullPathName.str(), nullptr, nullptr, &destPathName, &destPathName);
-        OwnedIFile source = createIFile(fullPathName);
-        OwnedIFile target = createIFile(destPathName);
-        if (!target->exists())
+        if (getConfigurationDirectory(nullptr, "query", nullptr, nullptr, dllDirectory))
         {
-            source->copyTo(target, 0, NULL, true);
+            StringBuffer destPathName(dllDirectory);
+            addNonEmptyPathSepChar(destPathName);
+            splitFilename(fullPathName.str(), nullptr, nullptr, &destPathName, &destPathName);
+            OwnedIFile source = createIFile(fullPathName);
+            OwnedIFile target = createIFile(destPathName);
+            if (!target->exists())
+            {
+                source->copyTo(target, 0, NULL, true);
+            }
+            query->addAssociatedFile(type, destPathName, "localhost", description, crc, minActivity, maxActivity);
+            // Should we delete the local files? No - they may not be finished with
         }
-        query->addAssociatedFile(type, destPathName, "localhost", description, crc, minActivity, maxActivity);
-        // Should we delete the local files? No - they may not be finished with
+        else
+        {
+            //Containerized stand alone eclcc or other examples with no configuration file
+            query->addAssociatedFile(type, fullPathName, "localhost", description, crc, minActivity, maxActivity);
+        }
     }
     else
     {

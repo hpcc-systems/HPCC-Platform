@@ -210,7 +210,7 @@ public:
     virtual const char* getRootPage(IEspContext* ctx) {return NULL;}
 
     virtual StringBuffer &generateNamespace(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &ns);
-    virtual void getSchemaLocation(IEspContext &context, CHttpRequest* request, StringBuffer &schemaLocation );
+    virtual void getSchemaLocation(IEspContext &context, CHttpRequest* request, StringBuffer &ns, StringBuffer &schemaLocation );
 
     static int formatHtmlResultSet(IEspContext &context, const char *serv, const char *method, const char *resultsXml, StringBuffer &html);
     int formatResultsPage(IEspContext &context, const char *serv, const char *method, StringBuffer &results, StringBuffer &page);

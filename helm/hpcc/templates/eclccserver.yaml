@@ -89,8 +89,7 @@ data:
             workingDir: /tmp
             volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" .me | indent 12 }}
-{{ include "hpcc.addDataVolumeMount" . | indent 12 }}
-{{ include "hpcc.addDllVolumeMount" . | indent 12 }}
+{{ include "hpcc.addVolumeMounts" . | indent 12 }}
 {{ include "hpcc.addSecretVolumeMounts" . | indent 12 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" .root "name" .me.name "component" "compile") | indent 12 }}
 {{- if $misc.postJobCommandViaSidecar }}
@@ -98,8 +97,7 @@ data:
 {{- end }}
           volumes:
 {{ include "hpcc.addConfigMapVolume" .me | indent 10 }}
-{{ include "hpcc.addDataVolume" . | indent 10 }}
-{{ include "hpcc.addDllVolume" . | indent 10 }}
+{{ include "hpcc.addVolumes" . | indent 10 }}
 {{ include "hpcc.addSecretVolumes" . | indent 10 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" .root "name" .me.name "component" "compile") | indent 10 }}
 {{- if $misc.postJobCommandViaSidecar }}
@@ -115,7 +113,7 @@ data:
 {{- if not .disabled -}}
 {{- $env := concat ($.Values.global.env | default list) (.env | default list) -}}
 {{- $secretsCategories := list "system" "codeVerify" }}
-{{- $commonCtx := dict "root" $ "me" . "secretsCategories" $secretsCategories "env" $env }}
+{{- $commonCtx := dict "root" $ "me" . "includeCategories" (list "dll") "secretsCategories" $secretsCategories "env" $env }}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.eclccServerConfigMap" "component" "eclccserver" "excludeKeys" "global,eclccserver.queues")) }}
 apiVersion: apps/v1
 kind: Deployment
@@ -146,8 +144,8 @@ spec:
       serviceAccountName: {{ .useChildProcesses | default false | ternary "hpcc-default" "hpcc-agent" }}
       terminationGracePeriodSeconds: {{ .terminationGracePeriodSeconds | default 600 }}
       initContainers:
-        {{- include "hpcc.checkDllMount" $commonCtx | indent 6 }}
-        {{- include "hpcc.addBundles" $commonCtx | indent 6 }}
+      {{- include "hpcc.changePlaneMountPerms" $commonCtx | indent 6 }}
+      {{- include "hpcc.addBundles" $commonCtx | nindent 6 }}
       containers:
       - name: {{ .name | quote }}
         workingDir: /tmp
@@ -170,16 +168,14 @@ spec:
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
         volumeMounts:
 {{ include "hpcc.addConfigMapVolumeMount" . | indent 8 }}
-{{ include "hpcc.addDataVolumeMount" $commonCtx | indent 8 }}
-{{ include "hpcc.addDllVolumeMount" $commonCtx | indent 8 }}
+{{ include "hpcc.addVolumeMounts" $commonCtx | indent 8 -}}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" .name "component" "eclccserver") | indent 8 }}
         - name: "hpccbundles"
           mountPath: "/home/hpcc/.HPCCSystems"
       volumes:
 {{ include "hpcc.addConfigMapVolume" . | indent 6 }}
-{{ include "hpcc.addDataVolume" $commonCtx | indent 6 }}
-{{ include "hpcc.addDllVolume" $commonCtx | indent 6 }}
+{{ include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addSecretVolumes" $commonCtx | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" .name "component" "eclccserver") | indent 6 }}
       - name: hpccbundles

@@ -346,13 +346,14 @@ The following convention defines how metric names are formed:
 
 * Names consist of parts separated by a period (.)
 * Each part shall use snake case (allows for compound names in each part)
-* Names for metric types shall be named as follows:
+* Each name shall begin with a prefix representing the scop of the metric
+* Names for metric types shall be named as follows (followed by examples):
 
-  Gauges: <plural-noun>.<state>   requests.waiting, status_requests.waiting
+  Gauges: <scope>.<plural-noun>.<state>   esp.requests.waiting, esp.status_requests.waiting
 
-  Counters:  <plural-noun>.<past-tense-verb>   requests.failed, gateway_requests.queued
+  Counters:  <scope>.<plural-noun>.<past-tense-verb>   thor.requests.failed, esp.gateway_requests.queued
 
-  Time:    <singular-noun>.<state or active-verb>.time  request.blocked.time, request.process.time
+  Time:    <scope>.<singular-noun>.<state or active-verb>.time  dali.request.blocked.time, dali.request.process.time
 
 Meta Data
 =========
