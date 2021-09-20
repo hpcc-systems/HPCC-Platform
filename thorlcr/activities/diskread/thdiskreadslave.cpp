@@ -407,10 +407,10 @@ void CDiskRecordPartHandler::close(CRC32 &fileCRC)
     {
         CriticalBlock block(inputCs);
         partStream.setown(in.getClear());
+        mergeStats(closedPartFileStats, partStream);
     }
     if (partStream)
     {
-        mergeStats(fileStats, partStream);
         activity.mergeSubFileStats(partDesc, partStream);
         partStream->stop(&fileCRC);
     }

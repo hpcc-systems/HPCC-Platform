@@ -64,7 +64,7 @@ void getPartsMetaInfo(ThorDataLinkMetaInfo &metaInfo, unsigned nparts, IPartDesc
 //////////////////////////////////////////////
 
 CDiskPartHandlerBase::CDiskPartHandlerBase(CDiskReadSlaveActivityBase &_activity) 
-    : activity(_activity), fileStats(diskReadRemoteStatistics)
+    : activity(_activity), closedPartFileStats(diskReadRemoteStatistics)
 {
     checkFileCrc = activity.checkFileCrc;
     which = 0;
@@ -318,7 +318,7 @@ void CDiskReadSlaveActivityBase::serializeStats(MemoryBuffer &mb)
     if (partHandler)
     {
         partHandler->gatherStats(activeStats);
-        stats.merge(activeStats);
+        stats.set(activeStats); // replace disk read stats
     }
     stats.setStatistic(StNumDiskRowsRead, diskProgress);
     PARENT::serializeStats(mb);
@@ -468,8 +468,8 @@ void CDiskWriteSlaveActivityBase::close()
                 CriticalBlock block(outputCs);
                 // ensure it is released/destroyed after releasing crit, since the IFileIO might involve a final copy and take considerable time.
                 tmpFileIO.setown(outputIO.getClear());
+                mergeStats(closedPartFileStats, tmpFileIO, diskWriteRemoteStatistics);
             }
-            mergeStats(stats, tmpFileIO, diskWriteRemoteStatistics);
             tmpFileIO->close(); // NB: close now, do not rely on close in dtor
         }
 
@@ -495,7 +495,7 @@ void CDiskWriteSlaveActivityBase::close()
 }
 
 CDiskWriteSlaveActivityBase::CDiskWriteSlaveActivityBase(CGraphElementBase *container)
-    : ProcessSlaveActivity(container, diskWriteActivityStatistics)
+    : ProcessSlaveActivity(container, diskWriteActivityStatistics), closedPartFileStats(diskWriteRemoteStatistics)
 {
     diskHelperBase = static_cast <IHThorDiskWriteArg *> (queryHelper());
     grouped = false;
@@ -545,10 +545,13 @@ void CDiskWriteSlaveActivityBase::abort()
 
 void CDiskWriteSlaveActivityBase::serializeStats(MemoryBuffer &mb)
 {
+    CRuntimeStatisticCollection activeStats(diskWriteRemoteStatistics);
     {
         CriticalBlock block(outputCs);
-        mergeStats(stats, outputIO, diskWriteRemoteStatistics);
+        activeStats.set(closedPartFileStats);
+        mergeStats(activeStats, outputIO, diskWriteRemoteStatistics);
     }
+    stats.set(activeStats); // replace disk write stats
     stats.setStatistic(StPerReplicated, replicateDone);
     PARENT::serializeStats(mb);
 }

@@ -140,7 +140,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
                 CriticalBlock block(inputCs);
                 partFileIO.setown(iFileIO.getClear());
             }
-            mergeStats(fileStats, partFileIO);
+            mergeStats(closedPartFileStats, partFileIO);
             partFileIO.clear();
             inputStream.clear();
             fileCRC = inputCRC;
