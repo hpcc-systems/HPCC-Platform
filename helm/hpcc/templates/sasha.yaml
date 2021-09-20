@@ -25,12 +25,15 @@
 {{- if not $sashaServices.disabled -}}
 {{ range $sashaName, $_sasha := $sashaServices -}}
 {{ $sasha := ($_sasha | default dict) -}}
-{{- $sashaPlane := $sasha.plane | default (include "hpcc.getFirstPlaneForCategory" (dict "root" $ "category" "sasha")) }}
 {{- if not $sasha.disabled -}}
 {{- $_ := set $sasha "name" $sashaName -}}
 {{- $_ := set $sasha "access" (splitList " " (include "hpcc.getSashaServiceAccess" $sasha)) -}}
 {{- $secretsCategories := append ((or (has "data" $sasha.access) (has "dalidata" $sasha.access)) | ternary (list "storage") list) "system" -}}
 {{- $commonCtx := dict "root" $ "me" $sasha "secretsCategories" $secretsCategories -}}
+{{- $_ := set $commonCtx "includeCategories" (splitList " " (include "hpcc.getSashaPlanesFromAccess" $sasha)) -}}
+{{- if and (hasKey $sasha "plane") $sasha.plane -}}
+{{- $_ := set $commonCtx "includeNames" (list ($sasha.plane | default (include "hpcc.getFirstPlaneForCategory" (dict "root" $ "category" "sasha")))) -}}
+{{- end -}}
 {{- $configSHA := include "hpcc.getConfigSHA" ($commonCtx | merge (dict "configMapHelper" "hpcc.sashaConfigMap" "component" "sasha" "excludeKeys" "global")) -}}
 {{- $serviceName := printf "sasha-%s" $sashaName -}}
 apiVersion: apps/v1
@@ -63,22 +66,28 @@ spec:
       serviceAccountName: "hpcc-default"
       {{- if hasKey $sasha "plane" }}
       initContainers:
-      {{ include "hpcc.changePlaneMountPerms" (dict "root" $ "includeNames" (list $sashaPlane)) | indent 6}}
+        {{- include "hpcc.changePlaneMountPerms" $commonCtx | indent 6 }}
       {{- end }}
       containers:
 {{- include "hpcc.addSashaContainer" $commonCtx | indent 6 }}
         volumeMounts:
-{{- include "hpcc.addSashaVolumeMounts" $commonCtx | indent 8 }}
+{{- with (dict "name" $serviceName) }}
+ {{- include "hpcc.addConfigMapVolumeMount" . | nindent 8 }}
+{{ end -}}
+{{- include "hpcc.addVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addSecretVolumeMounts" $commonCtx | indent 8 }}
 {{ include "hpcc.addCertificateVolumeMount" (dict "root" $ "name" $sashaName "component" "sasha" "external" false) | indent 8 }}
       volumes:
-{{- include "hpcc.addSashaVolumes" $commonCtx | indent 6 }}
+{{- with (dict "name" $serviceName) }}
+ {{- include "hpcc.addConfigMapVolume" . | nindent 6 }}
+{{ end -}}
+{{- include "hpcc.addVolumes" $commonCtx | indent 6 }}
 {{- include "hpcc.addSecretVolumes"  $commonCtx | indent 6 }}
 {{ include "hpcc.addCertificateVolume" (dict "root" $ "name" $sashaName "component" "sasha" "external" false) | indent 6 }}
 ---
 {{- if and (not $sasha.disabled) (hasKey $sasha "service") -}}
 {{- if $sasha.service.servicePort -}}
-{{ include "hpcc.addService" ( dict "root" $ "name" $serviceName "service" $sasha.service "selector" $serviceName "defaultPort" 8877 ) }}
+{{- include "hpcc.addService" ( dict "root" $ "name" $serviceName "service" $sasha.service "selector" $serviceName "defaultPort" 8877 ) | nindent 0 }}
 ---
 {{- end }}
 {{- end }}
