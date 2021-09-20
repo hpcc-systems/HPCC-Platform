@@ -2714,7 +2714,7 @@ CJobBase::CJobBase(ILoadedDllEntry *_querySo, const char *_graphName) : querySo(
     maxDiskUsage = diskUsage = 0;
     dirty = true;
     aborted = false;
-    globalMemoryMB = globals->getPropInt("@globalMemorySize"); // in MB
+    queryMemoryMB = 0;
     channelsPerSlave = globals->getPropInt("@channelsPerSlave", 1);
     numChannels = channelsPerSlave;
     pluginMap = new SafePluginMap(&pluginCtx, true);
@@ -2738,6 +2738,64 @@ CJobBase::CJobBase(ILoadedDllEntry *_querySo, const char *_graphName) : querySo(
     graphXGMML.setown(graph->getXGMMLTree(false, false));
     if (!graphXGMML)
         throwUnexpected();
+}
+
+void CJobBase::applyMemorySettings(float recommendedMaxPercentage, const char *context)
+{
+    // NB: 'total' memory has been calculated in advance from either resource settings or from system memory.
+    VStringBuffer totalMemorySetting("%sMemory/@total", context);
+    unsigned totalMemoryMB = globals->getPropInt(totalMemorySetting);
+
+    unsigned recommendedMaxMemoryMB = totalMemoryMB * recommendedMaxPercentage / 100;
+#ifdef _CONTAINERIZED
+    /* only "query" memory is actually used (if set, configures Thor roxiemem limit)
+     * others are only advisory, but totalled and checked to ensure within the total limit.
+     */
+    std::initializer_list<const char *> memorySettings = { "query", "thirdParty" };
+    offset_t totalRequirements = 0;
+    for (auto setting : memorySettings)
+    {
+        VStringBuffer workunitSettingName("%smemory.%s", context, setting); // NB: workunit options are case insensitive
+        StringBuffer memString;
+        getWorkUnitValue(workunitSettingName, memString);
+        if (0 == memString.length())
+        {
+            VStringBuffer globalSettingName("%sMemory/@%s", context, setting);
+            globals->getProp(globalSettingName, memString);
+        }
+        if (memString.length())
+        {
+            offset_t memBytes = friendlyStringToSize(memString);
+            if (streq("query", setting))
+                queryMemoryMB = (unsigned)(memBytes / 0x100000);
+            totalRequirements += memBytes;
+        }
+    }
+    unsigned totalRequirementsMB = (unsigned)(totalRequirements / 0x100000);
+    if (totalRequirementsMB > totalMemoryMB)
+        throw makeStringExceptionV(0, "The total memory requirements of the query (%u MB) exceeds the %s memory limit (%u MB)", totalRequirementsMB, context, totalMemoryMB);
+
+    if (totalRequirementsMB > recommendedMaxMemoryMB)
+    {
+        WARNLOG("The total memory requirements of the query (%u MB) exceed the recommended reserve limits for %s (total memory: %u MB, recommended max percentage : %.2f%%)", totalRequirementsMB, context, totalMemoryMB, recommendedMaxPercentage);
+    
+        // if "query" memory has not been defined, then use the remaining memory
+        if (0 == queryMemoryMB)
+            queryMemoryMB = totalMemoryMB - totalRequirementsMB;
+    }
+    else if (0 == queryMemoryMB)
+        queryMemoryMB = recommendedMaxMemoryMB - totalRequirementsMB;
+#else
+    queryMemoryMB = recommendedMaxMemoryMB;
+#endif
+
+    bool gmemAllowHugePages = globals->getPropBool("@heapUseHugePages", false);
+    gmemAllowHugePages = globals->getPropBool("@heapMasterUseHugePages", gmemAllowHugePages);
+    bool gmemAllowTransparentHugePages = globals->getPropBool("@heapUseTransparentHugePages", true);
+    bool gmemRetainMemory = globals->getPropBool("@heapRetainMemory", false);
+    roxiemem::setTotalMemoryLimit(gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, ((memsize_t)queryMemoryMB) * 0x100000, 0, thorAllocSizes, NULL);
+
+    PROGLOG("Total memory = %u MB, query memory = %u MB, memory spill at = %u", totalMemoryMB, queryMemoryMB, memorySpillAtPercentage);
 }
 
 void CJobBase::init()
@@ -2768,13 +2826,10 @@ void CJobBase::init()
     crcChecking = 0 != getWorkUnitValueInt("THOR_ROWCRC", globals->getPropBool("@THOR_ROWCRC", false));
     usePackedAllocator = 0 != getWorkUnitValueInt("THOR_PACKEDALLOCATOR", globals->getPropBool("@THOR_PACKEDALLOCATOR", true));
     memorySpillAtPercentage = (unsigned)getWorkUnitValueInt("memorySpillAt", globals->getPropInt("@memorySpillAt", 80));
-    sharedMemoryLimitPercentage = (unsigned)getWorkUnitValueInt("globalMemoryLimitPC", globals->getPropInt("@sharedMemoryLimit", 90));
-    sharedMemoryMB = globalMemoryMB*sharedMemoryLimitPercentage/100;
     failOnLeaks = getOptBool("failOnLeaks");
     maxLfnBlockTimeMins = getOptInt(THOROPT_MAXLFN_BLOCKTIME_MINS, DEFAULT_MAXLFN_BLOCKTIME_MINS);
     soapTraceLevel = getOptInt("soapTraceLevel", 1);
 
-    PROGLOG("Global memory size = %d MB, shared memory = %d%%, memory spill at = %d%%", globalMemoryMB, sharedMemoryLimitPercentage, memorySpillAtPercentage);
     StringBuffer tracing("maxActivityCores = ");
     if (maxActivityCores)
         tracing.append(maxActivityCores);
