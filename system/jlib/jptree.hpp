@@ -404,6 +404,7 @@ jlib_decl void markPTreeNameEncoded(IPropertyTree *tree);
 jlib_decl bool isPTreeNameEncoded(const IPropertyTree *tree);
 jlib_decl void setPTreeAttribute(IPropertyTree *tree, const char *name, const char *value, bool markEncoded);
 jlib_decl bool isPTreeAttributeNameEncoded(const IPropertyTree *tree, const char *name);
+jlib_decl bool isNullPtreeName(const char * name, bool isEncoded);
 
 jlib_decl StringBuffer &decodePtreeName(StringBuffer &s, const char *name, unsigned len);
 jlib_decl StringBuffer &decodePtreeName(StringBuffer &s, const char *name);

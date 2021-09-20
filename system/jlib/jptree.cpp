@@ -9786,6 +9786,13 @@ bool isPTreeAttributeNameEncoded(const IPropertyTree *tree, const char *name)
     return pt->isAttributeNameEncoded(name);
 }
 
+bool isNullPtreeName(const char * name, bool isEncoded)
+{
+    if (isEmptyString(name))
+        return true;
+    return isEncoded && streq(name, "_0");
+}
+
 static void decodePTreeNameHexEncoding(StringBuffer &s, const char *&input, unsigned &_remaining)
 {
     //use local variables to avoid indirect reference
