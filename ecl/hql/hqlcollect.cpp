@@ -544,13 +544,26 @@ void FileSystemDirectory::processDependencies(IPropertyTree * dependTree, const 
 {
     bool onlyAllowSHA = isPackageLock;
     Owned<IPropertyTreeIterator> depends = dependTree->getElements(path);
+    StringBuffer decodedName;
     ForEach(*depends)
     {
         IPropertyTree & cur = depends->query();
         const char * name = cur.queryName();
-        // The special node __empty__ is added for an emptry string mapping "" =>, which is the entry for this package
-        if (isEmptyString(name) || strieq(name, "__empty__"))
+
+        // An empty string means this package - so ignore it.  It is specially encoded in the ptree.
+        if (isNullPtreeName(name, isPTreeNameEncoded(&cur)))
             continue;
+
+        //npm generates entries in the format "node_modules/package", so skip the leading "node_modules/"
+        //Note because the "tag" contains a / the name will be encoded.
+        const char * encodedNodeModules = "node__modules_f"; // "node_modules/"
+        if (startsWith(name, encodedNodeModules))
+        {
+            name += strlen(encodedNodeModules);
+            //Ensure that any underscores (or other encoded characters), are decoded.
+            decodePtreeName(decodedName.clear(), name);
+            name = decodedName;
+        }
 
         //Ignore the entry if it has already been defined (node_modules has precedence over package-lock.json over package.json)
         IIdAtom * id = createIdAtom(name);
