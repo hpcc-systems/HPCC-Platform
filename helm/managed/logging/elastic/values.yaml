@@ -156,7 +156,7 @@ kibana:
   extraEnvs:
   # Increase WAIT_ES_READY_IN_SEC if get 'Cluster health check is unknown' message in log
   - name: WAIT_KIBANA_READY_IN_SEC
-    value: "120"
+    value: "180"
   lifecycle:
     postStart:
       exec:
@@ -165,8 +165,7 @@ kibana:
           - -c
           - |
             KIBANA_URL=http://localhost:5601
-            ES_URL=http://localhost:9200
-            [ -z ${WAIT_KIBANA_READY_IN_SEC} ] && WAIT_KIBANA_READY_IN_SEC=120
+            [ -z ${WAIT_KIBANA_READY_IN_SEC} ] && WAIT_KIBANA_READY_IN_SEC=180
             END_TIME=$(expr $(date +%s) \+ ${WAIT_KIBANA_READY_IN_SEC})
             while [[ "$(curl -s -o /dev/null -w '%{http_code}\n' $KIBANA_URL)" != "200" ]]; do
               echo "\nKibana not ready..."
@@ -174,7 +173,7 @@ kibana:
               sleep 1
             done
 
-            httpcode=$(curl -s -o /dev/null -I -w "%{http_code}" -X GET "localhost:5601/api/index_patterns/index_pattern/hpcc-filebeat-pattern" -H 'kbn-xsrf: true')
+            httpcode=$(curl -s -o /dev/null -I -w "%{http_code}" -X GET "$KIBANA_URL/api/index_patterns/index_pattern/hpcc-filebeat-pattern" -H 'kbn-xsrf: true')
 
             if [ ${httpcode} -eq 200 ]; then
               echo 'Pre-existing hpcc-filebeat-pattern index pattern detected, will not re-create.'
