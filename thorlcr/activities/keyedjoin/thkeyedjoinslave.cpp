@@ -2920,6 +2920,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 ++p;
             }
         }
+        handlerContainer.init();
 #ifdef _DEBUG
         handlerContainer.trace();
 #endif
@@ -3196,8 +3197,6 @@ public:
         endOfInput = false;
         lookupThreadLimiter.reset();
         fetchThreadLimiter.reset();
-        keyLookupHandlers.init();
-        fetchLookupHandlers.init();
         pendingKeyLookupLimiter.reset();
         doneListLimiter.reset();
         pendingJoinGroupList.clear();
