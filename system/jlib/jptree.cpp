@@ -1772,6 +1772,67 @@ void PTree::addPropInt64(const char *xpath, __int64 val)
     }
 }
 
+void PTree::setPropReal(const char * xpath, double val)
+{
+    if (!xpath || '\0' == *xpath)
+    {
+        std::string s = std::to_string(val);
+        setLocal((size32_t)s.length()+1, s.c_str());
+    }
+    else if (isAttribute(xpath))
+    {
+        std::string s = std::to_string(val);
+        setAttribute(xpath, s.c_str(), false);
+    }
+    else
+    {
+        const char *prop;
+        IPropertyTree *branch = splitBranchProp(xpath, prop, true);
+
+        if (isAttribute(prop))
+            branch->setPropReal(prop, val);
+        else
+        {
+            IPropertyTree *propBranch = queryCreateBranch(branch, prop);
+            propBranch->setPropReal(NULL, val);
+        }
+    }
+}
+
+void PTree::addPropReal(const char *xpath, double val)
+{
+    if (!xpath || '\0' == *xpath)
+    {
+        std::string s = std::to_string(val);
+        addLocal((size32_t)s.length()+1, s.c_str());
+    }
+    else if (isAttribute(xpath))
+    {
+        std::string s = std::to_string(val);
+        setAttribute(xpath, s.c_str(), false);
+    }
+    else if ('[' == *xpath)
+    {
+        std::string s = std::to_string(val);
+        aindex_t pos = getChildMatchPos(xpath);
+        if ((aindex_t) -1 == pos)
+            throw MakeIPTException(-1, "addPropInt64: qualifier unmatched %s", xpath);
+        addLocal((size32_t)s.length()+1, s.c_str(), false, pos);
+    }
+    else
+    {
+        IPropertyTree *parent, *child;
+        StringAttr path, qualifier;
+        resolveParentChild(xpath, parent, child, path, qualifier);
+        if (parent != this)
+            parent->addPropReal(path, val);
+        else if (child)
+            child->addPropReal(qualifier, val);
+        else
+            setPropReal(path, val);
+    }
+}
+
 int PTree::getPropInt(const char *xpath, int dft) const
 {
     return (int) getPropInt64(xpath, dft); // underlying type always __int64 (now)

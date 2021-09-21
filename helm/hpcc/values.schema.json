@@ -499,9 +499,13 @@
           "type": "string",
           "description": "The amount of overall resourced memory to dedicate to the query"
         },
-        "thirdParties": {
+        "thirdParty": {
           "type": "string",
           "description": "The amount of overall resource memory to reserve for 3rd party use"
+        },
+        "maxMemPercentage": {
+          "type": "number",
+          "description": "The default maximum percentage of resource memory to dedicate to HPCC"
         }
       },
       "additionalProperties": false
@@ -1022,6 +1026,9 @@
         },
         "resources": {
           "$ref": "#/definitions/resources"
+        },
+        "jobMemory": {
+          "$ref": "#/definitions/memory"
         }
       }
     },
@@ -1254,6 +1261,9 @@
         "labels": {
           "type": "object",
           "additionalProperties": { "type": "string" }
+        },
+        "eclAgentMemory": {
+          "$ref": "#/definitions/memory"
         },
         "workerMemory": {
           "$ref": "#/definitions/memory"

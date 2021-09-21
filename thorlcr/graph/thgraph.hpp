@@ -922,7 +922,7 @@ public:
     virtual IGraphTempHandler *createTempHandler(bool errorOnMissing) = 0;
     void addDependencies(IPropertyTree *xgmml, bool failIfMissing=true);
     void addSubGraph(IPropertyTree &xgmml);
-    void applyMemorySettings(float recommendReservePercentage, const char *context);
+    void applyMemorySettings(const char *context);
 
     void checkAndReportLeaks(roxiemem::IRowManager *rowManager);
     bool queryUseCheckpoints() const;

@@ -26,5 +26,8 @@
 
 extern THORHELPER_API bool getService(StringBuffer &serviceAddress, const char *serviceName, bool failIfNotFound);
 
+typedef std::function<bool(const char *prop, StringBuffer &result)> GetJobValueFunction;
+extern THORHELPER_API void getMemorySpecifications(std::unordered_map<std::string, __uint64> &memorySpecifications, const IPropertyTree *config, const char *context, unsigned maxMB, GetJobValueFunction getJobValueFunction);
+
 #endif // _HPCCCONFIG_HPP_
 

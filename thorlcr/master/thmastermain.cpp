@@ -732,6 +732,8 @@ int main( int argc, const char *argv[]  )
         }
 #endif
 
+        IPropertyTree *managerMemory = ensurePTree(globals, "managerMemory");
+        IPropertyTree *workerMemory = ensurePTree(globals, "workerMemory");
 
         HardwareInfo hdwInfo;
         getHardwareInfo(hdwInfo);
@@ -771,8 +773,20 @@ int main( int argc, const char *argv[]  )
 #endif
 #endif
             }
+
+#ifndef _CONTAINERIZED
+            // @localThor mode - 25% is used for manager and 50% is used for workers
+            // overrides recommended max percentage preferences if present
+            if (globals->getPropBool("@localThor") && (0 == mmemSize))
+            {
+                managerMemory->setProp("@maxMemPercentage", "25.0");
+                workerMemory->setPropReal("@maxMemPercentage", 50.0 / slavesPerNode);
+            }
+            else
+#endif
+                if (!workerMemory->hasProp("@maxMemPercentage"))
+                    workerMemory->setPropReal("@maxMemPercentage", defaultPctSysMemForRoxie);
         }
-        IPropertyTree *workerMemory = ensurePTree(globals, "workerMemory");
         workerMemory->setPropInt("@total", gmemSize);
 
         if (mmemSize)
@@ -791,9 +805,13 @@ int main( int argc, const char *argv[]  )
             }
             else
                 mmemSize = gmemSize; // default to same as slaves
+            if (!globals->hasProp("@globalMemorySize"))
+            {
+                if (!managerMemory->hasProp("@maxMemPercentage"))
+                    managerMemory->setProp("@maxMemPercentage", VStringBuffer("%.2f", defaultPctSysMemForRoxie));
+            }
         }
 
-        IPropertyTree *managerMemory = ensurePTree(globals, "managerMemory");
         managerMemory->setPropInt("@total", mmemSize);
 
         char thorPath[1024];

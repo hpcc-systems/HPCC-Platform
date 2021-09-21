@@ -948,6 +948,18 @@ void CClientRemoteTree::setPropInt64(const char *xpath, __int64 val)
     CRemoteTreeBase::setPropInt64(xpath, val);
 }
 
+void CClientRemoteTree::addPropReal(const char *xpath, double val)
+{
+    CConnectionLock b(connection);
+    CRemoteTreeBase::addPropReal(xpath, val);
+}
+
+void CClientRemoteTree::setPropReal(const char *xpath, double val)
+{
+    CConnectionLock b(connection);
+    CRemoteTreeBase::setPropReal(xpath, val);
+}
+
 void CClientRemoteTree::setPropBin(const char *xpath, size32_t size, const void *data)
 {
     CConnectionLock b(connection);
