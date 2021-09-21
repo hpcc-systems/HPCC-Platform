@@ -875,7 +875,7 @@ public:
                 getClusterPartDefaultBaseDir(NULL,baseoverride);
                 bool iswin;
                 getWindowsOS(iswin); // sets os
-                makePhysicalPartName(lfn.get(),0,0,str,false,os,baseoverride.str());
+                getLFNDirectoryUsingBaseDir(str, lfn.get(), baseoverride.str());
             }
         }
         return str;

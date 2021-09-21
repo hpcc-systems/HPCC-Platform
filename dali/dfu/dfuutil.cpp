@@ -476,10 +476,9 @@ public:
         dstfdesc->setPartMask(dstpartmask.str());
         unsigned np = srcfdesc->numParts();
         dstfdesc->setNumParts(srcfdesc->numParts());
-        DFD_OS os = (getPathSepChar(srcfdesc->queryDefaultDir())=='\\')?DFD_OSwindows:DFD_OSunix;
         StringBuffer dir;
         StringBuffer dstdir;
-        makePhysicalPartName(dstlfn.get(),0,0,dstdir,false,os,spec.defaultBaseDir.get());
+        getLFNDirectoryUsingBaseDir(dstdir, dstlfn.get(), spec.defaultBaseDir.get());
         dstfdesc->setDefaultDir(dstdir.str());
         dstfdesc->addCluster(cluster1,grp1,spec);
         if (iskey&&!cluster2.isEmpty())

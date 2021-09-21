@@ -577,7 +577,7 @@ bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, const char* group
 #endif
     }
 
-    makePhysicalPartName(pLogicalPath,0,0,folder,false,os,defaultFolder.str());
+    getLFNDirectoryUsingBaseDir(folder, pLogicalPath, defaultFolder.str());
 
     const char *n = pLogicalPath;
     const char* p;
