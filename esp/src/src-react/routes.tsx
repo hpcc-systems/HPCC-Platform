@@ -126,8 +126,9 @@ export const routes: RoutesEx = [
         mainNav: ["files"],
         path: "/xref",
         children: [
-            { path: "", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="XrefQueryWidget" />) },
-            { path: "/:XrefTarget", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="XrefDetailsWidget" params={params} />) }
+            { path: "", action: () => import("./components/Xrefs").then(_ => <_.Xrefs />) },
+            { path: "/:Name", action: (ctx, params) => import("./components/XrefDetails").then(_ => <_.XrefDetails name={params.Name as string} />) },
+            { path: "/:Name/:Tab", action: (ctx, params) => import("./components/XrefDetails").then(_ => <_.XrefDetails name={params.Name as string} tab={params.Tab as string} />) }
         ]
     },
     //  Roxie  ---
