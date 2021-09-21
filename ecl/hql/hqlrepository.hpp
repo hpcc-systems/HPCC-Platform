@@ -55,9 +55,10 @@ public:
 
     void processArchive(IPropertyTree * archiveTree);
     IEclPackage * resolveDependentRepository(IIdAtom * name, const char * defaultUrl, bool requireSHA);
-    void setOptions(const char * _eclRepoPath, bool _fetchRepos, bool _updateRepos, bool _verbose)
+    void setOptions(const char * _eclRepoPath, const char * _defaultGitPrefix, bool _fetchRepos, bool _updateRepos, bool _verbose)
     {
         options.eclRepoPath.set(_eclRepoPath);
+        options.defaultGitPrefix.set(_defaultGitPrefix);
         options.fetchRepos = _fetchRepos;
         options.updateRepos = _updateRepos;
         options.optVerbose = _verbose;
@@ -80,6 +81,7 @@ private:
     //Include all options in a nested struct to make it easy to ensure they are cloned
     struct {
         StringAttr eclRepoPath;
+        StringAttr defaultGitPrefix;
         bool fetchRepos = false;
         bool updateRepos = false;
         bool optVerbose = false;

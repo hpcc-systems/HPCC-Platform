@@ -251,6 +251,10 @@ public:
 #ifdef _CONTAINERIZED
         setSecurityOptions();
 #endif
+        const char * defaultGitPrefix = getenv("ECLCC_DEFAULT_GITPREFIX");
+        if (isEmptyString(defaultGitPrefix))
+            defaultGitPrefix = "git+ssh://github.com/";
+        optDefaultGitPrefix.set(defaultGitPrefix);
     }
     ~EclCC()
     {
@@ -372,6 +376,8 @@ protected:
     StringArray deniedPermissions;
     StringAttr optMetaLocation;
     StringBuffer neverSimplifyRegEx;
+    StringAttr optDefaultGitPrefix;
+
     bool defaultAllowed[2];
 
     ClusterType optTargetClusterType = RoxieCluster;
@@ -2166,7 +2172,7 @@ bool EclCC::processFiles()
 
     //Set up the default repository information.  This could be simplified to not use a localRepositoryManager later
     //if eclcc did not have a strange mode for running multiple queries as part of the regression suite testing on windows.
-    repositoryManager.setOptions(eclRepoPath, optFetchRepos, optUpdateRepos, logVerbose);
+    repositoryManager.setOptions(eclRepoPath, optDefaultGitPrefix, optFetchRepos, optUpdateRepos, logVerbose);
     ForEachItemIn(iMapping, repoMappings)
     {
         const char * cur = repoMappings.item(iMapping);
@@ -2640,6 +2646,9 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchOption(tempArg, "--daemon"))
         {
             //Ignore any --daemon option supplied to eclccserver which may be passed onto eclcc
+        }
+        else if (iter.matchOption(optDefaultGitPrefix, "--defaultGitPrefix"))
+        {
         }
         else if (iter.matchOption(optDFS, "-dfs") || /*deprecated*/ iter.matchOption(optDFS, "-dali"))
         {
