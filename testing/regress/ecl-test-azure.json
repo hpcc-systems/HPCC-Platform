@@ -50,8 +50,10 @@
         ],
         "Params":[
             "PassTest.ecl:bla='A value'",
-            "httpcall_multiheader.ecl:TargetIP=.",
-            "soapcall_multihttpheader.ecl:TargetIP=."
+            "httpcall_multiheader.ecl:TargetIP=40.88.243.151",
+            "httpcall_jsonpost.ecl:targetIP=52.226.177.210",
+            "httpcall_xmlpost.ecl:targetIP=52.226.177.210",
+            "soapcall_multihttpheader.ecl:TargetIP=40.88.243.151"
         ],
         "engineParams":[
             "failOnLeaks",
