@@ -5,10 +5,11 @@ import * as Observable from "dojo/store/Observable";
 import { Memory } from "src/Memory";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { useGrid } from "../hooks/grid";
 import { useFile } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
-import { DojoGrid, selector } from "./DojoGrid";
+import { ShortVerticalDivider } from "./Common";
+import { selector } from "./DojoGrid";
 
 function getStateImageName(row) {
     if (row.Complete) {
@@ -36,33 +37,26 @@ export const FileDetailsGraph: React.FunctionComponent<FileDetailsGraphProps> = 
 }) => {
 
     const [file, , _refresh] = useFile(cluster, logicalFile);
-    const [grid, setGrid] = React.useState<any>(undefined);
-    const [selection, setSelection] = React.useState([]);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
-    // const [helpers] = useWorkunitHelpers(wuid);
 
     //  Grid ---
-    const gridStore = useConst(new Observable(new Memory("Name")));
-    const gridQuery = useConst({});
-    const gridColumns = useConst({
-        col1: selector({
-            width: 27,
-            selectorType: "checkbox"
-        }),
-        Name: {
-            label: nlsHPCC.Name, sortable: true,
-            formatter: function (Name, row) {
-                return Utility.getImageHTML(getStateImageName(row)) + `&nbsp;<a href='#/workunits/${file?.Wuid}/graphs/${Name}' onClick='return false;' class='dgrid-row-url'>${Name}</a>`;
+    const store = useConst(new Observable(new Memory("Name")));
+    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+        store,
+        filename: "graphs",
+        columns: {
+            col1: selector({
+                width: 27,
+                selectorType: "checkbox"
+            }),
+            Name: {
+                label: nlsHPCC.Name, sortable: true,
+                formatter: function (Name, row) {
+                    return Utility.getImageHTML(getStateImageName(row)) + `&nbsp;<a href='#/workunits/${file?.Wuid}/graphs/${Name}' onClick='return false;' class='dgrid-row-url'>${Name}</a>`;
+                }
             }
         }
     });
-
-    const refreshTable = React.useCallback((clearSelection = false) => {
-        grid?.set("query", gridQuery);
-        if (clearSelection) {
-            grid?.clearSelection();
-        }
-    }, [grid, gridQuery]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -85,10 +79,6 @@ export const FileDetailsGraph: React.FunctionComponent<FileDetailsGraphProps> = 
         }
     ], [file?.Wuid, refreshTable, selection, uiState.hasSelection]);
 
-    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
-        ...createCopyDownloadSelection(grid, selection, "graphs.csv")
-    ], [grid, selection]);
-
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
@@ -98,7 +88,7 @@ export const FileDetailsGraph: React.FunctionComponent<FileDetailsGraphProps> = 
 
     React.useEffect(() => {
         if (file?.Graphs?.ECLGraph) {
-            gridStore.setData(file?.Graphs?.ECLGraph.map(item => {
+            store.setData(file?.Graphs?.ECLGraph.map(item => {
                 return {
                     Name: item,
                     Label: "",
@@ -109,12 +99,12 @@ export const FileDetailsGraph: React.FunctionComponent<FileDetailsGraphProps> = 
             }));
             refreshTable();
         }
-    }, [file?.Graphs?.ECLGraph, gridStore, refreshTable]);
+    }, [file?.Graphs?.ECLGraph, refreshTable, store]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
+        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={copyButtons} />}
         main={
-            <DojoGrid store={gridStore} query={gridQuery} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
+            <Grid />
         }
     />;
 };

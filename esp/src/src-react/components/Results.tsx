@@ -4,10 +4,11 @@ import { useConst } from "@fluentui/react-hooks";
 import { AlphaNumSortMemory } from "src/Memory";
 import * as Observable from "dojo/store/Observable";
 import nlsHPCC from "src/nlsHPCC";
+import { useGrid } from "../hooks/grid";
 import { useWorkunitResults } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
-import { DojoGrid, selector } from "./DojoGrid";
+import { ShortVerticalDivider } from "./Common";
+import { selector } from "./DojoGrid";
 
 const defaultUIState = {
     hasSelection: false
@@ -21,55 +22,49 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
     wuid
 }) => {
 
-    const [grid, setGrid] = React.useState<any>(undefined);
-    const [selection, setSelection] = React.useState([]);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [results] = useWorkunitResults(wuid);
 
     //  Grid ---
-    const gridStore = useConst(new Observable(new AlphaNumSortMemory("__hpcc_id", { Name: true, Value: true })));
-    const gridQuery = useConst({});
-    const gridSort = useConst([{ attribute: "Wuid", "descending": true }]);
-    const gridColumns = useConst({
-        col1: selector({
-            width: 27,
-            selectorType: "checkbox"
-        }),
-        Name: {
-            label: nlsHPCC.Name, width: 180, sortable: true,
-            formatter: function (Name, row) {
-                return `<a href='#/workunits/${row.Wuid}/outputs/${Name}' class='dgrid-row-url'>${Name}</a>`;
-            }
-        },
-        FileName: {
-            label: nlsHPCC.FileName, sortable: true,
-            formatter: function (FileName, idx) {
-                return `<a href='#/files/${FileName}' class='dgrid-row-url2'>${FileName}</a>`;
-            }
-        },
-        Value: {
-            label: nlsHPCC.Value,
-            width: 180,
-            sortable: true
-        },
-        ResultViews: {
-            label: nlsHPCC.Views, sortable: true,
-            formatter: function (ResultViews, idx) {
-                let retVal = "";
-                ResultViews?.forEach((item, idx) => {
-                    retVal += "<a href='#' onClick='return false;' viewName=" + encodeURIComponent(item) + " class='dgrid-row-url3'>" + item + "</a>&nbsp;";
-                });
-                return retVal;
+    const store = useConst(new Observable(new AlphaNumSortMemory("__hpcc_id", { Name: true, Value: true })));
+    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+        store,
+        sort: [{ attribute: "Wuid", "descending": true }],
+        filename: "results",
+        columns: {
+            col1: selector({
+                width: 27,
+                selectorType: "checkbox"
+            }),
+            Name: {
+                label: nlsHPCC.Name, width: 180, sortable: true,
+                formatter: function (Name, row) {
+                    return `<a href='#/workunits/${row.Wuid}/outputs/${Name}' class='dgrid-row-url'>${Name}</a>`;
+                }
+            },
+            FileName: {
+                label: nlsHPCC.FileName, sortable: true,
+                formatter: function (FileName, idx) {
+                    return `<a href='#/files/${FileName}' class='dgrid-row-url2'>${FileName}</a>`;
+                }
+            },
+            Value: {
+                label: nlsHPCC.Value,
+                width: 180,
+                sortable: true
+            },
+            ResultViews: {
+                label: nlsHPCC.Views, sortable: true,
+                formatter: function (ResultViews, idx) {
+                    let retVal = "";
+                    ResultViews?.forEach((item, idx) => {
+                        retVal += "<a href='#' onClick='return false;' viewName=" + encodeURIComponent(item) + " class='dgrid-row-url3'>" + item + "</a>&nbsp;";
+                    });
+                    return retVal;
+                }
             }
         }
     });
-
-    const refreshTable = React.useCallback((clearSelection = false) => {
-        grid?.set("query", gridQuery);
-        if (clearSelection) {
-            grid?.clearSelection();
-        }
-    }, [grid, gridQuery]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -104,10 +99,6 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
         },
     ], [refreshTable, selection, uiState.hasSelection, wuid]);
 
-    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
-        ...createCopyDownloadSelection(grid, selection, "results.csv")
-    ], [grid, selection]);
-
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
@@ -120,7 +111,7 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
     }, [selection]);
 
     React.useEffect(() => {
-        gridStore.setData(results.map(row => {
+        store.setData(results.map(row => {
             const tmp: any = row.ResultViews;
             return {
                 __hpcc_id: row.Name,
@@ -133,12 +124,12 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
             };
         }));
         refreshTable();
-    }, [gridStore, refreshTable, results]);
+    }, [store, refreshTable, results]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
-            <DojoGrid store={gridStore} query={gridQuery} sort={gridSort} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
+            <Grid />
         }
     />;
 };

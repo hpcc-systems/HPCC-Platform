@@ -4,9 +4,9 @@ import { scopedLogger } from "@hpcc-js/util";
 import * as Observable from "dojo/store/Observable";
 import { Memory } from "src/Memory";
 import nlsHPCC from "src/nlsHPCC";
+import { useGrid } from "../hooks/grid";
 import { useFile } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { DojoGrid } from "./DojoGrid";
 import * as WsDfu from "../../src/WsDfu";
 
 const logger = scopedLogger("../components/ProtectedBy.tsx");
@@ -22,52 +22,44 @@ export const ProtectedBy: React.FunctionComponent<ProtectedByProps> = ({
 }) => {
 
     const [file, , _refresh] = useFile(cluster, logicalFile);
-    const [grid, setGrid] = React.useState<any>(undefined);
-    const [, setSelection] = React.useState([]);
 
     //  Grid ---
-    const gridStore = useConst(new Observable(new Memory("Owner")));
-    const gridSort = useConst([{ attribute: "Owner", "descending": false }]);
-    const gridQuery = useConst({});
-    const gridColumns = useConst({
-        Owner: { label: nlsHPCC.Owner, sortable: false },
-        Modified: { label: nlsHPCC.Modified, sortable: false },
-    });
-
-    const refreshTable = (clearSelection = false) => {
-        grid?.set("query", gridQuery);
-        if (clearSelection) {
-            grid?.clearSelection();
+    const store = useConst(new Observable(new Memory("Owner")));
+    const [Grid, _selection, refreshTable, _copyButtons] = useGrid({
+        store,
+        sort: [{ attribute: "Owner", "descending": false }],
+        filename: "protectedBy",
+        columns: {
+            Owner: { label: nlsHPCC.Owner, sortable: false },
+            Modified: { label: nlsHPCC.Modified, sortable: false },
         }
-    };
+    });
 
     React.useEffect(() => {
         WsDfu.DFUInfo({
             request: {
                 Name: file?.Name
             }
-        })
-            .then(response => {
-                const results = response?.DFUInfoResponse?.FileDetail.ProtectList.DFUFileProtect;
+        }).then(response => {
+            const results = response?.DFUInfoResponse?.FileDetail.ProtectList.DFUFileProtect;
 
-                if (results) {
-                    gridStore.setData(results.map(row => {
-                        return {
-                            Owner: row.Owner,
-                            Modified: row.Modified
-                        };
-                    }));
-                    refreshTable();
-                }
-            })
+            if (results) {
+                store.setData(results.map(row => {
+                    return {
+                        Owner: row.Owner,
+                        Modified: row.Modified
+                    };
+                }));
+                refreshTable();
+            }
+        })
             .catch(logger.error)
             ;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [gridStore, file?.Name]);
+    }, [store, file?.Name, refreshTable]);
 
     return <HolyGrail
         main={
-            <DojoGrid store={gridStore} query={gridQuery} sort={gridSort} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
+            <Grid />
         }
     />;
 };

@@ -4,9 +4,8 @@ import { useConst } from "@fluentui/react-hooks";
 import * as Observable from "dojo/store/Observable";
 import { Memory } from "src/Memory";
 import nlsHPCC from "src/nlsHPCC";
+import { useGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { DojoGrid } from "./DojoGrid";
-import { createCopyDownloadSelection } from "./Common";
 import { useECLWatchLogger } from "../hooks/logging";
 import { Level } from "@hpcc-js/util";
 
@@ -21,9 +20,7 @@ export const LogViewer: React.FunctionComponent<LogViewerProps> = ({
     const [infoChecked, setInfoChecked] = React.useState(true);
     const [otherChecked, setOtherChecked] = React.useState(true);
     const [filterCounts, setFilterCounts] = React.useState<any>({});
-    const [grid, setGrid] = React.useState<any>(undefined);
     const [log, lastUpdate] = useECLWatchLogger();
-    const [selection, setSelection] = React.useState([]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -33,25 +30,18 @@ export const LogViewer: React.FunctionComponent<LogViewerProps> = ({
         { key: "others", onRender: () => <Checkbox defaultChecked label={`${filterCounts.other || 0} ${nlsHPCC.Others}`} onChange={(ev, value) => setOtherChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> }
     ], [filterCounts.error, filterCounts.info, filterCounts.other, filterCounts.warning]);
 
-    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
-        ...createCopyDownloadSelection(grid, selection, "errorwarnings.csv")
-    ], [grid, selection]);
-
     //  Grid ---
-    const gridStore = useConst(new Observable(new Memory("dateTime")));
-    const gridColumns = useConst({
-        dateTime: { label: nlsHPCC.Time, width: 160, sortable: false },
-        level: { label: nlsHPCC.Severity, width: 112, sortable: false, formatter: level => Level[level].toUpperCase() },
-        id: { label: nlsHPCC.Source, width: 212, sortable: false },
-        message: { label: nlsHPCC.Message, sortable: false }
-    });
-
-    const refreshTable = React.useCallback((clearSelection = false) => {
-        grid?.set("query", {});
-        if (clearSelection) {
-            grid?.clearSelection();
+    const store = useConst(new Observable(new Memory("dateTime")));
+    const [Grid, _selection, refreshTable, copyButtons] = useGrid({
+        store,
+        filename: "errorwarnings",
+        columns: {
+            dateTime: { label: nlsHPCC.Time, width: 160, sortable: false },
+            level: { label: nlsHPCC.Severity, width: 112, sortable: false, formatter: level => Level[level].toUpperCase() },
+            id: { label: nlsHPCC.Source, width: 212, sortable: false },
+            message: { label: nlsHPCC.Message, sortable: false }
         }
-    }, [grid]);
+    });
 
     React.useEffect(() => {
         const filterCounts = {
@@ -93,15 +83,15 @@ export const LogViewer: React.FunctionComponent<LogViewerProps> = ({
         }).sort((l, r) => {
             return l.level - r.level;
         });
-        gridStore.setData(filteredExceptions);
+        store.setData(filteredExceptions);
         refreshTable();
         setFilterCounts(filterCounts);
-    }, [errorChecked, gridStore, infoChecked, log, otherChecked, refreshTable, warningChecked, lastUpdate]);
+    }, [errorChecked, store, infoChecked, log, otherChecked, refreshTable, warningChecked, lastUpdate]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
+        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={copyButtons} />}
         main={
-            <DojoGrid type={"SimpleGrid"} store={gridStore} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
+            <Grid />
         }
     />;
 };

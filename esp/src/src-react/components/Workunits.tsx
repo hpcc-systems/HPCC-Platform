@@ -1,20 +1,20 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
 import * as domClass from "dojo/dom-class";
 import * as WsWorkunits from "src/WsWorkunits";
 import * as ESPWorkunit from "src/ESPWorkunit";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { useGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
-import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
-import { DojoGrid, selector } from "./DojoGrid";
+import { ShortVerticalDivider } from "./Common";
+import { selector } from "./DojoGrid";
 import { scopedLogger } from "@hpcc-js/util";
 
-const logger = scopedLogger("../components/Workunits.tsx");
+const logger = scopedLogger("src-react/components/Workunits.tsx");
 
 const FilterFields: Fields = {
     "Type": { type: "checkbox", label: nlsHPCC.ArchivedOnly },
@@ -74,71 +74,61 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     store
 }) => {
 
-    const [grid, setGrid] = React.useState<any>(undefined);
     const [showFilter, setShowFilter] = React.useState(false);
     const [mine, setMine] = React.useState(false);
-    const [selection, setSelection] = React.useState([]);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     //  Grid ---
-    const gridStore = useConst(() => store ? store : ESPWorkunit.CreateWUQueryStore({}));
-    const gridQuery = useConst(formatQuery(filter));
-    const gridSort = useConst([{ attribute: "Wuid", "descending": true }]);
-    const gridColumns = useConst({
-        col1: selector({
-            width: 27,
-            selectorType: "checkbox"
-        }),
-        Protected: {
-            renderHeaderCell: function (node) {
-                node.innerHTML = Utility.getImageHTML("locked.png", nlsHPCC.Protected);
-            },
-            width: 25,
-            sortable: false,
-            formatter: function (_protected) {
-                if (_protected === true) {
-                    return Utility.getImageHTML("locked.png");
+    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+        store: store ? store : ESPWorkunit.CreateWUQueryStore({}),
+        query: formatQuery(filter),
+        sort: [{ attribute: "Wuid", "descending": true }],
+        filename: "workunits",
+        columns: {
+            col1: selector({
+                width: 27,
+                selectorType: "checkbox"
+            }),
+            Protected: {
+                renderHeaderCell: function (node) {
+                    node.innerHTML = Utility.getImageHTML("locked.png", nlsHPCC.Protected);
+                },
+                width: 25,
+                sortable: false,
+                formatter: function (_protected) {
+                    if (_protected === true) {
+                        return Utility.getImageHTML("locked.png");
+                    }
+                    return "";
                 }
-                return "";
-            }
-        },
-        Wuid: {
-            label: nlsHPCC.WUID, width: 180,
-            formatter: function (Wuid) {
-                const wu = ESPWorkunit.Get(Wuid);
-                return `${wu.getStateImageHTML()}&nbsp;<a href='#/workunits/${Wuid}' class='dgrid-row-url''>${Wuid}</a>`;
-            }
-        },
-        Owner: { label: nlsHPCC.Owner, width: 90 },
-        Jobname: { label: nlsHPCC.JobName, width: 500 },
-        Cluster: { label: nlsHPCC.Cluster, width: 90 },
-        RoxieCluster: { label: nlsHPCC.RoxieCluster, width: 99 },
-        State: { label: nlsHPCC.State, width: 90 },
-        TotalClusterTime: {
-            label: nlsHPCC.TotalClusterTime, width: 117,
-            renderCell: function (object, value, node) {
-                domClass.add(node, "justify-right");
-                node.innerText = value;
+            },
+            Wuid: {
+                label: nlsHPCC.WUID, width: 180,
+                formatter: function (Wuid) {
+                    const wu = ESPWorkunit.Get(Wuid);
+                    return `${wu.getStateImageHTML()}&nbsp;<a href='#/workunits/${Wuid}' class='dgrid-row-url''>${Wuid}</a>`;
+                }
+            },
+            Owner: { label: nlsHPCC.Owner, width: 90 },
+            Jobname: { label: nlsHPCC.JobName, width: 500 },
+            Cluster: { label: nlsHPCC.Cluster, width: 90 },
+            RoxieCluster: { label: nlsHPCC.RoxieCluster, width: 99 },
+            State: { label: nlsHPCC.State, width: 90 },
+            TotalClusterTime: {
+                label: nlsHPCC.TotalClusterTime, width: 117,
+                renderCell: function (object, value, node) {
+                    domClass.add(node, "justify-right");
+                    node.innerText = value;
+                }
             }
         }
     });
-
-    const refreshTable = React.useCallback((clearSelection = false) => {
-        grid?.set("query", formatQuery(filter));
-        if (clearSelection) {
-            grid?.clearSelection();
-        }
-    }, [filter, grid]);
 
     //  Filter  ---
     const filterFields: Fields = {};
     for (const fieldID in FilterFields) {
         filterFields[fieldID] = { ...FilterFields[fieldID], value: filter[fieldID] };
     }
-
-    React.useEffect(() => {
-        refreshTable();
-    }, [refreshTable, filter, store?.data]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -201,10 +191,6 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         },
     ], [mine, refreshTable, selection, store, uiState.hasNotCompleted, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
 
-    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
-        ...createCopyDownloadSelection(grid, selection, "workunits.csv")
-    ], [grid, selection]);
-
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
@@ -235,10 +221,10 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
     }, [selection]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <>
-                <DojoGrid store={gridStore} query={gridQuery} sort={gridSort} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
+                <Grid />
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
             </>
         }

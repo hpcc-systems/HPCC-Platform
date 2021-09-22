@@ -6,10 +6,9 @@ import * as Observable from "dojo/store/Observable";
 import { Memory } from "src/Memory";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { useGrid } from "../hooks/grid";
 import { useWorkunitExceptions } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { DojoGrid } from "./DojoGrid";
-import { createCopyDownloadSelection } from "./Common";
 
 function extractGraphInfo(msg) {
     const retVal: { graphID?: string, subgraphID?: string, activityID?: string, activityName?: string } = {};
@@ -47,9 +46,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     const [infoChecked, setInfoChecked] = React.useState(true);
     const [otherChecked, setOtherChecked] = React.useState(true);
     const [filterCounts, setFilterCounts] = React.useState<any>({});
-    const [grid, setGrid] = React.useState<any>(undefined);
     const [exceptions] = useWorkunitExceptions(wuid);
-    const [selection, setSelection] = React.useState([]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -59,60 +56,53 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
         { key: "others", onRender: () => <Checkbox defaultChecked label={`${filterCounts.other || 0} ${nlsHPCC.Others}`} onChange={(ev, value) => setOtherChecked(value)} styles={{ root: { paddingTop: 8, paddingRight: 8 } }} /> }
     ], [filterCounts.error, filterCounts.info, filterCounts.other, filterCounts.warning]);
 
-    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
-        ...createCopyDownloadSelection(grid, selection, "errorwarnings.csv")
-    ], [grid, selection]);
-
     //  Grid ---
-    const gridStore = useConst(new Observable(new Memory("id")));
-    const gridColumns = useConst({
-        Severity: {
-            label: nlsHPCC.Severity, field: "", width: 72, sortable: false,
-            renderCell: function (object, value, node, options) {
-                switch (value) {
-                    case "Error":
-                        domClass.add(node, "ErrorCell");
-                        break;
-                    case "Alert":
-                        domClass.add(node, "AlertCell");
-                        break;
-                    case "Warning":
-                        domClass.add(node, "WarningCell");
-                        break;
+    const store = useConst(new Observable(new Memory("id")));
+    const [Grid, _selection, refreshTable, copyButtons] = useGrid({
+        store,
+        filename: "errorwarnings",
+        columns: {
+            Severity: {
+                label: nlsHPCC.Severity, field: "", width: 72, sortable: false,
+                renderCell: function (object, value, node, options) {
+                    switch (value) {
+                        case "Error":
+                            domClass.add(node, "ErrorCell");
+                            break;
+                        case "Alert":
+                            domClass.add(node, "AlertCell");
+                            break;
+                        case "Warning":
+                            domClass.add(node, "WarningCell");
+                            break;
+                    }
+                    node.innerText = value;
                 }
-                node.innerText = value;
-            }
-        },
-        Source: { label: nlsHPCC.Source, field: "", width: 144, sortable: false },
-        Code: { label: nlsHPCC.Code, field: "", width: 45, sortable: false },
-        Message: {
-            label: nlsHPCC.Message, field: "",
-            sortable: false,
-            formatter: function (Message, idx) {
-                const info = extractGraphInfo(Message);
-                if (info.graphID && info.subgraphID && info.activityID) {
-                    const txt = "Graph " + info.graphID + "[" + info.subgraphID + "], " + info.activityName + "[" + info.activityID + "]";
-                    Message = Message.replace(txt, "<a href='#' onClick='return false;' class='dgrid-row-url'>" + txt + "</a>");
-                } else if (info.graphID && info.subgraphID) {
-                    const txt = "Graph " + info.graphID + "[" + info.subgraphID + "]";
-                    Message = Message.replace(txt, "<a href='#' onClick='return false;' class='dgrid-row-url'>" + txt + "</a>");
-                } else {
-                    Message = Utility.xmlEncode2(Message);
+            },
+            Source: { label: nlsHPCC.Source, field: "", width: 144, sortable: false },
+            Code: { label: nlsHPCC.Code, field: "", width: 45, sortable: false },
+            Message: {
+                label: nlsHPCC.Message, field: "",
+                sortable: false,
+                formatter: function (Message, idx) {
+                    const info = extractGraphInfo(Message);
+                    if (info.graphID && info.subgraphID && info.activityID) {
+                        const txt = "Graph " + info.graphID + "[" + info.subgraphID + "], " + info.activityName + "[" + info.activityID + "]";
+                        Message = Message.replace(txt, "<a href='#' onClick='return false;' class='dgrid-row-url'>" + txt + "</a>");
+                    } else if (info.graphID && info.subgraphID) {
+                        const txt = "Graph " + info.graphID + "[" + info.subgraphID + "]";
+                        Message = Message.replace(txt, "<a href='#' onClick='return false;' class='dgrid-row-url'>" + txt + "</a>");
+                    } else {
+                        Message = Utility.xmlEncode2(Message);
+                    }
+                    return Message;
                 }
-                return Message;
-            }
-        },
-        Column: { label: nlsHPCC.Col, field: "", width: 36, sortable: false },
-        LineNo: { label: nlsHPCC.Line, field: "", width: 36, sortable: false },
-        FileName: { label: nlsHPCC.FileName, field: "", width: 360, sortable: false }
-    });
-
-    const refreshTable = React.useCallback((clearSelection = false) => {
-        grid?.set("query", {});
-        if (clearSelection) {
-            grid?.clearSelection();
+            },
+            Column: { label: nlsHPCC.Col, field: "", width: 36, sortable: false },
+            LineNo: { label: nlsHPCC.Line, field: "", width: 36, sortable: false },
+            FileName: { label: nlsHPCC.FileName, field: "", width: 360, sortable: false }
         }
-    }, [grid]);
+    });
 
     React.useEffect(() => {
         const filterCounts = {
@@ -169,15 +159,15 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
             }
             return l.Severity.localeCompare(r.Severity);
         });
-        gridStore.setData(filteredExceptions);
+        store.setData(filteredExceptions);
         refreshTable();
         setFilterCounts(filterCounts);
-    }, [errorChecked, exceptions, gridStore, infoChecked, otherChecked, refreshTable, warningChecked]);
+    }, [errorChecked, exceptions, store, infoChecked, otherChecked, refreshTable, warningChecked]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
+        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={copyButtons} />}
         main={
-            <DojoGrid type={"SimpleGrid"} store={gridStore} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
+            <Grid />
         }
     />;
 };

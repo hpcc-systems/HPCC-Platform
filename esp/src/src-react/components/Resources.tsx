@@ -4,10 +4,11 @@ import { useConst } from "@fluentui/react-hooks";
 import { AlphaNumSortMemory } from "src/Memory";
 import * as Observable from "dojo/store/Observable";
 import nlsHPCC from "src/nlsHPCC";
+import { useGrid } from "../hooks/grid";
 import { useWorkunitResources } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
-import { DojoGrid, selector } from "./DojoGrid";
+import { ShortVerticalDivider } from "./Common";
+import { selector } from "./DojoGrid";
 
 const defaultUIState = {
     hasSelection: false
@@ -21,34 +22,28 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
     wuid
 }) => {
 
-    const [grid, setGrid] = React.useState<any>(undefined);
-    const [selection, setSelection] = React.useState([]);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [resources] = useWorkunitResources(wuid);
 
     //  Grid ---
-    const gridStore = useConst(new Observable(new AlphaNumSortMemory("DisplayPath", { Name: true, Value: true })));
-    const gridQuery = useConst({});
-    const gridSort = useConst([{ attribute: "Wuid", "descending": true }]);
-    const gridColumns = useConst({
-        col1: selector({
-            width: 27,
-            selectorType: "checkbox"
-        }),
-        DisplayPath: {
-            label: nlsHPCC.Name, sortable: true,
-            formatter: function (url, row) {
-                return `<a href='#/iframe?src=${encodeURIComponent(`WsWorkunits/${row.URL}`)}' class='dgrid-row-url'>${url}</a>`;
+    const store = useConst(new Observable(new AlphaNumSortMemory("DisplayPath", { Name: true, Value: true })));
+    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+        store,
+        sort: [{ attribute: "Wuid", "descending": true }],
+        filename: "resources",
+        columns: {
+            col1: selector({
+                width: 27,
+                selectorType: "checkbox"
+            }),
+            DisplayPath: {
+                label: nlsHPCC.Name, sortable: true,
+                formatter: function (url, row) {
+                    return `<a href='#/iframe?src=${encodeURIComponent(`WsWorkunits/${row.URL}`)}' class='dgrid-row-url'>${url}</a>`;
+                }
             }
         }
     });
-
-    const refreshTable = React.useCallback((clearSelection = false) => {
-        grid?.set("query", gridQuery);
-        if (clearSelection) {
-            grid?.clearSelection();
-        }
-    }, [grid, gridQuery]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -83,10 +78,6 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
         },
     ], [refreshTable, selection, uiState.hasSelection]);
 
-    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
-        ...createCopyDownloadSelection(grid, selection, "roxiequeries.csv")
-    ], [grid, selection]);
-
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
@@ -99,19 +90,19 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
     }, [selection]);
 
     React.useEffect(() => {
-        gridStore.setData(resources.filter((row, idx) => idx > 0).map(row => {
+        store.setData(resources.filter((row, idx) => idx > 0).map(row => {
             return {
                 URL: row,
                 DisplayPath: row.substring(`res/${wuid}/`.length)
             };
         }));
         refreshTable();
-    }, [gridStore, refreshTable, resources, wuid]);
+    }, [store, refreshTable, resources, wuid]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
-            <DojoGrid store={gridStore} query={gridQuery} sort={gridSort} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
+            <Grid />
         }
     />;
 };

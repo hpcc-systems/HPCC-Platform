@@ -7,8 +7,9 @@ import * as ESPQuery from "src/ESPQuery";
 import { Memory } from "src/Memory";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { useGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { DojoGrid, selector } from "./DojoGrid";
+import { selector } from "./DojoGrid";
 
 const logger = scopedLogger("src-react/components/QueryGraphs.tsx");
 
@@ -34,30 +35,25 @@ export const QueryGraphs: React.FunctionComponent<QueryGraphsProps> = ({
 }) => {
 
     const [query, setQuery] = React.useState<any>();
-    const [grid, setGrid] = React.useState<any>(undefined);
 
     //  Grid ---
-    const gridStore = useConst(new Observable(new Memory("__hpcc_id")));
-    const gridQuery = useConst({});
-    const gridSort = useConst([{ attribute: "__hpcc_id" }]);
-    const gridColumns = useConst({
-        col1: selector({ width: 27, selectorType: "checkbox" }),
-        Name: {
-            label: nlsHPCC.Name,
-            formatter: function (Name, row) {
-                const url = `#/queries/${querySet}/${queryId}/graphs/${row.Wuid}/${Name}`;
-                return Utility.getImageHTML(getStateImageName(row)) + `&nbsp;<a href='${url}' class='dgrid-row-url'>${Name}</a>`;
-            }
-        },
-        Type: { label: nlsHPCC.Type, width: 72 },
-    });
-
-    const refreshTable = React.useCallback((clearSelection = false) => {
-        grid?.set("query", gridQuery);
-        if (clearSelection) {
-            grid?.clearSelection();
+    const store = useConst(new Observable(new Memory("__hpcc_id")));
+    const [Grid, _selection, refreshTable, copyButtons] = useGrid({
+        store,
+        sort: [{ attribute: "__hpcc_id" }],
+        filename: "queryGraphs",
+        columns: {
+            col1: selector({ width: 27, selectorType: "checkbox" }),
+            Name: {
+                label: nlsHPCC.Name,
+                formatter: function (Name, row) {
+                    const url = `#/queries/${querySet}/${queryId}/graphs/${row.Wuid}/${Name}`;
+                    return Utility.getImageHTML(getStateImageName(row)) + `&nbsp;<a href='${url}' class='dgrid-row-url'>${Name}</a>`;
+                }
+            },
+            Type: { label: nlsHPCC.Type, width: 72 },
         }
-    }, [grid, gridQuery]);
+    });
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -76,7 +72,7 @@ export const QueryGraphs: React.FunctionComponent<QueryGraphsProps> = ({
             .then(({ WUQueryDetailsResponse }) => {
                 const graphs = query?.WUGraphs?.ECLGraph;
                 if (graphs) {
-                    gridStore.setData(graphs.map((item, idx) => {
+                    store.setData(graphs.map((item, idx) => {
                         return {
                             __hpcc_id: idx,
                             Name: item.Name,
@@ -92,10 +88,10 @@ export const QueryGraphs: React.FunctionComponent<QueryGraphsProps> = ({
             })
             .catch(logger.error)
             ;
-    }, [gridStore, query, refreshTable]);
+    }, [store, query, refreshTable]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} />}
-        main={<DojoGrid store={gridStore} query={gridQuery} sort={gridSort} columns={gridColumns} setGrid={setGrid} setSelection={null} />}
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
+        main={<Grid />}
     />;
 };

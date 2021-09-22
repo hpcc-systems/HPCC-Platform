@@ -9,10 +9,11 @@ import * as FileSpray from "src/FileSpray";
 import * as ESPRequest from "src/ESPRequest";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { useGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
-import { DojoGrid, selector, tree } from "./DojoGrid";
+import { selector, tree } from "./DojoGrid";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { AddFileForm } from "./forms/landing-zone/AddFileForm";
@@ -24,12 +25,24 @@ import { VariableImportForm } from "./forms/landing-zone/VariableImportForm";
 import { XmlImportForm } from "./forms/landing-zone/XmlImportForm";
 import { FileListForm } from "./forms/landing-zone/FileListForm";
 
-function formatQuery(_filter) {
+function formatQuery(targetDropzones, filter) {
+    const dropzones = targetDropzones.filter(row => row.Name === filter?.DropZoneName);
+    const machines = targetDropzones[0]?.TpMachines?.TpMachine?.filter(row => row.ConfigNetaddress === filter?.Server);
     return {
-        DropZoneName: _filter.DropZoneName,
-        Server: _filter.Server,
-        NameFilter: _filter.NameFilter,
-        ECLWatchVisibleOnly: true
+        id: "*",
+        filter: (filter?.DropZoneName && dropzones.length && machines.length) ? {
+            filter: {
+                DropZoneName: filter.DropZoneName,
+                Server: filter.Server,
+                NameFilter: filter.NameFilter,
+                ECLWatchVisibleOnly: true
+            },
+            ECLWatchVisibleOnly: true,
+            __dropZone: {
+                ...targetDropzones.filter(row => row.Name === filter?.DropZoneName)[0],
+                machine: machines[0]
+            }
+        } : undefined
     };
 }
 
@@ -51,15 +64,12 @@ const emptyFilter: LandingZoneFilter = {};
 
 interface LandingZoneProps {
     filter?: LandingZoneFilter;
-    store?: any;
 }
 
 export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
-    filter = emptyFilter,
-    store
+    filter = emptyFilter
 }) => {
 
-    const [grid, setGrid] = React.useState<any>(undefined);
     const [showFilter, setShowFilter] = React.useState(false);
     const [showAddFile, setShowAddFile] = React.useState(false);
     const [showFixed, setShowFixed] = React.useState(false);
@@ -68,7 +78,6 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
     const [showJson, setShowJson] = React.useState(false);
     const [showVariable, setShowVariable] = React.useState(false);
     const [showBlob, setShowBlob] = React.useState(false);
-    const [selection, setSelection] = React.useState([]);
     const [showDropZone, setShowDropzone] = React.useState(false);
     const [uploadFiles, setUploadFiles] = React.useState([]);
     const [showFileUpload, setShowFileUpload] = React.useState(false);
@@ -81,84 +90,74 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
     }, []);
 
     //  Grid ---
-    const gridStore = useConst(FileSpray.CreateLandingZonesStore({}));
-    const gridQuery = useConst({});
-    const gridSort = useConst([{ attribute: "modifiedtime", "descending": true }]);
-    const gridColumns = useConst({
-        col1: selector({
-            width: 27,
-            disabled: function (item) {
-                if (item.type) {
-                    switch (item.type) {
-                        case "dropzone":
-                        case "folder":
-                        case "machine":
-                            return true;
-                    }
-                }
-                return false;
-            },
-            selectorType: "checkbox"
-        }),
-        displayName: tree({
-            label: nlsHPCC.Name,
-            sortable: false,
-            formatter: function (_name, row) {
-                let img = "";
-                let name = row.displayName;
-                if (row.isDir === undefined) {
-                    img = Utility.getImageHTML("server.png");
-                    name += " [" + row.Path + "]";
-                } else if (row.isMachine) {
-                    img = Utility.getImageHTML("machine.png");
-                } else if (row.isDir) {
-                    img = Utility.getImageHTML("folder.png");
-                } else {
-                    img = Utility.getImageHTML("file.png");
-                }
-                return img + "&nbsp;" + name;
-            },
-            renderExpando: function (level, hasChildren, expanded, object) {
-                const dir = this.grid.isRTL ? "right" : "left";
-                let cls = ".dgrid-expando-icon";
-                if (hasChildren) {
-                    cls += ".ui-icon.ui-icon-triangle-1-" + (expanded ? "se" : "e");
-                }
-                //@ts-ignore
-                const node = put("div" + cls + "[style=margin-" + dir + ": " + (level * (this.indentWidth || 9)) + "px; float: " + dir + "; margin-top: 3px]");
-                node.innerHTML = "&nbsp;";
-                return node;
+    const store = useConst(FileSpray.CreateLandingZonesStore({}));
+    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+        store,
+        query: formatQuery(targetDropzones, filter),
+        sort: [{ attribute: "modifiedtime", "descending": true }],
+        filename: "landingZones",
+        getSelected: function () {
+            if (filter?.__dropZone) {
+                return this.inherited(arguments, [FileSpray.CreateLandingZonesFilterStore({})]);
             }
-        }),
-        filesize: {
-            label: nlsHPCC.Size, width: 100,
-            renderCell: function (object, value, node, options) {
-                domClass.add(node, "justify-right");
-                node.innerText = Utility.convertedSize(value);
-            },
+            return this.inherited(arguments, [FileSpray.CreateFileListStore({})]);
         },
-        modifiedtime: { label: nlsHPCC.Date, width: 162 }
-    });
-
-    const refreshTable = React.useCallback((clearSelection = false) => {
-        const dropzones = targetDropzones.filter(row => row.Name === filter?.DropZoneName);
-        const machines = targetDropzones[0]?.TpMachines?.TpMachine?.filter(row => row.ConfigNetaddress === filter?.Server);
-        const query = {
-            id: "*",
-            filter: (filter?.DropZoneName && dropzones.length && machines.length) ? {
-                ...formatQuery(filter),
-                ECLWatchVisibleOnly: true,
-                __dropZone: {
-                    ...targetDropzones.filter(row => row.Name === filter?.DropZoneName)[0],
-                    machine: machines[0]
+        columns: {
+            col1: selector({
+                width: 27,
+                disabled: function (item) {
+                    if (item.type) {
+                        switch (item.type) {
+                            case "dropzone":
+                            case "folder":
+                            case "machine":
+                                return true;
+                        }
+                    }
+                    return false;
+                },
+                selectorType: "checkbox"
+            }),
+            displayName: tree({
+                label: nlsHPCC.Name,
+                sortable: false,
+                formatter: function (_name, row) {
+                    let img = "";
+                    let name = row.displayName;
+                    if (row.isDir === undefined) {
+                        img = Utility.getImageHTML("server.png");
+                        name += " [" + row.Path + "]";
+                    } else if (row.isMachine) {
+                        img = Utility.getImageHTML("machine.png");
+                    } else if (row.isDir) {
+                        img = Utility.getImageHTML("folder.png");
+                    } else {
+                        img = Utility.getImageHTML("file.png");
+                    }
+                    return img + "&nbsp;" + name;
+                },
+                renderExpando: function (level, hasChildren, expanded, object) {
+                    const dir = this.grid.isRTL ? "right" : "left";
+                    let cls = ".dgrid-expando-icon";
+                    if (hasChildren) {
+                        cls += ".ui-icon.ui-icon-triangle-1-" + (expanded ? "se" : "e");
+                    }
+                    //@ts-ignore
+                    const node = put("div" + cls + "[style=margin-" + dir + ": " + (level * (this.indentWidth || 9)) + "px; float: " + dir + "; margin-top: 3px]");
+                    node.innerHTML = "&nbsp;";
+                    return node;
                 }
-            } : undefined
-        };
-        grid?.set("query", query);
-        if (clearSelection) {
-            grid?.clearSelection();
+            }),
+            filesize: {
+                label: nlsHPCC.Size, width: 100,
+                renderCell: function (object, value, node, options) {
+                    domClass.add(node, "justify-right");
+                    node.innerText = Utility.convertedSize(value);
+                },
+            },
+            modifiedtime: { label: nlsHPCC.Date, width: 162 }
         }
-    }, [filter, grid, targetDropzones]);
+    });
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -200,7 +199,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
                 if (confirm(nlsHPCC.DeleteSelectedFiles + "\n" + list)) {
                     selection.forEach((item, idx) => {
                         if (item._isUserFile) {
-                            gridStore.removeUserFile(item);
+                            store.removeUserFile(item);
                             refreshTable(true);
                         } else {
                             FileSpray.DeleteDropZoneFile({
@@ -221,12 +220,12 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
         },
         { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "filter", text: nlsHPCC.Filter, disabled: !!store, iconProps: { iconName: "Filter" },
+            key: "filter", text: nlsHPCC.Filter, iconProps: { iconName: "Filter" },
             onClick: () => setShowFilter(true)
         },
         { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
-            key: "addFile", text: nlsHPCC.AddFile, disabled: !!store,
+            key: "addFile", text: nlsHPCC.AddFile,
             onClick: () => setShowAddFile(true)
         },
         { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
@@ -255,12 +254,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
             onClick: () => setShowBlob(true)
         },
         { key: "divider_6", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> }
-    ], [gridStore, refreshTable, selection, store]);
-
-    React.useEffect(() => {
-        //  refreshTable changes when filter changes...
-        refreshTable();
-    }, [refreshTable]);
+    ], [store, refreshTable, selection]);
 
     //  Filter  ---
     const filterFields: Fields = {};
@@ -268,7 +262,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
         filterFields[field] = { ...FilterFields[field], value: filter[field] };
     }
 
-    const dropStyles = mergeStyleSets({
+    const dropStyles = React.useMemo(() => mergeStyleSets({
         dzWrapper: {
             position: "absolute",
             top: "118px",
@@ -300,7 +294,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
         displayNone: {
             display: "none"
         }
-    });
+    }), [showDropZone]);
 
     const handleFileDragEnter = React.useCallback((evt) => {
         evt.preventDefault();
@@ -333,7 +327,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
     }, [setShowFileUpload, setUploadFiles]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} />}
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <>
                 <input
@@ -345,29 +339,20 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
                         <p>Drop file(s) to upload.</p>
                     </div>
                 </div>
-                <DojoGrid
-                    store={gridStore} columns={gridColumns} query={gridQuery}
-                    getSelected={function () {
-                        if (filter?.__dropZone) {
-                            return this.inherited(arguments, [FileSpray.CreateLandingZonesFilterStore({})]);
-                        }
-                        return this.inherited(arguments, [FileSpray.CreateFileListStore({})]);
-                    }}
-                    sort={gridSort} setGrid={setGrid} setSelection={setSelection}
-                />
+                <Grid />
                 <Filter
                     showFilter={showFilter} setShowFilter={setShowFilter}
                     filterFields={filterFields} onApply={pushParams}
                 />
-                { uploadFiles &&
-                <FileListForm
-                    formMinWidth={360} selection={uploadFiles}
-                    showForm={showFileUpload} setShowForm={setShowFileUpload}
-                    onSubmit={refreshTable}
-                />
+                {uploadFiles &&
+                    <FileListForm
+                        formMinWidth={360} selection={uploadFiles}
+                        showForm={showFileUpload} setShowForm={setShowFileUpload}
+                        onSubmit={() => refreshTable()}
+                    />
                 }
                 <AddFileForm
-                    formMinWidth={620} store={gridStore} refreshGrid={refreshTable}
+                    formMinWidth={620} store={store} refreshGrid={refreshTable}
                     showForm={showAddFile} setShowForm={setShowAddFile}
                 />
                 <FixedImportForm
