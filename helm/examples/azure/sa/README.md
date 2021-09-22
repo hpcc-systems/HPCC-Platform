@@ -49,6 +49,27 @@ If this Kuberenetes cluster has never generated the secret before, run following
 ```
 ../hpcc-azurefile helm chart should be started before installing the HPCC helm chart. Reference [parent README.md](../README.md) for the details.
 
+### Make storage account and AKS compliant
+By default there probably three medium alerts when configure a storage account with an AKS:
+```code
+Storage account should use a private link connection
+Storage accounts should restrict network access using virtual network rules
+Storage account public access should be disallowed
+```
+Two of them and some other compliant issues can be resolved by running following. Make sure you provide either AKS resource group or AKS name and parent resource group
+```code
+./sa-compliant.sh
+```
+Currently "Storage account should use a private link connection" alert cannot be fixed wtih AZ Cli but user can do it through Azure Portal:
+```code
+1) Find the storage account
+2) Go to the storage account and click "0" in Networking/"Number of private endpoint connections"
+3) Click "Private endpoint connection" to add a private endpoint. Choose "file" for "Target sub-resource"
+4) Make sure to Networking/"Number of private endpoint connections" shows 1 or nonzero value.
+```
+There is a JIRA against this: https://track.hpccsystems.com/browse/HPCC-26566
+
+
 ### Delete the storage
 delete-sa.sh will delete the resoruce group which will clean all resources underneath
 ```console
@@ -56,3 +77,8 @@ delete-sa.sh will delete the resoruce group which will clean all resources under
 ```
 You must make certain the contents of the shared storage are no longer needed since when it is deleted you can't get it back.
 On the other hand, be aware the storage will persist even when the kubernetes cluster is destroyed and there are fees/charges for the Azure storage. Be very cautious before making this decision.
+
+If there is a private endpoint associated with the subnet user cannot delete AKS. The private endpoint must be deleted first:
+```code
+./delete-ep.sh
+```

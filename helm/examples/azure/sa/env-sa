@@ -2,6 +2,12 @@
 SUBSCRIPTION=
 STORAGE_ACCOUNT_NAME=
 SA_RESOURCE_GROUP=
+
+# Provide AKS Resource Group or the parent Resource group and AKS name
+RESOURCE_GROUP=
+AKS_NAME=
+AKS_RESOURCE_GROUP=
+
 # Set the same location as Kubernetes cluster
 SA_LOCATION=eastus
 SA_KEY_DIR=~/.azure/storage
