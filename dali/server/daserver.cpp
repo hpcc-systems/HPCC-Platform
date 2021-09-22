@@ -392,6 +392,45 @@ static StringBuffer &formatDaliRole(StringBuffer &out, unsigned __int64 role)
     return out.append(queryRoleName((DaliClientRole)role));
 }
 
+#ifdef _CONTAINERIZED
+static IPropertyTree * getContainerLDAPConfiguration(const IPropertyTree *appConfig)
+{
+    const char * authMethod = appConfig->queryProp("@auth");
+    if (streq(authMethod, "none"))
+    {
+        WARNLOG("ECLWatch is unsafe, no security manager specified in configuration (auth: none)");
+        return nullptr; //no security manager
+    }
+
+    if (!streq(authMethod, "ldap"))
+    {
+        throw makeStringExceptionV(-1, "Unrecognized auth method specified, (auth: %s)", authMethod);
+    }
+
+    const char *ldapAddress = appConfig->queryProp("@ldapAddress");
+    if (isEmptyString(ldapAddress))
+        throw makeStringException(-1, "LDAP not configured (missing 'ldapAddress').  To run without security set 'auth: none'");
+
+    //Get default LDAP attributes from ldap.yaml
+    StringBuffer ldapDefaultsFile(hpccBuildInfo.componentDir);
+    char sepchar = getPathSepChar(ldapDefaultsFile.str());
+    addPathSepChar(ldapDefaultsFile, sepchar).append("applications").append(sepchar).append("common").append(sepchar).append("ldap").append(sepchar).append("ldap.yaml");
+    Owned<IPropertyTree> defaults;
+    if (!checkFileExists(ldapDefaultsFile))
+    {
+        throw makeStringExceptionV(-1, "Unable to locate LDAP defaults file '%s'", ldapDefaultsFile.str());
+    }
+    defaults.setown(createPTreeFromYAMLFile(ldapDefaultsFile.str()));
+
+    //Build merged configuration
+    Owned<IPropertyTree> mergedConfig = defaults->getPropTree("ldap");
+    mergePTree(mergedConfig, appConfig->queryPropTree("ldap"));//overlay defaults with config settings
+    mergedConfig->addProp("@ldapAddress", ldapAddress);
+
+    return LINK(mergedConfig);
+}
+#endif
+
 static constexpr const char * defaultYaml = R"!!(
 version: 1.0
 dali:
@@ -736,7 +775,11 @@ int main(int argc, const char* argv[])
             }
             else
             {
-                setLDAPconnection(createDaliLdapConnection(serverConfig->getPropTree("Coven/ldapSecurity")));
+#ifdef _CONTAINERIZED
+                setLDAPconnection(createDaliLdapConnection(getContainerLDAPConfiguration(serverConfig)));//container configuration
+#else
+                setLDAPconnection(createDaliLdapConnection(serverConfig->getPropTree("Coven/ldapSecurity")));//legacy configuration
+#endif
             }
 #endif
         }
