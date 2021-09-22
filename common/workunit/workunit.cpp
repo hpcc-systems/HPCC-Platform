@@ -13523,7 +13523,11 @@ static double getCpuSize(const char *resourceName)
 
 static double getCostCpuHour()
 {
-    double costCpuHour = getGlobalConfigSP()->getPropReal("cost/@perCpu");
+    double costCpuHour = 0.0;
+    if (getComponentConfigSP()->hasProp("cost/@perCpu"))
+        costCpuHour = getComponentConfigSP()->getPropReal("cost/@perCpu");
+    else
+        costCpuHour = getGlobalConfigSP()->getPropReal("cost/@perCpu");
     if (costCpuHour < 0.0)
         return 0.0;
     return costCpuHour;
@@ -13531,17 +13535,20 @@ static double getCostCpuHour()
 
 extern WORKUNIT_API double getMachineCostRate()
 {
-    return getCostCpuHour() * getCpuSize("resources/@cpu") ;
-};
+    unsigned numCpus = isContainerized()  ? getCpuSize("resources/@cpu") : getAffinityCpus();
+    return getCostCpuHour() * numCpus;
+}
 
 extern WORKUNIT_API double getThorManagerRate()
 {
-    return getCostCpuHour() * getCpuSize("managerResources/@cpu");
+    unsigned numCpus = isContainerized()  ? getCpuSize("managerResources/@cpu") : getAffinityCpus();
+    return getCostCpuHour() * numCpus ;
 }
 
 extern WORKUNIT_API double getThorWorkerRate()
 {
-    return getCostCpuHour() * getCpuSize("workerResources/@cpu");
+    unsigned numCpus = isContainerized()  ? getCpuSize("workerResources/@cpu") : getAffinityCpus();
+    return getCostCpuHour() * numCpus ;
 }
 
 extern WORKUNIT_API double calculateThorCost(unsigned __int64 ms, unsigned clusterWidth)

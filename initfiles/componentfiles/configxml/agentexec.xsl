@@ -113,7 +113,7 @@
       </xsl:if>
       <xsl:copy-of select="analyzerOptions"/>
       <xsl:copy-of select="/Environment/Software/Directories"/>  
-
+      <xsl:copy-of select="/Environment/Hardware/cost"/>
     </agentexec>
   </xsl:template>
 

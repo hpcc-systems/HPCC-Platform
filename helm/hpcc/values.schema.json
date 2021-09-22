@@ -268,6 +268,10 @@
             "perCpu": {
               "description": "cost of a single cpu",
               "type": "number"
+            },
+            "storageAtRest": {
+                "description": "storage cost (GiB per month)",
+                "type": "number"
             }
           }
         },
