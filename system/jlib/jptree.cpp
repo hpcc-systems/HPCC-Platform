@@ -9805,7 +9805,7 @@ static void decodePTreeNameHexEncoding(StringBuffer &s, const char *&input, unsi
         remaining -= 2;
         s.append(ch);
     }
-    if (*input=='_')
+    if (remaining && (*input=='_'))
     {
         input++;
         remaining--;
