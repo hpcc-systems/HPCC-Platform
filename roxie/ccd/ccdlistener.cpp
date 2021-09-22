@@ -1169,7 +1169,7 @@ public:
         else
         {
             daliHelper.setown(connectToDali());
-            wu.setown(daliHelper->attachWorkunit(wuid.get(), NULL));
+            wu.setown(daliHelper->attachWorkunit(wuid.get()));
         }
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
         if (wu->hasDebugValue("GlobalId"))

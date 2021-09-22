@@ -167,7 +167,7 @@ public:
 class CRoxieDaliHelper : implements IRoxieDaliHelper, public CInterface
 {
 private:
-    static bool isConnected;
+    static std::atomic<bool> isConnected;
     static CRoxieDaliHelper *daliHelper;  // Note - this does not own the helper
     static CriticalSection daliHelperCrit;
     CriticalSection daliConnectionCrit;
@@ -436,21 +436,39 @@ public:
     IMPLEMENT_IINTERFACE;
     CRoxieDaliHelper() : serverStatus(NULL), connectWatcher(this)
     {
-        userdesc.setown(createUserDescriptor());
-        const char *roxieUser = NULL;
-        const char *roxiePassword = NULL;
-        if (topology)
+        if (oneShotRoxie && topology && topology->hasProp("@workunit"))
         {
-            roxieUser = topology->queryProp("@ldapUser");
-            roxiePassword = topology->queryProp("@ldapPassword");
+            if (!connect(ROXIE_DALI_CONNECT_TIMEOUT))
+                throw MakeStringException(ROXIE_DALI_ERROR, "Failed to connect to dali");
+            Owned<IWorkUnitFactory> wuFactory = getWorkUnitFactory();
+            Owned<IWorkUnit> w = wuFactory->updateWorkUnit(topology->queryProp("@workunit"));
+            if (!w)
+                throw MakeStringException(ROXIE_DALI_ERROR, "Failed to locate dll workunit info");
+            w->setAgentSession(myProcessSession());
+            if(topology->getPropBool("@resetWorkflow", false))
+                w->resetWorkflow();
+            userdesc.set(w->queryUserDescriptor());
+            w->commit();
+            w.clear();
         }
-        if (!roxieUser)
-            roxieUser = "roxie";
-        if (!roxiePassword)
-            roxiePassword = "";
-        StringBuffer password;
-        decrypt(password, roxiePassword);
-        userdesc->set(roxieUser, password.str());
+        else
+        {
+            userdesc.setown(createUserDescriptor());
+            const char *roxieUser = NULL;
+            const char *roxiePassword = NULL;
+            if (topology)
+            {
+                roxieUser = topology->queryProp("@ldapUser");
+                roxiePassword = topology->queryProp("@ldapPassword");
+            }
+            if (!roxieUser)
+                roxieUser = "roxie";
+            if (!roxiePassword)
+                roxiePassword = "";
+            StringBuffer password;
+            decrypt(password, roxiePassword);
+            userdesc->set(roxieUser, password.str());
+        }
         if (fileNameServiceDali.length())
             connectWatcher.start();
         else
@@ -649,31 +667,10 @@ public:
 #endif
     }
 
-    virtual IConstWorkUnit *attachWorkunit(const char *wuid, ILoadedDllEntry *source)
+    virtual IConstWorkUnit *attachWorkunit(const char *wuid)
     {
         assertex(isConnected);
         Owned<IWorkUnitFactory> wuFactory = getWorkUnitFactory();
-        Owned<IWorkUnit> w = wuFactory->updateWorkUnit(wuid);
-        if (!w)
-            return NULL;
-        w->setAgentSession(myProcessSession());
-        if(topology->getPropBool("@resetWorkflow", false))
-            w->resetWorkflow();
-        if (source)
-        {
-            StringBuffer wuXML;
-            if (getEmbeddedWorkUnitXML(source, wuXML))
-            {
-                Owned<ILocalWorkUnit> localWU = createLocalWorkUnit(wuXML);
-                queryExtendedWU(w)->copyWorkUnit(localWU, true, true);
-            }
-            else
-                throw MakeStringException(ROXIE_DALI_ERROR, "Failed to locate dll workunit info");
-        }
-        if (topology->hasProp("@workunit"))    // This really only works properly in one-shot mode
-            userdesc.set(w->queryUserDescriptor());
-        w->commit();
-        w.clear();
         return wuFactory->openWorkUnit(wuid);
     }
 
@@ -956,7 +953,7 @@ public:
     }
 } roxieDllServer;
 
-bool CRoxieDaliHelper::isConnected = false;
+std::atomic<bool> CRoxieDaliHelper::isConnected(false);
 CRoxieDaliHelper * CRoxieDaliHelper::daliHelper;
 CriticalSection CRoxieDaliHelper::daliHelperCrit;
 #ifdef ROXIE_DALI_CACHE

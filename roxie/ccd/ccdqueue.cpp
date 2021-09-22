@@ -1519,7 +1519,7 @@ public:
         if (!queryFactory && logctx.queryWuid())
         {
             Owned <IRoxieDaliHelper> daliHelper = connectToDali();
-            Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(logctx.queryWuid(), NULL);
+            Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(logctx.queryWuid());
             queryFactory.setown(createAgentQueryFactoryFromWu(wu, channel));
             if (queryFactory)
                 cacheOnDemandQuery(queryHash, channel, queryFactory);
