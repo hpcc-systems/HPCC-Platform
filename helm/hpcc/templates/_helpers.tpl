@@ -144,10 +144,14 @@ Returns true if the given certificate issuer is enabled, otherwise false
 */}}
 {{- define "hpcc.isIssuerEnabled" -}}
 {{- $certificates := (.root.Values.certificates | default dict) -}}
-{{- $issuers := ($certificates.issuers | default dict) -}}
-{{- $issuer := get $issuers .issuer -}}
-{{- if $issuer -}}
-  {{- (hasKey $issuer "enabled" | ternary $issuer.enabled true) }}
+{{- if $certificates.enabled -}}
+  {{- $issuers := ($certificates.issuers | default dict) -}}
+  {{- $issuer := get $issuers .issuer -}}
+  {{- if $issuer -}}
+    {{- (hasKey $issuer "enabled" | ternary $issuer.enabled true) }}
+  {{- else -}}
+false
+  {{- end -}}
 {{- else -}}
 false
 {{- end -}}
