@@ -29,7 +29,12 @@ const FilterFields: Fields = {
     "EndDate": { type: "datetime", label: nlsHPCC.ToDate, placeholder: "" },
 };
 
-function formatQuery(filter) {
+function formatQuery(_filter) {
+    const filter = { ..._filter };
+    if (filter.Index) {
+        filter.ContentType = "key";
+        delete filter.Index;
+    }
     if (filter.StartDate) {
         filter.StartDate = new Date(filter.StartDate).toISOString();
     }
