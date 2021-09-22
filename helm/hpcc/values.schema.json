@@ -598,8 +598,13 @@
     },
     "ldap": {
       "type": "object",
+      "required": [ "ldapAddress" ],
       "additionalProperties": { "type": ["integer", "string", "boolean"] },
       "properties": {
+        "ldapAddress": {
+          "type": "string",
+          "description": "LDAP Server IP address(es), comma separated"
+        },
         "ldapProtocol": {
           "type": "string",
           "description": "The protocol to use - standard \"LDAP\" or secure \"LDAPS\" over SSL"

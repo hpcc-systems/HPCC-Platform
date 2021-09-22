@@ -407,10 +407,6 @@ static IPropertyTree * getContainerLDAPConfiguration(const IPropertyTree *appCon
         throw makeStringExceptionV(-1, "Unrecognized auth method specified, (auth: %s)", authMethod);
     }
 
-    const char *ldapAddress = appConfig->queryProp("@ldapAddress");
-    if (isEmptyString(ldapAddress))
-        throw makeStringException(-1, "LDAP not configured (missing 'ldapAddress').  To run without security set 'auth: none'");
-
     //Get default LDAP attributes from ldap.yaml
     StringBuffer ldapDefaultsFile(hpccBuildInfo.componentDir);
     char sepchar = getPathSepChar(ldapDefaultsFile.str());
@@ -424,8 +420,7 @@ static IPropertyTree * getContainerLDAPConfiguration(const IPropertyTree *appCon
 
     //Build merged configuration
     Owned<IPropertyTree> mergedConfig = defaults->getPropTree("ldap");
-    mergePTree(mergedConfig, appConfig->queryPropTree("ldap"));//overlay defaults with config settings
-    mergedConfig->addProp("@ldapAddress", ldapAddress);
+    mergeConfiguration(*mergedConfig, *appConfig->queryPropTree("ldap"));
 
     return LINK(mergedConfig);
 }

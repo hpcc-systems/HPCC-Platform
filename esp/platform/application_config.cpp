@@ -91,10 +91,6 @@ static void copyDirectories(IPropertyTree *target, IPropertyTree *src)
 
 bool addLdapSecurity(IPropertyTree *legacyEsp, IPropertyTree *appEsp, StringBuffer &bindAuth, LdapType ldapType)
 {
-    const char *ldapAddress = appEsp->queryProp("@ldapAddress");
-    if (isEmptyString(ldapAddress))
-        throw MakeStringException(-1, "LDAP not configured.  To run without security set auth=none");
-
     StringBuffer path(hpccBuildInfo.componentDir);
     char sepchar = getPathSepChar(hpccBuildInfo.componentDir);
     addPathSepChar(path, sepchar).append("applications").append(sepchar).append("common").append(sepchar).append("ldap").append(sepchar).append("ldap.yaml");
@@ -103,11 +99,13 @@ bool addLdapSecurity(IPropertyTree *legacyEsp, IPropertyTree *appEsp, StringBuff
 
     IPropertyTree *appLdap = appEsp->queryPropTree("ldap");
     if (!appLdap)
-        throw MakeStringException(-1, "Can't find application LDAP settings.  To run without security set auth=none");
+        throw MakeStringException(-1, "Can't find application LDAP settings.  To run without security set 'auth: none'");
+
+    if (!appLdap->hasProp("@ldapAddress"))
+        throw MakeStringException(-1, "LDAP not configured (Missing 'ldapAddress').  To run without security set 'auth: none'");
 
     IPropertyTree *legacyLdap = legacyEsp->addPropTree("ldapSecurity");
     copyAttributes(legacyLdap, appLdap);
-    legacyLdap->setProp("@ldapAddress", ldapAddress);
 
     StringAttr configname(appLdap->queryProp("@objname"));
     if (!legacyLdap->hasProp("@name"))
@@ -126,20 +124,20 @@ bool addAuthNZSecurity(const char *name, IPropertyTree *legacyEsp, IPropertyTree
 {
     IPropertyTree *authNZ = appEsp->queryPropTree("authNZ");
     if (!authNZ)
-        throw MakeStringException(-1, "Can't find application AuthNZ section.  To run without security set auth=none");
+        throw MakeStringException(-1, "Can't find application AuthNZ section.  To run without security set 'auth: none'");
     authNZ = authNZ->queryPropTree(name);
     if (!authNZ)
-        throw MakeStringException(-1, "Can't find application %s AuthNZ settings.  To run without security set auth=none", name);
+        throw MakeStringException(-1, "Can't find application %s AuthNZ settings.  To run without security set 'auth: none'", name);
     IPropertyTree *appSecMgr = authNZ->queryPropTree("SecurityManager");
     if (!appSecMgr)
     {
         const char *application = appEsp->queryProp("@application");
-        throw MakeStringException(-1, "Can't find SecurityManager settings configuring application '%s'.  To run without security set auth=none", application ? application : "");
+        throw MakeStringException(-1, "Can't find SecurityManager settings configuring application '%s'.  To run without security set 'auth: none'", application ? application : "");
     }
     const char *method = appSecMgr->queryProp("@name");
     const char *tag = appSecMgr->queryProp("@type");
     if (isEmptyString(tag))
-        throw MakeStringException(-1, "SecurityManager type attribute required.  To run without security set auth=none");
+        throw MakeStringException(-1, "SecurityManager type attribute required.  To run without security set 'auth: none'");
 
     legacyEsp->addPropTree("AuthDomains", createPTreeFromXMLString("<AuthDomains><AuthDomain authType='AuthPerRequestOnly' clientSessionTimeoutMinutes='120' domainName='default' invalidURLsAfterAuth='/esp/login' loginLogoURL='/esp/files/eclwatch/img/Loginlogo.png' logonURL='/esp/files/Login.html' logoutURL='' serverSessionTimeoutMinutes='240' unrestrictedResources='/favicon.ico,/esp/files/*,/esp/xslt/*'/></AuthDomains>"));
 
@@ -159,7 +157,7 @@ bool addSecurity(IPropertyTree *legacyEsp, IPropertyTree *appEsp, StringBuffer &
 {
     const char *auth = appEsp->queryProp("@auth");
     if (isEmptyString(auth))
-        throw MakeStringException(-1, "'auth' attribute required.  To run without security set 'auth=none'");
+        throw MakeStringException(-1, "'auth' attribute required.  To run without security set ''auth: none''");
     if (streq(auth, "none"))
         return false;
     if (streq(auth, "ldap"))
@@ -186,7 +184,7 @@ void bindAuthResources(IPropertyTree *legacyAuthenticate, IPropertyTree *app, co
             return;
     }
     if (!appAuth)
-        throw MakeStringException(-1, "Can't find application Auth settings.  To run without security set auth=none");
+        throw MakeStringException(-1, "Can't find application Auth settings.  To run without security set 'auth: none'");
     IPropertyTree *root_access = appAuth->queryPropTree("root_access");
     StringAttr required(root_access->queryProp("@required"));
     StringAttr description(root_access->queryProp("@description"));
