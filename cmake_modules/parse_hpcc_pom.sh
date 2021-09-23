@@ -90,7 +90,7 @@ function update_version_file()
     fi
     if [ "$_new_maturity" == "trunk" ]; then
       _new_maturity=-SNAPSHOT
-    if [ "$_new_maturity" == "rc" ]; then
+    elif [ "$_new_maturity" == "rc" ]; then
       _new_maturity=-SNAPSHOT
     elif [ "$_new_maturity" == "closedown" ]; then
       _new_maturity=-SNAPSHOT
