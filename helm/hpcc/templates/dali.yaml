@@ -27,7 +27,7 @@
 {{- $daliPlaneIncludeCategories := list "dali" -}}
 {{- $commonCtx := dict "root" $ "me" $dali "includeCategories" $daliPlaneIncludeCategories "env" $env -}}
 {{- $sashaServices := $dali.services | default dict -}}
-{{- $daliSecretsCategories := list "system" -}}
+{{- $daliSecretsCategories := list "system" "authn" -}}
 {{- $tmpDaliScope := dict "aggregateSashaSecretsCategories" list "aggregatePlaneCategories" $daliPlaneIncludeCategories "aggregateSashaNamedPlanes" list -}}
 {{- if not ($sashaServices.disabled) -}}
  {{- range $sashaName, $_sasha := $dali.services -}}

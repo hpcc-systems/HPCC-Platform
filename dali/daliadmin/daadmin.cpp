@@ -3224,13 +3224,16 @@ void removeOrphanedGlobalVariables(bool dryrun, bool reconstruct)
     {
         const char *name = varMapIt->first.c_str();
 
+        bool advanced = false;
         try
         {
             CDfsLogicalFileName lfn;
-            lfn.set(name);
-            lfn.makeFullnameQuery(lfnXpath.clear(), DXB_File);
-
-            Owned<IRemoteConnection> fConn = querySDS().connect(lfnXpath, myProcessSession(), RTM_LOCK_READ, daliConnectTimeoutMs);
+            Owned<IRemoteConnection> fConn;
+            if (lfn.setValidate(name))
+            {
+                lfn.makeFullnameQuery(lfnXpath.clear(), DXB_File);
+                fConn.setown(querySDS().connect(lfnXpath, myProcessSession(), RTM_LOCK_READ, daliConnectTimeoutMs));
+            }
             if (!fConn) // doesn't exist, clear up Variable and associates
             {
                 ++deletes;
@@ -3247,11 +3250,13 @@ void removeOrphanedGlobalVariables(bool dryrun, bool reconstruct)
                     }
                     varMapIt++;
                 }
+                advanced = true;
             }
             else
             {
                 ++existingPersists;
                 varMapIt++;
+                advanced = true;
             }
         }
         catch (IException *e)
@@ -3259,6 +3264,11 @@ void removeOrphanedGlobalVariables(bool dryrun, bool reconstruct)
             VStringBuffer errMsg("Skipping: %s", name);
             EXCLOG(e, errMsg.str());
             e->Release();
+            if (!advanced)
+            {
+                varMapIt++;
+                advanced = true;
+            }
         }
         ++checked;
 

@@ -35,13 +35,15 @@
  {{- end -}}
  {{- $_ := set $previousPlanes $plane.name true -}}
  {{- $rawPlane := omit $plane "name" "category" "subPath" -}}
- {{- if hasKey $previousMounts $plane.prefix -}}
-  {{- /* Should this restrict if has a pvc or a storage class? */ -}}
-  {{- if not (deepEqual (get $previousMounts $plane.prefix) $rawPlane) -}}
+ {{- if and (not (hasKey $plane "hosts")) (not (hasKey $plane "hostGroup")) -}}
+  {{- if hasKey $previousMounts $plane.prefix -}}
+   {{- /* Should this restrict if has a pvc or a storage class? */ -}}
+   {{- if not (deepEqual (get $previousMounts $plane.prefix) $rawPlane) -}}
     {{- required (printf "Multiple incompatible planes refer to prefix '%s'" $plane.prefix) nil -}}
+   {{- end -}}
   {{- end -}}
+  {{- $_ := set $previousMounts $plane.prefix $rawPlane -}}
  {{- end -}}
- {{- $_ := set $previousMounts $plane.prefix $rawPlane -}}
 {{- end -}}
 {{- /* check that planes exist for each of the required planes */ -}}
 {{ $need := dict }}

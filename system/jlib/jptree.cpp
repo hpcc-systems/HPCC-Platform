@@ -1461,7 +1461,7 @@ void PTree::setProp(const char *xpath, const char *val)
         if (!val)
             removeAttribute(xpath);
         else
-            setAttribute(xpath, val);
+            setAttribute(xpath, val, false);
     }
     else
     {
@@ -1605,7 +1605,7 @@ void PTree::addProp(const char *xpath, const char *val)
     if (!xpath || '\0' == *xpath)
         addLocal((size32_t)strlen(val)+1, val);
     else if (isAttribute(xpath))
-        setAttribute(xpath, val);
+        setAttribute(xpath, val, false);
     else if ('[' == *xpath)
     {
         aindex_t pos = getChildMatchPos(xpath);
@@ -1636,7 +1636,7 @@ void PTree::appendProp(const char *xpath, const char *val)
         StringBuffer newVal;
         getProp(xpath, newVal);
         newVal.append(val);
-        setAttribute(xpath, newVal.str());
+        setAttribute(xpath, newVal.str(), false);
     }
     else if ('[' == *xpath)
     {
@@ -1718,7 +1718,7 @@ void PTree::setPropInt64(const char * xpath, __int64 val)
     {
         char buf[23];
         numtostr(buf, val);
-        setAttribute(xpath, buf);
+        setAttribute(xpath, buf, false);
     }
     else
     {
@@ -1747,7 +1747,7 @@ void PTree::addPropInt64(const char *xpath, __int64 val)
     {
         char buf[23];
         numtostr(buf, val);
-        setAttribute(xpath, buf);
+        setAttribute(xpath, buf, false);
     }
     else if ('[' == *xpath)
     {
@@ -3619,10 +3619,18 @@ bool LocalPTree::removeAttribute(const char *key)
     return true;
 }
 
-void LocalPTree::setAttribute(const char *key, const char *val)
+void LocalPTree::setAttribute(const char *inputkey, const char *val, bool encoded)
 {
-    if (!key)
+    if (!inputkey)
         return;
+    const char *key = inputkey;
+    if (encoded)
+    {
+        if (*key!='~')
+            encoded=false;
+        else
+            key++;
+    }
     if (!validateXMLTag(key+1))
         throw MakeIPTException(-1, "Invalid xml attribute: %s", key);
     if (!val)
@@ -3639,8 +3647,8 @@ void LocalPTree::setAttribute(const char *key, const char *val)
     {
         attrs = (AttrValue *)realloc(attrs, (numAttrs+1)*sizeof(AttrValue));
         v = new(&attrs[numAttrs++]) AttrValue;  // Initialize new AttrValue
-        if (!v->key.set(key))
-            v->key.setPtr(isnocase() ? AttrStr::createNC(key) : AttrStr::create(key));
+        if (!v->key.set(inputkey)) //AttrStr will not return encoding marker when get() is called
+            v->key.setPtr(isnocase() ? AttrStr::createNC(inputkey) : AttrStr::create(inputkey));
     }
     if (arrayOwner)
     {
@@ -3812,7 +3820,7 @@ void CAtomPTree::freeAttrArray(AttrValue *a, unsigned n)
     }
 }
 
-void CAtomPTree::setAttribute(const char *key, const char *val)
+void CAtomPTree::setAttribute(const char *key, const char *val, bool encoded)
 {
     if (!key)
         return;
@@ -3864,6 +3872,9 @@ void CAtomPTree::setAttribute(const char *key, const char *val)
         v = &newattrs[numAttrs];
         if (!v->key.set(key))
             v->key.setPtr(attrHT->addkey(key, isnocase()));
+        //shared via atom table, may want to add this later... escaped and unescaped versions should be considered unique
+        //if (encoded)
+        //    v->key.setEncoded();
         if (!v->value.set(val))
             v->value.setPtr(attrHT->addval(val));
         numAttrs++;
@@ -5941,6 +5952,8 @@ IPTreeMaker *createRootLessPTreeMaker(byte flags, IPropertyTree *root, IPTreeNod
 static IPTreeMaker *createDefaultPTreeMaker(byte flags, PTreeReaderOptions readFlags)
 {
     bool noRoot = 0 != ((unsigned)readFlags & (unsigned)ptr_noRoot);
+    if (0 != ((unsigned)readFlags & (unsigned)ptr_encodeExtNames))
+        return new CPTreeEncodeNamesMaker(flags, NULL, NULL, noRoot);
     return new CPTreeMaker(flags, NULL, NULL, noRoot);
 }
 
@@ -6281,7 +6294,7 @@ void checkWriteJSONDelimiter(IIOStream &out, bool &delimit)
 
 static void writeJSONNameToStream(IIOStream &out, const char *name, unsigned indent, bool &delimit)
 {
-    if (!name || !*name)
+    if (!name)
         return;
     checkWriteJSONDelimiter(out, delimit);
     if (indent)
@@ -6293,9 +6306,7 @@ static void writeJSONNameToStream(IIOStream &out, const char *name, unsigned ind
         writeCharToStream(out, ' ');
 
     writeCharToStream(out, '"');
-    //Expand any specially encoded names for strings that cannot be stored in the PTree implementation
-    if (!streq(name, "__empty__"))
-        writeStringToStream(out, name);
+    writeStringToStream(out, name);
     writeStringToStream(out, "\": ");
     delimit = false;
 }
@@ -6352,7 +6363,14 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
     {
         if (!name || !*name)
             name = "__unnamed__";
-        writeJSONNameToStream(out, name, (flags & JSON_Format) ? indent : 0, delimit);
+        if (!isPTreeNameEncoded(tree))
+            writeJSONNameToStream(out, name, (flags & JSON_Format) ? indent : 0, delimit);
+        else
+        {
+            StringBuffer decoded;
+            decodePtreeName(decoded, name);
+            writeJSONNameToStream(out, decoded.str(), (flags & JSON_Format) ? indent : 0, delimit);
+        }
     }
 
     checkWriteJSONDelimiter(out, delimit);
@@ -6382,7 +6400,14 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
                     const char *val = it->queryValue();
                     if (val)
                     {
-                        writeJSONNameToStream(out, key, (flags & JSON_Format) ? indent+1 : 0, delimit);
+                        if (!isPTreeAttributeNameEncoded(tree, key))
+                            writeJSONNameToStream(out, key, (flags & JSON_Format) ? indent+1 : 0, delimit);
+                        else
+                        {
+                            StringBuffer decoded;
+                            decodePtreeName(decoded, key);
+                            writeJSONNameToStream(out, decoded.str(), (flags & JSON_Format) ? indent+1 : 0, delimit);
+                        }
                         if (flags & JSON_SanitizeAttributeValues)
                             writeJSONValueToStream(out, val, delimit, isHiddenWhenSanitized(val));
                         else
@@ -7203,10 +7228,6 @@ protected:
         if ('\"'!=nextChar)
             expecting("\"");
         readString(name);
-        //A blank mapping is legal in json, map it to a well defined internal value so external files can be parsed. (E.g. package-lock.json)
-        if (!name.length())
-            name.append("__empty__");
-
         readNext();
         skipWS();
         if (':'!=nextChar)
@@ -8019,7 +8040,7 @@ IPropertyTree *createPTreeFromJSONString(const char *json, byte flags, PTreeRead
     Owned<IPTreeMaker> _iMaker;
     if (!iMaker)
     {
-        iMaker = createDefaultPTreeMaker(flags, readFlags);
+        iMaker = createDefaultPTreeMaker(flags, (PTreeReaderOptions)(readFlags|ptr_encodeExtNames));
         _iMaker.setown(iMaker);
     }
     Owned<IPTreeReader> reader = createJSONStringReader(json, *iMaker, readFlags);
@@ -8032,7 +8053,7 @@ IPropertyTree *createPTreeFromJSONString(unsigned len, const char *json, byte fl
     Owned<IPTreeMaker> _iMaker;
     if (!iMaker)
     {
-        iMaker = createDefaultPTreeMaker(flags, readFlags);
+        iMaker = createDefaultPTreeMaker(flags, (PTreeReaderOptions)(readFlags|ptr_encodeExtNames));
         _iMaker.setown(iMaker);
     }
     Owned<IPTreeReader> reader = createJSONBufferReader(json, len, *iMaker, readFlags);
@@ -8945,7 +8966,7 @@ public:
 
     virtual void loadSequence(const char *tagname)
     {
-        if (!tagname || !*tagname) //if unmapped (unnamed) sequences are possible have to decide how to name them in the ptree, later
+        if (!tagname)
             throw makeStringException(99, "libyaml parser expected sequence name");
 
         yaml_event_t event;
@@ -8991,7 +9012,7 @@ public:
     {
         bool binaryContent = false;
         StringBuffer content;
-        if (tagname && *tagname)
+        if (tagname)
             iEvent->beginNode(tagname, sequence, parser.offset);
 
         yaml_event_t event;
@@ -9153,7 +9174,7 @@ IPropertyTree *createPTreeFromYAMLString(unsigned len, const char *yaml, byte fl
     Owned<IPTreeMaker> _iMaker;
     if (!iMaker)
     {
-        iMaker = createDefaultPTreeMaker(flags, readFlags);
+        iMaker = createDefaultPTreeMaker(flags, (PTreeReaderOptions)(readFlags|ptr_encodeExtNames));
         _iMaker.setown(iMaker);
     }
     Owned<IPTreeReader> reader = createYAMLBufferReader(yaml, len, *iMaker, readFlags);
@@ -9311,18 +9332,31 @@ public:
 
 static void _toYAML(const IPropertyTree *tree, YAMLEmitter &yaml, byte flags, bool root=false, bool isArrayItem=false)
 {
-    const char *name = tree->queryName();
-    if (!root && !isArrayItem)
+    bool hiddenRootArrayObject = false;
+    //Having to decode is the uncommon case.  Keep overhead low by only using a StringAttr here, and if we do have to decode, take the hit then and use an adapter (StringAttrBuilder).
+    StringAttr decoded;
     {
-        if (!name || !*name)
-            name = "__unnamed__";
-        yaml.writeName(name);
+        const char *name = tree->queryName();
+        hiddenRootArrayObject = isRootArrayObjectHidden(root, name, flags);
+        if (!root && !isArrayItem)
+        {
+            if (!name || !*name)
+                name = "__unnamed__";
+            else if (isPTreeNameEncoded(tree))
+            {
+                {
+                    StringAttrBuilder decodedBuilder(decoded);
+                    decodePtreeName(decodedBuilder, name);
+                }
+                name = decoded.str();
+            }
+            yaml.writeName(name);
+        }
     }
 
     Owned<IAttributeIterator> it = tree->getAttributes(true);
     bool hasAttributes = it->first();
     bool complex = (hasAttributes || tree->hasChildren());
-    bool hiddenRootArrayObject = isRootArrayObjectHidden(root, name, flags);
 
     if (!hiddenRootArrayObject)
     {
@@ -9333,9 +9367,18 @@ static void _toYAML(const IPropertyTree *tree, YAMLEmitter &yaml, byte flags, bo
         {
             ForEach(*it)
             {
-                const char *key = it->queryName()+1;
+                const char *key = it->queryName();
+                if (isPTreeAttributeNameEncoded(tree, key))
+                {
+                    {
+                        decoded.clear();
+                        StringAttrBuilder decodedAtBuilder(decoded);
+                        decodePtreeName(decodedAtBuilder, key);
+                    }
+                    key = decoded.str();
+                }
                 const char *val = it->queryValue();
-                yaml.writeAttribute(key, val, isSanitizedAndHidden(val, flags, true));
+                yaml.writeAttribute(key+1, val, isSanitizedAndHidden(val, flags, true));
             }
         }
     }
@@ -9384,7 +9427,25 @@ static void _toYAML(const IPropertyTree *tree, YAMLEmitter &yaml, byte flags, bo
         if (endprior)
             yaml.endSequence();
         if (first)
-            yaml.beginSequence(hiddenRootArrayObject ? nullptr : element.queryName());
+        {
+            const char *name = nullptr;
+            if (!hiddenRootArrayObject)
+            {
+                if (!isPTreeNameEncoded(&element))
+                    name = element.queryName();
+                else
+                {
+                    {
+                        decoded.clear();
+                        StringAttrBuilder decodedBuilder(decoded);
+                        decodePtreeName(decodedBuilder, element.queryName());
+                    }
+                    name = decoded.str();
+                }
+            }
+
+            yaml.beginSequence(name);
+        }
 
         _toYAML(&element, yaml, flags, false, sequence);
     }
@@ -9480,4 +9541,364 @@ void copyPropIfMissing(IPropertyTree & target, const char * targetName, IPropert
         else
             target.setProp(targetName, source.queryProp(sourceName));
     }
+}
+
+inline void checkEndHexSequence(StringBuffer &s, bool &hexSequence)
+{
+    if (hexSequence)
+    {
+        //close current hex stream sequence
+        s.append('_');
+        hexSequence = false;
+    }
+}
+inline bool isValidPTreeNameChar(const char *ch, unsigned remaining, unsigned &chlen, bool isatt, bool first)
+{
+    chlen = 0;
+    if (!ch || !*ch || !remaining)
+        return false;
+    chlen = utf8CharLen((const unsigned char *)ch, remaining);
+    if (0==chlen)
+    {
+        chlen=1;
+        return false;
+    }
+    if (chlen>1)
+        return !isatt;  //attributes do not seem to currently support multibyte characters in their names
+    if (first)
+        return isValidXPathStartChr(*ch);
+    return isValidXPathChr(*ch);
+}
+
+const char *findFirstInvalidPTreeNameChar(const char *ch, unsigned remaining)
+{
+    if (!ch)
+        return nullptr;
+    if (remaining==0 || *ch=='\0') //empty name still needs to trigger a special encoding
+        return ch;
+    bool isatt;
+    if ('@'==*ch)
+    {
+        isatt=true;
+        ch++;
+        remaining--;
+    }
+    else
+        isatt=false;
+
+    if (!remaining)
+        return nullptr;
+
+    unsigned chlen = 0;
+    if (!isValidPTreeNameChar(ch, remaining, chlen, isatt, true))
+        return ch;
+    if (remaining<chlen)
+        return nullptr;
+    ch += chlen;
+    remaining -= chlen;
+    while (remaining)
+    {
+        if (!isValidPTreeNameChar(ch, remaining, chlen, isatt, false))
+            return ch;
+        if (remaining<=chlen)
+            return nullptr;
+        ch += chlen;
+        remaining -= chlen;
+    }
+    return nullptr;
+}
+
+const char *findFirstInvalidPTreeNameChar(const char *ch)
+{
+    if (!ch)
+        return nullptr;
+    return findFirstInvalidPTreeNameChar(ch, strlen(ch));
+}
+
+static inline bool checkAppendValidPTreeNameChar(StringBuffer &s, const char *ch, unsigned remaining, unsigned &chlen, bool isatt, bool first, bool &hexSequence)
+{
+    if (!isValidPTreeNameChar(ch, remaining, chlen, isatt, first))
+        return false;
+    checkEndHexSequence(s, hexSequence);
+    s.append(chlen, ch);
+    return true;
+}
+
+inline void appendPTreeNameSpecialEncoding(StringBuffer &s, const char *enc, bool &hexSequence)
+{
+    checkEndHexSequence(s, hexSequence);
+    s.append('_');
+    s.append(enc);
+}
+
+inline StringBuffer &encodePTreeNameUtf8Char(StringBuffer &s, const char *&ch, unsigned &remaining, bool isatt, bool &hexSequence, bool &first)
+{
+    unsigned chlen = 1;
+    if (first && (*ch=='@'))
+    {
+        s.append('@');
+        ch++;
+        remaining--;
+        if (remaining==0 || *ch=='\0')
+            return s;
+    }
+    if (*ch!='_' && checkAppendValidPTreeNameChar(s, ch, remaining, chlen, isatt, first, hexSequence))
+    {
+        remaining -= chlen;
+        ch += chlen;
+        first = false;
+        return s;
+    }
+    switch (*ch)
+    {
+        case '_':
+            appendPTreeNameSpecialEncoding(s, "_", hexSequence);
+            break;
+        case ' ':
+            appendPTreeNameSpecialEncoding(s, "s", hexSequence);
+            break;
+        case '@':
+            appendPTreeNameSpecialEncoding(s, "a", hexSequence);
+            break;
+        case '\\':
+            appendPTreeNameSpecialEncoding(s, "b", hexSequence);
+            break;
+        case '/':
+            appendPTreeNameSpecialEncoding(s, "f", hexSequence);
+            break;
+        case '\n':
+            appendPTreeNameSpecialEncoding(s, "n", hexSequence);
+            break;
+        case '\"':
+            appendPTreeNameSpecialEncoding(s, "Q", hexSequence);
+            break;
+        case '\r':
+            appendPTreeNameSpecialEncoding(s, "r", hexSequence);
+            break;
+        case '\'':
+            appendPTreeNameSpecialEncoding(s, "q", hexSequence);
+            break;
+        case '\t':
+            appendPTreeNameSpecialEncoding(s, "t", hexSequence);
+            break;
+        default:
+            {
+                if (!hexSequence)
+                {
+                    s.append("_x");
+                    hexSequence = true;
+                }
+                appendDataAsHex(s, chlen, (const void *)ch);
+            }
+            break;
+    }
+    ch += chlen;
+    remaining -= chlen;
+    if (first)
+        first = false;
+    return s;
+}
+
+StringBuffer &encodePTreeName(StringBuffer &s, unsigned size, const char *value, const char *startEncoding)
+{
+    if (!value || !size)
+        return s.append("_0");
+    bool isattr = ('@'==*value);
+    if (isattr && size==1)
+        return s.append("@_0");
+    //preallocate some space, with expansion of characters to avoid constant reallocation while appending below
+    s.ensureCapacity(size + size/2);
+    if (startEncoding)
+    {
+        //see if we have any existing escape characters to expand ('_' ==> "__")
+        const void *realStart = memchr(value, '_', startEncoding - value);
+        if (realStart)
+            startEncoding = (const char *) realStart;
+        unsigned skipSize = startEncoding-value;
+        if (skipSize > size)
+            return s;
+        s.append(skipSize, value);
+        value = startEncoding;
+        size -= skipSize;
+    }
+    bool hexSequence = false;
+    bool first = true;
+    while (size)
+        encodePTreeNameUtf8Char(s, value, size, isattr, hexSequence, first);
+    checkEndHexSequence(s, hexSequence);
+    return s;
+}
+
+StringBuffer &encodePTreeName(StringBuffer &s, const char *value, const char *startEncoding)
+{
+    if (!value)
+        return s.append("_0");
+    return encodePTreeName(s, strlen(value), value, startEncoding);
+}
+
+//Only encode the PTREE XPATH name if necessary. That matches the way internal PTREE names are stored allowing the resulting XPATH to be used directly
+StringBuffer &appendPTreeXPathName(StringBuffer &s, unsigned size, const char *value)
+{
+    if (!size || !value)
+        return s.append("_0");
+    const char *startEncoding = findFirstInvalidPTreeNameChar(value, size);
+    if (!startEncoding)
+        return s.append(value);
+    return encodePTreeName(s, size, value, startEncoding);
+}
+
+StringBuffer &appendPTreeXPathName(StringBuffer &s, const char *value)
+{
+    if (isEmptyString(value))
+        return s;
+    return appendPTreeXPathName(s, strlen(value), value);
+}
+
+void markPTreeNameEncoded(IPropertyTree *tree)
+{
+    if (!tree)
+        return;
+    PTree *pt = static_cast<PTree*>(tree);
+    pt->markNameEncoded();
+}
+
+bool isPTreeNameEncoded(const IPropertyTree *tree)
+{
+    if (!tree)
+        return false;
+    const PTree *pt = static_cast<const PTree*>(tree);
+    return pt->isNameEncoded();
+}
+
+void setPTreeAttribute(IPropertyTree *tree, const char *name, const char *value, bool markEncoded)
+{
+    if (!tree || isEmptyString(name))
+        return;
+    PTree *pt = static_cast<PTree*>(tree);
+    pt->setAttribute(name, value, markEncoded);
+}
+
+bool isPTreeAttributeNameEncoded(const IPropertyTree *tree, const char *name)
+{
+    if (!tree || isEmptyString(name))
+        return false;
+    const PTree *pt = static_cast<const PTree*>(tree);
+    return pt->isAttributeNameEncoded(name);
+}
+
+bool isNullPtreeName(const char * name, bool isEncoded)
+{
+    if (isEmptyString(name))
+        return true;
+    return isEncoded && streq(name, "_0");
+}
+
+static void decodePTreeNameHexEncoding(StringBuffer &s, const char *&input, unsigned &_remaining)
+{
+    //use local variables to avoid indirect reference
+    unsigned remaining = _remaining;
+    byte ch = 0;
+    while (remaining >= 2 && *input!='_')
+    {
+        byte high = hex2num(*input++);
+        ch = (high << 4) | hex2num(*input++);
+        remaining -= 2;
+        s.append(ch);
+    }
+    if (remaining && (*input=='_'))
+    {
+        input++;
+        remaining--;
+    }
+    _remaining=remaining;
+}
+
+static void decodePTreeNameEncoding(StringBuffer &s, const char *&input, unsigned &_remaining)
+{
+    //use local variables to avoid indirect reference
+    unsigned remaining = _remaining;
+    if (*input!='_')
+        return;
+    input++;
+    remaining--;
+    if (remaining==0)
+    {
+        _remaining=remaining;
+        return;
+    }
+    if (*input=='x')
+    {
+        input++;
+        remaining--;
+        decodePTreeNameHexEncoding(s, input, remaining);
+        _remaining=remaining;
+        return;
+    }
+    switch (*input)
+    {
+        case '0': //we only currently use this for empy names (including "@" with no tail)
+            break;
+        case '_':
+            s.append('_');
+            break;
+        case 'a':
+            s.append('@');
+            break;
+        case 'b':
+            s.append('\\');
+            break;
+        case 'f':
+            s.append('/');
+            break;
+        case 'n':
+            s.append('\n');
+            break;
+        case 'Q':
+            s.append('\"');
+            break;
+        case 'r':
+            s.append('\r');
+            break;
+        case 's':
+            s.append(' ');
+            break;
+        case 'q':
+            s.append('\'');
+            break;
+        case 't':
+            s.append('\t');
+            break;
+        default: //shouldn't get here since encoding can't be done externally, but treat as if not encoded
+            s.append('_').append(*input);
+            break;
+    }
+    input++;
+    remaining--;
+    _remaining=remaining;
+}
+
+StringBuffer &decodePtreeName(StringBuffer &s, const char *input, unsigned remaining)
+{
+    if (!input || !remaining)
+        return s;
+    s.ensureCapacity(remaining); //preallocate for the multiple appends to follow.. decode should generally be less than or equal to number of input bytes
+    while (remaining)
+    {
+        if ('_'!=*input)
+        {
+            s.append(*input);
+            input++;
+            remaining--;
+        }
+        else
+            decodePTreeNameEncoding(s, input, remaining);
+    }
+    return s;
+}
+
+StringBuffer &decodePtreeName(StringBuffer &s, const char *name)
+{
+    if (isEmptyString(name))
+        return s;
+    return decodePtreeName(s, name, strlen(name));
 }

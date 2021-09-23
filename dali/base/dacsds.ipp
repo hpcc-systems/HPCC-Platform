@@ -333,7 +333,7 @@ public:
     virtual void appendLocal(size32_t size, const void *data, bool binary) override;
     virtual void addingNewElement(IPropertyTree &child, int pos) override;
     virtual void removingElement(IPropertyTree *tree, unsigned pos) override;
-    virtual void setAttribute(const char *attr, const char *val) override;
+    virtual void setAttribute(const char *attr, const char *val, bool encoded) override;
     virtual bool removeAttribute(const char *attr) override;
 
 // IPropertyTree

@@ -570,13 +570,13 @@ class Regression:
                                               server=self.config.espIp,
                                               username=self.config.username,
                                               password=self.config.password,
-                                              retryCount=self.config.maxAttemptCount)
+                                              retryCount=int(self.config.maxAttemptCount))
                         else:
                             res = eclCmd.runCmd("run", engine, cluster, query, report[0],
                                               server=self.config.espIp,
                                               username=self.config.username,
                                               password=self.config.password,
-                                              retryCount=self.config.maxAttemptCount)
+                                              retryCount=int(self.config.maxAttemptCount))
                     except Error as e:
                         logger.debug("Exception raised:'%s' (line: %s )"  % ( str(e), str(inspect.stack()[0][2]) ),  extra={'taskId':cnt})
                         res = False

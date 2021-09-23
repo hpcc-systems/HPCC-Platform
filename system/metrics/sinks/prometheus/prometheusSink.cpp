@@ -70,10 +70,7 @@ PrometheusMetricSink::PrometheusMetricSink(const char *name, const IPropertyTree
         m_server.Get(m_metricsServiceName.str(), [&](const Request& req, Response& res)
         {
             StringBuffer payload;
-            if (!m_metricsManager)
-                throw std::runtime_error("NULL MetricsManager detected!");
-            else
-                toPrometheusMetrics(m_metricsManager->queryMetricsForReport(std::string(m_metricsSinkName.str())), payload, m_verbose);
+            toPrometheusMetrics(m_metricsManager->queryMetricsForReport(std::string(m_metricsSinkName.str())), payload, m_verbose);
 
             res.set_content(payload.str(), PROMETHEUS_METRICS_SERVICE_RESP_TYPE);
             LOG(MCuserInfo, "TxSummary[status=%d;user=@%s:%d;contLen=%ld;req=GET;]\n",res.status, req.remote_addr.c_str(), req.remote_port, req.content_length);
@@ -95,7 +92,7 @@ const char * PrometheusMetricSink::mapHPCCMetricTypeToPrometheusStr(MetricType t
     }
 }
 
-void PrometheusMetricSink::toPrometheusMetrics(std::vector<std::shared_ptr<IMetric>> reportMetrics, StringBuffer & out, bool verbose)
+void PrometheusMetricSink::toPrometheusMetrics(const std::vector<std::shared_ptr<IMetric>> & reportMetrics, StringBuffer & out, bool verbose)
 {
     /*
      * [# HELP <metric name> <metric summary>\n]
@@ -154,6 +151,7 @@ void PrometheusMetricSink::startCollection(MetricsManager *_pManager)
 
 void PrometheusMetricSink::stopCollection()
 {
+	LOG(MCoperatorProgress, "PrometheusMetricsService stopping:  port: '%i' uri: '%s' sinkname: '%s'\n", m_port, m_metricsServiceName.str(), m_metricsSinkName.str());
     m_processing = false;
     m_server.stop();
     m_collectThread.join();

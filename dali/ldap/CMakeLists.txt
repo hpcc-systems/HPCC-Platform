@@ -15,7 +15,7 @@
 ################################################################################
 
 set ( COMMON_LDAP_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/ldap.yaml
+    ${HPCC_SOURCE_DIR}/esp/applications/common/ldap/ldap.yaml
 )
 
 FOREACH( iFile ${COMMON_LDAP_FILES} )

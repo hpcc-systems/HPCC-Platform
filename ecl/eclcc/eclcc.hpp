@@ -85,6 +85,7 @@ const char * const helpText[] = {
     "!   -brk <n>      Trigger a break point in eclcc after nth allocation",
 #endif
     "!   -Dname=value  Override the definition of a global attribute 'name'",
+    "!   --defaultGitPrefix <prefix>  The default prefix used to access git repos when not specified in package.json",
     "!   --deny=all    Disallow use of all named features not specifically allowed using --allow",
     "!   --deny=str    Disallow use of named feature",
     "!   --expand <path> Expand the contents of an archive to a directory",
