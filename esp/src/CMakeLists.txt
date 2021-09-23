@@ -25,21 +25,23 @@ file(REMOVE_RECURSE
 file(COPY
     ${CMAKE_CURRENT_SOURCE_DIR}/dgrid
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch
+    ${CMAKE_CURRENT_SOURCE_DIR}/eslint
     ${CMAKE_CURRENT_SOURCE_DIR}/ganglia
-    ${CMAKE_CURRENT_SOURCE_DIR}/index.html
     ${CMAKE_CURRENT_SOURCE_DIR}/loader
-    ${CMAKE_CURRENT_SOURCE_DIR}/lws.config.js
-    ${CMAKE_CURRENT_SOURCE_DIR}/package.json
-    ${CMAKE_CURRENT_SOURCE_DIR}/package-lock.json
     ${CMAKE_CURRENT_SOURCE_DIR}/put-selector
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src-react
-    ${CMAKE_CURRENT_SOURCE_DIR}/stub.htm
-    ${CMAKE_CURRENT_SOURCE_DIR}/Login.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/xstyle
+    ${CMAKE_CURRENT_SOURCE_DIR}/.eslintrc.js
     ${CMAKE_CURRENT_SOURCE_DIR}/GetUserName.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/index.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/Login.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/lws.config.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/package-lock.json
+    ${CMAKE_CURRENT_SOURCE_DIR}/package.json
+    ${CMAKE_CURRENT_SOURCE_DIR}/stub.htm
     ${CMAKE_CURRENT_SOURCE_DIR}/tsconfig.json
     ${CMAKE_CURRENT_SOURCE_DIR}/webpack.config.js
-    ${CMAKE_CURRENT_SOURCE_DIR}/xstyle
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 set ( SRCS
@@ -290,9 +292,16 @@ set ( SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src-react/util/history.ts
     ${CMAKE_CURRENT_SOURCE_DIR}/src-react/index.tsx
     ${CMAKE_CURRENT_SOURCE_DIR}/src-react/routes.tsx
-    ${CMAKE_CURRENT_SOURCE_DIR}/stub.htm
-    ${CMAKE_CURRENT_SOURCE_DIR}/Login.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/.eslintrc.js
     ${CMAKE_CURRENT_SOURCE_DIR}/GetUserName.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/index.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/Login.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/lws.config.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/package-lock.json
+    ${CMAKE_CURRENT_SOURCE_DIR}/package.json
+    ${CMAKE_CURRENT_SOURCE_DIR}/stub.htm
+    ${CMAKE_CURRENT_SOURCE_DIR}/tsconfig.json
+    ${CMAKE_CURRENT_SOURCE_DIR}/webpack.config.js
 )
 
 if ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
