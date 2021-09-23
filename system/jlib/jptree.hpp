@@ -67,6 +67,12 @@ typedef unsigned IPTIteratorCodes;
 #define iptiter_remoteget 0x06
 #define iptiter_remotegetbranch 0x0e
 
+//typedef unsigned IPTIteratorCodes;
+//#define ipt_ext_null 0x00
+//#define ipt_ext_arrayitem 0x01
+//#define ipt_ext_is_escaped 0x02
+//#define ipt_ext_escape 0x04
+
 extern jlib_decl unsigned queryNumLocalTrees();
 extern jlib_decl unsigned queryNumAtomTrees();
 
@@ -160,7 +166,7 @@ interface jlib_thrown_decl IPTreeReadException : extends IException
 };
 extern jlib_decl IPTreeReadException *createPTreeReadException(int code, const char *msg, const char *context, unsigned line, offset_t offset);
 
-enum PTreeReaderOptions { ptr_none=0x00, ptr_ignoreWhiteSpace=0x01, ptr_noRoot=0x02, ptr_ignoreNameSpaces=0x04 };
+enum PTreeReaderOptions { ptr_none=0x00, ptr_ignoreWhiteSpace=0x01, ptr_noRoot=0x02, ptr_ignoreNameSpaces=0x04, ptr_encodeExtNames=0x08 };
 
 interface IPTreeReader : extends IInterface
 {
@@ -195,7 +201,7 @@ enum ipt_flags
     ipt_ordered = 0x04,   // Preserve element ordering
     ipt_fast    = 0x08,   // Prioritize speed over low memory usage
     ipt_lowmem  = 0x10,   // Prioritize low memory usage over speed
-    ipt_ext3    = 0x20,   // Unused
+    ipt_escaped = 0x20,   // Name is escaped to handle extended character set
     ipt_ext4    = 0x40,   // Used internally in Dali
     ipt_ext5    = 0x80    // Used internally in Dali
 };
@@ -386,5 +392,24 @@ jlib_decl void dbglogYAML(const IPropertyTree *tree, unsigned indent = 0, unsign
 jlib_decl void setPTreeMappingThreshold(unsigned threshold);
 
 jlib_decl void copyPropIfMissing(IPropertyTree & target, const char * targetName, IPropertyTree & source, const char * sourceName);
+
+jlib_decl StringBuffer &encodePtreeName(StringBuffer &s, unsigned size, const char *value, const char *startEncoding=nullptr);
+jlib_decl StringBuffer &encodePTreeName(StringBuffer &s, const char *value, const char *startEncoding=nullptr);
+
+//Only encode the PTREE XPATH name if necessary. That matches the way internal PTREE names are stored allowing the resulting XPATH to be used directly
+jlib_decl StringBuffer &appendPTreeXPathName(StringBuffer &s, unsigned size, const char *value);
+jlib_decl StringBuffer &appendPTreeXPathName(StringBuffer &s, const char *value);
+
+jlib_decl void markPTreeNameEncoded(IPropertyTree *tree);
+jlib_decl bool isPTreeNameEncoded(const IPropertyTree *tree);
+jlib_decl void setPTreeAttribute(IPropertyTree *tree, const char *name, const char *value, bool markEncoded);
+jlib_decl bool isPTreeAttributeNameEncoded(const IPropertyTree *tree, const char *name);
+jlib_decl bool isNullPtreeName(const char * name, bool isEncoded);
+
+jlib_decl StringBuffer &decodePtreeName(StringBuffer &s, const char *name, unsigned len);
+jlib_decl StringBuffer &decodePtreeName(StringBuffer &s, const char *name);
+
+jlib_decl const char *findFirstInvalidPTreeNameChar(const char *ch, unsigned len);
+jlib_decl const char *findFirstInvalidPTreeNameChar(const char *ch);
 
 #endif

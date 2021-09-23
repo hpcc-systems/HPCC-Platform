@@ -55,7 +55,7 @@ bool looksLikeGitPackage(const char * urn)
     return false;
 }
 
-static bool splitRepoVersion(StringBuffer & repoUrn, StringBuffer & repo, StringBuffer & version, const char * urn)
+static bool splitRepoVersion(StringBuffer & repoUrn, StringBuffer & repo, StringBuffer & version, const char * urn, const char * defaultGitPrefix)
 {
     const char * cur = urn;
     //Allow either protocol://<server>/<user>/<repo>[#version] or <user>/<repo>[#version]
@@ -73,11 +73,14 @@ static bool splitRepoVersion(StringBuffer & repoUrn, StringBuffer & repo, String
         //cur now points at the user - same as the other syntax
         cur = slash + 1;
     }
-    else if (!isalnum(*urn))
-        return false;
+    else if (isalnum(*urn))
+    {
+        //Use defaultGitPrefix so gitlab can also be used by default. HPCC-26423
+        repoUrn.append(defaultGitPrefix);
+        addPathSepChar(repoUrn);
+    }
     else
-        //MORE: Pass this in as a defaultGitPrefix so gitlab can also be used by default. HPCC-26423
-        repoUrn.append("git+ssh://github.com/");
+        return false;
 
     const char * hash = strchr(cur, '#');
     if (hash)
@@ -552,7 +555,7 @@ void EclRepositoryManager::addRepository(IEclSourceCollection * source, const ch
 void EclRepositoryManager::addMapping(const char * url, const char * path)
 {
     StringBuffer repoUrn, repo, version;
-    if (!splitRepoVersion(repoUrn, repo, version, url))
+    if (!splitRepoVersion(repoUrn, repo, version, url, options.defaultGitPrefix))
         throw makeStringExceptionV(99, "Unsupported repository link format '%s'", url);
     repos.append(*new EclRepositoryMapping(repo, version, path));
 }
@@ -599,7 +602,7 @@ IEclPackage * EclRepositoryManager::resolveDependentRepository(IIdAtom * name, c
     if (!filename)
     {
         StringBuffer repoUrn, repo, version;
-        if (!splitRepoVersion(repoUrn, repo, version, defaultUrl))
+        if (!splitRepoVersion(repoUrn, repo, version, defaultUrl, options.defaultGitPrefix))
             throw makeStringExceptionV(99, "Unsupported repository link format '%s'", defaultUrl);
         if (isEmptyString(version))
             throw makeStringExceptionV(99, "Expected a version number in the url '%s'", defaultUrl);

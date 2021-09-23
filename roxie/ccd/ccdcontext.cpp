@@ -2722,15 +2722,6 @@ public:
                 logctx.CTXLOG("Created wu %s for query statistics", statsWu->queryWuid());
             }
         }
-        else if (wuid)  // This is undocumented for developer debug use only
-        {
-            IRoxieDaliHelper *daliHelper = checkDaliConnection();
-            assertex(daliHelper );
-            workUnit.setown(daliHelper->attachWorkunit(wuid, _factory->queryDll()));
-            if (!workUnit)
-                throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid);
-            startWorkUnit(); // MORE - will go horribly wrong if specified wu doesn't match query
-        }
         else if (context->getPropBool("@debug", false))
         {
             bool breakAtStart = context->getPropBool("@break", true);
@@ -3569,7 +3560,7 @@ public:
         Owned <IRoxieDaliHelper> daliHelper = connectToDali();
         if (daliHelper && daliHelper->connected())
         {
-            Owned<IConstWorkUnit> externalWU = daliHelper->attachWorkunit(wuid, NULL);
+            Owned<IConstWorkUnit> externalWU = daliHelper->attachWorkunit(wuid);
             if (externalWU)
             {
                 externalWU->remoteCheckAccess(queryUserDescriptor(), false);

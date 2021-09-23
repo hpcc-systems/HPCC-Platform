@@ -59,7 +59,7 @@ public:
     void startServer();
 private:
     std::thread       m_collectThread;
-    MetricsManager * m_metricsManager;
+    MetricsManager *  m_metricsManager;
     StringBuffer      m_metricsSinkName;
 
     std::atomic<bool>               m_processing{false};
@@ -97,7 +97,7 @@ protected:
     virtual void stopCollection() override;
 
     static const char * mapHPCCMetricTypeToPrometheusStr(MetricType type);
-    static void toPrometheusMetrics(std::vector<std::shared_ptr<IMetric>>, StringBuffer & out, bool verbose);
+    static void toPrometheusMetrics(const std::vector<std::shared_ptr<IMetric>> &, StringBuffer & out, bool verbose);
 };
 
 extern "C" MetricSink* getSinkInstance(const char *name, const IPropertyTree *pSettingsTree);

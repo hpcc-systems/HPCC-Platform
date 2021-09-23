@@ -544,13 +544,26 @@ void FileSystemDirectory::processDependencies(IPropertyTree * dependTree, const 
 {
     bool onlyAllowSHA = isPackageLock;
     Owned<IPropertyTreeIterator> depends = dependTree->getElements(path);
+    StringBuffer decodedName;
     ForEach(*depends)
     {
         IPropertyTree & cur = depends->query();
         const char * name = cur.queryName();
-        // The special node __empty__ is added for an emptry string mapping "" =>, which is the entry for this package
-        if (isEmptyString(name) || strieq(name, "__empty__"))
+
+        // An empty string means this package - so ignore it.  It is specially encoded in the ptree.
+        if (isNullPtreeName(name, isPTreeNameEncoded(&cur)))
             continue;
+
+        //npm generates entries in the format "node_modules/package", so skip the leading "node_modules/"
+        //Note because the "tag" contains a / the name will be encoded.
+        const char * encodedNodeModules = "node__modules_f"; // "node_modules/"
+        if (startsWith(name, encodedNodeModules))
+        {
+            name += strlen(encodedNodeModules);
+            //Ensure that any underscores (or other encoded characters), are decoded.
+            decodePtreeName(decodedName.clear(), name);
+            name = decodedName;
+        }
 
         //Ignore the entry if it has already been defined (node_modules has precedence over package-lock.json over package.json)
         IIdAtom * id = createIdAtom(name);
@@ -616,6 +629,7 @@ void FileSystemEclCollection::processFilePath(IErrorReceiver * errs, const char 
                     //a) node_modules directories (in this directory and parents)
                     root.processDependencies(absolutePath);
 
+                    bool lockProcessed = false;
                     //b) A package-lock.json file which ties down the package to a particular SHA
                     {
                         StringBuffer dependencyFilename(absolutePath);
@@ -633,6 +647,7 @@ void FileSystemEclCollection::processFilePath(IErrorReceiver * errs, const char 
                                 root.processDependencies(dependTree, "packages/*", true);
                                 //MORE: This needs re-implementing once Tony has added support for more general tags to json parsing
                                 //root.processDependencies(dependTree, "packages/node_modules/*", true);
+                                lockProcessed = true;
                             }
                             catch (IException * e)
                             {
@@ -644,6 +659,7 @@ void FileSystemEclCollection::processFilePath(IErrorReceiver * errs, const char 
                     }
 
                     //c) A package.json file which allows branches/tags or semantic versioning (once supported)
+                    if (!lockProcessed)
                     {
                         StringBuffer dependencyFilename(absolutePath);
                         addPathSepChar(dependencyFilename).append("package.json");

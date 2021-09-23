@@ -49,6 +49,7 @@ global:
   cost:
     moneyLocale: "en_US.UTF-8"
     perCpu: 0.126
+    storageAtRest: 0.0135
 
   # postJobCommand will execute at the end of a dynamically launched K8s job,
   # when the main entrypoint process finishes, or if the readiness probes trigger a preStop event.
@@ -135,7 +136,7 @@ storage:
   #   secret: <secret-id>                   # what secret is required to access the files.  This could optionally become a list if required (or add secrets:).
   #   defaultSprayParts: 4                  # The number of partitions created when spraying (default: 1)
   #   cost:                                 # The storage cost
-  #     storageAtRest: 0.113                # Storage at rest cost: cost per GiB/month
+  #     storageAtRest: 0.0135               # Storage at rest cost: cost per GiB/month
 
   - name: dali
     storageClass: ""
@@ -308,6 +309,7 @@ dafilesrv:
 
 dali:
 - name: mydali
+  auth: none
   services: # internal house keeping services
     coalescer:
       service:

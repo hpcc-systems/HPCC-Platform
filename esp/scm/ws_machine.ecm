@@ -32,6 +32,7 @@ ESPStruct [nil_remove] DiskUsage
     int64 Available;
     int PercentAvailable;
     [min_ver("1.17")] string Exception;
+    [min_ver("1.18")] int64 ActualSize;
 };
 
 ESPStruct [nil_remove] MachineUsage
@@ -457,7 +458,7 @@ ESPresponse [encode(0), nil_remove, exceptions_inline] GetNodeGroupUsageResponse
 };
 
 //-------- service ---------
-ESPservice [auth_feature("DEFERRED"), version("1.17")] ws_machine
+ESPservice [auth_feature("DEFERRED"), version("1.18")] ws_machine
 {
     ESPmethod [resp_xsl_default("./smc_xslt/clusterprocesses.xslt"), exceptions_inline("./smc_xslt/exceptions.xslt")]
        GetTargetClusterInfo(GetTargetClusterInfoRequest, GetTargetClusterInfoResponse);

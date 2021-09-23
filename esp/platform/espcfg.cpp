@@ -361,6 +361,19 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
         if (m_cfg->getProp("@daliServers", daliservers))
             initDali(daliservers.str()); //won't init if detached
 
+#ifndef _CONTAINERIZED
+        // Copy the 'cost' tree as provided in environment.xml to the globalConfiguration IPropertyTree,
+        // so that it is available to the functions that calculate storage and workunit costs
+        // (Thor, hThor and eclagent are already using globalConfiguration, so this copying is not nessary anywhere else)
+        IPropertyTree * espConfigCost = m_envpt->queryPropTree("cost");
+        if (espConfigCost)
+        {
+            Owned <IPropertyTree> global = getGlobalConfig();
+            IPropertyTree * cost = global->hasProp("cost") ? global->queryPropTree("cost") : global->addPropTree("cost");
+            mergeConfiguration(*cost, *espConfigCost, nullptr, false);
+        }
+#endif
+
         initializeStorageGroups(daliClientActive());
 
         const unsigned dafilesrvConnectTimeout = m_cfg->getPropInt("@dafilesrvConnectTimeout", 10)*1000;

@@ -305,6 +305,7 @@ class CStorageData  : public CInterface
     __int64         m_diskSpaceAvailable = 0;
     __int64         m_diskSpaceUsed = 0;
     __int64         m_diskSpaceTotal = 0;
+    __int64         m_diskSpaceActualSize = 0;
     int             m_diskSpacePercentAvail = 0;
     bool            m_readTitle = false;
     bool            m_readPath = false;
@@ -372,6 +373,16 @@ public:
     const int getDiskSpacePercentAvail()
     {
         return m_diskSpacePercentAvail;
+    }
+
+    void setDiskSpaceActualSize(__int64 space)
+    {
+        m_diskSpaceActualSize = space;
+    }
+
+    const __int64 getDiskSpaceActualSize()
+    {
+        return m_diskSpaceActualSize;
     }
 };
 

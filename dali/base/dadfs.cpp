@@ -180,9 +180,17 @@ static IPropertyTree *getEmptyAttr()
 static double calcFileCost(const char * cluster, double sizeGB, double fileAgeDays)
 {
     Owned<IPropertyTree> plane = getStoragePlane(cluster);
-    if (!plane)
-        return 0.0;
-    double storageCostDaily = plane->getPropReal("cost/@storageAtRest", 0.0) * 12 / 365;
+    double atRestCost = 0.0;
+    if (plane && plane->hasProp("cost/@storageAtRest"))
+    {
+        atRestCost = plane->getPropReal("cost/@storageAtRest", 0.0);
+    }
+    else
+    {
+        Owned<IPropertyTree> global = getGlobalConfig();
+        atRestCost = global->getPropReal("cost/@storageAtRest", 0.0);
+    }
+    double storageCostDaily = atRestCost * 12 / 365;
     return storageCostDaily * sizeGB * fileAgeDays;
 }
 
