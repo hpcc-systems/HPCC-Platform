@@ -1,0 +1,475 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="Containerized_Logging">
+  <title>Containerized Logging</title>
+
+  <sect1 id="HPCC_Systems_ContainerLogging" role="nobrk">
+    <title>Logging Background</title>
+
+    <para>Bare-metal HPCC Systems component logs are written to persistent
+    files on local file system, In contrast, containerized HPCC logs are
+    ephemeral, and their location is not always well defined. HPCC Systems
+    components provide informative application level logs for the purpose of
+    debugging problems, auditing actions, and progress monitoring.</para>
+
+    <para>Following the most widely accepted containerized methodologies, HPCC
+    Systems component log information is routed to the standard output streams
+    rather than local files. In containerized deployments there aren't any
+    component logs written to files as in previous editions.</para>
+
+    <para>These logs are written to the standard error (stderr) stream. At the
+    node level, the contents of the standard error and out streams are
+    redirected to a target location by a container engine. In a Kubernetes
+    environment, the Docker container engine redirects the streams to a
+    logging driver, which Kubernetes configures to write to a file in JSON
+    format. The logs are exposed by Kubernetes via the aptly named "logs"
+    command.</para>
+
+    <para>For example:</para>
+
+    <programlisting>&gt;kubectl logs myesp-6476c6659b-vqckq 
+&gt;0000CF0F PRG INF 2020-05-12 17:10:34.910 1 10690 "HTTP First Line: GET / HTTP/1.1" 
+&gt;0000CF10 PRG INF 2020-05-12 17:10:34.911 1 10690 "GET /, from 10.240.0.4" 
+&gt;0000CF11 PRG INF 2020-05-12 17:10:34.911 1 10690 “TxSummary[activeReqs=22; rcv=5ms;total=6ms;]" </programlisting>
+
+    <para>It is important to understand that these logs are ephemeral in
+    nature, and may be lost if the pod is evicted, the container crashes, the
+    node dies, etc. Also, due to the nature of containerized solutions,
+    related logs are likely to originate from various locations and might need
+    to be collected and processed. It is highly recommended to develop a
+    retention and processing strategy based on your needs.</para>
+
+    <para>Many tools are available to help create an appropriate solution
+    based on either a do-it-yourself approach, or managed features available
+    from cloud providers.</para>
+
+    <para>For the simplest of environments, it might be acceptable to rely on
+    the standard Kubernetes process which forwards all contents of
+    stdout/stderr to file. However, as the complexity of the cluster grows or
+    the importance of retaining the logs' content grows, a cluster-level
+    logging architecture should be employed.</para>
+
+    <para>Cluster-level logging for the containerized HPCC Systems cluster can
+    be accomplished by including a logging agent on each node. The task of
+    each of agent is to expose the logs or push them to a log processing
+    backend. Logging agents are generally not provided out of the box, but
+    there are several available such as Elasticsearch and Stackdriver Logging.
+    Various cloud providers offer built-in solutions which automatically
+    harvest all stdout/err streams and provide dynamic storage and powerful
+    analytic tools, and the ability to create custom alerts based on log
+    data.</para>
+
+    <para>It is your responsibility to determine the appropriate solution to
+    process the streaming log data.</para>
+  </sect1>
+
+  <sect1 id="HPCC_LogProcessing_Solution">
+    <title>Log Processing Solutions</title>
+
+    <para>There are multiple available log processing solutions. You could
+    choose to integrate HPCC Systems logging data with any of your existing
+    logging solutions, or to implement another one specifically for HPCC
+    Systems data. Starting with HPCC Systems version 8.4, we provide a
+    lightweight, yet complete log-processing solution for your convenience. As
+    stated there are several possible solutions, you should choose the option
+    that best meets your requirements. The following sections will look at two
+    possible solutions.</para>
+
+    <sect2 id="elastic4HPCC_HelmChart">
+      <title>The Elastic4hpcclogs chart</title>
+
+      <para>HPCC Systems provides a managed Helm chart,
+      <emphasis>elastic4hpcclogs</emphasis> which utilizes the Elastic Stack
+      Helm charts for Elastic Search, Filebeats, and Kibana. This chart
+      describes a local, minimal Elastic Stack instance for HPCC Systems
+      component log processing. Once successfully deployed, HPCC component
+      logs produced within the same namespace should be automatically indexed
+      on the Elastic Search end-point. Users can query those logs by issuing
+      Elastic Search RESTful API queries, or via the Kibana UI (after creating
+      a simple index pattern).</para>
+
+      <para>Out of the box, the Filebeat forwards the HPCC component log
+      entries to a generically named index: 'filebeat'-&lt;VERSION&gt;-
+      &lt;DATE_STAMP&gt; and writes the log data into 'hpcc.log.*' prefixed
+      fields. It also aggregates k8s, Docker, and system metadata to help the
+      user query the log entries of their interest.</para>
+
+      <para>A Kibana index pattern is created automatically based on the
+      default filebeat index layout.</para>
+    </sect2>
+  </sect1>
+
+  <sect1 id="Installing_helm_logging_charts">
+    <title>Installing the elastic4hpcclogs chart</title>
+
+    <para>Installing the provided simple solution is as the name implies,
+    simple and a convenient way to gather and filter log data. It is installed
+    via our helm charts from the HPCC Systems repository. In the
+    HPCC-platform/helm directory, the <emphasis>elastic4hpcclogs</emphasis>
+    chart is delivered along with the other HPCC System platform components.
+    The next sections will show you how to install and set up the Elastic
+    stack logging solution for HPCC Systems.</para>
+
+    <sect2 id="logs_Add_theHPCC_Systems_Repo">
+      <title>Add the HPCC Systems Repository</title>
+
+      <para>The delivered Elastic for HPCC Systems chart can be found in the
+      HPCC Systems Helm repository. To fetch and deploy the HPCC Systems
+      managed charts, add the HPCC Systems Helm repository if you haven't done
+      so already:</para>
+
+      <programlisting>helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting>
+
+      <para>Once this command has completed successfully, the
+      <emphasis>elastic4hpcclogs</emphasis> chart will be accessible.</para>
+
+      <para>Confirm the appropriate chart was pulled down.</para>
+
+      <programlisting>helm list</programlisting>
+
+      <para>Issuing the helm list command will display the available HPCC
+      Systems charts and repositories. The
+      <emphasis>elastic4hpcclogs</emphasis> chart is among them.</para>
+
+      <para><graphic fileref="../../images/CL-Img01-1.jpg" /></para>
+    </sect2>
+
+    <sect2 id="Elastic4HPCC_Install_theChart">
+      <title>Install the elastic4hpcc chart</title>
+
+      <para>Install the <emphasis>elastic4hpcclogs</emphasis> chart using the
+      following command:</para>
+
+      <programlisting>helm install &lt;Instance_Name&gt; hpcc/elastic4hpcclogs </programlisting>
+
+      <para>Provide the name you wish to call your Elastic Search instance for
+      the &lt;Instance_Name&gt; parameter. For example, you could call your
+      instance "myelk" in which case you would issue the install command as
+      follows:</para>
+
+      <programlisting>helm install myelk hpcc/elastic4hpcclogs </programlisting>
+
+      <para>Upon successful completion, the following message is
+      displayed:</para>
+
+      <programlisting>Thank you for installing elastic4hpcclogs. 
+ A lightweight Elastic Search instance for HPCC component log processing. 
+
+This deployment varies slightly from defaults set by Elastic, please review the effective values. 
+
+PLEASE NOTE: Elastic Search declares PVC(s) which might require explicit manual removal 
+  when no longer needed.
+</programlisting>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic
+                fileref="../../images/caution.png" /></entry>
+
+                <entry><emphasis role="bold">IMPORTANT: </emphasis>PLEASE
+                NOTE: Elastic Search declares PVC(s) which might require
+                explicit manual removal when no longer needed. This can be
+                particularly important for some cloud providers which could
+                accrue costs even after no longer using your instance. You
+                should ensure no components (such as PVCs) persist and
+                continue to accrue costs.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para>NOTE: Depending on the version of Kubernetes, users might be
+      warned about deprecated APIs in the Elastic charts (ClusterRole and
+      ClusterRoleBinding are deprecated in v1.17+). Deployments based on
+      Kubernetes &lt; v1.22 should not be impacted.</para>
+    </sect2>
+
+    <sect2 id="elastic4HPCC_ConfirmingThePodsReady">
+      <title>Confirm Your Pods are Ready</title>
+
+      <para>Confirm the Elastic pods are ready. Sometimes after installing,
+      pods can take a few seconds to come up. Confirming the pods are in a
+      ready state is a good idea before proceeding. To do this, use the
+      following command:</para>
+
+      <programlisting>kubectl get pods </programlisting>
+
+      <para>This command returns the following information, displaying the
+      status of the of the pods.</para>
+
+      <programlisting>elasticsearch-master-0                    1/1     Running            0          
+myelk-filebeat-6wd2g                      1/1     Running            0          
+myelk-kibana-68688b4d4d-d489b             1/1     Running            0      </programlisting>
+
+      <para><graphic fileref="../../images/CL-Img02-1.jpg" /></para>
+
+      <para>Once all the pods are indicating a 'ready' state and 'Running',
+      including the three components for filebeats, Elastic Search, and Kibana
+      (highlighted above) you can proceed.</para>
+    </sect2>
+
+    <sect2 id="confirming_elastic_services">
+      <title>Confirming the Elastic Services</title>
+
+      <para>To confirm the Elastic services are running, issue the following
+      command:</para>
+
+      <programlisting>$ kubectl get svc</programlisting>
+
+      <para>This displays the following confirmation information:</para>
+
+      <programlisting>... 
+elasticsearch-master ClusterIP 10.109.50.54 &lt;none&gt; 9200/TCP,9300/TCP 68m 
+elasticsearch-master-headless ClusterIP None &lt;none&gt; 9200/TCP,9300/TCP 68m 
+myelk-kibana LoadBalancer 10.110.129.199 localhost 5601:31465/TCP 68m 
+...</programlisting>
+
+      <para>Note: The myelk-kibana service is declared as LoadBalancer for
+      convenience.</para>
+    </sect2>
+
+    <sect2 id="Configuring_of_Elastic_Stack_Components">
+      <title>Configuring of Elastic Stack Components</title>
+
+      <para>You may need or want to customise the Elastic stack components.
+      The Elastic component charts values can be overridden as part of the
+      HPCC System deployment command.</para>
+
+      <para>For example:</para>
+
+      <programlisting>helm install myelk hpcc/elastic4hpcclogs --set elasticsearch.replicas=2 </programlisting>
+
+      <para>Please see the Elastic Stack GitHub repository for the complete
+      list of all Filebeat, Elastic Search, LogStash and Kibana options with
+      descriptions.</para>
+    </sect2>
+
+    <sect2>
+      <title>Use of HPCC Systems Component Logs in Kibana</title>
+
+      <para>Once enabled and running, you can explore and query HPCC Systems
+      component logs from the Kibana user interface. Using the Kibana
+      interface is well supported and documented. Kibana index patterns are
+      required to explore Elastic Search data from the Kibana user interface.
+      Elastic provides detailed explanations of the information required to
+      understand and effectively utilize the Elastic-Kibana interface.
+      Kibana's robust documentation, should be referred to for more
+      information about using the Kibana interface. Please see:</para>
+
+      <para><ulink url="???">https://www.elastic.co/</ulink></para>
+
+      <para>and</para>
+
+      <para><ulink
+      url="???">https://www.elastic.co/elastic-stack/</ulink></para>
+
+      <para>Included among the complete documentation are also quick start
+      videos and other helpful resources.</para>
+    </sect2>
+  </sect1>
+
+  <sect1 id="Azure_AKS_Insights">
+    <title>Azure AKS Insights</title>
+
+    <para>Azure AKS Insights is an optional feature designed to help monitor
+    performance and health of Kubernetes based clusters. Once enabled and
+    associated a given AKS with an active HPCC System cluster, the HPCC
+    component logs are automatically captured by Insights. All STDERR/STDOUT
+    data is captured and made available for monitoring and/or querying
+    purposes. As is usually the case with cloud provider features, cost is a
+    significant consideration and should be well understood before
+    implementation. Log content is written to the logs store associated with
+    your Log Analytics workspace.</para>
+
+    <sect2>
+      <title>Enabling Azure Insights</title>
+
+      <para>Enabling Azure's Insights on the target AKS cluster can be done
+      from the Azure portal or via CLI. For detailed Azure documentation:
+      Enable Container insights:</para>
+
+      <para><ulink
+      url="https://docs.microsoft.com/en-us/azure/azure-monitor/containers/container-insights-onboard">https://docs.microsoft.com/en-us/azure/azure-monitor/containers/container-insights-onboard</ulink></para>
+
+      <sect3 id="el4HPCC_EnableInsights_AzurePortal">
+        <title>Azure Portal</title>
+
+        <para>To enable the Azure insights on the Azure portal:</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Select Target AKS cluster</para>
+            </listitem>
+
+            <listitem>
+              <para>Select Monitoring</para>
+            </listitem>
+
+            <listitem>
+              <para>Select Insights</para>
+            </listitem>
+
+            <listitem>
+              <para>Enable - choose default workspace</para>
+            </listitem>
+          </orderedlist></para>
+      </sect3>
+
+      <sect3 id="EnableInsights_CLI">
+        <title>Command Line</title>
+
+        <para>To enable the Azure insights from the command line:</para>
+
+        <para>Optionally, create log-analytics workspace [default workspace
+        otherwise]</para>
+
+        <para>Enter:</para>
+
+        <programlisting>az monitor log-analytics workspace create -g myresourcegroup -n myworkspace --query-access Enabled </programlisting>
+
+        <para>Enable on target AKS cluster (reference the workspace resource
+        id from the previous step)</para>
+
+        <programlisting>az aks enable-addons -g myresourcegroup -n myaks -a monitoring --workspace-resource-id  \
+ "/subscriptions/xyz/resourcegroups/myresourcegroup/providers/ \
+  microsoft.operationalinsights/workspaces/myworkspace" </programlisting>
+
+        <para>The AKS Insights interface on Azure provides Kubernetes-centric
+        cluster/node/container-level health metrics visualizations, and direct
+        links to container logs via "log analytics" interfaces. The logs can
+        be queried via “Kusto” query language (KQL).</para>
+
+        <para>See the Azure documentation for specifics on how to query the
+        logs.</para>
+
+        <para>Example KQL query for fetching "Transaction summary" log entries
+        from an ECLWatch container:</para>
+
+        <programlisting>let ContainerIdList = KubePodInventory 
+| where ContainerName =~ 'xyz/myesp' 
+| where ClusterId =~ '/subscriptions/xyz/resourceGroups/xyz/providers/Microsoft.
+                      ContainerService/managedClusters/aks-clusterxyz' 
+| distinct ContainerID; 
+ContainerLog 
+| where LogEntry contains "TxSummary[" 
+| where ContainerID in (ContainerIdList) 
+| project LogEntrySource, LogEntry, TimeGenerated, Computer, Image, Name, ContainerID 
+| order by TimeGenerated desc 
+| render table </programlisting>
+
+        <para>Sample output</para>
+
+        <para><graphic fileref="../../images/CL-Img03-1.jpg" /></para>
+
+        <para>More complex queries can be formulated to fetch specific
+        information provided in any of the log columns including unformatted
+        data in the log message. The Insights interface facilitates creation
+        of alerts based on those queries, which can be used to trigger emails,
+        SMS, Logic App execution, and many other actions.</para>
+      </sect3>
+    </sect2>
+  </sect1>
+
+  <sect1 id="HPCC_Systems_Application-Level_logs">
+    <title>Controlling HPCC Systems Logging Output</title>
+
+    <para>The HPCC Systems logs provide a wealth of information which can be
+    used for benchmarking, auditing, debugging, monitoring, etc. The type of
+    information provided in the logs and its format is trivially controlled
+    via standard Helm configuration. Keep in mind in container mode, every
+    line of logging output is liable to incur a cost depending on the provider
+    and plan you have and the verbosity should be carefully controlled using
+    the following options.</para>
+
+    <para>By default, the component logs are not filtered, and contain the
+    following columns:</para>
+
+    <programlisting>MessageID TargetAudience LogEntryClass JobID DateStamp TimeStamp ProcessId ThreadID QuotedLogMessage </programlisting>
+
+    <para>The logs can be filtered by TargetAudience, Category, or Detail
+    Level. Further, the output columns can be configured. Logging
+    configuration settings can be applied at the global, or component
+    level.</para>
+
+    <sect2 id="Target_Audience_Filtering">
+      <title>Target Audience Filtering</title>
+
+      <para>The availble target audiences include operator(OPR), user(USR),
+      programmer(PRO), audit(ADT), or all. The filter is controlled by the
+      &lt;section&gt;.logging.audiences value. The string value is comprised
+      of 3 letter codes delimited by the aggregation operator (+) or the
+      removal operator (-).</para>
+
+      <para>For example, all component log output to include Programmer and
+      User messages only:</para>
+
+      <programlisting>helm install myhpcc ./hpcc --set global.logging.audiences="PRO+USR" </programlisting>
+    </sect2>
+
+    <sect2 id="Target_Category_Filtering">
+      <title>Target Category Filtering</title>
+
+      <para>The available target categories include disaster(DIS), error(ERR),
+      information(INF), warning(WRN), progress(PRO), metrics(MET). The
+      category (or class) filter is controlled by the
+      &lt;section&gt;.logging.classes value, comprised of 3 letter codes
+      delimited by the aggregation operator (+) or the removal operator
+      (-).</para>
+
+      <para>For example, the mydali instance's log output to include all
+      classes except for progress:</para>
+
+      <programlisting>helm install myhpcc ./hpcc --set dali[0].logging.classes="ALL-PRO" --set dali[0].name="mydali" </programlisting>
+    </sect2>
+
+    <sect2 id="Log_Detail_Level_Configuration">
+      <title>Log Detail Level Configuration</title>
+
+      <para>Log output verbosity can be adjusted from "critical messages only"
+      (1) up to "report all messages" (100). The default log level is rather
+      high (80) and should be adjusted accordingly.</para>
+
+      <para>For example, verbosity should be medium for all components:</para>
+
+      <programlisting>helm install myhpcc ./hpcc --set global.logging.detail="50" </programlisting>
+    </sect2>
+
+    <sect2 id="Log_Data_Column_Configuration">
+      <title>Log Data Column Configuration</title>
+
+      <para>The available log data columns include messageid(MID),
+      audience(AUD), class(CLS), date(DAT), time(TIM), node(NOD),
+      millitime(MLT), microtime(MCT), nanotime(NNT), processid(PID),
+      threadid(TID), job(JOB), use(USE), session(SES), code(COD),
+      component(COM), quotedmessage(QUO), prefix(PFX), all(ALL), and
+      standard(STD). The log data columns (or fields) configuration is
+      controlled by the &lt;section&gt;.logging.fields value, comprised of 3
+      letter codes delimited by the aggregation operator (+) or the removal
+      operator (-).</para>
+
+      <para>For example, all component log output should include the standard
+      columns except the job ID column:</para>
+
+      <programlisting>helm install myhpcc ./hpcc --set global.logging.fields="STD-JOB" </programlisting>
+
+      <para>Adjustment of per-component logging values can require assertion
+      of multiple component specific values, which can be inconvinient to do
+      via the --set command line parameter. In these cases, a custom values
+      file could be used to set all required fields.</para>
+
+      <para>For example, the ESP component instance 'eclwatch' should output
+      minimal log:</para>
+
+      <programlisting>helm install myhpcc ./hpcc --set -f ./examples/logging/esp-eclwatch-low-logging-values.yaml</programlisting>
+    </sect2>
+  </sect1>
+</chapter>
