@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="Containerized_Logging">
+  <title>Containerized Logging</title>
+
+  <sect1 id="LogsInContainers" role="nobrk">
+    <title>Logging in the Cloud</title>
+
+    <para>In bare metal environments, application logs could be written to
+    files at known locations, and those files then tend to persist. In
+    containerized environments typically those files would be ephemeral, and
+    the locations of those files is potentially distributed and/or dynamic.
+    Starting with HPCC Systems 8.4, we have implemented a lightweight, yet
+    complete log-processing solution.</para>
+
+    <para>This feature provides a managed Helm chart which utilizes the
+    Elastic Stack Helm charts for Elastic Search, Filebeats and Kibana.
+    Following widely accepted containerized methodologies, our component log
+    information is routed to standard output streams rather than to local
+    files.</para>
+  </sect1>
+
+  <sect1 id="Installing_helm_logging_charts">
+    <title>Installing the logging charts</title>
+
+    <para>Out of the box, Kubernetes exposes our component logs via the "get
+    logs" command.</para>
+
+    <para>Because the logs are available to standard output steams, it is easy
+    to re-route to log managers such as Elastic Search, Azure Log Analytics,
+    persistent files, and others.</para>
+
+    <sect2>
+      <title>Add the HPCC Systems Repository</title>
+
+      <para>The delivered Elastic for HPCC Systems chart can be found in the
+      HPCC Systems Helm repository. To fetch and deploy the HPCC Systems
+      managed charts, add the HPCC Systems Helm repository if you haven't done
+      so already:</para>
+
+      <programlisting>helm repo add hpcc https://hpcc-systems.github.io/helm-chart/</programlisting>
+
+      <para>Once this command has completed successfully, the
+      <emphasis>elastic4hpcclogs</emphasis> chart will be accessible.</para>
+
+      <para>Confirm the appropriate chart was pulled down.</para>
+
+      <programlisting>helm list</programlisting>
+
+      <para>Issuing the helm list command will display the available HPCC
+      Systems charts and repositories. The elastic4hpccchart is among
+      them.</para>
+
+      <para><graphic fileref="../../images/CL-Img01-1.jpg" /></para>
+    </sect2>
+
+    <sect2>
+      <title>Install the elastic4hpcc chart</title>
+
+      <para>Install the elastic4hpcc charts using the following
+      command:</para>
+
+      <programlisting>helm install &lt;Instance_Name&gt; hpcc/elastic4hpcclogs </programlisting>
+
+      <para>Provide the name you wish to call your Elastic Search instance for
+      the &lt;Instance_Name&gt; parameter. Upon completion, the following
+      message is displayed:</para>
+
+      <programlisting>Thank you for installing elastic4hpcclogs. A lightweight Elastic Search instance for HPCC component log processing. 
+
+This deployment varies slightly from defaults set by Elastic, please review the effective values. 
+
+PLEASE NOTE: Elastic Search declares PVC(s) which might require explicit manual removal when no longer needed.
+</programlisting>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic
+                fileref="../../images/caution.png" /></entry>
+
+                <entry><emphasis role="bold">IMPORTANT: </emphasis>PLEASE
+                NOTE: Elastic Search declares PVC(s) which might require
+                explicit manual removal when no longer needed. This can be
+                particularly important for some cloud providers which could
+                accrue costs even after no longer using your instance. You
+                should ensure no components (such as PVCs) persist and
+                continue to accrue costs.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para>NOTE: Depending on the version of Kubernetes, users might be
+      warned about deprecated APIs in the Elastic charts (ClusterRole and
+      ClusterRoleBinding are deprecated in v1.17+). Deployments based on
+      Kubernetes &lt; v1.22 should not be impacted.</para>
+    </sect2>
+
+    <sect2>
+      <title>Confirming your pods are ready.</title>
+
+      <para>Confirming the Elastic pods are ready To do this, use the
+      following command:</para>
+
+      <programlisting>kubectl get pods </programlisting>
+
+      <para>This displays the following information showing the running
+      pods:</para>
+
+      <programlisting>elasticsearch-master-0                    1/1     Running            0          
+myelk-filebeat-6wd2g                      1/1     Running            0          
+myelk-kibana-68688b4d4d-d489b             1/1     Running            0      </programlisting>
+
+      <para><graphic fileref="../../images/CL-Img02-1.jpg" /></para>
+
+      <para>Once all the pods are showing a 'ready' including the three
+      components for filebeats, Elastic Search, and Kibana highlighted above
+      you can move on to the next stage.</para>
+    </sect2>
+
+    <sect2 id="confirming_elastic_services">
+      <title>Confirming the Elastic services</title>
+
+      <para>To do this, use the following command:</para>
+
+      <programlisting>$ kubectl get svc</programlisting>
+
+      <para>This displays the following confirmation information:</para>
+
+      <programlisting>... 
+elasticsearch-master ClusterIP 10.109.50.54 &lt;none&gt; 9200/TCP,9300/TCP 68m 
+elasticsearch-master-headless ClusterIP None &lt;none&gt; 9200/TCP,9300/TCP 68m 
+myelk-kibana LoadBalancer 10.110.129.199 localhost 5601:31465/TCP 68m 
+...</programlisting>
+
+      <para>Note: The myelk-kibana service is declared as LoadBalancer for
+      convenience.</para>
+    </sect2>
+
+    <sect2>
+      <title>Configuring of Elastic Stack Components</title>
+
+      <para>You may need or want to customise the Elastic stack components.
+      The Elastic component charts values can be overridden as part of the
+      HPCC System deployment command, for example:</para>
+
+      <programlisting>helm install myelk hpcc/elastic4hpcclogs --set elasticsearch.replicas=2 </programlisting>
+
+      <para>Please see the Elastic Stack GitHub repository for the complete
+      list of all Filebeat, Elastic Search, LogStash and Kibana options with
+      descriptions.</para>
+    </sect2>
+  </sect1>
+
+  <sect1>
+    <title>Using HPCC Systems Component Logs in Kibana</title>
+
+    <para>Once enabled and running, it’s possible to explore and query HPCC
+    Systems component logs from the Kibana UI interface.</para>
+
+    <para>Kibana index patterns are required to explore Elastic Search data
+    from the Kibana user interface. Elastic provides detailed explanation of
+    the index pattern concept, with details about how to create appropriate
+    patterns. In addition to configuring the Kibana to use the index pattern
+    there is additional information required to understand and effectively
+    utilize the Elastic-Kibana interface. Kibana does have robust
+    documentation, we recommend referring to the Kibana documentation for more
+    information about using Kibana. Please see the Kibana
+    documentation:</para>
+
+    <para><ulink url="???">https://www.elastic.co/</ulink></para>
+
+    <para>and</para>
+
+    <para><ulink
+    url="???">https://www.elastic.co/elastic-stack/</ulink></para>
+
+    <para>Included among the complete documentation are also quick start
+    videos and other helpful resources.</para>
+
+    <para>This following information is provided only as a courtesy to get
+    started using the interface, please refer to the Elastic/Kibana official
+    documentation for more complete information.</para>
+
+    <sect2>
+      <title>Accessing Kibana</title>
+
+      <para>The Kibana Service is Accessible using your browser. Direct your
+      brower to:</para>
+
+      <programlisting>localhost:5601 </programlisting>
+
+      <para>...</para>
+    </sect2>
+
+    <sect2>
+      <title>Index Patterns</title>
+
+      <para>Kibana “index patterns” are required to explore Elastic Search
+      data from the Kibana user interface. Elastic provides detailed
+      explanation of the “index pattern” concept, and how to create
+      appropriate patterns. We provide the following simple example based on a
+      typical default installation using the delivered elastic4hpcc
+      chart.</para>
+
+      <sect3>
+        <title>Navigate to Index Patterns</title>
+
+        <orderedlist>
+          <listitem>
+            <para>Select the Hamburger (menu) Icon</para>
+          </listitem>
+
+          <listitem>
+            <para>Scroll down to Stack Management and select Data</para>
+          </listitem>
+
+          <listitem>
+            <para>Select Index Management</para>
+          </listitem>
+
+          <listitem>
+            <para>Select Kibana and select the Index Patterns menu</para>
+          </listitem>
+        </orderedlist>
+      </sect3>
+
+      <sect3>
+        <title>Creating an Index Pattern</title>
+
+        <para>From the Index Patterns section:</para>
+
+        <para>Click the Create Index Pattern button to display the Create
+        Index Pattern Dialog</para>
+
+        <para>Using the dialog, add a name pattern which matches the target
+        index(es),</para>
+
+        <para>For example filebeat*</para>
+
+        <para>In this example, filebeat* is chosen because in this scenario,
+        the index(es) created for the HPCC Systems log data follow this naming
+        convention: filebeat-xxxx</para>
+
+        <para>Select Next Step</para>
+
+        <para>Select @timestamp as the time field.</para>
+
+        <para>Select Create index pattern. Now you can use the interface to
+        explore your data </para>
+      </sect3>
+
+      <sect3>
+        <title>Discovering Log Data</title>
+
+        <para>Navigate to the Discover section by selecting the Hamburger
+        Icon, then Kibana, then Discover</para>
+
+        <para>Select filebeat* as the Index Pattern</para>
+
+        <para>From the Discover section,</para>
+
+        <para>select filebeat* from the index pattern drop-down list.</para>
+      </sect3>
+    </sect2>
+  </sect1>
+</chapter>
