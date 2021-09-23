@@ -152,7 +152,8 @@ void timeoutTopology()
         // If a server is missing a heartbeat for a while, we mark it as down. Queued packets for that server will get discarded, and
         // it will be sorted to the end of the priority list for agent requests
         // The timeout is different for server vs agent - for servers, we want to be sure it really is down, and there's no huge cost for waiting,
-        // while for agents we want to divert traffic away from it ASAP (so long as there are other destinations available
+        // while for agents we want to divert traffic away from it ASAP (so long as there are other destinations available)
+        // Note that there's a difference between 'sick' and 'shut down'
         if (now-lastSeen > timeout)
         {
             if (traceLevel)
@@ -165,7 +166,8 @@ void timeoutTopology()
                 it = topology.erase(it);
                 continue;
             }
-            it->second.instance = 0;  // By leaving the entry present but with instance=0, we will ensure that all clients get to see that the machine is no longer present
+            if (it->second.instance != (time_t) -1)
+                it->second.instance = 0;  // By leaving the entry present but with instance=0, we will ensure that all clients get to see that the machine is degraded
         }
         ++it;
     }
@@ -266,7 +268,7 @@ void doServer(ISocket *socket)
                         if (line[0]=='-')
                         {
                             line = line.substr(1);
-                            instance = 0;
+                            instance = (time_t) -1;
                         }
                         if (traceLevel >= 6)
                             DBGLOG("Adding entry %s instance %" I64F "u", line.c_str(), (__uint64) instance);
