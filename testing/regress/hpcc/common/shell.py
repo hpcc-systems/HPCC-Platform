@@ -69,5 +69,5 @@ class Shell:
                 err_msg += str(''.join([_f for _f in [stdout] if _f]))
             exception.output = err_msg +"'"
             logger.debug("exception.output:'%s'",  err_msg)
-            raise Error('1001', err=str(err_msg))
+            #raise Error('1001', err=str(err_msg))  # Unnecessary noise. The problem will be reported later in the test case result.
         return stdout, stderr
