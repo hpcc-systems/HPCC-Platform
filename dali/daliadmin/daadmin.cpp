@@ -514,7 +514,7 @@ bool dfspart(const char *lname, IUserDescriptor *userDesc, unsigned partnum, Str
 
 //=============================================================================
 
-void dfsmeta(const char *filename,IUserDescriptor *userDesc, bool includeStorage, StringBuffer &out)
+void dfsmeta(const char *filename, IUserDescriptor *userDesc, bool includeStorage, StringBuffer &out)
 {
     //This function isn't going to work on a container system because it won't have access to the storage planes
     initializeStorageGroups(true);
@@ -522,7 +522,7 @@ void dfsmeta(const char *filename,IUserDescriptor *userDesc, bool includeStorage
     if (includeStorage)
         options = options | ROincludeLocation;
     Owned<IPropertyTree> meta = resolveLogicalFilenameFromDali(filename, userDesc, options);
-    toYAML(meta, out, 0U, 4U);
+    toYAML(meta, out, 0U, YAML_HideRootArrayObject);
 }
 
 //=============================================================================
@@ -635,7 +635,7 @@ static void writeGroup(IGroup *group, const char *name, const char *outputFilena
             io->write(eps.length(), eps.str());
         }
         else
-            out.appendf("%s",eps.str());
+            out.appendf("%s\n", eps.str());
     }
 }
 
@@ -705,7 +705,7 @@ int clusterGroup(const char *name, const char *outputFilename, StringBuffer &out
         e->errorMessage(errStr);
         e->Release();
     }
-    out.appendf("%s", errStr.str());
+    out.append(errStr.str());
     return 1;
 }
 
@@ -873,11 +873,11 @@ void dfsunlink(const char *lname, IUserDescriptor *user, StringBuffer &out)
         Owned<IDistributedSuperFile> sf = &iter->get();
         iter.clear();
         if (sf->removeSubFile(lname,false))
-            out.appendf("removed %s from %s",lname,sf->queryLogicalName());
+            out.appendf("removed %s from %s\n",lname,sf->queryLogicalName());
         else
         {
             UERRLOG("FAILED to remove %s from %s",lname,sf->queryLogicalName());
-            out.appendf("FAILED to remove %s from %s",lname,sf->queryLogicalName());
+            out.appendf("FAILED to remove %s from %s\n",lname,sf->queryLogicalName());
         }
     }
 }
@@ -1097,7 +1097,7 @@ int dfsverify(const char *name,CDateTime *cutoff, IUserDescriptor *user, StringB
         if (item.crc!=item.requiredcrc) {
             StringBuffer rfs;
             UERRLOG("VERIFY: FAILED %s (%x,%x) file %s",name,item.crc,item.requiredcrc,item.filename.getRemotePath(rfs).str());
-            out.appendf("VERIFY: FAILED %s (%x,%x) file %s",name,item.crc,item.requiredcrc,item.filename.getRemotePath(rfs).str());
+            out.appendf("VERIFY: FAILED %s (%x,%x) file %s\n",name,item.crc,item.requiredcrc,item.filename.getRemotePath(rfs).str());
             afor.ok = false;
         }
     }
@@ -1363,9 +1363,9 @@ void checksuperfile(const char *lfn,StringBuffer &out,bool fix=false)
         }
     }
     if (fixed)
-        out.appendf("Superfile %s FIXED - from %d to %d subfiles\n",lname.get(),n,subnum);
+        out.appendf("Superfile %s FIXED - from %d to %d subfiles",lname.get(),n,subnum);
     else
-        out.appendf("Superfile %s OK - contains %d subfiles\n",lname.get(),n);
+        out.appendf("Superfile %s OK - contains %d subfiles",lname.get(),n);
 }
 
 //=============================================================================
@@ -1466,12 +1466,12 @@ void checksubfile(const char *lfn, StringBuffer &out)
         }
     }
     if (ok)
-        out.appendf("SubFile %s OK\n",lname.get());
+        out.appendf("SubFile %s OK",lname.get());
 }
 
 //=============================================================================
 
-void listexpires(const char * lfnmask, IUserDescriptor *user, StringBuffer &out)
+void listexpires(const char *lfnmask, IUserDescriptor *user, StringBuffer &out)
 {
     IDFAttributesIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator(lfnmask,user,true,false);
     ForEach(*iter) {
@@ -1694,10 +1694,10 @@ void dfsscopes(const char *name, IUserDescriptor *user, StringBuffer &out)
                 ln.appendf(" Files=%d SuperFiles=%d Scopes=%d",files,sfiles,scopes);
                 if (other)
                     ln.appendf(" others=%d",other);
-                out.appendf("%s",ln.str());
+                out.appendf("%s\n",ln.str());
             }
             else
-                out.appendf("%s EMPTY",ln.str());
+                out.appendf("%s EMPTY\n",ln.str());
         }
     }
 }
@@ -1737,13 +1737,13 @@ void cleanscopes(IUserDescriptor *user, StringBuffer &out)
         else {
             if (recursiveCheckEmptyScope(*conn->queryRoot())) {
                 toremove.append(iter->query());
-                out.appendf("EMPTY %s, %s",iter->query(),s.str());
+                out.appendf("EMPTY %s, %s\n",iter->query(),s.str());
             }
         }
     }
     iter.clear();
     ForEachItemIn(i,toremove) {
-        out.appendf("REMOVE %s",toremove.item(i));
+        out.appendf("REMOVE %s\n",toremove.item(i));
         try {
             queryDistributedFileDirectory().removeEmptyScope(toremove.item(i));
         }
@@ -1773,7 +1773,7 @@ void normalizeFileNames(IUserDescriptor *user, const char *name, StringBuffer &o
             dFile.setown(queryDistributedFileDirectory().lookup(dlfn, user, true, false, false, nullptr, defaultPrivilegedUser, 30000)); // 30 sec timeout
             if (!dFile)
             {
-                out.appendf("Could not find file lfn = %s", dlfn.get());
+                out.appendf("Could not find file lfn = %s\n", dlfn.get());
                 UWARNLOG("Could not find file lfn = %s", dlfn.get());
             }
         }
@@ -1791,7 +1791,7 @@ void normalizeFileNames(IUserDescriptor *user, const char *name, StringBuffer &o
             newDlfn.set(lfn);
             if (!streq(newDlfn.get(), dlfn.get()))
             {
-                out.appendf("File: '%s', renaming to: '%s'", dlfn.get(), newDlfn.get());
+                out.appendf("File: '%s', renaming to: '%s'\n", dlfn.get(), newDlfn.get());
                 try
                 {
                     dFile->rename(newDlfn.get(), user);
@@ -1923,7 +1923,7 @@ void dfsreplication(const char *clusterMask, const char *lfnMask, unsigned redun
                 const char *clusterName = cluster.queryProp("@name");
                 out.appendf("File=%s on cluster=%s - %s %s to %s", fileName, clusterName, dryRun?"Would set":"Setting", propToSet, value.str());
                 if (oldValue)
-                    out.appendf(" [old value = %s]", oldValue);
+                    out.appendf(" [old value = %s]\n", oldValue);
                 if (!dryRun)
                 {
                     if (!streq(value, defVal))

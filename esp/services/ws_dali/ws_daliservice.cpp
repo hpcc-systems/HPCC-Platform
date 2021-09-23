@@ -547,12 +547,7 @@ bool CWSDaliEx::onDFSReplication(IEspContext& context, IEspDFSReplicationRequest
         checkAccess(context);
 
         const char* clusterMask = req.getClusterMask();
-        if (isEmptyString(clusterMask))
-            throw makeStringException(ECLWATCH_INVALID_INPUT, "Cluster Mask not specified.");
-
         const char* lfnMask = req.getLogicalNameMask();
-        if (isEmptyString(lfnMask))
-            throw makeStringException(ECLWATCH_INVALID_INPUT, "Logical File Mask not specified.");
 
         if (req.getRedundancyCount_isNull())
             throw makeStringException(ECLWATCH_INVALID_INPUT, "Redundancy Count not specified");
@@ -582,8 +577,6 @@ bool CWSDaliEx::onNormalizeFileNames(IEspContext& context, IEspNormalizeFileName
         Owned<IUserDescriptor> userDesc = createUserDesc(context);
 
         const char* name = req.getName();
-        if (isEmptyString(name))
-            throw makeStringException(ECLWATCH_INVALID_INPUT, "Name not specified.");
 
         StringBuffer result;
         normalizeFileNames(userDesc, name, result);
@@ -656,7 +649,7 @@ bool CWSDaliEx::onDFSMeta(IEspContext& context, IEspDFSMetaRequest& req, IEspRes
             throw makeStringException(ECLWATCH_INVALID_INPUT, "Include Storage not specified.");
 
         StringBuffer result;
-        dfsmeta(name,userDesc,includeStorage,result);
+        dfsmeta(name, userDesc, includeStorage, result);
         resp.setResult(result);
     }
     catch(IException* e)
@@ -672,18 +665,16 @@ bool CWSDaliEx::onDFSGroup(IEspContext& context, IEspDFSGroupRequest& req, IEspR
     {
         checkAccess(context);
 
-
         const char* name = req.getName();
         if (isEmptyString(name))
             throw makeStringException(ECLWATCH_INVALID_INPUT, "Name not specified.");
-
 
         const char* outputFilename = req.getOutputFileName();
         if (isEmptyString(outputFilename))
             throw makeStringException(ECLWATCH_INVALID_INPUT, "Output File Name not specified.");
 
         StringBuffer result;
-        dfsGroup(name,outputFilename,result);
+        dfsGroup(name, outputFilename, result);
         resp.setResult(result);
     }
     catch(IException* e)
@@ -699,18 +690,16 @@ bool CWSDaliEx::onClusterGroup(IEspContext& context, IEspClusterGroupRequest& re
     {
         checkAccess(context);
 
-
         const char* name = req.getName();
         if (isEmptyString(name))
             throw makeStringException(ECLWATCH_INVALID_INPUT, "Name not specified.");
-
 
         const char* outputFilename = req.getOutputFileName();
         if (isEmptyString(outputFilename))
             throw makeStringException(ECLWATCH_INVALID_INPUT, "Output File Name not specified.");
 
         StringBuffer result;
-        clusterGroup(name,outputFilename,result);
+        clusterGroup(name, outputFilename, result);
         resp.setResult(result);
     }
     catch(IException* e)
@@ -733,7 +722,7 @@ bool CWSDaliEx::onDFSUnlink(IEspContext& context, IEspDFSUnlinkRequest& req, IEs
             throw makeStringException(ECLWATCH_INVALID_INPUT, "Link Name not specified.");
 
         StringBuffer result;
-        dfsunlink(name,userDesc,result);
+        dfsunlink(name, userDesc, result);
         resp.setResult(result);
     }
     catch(IException* e)
@@ -756,7 +745,7 @@ bool CWSDaliEx::onDFSVerify(IEspContext& context, IEspDFSVerifyRequest& req, IEs
             throw makeStringException(ECLWATCH_INVALID_INPUT, "Link Name not specified.");
 
         StringBuffer result;
-        dfsverify(name,NULL,userDesc,result);
+        dfsverify(name, nullptr, userDesc, result);
         resp.setResult(result);
     }
     catch(IException* e)
@@ -776,12 +765,11 @@ bool CWSDaliEx::onCheckSuperFile(IEspContext& context, IEspCheckSuperFileRequest
         if (isEmptyString(name))
             throw makeStringException(ECLWATCH_INVALID_INPUT, "Name not specified.");
 
+        // Not required, parameter defaults to false in checksuperfile()
         bool fix = req.getFix();
-        if (req.getFix_isNull())
-            throw makeStringException(ECLWATCH_INVALID_INPUT, "Fix not specified.");
 
         StringBuffer result;
-        checksuperfile(name,result,fix);
+        checksuperfile(name, result, (req.getFix_isNull() ? false : fix));
         resp.setResult(result);
     }
     catch(IException* e)
@@ -802,7 +790,7 @@ bool CWSDaliEx::onCheckSubFile(IEspContext& context, IEspCheckSubFileRequest& re
             throw makeStringException(ECLWATCH_INVALID_INPUT, "Name not specified.");
 
         StringBuffer result;
-        checksubfile(name,result);
+        checksubfile(name, result);
         resp.setResult(result);
     }
     catch(IException* e)
@@ -825,7 +813,7 @@ bool CWSDaliEx::onListExpires(IEspContext& context, IEspListExpiresRequest& req,
             throw makeStringException(ECLWATCH_INVALID_INPUT, "Linked File Name Mask not specified.");
 
         StringBuffer result;
-        listexpires(name,userDesc,result);
+        listexpires(name, userDesc, result);
         resp.setResult(result);
     }
     catch(IException* e)
@@ -851,7 +839,7 @@ bool CWSDaliEx::onListRelationships(IEspContext& context, IEspListRelationshipsR
 
 
         StringBuffer result;
-        listrelationships(primary,secondary,result);
+        listrelationships(primary, secondary, result);
         resp.setResult(result);
     }
     catch(IException* e)
@@ -874,7 +862,7 @@ bool CWSDaliEx::onDFSPerm(IEspContext& context, IEspDFSPermRequest& req, IEspRes
             throw makeStringException(ECLWATCH_INVALID_INPUT, "Name not specified.");
 
         StringBuffer result;
-        dfsperm(name,userDesc,result);
+        dfsperm(name, userDesc, result);
         resp.setResult(result);
     }
     catch(IException* e)
@@ -897,7 +885,7 @@ bool CWSDaliEx::onDFSCompRatio(IEspContext& context, IEspDFSCompRatioRequest& re
             throw makeStringException(ECLWATCH_INVALID_INPUT, "Name not specified.");
 
         StringBuffer result;
-        dfscompratio(name,userDesc,result);
+        dfscompratio(name, userDesc, result);
         resp.setResult(result);
     }
     catch(IException* e)

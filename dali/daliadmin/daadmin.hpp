@@ -45,7 +45,7 @@ extern DALIADMIN_API unsigned count(const char *path);
 
 extern DALIADMIN_API bool dfsfile(const char *lname, IUserDescriptor *userDesc, StringBuffer &out, UnsignedArray *partslist = nullptr);
 extern DALIADMIN_API bool dfspart(const char *lname,IUserDescriptor *userDesc, unsigned partnum, StringBuffer &out);
-extern DALIADMIN_API void dfsmeta(const char *filename,IUserDescriptor *userDesc, bool includeStorage, StringBuffer &out);
+extern DALIADMIN_API void dfsmeta(const char *filename, IUserDescriptor *userDesc, bool includeStorage, StringBuffer &out);
 extern DALIADMIN_API void setdfspartattr(const char *lname, unsigned partNum, const char *attr, const char *value, IUserDescriptor *userDesc, StringBuffer &out);
 extern DALIADMIN_API void dfscsv(const char *dali, IUserDescriptor *udesc, StringBuffer &out);
 extern DALIADMIN_API bool dfsCheck(StringBuffer &out);
@@ -63,7 +63,7 @@ extern DALIADMIN_API void unprotect(const char *filename, const char *callerid, 
 extern DALIADMIN_API void listprotect(const char *filename, const char *callerid, StringBuffer &out);
 extern DALIADMIN_API void checksuperfile(const char *lfn, StringBuffer &out, bool fix);
 extern DALIADMIN_API void checksubfile(const char *lfn, StringBuffer &out);
-extern DALIADMIN_API void listexpires(const char * lfnmask, IUserDescriptor *user, StringBuffer &out);
+extern DALIADMIN_API void listexpires(const char *lfnmask, IUserDescriptor *user, StringBuffer &out);
 extern DALIADMIN_API void listrelationships(const char *primary, const char *secondary, StringBuffer &out);
 extern DALIADMIN_API void dfscompratio (const char *lname, IUserDescriptor *user, StringBuffer &out);
 extern DALIADMIN_API void dfsscopes(const char *name, IUserDescriptor *user, StringBuffer &out);
