@@ -1710,10 +1710,12 @@ public:
                 dlfn.clearForeign();
 #ifdef _CONTAINERIZED
             const char *defaultDir = defaultPlaneDirPrefix;
+            bool defaultDirPerPart = defaultPlaneDirPerPart;
 #else
             const char *defaultDir = nullptr;
+            bool defaultDirPerPart = false;
 #endif
-            makePhysicalPartName(dlfn.get(), partNo, numParts, localLocation, replicationLevel, DFD_OSdefault, defaultDir);
+            makePhysicalPartName(dlfn.get(), partNo, numParts, localLocation, replicationLevel, DFD_OSdefault, defaultDir, defaultDirPerPart);
         }
         Owned<ILazyFileIO> ret;
         try

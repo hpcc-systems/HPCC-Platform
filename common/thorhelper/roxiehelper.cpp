@@ -2399,7 +2399,7 @@ void ClusterWriteHandler::getPhysicalName(StringBuffer & name, const char * clus
 {
     Owned<IStoragePlane> plane = getDataStoragePlane(cluster, false);
     const char * prefix = plane ? plane->queryPrefix() : nullptr;
-    makePhysicalPartName(logicalName.get(), 1, 1, name, 0, DFD_OSdefault, prefix);
+    makePhysicalPartName(logicalName.get(), 1, 1, name, 0, DFD_OSdefault, prefix, false);
 }
 
 void ClusterWriteHandler::addCluster(char const * cluster)

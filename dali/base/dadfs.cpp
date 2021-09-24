@@ -4255,16 +4255,19 @@ public:
             myBase = newbasedir;
         }
         else
+        {
             myBase = queryBaseDirectory(grp_unknown, 0, os);
+            diroverride = myBase;
+        }
 
         StringBuffer baseDir, newPath;
-        makePhysicalPartName(logicalName.get(), 0, 0, newPath, false, os, diroverride);
+        getLFNDirectoryUsingBaseDir(newPath, logicalName.get(), diroverride);
         if (!getBase(directory, newPath, baseDir))
             baseDir.append(myBase); // getBase returns false, if directory==newPath, so have common base
         getPartMask(newmask,newname,width);
         if (newmask.length()==0)
             return false;
-        makePhysicalPartName(newname, 0, 0, newPath.clear(), false, os, diroverride);
+        getLFNDirectoryUsingBaseDir(newPath.clear(), newname, diroverride);
         if (newPath.length()==0)
             return false;
         if (isPathSepChar(newPath.charAt(newPath.length()-1)))
@@ -4278,7 +4281,7 @@ public:
             newNames.append(*new CIStringArray);
             CDistributedFilePart &part = parts.item(i);
             for (unsigned copy=0; copy<part.numCopies(); copy++) {
-                makePhysicalPartName(newname, i+1, width, newPath.clear(), false, os, myBase);
+                makePhysicalPartName(newname, i+1, width, newPath.clear(), 0, os, myBase, hasDirPerPart());
                 newPath.remove(0, strlen(myBase));
 
                 StringBuffer copyDir(baseDir);

@@ -322,15 +322,19 @@ extern da_decl StringBuffer &makePhysicalPartName(
                                 unsigned partno,                    // part number (1..)
                                 unsigned partmax,                   // number of parts (1..)
                                 StringBuffer &result,               // result filename (or directory name if part 0)
-                                unsigned replicateLevel = 0,       // uses replication directory
-                                DFD_OS os=DFD_OSdefault,            // os must be specified if no dir specified
-                                const char *diroverride=NULL);      // override default directory
+                                unsigned replicateLevel,            // uses replication directory
+                                DFD_OS os,                          // os must be specified if no dir specified
+                                const char *diroverride,            // override default directory
+                                bool dirPerPart);                   // generate a subdirectory per part
 extern da_decl StringBuffer &makeSinglePhysicalPartName(const char *lname, // single part file
                                                         StringBuffer &result,
                                                         bool allowospath,   // allow an OS (absolute) file path
                                                         bool &wasdfs,       // not OS path
                                                         const char *diroverride=NULL
                                                         );
+// 
+extern da_decl StringBuffer &getLFNDirectoryUsingBaseDir(StringBuffer &result, const char *lname, const char *baseDir);
+extern da_decl StringBuffer &getLFNDirectoryUsingDefaultBaseDir(StringBuffer &result, const char *lname, DFD_OS os);
 
 // set/get defaults
 extern da_decl const char *queryBaseDirectory(GroupType groupType, unsigned replicateLevel=0, DFD_OS os=DFD_OSdefault);

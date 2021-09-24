@@ -477,6 +477,7 @@ public:
             desc->queryProperties().setProp("@job", jobStr.str());
             desc->queryProperties().setProp("@owner", userStr.str());
 
+#ifndef _CONTAINERIZED
             // if supporting different OS's in CLUSTER this should be checked where addCluster called
             DFD_OS os = DFD_OSdefault;
             EnvMachineOS thisOs = queryOS(groups.item(0).queryNode(0).endpoint());
@@ -492,7 +493,7 @@ public:
                 default:
                     break;
             };
-
+#endif
             unsigned offset = 0;
             unsigned total;
             if (restrictedWidth)
@@ -522,7 +523,7 @@ public:
                     }
 #else
                     if (!getConfigurationDirectory(globals->queryPropTree("Directories"), "data", "thor", groupNames.item(gn), thisPlaneDir))
-                        makePhysicalPartName(logicalName, 0, 0, thisPlaneDir, 0, os); // legacy
+                        getLFNDirectoryUsingDefaultBaseDir(thisPlaneDir, logicalName, os); // legacy
 #endif
                     if (!planeDir.length()) // 1st output plane
                     {
@@ -539,11 +540,11 @@ public:
                     }
                 }
                 // places logical filename directory in 'dir'
-                makePhysicalPartName(logicalName, 0, 0, dir, false, os, planeDir.str());
+                getLFNDirectoryUsingBaseDir(dir, logicalName, planeDir.str());
             }
             desc->setDefaultDir(dir.str());
 
-            if (job.getOptBool("subDirPerFilePart", dirPerPart))
+            if (job.getOptBool("subDirPerFilePart", dirPerPart) && total>1)
                 desc->queryProperties().setPropInt("@flags", static_cast<int>(FileDescriptorFlags::dirperpart));
 
             StringBuffer partmask;
