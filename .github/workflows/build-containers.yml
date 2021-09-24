@@ -1,0 +1,139 @@
+name: Docker smoketest build
+on:
+  pull_request:
+    branches:
+      - "master"
+      - "candidate-*"
+      - "!candidate-8.2.*"
+      - "!candidate-8.0.*"
+      - "!candidate-7.12.*"
+      - "!candidate-7.10.*"
+      - "!candidate-7.8.*"
+      - "!candidate-7.6.*"
+      - "!candidate-7.4.*"
+      - "!candidate-7.2.*"
+      - "!candidate-7.0.*"
+      - "!candidate-6.*"
+
+jobs:
+  check-skip:
+    # continue-on-error: true # Uncomment once integration is finished
+    runs-on: ubuntu-latest
+    # Map a step output to a job output
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: hpcc-systems/skip-duplicate-actions@master
+        with:
+          github_token: ${{ github.token }}
+          paths_ignore: '["clienttools/**", "devdoc/**", "docs/**", "helm/**", "initfiles/**" ]'
+
+  build-images:
+    needs: check-skip
+    if: ${{ needs.check-skip.outputs.should_skip != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: vars
+        id: vars
+        run: |
+          echo ::set-output name=base_ver::7.12
+          echo ::set-output name=container_registry::ghcr.io
+          echo ::set-output name=cr_user::${{ github.actor }}
+          echo ::set-output name=build_prbase_sha::${{ github.event.pull_request.base.sha }}
+          echo ::set-output name=build_prbase_label::label-${{ github.event.pull_request.base.sha }}
+          echo ::set-output name=build_pr_label::label-${{ github.sha }}
+          echo ::set-output name=build_user::${{ github.actor }}
+          echo ::set-output name=build_type::RelWithDebInfo
+          echo ::set-output name=use_cppunit::1
+          echo ::set-output name=platform_build_base::platform-build-base
+          echo ::set-output name=platform_build::platform-build
+
+      - name: tracing
+        run: |
+          echo "Branch     = ${GITHUB_REF#refs/heads/}
+          echo "Base ref   = ${GITHUB_REF#refs/heads/}
+          echo "SHA        = ${{ steps.vars.outputs.sha}}"
+          echo "Action     = ${{ github.action }}"
+          echo "Event      = ${{ github.event_name }}"
+          echo "Actor      = ${{ github.actor }}"
+          echo "Ref        = ${{ github.ref }}"
+          echo "base sha   = ${{ github.event.pull_request.base.sha }}"
+          echo "Sha        = ${{ github.sha }}"
+          echo "github.repository = ${{ github.repository }}"
+          echo "repository_owner = ${{ github.repository_owner }}"
+          echo "github.workspace = ${{ github.workspace }}"
+          echo "runner.workspace = ${{ runner.workspace }}"
+          echo "github.event.pull_request.head.repo.owner.login = ${{ github.event.pull_request.head.repo.owner.login }}"
+
+      - name: Checkout PR base
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1 
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Check if PR-Base prebuilt
+        id: check-images
+        run: |
+          build_base_missing=$(docker manifest inspect ${{ steps.vars.outputs.container_registry }}/${{ steps.vars.outputs.cr_user }}/${{ steps.vars.outputs.platform_build_base }}:${{ steps.vars.outputs.base_ver }} > /dev/null ; echo $?)
+          build_prbase_missing=$(docker manifest inspect ${{ steps.vars.outputs.container_registry }}/${{ steps.vars.outputs.cr_user }}/${{ steps.vars.outputs.platform_build }}:${{ steps.vars.outputs.build_prbase_label }} > /dev/null ; echo $?)
+          echo build_base_missing=${build_base_missing}
+          echo build_prbase_missing=${build_prbase_missing}
+          echo ::set-output name=build_base_missing::${build_base_missing}
+          echo ::set-output name=build_prbase_missing::${build_prbase_missing}
+         
+      # build base only if missing, and pr base image is missing, otherwise don't need it.
+      - name: Build build base image
+        if: ${{ steps.check-images.outputs.build_base_missing == '1' && steps.check-images.outputs.build_prbase_missing == '1' }}
+        uses: docker/build-push-action@v2
+        with:
+          context: dockerfiles/${{ steps.vars.outputs.platform_build_base }}
+          builder: ${{ steps.buildx.outputs.name }}
+          tags: |
+            ${{ steps.vars.outputs.container_registry }}/${{ steps.vars.outputs.cr_user }}/${{ steps.vars.outputs.platform_build_base }}:${{ steps.vars.outputs.base_ver }}
+          push: true
+
+      # build base image if missing
+      - name: Build PR-Base image 
+        if: ${{ steps.check-images.outputs.build_prbase_missing == '1' }}
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./dockerfiles/platform-build/Dockerfile
+          builder: ${{ steps.buildx.outputs.name }}
+          tags: |
+            ${{ steps.vars.outputs.container_registry }}/${{ steps.vars.outputs.cr_user }}/${{ steps.vars.outputs.platform_build }}:${{ steps.vars.outputs.build_prbase_label }}
+          push: true
+          build-args: |
+            CR_USER=${{ steps.vars.outputs.cr_user }}
+            CR_REPO=${{ steps.vars.outputs.container_registry }}
+            BASE_VER=${{ steps.vars.outputs.base_ver }}
+            BUILD_USER=${{ github.repository_owner }}
+            BUILD_TAG=${{ steps.vars.outputs.build_prbase_sha }}
+            BUILD_TYPE=${{ steps.vars.outputs.build_type }}
+            USE_CPPUNIT=${{ steps.vars.outputs.use_cppunit }}
+            BUILD_THREADS=${{ steps.vars.outputs.build_threads }}
+
+      - name: Build PR image 
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./dockerfiles/platform-build-incremental-container/Dockerfile
+          builder: ${{ steps.buildx.outputs.name }}
+          tags: |
+            ${{ steps.vars.outputs.container_registry }}/${{ steps.vars.outputs.build_user }}/${{ steps.vars.outputs.platform_build }}:${{ steps.vars.outputs.build_pr_label }}
+          build-args: |
+            CR_USER=${{ steps.vars.outputs.cr_user }}
+            CR_REPO=${{ steps.vars.outputs.container_registry }}
+            PLATFORM_PRBASE_VER=${{ steps.vars.outputs.build_prbase_label }}
+            GITHUB_REPO=${{ github.repository }}
+            GITHUB_PRREF=${{ github.ref }}
+            BUILD_THREADS=${{ steps.vars.outputs.build_threads }}
