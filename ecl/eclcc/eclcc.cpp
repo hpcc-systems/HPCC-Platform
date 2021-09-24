@@ -2169,46 +2169,57 @@ bool EclCC::processFiles()
     bool includePluginsInArchive = !optPruneArchive;
     bool includeLibraryInArchive = !optPruneArchive;
     Owned<IErrorReceiver> errs = optXml ? createXmlFileErrorReceiver(stderr) : createFileErrorReceiver(stderr);
-
-    //Set up the default repository information.  This could be simplified to not use a localRepositoryManager later
-    //if eclcc did not have a strange mode for running multiple queries as part of the regression suite testing on windows.
-    repositoryManager.setOptions(eclRepoPath, optDefaultGitPrefix, optFetchRepos, optUpdateRepos, logVerbose);
-    ForEachItemIn(iMapping, repoMappings)
-    {
-        const char * cur = repoMappings.item(iMapping);
-        const char * eq = strchr(cur, '=');
-        StringBuffer repo(eq-cur, cur);
-        repositoryManager.addMapping(repo, eq+1);
-    }
-
-    //Items first in the list have priority -Dxxx=y overrides all
-    repositoryManager.addSharedSourceFileEclRepository(errs, pluginsPath.str(), ESFallowplugins|ESFnodependencies, logVerbose ? PLUGIN_DLL_MODULE : 0, includePluginsInArchive);
-    repositoryManager.addSharedSourceFileEclRepository(errs, eclLibraryPath.str(), ESFnodependencies, 0, includeLibraryInArchive);
-    //Bundles are not included in other repos.  Should eventually be replaced by dependent repos
-
-    //Ensure symbols for plugins are initialised - see comment before CHqlMergedScope...
-//    lookupAllRootDefinitions(pluginsRepository);
-
     bool ok = true;
-    if (optBatchMode)
-    {
-        processBatchFiles();
-    }
-    else if (inputFiles.ordinality() == 0)
-    {
-        EclCompileInstance info(*this, NULL, *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen, optIgnoreSignatures, optIgnoreUnknownImport, optXml);
-        processReference(info, optQueryMainAttribute, optQueryMainPackage);
-        ok = (errs->errCount() == 0);
 
-        info.logStats(logTimings);
-    }
-    else
+    try
     {
-        EclCompileInstance info(*this, &inputFiles.item(0), *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen, optIgnoreSignatures, optIgnoreUnknownImport, optXml);
-        processFile(info);
-        ok = (errs->errCount() == 0);
+        //Set up the default repository information.  This could be simplified to not use a localRepositoryManager later
+        //if eclcc did not have a strange mode for running multiple queries as part of the regression suite testing on windows.
+        repositoryManager.setOptions(eclRepoPath, optDefaultGitPrefix, optFetchRepos, optUpdateRepos, logVerbose);
+        ForEachItemIn(iMapping, repoMappings)
+        {
+            const char * cur = repoMappings.item(iMapping);
+            const char * eq = strchr(cur, '=');
+            StringBuffer repo(eq-cur, cur);
+            repositoryManager.addMapping(repo, eq+1);
+        }
 
-        info.logStats(logTimings);
+        //Items first in the list have priority -Dxxx=y overrides all
+        repositoryManager.addSharedSourceFileEclRepository(errs, pluginsPath.str(), ESFallowplugins|ESFnodependencies, logVerbose ? PLUGIN_DLL_MODULE : 0, includePluginsInArchive);
+        repositoryManager.addSharedSourceFileEclRepository(errs, eclLibraryPath.str(), ESFnodependencies, 0, includeLibraryInArchive);
+        //Bundles are not included in other repos.  Should eventually be replaced by dependent repos
+
+        //Ensure symbols for plugins are initialised - see comment before CHqlMergedScope...
+    //    lookupAllRootDefinitions(pluginsRepository);
+
+        if (optBatchMode)
+        {
+            processBatchFiles();
+        }
+        else if (inputFiles.ordinality() == 0)
+        {
+            EclCompileInstance info(*this, NULL, *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen, optIgnoreSignatures, optIgnoreUnknownImport, optXml);
+            processReference(info, optQueryMainAttribute, optQueryMainPackage);
+            ok = (errs->errCount() == 0);
+
+            info.logStats(logTimings);
+        }
+        else
+        {
+            EclCompileInstance info(*this, &inputFiles.item(0), *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen, optIgnoreSignatures, optIgnoreUnknownImport, optXml);
+            processFile(info);
+            ok = (errs->errCount() == 0);
+
+            info.logStats(logTimings);
+        }
+    }
+    catch (IException * e)
+    {
+        //Ensure any exceptions are reported as xml if that option is selected
+        StringBuffer msg;
+        errs->reportError(e->errorCode(), e->errorMessage(msg).str(), nullptr, 0, 0, 0);
+        e->Release();
+        ok = false;
     }
 
     return ok;
