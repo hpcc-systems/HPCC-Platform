@@ -119,7 +119,7 @@ export const DataPatterns: React.FunctionComponent<DataPatternsProps> = ({
 
     return <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto}>
         <Sticky stickyPosition={StickyPositionType.Header}>
-            <CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />
+            <CommandBar items={buttons} farItems={rightButtons} />
         </Sticky>
         {wu?.isComplete() ?
             <AutosizeHpccJSComponent widget={dpReport} /> :

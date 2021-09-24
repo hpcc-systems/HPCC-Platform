@@ -23,7 +23,7 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
 }) => {
 
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
-    const [resources] = useWorkunitResources(wuid);
+    const [resources, , , refreshData] = useWorkunitResources(wuid);
 
     //  Grid ---
     const store = useConst(new Observable(new AlphaNumSortMemory("DisplayPath", { Name: true, Value: true })));
@@ -49,7 +49,7 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshData()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -76,7 +76,7 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
                 }
             }
         },
-    ], [refreshTable, selection, uiState.hasSelection]);
+    ], [refreshData, selection, uiState.hasSelection]);
 
     //  Selection  ---
     React.useEffect(() => {

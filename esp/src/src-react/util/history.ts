@@ -150,16 +150,22 @@ export function pushSearch(_: object, state?: any) {
     }, state);
 }
 
+export function updateSearch(_: object, state?: any) {
+    const search = stringify(_ as any);
+    hashHistory.replace({
+        search: search ? "?" + search : ""
+    }, state);
+}
+
 export function pushUrl(_: string, state?: any) {
     hashHistory.push({
         pathname: _
     }, state);
 }
 
-export function updateSearch(_: object, state?: any) {
-    const search = stringify(_ as any);
+export function replaceUrl(_: string, state?: any) {
     hashHistory.replace({
-        search: search ? "?" + search : ""
+        pathname: _
     }, state);
 }
 

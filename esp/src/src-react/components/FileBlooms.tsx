@@ -1,4 +1,5 @@
 import * as React from "react";
+import { CommandBar, ICommandBarItemProps } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import * as Observable from "dojo/store/Observable";
 import { Memory } from "src/Memory";
@@ -17,11 +18,11 @@ export const FileBlooms: React.FunctionComponent<FileBloomsProps> = ({
     logicalFile
 }) => {
 
-    const [file, , _refresh] = useFile(cluster, logicalFile);
+    const [file, , , refreshData] = useFile(cluster, logicalFile);
 
     //  Grid ---
     const store = useConst(new Observable(new Memory("FieldNames")));
-    const [Grid, , refreshTable] = useGrid({
+    const [Grid, , refreshTable, copyButtons] = useGrid({
         store,
         sort: [{ attribute: "FieldNames", "descending": false }],
         filename: "fileBlooms",
@@ -33,21 +34,28 @@ export const FileBlooms: React.FunctionComponent<FileBloomsProps> = ({
     });
 
     React.useEffect(() => {
-        if (file?.Blooms) {
-            const fileBlooms = file?.Blooms?.DFUFileBloom;
-            if (fileBlooms) {
-                store.setData(fileBlooms.map(bloom => {
-                    return {
-                        ...bloom,
-                        FieldNames: bloom?.FieldNames?.Item[0] || "",
-                    };
-                }));
-                refreshTable();
-            }
+        const fileBlooms = file?.Blooms?.DFUFileBloom;
+        if (fileBlooms) {
+            store.setData(fileBlooms.map(bloom => {
+                return {
+                    ...bloom,
+                    FieldNames: bloom?.FieldNames?.Item[0] || "",
+                };
+            }));
+            refreshTable();
         }
-    }, [file?.Blooms, store, refreshTable]);
+    }, [file?.Blooms?.DFUFileBloom, refreshTable, store]);
+
+    //  Command Bar  ---
+    const buttons = React.useMemo((): ICommandBarItemProps[] => [
+        {
+            key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
+            onClick: () => refreshData()
+        },
+    ], [refreshData]);
 
     return <HolyGrail
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <Grid />
         }

@@ -391,7 +391,7 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
 
     if (dojoConfig.isContainer) {
         return <HolyGrail
-            header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={copyButtons} />}
+            header={<CommandBar items={buttons} farItems={copyButtons} />}
             main={
                 <Grid />
             }
@@ -406,7 +406,7 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
         </ReflexSplitter>
         <ReflexElement>
             <HolyGrail
-                header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={copyButtons} />}
+                header={<CommandBar items={buttons} farItems={copyButtons} />}
                 main={
                     <Grid />
                 }

@@ -43,7 +43,7 @@ export function useGrid({ store, query = {}, sort = [], columns, getSelected, fi
 
     useDeepEffect(() => {
         refreshTable();
-    }, [refreshTable], [query]);
+    }, [], [query]);
 
     const copyButtons = React.useMemo((): ICommandBarItemProps[] => [
         ...createCopyDownloadSelection(grid, selection, `${filename}.csv`)
@@ -51,3 +51,8 @@ export function useGrid({ store, query = {}, sort = [], columns, getSelected, fi
 
     return [Grid, selection, refreshTable, copyButtons];
 }
+
+// export function useMemoryGrid({ query = {}, sort = [], columns, getSelected, filename }: useGridProps): [React.FunctionComponent, any[], (clearSelection?: boolean) => void, ICommandBarItemProps[]] {
+//     const [Grid, selection, refreshTable, copyButtons] = useGrid(params);
+//     return [Grid, selection, refreshTable, copyButtons];
+// };

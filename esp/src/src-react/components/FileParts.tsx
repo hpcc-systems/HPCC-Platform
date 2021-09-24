@@ -1,4 +1,5 @@
 import * as React from "react";
+import { ICommandBarItemProps, CommandBar } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { format as d3Format } from "@hpcc-js/common";
 import * as Observable from "dojo/store/Observable";
@@ -20,11 +21,11 @@ export const FileParts: React.FunctionComponent<FilePartsProps> = ({
     logicalFile
 }) => {
 
-    const [file, , _refresh] = useFile(cluster, logicalFile);
+    const [file, , , refreshData] = useFile(cluster, logicalFile);
 
     //  Grid ---
     const store = useConst(new Observable(new Memory("Id")));
-    const [Grid, _selection, refreshTable, _copyButtons] = useGrid({
+    const [Grid, _selection, refreshTable, copyButtons] = useGrid({
         store,
         sort: [{ attribute: "Id", "descending": false }],
         filename: "fileParts",
@@ -57,7 +58,16 @@ export const FileParts: React.FunctionComponent<FilePartsProps> = ({
         }
     }, [cluster, file?.DFUFilePartsOnClusters, store, refreshTable]);
 
+    //  Command Bar  ---
+    const buttons = React.useMemo((): ICommandBarItemProps[] => [
+        {
+            key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
+            onClick: () => refreshData()
+        }
+    ], [refreshData]);
+
     return <HolyGrail
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <Grid />
         }
