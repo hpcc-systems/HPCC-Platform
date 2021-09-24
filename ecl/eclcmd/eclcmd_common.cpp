@@ -173,6 +173,8 @@ EclObjectParameter::EclObjectParameter(unsigned _accept) : type(eclObjTypeUnknow
 
 bool EclObjectParameter::isElfContent()
 {
+    if (mb.length() < 4)
+        return false;
     const char *s = mb.toByteArray();
     return (s[0]==0x7F && s[1]=='E' && s[2]=='L' && s[3]=='F');
 }
