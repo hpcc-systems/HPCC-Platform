@@ -25,7 +25,7 @@ pushd $SCRIPT_DIR 2>&1 > /dev/null
 
 set -e
 
-. ${SCRIPT_DIR}/../cmake_modules/parse_cmake.sh
+. ${SCRIPT_DIR}/../cmake_modules/parse_cmake.sh ${SCRIPT_DIR}/../version.cmake
 parse_cmake
 set_tag $HPCC_PROJECT
 
