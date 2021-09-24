@@ -700,7 +700,12 @@ bool EclCmdWithEclTarget::finalizeOptions(IProperties *globals)
     if (!EclCmdCommon::finalizeOptions(globals))
         return false;
     if (!param.isEmpty())
-        optObj.set(param);
+    {
+        if (optTargetCluster.isEmpty())
+            optTargetCluster.set(param);
+        else
+            optObj.set(param);
+    }
     if (optObj.type == eclObjTypeUnknown)
     {
         if (optAttributePath.length())
