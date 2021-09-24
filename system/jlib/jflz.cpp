@@ -710,7 +710,7 @@ void fastLZCompressToBuffer(MemoryBuffer & out, size32_t len, const void * src)
     if (sz>=len)
     {
         sz = len;
-        memcpy(cmpData, src, len);
+        memcpy_iflen(cmpData, src, len);
     }
     cmpSzMarker.write(sz);
     out.setLength(outbase+sz+sizeof(size32_t)*2);
@@ -728,7 +728,7 @@ void fastLZDecompressToBuffer(MemoryBuffer & out, const void * src)
             throw MakeStringException(0, "fastLZDecompressToBuffer - corrupt data(1) %d %d",written,expsz);
     }
     else
-        memcpy(o,sz,expsz);
+        memcpy_iflen(o,sz,expsz);
 }
 
 void fastLZDecompressToBuffer(MemoryBuffer & out, MemoryBuffer & in)

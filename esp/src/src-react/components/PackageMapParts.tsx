@@ -8,10 +8,11 @@ import * as Observable from "dojo/store/Observable";
 import { Memory } from "src/Memory";
 import * as WsPackageMaps from "src/WsPackageMaps";
 import nlsHPCC from "src/nlsHPCC";
+import { useGrid } from "../hooks/grid";
 import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { AddPackageMapPart } from "./forms/AddPackageMapPart";
-import { DojoGrid, selector } from "./DojoGrid";
+import { selector } from "./DojoGrid";
 import { HolyGrail } from "../layouts/HolyGrail";
 
 const logger = scopedLogger("../components/PackageMapParts.tsx");
@@ -28,35 +29,29 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
     name,
 }) => {
 
-    const [grid, setGrid] = React.useState<any>(undefined);
     const [_package, setPackage] = React.useState<any>(undefined);
     const [showAddPartForm, setShowAddPartForm] = React.useState(false);
-    const [selection, setSelection] = React.useState([]);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     const [showError, setShowError] = React.useState(false);
     const [errorMessage, setErrorMessage] = React.useState("");
 
     //  Grid ---
-    const gridStore = useConst(new Observable(new Memory("Part")));
-    const gridSort = useConst([{ attribute: "Part", "descending": false }]);
-    const gridQuery = useConst({});
-    const gridColumns = useConst({
-        col1: selector({ width: 27, selectorType: "checkbox" }),
-        Part: {
-            label: nlsHPCC.Parts,
-            formatter: function (part, row) {
-                return `<a href="#/packagemaps/${name}/parts/${part}" class='dgrid-row-url'>${part}</a>`;
-            }
-        },
-    });
-
-    const refreshTable = React.useCallback((clearSelection = false) => {
-        grid?.set("query", gridQuery);
-        if (clearSelection) {
-            grid?.clearSelection();
+    const store = useConst(new Observable(new Memory("Part")));
+    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+        store,
+        sort: [{ attribute: "Part", "descending": false }],
+        filename: "packageMapParts",
+        columns: {
+            col1: selector({ width: 27, selectorType: "checkbox" }),
+            Part: {
+                label: nlsHPCC.Parts,
+                formatter: function (part, row) {
+                    return `<a href="#/packagemaps/${name}/parts/${part}" class='dgrid-row-url'>${part}</a>`;
+                }
+            },
         }
-    }, [grid, gridQuery]);
+    });
 
     //  Command Bar ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -83,7 +78,7 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
                         })
                             .then(({ RemovePartFromPackageMapResponse, Exceptions }) => {
                                 if (RemovePartFromPackageMapResponse?.status?.Code === 0) {
-                                    gridStore.remove(item.Part);
+                                    store.remove(item.Part);
                                     refreshTable();
                                 } else if (Exceptions?.Exception.length > 0) {
                                     setShowError(true);
@@ -109,7 +104,7 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
                 }
             }
         },
-    ], [_package, gridStore, name, refreshTable, selection, uiState.hasSelection]);
+    ], [_package, store, name, refreshTable, selection, uiState.hasSelection]);
 
     React.useEffect(() => {
         WsPackageMaps.getPackageMapById({ packageMap: name })
@@ -120,12 +115,12 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
                         Part: part.attributes[0].nodeValue
                     };
                 });
-                gridStore.setData(parts);
+                store.setData(parts);
                 refreshTable();
             })
             .catch(logger.error)
             ;
-    }, [gridStore, name, refreshTable]);
+    }, [store, name, refreshTable]);
 
     React.useEffect(() => {
         WsPackageMaps.PackageMapQuery({})
@@ -155,14 +150,14 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
         }
         <SizeMe monitorHeight>{({ size }) =>
             <HolyGrail
-                header={<CommandBar items={buttons} />}
+                header={<CommandBar items={buttons} farItems={copyButtons} />}
                 main={
-                    <DojoGrid store={gridStore} sort={gridSort} query={gridQuery} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
+                    <Grid />
                 }
             />
         }</SizeMe>
         <AddPackageMapPart
-            showForm={showAddPartForm} setShowForm={setShowAddPartForm} store={gridStore}
+            showForm={showAddPartForm} setShowForm={setShowAddPartForm} store={store}
             refreshTable={refreshTable} target={_package?.Target} packageMap={_package?.Id.split("::")[1]}
         />
     </>;

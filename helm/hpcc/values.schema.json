@@ -272,6 +272,14 @@
             "storageAtRest": {
                 "description": "storage cost (GiB per month)",
                 "type": "number"
+            },
+            "storageReads": {
+                "description": "cost per 10,000 read operations",
+                "type": "number"
+            },
+            "storageWrites": {
+                "description": "cost per 10,000 write operations",
+                "type": "number"
             }
           }
         },

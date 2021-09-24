@@ -1,17 +1,17 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
 import * as domClass from "dojo/dom-class";
 import * as ESPDFUWorkunit from "src/ESPDFUWorkunit";
 import * as FileSpray from "src/FileSpray";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { useGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { Filter } from "./forms/Filter";
 import { Fields } from "./forms/Fields";
-import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
-import { DojoGrid, selector } from "./DojoGrid";
+import { ShortVerticalDivider } from "./Common";
+import { selector } from "./DojoGrid";
 
 const FilterFields: Fields = {
     "Type": { type: "checkbox", label: nlsHPCC.ArchivedOnly },
@@ -52,71 +52,65 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
     store
 }) => {
 
-    const [grid, setGrid] = React.useState<any>(undefined);
     const [showFilter, setShowFilter] = React.useState(false);
     const [mine, setMine] = React.useState(false);
-    const [selection, setSelection] = React.useState([]);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     //  Grid ---
-    const gridStore = useConst(store || ESPDFUWorkunit.CreateWUQueryStore({}));
-    const gridQuery = useConst(formatQuery(filter));
-    const gridSort = useConst([{ attribute: "Wuid", "descending": true }]);
-    const gridColumns = useConst({
-        col1: selector({
-            width: 27,
-            selectorType: "checkbox"
-        }),
-        isProtected: {
-            renderHeaderCell: function (node) {
-                node.innerHTML = Utility.getImageHTML("locked.png", nlsHPCC.Protected);
+    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+        store: store || ESPDFUWorkunit.CreateWUQueryStore({}),
+        query: formatQuery(filter),
+        sort: [{ attribute: "Wuid", "descending": true }],
+        filename: "dfuworkunits",
+        columns: {
+            col1: selector({
+                width: 27,
+                selectorType: "checkbox"
+            }),
+            isProtected: {
+                renderHeaderCell: function (node) {
+                    node.innerHTML = Utility.getImageHTML("locked.png", nlsHPCC.Protected);
+                },
+                width: 25,
+                sortable: false,
+                formatter: function (_protected) {
+                    if (_protected === true) {
+                        return Utility.getImageHTML("locked.png");
+                    }
+                    return "";
+                }
             },
-            width: 25,
-            sortable: false,
-            formatter: function (_protected) {
-                if (_protected === true) {
-                    return Utility.getImageHTML("locked.png");
+            ID: {
+                label: nlsHPCC.ID,
+                width: 180,
+                formatter: function (ID, idx) {
+                    const wu = ESPDFUWorkunit.Get(ID);
+                    return `<img src='${wu.getStateImage()}'>&nbsp;<a href='#/dfuworkunits/${ID}' class='dgrid-row-url'>${ID}</a>`;
                 }
-                return "";
-            }
-        },
-        ID: {
-            label: nlsHPCC.ID,
-            width: 180,
-            formatter: function (ID, idx) {
-                const wu = ESPDFUWorkunit.Get(ID);
-                return `<img src='${wu.getStateImage()}'>&nbsp;<a href='#/dfuworkunits/${ID}' class='dgrid-row-url'>${ID}</a>`;
-            }
-        },
-        Command: {
-            label: nlsHPCC.Type,
-            width: 117,
-            formatter: function (command) {
-                if (command in FileSpray.CommandMessages) {
-                    return FileSpray.CommandMessages[command];
+            },
+            Command: {
+                label: nlsHPCC.Type,
+                width: 117,
+                formatter: function (command) {
+                    if (command in FileSpray.CommandMessages) {
+                        return FileSpray.CommandMessages[command];
+                    }
+                    return "Unknown";
                 }
-                return "Unknown";
-            }
-        },
-        User: { label: nlsHPCC.Owner, width: 90 },
-        JobName: { label: nlsHPCC.JobName, width: 500 },
-        ClusterName: { label: nlsHPCC.Cluster, width: 126 },
-        StateMessage: { label: nlsHPCC.State, width: 72 },
-        PercentDone: {
-            label: nlsHPCC.PctComplete, width: 90, sortable: false,
-            renderCell: function (object, value, node, options) {
-                domClass.add(node, "justify-right");
-                node.innerText = Utility.valueCleanUp(value);
+            },
+            User: { label: nlsHPCC.Owner, width: 90 },
+            JobName: { label: nlsHPCC.JobName, width: 500 },
+            ClusterName: { label: nlsHPCC.Cluster, width: 126 },
+            StateMessage: { label: nlsHPCC.State, width: 72 },
+            PercentDone: {
+                label: nlsHPCC.PctComplete, width: 90, sortable: false,
+                renderCell: function (object, value, node, options) {
+                    domClass.add(node, "justify-right");
+                    node.innerText = Utility.valueCleanUp(value);
+                }
             }
         }
     });
-
-    const refreshTable = React.useCallback((clearSelection = false) => {
-        grid?.set("query", formatQuery(filter));
-        if (clearSelection) {
-            grid?.clearSelection();
-        }
-    }, [filter, grid]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -175,19 +169,11 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
         },
     ], [mine, refreshTable, selection, store, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
 
-    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
-        ...createCopyDownloadSelection(grid, selection, "dfuworkunits.csv")
-    ], [grid, selection]);
-
     //  Filter  ---
     const filterFields: Fields = {};
     for (const field in FilterFields) {
         filterFields[field] = { ...FilterFields[field], value: filter[field] };
     }
-
-    React.useEffect(() => {
-        refreshTable();
-    }, [filter, refreshTable]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -210,10 +196,10 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
     }, [selection]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
+        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={copyButtons} />}
         main={
             <>
-                <DojoGrid store={gridStore} query={gridQuery} sort={gridSort} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
+                <Grid />
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
             </>
         }

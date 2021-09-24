@@ -430,7 +430,7 @@ StringBuffer & formatMoney(StringBuffer &out, unsigned __int64 value)
     std::locale & loc = moneyLocale.queryMoneyLocale();
     ss.imbue(loc);
     unsigned decplaces = std::use_facet<std::moneypunct<char>>(loc).frac_digits();
-    long double mvalue = cost_type2money(value)*std::pow(10, decplaces);
+    long double mvalue = ((long double)cost_type2money(value))*std::pow(10, decplaces);
     ss << std::showbase << std::put_money(mvalue);
     return out.append(ss.str().c_str());
 }

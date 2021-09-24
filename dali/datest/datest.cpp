@@ -74,7 +74,7 @@ static void addTestFile(const char *name,unsigned n)
     Owned<IPropertyTree> fileInfo = createPTree();
     Owned<IFileDescriptor> fileDesc = createFileDescriptor();
     StringBuffer dir;
-    makePhysicalPartName(name, 0, 0, dir, false, DFD_OSdefault);
+    getLFNDirectoryUsingDefaultBaseDir(dir, name, DFD_OSdefault);
     StringBuffer partmask;
     getPartMask(partmask,name,n);
     StringBuffer path;

@@ -3262,7 +3262,7 @@ public:
 #endif
             // MORE - should we create the IDistributedFile here ready for publishing (and/or to make sure it's locked while we write)?
             StringBuffer physicalPath;
-            makePhysicalPartName(lfn.get(), 1, 1, physicalPath, false, DFD_OSdefault, dir); // more - may need to override path for roxie
+            makePhysicalPartName(lfn.get(), 1, 1, physicalPath, 0, DFD_OSdefault, dir, false); // more - may need to override path for roxie
             localpath.set(physicalPath);
             fileExists = (dfile != NULL);
             return write;
