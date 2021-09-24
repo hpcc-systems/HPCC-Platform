@@ -1,18 +1,18 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, DefaultButton, Dropdown, ICommandBarItemProps, IDropdownOption, IStackTokens, Label, mergeStyleSets, MessageBar, MessageBarType, Pivot, PivotItem, Stack } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
 import { SizeMe } from "react-sizeme";
 import * as ESPPackageProcess from "src/ESPPackageProcess";
 import * as WsPackageMaps from "src/WsPackageMaps";
 import nlsHPCC from "src/nlsHPCC";
+import { useGrid } from "../hooks/grid";
 import { pivotItemStyle } from "../layouts/pivot";
 import { pushParams, pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { AddPackageMap } from "./forms/AddPackageMap";
-import { DojoGrid, selector } from "./DojoGrid";
+import { selector } from "./DojoGrid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { ReflexContainer, ReflexElement, ReflexSplitter } from "../layouts/react-reflex";
 import { TextSourceEditor, XMLSourceEditor } from "./SourceEditor";
@@ -87,8 +87,6 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
     tab = "packageMaps"
 }) => {
 
-    const [grid, setGrid] = React.useState<any>(undefined);
-
     const [targets, setTargets] = React.useState<IDropdownOption[]>();
     const [processes, setProcesses] = React.useState<IDropdownOption[]>();
     const [activeMapTarget, setActiveMapTarget] = React.useState("");
@@ -98,7 +96,6 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
     const [processFilters, setProcessFilters] = React.useState<IDropdownOption[]>();
     const [showFilter, setShowFilter] = React.useState(false);
     const [showAddForm, setShowAddForm] = React.useState(false);
-    const [selection, setSelection] = React.useState([]);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     const [showError, setShowError] = React.useState(false);
@@ -183,39 +180,35 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
     }, [activeMapProcess, activeMapTarget]);
 
     //  Grid ---
-    const gridStore = useConst(store || ESPPackageProcess.CreatePackageMapQueryObjectStore({}));
-    const gridQuery = useConst(formatQuery(filter));
-    const gridColumns = useConst({
-        col1: selector({
-            width: 27,
-            selectorType: "checkbox"
-        }),
-        Id: {
-            label: nlsHPCC.PackageMap,
-            formatter: function (Id, idx) {
-                return `<a href="#/packagemaps/${Id}" class='dgrid-row-url'>${Id}</a>`;
-            }
-        },
-        Target: { label: nlsHPCC.Target },
-        Process: { label: nlsHPCC.ProcessFilter },
-        Active: {
-            label: nlsHPCC.Active,
-            formatter: function (active) {
-                if (active === true) {
-                    return "A";
+    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+        store: store || ESPPackageProcess.CreatePackageMapQueryObjectStore({}),
+        query: formatQuery(filter),
+        filename: "packageMap",
+        columns: {
+            col1: selector({
+                width: 27,
+                selectorType: "checkbox"
+            }),
+            Id: {
+                label: nlsHPCC.PackageMap,
+                formatter: function (Id, idx) {
+                    return `<a href="#/packagemaps/${Id}" class='dgrid-row-url'>${Id}</a>`;
                 }
-                return "";
-            }
-        },
-        Description: { label: nlsHPCC.Description }
-    });
-
-    const refreshTable = React.useCallback((clearSelection = false) => {
-        grid?.set("query", formatQuery(filter));
-        if (clearSelection) {
-            grid?.clearSelection();
+            },
+            Target: { label: nlsHPCC.Target },
+            Process: { label: nlsHPCC.ProcessFilter },
+            Active: {
+                label: nlsHPCC.Active,
+                formatter: function (active) {
+                    if (active === true) {
+                        return "A";
+                    }
+                    return "";
+                }
+            },
+            Description: { label: nlsHPCC.Description }
         }
-    }, [filter, grid]);
+    });
 
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -360,10 +353,6 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
             ;
     }, []);
 
-    React.useEffect(() => {
-        refreshTable();
-    }, [filter, refreshTable]);
-
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
@@ -397,10 +386,10 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
             >
                 <PivotItem headerText={nlsHPCC.PackageMaps} itemKey="list" style={pivotItemStyle(size)} >
                     <HolyGrail
-                        header={<CommandBar items={buttons} />}
+                        header={<CommandBar items={buttons} farItems={copyButtons} />}
                         main={
                             <>
-                                <DojoGrid store={gridStore} query={gridQuery} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
+                                <Grid />
                                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
                             </>
                         }

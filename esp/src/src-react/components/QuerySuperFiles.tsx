@@ -6,10 +6,11 @@ import * as ESPQuery from "src/ESPQuery";
 import * as Observable from "dojo/store/Observable";
 import { Memory } from "src/Memory";
 import nlsHPCC from "src/nlsHPCC";
+import { useGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
-import { DojoGrid, selector } from "./DojoGrid";
+import { selector } from "./DojoGrid";
 
 const logger = scopedLogger("src-react/components/QuerySuperFiles.tsx");
 
@@ -28,30 +29,24 @@ export const QuerySuperFiles: React.FunctionComponent<QuerySuperFilesProps> = ({
 }) => {
 
     const [query, setQuery] = React.useState<any>();
-    const [grid, setGrid] = React.useState<any>(undefined);
-    const [selection, setSelection] = React.useState([]);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     //  Grid ---
-    const gridStore = useConst(new Observable(new Memory("__hpcc_id")));
-    const gridQuery = useConst({});
-    const gridSort = useConst([{ attribute: "__hpcc_id" }]);
-    const gridColumns = useConst({
-        col1: selector({ selectorType: "checkbox", width: 25 }),
-        File: {
-            label: nlsHPCC.File,
-            formatter: function (item, row) {
-                return `<a href="#/files/${querySet}/${item}">${item}</a>`;
-            }
-        },
-    });
-
-    const refreshTable = React.useCallback((clearSelection = false) => {
-        grid?.set("query", gridQuery);
-        if (clearSelection) {
-            grid?.clearSelection();
+    const store = useConst(new Observable(new Memory("__hpcc_id")));
+    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+        store,
+        sort: [{ attribute: "__hpcc_id" }],
+        filename: "querySuperFiles",
+        columns: {
+            col1: selector({ selectorType: "checkbox", width: 25 }),
+            File: {
+                label: nlsHPCC.File,
+                formatter: function (item, row) {
+                    return `<a href="#/files/${querySet}/${item}">${item}</a>`;
+                }
+            },
         }
-    }, [grid, gridQuery]);
+    });
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -94,7 +89,7 @@ export const QuerySuperFiles: React.FunctionComponent<QuerySuperFilesProps> = ({
             .then(({ WUQueryDetailsResponse }) => {
                 const superFiles = query?.SuperFiles?.SuperFile;
                 if (superFiles) {
-                    gridStore.setData(superFiles.map((item, idx) => {
+                    store.setData(superFiles.map((item, idx) => {
                         return {
                             __hpcc_id: idx,
                             File: item.Name
@@ -104,10 +99,10 @@ export const QuerySuperFiles: React.FunctionComponent<QuerySuperFilesProps> = ({
                 }
             })
             .catch(logger.error);
-    }, [gridStore, query, refreshTable]);
+    }, [store, query, refreshTable]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} />}
-        main={<DojoGrid store={gridStore} query={gridQuery} sort={gridSort} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />}
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
+        main={<Grid />}
     />;
 };

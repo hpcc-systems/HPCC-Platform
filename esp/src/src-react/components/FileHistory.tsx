@@ -5,9 +5,9 @@ import { scopedLogger } from "@hpcc-js/util";
 import * as Observable from "dojo/store/Observable";
 import { Memory } from "src/Memory";
 import nlsHPCC from "src/nlsHPCC";
+import { useGrid } from "../hooks/grid";
 import { useFile } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { DojoGrid } from "./DojoGrid";
 import * as WsDfu from "../../src/WsDfu";
 import { ShortVerticalDivider } from "./Common";
 
@@ -24,8 +24,6 @@ export const FileHistory: React.FunctionComponent<FileHistoryProps> = ({
 }) => {
 
     const [file, , _refresh] = useFile(cluster, logicalFile);
-    const [grid, setGrid] = React.useState<any>(undefined);
-    const [, setSelection] = React.useState([]);
 
     //  Command Bar  ---
     const buttons: ICommandBarItemProps[] = [
@@ -45,7 +43,7 @@ export const FileHistory: React.FunctionComponent<FileHistoryProps> = ({
                     })
                         .then(response => {
                             if (response) {
-                                gridStore.setData([]);
+                                store.setData([]);
                                 refreshTable();
                             }
                         })
@@ -57,59 +55,53 @@ export const FileHistory: React.FunctionComponent<FileHistoryProps> = ({
     ];
 
     //  Grid ---
-    const gridStore = useConst(new Observable(new Memory("Name")));
-    const gridSort = useConst([{ attribute: "Name", "descending": false }]);
-    const gridQuery = useConst({});
-    const gridColumns = useConst({
-        Name: { label: nlsHPCC.Name, sortable: false },
-        IP: { label: nlsHPCC.IP, sortable: false },
-        Operation: { label: nlsHPCC.Operation, sortable: false },
-        Owner: { label: nlsHPCC.Owner, sortable: false },
-        Path: { label: nlsHPCC.Path, sortable: false },
-        Timestamp: { label: nlsHPCC.TimeStamp, sortable: false },
-        Workunit: { label: nlsHPCC.Workunit, sortable: false }
-    });
-
-    const refreshTable = (clearSelection = false) => {
-        grid?.set("query", gridQuery);
-        if (clearSelection) {
-            grid?.clearSelection();
+    const store = useConst(new Observable(new Memory("Name")));
+    const [Grid, _selection, refreshTable, copyButtons] = useGrid({
+        store,
+        sort: [{ attribute: "Name", "descending": false }],
+        filename: "filehistory",
+        columns: {
+            Name: { label: nlsHPCC.Name, sortable: false },
+            IP: { label: nlsHPCC.IP, sortable: false },
+            Operation: { label: nlsHPCC.Operation, sortable: false },
+            Owner: { label: nlsHPCC.Owner, sortable: false },
+            Path: { label: nlsHPCC.Path, sortable: false },
+            Timestamp: { label: nlsHPCC.TimeStamp, sortable: false },
+            Workunit: { label: nlsHPCC.Workunit, sortable: false }
         }
-    };
+    });
 
     React.useEffect(() => {
         WsDfu.ListHistory({
             request: {
                 Name: file?.Name
             }
-        })
-            .then(response => {
-                const results = response?.ListHistoryResponse?.History?.Origin;
+        }).then(response => {
+            const results = response?.ListHistoryResponse?.History?.Origin;
 
-                if (results) {
-                    gridStore.setData(results.map(row => {
-                        return {
-                            Name: row.Name,
-                            IP: row.IP,
-                            Operation: row.Operation,
-                            Owner: row.Owner,
-                            Path: row.Path,
-                            Timestamp: row.Timestamp,
-                            Workunit: row.Workunit
-                        };
-                    }));
-                    refreshTable();
-                }
-            })
-            .catch(logger.error)
+            if (results) {
+                store.setData(results.map(row => {
+                    return {
+                        Name: row.Name,
+                        IP: row.IP,
+                        Operation: row.Operation,
+                        Owner: row.Owner,
+                        Path: row.Path,
+                        Timestamp: row.Timestamp,
+                        Workunit: row.Workunit
+                    };
+                }));
+                refreshTable();
+            }
+        }).catch(logger.error)
             ;
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [gridStore, file?.Name]);
+    }, [store, file?.Name]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={[]} />}
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
-            <DojoGrid store={gridStore} query={gridQuery} sort={gridSort} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
+            < Grid />
         }
     />;
 };

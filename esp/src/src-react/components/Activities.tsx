@@ -4,10 +4,11 @@ import { useConst } from "@fluentui/react-hooks";
 import * as ESPActivity from "src/ESPActivity";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { useGrid } from "../hooks/grid";
 import { ReflexContainer, ReflexElement, ReflexSplitter, classNames, styles } from "../layouts/react-reflex";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
-import { DojoGrid, selector, tree } from "./DojoGrid";
+import { ShortVerticalDivider } from "./Common";
+import { selector, tree } from "./DojoGrid";
 import { Summary } from "./DiskUsage";
 
 declare const dojoConfig;
@@ -51,15 +52,13 @@ interface ActivitiesProps {
 export const Activities: React.FunctionComponent<ActivitiesProps> = ({
 }) => {
 
-    const [grid, setGrid] = React.useState<any>(undefined);
-    const [selection, setSelection] = React.useState([]);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     //  Grid ---
     const activity = useConst(ESPActivity.Get());
-    const gridParams = useConst({
+    const [Grid, selection, refreshTable, copyButtons] = useGrid({
         store: activity.getStore({}),
-        query: {},
+        filename: "activities",
         columns: {
             col1: selector({
                 width: 27,
@@ -145,20 +144,13 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
         }
     });
 
-    const refreshTable = React.useCallback((clearSelection = false) => {
-        grid?.set("query", {});
-        if (clearSelection) {
-            grid?.clearSelection();
-        }
-    }, [grid]);
-
     React.useEffect(() => {
         refreshTable();
         const handle = activity.watch("__hpcc_changedCount", function (item, oldValue, newValue) {
             refreshTable();
         });
         return () => handle.unwatch();
-    }, [activity, grid, refreshTable]);
+    }, [activity, refreshTable]);
 
     //  Command Bar  ---
     const wuPriority = React.useCallback((priority) => {
@@ -354,10 +346,6 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
         },
     ], [activity, refreshTable, selection, uiState.clusterNotPausedSelected, uiState.clusterPausedSelected, uiState.thorClusterSelected, uiState.wuCanDown, uiState.wuCanHigh, uiState.wuCanLow, uiState.wuCanNormal, uiState.wuCanUp, uiState.wuSelected, wuPriority]);
 
-    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
-        ...createCopyDownloadSelection(grid, selection, "activities.csv")
-    ], [grid, selection]);
-
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
@@ -403,9 +391,9 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
 
     if (dojoConfig.isContainer) {
         return <HolyGrail
-            header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
+            header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={copyButtons} />}
             main={
-                <DojoGrid type="Sel" store={gridParams.store} query={gridParams.query} columns={gridParams.columns} setGrid={setGrid} setSelection={setSelection} />
+                <Grid />
             }
         />;
     }
@@ -418,9 +406,9 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
         </ReflexSplitter>
         <ReflexElement>
             <HolyGrail
-                header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
+                header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={copyButtons} />}
                 main={
-                    <DojoGrid type="Sel" store={gridParams.store} query={gridParams.query} columns={gridParams.columns} setGrid={setGrid} setSelection={setSelection} />
+                    <Grid />
                 }
             />
         </ReflexElement>

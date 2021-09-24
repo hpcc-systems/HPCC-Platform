@@ -1,18 +1,18 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
 import * as domClass from "dojo/dom-class";
 import * as put from "put-selector/put";
 import * as WsDfu from "src/WsDfu";
 import * as ESPLogicalFile from "src/ESPLogicalFile";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { useGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
-import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
-import { DojoGrid, selector, tree } from "./DojoGrid";
+import { ShortVerticalDivider } from "./Common";
+import { selector, tree } from "./DojoGrid";
 
 const FilterFields: Fields = {
     "LogicalName": { type: "string", label: nlsHPCC.Name, placeholder: nlsHPCC.somefile },
@@ -60,103 +60,97 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     store
 }) => {
 
-    const [grid, setGrid] = React.useState<any>(undefined);
     const [showFilter, setShowFilter] = React.useState(false);
     const [mine, setMine] = React.useState(false);
-    const [selection, setSelection] = React.useState([]);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     //  Grid ---
-    const gridStore = useConst(store || ESPLogicalFile.CreateLFQueryStore({}));
-    const gridQuery = useConst(formatQuery(filter));
-    const gridSort = useConst([{ attribute: "Modified", "descending": true }]);
-    const gridColumns = useConst({
-        col1: selector({
-            width: 27,
-            disabled: function (item) {
-                return item ? item.__hpcc_isDir : true;
-            },
-            selectorType: "checkbox"
-        }),
-        IsProtected: {
-            renderHeaderCell: function (node) {
-                node.innerHTML = Utility.getImageHTML("locked.png", nlsHPCC.Protected);
-            },
-            width: 25,
-            sortable: false,
-            formatter: function (_protected) {
-                if (_protected === true) {
-                    return Utility.getImageHTML("locked.png");
+    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+        store: store || ESPLogicalFile.CreateLFQueryStore({}),
+        query: formatQuery(filter),
+        sort: [{ attribute: "Modified", "descending": true }],
+        filename: "logicalfiles",
+        columns: {
+            col1: selector({
+                width: 27,
+                disabled: function (item) {
+                    return item ? item.__hpcc_isDir : true;
+                },
+                selectorType: "checkbox"
+            }),
+            IsProtected: {
+                renderHeaderCell: function (node) {
+                    node.innerHTML = Utility.getImageHTML("locked.png", nlsHPCC.Protected);
+                },
+                width: 25,
+                sortable: false,
+                formatter: function (_protected) {
+                    if (_protected === true) {
+                        return Utility.getImageHTML("locked.png");
+                    }
+                    return "";
                 }
-                return "";
-            }
-        },
-        IsCompressed: {
-            width: 25, sortable: false,
-            renderHeaderCell: function (node) {
-                node.innerHTML = Utility.getImageHTML("compressed.png", nlsHPCC.Compressed);
             },
-            formatter: function (compressed) {
-                if (compressed === true) {
-                    return Utility.getImageHTML("compressed.png");
+            IsCompressed: {
+                width: 25, sortable: false,
+                renderHeaderCell: function (node) {
+                    node.innerHTML = Utility.getImageHTML("compressed.png", nlsHPCC.Compressed);
+                },
+                formatter: function (compressed) {
+                    if (compressed === true) {
+                        return Utility.getImageHTML("compressed.png");
+                    }
+                    return "";
                 }
-                return "";
-            }
-        },
-        __hpcc_displayName: tree({
-            label: nlsHPCC.LogicalName, width: 600,
-            formatter: function (name, row) {
-                if (row.__hpcc_isDir) {
-                    return name;
+            },
+            __hpcc_displayName: tree({
+                label: nlsHPCC.LogicalName, width: 600,
+                formatter: function (name, row) {
+                    if (row.__hpcc_isDir) {
+                        return name;
+                    }
+                    return (row.getStateImageHTML ? row.getStateImageHTML() + "&nbsp;" : "") + "<a href='#/files/" + row.NodeGroup + "/" + name + "' class='dgrid-row-url'>" + name + "</a>";
+                },
+                renderExpando: function (level, hasChildren, expanded, object) {
+                    const dir = this.grid.isRTL ? "right" : "left";
+                    let cls = ".dgrid-expando-icon";
+                    if (hasChildren) {
+                        cls += ".ui-icon.ui-icon-triangle-1-" + (expanded ? "se" : "e");
+                    }
+                    //@ts-ignore
+                    const node = put("div" + cls + "[style=margin-" + dir + ": " + (level * (this.indentWidth || 9)) + "px; float: " + dir + (!object.__hpcc_isDir && level === 0 ? ";display: none" : "") + "]");
+                    node.innerHTML = "&nbsp;";
+                    return node;
                 }
-                return (row.getStateImageHTML ? row.getStateImageHTML() + "&nbsp;" : "") + "<a href='#/files/" + row.NodeGroup + "/" + name + "' class='dgrid-row-url'>" + name + "</a>";
+            }),
+            Owner: { label: nlsHPCC.Owner, width: 75 },
+            SuperOwners: { label: nlsHPCC.SuperOwner, width: 150 },
+            Description: { label: nlsHPCC.Description, width: 150 },
+            NodeGroup: { label: nlsHPCC.Cluster, width: 108 },
+            RecordCount: {
+                label: nlsHPCC.Records, width: 85,
+                renderCell: function (object, value, node, options) {
+                    domClass.add(node, "justify-right");
+                    node.innerText = Utility.valueCleanUp(value);
+                },
             },
-            renderExpando: function (level, hasChildren, expanded, object) {
-                const dir = this.grid.isRTL ? "right" : "left";
-                let cls = ".dgrid-expando-icon";
-                if (hasChildren) {
-                    cls += ".ui-icon.ui-icon-triangle-1-" + (expanded ? "se" : "e");
-                }
-                //@ts-ignore
-                const node = put("div" + cls + "[style=margin-" + dir + ": " + (level * (this.indentWidth || 9)) + "px; float: " + dir + (!object.__hpcc_isDir && level === 0 ? ";display: none" : "") + "]");
-                node.innerHTML = "&nbsp;";
-                return node;
-            }
-        }),
-        Owner: { label: nlsHPCC.Owner, width: 75 },
-        SuperOwners: { label: nlsHPCC.SuperOwner, width: 150 },
-        Description: { label: nlsHPCC.Description, width: 150 },
-        NodeGroup: { label: nlsHPCC.Cluster, width: 108 },
-        RecordCount: {
-            label: nlsHPCC.Records, width: 85,
-            renderCell: function (object, value, node, options) {
-                domClass.add(node, "justify-right");
-                node.innerText = Utility.valueCleanUp(value);
+            IntSize: {
+                label: nlsHPCC.Size, width: 100,
+                renderCell: function (object, value, node, options) {
+                    domClass.add(node, "justify-right");
+                    node.innerText = Utility.convertedSize(value);
+                },
             },
-        },
-        IntSize: {
-            label: nlsHPCC.Size, width: 100,
-            renderCell: function (object, value, node, options) {
-                domClass.add(node, "justify-right");
-                node.innerText = Utility.convertedSize(value);
+            Parts: {
+                label: nlsHPCC.Parts, width: 60,
+                renderCell: function (object, value, node, options) {
+                    domClass.add(node, "justify-right");
+                    node.innerText = Utility.valueCleanUp(value);
+                },
             },
-        },
-        Parts: {
-            label: nlsHPCC.Parts, width: 60,
-            renderCell: function (object, value, node, options) {
-                domClass.add(node, "justify-right");
-                node.innerText = Utility.valueCleanUp(value);
-            },
-        },
-        Modified: { label: nlsHPCC.ModifiedUTCGMT, width: 162 }
-    });
-
-    const refreshTable = React.useCallback((clearSelection = false) => {
-        grid?.set("query", formatQuery(filter));
-        if (clearSelection) {
-            grid?.clearSelection();
+            Modified: { label: nlsHPCC.ModifiedUTCGMT, width: 162 }
         }
-    }, [filter, grid]);
+    });
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -202,19 +196,11 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         },
     ], [mine, refreshTable, selection, store, uiState.hasSelection]);
 
-    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
-        ...createCopyDownloadSelection(grid, selection, "logicalfiles.csv")
-    ], [grid, selection]);
-
     //  Filter  ---
     const filterFields: Fields = {};
     for (const field in FilterFields) {
         filterFields[field] = { ...FilterFields[field], value: filter[field] };
     }
-
-    React.useEffect(() => {
-        refreshTable();
-    }, [filter, refreshTable]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -228,10 +214,10 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     }, [selection]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
+        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={copyButtons} />}
         main={
             <>
-                <DojoGrid store={gridStore} query={gridQuery} sort={gridSort} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
+                <Grid />
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
             </>
         }

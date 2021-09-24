@@ -1,16 +1,16 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
 import * as WsWorkunits from "src/WsWorkunits";
 import * as ESPQuery from "src/ESPQuery";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { useGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
-import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
-import { DojoGrid, selector } from "./DojoGrid";
+import { ShortVerticalDivider } from "./Common";
+import { selector } from "./DojoGrid";
 
 const FilterFields: Fields = {
     "QueryID": { type: "string", label: nlsHPCC.ID, placeholder: nlsHPCC.QueryIDPlaceholder },
@@ -57,124 +57,118 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
     store
 }) => {
 
-    const [grid, setGrid] = React.useState<any>(undefined);
     const [showFilter, setShowFilter] = React.useState(false);
     const [mine, setMine] = React.useState(false);
-    const [selection, setSelection] = React.useState([]);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     //  Grid ---
-    const gridStore = useConst(store || ESPQuery.CreateQueryStore({}));
-    const gridQuery = useConst(formatQuery(filter));
-    const gridSort = useConst([{ attribute: "Id" }]);
-    const gridColumns = useConst({
-        col1: selector({
-            width: 27,
-            selectorType: "checkbox"
-        }),
-        Suspended: {
-            label: nlsHPCC.Suspended,
-            renderHeaderCell: function (node) {
-                node.innerHTML = Utility.getImageHTML("suspended.png", nlsHPCC.Suspended);
-            },
-            width: 25,
-            sortable: false,
-            formatter: function (suspended) {
-                if (suspended === true) {
-                    return Utility.getImageHTML("suspended.png");
+    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+        store: store || ESPQuery.CreateQueryStore({}),
+        query: formatQuery(filter),
+        sort: [{ attribute: "Id" }],
+        filename: "roxiequeries",
+        columns: {
+            col1: selector({
+                width: 27,
+                selectorType: "checkbox"
+            }),
+            Suspended: {
+                label: nlsHPCC.Suspended,
+                renderHeaderCell: function (node) {
+                    node.innerHTML = Utility.getImageHTML("suspended.png", nlsHPCC.Suspended);
+                },
+                width: 25,
+                sortable: false,
+                formatter: function (suspended) {
+                    if (suspended === true) {
+                        return Utility.getImageHTML("suspended.png");
+                    }
+                    return "";
                 }
-                return "";
-            }
-        },
-        ErrorCount: {
-            renderHeaderCell: function (node) {
-                node.innerHTML = Utility.getImageHTML("errwarn.png", nlsHPCC.ErrorWarnings);
             },
-            width: 25,
-            sortable: false,
-            formatter: function (error) {
-                if (error > 0) {
-                    return Utility.getImageHTML("errwarn.png");
+            ErrorCount: {
+                renderHeaderCell: function (node) {
+                    node.innerHTML = Utility.getImageHTML("errwarn.png", nlsHPCC.ErrorWarnings);
+                },
+                width: 25,
+                sortable: false,
+                formatter: function (error) {
+                    if (error > 0) {
+                        return Utility.getImageHTML("errwarn.png");
+                    }
+                    return "";
                 }
-                return "";
-            }
-        },
-        MixedNodeStates: {
-            renderHeaderCell: function (node) {
-                node.innerHTML = Utility.getImageHTML("mixwarn.png", nlsHPCC.MixedNodeStates);
             },
-            width: 25,
-            sortable: false,
-            formatter: function (mixed) {
-                if (mixed === true) {
-                    return Utility.getImageHTML("mixwarn.png");
+            MixedNodeStates: {
+                renderHeaderCell: function (node) {
+                    node.innerHTML = Utility.getImageHTML("mixwarn.png", nlsHPCC.MixedNodeStates);
+                },
+                width: 25,
+                sortable: false,
+                formatter: function (mixed) {
+                    if (mixed === true) {
+                        return Utility.getImageHTML("mixwarn.png");
+                    }
+                    return "";
                 }
-                return "";
-            }
-        },
-        Activated: {
-            renderHeaderCell: function (node) {
-                node.innerHTML = Utility.getImageHTML("active.png", nlsHPCC.Active);
             },
-            width: 25,
-            formatter: function (activated) {
-                if (activated === true) {
-                    return Utility.getImageHTML("active.png");
+            Activated: {
+                renderHeaderCell: function (node) {
+                    node.innerHTML = Utility.getImageHTML("active.png", nlsHPCC.Active);
+                },
+                width: 25,
+                formatter: function (activated) {
+                    if (activated === true) {
+                        return Utility.getImageHTML("active.png");
+                    }
+                    return Utility.getImageHTML("inactive.png");
                 }
-                return Utility.getImageHTML("inactive.png");
+            },
+            Id: {
+                label: nlsHPCC.ID,
+                width: 380,
+                formatter: function (Id, row) {
+                    return `<a href='#/queries/${row.QuerySetId}/${Id}' class='dgrid-row-url'>${Id}</a>`;
+                }
+            },
+            priority: {
+                label: nlsHPCC.Priority,
+                width: 80,
+                formatter: function (priority, row) {
+                    return priority === undefined ? "" : priority;
+                }
+            },
+            Name: {
+                label: nlsHPCC.Name
+            },
+            QuerySetId: {
+                width: 140,
+                label: nlsHPCC.Target,
+                sortable: true
+            },
+            Wuid: {
+                width: 160,
+                label: nlsHPCC.WUID,
+                formatter: function (Wuid, idx) {
+                    return "<a href='#' onClick='return false;' class='dgrid-row-url2'>" + Wuid + "</a>";
+                }
+            },
+            Dll: {
+                width: 180,
+                label: nlsHPCC.Dll
+            },
+            PublishedBy: {
+                width: 100,
+                label: nlsHPCC.PublishedBy,
+                sortable: false
+            },
+            Status: {
+                width: 100,
+                label: nlsHPCC.Status,
+                sortable: false
             }
-        },
-        Id: {
-            label: nlsHPCC.ID,
-            width: 380,
-            formatter: function (Id, row) {
-                return `<a href='#/queries/${row.QuerySetId}/${Id}' class='dgrid-row-url'>${Id}</a>`;
-            }
-        },
-        priority: {
-            label: nlsHPCC.Priority,
-            width: 80,
-            formatter: function (priority, row) {
-                return priority === undefined ? "" : priority;
-            }
-        },
-        Name: {
-            label: nlsHPCC.Name
-        },
-        QuerySetId: {
-            width: 140,
-            label: nlsHPCC.Target,
-            sortable: true
-        },
-        Wuid: {
-            width: 160,
-            label: nlsHPCC.WUID,
-            formatter: function (Wuid, idx) {
-                return "<a href='#' onClick='return false;' class='dgrid-row-url2'>" + Wuid + "</a>";
-            }
-        },
-        Dll: {
-            width: 180,
-            label: nlsHPCC.Dll
-        },
-        PublishedBy: {
-            width: 100,
-            label: nlsHPCC.PublishedBy,
-            sortable: false
-        },
-        Status: {
-            width: 100,
-            label: nlsHPCC.Status,
-            sortable: false
         }
     });
-
-    const refreshTable = React.useCallback((clearSelection = false) => {
-        grid?.set("query", formatQuery(filter));
-        if (clearSelection) {
-            grid?.clearSelection();
-        }
-    }, [filter, grid]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -236,19 +230,11 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
         },
     ], [mine, refreshTable, selection, store, uiState.hasSelection, uiState.isActive, uiState.isNotActive, uiState.isNotSuspended, uiState.isSuspended, wuid]);
 
-    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
-        ...createCopyDownloadSelection(grid, selection, "roxiequeries.csv")
-    ], [grid, selection]);
-
     //  Filter  ---
     const filterFields: Fields = {};
     for (const field in FilterFields) {
         filterFields[field] = { ...FilterFields[field], value: filter[field] };
     }
-
-    React.useEffect(() => {
-        refreshTable();
-    }, [filter, refreshTable]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -272,10 +258,10 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
     }, [selection]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
+        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={copyButtons} />}
         main={
             <>
-                <DojoGrid store={gridStore} query={gridQuery} sort={gridSort} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
+                <Grid />
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
             </>
         }

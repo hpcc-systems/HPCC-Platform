@@ -3,9 +3,10 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Pivot, PivotI
 import { useConst } from "@fluentui/react-hooks";
 import { ESPSearch } from "src/ESPSearch";
 import nlsHPCC from "src/nlsHPCC";
+import { useGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
-import { DojoGrid, selector } from "./DojoGrid";
+import { ShortVerticalDivider } from "./Common";
+import { selector } from "./DojoGrid";
 import { Workunits } from "./Workunits";
 import { Files } from "./Files";
 import { Queries } from "./Queries";
@@ -27,36 +28,9 @@ export const Search: React.FunctionComponent<SearchProps> = ({
 
     const progress = useConst({ value: 0 });
 
-    const [grid, setGrid] = React.useState<any>(undefined);
     const [mine, setMine] = React.useState(false);
-    const [selection, setSelection] = React.useState([]);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [searchCount, setSearchCount] = React.useState(0);
-
-    //  Grid ---
-    const gridColumns = useConst({
-        col1: selector({ width: 27, selectorType: "checkbox" }),
-        Type: {
-            label: nlsHPCC.What, width: 108, sortable: true,
-            formatter: function (type, idx) {
-                return "<a href='#' onClick='return false;' rowIndex=" + idx + " class='" + "SearchTypeClick'>" + type + "</a>";
-            }
-        },
-        Reason: { label: nlsHPCC.Where, width: 108, sortable: true },
-        Summary: {
-            label: nlsHPCC.Who, sortable: true,
-            formatter: function (summary) {
-                return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + summary + "</a>";
-            }
-        }
-    });
-
-    const refreshTable = React.useCallback((clearSelection = false) => {
-        grid?.set("query", {});
-        if (clearSelection) {
-            grid?.clearSelection();
-        }
-    }, [grid]);
 
     //  Search
     const search = useConst(new ESPSearch(
@@ -69,6 +43,28 @@ export const Search: React.FunctionComponent<SearchProps> = ({
         }, () => {
             setSearchCount(0);
         }));
+
+    //  Grid ---
+    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+        store: search.store,
+        filename: "search",
+        columns: {
+            col1: selector({ width: 27, selectorType: "checkbox" }),
+            Type: {
+                label: nlsHPCC.What, width: 108, sortable: true,
+                formatter: function (type, idx) {
+                    return "<a href='#' onClick='return false;' rowIndex=" + idx + " class='" + "SearchTypeClick'>" + type + "</a>";
+                }
+            },
+            Reason: { label: nlsHPCC.Where, width: 108, sortable: true },
+            Summary: {
+                label: nlsHPCC.Who, sortable: true,
+                formatter: function (summary) {
+                    return "<a href='#' onClick='return false;' class='dgrid-row-url'>" + summary + "</a>";
+                }
+            }
+        }
+    });
 
     React.useEffect(() => {
         if (searchText) {
@@ -107,10 +103,6 @@ export const Search: React.FunctionComponent<SearchProps> = ({
         },
     ], [mine, refreshTable, selection, uiState.hasSelection]);
 
-    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
-        ...createCopyDownloadSelection(grid, selection, "search.csv")
-    ], [grid, selection]);
-
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
@@ -124,19 +116,20 @@ export const Search: React.FunctionComponent<SearchProps> = ({
     const [selectedKey, setSelectedKey] = React.useState("all");
 
     return <HolyGrail
-        header={<Pivot headersOnly={true} onLinkClick={(item: PivotItem) => setSelectedKey(item.props.itemKey!)}>
+        header={<Pivot headersOnly={true} onLinkClick={(item: PivotItem) => setSelectedKey(item.props.itemKey!)
+        }>
             <PivotItem itemKey="all" headerText={nlsHPCC.All} itemCount={search.store.data.length} />
             <PivotItem itemKey="ecl" headerText={nlsHPCC.ECLWorkunit} headerButtonProps={search.eclStore.data.length === 0 ? disabled : undefined} itemCount={search.eclStore.data.length} />
             <PivotItem itemKey="dfu" headerText={nlsHPCC.DFUWorkunit} headerButtonProps={search.dfuStore.data.length === 0 ? disabled : undefined} itemCount={search.dfuStore.data.length} />
             <PivotItem itemKey="file" headerText={nlsHPCC.LogicalFile} headerButtonProps={search.fileStore.data.length === 0 ? disabled : undefined} itemCount={search.fileStore.data.length} />
             <PivotItem itemKey="query" headerText={nlsHPCC.Query} headerButtonProps={search.queryStore.data.length === 0 ? disabled : undefined} itemCount={search.queryStore.data.length} />
-        </Pivot>}
+        </Pivot >}
         main={selectedKey === "all" ? <HolyGrail
             header={<>
-                <CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />
+                <CommandBar items={buttons} overflowButtonProps={{}} farItems={copyButtons} />
                 <ProgressIndicator progressHidden={searchCount === 0} percentComplete={searchCount === 0 ? 0 : progress.value / searchCount} />
             </>}
-            main={<DojoGrid store={search.store} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />}
+            main={<Grid />}
         /> : selectedKey === "ecl" ?
             <Workunits store={search.eclStore} /> : selectedKey === "dfu" ?
                 <DFUWorkunits store={search.dfuStore} /> : selectedKey === "file" ?
