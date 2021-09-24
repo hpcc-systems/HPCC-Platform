@@ -57,7 +57,6 @@
 //=================================================================================
 
 bool shuttingDown = false;
-unsigned numChannels;
 unsigned callbackRetries = 3;
 unsigned callbackTimeout = 5000;
 unsigned lowTimeout = 10000;
@@ -1438,8 +1437,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                 queryFileCache().startCacheReporter();
 #ifdef _CONTAINERIZED
                 publishTopology(traceLevel, myRoles);
-#endif
+#else
                 writeSentinelFile(sentinelFile);
+#endif
                 DBGLOG("Startup completed - LPT=%u APT=%u", queryNumLocalTrees(), queryNumAtomTrees());
                 DBGLOG("Waiting for queries");
                 if (pingInterval)
