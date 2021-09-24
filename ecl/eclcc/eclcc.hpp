@@ -38,7 +38,7 @@ const char * const helpText[] = {
     "                  executable, or stdout)",
     "?   -manifest     Specify path to manifest file listing resources to add",
     "    -foption[=value] Set an ecl option (#option)",
-    "    -main <ref>[@repo] Compile definition <ref> from the source collection, or specified git repo",
+    "    --main <ref>[@repo] Compile definition <ref> from the source collection, or specified git repo",
     "    -syntax       Perform a syntax check of the ECL",
     "    -platform=hthor Generate code for hthor executable",
     "    -platform=roxie Generate code for roxie cluster (default)",
