@@ -1036,6 +1036,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         }
         virtual void beforeDispose() override
         {
+            end();
             stop();
         }
         virtual void addPartNum(unsigned partCopy)
@@ -2189,15 +2190,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                     lookupHandler->join();
             }
         }
-        void end()
-        {
-            ForEachItemIn(h, handlers)
-            {
-                CLookupHandler *lookupHandler = handlers.item(h);
-                if (lookupHandler)
-                    lookupHandler->end();
-            }
-        }
         void getSubFileStats(std::vector<OwnedPtr<CRuntimeStatisticCollection>> & subFileStats)
         {
             ForEachItemIn(h, handlers)
@@ -2628,10 +2620,6 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         keyLookupHandlers.join(); // wait for pending handling, there may be more fetch items as a result
         fetchLookupHandlers.flushTS();
         fetchLookupHandlers.join();
-
-        // remote handlers will signal to other side that we are done
-        keyLookupHandlers.end();
-        fetchLookupHandlers.end();
 
         CriticalBlock b(onCompleteCrit); // protecting both pendingJoinGroupList and doneJoinGroupList
         endOfInput = true;
