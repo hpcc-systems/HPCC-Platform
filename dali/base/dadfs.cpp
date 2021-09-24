@@ -177,21 +177,27 @@ static IPropertyTree *getEmptyAttr()
     return createPTree("Attr");
 }
 
-static double calcFileCost(const char * cluster, double sizeGB, double fileAgeDays)
+static double calcFileCost(const char * cluster, double sizeGB, double fileAgeDays, __int64 numDiskWrites, __int64 numDiskReads)
 {
     Owned<IPropertyTree> plane = getStoragePlane(cluster);
-    double atRestCost = 0.0;
+    Owned<IPropertyTree> global;
+    IPropertyTree * costPT = nullptr;
+
     if (plane && plane->hasProp("cost/@storageAtRest"))
     {
-        atRestCost = plane->getPropReal("cost/@storageAtRest", 0.0);
+        costPT = plane->queryPropTree("cost");
     }
     else
     {
-        Owned<IPropertyTree> global = getGlobalConfig();
-        atRestCost = global->getPropReal("cost/@storageAtRest", 0.0);
+        global.setown(getGlobalConfig());
+        costPT = global->queryPropTree("cost");
     }
-    double storageCostDaily = atRestCost * 12 / 365;
-    return storageCostDaily * sizeGB * fileAgeDays;
+    constexpr int accessPriceScalingFactor = 10000; // read/write pricing based on 10,000 operations
+    double atRestPrice = costPT->getPropReal("@storageAtRest", 0.0);
+    double readPrice =  costPT->getPropReal("@storageReads", 0.0);
+    double writePrice =  costPT->getPropReal("@storageWrites", 0.0);
+    double storageCostDaily = atRestPrice * 12 / 365;
+    return (storageCostDaily * sizeGB * fileAgeDays) + (readPrice * numDiskReads / accessPriceScalingFactor) + (writePrice * numDiskWrites / accessPriceScalingFactor);
 }
 
 RemoteFilename &constructPartFilename(IGroup *grp,unsigned partno,unsigned partmax,const char *name,const char *partmask,const char *partdir,unsigned copy,ClusterPartDiskMapSpec &mspec,RemoteFilename &rfn)
@@ -4770,6 +4776,13 @@ public:
         getModificationTime(dt);
         double fileAgeDays = difftime(time(nullptr), dt.getSimple())/(24*60*60);
         double sizeGB = getDiskSize(true, false) / ((double)1024 * 1024 * 1024);
+        const IPropertyTree *attrs = root->queryPropTree("Attr");
+        __int64 numDiskWrites = 0, numDiskReads = 0;
+        if (attrs)
+        {
+            numDiskWrites = attrs->getPropInt64("@numDiskWrites");
+            numDiskReads = attrs->getPropInt64("@numDiskReads");
+        }
 
         if (isEmptyString(cluster))
         {
@@ -4777,12 +4790,12 @@ public:
             unsigned countClusters = getClusterNames(clusterNames);
             double totalCost = 0.0;
             for (unsigned i = 0; i < countClusters; i++)
-                totalCost += calcFileCost(clusterNames[i], sizeGB, fileAgeDays);
+                totalCost += calcFileCost(clusterNames[i], sizeGB, fileAgeDays, numDiskWrites, numDiskReads);
             return totalCost;
         }
         else
         {
-            return calcFileCost(cluster, sizeGB, fileAgeDays);
+            return calcFileCost(cluster, sizeGB, fileAgeDays, numDiskWrites, numDiskReads);
         }
     }
 };
