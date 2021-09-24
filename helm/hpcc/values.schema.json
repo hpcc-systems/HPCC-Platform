@@ -265,6 +265,11 @@
           "description": "resource cost",
           "type": "object",
           "properties": {
+            "currencyCode": {
+                "description": "currency code (ISO 4217)",
+                "type": "string",
+                "maxLength": 3
+            },
             "perCpu": {
               "description": "cost of a single cpu",
               "type": "number"
