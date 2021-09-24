@@ -572,12 +572,21 @@ public:
                 SocketEndpoint sendFlowEp(_sendFlowPort, ip);
                 SocketEndpoint dataEp(_dataPort, ip);
                 send_flow_socket = ISocket::udp_connect(sendFlowEp);
+                size32_t actualSize = send_flow_socket->get_send_buffer_size();
+                if (actualSize/2 < udpFlowSocketsSize)
+                {
+                    send_flow_socket->set_send_buffer_size(udpFlowSocketsSize);
+                    actualSize = send_flow_socket->get_send_buffer_size();
+                }
+                if (udpTraceLevel > 0)
+                    DBGLOG("UdpSender: sendbuffer set for send_flow socket (size=%d, actual=%d)", udpFlowSocketsSize, actualSize);
                 data_socket = ISocket::udp_connect(dataEp);
                 if (isLocal)
                 {
                     data_socket->set_send_buffer_size(udpLocalWriteSocketSize);
+                    actualSize = data_socket->get_send_buffer_size();
                     if (udpTraceLevel > 0)
-                        DBGLOG("UdpSender: sendbuffer set for local socket (size=%d)", udpLocalWriteSocketSize);
+                        DBGLOG("UdpSender: sendbuffer set for local socket (size=%d, actual=%d)", udpLocalWriteSocketSize, actualSize);
                 }
             }
             catch(IException *e) 
@@ -671,6 +680,9 @@ class CSendManager : implements ISendManager, public CInterface
         {
             if (udpTraceLevel > 0)
                 DBGLOG("UdpSender: send_resend_flow started");
+#ifdef __linux__
+            setLinuxThreadPriority(2);
+#endif
             unsigned timeout = udpRequestToSendTimeout;
             while (running)
             {
@@ -848,6 +860,7 @@ class CSendManager : implements ISendManager, public CInterface
         send_data(CSendManager &_parent, TokenBucket *_bucket)
             : StartedThread("UdpLib::send_data"), parent(_parent), bucket(_bucket), send_queue(100) // MORE - send q size should be configurable and/or related to size of cluster?
         {
+            // perhaps local should be << receive data size ?
             if (check_max_socket_write_buffer(udpLocalWriteSocketSize) < 0) 
                 throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max write buffer is less than %i", udpLocalWriteSocketSize);
             start();
