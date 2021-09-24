@@ -4,6 +4,7 @@ import { TextField as MaterialUITextField } from "@material-ui/core";
 import { Topology, TpLogicalClusterQuery } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { TpDropZoneQuery, TpGroupQuery, TpServiceQuery } from "src/WsTopology";
+import * as WsAccess from "src/ws_access";
 import { States } from "src/WsWorkunits";
 import { FileList, States as DFUStates } from "src/FileSpray";
 import nlsHPCC from "src/nlsHPCC";
@@ -38,38 +39,31 @@ const Dropdown: React.FunctionComponent<DropdownProps> = ({
     className
 }) => {
     React.useEffect(() => {
-        if (required === true && optional == false) {
-            logger.error(`${label} (${key}):  required == true and optional == false is illogical`);
+        if (required === true && optional === true) {
+            logger.error(`${label} (${key}):  required == true and optional == true is illogical`);
         }
     }, [key, label, optional, required]);
 
     const [selOptions, setSelOptions] = React.useState<IDropdownOption[]>([]);
     const [selectedKey, setSelectedKey] = React.useState<string | number | undefined>(defaultSelectedKey);
 
-    const handleOnChange = React.useCallback((evt, row) => {
-        if (onChange) {
-            onChange(evt, row);
-        }
-        setSelectedKey(row.key);
-    }, [onChange]);
-
     React.useEffect(() => {
         const selOptions = (optional ? [{ key: "", text: "" }, ...options] : [...options]);
         if (!optional && !defaultSelectedKey && selOptions.length) {
-            handleOnChange(undefined, selOptions[0]);
+            setSelectedKey(selOptions[0].key);
         }
         setSelOptions(selOptions);
-    }, [optional, options, defaultSelectedKey, handleOnChange]);
+    }, [optional, options, defaultSelectedKey, setSelectedKey]);
 
-    return <DropdownBase key={key} label={label} errorMessage={errorMessage} required={required} className={className} defaultSelectedKey={defaultSelectedKey} selectedKey={selectedKey} onChange={handleOnChange} placeholder={placeholder} options={selOptions} disabled={disabled} />;
+    return <DropdownBase key={key} label={label} errorMessage={errorMessage} required={required} className={className} defaultSelectedKey={selectedKey} onChange={onChange} placeholder={placeholder} options={selOptions} disabled={disabled} />;
 };
 
-export type FieldType = "string" | "number" | "checkbox" | "datetime" | "dropdown" | "link" | "links" | "progress" |
+export type FieldType = "string" | "password" | "number" | "checkbox" | "datetime" | "dropdown" | "link" | "links" | "progress" |
     "workunit-state" |
     "file-type" | "file-sortby" |
     "queries-priority" | "queries-suspend-state" | "queries-active-state" |
     "target-cluster" | "target-dropzone" | "target-server" | "target-group" |
-    "target-dfuqueue" |
+    "target-dfuqueue" | "user-groups" |
     "logicalfile-type" | "dfuworkunit-state";
 
 export type Values = { [name: string]: string | number | boolean | (string | number | boolean)[] };
@@ -84,7 +78,7 @@ interface BaseField {
 }
 
 interface StringField extends BaseField {
-    type: "string";
+    type: "string" | "password";
     value?: string;
     readonly?: boolean;
     multiline?: boolean;
@@ -176,6 +170,12 @@ interface DFUWorkunitStateField extends BaseField {
     value?: string;
 }
 
+interface UserGroupsField extends BaseField {
+    type: "user-groups";
+    username: string;
+    value?: string;
+}
+
 interface LinkField extends BaseField {
     type: "link";
     href: string;
@@ -199,7 +199,7 @@ type Field = StringField | NumericField | CheckboxField | DateTimeField | Dropdo
     FileTypeField | FileSortByField |
     QueriesPriorityField | QueriesSuspendStateField | QueriesActiveStateField |
     TargetClusterField | TargetDropzoneField | TargetServerField | TargetGroupField |
-    TargetDfuSprayQueueField |
+    TargetDfuSprayQueueField | UserGroupsField |
     LogicalFileType | DFUWorkunitStateField;
 
 export type Fields = { [id: string]: Field };
@@ -370,7 +370,7 @@ export const TargetGroupTextField: React.FunctionComponent<TargetGroupTextFieldP
 export interface TargetDfuSprayQueueTextFieldProps {
     key: string;
     label?: string;
-    selectedKey?: string;
+    defaultSelectedKey?: string;
     className?: string;
     required?: boolean;
     optional?: boolean;
@@ -478,6 +478,46 @@ export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFiel
     return <Dropdown {...props} options={folders} />;
 };
 
+export interface UserGroupsProps {
+    key: string;
+    label?: string;
+    selectedKey?: string;
+    className?: string;
+    required?: boolean;
+    optional?: boolean;
+    username: string;
+    errorMessage?: string;
+    onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
+    placeholder?: string;
+}
+
+export const UserGroupsField: React.FunctionComponent<UserGroupsProps> = (props) => {
+
+    const [groups, setGroups] = React.useState<IDropdownOption[]>([]);
+
+    React.useEffect(() => {
+        const request = { username: props.username };
+        WsAccess.UserGroupEditInput({ request: request })
+            .then(({ UserGroupEditInputResponse }) => {
+                const groups = UserGroupEditInputResponse.Groups.Group
+                    .filter(group => group.name !== "Administrators")
+                    .map(group => {
+                        return {
+                            key: group.name,
+                            text: group.name
+                        };
+                    });
+                groups.unshift({ key: "", text: "" });
+                setGroups(groups);
+            })
+            .catch(logger.error)
+            ;
+    }, [props.username]);
+
+    return <Dropdown {...props} options={groups} />;
+
+};
+
 const states = Object.keys(States).map(s => States[s]);
 const dfustates = Object.keys(DFUStates).map(s => DFUStates[s]);
 
@@ -491,13 +531,14 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
         }
         switch (field.type) {
             case "string":
+            case "password":
                 field.value = field.value !== undefined ? field.value : "";
                 retVal.push({
                     id: fieldID,
                     label: field.label,
                     field: <TextField
                         key={fieldID}
-                        type="string"
+                        type={field.type}
                         name={fieldID}
                         value={field.value}
                         placeholder={field.placeholder}
@@ -506,6 +547,8 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         readOnly={field.readonly}
                         required={field.required}
                         multiline={field.multiline}
+                        canRevealPassword={field.type === "password" ? true : false}
+                        revealPasswordAriaLabel={nlsHPCC.ShowPassword}
                     />
                 });
                 break;
@@ -763,6 +806,21 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     />
                 });
                 break;
+            case "user-groups":
+                field.value = field.value !== undefined ? field.value : "";
+                retVal.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: <UserGroupsField
+                        key={fieldID}
+                        username={field.username}
+                        required={field.required}
+                        selectedKey={field.value}
+                        onChange={(ev, row) => onChange(fieldID, row.key)}
+                        placeholder={field.placeholder}
+                    />
+                });
+                break;
             case "target-dfuqueue":
                 field.value = field.value !== undefined ? field.value : "";
                 retVal.push({
@@ -770,7 +828,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <TargetDfuSprayQueueTextField
                         key={fieldID}
-                        selectedKey={field.value}
+                        defaultSelectedKey={field.value}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                     />
