@@ -1380,14 +1380,8 @@ public:
                     {
                         unsigned handle;
                         msg.read(handle);
-                        bool res = removeActiveKeyManager(handle);
-                        msg.clear();
-                        msg.append(errorCode);
-                        msg.append(res);
-                        replyAttempt = true;
-                        if (!queryNodeComm().send(msg, sender, replyTag, LONGTIMEOUT))
-                            throw MakeStringException(0, "kjs_keyclose: Failed to reply to lookup request");
-                        msg.clear();
+                        removeActiveKeyManager(handle);
+                        replyAttempt = true; // suppress any reply (client not expecting one)
                         break;
                     }
                     case kjs_fetchopen:
@@ -1480,14 +1474,8 @@ public:
                     {
                         unsigned handle;
                         msg.read(handle);
-                        bool res = removeActiveFetchContext(handle);
-                        msg.clear();
-                        msg.append(errorCode);
-                        msg.append(res);
-                        replyAttempt = true;
-                        if (!queryNodeComm().send(msg, sender, replyTag, LONGTIMEOUT))
-                            throw MakeStringException(0, "kjs_fetchclose: Failed to reply to lookup request");
-                        msg.clear();
+                        removeActiveFetchContext(handle);
+                        replyAttempt = true; // suppress any reply (client not expecting one)
                         break;
                     }
                     default:
