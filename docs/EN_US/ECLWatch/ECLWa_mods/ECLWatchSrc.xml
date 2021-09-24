@@ -1557,6 +1557,24 @@
                 </imageobject>
               </mediaobject>
             </figure></para>
+
+          <para>The filter icon color also has meaning. The color changes to
+          red displaying a warning message if there are over 100,000 files
+          when hovering over the filter icon. </para>
+
+          <para><figure>
+              <title>Logical Files Limit Warning Icon</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA427.jpg"
+                             vendor="eclwatchSS" />
+                </imageobject>
+              </mediaobject>
+            </figure>The icon will remain red while browsing the logical
+          files, and will change to blue when you reduce the amount of files
+          returned. The Icon will change back to red if you clear the filter
+          on environments that exceed the 100,000 file warning limit.</para>
         </sect3>
       </sect2>
 
