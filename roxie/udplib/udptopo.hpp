@@ -69,6 +69,7 @@
 extern UDPLIB_API unsigned minIbytiDelay;
 extern UDPLIB_API unsigned initIbytiDelay;
 extern UDPLIB_API SocketEndpoint myAgentEP;
+extern UDPLIB_API unsigned numChannels;
 
 class UDPLIB_API ChannelInfo
 {
@@ -111,6 +112,7 @@ interface ITopologyServer : public IInterface
     virtual bool implementsChannel(unsigned channel) const = 0;
     virtual StringBuffer & report(StringBuffer &ret) const = 0;
     virtual time_t queryServerInstance(const SocketEndpoint &ep) const = 0;
+    virtual void updateStatus() const = 0;
 };
 
 extern UDPLIB_API unsigned getNumAgents(unsigned channel);

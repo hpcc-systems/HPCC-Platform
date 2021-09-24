@@ -7,10 +7,11 @@ import * as ESPRequest from "src/ESPRequest";
 import { Memory } from "src/Memory";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { useGrid } from "../hooks/grid";
 import { HelperRow, useWorkunitHelpers } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
-import { DojoGrid, selector } from "./DojoGrid";
+import { ShortVerticalDivider } from "./Common";
+import { selector } from "./DojoGrid";
 
 function canShowContent(type: string) {
     switch (type) {
@@ -100,49 +101,43 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
     wuid
 }) => {
 
-    const [grid, setGrid] = React.useState<any>(undefined);
-    const [selection, setSelection] = React.useState([]);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [helpers] = useWorkunitHelpers(wuid);
 
     //  Grid ---
-    const gridStore = useConst(new Observable(new Memory("id")));
-    const gridQuery = useConst({});
-    const gridColumns = useConst({
-        sel: selector({
-            width: 27,
-            selectorType: "checkbox"
-        }),
-        Type: {
-            label: nlsHPCC.Type,
-            width: 160,
-            formatter: function (Type, row) {
-                const target = getTarget(row.id, row);
-                if (target) {
-                    return `<a href='#/text?mode=${target.sourceMode}&src=${encodeURIComponent(target.url)}'>${Type + (row?.Orig?.Description ? " (" + row.Orig.Description + ")" : "")}</a>`;
+    const store = useConst(new Observable(new Memory("id")));
+    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+        store,
+        filename: "helpers",
+        columns: {
+            sel: selector({
+                width: 27,
+                selectorType: "checkbox"
+            }),
+            Type: {
+                label: nlsHPCC.Type,
+                width: 160,
+                formatter: function (Type, row) {
+                    const target = getTarget(row.id, row);
+                    if (target) {
+                        return `<a href='#/text?mode=${target.sourceMode}&src=${encodeURIComponent(target.url)}'>${Type + (row?.Orig?.Description ? " (" + row.Orig.Description + ")" : "")}</a>`;
+                    }
+                    return Type;
                 }
-                return Type;
-            }
-        },
-        Description: {
-            label: nlsHPCC.Description
-        },
-        FileSize: {
-            label: nlsHPCC.FileSize,
-            width: 90,
-            renderCell: function (object, value, node, options) {
-                domClass.add(node, "justify-right");
-                node.innerText = Utility.valueCleanUp(value);
             },
+            Description: {
+                label: nlsHPCC.Description
+            },
+            FileSize: {
+                label: nlsHPCC.FileSize,
+                width: 90,
+                renderCell: function (object, value, node, options) {
+                    domClass.add(node, "justify-right");
+                    node.innerText = Utility.valueCleanUp(value);
+                },
+            }
         }
     });
-
-    const refreshTable = React.useCallback((clearSelection = false) => {
-        grid?.set("query", gridQuery);
-        if (clearSelection) {
-            grid?.clearSelection();
-        }
-    }, [grid, gridQuery]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -197,10 +192,6 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
 
     ], [refreshTable, selection, uiState.canShowContent, uiState.hasSelection]);
 
-    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
-        ...createCopyDownloadSelection(grid, selection, "logicalfiles.csv")
-    ], [grid, selection]);
-
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
@@ -215,14 +206,14 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
     }, [selection]);
 
     React.useEffect(() => {
-        gridStore.setData(helpers);
+        store.setData(helpers);
         refreshTable();
-    }, [gridStore, helpers, refreshTable]);
+    }, [store, helpers, refreshTable]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
+        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={copyButtons} />}
         main={
-            <DojoGrid store={gridStore} query={gridQuery} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
+            <Grid />
         }
     />;
 };

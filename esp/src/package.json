@@ -33,7 +33,7 @@
   },
   "main": "src/stub.js",
   "dependencies": {
-    "@fluentui/react": "^8.34.0",
+    "@fluentui/react": "^8.34.4",
     "@fluentui/react-cards": "1.0.0-beta.0",
     "@fluentui/react-hooks": "^8.3.1",
     "@fluentui/react-icons-mdl2": "^1.2.1",
@@ -68,7 +68,7 @@
     "query-string": "6.13.2",
     "react": "^16.12.0",
     "react-dom": "^16.13.1",
-    "react-hook-form": "^7.15.3",
+    "react-hook-form": "^7.15.4",
     "react-reflex": "^4.0.3",
     "react-sizeme": "^3.0.2",
     "universal-router": "^9.1.0"
@@ -77,8 +77,8 @@
     "@types/dojo": "^1.9.43",
     "@types/react": "^16.14.15",
     "@types/react-dom": "^16.9.14",
-    "@typescript-eslint/eslint-plugin": "^4.31.0",
-    "@typescript-eslint/parser": "^4.31.0",
+    "@typescript-eslint/eslint-plugin": "^4.31.2",
+    "@typescript-eslint/parser": "^4.31.2",
     "braces": ">=2.3.1",
     "cpx": "^1.5.0",
     "css-loader": "^3.4.2",

@@ -8,6 +8,8 @@ the Kibana UI (after creating a simple index pattern).
 Out of the box, the Filebeat forwards the HPCC component logs to a generically named index: 'fielbeat'-<FB_VER>-<DateStamp> and specifically into a field labeled 'message'. It also aggregates k8s, Docker, and system metadata to
 help the user query the log entries of their interest.
 
+A Kibana index pattern is created automatically based on the default filebeat index layout.
+
 ### Dependencies
 This chart is dependent on the Elastic Stack Helm charts for ElasticSearch, Filebeats and Kibana.
 

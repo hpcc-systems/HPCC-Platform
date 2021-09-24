@@ -57,7 +57,6 @@
 //=================================================================================
 
 bool shuttingDown = false;
-unsigned numChannels;
 unsigned callbackRetries = 3;
 unsigned callbackTimeout = 5000;
 unsigned lowTimeout = 10000;
@@ -180,6 +179,7 @@ StringBuffer roxieName;
 #ifdef _CONTAINERIZED
 StringBuffer defaultPlane;
 StringBuffer defaultPlaneDirPrefix;
+bool defaultPlaneDirPerPart = false;
 #endif
 bool trapTooManyActiveQueries;
 unsigned maxEmptyLoopIterations;
@@ -724,6 +724,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         {
             Owned<IStoragePlane> plane = getDataStoragePlane(defaultPlane, true);
             defaultPlaneDirPrefix.set(plane->queryPrefix());
+            defaultPlaneDirPerPart = plane->queryDirPerPart();
         }
 #endif
         installDefaultFileHooks(topology);
@@ -1436,8 +1437,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                 queryFileCache().startCacheReporter();
 #ifdef _CONTAINERIZED
                 publishTopology(traceLevel, myRoles);
-#endif
+#else
                 writeSentinelFile(sentinelFile);
+#endif
                 DBGLOG("Startup completed - LPT=%u APT=%u", queryNumLocalTrees(), queryNumAtomTrees());
                 DBGLOG("Waiting for queries");
                 if (pingInterval)

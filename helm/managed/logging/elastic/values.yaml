@@ -153,3 +153,37 @@ kibana:
       #cloud.google.com/load-balancer-type: "Internal"
       #service.beta.kubernetes.io/aws-load-balancer-internal: "true"
       #service.beta.kubernetes.io/openstack-internal-load-balancer: "true"
+  extraEnvs:
+  # Increase WAIT_ES_READY_IN_SEC if get 'Cluster health check is unknown' message in log
+  - name: WAIT_KIBANA_READY_IN_SEC
+    value: "180"
+  lifecycle:
+    postStart:
+      exec:
+        command:
+          - bash
+          - -c
+          - |
+            KIBANA_URL=http://localhost:5601
+            [ -z ${WAIT_KIBANA_READY_IN_SEC} ] && WAIT_KIBANA_READY_IN_SEC=180
+            END_TIME=$(expr $(date +%s) \+ ${WAIT_KIBANA_READY_IN_SEC})
+            while [[ "$(curl -s -o /dev/null -w '%{http_code}\n' $KIBANA_URL)" != "200" ]]; do
+              echo "\nKibana not ready..."
+              [ $(date +%s) -ge ${END_TIME} ] && break
+              sleep 1
+            done
+
+            httpcode=$(curl -s -o /dev/null -I -w "%{http_code}" -X GET "$KIBANA_URL/api/index_patterns/index_pattern/hpcc-filebeat-pattern" -H 'kbn-xsrf: true')
+
+            if [ ${httpcode} -eq 200 ]; then
+              echo 'Pre-existing hpcc-filebeat-pattern index pattern detected, will not re-create.'
+            elif [ ${httpcode} -eq 404 ]; then
+              echo 'hpcc-filebeat-pattern not found, will create index pattern!'
+
+              httpcode=$(curl -s -w "%{http_code}" -X POST "$KIBANA_URL/api/saved_objects/index-pattern/hpcc-filebeat-pattern" -H 'kbn-xsrf: true' -H 'Content-Type: application/json' \
+              -d'{ "attributes":{"title":"filebeat*","timeFieldName":"@timestamp"}}')
+              echo Index pattern creation response:  ${httpcode}
+            else
+              echo Failed to retrieve index pattern information from Kibana: ${httpcode}
+              exit ${httpcode}
+            fi

@@ -1,18 +1,18 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsAccess from "src/ws_access";
 import nlsHPCC from "src/nlsHPCC";
+import { useGrid } from "../hooks/grid";
 import { ShortVerticalDivider } from "./Common";
-import { DojoGrid, selector } from "./DojoGrid";
+import { selector } from "./DojoGrid";
 import { AddUserForm } from "./forms/AddUser";
 import { Filter } from "./forms/Filter";
 import { Fields } from "./forms/Fields";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams, pushUrl } from "../util/history";
 
-const logger = scopedLogger("../components/Users.tsx");
+const logger = scopedLogger("src-react/components/Users.tsx");
 
 const FilterFields: Fields = {
     "username": { type: "string", label: nlsHPCC.User }
@@ -42,29 +42,30 @@ export const Users: React.FunctionComponent<UsersProps> = ({
     filter = emptyFilter
 }) => {
 
-    const [grid, setGrid] = React.useState<any>(undefined);
-    const [selection, setSelection] = React.useState([]);
     const [showAddUser, setShowAddUser] = React.useState(false);
     const [showFilter, setShowFilter] = React.useState(false);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     //  Grid ---
-    const gridStore = useConst(WsAccess.CreateUsersStore(null, true));
-    const gridSort = useConst([{ attribute: "username", "descending": false }]);
-    const gridQuery = useConst(formatQuery(filter));
-    const gridColumns = useConst({
-        check: selector({ width: 27 }, "checkbox"),
-        username: {
-            width: 180,
-            label: nlsHPCC.Username,
-            formatter: function (_name, idx) {
-                return `<a href="#/security/users/${_name}">${_name}</a>`;
-            }
-        },
-        employeeID: { width: 180, label: nlsHPCC.EmployeeID },
-        employeeNumber: { width: 180, label: nlsHPCC.EmployeeNumber },
-        fullname: { label: nlsHPCC.FullName },
-        passwordexpiration: { width: 180, label: nlsHPCC.PasswordExpiration }
+    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+        store: WsAccess.CreateUsersStore(null, true),
+        query: formatQuery(filter),
+        sort: [{ attribute: "username", "descending": false }],
+        filename: "users",
+        columns: {
+            check: selector({ width: 27 }, "checkbox"),
+            username: {
+                width: 180,
+                label: nlsHPCC.Username,
+                formatter: function (_name, idx) {
+                    return `<a href="#/security/users/${_name}">${_name}</a>`;
+                }
+            },
+            employeeID: { width: 180, label: nlsHPCC.EmployeeID },
+            employeeNumber: { width: 180, label: nlsHPCC.EmployeeNumber },
+            fullname: { label: nlsHPCC.FullName },
+            passwordexpiration: { width: 180, label: nlsHPCC.PasswordExpiration }
+        }
     });
 
     //  Selection  ---
@@ -77,13 +78,6 @@ export const Users: React.FunctionComponent<UsersProps> = ({
 
         setUIState(state);
     }, [selection]);
-
-    const refreshTable = React.useCallback((clearSelection = false) => {
-        grid?.set("query", formatQuery(filter));
-        if (clearSelection) {
-            grid?.clearSelection();
-        }
-    }, [filter, grid]);
 
     const exportUsers = React.useCallback(() => {
         let usernames = "";
@@ -115,7 +109,7 @@ export const Users: React.FunctionComponent<UsersProps> = ({
                     pushUrl(`/security/users/${selection[0].username}`);
                 } else {
                     selection.forEach(user => {
-                        window.open(`#/security/users/${user.username}`, "_blank");
+                        window.open(`#/security/users/${user?.username}`, "_blank");
                     });
                 }
             }
@@ -157,16 +151,12 @@ export const Users: React.FunctionComponent<UsersProps> = ({
         filterFields[field] = { ...FilterFields[field], value: filter[field] };
     }
 
-    React.useEffect(() => {
-        refreshTable();
-    }, [filter, grid?.data, refreshTable]);
-
     return <>
         <HolyGrail
-            header={<CommandBar items={buttons} overflowButtonProps={{}} />}
+            header={<CommandBar items={buttons} farItems={copyButtons} />}
             main={
                 <>
-                    <DojoGrid store={gridStore} query={gridQuery} sort={gridSort} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
+                    <Grid />
                     <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
                 </>
             }

@@ -50,6 +50,8 @@ global:
     moneyLocale: "en_US.UTF-8"
     perCpu: 0.126
     storageAtRest: 0.0135
+    storageReads: 0.0485
+    storageWrites: 0.0038
 
   # postJobCommand will execute at the end of a dynamically launched K8s job,
   # when the main entrypoint process finishes, or if the readiness probes trigger a preStop event.

@@ -6,10 +6,11 @@ import * as domClass from "dojo/dom-class";
 import { AlphaNumSortMemory } from "src/Memory";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { useGrid } from "../hooks/grid";
 import { useWorkunitSourceFiles } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
-import { createCopyDownloadSelection, ShortVerticalDivider } from "./Common";
-import { DojoGrid, selector, tree } from "./DojoGrid";
+import { ShortVerticalDivider } from "./Common";
+import { selector, tree } from "./DojoGrid";
 
 const defaultUIState = {
     hasSelection: false
@@ -34,42 +35,37 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
     wuid
 }) => {
 
-    const [grid, setGrid] = React.useState<any>(undefined);
-    const [selection, setSelection] = React.useState([]);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [variables] = useWorkunitSourceFiles(wuid);
 
     //  Grid ---
-    const gridStore = useConst(new Observable(new TreeStore("Name", { Name: true, Value: true })));
-    const gridSort = useConst([{ attribute: "Name", "descending": false }]);
-    const gridQuery = useConst({ __hpcc_parentName: "" });
-    const gridColumns = useConst({
-        col1: selector({
-            width: 27,
-            selectorType: "checkbox"
-        }),
-        Name: tree({
-            label: "Name", sortable: true,
-            formatter: function (Name, row) {
-                return Utility.getImageHTML(row.IsSuperFile ? "folder_table.png" : "file.png") + "&nbsp;<a href='#' onClick='return false;' class='dgrid-row-url'>" + Name + "</a>";
+    const store = useConst(new Observable(new TreeStore("Name", { Name: true, Value: true })));
+    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+        store,
+        sort: [{ attribute: "Name", "descending": false }],
+        query: { __hpcc_parentName: "" },
+        filename: "sourceFiles",
+        columns: {
+            col1: selector({
+                width: 27,
+                selectorType: "checkbox"
+            }),
+            Name: tree({
+                label: "Name", sortable: true,
+                formatter: function (Name, row) {
+                    return Utility.getImageHTML(row.IsSuperFile ? "folder_table.png" : "file.png") + "&nbsp;<a href='#' onClick='return false;' class='dgrid-row-url'>" + Name + "</a>";
+                }
+            }),
+            FileCluster: { label: nlsHPCC.FileCluster, width: 300, sortable: false },
+            Count: {
+                label: nlsHPCC.Usage, width: 72, sortable: true,
+                renderCell: function (object, value, node, options) {
+                    domClass.add(node, "justify-right");
+                    node.innerText = Utility.valueCleanUp(value);
+                },
             }
-        }),
-        FileCluster: { label: nlsHPCC.FileCluster, width: 300, sortable: false },
-        Count: {
-            label: nlsHPCC.Usage, width: 72, sortable: true,
-            renderCell: function (object, value, node, options) {
-                domClass.add(node, "justify-right");
-                node.innerText = Utility.valueCleanUp(value);
-            },
         }
     });
-
-    const refreshTable = React.useCallback((clearSelection = false) => {
-        grid?.set("query", gridQuery);
-        if (clearSelection) {
-            grid?.clearSelection();
-        }
-    }, [grid, gridQuery]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -92,10 +88,6 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
         },
     ], [refreshTable, selection, uiState.hasSelection]);
 
-    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
-        ...createCopyDownloadSelection(grid, selection, "sourcefiles.csv")
-    ], [grid, selection]);
-
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
@@ -108,14 +100,14 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
     }, [selection]);
 
     React.useEffect(() => {
-        gridStore.setData(variables);
+        store.setData(variables);
         refreshTable();
-    }, [gridStore, refreshTable, variables]);
+    }, [store, refreshTable, variables]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
-            <DojoGrid store={gridStore} query={gridQuery} sort={gridSort} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />
+            <Grid />
         }
     />;
 };

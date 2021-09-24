@@ -387,8 +387,7 @@ private:
                     // Due to the really weird code in dadfs, this MUST be set to match the leading portion of cloneFromDir
                     // in order to properly handle remote systems with different default directory locations
                     StringBuffer tail;
-                    DFD_OS os = (getPathSepChar(srcfdesc->queryDefaultDir())=='\\')?DFD_OSwindows:DFD_OSunix;
-                    makePhysicalPartName(dstlfn.get(),0,0,tail,0,os,PATHSEPSTR);  // if lfn is a::b::c, tail will be /a/b/
+                    getLFNDirectoryUsingBaseDir(tail, dstlfn.get(), PATHSEPSTR); // if lfn is a::b::c, tail will be /a/b/
                     assertex(tail.length() > 1);
                     tail.setLength(tail.length()-1);   // strip off the trailing /
                     StringBuffer head(srcfdesc->queryProperties().queryProp("@cloneFromDir")); // Will end with /a/b

@@ -1048,12 +1048,15 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 partNumMap.push_back(NotFound);
             partNumMap[partNo] = myParts++;
         }
-        virtual void init()
+        virtual void reset()
         {
             stopped = false;
             nextQueue = 0;
             totalQueued = 0;
             state = ts_initial;
+        }
+        virtual void init()
+        {
             ISuperFileDescriptor * superFDesc = allParts->item(0).queryOwner().querySuperFileDescriptor();
             if (superFDesc)
             {
@@ -1066,6 +1069,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 }
                 isSuper=true;
             }
+            reset();
         }
         void join()
         {
@@ -1534,8 +1538,12 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         }
         virtual void init() override
         {
-            PARENT::init();
             handles.resize(parts.size());
+            PARENT::init();
+        }
+        virtual void reset() override
+        {
+            PARENT::reset();
             for (auto &h: handles)
                 h = 0;
         }
@@ -2113,6 +2121,15 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
         std::vector<CLookupHandler *> partIdxToHandler;
         bool localKey = false;
         bool isLocalKey() const { return localKey; }
+        void reset()
+        {
+            ForEachItemIn(h, handlers)
+            {
+                CLookupHandler *lookupHandler = handlers.item(h);
+                if (lookupHandler)
+                    lookupHandler->reset();
+            }
+        }
         void init()
         {
             ForEachItemIn(h, handlers)
@@ -2920,6 +2937,7 @@ class CKeyedJoinSlave : public CSlaveActivity, implements IJoinProcessor, implem
                 ++p;
             }
         }
+        handlerContainer.init();
 #ifdef _DEBUG
         handlerContainer.trace();
 #endif
@@ -3196,8 +3214,8 @@ public:
         endOfInput = false;
         lookupThreadLimiter.reset();
         fetchThreadLimiter.reset();
-        keyLookupHandlers.init();
-        fetchLookupHandlers.init();
+        keyLookupHandlers.reset();
+        fetchLookupHandlers.reset();
         pendingKeyLookupLimiter.reset();
         doneListLimiter.reset();
         pendingJoinGroupList.clear();

@@ -22,6 +22,7 @@
 #include "jsocket.hpp"
 #include "jptree.hpp"
 #include "udplib.hpp"
+#include "udptopo.hpp"
 #include "portlist.h"
 #include "thorsoapcall.hpp"
 #include "thorxmlwrite.hpp"
@@ -284,7 +285,6 @@ enum class SinkMode : byte
 
 // Global configuration info
 extern bool shuttingDown;
-extern unsigned numChannels;
 extern unsigned callbackRetries;
 extern unsigned callbackTimeout;
 extern unsigned lowTimeout;
@@ -359,6 +359,7 @@ extern StringBuffer roxieName;
 #ifdef _CONTAINERIZED
 extern StringBuffer defaultPlane;
 extern StringBuffer defaultPlaneDirPrefix;
+extern bool defaultPlaneDirPerPart;
 #endif
 extern bool trapTooManyActiveQueries;
 extern unsigned maxEmptyLoopIterations;

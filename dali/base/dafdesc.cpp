@@ -2325,13 +2325,13 @@ IFileDescriptor *createFileDescriptor(const char *lname,IGroup *grp,IPropertyTre
     IFileDescriptor *res = createFileDescriptor(tree);
     res->setTraceName(lname);
     StringBuffer dir;
-    makePhysicalPartName(lname, 0, 0, dir,false,os);
+    getLFNDirectoryUsingDefaultBaseDir(dir, lname, os);
     res->setDefaultDir(dir.str());
     if (width==0)
         width = grp->ordinality();
     StringBuffer s;
     for (unsigned i=0;i<width;i++) {
-        makePhysicalPartName(lname, i+1, width, s.clear(),false,os);
+        makePhysicalPartName(lname, i+1, width, s.clear(), 0, os, nullptr, false);
         RemoteFilename rfn;
         rfn.setPath(grp->queryNode(i%grp->ordinality()).endpoint(),s.str());
         res->setPart(i,rfn,NULL);
@@ -2350,9 +2350,9 @@ IFileDescriptor *createFileDescriptor(const char *lname, const char *clusterType
 
     StringBuffer curDir, defaultDir;
     if (!getConfigurationDirectory(nullptr, "data", clusterType, groupName, defaultDir))
-        makePhysicalPartName(lname, 0, 0, curDir, false, DFD_OSdefault); // legacy
+        getLFNDirectoryUsingDefaultBaseDir(curDir, lname, DFD_OSdefault); // legacy
     else
-        makePhysicalPartName(lname, 0, 0, curDir, false, SepCharBaseOs(getPathSepChar(defaultDir)), defaultDir.str());
+        getLFNDirectoryUsingBaseDir(curDir, lname, defaultDir.str());
 
     Owned<IFileDescriptor> fileDesc = createFileDescriptor();
     fileDesc->setNumParts(parts);
@@ -2374,7 +2374,7 @@ IFileDescriptor *createFileDescriptor(const char *lname, const char *planeName, 
 
     StringBuffer partMask, dir;
     getPartMask(partMask, lname, numParts);
-    makePhysicalPartName(lname, 0, 0, dir, false, DFD_OSdefault, plane->queryPrefix());
+    getLFNDirectoryUsingBaseDir(dir, lname, plane->queryPrefix());
 
     Owned<IFileDescriptor> fileDesc = createFileDescriptor();
     fileDesc->setNumParts(numParts);
@@ -2650,9 +2650,30 @@ inline const char *skipRoot(const char *lname)
     return lname;
 }
 
+// returns position in result buffer of tail lfn name
+static size32_t translateLFNToPath(StringBuffer &result, const char *lname, char pathSep)
+{
+    lname = skipRoot(lname);
+    char c;
+    size32_t l = result.length();
+    while ((c=*(lname++))!=0)
+    {
+        if ((c==':')&&(*lname==':'))
+        {
+            lname++;
+            result.clip().append(pathSep);
+            l = result.length();
+            lname = skipRoot(lname);
+        }
+        else if (validFNameChar(c))
+            result.append((char)tolower(c));
+        else
+            result.appendf("%%%.2X", (int) c);
+    }
+    return l;
+}
 
-
-StringBuffer &makePhysicalPartName(const char *lname, unsigned partno, unsigned partmax, StringBuffer &result, unsigned replicateLevel, DFD_OS os,const char *diroverride)
+StringBuffer &makePhysicalPartName(const char *lname, unsigned partno, unsigned partmax, StringBuffer &result, unsigned replicateLevel, DFD_OS os,const char *diroverride,bool dirPerPart)
 {
     assertex(lname);
     if (strstr(lname,"::>")) { // probably query
@@ -2695,24 +2716,13 @@ StringBuffer &makePhysicalPartName(const char *lname, unsigned partno, unsigned 
         l++;
     }
 
-    lname = skipRoot(lname);
+    l = translateLFNToPath(result, lname, OsSepChar(os));
+
     char c;
-    while ((c=*(lname++))!=0) {
-        if ((c==':')&&(*lname==':')) {
-            lname++;
-            result.clip().append(OsSepChar(os));
-            l = result.length();
-            lname = skipRoot(lname);
-        }
-        else if (validFNameChar(c))
-            result.append((char)tolower(c));
-        else
-            result.appendf("%%%.2X", (int) c);
-    }
-    if (partno==0) { // just return directory (with trailing PATHSEP)
+    if (partno==0) // just return directory (with trailing PATHSEP)
         result.setLength(l);
-    }
-    else {
+    else
+    {
 #ifndef INCLUDE_1_OF_1
         if (partmax>1)  // avoid 1_of_1
 #endif
@@ -2720,6 +2730,8 @@ StringBuffer &makePhysicalPartName(const char *lname, unsigned partno, unsigned 
             StringBuffer tail(result.str()+l);
             tail.trim();
             result.setLength(l);
+            if (dirPerPart && (partmax>1))
+                result.append(partno).append(OsSepChar(os));
             const char *m = queryPartMask();
             while ((c=*(m++))!=0) {
                 if (c=='$') {
@@ -2752,8 +2764,34 @@ StringBuffer &makeSinglePhysicalPartName(const char *lname, StringBuffer &result
 {
     wasdfs = !(allowospath&&(isAbsolutePath(lname)||(stdIoHandle(lname)>=0)));
     if (wasdfs)
-        return makePhysicalPartName(lname, 1, 1, result, false, DFD_OSdefault,diroverride);
+        return makePhysicalPartName(lname, 1, 1, result, 0, DFD_OSdefault, diroverride, false);
     return result.append(lname);
+}
+
+StringBuffer &getLFNDirectoryUsingBaseDir(StringBuffer &result, const char *lname, const char *baseDir)
+{
+    assertex(lname);
+    if (isEmptyString(baseDir))
+        baseDir = queryBaseDirectory(grp_unknown, 0, DFD_OSdefault);
+
+    result.append(baseDir);
+    char pathSep = getPathSepChar(baseDir);
+    size32_t l = result.length();
+    if ((l>3) && (pathSep != result.charAt(l-1)))
+    {
+        result.append(pathSep);
+        l++;
+    }
+
+    l = translateLFNToPath(result, lname, pathSep);
+    result.setLength(l);
+    return result.clip();
+}
+
+StringBuffer &getLFNDirectoryUsingDefaultBaseDir(StringBuffer &result, const char *lname, DFD_OS os)
+{
+    const char *baseDir = queryBaseDirectory(grp_unknown, 0, os);
+    return getLFNDirectoryUsingBaseDir(result, lname, baseDir);
 }
 
 bool setReplicateDir(const char *dir,StringBuffer &out,bool isrep,const char *baseDir,const char *repDir)

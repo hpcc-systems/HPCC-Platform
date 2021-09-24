@@ -6,7 +6,7 @@ import nlsHPCC from "src/nlsHPCC";
 import * as WsAccess from "src/ws_access";
 import { MessageBox } from "../../layouts/MessageBox";
 
-const logger = scopedLogger("../components/forms/AddUser.tsx");
+const logger = scopedLogger("src-react/components/forms/AddUser.tsx");
 
 interface AddUserFormValues {
     username: string;
