@@ -38,7 +38,7 @@ const char * const helpText[] = {
     "                  executable, or stdout)",
     "?   -manifest     Specify path to manifest file listing resources to add",
     "    -foption[=value] Set an ecl option (#option)",
-    "    -main <ref>[@repo] Compile definition <ref> from the source collection, or specified git repo",
+    "    --main <ref>[@repo] Compile definition <ref> from the source collection, or specified git repo",
     "    -syntax       Perform a syntax check of the ECL",
     "    -platform=hthor Generate code for hthor executable",
     "    -platform=roxie Generate code for roxie cluster (default)",
@@ -85,7 +85,7 @@ const char * const helpText[] = {
     "!   -brk <n>      Trigger a break point in eclcc after nth allocation",
 #endif
     "!   -Dname=value  Override the definition of a global attribute 'name'",
-    "!   --defaultGitPrefix <prefix>  The default prefix used to access git repos when not specified in package.json",
+    "!   --defaultgitprefix <prefix>  The default prefix used to access git repos when not specified in package.json",
     "!   --deny=all    Disallow use of all named features not specifically allowed using --allow",
     "!   --deny=str    Disallow use of named feature",
     "!   --expand <path> Expand the contents of an archive to a directory",

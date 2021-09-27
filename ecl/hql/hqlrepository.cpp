@@ -490,7 +490,7 @@ IHqlExpression * CNewEclRepository::createSymbol(IHqlRemoteScope * rScope, IEclS
             const char * defaultUrl = source->queryPath();
             Owned<IProperties> props = source->getProperties();
             bool requireSHA = false;    // Should possibly be true (or true if it came from a package-lock.json file)
-            IEclRepository * repo = container->resolveDependentRepository(eclId, defaultUrl, requireSHA);
+            IEclRepository * repo = container->queryDependentRepository(eclId, defaultUrl, requireSHA);
             IHqlScope * childScope = repo->queryRootScope();
             body.set(queryExpression(childScope));
             break;
@@ -584,7 +584,7 @@ void EclRepositoryManager::processArchive(IPropertyTree * archiveTree)
     addRepository(archiveCollection, nullptr, true);
 }
 
-IEclPackage * EclRepositoryManager::resolveDependentRepository(IIdAtom * name, const char * defaultUrl, bool requireSHA)
+IEclPackage * EclRepositoryManager::queryDependentRepository(IIdAtom * name, const char * defaultUrl, bool requireSHA)
 {
     //Check to see if the reference is to a filename.  Should possibly be disabled on a switch.
     const char * filename = queryExtractFilename(defaultUrl);

@@ -1672,7 +1672,7 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     processDefinitions(localRepositoryManager);
     localRepositoryManager.inherit(repositoryManager); // Definitions, plugins, std library etc.
     Owned<IFileContents> contents;
-    IEclPackage * mainPackage = nullptr;
+    Owned<IEclPackage> mainPackage;
     StringBuffer fullPath; // Here so it doesn't get freed when leaving the else block
 
     if (queryText || queryAttributePath)
@@ -1708,7 +1708,7 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
 
     instance.dataServer.setown(localRepositoryManager.createPackage(nullptr));
     if (queryAttributePackage)
-        mainPackage = localRepositoryManager.resolveDependentRepository(nullptr, queryAttributePackage, false);
+        mainPackage.set(localRepositoryManager.queryDependentRepository(nullptr, queryAttributePackage, false));
 
     //Ensure classes are not linked by anything else
     localRepositoryManager.kill();  // help ensure non-shared repositories are freed as soon as possible
@@ -1828,7 +1828,7 @@ void EclCC::processFile(EclCompileInstance & instance)
         if (attributePackage)
         {
             //If attribute package is specified, resolve that package as the source for the query, and pass null to processSingleQuery
-            instance.dataServer.setown(localRepositoryManager.resolveDependentRepository(nullptr, attributePackage, false));
+            instance.dataServer.set(localRepositoryManager.queryDependentRepository(nullptr, attributePackage, false));
         }
         else
         {
@@ -1836,7 +1836,7 @@ void EclCC::processFile(EclCompileInstance & instance)
 
             instance.dataServer.setown(localRepositoryManager.createPackage(nullptr));
         }
-        localRepositoryManager.kill();  // help ensure non-shared repositories are freed as soon as possible
+
         processSingleQuery(instance, queryText, attributePath.str(), nullptr);
     }
 
@@ -2016,7 +2016,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
 
     if (queryAttributePackage)
     {
-        instance.dataServer.set(localRepositoryManager.resolveDependentRepository(nullptr, queryAttributePackage, false));
+        instance.dataServer.set(localRepositoryManager.queryDependentRepository(nullptr, queryAttributePackage, false));
     }
     else
     {
@@ -2026,7 +2026,7 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
 
         if (looksLikeGitPackage(searchPath))
         {
-            instance.dataServer.set(localRepositoryManager.resolveDependentRepository(nullptr, searchPath, false));
+            instance.dataServer.set(localRepositoryManager.queryDependentRepository(nullptr, searchPath, false));
         }
         else
         {
@@ -2658,7 +2658,7 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
             //Ignore any --daemon option supplied to eclccserver which may be passed onto eclcc
         }
-        else if (iter.matchOption(optDefaultGitPrefix, "--defaultGitPrefix"))
+        else if (iter.matchOption(optDefaultGitPrefix, "--defaultgitprefix"))
         {
         }
         else if (iter.matchOption(optDFS, "-dfs") || /*deprecated*/ iter.matchOption(optDFS, "-dali"))
@@ -2820,7 +2820,7 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchOption(optMonitorInterval, "--monitorinterval"))
         {
         }
-        else if (iter.matchOption(tempArg, "-main"))
+        else if (iter.matchOption(tempArg, "-main") || iter.matchOption(tempArg, "--main"))
         {
             const char * arg = tempArg;
             const char * at = strchr(arg, '@');
