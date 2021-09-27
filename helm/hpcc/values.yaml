@@ -84,8 +84,18 @@ global:
       type: LoadBalancer
       
       
-
-  # For pod placement instruction and examples please reference docs/placements.md
+# For pod placement instruction and examples please reference docs/placements.md
+# The following is for tolerations of Spot Node Pool on Azure. Other cloud providers
+# may have different taints for Spot Node Pool. The tolerations are harmless when
+# there is no taint on the node pool.
+#placements:
+# - pods: ["all"]
+#   placement:
+#     tolerations:
+#     - key: "kubernetes.azure.com/scalesetpriority"
+#       operator: "Equal"
+#       value:  "spot"
+#       effect: "NoSchedule"
 
 security:
   eclSecurity:
