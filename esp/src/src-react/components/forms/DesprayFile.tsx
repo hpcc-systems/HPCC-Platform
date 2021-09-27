@@ -3,9 +3,7 @@ import { Checkbox, DefaultButton, mergeStyleSets, PrimaryButton, Stack, TextFiel
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
 import * as FileSpray from "src/FileSpray";
-import { useFile } from "../../hooks/file";
 import { MessageBox } from "../../layouts/MessageBox";
-import { pushUrl } from "../../util/history";
 import { TargetDropzoneTextField, TargetFolderTextField, TargetServerTextField } from "./Fields";
 import * as FormStyles from "./landing-zone/styles";
 
@@ -13,7 +11,10 @@ interface DesprayFileFormValues {
     destGroup: string;
     destIP: string;
     destPath: string;
-    targetName: string;
+    sourceLogicalName: string;
+    targetName?: {
+        name: string
+    }[];
     splitprefix: string;
     overwrite: boolean;
     SingleConnection: boolean;
@@ -24,7 +25,7 @@ const defaultValues: DesprayFileFormValues = {
     destGroup: "",
     destIP: "",
     destPath: "",
-    targetName: "",
+    sourceLogicalName: "",
     splitprefix: "",
     overwrite: false,
     SingleConnection: false,
@@ -32,21 +33,23 @@ const defaultValues: DesprayFileFormValues = {
 };
 
 interface DesprayFileProps {
-    cluster: string;
-    logicalFile: string;
+    cluster?: string;
+    logicalFiles: string[];
 
     showForm: boolean;
     setShowForm: (_: boolean) => void;
+
+    refreshGrid?: (_?: boolean) => void;
 }
 
 export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
     cluster,
-    logicalFile,
+    logicalFiles,
     showForm,
-    setShowForm
+    setShowForm,
+    refreshGrid
 }) => {
 
-    const [file] = useFile(cluster, logicalFile);
     const [machine, setMachine] = React.useState<string>("");
     const [directory, setDirectory] = React.useState<string>("/");
     const [dropzone, setDropzone] = React.useState<string>("");
@@ -62,21 +65,40 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
-                const request = {
-                    ...data,
-                    destPath: [data.destPath, data.targetName].join(pathSep),
-                    sourceLogicalName: logicalFile
-                };
-                FileSpray.Despray({ request: request }).then(response => {
-                    closeForm();
-                    pushUrl(`/dfuworkunits/${response?.DesprayResponse?.wuid}`);
-                });
+                if (logicalFiles.length > 0) {
+                    if (logicalFiles.length === 1) {
+                        const request = {
+                            ...data,
+                            destPath: [data.destPath, data.targetName].join(pathSep),
+                            sourceLogicalName: logicalFiles[0]
+                        };
+                        FileSpray.Despray({ request: request }).then(response => {
+                            closeForm();
+                            reset(defaultValues);
+                            if (refreshGrid) refreshGrid(true);
+                        });
+                    } else {
+                        logicalFiles.forEach((logicalFile, idx) => {
+                            const request = {
+                                ...data,
+                                sourceLogicalName: logicalFile,
+                                destPath: [data.destPath, data.targetName[idx]].join(pathSep),
+                            };
+                            const requests = [];
+                            requests.push(FileSpray.Despray({ request: request }));
+                            Promise.all(requests).then(_ => {
+                                closeForm();
+                                if (refreshGrid) refreshGrid(true);
+                            });
+                        });
+                    }
+                }
             },
             err => {
                 console.log(err);
             }
         )();
-    }, [closeForm, handleSubmit, logicalFile, pathSep]);
+    }, [closeForm, handleSubmit, logicalFiles, pathSep, refreshGrid, reset]);
 
     const componentStyles = mergeStyleSets(
         FormStyles.componentStyles,
@@ -88,9 +110,18 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
     );
 
     React.useEffect(() => {
-        const newValues = { ...defaultValues, targetName: file?.Filename };
-        reset(newValues);
-    }, [file?.Filename, reset]);
+        if (logicalFiles.length === 1) {
+            const newValues = { ...defaultValues, sourceLogicalName: logicalFiles[0] };
+            reset(newValues);
+        } else if (logicalFiles.length > 1) {
+            const _files = [];
+            logicalFiles.forEach(file => {
+                _files.push({ name: file });
+            });
+            const newValues = { ...defaultValues, targetName: _files };
+            reset(newValues);
+        }
+    }, [logicalFiles, reset]);
 
     return <MessageBox title={nlsHPCC.Despray} show={showForm} setShow={closeForm}
         footer={<>
@@ -166,23 +197,58 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                         errorMessage={error && error.message}
                     />}
             />
-            <Controller
-                control={control} name="targetName"
-                render={({
-                    field: { onChange, name: fieldName, value },
-                    fieldState: { error }
-                }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        required={true}
-                        label={nlsHPCC.TargetName}
-                        value={value}
-                        errorMessage={error && error.message}
-                    />}
-                rules={{
-                    required: nlsHPCC.ValidationErrorRequired
-                }}
-            />
+            {logicalFiles?.length === 1 &&
+                <Controller
+                    control={control} name="sourceLogicalName"
+                    render={({
+                        field: { onChange, name: fieldName, value },
+                        fieldState: { error }
+                    }) => <TextField
+                            name={fieldName}
+                            onChange={onChange}
+                            required={true}
+                            label={nlsHPCC.TargetName}
+                            value={value}
+                            errorMessage={error && error.message}
+                        />}
+                    rules={{
+                        required: nlsHPCC.ValidationErrorRequired
+                    }}
+                />
+            }
+            {logicalFiles?.length > 1 &&
+                <table className={`${componentStyles.twoColumnTable} ${componentStyles.selectionTable}`} style={{ marginTop: "15px" }}>
+                    <thead>
+                        <tr>
+                            <th>{nlsHPCC.TargetName}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {logicalFiles.map((file, idx) => {
+                            return <tr key={`File-${idx}`}>
+                                <td>{file}</td>
+                                <td>
+                                    <Controller
+                                        control={control} name={`targetName.${idx}.name` as const}
+                                        render={({
+                                            field: { onChange, name: fieldName, value: file },
+                                            fieldState: { error }
+                                        }) => <TextField
+                                                name={fieldName}
+                                                onChange={onChange}
+                                                value={file}
+                                                errorMessage={error && error?.message}
+                                            />}
+                                        rules={{
+                                            required: nlsHPCC.ValidationErrorTargetNameRequired
+                                        }}
+                                    />
+                                </td>
+                            </tr>;
+                        })}
+                    </tbody>
+                </table>
+            }
             <Controller
                 control={control} name="splitprefix"
                 render={({
