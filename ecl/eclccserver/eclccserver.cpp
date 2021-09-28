@@ -246,7 +246,7 @@ class EclccCompileThread : implements IPooledThread, implements IErrorReporter, 
             const char * finger = (*start=='-') ? start+1 : start; //support leading double dash
             const char * dash = strrchr(finger, '-');     // position of trailing dash, if present
             StringAttr optName;
-            if (dash && (dash != start))
+            if (dash && (dash != start) && isdigit(dash[1]))
                 optName.set(start, dash-start);
             else
                 optName.set(start);
@@ -1020,6 +1020,32 @@ eclccserver:
 )!!";
 
 
+static IPropertyTree * translateOptions(IPropertyTree * legacy)
+{
+    Owned<IPropertyTreeIterator> options = legacy->getElements("./Option");
+    unsigned id = 1000; // start with a large number so it is unlikely to clash with any specified by the user
+    ForEach(*options)
+    {
+        IPropertyTree &option = options->query();
+        const char *name = option.queryProp("@name");
+        //Ensure that any repeated options of the form -x=a -x=y are retained, rather than being deduped, by appending a unique number.
+        //Used for --alowsigned=...
+        if (name && ((memicmp(name, "eclcc-", 6) == 0) || *name=='-'))
+        {
+            const char * start = name + (*name=='-' ? 1 : 6);
+            const char * dash = strrchr(start, '-');     // position of trailing dash, if present
+
+            //Do not add a unique number on the end if it already has a unique number on the end
+            if (!dash || !isdigit(dash[1]))
+            {
+                VStringBuffer newname("%s-%d", name, id++);
+                option.setProp("@name", newname.str());
+            }
+        }
+    }
+    return LINK(legacy);
+}
+
 
 int main(int argc, const char *argv[])
 {
@@ -1045,7 +1071,7 @@ int main(int argc, const char *argv[])
     try
     {
         globalArgv = argv;
-        globals.setown(loadConfiguration(defaultYaml, argv, "eclccserver", "ECLCCSERVER", "eclccserver.xml", nullptr));
+        globals.setown(loadConfiguration(defaultYaml, argv, "eclccserver", "ECLCCSERVER", "eclccserver.xml", translateOptions));
     }
     catch (IException * e)
     {
