@@ -183,6 +183,8 @@ export const routes: RoutesEx = [
             { path: "/:Tab", action: (ctx, params) => import("./components/Security").then(_ => <_.Security filter={parseSearch(ctx.search) as any} tab={params.Tab as string} />) },
             { path: "/users/:username", action: (ctx, params) => import("./components/UserDetails").then(_ => <_.UserDetails username={params.username as string} />) },
             { path: "/users/:username/:Tab", action: (ctx, params) => import("./components/UserDetails").then(_ => <_.UserDetails username={params.username as string} tab={params.Tab as string} />) },
+            { path: "/groups/:name", action: (ctx, params) => import("./components/GroupDetails").then(_ => <_.GroupDetails name={params.name as string} />) },
+            { path: "/groups/:name/:Tab", action: (ctx, params) => import("./components/GroupDetails").then(_ => <_.GroupDetails name={params.name as string} tab={params.Tab as string} />) },
         ]
     },
     {

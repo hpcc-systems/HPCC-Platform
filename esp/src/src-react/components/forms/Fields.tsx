@@ -63,7 +63,7 @@ export type FieldType = "string" | "password" | "number" | "checkbox" | "datetim
     "file-type" | "file-sortby" |
     "queries-priority" | "queries-suspend-state" | "queries-active-state" |
     "target-cluster" | "target-dropzone" | "target-server" | "target-group" |
-    "target-dfuqueue" | "user-groups" |
+    "target-dfuqueue" | "user-groups" | "group-members" |
     "logicalfile-type" | "dfuworkunit-state";
 
 export type Values = { [name: string]: string | number | boolean | (string | number | boolean)[] };
@@ -176,6 +176,12 @@ interface UserGroupsField extends BaseField {
     value?: string;
 }
 
+interface GroupMembersField extends BaseField {
+    type: "group-members";
+    groupname: string;
+    value?: string;
+}
+
 interface LinkField extends BaseField {
     type: "link";
     href: string;
@@ -199,7 +205,7 @@ type Field = StringField | NumericField | CheckboxField | DateTimeField | Dropdo
     FileTypeField | FileSortByField |
     QueriesPriorityField | QueriesSuspendStateField | QueriesActiveStateField |
     TargetClusterField | TargetDropzoneField | TargetServerField | TargetGroupField |
-    TargetDfuSprayQueueField | UserGroupsField |
+    TargetDfuSprayQueueField | UserGroupsField | GroupMembersField |
     LogicalFileType | DFUWorkunitStateField;
 
 export type Fields = { [id: string]: Field };
@@ -518,6 +524,41 @@ export const UserGroupsField: React.FunctionComponent<UserGroupsProps> = (props)
 
 };
 
+export interface GroupMembersProps {
+    key: string;
+    label?: string;
+    selectedKey?: string;
+    className?: string;
+    required?: boolean;
+    optional?: boolean;
+    groupname: string;
+    errorMessage?: string;
+    onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
+    placeholder?: string;
+}
+
+export const GroupMembersField: React.FunctionComponent<GroupMembersProps> = (props) => {
+
+    const [users, setUsers] = React.useState<IDropdownOption[]>([]);
+
+    React.useEffect(() => {
+        const request = { groupname: props.groupname };
+        WsAccess.GroupMemberEditInput({ request: request }).then(({ GroupMemberEditInputResponse }) => {
+            const _users = GroupMemberEditInputResponse.Users.User
+                .map(user => {
+                    return {
+                        key: user.username,
+                        text: user.username
+                    };
+                });
+            _users.unshift({ key: "", text: "" });
+            setUsers(_users);
+        });
+    }, [props.groupname]);
+
+    return <Dropdown {...props} options={users} />;
+};
+
 const states = Object.keys(States).map(s => States[s]);
 const dfustates = Object.keys(DFUStates).map(s => DFUStates[s]);
 
@@ -814,6 +855,21 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     field: <UserGroupsField
                         key={fieldID}
                         username={field.username}
+                        required={field.required}
+                        selectedKey={field.value}
+                        onChange={(ev, row) => onChange(fieldID, row.key)}
+                        placeholder={field.placeholder}
+                    />
+                });
+                break;
+            case "group-members":
+                field.value = field.value !== undefined ? field.value : "";
+                retVal.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: <GroupMembersField
+                        key={fieldID}
+                        groupname={field.groupname}
                         required={field.required}
                         selectedKey={field.value}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
