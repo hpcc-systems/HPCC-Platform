@@ -3399,6 +3399,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
     multiRowNodes->addProp("Node", "Computer");
     multiRowNodes->addProp("Node", "Switch");
     multiRowNodes->addProp("Node", "NAS");
+    multiRowNodes->addProp("Node", "cost");
     toXML(multiRowNodes, sb);
     resp.setMultiRowNodes(sb.str());
     

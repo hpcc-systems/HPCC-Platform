@@ -2004,6 +2004,21 @@ bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bo
       xpath.clear().append(XML_ATTR_TRACE);
       pNAS->addProp(xpath, sbdefaultValue.str());
     }
+
+    //<cost moneyLocale="en_US.UTF-8" perCpu="0.113" storageAtRest="0.0135" storageReads="0.0485" storageWrites="0.0038"/>
+
+    IPropertyTree* pCost = pCompTree->addPropTree("cost", createPTree());
+    xpath.clear().append("@memoryLocale");
+    pDomain->addProp(xpath, sbdefaultValue.str());
+    xpath.clear().append("@perCpu");
+    pDomain->addProp(xpath, sbdefaultValue.str());
+    xpath.clear().append("@storageAtRest");
+    pDomain->addProp(xpath, sbdefaultValue.str());
+    xpath.clear().append("@storageReads");
+    pDomain->addProp(xpath, sbdefaultValue.str());
+    xpath.clear().append("@storageWrites");
+    pDomain->addProp(xpath, sbdefaultValue.str());
+
   }
   else
   {
@@ -2031,16 +2046,25 @@ bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bo
     addItem(jsStrBuf, pEnv, XML_TAG_NAS,       TAG_DIRECTORY,       "", 0, 1, "", 1);
     addItem(jsStrBuf, pEnv, XML_TAG_NAS,       TAG_MASK,       "", 0, 1, "", 1);
     addItem(jsStrBuf, pEnv, XML_TAG_NAS,       TAG_TRACE,       "", 0, 1, "", 1);
+
+    addItem(jsStrBuf, pEnv, "cost",  "moneyLocale", "", 0, 0, "", 1);
+    addItem(jsStrBuf, pEnv, "cost",  "perCpu", "", 0, 0, "", 1);
+    addItem(jsStrBuf, pEnv, "cost",  "storageAtRest", "", 0, 0, "", 1);
+    addItem(jsStrBuf, pEnv, "cost",  "storageReads", "", 0, 0, "", 1);
+    addItem(jsStrBuf, pEnv, "cost",  "storageWrites", "", 0, 0, "", 1);
+
     jsStrBuf.append("compTabs['Hardware'][compTabs['Hardware'].length]= 'Computer Types';");
     jsStrBuf.append("compTabs['Hardware'][compTabs['Hardware'].length]= 'Switches';");
     jsStrBuf.append("compTabs['Hardware'][compTabs['Hardware'].length]= 'Domains';");
     jsStrBuf.append("compTabs['Hardware'][compTabs['Hardware'].length]= 'Computers';");
     jsStrBuf.append("compTabs['Hardware'][compTabs['Hardware'].length]= 'NAS';");
+    jsStrBuf.append("compTabs['Hardware'][compTabs['Hardware'].length]= 'cost';");
     jsStrBuf.append("compTabToNode['Computer Types']= 'ComputerType';");
     jsStrBuf.append("compTabToNode['Switches']= 'Switch';");
     jsStrBuf.append("compTabToNode['Domains']= 'Domain';");
     jsStrBuf.append("compTabToNode['Computers']= 'Computer';");
     jsStrBuf.append("compTabToNode['NAS']= 'NAS';");
+    jsStrBuf.append("compTabToNode['cost']= 'cost';");
 
     int index = 0;
     jsStrBuf.append("var colIndex = new Array();");
@@ -2065,6 +2089,13 @@ bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bo
     jsStrBuf.appendf("colIndex['subnetNAS']=%d;", index++);
     jsStrBuf.appendf("colIndex['directoryNAS']=%d;", index++);
     jsStrBuf.appendf("colIndex['traceNAS']=%d;", index++);
+
+    index=0;
+    jsStrBuf.appendf("colIndex['memoryLocalecost']=%d;", index++);
+    jsStrBuf.appendf("colIndex['perCpucost']=%d;", index++);
+    jsStrBuf.appendf("colIndex['storageAtRestcost']=%d;", index++);
+    jsStrBuf.appendf("colIndex['storageReadscost']=%d;", index++);
+    jsStrBuf.appendf("colIndex['storageWritescost']=%d;", index++);
 
     sbDefn.clear().append(jsStrBuf);
 
