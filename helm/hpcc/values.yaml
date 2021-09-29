@@ -82,8 +82,12 @@ global:
       #labels:
       #  mylabel: "4"
       type: LoadBalancer
-      
-      
+    # Ingress Network Polices will be created for following esp pods. The Network Policies will only take effect
+    # when a Kubernetes supported network polocy provider is ininstalled.
+    exposedServices: ["eclwatch", "eclqueries", "esdl-sandbox", "sql2ecl"]
+    # The following settings can be overwritted by ingress rules defined esp services/ingress
+    ingress:
+    - {}
 
   # For pod placement instruction and examples please reference docs/placements.md
 
@@ -444,6 +448,13 @@ esp:
     ## You can also specify labels on a service
     #labels:
     #  mylabel: "3"
+
+    # Additional ingress rules can be defined here
+    # ingress:
+    # - from:
+    #   - ipBlock:
+    #      cidr: <internal-cidr/>
+
   #resources:
   #  cpu: "1"
   #  memory: "2G"
@@ -523,6 +534,10 @@ roxie:
   topoServer:
     replicas: 1
   #directAccessPlanes: []  #add direct access planes that roxie will read from without copying the data to its default data plane
+
+  # Additional roxie ingress rule can be defined here
+  # ingress:
+  # - {}
 
 thor:
 - name: thor

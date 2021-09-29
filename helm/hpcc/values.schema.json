@@ -316,6 +316,15 @@
         "visibilities": {
           "type": "object",
           "description" : "Global visibilities configuration",
+          "properties" : {
+            "exposedServices": {
+              "type": "array",
+              "items": { "type": "string" }
+	    },
+            "ingress": {
+              "$ref" : "#/definitions/ingress"
+	    }
+	  },
           "additionalProperties": {
             "type": "object",
             "required": [ "type" ],
@@ -752,6 +761,15 @@
         }
       }
     },
+    "ingress": {
+      "type": "array",
+      "items": {
+        "additionalProperties": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      }
+    },
     "egress": {
       "type": "object",
       "properties": {
@@ -791,6 +809,9 @@
         "visibility": {
           "type": "string",
           "description": "Should this service be exposed outside the cluster, locally or to the internet"
+        },
+        "ingress": {
+          "$ref": "#/definitions/ingress"
         },
         "annotations": {
           "type": "object",
@@ -1092,7 +1113,10 @@
         "labels": {
           "type": "object",
           "additionalProperties": { "type": "string" }
-        }
+        },
+	"ingress": {
+          "$ref" : "#/definitions/ingress"
+	}
       }
     },
     "toposerver": {

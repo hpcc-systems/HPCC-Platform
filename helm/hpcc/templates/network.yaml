@@ -157,6 +157,25 @@ spec:
         matchLabels:
           app: eclservices
 ---
+{{ range .Values.esp -}}
+{{- if has .name $.Values.global.visibilities.exposedServices }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .name }}
+spec:
+  podSelector:
+    matchLabels:
+      app: {{ .name }}
+  ingress:
+{{- if .service.ingress }}
+{{ toYaml .service.ingress | indent 2}}
+{{- else }}
+{{ toYaml $.Values.global.visibilities.ingress | indent 2}}
+{{- end }}
+---
+{{- end -}}
+{{- end -}}
 ##
 ## Provides access to pods labeled prometheusMetricsReporter: "yes"
 ## onto port declared in global.metrics.sinks[type=prometheus].configuration.port
