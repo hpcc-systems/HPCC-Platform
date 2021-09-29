@@ -1739,6 +1739,11 @@ public:
             factory->noteProcessed(oid, processed);
     }
 
+    virtual void noteLibrary(IQueryFactory *library) override
+    {
+        throwUnexpected();
+    }
+
 protected:
     RecordTranslationMode getEnableFieldTranslation() const
     {
@@ -16320,6 +16325,7 @@ class CRoxieServerLibraryCallActivity : public CRoxieServerActivity
     Owned<IException> error;
     CriticalSection crit;
     rtlRowBuilder libraryExtractBuilder;
+    Owned<IQueryFactory> libraryQuery;  // Release after libraryGraph...
     Owned<IActivityGraph> libraryGraph;
     const LibraryCallFactoryExtra & extra;
 
@@ -16358,6 +16364,11 @@ public:
         delete [] inputUsed;
         delete [] outputAdaptors;
         delete [] outputUsed;
+    }
+
+    virtual void noteLibrary(IQueryFactory *library) override
+    {
+        libraryQuery.set(library);
     }
 
     virtual void onCreate(IHThorArg *_colocalParent)
