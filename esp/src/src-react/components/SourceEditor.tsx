@@ -61,7 +61,7 @@ const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
     useOnEvent(document, "eclwatch-theme-toggle", handleThemeToggle);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} />}
+        header={<CommandBar items={buttons} />}
         main={
             <AutosizeHpccJSComponent widget={editor} padding={4} />
         }

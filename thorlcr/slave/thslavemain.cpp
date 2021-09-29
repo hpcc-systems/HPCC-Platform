@@ -148,21 +148,25 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
             return false;
         }
 
-        ensurePTree(globals, "Debug");
+        StringBuffer xpath;
+        getExpertOptPath(nullptr, xpath); // 'expert' in container world, or 'Debug' in bare-metal
+        ensurePTree(globals, xpath);
         unsigned numStrands, blockSize;
-        if (globals->hasProp("Debug/@forceNumStrands"))
-            numStrands = globals->getPropInt("Debug/@forceNumStrands");
+        getExpertOptPath("forceNumStrands", xpath.clear());
+        if (globals->hasProp(xpath))
+            numStrands = globals->getPropInt(xpath);
         else
         {
             numStrands = defaultForceNumStrands;
-            globals->setPropInt("Debug/@forceNumStrands", defaultForceNumStrands);
+            globals->setPropInt(xpath, defaultForceNumStrands);
         }
-        if (globals->hasProp("Debug/@strandBlockSize"))
-            blockSize = globals->getPropInt("Debug/@strandBlockSize");
+        getExpertOptPath("strandBlockSize", xpath.clear());
+        if (globals->hasProp(xpath))
+            blockSize = globals->getPropInt(xpath);
         else
         {
             blockSize = defaultStrandBlockSize;
-            globals->setPropInt("Debug/@strandBlockSize", defaultStrandBlockSize);
+            globals->setPropInt(xpath, defaultStrandBlockSize);
         }
         PROGLOG("Strand defaults: numStrands=%u, blockSize=%u", numStrands, blockSize);
 
@@ -418,7 +422,7 @@ int main( int argc, const char *argv[]  )
             if (!slaveLogHandler)
                 slaveLogHandler = startSlaveLog();
 
-            if (globals->getPropBool("Debug/@slaveDaliClient"))
+            if (getExpertOptBool("slaveDaliClient"))
                 enableThorSlaveAsDaliClient();
 
             IDaFileSrvHook *daFileSrvHook = queryDaFileSrvHook();
@@ -439,7 +443,7 @@ int main( int argc, const char *argv[]  )
             }
 
 // Initialization from globals
-            setIORetryCount(globals->getPropInt("Debug/@ioRetries")); // default == 0 == off
+            setIORetryCount((unsigned)getExpertOptInt64("ioRetries")); // default == 0 == off
 
             StringBuffer str;
             if (globals->getProp("@externalProgDir", str.clear()))
@@ -467,7 +471,7 @@ int main( int argc, const char *argv[]  )
                 globals->getProp("@query_so_dir", str.clear());
             if (str.length())
             {
-                if (globals->getPropBool("Debug/@dllsToSlaves", true))
+                if (getExpertOptBool("dllsToSlaves", true))
                 {
                     StringBuffer uniqSoPath;
                     if (PATHSEPCHAR == str.charAt(str.length()-1))
@@ -591,7 +595,7 @@ int main( int argc, const char *argv[]  )
     if (unregisterException.get())
         UnregisterSelf(unregisterException);
 
-    if (globals->getPropBool("Debug/@slaveDaliClient"))
+    if (getExpertOptBool("slaveDaliClient"))
         disableThorSlaveAsDaliClient();
 
 #ifdef USE_MP_LOG

@@ -23,7 +23,7 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
 }) => {
 
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
-    const [results] = useWorkunitResults(wuid);
+    const [results, , , refreshData] = useWorkunitResults(wuid);
 
     //  Grid ---
     const store = useConst(new Observable(new AlphaNumSortMemory("__hpcc_id", { Name: true, Value: true })));
@@ -44,7 +44,7 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
             },
             FileName: {
                 label: nlsHPCC.FileName, sortable: true,
-                formatter: function (FileName, idx) {
+                formatter: function (FileName, row) {
                     return `<a href='#/files/${FileName}' class='dgrid-row-url2'>${FileName}</a>`;
                 }
             },
@@ -70,7 +70,7 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshData()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -97,7 +97,7 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
                 }
             }
         },
-    ], [refreshTable, selection, uiState.hasSelection, wuid]);
+    ], [refreshData, selection, uiState.hasSelection, wuid]);
 
     //  Selection  ---
     React.useEffect(() => {

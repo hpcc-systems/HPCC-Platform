@@ -1,4 +1,5 @@
 ldap:
+  #ldapAddress: "myldapserver"
   serverType: ActiveDirectory
   description: LDAP server process
   ldapProtocol: ldaps

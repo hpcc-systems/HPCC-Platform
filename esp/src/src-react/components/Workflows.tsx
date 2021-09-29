@@ -71,7 +71,7 @@ export const Workflows: React.FunctionComponent<WorkflowsProps> = ({
     ], [refreshWorkflow]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={copyButtons} />}
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <Grid />
         }

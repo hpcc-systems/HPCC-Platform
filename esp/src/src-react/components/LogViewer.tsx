@@ -89,7 +89,7 @@ export const LogViewer: React.FunctionComponent<LogViewerProps> = ({
     }, [errorChecked, store, infoChecked, log, otherChecked, refreshTable, warningChecked, lastUpdate]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={copyButtons} />}
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <Grid />
         }

@@ -1,40 +1,85 @@
 import * as React from "react";
-import { LogicalFile } from "@hpcc-js/comms";
+import { LogicalFile, WsDfu } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
-import * as WsDfu from "src/WsDfu";
+import { singletonDebounce } from "../util/throttle";
 import { useCounter } from "./workunit";
 
 const logger = scopedLogger("../hooks/file.ts");
 
-export function useFile(cluster: string, name: string): [LogicalFile, number, () => void] {
+export function useFile(cluster: string, name: string): [LogicalFile, boolean, number, () => void] {
 
     const [file, setFile] = React.useState<LogicalFile>();
+    const [isProtected, setIsProtected] = React.useState(false);
     const [lastUpdate, setLastUpdate] = React.useState(Date.now());
     const [count, increment] = useCounter();
 
     React.useEffect(() => {
         const file = LogicalFile.attach({ baseUrl: "" }, cluster, name);
-        file.fetchInfo().then(response => {
-            setFile(file);
-            setLastUpdate(Date.now());
-        }).catch(logger.error);
-    }, [cluster, name, count]);
+        let active = true;
+        let handle;
+        const fetchInfo = singletonDebounce(file, "fetchInfo");
+        fetchInfo().then(() => {
+            if (active) {
+                setFile(file);
+                setIsProtected(file.ProtectList?.DFUFileProtect?.length > 0 || false);
+                setLastUpdate(Date.now());
+                handle = file.watch(() => {
+                    setIsProtected(file.ProtectList?.DFUFileProtect?.length > 0 || false);
+                    setLastUpdate(Date.now());
+                });
+            }
+        });
+        return () => {
+            active = false;
+            handle?.release();
+        };
+    }, [cluster, count, name]);
 
-    return [file, lastUpdate, increment];
+    return [file, isProtected, lastUpdate, increment];
 }
 
-export function useDefFile(cluster: string, name: string, format: "def" | "xml"): [string] {
-    const [file, setFile] = React.useState("");
+export function useDefFile(cluster: string, name: string, format: "def" | "xml"): [string, () => void] {
+    const [file] = useFile(cluster, name);
+    const [defFile, setDefFile] = React.useState("");
+    const [count, increment] = useCounter();
 
     React.useEffect(() => {
-        if (name) {
-            WsDfu.DFUDefFile(
-                { "request": { "Name": name, "Format": format }
-            }).then(response => {
-                setFile(response);
-            }).catch(logger.error);
+        if (file) {
+            file.fetchDefFile(format)
+                .then(setDefFile)
+                .catch(logger.error)
+                ;
         }
-    }, [cluster, format, name]);
+    }, [file, format, count]);
 
-    return [file];
+    return [defFile, increment];
+}
+
+export function useFileHistory(cluster: string, name: string): [WsDfu.Origin2[], () => void, () => void] {
+
+    const [file] = useFile(cluster, name);
+    const [history, setHistory] = React.useState<WsDfu.Origin2[]>([]);
+    const [count, increment] = useCounter();
+
+    const eraseHistory = React.useCallback(() => {
+        file?.eraseHistory()
+            .then(response => {
+                setHistory(response);
+            })
+            .catch(logger.error)
+            ;
+    }, [file]);
+
+    React.useEffect(() => {
+        if (file) {
+            file.fetchListHistory()
+                .then(response => {
+                    setHistory(response);
+                })
+                .catch(logger.error)
+                ;
+        }
+    }, [file, count]);
+
+    return [history, eraseHistory, increment];
 }

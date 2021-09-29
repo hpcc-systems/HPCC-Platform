@@ -101,6 +101,7 @@ export const routes: RoutesEx = [
         path: "/files",
         children: [
             { path: "", action: (context) => import("./components/Files").then(_ => <_.Files filter={parseSearch(context.search) as any} />) },
+            { path: "/:Name", action: (ctx, params) => import("./components/FileDetails").then(_ => <_.FileDetails cluster={undefined} logicalFile={params.Name as string} />) },
             { path: "/:NodeGroup/:Name", action: (ctx, params) => import("./components/FileDetails").then(_ => <_.FileDetails cluster={params.NodeGroup as string} logicalFile={params.Name as string} />) },
             { path: "/:NodeGroup/:Name/:Tab", action: (ctx, params) => import("./components/FileDetails").then(_ => <_.FileDetails cluster={params.NodeGroup as string} logicalFile={params.Name as string} tab={params.Tab as string} />) },
         ]
@@ -126,8 +127,9 @@ export const routes: RoutesEx = [
         mainNav: ["files"],
         path: "/xref",
         children: [
-            { path: "", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="XrefQueryWidget" />) },
-            { path: "/:XrefTarget", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="XrefDetailsWidget" params={params} />) }
+            { path: "", action: () => import("./components/Xrefs").then(_ => <_.Xrefs />) },
+            { path: "/:Name", action: (ctx, params) => import("./components/XrefDetails").then(_ => <_.XrefDetails name={params.Name as string} />) },
+            { path: "/:Name/:Tab", action: (ctx, params) => import("./components/XrefDetails").then(_ => <_.XrefDetails name={params.Name as string} tab={params.Tab as string} />) }
         ]
     },
     //  Roxie  ---
@@ -183,6 +185,9 @@ export const routes: RoutesEx = [
             { path: "/:Tab", action: (ctx, params) => import("./components/Security").then(_ => <_.Security filter={parseSearch(ctx.search) as any} tab={params.Tab as string} />) },
             { path: "/users/:username", action: (ctx, params) => import("./components/UserDetails").then(_ => <_.UserDetails username={params.username as string} />) },
             { path: "/users/:username/:Tab", action: (ctx, params) => import("./components/UserDetails").then(_ => <_.UserDetails username={params.username as string} tab={params.Tab as string} />) },
+            { path: "/groups/:name", action: (ctx, params) => import("./components/GroupDetails").then(_ => <_.GroupDetails name={params.name as string} />) },
+            { path: "/groups/:name/:Tab", action: (ctx, params) => import("./components/GroupDetails").then(_ => <_.GroupDetails name={params.name as string} tab={params.Tab as string} />) },
+            { path: "/permissions/:Name/:BaseDn", action: (ctx, params) => import("./components/Security").then(_ => <_.Security tab="permissions" name={params.Name as string} baseDn={params.BaseDn as string} />) },
         ]
     },
     {

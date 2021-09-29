@@ -5677,6 +5677,10 @@ public:
             fdesc->setPart(n,part.getFilename(rfn,copy),&part.queryAttributes());
             n++;
         }
+        // turn off dirperpart (if present) because the super descriptor has already encoded the common parent dir + tails above.
+        FileDescriptorFlags flags = static_cast<FileDescriptorFlags>(fdesc->queryProperties().getPropInt("@flags"));
+        flags &= ~FileDescriptorFlags::dirperpart;
+        fdesc->queryProperties().setPropInt("@flags", static_cast<int>(flags));
         ClusterPartDiskMapSpec mspec;
         if (subfiles.ordinality()) {
             mspec = subfiles.item(0).queryPartDiskMapping(0);

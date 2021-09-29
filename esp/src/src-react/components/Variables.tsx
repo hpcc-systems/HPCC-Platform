@@ -17,7 +17,7 @@ export const Variables: React.FunctionComponent<VariablesProps> = ({
     wuid
 }) => {
 
-    const [variables] = useWorkunitVariables(wuid);
+    const [variables, , , refreshData] = useWorkunitVariables(wuid);
 
     //  Grid ---
     const store = useConst(new Observable(new AlphaNumSortMemory("__hpcc_id", { Name: true, Value: true })));
@@ -46,10 +46,10 @@ export const Variables: React.FunctionComponent<VariablesProps> = ({
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshData()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-    ], [refreshTable]);
+    ], [refreshData]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}

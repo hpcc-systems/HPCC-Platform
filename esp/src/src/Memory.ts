@@ -1,6 +1,12 @@
+import * as Deferred from "dojo/Deferred";
+import * as Observable from "dojo/store/Observable";
 import * as QueryResults from "dojo/store/util/QueryResults";
 import * as SimpleQueryEngine from "dojo/store/util/SimpleQueryEngine";
 import { alphanumSort } from "./Utility";
+
+export {
+    Observable
+};
 
 //  Replacement for "dojo/store/Memory"
 export interface MemoryOptions {
@@ -10,24 +16,49 @@ export interface MemoryOptions {
     queryEngine?: any
 }
 
-export class Memory {
+type FetchDataResponse = Promise<any[]>;
 
-    protected data = null;
-    private idProperty: string;
-    private index = null;
+export class BaseStore {
+
+    protected idProperty: string;
+    protected index = null;
     protected queryEngine = SimpleQueryEngine;
 
     constructor(idProperty: string = "id") {
         this.idProperty = idProperty;
-        this.setData(this.data || []);
-    }
-
-    get(id) {
-        return this.data[this.index[id]];
     }
 
     getIdentity(object) {
         return object[this.idProperty];
+    }
+
+    protected fetchData(): FetchDataResponse {
+        return Promise.resolve([]);
+    }
+
+    query(query, options) {
+        const retVal = new Deferred();
+        this.fetchData().then(response => {
+            const data = this.queryEngine(query, options)(response);
+            retVal.resolve(data);
+        });
+        return QueryResults(retVal.then(response => response), {
+            totalLength: retVal.then(response => response.length)
+        });
+    }
+}
+
+export class Memory extends BaseStore {
+
+    protected data = null;
+
+    constructor(idProperty: string = "id") {
+        super(idProperty);
+        this.setData(this.data || []);
+    }
+
+    get(id: string) {
+        return this.data[this.index[id]];
     }
 
     put(row, options) {
@@ -61,10 +92,6 @@ export class Memory {
         }
     }
 
-    query(query, options) {
-        return QueryResults(this.queryEngine(query, options)(this.data));
-    }
-
     setData(data) {
         if (data.items) {
             this.idProperty = data.identifier || this.idProperty;
@@ -76,6 +103,10 @@ export class Memory {
         for (let i = 0, l = data.length; i < l; i++) {
             this.index[data[i][this.idProperty]] = i;
         }
+    }
+
+    protected fetchData(): FetchDataResponse {
+        return Promise.resolve(this.data);
     }
 }
 
@@ -91,5 +122,16 @@ export class AlphaNumSortMemory extends Memory {
             alphanumSort(retVal, options.sort[0].attribute, options.sort[0].descending);
         }
         return retVal;
+    }
+}
+
+export class ASyncStore extends BaseStore {
+
+    constructor(idProperty: string = "id", protected _fetchData: () => Promise<void | any[]>) {
+        super(idProperty);
+    }
+
+    fetchData(): FetchDataResponse {
+        return this._fetchData().then(data => !!data ? data : []);
     }
 }

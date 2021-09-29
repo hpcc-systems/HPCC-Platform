@@ -118,7 +118,7 @@ const subMenuItems: SubMenuItems = {
     ],
     "workunits": [
         { headerText: nlsHPCC.Workunits, itemKey: "/workunits" },
-        { headerText: nlsHPCC.Dashboard, itemKey: "/workunits/dashboard" },
+        // TODO: Post Tech Preview { headerText: nlsHPCC.Dashboard, itemKey: "/workunits/dashboard" },
         { headerText: nlsHPCC.Playground, itemKey: "/play" },
     ],
     "files": [
@@ -222,8 +222,8 @@ export const SubNavigation: React.FunctionComponent<SubNavigationProps> = ({
                 </Stack>
             </Stack.Item>
             <Stack.Item align="center" grow={0}>
-                <IconButton title={nlsHPCC.Advanced} iconProps={{ iconName: "History" }} menuProps={{ items: history }} />
-                <IconButton title={nlsHPCC.Advanced} iconProps={{ iconName: isFavorite ? "FavoriteStarFill" : "FavoriteStar" }} menuProps={{ items: favoriteMenu }} split onClick={() => {
+                <IconButton title={nlsHPCC.History} iconProps={{ iconName: "History" }} menuProps={{ items: history }} />
+                <IconButton title={nlsHPCC.Favorites} iconProps={{ iconName: isFavorite ? "FavoriteStarFill" : "FavoriteStar" }} menuProps={{ items: favoriteMenu }} split onClick={() => {
                     if (isFavorite) {
                         removeFavorite();
                     } else {
