@@ -53,6 +53,7 @@
 #include "roxiehelper.hpp"
 #include "jlzw.hpp"
 #include "anawu.hpp"
+#include "hpccconfig.hpp"
 
 using roxiemem::OwnedRoxieString;
 
@@ -2112,16 +2113,6 @@ void EclAgent::runProcess(IEclProcess *process)
     assertex(rowManager==NULL);
     allocatorMetaCache.setown(createRowAllocatorCache(this));
 
-    //Get memory limit. Workunit specified value takes precedence over config file
-    int memLimitMB = agentTopology->getPropInt("@defaultMemoryLimitMB", DEFAULT_MEM_LIMIT);
-    memLimitMB = queryWorkUnit()->getDebugValueInt("hthorMemoryLimit", memLimitMB);
-
-    bool allowHugePages = agentTopology->getPropBool("@heapUseHugePages", false);
-
-    bool allowTransparentHugePages = agentTopology->getPropBool("@heapUseTransparentHugePages", true);
-
-    bool retainMemory = agentTopology->getPropBool("@heapRetainMemory", false);
-
     if (agentTopology->hasProp("@httpGlobalIdHeader"))
         updateDummyContextLogger().setHttpIdHeaders(agentTopology->queryProp("@httpGlobalIdHeader"), agentTopology->queryProp("@httpCallerIdHeader"));
 
@@ -2150,6 +2141,32 @@ void EclAgent::runProcess(IEclProcess *process)
         }
     }
 
+    // a component may specify an alternate name for the agent/workflow memory area,
+    // e.g. Thor specifies in "eclAgentMemory"
+    const char *jobMemorySectionName = agentTopology->queryProp("@jobMemorySectionName");
+    if (isEmptyString(jobMemorySectionName))
+        jobMemorySectionName = "jobMemory";
+    //Get memory limit. Workunit specified value takes precedence over config
+    unsigned memLimitMB = queryWorkUnit()->getDebugValueInt("hthorMemoryLimit", 0);
+    if (0 == memLimitMB)
+    {
+        if (isContainerized())
+        {
+            const char *resourcedMemory = agentTopology->queryProp("resources/@memory");
+            if (!isEmptyString(resourcedMemory))
+            {
+                offset_t sizeBytes = friendlyStringToSize(resourcedMemory);
+                memLimitMB = (unsigned)(sizeBytes / 0x100000);
+            }
+            else
+                memLimitMB = DEFAULT_MEM_LIMIT;
+            static constexpr float defaultPctSysMemForRoxie = 90.0;
+            if (!agentTopology->hasProp(VStringBuffer("%s/@maxMemPercentage", jobMemorySectionName)))
+                ensurePTree(agentTopology, jobMemorySectionName)->setPropReal("@maxMemPercentage", defaultPctSysMemForRoxie);
+        }
+        else
+            memLimitMB = (unsigned)agentTopology->getPropInt("@defaultMemoryLimitMB", DEFAULT_MEM_LIMIT);
+    }
 #ifndef __64BIT__
     if (memLimitMB > 4096)
     {
@@ -2158,12 +2175,64 @@ void EclAgent::runProcess(IEclProcess *process)
         fail(0, errmsg.str());
     }
 #endif
-    memsize_t memLimitBytes = (memsize_t)memLimitMB * 1024 * 1024;
+
+    auto getWorkUnitValueFunc = [this](const char *prop, StringBuffer &result)
+    {
+        SCMStringBuffer value;
+        queryWorkUnit()->getDebugValue(prop, value);
+        if (0 == value.length())
+            return false;
+        result.append(value.str());
+        return true;
+    };
+    std::unordered_map<std::string, __uint64> memorySpecifications;
+    getMemorySpecifications(memorySpecifications, agentTopology, jobMemorySectionName, memLimitMB, getWorkUnitValueFunc);
+
+    unsigned queryMemoryMB = (unsigned)(memorySpecifications["query"] / 0x100000);
+
+    if (0 == queryMemoryMB)
+    {
+        unsigned totalRequirementsMB = (unsigned)(memorySpecifications["total"] / 0x100000);
+        unsigned recommendedMaxMB = (unsigned)(memorySpecifications["recommendedMaxMemory"] / 0x100000);
+        unsigned remainingMemoryMB = recommendedMaxMB - totalRequirementsMB;
+        if (agentTopology->getPropBool("@useChildProcesses"))
+        {
+            /* If using child proceses and there is no per query specification of memory usage
+             * divide up the available memory between the maxAcive instances
+             * if < than the historical default, use that and hence over commit.
+             */
+            unsigned maxActive = agentTopology->getPropInt("@maxActive");
+            queryMemoryMB = remainingMemoryMB / maxActive;
+            if (queryMemoryMB < DEFAULT_MEM_LIMIT)
+                queryMemoryMB = DEFAULT_MEM_LIMIT;
+        }
+        else
+            queryMemoryMB = remainingMemoryMB;
+    }
+
+    // a simple helper used below, to fetch bool from workunit, or 'jobMemory/' or legacy location
+    auto getBoolSetting = [&](const char *setting, bool defaultValue)
+    {
+        VStringBuffer attrSetting("@%s", setting);
+        return queryWorkUnit()->getDebugValueBool(setting,
+            agentTopology->getPropBool(VStringBuffer("jobMemory/%s", attrSetting.str()),
+            agentTopology->getPropBool(attrSetting,
+            defaultValue
+                                 )));
+    };
+
+    bool allowHugePages = getBoolSetting("heapUseHugePages", false);
+    bool allowTransparentHugePages = getBoolSetting("heapUseTransparentHugePages", true);
+    bool retainMemory = getBoolSetting("heapRetainMemory", false);
+
+    memsize_t memLimitBytes = (memsize_t)queryMemoryMB * 1024 * 1024;
     roxiemem::setTotalMemoryLimit(allowHugePages, allowTransparentHugePages, retainMemory, memLimitBytes, 0, NULL, NULL);
+
+    PROGLOG("Total memory = %u MB, query memory = %u MB", memLimitMB, queryMemoryMB);
 
     rowManager.setown(roxiemem::createRowManager(0, NULL, queryDummyContextLogger(), allocatorMetaCache, false));
     setHThorRowManager(rowManager.get());
-    rowManager->setActivityTracking(queryWorkUnit()->getDebugValueBool("traceRoxiePeakMemory", false));
+    rowManager->setActivityTracking(getBoolSetting("traceRoxiePeakMemory", false));
 
     if (debugContext)
         debugContext->checkBreakpoint(DebugStateReady, NULL, NULL);

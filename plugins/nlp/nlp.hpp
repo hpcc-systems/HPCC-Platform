@@ -15,19 +15,24 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef _HPCCCONFIG_HPP_
-#define _HPCCCONFIG_HPP_
+#ifndef NLP_INCL
+#define NLP_INCL
 
-#ifdef THORHELPER_EXPORTS
-#define THORHELPER_API DECL_EXPORT
+#ifdef _WIN32
+#define ECL_NLP_CALL _cdecl
 #else
-#define THORHELPER_API DECL_IMPORT
+#define ECL_NLP_CALL
 #endif
 
-extern THORHELPER_API bool getService(StringBuffer &serviceAddress, const char *serviceName, bool failIfNotFound);
+#ifdef ECL_NLP_EXPORTS
+#define ECL_NLP_API DECL_EXPORT
+#else
+#define ECL_NLP_API DECL_IMPORT
+#endif
 
-typedef std::function<bool(const char *prop, StringBuffer &result)> GetJobValueFunction;
-extern THORHELPER_API void getMemorySpecifications(std::unordered_map<std::string, __uint64> &memorySpecifications, const IPropertyTree *config, const char *context, unsigned maxMB, GetJobValueFunction getJobValueFunction);
+#include "hqlplugins.hpp"
+#include "eclhelper.hpp"
+#include "nlp_eng.hpp"
+#include <sstream>
 
-#endif // _HPCCCONFIG_HPP_
-
+#endif
