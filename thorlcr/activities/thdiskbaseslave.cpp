@@ -209,7 +209,7 @@ CDiskReadSlaveActivityBase::CDiskReadSlaveActivityBase(CGraphElementBase *_conta
     reInit = 0 != (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename));
     crcCheckCompressed = getOptBool(THOROPT_READCOMPRESSED_CRC, false);
     markStart = gotMeta = false;
-    checkFileCrc = !globals->getPropBool("Debug/@fileCrcDisabled", false);
+    checkFileCrc = !getExpertOptBool("fileCrcDisabled", false);
     checkFileCrc = getOptBool(THOROPT_READ_CRC, checkFileCrc);
 }
 

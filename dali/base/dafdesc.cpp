@@ -1378,7 +1378,7 @@ public:
         directory.set(pt.queryProp("@directory"));
         partmask.set(pt.queryProp("@partmask"));
         unsigned np = pt.getPropInt("@numparts");
-        fileFlags = static_cast<FileDescriptorFlags>(pt.getPropInt("@flags"));
+        fileFlags = static_cast<FileDescriptorFlags>(pt.getPropInt("Attr/@flags"));
         StringBuffer query;
         IPropertyTree **trees = NULL;
         Owned<IPropertyTreeIterator> piter;

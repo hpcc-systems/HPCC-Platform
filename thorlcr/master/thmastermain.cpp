@@ -601,7 +601,7 @@ int main( int argc, const char *argv[]  )
 
     globals->setProp("@masterBuildTag", hpccBuildInfo.buildTag);
 
-    setIORetryCount(globals->getPropInt("Debug/@ioRetries")); // default == 0 == off
+    setIORetryCount((unsigned)getExpertOptInt64("ioRetries")); // default == 0 == off
     StringBuffer daliServer;
     if (!globals->getProp("@daliServers", daliServer)) 
     {

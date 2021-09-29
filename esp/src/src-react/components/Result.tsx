@@ -300,7 +300,7 @@ export const Result: React.FunctionComponent<ResultProps> = ({
     ];
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />}
+        header={<CommandBar items={buttons} farItems={rightButtons} />}
         main={
             <>
                 <AutosizeHpccJSComponent widget={resultTable} />

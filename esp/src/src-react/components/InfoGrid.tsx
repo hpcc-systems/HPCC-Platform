@@ -165,7 +165,7 @@ export const InfoGrid: React.FunctionComponent<InfoGridProps> = ({
     }, [errorChecked, exceptions, store, infoChecked, otherChecked, refreshTable, warningChecked]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={copyButtons} />}
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <Grid />
         }

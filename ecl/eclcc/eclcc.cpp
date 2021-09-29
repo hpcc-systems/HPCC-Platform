@@ -2658,7 +2658,7 @@ int EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
             //Ignore any --daemon option supplied to eclccserver which may be passed onto eclcc
         }
-        else if (iter.matchOption(optDefaultGitPrefix, "--defaultGitPrefix"))
+        else if (iter.matchOption(optDefaultGitPrefix, "--defaultgitprefix"))
         {
         }
         else if (iter.matchOption(optDFS, "-dfs") || /*deprecated*/ iter.matchOption(optDFS, "-dali"))

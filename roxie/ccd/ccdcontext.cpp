@@ -1514,6 +1514,7 @@ public:
         {
             Owned<IQueryFactory> libraryQuery = factory->lookupLibrary(extra.libraryName, extra.interfaceHash, *this);
             assertex(libraryQuery);
+            parentActivity->noteLibrary(libraryQuery);
             IActivityGraph *ret = libraryQuery->lookupGraph(this, "graph1", probeManager, *this, parentActivity);
             ret->setPrefix(libraryQuery->queryQueryName());
             return ret;

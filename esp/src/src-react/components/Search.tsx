@@ -126,7 +126,7 @@ export const Search: React.FunctionComponent<SearchProps> = ({
         </Pivot >}
         main={selectedKey === "all" ? <HolyGrail
             header={<>
-                <CommandBar items={buttons} overflowButtonProps={{}} farItems={copyButtons} />
+                <CommandBar items={buttons} farItems={copyButtons} />
                 <ProgressIndicator progressHidden={searchCount === 0} percentComplete={searchCount === 0 ? 0 : progress.value / searchCount} />
             </>}
             main={<Grid />}

@@ -196,7 +196,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
     }, [selection]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={copyButtons} />}
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <>
                 <Grid />
