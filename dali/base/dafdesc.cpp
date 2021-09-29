@@ -3247,7 +3247,12 @@ bool GroupInformation::checkIsSubset(const GroupInformation & other)
     //Find the first ip that matches, and then check the next ips within the other list also match
     unsigned thisSize = hosts.ordinality();
     unsigned otherSize = other.hosts.ordinality();
-    assertex(thisSize <= otherSize);
+    if (thisSize > otherSize)
+    {
+        if (dropZoneIndex)
+            return false;
+        throwUnexpected();
+    }
     for (unsigned i=0; i <= otherSize-thisSize; i++)
     {
         bool match = true;
