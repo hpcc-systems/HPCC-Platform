@@ -25,7 +25,11 @@ When enabled and properly configured, the HPCC metrics for Prometheus feature ex
 which reports metrics. It also annotates all HPCC pods to be discoverable by Prometheus servers and provides the connectivity inforation required, such as
 the port to liston on, and the url path on which to serve Prometheus formatted metrics. Autodiscovery annotations can be disabled via metrics.sinks[type=prometheus].settings.autodiscovery
 
-####Prometheus Metric Service Discovery
+#### prometheus4hpccmetrics
+HPCC Systems provides a convenient Helm chart which deploys and configures a local Prometheus Kube Stack instance for the purpose of HPCC component metrics processing, please see
+helm/managed/metrics/prometheus for further details.
+
+#### Prometheus Metric Service Discovery
 On the Prometheus server side, an "additionalScrapeConfigs" entry is necessary to link the HPCC metrics services to Prometheus
 
 For example, the following Prometheus scrape job can be applied to Prometheus deployments as part of the 'additionalScrapeConfigs' configuration:
