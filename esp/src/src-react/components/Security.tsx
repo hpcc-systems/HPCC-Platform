@@ -3,18 +3,24 @@ import { Pivot, PivotItem } from "@fluentui/react";
 import { SizeMe } from "react-sizeme";
 import { pushUrl } from "../util/history";
 import { Groups } from "./Groups";
+import { Permissions } from "./Permissions";
 import { Users } from "./Users";
 import { pivotItemStyle } from "../layouts/pivot";
+import { DojoAdapter } from "../layouts/DojoAdapter";
 import nlsHPCC from "src/nlsHPCC";
 
 interface SecurityProps {
     filter?: object;
     tab?: string;
+    name?: string;
+    baseDn?: string;
 }
 
 export const Security: React.FunctionComponent<SecurityProps> = ({
     filter,
-    tab = "users"
+    tab = "users",
+    name,
+    baseDn
 }) => {
 
     return <>
@@ -30,6 +36,12 @@ export const Security: React.FunctionComponent<SecurityProps> = ({
                     <Groups filter={filter} />
                 </PivotItem>
                 <PivotItem headerText={nlsHPCC.Permissions} itemKey="permissions" style={pivotItemStyle(size)}>
+                    {!name && !baseDn &&
+                        <Permissions />
+                    }
+                    {name && baseDn &&
+                        <DojoAdapter widgetClassID="ShowIndividualPermissionsWidget" params={{ Basedn: baseDn, Name: name }} />
+                    }
                 </PivotItem>
             </Pivot>
         }</SizeMe>
