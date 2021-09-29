@@ -118,7 +118,7 @@ const subMenuItems: SubMenuItems = {
     ],
     "workunits": [
         { headerText: nlsHPCC.Workunits, itemKey: "/workunits" },
-        { headerText: nlsHPCC.Dashboard, itemKey: "/workunits/dashboard" },
+        // TODO: Post Tech Preview { headerText: nlsHPCC.Dashboard, itemKey: "/workunits/dashboard" },
         { headerText: nlsHPCC.Playground, itemKey: "/play" },
     ],
     "files": [

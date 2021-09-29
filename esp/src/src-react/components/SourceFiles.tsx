@@ -36,7 +36,7 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
 }) => {
 
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
-    const [variables] = useWorkunitSourceFiles(wuid);
+    const [sourceFiles, , , refreshData] = useWorkunitSourceFiles(wuid);
 
     //  Grid ---
     const store = useConst(new Observable(new TreeStore("Name", { Name: true, Value: true })));
@@ -53,7 +53,7 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
             Name: tree({
                 label: "Name", sortable: true,
                 formatter: function (Name, row) {
-                    return Utility.getImageHTML(row.IsSuperFile ? "folder_table.png" : "file.png") + "&nbsp;<a href='#' onClick='return false;' class='dgrid-row-url'>" + Name + "</a>";
+                    return `${Utility.getImageHTML(row.IsSuperFile ? "folder_table.png" : "file.png")}&nbsp;<a href='#/files/${row.FileCluster}/${Name}' class='dgrid-row-url2'>${Name}</a>`;
                 }
             }),
             FileCluster: { label: nlsHPCC.FileCluster, width: 300, sortable: false },
@@ -71,7 +71,7 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshData()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -86,7 +86,7 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
                 }
             }
         },
-    ], [refreshTable, selection, uiState.hasSelection]);
+    ], [refreshData, selection, uiState.hasSelection]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -100,9 +100,9 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
     }, [selection]);
 
     React.useEffect(() => {
-        store.setData(variables);
+        store.setData(sourceFiles);
         refreshTable();
-    }, [store, refreshTable, variables]);
+    }, [store, refreshTable, sourceFiles]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}

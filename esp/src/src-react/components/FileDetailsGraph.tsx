@@ -1,8 +1,7 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
-import * as Observable from "dojo/store/Observable";
-import { Memory } from "src/Memory";
+import { Memory, Observable } from "src/Memory";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useGrid } from "../hooks/grid";
@@ -36,7 +35,7 @@ export const FileDetailsGraph: React.FunctionComponent<FileDetailsGraphProps> = 
     logicalFile
 }) => {
 
-    const [file, , _refresh] = useFile(cluster, logicalFile);
+    const [file, , , refreshData] = useFile(cluster, logicalFile);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     //  Grid ---
@@ -62,7 +61,7 @@ export const FileDetailsGraph: React.FunctionComponent<FileDetailsGraphProps> = 
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshData()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -77,7 +76,7 @@ export const FileDetailsGraph: React.FunctionComponent<FileDetailsGraphProps> = 
                 }
             }
         }
-    ], [file?.Wuid, refreshTable, selection, uiState.hasSelection]);
+    ], [file?.Wuid, refreshData, selection, uiState.hasSelection]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -87,22 +86,20 @@ export const FileDetailsGraph: React.FunctionComponent<FileDetailsGraphProps> = 
     }, [selection]);
 
     React.useEffect(() => {
-        if (file?.Graphs?.ECLGraph) {
-            store.setData(file?.Graphs?.ECLGraph.map(item => {
-                return {
-                    Name: item,
-                    Label: "",
-                    Completed: "",
-                    Time: 0,
-                    Type: ""
-                };
-            }));
-            refreshTable();
-        }
-    }, [file?.Graphs?.ECLGraph, refreshTable, store]);
+        store.setData((file?.Graphs?.ECLGraph || []).map(item => {
+            return {
+                Name: item,
+                Label: "",
+                Completed: "",
+                Time: 0,
+                Type: ""
+            };
+        }));
+        refreshTable();
+    }, [store, file?.Graphs?.ECLGraph, refreshTable]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={copyButtons} />}
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <Grid />
         }

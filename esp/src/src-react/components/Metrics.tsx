@@ -331,7 +331,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 
     return <HolyGrail
         header={<>
-            <CommandBar items={buttons} overflowButtonProps={{}} farItems={rightButtons} />
+            <CommandBar items={buttons} farItems={rightButtons} />
             <AutosizeHpccJSComponent widget={timeline} fixedHeight={"160px"} padding={4} />
         </>}
         main={

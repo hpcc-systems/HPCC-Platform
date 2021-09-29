@@ -24,7 +24,7 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
     logicalFile
 }) => {
 
-    const [file, , _refresh] = useFile(cluster, logicalFile);
+    const [file, , , refreshData] = useFile(cluster, logicalFile);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     //  Grid ---
@@ -46,7 +46,7 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshData()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -61,7 +61,7 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
                 }
             }
         },
-    ], [cluster, refreshTable, selection, uiState.hasSelection]);
+    ], [cluster, refreshData, selection, uiState.hasSelection]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -81,7 +81,7 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
     }, [file, store, refreshTable]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={copyButtons} />}
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <Grid />
         }

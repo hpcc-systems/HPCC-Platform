@@ -4,6 +4,7 @@ import { Workunit, Result, WUStateID, WUInfo, WorkunitsService } from "@hpcc-js/
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import * as Utility from "src/Utility";
+import { singletonDebounce } from "../util/throttle";
 
 const logger = scopedLogger("../hooks/workunit.ts");
 
@@ -14,47 +15,55 @@ export function useCounter(): [number, () => void] {
     return [counter, () => setCounter(counter + 1)];
 }
 
-export function useWorkunit(wuid: string, full: boolean = false): [Workunit, WUStateID, number, boolean] {
+export function useWorkunit(wuid: string, full: boolean = false): [Workunit, WUStateID, number, boolean, (full?: boolean) => Promise<Workunit>] {
 
-    const [retVal, setRetVal] = React.useState<{ workunit: Workunit, state: number, lastUpdate: number, isComplete: boolean }>();
+    // eslint-disable-next-line func-call-spacing
+    const [retVal, setRetVal] = React.useState<{ workunit: Workunit, state: number, lastUpdate: number, isComplete: boolean, refresh: (full?: boolean) => Promise<Workunit> }>();
 
     React.useEffect(() => {
         if (!wuid) {
-            setRetVal({ workunit: undefined, state: WUStateID.NotFound, lastUpdate: Date.now(), isComplete: undefined });
+            setRetVal({ workunit: undefined, state: WUStateID.NotFound, lastUpdate: Date.now(), isComplete: undefined, refresh: () => Promise.resolve(undefined) });
             return;
         }
         const wu = Workunit.attach({ baseUrl: "" }, wuid);
         let active = true;
         let handle;
-        wu.refresh(full).then(() => {
-            if (active) {
-                setRetVal({ workunit: wu, state: wu.StateID, lastUpdate: Date.now(), isComplete: wu.isComplete() });
-                handle = wu.watch(() => {
-                    setRetVal({ workunit: wu, state: wu.StateID, lastUpdate: Date.now(), isComplete: wu.isComplete() });
-                });
-            }
-                    }).catch(logger.error);
+        const refresh = singletonDebounce(wu, "refresh");
+        refresh(full)
+            .then(() => {
+                if (active) {
+                    setRetVal({ workunit: wu, state: wu.StateID, lastUpdate: Date.now(), isComplete: wu.isComplete(), refresh });
+                    handle = wu.watch(() => {
+                        setRetVal({ workunit: wu, state: wu.StateID, lastUpdate: Date.now(), isComplete: wu.isComplete(), refresh });
+                    });
+                }
+            }).catch(logger.error);
+
         return () => {
             active = false;
             handle?.release();
         };
     }, [wuid, full]);
 
-    return [retVal?.workunit, retVal?.state, retVal?.lastUpdate, retVal?.isComplete];
+    return [retVal?.workunit, retVal?.state, retVal?.lastUpdate, retVal?.isComplete, retVal?.refresh];
 }
 
-export function useWorkunitResults(wuid: string): [Result[], Workunit, WUStateID] {
+export function useWorkunitResults(wuid: string): [Result[], Workunit, WUStateID, () => void] {
 
     const [workunit, state] = useWorkunit(wuid);
     const [results, setResults] = React.useState<Result[]>([]);
+    const [count, inc] = useCounter();
 
     React.useEffect(() => {
-        workunit?.fetchResults().then(results => {
-            setResults(results);
-        }).catch(logger.error);
-    }, [workunit, state]);
+        if (workunit) {
+            const fetchResults = singletonDebounce(workunit, "fetchResults");
+            fetchResults().then(results => {
+                setResults(results);
+            }).catch(logger.error);
+        }
+    }, [workunit, state, count]);
 
-    return [results, workunit, state];
+    return [results, workunit, state, inc];
 }
 
 export function useWorkunitResult(wuid: string, resultName: string): [Result, Workunit, WUStateID] {
@@ -75,76 +84,84 @@ export interface Variable {
     Value: string;
 }
 
-export function useWorkunitVariables(wuid: string): [Variable[], Workunit, WUStateID] {
+export function useWorkunitVariables(wuid: string): [Variable[], Workunit, WUStateID, () => void] {
 
     const [workunit, state] = useWorkunit(wuid);
     const [variables, setVariables] = React.useState<Variable[]>([]);
+    const [count, inc] = useCounter();
 
     React.useEffect(() => {
-        workunit?.fetchInfo({
-            IncludeVariables: true,
-            IncludeApplicationValues: true,
-            IncludeDebugValues: true
-        }).then(response => {
-            const vars: Variable[] = response?.Workunit?.Variables?.ECLResult?.map(row => {
-                return {
-                    Type: nlsHPCC.ECL,
-                    Name: row.Name,
-                    Value: row.Value
-                };
-            }) || [];
-            const appData: Variable[] = response?.Workunit?.ApplicationValues?.ApplicationValue.map(row => {
-                return {
-                    Type: row.Application,
-                    Name: row.Name,
-                    Value: row.Value
-                };
-            }) || [];
-            const debugData: Variable[] = response?.Workunit?.DebugValues?.DebugValue.map(row => {
-                return {
-                    Type: nlsHPCC.Debug,
-                    Name: row.Name,
-                    Value: row.Value
-                };
-            }) || [];
-            setVariables([...vars, ...appData, ...debugData]);
-        }).catch(logger.error);
-    }, [workunit, state]);
+        if (workunit) {
+            const fetchInfo = singletonDebounce(workunit, "fetchInfo");
+            fetchInfo({
+                IncludeVariables: true,
+                IncludeApplicationValues: true,
+                IncludeDebugValues: true
+            }).then(response => {
+                const vars: Variable[] = response?.Workunit?.Variables?.ECLResult?.map(row => {
+                    return {
+                        Type: nlsHPCC.ECL,
+                        Name: row.Name,
+                        Value: row.Value
+                    };
+                }) || [];
+                const appData: Variable[] = response?.Workunit?.ApplicationValues?.ApplicationValue.map(row => {
+                    return {
+                        Type: row.Application,
+                        Name: row.Name,
+                        Value: row.Value
+                    };
+                }) || [];
+                const debugData: Variable[] = response?.Workunit?.DebugValues?.DebugValue.map(row => {
+                    return {
+                        Type: nlsHPCC.Debug,
+                        Name: row.Name,
+                        Value: row.Value
+                    };
+                }) || [];
+                setVariables([...vars, ...appData, ...debugData]);
+            }).catch(logger.error);
+        }
+    }, [workunit, state, count]);
 
-    return [variables, workunit, state];
+    return [variables, workunit, state, inc];
 }
 
 export interface SourceFile extends WUInfo.ECLSourceFile {
     __hpcc_parentName: string;
 }
 
-export function useWorkunitSourceFiles(wuid: string): [SourceFile[], Workunit, WUStateID] {
+export function useWorkunitSourceFiles(wuid: string): [SourceFile[], Workunit, WUStateID, () => void] {
 
     const [workunit, state] = useWorkunit(wuid);
     const [sourceFiles, setSourceFiles] = React.useState<SourceFile[]>([]);
+    const [count, inc] = useCounter();
 
     React.useEffect(() => {
-        workunit?.fetchInfo({
-            IncludeSourceFiles: true
-        }).then(response => {
-            const sourceFiles: SourceFile[] = [];
-            response?.Workunit?.SourceFiles?.ECLSourceFile.forEach(sourceFile => {
-                sourceFiles.push({
-                    __hpcc_parentName: "",
-                    ...sourceFile
-                });
-                sourceFile?.ECLSourceFiles?.ECLSourceFile.forEach(childSourceFile => {
+        if (workunit) {
+            const fetchInfo = singletonDebounce(workunit, "fetchInfo");
+            fetchInfo({
+                IncludeSourceFiles: true
+            }).then(response => {
+                const sourceFiles: SourceFile[] = [];
+                response?.Workunit?.SourceFiles?.ECLSourceFile.forEach(sourceFile => {
                     sourceFiles.push({
-                        __hpcc_parentName: sourceFile.Name,
-                        ...childSourceFile
+                        __hpcc_parentName: "",
+                        ...sourceFile
+                    });
+                    sourceFile?.ECLSourceFiles?.ECLSourceFile.forEach(childSourceFile => {
+                        sourceFiles.push({
+                            __hpcc_parentName: sourceFile.Name,
+                            ...childSourceFile
+                        });
                     });
                 });
-            });
-            setSourceFiles(sourceFiles);
-        }).catch(logger.error);
-    }, [workunit, state]);
+                setSourceFiles(sourceFiles);
+            }).catch(logger.error);
+        }
+    }, [workunit, state, count]);
 
-    return [sourceFiles, workunit, state];
+    return [sourceFiles, workunit, state, inc];
 }
 
 export function useWorkunitWorkflows(wuid: string): [WUInfo.ECLWorkflow[], Workunit, () => void] {
@@ -154,11 +171,14 @@ export function useWorkunitWorkflows(wuid: string): [WUInfo.ECLWorkflow[], Worku
     const [count, increment] = useCounter();
 
     React.useEffect(() => {
-        workunit?.fetchInfo({
-            IncludeWorkflows: true
-        }).then(response => {
-            setWorkflows(response?.Workunit?.Workflows?.ECLWorkflow || []);
-        }).catch(logger.error);
+        if (workunit) {
+            const fetchInfo = singletonDebounce(workunit, "fetchInfo");
+            fetchInfo({
+                IncludeWorkflows: true
+            }).then(response => {
+                setWorkflows(response?.Workunit?.Workflows?.ECLWorkflow || []);
+            }).catch(logger.error);
+        }
     }, [workunit, state, count]);
 
     return [workflows, workunit, increment];
@@ -189,31 +209,37 @@ export function useWorkunitExceptions(wuid: string): [WUInfo.ECLException[], Wor
     const [count, increment] = useCounter();
 
     React.useEffect(() => {
-        if (!workunit) return;
-        workunit?.fetchInfo({
-            IncludeExceptions: true
-        }).then(response => {
-            setExceptions(response?.Workunit?.Exceptions?.ECLException || []);
-        }).catch(logger.error);
+        if (workunit) {
+            const fetchInfo = singletonDebounce(workunit, "fetchInfo");
+            fetchInfo({
+                IncludeExceptions: true
+            }).then(response => {
+                setExceptions(response?.Workunit?.Exceptions?.ECLException || []);
+            }).catch(logger.error);
+        }
     }, [workunit, state, count]);
 
     return [exceptions, workunit, increment];
 }
 
-export function useWorkunitResources(wuid: string): [string[], Workunit, WUStateID] {
+export function useWorkunitResources(wuid: string): [string[], Workunit, WUStateID, () => void] {
 
     const [workunit, state] = useWorkunit(wuid);
     const [resources, setResources] = React.useState<string[]>([]);
+    const [count, increment] = useCounter();
 
     React.useEffect(() => {
-        workunit?.fetchInfo({
-            IncludeResourceURLs: true
-        }).then(response => {
-            setResources(response?.Workunit?.ResourceURLs?.URL || []);
-        }).catch(logger.error);
-    }, [workunit, state]);
+        if (workunit) {
+            const fetchInfo = singletonDebounce(workunit, "fetchInfo");
+            fetchInfo({
+                IncludeResourceURLs: true
+            }).then(response => {
+                setResources(response?.Workunit?.ResourceURLs?.URL || []);
+            }).catch(logger.error);
+        }
+    }, [workunit, state, count]);
 
-    return [resources, workunit, state];
+    return [resources, workunit, state, increment];
 }
 
 export interface HelperRow {
@@ -257,33 +283,37 @@ function mapThorLogInfo(workunit: Workunit, thorLogInfo: WUInfo.ThorLogInfo[] = 
     return retVal;
 }
 
-export function useWorkunitHelpers(wuid: string): [HelperRow[]] {
+export function useWorkunitHelpers(wuid: string): [HelperRow[], () => void] {
 
     const [workunit, state] = useWorkunit(wuid);
+    const [counter, incCounter] = useCounter();
     const [helpers, setHelpers] = React.useState<HelperRow[]>([]);
 
     React.useEffect(() => {
-        workunit?.fetchInfo({
-            IncludeHelpers: true
-        }).then(response => {
-            setHelpers([{
-                id: "E:0",
-                Type: "ECL",
-                workunit
-            }, {
-                id: "X:0",
-                Type: "Workunit XML",
-                workunit
-            }, ...(workunit.HasArchiveQuery ? [{
-                id: "A:0",
-                Type: "Archive Query",
-                workunit
-            }] : []),
-            ...mapHelpers(workunit, response?.Workunit?.Helpers?.ECLHelpFile),
-            ...mapThorLogInfo(workunit, response?.Workunit?.ThorLogList?.ThorLogInfo)
-            ]);
-        }).catch(logger.error);
-    }, [workunit, state]);
+        if (workunit) {
+            const fetchInfo = singletonDebounce(workunit, "fetchInfo");
+            fetchInfo({
+                IncludeHelpers: true
+            }).then(response => {
+                setHelpers([{
+                    id: "E:0",
+                    Type: "ECL",
+                    workunit
+                }, {
+                    id: "X:0",
+                    Type: "Workunit XML",
+                    workunit
+                }, ...(workunit.HasArchiveQuery ? [{
+                    id: "A:0",
+                    Type: "Archive Query",
+                    workunit
+                }] : []),
+                ...mapHelpers(workunit, response?.Workunit?.Helpers?.ECLHelpFile),
+                ...mapThorLogInfo(workunit, response?.Workunit?.ThorLogList?.ThorLogInfo)
+                ]);
+            }).catch(logger.error);
+        }
+    }, [counter, workunit, state]);
 
-    return [helpers];
+    return [helpers, incCounter];
 }

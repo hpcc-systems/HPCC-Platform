@@ -102,7 +102,7 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
 }) => {
 
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
-    const [helpers] = useWorkunitHelpers(wuid);
+    const [helpers, refreshData] = useWorkunitHelpers(wuid);
 
     //  Grid ---
     const store = useConst(new Observable(new Memory("id")));
@@ -143,7 +143,7 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => refreshTable()
+            onClick: () => refreshData()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -190,7 +190,7 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
             }
         }
 
-    ], [refreshTable, selection, uiState.canShowContent, uiState.hasSelection]);
+    ], [refreshData, selection, uiState.canShowContent, uiState.hasSelection]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -211,7 +211,7 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
     }, [store, helpers, refreshTable]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={copyButtons} />}
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <Grid />
         }

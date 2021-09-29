@@ -214,7 +214,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     }, [selection]);
 
     return <HolyGrail
-        header={<CommandBar items={buttons} overflowButtonProps={{}} farItems={copyButtons} />}
+        header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
             <>
                 <Grid />
