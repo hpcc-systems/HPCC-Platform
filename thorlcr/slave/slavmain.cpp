@@ -1759,7 +1759,7 @@ public:
 #else
         soPattern.append("so");
 #endif
-        if (globals->getPropBool("Debug/@dllsToSlaves",true))
+        if (getExpertOptBool("dllsToSlaves", true))
             querySoCache.init(soPath.str(), DEFAULT_QUERYSO_LIMIT, soPattern);
 #endif
         Owned<ISlaveWatchdog> watchdog;
@@ -1831,7 +1831,7 @@ public:
                                 e->Release();
                                 throw e2;
                             }
-                            assertex(globals->getPropBool("Debug/@dllsToSlaves", true));
+                            assertex(getExpertOptBool("dllsToSlaves", true));
                             querySoCache.add(soPath.str());
                         }
                         else
@@ -1842,7 +1842,7 @@ public:
                                 rfn.getRemotePath(_remoteSoPath);
                                 remoteSoPath.set(_remoteSoPath);
                             }
-                            if (globals->getPropBool("Debug/@dllsToSlaves", true))
+                            if (getExpertOptBool("dllsToSlaves", true))
                             {
                                 globals->getProp("@query_so_dir", soPath);
                                 if (soPath.length())
@@ -1887,7 +1887,7 @@ public:
                         PROGLOG("Started wuid=%s, user=%s, graph=%s [log detail level=%u]\n", wuid.get(), user.str(), graphName.get(), maxLogDetail);
                         PROGLOG("Using query: %s", soPath.str());
 
-                        if (!globals->getPropBool("Debug/@slaveDaliClient") && workUnitInfo->getPropBool("Debug/slavedaliclient", false))
+                        if (!getExpertOptBool("slaveDaliClient") && workUnitInfo->getPropBool("Debug/slavedaliclient", false))
                         {
                             PROGLOG("Workunit option 'slaveDaliClient' enabled");
                             enableThorSlaveAsDaliClient();
@@ -1919,7 +1919,7 @@ public:
 
                         PROGLOG("Finished wuid=%s, graph=%s", wuid.get(), graphName.get());
 
-                        if (!globals->getPropBool("Debug/@slaveDaliClient") && job->getWorkUnitValueBool("slaveDaliClient", false))
+                        if (!getExpertOptBool("slaveDaliClient") && job->getWorkUnitValueBool("slaveDaliClient", false))
                             disableThorSlaveAsDaliClient();
 
                         PROGLOG("QueryDone, removing %s from jobs", key.get());
@@ -2362,7 +2362,7 @@ void slaveMain(bool &jobListenerStopped, ILogMsgHandler *logHandler)
     setIThorResource(slaveResource);
 
 #ifdef __linux__
-    bool useMirrorMount = globals->getPropBool("Debug/@useMirrorMount", false);
+    bool useMirrorMount = getExpertOptBool("useMirrorMount", false);
 
     if (useMirrorMount && queryNodeGroup().ordinality() > 2)
     {

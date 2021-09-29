@@ -969,7 +969,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
             FLLOG(MCexception(e), thorJob, e, "Failed to write query dll - ignoring!");
             e->Release();
         }
-        sendSo = globals->getPropBool("Debug/@dllsToSlaves", true);
+        sendSo = getExpertOptBool("dllsToSlaves", true);
     }
     querySo.setown(createDllEntry(compoundPath.str(), false, NULL, false));
     soPath.swapWith(compoundPath);

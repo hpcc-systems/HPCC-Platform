@@ -1587,3 +1587,37 @@ void checkFileType(CActivityBase *activity, IDistributedFile *file, const char *
     }
 }
 
+StringBuffer &getExpertOptPath(const char *opt, StringBuffer &out)
+{
+#ifdef _CONTAINERIZED
+    if (opt)
+        return out.append("expert/@").append(opt);
+    return out.append("expert");
+#else
+    if (opt)
+        return out.append("Debug/@").append(opt);
+    return out.append("Debug");
+#endif
+}
+
+bool getExpertOptBool(const char *opt, bool dft)
+{
+    StringBuffer xpath;
+    getExpertOptPath(opt, xpath);
+    return globals->getPropBool(xpath, dft);
+}
+
+__int64 getExpertOptInt64(const char *opt, __int64 dft)
+{
+    StringBuffer xpath;
+    getExpertOptPath(opt, xpath);
+    return globals->getPropInt64(xpath, dft);
+}
+
+StringBuffer &getExpertOptString(const char *opt, StringBuffer &out)
+{
+    StringBuffer xpath;
+    getExpertOptPath(opt, xpath);
+    globals->getProp(xpath, out);
+    return out;
+}
