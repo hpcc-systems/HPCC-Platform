@@ -1347,13 +1347,7 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, ILoaded
         loadPlugin(pluginMap, pluginsDir.str(), name.str());
     }
 
-    float recommendedMaxPercentage = defaultPctSysMemForRoxie;
-#ifndef _CONTAINERIZED
-    // @localThor mode - 25% is used for manager and 50% is used for workers
-    if (globals->getPropBool("@localThor") && (0 == globals->getPropInt("@masterMemorySize")))
-        recommendedMaxPercentage = 25.0;
-#endif
-    applyMemorySettings(recommendedMaxPercentage, "manager");
+    applyMemorySettings("manager");
     sharedAllocator.setown(::createThorAllocator(queryMemoryMB, 0, 1, memorySpillAtPercentage, *logctx, crcChecking, usePackedAllocator));
     Owned<IMPServer> mpServer = getMPServer();
     CJobChannel *channel = addChannel(mpServer);

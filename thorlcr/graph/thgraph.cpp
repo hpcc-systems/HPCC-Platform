@@ -29,6 +29,7 @@
 #include "thorsoapcall.hpp"
 #include "thorport.hpp"
 #include "roxiehelper.hpp"
+#include "hpccconfig.hpp"
 
 
 
@@ -2740,59 +2741,38 @@ CJobBase::CJobBase(ILoadedDllEntry *_querySo, const char *_graphName) : querySo(
         throwUnexpected();
 }
 
-void CJobBase::applyMemorySettings(float recommendedMaxPercentage, const char *context)
+void CJobBase::applyMemorySettings(const char *context)
 {
     // NB: 'total' memory has been calculated in advance from either resource settings or from system memory.
-    VStringBuffer totalMemorySetting("%sMemory/@total", context);
-    unsigned totalMemoryMB = globals->getPropInt(totalMemorySetting);
+    VStringBuffer memoryContext("%sMemory", context);
+    unsigned totalMemoryMB = globals->getPropInt(VStringBuffer("%s/@total", memoryContext.str()));
+    dbgassertex(totalMemoryMB);
 
-    unsigned recommendedMaxMemoryMB = totalMemoryMB * recommendedMaxPercentage / 100;
-#ifdef _CONTAINERIZED
-    /* only "query" memory is actually used (if set, configures Thor roxiemem limit)
-     * others are only advisory, but totalled and checked to ensure within the total limit.
-     */
-    std::initializer_list<const char *> memorySettings = { "query", "thirdParty" };
-    offset_t totalRequirements = 0;
-    for (auto setting : memorySettings)
+    auto getWorkUnitValueFunc = [this](const char *prop, StringBuffer &result) { getWorkUnitValue(prop, result); return result.length()>0;};
+    std::unordered_map<std::string, __uint64> memorySpecifications;
+    getMemorySpecifications(memorySpecifications, globals, memoryContext, totalMemoryMB, getWorkUnitValueFunc);
+    queryMemoryMB = (unsigned)(memorySpecifications["query"] / 0x100000);
+    if (0 == queryMemoryMB)
     {
-        VStringBuffer workunitSettingName("%smemory.%s", context, setting); // NB: workunit options are case insensitive
-        StringBuffer memString;
-        getWorkUnitValue(workunitSettingName, memString);
-        if (0 == memString.length())
-        {
-            VStringBuffer globalSettingName("%sMemory/@%s", context, setting);
-            globals->getProp(globalSettingName, memString);
-        }
-        if (memString.length())
-        {
-            offset_t memBytes = friendlyStringToSize(memString);
-            if (streq("query", setting))
-                queryMemoryMB = (unsigned)(memBytes / 0x100000);
-            totalRequirements += memBytes;
-        }
+        unsigned totalRequirementsMB = (unsigned)(memorySpecifications["total"] / 0x100000);
+        unsigned recommendedMaxMB = (unsigned)(memorySpecifications["recommendedMaxMemory"] / 0x100000);
+        queryMemoryMB = recommendedMaxMB - totalRequirementsMB;
     }
-    unsigned totalRequirementsMB = (unsigned)(totalRequirements / 0x100000);
-    if (totalRequirementsMB > totalMemoryMB)
-        throw makeStringExceptionV(0, "The total memory requirements of the query (%u MB) exceeds the %s memory limit (%u MB)", totalRequirementsMB, context, totalMemoryMB);
 
-    if (totalRequirementsMB > recommendedMaxMemoryMB)
+    // a simple helper used below, to fetch bool from workunit, or the memory settings (either managerMemory or workerMemory) or legacy location
+    auto getBoolSetting = [&](const char *setting, bool defaultValue)
     {
-        WARNLOG("The total memory requirements of the query (%u MB) exceed the recommended reserve limits for %s (total memory: %u MB, recommended max percentage : %.2f%%)", totalRequirementsMB, context, totalMemoryMB, recommendedMaxPercentage);
-    
-        // if "query" memory has not been defined, then use the remaining memory
-        if (0 == queryMemoryMB)
-            queryMemoryMB = totalMemoryMB - totalRequirementsMB;
-    }
-    else if (0 == queryMemoryMB)
-        queryMemoryMB = recommendedMaxMemoryMB - totalRequirementsMB;
-#else
-    queryMemoryMB = recommendedMaxMemoryMB;
-#endif
-
-    bool gmemAllowHugePages = globals->getPropBool("@heapUseHugePages", false);
-    gmemAllowHugePages = globals->getPropBool("@heapMasterUseHugePages", gmemAllowHugePages);
-    bool gmemAllowTransparentHugePages = globals->getPropBool("@heapUseTransparentHugePages", true);
-    bool gmemRetainMemory = globals->getPropBool("@heapRetainMemory", false);
+        VStringBuffer attrSetting("@%s", setting);
+        return getWorkUnitValueBool(setting,
+            globals->getPropBool(VStringBuffer("%s/%s", memoryContext.str(), attrSetting.str()),
+            globals->getPropBool(attrSetting,
+            defaultValue
+                                 )));
+    };
+    bool gmemAllowHugePages = getBoolSetting("heapUseHugePages", false);
+    gmemAllowHugePages = getBoolSetting("heapMasterUseHugePages", gmemAllowHugePages);
+    bool gmemAllowTransparentHugePages = getBoolSetting("heapUseTransparentHugePages", true);
+    bool gmemRetainMemory = getBoolSetting("heapRetainMemory", false);
     roxiemem::setTotalMemoryLimit(gmemAllowHugePages, gmemAllowTransparentHugePages, gmemRetainMemory, ((memsize_t)queryMemoryMB) * 0x100000, 0, thorAllocSizes, NULL);
 
     PROGLOG("Total memory = %u MB, query memory = %u MB, memory spill at = %u", totalMemoryMB, queryMemoryMB, memorySpillAtPercentage);
