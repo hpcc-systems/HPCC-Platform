@@ -398,7 +398,7 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
         />;
     }
     return <ReflexContainer orientation="horizontal">
-        <ReflexElement minSize={100} style={{ overflow: "hidden" }}>
+        <ReflexElement size={100} minSize={100} style={{ overflow: "hidden" }}>
             <Summary />
         </ReflexElement>
         <ReflexSplitter style={styles.reflexSplitter}>

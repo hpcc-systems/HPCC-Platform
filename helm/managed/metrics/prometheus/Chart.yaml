@@ -1,0 +1,22 @@
+apiVersion: v2
+name: prometheus4hpccmetrics
+description: A Helm chart for deploying a Kubenetes Prometheus Stack instance
+type: application
+
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+version: 0.0.1
+
+# Prometheus version
+appVersion: 0.50.0
+
+# Dependencies can be automatically updated via HELM dependancy update command:
+# > 'helm dependency update' command
+# or helm install parameter —dependency-update
+# > helm install myprometheus helm/managed/metrics/prometheus --dependency-update
+
+# Official Prometheus repository https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/README.md
+dependencies:
+- name: kube-prometheus-stack
+  version: 18.1.0
+  repository: https://prometheus-community.github.io/helm-charts

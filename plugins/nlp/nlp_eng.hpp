@@ -15,19 +15,24 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef _HPCCCONFIG_HPP_
-#define _HPCCCONFIG_HPP_
+//#define NLP_DEBUG
 
-#ifdef THORHELPER_EXPORTS
-#define THORHELPER_API DECL_EXPORT
-#else
-#define THORHELPER_API DECL_IMPORT
+#ifdef NLP_DEBUG
+#include <iostream>
+#define NLP_DEBUG_FILE "/tmp/nlp_debug.txt"
 #endif
 
-extern THORHELPER_API bool getService(StringBuffer &serviceAddress, const char *serviceName, bool failIfNotFound);
+#include<sstream>
+#include "jutil.hpp"
+#include "jmutex.hpp"
+using namespace std;
 
-typedef std::function<bool(const char *prop, StringBuffer &result)> GetJobValueFunction;
-extern THORHELPER_API void getMemorySpecifications(std::unordered_map<std::string, __uint64> &memorySpecifications, const IPropertyTree *config, const char *context, unsigned maxMB, GetJobValueFunction getJobValueFunction);
-
-#endif // _HPCCCONFIG_HPP_
-
+class NLPEng
+{
+private:
+    string workingFolder;
+public:
+    NLPEng();
+    ~NLPEng();
+    int nlpEngAnalyze(const char *analyzerName, const char *inputText, ostringstream &sso);
+};

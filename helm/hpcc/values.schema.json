@@ -265,6 +265,11 @@
           "description": "resource cost",
           "type": "object",
           "properties": {
+            "currencyCode": {
+                "description": "currency code (ISO 4217)",
+                "type": "string",
+                "maxLength": 3
+            },
             "perCpu": {
               "description": "cost of a single cpu",
               "type": "number"
@@ -328,6 +333,9 @@
               "labels": {
                 "type": "object",
                 "additionalProperties": { "type": "string" }
+              },
+              "ingress": {
+                "$ref" : "#/definitions/ingress"
               },
               "type": {
                 "type": "string"
@@ -499,9 +507,13 @@
           "type": "string",
           "description": "The amount of overall resourced memory to dedicate to the query"
         },
-        "thirdParties": {
+        "thirdParty": {
           "type": "string",
           "description": "The amount of overall resource memory to reserve for 3rd party use"
+        },
+        "maxMemPercentage": {
+          "type": "number",
+          "description": "The default maximum percentage of resource memory to dedicate to HPCC"
         }
       },
       "additionalProperties": false
@@ -752,6 +764,15 @@
         }
       }
     },
+    "ingress": {
+      "type": "array",
+      "items": {
+        "additionalProperties": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      }
+    },
     "egress": {
       "type": "object",
       "properties": {
@@ -795,6 +816,9 @@
         "annotations": {
           "type": "object",
           "additionalProperties": { "type": "string" }
+        },
+        "ingress": {
+          "$ref" : "#/definitions/ingress"
         },
         "labels": {
           "type": "object",
@@ -1022,6 +1046,9 @@
         },
         "resources": {
           "$ref": "#/definitions/resources"
+        },
+        "jobMemory": {
+          "$ref": "#/definitions/memory"
         }
       }
     },
@@ -1152,6 +1179,9 @@
           "type": "object",
           "additionalProperties": { "type": "string" }
         },
+        "ingress": {
+          "$ref" : "#/definitions/ingress"
+        },
         "visibility": {
           "type": "string",
           "description": "Should this service be exposed outside the cluster, locally or to the internet"
@@ -1254,6 +1284,9 @@
         "labels": {
           "type": "object",
           "additionalProperties": { "type": "string" }
+        },
+        "eclAgentMemory": {
+          "$ref": "#/definitions/memory"
         },
         "workerMemory": {
           "$ref": "#/definitions/memory"
@@ -1623,6 +1656,10 @@
         },
         "schedulerName": {
           "type": "string"
+        },
+        "topologySpreadConstraints": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/topologySpreadConstraint" }
         }
       }
     },
@@ -1653,6 +1690,28 @@
         },
         "tolerationSeconds": {
           "type": "integer"
+        }
+      }
+    },
+    "topologySpreadConstraint": {
+      "type": "object",
+      "properties": {
+        "maxSkew": {
+          "type": "integer",
+          "description": "describes the degree to which Pods may be unevenly distributed. It must be greater than zero"
+        },
+        "topologyKey": {
+          "type": "string",
+          "description": "is the key of node labels"
+        },
+        "whenUnsatisfiable": {
+          "type": "string",
+          "enum": ["DoNotSchedule", "ScheduleAnyway"],
+          "description": "indicates how to deal with a Pod if it doesn't satisfy the spread constraint"
+        },
+        "labelSelector": {
+          "type": "object",
+          "description": "labelSelector is used to find matching Pods"
         }
       }
     },

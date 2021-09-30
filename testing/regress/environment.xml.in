@@ -13,6 +13,11 @@
             name="localhost"
             netAddress="."/>
   <Switch name="Switch"/>
+  <cost currencyCode="USD"
+        perCpu="0.113"
+        storageAtRest="0.0135"
+        storageReads="0.0485"
+        storageWrites="0.0038"/>
  </Hardware>
  <Software>
   <DropZone build="_"

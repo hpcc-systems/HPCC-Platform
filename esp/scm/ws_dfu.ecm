@@ -191,7 +191,7 @@ ESPStruct [nil_remove] DFUFileDetail
     [min_ver("1.39")] ESParray<ESPstruct DFUFileBloom> Blooms;
     [min_ver("1.40")] int ExpireDays;
     [min_ver("1.41")] string KeyType;
-    [min_ver("1.59")] string Cost;
+    [min_ver("1.60")] double Cost;
 };
 
 ESPStruct DFUSpaceItem
@@ -968,8 +968,8 @@ ESPresponse [exceptions_inline, nil_remove] DFUFilePublishResponse
 //  ===========================================================================
 ESPservice [
     auth_feature("DEFERRED"),
-    version("1.59"),
-    default_client_version("1.59"),
+    version("1.60"),
+    default_client_version("1.60"),
     noforms,
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {

@@ -386,53 +386,9 @@ static StringBuffer & formatIPV4(StringBuffer & out, unsigned __int64 value)
     return out.appendf("%d.%d.%d.%d", ip1, ip2, ip3, ip4);
 }
 
-class MoneyLocale
-{
-public:
-    ~MoneyLocale()
-    {
-        delete locale.load(std::memory_order_relaxed);
-    }
-    std::locale * createMoneyLocale() const
-    {
-        StringBuffer localestr;
-        getGlobalConfigSP()->getProp("cost/@moneyLocale", localestr);
-        std::locale * loc = nullptr;
-        try
-        {
-            loc = new std::locale(localestr.str());
-        }
-        catch (std::exception const& e)
-        {
-            // Use default locale if the specified moneyLocale is invalid
-            // (avoids difficult to track down crashes)
-            OERRLOG("Locale '%s' is not installed [%s]", localestr.str(), e.what());
-            loc = new std::locale("");
-        }
-        return loc;
-    }
-    std::locale & queryMoneyLocale()
-    {
-        return *querySingleton(locale, cslock, [this]{ return this->createMoneyLocale(); });
-    }
-
-private:
-    static CriticalSection cslock;
-    std::atomic<std::locale *> locale {nullptr};
-};
-
-static MoneyLocale moneyLocale;
-CriticalSection MoneyLocale::cslock;
-
 StringBuffer & formatMoney(StringBuffer &out, unsigned __int64 value)
 {
-    std::stringstream ss;
-    std::locale & loc = moneyLocale.queryMoneyLocale();
-    ss.imbue(loc);
-    unsigned decplaces = std::use_facet<std::moneypunct<char>>(loc).frac_digits();
-    long double mvalue = ((long double)cost_type2money(value))*std::pow(10, decplaces);
-    ss << std::showbase << std::put_money(mvalue);
-    return out.append(ss.str().c_str());
+    return out.appendf("%.6f", cost_type2money(value));
 }
 
 StringBuffer & formatStatistic(StringBuffer & out, unsigned __int64 value, StatisticMeasure measure)

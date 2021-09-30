@@ -672,6 +672,8 @@ public:
     virtual __int64 getPropInt64(const char *xpath, __int64 dft=0) const override;
     virtual void setPropInt64(const char * xpath, __int64 val) override;
     virtual void addPropInt64(const char *xpath, __int64 val) override;
+    virtual void setPropReal(const char * xpath, double val) override;
+    virtual void addPropReal(const char *xpath, double val) override;
     virtual int getPropInt(const char *xpath, int dft=0) const override;
     virtual void setPropInt(const char *xpath, int val) override;
     virtual void addPropInt(const char *xpath, int val) override;

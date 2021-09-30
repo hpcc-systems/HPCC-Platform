@@ -1,7 +1,11 @@
 import * as React from "react";
 import { ContextualMenuItemType, DefaultButton, IconButton, IIconProps, Image, IPanelProps, IPersonaSharedProps, IRenderFunction, Link, Panel, PanelType, Persona, PersonaSize, SearchBox, Stack, Text, useTheme } from "@fluentui/react";
 import { About } from "./About";
+import { MyAccount } from "./MyAccount";
 import { useBoolean } from "@fluentui/react-hooks";
+
+import * as WsAccount from "src/ws_account";
+import * as cookie from "dojo/cookie";
 
 import nlsHPCC from "src/nlsHPCC";
 import { useECLWatchLogger } from "../hooks/logging";
@@ -11,10 +15,10 @@ const collapseMenuIcon: IIconProps = { iconName: "CollapseMenu" };
 const waffleIcon: IIconProps = { iconName: "WaffleOffice365" };
 const searchboxStyles = { margin: "5px", height: "auto", width: "100%" };
 
-const examplePersona: IPersonaSharedProps = {
-    secondaryText: "Designer",
-    tertiaryText: "In a meeting",
-    optionalText: "Available at 4:00pm",
+const personaStyles = {
+    root: {
+        "&:hover": { cursor: "pointer" }
+    }
 };
 
 interface DevTitleProps {
@@ -24,7 +28,17 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
 }) => {
 
     const [showAbout, setShowAbout] = React.useState(false);
+    const [showMyAccount, setShowMyAccount] = React.useState(false);
+    const [currentUser, setCurrentUser] = React.useState(undefined);
     const [isOpen, { setTrue: openPanel, setFalse: dismissPanel }] = useBoolean(false);
+
+    const personaProps: IPersonaSharedProps = React.useMemo(() => {
+        return {
+            text: currentUser?.firstName + " " + currentUser?.lastName,
+            secondaryText: currentUser?.accountType,
+            size: PersonaSize.size32
+        };
+    }, [currentUser]);
 
     const onRenderNavigationContent: IRenderFunction<IPanelProps> = React.useCallback(
         (props, defaultRender) => (
@@ -62,17 +76,45 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                     }
                 },
                 { key: "divider_3", itemType: ContextualMenuItemType.Divider },
-                { key: "lock", text: nlsHPCC.Lock },
-                { key: "logout", text: nlsHPCC.Logout },
+                {
+                    key: "lock", text: nlsHPCC.Lock, disabled: !currentUser?.username, onClick: () => {
+                        fetch("esp/lock", {
+                            method: "post"
+                        }).then(() => { window.location.href = "/esp/files/Login.html"; });
+                    }
+                },
+                {
+                    key: "logout", text: nlsHPCC.Logout, disabled: !currentUser?.username, onClick: () => {
+                        fetch("esp/logout", {
+                            method: "post"
+                        }).then(data => {
+                            if (data) {
+                                cookie("ECLWatchUser", "", { expires: -1 });
+                                cookie("ESPSessionID" + location.port + " = '' ", "", { expires: -1 });
+                                cookie("Status", "", { expires: -1 });
+                                cookie("User", "", { expires: -1 });
+                                window.location.reload();
+                            }
+                        });
+                    }
+                },
                 { key: "divider_4", itemType: ContextualMenuItemType.Divider },
                 { key: "config", href: "#/config", text: nlsHPCC.Configuration },
                 { key: "about", text: nlsHPCC.About, onClick: () => setShowAbout(true) }
             ],
             directionalHintFixed: true
         };
-    }, [log.length]);
+    }, [currentUser?.username, log.length]);
 
     const theme = useTheme();
+
+    React.useEffect(() => {
+        WsAccount.MyAccount({})
+            .then(({ MyAccountResponse }) => {
+                setCurrentUser(MyAccountResponse);
+            })
+            ;
+    }, [setCurrentUser]);
 
     return <div style={{ backgroundColor: theme.palette.themeLight }}>
         <Stack horizontal verticalAlign="center" horizontalAlign="space-between">
@@ -91,9 +133,11 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             </Stack.Item>
             <Stack.Item align="center" >
                 <Stack horizontal>
-                    <Stack.Item>
-                        <Persona {...examplePersona} text="Jane Doe" size={PersonaSize.size32} />
-                    </Stack.Item>
+                    {currentUser?.username &&
+                        <Stack.Item>
+                            <Persona {...personaProps} onClick={() => setShowMyAccount(true)} styles={personaStyles} />
+                        </Stack.Item>
+                    }
                     <Stack.Item align="center">
                         <IconButton title={nlsHPCC.Advanced} iconProps={collapseMenuIcon} menuProps={advMenuProps} />
                     </Stack.Item>
@@ -112,6 +156,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             <DefaultButton text="K8s Dashboard" href="https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/" target="_blank" onRenderIcon={() => <Image src="https://www.google.com/s2/favicons?domain=kubernetes.io" />} />
         </Panel>
         <About show={showAbout} onClose={() => setShowAbout(false)} ></About>
+        <MyAccount currentUser={currentUser} show={showMyAccount} onClose={() => setShowMyAccount(false)}></MyAccount>
     </div>;
 };
 

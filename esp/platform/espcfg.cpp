@@ -373,7 +373,6 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
             mergeConfiguration(*cost, *espConfigCost, nullptr, false);
         }
 #endif
-
         initializeStorageGroups(daliClientActive());
 
         const unsigned dafilesrvConnectTimeout = m_cfg->getPropInt("@dafilesrvConnectTimeout", 10)*1000;

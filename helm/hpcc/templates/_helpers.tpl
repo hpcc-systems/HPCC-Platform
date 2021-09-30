@@ -918,8 +918,9 @@ A template to generate a service
 Pass in dict with .root, .name, .service, .defaultPort, .selector defined
 */}}
 {{- define "hpcc.addService" }}
-{{- $lvars := dict "type" "ClusterIP" "labels" dict "annotations" dict -}}
+{{- $lvars := dict "type" "ClusterIP" "labels" dict "annotations" dict "ingress" list "serviceName" .name -}}
 {{- if hasKey . "service" -}}
+ {{- if hasKey .service "name" -}}{{- $_ := set $lvars "servicename" .service.name -}}{{- end -}}
  {{- if hasKey .service "labels" -}}{{- $_ := set $lvars "labels" (merge $lvars.labels .service.labels) -}}{{- end -}}
  {{- if hasKey .service "annotations" -}}{{- $_ := set $lvars "annotations" (merge $lvars.annotations .service.annotations) -}}{{- end -}}
  {{- if hasKey .service "visibility" -}}
@@ -928,6 +929,7 @@ Pass in dict with .root, .name, .service, .defaultPort, .selector defined
     {{- $globalServiceInfo := get .root.Values.global.visibilities .service.visibility -}}
     {{- if hasKey $globalServiceInfo "labels" -}}{{- $_ := set $lvars "labels" (merge $lvars.labels $globalServiceInfo.labels) -}}{{- end -}}
     {{- if hasKey $globalServiceInfo "annotations" -}}{{- $_ := set $lvars "annotations" (merge $lvars.annotations $globalServiceInfo.annotations) -}}{{- end -}}
+    {{- if hasKey $globalServiceInfo "ingress" -}}{{- $_ := set $lvars "ingress" $globalServiceInfo.ingress -}}{{- end -}}
     {{- $_ := set $lvars "type" $globalServiceInfo.type -}}
    {{- else -}}
     {{- required (printf "Specified service visibility %s not found in global visibilities section" .service.visibility) nil -}}
@@ -936,11 +938,12 @@ Pass in dict with .root, .name, .service, .defaultPort, .selector defined
    {{- required "global visibilities section not found" nil -}}
   {{- end -}}
  {{- end -}}
+ {{- if hasKey .service "ingress" -}}{{- $_ := set $lvars "ingress" .service.ingress -}}{{- end -}}
 {{- end }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .name | quote }}
+  name: {{ $lvars.serviceName | quote }}
   labels:
     helmVersion: 8.5.0-trunk0
 {{- if $lvars.labels }}
@@ -958,6 +961,19 @@ spec:
   selector:
     server: {{ .selector | quote }}
   type: {{ $lvars.type }}
+{{- if $lvars.ingress }} 
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $lvars.serviceName | quote }}
+spec:
+  podSelector:
+    matchLabels:
+      server: {{ .selector | quote }}
+  ingress:
+{{ toYaml $lvars.ingress | indent 2 }}
+{{- end -}}
 {{- end -}}
 
 {{/*
@@ -1051,16 +1067,19 @@ Pass in dict with me for current placements and dict with new for the new placem
 */}}
 {{- define "hpcc.mergePlacementSetting" -}}
 {{- if .me.placement.nodeSelector }}
-{{- $_ := set .new "nodeSelector" (mergeOverwrite (.new.nodeSelector | default dict ) .me.placement.nodeSelector)  }}
+ {{- $_ := set .new "nodeSelector" (mergeOverwrite (.new.nodeSelector | default dict ) .me.placement.nodeSelector)  }}
 {{- end -}}
 {{- if .me.placement.tolerations }}
-{{- $_ := set .new "tolerations" (concat (.new.tolerations | default list ) .me.placement.tolerations)  }}
+ {{- $_ := set .new "tolerations" (concat (.new.tolerations | default list ) .me.placement.tolerations)  }}
 {{- end -}}
 {{- if .me.placement.affinity }}
-{{- $_ := set .new "affinity" .me.placement.affinity  }}
+ {{- $_ := set .new "affinity" .me.placement.affinity  }}
 {{- end -}}
 {{- if .me.placement.schedulerName }}
-{{- $_ := set .new "schedulerName" .me.placement.schedulerName }}
+ {{- $_ := set .new "schedulerName" .me.placement.schedulerName }}
+{{- end -}}
+{{- if .me.placement.topologySpreadConstraints }}
+ {{- $_ := set .new "topologySpreadConstraints" (concat (.new.topologySpreadConstraints | default list ) .me.placement.topologySpreadConstraints)  }}
 {{- end -}}
 {{- end -}}
 

@@ -47,7 +47,7 @@ global:
     # kubeApiPort: 7443
 
   cost:
-    moneyLocale: "en_US.UTF-8"
+    currencyCode: USD
     perCpu: 0.126
     storageAtRest: 0.0135
     storageReads: 0.0485
@@ -78,14 +78,31 @@ global:
         #service.beta.kubernetes.io/aws-load-balancer-internal: "true"
         service.beta.kubernetes.io/azure-load-balancer-internal: "true"
       type: LoadBalancer
+      # If ingress is specified, an ingress Network Policy will be created for any pod implementing a service with this visibility
+      # Default allows ingress from anywhere, but more restrictive rules can be used if preferred.
+      # Ingress rules can also be overriden by individual services
+      ingress:
+      - {}
     global:
       #labels:
       #  mylabel: "4"
       type: LoadBalancer
+      ingress:
+      - {}
       
       
-
-  # For pod placement instruction and examples please reference docs/placements.md
+# For pod placement instruction and examples please reference docs/placements.md
+# The following is for tolerations of Spot Node Pool on Azure. Other cloud providers
+# may have different taints for Spot Node Pool. The tolerations are harmless when
+# there is no taint on the node pool.
+#placements:
+# - pods: ["all"]
+#   placement:
+#     tolerations:
+#     - key: "kubernetes.azure.com/scalesetpriority"
+#       operator: "Equal"
+#       value:  "spot"
+#       effect: "NoSchedule"
 
 security:
   eclSecurity:
@@ -308,6 +325,7 @@ dafilesrv:
   service:
     servicePort: 7600
     visibility: local
+    
 
 dali:
 - name: mydali
@@ -499,8 +517,10 @@ roxie:
     listenQueue: 200
     numThreads: 30
     visibility: local
+    # Can override ingress rules for each service if desired - for example to add no additional ingress permissions you can use
+    # ingress: []
   ## replicas indicates the number of replicas per channel
-  replicas: 2  
+  replicas: 2
   numChannels: 2
   ## Set serverReplicas to indicate a separate replicaSet of roxie servers, with agent nodes not acting as servers
   serverReplicas: 0
