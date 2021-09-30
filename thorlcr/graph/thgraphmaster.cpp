@@ -528,6 +528,8 @@ void CMasterActivity::deserializeStats(unsigned node, MemoryBuffer &mb)
 void CMasterActivity::getActivityStats(IStatisticGatherer & stats)
 {
     statsCollection.getStats(stats);
+    if (diskAccessCost)
+        stats.addStatistic(StCostFileAccess, diskAccessCost);
 }
 
 void CMasterActivity::getEdgeStats(IStatisticGatherer & stats, unsigned idx)
@@ -544,6 +546,50 @@ void CMasterActivity::done()
     {
         IDistributedFile &file = readFiles.item(s);
         file.setAccessed();
+    }
+}
+
+void CMasterActivity::updateFileReadCostStats(std::vector<OwnedPtr<CThorStatsCollection>> & subFileStats)
+{
+    if (!subFileStats.empty())
+    {
+        unsigned numSubFiles = subFileStats.size();
+        for (unsigned i=0; i<numSubFiles; i++)
+        {
+            IDistributedFile *file = queryReadFile(i);
+            if (file)
+            {
+                stat_type numDiskReads = subFileStats[i]->getStatisticSum(StNumDiskReads);
+                StringBuffer clusterName;
+                file->getClusterName(0, clusterName);
+                diskAccessCost += money2cost_type(calcFileCost(clusterName, 0, 0, 0, numDiskReads));
+                file->addAttrValue("@numDiskReads", numDiskReads);
+            }
+        }
+    }
+    else
+    {
+        IDistributedFile *file = queryReadFile(0);
+        if (file)
+        {
+            stat_type numDiskReads = statsCollection.getStatisticSum(StNumDiskReads);
+            StringBuffer clusterName;
+            file->getClusterName(0, clusterName);
+            diskAccessCost += money2cost_type(calcFileCost(clusterName, 0, 0, 0, numDiskReads));
+            file->addAttrValue("@numDiskReads", numDiskReads);
+        }
+    }
+}
+
+void CMasterActivity::updateFileWriteCostStats(IFileDescriptor & fileDesc, IPropertyTree &props, stat_type numDiskWrites)
+{
+    if (numDiskWrites)
+    {
+        props.setPropInt64("@numDiskWrites", numDiskWrites);
+        assertex(fileDesc.numClusters()>=1);
+        StringBuffer clusterName;
+        fileDesc.getClusterGroupName(0, clusterName);// Note: calculating for 1st cluster. (Future: calc for >1 clusters)
+        diskAccessCost += money2cost_type(calcFileCost(clusterName, 0, 0, numDiskWrites, 0));
     }
 }
 
