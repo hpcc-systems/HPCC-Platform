@@ -82,7 +82,7 @@ export const UserAddGroupForm: React.FunctionComponent<UserAddGroupProps> = ({
                     username={username}
                     required={true}
                     label={nlsHPCC.GroupName}
-                    selectedKey={value}
+                    defaultSelectedKey={value}
                     onChange={(evt, option) => {
                         onChange(option.key);
                     }}

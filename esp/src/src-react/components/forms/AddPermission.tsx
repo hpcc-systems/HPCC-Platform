@@ -81,7 +81,7 @@ export const AddPermissionForm: React.FunctionComponent<AddPermissionFormProps> 
                     key={fieldName}
                     required={true}
                     label={nlsHPCC.Type}
-                    selectedKey={value}
+                    defaultSelectedKey={value}
                     onChange={(evt, option) => {
                         onChange(option.key);
                     }}

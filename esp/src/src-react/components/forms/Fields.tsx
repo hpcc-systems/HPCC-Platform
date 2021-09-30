@@ -12,7 +12,6 @@ import nlsHPCC from "src/nlsHPCC";
 const logger = scopedLogger("src-react/components/forms/Fields.tsx");
 
 interface DropdownProps {
-    key: string;
     label?: string;
     options?: IDropdownOption[];
     defaultSelectedKey?: string;
@@ -22,11 +21,10 @@ interface DropdownProps {
     errorMessage?: string;
     onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
     placeholder?: string;
-    className?: string;
+    className?: string
 }
 
 const Dropdown: React.FunctionComponent<DropdownProps> = ({
-    key,
     label,
     options = [],
     defaultSelectedKey,
@@ -40,22 +38,23 @@ const Dropdown: React.FunctionComponent<DropdownProps> = ({
 }) => {
     React.useEffect(() => {
         if (required === true && optional === true) {
-            logger.error(`${label} (${key}):  required == true and optional == true is illogical`);
+            logger.error(`${label}:  required == true and optional == true is illogical`);
         }
-    }, [key, label, optional, required]);
+    }, [label, optional, required]);
 
     const [selOptions, setSelOptions] = React.useState<IDropdownOption[]>([]);
     const [selectedKey, setSelectedKey] = React.useState<string | number | undefined>(defaultSelectedKey);
 
     React.useEffect(() => {
         const selOptions = (optional ? [{ key: "", text: "" }, ...options] : [...options]);
-        if (!optional && !defaultSelectedKey && selOptions.length) {
+        if (defaultSelectedKey !== undefined) {
+            setSelectedKey(defaultSelectedKey);
+        } else if (selOptions.length) {
             setSelectedKey(selOptions[0].key);
         }
         setSelOptions(selOptions);
     }, [optional, options, defaultSelectedKey, setSelectedKey]);
-
-    return <DropdownBase key={key} label={label} errorMessage={errorMessage} required={required} className={className} defaultSelectedKey={selectedKey} onChange={onChange} placeholder={placeholder} options={selOptions} disabled={disabled} />;
+    return <DropdownBase label={label} errorMessage={errorMessage} required={required} defaultSelectedKey={selectedKey} onChange={onChange} placeholder={placeholder} options={selOptions} disabled={disabled} className={className} />;
 };
 
 export type FieldType = "string" | "password" | "number" | "checkbox" | "datetime" | "dropdown" | "link" | "links" | "progress" |
@@ -346,16 +345,7 @@ export const TargetServerTextLinkedField: React.FunctionComponent<TargetServerTe
     return <TargetServerTextField {...props} dropzone={dropzone} />;
 };
 
-export interface TargetGroupTextFieldProps {
-    key: string;
-    label?: string;
-    selectedKey?: string;
-    className?: string;
-    required?: boolean;
-    optional?: boolean;
-    errorMessage?: string;
-    onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
-    placeholder?: string;
+export interface TargetGroupTextFieldProps extends DropdownProps {
 }
 
 export const TargetGroupTextField: React.FunctionComponent<TargetGroupTextFieldProps> = (props) => {
@@ -378,16 +368,7 @@ export const TargetGroupTextField: React.FunctionComponent<TargetGroupTextFieldP
     return <Dropdown {...props} options={targetGroups} />;
 };
 
-export interface TargetDfuSprayQueueTextFieldProps {
-    key: string;
-    label?: string;
-    defaultSelectedKey?: string;
-    className?: string;
-    required?: boolean;
-    optional?: boolean;
-    errorMessage?: string;
-    onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
-    placeholder?: string;
+export interface TargetDfuSprayQueueTextFieldProps extends DropdownProps {
 }
 
 export const TargetDfuSprayQueueTextField: React.FunctionComponent<TargetDfuSprayQueueTextFieldProps> = (props) => {
@@ -410,20 +391,11 @@ export const TargetDfuSprayQueueTextField: React.FunctionComponent<TargetDfuSpra
     return <Dropdown {...props} options={dfuSprayQueues} />;
 };
 
-export interface TargetFolderTextFieldProps {
-    key: string;
-    label?: string;
-    selectedKey?: string;
+export interface TargetFolderTextFieldProps extends DropdownProps {
     pathSepChar?: string;
     machineAddress?: string;
     machineDirectory?: string;
     machineOS?: number;
-    className?: string;
-    required?: boolean;
-    optional?: boolean;
-    errorMessage?: string;
-    onChange?: (event?: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
-    placeholder?: string;
 }
 
 export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFieldProps> = (props) => {
@@ -489,17 +461,8 @@ export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFiel
     return <Dropdown {...props} options={folders} />;
 };
 
-export interface UserGroupsProps {
-    key: string;
-    label?: string;
-    selectedKey?: string;
-    className?: string;
-    required?: boolean;
-    optional?: boolean;
+export interface UserGroupsProps extends DropdownProps {
     username: string;
-    errorMessage?: string;
-    onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
-    placeholder?: string;
 }
 
 export const UserGroupsField: React.FunctionComponent<UserGroupsProps> = (props) => {
@@ -529,17 +492,8 @@ export const UserGroupsField: React.FunctionComponent<UserGroupsProps> = (props)
 
 };
 
-export interface GroupMembersProps {
-    key: string;
-    label?: string;
-    selectedKey?: string;
-    className?: string;
-    required?: boolean;
-    optional?: boolean;
+export interface GroupMembersProps extends DropdownProps {
     groupname: string;
-    errorMessage?: string;
-    onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
-    placeholder?: string;
 }
 
 export const GroupMembersField: React.FunctionComponent<GroupMembersProps> = (props) => {
@@ -564,16 +518,7 @@ export const GroupMembersField: React.FunctionComponent<GroupMembersProps> = (pr
     return <Dropdown {...props} options={users} />;
 };
 
-export interface PermissionTypeProps {
-    key: string;
-    label?: string;
-    selectedKey?: string;
-    className?: string;
-    required?: boolean;
-    optional?: boolean;
-    errorMessage?: string;
-    onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
-    placeholder?: string;
+export interface PermissionTypeProps extends DropdownProps {
 }
 
 export const PermissionTypeField: React.FunctionComponent<PermissionTypeProps> = (props) => {
@@ -595,7 +540,7 @@ export const PermissionTypeField: React.FunctionComponent<PermissionTypeProps> =
     }, []);
 
     return <Dropdown {...props} options={baseDns} />;
-    
+
 };
 
 const states = Object.keys(States).map(s => States[s]);
@@ -880,7 +825,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     field: <TargetGroupTextField
                         key={fieldID}
                         required={field.required}
-                        selectedKey={field.value}
+                        defaultSelectedKey={field.value}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                     />
@@ -895,7 +840,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         key={fieldID}
                         username={field.username}
                         required={field.required}
-                        selectedKey={field.value}
+                        defaultSelectedKey={field.value}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                     />
@@ -910,26 +855,26 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         key={fieldID}
                         groupname={field.groupname}
                         required={field.required}
-                        selectedKey={field.value}
+                        defaultSelectedKey={field.value}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                     />
                 });
                 break;
-			case "permission-type":
-			    field.value = field.value !== undefined ? field.value : "";
-			    retVal.push({
-			        id: fieldID,
-			        label: field.label,
-			        field: <PermissionTypeField
-			            key={fieldID}
-			            required={field.required}
-			            selectedKey={field.value}
-			            onChange={(ev, row) => onChange(fieldID, row.key)}
-			            placeholder={field.placeholder}
-			        />
-			    });
-			    break;
+            case "permission-type":
+                field.value = field.value !== undefined ? field.value : "";
+                retVal.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: <PermissionTypeField
+                        key={fieldID}
+                        required={field.required}
+                        defaultSelectedKey={field.value}
+                        onChange={(ev, row) => onChange(fieldID, row.key)}
+                        placeholder={field.placeholder}
+                    />
+                });
+                break;
             case "target-dfuqueue":
                 field.value = field.value !== undefined ? field.value : "";
                 retVal.push({
@@ -950,6 +895,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
+                        defaultSelectedKey={field.value}
                         optional
                         options={dfustates.map(state => {
                             return {
@@ -969,7 +915,9 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
+                        defaultSelectedKey={field.value}
                         optional
+                        // disabled={field.disabled ? field.disabled(field) : false}
                         options={[
                             { key: "Created", text: nlsHPCC.CreatedByWorkunit },
                             { key: "Used", text: nlsHPCC.UsedByWorkunit }
