@@ -3,6 +3,7 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluen
 import { scopedLogger } from "@hpcc-js/util";
 import * as WsAccess from "src/ws_access";
 import nlsHPCC from "src/nlsHPCC";
+import { useConfirm } from "../hooks/confirm";
 import { useGrid } from "../hooks/grid";
 import { ShortVerticalDivider } from "./Common";
 import { selector } from "./DojoGrid";
@@ -68,6 +69,25 @@ export const Users: React.FunctionComponent<UsersProps> = ({
         }
     });
 
+    const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
+        title: nlsHPCC.Delete,
+        message: nlsHPCC.DeleteSelectedUsers + "\n" + selection.map(user => user.username).join("\n"),
+        onSubmit: React.useCallback(() => {
+            const request = {
+                ActionType: "delete"
+            };
+            selection.forEach((item, idx) => {
+                request["usernames_i" + idx] = item.username;
+            });
+            WsAccess.UserAction({ request: request })
+                .then(response => {
+                    refreshTable(true);
+                })
+                .catch(logger.error)
+                ;
+        }, [refreshTable, selection])
+    });
+
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
@@ -120,30 +140,14 @@ export const Users: React.FunctionComponent<UsersProps> = ({
         },
         {
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection,
-            onClick: () => {
-                const list = selection.map(user => user.username).join("\n");
-                if (confirm(nlsHPCC.DeleteSelectedUsers + "\n" + list)) {
-                    const request = {
-                        ActionType: "delete"
-                    };
-                    selection.forEach((item, idx) => {
-                        request["usernames_i" + idx] = item.username;
-                    });
-                    WsAccess.UserAction({ request: request })
-                        .then(response => {
-                            refreshTable(true);
-                        })
-                        .catch(logger.error)
-                        ;
-                }
-            },
+            onClick: () => setShowDeleteConfirm(true)
         },
         { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "export", text: nlsHPCC.Export,
             onClick: () => exportUsers()
         },
-    ], [exportUsers, refreshTable, selection, uiState]);
+    ], [exportUsers, refreshTable, selection, setShowDeleteConfirm, uiState]);
 
     //  Filter  ---
     const filterFields: Fields = {};
@@ -162,6 +166,7 @@ export const Users: React.FunctionComponent<UsersProps> = ({
             }
         />
         <AddUserForm showForm={showAddUser} setShowForm={setShowAddUser} refreshGrid={refreshTable} />
+        <DeleteConfirm />
     </>;
 
 };

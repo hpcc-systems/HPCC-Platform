@@ -9,6 +9,7 @@ import * as FileSpray from "src/FileSpray";
 import * as ESPRequest from "src/ESPRequest";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { useConfirm } from "../hooks/confirm";
 import { useGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
@@ -159,6 +160,31 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
         }
     });
 
+    const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
+        title: nlsHPCC.Delete,
+        message: nlsHPCC.DeleteSelectedFiles + "\n" + selection.map(s => s.name).join("\n"),
+        onSubmit: React.useCallback(() => {
+            selection.forEach((item, idx) => {
+                if (item._isUserFile) {
+                    store.removeUserFile(item);
+                    refreshTable(true);
+                } else {
+                    FileSpray.DeleteDropZoneFile({
+                        request: {
+                            NetAddress: item.NetAddress,
+                            Path: item.fullFolderPath,
+                            OS: item.OS,
+                            Names: item.name
+                        },
+                        load: function (response) {
+                            refreshTable(true);
+                        }
+                    });
+                }
+            });
+        }, [refreshTable, selection, store])
+    });
+
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -194,29 +220,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
         },
         {
             key: "delete", text: nlsHPCC.Delete, disabled: !selection.length, iconProps: { iconName: "Delete" },
-            onClick: () => {
-                const list = selection.map(s => s.name);
-                if (confirm(nlsHPCC.DeleteSelectedFiles + "\n" + list)) {
-                    selection.forEach((item, idx) => {
-                        if (item._isUserFile) {
-                            store.removeUserFile(item);
-                            refreshTable(true);
-                        } else {
-                            FileSpray.DeleteDropZoneFile({
-                                request: {
-                                    NetAddress: item.NetAddress,
-                                    Path: item.fullFolderPath,
-                                    OS: item.OS,
-                                    Names: item.name
-                                },
-                                load: function (response) {
-                                    refreshTable(true);
-                                }
-                            });
-                        }
-                    });
-                }
-            }
+            onClick: () => setShowDeleteConfirm(true)
         },
         { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -254,7 +258,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
             onClick: () => setShowBlob(true)
         },
         { key: "divider_6", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> }
-    ], [store, refreshTable, selection]);
+    ], [refreshTable, selection, setShowDeleteConfirm]);
 
     //  Filter  ---
     const filterFields: Fields = {};
@@ -379,6 +383,7 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
                     formMinWidth={620} selection={selection}
                     showForm={showBlob} setShowForm={setShowBlob}
                 />
+                <DeleteConfirm />
             </>
         }
     />;

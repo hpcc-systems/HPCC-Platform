@@ -5,6 +5,7 @@ import { formatCost } from "src/Session";
 import * as WsDfu from "src/WsDfu";
 import * as Utility from "src/Utility";
 import { getStateImageName, IFile } from "src/ESPLogicalFile";
+import { useConfirm } from "../hooks/confirm";
 import { useFile } from "../hooks/file";
 import { useBuildInfo } from "../hooks/platform";
 import { ShortVerticalDivider } from "./Common";
@@ -13,6 +14,7 @@ import { CopyFile } from "./forms/CopyFile";
 import { DesprayFile } from "./forms/DesprayFile";
 import { RenameFile } from "./forms/RenameFile";
 import { ReplicateFile } from "./forms/ReplicateFile";
+import { replaceUrl } from "../util/history";
 
 import "react-reflex/styles.css";
 
@@ -39,6 +41,19 @@ export const FileSummary: React.FunctionComponent<FileSummaryProps> = ({
     const [showRenameFile, setShowRenameFile] = React.useState(false);
     const [showDesprayFile, setShowDesprayFile] = React.useState(false);
     const [showReplicateFile, setShowReplicateFile] = React.useState(false);
+
+    const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
+        title: nlsHPCC.Delete,
+        message: nlsHPCC.YouAreAboutToDeleteThisFile,
+        onSubmit: React.useCallback(() => {
+            WsDfu.DFUArrayAction([file], "Delete").then(response => {
+                const actionInfo = response?.DFUArrayActionResponse?.ActionResults?.DFUActionInfo;
+                if (actionInfo && actionInfo.length && !actionInfo[0].Failed) {
+                    replaceUrl("/files");
+                }
+            });
+        }, [file])
+    });
 
     const isDFUWorkunit = React.useMemo(() => {
         return file?.Wuid?.length && file?.Wuid[0] === "D";
@@ -97,16 +112,7 @@ export const FileSummary: React.FunctionComponent<FileSummaryProps> = ({
         },
         {
             key: "delete", text: nlsHPCC.Delete, iconProps: { iconName: "Delete" }, disabled: !file,
-            onClick: () => {
-                if (confirm(nlsHPCC.YouAreAboutToDeleteThisFile)) {
-                    WsDfu.DFUArrayAction([file], "Delete").then(response => {
-                        const actionInfo = response?.DFUArrayActionResponse?.ActionResults?.DFUActionInfo;
-                        if (actionInfo && actionInfo.length && !actionInfo[0].Failed) {
-                            window.history.back();
-                        }
-                    });
-                }
-            }
+            onClick: () => setShowDeleteConfirm(true)
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -126,7 +132,7 @@ export const FileSummary: React.FunctionComponent<FileSummaryProps> = ({
             key: "replicate", text: nlsHPCC.Replicate, disabled: !canReplicateFlag || !replicateFlag,
             onClick: () => setShowReplicateFile(true)
         },
-    ], [_protected, canReplicateFlag, canSave, description, file, logicalFile, refresh, replicateFlag, restricted]);
+    ], [_protected, canReplicateFlag, canSave, description, file, logicalFile, refresh, replicateFlag, restricted, setShowDeleteConfirm]);
 
     const protectedImage = _protected ? Utility.getImageURL("locked.png") : Utility.getImageURL("unlocked.png");
     const stateImage = Utility.getImageURL(getStateImageName(file as unknown as IFile));
@@ -194,5 +200,6 @@ export const FileSummary: React.FunctionComponent<FileSummaryProps> = ({
         <DesprayFile cluster={cluster} logicalFile={logicalFile} showForm={showDesprayFile} setShowForm={setShowDesprayFile} />
         <RenameFile cluster={cluster} logicalFile={logicalFile} showForm={showRenameFile} setShowForm={setShowRenameFile} />
         <ReplicateFile cluster={cluster} logicalFile={logicalFile} showForm={showReplicateFile} setShowForm={setShowReplicateFile} />
+        <DeleteConfirm />
     </>;
 };

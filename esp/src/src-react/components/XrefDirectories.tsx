@@ -6,6 +6,7 @@ import { HolyGrail } from "../layouts/HolyGrail";
 import * as WsDFUXref from "src/WsDFUXref";
 import * as Observable from "dojo/store/Observable";
 import { Memory } from "src/Memory";
+import { useConfirm } from "../hooks/confirm";
 import { useGrid } from "../hooks/grid";
 import { ShortVerticalDivider } from "./Common";
 import nlsHPCC from "src/nlsHPCC";
@@ -84,6 +85,19 @@ export const XrefDirectories: React.FunctionComponent<XrefDirectoriesProps> = ({
             ;
     }, [store, name, refreshTable]);
 
+    const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
+        title: nlsHPCC.Delete,
+        message: nlsHPCC.DeleteDirectories,
+        onSubmit: React.useCallback(() => {
+            WsDFUXref.DFUXRefCleanDirectories({ request: { Cluster: name } })
+                .then(response => {
+                    refreshData();
+                })
+                .catch(logger.error)
+                ;
+        }, [name, refreshData])
+    });
+
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -93,19 +107,10 @@ export const XrefDirectories: React.FunctionComponent<XrefDirectoriesProps> = ({
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "delete", text: nlsHPCC.DeleteEmptyDirectories,
-            onClick: () => {
-                if (confirm(nlsHPCC.DeleteDirectories)) {
-                    WsDFUXref.DFUXRefCleanDirectories({ request: { Cluster: name } })
-                        .then(response => {
-                            refreshData();
-                        })
-                        .catch(logger.error)
-                        ;
-                }
-            }
+            onClick: () => setShowDeleteConfirm(true)
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-    ], [name, refreshData]);
+    ], [refreshData, setShowDeleteConfirm]);
 
     React.useEffect(() => {
         refreshData();
@@ -113,7 +118,12 @@ export const XrefDirectories: React.FunctionComponent<XrefDirectoriesProps> = ({
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={<Grid />}
+        main={
+            <>
+                <Grid />
+                <DeleteConfirm />
+            </>
+        }
     />;
 
 };

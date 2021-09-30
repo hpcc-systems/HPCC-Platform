@@ -5,6 +5,7 @@ import * as ESPDFUWorkunit from "src/ESPDFUWorkunit";
 import * as FileSpray from "src/FileSpray";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { useConfirm } from "../hooks/confirm";
 import { useGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
@@ -112,6 +113,14 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
         }
     });
 
+    const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
+        title: nlsHPCC.Delete,
+        message: nlsHPCC.DeleteSelectedWorkunits + "\n\n" + selection.map(s => s.Wuid).join("\n"),
+        onSubmit: React.useCallback(() => {
+            FileSpray.DFUWorkunitsAction(selection, nlsHPCC.Delete).then(() => refreshTable(true));
+        }, [refreshTable, selection])
+    });
+
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -133,12 +142,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
         },
         {
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasNotProtected, iconProps: { iconName: "Delete" },
-            onClick: () => {
-                const list = selection.map(s => s.Wuid);
-                if (confirm(nlsHPCC.DeleteSelectedWorkunits + "\n" + list)) {
-                    FileSpray.DFUWorkunitsAction(selection, nlsHPCC.Delete).then(() => refreshTable(true));
-                }
-            }
+            onClick: () => setShowDeleteConfirm(true)
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -167,7 +171,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
                 setMine(!mine);
             }
         },
-    ], [mine, refreshTable, selection, store, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
+    ], [mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
 
     //  Filter  ---
     const filterFields: Fields = {};
@@ -201,6 +205,7 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
             <>
                 <Grid />
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
+                <DeleteConfirm />
             </>
         }
     />;
