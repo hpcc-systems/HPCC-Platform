@@ -74,6 +74,10 @@ Supported configurations under each "placement"
    Kubernetes 1.20.0 beta and later releases
    Only one "schedulerName" can be applied to a Pod/Job.
 
+5) topologySpreadConstraints
+   Requires Kubernetes v1.19+.
+   Reference https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
+
 "nodeSelector" example:
 ```code
 placements:
@@ -124,4 +128,21 @@ placements:
       operator: "Equal"
       value: "true"
       effect: "NoSchedule"
+
+```
+"topologySpreadConstraints" example, there are two node pools which have "hpcc=spot1" and "hpcc=spot2" respectively. The roxie pods will be evenly scheduled on the two node pools. After deployment verify it with
+```code
+kubectl get pod -o wide | grep roxie
+```
+Placements code:
+```code
+- pods: ["type:roxie"]
+  placement:
+    topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: hpcc
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          roxie-cluster: "roxie"
 ```

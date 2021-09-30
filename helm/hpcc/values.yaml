@@ -510,7 +510,7 @@ roxie:
     numThreads: 30
     visibility: local
   ## replicas indicates the number of replicas per channel
-  replicas: 2  
+  replicas: 2
   numChannels: 2
   ## Set serverReplicas to indicate a separate replicaSet of roxie servers, with agent nodes not acting as servers
   serverReplicas: 0

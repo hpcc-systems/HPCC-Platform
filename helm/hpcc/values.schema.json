@@ -1638,6 +1638,10 @@
         },
         "schedulerName": {
           "type": "string"
+        },
+        "topologySpreadConstraints": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/topologySpreadConstraint" }
         }
       }
     },
@@ -1668,6 +1672,28 @@
         },
         "tolerationSeconds": {
           "type": "integer"
+        }
+      }
+    },
+    "topologySpreadConstraint": {
+      "type": "object",
+      "properties": {
+        "maxSkew": {
+          "type": "integer",
+          "description": "describes the degree to which Pods may be unevenly distributed. It must be greater than zero"
+        },
+        "topologyKey": {
+          "type": "string",
+          "description": "is the key of node labels"
+        },
+        "whenUnsatisfiable": {
+          "type": "string",
+          "enum": ["DoNotSchedule", "ScheduleAnyway"],
+          "description": "indicates how to deal with a Pod if it doesn't satisfy the spread constraint"
+        },
+        "labelSelector": {
+          "type": "object",
+          "description": "labelSelector is used to find matching Pods"
         }
       }
     },
