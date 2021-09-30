@@ -78,10 +78,17 @@ global:
         #service.beta.kubernetes.io/aws-load-balancer-internal: "true"
         service.beta.kubernetes.io/azure-load-balancer-internal: "true"
       type: LoadBalancer
+      # If ingress is specified, an ingress Network Policy will be created for any pod implementing a service with this visibility
+      # Default allows ingress from anywhere, but more restrictive rules can be used if preferred.
+      # Ingress rules can also be overriden by individual services
+      ingress:
+      - {}
     global:
       #labels:
       #  mylabel: "4"
       type: LoadBalancer
+      ingress:
+      - {}
       
       
 # For pod placement instruction and examples please reference docs/placements.md
@@ -318,6 +325,7 @@ dafilesrv:
   service:
     servicePort: 7600
     visibility: local
+    
 
 dali:
 - name: mydali
@@ -509,6 +517,8 @@ roxie:
     listenQueue: 200
     numThreads: 30
     visibility: local
+    # Can override ingress rules for each service if desired - for example to add no additional ingress permissions you can use
+    # ingress: []
   ## replicas indicates the number of replicas per channel
   replicas: 2  
   numChannels: 2
