@@ -39,7 +39,7 @@ PUT _ingest/pipeline/hpccpipeline
         "grok" : {
           "field" : "message",
           "patterns" : [
-            """%{BASE16NUM:hpcc.log.sequence}\s+(%{HPCC_LOG_AUDIENCE:hpcc.log.audience})\s+%{HPCC_LOG_CLASS:hpcc.log.class}\s+%{TIMESTAMP_ISO8601:hpcc.log.timestamp}\s+%{POSINT:hpcc.log.procid\s+%{POSINT:hpcc.log.threadid}\s+%{HPCC_LOG_WUID:hpcc.log.jobid}\s+%{QUOTEDSTRING:hpcc.log.message}""",
+            """%{BASE16NUM:hpcc.log.sequence}\s+(%{HPCC_LOG_AUDIENCE:hpcc.log.audience})\s+%{HPCC_LOG_CLASS:hpcc.log.class}\s+%{TIMESTAMP_ISO8601:hpcc.log.timestamp}\s+%{POSINT:hpcc.log.procid}\s+%{POSINT:hpcc.log.threadid}\s+%{HPCC_LOG_WUID:hpcc.log.jobid}\s+%{QUOTEDSTRING:hpcc.log.message}""",
             """%{BASE16NUM:hpcc.log.sequence}\s+%{HPCC_LOG_AUDIENCE:hpcc.log.audience}\s+%{HPCC_LOG_CLASS:hpcc.log.class}\s%{TIMESTAMP_ISO8601:hpcc.log.timestamp}\s+%{POSINT:hpcc.log.procid}\s+%{POSINT:hpcc.log.threadid}\s+%{HPCC_LOG_WUID:hpcc.log.jobid}\s+%{GREEDYDATA:hpcc.log.message}"""
           ],
           "pattern_definitions" : {

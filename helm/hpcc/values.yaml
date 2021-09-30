@@ -47,7 +47,7 @@ global:
     # kubeApiPort: 7443
 
   cost:
-    moneyLocale: "en_US.UTF-8"
+    currencyCode: USD
     perCpu: 0.126
     storageAtRest: 0.0135
     storageReads: 0.0485
@@ -520,7 +520,7 @@ roxie:
     # Can override ingress rules for each service if desired - for example to add no additional ingress permissions you can use
     # ingress: []
   ## replicas indicates the number of replicas per channel
-  replicas: 2  
+  replicas: 2
   numChannels: 2
   ## Set serverReplicas to indicate a separate replicaSet of roxie servers, with agent nodes not acting as servers
   serverReplicas: 0

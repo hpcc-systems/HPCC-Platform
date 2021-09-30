@@ -113,7 +113,7 @@ export const ReplicateFile: React.FunctionComponent<ReplicateFileProps> = ({
                         key={fieldName}
                         label={nlsHPCC.Cluster}
                         required={true}
-                        selectedKey={value}
+                        defaultSelectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
                             onChange(option.key);

@@ -1067,16 +1067,19 @@ Pass in dict with me for current placements and dict with new for the new placem
 */}}
 {{- define "hpcc.mergePlacementSetting" -}}
 {{- if .me.placement.nodeSelector }}
-{{- $_ := set .new "nodeSelector" (mergeOverwrite (.new.nodeSelector | default dict ) .me.placement.nodeSelector)  }}
+ {{- $_ := set .new "nodeSelector" (mergeOverwrite (.new.nodeSelector | default dict ) .me.placement.nodeSelector)  }}
 {{- end -}}
 {{- if .me.placement.tolerations }}
-{{- $_ := set .new "tolerations" (concat (.new.tolerations | default list ) .me.placement.tolerations)  }}
+ {{- $_ := set .new "tolerations" (concat (.new.tolerations | default list ) .me.placement.tolerations)  }}
 {{- end -}}
 {{- if .me.placement.affinity }}
-{{- $_ := set .new "affinity" .me.placement.affinity  }}
+ {{- $_ := set .new "affinity" .me.placement.affinity  }}
 {{- end -}}
 {{- if .me.placement.schedulerName }}
-{{- $_ := set .new "schedulerName" .me.placement.schedulerName }}
+ {{- $_ := set .new "schedulerName" .me.placement.schedulerName }}
+{{- end -}}
+{{- if .me.placement.topologySpreadConstraints }}
+ {{- $_ := set .new "topologySpreadConstraints" (concat (.new.topologySpreadConstraints | default list ) .me.placement.topologySpreadConstraints)  }}
 {{- end -}}
 {{- end -}}
 

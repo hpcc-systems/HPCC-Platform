@@ -2654,13 +2654,8 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor *udesc, co
                 FileDetails.setJsonInfo(jsonLayout);
         }
     }
-    if (version >= 1.59)
-    {
-        double totalCost = df->getCost(cluster);
-        StringBuffer s;
-        formatMoney(s, money2cost_type(totalCost));
-        FileDetails.setCost(s);
-    }
+    if (version >= 1.60)
+        FileDetails.setCost(df->getCost(cluster));
     PROGLOG("doGetFileDetails: %s done", name);
 }
 
