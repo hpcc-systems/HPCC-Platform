@@ -334,6 +334,9 @@
                 "type": "object",
                 "additionalProperties": { "type": "string" }
               },
+              "ingress": {
+                "$ref" : "#/definitions/ingress"
+              },
               "type": {
                 "type": "string"
               }
@@ -761,6 +764,15 @@
         }
       }
     },
+    "ingress": {
+      "type": "array",
+      "items": {
+        "additionalProperties": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      }
+    },
     "egress": {
       "type": "object",
       "properties": {
@@ -804,6 +816,9 @@
         "annotations": {
           "type": "object",
           "additionalProperties": { "type": "string" }
+        },
+        "ingress": {
+          "$ref" : "#/definitions/ingress"
         },
         "labels": {
           "type": "object",
@@ -1163,6 +1178,9 @@
         "labels": {
           "type": "object",
           "additionalProperties": { "type": "string" }
+        },
+        "ingress": {
+          "$ref" : "#/definitions/ingress"
         },
         "visibility": {
           "type": "string",
