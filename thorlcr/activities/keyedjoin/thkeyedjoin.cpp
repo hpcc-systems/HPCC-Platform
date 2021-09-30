@@ -566,13 +566,7 @@ public:
     }
     virtual void done() override
     {
-        unsigned numSubFiles = fileStats.size();
-        for (unsigned i=0; i<numSubFiles; i++)
-        {
-            IDistributedFile *file = queryReadFile(i);
-            if (file) //publish the number of disk reads for indexes and disk fetches.
-                file->addAttrValue("@numDiskReads", fileStats[i]->getStatisticSum(StNumDiskReads));
-        }
+        updateFileReadCostStats(fileStats);
         CMasterActivity::done();
     }
 };

@@ -119,22 +119,7 @@ void CDiskReadMasterBase::serializeSlaveData(MemoryBuffer &dst, unsigned slave)
 
 void CDiskReadMasterBase::done()
 {
-    if (!subFileStats.empty())
-    {
-        unsigned numSubFiles = subFileStats.size();
-        for (unsigned i=0; i<numSubFiles; i++)
-        {
-            IDistributedFile *file = queryReadFile(i);
-            if (file)
-                file->addAttrValue("@numDiskReads", subFileStats[i]->getStatisticSum(StNumDiskReads));
-        }
-    }
-    else
-    {
-        IDistributedFile *file = queryReadFile(0);
-        if (file)
-            file->addAttrValue("@numDiskReads", statsCollection.getStatisticSum(StNumDiskReads));
-    }
+    updateFileReadCostStats(subFileStats);
     CMasterActivity::done();
 }
 
@@ -253,7 +238,7 @@ void CWriteMasterBase::publish()
     }
     if (TDWrestricted & diskHelperBase->getFlags())
         props.setPropBool("restricted", true );
-    props.setPropInt64("@numDiskWrites", statsCollection.getStatisticSum(StNumDiskWrites));
+    updateFileWriteCostStats(*fileDesc, props, statsCollection.getStatisticSum(StNumDiskWrites));
     container.queryTempHandler()->registerFile(fileName, container.queryOwner().queryGraphId(), diskHelperBase->getTempUsageCount(), TDXtemporary & diskHelperBase->getFlags(), getDiskOutputKind(diskHelperBase->getFlags()), &clusters);
     if (!dlfn.isExternal())
     {

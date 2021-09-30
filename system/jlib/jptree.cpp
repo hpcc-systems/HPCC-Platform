@@ -8929,7 +8929,19 @@ static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfigura
 
     //For legacy (and other weird cases) ensure there is a global section
     if (!newGlobalConfig)
+    {
         newGlobalConfig.setown(createPTree("global"));
+#ifndef _CONTAINERIZED
+        // The cost PT needs to be in the global config.  In bare-metal, the cost PT is generated in
+        // the component's xml file.  Here, copy cost PT from component to the global config
+        IPropertyTree * costPT = newComponentConfig->queryPropTree("cost");
+        if (costPT)
+        {
+            IPropertyTree * globalCostPT = newGlobalConfig->addPropTree("cost");
+            mergeConfiguration(*globalCostPT, *costPT, nullptr, false);
+        }
+#endif
+    }
 
 #ifdef _DEBUG
     // NB: don't re-hold, if CLI --hold already held.

@@ -778,7 +778,7 @@ extern jlib_decl StatsMergeAction queryMergeMode(StatisticKind kind)
 #define IPV4STAT(y) STAT(IPV4, y, SMeasureIPV4)
 #define CYCLESTAT(y) St##Cycle##y##Cycles, SMeasureCycle, St##Time##y, St##Cycle##y##Cycles, { NAMES(Cycle, y##Cycles) }, { TAGS(Cycle, y##Cycles) }
 #define ENUMSTAT(y) STAT(Enum, y, SMeasureEnum)
-
+#define COSTSTAT(y) STAT(Cost, y, SMeasureCost)
 //--------------------------------------------------------------------------------------------------------------------
 
 class StatisticMeta
@@ -912,10 +912,11 @@ static const StatisticMeta statsMetaData[StMax] = {
     { SIZESTAT(OsDiskWrite) },
     { TIMESTAT(Blocked) },
     { CYCLESTAT(Blocked) },
-    { STAT(Cost, Execute, SMeasureCost) },
+    { COSTSTAT(Execute) },
     { SIZESTAT(AgentReply) },
     { TIMESTAT(AgentWait) },
     { CYCLESTAT(AgentWait) },
+    { COSTSTAT(FileAccess) }
 };
 
 //Is a 0 value likely, and useful to be reported if it does happen to be zero?
@@ -1228,7 +1229,7 @@ const StatisticsMapping allStatistics(StKindAll);
 const StatisticsMapping heapStatistics({StNumAllocations, StNumAllocationScans});
 const StatisticsMapping diskLocalStatistics({StCycleDiskReadIOCycles, StSizeDiskRead, StNumDiskReads, StCycleDiskWriteIOCycles, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries});
 const StatisticsMapping diskRemoteStatistics({StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries});
-const StatisticsMapping diskReadRemoteStatistics({StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StNumDiskRetries, StCycleDiskReadIOCycles});
+const StatisticsMapping diskReadRemoteStatistics({StTimeDiskReadIO, StSizeDiskRead, StNumDiskReads, StNumDiskRetries, StCycleDiskReadIOCycles, StCostFileAccess});
 const StatisticsMapping diskWriteRemoteStatistics({StTimeDiskWriteIO, StSizeDiskWrite, StNumDiskWrites, StNumDiskRetries, StCycleDiskWriteIOCycles});
 
 //--------------------------------------------------------------------------------------------------------------------
