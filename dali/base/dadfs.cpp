@@ -192,6 +192,8 @@ static double calcFileCost(const char * cluster, double sizeGB, double fileAgeDa
         global.setown(getGlobalConfig());
         costPT = global->queryPropTree("cost");
     }
+    if (costPT==nullptr)
+        return 0.0;
     constexpr int accessPriceScalingFactor = 10000; // read/write pricing based on 10,000 operations
     double atRestPrice = costPT->getPropReal("@storageAtRest", 0.0);
     double readPrice =  costPT->getPropReal("@storageReads", 0.0);
