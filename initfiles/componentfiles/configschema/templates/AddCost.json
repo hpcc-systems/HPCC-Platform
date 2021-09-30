@@ -1,0 +1,44 @@
+{
+    "name": "Add cost element",
+    "description": "Add cost element to the hardware portion of the environment.xml",
+    "type": "modification",
+    "operations": [
+        {
+            "action" : "delete",
+            "target_path" : "/Environment/Hardware/cost",
+            "data" : {
+                "error_if_not_found" : false
+            }
+        },
+        {
+            "action": "create",
+            "description": "Create the cost element in the Environment/Hardware section",
+            "target_path": "/Environment/Hardware",
+            "data": {
+                "node_type": "cost",
+                "attributes": [
+                    {
+                        "name": "currencyCode",
+                        "value": "USD"
+                    },
+                    {
+                        "name": "perCpu",
+                        "value": "0.113"
+                    },
+                    {
+                        "name": "storageAtRest",
+                        "value": "0.0135"
+                    },
+                    {
+                        "name": "storageReads",
+                        "value": "0.0485"
+                    },
+                    {
+                        "name": "storageWrites",
+                        "value": "0.0038"
+                    }
+                ]
+            }
+        }
+    ]
+}
