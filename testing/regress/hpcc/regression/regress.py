@@ -122,6 +122,7 @@ class Regression:
         numOfThreads=1
         if 'pq' in args:
             if args.pq == 0:
+                args.pq = 1
                 numOfThreads = 1;
             else:
                 numOfThreads = args.pq
@@ -162,6 +163,9 @@ class Regression:
 
         self.suites[engine] = Suite(engine, cluster, self.dir_ec, self.dir_a, self.dir_ex, self.dir_r, self.logDir, self.dir_inc, args, False, fileList)
         self.maxtasks = len(self.suites[engine].getSuite())
+        self.maxthreads =args.pq
+        self.exitmutexes = [_thread.allocate_lock() for i in range(self.maxthreads)]
+        self.timeouts = [(-1) for i in range(self.maxthreads)]
 
     def createDirectory(self, dir_n):
         if not os.path.isdir(dir_n):
@@ -175,6 +179,8 @@ class Regression:
         self.createDirectory(self.dir_zap)
         self.setupSuite = Suite(args.engine,  args.cluster, self.setupDir, self.dir_a, self.dir_ex, self.dir_r, self.logDir, self.dir_inc, args, True, args.setup)
         self.maxtasks = len(self.setupSuite.getSuite())
+        self.exitmutexes = [_thread.allocate_lock() for i in range(self.maxthreads)]
+        self.timeouts = [(-1) for i in range(self.maxthreads)]
         return self.setupSuite
 
     def buildLogging(self, name):
