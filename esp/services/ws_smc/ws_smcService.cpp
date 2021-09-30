@@ -2645,6 +2645,15 @@ bool CWsSMCEx::onGetBuildInfo(IEspContext &context, IEspGetBuildInfoRequest &req
             namedValue->setValue("ON");
             buildInfo.append(*namedValue.getClear());
         }
+        Owned<IPropertyTree> costPT = getGlobalConfigSP()->queryPropTree("cost");
+        if (costPT)
+        {
+            Owned<IEspNamedValue> namedValue = createNamedValue();
+            namedValue->setName("currencyCode");
+            const char * currencyCode = costPT->queryProp("@currencyCode");
+            namedValue->setValue(isEmptyString(currencyCode)?"USD":currencyCode);
+            buildInfo.append(*namedValue.getClear());
+        }
         resp.setBuildInfo(buildInfo);
     }
     catch(IException* e)

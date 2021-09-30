@@ -47,7 +47,7 @@ global:
     # kubeApiPort: 7443
 
   cost:
-    moneyLocale: "en_US.UTF-8"
+    currencyCode: USD
     perCpu: 0.126
     storageAtRest: 0.0135
     storageReads: 0.0485
