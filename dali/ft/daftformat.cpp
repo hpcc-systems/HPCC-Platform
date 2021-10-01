@@ -1065,11 +1065,10 @@ void CCsvQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
     else
     {
         // We are in the first part of the file
-        bool eof;
-        if (format.maxRecordSize + maxElementLength > blockSize)
-            eof = !ensureBuffered(blockSize);
-        else
-            eof = !ensureBuffered(format.maxRecordSize + maxElementLength);
+        // Originally the parameter of the ensureBuffered() function was blockSize
+        // and it assumed the first record is not too big and ignored the record size parameter. It was wrong.
+        // The new parameter is the bufferSize what is calculated from the blockSize and expectedRecordSize
+        bool eof = !ensureBuffered(bufferSize);
         bool fullBuffer = false;
 
         // Discover record structure in the first record/row
