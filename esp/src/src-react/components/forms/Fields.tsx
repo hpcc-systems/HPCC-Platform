@@ -14,6 +14,7 @@ const logger = scopedLogger("src-react/components/forms/Fields.tsx");
 interface DropdownProps {
     label?: string;
     options?: IDropdownOption[];
+    selectedKey?: string;
     defaultSelectedKey?: string;
     required?: boolean;
     optional?: boolean;
@@ -27,6 +28,7 @@ interface DropdownProps {
 const Dropdown: React.FunctionComponent<DropdownProps> = ({
     label,
     options = [],
+    selectedKey,
     defaultSelectedKey,
     required = false,
     optional = !required,
@@ -42,19 +44,11 @@ const Dropdown: React.FunctionComponent<DropdownProps> = ({
         }
     }, [label, optional, required]);
 
-    const [selOptions, setSelOptions] = React.useState<IDropdownOption[]>([]);
-    const [selectedKey, setSelectedKey] = React.useState<string | number | undefined>(defaultSelectedKey);
+    const selOptions = React.useMemo(() => {
+        return optional ? [{ key: "", text: "" }, ...options] : [...options];
+    }, [optional, options]);
 
-    React.useEffect(() => {
-        const selOptions = (optional ? [{ key: "", text: "" }, ...options] : [...options]);
-        if (defaultSelectedKey !== undefined) {
-            setSelectedKey(defaultSelectedKey);
-        } else if (selOptions.length) {
-            setSelectedKey(selOptions[0].key);
-        }
-        setSelOptions(selOptions);
-    }, [optional, options, defaultSelectedKey, setSelectedKey]);
-    return <DropdownBase label={label} errorMessage={errorMessage} required={required} defaultSelectedKey={selectedKey} onChange={onChange} placeholder={placeholder} options={selOptions} disabled={disabled} className={className} />;
+    return <DropdownBase label={label} errorMessage={errorMessage} required={required} selectedKey={selectedKey} defaultSelectedKey={defaultSelectedKey} onChange={onChange} placeholder={placeholder} options={selOptions} disabled={disabled} className={className} />;
 };
 
 export type FieldType = "string" | "password" | "number" | "checkbox" | "datetime" | "dropdown" | "link" | "links" | "progress" |
@@ -220,7 +214,7 @@ export interface TargetClusterTextFieldProps extends DropdownProps {
 export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFieldProps> = (props) => {
 
     const [targetClusters, setTargetClusters] = React.useState<IDropdownOption[]>([]);
-    const [defaultSelectedKey, setDefaultSelectedKey] = React.useState<string>(props.defaultSelectedKey);
+    const [defaultSelectedKey, setDefaultSelectedKey] = React.useState<string>(props.selectedKey);
 
     React.useEffect(() => {
         const topology = Topology.attach({ baseUrl: "" });
@@ -256,7 +250,7 @@ export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFi
             }
             return row;
         });
-        if (props.defaultSelectedKey === undefined && (props.required === true || props.optional === false)) {
+        if (props.selectedKey === undefined && (props.required === true || props.optional === false)) {
             const selRow = firstThor || firstHThor || firstRow;
             if (selRow) {
                 setDefaultSelectedKey(selRow?.key as string);
@@ -265,7 +259,7 @@ export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFi
         }
     }, [props, targetClusters]);
 
-    return <Dropdown {...props} defaultSelectedKey={defaultSelectedKey} options={targetClusters} />;
+    return <Dropdown {...props} selectedKey={props.selectedKey} defaultSelectedKey={defaultSelectedKey} options={targetClusters} />;
 };
 
 export interface TargetDropzoneTextFieldProps extends DropdownProps {
@@ -286,7 +280,7 @@ export const TargetDropzoneTextField: React.FunctionComponent<TargetDropzoneText
                         text: row.Name,
                         path: row.Path
                     };
-                    if (retVal.key === props.defaultSelectedKey) {
+                    if (retVal.key === props.selectedKey) {
                         selected = retVal;
                         selectedIdx = idx;
                     }
@@ -323,7 +317,7 @@ export const TargetServerTextField: React.FunctionComponent<TargetServerTextFiel
                 }) || []
             );
         });
-    }, [props.defaultSelectedKey, props.dropzone]);
+    }, [props.selectedKey, props.dropzone]);
 
     return <Dropdown {...props} options={targetServers} />;
 };
@@ -340,7 +334,7 @@ export const TargetServerTextLinkedField: React.FunctionComponent<TargetServerTe
         if (props.setSetDropzone) {
             props.setSetDropzone(setDropzone);
         }
-    }, [props]);
+    }, [props, props.setSetDropzone]);
 
     return <TargetServerTextField {...props} dropzone={dropzone} />;
 };
@@ -598,7 +592,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
                         options={field.options}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
@@ -664,7 +658,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
                         optional
                         options={states.map(state => {
                             return {
@@ -684,7 +678,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
                         options={[
                             { key: "", text: nlsHPCC.LogicalFilesAndSuperfiles },
                             { key: "Logical Files Only", text: nlsHPCC.LogicalFilesOnly },
@@ -703,7 +697,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
                         optional
                         options={[
                             { key: "Newest", text: nlsHPCC.Newest },
@@ -723,7 +717,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        defaultSelectedKey={field.value.toString()}
+                        selectedKey={field.value.toString()}
                         options={[
                             { key: "", text: nlsHPCC.None },
                             { key: "0", text: nlsHPCC.Low },
@@ -742,7 +736,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
                         optional
                         options={[
                             { key: "Not suspended", text: nlsHPCC.NotSuspended },
@@ -763,7 +757,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
                         optional
                         options={[
                             { key: "1", text: nlsHPCC.Active },
@@ -781,7 +775,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <TargetClusterTextField
                         key={fieldID}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                     />
@@ -794,7 +788,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <TargetDropzoneTextField
                         key={fieldID}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
                         onChange={(ev, row) => {
                             onChange(fieldID, row.key);
                             setDropzone(row.key as string);
@@ -810,7 +804,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <TargetServerTextLinkedField
                         key={fieldID}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                         setSetDropzone={_ => setDropzone = _}
@@ -825,7 +819,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     field: <TargetGroupTextField
                         key={fieldID}
                         required={field.required}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                     />
@@ -840,7 +834,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         key={fieldID}
                         username={field.username}
                         required={field.required}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                     />
@@ -855,7 +849,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         key={fieldID}
                         groupname={field.groupname}
                         required={field.required}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                     />
@@ -869,7 +863,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     field: <PermissionTypeField
                         key={fieldID}
                         required={field.required}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                     />
@@ -882,7 +876,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <TargetDfuSprayQueueTextField
                         key={fieldID}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                     />
@@ -895,7 +889,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
                         optional
                         options={dfustates.map(state => {
                             return {
@@ -915,7 +909,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     label: field.label,
                     field: <Dropdown
                         key={fieldID}
-                        defaultSelectedKey={field.value}
+                        selectedKey={field.value}
                         optional
                         // disabled={field.disabled ? field.disabled(field) : false}
                         options={[

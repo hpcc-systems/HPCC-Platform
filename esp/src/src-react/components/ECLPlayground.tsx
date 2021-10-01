@@ -237,7 +237,7 @@ const ECLEditorToolbar: React.FunctionComponent<ECLEditorToolbarProps> = ({
                 className={playgroundStyles.inlineDropdown}
                 onChange={React.useCallback((evt, option) => setCluster(option.key.toString()), [setCluster])}
                 required={true}
-                defaultSelectedKey={cluster ? cluster : undefined}
+                selectedKey={cluster ? cluster : undefined}
                 options={[]}
             />
             <div className={playgroundStyles.outputButtons}>
