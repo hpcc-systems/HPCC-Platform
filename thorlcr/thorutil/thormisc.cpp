@@ -784,7 +784,7 @@ void loadCmdProp(IPropertyTree *tree, const char *cmdProp)
     }
 }
 
-const LogMsgJobInfo thorJob(UnknownJob, UnknownUser); // may be improved later
+LogMsgJobInfo thorJob(UnknownJob, UnknownUser); // configured at job start (in manager and workers)
 
 void ensureDirectoryForFile(const char *fName)
 {
