@@ -2645,7 +2645,7 @@ bool CWsSMCEx::onGetBuildInfo(IEspContext &context, IEspGetBuildInfoRequest &req
             namedValue->setValue("ON");
             buildInfo.append(*namedValue.getClear());
         }
-        Owned<IPropertyTree> costPT = getGlobalConfigSP()->queryPropTree("cost");
+        Owned<IPropertyTree> costPT = getGlobalConfigSP()->getPropTree("cost");
         if (costPT)
         {
             Owned<IEspNamedValue> namedValue = createNamedValue();
