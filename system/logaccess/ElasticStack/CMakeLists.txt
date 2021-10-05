@@ -32,6 +32,13 @@ ExternalProject_Add(
     ${CMAKE_CURRENT_BINARY_DIR}/elasticlient/lib/libcpr${CMAKE_SHARED_LIBRARY_SUFFIX}
   INSTALL_COMMAND "")
 
+message(STATUS "LD ------------------>>> ${LIBRARY_OUTPUT_PATH}")
+set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
+message(STATUS "LD ------------------>>> ${LIBRARY_OUTPUT_PATH}")
+message(STATUS "origin == ${ORIGIN}")
+message(STATUS "ENV{ORIGIN} == $ENV{ORIGIN}")
+message(STATUS "LD_PRELOAD_PATH == $ENV{LD_PRELOAD_PATH}")
+
 add_library(elasticlient SHARED IMPORTED GLOBAL)
 set_property(TARGET elasticlient
   PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/elasticlient/lib/libelasticlient${CMAKE_SHARED_LIBRARY_SUFFIX})
