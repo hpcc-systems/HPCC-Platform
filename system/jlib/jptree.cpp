@@ -8932,6 +8932,7 @@ static std::tuple<std::string, IPropertyTree *, IPropertyTree *> doLoadConfigura
         newGlobalConfig.setown(createPTree("global"));
 
 #ifdef _DEBUG
+
     // NB: don't re-hold, if CLI --hold already held.
     if (!held && newComponentConfig->getPropBool("@hold"))
         holdLoop();
