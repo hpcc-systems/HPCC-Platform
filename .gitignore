@@ -8,3 +8,4 @@ ln/
 !esp/src/.vscode
 eclcc.log
 *.pyc
+./helm/examples/azure/sa/env-sa

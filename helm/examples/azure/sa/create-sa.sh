@@ -31,7 +31,7 @@ fi
 rc=$(az group exists --name ${SA_RESOURCE_GROUP})
 if [ "$rc" != "true" ]
 then
-  az group create --name ${SA_RESOURCE_GROUP} --location ${SA_LOCATION}
+  az group create --name ${SA_RESOURCE_GROUP} --location ${SA_LOCATION} --tags ${TAGS}
 fi
 
 az storage account check-name -n $STORAGE_ACCOUNT_NAME | \
@@ -43,7 +43,8 @@ then
     -n $STORAGE_ACCOUNT_NAME \
     -g $SA_RESOURCE_GROUP \
     -l $SA_LOCATION \
-    --sku $SA_SKU
+    --sku $SA_SKU \
+    --tags ${TAGS}
 fi
 # Export the connection string as an environment variable,
 # this is used when creating the Azure file share
@@ -54,7 +55,7 @@ for shareName in $SHARE_NAMES
 do
   az storage share exists --connection-string "${AZURE_STORAGE_CONNECTION_STRING}" \
     --name  $shareName | grep -q  "\"exists\":[[:space:]]*false"
-  if [ $? -eq 0 ]
+  if [ $? -eq 1 ]
   then
     echo "create share $shareName"
     az storage share create \
