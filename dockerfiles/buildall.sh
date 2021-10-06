@@ -88,7 +88,7 @@ if [[ -z "$BUILD_ML" ]]; then
   build_image platform-build
   build_image platform-core
 else
-  build_image platform-core # NB: if building ML images and core has already been built, this will only pull it
+  docker pull ${DOCKER_REPO}/platform-core:${$BUILD_LABEL}
   build_ml_images
 fi
 

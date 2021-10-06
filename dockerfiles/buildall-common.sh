@@ -66,11 +66,19 @@ build_image() {
   local name=$1
   local label=$2
   local buildTag=$3
+  local rebuild=0
   local rest=${@:4}
-  [[ -z ${label} ]] && label=$BUILD_LABEL
+  if [[ -z ${label} ]] ; then
+    label=$BUILD_LABEL
+    if [[ "$HPCC_MATURITY" = "release" ]] && [[ "$HPCC_SEQUENCE" != "1" ]] ; then
+      rebuild=1
+    fi
+  fi
+
+  fi
   [[ -z ${buildTag} ]] && buildTag=$BUILD_TAG
 
-  if ! docker pull ${DOCKER_REPO}/${name}:${label} ; then
+  if [ "$rebuild" = "1" ] || ! docker pull ${DOCKER_REPO}/${name}:${label} ; then
     docker image build -t ${DOCKER_REPO}/${name}:${label} \
        --build-arg BASE_VER=${BASE_VER} \
        --build-arg DOCKER_REPO=${DOCKER_REPO} \
