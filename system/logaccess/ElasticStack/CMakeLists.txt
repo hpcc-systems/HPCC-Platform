@@ -24,20 +24,13 @@ ExternalProject_Add(
   elasticlient-build
   SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/elasticlient
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/elasticlient
-  CMAKE_ARGS -DBUILD_ELASTICLIENT_TESTS=OFF -DBUILD_ELASTICLIENT_EXAMPLE=OFF -DUSE_ALL_SYSTEM_LIBS=OFF -DBUILD_CPR_TESTS=OFF -DUSE_SYSTEM_CURL=ON -DCMAKE_SHARED_LINKER_FLAGS=-Wl,-rpath-link,${LIB_PATH}
+  CMAKE_ARGS -DBUILD_ELASTICLIENT_TESTS=OFF -DBUILD_ELASTICLIENT_EXAMPLE=OFF -DUSE_ALL_SYSTEM_LIBS=OFF -DBUILD_CPR_TESTS=OFF -DUSE_SYSTEM_CURL=ON
   BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} cpr jsoncpp_lib elasticlient
   BUILD_BYPRODUCTS
     ${CMAKE_CURRENT_BINARY_DIR}/elasticlient/lib/libjsoncpp${CMAKE_SHARED_LIBRARY_SUFFIX}
     ${CMAKE_CURRENT_BINARY_DIR}/elasticlient/lib/libelasticlient${CMAKE_SHARED_LIBRARY_SUFFIX}
     ${CMAKE_CURRENT_BINARY_DIR}/elasticlient/lib/libcpr${CMAKE_SHARED_LIBRARY_SUFFIX}
   INSTALL_COMMAND "")
-
-message(STATUS "LD ------------------>>> ${LIBRARY_OUTPUT_PATH}")
-set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
-message(STATUS "LD ------------------>>> ${LIBRARY_OUTPUT_PATH}")
-message(STATUS "origin == ${ORIGIN}")
-message(STATUS "ENV{ORIGIN} == $ENV{ORIGIN}")
-message(STATUS "LD_PRELOAD_PATH == $ENV{LD_PRELOAD_PATH}")
 
 add_library(elasticlient SHARED IMPORTED GLOBAL)
 set_property(TARGET elasticlient
@@ -95,11 +88,11 @@ if(NOT PLUGIN)
     RENAME elasticlient-LICENSE.txt)
   install(CODE "file(RPATH_CHANGE
     FILE \"${CMAKE_CURRENT_BINARY_DIR}/elasticlient/lib/libelasticlient${CMAKE_SHARED_LIBRARY_SUFFIX}\"
-    OLD_RPATH \"${PROJECT_BINARY_DIR}/elasticlient/lib:\"
+    OLD_RPATH \"${PROJECT_BINARY_DIR}/elasticlient/lib\"
     NEW_RPATH \"${LIB_PATH}\")")
   install(CODE "file(RPATH_CHANGE
     FILE \"${CMAKE_CURRENT_BINARY_DIR}/elasticlient/lib/libcpr${CMAKE_SHARED_LIBRARY_SUFFIX}\"
-    OLD_RPATH \"${PROJECT_BINARY_DIR}/elasticlient/lib:\"
+    OLD_RPATH \"${PROJECT_BINARY_DIR}/elasticlient/lib\"
     NEW_RPATH \"${LIB_PATH}\")")
   install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/elasticlient/lib/libelasticlient${CMAKE_SHARED_LIBRARY_SUFFIX}.2.1.0
