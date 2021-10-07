@@ -1,0 +1,169 @@
+{
+    "name": "Add workunits authorization",
+    "description": "Add the necessary keys for authorizing access to work units",
+    "type": "modification",
+    "operations": [
+        {
+            "action": "create",
+            "description": "Create the AuthenticateFeature child key under Properties for all defined EspServices of type espsmc",
+            "target_path": "/Environment/Software/EspService[@buildSet=('espsmc')]/Properties",
+            "data": {
+                "node_type": "AuthenticateFeature",
+                "attributes": [
+                    {
+                        "name": "description",
+                        "value": "Access to deploy workunits"
+                    },
+                    {
+                        "name": "path",
+                        "value": "DeployWorkunitsAccess"
+                    },
+                    {
+                        "name": "resource",
+                        "value": "DeployWorkunitsAccess"
+                    },
+                    {
+                        "name": "service",
+                        "value": "ws_workunits"
+                    }
+                ]
+            }
+        },
+        {
+            "action": "find",
+            "description": "Get all of the ECL watch defined service names",
+            "target_path": "/Environment/Software/EspService[@buildSet=('espsmc')]",
+            "data": {
+                "attributes": [
+                    {
+                        "name": "name",
+                        "save": {
+                            "name": "EclWatchName",
+                            "duplicate_ok": true
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "action": "create",
+            "description": "Add the AuthenticateFeature key to all ESP bindings for ECL Watch",
+            "target_path": "/Environment/Software/EspProcess/EspBinding[@service=('{{EclWatchName}}')]",
+                "data": {
+                "node_type": "AuthenticateFeature",
+                "attributes": [
+                    {
+                        "name": "description",
+                        "value": "Access to deploy workunits"
+                    },
+                    {
+                        "name": "path",
+                        "value": "DeployWorkunitsAccess"
+                    },
+                    {
+                        "name": "resource",
+                        "value": "DeployWorkunitsAccess"
+                    },
+                    {
+                        "name": "service",
+                        "value": "ws_workunits"
+                    }
+                ]
+            }
+        },
+        {
+            "action": "create",
+            "description": "Add the AuthenticateFeature key to all ESP services for ECL Watch",
+            "target_path": "/Environment/Software/EspService[@buildSet=('ws_sql')]/Properties",
+                "data": {
+                "node_type": "AuthenticateFeature",
+                "attributes": [
+                    {
+                        "name": "description",
+                        "value": "Access to deploy workunits"
+                    },
+                    {
+                        "name": "path",
+                        "value": "DeployWorkunitsAccess"
+                    },
+                    {
+                        "name": "resource",
+                        "value": "DeployWorkunitsAccess"
+                    },
+                    {
+                        "name": "service",
+                        "value": "ws_sql"
+                    }
+                ]
+            }
+        },
+        {
+            "action": "find",
+            "description": "Get all of the ECL watch defined service names",
+            "target_path": "/Environment/Software/EspService[@buildSet=('ws_sql')]",
+                "data": {
+                "attributes": [
+                    {
+                        "name": "name",
+                            "save": {
+                            "name": "WsSQLName",
+                            "duplicate_ok": true
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "action": "create",
+            "description": "Add the AuthenticateFeature key to the work unit service for ECL Watch",
+            "target_path": "/Environment/Software/EspProcess/EspBinding[@service=('{{WsSQLName}}')]",
+                "data": {
+                "node_type": "AuthenticateFeature",
+                "attributes": [
+                    {
+                        "name": "description",
+                        "value": "Access to deploy workunits"
+                    },
+                    {
+                        "name": "path",
+                        "value": "DeployWorkunitsAccess"
+                    },
+                    {
+                        "name": "resource",
+                        "value": "DeployWorkunitsAccess"
+                    },
+                    {
+                        "name": "service",
+                        "value": "ws_sql"
+                    }
+                ]
+            }
+        },
+        {
+            "action": "create",
+            "description": "Add the AuthenticateFeature key to all ESP services for ECL Watch",
+            "target_path": "/Environment/Programs/Build/BuildSet[@name=('espsmc')]/Properties",
+                "data": {
+                "node_type": "AuthenticateFeature",
+                "attributes": [
+                    {
+                        "name": "description",
+                        "value": "Access to deploy workunits"
+                    },
+                    {
+                        "name": "path",
+                        "value": "DeployWorkunitsAccess"
+                    },
+                    {
+                        "name": "resource",
+                        "value": "DeployWorkunitsAccess"
+                    },
+                    {
+                        "name": "service",
+                        "value": "ws_workunits"
+                    }
+                ]
+            }
+        }
+    ]
+}
