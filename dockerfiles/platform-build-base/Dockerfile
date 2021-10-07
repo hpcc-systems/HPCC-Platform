@@ -19,6 +19,11 @@
 
 FROM ubuntu:20.04 as build
 ENV DEBIAN_FRONTEND=noninteractive
+ARG BASE_VER
+
+# This is version 7.12.1 of the platform-build-base, and anyone building/using it should have set that in BASE_VER
+RUN [ "${BASE_VER}" = "7.12.1" ]
+ 
 RUN apt clean -y && \
     apt autoclean -y && \
     apt install -y -f && \
