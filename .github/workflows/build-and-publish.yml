@@ -25,7 +25,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          latest: 0   # this should only be set on the current minor branch
+          latest: 1   # this should only be set on the current minor branch
 
   ml-builds:
     needs: build
@@ -42,6 +42,6 @@ jobs:
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-        latest: 0   # this should only be set on the current minor branch
+        latest: 1   # this should only be set on the current minor branch
         build_ml: ${{ matrix.engine }}
 
