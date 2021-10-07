@@ -299,22 +299,7 @@ public:
     }
     virtual void done() override
     {
-        if (!subIndexFileStats.empty())
-        {
-            unsigned numSubFiles = subIndexFileStats.size();
-            for (unsigned i=0; i<numSubFiles; i++)
-            {
-                IDistributedFile *file = queryReadFile(i);
-                if (file)
-                    file->addAttrValue("@numDiskReads", subIndexFileStats[i]->getStatisticSum(StNumDiskReads));
-            }
-        }
-        else
-        {
-            IDistributedFile *file = queryReadFile(0);
-            if (file)
-                file->addAttrValue("@numDiskReads", statsCollection.getStatisticSum(StNumDiskReads));
-        }
+        updateFileReadCostStats(subIndexFileStats);
         CMasterActivity::done();
     }
 };

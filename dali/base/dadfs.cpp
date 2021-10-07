@@ -177,7 +177,7 @@ static IPropertyTree *getEmptyAttr()
     return createPTree("Attr");
 }
 
-static double calcFileCost(const char * cluster, double sizeGB, double fileAgeDays, __int64 numDiskWrites, __int64 numDiskReads)
+extern da_decl double calcFileCost(const char * cluster, double sizeGB, double fileAgeDays, __int64 numDiskWrites, __int64 numDiskReads)
 {
     Owned<IPropertyTree> plane = getStoragePlane(cluster);
     Owned<IPropertyTree> global;
