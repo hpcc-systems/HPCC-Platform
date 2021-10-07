@@ -68,7 +68,7 @@ export const Optimize: React.FunctionComponent<OptimizeProps> = ({
                 key="targetClusterField"
                 label={nlsHPCC.Target}
                 placeholder={nlsHPCC.Target}
-                defaultSelectedKey={value}
+                selectedKey={value}
                 optional={false}
                 onChange={(ev, row) => {
                     return onChange(row.key);

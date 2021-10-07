@@ -139,7 +139,7 @@ export const JsonImportForm: React.FunctionComponent<JsonImportFormProps> = ({
                         key="destGroup"
                         label={nlsHPCC.Group}
                         required={true}
-                        defaultSelectedKey={value}
+                        selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
                             onChange(option.key);
@@ -159,7 +159,7 @@ export const JsonImportForm: React.FunctionComponent<JsonImportFormProps> = ({
                         key="DFUServerQueue"
                         label={nlsHPCC.Queue}
                         required={true}
-                        defaultSelectedKey={value}
+                        selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
                             onChange(option.key);

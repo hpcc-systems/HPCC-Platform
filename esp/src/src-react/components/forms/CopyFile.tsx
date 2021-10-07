@@ -102,7 +102,7 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
                         key={fieldName}
                         label={nlsHPCC.Group}
                         required={true}
-                        defaultSelectedKey={value}
+                        selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
                             onChange(option.key);
