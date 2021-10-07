@@ -1300,6 +1300,7 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual void clearGraphProgress() const = 0;
     virtual IStringVal & getAbortBy(IStringVal & str) const = 0;
     virtual unsigned __int64 getAbortTimeStamp() const = 0;
+    virtual unsigned __int64 getExecuteCost() const = 0;
 };
 
 
