@@ -1083,6 +1083,13 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="udpDataWriteSocketSize" type="xs:nonNegativeInteger" use="optional" default="131071">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Controls the write socket buffer size of the remote UDP sockets (Agent to Server on other node)</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="udpMaxRetryTimedoutReqs" type="xs:nonNegativeInteger" use="optional" default="0">
       <xs:annotation>
         <xs:appinfo>

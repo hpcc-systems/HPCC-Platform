@@ -239,8 +239,8 @@ public:
     
     // Create client socket connected to a UDP server socket
     //
-    static ISocket*  udp_connect( unsigned short port, char const* host);
-    static ISocket*  udp_connect( const SocketEndpoint &ep);
+    static ISocket*  udp_connect( unsigned short port, char const* host, unsigned sockSize=0 );
+    static ISocket*  udp_connect( const SocketEndpoint &ep, unsigned sockSize=0 );
 
     //
     // Create server TCP socket

@@ -979,6 +979,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         udpMulticastBufferSize = topology->getPropInt("@udpMulticastBufferSize", 262142);
         udpFlowSocketsSize = topology->getPropInt("@udpFlowSocketsSize", 131072);
         udpLocalWriteSocketSize = topology->getPropInt("@udpLocalWriteSocketSize", 1024000);
+        udpDataWriteSocketSize = topology->getPropInt("@udpDataWriteSocketSize", udpLocalWriteSocketSize);
 #ifndef _CONTAINERIZED
         roxieMulticastEnabled = topology->getPropBool("@roxieMulticastEnabled", true) && !useAeron;   // enable use of multicast for sending requests to agents
 #endif

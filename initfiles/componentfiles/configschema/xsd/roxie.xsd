@@ -308,6 +308,9 @@
                     <xs:attribute name="udpLocalWriteSocketSize" type="xs:nonNegativeInteger"
                                   hpcc:displayName="UDP Local Write Socket Size (bytes)" hpcc:presetValue="131071"
                                   hpcc:tooltip="Controls the write socket buffer size of the local UDP sockets (Agent to Server on same node)"/>
+                    <xs:attribute name="udpDataWriteSocketSize" type="xs:nonNegativeInteger"
+                                  hpcc:displayName="UDP Data Write Socket Size (bytes)" hpcc:presetValue="131071"
+                                  hpcc:tooltip="Controls the write socket buffer size of the remote UDP sockets (Agent to Server on other node)"/>
                     <xs:attribute name="udpMaxRetryTimedoutReqs" type="xs:nonNegativeInteger"
                                   hpcc:displayName="UDP Max Retry Timedout Reqs" hpcc:presetValue="0"
                                   hpcc:tooltip="Controls the Max number of agent 'request to send' to be retried. 0 means keep retrying forever"/>

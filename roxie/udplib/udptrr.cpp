@@ -127,7 +127,12 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         UdpSenderEntry(const IpAddress &_dest, unsigned port) : dest(_dest)
         {
             SocketEndpoint ep(port, dest);
-            flowSocket = ISocket::udp_connect(ep);
+            flowSocket = ISocket::udp_connect(ep, udpFlowSocketsSize);
+            if (udpTraceLevel > 0)
+            {
+                size32_t actualSize = flowSocket->get_send_buffer_size();
+                DBGLOG("UdpFlow: flow socket created port=%u sockbuffsize=%u actual %u", port, udpFlowSocketsSize, actualSize);
+            }
         }
 
         ~UdpSenderEntry()

@@ -570,14 +570,30 @@ public:
             try 
             {
                 SocketEndpoint sendFlowEp(_sendFlowPort, ip);
+                send_flow_socket = ISocket::udp_connect(sendFlowEp, udpFlowSocketsSize);
+                if (udpTraceLevel > 0)
+                {
+                    size32_t actualSize = send_flow_socket->get_send_buffer_size();
+                    DBGLOG("UdpSender: sendbuffer set for send_flow socket (size=%u, actual=%u)", udpFlowSocketsSize, actualSize);
+                }
                 SocketEndpoint dataEp(_dataPort, ip);
-                send_flow_socket = ISocket::udp_connect(sendFlowEp);
-                data_socket = ISocket::udp_connect(dataEp);
                 if (isLocal)
                 {
-                    data_socket->set_send_buffer_size(udpLocalWriteSocketSize);
+                    data_socket = ISocket::udp_connect(dataEp, udpLocalWriteSocketSize);
                     if (udpTraceLevel > 0)
-                        DBGLOG("UdpSender: sendbuffer set for local socket (size=%d)", udpLocalWriteSocketSize);
+                    {
+                        size32_t actualSize = data_socket->get_send_buffer_size();
+                        DBGLOG("UdpSender: sendbuffer set for local socket (size=%u, actual=%u)", udpLocalWriteSocketSize, actualSize);
+                    }
+                }
+                else
+                {
+                    data_socket = ISocket::udp_connect(dataEp, udpDataWriteSocketSize);
+                    if (udpTraceLevel > 0)
+                    {
+                        size32_t actualSize = data_socket->get_send_buffer_size();
+                        DBGLOG("UdpSender: sendbuffer set for data socket (size=%u, actual=%u)", udpDataWriteSocketSize, actualSize);
+                    }
                 }
             }
             catch(IException *e) 
@@ -671,6 +687,9 @@ class CSendManager : implements ISendManager, public CInterface
         {
             if (udpTraceLevel > 0)
                 DBGLOG("UdpSender: send_resend_flow started");
+#ifdef __linux__
+            setLinuxThreadPriority(2);
+#endif
             unsigned timeout = udpRequestToSendTimeout;
             while (running)
             {
@@ -848,8 +867,9 @@ class CSendManager : implements ISendManager, public CInterface
         send_data(CSendManager &_parent, TokenBucket *_bucket)
             : StartedThread("UdpLib::send_data"), parent(_parent), bucket(_bucket), send_queue(100) // MORE - send q size should be configurable and/or related to size of cluster?
         {
-            if (check_max_socket_write_buffer(udpLocalWriteSocketSize) < 0) 
-                throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max write buffer is less than %i", udpLocalWriteSocketSize);
+            unsigned maxSocketSize = std::max(udpLocalWriteSocketSize, udpDataWriteSocketSize);
+            if (check_max_socket_write_buffer(maxSocketSize) < 0)
+                throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max write buffer is less than %i", maxSocketSize);
             start();
         }
         

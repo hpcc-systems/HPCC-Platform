@@ -143,6 +143,7 @@
                 trapTooManyActiveQueries="true"
                 udpFlowSocketsSize="131071"
                 udpLocalWriteSocketSize="131071"
+                udpDataWriteSocketSize="131071"
                 udpMaxRetryTimedoutReqs="0"
                 udpMaxSlotsPerClient="2147483647"
                 udpMulticastBufferSize="131071"

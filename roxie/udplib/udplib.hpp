@@ -172,6 +172,7 @@ extern UDPLIB_API void setLinuxThreadPriority(int level);
 
 extern UDPLIB_API unsigned udpFlowSocketsSize;
 extern UDPLIB_API unsigned udpLocalWriteSocketSize;
+extern UDPLIB_API unsigned udpDataWriteSocketSize;
 extern UDPLIB_API unsigned udpMaxRetryTimedoutReqs;
 extern UDPLIB_API unsigned udpRequestToSendTimeout;
 extern UDPLIB_API unsigned udpRequestToSendAckTimeout;

@@ -414,7 +414,7 @@ public:
     void        open(int listen_queue_size,bool reuseports=false);
     bool        connect_timeout( unsigned timeout, bool noexception);
     void        connect_wait( unsigned timems);
-    void        udpconnect();
+    void        udpconnect(unsigned sockSize=0);
 
     void        read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,unsigned timeoutsecs);
     void        readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timedelaysecs);
@@ -1565,7 +1565,7 @@ ISocket*  ISocket::connect_wait( const SocketEndpoint &ep, unsigned timems)
 
 
 
-void CSocket::udpconnect()
+void CSocket::udpconnect(unsigned sockSize)
 {
     DEFINE_SOCKADDR(u);
     if (targetip.isNull()) {
@@ -1581,6 +1581,8 @@ void CSocket::udpconnect()
     if (sock == INVALID_SOCKET) {
         THROWJSOCKEXCEPTION(ERRNO());
     }
+    if (sockSize > 0)
+        set_send_buffer_size(sockSize);
     int res = ::connect(sock, &u.sa, ul);
     if (res != 0) { // works for UDP
         closesock();
@@ -2871,20 +2873,20 @@ ISocket* ISocket::multicast_create(unsigned short p, const IpAddress &ip, unsign
     return sock.getClear();
 }
 
-ISocket* ISocket::udp_connect(unsigned short p, char const* name)
+ISocket* ISocket::udp_connect(unsigned short p, char const* name, unsigned sockSize)
 {
     if (!name||!*name||(p==0))
         THROWJSOCKEXCEPTION2(JSOCKERR_bad_address);
     SocketEndpoint ep(name, p);
     Owned<CSocket> sock = new CSocket(ep,sm_udp,name);
-    sock->udpconnect();
+    sock->udpconnect(sockSize);
     return sock.getClear();
 }
 
-ISocket* ISocket::udp_connect(const SocketEndpoint &ep)
+ISocket* ISocket::udp_connect(const SocketEndpoint &ep, unsigned sockSize)
 {
     Owned<CSocket> sock = new CSocket(ep,sm_udp,NULL);
-    sock->udpconnect();
+    sock->udpconnect(sockSize);
     return sock.getClear();
 }
 
