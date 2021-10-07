@@ -143,8 +143,11 @@ void CPartitioner::commonCalcPartitions()
         //Don't add an empty block on the start of the this chunk to transfer.
         if ((split != firstSplit) || (inputOffset != startInputOffset))
         {
-            results.append(*new PartitionPoint(whichInput, split-1, startInputOffset-thisOffset+thisHeaderSize, inputOffset - startInputOffset - cursor.trimLength, cursor.outputOffset-startOutputOffset));
-            JSON_DBGLOG("commonCalcPartitions: startInputOffset:%lld, inputOffset: %lld, startOutputOffset: %lld, cursor.outputOffset: %lld",startInputOffset ,inputOffset, startOutputOffset, cursor.outputOffset);
+            // To avoid the first partition's whichOutput value becomes -1 (which means invalid)
+            unsigned whichOutput = (split > 0 ? split-1 : split);
+            results.append(*new PartitionPoint(whichInput, whichOutput, startInputOffset-thisOffset+thisHeaderSize, inputOffset - startInputOffset - cursor.trimLength, cursor.outputOffset-startOutputOffset));
+            JSON_DBGLOG("commonCalcPartitions: startInputOffset:%lld, inputOffset: %lld, startOutputOffset: %lld, cursor.outputOffset: %lld, whichInput: %u, whichOutput: %u",
+                                               startInputOffset ,inputOffset, startOutputOffset, cursor.outputOffset, whichInput, whichOutput);
             startInputOffset = inputOffset;
             startOutputOffset = cursor.outputOffset;
         }
@@ -1002,78 +1005,64 @@ void CCsvQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
 {
     const byte *buffer = bufferBase();
     numInBuffer = bufferOffset = 0;
-    if (splitOffset != 0)
-    {
-        seekInput(splitOffset-thisOffset+thisHeaderSize);
 
-        bool eof;
-        if (format.maxRecordSize + maxElementLength > blockSize)
-            eof = !ensureBuffered(blockSize);
-        else
-            eof = !ensureBuffered(format.maxRecordSize + maxElementLength);
-        bool fullBuffer = false;
-        //Could be end of file - if no elements read.
+    seekInput(splitOffset-thisOffset+thisHeaderSize);
+
+    bool eof;
+    if (format.maxRecordSize + maxElementLength > blockSize)
+        eof = !ensureBuffered(blockSize);
+    else
+        eof = !ensureBuffered(format.maxRecordSize + maxElementLength);
+    bool fullBuffer = false;
+    //Could be end of file - if no elements read.
+    if (numInBuffer != bufferOffset)
+    {
+        //Throw away the first match, incase we hit the \n of a \r\n or something similar.
+        if (maxElementLength > 1)
+        {
+            unsigned matchLen;
+            unsigned match = matcher.getMatch(numInBuffer - bufferOffset, (const char *)buffer+bufferOffset, matchLen);
+            if ((match & 255) == NONE)
+                bufferOffset++;
+            else
+                bufferOffset += matchLen;
+        }
+
+        //Could have been single \n at the end of the file....
         if (numInBuffer != bufferOffset)
         {
-            //Throw away the first match, incase we hit the \n of a \r\n or something similar.
-            if (maxElementLength > 1)
+            if (format.maxRecordSize <= blockSize)
+                bufferOffset += getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, fullBuffer, eof);
+            else
             {
-                unsigned matchLen;
-                unsigned match = matcher.getMatch(numInBuffer - bufferOffset, (const char *)buffer+bufferOffset, matchLen);
-                if ((match & 255) == NONE)
-                    bufferOffset++;
-                else
-                    bufferOffset += matchLen;
-            }
-
-            //Could have been single \n at the end of the file....
-            if (numInBuffer != bufferOffset)
-            {
-                if (format.maxRecordSize <= blockSize)
-                    bufferOffset += getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, fullBuffer, eof);
-                else
+                //For large
+                size32_t ensureSize = numInBuffer-bufferOffset;
+                for (;;)
                 {
-                    //For large
-                    size32_t ensureSize = numInBuffer-bufferOffset;
-                    for (;;)
+                    try
                     {
-                        try
-                        {
-                            //There is still going to be enough buffered for a whole record.
-                            eof = !ensureBuffered(ensureSize);
-                            bufferOffset += getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, fullBuffer, eof);
-                            break;
-                        }
-                        catch (IException * e)
-                        {
-                            if (ensureSize == format.maxRecordSize)
-                                throw;
-                            e->Release();
-                            LOG(MCdebugProgress, unknownJob, "Failed to find split after reading %d", ensureSize);
-                            ensureSize += blockSize;
-                            if (ensureSize > format.maxRecordSize)
-                                ensureSize = format.maxRecordSize;
-                        }
+                        //There is still going to be enough buffered for a whole record.
+                        eof = !ensureBuffered(ensureSize);
+                        bufferOffset += getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, fullBuffer, eof);
+                        break;
                     }
-                    LOG(MCdebugProgress, unknownJob, "Found split after reading %d", ensureSize);
+                    catch (IException * e)
+                    {
+                        if (ensureSize == format.maxRecordSize)
+                            throw;
+                        e->Release();
+                        LOG(MCdebugProgress, unknownJob, "Failed to find split after reading %d", ensureSize);
+                        ensureSize += blockSize;
+                        if (ensureSize > format.maxRecordSize)
+                            ensureSize = format.maxRecordSize;
+                    }
                 }
+                LOG(MCdebugProgress, unknownJob, "Found split after reading %d", ensureSize);
             }
         }
-        else if (splitOffset - thisOffset < thisSize)
-            throwError2(DFTERR_UnexpectedReadFailure, fullPath.get(), splitOffset-thisOffset+thisHeaderSize);
     }
-    else
-    {
-        // We are in the first part of the file
-        // Originally the parameter of the ensureBuffered() function was blockSize
-        // and it assumed the first record is not too big and ignored the record size parameter. It was wrong.
-        // The new parameter is the bufferSize what is calculated from the blockSize and expectedRecordSize
-        bool eof = !ensureBuffered(bufferSize);
-        bool fullBuffer = false;
-
-        // Discover record structure in the first record/row
-        getSplitRecordSize(buffer, numInBuffer, fullBuffer, eof);
-    }
+    else if (splitOffset - thisOffset < thisSize)
+        throwError2(DFTERR_UnexpectedReadFailure, fullPath.get(), splitOffset-thisOffset+thisHeaderSize);
 
     cursor.inputOffset = splitOffset + bufferOffset;
     if (noTranslation)
@@ -1338,81 +1327,67 @@ void CUtfQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
 {
     const byte *buffer = bufferBase();
     numInBuffer = bufferOffset = 0;
-    if (splitOffset != 0)
+
+    unsigned delta = (unsigned)(splitOffset & (unitSize-1));
+    if (delta)
+        splitOffset += (unitSize - delta);
+    seekInput(splitOffset-thisOffset + thisHeaderSize);
+    bool eof;
+    if (format.maxRecordSize + maxElementLength > blockSize)
+        eof = !ensureBuffered(blockSize);
+    else
+        eof = !ensureBuffered(format.maxRecordSize + maxElementLength);
+    bool fullBuffer = false;
+    //Could be end of file - if no elements read.
+    if (numInBuffer != bufferOffset)
     {
-        unsigned delta = (unsigned)(splitOffset & (unitSize-1));
-        if (delta)
-            splitOffset += (unitSize - delta);
-        seekInput(splitOffset-thisOffset + thisHeaderSize);
-        bool eof;
-        if (format.maxRecordSize + maxElementLength > blockSize)
-            eof = !ensureBuffered(blockSize);
-        else
-            eof = !ensureBuffered(format.maxRecordSize + maxElementLength);
-        bool fullBuffer = false;
-        //Could be end of file - if no elements read.
+        //Throw away the first match, incase we hit the \n of a \r\n or something similar.
+        if (maxElementLength > unitSize)
+        {
+            unsigned matchLen;
+            unsigned match = matcher.getMatch(numInBuffer - bufferOffset, (const char *)buffer+bufferOffset, matchLen);
+            if ((match & 255) == NONE)
+                bufferOffset += unitSize;
+            else
+                bufferOffset += matchLen;
+        }
+
+        //Could have been single \n at the end of the file....
         if (numInBuffer != bufferOffset)
         {
-            //Throw away the first match, incase we hit the \n of a \r\n or something similar.
-            if (maxElementLength > unitSize)
+            if (format.maxRecordSize <= blockSize)
+                bufferOffset += getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, fullBuffer, eof);
+            else
             {
-                unsigned matchLen;
-                unsigned match = matcher.getMatch(numInBuffer - bufferOffset, (const char *)buffer+bufferOffset, matchLen);
-                if ((match & 255) == NONE)
-                    bufferOffset += unitSize;
-                else
-                    bufferOffset += matchLen;
-            }
-
-            //Could have been single \n at the end of the file....
-            if (numInBuffer != bufferOffset)
-            {
-                if (format.maxRecordSize <= blockSize)
-                    bufferOffset += getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, fullBuffer, eof);
-                else
+                //For large
+                size32_t ensureSize = numInBuffer-bufferOffset;
+                for (;;)
                 {
-                    //For large
-                    size32_t ensureSize = numInBuffer-bufferOffset;
-                    for (;;)
+                    try
                     {
-                        try
-                        {
-                            //There is still going to be enough buffered for a whole record.
-                            eof = !ensureBuffered(ensureSize);
-                            bufferOffset += getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, fullBuffer, eof);
-                            break;
-                        }
-                        catch (IException * e)
-                        {
-                            if (ensureSize == format.maxRecordSize)
-                                throw;
-                            e->Release();
-                            LOG(MCdebugProgress, unknownJob, "Failed to find split after reading %d", ensureSize);
-                            ensureSize += blockSize;
-                            if (ensureSize > format.maxRecordSize)
-                                ensureSize = format.maxRecordSize;
-                        }
+                        //There is still going to be enough buffered for a whole record.
+                        eof = !ensureBuffered(ensureSize);
+                        bufferOffset += getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, fullBuffer, eof);
+                        break;
                     }
-                    LOG(MCdebugProgress, unknownJob, "Found split after reading %d", ensureSize);
+                    catch (IException * e)
+                    {
+                        if (ensureSize == format.maxRecordSize)
+                            throw;
+                        e->Release();
+                        LOG(MCdebugProgress, unknownJob, "Failed to find split after reading %d", ensureSize);
+                        ensureSize += blockSize;
+                        if (ensureSize > format.maxRecordSize)
+                            ensureSize = format.maxRecordSize;
+                    }
                 }
+                LOG(MCdebugProgress, unknownJob, "Found split after reading %d", ensureSize);
             }
         }
-        else if (splitOffset - thisOffset < thisSize)
-            throwError2(DFTERR_UnexpectedReadFailure, fullPath.get(), splitOffset-thisOffset+thisHeaderSize);
     }
-    else
-    {
-        // We are in the first part of the file
-        bool eof;
-        if (format.maxRecordSize + maxElementLength > blockSize)
-            eof = !ensureBuffered(blockSize);
-        else
-            eof = !ensureBuffered(format.maxRecordSize + maxElementLength);
-        bool fullBuffer = false;
+    else if (splitOffset - thisOffset < thisSize)
+        throwError2(DFTERR_UnexpectedReadFailure, fullPath.get(), splitOffset-thisOffset+thisHeaderSize);
 
-        // Discover record structure in the first record/row
-        getSplitRecordSize(buffer, numInBuffer, fullBuffer, eof);
-    }
     cursor.inputOffset = splitOffset + bufferOffset;
     if (noTranslation)
         cursor.outputOffset = cursor.inputOffset - thisOffset;
