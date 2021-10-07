@@ -17,6 +17,7 @@ define([
     "src/ESPDFUWorkunit",
     "src/FileSpray",
     "src/DataPatternsWidget",
+    "src/Session",
 
     "dojo/text!../templates/LFDetailsWidget.html",
 
@@ -49,7 +50,7 @@ define([
 
 ], function (exports, declare, lang, nlsHPCCMod, dom, domAttr, domClass, domForm,
     registry,
-    _TabContainerWidget, DelayLoadWidget, Clippy, ESPLogicalFile, ESPDFUWorkunit, FileSpray, DataPatternsWidget,
+    _TabContainerWidget, DelayLoadWidget, Clippy, ESPLogicalFile, ESPDFUWorkunit, FileSpray, DataPatternsWidget, Session,
     template) {
 
     var nlsHPCC = nlsHPCCMod.default;
@@ -459,6 +460,8 @@ define([
                 }
             } else if (name === "RecordSize" && newValue === "0") {
                 this.updateInput("RecordSize", oldValue, this.i18n.NoPublishedSize);
+            } else if (name === "Cost") {
+                this.updateInput("FormattedCost", oldValue, Session.formatCost(newValue || 0) + " (" + dojoConfig.currencyCode + ")");
             }
         },
 

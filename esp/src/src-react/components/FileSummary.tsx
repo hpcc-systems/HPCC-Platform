@@ -1,10 +1,12 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
+import { formatCost } from "src/Session";
 import * as WsDfu from "src/WsDfu";
 import * as Utility from "src/Utility";
 import { getStateImageName, IFile } from "src/ESPLogicalFile";
 import { useFile } from "../hooks/file";
+import { useBuildInfo } from "../hooks/platform";
 import { ShortVerticalDivider } from "./Common";
 import { TableGroup } from "./forms/Groups";
 import { CopyFile } from "./forms/CopyFile";
@@ -28,6 +30,7 @@ export const FileSummary: React.FunctionComponent<FileSummaryProps> = ({
 
     const [file, isProtected, , refresh] = useFile(cluster, logicalFile);
     const [description, setDescription] = React.useState("");
+    const [, { currencyCode }] = useBuildInfo();
     const [_protected, setProtected] = React.useState(false);
     const [restricted, setRestricted] = React.useState(false);
     const [canReplicateFlag, setCanReplicateFlag] = React.useState(false);
@@ -46,10 +49,10 @@ export const FileSummary: React.FunctionComponent<FileSummaryProps> = ({
         setProtected(file?.ProtectList?.DFUFileProtect?.length > 0 || false);
         setRestricted(file?.IsRestricted || false);
 
-        if (file?.DFUFilePartsOnClusters?.DFUFilePartsOnCluster?.length > 0) {
+        if ((file?.filePartsOnCluster() ?? []).length > 0) {
             let _canReplicate = false;
             let _replicate = false;
-            file?.DFUFilePartsOnClusters?.DFUFilePartsOnCluster.forEach(part => {
+            file?.filePartsOnCluster().forEach(part => {
                 _canReplicate = _canReplicate && part.CanReplicate;
                 _replicate = _replicate && part.Replicate;
             });
@@ -57,7 +60,7 @@ export const FileSummary: React.FunctionComponent<FileSummaryProps> = ({
             setReplicateFlag(_replicate);
         }
 
-    }, [file?.DFUFilePartsOnClusters?.DFUFilePartsOnCluster, file?.Description, file?.IsRestricted, file?.ProtectList?.DFUFileProtect?.length]);
+    }, [file]);
 
     const canSave = React.useMemo(() => {
         return file && (
@@ -151,6 +154,7 @@ export const FileSummary: React.FunctionComponent<FileSummaryProps> = ({
                 "NodeGroup": { label: nlsHPCC.ClusterName, type: "string", value: file?.NodeGroup, readonly: true },
                 "Description": { label: nlsHPCC.Description, type: "string", value: description },
                 "JobName": { label: nlsHPCC.JobName, type: "string", value: file?.JobName, readonly: true },
+                "Cost": { label: nlsHPCC.Cost, type: "string", value: `${formatCost(file?.Cost ?? 0)} (${currencyCode})`, readonly: true },
                 "isProtected": { label: nlsHPCC.Protected, type: "checkbox", value: _protected },
                 "isRestricted": { label: nlsHPCC.Restricted, type: "checkbox", value: restricted },
                 "ContentType": { label: nlsHPCC.ContentType, type: "string", value: file?.ContentType, readonly: true },
@@ -166,7 +170,7 @@ export const FileSummary: React.FunctionComponent<FileSummaryProps> = ({
                 "PathMask": { label: nlsHPCC.PathMask, type: "string", value: file?.PathMask, readonly: true },
                 "RecordSize": { label: nlsHPCC.RecordSize, type: "string", value: file?.RecordSize, readonly: true },
                 "RecordCount": { label: nlsHPCC.RecordCount, type: "string", value: file?.RecordCount, readonly: true },
-                "IsReplicated": { label: nlsHPCC.IsReplicated, type: "checkbox", value: file?.DFUFilePartsOnClusters?.DFUFilePartsOnCluster?.length > 0, readonly: true },
+                "IsReplicated": { label: nlsHPCC.IsReplicated, type: "checkbox", value: (file?.filePartsOnCluster() ?? []).length > 0, readonly: true },
                 "NumParts": { label: nlsHPCC.FileParts, type: "number", value: file?.NumParts, readonly: true },
                 "MinSkew": { label: nlsHPCC.MinSkew, type: "string", value: file?.Stat?.MinSkew, readonly: true },
                 "MaxSkew": { label: nlsHPCC.MaxSkew, type: "string", value: file?.Stat?.MaxSkew, readonly: true },

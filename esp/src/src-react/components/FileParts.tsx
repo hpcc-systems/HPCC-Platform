@@ -40,23 +40,19 @@ export const FileParts: React.FunctionComponent<FilePartsProps> = ({
     });
 
     React.useEffect(() => {
-        if (file?.DFUFilePartsOnClusters) {
-            const fileParts = file?.DFUFilePartsOnClusters?.DFUFilePartsOnCluster[0]?.DFUFileParts?.DFUPart;
-            if (fileParts) {
-                store.setData(fileParts.map(part => {
-                    return {
-                        Id: part.Id,
-                        Copy: part.Copy,
-                        Ip: part.Ip,
-                        Cluster: cluster,
-                        PartsizeInt64: formatNum(part.PartSizeInt64),
-                        CompressedSize: part.CompressedSize ? formatNum(part.CompressedSize) : ""
-                    };
-                }));
-                refreshTable();
-            }
-        }
-    }, [cluster, file?.DFUFilePartsOnClusters, store, refreshTable]);
+        const fileParts = file?.fileParts() ?? [];
+        store.setData(fileParts.map(part => {
+            return {
+                Id: part.Id,
+                Copy: part.Copy,
+                Ip: part.Ip,
+                Cluster: cluster,
+                PartsizeInt64: formatNum(part.PartSizeInt64),
+                CompressedSize: part.CompressedSize ? formatNum(part.CompressedSize) : ""
+            };
+        }));
+        refreshTable();
+    }, [cluster, file, refreshTable, store]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [

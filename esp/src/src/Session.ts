@@ -1,8 +1,13 @@
 import * as cookie from "dojo/cookie";
 import * as xhr from "dojo/request/xhr";
 import * as topic from "dojo/topic";
+import { format as d3Format } from "@hpcc-js/common";
 import { SMCService } from "@hpcc-js/comms";
+import { singletonDebounce } from "../src-react/util/throttle";
 import * as ESPUtil from "./ESPUtil";
+import { scopedLogger } from "@hpcc-js/util";
+
+const logger = scopedLogger("src/Session.ts");
 
 const espTimeoutSeconds = cookie("ESPSessionTimeoutSeconds") || 600; // 10 minuntes?
 const IDLE_TIMEOUT = espTimeoutSeconds * 1000;
@@ -16,11 +21,31 @@ let _prevReset = Date.now();
 declare const dojoConfig;
 
 const smc = new SMCService({ baseUrl: "" });
-smc.GetBuildInfo({}).then(response => {
-    if (response?.BuildInfo?.NamedValue?.filter(row => row.Name === "CONTAINERIZED" && row.Value === "ON")?.length > 0) {
-        dojoConfig.isContainer = true;
-    }
+
+export type BuildInfo = { [key: string]: string };
+
+export async function getBuildInfo(): Promise<BuildInfo> {
+    const getBuildInfo = singletonDebounce(smc, "GetBuildInfo", 60);
+    return getBuildInfo({}).then(response => {
+        const buildInfo = {};
+        response?.BuildInfo?.NamedValue?.forEach(row => {
+            buildInfo[row.Name] = row.Value;
+        });
+        return buildInfo;
+    }).catch(e => {
+        logger.error(e);
+        return {};
+    });
+}
+
+dojoConfig.isContainer = false;
+dojoConfig.currencyCode = "";
+getBuildInfo().then(info => {
+    dojoConfig.isContainer = info["CONTAINERIZED"] === "ON";
+    dojoConfig.currencyCode = info["currencyCode"] ?? "";
 });
+
+export const formatCost = d3Format(".2f");
 
 export function initSession() {
     if (sessionIsActive > -1) {

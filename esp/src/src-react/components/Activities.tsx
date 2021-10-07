@@ -5,6 +5,7 @@ import * as ESPActivity from "src/ESPActivity";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useGrid } from "../hooks/grid";
+import { useBuildInfo } from "../hooks/platform";
 import { ReflexContainer, ReflexElement, ReflexSplitter, classNames, styles } from "../layouts/react-reflex";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { ShortVerticalDivider } from "./Common";
@@ -389,8 +390,10 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
         setUIState(state);
     }, [activity, selection]);
 
-    if (dojoConfig.isContainer) {
-        return <HolyGrail
+    const [, isContainer] = useBuildInfo();
+
+    if (isContainer) {
+        return <HolyGrail key="activities"
             header={<CommandBar items={buttons} farItems={copyButtons} />}
             main={
                 <Grid />
@@ -405,7 +408,7 @@ export const Activities: React.FunctionComponent<ActivitiesProps> = ({
             <div className={classNames.reflexSplitterDiv}></div>
         </ReflexSplitter>
         <ReflexElement>
-            <HolyGrail
+            <HolyGrail key="activities"
                 header={<CommandBar items={buttons} farItems={copyButtons} />}
                 main={
                     <Grid />
