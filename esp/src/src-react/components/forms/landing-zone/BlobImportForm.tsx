@@ -130,7 +130,7 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
                         key="destGroup"
                         label={nlsHPCC.Group}
                         required={true}
-                        defaultSelectedKey={value}
+                        selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
                             onChange(option.key);
@@ -150,7 +150,7 @@ export const BlobImportForm: React.FunctionComponent<BlobImportFormProps> = ({
                         key="DFUServerQueue"
                         label={nlsHPCC.Queue}
                         required={true}
-                        defaultSelectedKey={value}
+                        selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
                             onChange(option.key);

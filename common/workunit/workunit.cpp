@@ -4305,6 +4305,8 @@ public:
             { return c->getAbortBy(str); }
     virtual unsigned __int64 getAbortTimeStamp() const
             { return c->getAbortTimeStamp(); }
+    virtual unsigned __int64 getExecuteCost() const
+            { return c->getExecuteCost(); }
     virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree)
             { return c->import(wuTree, graphProgressTree); }
 
@@ -12259,6 +12261,18 @@ unsigned __int64 CLocalWorkUnit::getAbortTimeStamp() const
 {
     CriticalBlock block(crit);
     return p->getPropInt64("Tracing/AbortTimeStamp", 0);
+}
+unsigned __int64 CLocalWorkUnit::getExecuteCost() const
+{
+    CriticalBlock block(crit);
+    Owned<IPropertyTreeIterator> iter = p->getElements("./Statistics/Statistic[@kind='CostExecute'][@scope='']");
+    unsigned __int64 totalCost = 0;
+    ForEach(*iter)
+    {
+        IPropertyTree &stat = iter->query();
+        totalCost += stat.getPropInt64("@value");
+    }
+    return totalCost;
 }
 
 #if 0

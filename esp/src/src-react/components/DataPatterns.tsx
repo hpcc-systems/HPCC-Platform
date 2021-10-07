@@ -86,7 +86,7 @@ export const DataPatterns: React.FunctionComponent<DataPatternsProps> = ({
                 placeholder={nlsHPCC.Target}
                 className={dpStyles.inlineDropdown}
                 optional={false}
-                defaultSelectedKey={targetCluster}
+                selectedKey={targetCluster}
                 onChange={(ev, row) => {
                     setTargetCluster(row.key as string);
                 }}

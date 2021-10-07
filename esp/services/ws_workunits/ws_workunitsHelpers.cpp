@@ -1049,6 +1049,8 @@ void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned long flags)
     info.setSourceFileCount(cw->getSourceFileCount());
     info.setApplicationValueCount(cw->getApplicationValueCount());
     info.setHasDebugValue(cw->hasDebugValue("__calculated__complexity__"));
+    if(version>=1.84)
+        info.setExecuteCost(cost_type2money(cw->getExecuteCost()));
 
     getClusterInfo(info, flags);
     getExceptions(info, flags);

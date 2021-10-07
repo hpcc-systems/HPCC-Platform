@@ -56,7 +56,7 @@ export const TableForm: React.FunctionComponent<TableFormProps> = ({
         onReset(fieldsToRequest(localFields));
     }, [doReset, localFields, onReset]);
 
-    return <TableGroup fields={localFields} onChange={(id, value) => {
+    const onChange = React.useCallback((id, value) => {
         const field = localFields[id];
         switch (field.type) {
             case "links":
@@ -65,6 +65,7 @@ export const TableForm: React.FunctionComponent<TableFormProps> = ({
                 field.value = value;
         }
         setLocalFields({ ...localFields });
-    }} />;
+    }, [localFields]);
+    return <TableGroup fields={localFields} onChange={onChange} />;
 };
 

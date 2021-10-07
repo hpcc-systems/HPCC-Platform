@@ -97,6 +97,12 @@ if [[ -z "$FORCE" ]] ; then
 
   if [[ -z ${PREV_COMMIT} ]] ; then
     PREV_COMMIT=community_$(echo "${PREV}" | sed -e "s/-${BUILD_TYPE}.*$//")
+    # check if manually specified base (PREV) was gold release. Gold if no trailing -<release>
+    # if gold, add "-1" to match git tagging.
+    pat=".+-.+$"
+    if [[ ! ${PREV_COMMIT} =~ ${pat} ]] ; then
+      PREV_COMMIT=${PREV_COMMIT}-1
+    fi
   fi
 
   # create empty patch file

@@ -107,7 +107,7 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                         key={fieldName}
                         label={nlsHPCC.DropZone}
                         required={true}
-                        defaultSelectedKey={value}
+                        selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
                             setDropzone(option.key as string);
@@ -133,7 +133,7 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                         dropzone={dropzone}
                         required={true}
                         label={nlsHPCC.IPAddress}
-                        defaultSelectedKey={value}
+                        selectedKey={value}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
                             setMachine(option.key as string);
@@ -158,16 +158,13 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                         machineAddress={machine}
                         machineDirectory={directory}
                         machineOS={os}
-                        required={true}
+                        required={false}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
                             onChange(option.key);
                         }}
                         errorMessage={error && error.message}
                     />}
-                rules={{
-                    required: nlsHPCC.ValidationErrorRequired,
-                }}
             />
             <Controller
                 control={control} name="targetName"

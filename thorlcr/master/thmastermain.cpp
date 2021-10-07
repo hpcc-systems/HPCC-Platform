@@ -927,7 +927,9 @@ int main( int argc, const char *argv[]  )
             throw makeStringException(0, "missing --workunit");
         if (isEmptyString(graphName))
             throw makeStringException(0, "missing --graphName");
-        setDefaultJobId(workunit);
+        LogMsgJobId thorJobId = queryLogMsgManager()->addJobId(workunit);
+        thorJob.setJobID(thorJobId);
+        setDefaultJobId(thorJobId);
         StringBuffer thorEpStr;
         LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getUrlStr(thorEpStr).str());
         LOG(MCdebugProgress, thorJob, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());

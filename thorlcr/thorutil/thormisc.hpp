@@ -110,7 +110,7 @@
 #define THOR_SEM_RETRY_TIMEOUT 2
 
 // Logging
-extern graph_decl const LogMsgJobInfo thorJob;
+extern graph_decl LogMsgJobInfo thorJob;
 
 enum ThorExceptionAction { tea_null, tea_warning, tea_abort, tea_shutdown };
 

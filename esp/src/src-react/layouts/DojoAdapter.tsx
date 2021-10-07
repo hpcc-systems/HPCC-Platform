@@ -89,7 +89,7 @@ export const DojoAdapter: React.FunctionComponent<DojoAdapterProps> = ({
             widget = null;  //  Avoid race condition  ---
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [widgetClass, widgetClassID]);
 
     React.useEffect(() => {
         if (!widget || !Wuid) return;
