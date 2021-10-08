@@ -781,6 +781,7 @@ public:
     void doExecuteChild(size32_t parentExtractSz, const byte *parentExtract);
     void executeChild(size32_t & retSize, void * & ret, size32_t parentExtractSz, const byte *parentExtract);
     void setResults(IThorGraphResults *results);
+    virtual stat_type getDiskAccessCost() = 0;
     virtual void executeChild(size32_t parentExtractSz, const byte *parentExtract, IThorGraphResults *results, IThorGraphResults *graphLoopResults);
     virtual void executeChild(size32_t parentExtractSz, const byte *parentExtract);
     virtual bool serializeStats(MemoryBuffer &mb) override { return false; }

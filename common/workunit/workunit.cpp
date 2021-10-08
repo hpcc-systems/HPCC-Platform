@@ -2607,7 +2607,7 @@ cost_type aggregateCost(const IConstWorkUnit * wu, const char *scope, bool exclu
         cost_type totalCost = 0;
         for (it->first(); it->isValid(); )
         {
-            stat_type value = 0.0;
+            stat_type value = 0;
             if (it->getStat(StCostExecute, value))
             {
                 totalCost += value;
@@ -2620,6 +2620,37 @@ cost_type aggregateCost(const IConstWorkUnit * wu, const char *scope, bool exclu
     }
 }
 
+// Aggregrate disk access costs
+cost_type aggregateDiskAccessCost(const IConstWorkUnit * wu, const char *scope)
+{
+    // depth 1: workflow, depth 2: graph, depth 3: subgraph
+    WuScopeFilter filter;
+    if (scope && *scope)
+    {
+        filter.addScope(scope);
+        filter.setIncludeNesting(3);
+        filter.addOutputStatistic(StCostFileAccess);
+        filter.addRequiredStat(StCostFileAccess);
+    }
+    else
+        filter.addFilter("stat[CostFileAccess],depth[1..3],nested[0],where[CostFileAccess]");
+    filter.addSource("global");
+    filter.finishedFilter();
+    Owned<IConstWUScopeIterator> it = &wu->getScopeIterator(filter);
+    cost_type totalCost = 0;
+    for (it->first(); it->isValid(); )
+    {
+        cost_type value = 0;
+        if (it->getStat(StCostFileAccess, value))
+        {
+            totalCost += value;
+            it->nextSibling();
+        }
+        else
+            it->next();
+    }
+    return totalCost;
+}
 //---------------------------------------------------------------------------------------------------------------------
 
 

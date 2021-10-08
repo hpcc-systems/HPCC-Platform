@@ -450,6 +450,7 @@ public:
     virtual void abort(IException *e) override;
     virtual void reset() override;
     virtual void done() override;
+    virtual stat_type getDiskAccessCost() const override { return 0; }
     virtual IThorGraphResults *createThorGraphResults(unsigned num);
 
 // IExceptionHandler

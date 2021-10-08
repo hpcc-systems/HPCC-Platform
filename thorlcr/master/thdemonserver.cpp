@@ -93,7 +93,12 @@ private:
             const unsigned clusterWidth = queryNodeClusterWidth();
             const cost_type sgCost = money2cost_type(calcCost(thorManagerRate, duration) + calcCost(thorWorkerRate, duration) * clusterWidth);
             if (finished && sgCost)
+            {
                 wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, graphScope, StCostExecute, NULL, sgCost, 1, 0, StatsMergeReplace);
+                cost_type costDiskAccess = graph.getDiskAccessCost();
+                if (costDiskAccess)
+                    wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, graphScope, StCostFileAccess, NULL, costDiskAccess, 1, 0, StatsMergeReplace);
+            }
 
             const cost_type totalCost = workunitCost + sgCost;
             if (costLimit>0.0 && totalCost > costLimit)
