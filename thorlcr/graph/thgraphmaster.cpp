@@ -2861,6 +2861,31 @@ void CMasterGraph::getStats(IStatisticGatherer &stats)
     }
 }
 
+cost_type CMasterGraph::getDiskAccessCost()
+{
+    cost_type totalDiskAccessCost = 0;
+    Owned<IThorGraphIterator> iterChildGraph = getChildGraphIterator();
+    ForEach(*iterChildGraph)
+    {
+        CGraphBase &graph = iterChildGraph->query();
+        totalDiskAccessCost += graph.getDiskAccessCost();
+    }
+
+    Owned<IThorActivityIterator> iter;
+    if (queryOwner() && !isGlobal())
+        iter.setown(getIterator()); // Local child graphs still send progress, but aren't connected in master
+    else
+        iter.setown(getConnectedIterator());
+    ForEach (*iter)
+    {
+        CMasterGraphElement &container = (CMasterGraphElement &)iter->query();
+        CMasterActivity *activity = (CMasterActivity *)container.queryActivity();
+        if (activity) // may not be created (if within child query)
+            totalDiskAccessCost += activity->getDiskAccessCost();
+    }
+    return totalDiskAccessCost;
+}
+
 IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IThorRowInterfaces *rowIf, ThorGraphResultType resultType, unsigned spillPriority)
 {
     Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, id, results->queryOwnerId(), spillPriority);

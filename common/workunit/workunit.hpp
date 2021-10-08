@@ -1301,6 +1301,7 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual IStringVal & getAbortBy(IStringVal & str) const = 0;
     virtual unsigned __int64 getAbortTimeStamp() const = 0;
     virtual unsigned __int64 getExecuteCost() const = 0;
+    virtual unsigned __int64 getFileAccessCost() const = 0;
 };
 
 
@@ -1707,7 +1708,7 @@ extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, ITimeReporter *ti
 extern WORKUNIT_API void updateWorkunitTimings(IWorkUnit * wu, StatisticScopeType scopeType, StatisticKind kind, ITimeReporter *timer);
 extern WORKUNIT_API void aggregateStatistic(StatsAggregation & result, IConstWorkUnit * wu, const WuScopeFilter & filter, StatisticKind search);
 extern WORKUNIT_API cost_type aggregateCost(const IConstWorkUnit * wu, const char *scope=nullptr, bool excludehThor=false);
-
+extern WORKUNIT_API cost_type aggregateDiskAccessCost(const IConstWorkUnit * wu, const char *scope);
 extern WORKUNIT_API const char *getTargetClusterComponentName(const char *clustname, const char *processType, StringBuffer &name);
 extern WORKUNIT_API void descheduleWorkunit(char const * wuid);
 #if 0
