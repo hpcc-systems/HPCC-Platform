@@ -1,7 +1,7 @@
 import * as React from "react";
 import { deepEquals } from "@hpcc-js/util";
 
-//  Inpired from:  https://github.com/kentcdodds/use-deep-compare-effect
+//  Inspired by:  https://github.com/kentcdodds/use-deep-compare-effect
 
 function useDeepCompareMemoize<T>(value: T) {
     const ref = React.useRef<T>(value);
@@ -35,4 +35,10 @@ export function useDeepCallback(callback: CallbackCallback, dependencies: Depend
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     return React.useCallback(callback, [...dependencies, ...useDeepCompareMemoize(deepDependencies)]);
+}
+
+export function useDeepMemo(memo: CallbackCallback, dependencies: DependencyList, deepDependencies: DependencyList) {
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return React.useMemo(memo, [...dependencies, ...useDeepCompareMemoize(deepDependencies)]);
 }

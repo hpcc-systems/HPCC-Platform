@@ -3,6 +3,7 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, ScrollablePan
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUStatus } from "src/react/index";
+import { formatCost } from "src/Session";
 import { useWorkunit } from "../hooks/workunit";
 import { ReflexContainer, ReflexElement, ReflexSplitter, classNames, styles } from "../layouts/react-reflex";
 import { pushUrl } from "../util/history";
@@ -13,6 +14,7 @@ import { SlaveLogs } from "./forms/SlaveLogs";
 import { ZAPDialog } from "./forms/ZAPDialog";
 import { InfoGrid } from "./InfoGrid";
 import { WorkunitPersona } from "./controls/StateIcon";
+import { useBuildInfo } from "../hooks/platform";
 
 const logger = scopedLogger("../components/WorkunitDetails.tsx");
 
@@ -27,6 +29,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
     const [workunit, , , , refresh] = useWorkunit(wuid, true);
     const [jobname, setJobname] = React.useState("");
     const [description, setDescription] = React.useState("");
+    const [, { currencyCode }] = useBuildInfo();
     const [_protected, setProtected] = React.useState(false);
     const [showPublishForm, setShowPublishForm] = React.useState(false);
     const [showZapForm, setShowZapForm] = React.useState(false);
@@ -146,7 +149,9 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
     ], []);
 
-    const serviceNames = workunit?.ServiceNames?.Item?.join("\n") || "";
+    const serviceNames = React.useMemo(() => {
+        return workunit?.ServiceNames?.Item?.join("\n") || "";
+    }, [workunit?.ServiceNames?.Item]);
 
     return <>
         <div style={{ height: "100%", position: "relative" }}>
@@ -170,6 +175,8 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                                 "owner": { label: nlsHPCC.Owner, type: "string", value: workunit?.Owner, readonly: true },
                                 "jobname": { label: nlsHPCC.JobName, type: "string", value: jobname },
                                 "description": { label: nlsHPCC.Description, type: "string", value: description },
+                                "executeCost": { label: nlsHPCC.ExecuteCost, type: "string", value: `${formatCost(workunit?.ExecuteCost ?? 0)} (${currencyCode})`, readonly: true },
+                                "fileAccessCost": { label: nlsHPCC.FileAccessCost, type: "string", value: `${formatCost(workunit?.FileAccessCost ?? 0)} (${currencyCode})`, readonly: true },
                                 "protected": { label: nlsHPCC.Protected, type: "checkbox", value: _protected },
                                 "cluster": { label: nlsHPCC.Cluster, type: "string", value: workunit?.Cluster, readonly: true },
                                 "totalClusterTime": { label: nlsHPCC.TotalClusterTime, type: "string", value: workunit?.TotalClusterTime, readonly: true },

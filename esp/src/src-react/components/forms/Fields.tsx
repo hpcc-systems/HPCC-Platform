@@ -571,6 +571,24 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     />
                 });
                 break;
+            case "number":
+                field.value = field.value !== undefined ? field.value : 0;
+                retVal.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: <TextField
+                        key={fieldID}
+                        type={field.type}
+                        name={fieldID}
+                        value={`${field.value}`}
+                        placeholder={field.placeholder}
+                        onChange={(evt, newValue) => onChange(fieldID, newValue)}
+                        borderless={field.readonly}
+                        readOnly={field.readonly}
+                        required={field.required}
+                    />
+                });
+                break;
             case "checkbox":
                 field.value = field.value || false;
                 retVal.push({

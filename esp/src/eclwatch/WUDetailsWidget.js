@@ -16,6 +16,7 @@ define([
     "src/ESPActivity",
     "src/ESPRequest",
     "src/WsWorkunits",
+    "src/Session",
 
     "dojo/text!../templates/WUDetailsWidget.html",
 
@@ -45,7 +46,7 @@ define([
     registry,
     Clippy,
     srcReact,
-    _TabContainerWidget, ESPWorkunit, ESPActivity, ESPRequest, WsWorkunits,
+    _TabContainerWidget, ESPWorkunit, ESPActivity, ESPRequest, WsWorkunits, Session,
     template) {
 
     var nlsHPCC = nlsHPCCMod.default;
@@ -607,6 +608,10 @@ define([
             } else if (name === "ServiceNames" && newValue && newValue.Item) {
                 var domElem = registry.byId(this.id + "ServiceNamesCustom");
                 domElem.set("value", newValue.Item.join("\n"));
+            } else if (name === "ExecuteCost") {
+                this.updateInput("FormattedExecuteCost", oldValue, Session.formatCost(newValue || 0) + " (" + dojoConfig.currencyCode + ")");
+            } else if (name === "FileAccessCost") {
+                this.updateInput("FormattedFileAccessCost", oldValue, Session.formatCost(newValue || 0) + " (" + dojoConfig.currencyCode + ")");
             }
             if (name === "__hpcc_changedCount" && newValue > 0) {
                 var getInt = function (item) {
