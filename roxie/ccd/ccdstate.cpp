@@ -1386,11 +1386,6 @@ public:
         return packages->queryPackageId();
     }
 
-    virtual void reload()
-    {
-        // Default is to do nothing...
-    }
-
     virtual void load(bool forceReload) = 0;
 
     bool matches(hash64_t _xmlHash, bool _active) const
@@ -1520,12 +1515,18 @@ public:
     {
         return querySet;
     }
+    void noteOrphaned()
+    {
+        orphaned = true;
+    }
 
     // These are set at construction and not changed for the lifetime of the object
     const Owned<const IRoxiePackageMap> packages;
     const unsigned numChannels;
     const hash64_t xmlHash;
     const StringAttr querySet;
+    // The following is set once it is no longer the current package manager (so any changes will be thrown away)
+    std::atomic<bool> orphaned{false};
 };
 
 /**
@@ -1550,9 +1551,12 @@ public:
  **/
 class CRoxieDaliQueryPackageManager : public CRoxieQueryPackageManager, implements ISafeSDSSubscription
 {
+    static constexpr unsigned NotifyMergeDelayMs = 50;  // How long to wait for other notifications before reloading the querySet
+
     Owned<IRoxieDaliHelper> daliHelper;
     Owned<IDaliPackageWatcher> notifier;
-
+    std::atomic<unsigned> notifyCount{0};
+    CriticalSection cs;
 public:
     IMPLEMENT_IINTERFACE;
     CRoxieDaliQueryPackageManager(unsigned _numChannels, const IRoxiePackageMap *_packages, const char *_querySet, hash64_t _xmlHash)
@@ -1571,18 +1575,56 @@ public:
 
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
-        reload(false);
+        unsigned active = ++notifyCount;
+        //Increment notifies, and exit if someone got here before us and is still waiting.
+        if (active != 1)
+            return;
+
+        //MORE: The following code should probably go on a separate thread, but implement as a subsequent PR
+        unsigned waits = 1;
+        for (;;)
+        {
+            MilliSleep(NotifyMergeDelayMs);
+
+            unsigned nextActive = notifyCount;
+            //Check to see if any other requests came in during the small delay.
+            if (active == nextActive)
+            {
+                //If no more process all the notifications
+                break;
+            }
+            active = nextActive;
+            waits++;
+        }
+
+        //Critical section is here to prevent a subsequent notify from overtaking the previous one, and ensure only one thread
+        //is reloading at a time.
+        CriticalBlock block(cs);
+
+        //Ignore any changes if they are going to be thrown away, any subsequent changes will return immediately.
+        //check inside cs because it is best to test this as late as possible.
+        if (orphaned)
+            return;
+
+        //How many notifications are there, and reset the count so that subsequent notifications will be processed.
+        active = notifyCount.exchange(0);
+        DBGLOG("Dali update '%s' for '%s': %u changes (%u waits) [%p] %s", xpath, queryQuerySetName(), active, waits, this, orphaned ? " <orphaned>" : "");
+        reloadPackage(false);
         daliHelper->commitCache();
     }
 
     virtual void load(bool forceReload)
     {
         notifier.setown(daliHelper->getQuerySetSubscription(querySet, this));
-        reload(forceReload);
+
+        CriticalBlock block(cs);
+        reloadPackage(forceReload);
     }
 
-    virtual void reload(bool forceRetry)
+private:
+    void reloadPackage(bool forceRetry)
     {
+        //Should be called within a critical section
         hash64_t newHash = numChannels;
         Owned<IPropertyTree> newQuerySet = daliHelper->getQuerySet(querySet);
         Owned<CRoxieAgentQuerySetManagerSet> newAgentManagers = new CRoxieAgentQuerySetManagerSet(numChannels, querySet);
@@ -1784,6 +1826,12 @@ public:
         }
         if (!matched && id && *id)
             throw MakeStringException(ROXIE_UNKNOWN_QUERY, "Unknown query %s", id);
+    }
+
+    void noteOrphaned()
+    {
+        ForEachItemIn(i, allQueryPackages)
+            allQueryPackages.item(i).noteOrphaned();
     }
 
 private:
@@ -2079,6 +2127,11 @@ private:
     void reload(bool forceRetry)
     {
         clearDaliMisses();
+
+        //The old packages are about to be replaced - so there is no point updating them with any incoming changes.
+        if (allQueryPackages)
+            allQueryPackages->noteOrphaned();
+
         // We want to kill the old packages, but not until we have created the new ones
         // So that the query/dll caching will work for anything that is not affected by the changes
         Owned<CRoxiePackageSetWatcher> newPackages;
@@ -2093,6 +2146,7 @@ private:
             }
             newPackages.setown(new CRoxiePackageSetWatcher(daliHelper, numChannels, currentPackages, forceRetry));
         }
+
         // Hold the lock for as little time as we can
         // Note that we must NOT hold the lock during the delete of the old object - or we deadlock.
         // Hence the slightly convoluted code below
