@@ -2005,10 +2005,10 @@ bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bo
       pNAS->addProp(xpath, sbdefaultValue.str());
     }
 
-    //<cost moneyLocale="en_US.UTF-8" perCpu="0.113" storageAtRest="0.0135" storageReads="0.0485" storageWrites="0.0038"/>
+    //<cost currencyCode="en_US.UTF-8" perCpu="0.113" storageAtRest="0.0135" storageReads="0.0485" storageWrites="0.0038"/>
 
     IPropertyTree* pCost = pCompTree->addPropTree("cost", createPTree());
-    xpath.clear().append("@memoryLocale");
+    xpath.clear().append("@currencyCode");
     pDomain->addProp(xpath, sbdefaultValue.str());
     xpath.clear().append("@perCpu");
     pDomain->addProp(xpath, sbdefaultValue.str());
@@ -2047,7 +2047,7 @@ bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bo
     addItem(jsStrBuf, pEnv, XML_TAG_NAS,       TAG_MASK,       "", 0, 1, "", 1);
     addItem(jsStrBuf, pEnv, XML_TAG_NAS,       TAG_TRACE,       "", 0, 1, "", 1);
 
-    addItem(jsStrBuf, pEnv, "cost",  "moneyLocale", "", 0, 0, "", 1);
+    addItem(jsStrBuf, pEnv, "cost",  "currencyCode", "", 0, 0, "", 1);
     addItem(jsStrBuf, pEnv, "cost",  "perCpu", "", 0, 0, "", 1);
     addItem(jsStrBuf, pEnv, "cost",  "storageAtRest", "", 0, 0, "", 1);
     addItem(jsStrBuf, pEnv, "cost",  "storageReads", "", 0, 0, "", 1);
@@ -2091,7 +2091,7 @@ bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bo
     jsStrBuf.appendf("colIndex['traceNAS']=%d;", index++);
 
     index=0;
-    jsStrBuf.appendf("colIndex['memoryLocalecost']=%d;", index++);
+    jsStrBuf.appendf("colIndex['currencyCodecost']=%d;", index++);
     jsStrBuf.appendf("colIndex['perCpucost']=%d;", index++);
     jsStrBuf.appendf("colIndex['storageAtRestcost']=%d;", index++);
     jsStrBuf.appendf("colIndex['storageReadscost']=%d;", index++);

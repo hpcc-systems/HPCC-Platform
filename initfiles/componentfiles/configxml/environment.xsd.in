@@ -124,7 +124,7 @@
 
                                 <xs:element name="cost">
                                     <xs:complexType>
-                                        <xs:attribute name="memoryLocal" type="xs:string"/>
+                                        <xs:attribute name="currencyCode" type="xs:string"/>
                                         <xs:attribute name="perCpu" type="xs:string"/>
                                         <xs:attribute name="storageAtRest" type="xs:string"/>
                                         <xs:attribute name="storageReads" type="xs:string"/>
