@@ -21,8 +21,8 @@ FROM ubuntu:20.04 as build
 ENV DEBIAN_FRONTEND=noninteractive
 ARG BASE_VER
 
-# This is version 7.12.1 of the platform-build-base, and anyone building/using it should have set that in BASE_VER
-RUN [ "${BASE_VER}" = "7.12.1" ]
+# This is version 8.6 of the platform-build-base, and anyone building/using it should have set that in BASE_VER
+RUN [ "${BASE_VER}" = "8.6" ]
  
 RUN apt clean -y && \
     apt autoclean -y && \
@@ -88,7 +88,7 @@ RUN apt-get install -y \
   jq
 
 RUN curl https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -
-RUN apt-add-repository "deb https://deb.nodesource.com/node_12.x $(lsb_release -sc) main"
+RUN apt-add-repository "deb https://deb.nodesource.com/node_16.x $(lsb_release -sc) main"
 RUN apt-get update -y
 RUN apt-get install -y nodejs
 
