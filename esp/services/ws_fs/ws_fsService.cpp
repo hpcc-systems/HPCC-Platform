@@ -2505,6 +2505,8 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
 #ifdef _CONTAINERIZED
         if (isEmptyString(destPlane))
             destPlane = req.getDestGroup();  // allow eclwatch to continue providing storage plane as 'destgroup' field
+        if (isEmptyString(destPlane))
+            throw makeStringException(ECLWATCH_INVALID_INPUT, "Destination storage plane not specified.");
 #endif
 
         StringBuffer destPath;
