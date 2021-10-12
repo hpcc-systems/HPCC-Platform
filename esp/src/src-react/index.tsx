@@ -5,7 +5,7 @@ import { scopedLogger } from "@hpcc-js/util";
 import { initSession } from "src/Session";
 import { ECLWatchLogger } from "./hooks/logging";
 
-import "css!dojo-themes/flat/flat.css";
+import "css!dijit-themes/flat/flat.css";
 import "css!hpcc/css/ecl.css";
 import "css!hpcc/css/hpcc.css";
 import "src-react-css/index.css";
