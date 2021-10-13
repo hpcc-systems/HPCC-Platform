@@ -41,8 +41,8 @@ jobs:
           echo ::set-output name=container_registry::ghcr.io
           echo ::set-output name=cr_user::${{ github.actor }}
           echo ::set-output name=build_prbase_sha::${{ github.event.pull_request.base.sha }}
-          echo ::set-output name=build_prbase_label::label-${{ github.event.pull_request.base.sha }}
-          echo ::set-output name=build_pr_label::label-${{ github.sha }}
+          echo ::set-output name=build_prbase_label::${{ github.base_ref }}-${{ github.event.pull_request.base.sha }}
+          echo ::set-output name=build_pr_label::pr-${{ github.event.number }}-${{ github.sha }}
           echo ::set-output name=build_user::${{ github.actor }}
           echo ::set-output name=build_type::RelWithDebInfo
           echo ::set-output name=use_cppunit::1
@@ -65,8 +65,10 @@ jobs:
           echo "github.workspace = ${{ github.workspace }}"
           echo "runner.workspace = ${{ runner.workspace }}"
           echo "github.event.pull_request.head.repo.owner.login = ${{ github.event.pull_request.head.repo.owner.login }}"
+          echo "build_prbase_label = ${{ steps.vars.outputs.build_prbase_label }}"
+          echo "build_pr_label = ${{ steps.vars.outputs.build_pr_label }}"
 
-      - name: Checkout PR base
+      - name: Checkout PR
         uses: actions/checkout@v2
 
       - name: Set up Docker Buildx
@@ -91,7 +93,7 @@ jobs:
           echo ::set-output name=build_prbase_missing::${build_prbase_missing}
          
       # build base only if missing, and pr base image is missing, otherwise don't need it.
-      - name: Build build base image
+      - name: HPCC build-base image
         if: ${{ steps.check-images.outputs.build_base_missing == '1' && steps.check-images.outputs.build_prbase_missing == '1' }}
         uses: docker/build-push-action@v2
         with:
@@ -102,7 +104,7 @@ jobs:
           push: true
 
       # build base image if missing
-      - name: Build PR-Base image 
+      - name: PR-Base image
         if: ${{ steps.check-images.outputs.build_prbase_missing == '1' }}
         uses: docker/build-push-action@v2
         with:
@@ -122,7 +124,7 @@ jobs:
             USE_CPPUNIT=${{ steps.vars.outputs.use_cppunit }}
             BUILD_THREADS=${{ steps.vars.outputs.build_threads }}
 
-      - name: Build PR image 
+      - name: PR image
         uses: docker/build-push-action@v2
         with:
           context: .
