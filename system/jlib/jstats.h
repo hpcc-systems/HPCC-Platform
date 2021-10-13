@@ -652,13 +652,14 @@ public:
 
     void mergeStatistic(StatisticKind kind, unsigned __int64 value, unsigned node);
     void setStatistic(StatisticKind kind, unsigned __int64 value, unsigned node);
-
+    double queryStdDevInfo(StatisticKind kind, unsigned __int64 &_min, unsigned __int64 &_max, unsigned &_minNode, unsigned &_maxNode) const;
 protected:
     struct DerivedStats
     {
     public:
         void mergeStatistic(unsigned __int64 value, unsigned node);
         void setStatistic(unsigned __int64 value, unsigned node);
+        double queryStdDevInfo(unsigned __int64 &_min, unsigned __int64 &_max, unsigned &_minNode, unsigned &_maxNode) const;
     public:
         unsigned __int64 max = 0;
         unsigned __int64 min = 0;

@@ -916,7 +916,8 @@ static const StatisticMeta statsMetaData[StMax] = {
     { SIZESTAT(AgentReply) },
     { TIMESTAT(AgentWait) },
     { CYCLESTAT(AgentWait) },
-    { COSTSTAT(FileAccess) }
+    { COSTSTAT(FileAccess) },
+    { NUMSTAT(Pods) }
 };
 
 //Is a 0 value likely, and useful to be reported if it does happen to be zero?
@@ -2565,6 +2566,17 @@ void CRuntimeSummaryStatisticCollection::DerivedStats::setStatistic(unsigned __i
     sumSquares = dvalue * dvalue;
 }
 
+double CRuntimeSummaryStatisticCollection::DerivedStats::queryStdDevInfo(unsigned __int64 &_min, unsigned __int64 &_max, unsigned &_minNode, unsigned &_maxNode) const
+{
+    _min = min;
+    _max = max;
+    _minNode = minNode;
+    _maxNode = maxNode;
+    double mean = sum / count;
+    double variance = (sumSquares - sum * mean) / count;
+    return sqrt(variance);
+}
+
 CRuntimeSummaryStatisticCollection::CRuntimeSummaryStatisticCollection(const StatisticsMapping & _mapping) : CRuntimeStatisticCollection(_mapping)
 {
     derived = new DerivedStats[ordinality()+1];
@@ -2592,6 +2604,11 @@ void CRuntimeSummaryStatisticCollection::setStatistic(StatisticKind kind, unsign
     CRuntimeStatisticCollection::setStatistic(kind, value);
     unsigned index = queryMapping().getIndex(kind);
     derived[index].setStatistic(value, node);
+}
+
+double CRuntimeSummaryStatisticCollection::queryStdDevInfo(StatisticKind kind, unsigned __int64 &_min, unsigned __int64 &_max, unsigned &_minNode, unsigned &_maxNode) const
+{
+    return derived[queryMapping().getIndex(kind)].queryStdDevInfo(_min, _max, _minNode, _maxNode);
 }
 
 static bool skewHasMeaning(StatisticKind kind)
