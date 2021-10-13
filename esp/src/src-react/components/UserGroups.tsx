@@ -8,6 +8,7 @@ import * as WsAccess from "src/ws_access";
 import nlsHPCC from "src/nlsHPCC";
 import { ShortVerticalDivider } from "./Common";
 import { pushUrl } from "../util/history";
+import { useConfirm } from "../hooks/confirm";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { DojoGrid, selector } from "./DojoGrid";
 import { UserAddGroupForm } from "./forms/UserAddGroup";
@@ -82,6 +83,25 @@ export const UserGroups: React.FunctionComponent<UserGroupsProps> = ({
             ;
     }, [grid, gridQuery, gridStore, username]);
 
+    const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
+        title: nlsHPCC.Delete,
+        message: nlsHPCC.YouAreAboutToRemoveUserFrom,
+        onSubmit: React.useCallback(() => {
+            const requests = [];
+            selection.forEach((group, idx) => {
+                const request = {
+                    username: username,
+                    action: "Delete"
+                };
+                request["groupnames_i" + idx] = group.name;
+                requests.push(WsAccess.UserGroupEdit({ request: request }));
+            });
+            Promise.all(requests)
+                .then(responses => refreshTable())
+                .catch(logger.error);
+        }, [refreshTable, selection, username])
+    });
+
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
@@ -107,24 +127,9 @@ export const UserGroups: React.FunctionComponent<UserGroupsProps> = ({
         },
         {
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection,
-            onClick: () => {
-                if (confirm(nlsHPCC.YouAreAboutToRemoveUserFrom)) {
-                    const requests = [];
-                    selection.forEach((group, idx) => {
-                        const request = {
-                            username: username,
-                            action: "Delete"
-                        };
-                        request["groupnames_i" + idx] = group.name;
-                        requests.push(WsAccess.UserGroupEdit({ request: request }));
-                    });
-                    Promise.all(requests)
-                        .then(responses => refreshTable())
-                        .catch(logger.error);
-                }
-            }
+            onClick: () => setShowDeleteConfirm(true)
         },
-    ], [refreshTable, selection, uiState.hasSelection, username]);
+    ], [refreshTable, selection, setShowDeleteConfirm, uiState.hasSelection]);
 
     React.useEffect(() => {
         if (!grid || !gridStore) return;
@@ -142,6 +147,7 @@ export const UserGroups: React.FunctionComponent<UserGroupsProps> = ({
             }
         />
         <UserAddGroupForm showForm={showAdd} setShowForm={setShowAdd} refreshGrid={refreshTable} username={username} />
+        <DeleteConfirm />
     </>;
 
 };

@@ -6,6 +6,7 @@ import { HolyGrail } from "../layouts/HolyGrail";
 import * as WsDFUXref from "src/WsDFUXref";
 import * as Observable from "dojo/store/Observable";
 import { Memory } from "src/Memory";
+import { useConfirm } from "../hooks/confirm";
 import { useGrid } from "../hooks/grid";
 import { ShortVerticalDivider } from "./Common";
 import { selector } from "./DojoGrid";
@@ -79,6 +80,19 @@ export const XrefLostFiles: React.FunctionComponent<XrefLostFilesProps> = ({
             ;
     }, [store, name, refreshTable]);
 
+    const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
+        title: nlsHPCC.Delete,
+        message: nlsHPCC.DeleteSelectedFiles + "\n" + selection.map(file => file.name),
+        onSubmit: React.useCallback(() => {
+            WsDFUXref.DFUXRefArrayAction(selection, "DeleteLogical", name, "Lost")
+                .then(response => {
+                    refreshData();
+                })
+                .catch(logger.error)
+                ;
+        }, [name, refreshData, selection])
+    });
+
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -88,20 +102,10 @@ export const XrefLostFiles: React.FunctionComponent<XrefLostFilesProps> = ({
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection,
-            onClick: () => {
-                const list = selection.map(file => file.name);
-                if (confirm(nlsHPCC.DeleteSelectedFiles + "\n" + list)) {
-                    WsDFUXref.DFUXRefArrayAction(selection, "DeleteLogical", name, "Lost")
-                        .then(response => {
-                            refreshData();
-                        })
-                        .catch(logger.error)
-                        ;
-                }
-            }
+            onClick: () => setShowDeleteConfirm(true)
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-    ], [name, refreshData, selection, uiState]);
+    ], [refreshData, setShowDeleteConfirm, uiState]);
 
     React.useEffect(() => {
         refreshData();
@@ -109,7 +113,12 @@ export const XrefLostFiles: React.FunctionComponent<XrefLostFilesProps> = ({
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={<Grid />}
+        main={
+            <>
+                <Grid />
+                <DeleteConfirm />
+            </>
+        }
     />;
 
 };

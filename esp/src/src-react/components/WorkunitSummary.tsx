@@ -4,9 +4,10 @@ import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUStatus } from "src/react/index";
 import { formatCost } from "src/Session";
+import { useConfirm } from "../hooks/confirm";
 import { useWorkunit } from "../hooks/workunit";
 import { ReflexContainer, ReflexElement, ReflexSplitter, classNames, styles } from "../layouts/react-reflex";
-import { pushUrl } from "../util/history";
+import { pushUrl, replaceUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { TableGroup } from "./forms/Groups";
 import { PublishQueryForm } from "./forms/PublishQuery";
@@ -54,6 +55,17 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
     const canDeschedule = workunit && workunit?.EventSchedule === 2;
     const canReschedule = workunit && workunit?.EventSchedule === 1;
 
+    const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
+        title: nlsHPCC.Delete,
+        message: nlsHPCC.YouAreAboutToDeleteThisWorkunit,
+        onSubmit: React.useCallback(() => {
+            workunit?.delete()
+                .then(response => replaceUrl("/workunits"))
+                .catch(logger.error)
+                ;
+        }, [workunit])
+    });
+
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
@@ -80,12 +92,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         },
         {
             key: "delete", text: nlsHPCC.Delete, iconProps: { iconName: "Delete" }, disabled: !canDelete,
-            onClick: () => {
-                if (confirm(nlsHPCC.YouAreAboutToDeleteThisWorkunit)) {
-                    workunit?.delete().catch(logger.error);
-                    pushUrl("/workunits");
-                }
-            }
+            onClick: () => setShowDeleteConfirm(true)
         },
         {
             key: "restore", text: nlsHPCC.Restore, disabled: !workunit?.Archived,
@@ -144,10 +151,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
             key: "slaveLogs", text: nlsHPCC.SlaveLogs, disabled: !workunit?.ThorLogList,
             onClick: () => setShowThorSlaveLogs(true)
         },
-    ], [_protected, canDelete, canDeschedule, canReschedule, canSave, description, jobname, refresh, workunit, wuid]);
-
-    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
-    ], []);
+    ], [_protected, canDelete, canDeschedule, canReschedule, canSave, description, jobname, refresh, setShowDeleteConfirm, workunit, wuid]);
 
     const serviceNames = React.useMemo(() => {
         return workunit?.ServiceNames?.Item?.join("\n") || "";
@@ -160,7 +164,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                     <div className="pane-content">
                         <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto}>
                             <Sticky stickyPosition={StickyPositionType.Header}>
-                                <CommandBar items={buttons} farItems={rightButtons} />
+                                <CommandBar items={buttons} />
                             </Sticky>
                             <Sticky stickyPosition={StickyPositionType.Header}>
                                 <WorkunitPersona wuid={wuid} />
@@ -212,5 +216,6 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         <PublishQueryForm wuid={wuid} showForm={showPublishForm} setShowForm={setShowPublishForm} />
         <ZAPDialog wuid={wuid} showForm={showZapForm} setShowForm={setShowZapForm} />
         <SlaveLogs wuid={wuid} showForm={showThorSlaveLogs} setShowForm={setShowThorSlaveLogs} />
+        <DeleteConfirm />
     </>;
 };

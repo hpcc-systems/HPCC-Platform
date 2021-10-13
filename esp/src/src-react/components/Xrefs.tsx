@@ -6,6 +6,7 @@ import { HolyGrail } from "../layouts/HolyGrail";
 import * as WsDFUXref from "src/WsDFUXref";
 import * as Observable from "dojo/store/Observable";
 import { Memory } from "src/Memory";
+import { useConfirm } from "../hooks/confirm";
 import { useGrid } from "../hooks/grid";
 import { ShortVerticalDivider } from "./Common";
 import { selector } from "./DojoGrid";
@@ -80,6 +81,41 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
             ;
     }, [refreshTable, store]);
 
+    const [CancelConfirm, setShowCancelConfirm] = useConfirm({
+        title: nlsHPCC.CancelAll,
+        message: nlsHPCC.CancelAllMessage,
+        onSubmit: React.useCallback(() => {
+            WsDFUXref.DFUXRefBuildCancel({
+                request: {}
+            })
+                .catch(logger.error)
+                ;
+        }, [])
+    });
+
+    const [GenerateConfirm, setShowGenerateConfirm] = useConfirm({
+        title: nlsHPCC.Generate,
+        message: nlsHPCC.RunningServerStrain,
+        onSubmit: React.useCallback(() => {
+            const requests = [];
+            for (let i = selection.length - 1; i >= 0; --i) {
+                requests.push(
+                    WsDFUXref.DFUXRefBuild({
+                        request: {
+                            Cluster: selection[i].name
+                        }
+                    })
+                );
+            }
+            Promise.all(requests)
+                .then(() => {
+                    refreshData();
+                })
+                .catch(logger.error)
+                ;
+        }, [refreshData, selection])
+    });
+
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -102,42 +138,14 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "cancelAll", text: nlsHPCC.CancelAll,
-            onClick: () => {
-                if (confirm(nlsHPCC.CancelAllMessage)) {
-                    WsDFUXref.DFUXRefBuildCancel({
-                        request: {}
-                    })
-                        .catch(logger.error)
-                        ;
-                }
-            }
+            onClick: () => setShowCancelConfirm(true)
         },
         { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "generate", text: nlsHPCC.Generate,
-            onClick: () => {
-                if (confirm(nlsHPCC.RunningServerStrain)) {
-                    const requests = [];
-                    for (let i = selection.length - 1; i >= 0; --i) {
-                        requests.push(
-                            WsDFUXref.DFUXRefBuild({
-                                request: {
-                                    Cluster: selection[i].name
-                                }
-                            })
-                        );
-
-                        Promise.all(requests)
-                            .then(() => {
-                                refreshData();
-                            })
-                            .catch(logger.error)
-                            ;
-                    }
-                }
-            },
+            onClick: () => setShowGenerateConfirm(true)
         }
-    ], [refreshData, selection, uiState]);
+    ], [refreshData, selection, setShowCancelConfirm, setShowGenerateConfirm, uiState]);
 
     React.useEffect(() => {
         refreshData();
@@ -145,7 +153,13 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={<Grid />}
+        main={
+            <>
+                <Grid />
+                <CancelConfirm />
+                <GenerateConfirm />
+            </>
+        }
     />;
 
 };
