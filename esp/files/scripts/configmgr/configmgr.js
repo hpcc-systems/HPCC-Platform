@@ -1063,7 +1063,7 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
           }
           var indexOfSubType = newParams.indexOf("::subType");
           var newParamsSubString = newParams.substr(indexOfSubType);
-          var indexOfName = newParamsSubString.indexof("@name")+7;
+          var indexOfName = newParamsSubString.indexOf("@name")+7;
 
           top.document.selectRecordClick = true;
           top.document.selectRecord = newParamsSubString.substr(indexOfName).substring(0,newParamsSubString.substr(indexOfName).indexOf("'"));

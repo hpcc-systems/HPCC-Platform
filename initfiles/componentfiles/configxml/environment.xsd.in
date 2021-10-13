@@ -121,6 +121,17 @@
                                     <xs:attribute name="domain" type="xs:string"/>
                                     <xs:attribute name="computerType" type="xs:string"/>
                                 </xs:complexType>
+
+                                <xs:element name="cost">
+                                    <xs:complexType>
+                                        <xs:attribute name="currencyCode" type="xs:string"/>
+                                        <xs:attribute name="perCpu" type="xs:string"/>
+                                        <xs:attribute name="storageAtRest" type="xs:string"/>
+                                        <xs:attribute name="storageReads" type="xs:string"/>
+                                        <xs:attribute name="storageWrites" type="xs:string"/>
+                                    </xs:complexType>
+                                </xs:element>
+
                             </xs:element>
                         </xs:choice>
                         <xs:attribute name="include" type="xs:string"/>
