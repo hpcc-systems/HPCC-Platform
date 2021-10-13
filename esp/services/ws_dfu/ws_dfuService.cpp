@@ -6512,7 +6512,7 @@ bool CWsDfuEx::onDFUFileCreateV2(IEspContext &context, IEspDFUFileCreateV2Reques
         accessInfo.setMetaInfoBlob(metaInfoBlob);
         if (returnTextResponse)
         {
-            getFilePartsInfo(context, dafilesrvHost, *fileDesc, true, accessInfo);
+            getFilePartsInfo(context, nullIfEmptyString(dafilesrvHost), *fileDesc, true, accessInfo);
             getJsonTypeInfo(*fileDesc, accessInfo);
 
             accessInfo.setExpiryTime(metaInfo->queryProp("expiryTime"));
