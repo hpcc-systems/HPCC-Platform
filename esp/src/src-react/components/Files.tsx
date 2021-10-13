@@ -6,10 +6,10 @@ import * as WsDfu from "src/WsDfu";
 import * as ESPLogicalFile from "src/ESPLogicalFile";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { useConfirm } from "../hooks/confirm";
 import { useGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
-import { Confirm } from "./controls/Confirm";
 import { AddToSuperfile } from "./forms/AddToSuperfile";
 import { CopyFile } from "./forms/CopyFile";
 import { DesprayFile } from "./forms/DesprayFile";
@@ -75,11 +75,6 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     const [mine, setMine] = React.useState(false);
     const [selectedFileList, setSelectedFileList] = React.useState("");
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
-
-    const [showConfirm, setShowConfirm] = React.useState(false);
-    const [confirmTitle, setConfirmTitle] = React.useState("");
-    const [confirmMessage, setConfirmMessage] = React.useState("");
-    const [confirmOnSubmit, setConfirmOnSubmit] = React.useState(null);
 
     //  Grid ---
     const [Grid, selection, refreshTable, copyButtons] = useGrid({
@@ -170,9 +165,13 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         }
     });
 
-    const deleteFiles = React.useCallback(() => {
-        WsDfu.DFUArrayAction(selection, "Delete").then(() => refreshTable(true));
-    }, [refreshTable, selection]);
+    const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
+        title: nlsHPCC.Delete,
+        message: nlsHPCC.DeleteSelectedFiles + "\n\n" + selectedFileList,
+        onSubmit: React.useCallback(() => {
+            WsDfu.DFUArrayAction(selection, "Delete").then(() => refreshTable(true));
+        }, [refreshTable, selection])
+    });
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -195,12 +194,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         },
         {
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection, iconProps: { iconName: "Delete" },
-            onClick: () => {
-                setConfirmTitle(nlsHPCC.Delete);
-                setConfirmMessage(nlsHPCC.DeleteSelectedFiles + "\n\n" + selectedFileList);
-                setConfirmOnSubmit(() => deleteFiles);
-                setShowConfirm(true);
-            }
+            onClick: () => setShowDeleteConfirm(true)
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -237,7 +231,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 setMine(!mine);
             }
         },
-    ], [deleteFiles, mine, refreshTable, selectedFileList, selection, store, uiState.hasSelection]);
+    ], [mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection]);
 
     //  Filter  ---
     const filterFields: Fields = {};
@@ -268,10 +262,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 <RenameFile logicalFiles={selection.map(s => s.Name)} showForm={showRenameFile} setShowForm={setShowRenameFile} />
                 <AddToSuperfile logicalFiles={selection.map(s => s.Name)} showForm={showAddToSuperfile} setShowForm={setShowAddToSuperfile} />
                 <DesprayFile logicalFiles={selection.map(s => s.Name)} showForm={showDesprayFile} setShowForm={setShowDesprayFile} refreshGrid={refreshTable} />
-                <Confirm
-                    show={showConfirm} setShow={setShowConfirm}
-                    title={confirmTitle} message={confirmMessage} onSubmit={confirmOnSubmit}
-                />
+                <DeleteConfirm />
             </>
         }
     />;
