@@ -196,9 +196,9 @@ export const FileSummary: React.FunctionComponent<FileSummaryProps> = ({
                 }
             }} />
         </ScrollablePane>
-        <CopyFile cluster={cluster} logicalFile={logicalFile} showForm={showCopyFile} setShowForm={setShowCopyFile} />
-        <DesprayFile cluster={cluster} logicalFile={logicalFile} showForm={showDesprayFile} setShowForm={setShowDesprayFile} />
-        <RenameFile cluster={cluster} logicalFile={logicalFile} showForm={showRenameFile} setShowForm={setShowRenameFile} />
+        <CopyFile logicalFiles={[logicalFile]} showForm={showCopyFile} setShowForm={setShowCopyFile} />
+        <DesprayFile logicalFiles={[logicalFile]} showForm={showDesprayFile} setShowForm={setShowDesprayFile} />
+        <RenameFile logicalFiles={[logicalFile]} showForm={showRenameFile} setShowForm={setShowRenameFile} />
         <ReplicateFile cluster={cluster} logicalFile={logicalFile} showForm={showReplicateFile} setShowForm={setShowReplicateFile} />
         <DeleteConfirm />
     </>;
