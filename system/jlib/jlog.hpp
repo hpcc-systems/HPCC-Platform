@@ -266,14 +266,14 @@ typedef unsigned LogMsgId;
 typedef unsigned __int64 LogMsgJobId;
 typedef unsigned __int64 LogMsgUserId;
 typedef unsigned __int64 LogMsgSessionId;
-#define UnknownJob (LogMsgJobId)-1
-#define UnknownUser (LogMsgUserId)-1
-#define UnknownSession (LogMsgSessionId)-1
+constexpr LogMsgJobId UnknownJob = (LogMsgJobId)-1;
+constexpr LogMsgUserId UnknownUser = (LogMsgUserId)-1;
+constexpr LogMsgSessionId UnknownSession = (LogMsgSessionId)-1;
 
 // Other enums, typedefs, and consts
 
 typedef int LogMsgCode;
-#define NoLogMsgCode -1
+constexpr LogMsgCode NoLogMsgCode = (LogMsgCode)-1;
 
 // When changing this enum, be sure to update (a) the string function, and (b) the abbrev function
 

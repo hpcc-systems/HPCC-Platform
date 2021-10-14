@@ -229,11 +229,24 @@ void LogMsgJobInfo::serialize(MemoryBuffer & out) const
 
 void LogMsgJobInfo::deserialize(MemoryBuffer & in)
 {
-    StringBuffer idStr;
-    in.read(idStr);
-    jobIDStr = idStr.detach();
+// kludge for backward compatibility of pre 8.0 clients that send a LogMsgJobId: (_uint64), not a string
+// NB: jobID pre 8.0 was redundant as always equal to UnknownJob
+    dbgassertex(in.remaining() >= sizeof(LogMsgJobId)); // should always be at least this amount, because userID follows the jobID
+    if (0 == memcmp(in.toByteArray()+in.getPos(), &UnknownJob, sizeof(LogMsgJobId))) // pre 8.0 client
+    {
+        in.skip(sizeof(jobID));
+        jobID = UnknownJob;
+        isDeserialized = false;
+    }
+    else
+    {
+        // >= 8.0 client
+        StringBuffer idStr;
+        in.read(idStr);
+        jobIDStr = idStr.detach();
+        isDeserialized = true;
+    }
     in.read(userID);
-    isDeserialized = true;
 }
 
 static LogMsgJobInfo globalDefaultJobInfo(UnknownJob, UnknownUser);
