@@ -10,57 +10,7 @@
   <sect1 id="prereq" role="nobrk">
     <title>Prerequisites</title>
 
-    <itemizedlist>
-      <listitem>
-        <para>Install Docker Desktop and <emphasis role="bold">WSL
-        2</emphasis></para>
-      </listitem>
-
-      <listitem>
-        <para>Enable WSL integration in Docker</para>
-      </listitem>
-
-      <listitem>
-        <para>Enable Kubernetes in Docker Desktop</para>
-      </listitem>
-
-      <listitem>
-        <para>Install Helm</para>
-      </listitem>
-    </itemizedlist>
-
-    <para>OR</para>
-
-    <itemizedlist>
-      <listitem>
-        <para>Install Docker Desktop and <emphasis
-        role="bold">Hyper-V</emphasis></para>
-      </listitem>
-
-      <listitem>
-        <para>Enable Kubernetes in Docker Desktop</para>
-      </listitem>
-
-      <listitem>
-        <para>Install Helm</para>
-      </listitem>
-    </itemizedlist>
-
-    <para>OR</para>
-
-    <itemizedlist>
-      <listitem>
-        <para>Install Docker Desktop on macOS</para>
-      </listitem>
-
-      <listitem>
-        <para>Enable Kubernetes in Docker Desktop</para>
-      </listitem>
-
-      <listitem>
-        <para>Install Helm</para>
-      </listitem>
-    </itemizedlist>
+    <para><graphic fileref="../../images/WhatYouNeed.jpg" /></para>
   </sect1>
 
   <sect1 id="addrepo" role="nobrk">
