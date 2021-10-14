@@ -102,6 +102,7 @@ class RegressMain:
                 if len(eclfiles) :
                     #Execute multiple ECL files like RUN to generates summary results and diff report.
                     self.regress.bootstrap(engine, cluster, self.args,  eclfiles)
+                    logger.debug("self.args.pq:'%s', self.regress.maxtasks:'%s', self.regress.maxthreads:'%s" % ( self.args.pq, self.regress.maxtasks, self.regress.maxthreads))
                     if (self.args.pq in (0, 1)) or (self.regress.maxtasks == 1):
                         self.regress.runSuite(engine, cluster, self.regress.suites[engine])
                     else:

@@ -511,11 +511,18 @@ class ECLFile:
             logger.debug("%3d. recieved: " + repr(recieved),  self.taskId )
             diffLines = ''
             lineIndex = 1
+            missingLines = 0
+            addedLines = 0
             for line in difflib.unified_diff(expected, recieved, fromfile=self.xml_e, tofile=self.xml_r):
+                if line.startswith('-'):
+                    missingLines += 1
+                if line.startswith('-'):
+                    addedLines += 1
                 diffLines += line
                 logger.debug("%3d. Line" + str(lineIndex) +":" + line,  self.taskId )
                 lineIndex += 1
 
+            logger.debug("%3d. missingLines: %d, addedLines: %d" % (missingLines, addedLines))
             logger.debug("%3d. diffLines: " + diffLines,  self.taskId )
             if len(diffLines) > 0:
                 self.diff += ("%3d. Test: %s\n") % (self.taskId,  self.getBaseEclRealName())
