@@ -118,6 +118,7 @@ class ECLcmd(Shell):
             logger.debug("%3d. stderr :'%s'", eclfile.getTaskId(),  stderr)
             data = '\n'.join(line for line in
                              results.split('\n') if line) + "\n"
+
             ret = data.split('\n')
             result = ""
             cnt = 0
@@ -158,7 +159,12 @@ class ECLcmd(Shell):
                         logger.error("%3d. type of i: '%s', i: '%s'", eclfile.getTaskId(), type(i), i )
                 cnt += 1
             data = '\n'.join(line for line in
-                             result.split('\n') if line) + "\n"
+                             result.split('\n') if line) 
+
+            if len(stderr) > 0 and stderr.startswith('eclcc') :  
+                data += '\n'.join(line for line in stderr.split('\n') if line and (' Warning ' not in line) and (' Info ' not in line) and ('0 error(s)' not in line)  ) 
+                
+            data += '\n'
 
         except Error as err:
             data = str(err)
@@ -240,16 +246,25 @@ class ECLcmd(Shell):
                     resultLines = data.strip().split('\n')
                     resultLinesLen = len(resultLines)
                     resultLineIndex = 0;
-                    #                                                 It has some output what should compare
-                    while resultLineIndex <resultLinesLen and not resultLines[resultLineIndex].startswith('<'):
+                    #                                                 It has some output but not an '<Exceptin>' only what should compare
+                    while resultLineIndex <resultLinesLen and  resultLines[resultLineIndex].startswith('<Exception'):
+                        logger.debug("%3d. resultLineIndex:%d, resultLinesLen:%d, resultLines[%s]:'%s' )", eclfile.getTaskId(), resultLineIndex, resultLinesLen, resultLineIndex,  resultLines[resultLineIndex])
                         resultLineIndex += 1
                     logger.debug("%3d. State is fail (resultLineIndex:%d, resultLinesLen:%d, resultLines:'%s' )", eclfile.getTaskId(), resultLineIndex, resultLinesLen, resultLines)
-                    data = '\n'.join(resultLines[resultLineIndex:])+ "\n"
-                    eclfile.addResults(data, wuid)
                     logger.debug("%3d. State is fail (resultLineIndex:%d, data:'%s' )", eclfile.getTaskId(), resultLineIndex,  data)
-                    if ( resultLinesLen > 0 ) and ( resultLineIndex < resultLinesLen ) and ( not resultLines[resultLineIndex].startswith('Error (') ) and resultLines[resultLineIndex].startswith('<') and True :
-                        test = eclfile.testResults()
+                    if ( resultLinesLen > 0 ):
+                        # We have some output
+                        if ( resultLineIndex < resultLinesLen ) and ( not resultLines[resultLineIndex].startswith('Error (') ) and not resultLines[resultLineIndex].startswith('<Exception') and not resultLines[resultLineIndex].startswith('eclcc'):
+                            # The output contains some '<Result>' like workflow_contingency_*.ecl compare it and report
+                            eclfile.addResults(data, wuid)
+                            test = eclfile.testResults()
+                        else:
+                            # The output contains '<Exception>' don't compare the output with the key file, but report the error
+                            test = False
+                            eclfile.diff = ("%3d. Test: %s\n") % (eclfile.taskId, eclfile.getBaseEclRealName())
+                            eclfile.diff += data
                     else:
+                        # We have no output (happens in Cloud) report it and avoid to compare with key file. 
                         test = False
                         eclfile.diff = ("%3d. Test: %s\n") % (eclfile.taskId, eclfile.getBaseEclRealName())
                         eclfile.diff += '\tNo output\n'
