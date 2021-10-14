@@ -887,18 +887,20 @@ void EclSubGraph::updateProgress()
             subgraphid.append(parent.queryGraphName()).append(":").append(SubGraphScopePrefix).append(id);
             if (startGraphTime)
                 parent.updateWUStatistic(lockedwu, SSTsubgraph, subgraphid, StWhenStarted, nullptr, startGraphTime);
+            StringBuffer scope;
+            scope.append(WorkflowScopePrefix).append(parent.queryWfid()).append(":").append(subgraphid);
             if (elapsedGraphCycles)
             {
                 unsigned __int64 elapsedTime = cycle_to_nanosec(elapsedGraphCycles);
                 parent.updateWUStatistic(lockedwu, SSTsubgraph, subgraphid, StTimeElapsed, nullptr, elapsedTime);
                 const cost_type cost = money2cost_type(calcCost(agent->queryAgentMachineCost(), nanoToMilli(elapsedTime)));
                 if (cost)
-                {
-                    StringBuffer scope;
-                    scope.append(WorkflowScopePrefix).append(parent.queryWfid()).append(":").append(subgraphid);
                     lockedwu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, scope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
-                }
             }
+            Owned<IStatisticCollection> statsCollection = stats.getResult();
+            const cost_type costDiskAccess = aggregateStatistic(StCostFileAccess, statsCollection) ;
+            if (costDiskAccess)
+                lockedwu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTsubgraph, scope, StCostFileAccess, NULL, costDiskAccess, 1, 0, StatsMergeReplace);
         }
     }
 }
@@ -1268,13 +1270,15 @@ void EclGraph::execute(const byte * parentExtract)
             unsigned __int64 elapsedNs = milliToNano(elapsed);
             updateWorkunitStat(wu, SSTgraph, queryGraphName(), StTimeElapsed, description.str(), elapsedNs, wfid);
 
+            StringBuffer scope;
+            scope.append(WorkflowScopePrefix).append(wfid).append(":").append(queryGraphName());
             const cost_type cost = money2cost_type(calcCost(agent->queryAgentMachineCost(), elapsed));
             if (cost)
-            {
-                StringBuffer scope;
-                scope.append(WorkflowScopePrefix).append(wfid).append(":").append(queryGraphName());
                 wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, scope, StCostExecute, NULL, cost, 1, 0, StatsMergeReplace);
-            }
+
+            const cost_type costDiskAccess = aggregateDiskAccessCost(wu, scope);
+            if (costDiskAccess)
+                wu->setStatistic(queryStatisticsComponentType(), queryStatisticsComponentName(), SSTgraph, scope, StCostFileAccess, NULL, costDiskAccess, 1, 0, StatsMergeReplace);
         }
 
         if (agent->queryRemoteWorkunit())
