@@ -185,6 +185,23 @@ unsigned getPositionOfField(unsigned logfields, unsigned positionoffield)
     return loggingFieldColumns.getPositionOfField(logfields, positionoffield);
 }
 
+void LogMsgJobInfo::deserialize(MemoryBuffer & in)
+{
+// kludge for forward compatibility of >= 8.0 clients that send a job id string
+// NB: jobID pre 8.0 was redundant as always equal to UnknownJob
+    dbgassertex(in.remaining() >= sizeof(LogMsgJobId)); // should always be at least this amount, because userID follows the jobID
+    if (0 == memcmp(in.toByteArray()+in.getPos(), &UnknownJob, sizeof(LogMsgJobId))) // pre 8.0 client
+       in.skip(sizeof(LogMsgJobId));
+    else
+    {
+        // this is a >= 8.0 client, so the jobID is a string, read it and ignore it.
+        StringBuffer idStr;
+        in.read(idStr);
+    }
+    jobID = UnknownJob;
+    in.read(userID);
+}
+
 // LogMsg
 
 StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
