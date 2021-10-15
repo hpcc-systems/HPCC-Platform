@@ -18,13 +18,13 @@ import { replaceUrl } from "../util/history";
 
 import "react-reflex/styles.css";
 
-interface FileSummaryProps {
+interface LogicalFileSummaryProps {
     cluster?: string;
     logicalFile: string;
     tab?: string;
 }
 
-export const FileSummary: React.FunctionComponent<FileSummaryProps> = ({
+export const LogicalFileSummary: React.FunctionComponent<LogicalFileSummaryProps> = ({
     cluster,
     logicalFile,
     tab = "summary"
@@ -156,7 +156,7 @@ export const FileSummary: React.FunctionComponent<FileSummaryProps> = ({
             <TableGroup fields={{
                 "Wuid": { label: nlsHPCC.Workunit, type: "link", value: file?.Wuid, href: `#/${isDFUWorkunit ? "dfu" : ""}workunits/${file?.Wuid}`, readonly: true, },
                 "Owner": { label: nlsHPCC.Owner, type: "string", value: file?.Owner, readonly: true },
-                "SuperOwner": { label: nlsHPCC.SuperFile, type: "links", links: file?.Superfiles?.DFULogicalFile?.map(row => ({ label: "", type: "link", value: row.Name, href: `#/superfiles/${row.Name}` })) },
+                "SuperOwner": { label: nlsHPCC.SuperFile, type: "links", links: file?.Superfiles?.DFULogicalFile?.map(row => ({ label: "", type: "link", value: row.Name, href: `#/files/${row.Name}` })) },
                 "NodeGroup": { label: nlsHPCC.ClusterName, type: "string", value: file?.NodeGroup, readonly: true },
                 "Description": { label: nlsHPCC.Description, type: "string", value: description },
                 "JobName": { label: nlsHPCC.JobName, type: "string", value: file?.JobName, readonly: true },
