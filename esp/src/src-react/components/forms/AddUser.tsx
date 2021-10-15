@@ -76,7 +76,7 @@ export const AddUserForm: React.FunctionComponent<AddUserFormProps> = ({
         )();
     }, [closeForm, handleSubmit, refreshGrid, reset]);
 
-    return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.AddUser} width={400}
+    return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.AddUser} minWidth={400}
         footer={<>
             <PrimaryButton text={nlsHPCC.Add} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => { reset(defaultValues); closeForm(); }} />

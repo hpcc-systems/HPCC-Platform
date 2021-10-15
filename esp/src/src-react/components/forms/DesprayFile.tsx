@@ -226,8 +226,8 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                     <tbody>
                         {logicalFiles.map((file, idx) => {
                             return <tr key={`File-${idx}`}>
-                                <td>{file}</td>
-                                <td>
+                                <td width="50%">{file}</td>
+                                <td width="50%">
                                     <Controller
                                         control={control} name={`targetName.${idx}.name` as const}
                                         render={({
