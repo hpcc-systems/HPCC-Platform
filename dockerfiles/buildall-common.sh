@@ -75,7 +75,6 @@ build_image() {
     fi
   fi
 
-  fi
   [[ -z ${buildTag} ]] && buildTag=$BUILD_TAG
 
   if [ "$rebuild" = "1" ] || ! docker pull ${DOCKER_REPO}/${name}:${label} ; then
