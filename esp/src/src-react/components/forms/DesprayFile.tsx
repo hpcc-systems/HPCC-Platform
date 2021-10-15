@@ -189,7 +189,7 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                         machineAddress={machine}
                         machineDirectory={directory}
                         machineOS={os}
-                        required={false}
+                        required={true}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
                             onChange(option.key);
