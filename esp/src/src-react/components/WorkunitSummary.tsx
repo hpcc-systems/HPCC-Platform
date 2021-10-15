@@ -3,9 +3,11 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, ScrollablePan
 import { scopedLogger } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUStatus } from "src/react/index";
+import { formatCost } from "src/Session";
+import { useConfirm } from "../hooks/confirm";
 import { useWorkunit } from "../hooks/workunit";
 import { ReflexContainer, ReflexElement, ReflexSplitter, classNames, styles } from "../layouts/react-reflex";
-import { pushUrl } from "../util/history";
+import { pushUrl, replaceUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { TableGroup } from "./forms/Groups";
 import { PublishQueryForm } from "./forms/PublishQuery";
@@ -13,6 +15,7 @@ import { SlaveLogs } from "./forms/SlaveLogs";
 import { ZAPDialog } from "./forms/ZAPDialog";
 import { InfoGrid } from "./InfoGrid";
 import { WorkunitPersona } from "./controls/StateIcon";
+import { useBuildInfo } from "../hooks/platform";
 
 const logger = scopedLogger("../components/WorkunitDetails.tsx");
 
@@ -27,6 +30,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
     const [workunit, , , , refresh] = useWorkunit(wuid, true);
     const [jobname, setJobname] = React.useState("");
     const [description, setDescription] = React.useState("");
+    const [, { currencyCode }] = useBuildInfo();
     const [_protected, setProtected] = React.useState(false);
     const [showPublishForm, setShowPublishForm] = React.useState(false);
     const [showZapForm, setShowZapForm] = React.useState(false);
@@ -50,6 +54,17 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
     );
     const canDeschedule = workunit && workunit?.EventSchedule === 2;
     const canReschedule = workunit && workunit?.EventSchedule === 1;
+
+    const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
+        title: nlsHPCC.Delete,
+        message: nlsHPCC.YouAreAboutToDeleteThisWorkunit,
+        onSubmit: React.useCallback(() => {
+            workunit?.delete()
+                .then(response => replaceUrl("/workunits"))
+                .catch(logger.error)
+                ;
+        }, [workunit])
+    });
 
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -77,12 +92,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         },
         {
             key: "delete", text: nlsHPCC.Delete, iconProps: { iconName: "Delete" }, disabled: !canDelete,
-            onClick: () => {
-                if (confirm(nlsHPCC.YouAreAboutToDeleteThisWorkunit)) {
-                    workunit?.delete().catch(logger.error);
-                    pushUrl("/workunits");
-                }
-            }
+            onClick: () => setShowDeleteConfirm(true)
         },
         {
             key: "restore", text: nlsHPCC.Restore, disabled: !workunit?.Archived,
@@ -141,12 +151,11 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
             key: "slaveLogs", text: nlsHPCC.SlaveLogs, disabled: !workunit?.ThorLogList,
             onClick: () => setShowThorSlaveLogs(true)
         },
-    ], [_protected, canDelete, canDeschedule, canReschedule, canSave, description, jobname, refresh, workunit, wuid]);
+    ], [_protected, canDelete, canDeschedule, canReschedule, canSave, description, jobname, refresh, setShowDeleteConfirm, workunit, wuid]);
 
-    const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
-    ], []);
-
-    const serviceNames = workunit?.ServiceNames?.Item?.join("\n") || "";
+    const serviceNames = React.useMemo(() => {
+        return workunit?.ServiceNames?.Item?.join("\n") || "";
+    }, [workunit?.ServiceNames?.Item]);
 
     return <>
         <div style={{ height: "100%", position: "relative" }}>
@@ -155,7 +164,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                     <div className="pane-content">
                         <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto}>
                             <Sticky stickyPosition={StickyPositionType.Header}>
-                                <CommandBar items={buttons} farItems={rightButtons} />
+                                <CommandBar items={buttons} />
                             </Sticky>
                             <Sticky stickyPosition={StickyPositionType.Header}>
                                 <WorkunitPersona wuid={wuid} />
@@ -170,6 +179,8 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                                 "owner": { label: nlsHPCC.Owner, type: "string", value: workunit?.Owner, readonly: true },
                                 "jobname": { label: nlsHPCC.JobName, type: "string", value: jobname },
                                 "description": { label: nlsHPCC.Description, type: "string", value: description },
+                                "executeCost": { label: nlsHPCC.ExecuteCost, type: "string", value: `${formatCost(workunit?.ExecuteCost ?? 0)} (${currencyCode})`, readonly: true },
+                                "fileAccessCost": { label: nlsHPCC.FileAccessCost, type: "string", value: `${formatCost(workunit?.FileAccessCost ?? 0)} (${currencyCode})`, readonly: true },
                                 "protected": { label: nlsHPCC.Protected, type: "checkbox", value: _protected },
                                 "cluster": { label: nlsHPCC.Cluster, type: "string", value: workunit?.Cluster, readonly: true },
                                 "totalClusterTime": { label: nlsHPCC.TotalClusterTime, type: "string", value: workunit?.TotalClusterTime, readonly: true },
@@ -205,5 +216,6 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         <PublishQueryForm wuid={wuid} showForm={showPublishForm} setShowForm={setShowPublishForm} />
         <ZAPDialog wuid={wuid} showForm={showZapForm} setShowForm={setShowZapForm} />
         <SlaveLogs wuid={wuid} showForm={showThorSlaveLogs} setShowForm={setShowThorSlaveLogs} />
+        <DeleteConfirm />
     </>;
 };

@@ -1,10 +1,12 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { scopedLogger } from "@hpcc-js/util";
 import * as domClass from "dojo/dom-class";
 import * as WsWorkunits from "src/WsWorkunits";
 import * as ESPWorkunit from "src/ESPWorkunit";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { useConfirm } from "../hooks/confirm";
 import { useGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
@@ -12,7 +14,6 @@ import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
 import { ShortVerticalDivider } from "./Common";
 import { selector } from "./DojoGrid";
-import { scopedLogger } from "@hpcc-js/util";
 
 const logger = scopedLogger("src-react/components/Workunits.tsx");
 
@@ -124,6 +125,14 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         }
     });
 
+    const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
+        title: nlsHPCC.Delete,
+        message: nlsHPCC.DeleteSelectedWorkunits + "\n" + selection.map(s => s.Wuid).join("\n"),
+        onSubmit: React.useCallback(() => {
+            WsWorkunits.WUAction(selection, "Delete").then(() => refreshTable(true));
+        }, [refreshTable, selection])
+    });
+
     //  Filter  ---
     const filterFields: Fields = {};
     for (const fieldID in FilterFields) {
@@ -151,12 +160,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         },
         {
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasNotProtected, iconProps: { iconName: "Delete" },
-            onClick: () => {
-                const list = selection.map(s => s.Wuid);
-                if (confirm(nlsHPCC.DeleteSelectedWorkunits + "\n" + list)) {
-                    WsWorkunits.WUAction(selection, "Delete").then(() => refreshTable(true));
-                }
-            }
+            onClick: () => setShowDeleteConfirm(true)
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -179,17 +183,13 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
         { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "filter", text: nlsHPCC.Filter, disabled: !!store, iconProps: { iconName: "Filter" },
-            onClick: () => {
-                setShowFilter(true);
-            }
+            onClick: () => { setShowFilter(true); }
         },
         {
             key: "mine", text: nlsHPCC.Mine, disabled: true, iconProps: { iconName: "Contact" }, canCheck: true, checked: mine,
-            onClick: () => {
-                setMine(!mine);
-            }
+            onClick: () => { setMine(!mine); }
         },
-    ], [mine, refreshTable, selection, store, uiState.hasNotCompleted, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
+    ], [mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasNotCompleted, uiState.hasNotProtected, uiState.hasProtected, uiState.hasSelection]);
 
     //  Selection  ---
     React.useEffect(() => {
@@ -226,6 +226,7 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
             <>
                 <Grid />
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
+                <DeleteConfirm />
             </>
         }
     />;

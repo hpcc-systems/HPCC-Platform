@@ -7,6 +7,7 @@ import { Memory } from "src/Memory";
 import * as WsAccess from "src/ws_access";
 import nlsHPCC from "src/nlsHPCC";
 import { ShortVerticalDivider } from "./Common";
+import { useConfirm } from "../hooks/confirm";
 import { pushUrl } from "../util/history";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { DojoGrid, selector } from "./DojoGrid";
@@ -49,17 +50,6 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
         passwordexpiration: { label: nlsHPCC.PasswordExpiration }
     });
 
-    //  Selection  ---
-    React.useEffect(() => {
-        const state = { ...defaultUIState };
-
-        if (selection.length > 0) {
-            state.hasSelection = true;
-        }
-
-        setUIState(state);
-    }, [selection]);
-
     const refreshTable = React.useCallback((clearSelection = false) => {
         WsAccess.GroupMemberQuery({
             request: { GroupName: groupname }
@@ -80,6 +70,36 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
             .catch(logger.error)
             ;
     }, [grid, gridQuery, gridStore, groupname]);
+
+    const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
+        title: nlsHPCC.Delete,
+        message: nlsHPCC.YouAreAboutToRemoveUserFrom,
+        onSubmit: React.useCallback(() => {
+            const requests = [];
+            selection.forEach((user, idx) => {
+                const request = {
+                    groupname: groupname,
+                    action: "Delete"
+                };
+                request["usernames_i" + idx] = user.username;
+                requests.push(WsAccess.GroupMemberEdit({ request: request }));
+            });
+            Promise.all(requests)
+                .then(responses => refreshTable())
+                .catch(logger.error);
+        }, [groupname, refreshTable, selection])
+    });
+
+    //  Selection  ---
+    React.useEffect(() => {
+        const state = { ...defaultUIState };
+
+        if (selection.length > 0) {
+            state.hasSelection = true;
+        }
+
+        setUIState(state);
+    }, [selection]);
 
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -106,24 +126,9 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
         },
         {
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection,
-            onClick: () => {
-                if (confirm(nlsHPCC.YouAreAboutToRemoveUserFrom)) {
-                    const requests = [];
-                    selection.forEach((user, idx) => {
-                        const request = {
-                            groupname: groupname,
-                            action: "Delete"
-                        };
-                        request["usernames_i" + idx] = user.username;
-                        requests.push(WsAccess.GroupMemberEdit({ request: request }));
-                    });
-                    Promise.all(requests)
-                        .then(responses => refreshTable())
-                        .catch(logger.error);
-                }
-            }
+            onClick: () => setShowDeleteConfirm(true)
         },
-    ], [groupname, refreshTable, selection, uiState.hasSelection]);
+    ], [refreshTable, selection, setShowDeleteConfirm, uiState.hasSelection]);
 
     React.useEffect(() => {
         if (!grid || !gridStore) return;
@@ -141,6 +146,7 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
             }
         />
         <GroupAddUserForm showForm={showAdd} setShowForm={setShowAdd} refreshGrid={refreshTable} groupname={groupname} />
+        <DeleteConfirm />
     </>;
 
 };

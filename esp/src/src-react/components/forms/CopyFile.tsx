@@ -3,7 +3,6 @@ import { Checkbox, DefaultButton, mergeStyleSets, PrimaryButton, Stack, TextFiel
 import { useForm, Controller } from "react-hook-form";
 import nlsHPCC from "src/nlsHPCC";
 import * as FileSpray from "src/FileSpray";
-import { useFile } from "../../hooks/file";
 import { MessageBox } from "../../layouts/MessageBox";
 import { pushUrl } from "../../util/history";
 import { TargetGroupTextField } from "./Fields";
@@ -12,6 +11,9 @@ import * as FormStyles from "./landing-zone/styles";
 interface CopyFileFormValues {
     destGroup: string;
     destLogicalName: string;
+    targetCopyName?: {
+        name: string
+    }[];
     overwrite: boolean;
     replicate: boolean;
     nosplit: boolean;
@@ -36,21 +38,20 @@ const defaultValues: CopyFileFormValues = {
 };
 
 interface CopyFileProps {
-    cluster: string;
-    logicalFile: string;
+    logicalFiles: string[];
 
     showForm: boolean;
     setShowForm: (_: boolean) => void;
+
+    refreshGrid?: () => void;
 }
 
 export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
-    cluster,
-    logicalFile,
+    logicalFiles,
     showForm,
-    setShowForm
+    setShowForm,
+    refreshGrid
 }) => {
-
-    const [file] = useFile(cluster, logicalFile);
 
     const { handleSubmit, control, reset } = useForm<CopyFileFormValues>({ defaultValues });
 
@@ -61,17 +62,31 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
     const onSubmit = React.useCallback(() => {
         handleSubmit(
             (data, evt) => {
-                const request = { ...data, sourceLogicalName: logicalFile };
-                FileSpray.Copy({ request: request }).then(response => {
-                    closeForm();
-                    pushUrl(`/files/${data.destGroup}/${data.destLogicalName}`);
-                });
+                if (logicalFiles.length > 0) {
+                    if (logicalFiles.length === 1) {
+                        const request = { ...data, sourceLogicalName: logicalFiles[0] };
+                        FileSpray.Copy({ request: request }).then(response => {
+                            closeForm();
+                            pushUrl(`/files/${data.destGroup}/${request.destLogicalName}`);
+                        });
+                    } else {
+                        logicalFiles.forEach((logicalFile, idx) => {
+                            const request = { ...data, sourceLogicalName: logicalFile, destLogicalName: data.targetCopyName[idx].name };
+                            const requests = [];
+                            requests.push(FileSpray.Copy({ request: request }));
+                            Promise.all(requests).then(_ => {
+                                closeForm();
+                                if (refreshGrid) refreshGrid();
+                            });
+                        });
+                    }
+                }
             },
             err => {
                 console.log(err);
             }
         )();
-    }, [closeForm, handleSubmit, logicalFile]);
+    }, [closeForm, handleSubmit, logicalFiles, refreshGrid]);
 
     const componentStyles = mergeStyleSets(
         FormStyles.componentStyles,
@@ -83,9 +98,18 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
     );
 
     React.useEffect(() => {
-        const newValues = { ...defaultValues, destLogicalName: logicalFile };
-        reset(newValues);
-    }, [file, logicalFile, reset]);
+        if (logicalFiles?.length === 1) {
+            const newValues = { ...defaultValues, destLogicalName: logicalFiles[0] };
+            reset(newValues);
+        } else if (logicalFiles?.length > 1) {
+            const _files = [];
+            logicalFiles.forEach(file => {
+                _files.push({ name: file });
+            });
+            const newValues = { ...defaultValues, targetCopyName: _files };
+            reset(newValues);
+        }
+    }, [logicalFiles, reset]);
 
     return <MessageBox title={nlsHPCC.Copy} show={showForm} setShow={closeForm}
         footer={<>
@@ -113,24 +137,60 @@ export const CopyFile: React.FunctionComponent<CopyFileProps> = ({
                     required: `${nlsHPCC.SelectA} ${nlsHPCC.Group}`
                 }}
             />
-            <Controller
-                control={control} name="destLogicalName"
-                render={({
-                    field: { onChange, name: fieldName, value },
-                    fieldState: { error }
-                }) => <TextField
-                        name={fieldName}
-                        onChange={onChange}
-                        required={true}
-                        label={nlsHPCC.TargetName}
-                        value={value}
-                        errorMessage={error && error.message}
-                    />}
-                rules={{
-                    required: nlsHPCC.ValidationErrorRequired
-                }}
-            />
+            {logicalFiles.length === 1 &&
+                <Controller
+                    control={control} name="destLogicalName"
+                    render={({
+                        field: { onChange, name: fieldName, value },
+                        fieldState: { error }
+                    }) => <TextField
+                            name={fieldName}
+                            onChange={onChange}
+                            required={true}
+                            label={nlsHPCC.TargetName}
+                            value={value}
+                            errorMessage={error && error.message}
+                        />}
+                    rules={{
+                        required: nlsHPCC.ValidationErrorRequired
+                    }}
+                />
+            }
         </Stack>
+        {logicalFiles.length > 1 &&
+            <Stack>
+                <table className={`${componentStyles.twoColumnTable} ${componentStyles.selectionTable}`}>
+                    <thead>
+                        <tr>
+                            <th>{nlsHPCC.TargetName}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {logicalFiles.map((file, idx) => {
+                            return <tr key={`File-${idx}`}>
+                                <td>
+                                    <Controller
+                                        control={control} name={`targetCopyName.${idx}.name` as const}
+                                        render={({
+                                            field: { onChange, name: fieldName, value: file },
+                                            fieldState: { error }
+                                        }) => <TextField
+                                                name={fieldName}
+                                                onChange={onChange}
+                                                value={file}
+                                                errorMessage={error && error?.message}
+                                            />}
+                                        rules={{
+                                            required: nlsHPCC.ValidationErrorTargetNameRequired
+                                        }}
+                                    />
+                                </td>
+                            </tr>;
+                        })}
+                    </tbody>
+                </table>
+            </Stack>
+        }
         <Stack>
             <table className={componentStyles.twoColumnTable}>
                 <tbody>

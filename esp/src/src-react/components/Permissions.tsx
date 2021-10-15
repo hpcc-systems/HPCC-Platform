@@ -5,7 +5,7 @@ import { scopedLogger } from "@hpcc-js/util";
 import * as WsAccess from "src/ws_access";
 import nlsHPCC from "src/nlsHPCC";
 import { ShortVerticalDivider } from "./Common";
-import { Confirm } from "./controls/Confirm";
+import { useConfirm } from "../hooks/confirm";
 import { DojoGrid, selector, tree } from "./DojoGrid";
 import { AddPermissionForm } from "./forms/AddPermission";
 import { HolyGrail } from "../layouts/HolyGrail";
@@ -30,11 +30,6 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
 
     const [grid, setGrid] = React.useState<any>(undefined);
     const [selection, setSelection] = React.useState([]);
-
-    const [showConfirm, setShowConfirm] = React.useState(false);
-    const [confirmTitle, setConfirmTitle] = React.useState("");
-    const [confirmMessage, setConfirmMessage] = React.useState("");
-    const [confirmOnSubmit, setConfirmOnSubmit] = React.useState(null);
 
     const [showAddPermission, setShowAddPermission] = React.useState(false);
     const [scopeScansEnabled, setScopeScansEnabled] = React.useState(false);
@@ -117,33 +112,55 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
         }
     }, [grid, gridQuery]);
 
-    const deletePermission = React.useCallback(() => {
-        const deleteRequests = {};
-        const requests = [];
-        selection.forEach((item, idx) => {
-            if (!deleteRequests[item.__hpcc_id]) {
-                deleteRequests[item.__hpcc_id] = {
-                    action: "Delete",
-                    BasednName: item.__hpcc_parent.name,
-                    rtype: item.__hpcc_parent.rtype,
-                    rtitle: item.__hpcc_parent.rtitle
-                };
+    const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
+        title: nlsHPCC.Delete,
+        message: nlsHPCC.DeleteSelectedPermissions + "\n\n" + selectedFileList,
+        onSubmit: React.useCallback(() => {
+            const deleteRequests = {};
+            const requests = [];
+            selection.forEach((item, idx) => {
+                if (!deleteRequests[item.__hpcc_id]) {
+                    deleteRequests[item.__hpcc_id] = {
+                        action: "Delete",
+                        BasednName: item.__hpcc_parent.name,
+                        rtype: item.__hpcc_parent.rtype,
+                        rtitle: item.__hpcc_parent.rtitle
+                    };
+                }
+                deleteRequests[item.__hpcc_id]["names_i" + idx] = item.name;
+            });
+            for (const key in deleteRequests) {
+                requests.push(WsAccess.ResourceDelete({
+                    request: deleteRequests[key]
+                }));
             }
-            deleteRequests[item.__hpcc_id]["names_i" + idx] = item.name;
-        });
-        for (const key in deleteRequests) {
-            requests.push(WsAccess.ResourceDelete({
-                request: deleteRequests[key]
-            }));
-        }
 
-        Promise.all(requests)
-            .then(() => {
-                refreshTable();
-            })
-            .catch(logger.error)
-            ;
-    }, [refreshTable, selection]);
+            Promise.all(requests)
+                .then(() => {
+                    refreshTable();
+                })
+                .catch(logger.error)
+                ;
+        }, [refreshTable, selection])
+    });
+
+    const [ClearPermissionsConfirm, setShowClearPermissionsConfirm] = useConfirm({
+        title: nlsHPCC.ClearPermissionsCache,
+        message: nlsHPCC.ClearPermissionsCacheConfirm,
+        onSubmit: () => WsAccess.ClearPermissionsCache
+    });
+
+    const [EnableScopesConfirm, setShowEnableScopesConfirm] = useConfirm({
+        title: nlsHPCC.EnableScopeScans,
+        message: nlsHPCC.EnableScopeScansConfirm,
+        onSubmit: () => WsAccess.EnableScopeScans
+    });
+
+    const [DisableScopesConfirm, setShowDisableScopesConfirm] = useConfirm({
+        title: nlsHPCC.DisableScopeScans,
+        message: nlsHPCC.DisableScopeScanConfirm,
+        onSubmit: () => WsAccess.DisableScopeScans
+    });
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -158,22 +175,12 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
         },
         {
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.canDelete,
-            onClick: () => {
-                setConfirmTitle(nlsHPCC.Delete);
-                setConfirmMessage(nlsHPCC.DeleteSelectedPermissions + "\n\n" + selectedFileList);
-                setConfirmOnSubmit(() => deletePermission);
-                setShowConfirm(true);
-            }
+            onClick: () => setShowDeleteConfirm(true)
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "clearPermissions", text: nlsHPCC.ClearPermissionsCache,
-            onClick: () => {
-                setConfirmTitle(nlsHPCC.ClearPermissionsCache);
-                setConfirmMessage(nlsHPCC.ClearPermissionsCacheConfirm);
-                setConfirmOnSubmit(() => WsAccess.ClearPermissionsCache);
-                setShowConfirm(true);
-            }
+            onClick: () => setShowClearPermissionsConfirm(true)
         },
         {
             key: "advanced", text: nlsHPCC.Advanced, disabled: !uiState.hasSelection || !uiState.categorySelected,
@@ -182,23 +189,13 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
                     {
                         key: "enableScopeScans",
                         text: nlsHPCC.EnableScopeScans,
-                        onClick: () => {
-                            setConfirmTitle(nlsHPCC.EnableScopeScans);
-                            setConfirmMessage(nlsHPCC.EnableScopeScansConfirm);
-                            setConfirmOnSubmit(() => WsAccess.EnableScopeScans);
-                            setShowConfirm(true);
-                        },
+                        onClick: () => setShowEnableScopesConfirm(true),
                         disabled: scopeScansEnabled
                     },
                     {
                         key: "disableScopeScans",
                         text: nlsHPCC.DisableScopeScans,
-                        onClick: () => {
-                            setConfirmTitle(nlsHPCC.DisableScopeScans);
-                            setConfirmMessage(nlsHPCC.DisableScopeScanConfirm);
-                            setConfirmOnSubmit(() => WsAccess.DisableScopeScans);
-                            setShowConfirm(true);
-                        },
+                        onClick: () => setShowDisableScopesConfirm(true),
                         disabled: !scopeScansEnabled
                     },
                     { key: "fileScopeDefaults", text: nlsHPCC.FileScopeDefaultPermissions, onClick: (evt, item) => pushUrl("/security/permissions/_/File%20Scopes"), disabled: !uiState.fileScope },
@@ -209,7 +206,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
                 ],
             },
         },
-    ], [deletePermission, modulesDn, refreshTable, selectedFileList, scopeScansEnabled, uiState]);
+    ], [modulesDn, refreshTable, setShowClearPermissionsConfirm, setShowDeleteConfirm, setShowDisableScopesConfirm, setShowEnableScopesConfirm, scopeScansEnabled, uiState]);
 
     React.useEffect(() => {
         refreshTable();
@@ -220,10 +217,10 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
             header={<CommandBar items={buttons} overflowButtonProps={{}} />}
             main={<DojoGrid store={gridStore} query={gridQuery} sort={gridSort} columns={gridColumns} setGrid={setGrid} setSelection={setSelection} />}
         />
-        <Confirm
-            show={showConfirm} setShow={setShowConfirm}
-            title={confirmTitle} message={confirmMessage} onSubmit={confirmOnSubmit}
-        />
+        <DeleteConfirm />
+        <ClearPermissionsConfirm />
+        <EnableScopesConfirm />
+        <DisableScopesConfirm />
         <AddPermissionForm showForm={showAddPermission} setShowForm={setShowAddPermission} refreshGrid={refreshTable} />
     </>;
 

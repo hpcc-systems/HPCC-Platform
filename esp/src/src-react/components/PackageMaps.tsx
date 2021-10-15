@@ -5,6 +5,7 @@ import { SizeMe } from "react-sizeme";
 import * as ESPPackageProcess from "src/ESPPackageProcess";
 import * as WsPackageMaps from "src/WsPackageMaps";
 import nlsHPCC from "src/nlsHPCC";
+import { useConfirm } from "../hooks/confirm";
 import { useGrid } from "../hooks/grid";
 import { pivotItemStyle } from "../layouts/pivot";
 import { pushParams, pushUrl } from "../util/history";
@@ -210,6 +211,32 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
         }
     });
 
+    const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
+        title: nlsHPCC.Delete,
+        message: nlsHPCC.DeleteSelectedPackages,
+        onSubmit: React.useCallback(() => {
+            selection.forEach((item, idx) => {
+                WsPackageMaps.deletePackageMap({
+                    request: {
+                        PackageMap: item.Id,
+                        Target: item.Target,
+                        Process: item.Process
+                    }
+                })
+                    .then(({ DeletePackageResponse, Exceptions }) => {
+                        if (DeletePackageResponse?.status?.Code === 0) {
+                            refreshTable();
+                        } else if (Exceptions?.Exception.length > 0) {
+                            setShowError(true);
+                            setErrorMessage(Exceptions?.Exception[0].Message);
+                        }
+                    })
+                    .catch(logger.error)
+                    ;
+            });
+        }, [refreshTable, selection])
+    });
+
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
@@ -234,29 +261,7 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
         },
         {
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection,
-            onClick: () => {
-                if (confirm(nlsHPCC.DeleteSelectedPackages)) {
-                    selection.forEach((item, idx) => {
-                        WsPackageMaps.deletePackageMap({
-                            request: {
-                                PackageMap: item.Id,
-                                Target: item.Target,
-                                Process: item.Process
-                            }
-                        })
-                            .then(({ DeletePackageResponse, Exceptions }) => {
-                                if (DeletePackageResponse?.status?.Code === 0) {
-                                    refreshTable();
-                                } else if (Exceptions?.Exception.length > 0) {
-                                    setShowError(true);
-                                    setErrorMessage(Exceptions?.Exception[0].Message);
-                                }
-                            })
-                            .catch(logger.error)
-                            ;
-                    });
-                }
-            }
+            onClick: () => setShowDeleteConfirm(true)
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -307,7 +312,7 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
                 setShowFilter(true);
             }
         },
-    ], [refreshTable, selection, store, uiState.hasSelection]);
+    ], [refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection]);
 
     //  Filter  ---
     const filterFields: Fields = {};
@@ -474,5 +479,6 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
             showForm={showAddForm} setShowForm={setShowAddForm}
             refreshTable={refreshTable} targets={targets} processes={processes}
         />
+        <DeleteConfirm />
     </>;
 };

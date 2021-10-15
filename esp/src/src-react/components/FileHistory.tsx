@@ -3,6 +3,7 @@ import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluen
 import { useConst } from "@fluentui/react-hooks";
 import { Memory, Observable } from "src/Memory";
 import nlsHPCC from "src/nlsHPCC";
+import { useConfirm } from "../hooks/confirm";
 import { useFileHistory } from "../hooks/file";
 import { useGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
@@ -37,6 +38,12 @@ export const FileHistory: React.FunctionComponent<FileHistoryProps> = ({
         }
     });
 
+    const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
+        title: nlsHPCC.EraseHistory,
+        message: nlsHPCC.EraseHistoryQ + "\n" + logicalFile + "?",
+        onSubmit: eraseHistory
+    });
+
     React.useEffect(() => {
         store.setData(history);
         refreshTable();
@@ -51,18 +58,17 @@ export const FileHistory: React.FunctionComponent<FileHistoryProps> = ({
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "erase", text: nlsHPCC.EraseHistory, disabled: history?.length === 0,
-            onClick: () => {
-                if (confirm(nlsHPCC.EraseHistoryQ + "\n" + logicalFile + "?")) {
-                    eraseHistory();
-                }
-            }
+            onClick: () => setShowDeleteConfirm(true)
         },
-    ], [eraseHistory, history?.length, logicalFile, refreshData]);
+    ], [history?.length, refreshData, setShowDeleteConfirm]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
         main={
-            <Grid />
+            <>
+                <Grid />
+                <DeleteConfirm />
+            </>
         }
     />;
 };

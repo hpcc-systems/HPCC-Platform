@@ -64,10 +64,10 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
             <PivotItem headerText={nlsHPCC.XML} itemKey="XML" style={pivotItemStyle(size, 0)}>
                 <XMLSourceEditor text={xmlFile} readonly={true} />
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.Superfiles} itemKey="superfiles" itemCount={file?.Superfiles?.DFULogicalFile.length || 0} style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.Superfiles} itemKey="superfiles" itemCount={file?.Superfiles?.DFULogicalFile.length ?? 0} style={pivotItemStyle(size, 0)}>
                 <SuperFiles cluster={cluster} logicalFile={logicalFile} />
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.FileParts} itemKey="FileParts" style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.FileParts} itemKey="FileParts" itemCount={file?.fileParts().length ?? 0} style={pivotItemStyle(size, 0)}>
                 <FileParts cluster={cluster} logicalFile={logicalFile} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Queries} itemKey="queries" style={pivotItemStyle(size, 0)}>

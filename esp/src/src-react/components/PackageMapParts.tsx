@@ -8,6 +8,7 @@ import * as Observable from "dojo/store/Observable";
 import { Memory } from "src/Memory";
 import * as WsPackageMaps from "src/WsPackageMaps";
 import nlsHPCC from "src/nlsHPCC";
+import { useConfirm } from "../hooks/confirm";
 import { useGrid } from "../hooks/grid";
 import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
@@ -53,6 +54,33 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
         }
     });
 
+    const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
+        title: nlsHPCC.Delete,
+        message: nlsHPCC.YouAreAboutToDeleteThisPart,
+        onSubmit: React.useCallback(() => {
+            selection.forEach((item, idx) => {
+                WsPackageMaps.RemovePartFromPackageMap({
+                    request: {
+                        PackageMap: name.split("::")[1],
+                        Target: _package.Target,
+                        PartName: item.Part
+                    }
+                })
+                    .then(({ RemovePartFromPackageMapResponse, Exceptions }) => {
+                        if (RemovePartFromPackageMapResponse?.status?.Code === 0) {
+                            store.remove(item.Part);
+                            refreshTable();
+                        } else if (Exceptions?.Exception.length > 0) {
+                            setShowError(true);
+                            setErrorMessage(Exceptions?.Exception[0].Message);
+                        }
+                    })
+                    .catch(logger.error)
+                    ;
+            });
+        }, [_package.Target, name, refreshTable, selection, store])
+    });
+
     //  Command Bar ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -66,30 +94,7 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
         },
         {
             key: "delete", text: nlsHPCC.RemovePart, disabled: !uiState.hasSelection,
-            onClick: () => {
-                if (confirm(nlsHPCC.YouAreAboutToDeleteThisPart)) {
-                    selection.forEach((item, idx) => {
-                        WsPackageMaps.RemovePartFromPackageMap({
-                            request: {
-                                PackageMap: name.split("::")[1],
-                                Target: _package.Target,
-                                PartName: item.Part
-                            }
-                        })
-                            .then(({ RemovePartFromPackageMapResponse, Exceptions }) => {
-                                if (RemovePartFromPackageMapResponse?.status?.Code === 0) {
-                                    store.remove(item.Part);
-                                    refreshTable();
-                                } else if (Exceptions?.Exception.length > 0) {
-                                    setShowError(true);
-                                    setErrorMessage(Exceptions?.Exception[0].Message);
-                                }
-                            })
-                            .catch(logger.error)
-                            ;
-                    });
-                }
-            }
+            onClick: () => setShowDeleteConfirm(true)
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -104,7 +109,7 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
                 }
             }
         },
-    ], [_package, store, name, refreshTable, selection, uiState.hasSelection]);
+    ], [name, refreshTable, selection, setShowDeleteConfirm, uiState.hasSelection]);
 
     React.useEffect(() => {
         WsPackageMaps.getPackageMapById({ packageMap: name })
@@ -160,5 +165,6 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
             showForm={showAddPartForm} setShowForm={setShowAddPartForm} store={store}
             refreshTable={refreshTable} target={_package?.Target} packageMap={_package?.Id.split("::")[1]}
         />
+        <DeleteConfirm />
     </>;
 };

@@ -6,11 +6,17 @@ import * as WsDfu from "src/WsDfu";
 import * as ESPLogicalFile from "src/ESPLogicalFile";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { useConfirm } from "../hooks/confirm";
 import { useGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
+import { AddToSuperfile } from "./forms/AddToSuperfile";
+import { CopyFile } from "./forms/CopyFile";
+import { DesprayFile } from "./forms/DesprayFile";
 import { Fields } from "./forms/Fields";
 import { Filter } from "./forms/Filter";
+import { RemoteCopy } from "./forms/RemoteCopy";
+import { RenameFile } from "./forms/RenameFile";
 import { ShortVerticalDivider } from "./Common";
 import { selector, tree } from "./DojoGrid";
 
@@ -61,7 +67,13 @@ export const Files: React.FunctionComponent<FilesProps> = ({
 }) => {
 
     const [showFilter, setShowFilter] = React.useState(false);
+    const [showRemoteCopy, setShowRemoteCopy] = React.useState(false);
+    const [showCopy, setShowCopy] = React.useState(false);
+    const [showRenameFile, setShowRenameFile] = React.useState(false);
+    const [showAddToSuperfile, setShowAddToSuperfile] = React.useState(false);
+    const [showDesprayFile, setShowDesprayFile] = React.useState(false);
     const [mine, setMine] = React.useState(false);
+    const [selectedFileList, setSelectedFileList] = React.useState("");
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     //  Grid ---
@@ -109,7 +121,8 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                     if (row.__hpcc_isDir) {
                         return name;
                     }
-                    return (row.getStateImageHTML ? row.getStateImageHTML() + "&nbsp;" : "") + "<a href='#/files/" + row.NodeGroup + "/" + name + "' class='dgrid-row-url'>" + name + "</a>";
+                    const url = "#/files/" + (row.NodeGroup ? row.NodeGroup + "/" : "") + name;
+                    return (row.getStateImageHTML ? row.getStateImageHTML() + "&nbsp;" : "") + "<a href='" + url + "' class='dgrid-row-url'>" + name + "</a>";
                 },
                 renderExpando: function (level, hasChildren, expanded, object) {
                     const dir = this.grid.isRTL ? "right" : "left";
@@ -152,6 +165,14 @@ export const Files: React.FunctionComponent<FilesProps> = ({
         }
     });
 
+    const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
+        title: nlsHPCC.Delete,
+        message: nlsHPCC.DeleteSelectedFiles + "\n\n" + selectedFileList,
+        onSubmit: React.useCallback(() => {
+            WsDfu.DFUArrayAction(selection, "Delete").then(() => refreshTable(true));
+        }, [refreshTable, selection])
+    });
+
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -163,24 +184,40 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             key: "open", text: nlsHPCC.Open, disabled: !uiState.hasSelection, iconProps: { iconName: "WindowEdit" },
             onClick: () => {
                 if (selection.length === 1) {
-                    window.location.href = `#/files/${selection[0].NodeGroup}/${selection[0].Name}`;
+                    window.location.href = "#/files/" + (selection[0].NodeGroup ? selection[0].NodeGroup + "/" : "") + selection[0].Name;
                 } else {
                     for (let i = selection.length - 1; i >= 0; --i) {
-                        window.open(`#/files/${selection[0].NodeGroup}/${selection[i].Name}`, "_blank");
+                        window.open("#/files/" + (selection[i].NodeGroup ? selection[i].NodeGroup + "/" : "") + selection[i].Name, "_blank");
                     }
                 }
             }
         },
         {
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection, iconProps: { iconName: "Delete" },
-            onClick: () => {
-                const list = selection.map(s => s.Name);
-                if (confirm(nlsHPCC.DeleteSelectedFiles + "\n" + list)) {
-                    WsDfu.DFUArrayAction(selection, "Delete").then(() => refreshTable(true));
-                }
-            }
+            onClick: () => setShowDeleteConfirm(true)
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "remoteCopy", text: nlsHPCC.RemoteCopy,
+            onClick: () => setShowRemoteCopy(true)
+        },
+        { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
+        {
+            key: "copy", text: nlsHPCC.Copy, disabled: !uiState.hasSelection,
+            onClick: () => setShowCopy(true)
+        },
+        {
+            key: "rename", text: nlsHPCC.Rename, disabled: !uiState.hasSelection,
+            onClick: () => setShowRenameFile(true)
+        },
+        {
+            key: "addToSuperfile", text: nlsHPCC.AddToSuperfile, disabled: !uiState.hasSelection,
+            onClick: () => setShowAddToSuperfile(true)
+        },
+        {
+            key: "despray", text: nlsHPCC.Despray, disabled: !uiState.hasSelection,
+            onClick: () => setShowDesprayFile(true)
+        },
         { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "filter", text: nlsHPCC.Filter, disabled: !!store, iconProps: { iconName: "Filter" },
@@ -194,7 +231,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
                 setMine(!mine);
             }
         },
-    ], [mine, refreshTable, selection, store, uiState.hasSelection]);
+    ], [mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection]);
 
     //  Filter  ---
     const filterFields: Fields = {};
@@ -210,6 +247,7 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             state.hasSelection = true;
             //  TODO:  More State
         }
+        setSelectedFileList(selection.map(s => s.Name).join("\n"));
         setUIState(state);
     }, [selection]);
 
@@ -219,6 +257,12 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             <>
                 <Grid />
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
+                <RemoteCopy showForm={showRemoteCopy} setShowForm={setShowRemoteCopy} refreshGrid={refreshTable} />
+                <CopyFile logicalFiles={selection.map(s => s.Name)} showForm={showCopy} setShowForm={setShowCopy} refreshGrid={refreshTable} />
+                <RenameFile logicalFiles={selection.map(s => s.Name)} showForm={showRenameFile} setShowForm={setShowRenameFile} />
+                <AddToSuperfile logicalFiles={selection.map(s => s.Name)} showForm={showAddToSuperfile} setShowForm={setShowAddToSuperfile} />
+                <DesprayFile logicalFiles={selection.map(s => s.Name)} showForm={showDesprayFile} setShowForm={setShowDesprayFile} refreshGrid={refreshTable} />
+                <DeleteConfirm />
             </>
         }
     />;

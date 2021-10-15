@@ -4,6 +4,7 @@ import * as WsWorkunits from "src/WsWorkunits";
 import * as ESPQuery from "src/ESPQuery";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
+import { useConfirm } from "../hooks/confirm";
 import { useGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushParams } from "../util/history";
@@ -170,6 +171,14 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
         }
     });
 
+    const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
+        title: nlsHPCC.Delete,
+        message: nlsHPCC.DeleteSelectedWorkunits + "\n" + selection.map(s => s.Id).join("\n"),
+        onSubmit: React.useCallback(() => {
+            WsWorkunits.WUQuerysetQueryAction(selection, "Delete").then(() => refreshTable(true));
+        }, [refreshTable, selection])
+    });
+
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -191,12 +200,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
         },
         {
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection, iconProps: { iconName: "Delete" },
-            onClick: () => {
-                const list = selection.map(s => s.Id);
-                if (confirm(nlsHPCC.DeleteSelectedWorkunits + "\n" + list)) {
-                    WsWorkunits.WUQuerysetQueryAction(selection, "Delete").then(() => refreshTable(true));
-                }
-            }
+            onClick: () => setShowDeleteConfirm(true)
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -228,7 +232,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
                 setMine(!mine);
             }
         },
-    ], [mine, refreshTable, selection, store, uiState.hasSelection, uiState.isActive, uiState.isNotActive, uiState.isNotSuspended, uiState.isSuspended, wuid]);
+    ], [mine, refreshTable, selection, setShowDeleteConfirm, store, uiState.hasSelection, uiState.isActive, uiState.isNotActive, uiState.isNotSuspended, uiState.isSuspended, wuid]);
 
     //  Filter  ---
     const filterFields: Fields = {};
@@ -263,6 +267,7 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
             <>
                 <Grid />
                 <Filter showFilter={showFilter} setShowFilter={setShowFilter} filterFields={filterFields} onApply={pushParams} />
+                <DeleteConfirm />
             </>
         }
     />;

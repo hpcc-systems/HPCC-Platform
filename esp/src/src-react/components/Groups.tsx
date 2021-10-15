@@ -6,6 +6,7 @@ import * as WsAccess from "src/ws_access";
 import nlsHPCC from "src/nlsHPCC";
 import { ShortVerticalDivider } from "./Common";
 import { DojoGrid, selector } from "./DojoGrid";
+import { useConfirm } from "../hooks/confirm";
 import { AddGroupForm } from "./forms/AddGroup";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { pushUrl } from "../util/history";
@@ -44,6 +45,33 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
         groupDesc: { label: nlsHPCC.Description }
     });
 
+    const refreshTable = React.useCallback((clearSelection = false) => {
+        grid?.set("query", {});
+        if (clearSelection) {
+            grid?.clearSelection();
+        }
+    }, [grid]);
+
+    const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
+        title: nlsHPCC.Delete,
+        message: nlsHPCC.DeleteSelectedGroups + "\n" + selection.map(group => group.name).join("\n"),
+        onSubmit: React.useCallback(() => {
+            const request = { ActionType: "delete" };
+            selection.forEach((item, idx) => {
+                request["groupnames_i" + idx] = item.name;
+            });
+
+            WsAccess.GroupAction({
+                request: request
+            })
+                .then((response) => {
+                    refreshTable(true);
+                })
+                .catch(logger.error)
+                ;
+        }, [refreshTable, selection])
+    });
+
     //  Selection  ---
     React.useEffect(() => {
         const state = { ...defaultUIState };
@@ -54,13 +82,6 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
 
         setUIState(state);
     }, [selection]);
-
-    const refreshTable = React.useCallback((clearSelection = false) => {
-        grid?.set("query", {});
-        if (clearSelection) {
-            grid?.clearSelection();
-        }
-    }, [grid]);
 
     const exportGroups = React.useCallback(() => {
         let groupnames = "";
@@ -98,31 +119,14 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
         },
         {
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection,
-            onClick: () => {
-                const list = selection.map(group => group.name).join("\n");
-                if (confirm(nlsHPCC.DeleteSelectedGroups + "\n" + list)) {
-                    const request = { ActionType: "delete" };
-                    selection.forEach((item, idx) => {
-                        request["groupnames_i" + idx] = item.name;
-                    });
-
-                    WsAccess.GroupAction({
-                        request: request
-                    })
-                        .then((response) => {
-                            refreshTable(true);
-                        })
-                        .catch(logger.error)
-                        ;
-                }
-            },
+            onClick: () => setShowDeleteConfirm(true)
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "export", text: nlsHPCC.Export,
             onClick: () => exportGroups()
         },
-    ], [exportGroups, refreshTable, selection, uiState]);
+    ], [exportGroups, refreshTable, selection, setShowDeleteConfirm, uiState]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} overflowButtonProps={{}} />}
@@ -133,6 +137,7 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
                     columns={gridColumns} setGrid={setGrid} setSelection={setSelection}
                 />
                 <AddGroupForm showForm={showAddGroup} setShowForm={setShowAddGroup} refreshGrid={refreshTable} />
+                <DeleteConfirm />
             </>
         }
     />;

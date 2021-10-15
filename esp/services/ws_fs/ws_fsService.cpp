@@ -2502,10 +2502,6 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         double version = context.getClientVersion();
         StringBuffer destip(req.getDestIP());
         const char* destPlane = req.getDestPlane();
-#ifdef _CONTAINERIZED
-        if (isEmptyString(destPlane))
-            destPlane = req.getDestGroup();  // allow eclwatch to continue providing storage plane as 'destgroup' field
-#endif
 
         StringBuffer destPath;
         StringBuffer implicitDestFile;
@@ -2514,8 +2510,15 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
         MemoryBuffer& dstxml = (MemoryBuffer&)req.getDstxml();
         if(dstxml.length() == 0)
         {
-            if(isEmptyString(destPlane) && destip.isEmpty())
+#ifdef _CONTAINERIZED
+            if (isEmptyString(destPlane))
+                destPlane = req.getDestGroup();  // allow eclwatch to continue providing storage plane as 'destgroup' field
+            if (isEmptyString(destPlane))
+                throw makeStringException(ECLWATCH_INVALID_INPUT, "Destination storage plane not specified.");
+#else
+            if (isEmptyString(destPlane) && destip.isEmpty())
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination network IP/storage plane not specified.");
+#endif
 
             //If the destination filename is not provided, calculate a relative filename from the logical filename
             if(!destfile || !*destfile)

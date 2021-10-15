@@ -6,6 +6,7 @@ import { HolyGrail } from "../layouts/HolyGrail";
 import * as WsDFUXref from "src/WsDFUXref";
 import * as Observable from "dojo/store/Observable";
 import { Memory } from "src/Memory";
+import { useConfirm } from "../hooks/confirm";
 import { useGrid } from "../hooks/grid";
 import { ShortVerticalDivider } from "./Common";
 import { selector } from "./DojoGrid";
@@ -73,6 +74,32 @@ export const XrefFoundFiles: React.FunctionComponent<XrefFoundFilesProps> = ({
             ;
     }, [name, refreshTable, store]);
 
+    const [AttachConfirm, setShowAttachConfirm] = useConfirm({
+        title: nlsHPCC.Attach,
+        message: nlsHPCC.AddTheseFilesToDali + "\n" + selection.map(file => file.name).join("\n"),
+        onSubmit: React.useCallback(() => {
+            WsDFUXref.DFUXRefArrayAction(selection, nlsHPCC.Attach, name, "Found")
+                .then(response => {
+                    refreshData();
+                })
+                .catch(logger.error)
+                ;
+        }, [name, refreshData, selection])
+    });
+
+    const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
+        title: nlsHPCC.Delete,
+        message: nlsHPCC.DeleteSelectedFiles + "\n" + selection.map(file => file.name),
+        onSubmit: React.useCallback(() => {
+            WsDFUXref.DFUXRefArrayAction(selection, nlsHPCC.Delete, name, "Found")
+                .then(response => {
+                    refreshData();
+                })
+                .catch(logger.error)
+                ;
+        }, [name, refreshData, selection])
+    });
+
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -82,34 +109,14 @@ export const XrefFoundFiles: React.FunctionComponent<XrefFoundFilesProps> = ({
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "attach", text: nlsHPCC.Attach, disabled: !uiState.hasSelection,
-            onClick: () => {
-                const list = selection.map(file => file.name);
-                if (confirm(nlsHPCC.AddTheseFilesToDali + "\n" + list)) {
-                    WsDFUXref.DFUXRefArrayAction(selection, nlsHPCC.Attach, name, "Found")
-                        .then(response => {
-                            refreshData();
-                        })
-                        .catch(logger.error)
-                        ;
-                }
-            }
+            onClick: () => setShowAttachConfirm(true)
         },
         {
             key: "delete", text: nlsHPCC.Delete, disabled: !uiState.hasSelection,
-            onClick: () => {
-                const list = selection.map(file => file.name);
-                if (confirm(nlsHPCC.DeleteSelectedFiles + "\n" + list)) {
-                    WsDFUXref.DFUXRefArrayAction(selection, nlsHPCC.Delete, name, "Found")
-                        .then(response => {
-                            refreshData();
-                        })
-                        .catch(logger.error)
-                        ;
-                }
-            }
+            onClick: () => setShowDeleteConfirm(true)
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
-    ], [name, refreshData, selection, uiState]);
+    ], [refreshData, setShowAttachConfirm, setShowDeleteConfirm, uiState]);
 
     React.useEffect(() => {
         refreshData();
@@ -117,7 +124,13 @@ export const XrefFoundFiles: React.FunctionComponent<XrefFoundFilesProps> = ({
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={<Grid />}
+        main={
+            <>
+                <Grid />
+                <AttachConfirm />
+                <DeleteConfirm />
+            </>
+        }
     />;
 
 };

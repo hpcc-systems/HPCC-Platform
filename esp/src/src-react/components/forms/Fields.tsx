@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Checkbox, Dropdown as DropdownBase, TextField, IDropdownOption, Link, ProgressIndicator } from "@fluentui/react";
+import { Checkbox, ChoiceGroup, IChoiceGroupOption, Dropdown as DropdownBase, IDropdownOption, TextField, Link, ProgressIndicator } from "@fluentui/react";
 import { TextField as MaterialUITextField } from "@material-ui/core";
 import { Topology, TpLogicalClusterQuery } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
@@ -51,7 +51,7 @@ const Dropdown: React.FunctionComponent<DropdownProps> = ({
     return <DropdownBase label={label} errorMessage={errorMessage} required={required} selectedKey={selectedKey} defaultSelectedKey={defaultSelectedKey} onChange={onChange} placeholder={placeholder} options={selOptions} disabled={disabled} className={className} />;
 };
 
-export type FieldType = "string" | "password" | "number" | "checkbox" | "datetime" | "dropdown" | "link" | "links" | "progress" |
+export type FieldType = "string" | "password" | "number" | "checkbox" | "choicegroup" | "datetime" | "dropdown" | "link" | "links" | "progress" |
     "workunit-state" |
     "file-type" | "file-sortby" |
     "queries-priority" | "queries-suspend-state" | "queries-active-state" |
@@ -90,6 +90,12 @@ interface DateTimeField extends BaseField {
 interface CheckboxField extends BaseField {
     type: "checkbox";
     value?: boolean;
+}
+
+interface ChoiceGroupField extends BaseField {
+    type: "choicegroup";
+    value?: string;
+    options: IChoiceGroupOption[];
 }
 
 interface DropdownField extends BaseField {
@@ -198,7 +204,7 @@ interface ProgressField extends BaseField {
     value?: string;
 }
 
-type Field = StringField | NumericField | CheckboxField | DateTimeField | DropdownField | LinkField | LinksField | ProgressField |
+type Field = StringField | NumericField | CheckboxField | ChoiceGroupField | DateTimeField | DropdownField | LinkField | LinksField | ProgressField |
     WorkunitStateField |
     FileTypeField | FileSortByField |
     QueriesPriorityField | QueriesSuspendStateField | QueriesActiveStateField |
@@ -571,6 +577,24 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     />
                 });
                 break;
+            case "number":
+                field.value = field.value !== undefined ? field.value : 0;
+                retVal.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: <TextField
+                        key={fieldID}
+                        type={field.type}
+                        name={fieldID}
+                        value={`${field.value}`}
+                        placeholder={field.placeholder}
+                        onChange={(evt, newValue) => onChange(fieldID, newValue)}
+                        borderless={field.readonly}
+                        readOnly={field.readonly}
+                        required={field.required}
+                    />
+                });
+                break;
             case "checkbox":
                 field.value = field.value || false;
                 retVal.push({
@@ -581,6 +605,21 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                         name={fieldID}
                         disabled={field.disabled("") ? true : false}
                         checked={field.value === true ? true : false}
+                        onChange={(evt, newValue) => onChange(fieldID, newValue)}
+                    />
+                });
+                break;
+            case "choicegroup":
+                field.value !== undefined ? field.value : "";
+                retVal.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: <ChoiceGroup
+                        key={fieldID}
+                        name={fieldID}
+                        disabled={field.disabled("") ? true : false}
+                        selectedKey={field.value}
+                        options={field.options ? field.options : []}
                         onChange={(evt, newValue) => onChange(fieldID, newValue)}
                     />
                 });

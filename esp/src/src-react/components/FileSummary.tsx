@@ -1,16 +1,20 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, ScrollablePane, ScrollbarVisibility, Sticky, StickyPositionType } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
+import { formatCost } from "src/Session";
 import * as WsDfu from "src/WsDfu";
 import * as Utility from "src/Utility";
 import { getStateImageName, IFile } from "src/ESPLogicalFile";
+import { useConfirm } from "../hooks/confirm";
 import { useFile } from "../hooks/file";
+import { useBuildInfo } from "../hooks/platform";
 import { ShortVerticalDivider } from "./Common";
 import { TableGroup } from "./forms/Groups";
 import { CopyFile } from "./forms/CopyFile";
 import { DesprayFile } from "./forms/DesprayFile";
 import { RenameFile } from "./forms/RenameFile";
 import { ReplicateFile } from "./forms/ReplicateFile";
+import { replaceUrl } from "../util/history";
 
 import "react-reflex/styles.css";
 
@@ -28,6 +32,7 @@ export const FileSummary: React.FunctionComponent<FileSummaryProps> = ({
 
     const [file, isProtected, , refresh] = useFile(cluster, logicalFile);
     const [description, setDescription] = React.useState("");
+    const [, { currencyCode }] = useBuildInfo();
     const [_protected, setProtected] = React.useState(false);
     const [restricted, setRestricted] = React.useState(false);
     const [canReplicateFlag, setCanReplicateFlag] = React.useState(false);
@@ -36,6 +41,19 @@ export const FileSummary: React.FunctionComponent<FileSummaryProps> = ({
     const [showRenameFile, setShowRenameFile] = React.useState(false);
     const [showDesprayFile, setShowDesprayFile] = React.useState(false);
     const [showReplicateFile, setShowReplicateFile] = React.useState(false);
+
+    const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
+        title: nlsHPCC.Delete,
+        message: nlsHPCC.YouAreAboutToDeleteThisFile,
+        onSubmit: React.useCallback(() => {
+            WsDfu.DFUArrayAction([file], "Delete").then(response => {
+                const actionInfo = response?.DFUArrayActionResponse?.ActionResults?.DFUActionInfo;
+                if (actionInfo && actionInfo.length && !actionInfo[0].Failed) {
+                    replaceUrl("/files");
+                }
+            });
+        }, [file])
+    });
 
     const isDFUWorkunit = React.useMemo(() => {
         return file?.Wuid?.length && file?.Wuid[0] === "D";
@@ -46,10 +64,10 @@ export const FileSummary: React.FunctionComponent<FileSummaryProps> = ({
         setProtected(file?.ProtectList?.DFUFileProtect?.length > 0 || false);
         setRestricted(file?.IsRestricted || false);
 
-        if (file?.DFUFilePartsOnClusters?.DFUFilePartsOnCluster?.length > 0) {
+        if ((file?.filePartsOnCluster() ?? []).length > 0) {
             let _canReplicate = false;
             let _replicate = false;
-            file?.DFUFilePartsOnClusters?.DFUFilePartsOnCluster.forEach(part => {
+            file?.filePartsOnCluster().forEach(part => {
                 _canReplicate = _canReplicate && part.CanReplicate;
                 _replicate = _replicate && part.Replicate;
             });
@@ -57,7 +75,7 @@ export const FileSummary: React.FunctionComponent<FileSummaryProps> = ({
             setReplicateFlag(_replicate);
         }
 
-    }, [file?.DFUFilePartsOnClusters?.DFUFilePartsOnCluster, file?.Description, file?.IsRestricted, file?.ProtectList?.DFUFileProtect?.length]);
+    }, [file]);
 
     const canSave = React.useMemo(() => {
         return file && (
@@ -94,16 +112,7 @@ export const FileSummary: React.FunctionComponent<FileSummaryProps> = ({
         },
         {
             key: "delete", text: nlsHPCC.Delete, iconProps: { iconName: "Delete" }, disabled: !file,
-            onClick: () => {
-                if (confirm(nlsHPCC.YouAreAboutToDeleteThisFile)) {
-                    WsDfu.DFUArrayAction([file], "Delete").then(response => {
-                        const actionInfo = response?.DFUArrayActionResponse?.ActionResults?.DFUActionInfo;
-                        if (actionInfo && actionInfo.length && !actionInfo[0].Failed) {
-                            window.history.back();
-                        }
-                    });
-                }
-            }
+            onClick: () => setShowDeleteConfirm(true)
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -123,7 +132,7 @@ export const FileSummary: React.FunctionComponent<FileSummaryProps> = ({
             key: "replicate", text: nlsHPCC.Replicate, disabled: !canReplicateFlag || !replicateFlag,
             onClick: () => setShowReplicateFile(true)
         },
-    ], [_protected, canReplicateFlag, canSave, description, file, logicalFile, refresh, replicateFlag, restricted]);
+    ], [_protected, canReplicateFlag, canSave, description, file, logicalFile, refresh, replicateFlag, restricted, setShowDeleteConfirm]);
 
     const protectedImage = _protected ? Utility.getImageURL("locked.png") : Utility.getImageURL("unlocked.png");
     const stateImage = Utility.getImageURL(getStateImageName(file as unknown as IFile));
@@ -151,6 +160,7 @@ export const FileSummary: React.FunctionComponent<FileSummaryProps> = ({
                 "NodeGroup": { label: nlsHPCC.ClusterName, type: "string", value: file?.NodeGroup, readonly: true },
                 "Description": { label: nlsHPCC.Description, type: "string", value: description },
                 "JobName": { label: nlsHPCC.JobName, type: "string", value: file?.JobName, readonly: true },
+                "Cost": { label: nlsHPCC.Cost, type: "string", value: `${formatCost(file?.Cost ?? 0)} (${currencyCode})`, readonly: true },
                 "isProtected": { label: nlsHPCC.Protected, type: "checkbox", value: _protected },
                 "isRestricted": { label: nlsHPCC.Restricted, type: "checkbox", value: restricted },
                 "ContentType": { label: nlsHPCC.ContentType, type: "string", value: file?.ContentType, readonly: true },
@@ -166,7 +176,7 @@ export const FileSummary: React.FunctionComponent<FileSummaryProps> = ({
                 "PathMask": { label: nlsHPCC.PathMask, type: "string", value: file?.PathMask, readonly: true },
                 "RecordSize": { label: nlsHPCC.RecordSize, type: "string", value: file?.RecordSize, readonly: true },
                 "RecordCount": { label: nlsHPCC.RecordCount, type: "string", value: file?.RecordCount, readonly: true },
-                "IsReplicated": { label: nlsHPCC.IsReplicated, type: "checkbox", value: file?.DFUFilePartsOnClusters?.DFUFilePartsOnCluster?.length > 0, readonly: true },
+                "IsReplicated": { label: nlsHPCC.IsReplicated, type: "checkbox", value: (file?.filePartsOnCluster() ?? []).length > 0, readonly: true },
                 "NumParts": { label: nlsHPCC.FileParts, type: "number", value: file?.NumParts, readonly: true },
                 "MinSkew": { label: nlsHPCC.MinSkew, type: "string", value: file?.Stat?.MinSkew, readonly: true },
                 "MaxSkew": { label: nlsHPCC.MaxSkew, type: "string", value: file?.Stat?.MaxSkew, readonly: true },
@@ -186,9 +196,10 @@ export const FileSummary: React.FunctionComponent<FileSummaryProps> = ({
                 }
             }} />
         </ScrollablePane>
-        <CopyFile cluster={cluster} logicalFile={logicalFile} showForm={showCopyFile} setShowForm={setShowCopyFile} />
-        <DesprayFile cluster={cluster} logicalFile={logicalFile} showForm={showDesprayFile} setShowForm={setShowDesprayFile} />
-        <RenameFile cluster={cluster} logicalFile={logicalFile} showForm={showRenameFile} setShowForm={setShowRenameFile} />
+        <CopyFile logicalFiles={[logicalFile]} showForm={showCopyFile} setShowForm={setShowCopyFile} />
+        <DesprayFile logicalFiles={[logicalFile]} showForm={showDesprayFile} setShowForm={setShowDesprayFile} />
+        <RenameFile logicalFiles={[logicalFile]} showForm={showRenameFile} setShowForm={setShowRenameFile} />
         <ReplicateFile cluster={cluster} logicalFile={logicalFile} showForm={showReplicateFile} setShowForm={setShowReplicateFile} />
+        <DeleteConfirm />
     </>;
 };
