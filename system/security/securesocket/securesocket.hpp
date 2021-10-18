@@ -56,8 +56,8 @@ interface ISecureSocket : implements ISocket
 // One instance per program running
 interface ISecureSocketContext : implements IInterface
 {
-    virtual ISecureSocket* createSecureSocket(ISocket* sock, int loglevel = SSLogNormal) = 0;
-    virtual ISecureSocket* createSecureSocket(int sockfd, int loglevel = SSLogNormal) = 0;
+    virtual ISecureSocket* createSecureSocket(ISocket* sock, int loglevel = SSLogNormal, const char *fqdn = nullptr) = 0;
+    virtual ISecureSocket* createSecureSocket(int sockfd, int loglevel = SSLogNormal, const char *fqdn = nullptr) = 0;
 };
 
 interface ICertificate : implements IInterface

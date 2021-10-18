@@ -198,7 +198,7 @@ int COneServerHttpProxyThread::start()
         if(m_use_ssl && m_ssctx != NULL)
         {
 #ifdef _USE_OPENSSL
-            Owned<ISecureSocket> securesocket = m_ssctx->createSecureSocket(socket2.getLink());
+            Owned<ISecureSocket> securesocket = m_ssctx->createSecureSocket(socket2.getLink(), SSLogNormal, m_host.str());
             int res = securesocket->secure_connect();
             if(res >= 0)
             {
