@@ -37,9 +37,9 @@ jobs:
       - name: vars
         id: vars
         run: |
-          echo ::set-output name=base_ver::7.12
+          echo ::set-output name=base_ver::7.12.1
           echo ::set-output name=container_registry::ghcr.io
-          echo ::set-output name=cr_user::${{ github.actor }}
+          echo ::set-output name=cr_user::${{ github.repository_owner }}
           echo ::set-output name=build_prbase_sha::${{ github.event.pull_request.base.sha }}
           echo ::set-output name=build_prbase_label::${{ github.base_ref }}-${{ github.event.pull_request.base.sha }}
           echo ::set-output name=build_pr_label::pr-${{ github.event.number }}-${{ github.sha }}
@@ -102,6 +102,8 @@ jobs:
           tags: |
             ${{ steps.vars.outputs.container_registry }}/${{ steps.vars.outputs.cr_user }}/${{ steps.vars.outputs.platform_build_base }}:${{ steps.vars.outputs.base_ver }}
           push: true
+          build-args: |
+            BASE_VER=${{ steps.vars.outputs.base_ver }}
 
       # build base image if missing
       - name: PR-Base image
