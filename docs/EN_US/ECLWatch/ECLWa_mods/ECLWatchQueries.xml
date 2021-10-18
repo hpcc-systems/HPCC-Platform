@@ -31,37 +31,10 @@
       fictitious. Any similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para />
+      <para></para>
     </legalnotice>
 
-    <xi:include href="../../common/Version.xml" xpointer="FooterInfo"
-                xmlns:xi="http://www.w3.org/2001/XInclude">
-      <xi:fallback>
-        <para>
-          <emphasis>FooterInfo Failed to load</emphasis>
-        </para>
-      </xi:fallback>
-    </xi:include>
-
-    <xi:include href="../../common/Version.xml" xpointer="DateVer"
-                xmlns:xi="http://www.w3.org/2001/XInclude">
-      <xi:fallback>
-        <para>
-          <emphasis>DateVer Failed to load</emphasis>
-        </para>
-      </xi:fallback>
-    </xi:include>
-
     <corpname>HPCC Systems<superscript>®</superscript></corpname>
-
-    <xi:include href="../../common/Version.xml" xpointer="Copyright"
-                xmlns:xi="http://www.w3.org/2001/XInclude">
-      <xi:fallback>
-        <para>
-          <emphasis>Copyright Failed to load</emphasis>
-        </para>
-      </xi:fallback>
-    </xi:include>
 
     <mediaobject role="logo">
       <imageobject>
@@ -248,84 +221,105 @@ depending on where they wind up.-->
             </varlistentry>
 
             <varlistentry>
-              <?dbfo keep-together="always"?>
-
               <term>Filter</term>
 
               <listitem>
                 <para>Allows you to filter the queries for the criteria you
                 enter. When the Filter is applied the action button displays
-                <emphasis role="bold">Filter Set</emphasis>. This icon
-                indicates that the published queries displayed are
-                filtered.</para>
-
-                <para><graphic fileref="../../images/ECLWA203.jpg" />You can
-                filter for several query attributes. You can filter by:</para>
-
-                <itemizedlist>
-                  <listitem>
-                    <para>ID</para>
-                  </listitem>
-
-                  <listitem>
-                    <para>Name</para>
-                  </listitem>
-
-                  <listitem>
-                    <para>Published by</para>
-                  </listitem>
-
-                  <listitem>
-                    <para>WUID</para>
-                  </listitem>
-
-                  <listitem>
-                    <para>Cluster</para>
-                  </listitem>
-
-                  <listitem>
-                    <para>Logical File Name</para>
-                  </listitem>
-
-                  <listitem>
-                    <para>Libraries Used</para>
-                  </listitem>
-
-                  <listitem>
-                    <para>Suspended queries.</para>
-                  </listitem>
-
-                  <listitem>
-                    <para>Active queries.</para>
-                  </listitem>
-                </itemizedlist>
-
-                <para>The Filter also supports wild cards.</para>
-              </listitem>
-            </varlistentry>
-
-            <varlistentry>
-              <term>Options</term>
-
-              <listitem>
-                <para>Provides the option to search/display queries on a
-                single node or all nodes. Using this option can improve
-                performance if you have a large multi-node cluster.</para>
-              </listitem>
-            </varlistentry>
-
-            <varlistentry>
-              <term>Recreate Query</term>
-
-              <listitem>
-                <para>Recompiles a query into a new workunit and republishes
-                the new workunit. This is useful when upgrading to a new ECL
-                compiler and you want to recompile a query from the exact same
-                source. The ECL archive must be available within the workunit
-                of the query.</para>
+                <emphasis role="bold">Filter Set</emphasis>. The solid icon
+                indicates that the published queries displayed are filtered.
+                When you set a filter, a link to that filter is added to
+                <emphasis role="bold">Recent Filters</emphasis>. The
+                <emphasis>Open in New Page</emphasis> button then displays
+                next to the Recent Filters which will open a new page with
+                that set of filter criteria.</para>
               </listitem>
             </varlistentry>
           </variablelist></para>
+
+        <para><graphic fileref="../../images/ECLWA203.jpg" />You can filter
+        for several query attributes. You can filter by:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>ID</para>
+          </listitem>
+
+          <listitem>
+            <para>Name</para>
+          </listitem>
+
+          <listitem>
+            <para>Priority</para>
+          </listitem>
+
+          <listitem>
+            <para>Published by</para>
+          </listitem>
+
+          <listitem>
+            <para>WUID</para>
+          </listitem>
+
+          <listitem>
+            <para>Cluster</para>
+          </listitem>
+
+          <listitem>
+            <para>Logical File Name</para>
+          </listitem>
+
+          <listitem>
+            <para>Libraries Used</para>
+          </listitem>
+
+          <listitem>
+            <para>Suspended queries.</para>
+          </listitem>
+
+          <listitem>
+            <para>Active queries.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>The Filter also supports wild cards. Some attributes have
+        choices filled in that you can select from a list.</para>
+
+        <para><graphic fileref="../../images/ECLWA203-1.jpg" /></para>
+
+        <variablelist>
+          <varlistentry>
+            <term>Options</term>
+
+            <listitem>
+              <para>Provides the option to search/display queries on a single
+              node or all nodes. Using this option can improve performance if
+              you have a large multi-node cluster.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>Recreate Query</term>
+
+            <listitem>
+              <para>Recompiles a query into a new workunit and republishes the
+              new workunit. This is useful when upgrading to a new ECL
+              compiler and you want to recompile a query from the exact same
+              source. The ECL archive must be available within the workunit of
+              the query.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>Published by me</term>
+
+            <listitem>
+              <para>You can check the <emphasis>Published by me</emphasis> box
+              to quickly filter for only the queries that you
+              published.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
       </sect2>
 
       <sect2 id="QueryDetails" role="brk">

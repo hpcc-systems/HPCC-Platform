@@ -13,6 +13,7 @@ const footerTokens: IStackTokens = {
 };
 
 const dragOptions: IDragOptions = {
+    dragHandleSelector: ".draggable",
     moveMenuItemText: nlsHPCC.Move,
     closeMenuItemText: nlsHPCC.Close,
     menu: ContextualMenu,
@@ -49,15 +50,15 @@ export const MessageBox: React.FunctionComponent<MessageBoxProps> = ({
     const theme = useTheme();
     const contentStyles = React.useMemo(() => mergeStyleSets({
         container: { overflowY: "hidden", width: width },
-        header: { borderTop: `4px solid ${theme.palette.themePrimary}` },
+        header: { borderTop: `4px solid ${theme.palette.themePrimary}`, cursor: "move" },
         body: { padding: "12px 24px 12px 24px", overflowY: "hidden" },
     }), [theme.palette.themePrimary, width]);
 
     const close = React.useCallback(() => setShow(false), [setShow]);
 
-    return <Modal isOpen={show} onDismiss={close} dragOptions={dragOptions}
+    return <Modal isOpen={show} onDismiss={close} isModeless={true} dragOptions={dragOptions}
         isBlocking={true} containerClassName={contentStyles.container}>
-        <Stack tokens={headerTokens} horizontal horizontalAlign="space-between" verticalAlign="center" styles={{ root: contentStyles.header }}>
+        <Stack tokens={headerTokens} horizontal horizontalAlign="space-between" verticalAlign="center" styles={{ root: contentStyles.header }} className="draggable">
             <h2>{title}</h2>
             <IconButton iconProps={cancelIcon} ariaLabel={nlsHPCC.CloseModal} onClick={close} styles={iconButtonStyles} />
         </Stack>
