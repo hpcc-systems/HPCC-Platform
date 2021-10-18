@@ -115,7 +115,7 @@ bool addLdapSecurity(IPropertyTree *legacyEsp, IPropertyTree *appEsp, StringBuff
     StringAttr workunitsBasedn(appLdap->queryProp("@workunitsBasedn"));
     bindAuth.setf("<Authenticate method='LdapSecurity' config='%s' resourcesBasedn='%s' workunitsBasedn='%s'/>", configname.str(), resourcesBasedn.str(), workunitsBasedn.str());
 
-    VStringBuffer authenticationXml("<Authentication htpasswdFile='/etc/HPCCSystems/.htpasswd' ldapConnections='10' ldapServer='%s' method='ldaps' passwordExpirationWarningDays='10'/>", configname.str());
+    VStringBuffer authenticationXml("<Authentication ldapConnections='10' ldapServer='%s' method='ldaps' passwordExpirationWarningDays='10'/>", configname.str());
     legacyEsp->addPropTree("Authentication", createPTreeFromXMLString(authenticationXml));
     return true;
 }
@@ -131,8 +131,7 @@ bool addAuthNZSecurity(const char *name, IPropertyTree *legacyEsp, IPropertyTree
     IPropertyTree *appSecMgr = authNZ->queryPropTree("SecurityManager");
     if (!appSecMgr)
     {
-        const char *application = appEsp->queryProp("@application");
-        throw MakeStringException(-1, "Can't find SecurityManager settings configuring application '%s'.  To run without security set 'auth: none'", application ? application : "");
+        appSecMgr = authNZ;
     }
     const char *method = appSecMgr->queryProp("@name");
     const char *tag = appSecMgr->queryProp("@type");
@@ -157,7 +156,7 @@ bool addSecurity(IPropertyTree *legacyEsp, IPropertyTree *appEsp, StringBuffer &
 {
     const char *auth = appEsp->queryProp("@auth");
     if (isEmptyString(auth))
-        throw MakeStringException(-1, "'auth' attribute required.  To run without security set ''auth: none''");
+        throw MakeStringException(-1, "'auth' attribute required.  To run without security set 'auth: none'");
     if (streq(auth, "none"))
         return false;
     if (streq(auth, "ldap"))
