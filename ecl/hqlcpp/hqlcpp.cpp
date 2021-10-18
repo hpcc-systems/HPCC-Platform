@@ -3281,7 +3281,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
         doBuildExprSysFunc(ctx, expr, tgt, log10Id, options.divideByZeroAction);
         return;
     case no_power:
-        doBuildExprSysFunc(ctx, expr, tgt, powerId);
+        doBuildExprPow(ctx, expr, tgt);
         return;
     case no_fail:
         doBuildStmtFail(ctx, expr);
@@ -7487,6 +7487,83 @@ void HqlCppTranslator::doBuildAssignExecuteWhen(BuildCtx & ctx, const CHqlBoundT
     }
 }
 
+void HqlCppTranslator::doBuildExprPow(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt)
+{
+    assertex(expr->numChildren() == 2);
+    
+    IHqlExpression * left = expr->queryChild(0);
+    IHqlExpression * right = expr->queryChild(1);
+
+    bool notIntegerPower = !right->queryType()->isInteger();
+    if (notIntegerPower)
+    {
+        doBuildExprSysFunc(ctx, expr, tgt, powerId);
+        return;
+    }
+
+    IValue * value = right->queryValue();
+    bool notConstant = (value == nullptr);
+    if (notConstant) 
+    {
+        doBuildExprSysFunc(ctx, expr, tgt, powerId);
+        return;
+    }
+
+    const uint MAX_EXP_INLINE_VALUE = 3;
+    int64_t rightIntVal = value->getIntValue();
+    if (abs(rightIntVal) > MAX_EXP_INLINE_VALUE)
+    {
+        doBuildExprSysFunc(ctx, expr, tgt, powerId);
+        return;
+    }
+
+    IHqlExpression* outExpr = nullptr;
+    if (rightIntVal == 0)
+    {
+        outExpr = createConstant(left->queryType()->castFrom(1.0));
+    }
+    else if (rightIntVal == 1)
+    {
+        outExpr = left;
+    }
+    else
+    {
+        //---------------------------------------------------------------------------
+        // Question:
+        // Is there a better way to get a temp real here?
+        //---------------------------------------------------------------------------
+
+        CHqlBoundExpr leftBound;
+        buildTempExpr(ctx, left, leftBound);
+
+        CHqlBoundExpr tempReal;
+        OwnedITypeInfo realType = makeRealType(DEFAULT_REAL_SIZE);
+        doBuildCastViaTemp(ctx, realType, leftBound, tempReal);
+        outExpr = tempReal.expr;
+
+        for (int i = 1; i < abs(rightIntVal); i++)
+        {
+            outExpr = createValue(no_mul, realType, LINK(outExpr), LINK(tempReal.expr));
+        }
+
+        if (rightIntVal < 0)
+        {
+            CHqlBoundExpr bound;
+            buildTempExpr(ctx, outExpr, bound);
+
+            //---------------------------------------------------------------------------
+            // Question:
+            // This inserts a check for divide by zero. What is the best way to not have
+            // that check generated?
+            //---------------------------------------------------------------------------
+            outExpr = createValue(no_div, realType, createConstant(1.0), bound.expr);
+        }
+    }
+
+    buildExpr(ctx, outExpr, tgt);
+    return;
+}
+
 //---------------------------------------------------------------------------
 //-- no_div --
 // also used for no_modulus
@@ -7521,8 +7598,6 @@ void HqlCppTranslator::doBuildExprDivide(BuildCtx & ctx, IHqlExpression * expr, 
         buildTempExpr(ctx, expr, tgt);
     }
 }
-
-
 
 void HqlCppTranslator::doBuildDivideByZero(BuildCtx & ctx, const CHqlBoundTarget * target, IHqlExpression * zero, CHqlBoundExpr * bound)
 {
