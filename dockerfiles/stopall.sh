@@ -42,6 +42,7 @@ done
 
 helm uninstall $CLUSTERNAME
 helm uninstall localfile
+helm uninstall myprometheus4hpccmetrics
 kubectl delete jobs --all
 kubectl delete networkpolicy --all
 if [[ $UNINSTALL_ELK == 1 ]] ; then

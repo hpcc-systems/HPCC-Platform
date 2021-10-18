@@ -88,6 +88,7 @@ while [ "$#" -gt 0 ]; do
          echo "    -p <location>      Use local persistent data"
          echo "    -pv <yamlfile>     Override dataplane definitions for local persistent data"
          echo "    -e                 Deploy light-weight Elastic Stack for component log processing"
+         echo "    -m                 Deploy Prometheus Stack for component metrics processing"
          exit
          ;;
       t) CMD="template"
@@ -96,7 +97,10 @@ while [ "$#" -gt 0 ]; do
       # vanilla install - for testing system in the same way it will normally be used
       v) DEVELOPER_OPTIONS=""
          ;;
-      e) DEPLOY_ES=true
+      e) DEPLOY_ES=1
+         ;;
+      m) DEPLOY_PROM=1
+         PROMETHEUS_METRICS_SINK_ARG="-f $scriptdir/../helm/examples/metrics/prometheus_metrics.yaml"
          ;;
       *) restArgs+=(${arg})
          ;;
@@ -129,17 +133,25 @@ if [[ -n ${PERSIST} ]] ; then
   done
   helm ${CMD} localfile $scriptdir/../helm/examples/local/hpcc-localfile --set common.hostpath=${PERSIST} $PERSISTVALUES | tee lsfull.yaml | grep -A1000 storage: > localstorage.yaml && \
   grep "##" lsfull.yaml  && \
-  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS $DEP_UPDATE_ARG ${restArgs[@]} -f localstorage.yaml
+  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS $DEP_UPDATE_ARG ${restArgs[@]} -f localstorage.yaml ${PROMETHEUS_METRICS_SINK_ARG}
 else
-  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS $DEP_UPDATE_ARG ${restArgs[@]}
+  helm ${CMD} $CLUSTERNAME $scriptdir/../helm/hpcc/ --set global.image.root="${DOCKER_REPO}" --set global.image.version=$LABEL $DEVELOPER_OPTIONS $DEP_UPDATE_ARG ${restArgs[@]} ${PROMETHEUS_METRICS_SINK_ARG}
 fi
 
-if [[ $DEPLOY_ES ]] ; then
+if [[ $DEPLOY_ES == 1 ]] ; then
   echo -e "\n\nDeploying "myelastic4hpcclogs" - light-weight Elastic Stack:"
   if [[ -z "${DEP_UPDATE_ARG}" ]]; then
     dependency_check "managed/logging/elastic"
   fi
   helm ${CMD} myelastic4hpcclogs $scriptdir/../helm/managed/logging/elastic $DEP_UPDATE_ARG ${restArgs[@]}
+fi
+
+if [[ $DEPLOY_PROM == 1 ]] ; then
+  echo -e "\n\nDeploying "myprometheus4hpccmetrics" - Prometheus Stack:"
+  if [[ -z "${DEP_UPDATE_ARG}" ]]; then
+    dependency_check "managed/metrics/prometheus"
+  fi
+  helm ${CMD} myprometheus4hpccmetrics $scriptdir/../helm/managed/metrics/prometheus $DEP_UPDATE_ARG ${restArgs[@]} --set kube-prometheus-stack.prometheus.service.type=LoadBalancer --set kube-prometheus-stack.grafana.service.type=LoadBalancer
 fi
 
 if [ ${CMD} != "template" ] ; then
