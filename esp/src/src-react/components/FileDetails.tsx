@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Pivot, PivotItem } from "@fluentui/react";
+import { getTheme, Pivot, PivotItem } from "@fluentui/react";
 import { SizeMe } from "react-sizeme";
 import nlsHPCC from "src/nlsHPCC";
 import { FileParts } from "./FileParts";
@@ -11,9 +11,11 @@ import { FileBlooms } from "./FileBlooms";
 import { FileHistory } from "./FileHistory";
 import { ProtectedBy } from "./ProtectedBy";
 import { SuperFiles } from "./SuperFiles";
+import { SubFiles } from "./SubFiles";
 import { ECLSourceEditor, XMLSourceEditor } from "./SourceEditor";
 import { FileDetailsGraph } from "./FileDetailsGraph";
-import { FileSummary } from "./FileSummary";
+import { LogicalFileSummary } from "./LogicalFileSummary";
+import { SuperFileSummary } from "./SuperFileSummary";
 import { DataPatterns } from "./DataPatterns";
 import { Result } from "./Result";
 import { Queries } from "./Queries";
@@ -44,10 +46,17 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
 
     const isDFUWorkunit = file?.Wuid?.length && file?.Wuid[0] === "D";
 
+    const theme = getTheme();
+
     return <SizeMe monitorHeight>{({ size }) =>
         <Pivot overflowBehavior="menu" style={{ height: "100%" }} selectedKey={tab} onLinkClick={evt => pushUrl(`/files/${cluster}/${logicalFile}/${evt.props.itemKey}`)}>
             <PivotItem headerText={nlsHPCC.Summary} itemKey="summary" style={pivotItemStyle(size)}>
-                <FileSummary cluster={cluster} logicalFile={logicalFile} />
+                {file?.isSuperfile !== undefined
+                    ? file.isSuperfile
+                        ? <SuperFileSummary cluster={cluster} logicalFile={logicalFile} />
+                        : <LogicalFileSummary cluster={cluster} logicalFile={logicalFile} />
+                    : <></>
+                }
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Contents} itemKey="Contents" style={pivotItemStyle(size, 0)}>
                 <Result cluster={cluster} logicalFile={logicalFile} />
@@ -64,9 +73,14 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
             <PivotItem headerText={nlsHPCC.XML} itemKey="XML" style={pivotItemStyle(size, 0)}>
                 <XMLSourceEditor text={xmlFile} readonly={true} />
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.Superfiles} itemKey="superfiles" itemCount={file?.Superfiles?.DFULogicalFile.length ?? 0} style={pivotItemStyle(size, 0)}>
-                <SuperFiles cluster={cluster} logicalFile={logicalFile} />
-            </PivotItem>
+            {file?.isSuperfile
+                ? <PivotItem headerText={nlsHPCC.Subfiles} itemKey="subfiles" itemCount={file?.subfiles?.Item.length ?? 0} style={pivotItemStyle(size, 0)}>
+                    <SubFiles cluster={cluster} logicalFile={logicalFile} />
+                </PivotItem>
+                : <PivotItem headerText={nlsHPCC.Superfiles} itemKey="superfiles" itemCount={file?.Superfiles?.DFULogicalFile.length ?? 0} style={pivotItemStyle(size, 0)}>
+                    <SuperFiles cluster={cluster} logicalFile={logicalFile} />
+                </PivotItem>
+            }
             <PivotItem headerText={nlsHPCC.FileParts} itemKey="FileParts" itemCount={file?.fileParts().length ?? 0} style={pivotItemStyle(size, 0)}>
                 <FileParts cluster={cluster} logicalFile={logicalFile} />
             </PivotItem>
@@ -76,7 +90,7 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
             <PivotItem headerText={nlsHPCC.Graphs} itemKey="Graphs" itemCount={file?.Graphs?.ECLGraph?.length} headerButtonProps={{ disabled: isDFUWorkunit }} style={pivotItemStyle(size, 0)}>
                 <FileDetailsGraph cluster={cluster} logicalFile={logicalFile} />
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.Workunit} itemKey="Workunit" style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.Workunit} itemKey="Workunit" style={pivotItemStyle(size, 0)} headerButtonProps={!!file?.isSuperfile ? { disabled: true, style: { color: theme.palette.neutralTertiary } } : {}}>
                 {isDFUWorkunit ? <DojoAdapter widgetClassID="DFUWUDetailsWidget" params={{ Wuid: file?.Wuid }} /> : <WorkunitDetails wuid={file?.Wuid} />}
             </PivotItem>
             <PivotItem headerText={nlsHPCC.History} itemKey="History" style={pivotItemStyle(size, 0)}>

@@ -778,6 +778,7 @@ export = {
         Stopped: "Stopped",
         Stopping: "Stopping",
         StorageInformation: "Storage Information",
+        Subfiles: "Subfiles",
         Subgraph: "Subgraph",
         SubgraphLabel: "Subgraph Label",
         Subgraphs: "Subgraphs",
