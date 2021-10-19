@@ -56,7 +56,7 @@ export const AddGroupForm: React.FunctionComponent<AddGroupFormProps> = ({
         )();
     }, [closeForm, handleSubmit, refreshGrid, reset]);
 
-    return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.AddGroup} width={400}
+    return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.AddGroup} minWidth={400}
         footer={<>
             <PrimaryButton text={nlsHPCC.Add} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => { reset(defaultValues); closeForm(); }} />

@@ -67,7 +67,7 @@ export const UserAddGroupForm: React.FunctionComponent<UserAddGroupProps> = ({
         )();
     }, [closeForm, handleSubmit, refreshGrid, reset, username]);
 
-    return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.PleaseSelectAGroupToAddUser} width={400}
+    return <MessageBox show={showForm} setShow={closeForm} title={nlsHPCC.PleaseSelectAGroupToAddUser} minWidth={400}
         footer={<>
             <PrimaryButton text={nlsHPCC.Add} onClick={handleSubmit(onSubmit)} />
             <DefaultButton text={nlsHPCC.Cancel} onClick={() => { reset(defaultValues); closeForm(); }} />
