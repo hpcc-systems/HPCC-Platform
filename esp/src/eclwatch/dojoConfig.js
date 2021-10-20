@@ -72,8 +72,8 @@ function getConfig(env) {
                 lib: "."
             },
             {
-                name: "dojo-themes",
-                location: baseUrl + "/node_modules/dojo-themes",
+                name: "dijit-themes",
+                location: baseUrl + "/node_modules/dijit-themes",
                 lib: "."
             },
             {
