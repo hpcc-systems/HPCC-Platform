@@ -617,8 +617,11 @@
     },
     "auth": {
       "type": "string",
-      "description": "Authentication method",
-      "enum": ["none", "ldap"]
+      "description": "Authentication method"
+    },
+    "authNZ": {
+      "type": "object",
+      "additionalProperties": { "type": ["object"] }
     },
     "ldap": {
       "type": "object",
@@ -991,6 +994,9 @@
         },
         "auth": {
           "$ref": "#/definitions/auth"
+        },
+        "authNZ": {
+          "$ref": "#/definitions/authNZ"
         },
         "ldap": {
           "$ref": "#/definitions/ldap"
