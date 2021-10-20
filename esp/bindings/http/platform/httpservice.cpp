@@ -1302,9 +1302,12 @@ bool CEspHttpServer::verifyESPSessionIDCookie(EspAuthRequest& authReq)
     IPropertyTree* sessionTree = espSessions->queryBranch(xpath.str());
     if (!sessionTree)
         return false;
-
+#ifdef _CONTAINERIZED
+    return true;
+#else
     StringBuffer peer;
     return streq(m_request->getPeer(peer).str(), sessionTree->queryProp(PropSessionNetworkAddress));
+#endif
 }
 
 void CEspHttpServer::verifyESPAuthenticatedCookie(EspAuthRequest& authReq, CESPCookieVerification& cookie)
@@ -1960,11 +1963,15 @@ EspAuthState CEspHttpServer::authExistingSession(EspAuthRequest& authReq, unsign
     const char* sessionStartIP = sessionTree->queryProp(PropSessionNetworkAddress);
     if (!streq(m_request->getPeer(peer).str(), sessionStartIP))
     {
+#ifdef _CONTAINERIZED
+        ESPLOG(LogMax, "####Peer changed");
+#else
         authReq.ctx->setAuthStatus(AUTH_STATUS_FAIL);
         clearSessionCookies(authReq);
         sendSessionReloadHTMLPage(m_request->queryContext(), authReq, "Authentication failed: Network address for ESP session has been changed.");
         ESPLOG(LogMin, "Authentication failed: session ID %u from IP %s. ", sessionID, peer.str());
         return authFailed;
+#endif
     }
 
     authOptionalGroups(authReq);
