@@ -138,6 +138,7 @@ private:
     int         m_loglevel;
     bool        m_isSecure;
     StringBuffer m_fqdn;
+    size32_t    nextblocksize = 0;
     unsigned    blockflags = BF_ASYNC_TRANSFER;
     unsigned    blocktimeoutms = WAIT_FOREVER;
 #ifdef USERECVSEM
