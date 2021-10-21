@@ -2389,7 +2389,7 @@ public:
     ~CHThorCsvReadActivity();
     virtual const void *nextRow();
     virtual void ready();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return true; }
     virtual void stop();
 
 protected:
