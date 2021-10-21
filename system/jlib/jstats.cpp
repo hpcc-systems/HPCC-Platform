@@ -2251,8 +2251,7 @@ void CRuntimeStatisticCollection::set(const CRuntimeStatisticCollection & other,
     {
         StatisticKind kind = other.getKind(i);
         unsigned __int64 value = other.getStatisticValue(kind);
-        if (value)
-            setStatistic(kind, value, node);
+        setStatistic(kind, value, node);
     }
 
     CNestedRuntimeStatisticMap *otherNested = other.queryNested();
@@ -2268,8 +2267,7 @@ void CRuntimeStatisticCollection::merge(const CRuntimeStatisticCollection & othe
     {
         StatisticKind kind = other.getKind(i);
         unsigned __int64 value = other.getStatisticValue(kind);
-        if (value)
-            mergeStatistic(kind, value, node);
+        mergeStatistic(kind, value, node);
     }
 
     CNestedRuntimeStatisticMap *otherNested = other.queryNested();
