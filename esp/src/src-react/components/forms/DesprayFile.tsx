@@ -189,7 +189,7 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                         machineAddress={machine}
                         machineDirectory={directory}
                         machineOS={os}
-                        required={false}
+                        required={true}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
                             onChange(option.key);
@@ -226,8 +226,8 @@ export const DesprayFile: React.FunctionComponent<DesprayFileProps> = ({
                     <tbody>
                         {logicalFiles.map((file, idx) => {
                             return <tr key={`File-${idx}`}>
-                                <td>{file}</td>
-                                <td>
+                                <td width="50%">{file}</td>
+                                <td width="50%">
                                     <Controller
                                         control={control} name={`targetName.${idx}.name` as const}
                                         render={({

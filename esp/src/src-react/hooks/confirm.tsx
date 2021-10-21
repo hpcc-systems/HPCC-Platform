@@ -22,8 +22,8 @@ export function useConfirm({ title, message, onSubmit }: useConfirmProps): [Reac
             maxWidth={500}
         >
             <div>
-                {message.split("\n").map(str => {
-                    return <span>{str} <br /></span>;
+                {message.split("\n").map((str, idx) => {
+                    return <span key={idx}>{str} <br /></span>;
                 })}
             </div>
             <DialogFooter>

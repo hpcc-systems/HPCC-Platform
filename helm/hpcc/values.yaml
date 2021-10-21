@@ -257,7 +257,7 @@ secrets:
 
   authn: {}
     ## Category to deploy authentication secrets to container, and to create a key name alias to reference those secrets
-    #ldapadmincredskey: "myk8sldapadmincreds"  ## Default k/v for LDAP authentication secrets
+    #ldapadmincredskey: "admincredssecretname"  ## Default k/v for LDAP authentication secrets
 
   ecl: {}
     ## Category for secrets published to all components that run ecl

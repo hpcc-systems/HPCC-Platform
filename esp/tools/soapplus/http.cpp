@@ -1129,7 +1129,7 @@ public:
         
         if(m_ssctx != NULL)
         {
-            m_securesocket.setown(m_ssctx->createSecureSocket(m_sockfd));
+            m_securesocket.setown(m_ssctx->createSecureSocket(m_sockfd, SSLogNormal, address->m_fqdn.str()));
             int res = m_securesocket->secure_connect();
             if(res < 0)
             {
@@ -1759,7 +1759,7 @@ int HttpClient::sendRequest(StringBuffer& req, IFileIO* request_output, IFileIO*
         socket.setown(ISocket::connect(ep));
         if(m_ssctx.get() != NULL)
         {
-            Owned<ISecureSocket> securesocket = m_ssctx->createSecureSocket(socket.getLink());
+            Owned<ISecureSocket> securesocket = m_ssctx->createSecureSocket(socket.getLink(), SSLogNormal, m_host.str());
             int res = securesocket->secure_connect();
             if(res >= 0)
             {

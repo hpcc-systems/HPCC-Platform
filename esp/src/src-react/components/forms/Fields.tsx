@@ -42,14 +42,83 @@ const Dropdown: React.FunctionComponent<DropdownProps> = ({
         if (required === true && optional === true) {
             logger.error(`${label}:  required == true and optional == true is illogical`);
         }
-    }, [label, optional, required]);
+        if (defaultSelectedKey && selectedKey) {
+            logger.error(`${label}:  Dropdown property 'defaultSelectedKey' is mutually exclusive with 'selectedKey' (${defaultSelectedKey}, ${selectedKey}). Use one or the other.`);
+        }
+    }, [defaultSelectedKey, label, optional, required, selectedKey]);
 
-    const selOptions = React.useMemo(() => {
-        return optional ? [{ key: "", text: "" }, ...options] : [...options];
-    }, [optional, options]);
+    const [selOptions, selKey] = React.useMemo(() => {
+        const selOpts = optional ? [{ key: "", text: "" }, ...options] : [...options];
+        if (options.length === 0) {
+            return [selOpts, selectedKey];
+        }
 
-    return <DropdownBase label={label} errorMessage={errorMessage} required={required} selectedKey={selectedKey} defaultSelectedKey={defaultSelectedKey} onChange={onChange} placeholder={placeholder} options={selOptions} disabled={disabled} className={className} />;
+        let selRow;
+        let selIdx;
+        selOpts.forEach((row, idx) => {
+            if (idx === 0 || row.key === selectedKey) {
+                selRow = row;
+                selIdx = idx;
+            }
+        });
+        if (selRow && selRow.key !== selectedKey) {
+            setTimeout(() => {
+                onChange(undefined, selRow, selIdx);
+            }, 1);
+        }
+        return [selOpts, selRow?.key];
+    }, [onChange, optional, options, selectedKey]);
+
+    return <DropdownBase label={label} errorMessage={errorMessage} required={required} selectedKey={selKey} defaultSelectedKey={defaultSelectedKey} onChange={onChange} placeholder={placeholder} options={selOptions} disabled={disabled} className={className} />;
 };
+
+interface AsyncDropdownProps {
+    label?: string;
+    options?: IDropdownOption[];
+    selectedKey?: string;
+    required?: boolean;
+    optional?: boolean;
+    disabled?: boolean;
+    errorMessage?: string;
+    onChange?: (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => void;
+    placeholder?: string;
+    className?: string;
+}
+
+const AsyncDropdown: React.FunctionComponent<AsyncDropdownProps> = ({
+    label,
+    options,
+    selectedKey,
+    required = false,
+    optional = !required,
+    disabled,
+    errorMessage,
+    onChange,
+    placeholder,
+    className
+}) => {
+
+    let isOptional;
+    let selOptions;
+    let selKey = selectedKey;
+    if (options !== undefined) {
+        isOptional = isOptionalDropdown(required, optional);
+        selOptions = isOptional ? [{ key: "", text: "" }, ...options] : options;
+        if (!selOptions.some(row => row.key === selKey)) {
+            selKey = selOptions[0]?.key;
+            setTimeout(() => {
+                onChange(undefined, selOptions[0], 0);
+            }, 1);
+        }
+    }
+
+    return options === undefined ?
+        <DropdownBase label={label} options={[]} placeholder={nlsHPCC.loadingMessage} disabled={true} /> :
+        <DropdownBase label={label} options={selOptions} selectedKey={selKey} onChange={onChange} placeholder={placeholder} disabled={disabled} required={required} errorMessage={errorMessage} className={className} />;
+};
+
+const isOptionalDropdown = (required?: boolean, optional?: boolean) => required === false || optional === true;
+const autoSelectDropdown = (selectedKey?: string, required?: boolean, optional?: boolean) => selectedKey === undefined && isOptionalDropdown(required, optional);
 
 export type FieldType = "string" | "password" | "number" | "checkbox" | "choicegroup" | "datetime" | "dropdown" | "link" | "links" | "progress" |
     "workunit-state" |
@@ -214,121 +283,101 @@ type Field = StringField | NumericField | CheckboxField | ChoiceGroupField | Dat
 
 export type Fields = { [id: string]: Field };
 
-export interface TargetClusterTextFieldProps extends DropdownProps {
+export interface TargetClusterTextFieldProps extends AsyncDropdownProps {
 }
 
 export const TargetClusterTextField: React.FunctionComponent<TargetClusterTextFieldProps> = (props) => {
 
-    const [targetClusters, setTargetClusters] = React.useState<IDropdownOption[]>([]);
-    const [defaultSelectedKey, setDefaultSelectedKey] = React.useState<string>(props.selectedKey);
+    const [targetClusters, setTargetClusters] = React.useState<IDropdownOption[]>();
+    const [defaultRow, setDefaultRow] = React.useState<IDropdownOption>();
 
     React.useEffect(() => {
         const topology = Topology.attach({ baseUrl: "" });
         let active = true;
         topology.fetchLogicalClusters().then((response: TpLogicalClusterQuery.TpLogicalCluster[]) => {
             if (active) {
-                const options = response.map((n, i) => {
+                const options = response.map(row => {
                     return {
-                        key: n.Name || "unknown",
-                        text: n.Name + (n.Name !== n.Type ? ` (${n.Type})` : ""),
-                        type: n.Type
+                        key: row.Name || "unknown",
+                        text: row.Name + (row.Name !== row.Type ? ` (${row.Type})` : ""),
+                        type: row.Type
                     };
-                });
+                }) || [];
                 setTargetClusters(options);
+                let firstRow: IDropdownOption;
+                let firstHThor: IDropdownOption;
+                let firstThor: IDropdownOption;
+                options.forEach(row => {
+                    if (firstRow === undefined) {
+                        firstRow = row;
+                    }
+                    if (firstHThor === undefined && (row as any).type === "hthor") {
+                        firstHThor = row;
+                    }
+                    if (firstThor === undefined && (row as any).type === "thor") {
+                        firstThor = row;
+                    }
+                    return row;
+                });
+                if (autoSelectDropdown(props.selectedKey, props.required, props.optional)) {
+                    const selRow = firstThor || firstHThor || firstRow;
+                    setDefaultRow(selRow);
+                }
             }
-        });
+        }).catch(e => logger.error);
         return () => { active = false; };
-    }, []);
+    }, [props.selectedKey, props.required, props.optional]);
 
-    React.useEffect(() => {
-        let firstRow: IDropdownOption;
-        let firstHThor: IDropdownOption;
-        let firstThor: IDropdownOption;
-        targetClusters.forEach(row => {
-            if (firstRow === undefined) {
-                firstRow = row;
-            }
-            if (firstHThor === undefined && (row as any).type === "hthor") {
-                firstHThor = row;
-            }
-            if (firstThor === undefined && (row as any).type === "thor") {
-                firstThor = row;
-            }
-            return row;
-        });
-        if (props.selectedKey === undefined && (props.required === true || props.optional === false)) {
-            const selRow = firstThor || firstHThor || firstRow;
-            if (selRow) {
-                setDefaultSelectedKey(selRow?.key as string);
-                props.onChange && props.onChange(undefined, selRow);
-            }
-        }
-    }, [props, targetClusters]);
-
-    return <Dropdown {...props} selectedKey={props.selectedKey} defaultSelectedKey={defaultSelectedKey} options={targetClusters} />;
+    return <AsyncDropdown {...props} selectedKey={props.selectedKey || defaultRow?.key as string} options={targetClusters} />;
 };
 
-export interface TargetDropzoneTextFieldProps extends DropdownProps {
+export interface TargetDropzoneTextFieldProps extends AsyncDropdownProps {
 }
 
 export const TargetDropzoneTextField: React.FunctionComponent<TargetDropzoneTextFieldProps> = (props) => {
 
-    const [targetDropzones, setTargetDropzones] = React.useState<IDropdownOption[]>([]);
+    const [targetDropzones, setTargetDropzones] = React.useState<IDropdownOption[]>();
 
     React.useEffect(() => {
         TpDropZoneQuery({}).then(({ TpDropZoneQueryResponse }) => {
-            let selected: IDropdownOption;
-            let selectedIdx: number;
-            setTargetDropzones(
-                TpDropZoneQueryResponse?.TpDropZones?.TpDropZone?.map((row, idx) => {
-                    const retVal = {
-                        key: row.Name,
-                        text: row.Name,
-                        path: row.Path
-                    };
-                    if (retVal.key === props.selectedKey) {
-                        selected = retVal;
-                        selectedIdx = idx;
-                    }
-                    return retVal;
-                }) || []
-            );
-            if (selected) {
-                props.onChange(undefined, selected, selectedIdx);
-            }
-        });
-    }, [props]);
+            setTargetDropzones(TpDropZoneQueryResponse?.TpDropZones?.TpDropZone?.map((row, idx) => {
+                return {
+                    key: row.Name,
+                    text: row.Name,
+                    path: row.Path
+                };
+            }) || []);
+        }).catch(e => logger.error);
+    }, []);
 
-    return <Dropdown {...props} options={targetDropzones} />;
+    return <AsyncDropdown {...props} options={targetDropzones} />;
 };
 
-export interface TargetServerTextFieldProps extends DropdownProps {
+export interface TargetServerTextFieldProps extends AsyncDropdownProps {
     dropzone: string;
 }
 
 export const TargetServerTextField: React.FunctionComponent<TargetServerTextFieldProps> = (props) => {
 
-    const [targetServers, setTargetServers] = React.useState<IDropdownOption[]>([]);
+    const [targetServers, setTargetServers] = React.useState<IDropdownOption[]>();
 
     React.useEffect(() => {
         TpDropZoneQuery({ Name: "" }).then(response => {
             const { TpDropZoneQueryResponse } = response;
-            setTargetServers(
-                TpDropZoneQueryResponse?.TpDropZones?.TpDropZone?.filter(row => row.Name === props.dropzone)[0]?.TpMachines?.TpMachine?.map(n => {
-                    return {
-                        key: n.ConfigNetaddress,
-                        text: n.Netaddress,
-                        OS: n.OS
-                    };
-                }) || []
-            );
-        });
+            setTargetServers(TpDropZoneQueryResponse?.TpDropZones?.TpDropZone?.filter(row => row.Name === props.dropzone)[0]?.TpMachines?.TpMachine?.map(n => {
+                return {
+                    key: n.ConfigNetaddress,
+                    text: n.Netaddress,
+                    OS: n.OS
+                };
+            }) || []);
+        }).catch(e => logger.error);
     }, [props.selectedKey, props.dropzone]);
 
-    return <Dropdown {...props} options={targetServers} />;
+    return <AsyncDropdown {...props} options={targetServers} />;
 };
 
-export interface TargetServerTextFieldLinkedProps extends DropdownProps {
+export interface TargetServerTextFieldLinkedProps extends AsyncDropdownProps {
     setSetDropzone?: (setDropzone: (dropzone: string) => void) => void;
 }
 
@@ -345,35 +394,33 @@ export const TargetServerTextLinkedField: React.FunctionComponent<TargetServerTe
     return <TargetServerTextField {...props} dropzone={dropzone} />;
 };
 
-export interface TargetGroupTextFieldProps extends DropdownProps {
+export interface TargetGroupTextFieldProps extends AsyncDropdownProps {
 }
 
 export const TargetGroupTextField: React.FunctionComponent<TargetGroupTextFieldProps> = (props) => {
 
-    const [targetGroups, setTargetGroups] = React.useState<IDropdownOption[]>([]);
+    const [targetGroups, setTargetGroups] = React.useState<IDropdownOption[]>();
 
     React.useEffect(() => {
         TpGroupQuery({}).then(({ TpGroupQueryResponse }) => {
-            setTargetGroups(
-                TpGroupQueryResponse.TpGroups.TpGroup.map(n => {
-                    return {
-                        key: n.Name,
-                        text: n.Name + (n.Name !== n.Kind ? ` (${n.Kind})` : "")
-                    };
-                })
-            );
-        });
+            setTargetGroups(TpGroupQueryResponse.TpGroups.TpGroup.map(n => {
+                return {
+                    key: n.Name,
+                    text: n.Name + (n.Name !== n.Kind ? ` (${n.Kind})` : "")
+                };
+            }));
+        }).catch(e => logger.error);
     }, []);
 
-    return <Dropdown {...props} options={targetGroups} />;
+    return <AsyncDropdown {...props} options={targetGroups} />;
 };
 
-export interface TargetDfuSprayQueueTextFieldProps extends DropdownProps {
+export interface TargetDfuSprayQueueTextFieldProps extends AsyncDropdownProps {
 }
 
 export const TargetDfuSprayQueueTextField: React.FunctionComponent<TargetDfuSprayQueueTextFieldProps> = (props) => {
 
-    const [dfuSprayQueues, setDfuSprayQueues] = React.useState<IDropdownOption[]>([]);
+    const [dfuSprayQueues, setDfuSprayQueues] = React.useState<IDropdownOption[]>();
 
     React.useEffect(() => {
         TpServiceQuery({}).then(({ TpServiceQueryResponse }) => {
@@ -385,13 +432,13 @@ export const TargetDfuSprayQueueTextField: React.FunctionComponent<TargetDfuSpra
                     };
                 })
             );
-        });
+        }).catch(e => logger.error);
     }, []);
 
-    return <Dropdown {...props} options={dfuSprayQueues} />;
+    return <AsyncDropdown {...props} options={dfuSprayQueues} />;
 };
 
-export interface TargetFolderTextFieldProps extends DropdownProps {
+export interface TargetFolderTextFieldProps extends AsyncDropdownProps {
     pathSepChar?: string;
     machineAddress?: string;
     machineDirectory?: string;
@@ -400,13 +447,10 @@ export interface TargetFolderTextFieldProps extends DropdownProps {
 
 export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFieldProps> = (props) => {
 
-    const [folders, setFolders] = React.useState<IDropdownOption[]>([]);
-
+    const [folders, setFolders] = React.useState<IDropdownOption[]>();
     const { pathSepChar, machineAddress, machineDirectory, machineOS } = { ...props };
 
-    const fetchFolders = React.useCallback((
-        pathSepChar: string, Netaddr: string, Path: string, OS: number, depth: number
-    ): Promise<IDropdownOption[]> => {
+    const fetchFolders = React.useCallback((pathSepChar: string, Netaddr: string, Path: string, OS: number, depth: number): Promise<IDropdownOption[]> => {
         depth = depth || 0;
         let retVal: IDropdownOption[] = [];
         if (props.optional) {
@@ -428,7 +472,7 @@ export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFiel
                     suppressExceptionToaster: true
                 }).then(({ FileListResponse }) => {
                     const requests = [];
-                    FileListResponse.files.PhysicalFileStruct.forEach(file => {
+                    FileListResponse.files?.PhysicalFileStruct?.forEach(file => {
                         if (file.isDir) {
                             if (Path + pathSepChar === "//") {
                                 requests.push(fetchFolders(pathSepChar, Netaddr, Path + file.name, OS, ++depth));
@@ -442,7 +486,7 @@ export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFiel
                             retVal = retVal.concat(response);
                         });
                         resolve(retVal);
-                    });
+                    }).catch(e => logger.error);
                 });
             }
         });
@@ -458,89 +502,81 @@ export const TargetFolderTextField: React.FunctionComponent<TargetFolderTextFiel
         }
     }, [pathSepChar, machineAddress, machineDirectory, machineOS, fetchFolders]);
 
-    return <Dropdown {...props} options={folders} />;
+    return <AsyncDropdown {...props} options={folders} />;
 };
 
-export interface UserGroupsProps extends DropdownProps {
+export interface UserGroupsProps extends AsyncDropdownProps {
     username: string;
 }
 
 export const UserGroupsField: React.FunctionComponent<UserGroupsProps> = (props) => {
 
-    const [groups, setGroups] = React.useState<IDropdownOption[]>([]);
+    const [groups, setGroups] = React.useState<IDropdownOption[]>();
 
     React.useEffect(() => {
-        const request = { username: props.username };
-        WsAccess.UserGroupEditInput({ request: request })
+        WsAccess.UserGroupEditInput({ request: { username: props.username } })
             .then(({ UserGroupEditInputResponse }) => {
-                const groups = UserGroupEditInputResponse.Groups.Group
+                const groups = UserGroupEditInputResponse?.Groups?.Group
                     .filter(group => group.name !== "Administrators")
                     .map(group => {
                         return {
                             key: group.name,
                             text: group.name
                         };
-                    });
-                groups.unshift({ key: "", text: "" });
-                setGroups(groups);
-            })
-            .catch(logger.error)
-            ;
+                    }) || [];
+                setGroups(groups || []);
+            }).catch(logger.error);
     }, [props.username]);
 
-    return <Dropdown {...props} options={groups} />;
-
+    return <AsyncDropdown {...props} options={groups} />;
 };
 
-export interface GroupMembersProps extends DropdownProps {
+export interface GroupMembersProps extends AsyncDropdownProps {
     groupname: string;
 }
 
 export const GroupMembersField: React.FunctionComponent<GroupMembersProps> = (props) => {
 
-    const [users, setUsers] = React.useState<IDropdownOption[]>([]);
+    const [users, setUsers] = React.useState<IDropdownOption[]>();
 
     React.useEffect(() => {
         const request = { groupname: props.groupname };
         WsAccess.GroupMemberEditInput({ request: request }).then(({ GroupMemberEditInputResponse }) => {
-            const _users = GroupMemberEditInputResponse.Users.User
+            const _users = GroupMemberEditInputResponse?.Users?.User
                 .map(user => {
                     return {
                         key: user.username,
                         text: user.username
                     };
-                });
-            _users.unshift({ key: "", text: "" });
+                }) || [];
             setUsers(_users);
-        });
+        }).catch(logger.error);
     }, [props.groupname]);
 
-    return <Dropdown {...props} options={users} />;
+    return <AsyncDropdown {...props} options={users} />;
 };
 
-export interface PermissionTypeProps extends DropdownProps {
+export interface PermissionTypeProps extends AsyncDropdownProps {
 }
 
 export const PermissionTypeField: React.FunctionComponent<PermissionTypeProps> = (props) => {
 
-    const [baseDns, setBaseDns] = React.useState<IDropdownOption[]>([]);
+    const [baseDns, setBaseDns] = React.useState<IDropdownOption[]>();
 
     React.useEffect(() => {
         WsAccess.Permissions({}).then(({ BasednsResponse }) => {
-            const _basedns = BasednsResponse.Basedns.Basedn
+            const _basedns = BasednsResponse?.Basedns?.Basedn
                 .map(dn => {
                     return {
                         key: dn.name,
                         text: dn.name
                     };
-                });
-            _basedns.unshift({ key: "", text: "" });
+                }) || [];
             setBaseDns(_basedns);
-        });
+        }).catch(logger.error);
     }, []);
 
-    return <Dropdown {...props} options={baseDns} />;
-
+    return <AsyncDropdown {...props} options={baseDns} />;
 };
 
 const states = Object.keys(States).map(s => States[s]);
@@ -815,6 +851,7 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     field: <TargetClusterTextField
                         key={fieldID}
                         selectedKey={field.value}
+                        optional
                         onChange={(ev, row) => onChange(fieldID, row.key)}
                         placeholder={field.placeholder}
                     />
