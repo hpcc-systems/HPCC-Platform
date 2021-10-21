@@ -516,7 +516,7 @@ int HttpClient::sendRequest(int times, HttpStat& stat, StringBuffer& req)
             socket.setown(ISocket::connect(ep));
             if(m_use_ssl && m_ssctx.get() != NULL)
             {
-                Owned<ISecureSocket> securesocket = m_ssctx->createSecureSocket(socket.getLink());
+                Owned<ISecureSocket> securesocket = m_ssctx->createSecureSocket(socket.getLink(), SSLogNormal, m_host.str());
                 int res = securesocket->secure_connect();
                 if(res >= 0)
                 {
@@ -846,7 +846,7 @@ int COneServerHttpProxyThread::start()
         socket2.setown(ISocket::connect(ep));
         if(m_use_ssl && m_ssctx != NULL)
         {
-            Owned<ISecureSocket> securesocket = m_ssctx->createSecureSocket(socket2.getLink());
+            Owned<ISecureSocket> securesocket = m_ssctx->createSecureSocket(socket2.getLink(), SSLogNormal, m_host.str());
             int res = securesocket->secure_connect();
             if(res >= 0)
             {
