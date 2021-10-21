@@ -309,7 +309,7 @@ int CHttpClient::connect(StringBuffer& errmsg, bool forceNewConnection)
 
             if(strcmp(m_protocol.get(), "HTTPS") == 0)
             {
-                ISecureSocket* securesocket = m_ssctx->createSecureSocket(m_socket);
+                ISecureSocket* securesocket = m_ssctx->createSecureSocket(m_socket, SSLogNormal, m_host.str());
                 int res = securesocket->secure_connect();
                 if(res < 0)
                 {

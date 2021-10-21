@@ -110,6 +110,7 @@ public:
     StringBuffer m_ip;
     int          m_port;
     struct sockaddr_in* m_addr;
+    StringBuffer m_fqdn;
 
     CAddress(const char* host, int port)
     {
@@ -123,6 +124,7 @@ public:
         IpAddress ip(host);
         ip.getIpText(m_ip);
         m_port = port;
+        m_fqdn.set(host);
 
     #ifndef _WIN32
         inet_pton(AF_INET, m_ip.str(), &(m_addr->sin_addr));

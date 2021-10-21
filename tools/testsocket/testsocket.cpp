@@ -562,7 +562,7 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
 #ifdef _USE_OPENSSL
                     if (!persistSecureContext)
                         persistSecureContext.setown(createSecureSocketContext(ClientSocket));
-                    persistSSock.setown(persistSecureContext->createSecureSocket(persistSocket.getClear()));
+                    persistSSock.setown(persistSecureContext->createSecureSocket(persistSocket.getClear(), SSLogNormal, ip));
                     int res = persistSSock->secure_connect();
                     if (res < 0)
                         throw MakeStringException(-1, "doSendQuery : Failed to establish secure connection");
@@ -582,7 +582,7 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
             {
 #ifdef _USE_OPENSSL
                 secureContext.setown(createSecureSocketContext(ClientSocket));
-                Owned<ISecureSocket> ssock = secureContext->createSecureSocket(socket.getClear());
+                Owned<ISecureSocket> ssock = secureContext->createSecureSocket(socket.getClear(), SSLogNormal, ip);
                 int res = ssock->secure_connect();
                 if (res < 0)
                     throw MakeStringException(-1, "doSendQuery : Failed to establish secure connection");

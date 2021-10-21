@@ -1139,10 +1139,10 @@ public:
         CriticalBlock b(secureContextCrit);
         return ensureSecureContext(secureContext);
     }
-    ISecureSocket *createSecureSocket(ISocket *sock)
+    ISecureSocket *createSecureSocket(ISocket *sock, const char *fqdn = nullptr)
     {
         ISecureSocketContext *sc = (customClientCert) ? ensureSecureContext(customSecureContext) : ensureStaticSecureContext();
-        return sc->createSecureSocket(sock);
+        return sc->createSecureSocket(sock, SSLogNormal, fqdn);
     }
 #endif
     bool isTimeLimitExceeded(unsigned *_remainingMS)
@@ -2228,7 +2228,7 @@ public:
                         if (proto == PersistentProtocol::ProtoTLS)
                         {
 #ifdef _USE_OPENSSL
-                            Owned<ISecureSocket> ssock = master->createSecureSocket(socket.getClear());
+                            Owned<ISecureSocket> ssock = master->createSecureSocket(socket.getClear(), connUrl.host);
                             if (ssock)
                             {
                                 checkTimeLimitExceeded(&remainingMS);

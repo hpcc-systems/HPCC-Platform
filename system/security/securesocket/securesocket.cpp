@@ -137,7 +137,7 @@ private:
     CStringSet* m_peers;
     int         m_loglevel;
     bool        m_isSecure;
-    size32_t    nextblocksize = 0;
+    StringBuffer m_fqdn;
     unsigned    blockflags = BF_ASYNC_TRANSFER;
     unsigned    blocktimeoutms = WAIT_FOREVER;
 #ifdef USERECVSEM
@@ -151,8 +151,8 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CSecureSocket(ISocket* sock, SSL_CTX* ctx, bool verify = false, bool addres_match = false, CStringSet* m_peers = NULL, int loglevel=SSLogNormal);
-    CSecureSocket(int sockfd, SSL_CTX* ctx, bool verify = false, bool addres_match = false, CStringSet* m_peers = NULL, int loglevel=SSLogNormal);
+    CSecureSocket(ISocket* sock, SSL_CTX* ctx, bool verify = false, bool addres_match = false, CStringSet* m_peers = NULL, int loglevel=SSLogNormal, const char *fqdn = nullptr);
+    CSecureSocket(int sockfd, SSL_CTX* ctx, bool verify = false, bool addres_match = false, CStringSet* m_peers = NULL, int loglevel=SSLogNormal, const char *fqdn = nullptr);
     ~CSecureSocket();
 
     virtual int secure_accept(int logLevel);
@@ -449,7 +449,7 @@ Semaphore CSecureSocket::receiveblocksem(2);
 /**************************************************************************
  *  CSecureSocket -- secure socket layer implementation using openssl     *
  **************************************************************************/
-CSecureSocket::CSecureSocket(ISocket* sock, SSL_CTX* ctx, bool verify, bool address_match, CStringSet* peers, int loglevel)
+CSecureSocket::CSecureSocket(ISocket* sock, SSL_CTX* ctx, bool verify, bool address_match, CStringSet* peers, int loglevel, const char *fqdn)
 {
     m_socket.setown(sock);
     m_ssl = SSL_new(ctx);
@@ -471,9 +471,12 @@ CSecureSocket::CSecureSocket(ISocket* sock, SSL_CTX* ctx, bool verify, bool addr
 #endif
 
     SSL_set_fd(m_ssl, sock->OShandle());
+
+    if (fqdn)
+        m_fqdn.set(fqdn);
 }
 
-CSecureSocket::CSecureSocket(int sockfd, SSL_CTX* ctx, bool verify, bool address_match, CStringSet* peers, int loglevel)
+CSecureSocket::CSecureSocket(int sockfd, SSL_CTX* ctx, bool verify, bool address_match, CStringSet* peers, int loglevel, const char *fqdn)
 {
     //m_socket.setown(sock);
     //m_socket.setown(ISocket::attach(sockfd));
@@ -496,6 +499,9 @@ CSecureSocket::CSecureSocket(int sockfd, SSL_CTX* ctx, bool verify, bool address
 #endif
 
     SSL_set_fd(m_ssl, sockfd);
+
+    if (fqdn)
+        m_fqdn.set(fqdn);
 }
 
 CSecureSocket::~CSecureSocket()
@@ -701,6 +707,12 @@ int CSecureSocket::secure_accept(int logLevel)
 
 int CSecureSocket::secure_connect(int logLevel)
 {
+    if (m_fqdn.length() > 0)
+    {
+        if (!streq(m_fqdn.str(), "."))
+            SSL_set_tlsext_host_name(m_ssl, m_fqdn.str());
+    }
+
     int err = SSL_connect (m_ssl);                     
     if(err <= 0)
     {
@@ -1329,14 +1341,14 @@ public:
         SSL_CTX_free(m_ctx);
     }
 
-    ISecureSocket* createSecureSocket(ISocket* sock, int loglevel)
+    ISecureSocket* createSecureSocket(ISocket* sock, int loglevel, const char *fqdn)
     {
-        return new CSecureSocket(sock, m_ctx, m_verify, m_address_match, m_peers, loglevel);
+        return new CSecureSocket(sock, m_ctx, m_verify, m_address_match, m_peers, loglevel, fqdn);
     }
 
-    ISecureSocket* createSecureSocket(int sockfd, int loglevel)
+    ISecureSocket* createSecureSocket(int sockfd, int loglevel, const char *fqdn)
     {
-        return new CSecureSocket(sockfd, m_ctx, m_verify, m_address_match, m_peers, loglevel);
+        return new CSecureSocket(sockfd, m_ctx, m_verify, m_address_match, m_peers, loglevel, fqdn);
     }
 };
 
