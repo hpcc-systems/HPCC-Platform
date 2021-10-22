@@ -22,7 +22,7 @@
         "jsx": "react",
         "lib": [
             "dom",
-            "es2017"
+            "es2015"
         ],
         "typeRoots": [],
         "types": [],
