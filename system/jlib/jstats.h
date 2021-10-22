@@ -551,6 +551,13 @@ public:
 #endif
         return values[index];
     }
+    inline CRuntimeStatistic * queryOptStatistic(StatisticKind kind)
+    {
+        unsigned index = queryMapping().getIndex(kind);
+        if (index == mapping.numStatistics())
+            return nullptr;
+        return &values[index];
+    }
     inline const CRuntimeStatistic & queryStatistic(StatisticKind kind) const
     {
         unsigned index = queryMapping().getIndex(kind);

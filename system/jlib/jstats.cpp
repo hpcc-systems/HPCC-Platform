@@ -2307,7 +2307,9 @@ void CRuntimeStatisticCollection::updateDelta(CRuntimeStatisticCollection & targ
 
 void CRuntimeStatisticCollection::mergeStatistic(StatisticKind kind, unsigned __int64 value)
 {
-    queryStatistic(kind).merge(value, queryMergeMode(kind));
+    CRuntimeStatistic * target = queryOptStatistic(kind);
+    if (target)
+        target->merge(value, queryMergeMode(kind));
 }
 
 void CRuntimeStatisticCollection::sumStatistic(StatisticKind kind, unsigned __int64 value)
