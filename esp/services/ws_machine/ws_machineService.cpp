@@ -908,26 +908,12 @@ void Cws_machineEx::getProcesses(IConstEnvironment* constEnv, IPropertyTree* env
             SCMStringBuffer ep;
             pMachineInfo->getNetAddress(ep);
 
-            const char* ip = ep.str();
-            if (!ip)
+            if (ep.length() == 0)
             {
                 OWARNLOG("Network address not found for machine %s", name0);
                 continue;
             }
-
-            StringBuffer netAddress;
-            StringBuffer configNetAddress(ip);
-            if (!streq(ip, "."))
-            {
-                netAddress.set(ip);
-            }
-            else
-            {
-                IpAddress ipaddr = queryHostIP();
-                ipaddr.getIpText(netAddress);
-            }
-
-            setProcessRequest(machineInfoData, uniqueProcesses, netAddress.str(), configNetAddress.str(), processType, processName, directory0);
+            setProcessRequest(machineInfoData, uniqueProcesses, ep.str(), ep.str(), processType, processName, directory0);
         }
     }
 

@@ -1634,11 +1634,8 @@ void CTpWrapper::appendTpDropZone(double clientVersion, IConstEnvironment* const
             machine->setName(name.str());
         if (!server.isEmpty())
         {
-            IpAddress ipAddr;
-            ipAddr.ipset(server.str());
-            ipAddr.getIpText(networkAddress);
-            machine->setNetaddress(networkAddress.str());
-            machine->setConfigNetaddress(server.str());
+            machine->setNetaddress(server);
+            machine->setConfigNetaddress(server); //May be used by legacy ECLWatch. Leave it for now.
         }
         if (directory.length() > 0)
         {
@@ -1712,33 +1709,6 @@ void CTpWrapper::appendTpSparkThor(double clientVersion, IConstEnvironment* cons
     list.append(*sparkThor.getLink());
 }
 
-void CTpWrapper::appendTpMachine(double clientVersion, IConstEnvironment* constEnv, IConstInstanceInfo& instanceInfo, IArrayOf<IConstTpMachine>& machines)
-{
-    SCMStringBuffer name, networkAddress, description, directory;
-    Owned<IConstMachineInfo> machineInfo = instanceInfo.getMachine();
-    machineInfo->getName(name);
-    machineInfo->getNetAddress(networkAddress);
-    instanceInfo.getDirectory(directory);
-
-    Owned<IEspTpMachine> machine = createTpMachine();
-    machine->setName(name.str());
-
-    if (networkAddress.length() > 0)
-    {
-        IpAddress ipAddr;
-        ipAddr.ipset(networkAddress.str());
-
-        StringBuffer networkAddressStr;
-        ipAddr.getIpText(networkAddressStr);
-        machine->setNetaddress(networkAddressStr);
-    }
-    machine->setPort(instanceInfo.getPort());
-    machine->setOS(machineInfo->getOS());
-    machine->setDirectory(directory.str());
-    machine->setType(eqSparkThorProcess);
-    machines.append(*machine.getLink());
-}
-
 IEspTpMachine* CTpWrapper::createTpMachineEx(const char* name, const char* type, IConstMachineInfo* machineInfo)
 {
     if (!machineInfo)
@@ -1793,30 +1763,9 @@ void CTpWrapper::setMachineInfo(const char* name,const char* type,IEspTpMachine&
             SCMStringBuffer ep;
 
             pMachineInfo->getNetAddress(ep);
-
-            const char* ip = ep.str();
-            if (!ip || stricmp(ip, "."))
-            {
-                machine.setNetaddress(ep.str());
-                machine.setConfigNetaddress(ep.str());
-            }
-            else
-            {
-                StringBuffer ipStr;
-                IpAddress ipaddr = queryHostIP();
-                ipaddr.getIpText(ipStr);
-                if (ipStr.length() > 0)
-                {
-#ifdef MACHINE_IP
-                    machine.setNetaddress(MACHINE_IP);
-#else
-                    machine.setNetaddress(ipStr.str());
-#endif
-                    machine.setConfigNetaddress(".");
-                }
-            }
+            machine.setNetaddress(ep.str());
+            machine.setConfigNetaddress(ep.str());
             machine.setOS(pMachineInfo->getOS());
-                
             
             switch(pMachineInfo->getState())
             {
