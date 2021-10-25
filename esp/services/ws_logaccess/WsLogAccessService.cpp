@@ -33,7 +33,7 @@ void Cws_logaccessEx::init(const IPropertyTree *cfg, const char *process, const 
         if (m_remoteLogAccessor == nullptr)
             LOG(MCerror,"WsLogAccessService could not load remote log access plugin!");
 
-        m_logMap.set(m_remoteLogAccessor->fetchLogMap());
+        m_logMap.set(m_remoteLogAccessor->queryLogMap());
     }
     catch (IException * e)
     {
@@ -111,10 +111,10 @@ bool Cws_logaccessEx::onGetLogs(IEspContext &context, IEspGetLogsRequest &req, I
             if (startFrom < 0)
                 throw makeStringExceptionV(-1, "WsLogAccess: Encountered invalid LogLineStartFrom value: '%lld'", startFrom);
 
-            logFetchOptions.timeRange = range;
+            logFetchOptions.setTimeRange(range);
             logFetchOptions.copyLogFieldNames(cols);
-            logFetchOptions.limit = limit;
-            logFetchOptions.startFrom = (offset_t)startFrom;
+            logFetchOptions.setLimit(limit);
+            logFetchOptions.setStartFrom((offset_t)startFrom);
 
             StringBuffer logcontent;
             m_remoteLogAccessor->fetchLog(logFetchOptions, logcontent, logAccessFormatFromName(req.getFormat()));

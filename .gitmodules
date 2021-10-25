@@ -66,4 +66,4 @@
 	url = https://github.com/hpcc-systems/nlp-engine.git
 [submodule "system/logaccess/ElasticStack/elasticlient"]
 	path = system/logaccess/ElasticStack/elasticlient
-	url = https://github.com/seznam/elasticlient.git
+	url = https://github.com/hpcc-systems/elasticlient.git

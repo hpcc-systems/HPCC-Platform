@@ -1348,9 +1348,11 @@ extern jlib_decl IComponentLogFileCreator * createComponentLogFileCreator(const 
 
 struct LogAccessTimeRange
 {
-    //%Y-%m-dT%H:%M:%S.%z%z
+private:
     CDateTime startt;
     CDateTime endt;
+
+public:
     void setStart(const CDateTime start)
     {
         startt = start;
@@ -1369,6 +1371,16 @@ struct LogAccessTimeRange
     void setEnd(const char * end, bool local = true)
     {
         endt.setString(end,nullptr,local);
+    }
+
+    const CDateTime & getEndt() const
+    {
+        return endt;
+    }
+
+    const CDateTime & getStartt() const
+    {
+        return startt;
     }
 };
 
@@ -1450,13 +1462,12 @@ struct LogAccessConditions
 {
 private:
     Owned<ILogAccessFilter> filter;
-public:
+    StringArray logFieldNames;
     LogAccessTimeRange timeRange;
     unsigned limit = 100;
     offset_t startFrom = 0;
 
-    StringArray logFieldNames;
-
+public:
     LogAccessConditions & operator = (const LogAccessConditions & l)
     {
         copyLogFieldNames(l.logFieldNames);
@@ -1467,8 +1478,6 @@ public:
 
         return *this;
     }
-
-    ~LogAccessConditions() {}
 
     ILogAccessFilter * queryFilter() const
     {
@@ -1492,7 +1501,51 @@ public:
             appendLogFieldName(fields.item(fieldsindex));
         }
     }
-    inline const StringArray &queryLogFieldNames() const { return logFieldNames; }
+
+    inline const StringArray & queryLogFieldNames() const
+    {
+        return logFieldNames;
+    }
+
+    unsigned getLimit() const
+    {
+        return limit;
+    }
+
+    void setLimit(unsigned limit = 100)
+    {
+        this->limit = limit;
+    }
+
+    const StringArray& getLogFieldNames() const
+    {
+        return logFieldNames;
+    }
+
+    void setLogFieldNames(const StringArray &logFieldNames)
+    {
+        this->logFieldNames = logFieldNames;
+    }
+
+    offset_t getStartFrom() const
+    {
+        return startFrom;
+    }
+
+    void setStartFrom(offset_t startFrom = 0)
+    {
+        this->startFrom = startFrom;
+    }
+
+    const LogAccessTimeRange & getTimeRange() const
+    {
+        return timeRange;
+    }
+
+    void setTimeRange(const LogAccessTimeRange &timeRange)
+    {
+        this->timeRange = timeRange;
+    }
 };
 
 typedef enum
@@ -1522,38 +1575,18 @@ interface IRemoteLogAccess : extends IInterface
     virtual bool fetchLog(const LogAccessConditions & options, StringBuffer & returnbuf, LogAccessLogFormat format) = 0;
 
     virtual const char * getRemoteLogAccessType() const = 0;
-    virtual IPropertyTree * fetchLogMap() const = 0;
+    virtual IPropertyTree * queryLogMap() const = 0;
     virtual const char * fetchConnectionStr() const = 0;
 };
 
 inline bool fetchLog(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, ILogAccessFilter * filter, LogAccessTimeRange timeRange, const StringArray & cols, LogAccessLogFormat format)
 {
     LogAccessConditions logFetchOptions;
-    logFetchOptions.timeRange = timeRange;
+    logFetchOptions.setTimeRange(timeRange);
     logFetchOptions.setFilter(filter);
     logFetchOptions.copyLogFieldNames(cols); //ensure these fields are declared in m_logMapping->queryProp("WorkUnits/@contentcolumn")? or in LogMap/Fields?"
 
     return logAccess.fetchLog(logFetchOptions, returnbuf, format);
-}
-
-inline bool fetchJobIDLog(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, const char *jobid, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
-{
-    return fetchLog(returnbuf, logAccess, getJobIDLogAccessFilter(jobid), timeRange, cols, format);
-}
-
-inline bool fetchComponentLog(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, const char * component, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
-{
-    return fetchLog(returnbuf, logAccess, getComponentLogAccessFilter(component), timeRange, cols, format);
-}
-
-inline bool fetchLogByAudience(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, MessageAudience audience, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
-{
-    return fetchLog(returnbuf, logAccess, getAudienceLogAccessFilter(audience), timeRange, cols, format);
-}
-
-inline bool fetchLogByClass(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, LogMsgClass logclass, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
-{
-    return fetchLog(returnbuf, logAccess, getClassLogAccessFilter(logclass), timeRange, cols, format);
 }
 
 //logAccessPluginConfig expected to contain connectivity and log mapping information
@@ -1632,4 +1665,25 @@ public:
         return pLogAccessPlugin;
     }
 };
+
+inline bool fetchJobIDLog(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, const char *jobid, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
+{
+    return fetchLog(returnbuf, logAccess, getJobIDLogAccessFilter(jobid), timeRange, cols, format);
+}
+
+inline bool fetchComponentLog(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, const char * component, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
+{
+    return fetchLog(returnbuf, logAccess, getComponentLogAccessFilter(component), timeRange, cols, format);
+}
+
+inline bool fetchLogByAudience(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, MessageAudience audience, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
+{
+    return fetchLog(returnbuf, logAccess, getAudienceLogAccessFilter(audience), timeRange, cols, format);
+}
+
+inline bool fetchLogByClass(StringBuffer & returnbuf, IRemoteLogAccess & logAccess, LogMsgClass logclass, LogAccessTimeRange timeRange, StringArray & cols, LogAccessLogFormat format = LOGACCESS_LOGFORMAT_json)
+{
+    return fetchLog(returnbuf, logAccess, getClassLogAccessFilter(logclass), timeRange, cols, format);
+}
+
 #endif

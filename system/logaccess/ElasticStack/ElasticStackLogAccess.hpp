@@ -113,6 +113,6 @@ public:
     const IPropertyTree * getTimestampTypeFormat(const char * indexpattern, const char * fieldname);
 
     virtual const char * getRemoteLogAccessType() const override { return type; }
-    virtual IPropertyTree * fetchLogMap() const override { return m_pluginCfg->queryPropTree("logmap");}
+    virtual IPropertyTree * queryLogMap() const override { return m_pluginCfg->queryPropTree("logmap");}
     virtual const char * fetchConnectionStr() const override { return m_esConnectionStr.str();}
 };

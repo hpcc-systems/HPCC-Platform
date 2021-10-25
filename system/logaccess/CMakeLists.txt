@@ -14,6 +14,6 @@
 #    limitations under the License.
 ################################################################################
 
-IF(NOT WIN32)
+IF((NOT WIN32) AND USE_ELASTICSTACK_CLIENT)
   HPCC_ADD_SUBDIRECTORY (ElasticStack)
 ENDIF()

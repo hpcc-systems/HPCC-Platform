@@ -442,7 +442,7 @@ cpr::Response ElasticStackLogAccess::performESQuery(const LogAccessConditions & 
         }
 
         std::string fullRequest = "{";
-        esSearchMetaData(fullRequest, options.logFieldNames, options.limit, options.startFrom);
+        esSearchMetaData(fullRequest, options.getLogFieldNames(), options.getLimit(), options.getStartFrom());
 
         fullRequest += "\"query\": { \"bool\": {";
 
@@ -463,11 +463,12 @@ cpr::Response ElasticStackLogAccess::performESQuery(const LogAccessConditions & 
         std::string filter = "\"filter\": {";
         std::string range;
 
+        const LogAccessTimeRange trange = options.getTimeRange();
         //Bail out earlier?
-        if (options.timeRange.startt.isNull())
+        if (trange.getStartt().isNull())
             throw makeStringExceptionV(-1, "%s: start time must be provided!", COMPONENT_NAME);
 
-        esTimestampQueryRangeString(range, m_globalIndexTimestampField.str(), options.timeRange.startt.getSimple(),options.timeRange.endt.isNull() ? -1 : options.timeRange.endt.getSimple());
+        esTimestampQueryRangeString(range, m_globalIndexTimestampField.str(), trange.getStartt().getSimple(),trange.getEndt().isNull() ? -1 : trange.getEndt().getSimple());
 
         filter += range.c_str();
         filter += "}"; //end filter
