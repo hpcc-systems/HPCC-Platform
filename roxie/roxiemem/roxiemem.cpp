@@ -6375,8 +6375,14 @@ public:
         if (memTraceLevel >= 5)
             DBGLOG("RoxieMemMgr: CDataBufferManager::allocate() curBlock=%p nextAddr=%p:%x", curBlock, nextBase, nextOffset);
 
-        if (freePending.exchange(false, std::memory_order_acquire))
+        // This code be coded as freePending.exchange(false, std::memory_order_acquire))
+        // but that will be a locked operation.
+        // Since this is the only thread that clears the flag it is more efficient to check if it is set and clear if true.
+        if (freePending.load(std::memory_order_acquire))
+        {
+            freePending.store(false, std::memory_order_release);
             freeUnused();
+        }
 
         for (;;)
         {
