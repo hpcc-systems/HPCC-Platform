@@ -4850,7 +4850,7 @@ class CLightCoalesceThread : implements ICoalesce, public CInterface
     Semaphore sem;
     unsigned lastSaveWriteTransactions = 0;
     unsigned lastWarning = 0;
-    unsigned idlePeriod, minimumTimeBetweenSaves, idleRate;
+    unsigned idlePeriodSecs, minimumSecsBetweenSaves, idleRate;
     Linked<IPropertyTree> config;
     Owned<IJlibDateTime> quietStartTime, quietEndTime;
     CheckedCriticalSection crit;
@@ -4868,8 +4868,8 @@ public:
     IMPLEMENT_IINTERFACE;
     CLightCoalesceThread(IPropertyTree &_config, IStoreHelper *_iStoreHelper) : config(&_config), iStoreHelper(_iStoreHelper)
     {
-        idlePeriod = config->getPropInt("@lCIdlePeriod", DEFAULT_LCIDLE_PERIOD)*1000;
-        minimumTimeBetweenSaves = config->getPropInt("@lCMinTime", DEFAULT_LCMIN_TIME)*1000;
+        idlePeriodSecs = config->getPropInt("@lCIdlePeriod", DEFAULT_LCIDLE_PERIOD);
+        minimumSecsBetweenSaves = config->getPropInt("@lCMinTime", DEFAULT_LCMIN_TIME);
         idleRate = config->getPropInt("@lCIdleRate", DEFAULT_LCIDLE_RATE);
         char const *quietStartTimeStr = config->queryProp("@lCQuietStartTime");
         if (quietStartTimeStr)
@@ -4916,7 +4916,7 @@ public:
         while (!stopped)
         {
             unsigned writeTransactionsNow = SDSManager->writeTransactions;
-            if (!sem.wait(idlePeriod))
+            if (!sem.wait(idlePeriodSecs*1000))
             {
                 if (writeTransactionsNow != lastSaveWriteTransactions)
                 {
@@ -4937,19 +4937,18 @@ public:
                     {
                         unsigned transactions = SDSManager->writeTransactions-writeTransactionsNow; // don't care about rollover.
                         if (0 == transactions ||
-                            (0 != idleRate && idlePeriod>=60000 && (transactions/(idlePeriod/60000))<=idleRate))
+                            (0 != idleRate && idlePeriodSecs>=60 && (transactions/(idlePeriodSecs/60))<=idleRate))
                         {
                             StringBuffer filename;
                             iStoreHelper->getPrimaryLocation(filename);
                             iStoreHelper->getCurrentStoreFilename(filename);
                             OwnedIFile iFile = createIFile(filename);
-                            CDateTime createTime, nowTime;
-                            nowTime.setNow();
-                            int diff = 0;
+                            CDateTime createTime;
+                            __int64 sinceLastSaveSecs = 0;
                             try
                             {
                                 if (iFile->getTime(&createTime, NULL, NULL))
-                                    diff = ((int)nowTime.getSimple()-(int)createTime.getSimple())*1000;
+                                    sinceLastSaveSecs = (__int64)difftime(time(nullptr), createTime.getSimple()); // round to whole seconds
                             }
                             catch (IException *e)
                             {
@@ -4958,11 +4957,13 @@ public:
                                 EXCLOG(e, errMsg.str());
                                 e->Release();
                             }
-                            int period;
-                            if (diff<=0 || diff > (int)minimumTimeBetweenSaves) // <0 - createTime>nowTime, assume time skew and allow save.
+                            unsigned nextWaitPeriod = 0;
+                            // <=0 - either file doesn't exist, or assume time skew and allow save.
+                            if ((sinceLastSaveSecs <= 0) || (sinceLastSaveSecs > minimumSecsBetweenSaves))
                             {
-                                period = minimumTimeBetweenSaves-idlePeriod;
-                                if (0 > period) period = 0;
+                                if (idlePeriodSecs<minimumSecsBetweenSaves)
+                                    nextWaitPeriod = minimumSecsBetweenSaves-idlePeriodSecs;
+
                                 {
                                     CHECKEDCRITICALBLOCK(saveStoreCrit, fakeCritTimeout);
                                     SDSManager->blockingSave(&lastSaveWriteTransactions);
@@ -4970,13 +4971,16 @@ public:
                                 }
                                 t = lastWarning = 0;
                             }
-                            else
-                                period = minimumTimeBetweenSaves-diff;
-                            sem.wait(period);
+                            else if (sinceLastSaveSecs >= 0)
+                            {
+                                // sinceLastSaveSecs guaranteed to be <= minimumSecsBetweenSaves
+                                nextWaitPeriod = minimumSecsBetweenSaves-(unsigned)sinceLastSaveSecs;
+                            }
+                            sem.wait(nextWaitPeriod*1000);
                         }
                         else
                         {
-                            t += idlePeriod/1000;
+                            t += idlePeriodSecs;
                             if (t/3600 >= STORENOTSAVE_WARNING_PERIOD && ((t-lastWarning)/3600>(STORENOTSAVE_WARNING_PERIOD/2)))
                             {
                                 OWARNLOG("Store has not been saved for %d hours", t/3600);
