@@ -369,7 +369,7 @@ void CTopologyServer::updateStatus() const
         if (rangeStart != numChannels)
             report.appendf("-%u", numChannels);
     }
-    Owned<IFile> sentinelFile = createSentinelTarget();
+    Owned<IFile> sentinelFile = createSentinelTarget(".ready");
     if (unready==0)
     {
         writeSentinelFile(sentinelFile);
