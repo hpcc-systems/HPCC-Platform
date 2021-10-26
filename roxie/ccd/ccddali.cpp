@@ -182,10 +182,12 @@ private:
     private:
         CRoxieDaliHelper *owner;
         bool aborted;
+        bool wasConnected;
     public:
         CRoxieDaliConnectWatcher(CRoxieDaliHelper *_owner) : owner(_owner)
         {
             aborted = false;
+            wasConnected = owner->isConnected;
         }
 
         virtual int run()
@@ -194,24 +196,16 @@ private:
             {
                 if (topology && topology->getPropBool("@lockDali", false))
                 {
-                    Sleep(ROXIE_DALI_CONNECT_TIMEOUT);
                 }
-                else if (owner->connect(ROXIE_DALI_CONNECT_TIMEOUT))
+                else
                 {
-                    if (traceLevel)
+                    wasConnected = owner->checkDaliConnectionValid();
+                    bool connected = owner->connect(ROXIE_DALI_CONNECT_TIMEOUT);
+                    if (connected && !wasConnected && traceLevel)
                         DBGLOG("CRoxieDaliConnectWatcher reconnected");
-                    try
-                    {
-                        owner->disconnectSem.wait();
-                        Sleep(5000);   // Don't retry immediately, give Dali a chance to recover.
-                    }
-                    catch (IException *E)
-                    {
-                        if (!aborted)
-                            EXCLOG(E, "roxie: Unexpected exception in CRoxieDaliConnectWatcher");
-                        E->Release();
-                    }
+                    wasConnected = connected;
                 }
+                Sleep(ROXIE_DALI_CONNECT_TIMEOUT);
             }
             return 0;
         }
@@ -229,6 +223,26 @@ private:
                 Thread::join();
         }
     } connectWatcher;
+
+    bool checkDaliConnectionValid()
+    {
+        CriticalBlock b(daliHelperCrit);
+        if (!isConnected)
+            return false;
+        try
+        {
+            Owned<INode> res = querySessionManager().getProcessSessionNode(myProcessSession());
+            if (!res)
+                disconnect();
+        }
+        catch (IException *E)
+        {
+            EXCLOG(E);
+            ::Release(E);
+            disconnect();
+        }
+        return isConnected;
+    }
 
     virtual void beforeDispose()
     {
