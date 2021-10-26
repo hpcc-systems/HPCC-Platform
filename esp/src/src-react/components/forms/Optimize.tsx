@@ -2,11 +2,11 @@ import * as React from "react";
 import { Checkbox, DefaultButton, PrimaryButton, TextField, } from "@fluentui/react";
 import { scopedLogger } from "@hpcc-js/util";
 import { useForm, Controller } from "react-hook-form";
+import { DPWorkunit } from "src/DataPatterns/DPWorkunit";
 import nlsHPCC from "src/nlsHPCC";
 import { MessageBox } from "../../layouts/MessageBox";
+import { pushUrl } from "../../util/history";
 import { TargetClusterTextField } from "./Fields";
-import { DPWorkunit } from "src/DataPatterns/DPWorkunit";
-import { pushUrl } from "src-react/util/history";
 
 const logger = scopedLogger("../components/forms/PublishQuery.tsx");
 
