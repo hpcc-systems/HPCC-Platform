@@ -76,6 +76,7 @@ FILE * trace;
 CriticalSection traceCrit;
 
 unsigned queryDelayMS = 0;
+unsigned queryAbsDelayMS = 0;  // ex: -u0 -qd 1000 for 1 q/s ...
 unsigned totalQueryCnt = 0;
 double totalQueryMS = 0.0;
 
@@ -774,7 +775,14 @@ class QueryThread : public Thread
 public:
     QueryThread(const char * _ip, unsigned _port, const char * _base) : ip(_ip),port(_port),base(_base) {}
 
-    virtual int run() { doSendQuery(ip, port, base); done.signal(); okToSend.signal(); return 0; }
+    virtual int run()
+    {
+        doSendQuery(ip, port, base);
+        done.signal();
+        if (multiThreadMax)
+            okToSend.signal();
+        return 0;
+    }
 
 protected:
     StringAttr      ip;
@@ -794,6 +802,10 @@ int sendQuery(const char * ip, unsigned port, const char * base)
     Thread * thread = new QueryThread(ip, port, base);
     thread->start();
     thread->Release();
+
+    if (multiThread && queryAbsDelayMS && !multiThreadMax)
+        Sleep(queryAbsDelayMS);
+
     return 0;
 }
 
@@ -1065,6 +1077,12 @@ int main(int argc, char **argv)
     {
         printf("Multi-thread (-u) not available with -persist - ignored\n");
         multiThread = false;
+    }
+
+    if (multiThread && queryDelayMS && !multiThreadMax)
+    {
+        queryAbsDelayMS = queryDelayMS;
+        queryDelayMS = 0;
     }
 
     StringAttr ip;

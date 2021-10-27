@@ -1510,12 +1510,15 @@ public:
             {
                 if (state==STATEstarted || state==STATEstarting)
                 {
-                    if (ctx->queryServerContext()->okToLogStartStopError()) // && traceLevel ?
+                    if (ctx && ctx->queryServerContext() && ctx->queryCodeContext())
                     {
-                        VStringBuffer err("STATE: activity %d reset without stop", activityId);
-                        ctx->queryCodeContext()->addWuException(err.str(), ROXIE_INTERNAL_ERROR, SeverityError, "roxie");
+                        if (ctx->queryServerContext()->okToLogStartStopError()) // && traceLevel ?
+                        {
+                            VStringBuffer err("STATE: activity %d reset without stop", activityId);
+                            ctx->queryCodeContext()->addWuException(err.str(), ROXIE_INTERNAL_ERROR, SeverityError, "roxie");
+                        }
                     }
-                    if (ctx->queryOptions().failOnLeaks)
+                    if (ctx && ctx->queryOptions().failOnLeaks)
                         throw makeStringExceptionV(ROXIE_INTERNAL_ERROR, "STATE: activity %d reset without stop", activityId);
                     try
                     {
