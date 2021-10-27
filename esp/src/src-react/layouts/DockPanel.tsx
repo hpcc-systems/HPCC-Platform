@@ -4,7 +4,6 @@ import { PartialTheme, ThemeProvider, useTheme } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { HTMLWidget, Widget } from "@hpcc-js/common";
 import { DockPanel as HPCCDockPanel, IClosable } from "@hpcc-js/phosphor";
-import { useUserStore } from "../hooks/store";
 import { lightTheme } from "../themes";
 import { AutosizeHpccJSComponent } from "./HpccJSAdapter";
 
@@ -95,23 +94,57 @@ function isDockPanelComponent(item: DockPanelWidget | DockPanelComponent): item 
     return !!(item as DockPanelComponent).component;
 }
 
+export class ResetableDockPanel extends HPCCDockPanel {
+
+    protected _origLayout;
+
+    render() {
+        const retVal = super.render();
+        if (this._origLayout === undefined) {
+            this._origLayout = this.layout();
+        }
+        return retVal;
+    }
+
+    setLayout(layout: object) {
+        if (this._origLayout === undefined) {
+            this._origLayout = this.layout();
+        }
+        this.layout(layout);
+        return this;
+    }
+
+    resetLayout() {
+        if (this._origLayout) {
+            this
+                .layout(this._origLayout)
+                .lazyRender()
+                ;
+        }
+    }
+}
+
 export type DockPanelItems = (DockPanelWidget | DockPanelComponent)[];
 
 interface DockPanelProps {
-    storeID: string;
-    items?: DockPanelItems
+    items?: DockPanelItems,
+    layout?: object,
+    layoutChanged: (layout: object) => void,
+    onDockPanelCreate: (dockpanel: ResetableDockPanel) => void
 }
 
 export const DockPanel: React.FunctionComponent<DockPanelProps> = ({
-    storeID,
-    items
+    items,
+    layout,
+    layoutChanged = layout => { },
+    onDockPanelCreate
 }) => {
 
     const theme = useTheme();
     const [idx, setIdx] = React.useState<{ [key: string]: Widget }>({});
 
     const dockPanel = useConst(() => {
-        const retVal = new HPCCDockPanel();
+        const retVal = new ResetableDockPanel();
         const idx: { [key: string]: Widget } = {};
         items.forEach(item => {
             if (isDockPanelComponent(item)) {
@@ -123,29 +156,23 @@ export const DockPanel: React.FunctionComponent<DockPanelProps> = ({
             }
         });
         setIdx(idx);
+        onDockPanelCreate(retVal);
         return retVal;
     });
 
-    const [layout, setLayout] = useUserStore(storeID, "");
-    const [ready, setReady] = React.useState(false);
-
     React.useEffect(() => {
-        if (layout !== undefined) {
-            try {
-                const obj = JSON.parse(layout);
-                dockPanel.layout(obj);
-            } catch (e) {
-
-            }
-            setReady(true);
+        if (layout === undefined) {
+            dockPanel?.resetLayout();
+        } else {
+            dockPanel?.setLayout(layout);
         }
     }, [dockPanel, layout]);
 
     React.useEffect(() => {
         return () => {
-            setLayout(JSON.stringify(dockPanel?.layout()));
+            layoutChanged(dockPanel?.layout());
         };
-    }, [dockPanel, setLayout]);
+    }, [dockPanel, layoutChanged]);
 
     React.useEffect(() => {
         items.filter(isDockPanelComponent).forEach(item => {
@@ -157,7 +184,5 @@ export const DockPanel: React.FunctionComponent<DockPanelProps> = ({
         });
     }, [idx, items, theme]);
 
-    return <>
-        {ready && <AutosizeHpccJSComponent widget={dockPanel} padding={4} debounce={false} />}
-    </>;
+    return <AutosizeHpccJSComponent widget={dockPanel} padding={4} debounce={false} />;
 };
