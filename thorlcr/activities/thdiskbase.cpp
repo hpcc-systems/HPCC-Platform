@@ -126,9 +126,11 @@ void CDiskReadMasterBase::done()
 void CDiskReadMasterBase::deserializeStats(unsigned node, MemoryBuffer &mb)
 {
     CMasterActivity::deserializeStats(node, mb);
-
-    for (auto &stats: subFileStats)
-        stats->deserialize(node, mb);
+    if (mapping && (mapping->queryMapWidth(node)>0)) // there won't be any subfile stats. if worker was sent 0 parts
+    {
+        for (auto &stats: subFileStats)
+            stats->deserialize(node, mb);
+    }
 }
 /////////////////
 
