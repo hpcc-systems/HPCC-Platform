@@ -1266,6 +1266,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
 #ifdef _CONTAINERIZED
         initializeTopology(topoValues, myRoles);
+        writeSentinelFile(sentinelFile);
 #endif
         createDelayedReleaser();
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
@@ -1436,6 +1437,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     queryFileCache().loadSavedOsCacheInfo();
                 queryFileCache().startCacheReporter();
 #ifdef _CONTAINERIZED
+                // Roxie indicates readiness when all channels report ready
                 publishTopology(traceLevel, myRoles);
 #else
                 writeSentinelFile(sentinelFile);

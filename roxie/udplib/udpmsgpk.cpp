@@ -624,8 +624,8 @@ void CMessageCollator::collate(DataBuffer *dataBuff)
         mapping.remove(puid);
         queueCrit.enter();
         queue.push(pkSqncr);
-        sem.signal();
         queueCrit.leave();
+        sem.signal();
     }
 }
 

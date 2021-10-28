@@ -7,15 +7,18 @@
   <para><emphasis role="bold">UTF8<indexterm>
       <primary>UTF8</primary>
     </indexterm>[</emphasis><emphasis>_locale</emphasis><emphasis
+  role="bold">][</emphasis><emphasis>_n</emphasis><emphasis
   role="bold">]<indexterm>
       <primary>UTF8 value type</primary>
     </indexterm></emphasis></para>
 
-  <para>A UTF-8 encoded unicode character string of variable length to the
-  size needed to contain the result of the cast or passed parameter. The
-  optional <emphasis>locale </emphasis>specifies a valid unicode locale code,
-  as specified in ISO standards 639 and 3166 (not needed if LOCALE is
-  specified on the RECORD structure containing the field definition).</para>
+  <para>A UTF-8 encoded unicode character string of <emphasis>n</emphasis>
+  characters, space-padded just as STRING is. If _<emphasis>n</emphasis> is
+  omitted, the string is variable length to the size needed to contain the
+  result of the cast or passed parameter. The optional <emphasis>locale
+  </emphasis>specifies a valid unicode locale code, as specified in ISO
+  standards 639 and 3166 (not needed if LOCALE is specified on the RECORD
+  structure containing the field definition).</para>
 
   <para>Type casting UTF8 to UNICODE, VARUNICODE, STRING, or DATA is allowed,
   while casting to any other type will first implicitly cast to STRING and
@@ -25,9 +28,12 @@
 
   <para>Example:</para>
 
-  <programlisting>UTF8 FirstName := U8'Noël';
-        // utf-8-encoded string
-UTF8_de MyUnicodeString := U8'abcd\353';
-        // becomes 'abcdë' with a German locale
+  <programlisting>UTF8 FirstName := U8'Noël';                 // utf-8-encoded string
+
+UTF8_de MyUnicodeString := U8'abcd\353';    // becomes 'abcdë' with a German locale
+
+UTF8_4 FirstName4 := U8'Noël';              // 4-character utf-8-encoded string
+
+UTF8_de_5 MyUnicodeString5 := U8'abcd\353'; // becomes 'abcdë' with a German locale
 </programlisting>
 </sect1>

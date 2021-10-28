@@ -277,7 +277,7 @@ spec:
           containerPort: {{ $service.servicePort }}
 {{- end }}
 {{- end }}
-{{ include "hpcc.addSentinelProbes" $roxie | indent 8 }}
+{{ include "hpcc.addSentinelProbes" ( $roxie | merge (dict "readyProbeName" ".ready" )) | indent 8 }}
 {{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{- include "hpcc.addResources" (dict "me" $roxie.serverResources) | indent 8 }}
 {{ include "hpcc.addImageAttrs" $commonCtx | indent 8 }}
@@ -385,7 +385,7 @@ spec:
           containerPort: {{ $service.servicePort }}
 {{- end }}
 {{- end }}
-{{ include "hpcc.addSentinelProbes" $roxie | indent 8 }}
+{{ include "hpcc.addSentinelProbes" ( $roxie | merge (dict "readyProbeName" ".ready" )) | indent 8 }}
 {{- end }}
 {{ include "hpcc.addSecurityContext" (dict "root" $ "me" .) | indent 8 }}
 {{- include "hpcc.addResources" (dict "me" $roxie.channelResources) | indent 8 }}
