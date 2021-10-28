@@ -226,7 +226,7 @@ private:
 
     bool checkDaliConnectionValid()
     {
-        CriticalBlock b(daliHelperCrit);
+        CriticalBlock b(daliConnectionCrit);
         if (!isConnected)
             return false;
         try
