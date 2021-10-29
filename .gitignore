@@ -1,3 +1,6 @@
+build/
+node_modules/
+vcpkg/
 externals/
 .project
 .svn/
