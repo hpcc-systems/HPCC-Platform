@@ -144,6 +144,7 @@ void CPartitioner::commonCalcPartitions()
         if ((split != firstSplit) || (inputOffset != startInputOffset))
         {
             // To avoid the first partition's whichOutput value becomes -1 (which means invalid)
+            // when there is only one, large record presents in input.
             unsigned whichOutput = (split > 0 ? split-1 : split);
             results.append(*new PartitionPoint(whichInput, whichOutput, startInputOffset-thisOffset+thisHeaderSize, inputOffset - startInputOffset - cursor.trimLength, cursor.outputOffset-startOutputOffset));
             JSON_DBGLOG("commonCalcPartitions: startInputOffset:%lld, inputOffset: %lld, startOutputOffset: %lld, cursor.outputOffset: %lld, whichInput: %u, whichOutput: %u",

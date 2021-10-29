@@ -830,12 +830,14 @@ void FileSprayer::assignPartitionFilenames()
             cur.inputName.set(sources.item(cur.whichInput).filename);
             setCanAccessDirectly(cur.inputName);
         }
-        // Prevent to use invalid (-1) whichOutput index.
+
         if (cur.whichOutput != (unsigned)-1)
         {
             cur.outputName.set(targets.item(cur.whichOutput).filename);
             setCanAccessDirectly(cur.outputName);
         }
+        else
+            throwError1(DFTERR_InvalidPartitionOutputFileIndex, idx);
 
         // NB: partition (cur) is serialized to ftslave and it's this modifiedTime is used if present
         if (replicate)
