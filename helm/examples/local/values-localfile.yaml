@@ -13,27 +13,27 @@
 storage:
   planes:
   - name: dali
-    pvc: dali-hpcc-localfile-pvc
+    pvc: dali-localfile-hpcc-localfile-pvc
     prefix: "/var/lib/HPCCSystems/dalistorage"
     category: dali
 
   - name: dll
-    pvc: dll-hpcc-localfile-pvc
+    pvc: dll-localfile-hpcc-localfile-pvc
     prefix: "/var/lib/HPCCSystems/queries"
     category: dll
 
   - name: sasha
-    pvc: sasha-hpcc-localfile-pvc
+    pvc: sasha-localfile-hpcc-localfile-pvc
     prefix: "/var/lib/HPCCSystems/sasha"
     category: sasha
 
   - name: data
-    pvc: data-hpcc-localfile-pvc
+    pvc: data-localfile-hpcc-localfile-pvc
     prefix: "/var/lib/HPCCSystems/hpcc-data"
     category: data
 
   - name: mydropzone
-    pvc: mydropzone-hpcc-localfile-pvc
+    pvc: mydropzone-localfile-hpcc-localfile-pvc
     prefix: "/var/lib/HPCCSystems/mydropzone"
     category: lz
 
