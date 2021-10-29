@@ -3,7 +3,7 @@ on:
   pull_request:
     branches:
       - "master"
-      - "candidate-*"
+      - "candidate-*.x"
       - "!candidate-8.2.*"
       - "!candidate-8.0.*"
       - "!candidate-7.12.*"
@@ -48,8 +48,8 @@ jobs:
           echo ::set-output name=build_user::${{ github.actor }}
           echo ::set-output name=build_type::RelWithDebInfo
           echo ::set-output name=use_cppunit::1
-          echo ::set-output name=platform_build_base::platform-build-base
-          echo ::set-output name=platform_build::platform-build
+          echo ::set-output name=platform_build_base::smoketest-platform-build-base
+          echo ::set-output name=platform_build::smoketest-platform-build
 
       - name: tracing
         run: |
@@ -107,7 +107,7 @@ jobs:
         if: ${{ steps.check-images.outputs.build_base_missing == '1' && steps.check-images.outputs.prbase_missing == '1' }}
         uses: docker/build-push-action@v2
         with:
-          context: dockerfiles/${{ steps.vars.outputs.platform_build_base }}
+          context: dockerfiles/platform-build-base
           builder: ${{ steps.buildx.outputs.name }}
           tags: |
             ${{ steps.vars.outputs.container_registry }}/${{ steps.vars.outputs.cr_user }}/${{ steps.vars.outputs.platform_build_base }}:${{ steps.vars.outputs.base_ver }}

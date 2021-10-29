@@ -20,7 +20,7 @@
 ARG CR_USER=hpccsystems
 ARG CR_REPO=docker.io
 ARG PLATFORM_PRBASE_VER
-FROM ${CR_REPO}/${CR_USER}/platform-build:${PLATFORM_PRBASE_VER}
+FROM ${CR_REPO}/${CR_USER}/smoketest-platform-build:${PLATFORM_PRBASE_VER}
 
 USER hpcc
 
