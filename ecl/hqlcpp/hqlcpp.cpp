@@ -7491,7 +7491,6 @@ void HqlCppTranslator::doBuildExprPow(BuildCtx & ctx, IHqlExpression * expr, CHq
 {
     assertex(expr->numChildren() == 2);
     
-    IHqlExpression * left = expr->queryChild(0);
     IHqlExpression * right = expr->queryChild(1);
 
     bool notIntegerPower = !right->queryType()->isInteger();
@@ -7511,57 +7510,39 @@ void HqlCppTranslator::doBuildExprPow(BuildCtx & ctx, IHqlExpression * expr, CHq
 
     const uint MAX_EXP_INLINE_VALUE = 3;
     int64_t rightIntVal = value->getIntValue();
-    if (abs(rightIntVal) > MAX_EXP_INLINE_VALUE)
+    int64_t absExp = abs(rightIntVal);
+    if (absExp > MAX_EXP_INLINE_VALUE)
     {
         doBuildExprSysFunc(ctx, expr, tgt, powerId);
         return;
     }
-
-    IHqlExpression* outExpr = nullptr;
-    if (rightIntVal == 0)
+    
+    IHqlExpression * left = expr->queryChild(0);
+    if (absExp == 0)
     {
-        outExpr = createConstant(left->queryType()->castFrom(1.0));
-    }
-    else if (rightIntVal == 1)
-    {
-        outExpr = left;
+        tgt.expr.setown(createConstant(left->queryType()->castFrom(1.0)));
     }
     else
     {
-        //---------------------------------------------------------------------------
-        // Question:
-        // Is there a better way to get a temp real here?
-        //---------------------------------------------------------------------------
+        OwnedITypeInfo realType = makeRealType(DEFAULT_REAL_SIZE);
 
         CHqlBoundExpr leftBound;
-        buildTempExpr(ctx, left, leftBound);
+        OwnedHqlExpr castLeft = ensureExprType(left, realType);
+        buildTempExpr(ctx, castLeft, leftBound);
 
-        CHqlBoundExpr tempReal;
-        OwnedITypeInfo realType = makeRealType(DEFAULT_REAL_SIZE);
-        doBuildCastViaTemp(ctx, realType, leftBound, tempReal);
-        outExpr = tempReal.expr;
-
-        for (int i = 1; i < abs(rightIntVal); i++)
+        IHqlExpression* outExpr = leftBound.expr;
+        for (int i = 1; i < absExp; i++)
         {
-            outExpr = createValue(no_mul, realType, LINK(outExpr), LINK(tempReal.expr));
+            outExpr = createValue(no_mul, LINK(realType), LINK(outExpr), LINK(leftBound.expr));
         }
+
+        tgt.expr.setown(outExpr);
 
         if (rightIntVal < 0)
         {
-            CHqlBoundExpr bound;
-            buildTempExpr(ctx, outExpr, bound);
-
-            //---------------------------------------------------------------------------
-            // Question:
-            // This inserts a check for divide by zero. What is the best way to not have
-            // that check generated?
-            //---------------------------------------------------------------------------
-            outExpr = createValue(no_div, realType, createConstant(1.0), bound.expr);
+            tgt.expr.setown(createValue(no_div, LINK(realType), createConstant(1.0), LINK(tgt.expr)));
         }
     }
-
-    buildExpr(ctx, outExpr, tgt);
-    return;
 }
 
 //---------------------------------------------------------------------------
