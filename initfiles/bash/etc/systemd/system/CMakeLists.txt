@@ -42,7 +42,7 @@ set(esp "esp" "--daemon %i" "dafilesrv.service")
 set(roxie "roxie" "--topology=RoxieTopology.xml --logfile --restarts=2 --stdlog=0 --daemon %i" "dafilesrv.service")
 set(sasha "saserver" "--daemon %i" "dafilesrv.service")
 set(thor "thormaster_lcr" "--daemon %i MASTER=\${THORMASTER}:\${THORMASTERPORT}" "dafilesrv.service")
-set(thorslave "thorslave_lcr" "--daemon %i master=\${THORMASTER}:\${THORMASTERPORT} slave=.:\${SLAVEPORT} slavenum=\${SLAVENUM} logDir=${LOG_PATH}/\${THORNAME}" "dafilesrv.service")
+set(thorslave "thorslave_lcr" "--daemon %i --master=\${THORMASTER}:\${THORMASTERPORT} --slave=.:\${SLAVEPORT} --slavenum=\${SLAVENUM} --logDir=${LOG_PATH}/\${THORNAME}" "dafilesrv.service")
 set(backupnode "backup.sh" "" "")
 set(toposerver "toposerver" "--daemon %i" "dafilesrv.service")
 
