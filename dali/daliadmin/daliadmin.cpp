@@ -20,6 +20,9 @@
 #include "rmtfile.hpp"
 #include "daadmin.hpp"
 
+#include "ws_dfsclient.hpp"
+
+
 using namespace daadmin;
 
 #define DEFAULT_DALICONNECT_TIMEOUT 5 // seconds
@@ -125,6 +128,8 @@ daliadmin:
   name: daliadmin
 )!!";
 
+static void remoteTest(const char *logicalName, bool withDali);
+
 int main(int argc, const char* argv[])
 {
     int ret = 0;
@@ -219,6 +224,8 @@ int main(int argc, const char* argv[])
                         branchType = DXB_File;
                     translateToXpath(params.item(1), branchType);
                 }
+                else if (strieq(cmd, "remotetest"))
+                    remoteTest(params.item(1), false);
                 else
                 {
                     UERRLOG("Unknown command %s",cmd);
@@ -561,6 +568,8 @@ int main(int argc, const char* argv[])
                         }
                         removeOrphanedGlobalVariables(dryrun, reconstruct);
                     }
+                    else if (strieq(cmd, "remotetest"))
+                        remoteTest(params.item(1), true);
                     else
                         UERRLOG("Unknown command %s",cmd);
                 }
@@ -580,4 +589,224 @@ int main(int argc, const char* argv[])
     fflush(stdout);
     fflush(stderr);
     return ret;
+}
+
+static void testDFSFile(IDistributedFile *legacyDfsFile, const char *logicalName)
+{
+    unsigned numParts = legacyDfsFile->numParts();
+    IDistributedFilePart &part0 = legacyDfsFile->queryPart(0);
+    Owned<IDistributedFilePart> part0b = legacyDfsFile->getPart(0);
+    StringBuffer partName;
+    part0b->getPartName(partName);
+    PROGLOG("partName: %s", partName.str());
+    StringBuffer lfn;
+    legacyDfsFile->getLogicalName(lfn);
+    PROGLOG("lfn: %s", lfn.str());
+    verifyex(streq(logicalName, lfn));
+    const char *lfnb = legacyDfsFile->queryLogicalName();
+    verifyex(streq(logicalName, lfnb));
+    Owned<IDistributedFilePartIterator> iter = legacyDfsFile->getIterator();
+    ForEach(*iter)
+    {
+        IDistributedFilePart &part = iter->query();
+        part.getPartName(partName.clear());
+        PROGLOG("partName: %s", partName.str());
+    }
+    Owned<IFileDescriptor> dfsFileDesc = legacyDfsFile->getFileDescriptor();
+    const char *dir = legacyDfsFile->queryDefaultDir();
+    PROGLOG("dir = %s", dir);
+    const char *mask = legacyDfsFile->queryPartMask();
+    PROGLOG("mask = %s", dir);
+    IPropertyTree &attrs = legacyDfsFile->queryAttributes();
+    legacyDfsFile->lockProperties();
+    legacyDfsFile->unlockProperties();
+    CDateTime dt;
+    legacyDfsFile->getModificationTime(dt);
+    StringBuffer dateString;
+    dt.getString(dateString);
+    PROGLOG("Modification time: %s", dateString.str());
+
+    legacyDfsFile->getAccessedTime(dt);
+    dt.getString(dateString.clear());
+    PROGLOG("Accessed time: %s", dateString.str());
+    unsigned numCopies = legacyDfsFile->numCopies(0);
+    PROGLOG("numCopies: %d", numCopies);
+    bool forcePhysical = false;
+    if (!legacyDfsFile->existsPhysicalPartFiles(0))
+        WARNLOG("Could not find physical part files");
+    else
+        forcePhysical = true;
+    __int64 dfsSz = legacyDfsFile->getFileSize(true, forcePhysical);
+    PROGLOG("dfsSz: %" I64F "d", dfsSz);
+    __int64 diskSz = legacyDfsFile->getDiskSize(true, forcePhysical);
+    PROGLOG("diskSz: %" I64F "d", diskSz);
+    unsigned checkSum;
+    legacyDfsFile->getFileCheckSum(checkSum);
+    PROGLOG("checkSum: %d", checkSum);
+    offset_t base;
+    legacyDfsFile->getPositionPart(0, base);
+    PROGLOG("base: %" I64F "d", base);
+    IDistributedSuperFile *super = legacyDfsFile->querySuperFile();
+    PROGLOG("isSuper: %s", boolToStr(super!=NULL));
+    Owned<IDistributedSuperFileIterator> ownerIter = legacyDfsFile->getOwningSuperFiles();
+    ForEach(*ownerIter)
+    {
+        IDistributedSuperFile &superFile = ownerIter->query();
+        PROGLOG("superName: %s", superFile.queryLogicalName());
+    }
+    bool compressed = legacyDfsFile->isCompressed();
+    PROGLOG("compressed: %s", boolToStr(compressed));
+    StringBuffer clusterName;
+    legacyDfsFile->getClusterName(0, clusterName);
+    PROGLOG("clusterName: %s", clusterName.str());
+    StringArray clusters;
+    unsigned numClusterNames = legacyDfsFile->getClusterNames(clusters);
+    ForEachItemIn(i, clusters)
+    {
+        PROGLOG("clusterName: %s", clusters.item(i));
+    }
+    unsigned numClusters = legacyDfsFile->numClusters();
+    PROGLOG("numClusters: %d", numClusters);
+    unsigned clusterNamePos = legacyDfsFile->findCluster(clusterName);
+    PROGLOG("clusterNamePos: %d", clusterNamePos);
+    ClusterPartDiskMapSpec &mapSpec = legacyDfsFile->queryPartDiskMapping(0);
+    IGroup *group = legacyDfsFile->queryClusterGroup(0);
+    StringBuffer clusterGroupName;
+    legacyDfsFile->getClusterGroupName(0, clusterGroupName);
+    PROGLOG("clusterGroupName: %s", clusterGroupName.str());
+    StringBuffer ecl;
+    legacyDfsFile->getECL(ecl);
+    PROGLOG("ecl: %s", ecl.str());
+    StringBuffer reason;
+    bool canModify = legacyDfsFile->canModify(reason);
+    PROGLOG("canModify: %s", boolToStr(canModify));
+    bool canRemove = legacyDfsFile->canRemove(reason.clear());
+    PROGLOG("canRemove: %s", boolToStr(canRemove));
+    StringBuffer err;
+    bool compat = legacyDfsFile->checkClusterCompatible(*dfsFileDesc, err);
+    PROGLOG("compat: %s", boolToStr(compat));
+    unsigned crc;
+    legacyDfsFile->getFormatCrc(crc);
+    PROGLOG("crc: %d", crc);
+    size32_t rsz;
+    legacyDfsFile->getRecordSize(rsz);
+    PROGLOG("rsz: %d", rsz);
+    MemoryBuffer layout;
+    legacyDfsFile->getRecordLayout(layout, "_rtlType");
+    StringBuffer mapping;
+    legacyDfsFile->getColumnMapping(mapping);
+    PROGLOG("mapping: %s", mapping.str());
+    bool restricted = legacyDfsFile->isRestrictedAccess();
+    PROGLOG("restricted: %s", boolToStr(restricted));
+    unsigned oldTimeout = legacyDfsFile->setDefaultTimeout(3500);
+    PROGLOG("oldTimeout: %d", oldTimeout);
+
+    try
+    {
+        legacyDfsFile->validate();
+    }
+    catch (IException *e)
+    {
+        EXCLOG(e);
+        e->Release();
+    }
+
+    IPropertyTree *history = legacyDfsFile->queryHistory();
+    bool isExternal = legacyDfsFile->isExternal();
+    PROGLOG("isExternal: %s", boolToStr(isExternal));
+    unsigned maxSkew, minSkew, maxSkewPart, minSkewPart;
+    if (legacyDfsFile->getSkewInfo(maxSkew, minSkew, maxSkewPart, minSkewPart, true))
+    {
+        PROGLOG("maxSkew: %d", maxSkew);
+        PROGLOG("minSkew: %d", minSkew);
+        PROGLOG("maxSkewPart: %d", maxSkewPart);
+        PROGLOG("minSkewPart: %d", minSkewPart);
+    }
+    int expire = legacyDfsFile->getExpire();
+    PROGLOG("expire: %d", expire);
+    try
+    {
+        double cost = legacyDfsFile->getCost(clusterName.str());
+        PROGLOG("cost: %f", cost);
+    }
+    catch(IException *e)
+    {
+        EXCLOG(e);
+        e->Release();
+    }
+
+    // test some write methods. NB: at the moment, in common with foreign files, these changes do not get propagaged to dali
+    legacyDfsFile->setModified();
+    dt.adjustTime(30);
+    legacyDfsFile->setAccessedTime(dt);
+    legacyDfsFile->setAccessed();
+    legacyDfsFile->addAttrValue("recordCount", 10);
+    legacyDfsFile->setExpire(10);
+    legacyDfsFile->setECL("1;");
+    legacyDfsFile->resetHistory();
+    legacyDfsFile->setProtect("me", true);
+    legacyDfsFile->setColumnMapping("field1");
+    legacyDfsFile->setRestrictedAccess(true);
+
+    // this is simulating what happens in Thor when the manager serializes parts to workers
+    Owned<IFileDescriptor> fileDesc = legacyDfsFile->getFileDescriptor();
+    MemoryBuffer mb;
+    UnsignedArray parts;
+    parts.append(0);
+    fileDesc->serializeParts(mb, parts);
+
+    // worker side
+    IArrayOf<IPartDescriptor> partDescs;
+    deserializePartFileDescriptors(mb, partDescs);
+    IPartDescriptor &partDesc = partDescs.item(0);
+    RemoteFilename rfn;
+    partDesc.getFilename(0, rfn);
+    StringBuffer path;
+    rfn.getPath(path);
+    Owned<IFile> iFile = createIFile(path);
+    PROGLOG("File exists = %s", boolToStr(iFile->exists()));
+}
+
+static void remoteTest(const char *logicalName, bool withDali)
+{
+    CDfsLogicalFileName dlfn;
+    dlfn.set(logicalName);
+    logicalName = dlfn.get();
+    StringBuffer svc, remoteName;
+    CDfsLogicalFileName dlfn2;
+    if (!dlfn.getRemoteSpec(svc, remoteName))
+        remoteName.clear().append(logicalName);
+    dlfn2.set(remoteName.str());
+    remoteName.clear().append(dlfn2.get());
+
+    PROGLOG("Reading file: %s, remoteName: %s", logicalName, remoteName.str());
+
+    unsigned timeoutSecs = 60;
+    unsigned keepAliveExpiryFrequency = 10;
+    Owned<IUserDescriptor> userDesc = createUserDescriptor();
+    userDesc->set("jsmith", "password");
+
+    Owned<IDistributedFile> legacyDfsFile;
+    if (dlfn.isRemote())
+    {
+        Owned<wsdfs::IDFSFile> dfsFile = wsdfs::lookupDFSFile(logicalName, timeoutSecs, keepAliveExpiryFrequency, userDesc);
+
+        if (dfsFile)
+            legacyDfsFile.setown(createLegacyDFSFile(dfsFile));
+    }
+    else
+    {
+        if (!withDali)
+            throw makeStringExceptionV(0, "remotetest for non-remote files needs Dali.");
+
+        legacyDfsFile.setown(queryDistributedFileDirectory().lookup(dlfn, userDesc, false, false, false, nullptr, false));
+    }
+
+    if (!legacyDfsFile)
+    {
+        PROGLOG("Failed to open file: %s", logicalName);
+        return;
+    }
+
+    testDFSFile(legacyDfsFile, remoteName);
 }

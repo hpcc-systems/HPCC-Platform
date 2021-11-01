@@ -7428,3 +7428,10 @@ IPropertyTree * getStoragePlane(const char * name)
     Owned<IPropertyTree> global = getGlobalConfig();
     return global->getPropTree(xpath);
 }
+
+IPropertyTree * getRemoteStorage(const char * name)
+{
+    VStringBuffer xpath("storage/remote[@name='%s']", name);
+    Owned<IPropertyTree> global = getGlobalConfig();
+    return global->getPropTree(xpath);
+}
