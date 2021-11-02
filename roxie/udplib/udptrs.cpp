@@ -804,7 +804,7 @@ class CSendManager : implements ISendManager, public CInterface
                     try 
                     {
                         unsigned int res;
-                        flow_socket->read(&f, readsize, readsize, res, 5);
+                        flow_socket->readtms(&f, readsize, readsize, res, 5000);
                         flowPermitsReceived++;
                         assert(res==readsize);
                         switch (f.cmd)
