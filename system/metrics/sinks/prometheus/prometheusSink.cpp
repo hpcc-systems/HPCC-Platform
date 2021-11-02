@@ -104,7 +104,10 @@ void PrometheusMetricSink::toPrometheusMetrics(const std::vector<std::shared_ptr
 
     for (auto &pMetric: reportMetrics)
     {
-        const std::string & name = pMetric->queryName();
+        std::string name = pMetric->queryName();
+
+        //'.' is a known char used in HPCC metric names but invalid in Prometheus
+        std::replace(name.begin(), name.end(), '.', '_');
         if (verbose)
         {
             if (!pMetric->queryDescription().empty())
