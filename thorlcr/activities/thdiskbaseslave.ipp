@@ -91,7 +91,6 @@ protected:
     mutable ThorDataLinkMetaInfo cachedMetaInfo;
     Owned<CDiskPartHandlerBase> partHandler;
     Owned<IExpander> eexp;
-    rowcount_t diskProgress = 0;
     std::vector<OwnedPtr<CRuntimeStatisticCollection>> subFileStats;
 
 public:

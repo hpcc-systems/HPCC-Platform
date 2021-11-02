@@ -159,7 +159,7 @@ public:
                 e->base = part.queryProperties().getPropInt64("@offset");
                 e->top = e->base + part.queryProperties().getPropInt64("@size");
                 e->index = f;
-                e->file = queryThor().queryFileCache().lookupIFileIO(owner, logicalFilename, part, nullptr, diskReadActivityStatistics); // NB: freed by FPosTableEntryIFileIO dtor
+                e->file = queryThor().queryFileCache().lookupIFileIO(owner, logicalFilename, part, nullptr, diskReadPartStatistics); // NB: freed by FPosTableEntryIFileIO dtor
             }
         }
     }
@@ -389,7 +389,7 @@ public:
             ISuperFileDescriptor *super = parts.item(0).queryOwner().querySuperFileDescriptor();
             if (super)
                 for (unsigned i=0; i<files; i++)
-                    subFileStats.push_back(new CRuntimeStatisticCollection(diskReadActivityStatistics));
+                    subFileStats.push_back(new CRuntimeStatisticCollection(diskReadPartStatistics));
         }
 
         unsigned encryptedKeyLen;

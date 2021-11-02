@@ -61,7 +61,6 @@ protected:
     bool hasMatchFilter = false;
     size32_t diskRowMinSz;
     unsigned numSegFieldsUsed = 0;
-    rowcount_t totalProgress = 0;
     rowcount_t stopAfter = 0;
     rowcount_t remoteLimit = 0;
     rowcount_t limit = 0;
@@ -133,13 +132,6 @@ public:
         segMonitors.kill();
         helper->createSegmentMonitors(this);
     }
-
-    virtual void serializeStats(MemoryBuffer &mb) override
-    {
-        if (partHandler)
-            diskProgress = totalProgress + partHandler->queryProgress();
-        CDiskReadSlaveActivityBase::serializeStats(mb);
-    }
 friend class CDiskRecordPartHandler;
 };
 
@@ -190,6 +182,8 @@ public:
         CriticalBlock block(inputCs); // Ensure iFileIO remains valid for the duration of mergeStats()
         CDiskPartHandlerBase::gatherStats(merged);
         mergeStats(merged, in);
+        if (in)
+            merged.mergeStatistic(StNumDiskRowsRead, in->queryProgress());
     }
     virtual unsigned __int64 queryProgress() override
     {
@@ -253,8 +247,6 @@ void CDiskRecordPartHandler::open()
         CriticalBlock block(inputCs);
         partStream.swap(in);
     }
-    if (partStream)
-        activity.totalProgress += partStream->queryProgress();
     partStream.clear();
 
     unsigned rwFlags = 0;
@@ -411,6 +403,7 @@ void CDiskRecordPartHandler::close(CRC32 &fileCRC)
     }
     if (partStream)
     {
+        closedPartFileStats.mergeStatistic(StNumDiskRowsRead, partStream->queryProgress());
         activity.mergeSubFileStats(partDesc, partStream);
         partStream->stop(&fileCRC);
     }
