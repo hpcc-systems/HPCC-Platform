@@ -219,7 +219,7 @@ public:
 
 class graph_decl CTimeoutTrigger : public CInterface, implements IThreaded
 {
-    bool running;
+    std::atomic<bool> running;
     Semaphore todo;
     CriticalSection crit;
     unsigned timeout;

@@ -146,7 +146,7 @@ unsigned SendAsFastAsPossible::totalSent = 0;
 
 class Receiver : public Thread
 {
-    bool running;
+    std::atomic<bool> running;
     Semaphore started;
     offset_t allReceived;
     CriticalSection arsect;

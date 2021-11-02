@@ -638,7 +638,7 @@ class CSendManager : implements ISendManager, public CInterface
             return doRun();
         }
     protected:
-        bool running;
+        std::atomic<bool> running;
     public:
         StartedThread(const char *name) : Thread(name)
         {

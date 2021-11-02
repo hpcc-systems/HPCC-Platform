@@ -1264,7 +1264,7 @@ class CRowServer : public CSimpleInterface, implements IThreaded, implements IRo
     mptag_t mpTag;
     unsigned fetchBuffSize;
     Linked<IRowStream> seq;
-    bool running;
+    std::atomic<bool> running;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);

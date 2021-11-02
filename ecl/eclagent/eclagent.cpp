@@ -141,7 +141,7 @@ interface IHThorDebugSocketListener : extends IInterface
 class CHThorDebugSocketListener : public Thread, implements IHThorDebugSocketListener, implements IThreadFactory
 {
     unsigned port;
-    bool running;
+    std::atomic<bool> running;
     bool suspended;
     Semaphore started;
     Owned<ISocket> socket;
