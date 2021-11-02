@@ -21,6 +21,7 @@
 #include "jlog.hpp"
 #include "roxie.hpp"
 #include "roxiemem.hpp"
+#include "portlist.h"
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -655,3 +656,185 @@ If you do need global:
 
 
 */
+
+/* Simulating traffic flow
+
+N threads that simulate behaviour of agents
+fake write socket that
+- accepts data pushed to it
+- moves it to a read socket
+fake read socket that
+- accepts packets from write sockets
+- discards when full (but tells you)
+- delivers packets to consumer
+
+*/
+
+#ifdef SOCKET_SIMULATION
+bool isUdpTestMode = false;
+
+
+CSimulatedWriteSocket* CSimulatedWriteSocket::udp_connect(const SocketEndpoint &ep)
+{
+    return new CSimulatedWriteSocket(ep);
+}
+
+size32_t CSimulatedWriteSocket::write(void const* buf, size32_t size)
+{
+    CriticalBlock b(CSimulatedReadSocket::allReadersCrit);
+    CSimulatedReadSocket *dest = CSimulatedReadSocket::connectSimulatedSocket(destEp);
+    if (dest)
+        dest->writeSimulatedPacket(buf, size);
+    else
+    {
+        StringBuffer s;
+        DBGLOG("Write to disconnected socket %s", destEp.getUrlStr(s).str());
+    }
+    return size;
+}
+
+std::map<SocketEndpoint, CSimulatedReadSocket *> CSimulatedReadSocket::allReaders;
+CriticalSection CSimulatedReadSocket::allReadersCrit;
+
+CSimulatedReadSocket::CSimulatedReadSocket(const SocketEndpoint &_me) : me(_me)
+{
+    StringBuffer s;
+    DBGLOG("Creating fake socket %s", me.getUrlStr(s).str());
+    CriticalBlock b(allReadersCrit);
+    allReaders[me] = this;
+}
+
+CSimulatedReadSocket::~CSimulatedReadSocket()
+{
+    StringBuffer s;
+    DBGLOG("Closing fake socket %s", me.getUrlStr(s).str());
+    CriticalBlock b(allReadersCrit);
+    allReaders.erase(me);
+}
+
+CSimulatedReadSocket* CSimulatedReadSocket::udp_create(const SocketEndpoint &_me)
+{
+    return new CSimulatedReadSocket(_me);
+}
+
+CSimulatedReadSocket* CSimulatedReadSocket::connectSimulatedSocket(const SocketEndpoint &ep)
+{
+    CriticalBlock b(allReadersCrit);
+    return allReaders[ep];
+}
+
+void CSimulatedReadSocket::writeSimulatedPacket(void const* buf, size32_t size)
+{
+    {
+        CriticalBlock b(crit);
+        if (size+used > max)
+        {
+            DBGLOG("Lost packet");
+            return;
+        }
+        packetSizes.push(size);
+        packets.push(memcpy(malloc(size), buf, size));
+        used += size;
+    }
+//    StringBuffer s; DBGLOG("Signalling available data on %s", me.getUrlStr(s).str());
+    avail.signal();
+}
+
+void CSimulatedReadSocket::read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutsecs)
+{
+    unsigned tms = timeoutsecs == WAIT_FOREVER ? WAIT_FOREVER : timeoutsecs * 1000;
+    readtms(buf, min_size, max_size, size_read, tms);
+}
+
+void CSimulatedReadSocket::readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,
+                     unsigned timeout)
+{
+    size_read = 0;
+    if (!timeout || wait_read(timeout))
+    {
+        CriticalBlock b(crit);
+        const void *thisData = packets.front();
+        unsigned thisSize = packetSizes.front();
+        if (thisSize > max_size)
+        {
+            assert(false);
+            UNIMPLEMENTED;  // Partial packet read not supported yet - add if needed
+        }
+        else
+        {
+            packets.pop();
+            packetSizes.pop();
+            used -= thisSize;
+        }
+        size_read = thisSize;
+        memcpy(buf, thisData, thisSize);
+        free((void *) thisData);
+    }
+    else
+        throw makeStringException(JSOCKERR_timeout_expired, "");
+}
+
+int CSimulatedReadSocket::wait_read(unsigned timeout)
+{
+    bool ret = avail.wait(timeout);
+    return ret;
+}
+
+#ifdef _USE_CPPUNIT
+
+class SimulatedUdpStressTest : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(SimulatedUdpStressTest);
+    CPPUNIT_TEST(simulateTraffic);
+    CPPUNIT_TEST_SUITE_END();
+
+    Owned<IDataBufferManager> dbm;
+    bool initialized = false;
+
+    void testInit()
+    {
+        if (!initialized)
+        {
+            udpTraceLevel = 1;
+            udpTraceTimeouts = true;
+            udpResendLostPackets = true;
+            udpRequestToSendTimeout = 10000;
+            udpRequestToSendAckTimeout = 10000;
+            isUdpTestMode = true;
+            roxiemem::setTotalMemoryLimit(false, false, false, 20*1024*1024, 0, NULL, NULL);
+            dbm.setown(roxiemem::createDataBufferManager(roxiemem::DATA_ALIGNMENT_SIZE));
+            initialized = true;
+        }
+    }
+
+    void simulateTraffic()
+    {
+        testInit();
+        myNode.setIp(IpAddress("1.2.3.4"));
+        Owned<IReceiveManager> rm = createReceiveManager(CCD_SERVER_FLOW_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, 2, 2, false);
+        printf("Start test\n");
+        asyncFor(20, 20, [](unsigned i)
+        {
+            unsigned header = 0;
+            IpAddress pretendIP(VStringBuffer("8.8.8.%d", i));
+            // Note - this is assuming we send flow on the data port (that option defaults true in roxie too)
+            Owned<ISendManager> sm = createSendManager(CCD_DATA_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, 100, 3, pretendIP, nullptr, false);
+            Owned<IMessagePacker> mp = sm->createMessagePacker(0, 0, &header, sizeof(header), myNode, 0);
+            for (unsigned i = 0; i < 10000; i++)
+            {
+                void *buf = mp->getBuffer(500, false);
+                memset(buf, i, 500);
+                mp->putBuffer(buf, 500, false);
+            }
+            mp->flush();
+            Sleep(1000);
+        });
+        printf("End test\n");
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( SimulatedUdpStressTest );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( SimulatedUdpStressTest, "SimulatedUdpStressTest" );
+
+#endif
+#endif

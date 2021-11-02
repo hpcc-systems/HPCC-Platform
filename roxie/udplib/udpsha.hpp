@@ -22,6 +22,8 @@
 #include "roxiemem.hpp"
 #include "jcrc.hpp"
 #include <limits>
+#include <queue>
+#include <map>
 
 typedef unsigned sequence_t;
 #define SEQF
@@ -261,6 +263,135 @@ inline bool checkTraceLevel(unsigned category, unsigned level)
 {
     return (udpTraceLevel >= level);
 }
+#define SOCKET_SIMULATION
 
+#ifdef SOCKET_SIMULATION
+extern bool isUdpTestMode;
+
+class CSocketSimulator : public CInterfaceOf<ISocket>
+{
+private:
+    virtual void   read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,
+                        unsigned timeoutsecs = WAIT_FOREVER) override { UNIMPLEMENTED; }
+    virtual void   readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,
+                           unsigned timeout) override { UNIMPLEMENTED; }
+    virtual void   read(void* buf, size32_t size) override { UNIMPLEMENTED; }
+    virtual size32_t write(void const* buf, size32_t size) override { UNIMPLEMENTED; }
+    virtual size32_t writetms(void const* buf, size32_t size, unsigned timeoutms=WAIT_FOREVER) override { UNIMPLEMENTED; }
+
+    virtual size32_t get_max_send_size() override { UNIMPLEMENTED; }
+    virtual ISocket* accept(bool allowcancel=false, SocketEndpoint *peerEp = nullptr) override { UNIMPLEMENTED; }
+    virtual int logPollError(unsigned revents, const char *rwstr) override { UNIMPLEMENTED; }
+    virtual int wait_read(unsigned timeout) override { UNIMPLEMENTED; }
+    virtual int wait_write(unsigned timeout) override { UNIMPLEMENTED; }
+    virtual bool set_nonblock(bool on) override { UNIMPLEMENTED; }
+    virtual bool set_nagle(bool on) override { UNIMPLEMENTED; }
+    virtual void set_linger(int lingersecs) override { UNIMPLEMENTED; }
+    virtual void  cancel_accept() override { UNIMPLEMENTED; }
+    virtual void  shutdown(unsigned mode=SHUTDOWN_READWRITE) override { UNIMPLEMENTED; }
+    virtual int name(char *name,size32_t namemax) override { UNIMPLEMENTED; }
+    virtual int peer_name(char *name,size32_t namemax) override { UNIMPLEMENTED; }
+    virtual SocketEndpoint &getPeerEndpoint(SocketEndpoint &ep) override { UNIMPLEMENTED; }
+    virtual IpAddress &getPeerAddress(IpAddress &addr) override { UNIMPLEMENTED; }
+    virtual SocketEndpoint &getEndpoint(SocketEndpoint &ep) const override { UNIMPLEMENTED; }
+    virtual bool connectionless() override { UNIMPLEMENTED; }
+
+    virtual void set_return_addr(int port,const char *name) override { UNIMPLEMENTED; }
+    virtual void  set_block_mode (             // must be called before block operations
+                            unsigned flags,    // BF_* flags (must match receive_block)
+                          size32_t recsize=0,  // record size (required for rec compression)
+                            unsigned timeoutms=0 // timeout in milisecs (0 for no timeout)
+                  ) override { UNIMPLEMENTED; }
+
+
+
+    virtual bool  send_block(
+                            const void *blk,   // data to send
+                            size32_t sz          // size to send (0 for eof)
+                  ) override { UNIMPLEMENTED; }
+
+    virtual size32_t receive_block_size () override { UNIMPLEMENTED; }
+
+    virtual size32_t receive_block(
+                            void *blk,         // receive pointer
+                            size32_t sz          // max size to read (0 for sync eof)
+                                               // if less than block size truncates block
+                  ) override { UNIMPLEMENTED; }
+
+    virtual void  close() override { UNIMPLEMENTED; }
+
+    virtual unsigned OShandle() const override { UNIMPLEMENTED; }
+    virtual size32_t avail_read() override { UNIMPLEMENTED; }
+
+    virtual size32_t write_multiple(unsigned num,void const**buf, size32_t *size) override { UNIMPLEMENTED; }
+
+    virtual size32_t get_send_buffer_size() override { UNIMPLEMENTED; }
+    virtual void set_send_buffer_size(size32_t sz) override { UNIMPLEMENTED; }
+
+    virtual bool join_multicast_group(SocketEndpoint &ep) override { UNIMPLEMENTED; }
+    virtual bool leave_multicast_group(SocketEndpoint &ep) override { UNIMPLEMENTED; }
+
+    virtual void set_ttl(unsigned _ttl) override { UNIMPLEMENTED; }
+
+    virtual size32_t get_receive_buffer_size() override { UNIMPLEMENTED; }
+    virtual void set_receive_buffer_size(size32_t sz) override { UNIMPLEMENTED; }
+
+    virtual void set_keep_alive(bool set) override { UNIMPLEMENTED; }
+
+    virtual size32_t udp_write_to(const SocketEndpoint &ep,void const* buf, size32_t size) override { UNIMPLEMENTED; }
+    virtual bool check_connection() override { UNIMPLEMENTED; }
+
+    virtual bool isSecure() const override { UNIMPLEMENTED; }
+    virtual bool isValid() const override { UNIMPLEMENTED; }
+
+};
+
+class CSimulatedReadSocket : public CSocketSimulator
+{
+    friend class CSimulatedWriteSocket;
+
+    CSimulatedReadSocket(const SocketEndpoint &_me);
+    ~CSimulatedReadSocket();
+
+    std::queue<unsigned> packetSizes;
+    std::queue<const void *> packets;
+    unsigned max = 131072;
+    unsigned used = 0;
+    SocketEndpoint me;
+    CriticalSection crit;
+    Semaphore avail;
+
+    void writeSimulatedPacket(void const* buf, size32_t size);
+    static std::map<SocketEndpoint, CSimulatedReadSocket *> allReaders;
+    static CriticalSection allReadersCrit;
+
+public:
+    static CSimulatedReadSocket* udp_create(const SocketEndpoint &_me);
+    static CSimulatedReadSocket* connectSimulatedSocket(const SocketEndpoint &ep);
+
+    virtual size32_t get_receive_buffer_size() override { return max; }
+    virtual void set_receive_buffer_size(size32_t sz) override { max = sz; }
+    virtual void read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,
+                      unsigned timeoutsecs = WAIT_FOREVER) override;
+    virtual void readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,
+                         unsigned timeout) override;
+    virtual int wait_read(unsigned timeout) override;
+    virtual void close() override {}
+
+};
+
+class CSimulatedWriteSocket : public CSocketSimulator
+{
+    CSimulatedWriteSocket( const SocketEndpoint &ep) : destEp(ep) {}
+    const SocketEndpoint destEp;
+public:
+    static CSimulatedWriteSocket*  udp_connect( const SocketEndpoint &ep);
+    virtual size32_t write(void const* buf, size32_t size) override;
+    virtual void set_send_buffer_size(size32_t sz) override {};
+    virtual void close() override {};
+};
+
+
+#endif
 
 #endif
