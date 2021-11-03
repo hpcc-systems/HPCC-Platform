@@ -80,7 +80,7 @@ class CJobManager : public CSimpleInterface, implements IJobManager, implements 
         Owned<ISocket> sock;
         CJobManager &mgr;
     private:
-        volatile bool running;
+        std::atomic<bool> running;
     public:
         CThorDebugListener(CJobManager &_mgr) : threaded("CThorDebugListener", this), mgr(_mgr)
         {

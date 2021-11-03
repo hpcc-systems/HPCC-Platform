@@ -865,7 +865,7 @@ public:
 
 protected:
     unsigned poolSize;
-    bool running;
+    std::atomic<bool> running;
     bool suspended;
     Semaphore started;
     Owned<IThreadPool> pool;

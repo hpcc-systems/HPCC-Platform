@@ -1170,7 +1170,7 @@ class CLdapWorkItem : public Thread
     Linked<IUserDescriptor> udesc;
     Linked<IDaliLdapConnection> ldapconn;
     unsigned flags;
-    bool running;
+    std::atomic<bool> running;
     Semaphore contsem;
     Semaphore ready;
     Semaphore &threaddone;

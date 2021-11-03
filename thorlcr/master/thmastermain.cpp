@@ -151,7 +151,7 @@ class CRegistryServer : public CSimpleInterface
     {
         CThreaded threaded;
         CRegistryServer &registry;
-        bool running;
+        std::atomic<bool> running;
     public:
         CDeregistrationWatch(CRegistryServer &_registry) : threaded("CDeregistrationWatch"), registry(_registry), running(false) { }
         ~CDeregistrationWatch()

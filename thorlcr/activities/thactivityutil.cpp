@@ -61,7 +61,7 @@ class CRowStreamLookAhead : public CSimpleInterfaceOf<IStartableEngineRowStream>
     CSlaveActivity &activity;
     bool allowspill, preserveGrouping;
     ILookAheadStopNotify *notify;
-    bool running = false;
+    std::atomic<bool> running{false};
     bool started = false;
     rowcount_t required;
     Semaphore startSem;

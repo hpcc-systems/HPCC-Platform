@@ -181,7 +181,7 @@ public:
     }
 
 protected:
-    bool running;
+    std::atomic<bool> running;
     Semaphore started;
     Owned<IThreadPool> pool;
 

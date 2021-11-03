@@ -915,7 +915,7 @@ class EclccServer : public CInterface, implements IThreadFactory, implements IAb
 
     unsigned threadsActive;
     CriticalSection threadActiveCrit;
-    bool running;
+    std::atomic<bool> running;
     CSDSServerStatus serverstatus;
     Owned<IJobQueue> queue;
     CriticalSection queueUpdateCS;

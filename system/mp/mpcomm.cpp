@@ -442,7 +442,7 @@ class CMPChannel;
 
 class CMPConnectThread: public Thread
 {
-    bool running;
+    std::atomic<bool> running;
     bool listen;
     ISocket *listensock;
     CMPServer *parent;
