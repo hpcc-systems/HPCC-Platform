@@ -5,7 +5,7 @@
 	"build": {
 		"dockerfile": "Dockerfile",
 		"args": {
-			"BASE_VER": "7.12"
+			"BASE_VER": "7.12.1"
 		}
 	},
 	"runArgs": [
