@@ -1,7 +1,7 @@
 import { ECLEditor } from "@hpcc-js/codemirror";
 import { extent, Palette } from "@hpcc-js/common";
 import { Workunit } from "@hpcc-js/comms";
-import { HTMLTooltip } from "@hpcc-js/html";
+import { Table } from "@hpcc-js/dgrid";
 import { SplitPanel } from "@hpcc-js/phosphor";
 import { DirectoryTree } from "@hpcc-js/tree";
 import { xml2json } from "@hpcc-js/util";
@@ -45,9 +45,11 @@ export class ECLArchiveWidget {
 
     private borderContainer = null;
     private editor: ECLEditor = null;
+    private leftPanel: SplitPanel;
+    private summaryTable: Table;
     private archiveViewer: SplitPanel;
     private directoryTree: DirectoryTreeEx;
-    private tooltip: HTMLTooltip;
+    private selectedMarker: number;
 
     buildRendering(args) {
         this.inherited(arguments);
@@ -86,14 +88,12 @@ export class ECLArchiveWidget {
             .textFileIcon("fa fa-file-code-o")
             .omitRoot(true)
             ;
+        this.summaryTable = new Table()
+            .sortable(true)
+            ;
         this.editor = new ECLEditor().readOnly(true);
         this.archiveViewer = new SplitPanel("horizontal");
-        this.tooltip = new HTMLTooltip()
-            .target(document.body)
-            .direction("e")
-            .visible(false)
-            .render()
-            ;
+        this.leftPanel = new SplitPanel("vertical");
 
         const tableDataTransformer = d => {
             const ret = d.map((n: any) => {
@@ -132,10 +132,16 @@ export class ECLArchiveWidget {
                     .iconSize(20)
                     .rowItemPadding(2)
                     ;
-                context.archiveViewer
+                context.leftPanel
                     .addWidget(context.directoryTree)
+                    .addWidget(context.summaryTable)
+                    .relativeSizes([0.38, 0.62])
+                    .lazyRender()
+                    ;
+                context.archiveViewer
+                    .addWidget(context.leftPanel)
                     .addWidget(context.editor)
-                    .relativeSizes([0.1, 0.9])
+                    .relativeSizes([0.2, 0.8])
                     .lazyRender()
                     ;
                 const scopesOptions = {
@@ -365,6 +371,7 @@ export class ECLArchiveWidget {
                         addMarkers(markers);
                     });
                 }
+                updateSummary(markers);
             }
 
             function recursiveSort(n) {
@@ -400,6 +407,73 @@ export class ECLArchiveWidget {
                     label = node["$"].originalFilename.split("\\").pop();
                 }
                 return label;
+            }
+        }
+        function updateSummary(markers) {
+            const propCounts = {};
+            const propFormats = {};
+            const propSums = markers.reduce((ret, n)=>{
+                n.properties.forEach(prop=>{
+                    if(prop.Measure !== undefined){
+                        if(!propCounts[prop.Name]){
+                            propCounts[prop.Name] = 0;
+                            propFormats[prop.Name] = prop.Measure;
+                            ret[prop.Name] = 0;
+                        }
+                        propCounts[prop.Name]++;
+                        ret[prop.Name] += Number(prop.RawValue);
+                    }
+                });
+                return ret;
+            }, {});
+            const propAvgs = Object.keys(propSums).reduce((ret, k)=>{
+                ret[k] = propSums[k] / propCounts[k];
+                return ret;
+            }, {});
+            context.summaryTable
+                .columns(["Name", "Cnt", "Avg", "Sum"])
+                .data([
+                    ...Object.keys(propSums).map(k=>{
+                        let avg = propAvgs[k];
+                        let sum = propSums[k];
+
+                        const isTime = propFormats[k] === "ns";
+                        const isSize = propFormats[k] === "sz";
+
+                        if(isTime) {
+                            avg = _formatTime(avg);
+                            sum = _formatTime(sum);
+                        } else if (isSize) {
+                            avg = _formatSize(avg);
+                            sum = _formatSize(sum);
+                        } else {
+                            avg = avg.toFixed(3);
+                            sum = sum.toFixed(3);
+                        }
+                        return [
+                            k,
+                            propCounts[k],
+                            avg,
+                            sum,
+                        ];
+                    })
+                ])
+                .lazyRender()
+                ;
+            function _formatTime(v){
+                if(v > 1000000000) {
+                    return (v / 1000000000).toFixed(3) + "s";
+                }
+                return (v / 1000000).toFixed(3) + "ms";
+            }
+            function _formatSize(v){
+                if(v > 1000000000) {
+                    return (v * 0.000000000931).toFixed(3) + "Gb";
+                }
+                else if(v > 1000000) {
+                    return (v * 0.0000009537).toFixed(3) + "Mb";
+                }
+                return (v * 0.000977).toFixed(3) + "Kb";
             }
         }
         function buildMarkerData(scopesArr) {
@@ -460,10 +534,7 @@ export class ECLArchiveWidget {
 
             return markers;
         }
-        function markerTooltipTable(marker) {
-            const table = document.createElement("table");
-            const thead = document.createElement("thead");
-            const tbody = document.createElement("tbody");
+        function markerTableData(marker) {
             const labels = [];
             const tableDataArr = marker.tableData.map((_table, tableIdx) => {
                 const tableData = JSON.parse(_table);
@@ -489,36 +560,7 @@ export class ECLArchiveWidget {
                     })
                 ];
             });
-
-            _data
-                .filter(row => row[0] === "Label")
-                .forEach(row => {
-                    appendRow(row, thead, () => true);
-                });
-            _data
-                .filter(row => row[0] !== "Label")
-                .forEach(row => {
-                    appendRow(row, tbody, idx => idx === 0);
-                });
-            table.appendChild(thead);
-            table.appendChild(tbody);
-            table.style.maxWidth = "500px";
-            return table;
-
-            function appendRow(cellArr, parentNode, thCondition) {
-                const tr = document.createElement("tr");
-                tr.style.maxHeight = "200px";
-                cellArr.forEach((cellText, i) => {
-                    const td = document.createElement(thCondition(i) ? "th" : "td");
-                    td.style.maxWidth = "180px";
-                    td.style.textAlign = i === 0 ? "right" : "left";
-                    td.style.overflow = "hidden";
-                    td.style.textOverflow = "ellipsis";
-                    td.textContent = cellText;
-                    tr.appendChild(td);
-                });
-                parentNode.appendChild(tr);
-            }
+            return _data;
         }
         function addMarkers(markers) {
             const palette = Palette.rainbow("YlOrRd");
@@ -537,24 +579,30 @@ export class ECLArchiveWidget {
                     marker.color,
                     "Verdana",
                     "12px",
+                    () => {},
+                    () => {},
                     () => {
-                        //onmouseenter
-                        const _content = markerTooltipTable(marker);
-                        context.tooltip._cursorLoc = [
-                            (event as MouseEvent).clientX,
-                            (event as MouseEvent).clientY
-                        ];
-                        context.tooltip
-                            .followCursor(true)
-                            .visible(true)
-                            .fitContent(true)
-                            .tooltipContent(_content)
-                            .render()
-                            ;
-                    },
-                    () => {
-                        //onmouseleave
-                        context.tooltip.visible(false);
+                        if(context.selectedMarker === marker.lineNum) {
+                            updateSummary(markers);
+                            context.selectedMarker = -1;
+                            const columnArr = context.summaryTable.columns();
+                            columnArr[0] = "Name";
+                            context.summaryTable
+                                .columns(columnArr)
+                                .lazyRender()
+                                ;
+                        } else {
+
+                            const _data = markerTableData(marker);
+                            
+                            context.summaryTable
+                                .columns(["Line: "+marker.lineNum, ...Array(_data[0].length).fill("")])
+                                .data(_data)
+                                .lazyRender()
+                                ;
+
+                            context.selectedMarker = marker.lineNum;
+                        }
                     }
                 );
             });
