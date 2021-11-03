@@ -637,8 +637,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                             StringBuffer s;
                             DBGLOG("UdpReceiver: discarding unwanted resent packet %" SEQF "u %x from %s", hdr.sendSeq, hdr.pktSeq, hdr.node.getTraceText(s).str());
                         }
-                        parent.noteDuplicate(b);
-                        ::Release(b);
+                        hdr.node.clear();  // Used to indicate a duplicate that collate thread should discard. We don't discard on this thread as don't want to do anything that requires locks...
                     }
                     else
                     {
@@ -647,8 +646,8 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                             StringBuffer s;
                             DBGLOG("UdpReceiver: %u bytes received packet %" SEQF "u %x from %s", res, hdr.sendSeq, hdr.pktSeq, hdr.node.getTraceText(s).str());
                         }
-                        parent.input_queue->pushOwn(b);
                     }
+                    parent.input_queue->pushOwn(b);
                     b = NULL;
                 }
                 catch (IException *e) 
@@ -789,29 +788,6 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             DataBuffer *dataBuff = input_queue->pop(true);
             collatePacket(dataBuff);
         }
-    }
-    void noteDuplicate(DataBuffer *dataBuff)
-    {
-        const UdpPacketHeader *pktHdr = (UdpPacketHeader*) dataBuff->data;
-        Linked <CMessageCollator> msgColl;
-        SpinBlock b(collatorsLock);
-        try
-        {
-            msgColl.set(collators[pktHdr->ruid]);
-        }
-        catch (IException *E)
-        {
-            EXCLOG(E);
-            E->Release();
-        }
-        catch (...)
-        {
-            IException *E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unexpected exception caught in CPacketCollator::run");
-            EXCLOG(E);
-            E->Release();
-        }
-        if (msgColl)
-            msgColl->noteDuplicate((pktHdr->pktSeq & UDP_PACKET_RESENT) != 0);
     }
 
     void collatePacket(DataBuffer *dataBuff)

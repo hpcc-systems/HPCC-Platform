@@ -563,9 +563,15 @@ unsigned CMessageCollator::queryResends() const
 
 bool CMessageCollator::attach_databuffer(DataBuffer *dataBuff)
 {
-    activity = true;
     UdpPacketHeader *pktHdr = (UdpPacketHeader*) dataBuff->data;
     totalBytesReceived += pktHdr->length;
+    if (pktHdr->node.isNull())   // Indicates a packet that has been identified as a duplicate to be logged and discarded
+    {
+        noteDuplicate((pktHdr->pktSeq & UDP_PACKET_RESENT) != 0);
+        dataBuff->Release();
+        return true;
+    }
+    activity = true;
     if (memLimitExceeded || roxiemem::memPoolExhausted())
     {
         DBGLOG("UdpCollator: mem limit exceeded");
