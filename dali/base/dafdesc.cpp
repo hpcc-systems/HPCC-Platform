@@ -3455,7 +3455,9 @@ void initializeStorageGroups(bool createPlanesFromGroups)
         PROGLOG("initializeStorageGroups update");
         doInitializeStorageGroups(createPlanesFromGroups);
     };
-    configUpdateHook.installOnce(updateFunc, true);
+
+    doInitializeStorageGroups(createPlanesFromGroups);
+    configUpdateHook.installOnce(updateFunc, false);
 }
 
 bool getDefaultStoragePlane(StringBuffer &ret)
