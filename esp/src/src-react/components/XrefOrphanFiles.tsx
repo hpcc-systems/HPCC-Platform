@@ -78,7 +78,8 @@ export const XrefOrphanFiles: React.FunctionComponent<XrefOrphanFilesProps> = ({
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
-        message: nlsHPCC.DeleteSelectedFiles + "\n" + selection.map(file => file.name).join("\n"),
+        message: nlsHPCC.DeleteSelectedFiles,
+        items: selection.map(file => file.name),
         onSubmit: React.useCallback(() => {
             WsDFUXref.DFUXRefArrayAction(selection, nlsHPCC.Delete, name, "Orphan")
                 .then(response => {

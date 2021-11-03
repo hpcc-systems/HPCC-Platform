@@ -115,7 +115,8 @@ export const DFUWorkunits: React.FunctionComponent<DFUWorkunitsProps> = ({
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
-        message: nlsHPCC.DeleteSelectedWorkunits + "\n\n" + selection.map(s => s.Wuid).join("\n"),
+        message: nlsHPCC.DeleteSelectedWorkunits,
+        items: selection.map(s => s.Wuid),
         onSubmit: React.useCallback(() => {
             FileSpray.DFUWorkunitsAction(selection, nlsHPCC.Delete).then(() => refreshTable(true));
         }, [refreshTable, selection])

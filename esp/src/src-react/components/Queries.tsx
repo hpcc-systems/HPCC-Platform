@@ -173,7 +173,8 @@ export const Queries: React.FunctionComponent<QueriesProps> = ({
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
-        message: nlsHPCC.DeleteSelectedWorkunits + "\n" + selection.map(s => s.Id).join("\n"),
+        message: nlsHPCC.DeleteSelectedWorkunits,
+        items: selection.map(s => s.Id),
         onSubmit: React.useCallback(() => {
             WsWorkunits.WUQuerysetQueryAction(selection, "Delete").then(() => refreshTable(true));
         }, [refreshTable, selection])

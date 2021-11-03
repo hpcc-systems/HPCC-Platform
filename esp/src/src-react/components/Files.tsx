@@ -73,7 +73,6 @@ export const Files: React.FunctionComponent<FilesProps> = ({
     const [showAddToSuperfile, setShowAddToSuperfile] = React.useState(false);
     const [showDesprayFile, setShowDesprayFile] = React.useState(false);
     const [mine, setMine] = React.useState(false);
-    const [selectedFileList, setSelectedFileList] = React.useState("");
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     //  Grid ---
@@ -167,7 +166,8 @@ export const Files: React.FunctionComponent<FilesProps> = ({
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
-        message: nlsHPCC.DeleteSelectedFiles + "\n\n" + selectedFileList,
+        message: nlsHPCC.DeleteSelectedFiles,
+        items: selection.map(s => s.Name),
         onSubmit: React.useCallback(() => {
             WsDfu.DFUArrayAction(selection, "Delete").then(() => refreshTable(true));
         }, [refreshTable, selection])
@@ -247,7 +247,6 @@ export const Files: React.FunctionComponent<FilesProps> = ({
             state.hasSelection = true;
             //  TODO:  More State
         }
-        setSelectedFileList(selection.map(s => s.Name).join("\n"));
         setUIState(state);
     }, [selection]);
 
