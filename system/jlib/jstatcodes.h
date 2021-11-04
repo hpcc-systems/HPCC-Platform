@@ -241,6 +241,7 @@ enum StatisticKind
     StTimeAgentWait,
     StCycleAgentWaitCycles,
     StCostFileAccess,
+    StNumPods,
     StMax,
 
     //For any quantity there is potentially the following variants.

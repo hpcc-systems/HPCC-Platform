@@ -14467,4 +14467,57 @@ std::pair<std::string, unsigned> getExternalService(const char *serviceName)
     return servicePair;
 }
 
+// returns a vector of {pod-name, node-name} vectors,
+// represented as a nested vector for extensibility, e.g. to add other meta fields
+std::vector<std::vector<std::string>> getPodNodes(const char *selector)
+{
+    VStringBuffer getWorkerNodes("kubectl get pods --selector=job-name=%s \"--output=jsonpath={range .items[*]}{.metadata.name},{.spec.nodeName}{'\\n'}{end}\"", selector);
+    StringBuffer result;
+    runKubectlCommand("get-worker-nodes", getWorkerNodes, nullptr, &result);
+
+    if (result.isEmpty())
+        throw makeStringExceptionV(-1, "No worker nodes found for selector '%s'", selector);
+
+    const char *start = result.str();
+    const char *finger = start;
+    std::string fieldName;
+    std::vector<std::vector<std::string>> results;
+    std::vector<std::string> current;
+    while (true)
+    {
+        switch (*finger)
+        {
+            case ',':
+            {
+                if (start == finger)
+                    throw makeStringException(-1, "getPodNodes: Missing node name(s) in output");
+                fieldName.assign(start, finger-start);
+                current.emplace_back(std::move(fieldName));
+                finger++;
+                start = finger;
+                break;
+            }
+            case '\n':
+            case '\0':
+            {
+                if (start == finger)
+                    throw makeStringException(-1, "getPodNodes: Missing pod name(s) in output");
+                fieldName.assign(start, finger-start);
+                current.emplace_back(std::move(fieldName));
+                results.emplace_back(std::move(current));
+                if ('\0' == *finger)
+                    return results;
+                finger++;
+                start = finger;
+                break;
+            }
+            default:
+            {
+                ++finger;
+                break;
+            }
+        }
+    }
+}
+
 #endif
