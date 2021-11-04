@@ -2347,21 +2347,6 @@ CRuntimeStatisticCollection & CRuntimeStatisticCollection::registerNested(const 
     return ensureNested().addNested(scope, mapping).queryStats();
 }
 
-void CRuntimeStatisticCollection::rollupStatistics(unsigned numTargets, IContextLogger * const * targets) const
-{
-    ForEachItem(iStat)
-    {
-        unsigned __int64 value = values[iStat].getClear();
-        if (value)
-        {
-            StatisticKind kind = getKind(iStat);
-            for (unsigned iTarget = 0; iTarget < numTargets; iTarget++)
-                targets[iTarget]->noteStatistic(kind, value);
-        }
-    }
-    reportIgnoredStats();
-}
-
 void CRuntimeStatisticCollection::recordStatistics(IStatisticGatherer & target, bool clear) const
 {
     ForEachItem(i)
@@ -2589,7 +2574,7 @@ CRuntimeSummaryStatisticCollection::~CRuntimeSummaryStatisticCollection()
 
 CNestedRuntimeStatisticMap * CRuntimeSummaryStatisticCollection::createNested() const
 {
-    return new CNestedSummaryRuntimeStatisticMap;
+    return new CNestedRuntimeSummaryStatisticMap;
 }
 
 void CRuntimeSummaryStatisticCollection::mergeStatistic(StatisticKind kind, unsigned __int64 value, unsigned node)
@@ -2977,7 +2962,7 @@ CRuntimeStatisticCollection * CNestedRuntimeStatisticMap::createStats(const Stat
     return new CRuntimeStatisticCollection(mapping);
 }
 
-CRuntimeStatisticCollection * CNestedSummaryRuntimeStatisticMap::createStats(const StatisticsMapping & mapping)
+CRuntimeStatisticCollection * CNestedRuntimeSummaryStatisticMap::createStats(const StatisticsMapping & mapping)
 {
     return new CRuntimeSummaryStatisticCollection(mapping);
 }

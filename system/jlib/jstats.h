@@ -503,7 +503,8 @@ public:
     inline unsigned __int64 getClearAtomic()
     {
         unsigned __int64 ret = value;
-        value.fetch_sub(ret);
+        if (likely(ret))
+            value.fetch_sub(ret);
         return ret;
     }
     inline void clear() { set(0); }
@@ -515,10 +516,12 @@ protected:
     RelaxedAtomic<unsigned __int64> value;
 };
 
-//This class is used to gather statistics for an activity - it has no notion of scope.
 interface IContextLogger;
 class CNestedRuntimeStatisticMap;
 
+//The CRuntimeStatisticCollection  used to gather statistics for an activity - it has no notion of its scope, but can contain nested scopes.
+//Some of the functions have node parameters which have no meaning for the base implementation, but are used by the derived class
+//CRuntimeSummaryStatisticCollection which is used fro summarising stats from multiple different worker nodes.
 class jlib_decl CRuntimeStatisticCollection
 {
 public:
@@ -528,7 +531,7 @@ public:
 #endif
 {
         unsigned num = mapping.numStatistics();
-        values = new CRuntimeStatistic[num+1]; // extra entry is to gather unexpected stats
+        values = new CRuntimeStatistic[num+1]; // extra entry is to gather unexpected stats and avoid tests when accumulating
     }
     CRuntimeStatisticCollection(const CRuntimeStatisticCollection & _other) : mapping(_other.mapping)
 #ifdef _DEBUG
@@ -600,22 +603,19 @@ public:
     void set(const CRuntimeStatisticCollection & other, unsigned node = 0);
     void merge(const CRuntimeStatisticCollection & other, unsigned node = 0);
     void updateDelta(CRuntimeStatisticCollection & target, const CRuntimeStatisticCollection & source);
-    void rollupStatistics(IContextLogger * target) { rollupStatistics(1, &target); }
-    void rollupStatistics(unsigned num, IContextLogger * const * targets) const;
-
-    virtual void recordStatistics(IStatisticGatherer & target, bool clear) const;
 
     // Print out collected stats to string
     StringBuffer &toStr(StringBuffer &str) const;
     // Print out collected stats to string as XML
     StringBuffer &toXML(StringBuffer &str) const;
-    // Serialize/deserialize
+
+// The following functions are re-implemented in the derived CRuntimeSummaryStatisticCollection class
+    virtual void recordStatistics(IStatisticGatherer & target, bool clear) const;
     virtual void setStatistic(StatisticKind kind, unsigned __int64 value, unsigned node);
     virtual void mergeStatistic(StatisticKind kind, unsigned __int64 value, unsigned node);
     virtual bool serialize(MemoryBuffer & out) const;  // Returns true if any non-zero
     virtual void deserialize(MemoryBuffer & in);
     virtual void deserializeMerge(MemoryBuffer& in);
-
 
 protected:
     virtual CNestedRuntimeStatisticMap *createNested() const;
@@ -637,6 +637,32 @@ protected:
     bool ignoreUnknown = false;
 #endif
 };
+
+/*
+CRuntimeSummaryStatisticCollection
+I can think of 3 different implementations of this class, each of which have advantages and disadvantages
+1) Current scheme - specialized derived classes.
+Derived versions of CRuntimeStatisticCollection, CNestedRuntimeStatisticCollection and CNestedRuntimeStatisticMap.
+The individual results from the different nodes are not stored, but a summary result is stored and updated as stats
+are updated.  The disadvantage with this approach is some functions in CRuntimeStatisticCollection which aren't
+necessary.
+
+2) Use template classes instead of derived classes.
+Collection<CRuntimeStatistic> and Collection<DerivedStats:CRuntimeStatistic>.  It might be slightly more efficient,
+but would require node to be passed to CRuntimeStatistic functions that ignore it.
+
+3) Implement as completely separate classes.
+Would provide a cleaner interface to the two classes, but would duplicate a substantial amount of code (all the nested
+scope processing in addition to main class).  Unlikely to be better.
+
+4) Have an array of stats, one for each node.
+In this model the derived stats would only be calculated when required.  It would probably produce a cleaner interface
+but would use more memory.  Perhaps more significantly it would be hard to merge the nested scopes e.g. for function
+timings.  Only some of the stats would have them, so you would need to perform a union of all stat scopes.
+
+So although HPCC-26541 was opened to refactor these classes, none of the alternatives are preferrable.
+*/
+
 
 //NB: Serialize and deserialize are not currently implemented.
 class jlib_decl CRuntimeSummaryStatisticCollection : public CRuntimeStatisticCollection
@@ -733,7 +759,7 @@ protected:
     mutable ReadWriteLock lock;
 };
 
-class CNestedSummaryRuntimeStatisticMap : public CNestedRuntimeStatisticMap
+class CNestedRuntimeSummaryStatisticMap : public CNestedRuntimeStatisticMap
 {
 protected:
     virtual CRuntimeStatisticCollection * createStats(const StatisticsMapping & mapping) override;
