@@ -115,6 +115,7 @@ public:
     void readActivityInitData(MemoryBuffer &mb, unsigned slave);
     bool deserializeStats(unsigned node, MemoryBuffer &mb);
     void getStats(IStatisticGatherer &stats);
+    virtual cost_type getDiskAccessCost() override;
     virtual void setComplete(bool tf=true);
     virtual bool prepare(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool shortCircuit, bool async) override;
     virtual void execute(size32_t _parentExtractSz, const byte *parentExtract, bool checkDependencies, bool async) override;
@@ -247,7 +248,7 @@ protected:
     std::vector<OwnedPtr<CThorEdgeCollection>> edgeStatsVector;
     CThorStatsCollection statsCollection;
     IBitSet *notedWarnings;
-    stat_type diskAccessCost = 0;
+    cost_type diskAccessCost = 0;
 
     void addReadFile(IDistributedFile *file, bool temp=false);
     IDistributedFile *queryReadFile(unsigned f);
@@ -278,6 +279,7 @@ public:
     virtual bool wait(unsigned timeout);
     virtual void done();
     virtual void kill();
+    virtual cost_type getDiskAccessCost() const { return diskAccessCost; }
 
 // IExceptionHandler
     virtual bool fireException(IException *e);

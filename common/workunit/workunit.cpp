@@ -2607,7 +2607,7 @@ cost_type aggregateCost(const IConstWorkUnit * wu, const char *scope, bool exclu
         cost_type totalCost = 0;
         for (it->first(); it->isValid(); )
         {
-            stat_type value = 0.0;
+            stat_type value = 0;
             if (it->getStat(StCostExecute, value))
             {
                 totalCost += value;
@@ -2620,6 +2620,43 @@ cost_type aggregateCost(const IConstWorkUnit * wu, const char *scope, bool exclu
     }
 }
 
+//aggregate disk costs from top-level subgraphs (when scope specified) or workflows (scope not specified)
+cost_type aggregateDiskAccessCost(const IConstWorkUnit * wu, const char *scope)
+{
+    WuScopeFilter filter;
+    if (!isEmptyString(scope))
+        filter.addScope(scope);
+    else
+        filter.addScope("");      // Needed to match scope
+    // when scope is a workflow, sum graph costs (or subgraph cost when no graph cost) to get workflow cost
+    // (Costs from child graphs and activities should have been summed up to graph/subgraph level already)
+    // when isEmptyString(scope), sum workflow costs (or graph cost when no workflow cost) to get global cost
+    // (Costs from all levels below graph should be summed upto at least graph level already)
+    // i.e. need 2 levels of nesting
+    filter.setIncludeNesting(2);
+    // includeNesting(2) needs just source "global". However, WuScopeFilter is incorrectly inferring the source as "global,stats",
+    // causing too many of the stats to be pulled in and inefficiency.  Here, explicitly set source to "global"
+    filter.addSource("global");
+    filter.addOutputStatistic(StCostFileAccess);
+    filter.addRequiredStat(StCostFileAccess);
+    filter.finishedFilter();
+    Owned<IConstWUScopeIterator> it = &wu->getScopeIterator(filter);
+    cost_type totalCost = 0;
+    for (it->first(); it->isValid(); )
+    {
+        cost_type value = 0;
+        if (it->getStat(StCostFileAccess, value))
+        {
+            totalCost += value;
+            it->nextSibling();
+        }
+        else
+        {
+            it->next();
+        }
+    }
+    return totalCost;
+}
 //---------------------------------------------------------------------------------------------------------------------
 
 
@@ -4307,6 +4344,8 @@ public:
             { return c->getAbortTimeStamp(); }
     virtual unsigned __int64 getExecuteCost() const
             { return c->getExecuteCost(); }
+    virtual unsigned __int64 getFileAccessCost() const
+            { return c->getFileAccessCost(); }
     virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree)
             { return c->import(wuTree, graphProgressTree); }
 
@@ -12262,11 +12301,25 @@ unsigned __int64 CLocalWorkUnit::getAbortTimeStamp() const
     CriticalBlock block(crit);
     return p->getPropInt64("Tracing/AbortTimeStamp", 0);
 }
+
 unsigned __int64 CLocalWorkUnit::getExecuteCost() const
 {
     CriticalBlock block(crit);
     Owned<IPropertyTreeIterator> iter = p->getElements("./Statistics/Statistic[@kind='CostExecute'][@scope='']");
-    unsigned __int64 totalCost = 0;
+    cost_type totalCost = 0;
+    ForEach(*iter)
+    {
+        IPropertyTree &stat = iter->query();
+        totalCost += stat.getPropInt64("@value");
+    }
+    return totalCost;
+}
+
+unsigned __int64 CLocalWorkUnit::getFileAccessCost() const
+{
+    CriticalBlock block(crit);
+    Owned<IPropertyTreeIterator> iter = p->getElements("./Statistics/Statistic[@kind='CostFileAccess'][@scope='']");
+    cost_type totalCost = 0;
     ForEach(*iter)
     {
         IPropertyTree &stat = iter->query();
