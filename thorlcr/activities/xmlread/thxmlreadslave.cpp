@@ -52,6 +52,7 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
         OwnedIFileIO iFileIO;
         Owned<IIOStream> inputIOstream;
         offset_t localOffset;  // not sure what this is for 
+        unsigned __int64 progress = 0;
         Linked<IEngineRowAllocator> allocator;
 
     public:
@@ -96,6 +97,7 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
                 xmlParser.setown(createJSONParse(*inputIOstream.get(), xmlIterator, *this, (0 != (TDRxmlnoroot & activity.helper->getFlags()))?ptr_noRoot:ptr_none, 0 != (TDRusexmlcontents & activity.helper->getFlags())));
             else
                 xmlParser.setown(createXMLParse(*inputIOstream.get(), xmlIterator, *this, (0 != (TDRxmlnoroot & activity.helper->getFlags()))?ptr_noRoot:ptr_none, 0 != (TDRusexmlcontents & activity.helper->getFlags())));
+            progress = 0;
         }
         virtual void close(CRC32 &fileCRC)
         {
@@ -111,7 +113,12 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
                 CriticalBlock block(inputCs);
                 partFileIO.setown(iFileIO.getClear());
             }
-            mergeStats(closedPartFileStats, partFileIO);
+            if (partFileIO)
+            {
+                mergeStats(closedPartFileStats, partFileIO);
+                closedPartFileStats.mergeStatistic(StNumDiskRowsRead, progress);
+                progress = 0;
+            }
         }
 
         const void *nextRow()
@@ -131,7 +138,7 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
                         if (sz)
                         {
                             localOffset = 0;
-                            ++activity.diskProgress;
+                            ++progress;
                             return row.finalizeRowClear(sz);
                         }
                     }
@@ -201,6 +208,7 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase
             CriticalBlock block(inputCs);
             CDiskPartHandlerBase::gatherStats(merged);
             mergeStats(merged, iFileIO);
+            merged.mergeStatistic(StNumDiskRowsRead, progress);
         }
     };
 public:

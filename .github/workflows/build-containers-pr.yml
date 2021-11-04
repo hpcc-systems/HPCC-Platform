@@ -41,7 +41,7 @@ jobs:
           # echo ::set-output name=container_registry::ghcr.io
           # echo ::set-output name=cr_user::${{ github.repository_owner }}
           echo ::set-output name=container_registry::docker.io
-          echo ::set-output name=cr_user::hpccsystems
+          echo ::set-output name=cr_user::hpccbuilds
           echo ::set-output name=build_prbase_sha::${{ github.event.pull_request.base.sha }}
           echo ::set-output name=build_prbase_label::${{ github.base_ref }}
           echo ::set-output name=build_pr_label::pr-${{ github.event.number }}-${{ github.sha }}

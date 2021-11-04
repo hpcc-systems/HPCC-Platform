@@ -86,6 +86,7 @@ const StatisticsMapping diskReadActivityStatistics({StNumDiskRowsRead}, basicAct
 const StatisticsMapping diskWriteActivityStatistics({StPerReplicated}, basicActivityStatistics, diskWriteRemoteStatistics);
 const StatisticsMapping sortActivityStatistics({}, basicActivityStatistics, spillStatistics);
 const StatisticsMapping graphStatistics({StNumExecutions}, basicActivityStatistics);
+const StatisticsMapping diskReadPartStatistics({StNumDiskRowsRead}, diskReadRemoteStatistics);
 
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)

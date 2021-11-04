@@ -64,7 +64,7 @@ void getPartsMetaInfo(ThorDataLinkMetaInfo &metaInfo, unsigned nparts, IPartDesc
 //////////////////////////////////////////////
 
 CDiskPartHandlerBase::CDiskPartHandlerBase(CDiskReadSlaveActivityBase &_activity) 
-    : activity(_activity), closedPartFileStats(diskReadRemoteStatistics)
+    : activity(_activity), closedPartFileStats(diskReadPartStatistics)
 {
     checkFileCrc = activity.checkFileCrc;
     which = 0;
@@ -273,7 +273,6 @@ void CDiskReadSlaveActivityBase::start()
 {
     PARENT::start();
     markStart = true;
-    diskProgress = 0;
     unsigned encryptedKeyLen;
     void *encryptedKey;
     helper->getEncryptKey(encryptedKeyLen, encryptedKey);
@@ -314,13 +313,12 @@ IThorRowInterfaces * CDiskReadSlaveActivityBase::queryProjectedDiskRowInterfaces
 
 void CDiskReadSlaveActivityBase::serializeStats(MemoryBuffer &mb)
 {
-    CRuntimeStatisticCollection activeStats(diskReadRemoteStatistics);
+    CRuntimeStatisticCollection activePartStats(diskReadPartStatistics);
     if (partHandler)
     {
-        partHandler->gatherStats(activeStats);
-        stats.set(activeStats); // replace disk read stats
+        partHandler->gatherStats(activePartStats);
+        stats.set(activePartStats); // replace disk read stats
     }
-    stats.setStatistic(StNumDiskRowsRead, diskProgress);
     PARENT::serializeStats(mb);
     for (auto &stats: subFileStats)
         stats->serialize(mb);

@@ -133,6 +133,7 @@ extern graph_decl const StatisticsMapping keyedJoinActivityStatistics;
 extern graph_decl const StatisticsMapping lookupJoinActivityStatistics;
 extern graph_decl const StatisticsMapping loopActivityStatistics;
 extern graph_decl const StatisticsMapping diskReadActivityStatistics;
+extern graph_decl const StatisticsMapping diskReadPartStatistics;
 extern graph_decl const StatisticsMapping diskWriteActivityStatistics;
 extern graph_decl const StatisticsMapping sortActivityStatistics;
 

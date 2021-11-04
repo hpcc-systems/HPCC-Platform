@@ -56,9 +56,10 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
         OwnedIFileIO iFileIO;
         CSVSplitter csvSplitter;
         CRC32 inputCRC;
-        bool readFinished;
         offset_t localOffset;
+        unsigned __int64 progress = 0;
         size32_t maxRowSize;
+        bool readFinished;
         bool processHeaderLines = false;
 
         unsigned splitLine(ISerialStream *inputStream, size32_t maxRowSize)
@@ -132,6 +133,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
             inputStream.setown(createFileSerialStream(iFileIO));
             if (activity.headerLines)
                 processHeaderLines = true;
+            progress = 0;
         }
         virtual void close(CRC32 &fileCRC)
         {
@@ -140,9 +142,14 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
                 CriticalBlock block(inputCs);
                 partFileIO.setown(iFileIO.getClear());
             }
-            mergeStats(closedPartFileStats, partFileIO);
-            partFileIO.clear();
-            inputStream.clear();
+            if (partFileIO)
+            {
+                mergeStats(closedPartFileStats, partFileIO);
+                closedPartFileStats.mergeStatistic(StNumDiskRowsRead, progress);
+                progress = 0;
+                partFileIO.clear();
+                inputStream.clear();
+            }
             fileCRC = inputCRC;
         }
         const void *nextRow()
@@ -160,7 +167,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
                 if (res != 0)
                 {
                     localOffset += lineLength;
-                    ++activity.diskProgress;
+                    ++progress;
                     return row.finalizeRowClear(res);
                 }
             }
@@ -171,6 +178,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase
             CriticalBlock block(inputCs); // Ensure iFileIO remains valid for the duration of mergeStats()
             CDiskPartHandlerBase::gatherStats(merged);
             mergeStats(merged, iFileIO);
+            merged.mergeStatistic(StNumDiskRowsRead, progress);
         }
     };
 
