@@ -6,9 +6,9 @@ type: application
 
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
-version: 8.2.33-closedown0
+version: 8.2.34-rc1
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application.
 
-appVersion: 8.2.33-closedown0
+appVersion: 8.2.34-rc1
