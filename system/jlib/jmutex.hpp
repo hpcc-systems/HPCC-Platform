@@ -32,7 +32,7 @@ extern jlib_decl void spinUntilReady(std::atomic_uint &value);
 
 #ifdef _DEBUG
 //#define SPINLOCK_USE_MUTEX // for testing
-//#define SPINLOCK_RR_CHECK     // checks for realtime threads
+#define SPINLOCK_RR_CHECK     // checks for realtime threads
 #define _ASSERT_LOCK_SUPPORT
 #endif
 

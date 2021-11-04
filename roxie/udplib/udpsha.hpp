@@ -40,7 +40,7 @@ struct UdpPacketHeader
 {
     unsigned short length;      // total length of packet including the header, data, and meta
     unsigned short metalength;  // length of metadata (comes after header and data)
-    ServerIdentifier  node;        // Node this message came from
+    ServerIdentifier  node;     // Node this message came from
     unsigned       msgSeq;      // sequence number of messages ever sent from given node, used with ruid to tell which packets are from same message
     unsigned       pktSeq;      // sequence number of this packet within the message (top bit signifies final packet)
     sequence_t     sendSeq;     // sequence number of this packet among all those send from this node to this target
