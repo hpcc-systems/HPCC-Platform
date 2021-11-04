@@ -447,6 +447,7 @@ public:
     }
     inline StatisticKind getKind(unsigned index) const { return (StatisticKind)indexToKind.item(index); }
     inline unsigned numStatistics() const { return indexToKind.ordinality(); }
+    inline unsigned getUniqueHash() const { return hashcode; }
 
 protected:
     StatisticsMapping() { }
@@ -463,10 +464,12 @@ protected:
             indexToKind.append(mapping->indexToKind.item(idx));
     }
     void createMappings();
+    bool equals(const StatisticsMapping & other);
 
 protected:
     UnsignedArray kindToIndex;
     UnsignedArray indexToKind;
+    unsigned hashcode = 0;          // Used to uniquely define the StatisticsMapping class required for nested scopes (do not persist)
 private:
     StatisticsMapping& operator=(const StatisticsMapping&) =delete;
 };
