@@ -78,7 +78,7 @@ public:
             IDistributedSuperFile *super = fetchFile->querySuperFile();
             unsigned numsubs = super?super->numSubFiles(true):0;
             for (unsigned i=0; i<numsubs; i++)
-                subFileStats.push_back(new CThorStatsCollection(diskReadActivityStatistics));
+                subFileStats.push_back(new CThorStatsCollection(diskReadPartStatistics));
 
             mapping.setown(getFileSlaveMaps(fetchFile->queryLogicalName(), *fileDesc, container.queryJob().queryUserDescriptor(), container.queryJob().querySlaveGroup(), container.queryLocalOrGrouped(), false, NULL, super));
             mapping->serializeFileOffsetMap(offsetMapMb);
