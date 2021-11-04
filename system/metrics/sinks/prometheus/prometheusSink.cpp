@@ -64,16 +64,21 @@ PrometheusMetricSink::PrometheusMetricSink(const char *name, const IPropertyTree
             VStringBuffer respmessage(PROMETHEUS_METRICS_HTTP_ERROR, msg.str(), req.path.c_str(), res.status);
             res.set_content(respmessage.str(), PROMETHEUS_METRICS_SERVICE_RESP_TYPE);
 
-            LOG(MCuserInfo, "TxSummary[status=%d;user=@%s:%d;contLen=%ld;req=%s;]\n", res.status, req.remote_addr.c_str(), req.remote_port, req.content_length, req.method.c_str());
+            LOG(MCuserError, "PrometheusMetricsService Error: %s", msg.str());
+            LOG(MCuserInfo, "TxSummary[status=%d;user=@%s:%d;contLen=%ld;req=%s;path=%s]", res.status, req.remote_addr.c_str(), req.remote_port, req.content_length, req.method.c_str(), req.path.c_str());
         });
 
         m_server.Get(m_metricsServiceName.str(), [&](const Request& req, Response& res)
         {
+            LOG(MCdebugInfo, "GET PrometheusMetricsService%s, from %s:%d", req.path.c_str(), req.remote_addr.c_str(), req.remote_port);
+
             StringBuffer payload;
             toPrometheusMetrics(m_metricsManager->queryMetricsForReport(std::string(m_metricsSinkName.str())), payload, m_verbose);
 
             res.set_content(payload.str(), PROMETHEUS_METRICS_SERVICE_RESP_TYPE);
-            LOG(MCuserInfo, "TxSummary[status=%d;user=@%s:%d;contLen=%ld;req=GET;]\n",res.status, req.remote_addr.c_str(), req.remote_port, req.content_length);
+            res.status = 200;
+            LOG(MCdebugInfo, "PrometheusMetricsService Response: %s\n", payload.str());
+            LOG(MCuserInfo, "TxSummary[status=%d;user=@%s:%d;contLen=%ld;req=GET;path=%s]", res.status, req.remote_addr.c_str(), req.remote_port, req.content_length, req.path.c_str());
         });
     }
 }
@@ -87,7 +92,7 @@ const char * PrometheusMetricSink::mapHPCCMetricTypeToPrometheusStr(MetricType t
     case hpccMetrics::METRICS_GAUGE:
         return "gauge";
     default:
-        LOG(MCdebugInfo, "Encountered unknown metric - cannot map to Prometheus metric!");
+        LOG(MCinternalWarning, "Encountered unknown metric - cannot map to Prometheus metric!");
         return nullptr;
     }
 }
@@ -154,7 +159,7 @@ void PrometheusMetricSink::startCollection(MetricsManager *_pManager)
 
 void PrometheusMetricSink::stopCollection()
 {
-	LOG(MCoperatorProgress, "PrometheusMetricsService stopping:  port: '%i' uri: '%s' sinkname: '%s'\n", m_port, m_metricsServiceName.str(), m_metricsSinkName.str());
+    LOG(MCoperatorProgress, "PrometheusMetricsService stopping:  port: '%i' uri: '%s' sinkname: '%s'", m_port, m_metricsServiceName.str(), m_metricsSinkName.str());
     m_processing = false;
     m_server.stop();
     m_collectThread.join();
@@ -162,6 +167,6 @@ void PrometheusMetricSink::stopCollection()
 
 void PrometheusMetricSink::startServer()
 {
-    LOG(MCoperatorProgress, "PrometheusMetricsService started:  port: '%i' uri: '%s' sinkname: '%s'\n", m_port, m_metricsServiceName.str(), m_metricsSinkName.str());
+    LOG(MCoperatorProgress, "PrometheusMetricsService started:  port: '%i' uri: '%s' sinkname: '%s'", m_port, m_metricsServiceName.str(), m_metricsSinkName.str());
     m_server.listen(BIND_ALL_LOCAL_NICS, m_port);
 }
