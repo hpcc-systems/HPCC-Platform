@@ -32,7 +32,7 @@ set(componentList
     backupnode
     toposerver)
 
-set(dafilesrv "dafilesrv" "-L ${LOG_PATH} -I %i -D" "")
+set(dafilesrv "dafilesrv" "--logDir=${LOG_PATH} --name=%i --daemon" "")
 set(dali "daserver" "--daemon %i" "dafilesrv.service")
 set(dfuserver "dfuserver" "--daemon %i" "dafilesrv.service")
 set(eclagent "agentexec" "--daemon %i" "dafilesrv.service")

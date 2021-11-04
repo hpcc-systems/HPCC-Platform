@@ -15,7 +15,11 @@
 	],
 	// "postCreateCommand": "git config oh-my-zsh.hide-info 1",
 	// Set *default* container specific settings.json values on container create.
-	"settings": {},
+	"settings": {
+		"cmake.configureArgs": [
+			"-DUSE_SHLIBDEPS=ON"
+		]
+	},
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
 		"ms-vscode.cpptools",

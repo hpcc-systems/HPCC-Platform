@@ -18,7 +18,10 @@
 # Base container image that builds all HPCC platform components
 
 ARG BASE_VER=8.6 
-FROM hpccsystems/platform-build-base:${BASE_VER}
+ARG CR_USER=hpccsystems
+ARG CR_REPO=docker.io
+ARG CR_CONTAINER_NAME=platform-build-base
+FROM ${CR_REPO}/${CR_USER}/${CR_CONTAINER_NAME}:${BASE_VER}
 
 RUN groupadd -g 10001 hpcc
 RUN useradd -s /bin/bash -r -m -N -c "hpcc runtime User" -u 10000 -g hpcc hpcc

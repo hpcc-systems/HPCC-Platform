@@ -1,8 +1,8 @@
 import * as React from "react";
-import { ContextualMenuItemType, DefaultButton, IconButton, IIconProps, Image, IPanelProps, IPersonaSharedProps, IRenderFunction, Link, Panel, PanelType, Persona, PersonaSize, SearchBox, Stack, Text, useTheme } from "@fluentui/react";
+import { ContextualMenuItemType, DefaultButton, IconButton, IIconProps, Image, IPanelProps, IPersonaSharedProps, IRenderFunction, Link, mergeStyleSets, Panel, PanelType, Persona, PersonaSize, SearchBox, Stack, Text, useTheme } from "@fluentui/react";
+import { useBoolean } from "@fluentui/react-hooks";
 import { About } from "./About";
 import { MyAccount } from "./MyAccount";
-import { useBoolean } from "@fluentui/react-hooks";
 
 import * as WsAccount from "src/ws_account";
 import * as cookie from "dojo/cookie";
@@ -58,11 +58,9 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             items: [
                 { key: "legacy", text: nlsHPCC.OpenLegacyECLWatch, href: "/esp/files/stub.htm" },
                 { key: "divider_0", itemType: ContextualMenuItemType.Divider },
-                { key: "errors", href: "#/log", text: `${nlsHPCC.ErrorWarnings} ${log.length > 0 ? `(${log.length})` : ""}`, },
-                { key: "divider_1", itemType: ContextualMenuItemType.Divider },
                 { key: "banner", text: nlsHPCC.SetBanner },
                 { key: "toolbar", text: nlsHPCC.SetToolbar },
-                { key: "divider_2", itemType: ContextualMenuItemType.Divider },
+                { key: "divider_1", itemType: ContextualMenuItemType.Divider },
                 { key: "docs", href: "https://hpccsystems.com/training/documentation/", text: nlsHPCC.Documentation, target: "_blank" },
                 { key: "downloads", href: "https://hpccsystems.com/download", text: nlsHPCC.Downloads, target: "_blank" },
                 { key: "releaseNotes", href: "https://hpccsystems.com/download/release-notes", text: nlsHPCC.ReleaseNotes, target: "_blank" },
@@ -75,7 +73,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                         ]
                     }
                 },
-                { key: "divider_3", itemType: ContextualMenuItemType.Divider },
+                { key: "divider_2", itemType: ContextualMenuItemType.Divider },
                 {
                     key: "lock", text: nlsHPCC.Lock, disabled: !currentUser?.username, onClick: () => {
                         fetch("esp/lock", {
@@ -98,15 +96,28 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                         });
                     }
                 },
-                { key: "divider_4", itemType: ContextualMenuItemType.Divider },
+                { key: "divider_3", itemType: ContextualMenuItemType.Divider },
                 { key: "config", href: "#/config", text: nlsHPCC.Configuration },
                 { key: "about", text: nlsHPCC.About, onClick: () => setShowAbout(true) }
             ],
             directionalHintFixed: true
         };
-    }, [currentUser?.username, log.length]);
+    }, [currentUser?.username]);
 
     const theme = useTheme();
+
+    const btnStyles = mergeStyleSets({
+        errorsWarnings: {
+            border: "none",
+            background: "transparent",
+            minWidth: 48,
+            padding: "0 10px 0 4px",
+            color: theme.semanticColors.link
+        },
+        errorsWarningsCount: {
+            margin: "-3px 0 0 -3px"
+        }
+    });
 
     React.useEffect(() => {
         WsAccount.MyAccount({})
@@ -138,6 +149,11 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                             <Persona {...personaProps} onClick={() => setShowMyAccount(true)} styles={personaStyles} />
                         </Stack.Item>
                     }
+                    <Stack.Item align="center">
+                        <DefaultButton href="#/log" title={nlsHPCC.ErrorWarnings} iconProps={{ iconName: log.length > 0 ? "RingerSolid" : "Ringer" }} className={btnStyles.errorsWarnings}>
+                            <span className={btnStyles.errorsWarningsCount}>{`(${log.length})`}</span>
+                        </DefaultButton>
+                    </Stack.Item>
                     <Stack.Item align="center">
                         <IconButton title={nlsHPCC.Advanced} iconProps={collapseMenuIcon} menuProps={advMenuProps} />
                     </Stack.Item>

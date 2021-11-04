@@ -475,6 +475,7 @@ int main(int argc, const char* argv[])
 
         for (unsigned i=1;i<(unsigned)argc;i++) {
             if (streq(argv[i],"--daemon") || streq(argv[i],"-d")) {
+                i++; // consumed within checkCreateDaemon(), bump up here
             }
             else if (streq(argv[i],"--server") || streq(argv[i],"-s"))
                 server = argv[++i];
