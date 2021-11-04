@@ -118,6 +118,7 @@ jobs:
           build-args: |
             CR_USER=${{ steps.vars.outputs.cr_user }}
             CR_REPO=${{ steps.vars.outputs.container_registry }}
+            CR_CONTAINER_NAME=${{ steps.vars.outputs.platform_build_base }}
             BASE_VER=${{ steps.vars.outputs.base_ver }}
             BUILD_USER=${{ github.repository_owner }}
             BUILD_TAG=${{ steps.vars.outputs.build_base_sha }}
