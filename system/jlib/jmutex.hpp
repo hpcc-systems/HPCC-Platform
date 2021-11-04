@@ -429,7 +429,7 @@ public:
     inline void enter()       
     { 
         ThreadId self = GetCurrentThreadId(); 
-#ifdef SPINLOCK_RR_CHECK    // as requested by RKC 
+#if defined(SPINLOCK_RR_CHECK) && !defined(_WIN32)    // as requested by RKC
         int policy;
         sched_param param;
         if ((pthread_getschedparam(self, &policy, &param)==0)&&(policy==SCHED_RR)) {
