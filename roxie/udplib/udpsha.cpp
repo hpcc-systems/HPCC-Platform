@@ -798,8 +798,8 @@ class SimulatedUdpStressTest : public CppUnit::TestFixture
             udpTraceLevel = 1;
             udpTraceTimeouts = true;
             udpResendLostPackets = true;
-            udpRequestToSendTimeout = 10000;
-            udpRequestToSendAckTimeout = 10000;
+            udpRequestToSendTimeout = 1000;
+            udpRequestToSendAckTimeout = 1000;
             isUdpTestMode = true;
             roxiemem::setTotalMemoryLimit(false, false, false, 20*1024*1024, 0, NULL, NULL);
             dbm.setown(roxiemem::createDataBufferManager(roxiemem::DATA_ALIGNMENT_SIZE));
@@ -811,7 +811,7 @@ class SimulatedUdpStressTest : public CppUnit::TestFixture
     {
         testInit();
         myNode.setIp(IpAddress("1.2.3.4"));
-        Owned<IReceiveManager> rm = createReceiveManager(CCD_SERVER_FLOW_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, 2, 2, false);
+        Owned<IReceiveManager> rm = createReceiveManager(CCD_DATA_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, 2, 2, false);
         printf("Start test\n");
         asyncFor(20, 20, [](unsigned i)
         {
