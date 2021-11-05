@@ -102,6 +102,8 @@ protected:
 
 interface IStatisticCollectionIterator;
 interface IStatisticGatherer;
+interface IStatisticVisitor;
+
 interface IStatisticCollection : public IInterface
 {
 public:
@@ -119,10 +121,17 @@ public:
     virtual unsigned __int64 queryWhenCreated() const = 0;
     virtual void mergeInto(IStatisticGatherer & target) const = 0;
     virtual StringBuffer &toXML(StringBuffer &out) const = 0;
+    virtual void visit(IStatisticVisitor & target) const = 0;
+    virtual void visitChildren(IStatisticVisitor & target) const = 0;
 };
 
 interface IStatisticCollectionIterator : public IIteratorOf<IStatisticCollection>
 {
+};
+
+interface IStatisticVisitor
+{
+    virtual bool visitScope(const IStatisticCollection & cur) = 0;        // return true to iterate through children
 };
 
 enum StatsMergeAction
@@ -853,5 +862,6 @@ public:
 };
 
 extern jlib_decl StringBuffer & formatMoney(StringBuffer &out, unsigned __int64 value);
+extern jlib_decl stat_type aggregateStatistic(StatisticKind kind, IStatisticCollection * statsCollection);
 
 #endif

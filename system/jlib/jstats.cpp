@@ -1832,7 +1832,7 @@ public:
 
     CStatisticCollection * ensureSubScope(const StatsScopeId & search, bool hasChildren)
     {
-        //Once the CStatisicCollection is created it should not be replaced - so that returned pointers remain valid.
+        //Once the CStatisticCollection is created it should not be replaced - so that returned pointers remain valid.
         CStatisticCollection * match = children.find(&search);
         if (match)
             return match;
@@ -1867,6 +1867,21 @@ public:
 
         for (auto const & cur : children)
             cur.mergeInto(target);
+    }
+
+    virtual void visit(IStatisticVisitor & visitor) const
+    {
+        if (visitor.visitScope(*this))
+        {
+            for (auto const & cur : children)
+                cur.visit(visitor);
+        }
+    }
+
+    virtual void visitChildren(IStatisticVisitor & visitor) const
+    {
+        for (auto const & cur : children)
+            cur.visit(visitor);
     }
 
 private:
@@ -1987,6 +2002,52 @@ public:
     StringAttr creator;
     unsigned __int64 whenCreated;
 };
+
+
+class StatAggregator : implements IStatisticVisitor
+{
+public:
+    StatAggregator(StatisticKind _kind) : kind(_kind) {}
+
+    virtual bool visitScope(const IStatisticCollection & cur)
+    {
+        switch (cur.queryScopeType())
+        {
+        //If there is a match for the stat in any of these containers, then avoid summing any child scopes
+        case SSTglobal:
+        case SSTgraph:
+        case SSTsubgraph:
+        case SSTsection:
+        case SSTchildgraph:
+        case SSTworkflow:
+        {
+            stat_type value;
+            if (cur.getStatistic(kind, value))
+            {
+                total += value;
+                return false;
+            }
+            return true;
+        }
+        //Default is to sum the value for this scope and children => recurse.  E.g. activity and any child activities.
+        default:
+            total += cur.queryStatistic(kind);
+            return true;
+        }
+    }
+    stat_type getTotal() const { return total; }
+private:
+    stat_type total = 0;
+    StatisticKind kind;
+};
+
+
+stat_type aggregateStatistic(StatisticKind kind, IStatisticCollection * statsCollection)
+{
+    StatAggregator aggregator(kind);
+    statsCollection->visit(aggregator);
+    return aggregator.getTotal();
+}
 
 //---------------------------------------------------------------------------------------------------------------------
 
