@@ -28,7 +28,8 @@ project( ws_resources )
 
 include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
 
-set (    SRCS 
+set (    SRCS
+         ${ESPSCM_GENERATED_DIR}/common_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_resources_esp.cpp 
          ws_resourcesPlugin.cpp 
          ws_resourcesService.cpp 

@@ -15,12 +15,28 @@
     limitations under the License.
 ############################################################################## */
 
+EspInclude(common);
+
 ESPStruct HPCCService
 {
     string Name;
     string Type;
     unsigned Port;
     bool TLSSecure;
+};
+
+ESPStruct DiscoveredWebLink
+{
+    string ServiceName;
+    string NameSpace;
+    ESParray<ESPstruct NamedValue> Annotations;
+};
+
+ESPStruct ConfiguredWebLink
+{
+    string Name;
+    string Description;
+    string URL;
 };
 
 ESPrequest ServiceQueryRequest
@@ -34,9 +50,20 @@ ESPresponse [nil_remove, exceptions_inline] ServiceQueryResponse
     ESParray<ESPstruct HPCCService, Service> Services;
 };
 
-ESPservice [auth_feature("ResourceQueryAccess:ACCESS"), noforms, version("1.00"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsResources
+ESPrequest WebLinksQueryRequest
+{
+};
+
+ESPresponse [nil_remove, exceptions_inline] WebLinksQueryResponse
+{
+    ESParray<ESPstruct DiscoveredWebLink> DiscoveredWebLinks;
+    ESParray<ESPstruct ConfiguredWebLink> ConfiguredWebLinks;
+};
+
+ESPservice [auth_feature("ResourceQueryAccess:ACCESS"), version("1.01"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsResources
 {
     ESPmethod [auth_feature("ResourceQueryAccess:READ")] ServiceQuery(ServiceQueryRequest, ServiceQueryResponse);
+    ESPmethod [auth_feature("ResourceQueryAccess:READ"), min_ver("1.01")] WebLinksQuery(WebLinksQueryRequest, WebLinksQueryResponse);
 };
 
 SCMexportdef(WsResources);

@@ -27,6 +27,7 @@ project( SMCLib )
 include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
 
 set (    SRCS
+         ${ESPSCM_GENERATED_DIR}/common_esp.cpp
          ${HPCC_SOURCE_DIR}/dali/sasha/sacmd.cpp
          ${ESPSCM_GENERATED_DIR}/ws_topology_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_resources_esp.cpp
