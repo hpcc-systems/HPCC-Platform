@@ -210,6 +210,15 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     StringBuffer ipStr;
                     DBGLOG("UdpReceiver: sending request_received msg seq %" SEQF "u to node=%s", _flowSeq, dest.getIpText(ipStr).str());
                 }
+#ifdef TEST_DROPPED_PACKETS
+                flowPacketsSent[msg.cmd]++;
+                if (udpDropFlowPackets[msg.cmd] && flowPacketsSent[msg.cmd]%udpDropFlowPackets[msg.cmd]==0)
+                {
+                    StringBuffer ipStr;
+                    DBGLOG("UdpReceiver: deliberately dropping request_received msg seq %" SEQF "u to node=%s", _flowSeq, dest.getIpText(ipStr).str());
+                }
+                else
+#endif
                 flowSocket->write(&msg, udpResendLostPackets ? sizeof(UdpPermitToSendMsg) : offsetof(UdpPermitToSendMsg, seen));
                 flowPermitsSent++;
 
@@ -241,6 +250,15 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     StringBuffer ipStr;
                     DBGLOG("UdpReceiver: sending ok_to_send %u msg seq %" SEQF "u to node=%s", maxTransfer, flowSeq, dest.getIpText(ipStr).str());
                 }
+#ifdef TEST_DROPPED_PACKETS
+                flowPacketsSent[msg.cmd]++;
+                if (udpDropFlowPackets[msg.cmd] && flowPacketsSent[msg.cmd]%udpDropFlowPackets[msg.cmd]==0)
+                {
+                    StringBuffer ipStr;
+                    DBGLOG("UdpReceiver: deliberately dropping ok_to_send %u msg seq %" SEQF "u to node=%s", maxTransfer, flowSeq, dest.getIpText(ipStr).str());
+                }
+                else
+#endif
                 flowSocket->write(&msg, udpResendLostPackets ? sizeof(UdpPermitToSendMsg) : offsetof(UdpPermitToSendMsg, seen));
                 flowPermitsSent++;
             }
