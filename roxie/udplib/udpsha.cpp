@@ -866,8 +866,8 @@ class SimulatedUdpStressTest : public CppUnit::TestFixture
             udpTraceLevel = 1;
             udpTraceTimeouts = true;
             udpResendLostPackets = true;
-            udpRequestToSendTimeout = 10000;
-            udpRequestToSendAckTimeout = 10000;
+            udpRequestToSendTimeout = 1000;
+            udpRequestToSendAckTimeout = 1000;
             udpMaxPendingPermits = 1;
             udpTraceFlow = 0;
             isUdpTestMode = true;
@@ -886,7 +886,7 @@ class SimulatedUdpStressTest : public CppUnit::TestFixture
         {
             testInit();
             myNode.setIp(IpAddress("1.2.3.4"));
-            Owned<IReceiveManager> rm = createReceiveManager(CCD_SERVER_FLOW_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, numReceiveSlots, maxSlotsPerClient, false);
+            Owned<IReceiveManager> rm = createReceiveManager(CCD_DATA_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, numReceiveSlots, maxSlotsPerClient, false);
             unsigned begin = msTick();
             printf("Start test\n");
             asyncFor(20, 20, [](unsigned i)
