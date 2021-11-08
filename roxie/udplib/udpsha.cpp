@@ -91,39 +91,58 @@ queue_t::~queue_t()
     }
 }
 
-unsigned queue_t::available()
-{
-    CriticalBlock b(c_region);
-    if (count < limit)
-        return limit - count;
-    return 0;
-}
-
-int queue_t::free_slots() 
-{
-    int res=0;
-    while (res <= 0)
-    {
-        c_region.enter();
-        res = limit - count;
-        if (res <= 0)
-            signal_free_sl++;
-        c_region.leave();
-        if (res <= 0)
-        {
-            while (!free_sl.wait(3000))
-            {
-                if (udpTraceLevel >= 1)
-                    DBGLOG("queue_t::free_slots blocked for 3 seconds waiting for free_sl semaphore");
-            }
-        }
-    }
-    return res;
-}
-
 void queue_t::interrupt()
 {
     data_avail.interrupt();
+}
+
+void queue_t::doEnqueue(DataBuffer *buf)
+{
+    // Must currently be called within a critical section.  Does not signal - that should be done outside the CS.
+    // Could probably be done lock-free, which given one thread using this is high priority might avoid some
+    // potential priority-inversion issues. Or we might consider using PI-aware futexes here?
+    if (tail)
+    {
+        assert(head);
+        assert(!tail->msgNext);
+        tail->msgNext = buf;
+    }
+    else
+    {
+        assert(!head);
+        head = buf;
+    }
+    tail = buf;
+    count.fastAdd(1); // inside a critical section, so no need for atomic inc.
+#ifdef _DEBUG
+    if (count > limit)
+        DBGLOG("queue_t::pushOwn set count to %u", count.load());
+#endif
+}
+
+void queue_t::pushOwnWait(DataBuffer * buf)
+{
+    assert(!buf->msgNext);
+    for (;;)
+    {
+        {
+            CriticalBlock b(c_region);
+
+            if (count < limit)
+            {
+                doEnqueue(buf);
+                break;  // signal outside the critical section, rather than here, so the waiting thread can progress
+            }
+            signal_free_sl++;
+        }
+
+        while (!free_sl.wait(3000))
+        {
+            if (udpTraceLevel >= 1)
+                DBGLOG("queue_t::pushOwnWait blocked for 3 seconds waiting for free_sl semaphore");
+        }
+    }
+    data_avail.signal();
 }
 
 void queue_t::pushOwn(DataBuffer *buf)
@@ -133,23 +152,7 @@ void queue_t::pushOwn(DataBuffer *buf)
     assert(!buf->msgNext);
     {
         CriticalBlock b(c_region);
-        if (tail)
-        {
-            assert(head);
-            assert(!tail->msgNext);
-            tail->msgNext = buf;
-        }
-        else
-        {
-            assert(!head);
-            head = buf;
-        }
-        tail = buf;
-        count++;
-#ifdef _DEBUG
-        if (count > limit)
-            DBGLOG("queue_t::pushOwn set count to %u", count);
-#endif
+        doEnqueue(buf);
     }
     data_avail.signal();
 }
@@ -164,7 +167,7 @@ DataBuffer *queue_t::pop(bool block)
         CriticalBlock b(c_region);
         if (!count)
             return nullptr;
-        count--;
+        count.fastAdd(-1); // inside a critical section => not atomic
         ret = head;
         head = head->msgNext;
         if (!head)
@@ -211,7 +214,7 @@ unsigned queue_t::removeData(const void *key, PKT_CMP_FUN pkCmpFn)
                     if (temp==tail)
                         tail = prev;
                     ::Release(temp);
-                    count--;
+                    count.fastAdd(-1);
                     if (count < limit && signal_free_sl)
                     {
                         signal_free_sl--;

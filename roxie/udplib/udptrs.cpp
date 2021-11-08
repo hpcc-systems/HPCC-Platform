@@ -508,8 +508,7 @@ public:
 
     inline void pushData(unsigned queue, DataBuffer *buffer)
     {
-        output_queue[queue].free_slots();     // block until at least one free space
-        output_queue[queue].pushOwn(buffer);
+        output_queue[queue].pushOwnWait(buffer);  // block until there is some space on the queue
         if (!packetsQueued++)
             requestToSendNew();
     }
