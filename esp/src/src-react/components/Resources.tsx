@@ -1,10 +1,9 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { AlphaNumSortMemory } from "src/Memory";
-import * as Observable from "dojo/store/Observable";
 import nlsHPCC from "src/nlsHPCC";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitResources } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { ShortVerticalDivider } from "./Common";
@@ -26,8 +25,8 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
     const [resources, , , refreshData] = useWorkunitResources(wuid);
 
     //  Grid ---
-    const store = useConst(new Observable(new AlphaNumSortMemory("DisplayPath", { Name: true, Value: true })));
-    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+    const store = useConst(new AlphaNumSortMemory("DisplayPath", { Name: true, Value: true }));
+    const [Grid, selection, copyButtons] = useFluentGrid({
         store,
         sort: [{ attribute: "Wuid", "descending": true }],
         filename: "resources",
@@ -39,7 +38,7 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
             DisplayPath: {
                 label: nlsHPCC.Name, sortable: true,
                 formatter: function (url, row) {
-                    return `<a href='#/iframe?src=${encodeURIComponent(`WsWorkunits/${row.URL}`)}' class='dgrid-row-url'>${url}</a>`;
+                    return <Link href={`#/iframe?src=${encodeURIComponent(`WsWorkunits/${row.URL}`)}`}>{url}</Link>;
                 }
             }
         }
@@ -96,8 +95,7 @@ export const Resources: React.FunctionComponent<ResourcesProps> = ({
                 DisplayPath: row.substring(`res/${wuid}/`.length)
             };
         }));
-        refreshTable();
-    }, [store, refreshTable, resources, wuid]);
+    }, [store, resources, wuid]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
