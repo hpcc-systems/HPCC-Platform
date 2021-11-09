@@ -1,15 +1,11 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
-import { HolyGrail } from "../layouts/HolyGrail";
+import { CommandBar, ContextualMenuItemType, FontIcon, ICommandBarItemProps, Link, ScrollablePane, Sticky } from "@fluentui/react";
 import * as ESPLogicalFile from "src/ESPLogicalFile";
 import * as WsDfu from "src/WsDfu";
 import * as Utility from "src/Utility";
 import { useConfirm } from "../hooks/confirm";
 import { useFile } from "../hooks/file";
-import { useGrid } from "../hooks/grid";
-import * as Observable from "dojo/store/Observable";
-import { Memory } from "src/Memory";
+import { useFluentGrid } from "../hooks/grid";
 import { ShortVerticalDivider } from "./Common";
 import { selector } from "./DojoGrid";
 import { pushUrl } from "../util/history";
@@ -31,11 +27,13 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
 
     const [file, , , refresh] = useFile(cluster, logicalFile);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
+    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const store = useConst(new Observable(new Memory("Name")));
-    const [Grid, selection, refreshTable] = useGrid({
-        store: store,
+    const [Grid, selection, copyButtons] = useFluentGrid({
+        data,
+        primaryID: "Name",
+        alphaNumColumns: { RecordCount: true, Totalsize: true },
         query: {},
         sort: [{ attribute: "Modified", "descending": true }],
         filename: "subfiles",
@@ -43,66 +41,60 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
             sel: selector({ width: 27, selectorType: "checkbox" }),
             IsCompressed: {
                 width: 25, sortable: false,
-                renderHeaderCell: function (node) {
-                    node.innerHTML = Utility.getImageHTML("compressed.png", nlsHPCC.Compressed);
-                },
+                headerIcon: "ZipFolder",
+                headerTooltip: nlsHPCC.Compressed,
                 formatter: function (compressed) {
                     if (compressed === true) {
-                        return Utility.getImageHTML("compressed.png");
+                        return <FontIcon iconName="zipFolder" />;
                     }
-                    return "";
+                    return <></>;
                 }
             },
             IsKeyFile: {
                 width: 25, sortable: false,
-                renderHeaderCell: function (node) {
-                    node.innerHTML = Utility.getImageHTML("index.png", nlsHPCC.Index);
-                },
+                headerIcon: "Permissions",
+                headerTooltip: nlsHPCC.Index,
                 formatter: function (keyfile, row) {
                     if (row.ContentType === "key") {
-                        return Utility.getImageHTML("index.png");
+                        return <FontIcon iconName="Permissions" />;
                     }
-                    return "";
+                    return <></>;
                 }
             },
             isSuperfile: {
                 width: 25, sortable: false,
-                renderHeaderCell: function (node) {
-                    node.innerHTML = Utility.getImageHTML("superfile.png", nlsHPCC.Superfile);
-                },
+                headerIcon: "Folder",
+                headerTooltip: nlsHPCC.Superfile,
                 formatter: function (superfile) {
                     if (superfile === true) {
-                        return Utility.getImageHTML("superfile.png");
+                        return <FontIcon iconName="Folder" />;
                     }
-                    return "";
+                    return <></>;
                 }
             },
             Name: {
                 label: nlsHPCC.LogicalName,
                 formatter: function (name, row) {
                     const url = "#/files/" + (row.NodeGroup ? row.NodeGroup + "/" : "") + name;
-                    return "<a href='" + url + "'>" + name + "</a>";
+                    return <Link href={url}>{name}</Link>;
                 }
             },
             Owner: { label: nlsHPCC.Owner, width: 72 },
             Description: { label: nlsHPCC.Description, width: 153 },
             RecordCount: {
                 label: nlsHPCC.Records, width: 72, sortable: false,
-                renderCell: function (object, value, node, options) {
-                    node.innerText = Utility.valueCleanUp(value);
+                formatter: function (recordCount, row) {
+                    return Utility.valueCleanUp(recordCount);
                 },
             },
             Totalsize: {
                 label: nlsHPCC.Size, width: 72, sortable: false,
-                renderCell: function (object, value, node, options) {
-                    node.innerText = Utility.valueCleanUp(value);
+                formatter: function (totalSize, row) {
+                    return Utility.valueCleanUp(totalSize);
                 },
             },
             Parts: {
                 label: nlsHPCC.Parts, width: 45, sortable: false,
-                renderCell: function (object, value, node, options) {
-                    node.innerText = value;
-                },
             },
             Modified: { label: nlsHPCC.ModifiedUTCGMT, width: 155, sortable: false }
         }
@@ -130,10 +122,9 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
             subfiles.push(logicalFile);
         });
         Promise.all(promises).then(logicalFiles => {
-            store.setData(subfiles);
-            refreshTable();
+            setData(subfiles);
         });
-    }, [store, file?.subfiles, refreshTable]);
+    }, [file?.subfiles]);
 
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
@@ -166,11 +157,12 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
     }, [selection]);
 
     return <>
-        <HolyGrail
-            header={<CommandBar items={buttons} />}
-            main={<Grid />}
-        />
+        <ScrollablePane>
+            <Sticky>
+                <CommandBar items={buttons} farItems={copyButtons} />
+            </Sticky>
+            <Grid />
+        </ScrollablePane>
         <DeleteSubfilesConfirm />
     </>;
-
 };

@@ -1,11 +1,9 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
-import { Memory, Observable } from "src/Memory";
 import nlsHPCC from "src/nlsHPCC";
 import { useConfirm } from "../hooks/confirm";
 import { useFileHistory } from "../hooks/file";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { ShortVerticalDivider } from "./Common";
 
@@ -21,10 +19,11 @@ export const FileHistory: React.FunctionComponent<FileHistoryProps> = ({
 
     //  Grid ---
     const [history, eraseHistory, refreshData] = useFileHistory(cluster, logicalFile);
+    const [data, setData] = React.useState<any[]>([]);
 
-    const store = useConst(new Observable(new Memory("Name")));
-    const [Grid, _selection, refreshTable, copyButtons] = useGrid({
-        store,
+    const [Grid, _selection, copyButtons] = useFluentGrid({
+        data,
+        primaryID: "__hpcc_id",
         sort: [{ attribute: "Name", "descending": false }],
         filename: "filehistory",
         columns: {
@@ -45,9 +44,8 @@ export const FileHistory: React.FunctionComponent<FileHistoryProps> = ({
     });
 
     React.useEffect(() => {
-        store.setData(history);
-        refreshTable();
-    }, [history, refreshTable, store]);
+        setData(history.map((item, idx) => ({ ...item, __hpcc_id: idx })));
+    }, [history]);
 
     //  Command Bar  ---
     const buttons: ICommandBarItemProps[] = React.useMemo(() => [

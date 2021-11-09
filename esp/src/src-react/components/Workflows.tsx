@@ -1,11 +1,8 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
-import { AlphaNumSortMemory } from "src/Memory";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, ScrollablePane, Sticky } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
 import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitWorkflows } from "../hooks/workunit";
-import { HolyGrail } from "../layouts/HolyGrail";
 import { ShortVerticalDivider } from "./Common";
 
 interface WorkflowsProps {
@@ -17,11 +14,13 @@ export const Workflows: React.FunctionComponent<WorkflowsProps> = ({
 }) => {
 
     const [workflows, , refreshWorkflow] = useWorkunitWorkflows(wuid);
+    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const store = useConst(new AlphaNumSortMemory("__hpcc_id", { Name: true, Value: true }));
     const [Grid, _selection, copyButtons] = useFluentGrid({
-        store,
+        data,
+        primaryID: "__hpcc_id",
+        alphaNumColumns: { Name: true, Value: true },
         sort: [{ attribute: "Wuid", "descending": true }],
         filename: "workflows",
         columns: {
@@ -49,13 +48,13 @@ export const Workflows: React.FunctionComponent<WorkflowsProps> = ({
     });
 
     React.useEffect(() => {
-        store.setData(workflows.map(row => {
+        setData(workflows.map(row => {
             return {
                 ...row,
                 __hpcc_id: row.WFID
             };
         }));
-    }, [store, workflows]);
+    }, [workflows]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -68,10 +67,10 @@ export const Workflows: React.FunctionComponent<WorkflowsProps> = ({
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
     ], [refreshWorkflow]);
 
-    return <HolyGrail
-        header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={
-            <Grid />
-        }
-    />;
+    return <ScrollablePane>
+        <Sticky>
+            <CommandBar items={buttons} farItems={copyButtons} />
+        </Sticky>
+        <Grid />
+    </ScrollablePane>;
 };
