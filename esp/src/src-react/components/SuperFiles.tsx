@@ -1,12 +1,11 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, ScrollablePane, Sticky } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import * as Observable from "dojo/store/Observable";
 import { Memory } from "src/Memory";
 import nlsHPCC from "src/nlsHPCC";
 import { useGrid } from "../hooks/grid";
 import { useFile } from "../hooks/file";
-import { HolyGrail } from "../layouts/HolyGrail";
 import { ShortVerticalDivider } from "./Common";
 import { selector } from "./DojoGrid";
 
@@ -80,10 +79,10 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
         }
     }, [file, store, refreshTable]);
 
-    return <HolyGrail
-        header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={
-            <Grid />
-        }
-    />;
+    return <ScrollablePane>
+        <Sticky>
+            <CommandBar items={buttons} farItems={copyButtons} />
+        </Sticky>
+        <Grid />
+    </ScrollablePane>;
 };

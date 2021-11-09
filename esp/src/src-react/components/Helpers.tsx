@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, ScrollablePane, Sticky } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import * as domClass from "dojo/dom-class";
 import * as ESPRequest from "src/ESPRequest";
@@ -8,7 +8,6 @@ import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useFluentGrid } from "../hooks/grid";
 import { HelperRow, useWorkunitHelpers } from "../hooks/workunit";
-import { HolyGrail } from "../layouts/HolyGrail";
 import { ShortVerticalDivider } from "./Common";
 import { selector } from "./DojoGrid";
 
@@ -208,10 +207,10 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
         store.setData(helpers);
     }, [store, helpers]);
 
-    return <HolyGrail
-        header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={
-            <Grid />
-        }
-    />;
+    return <ScrollablePane>
+        <Sticky>
+            <CommandBar items={buttons} farItems={copyButtons} />
+        </Sticky>
+        <Grid />
+    </ScrollablePane>;
 };
