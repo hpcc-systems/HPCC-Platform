@@ -1,10 +1,9 @@
 import * as React from "react";
 import { useConst } from "@fluentui/react-hooks";
-import { userKeyValStore } from "src/KeyValStore";
+import { globalKeyValStore, IKeyValStore, userKeyValStore } from "src/KeyValStore";
 
-export function useUserStore(key: string, defaultValue?: string, monitor: boolean = false): [value: string, setValue: (value: string) => void] {
+function useStore(store: IKeyValStore, key: string, defaultValue?: string, monitor: boolean = false): [value: string, setValue: (value: string) => void] {
 
-    const store = useConst(() => userKeyValStore());
     const [value, setValue] = React.useState<string>();
 
     React.useEffect(() => {
@@ -33,4 +32,16 @@ export function useUserStore(key: string, defaultValue?: string, monitor: boolea
     });
 
     return [value, extSetValue];
+}
+
+export function useUserStore(key: string, defaultValue?: string, monitor: boolean = false): [value: string, setValue: (value: string) => void] {
+
+    const store = useConst(() => userKeyValStore());
+    return useStore(store, key, defaultValue, monitor);
+}
+
+export function useGlobalStore(key: string, defaultValue?: string, monitor: boolean = false): [value: string, setValue: (value: string) => void] {
+
+    const store = useConst(() => globalKeyValStore());
+    return useStore(store, key, defaultValue, monitor);
 }
