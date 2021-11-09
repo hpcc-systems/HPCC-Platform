@@ -430,7 +430,18 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             adjustPriority(1);
         #endif
             UdpRequestToSendMsg msg;
-            unsigned timeout = 5000;
+            unsigned timeout = 1000;
+            unsigned oStart = msTick();
+            unsigned numPend = 0;
+            unsigned maxPend = 0;
+            unsigned numReq = 0;
+            unsigned maxReq = 0;
+            unsigned okCalled = 0;
+            unsigned okNotCalled1 = 0;
+            unsigned okNotCalled2 = 0;
+            unsigned noSlots = 0;
+            unsigned loopIters = 0;
+            unsigned numDA = 0;
             while (running)
             {
                 try
@@ -442,6 +453,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     bool dataAvail = flow_socket->wait_read(timeout);
                     if (dataAvail)
                     {
+                        numDA++;
                         const unsigned l = sizeof(msg);
                         unsigned int res ;
                         flow_socket->readtms(&msg, l, l, res, 0);
@@ -472,7 +484,41 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                             DBGLOG("UdpReceiver: received unrecognized flow control message cmd=%i", msg.cmd);
                         }
                     }
-                    timeout = 5000;   // The default timeout is 5 seconds if nothing is waiting for response...
+
+                    loopIters++;
+                    if (pendingPermits)
+                    {
+                        numPend += pendingPermits.length();
+                        if (pendingPermits.length() > maxPend)
+                            maxPend = pendingPermits.length();
+                    }
+                    if (pendingRequests)
+                    {
+                        numReq += pendingRequests.length();
+                        if (pendingRequests.length() > maxReq)
+                            maxReq = pendingRequests.length();
+                    }
+
+                    unsigned tNow = msTick();
+                    if ( (tNow - oStart) >= 5000)
+                    {
+                        if (numPend || numReq || okCalled || okNotCalled1 || okNotCalled2 || noSlots)
+                            DBGLOG("mck - pendPermits = %u (%u) pendRequests = %u (%u) okCalled = %u okNotCalled = %u / %u noSlots = %u numDataAvail = %u loopIters = %u",
+                                    numPend, maxPend, numReq, maxReq, okCalled, okNotCalled1, okNotCalled2, noSlots, numDA, loopIters);
+                        oStart = tNow;
+                        numPend = 0;
+                        numReq = 0;
+                        maxPend = 0;
+                        maxReq = 0;
+                        okCalled = 0;
+                        okNotCalled1 = 0;
+                        okNotCalled2 = 0;
+                        noSlots = 0;
+                        numDA = 0;
+                        loopIters = 0;
+                    }
+
+                    timeout = 1000;   // The default timeout is 5 seconds if nothing is waiting for response...
                     if (pendingPermits)
                     {
                         unsigned now = msTick();
@@ -516,9 +562,13 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     for (UdpSenderEntry *finger = pendingRequests; finger != nullptr; finger = finger->nextSender)
                     {
                         if (pendingPermits.length()>=udpMaxPendingPermits)
+                        {
+                            okNotCalled1++;
                             break;
+                        }
                         if (!slots) // || slots<minSlotsPerSender)
                         {
+                            noSlots++;
                             timeout = 1;   // Slots should free up very soon!
                             break;
                         }
@@ -530,6 +580,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                             if (requestSlots>maxSlotsPerSender)
                                 requestSlots = maxSlotsPerSender;
                             okToSend(finger, requestSlots);
+                            okCalled++;
                             slots -= requestSlots;
                             if (timeout > udpRequestToSendAckTimeout)
                                 timeout = udpRequestToSendAckTimeout;
@@ -537,6 +588,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                         }
                         else
                         {
+                            okNotCalled2++;
                             if (udpTraceFlow)
                             {
                                 StringBuffer s;
