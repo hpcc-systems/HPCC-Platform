@@ -1025,13 +1025,15 @@ void EclSubGraph::execute(const byte * parentExtract)
     doExecute(parentExtract, false);
 
     if(!owner)
-        PROGLOG("Completed subgraph %u", id);
-    if (!owner && !parent.queryLibrary())
     {
-        updateProgress();
-        cleanupActivities();
+        PROGLOG("Completed subgraph %u", id);
+        if (!parent.queryLibrary())
+        {
+            updateProgress();
+            cleanupActivities();
+            agent->updateWULogfile(nullptr);//Update workunit logfile name in case of rollover
+        }
     }
-    agent->updateWULogfile(nullptr);//Update workunit logfile name in case of rollover
 }
 
 
