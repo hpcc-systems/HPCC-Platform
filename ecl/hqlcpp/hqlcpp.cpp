@@ -7508,32 +7508,39 @@ void HqlCppTranslator::doBuildExprPow(BuildCtx & ctx, IHqlExpression * expr, CHq
         return;
     }
 
+    __int64 rightIntVal = value->getIntValue();
+    __int64 absExp = abs(rightIntVal);
+
     const uint MAX_EXP_INLINE_VALUE = 3;
-    int64_t rightIntVal = value->getIntValue();
-    int64_t absExp = abs(rightIntVal);
     if (absExp > MAX_EXP_INLINE_VALUE)
     {
         doBuildExprSysFunc(ctx, expr, tgt, powerId);
         return;
     }
     
+    OwnedITypeInfo realType = makeRealType(DEFAULT_REAL_SIZE);
+    CHqlBoundExpr leftBound;
+    
     IHqlExpression * left = expr->queryChild(0);
-    if (absExp == 0)
+    OwnedHqlExpr castLeft = ensureExprType(left, realType);
+    buildTempExpr(ctx, castLeft, leftBound);
+
+    if (rightIntVal == 0)
     {
         tgt.expr.setown(createConstant(left->queryType()->castFrom(1.0)));
     }
+    else if (rightIntVal == 1)
+    {
+        tgt.expr.setown(LINK(leftBound.expr));
+    }
     else
     {
-        OwnedITypeInfo realType = makeRealType(DEFAULT_REAL_SIZE);
-
-        CHqlBoundExpr leftBound;
-        OwnedHqlExpr castLeft = ensureExprType(left, realType);
-        buildTempExpr(ctx, castLeft, leftBound);
+        LINK(leftBound.expr);
 
         IHqlExpression* outExpr = leftBound.expr;
         for (int i = 1; i < absExp; i++)
         {
-            outExpr = createValue(no_mul, LINK(realType), LINK(outExpr), LINK(leftBound.expr));
+            outExpr = createValue(no_mul, LINK(realType), outExpr, LINK(leftBound.expr));
         }
 
         tgt.expr.setown(outExpr);
@@ -7542,6 +7549,9 @@ void HqlCppTranslator::doBuildExprPow(BuildCtx & ctx, IHqlExpression * expr, CHq
         {
             tgt.expr.setown(createValue(no_div, LINK(realType), createConstant(1.0), LINK(tgt.expr)));
         }
+
+        OwnedHqlExpr cond = createBoolExpr(no_ne, LINK(leftBound.expr), getZero());
+        tgt.expr.setown(createValue(no_if, leftBound.expr->getType(), LINK(cond), LINK(tgt.expr), getZero()));
     }
 }
 
