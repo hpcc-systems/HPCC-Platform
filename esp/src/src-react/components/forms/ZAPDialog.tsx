@@ -101,7 +101,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                         closeForm();
                         reset(defaultValues);
                     })
-                    .catch(logger.error)
+                    .catch(err => logger.error(err))
                     ;
             },
             logger.info
@@ -118,7 +118,7 @@ export const ZAPDialog: React.FunctionComponent<ZAPDialogProps> = ({
                 }
             }
             reset(newValues);
-        }).catch(logger.error);
+        }).catch(err => logger.error(err));
     }, [wuid, reset]);
 
     return <MessageBox title={nlsHPCC.ZippedAnalysisPackage} show={showForm} setShow={closeForm}

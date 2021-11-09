@@ -61,7 +61,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         onSubmit: React.useCallback(() => {
             workunit?.delete()
                 .then(response => replaceUrl("/workunits"))
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }, [workunit])
     });
@@ -87,7 +87,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                     Jobname: jobname,
                     Description: description,
                     Protected: _protected
-                }).catch(logger.error);
+                }).catch(err => logger.error(err));
             }
         },
         {
@@ -96,35 +96,35 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
         },
         {
             key: "restore", text: nlsHPCC.Restore, disabled: !workunit?.Archived,
-            onClick: () => workunit?.restore().catch(logger.error)
+            onClick: () => workunit?.restore().catch(err => logger.error(err))
 
         },
         { key: "divider_2", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "reschedule", text: nlsHPCC.Reschedule, disabled: !canReschedule,
-            onClick: () => workunit?.reschedule().catch(logger.error)
+            onClick: () => workunit?.reschedule().catch(err => logger.error(err))
         },
         {
             key: "deschedule", text: nlsHPCC.Deschedule, disabled: !canDeschedule,
-            onClick: () => workunit?.deschedule().catch(logger.error)
+            onClick: () => workunit?.deschedule().catch(err => logger.error(err))
         },
         { key: "divider_3", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "setToFailed", text: nlsHPCC.SetToFailed, disabled: workunit?.Archived || workunit?.isComplete() || workunit?.isDeleted(),
-            onClick: () => workunit?.setToFailed().catch(logger.error)
+            onClick: () => workunit?.setToFailed().catch(err => logger.error(err))
         },
         {
             key: "abort", text: nlsHPCC.Abort, disabled: workunit?.Archived || workunit?.isComplete() || workunit?.isDeleted(),
-            onClick: () => workunit?.abort().catch(logger.error)
+            onClick: () => workunit?.abort().catch(err => logger.error(err))
         },
         { key: "divider_4", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
             key: "recover", text: nlsHPCC.Recover, disabled: workunit?.Archived || !workunit?.isComplete() || workunit?.isDeleted(),
-            onClick: () => workunit?.resubmit().catch(logger.error)
+            onClick: () => workunit?.resubmit().catch(err => logger.error(err))
         },
         {
             key: "resubmit", text: nlsHPCC.Resubmit, disabled: workunit?.Archived || !workunit?.isComplete() || workunit?.isDeleted(),
-            onClick: () => workunit?.resubmit().catch(logger.error)
+            onClick: () => workunit?.resubmit().catch(err => logger.error(err))
         },
         {
             key: "clone", text: nlsHPCC.Clone, disabled: workunit?.Archived || !workunit?.isComplete() || workunit?.isDeleted(),
@@ -133,7 +133,7 @@ export const WorkunitSummary: React.FunctionComponent<WorkunitSummaryProps> = ({
                     if (wu && wu.Wuid) {
                         pushUrl(`/workunits/${wu?.Wuid}`);
                     }
-                }).catch(logger.error);
+                }).catch(err => logger.error(err));
             }
         },
         { key: "divider_5", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },

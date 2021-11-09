@@ -69,7 +69,7 @@ export const AddUserForm: React.FunctionComponent<AddUserFormProps> = ({
                             if (refreshGrid) refreshGrid();
                         }
                     })
-                    .catch(logger.error)
+                    .catch(err => logger.error(err))
                     ;
             },
             logger.info

@@ -98,7 +98,7 @@ export const QueryLogicalFiles: React.FunctionComponent<QueryLogicalFilesProps> 
                     refreshTable();
                 }
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [store, query, refreshTable]);
 

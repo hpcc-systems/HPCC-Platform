@@ -42,7 +42,7 @@ export const SuperFileSummary: React.FunctionComponent<SuperFileSummaryProps> = 
             const subfiles = (file?.subfiles?.Item || []).map(s => { return { Name: s }; });
             WsDfu.SuperfileAction("remove", file.Name, subfiles, true)
                 .then(() => replaceUrl("/files"))
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }, [file?.Name, file?.subfiles])
     });
@@ -72,7 +72,7 @@ export const SuperFileSummary: React.FunctionComponent<SuperFileSummaryProps> = 
                     Protect: _protected ? "1" : "2",
                     Restrict: restricted ? "1" : "2",
                 })
-                    .catch(logger.error)
+                    .catch(err => logger.error(err))
                     ;
             }
         },

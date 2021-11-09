@@ -103,7 +103,7 @@ export const ESDLBindingMethods: React.FunctionComponent<ESDLBindingMethodsProps
                 store.setData(results);
                 refreshTable();
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [name, refreshTable, store]);
 

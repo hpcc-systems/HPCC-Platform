@@ -86,7 +86,7 @@ export const QueryGraphs: React.FunctionComponent<QueryGraphsProps> = ({
                     refreshTable();
                 }
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [store, query, refreshTable]);
 

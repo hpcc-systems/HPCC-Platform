@@ -37,7 +37,7 @@ export function useWorkunit(wuid: string, full: boolean = false): [Workunit, WUS
                         setRetVal({ workunit: wu, state: wu.StateID, lastUpdate: Date.now(), isComplete: wu.isComplete(), refresh });
                     });
                 }
-            }).catch(logger.error);
+            }).catch(err => logger.error(err));
 
         return () => {
             active = false;
@@ -59,7 +59,7 @@ export function useWorkunitResults(wuid: string): [Result[], Workunit, WUStateID
             const fetchResults = singletonDebounce(workunit, "fetchResults");
             fetchResults().then(results => {
                 setResults(results);
-            }).catch(logger.error);
+            }).catch(err => logger.error(err));
         }
     }, [workunit, state, count]);
 
@@ -120,7 +120,7 @@ export function useWorkunitVariables(wuid: string): [Variable[], Workunit, WUSta
                     };
                 }) || [];
                 setVariables([...vars, ...appData, ...debugData]);
-            }).catch(logger.error);
+            }).catch(err => logger.error(err));
         }
     }, [workunit, state, count]);
 
@@ -157,7 +157,7 @@ export function useWorkunitSourceFiles(wuid: string): [SourceFile[], Workunit, W
                     });
                 });
                 setSourceFiles(sourceFiles);
-            }).catch(logger.error);
+            }).catch(err => logger.error(err));
         }
     }, [workunit, state, count]);
 
@@ -177,7 +177,7 @@ export function useWorkunitWorkflows(wuid: string): [WUInfo.ECLWorkflow[], Worku
                 IncludeWorkflows: true
             }).then(response => {
                 setWorkflows(response?.Workunit?.Workflows?.ECLWorkflow || []);
-            }).catch(logger.error);
+            }).catch(err => logger.error(err));
         }
     }, [workunit, state, count]);
 
@@ -196,7 +196,7 @@ export function useWorkunitXML(wuid: string): [string] {
             Type: "XML"
         }).then(response => {
             setXML(response);
-        }).catch(logger.error);
+        }).catch(err => logger.error(err));
     }, [wuid, service]);
 
     return [xml];
@@ -215,7 +215,7 @@ export function useWorkunitExceptions(wuid: string): [WUInfo.ECLException[], Wor
                 IncludeExceptions: true
             }).then(response => {
                 setExceptions(response?.Workunit?.Exceptions?.ECLException || []);
-            }).catch(logger.error);
+            }).catch(err => logger.error(err));
         }
     }, [workunit, state, count]);
 
@@ -235,7 +235,7 @@ export function useWorkunitResources(wuid: string): [string[], Workunit, WUState
                 IncludeResourceURLs: true
             }).then(response => {
                 setResources(response?.Workunit?.ResourceURLs?.URL || []);
-            }).catch(logger.error);
+            }).catch(err => logger.error(err));
         }
     }, [workunit, state, count]);
 
@@ -311,7 +311,7 @@ export function useWorkunitHelpers(wuid: string): [HelperRow[], () => void] {
                 ...mapHelpers(workunit, response?.Workunit?.Helpers?.ECLHelpFile),
                 ...mapThorLogInfo(workunit, response?.Workunit?.ThorLogList?.ThorLogInfo)
                 ]);
-            }).catch(logger.error);
+            }).catch(err => logger.error(err));
         }
     }, [counter, workunit, state]);
 

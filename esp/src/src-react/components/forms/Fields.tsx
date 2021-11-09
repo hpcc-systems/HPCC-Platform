@@ -583,7 +583,7 @@ export const UserGroupsField: React.FunctionComponent<UserGroupsProps> = (props)
                         };
                     }) || [];
                 setGroups(groups || []);
-            }).catch(logger.error);
+            }).catch(err => logger.error(err));
     }, [props.username]);
 
     return <AsyncDropdown {...props} options={groups} />;
@@ -608,7 +608,7 @@ export const GroupMembersField: React.FunctionComponent<GroupMembersProps> = (pr
                     };
                 }) || [];
             setUsers(_users);
-        }).catch(logger.error);
+        }).catch(err => logger.error(err));
     }, [props.groupname]);
 
     return <AsyncDropdown {...props} options={users} />;
@@ -631,7 +631,7 @@ export const PermissionTypeField: React.FunctionComponent<PermissionTypeProps> =
                     };
                 }) || [];
             setBaseDns(_basedns);
-        }).catch(logger.error);
+        }).catch(err => logger.error(err));
     }, []);
 
     return <AsyncDropdown {...props} options={baseDns} />;

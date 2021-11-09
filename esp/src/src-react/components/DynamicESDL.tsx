@@ -154,7 +154,7 @@ export const DynamicESDL: React.FunctionComponent<ESDLBindingProps> = ({
                 store.setData(rows);
                 refreshTable();
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [refreshTable, store]);
 
@@ -177,7 +177,7 @@ export const DynamicESDL: React.FunctionComponent<ESDLBindingProps> = ({
                 .then(() => {
                     refreshGrid();
                 })
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }, [refreshGrid, selection])
     });

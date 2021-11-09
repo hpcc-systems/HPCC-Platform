@@ -62,7 +62,7 @@ export const AddToSuperfile: React.FunctionComponent<AddToSuperfileProps> = ({
                         closeForm();
                         if (refreshGrid) refreshGrid(true);
                     })
-                    .catch(logger.error)
+                    .catch(err => logger.error(err))
                     ;
             },
             err => {

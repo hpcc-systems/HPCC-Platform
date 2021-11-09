@@ -75,7 +75,7 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
                             setErrorMessage(Exceptions?.Exception[0].Message);
                         }
                     })
-                    .catch(logger.error)
+                    .catch(err => logger.error(err))
                     ;
             });
         }, [_package.Target, name, refreshTable, selection, store])
@@ -123,7 +123,7 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
                 store.setData(parts);
                 refreshTable();
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [store, name, refreshTable]);
 
@@ -133,7 +133,7 @@ export const PackageMapParts: React.FunctionComponent<PackageMapPartsProps> = ({
                 const __package = ListPackagesResponse?.PackageMapList?.PackageListMapData.filter(item => item.Id === name)[0];
                 setPackage(__package);
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [name]);
 

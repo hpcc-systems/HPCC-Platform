@@ -77,7 +77,7 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
                     refreshTable();
                 }
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [refreshTable, store]);
 
@@ -88,7 +88,7 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
             WsDFUXref.DFUXRefBuildCancel({
                 request: {}
             })
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }, [])
     });
@@ -111,7 +111,7 @@ export const Xrefs: React.FunctionComponent<XrefsProps> = ({
                 .then(() => {
                     refreshData();
                 })
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }, [refreshData, selection])
     });

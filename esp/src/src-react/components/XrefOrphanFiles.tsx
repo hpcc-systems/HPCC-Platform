@@ -72,7 +72,7 @@ export const XrefOrphanFiles: React.FunctionComponent<XrefOrphanFilesProps> = ({
                     refreshTable();
                 }
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [name, refreshTable, store]);
 
@@ -84,7 +84,7 @@ export const XrefOrphanFiles: React.FunctionComponent<XrefOrphanFilesProps> = ({
                 .then(response => {
                     refreshData();
                 })
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }, [name, refreshData, selection])
     });

@@ -67,7 +67,7 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
                 .then((response) => {
                     refreshTable(true);
                 })
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }, [refreshTable, selection])
     });

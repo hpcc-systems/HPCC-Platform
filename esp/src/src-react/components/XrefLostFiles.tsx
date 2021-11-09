@@ -76,7 +76,7 @@ export const XrefLostFiles: React.FunctionComponent<XrefLostFilesProps> = ({
                     refreshTable();
                 }
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [store, name, refreshTable]);
 
@@ -88,7 +88,7 @@ export const XrefLostFiles: React.FunctionComponent<XrefLostFilesProps> = ({
                 .then(response => {
                     refreshData();
                 })
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }, [name, refreshData, selection])
     });

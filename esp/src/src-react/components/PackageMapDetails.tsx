@@ -45,7 +45,7 @@ export const PackageMapDetails: React.FunctionComponent<PackageMapDetailsProps> 
                         logger.error(Exceptions.Exception[0].Message);
                     }
                 })
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }, [_package])
     });
@@ -57,13 +57,13 @@ export const PackageMapDetails: React.FunctionComponent<PackageMapDetailsProps> 
                 setPackage(__package);
                 setIsActive(__package.Active);
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
         WsPackageMaps.getPackageMapById({ packageMap: name })
             .then(({ GetPackageMapByIdResponse }) => {
                 setXml(GetPackageMapByIdResponse?.Info);
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [name]);
 
@@ -83,7 +83,7 @@ export const PackageMapDetails: React.FunctionComponent<PackageMapDetailsProps> 
                             setIsActive(true);
                         }
                     })
-                    .catch(logger.error)
+                    .catch(err => logger.error(err))
                     ;
             }
         },
@@ -102,7 +102,7 @@ export const PackageMapDetails: React.FunctionComponent<PackageMapDetailsProps> 
                             setIsActive(false);
                         }
                     })
-                    .catch(logger.error)
+                    .catch(err => logger.error(err))
                     ;
             }
         },

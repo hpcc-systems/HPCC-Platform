@@ -83,7 +83,7 @@ export const Users: React.FunctionComponent<UsersProps> = ({
                 .then(response => {
                     refreshTable(true);
                 })
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }, [refreshTable, selection])
     });

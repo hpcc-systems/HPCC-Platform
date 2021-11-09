@@ -70,7 +70,7 @@ export const XrefFoundFiles: React.FunctionComponent<XrefFoundFilesProps> = ({
                     refreshTable();
                 }
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [name, refreshTable, store]);
 
@@ -82,7 +82,7 @@ export const XrefFoundFiles: React.FunctionComponent<XrefFoundFilesProps> = ({
                 .then(response => {
                     refreshData();
                 })
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }, [name, refreshData, selection])
     });
@@ -95,7 +95,7 @@ export const XrefFoundFiles: React.FunctionComponent<XrefFoundFilesProps> = ({
                 .then(response => {
                     refreshData();
                 })
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }, [name, refreshData, selection])
     });

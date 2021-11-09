@@ -87,7 +87,7 @@ class History<S extends object = object> {
                     this._recent = retVal;
                 }
             }
-        }).catch(logger.error).finally(() => {
+        }).catch(err => logger.error(err)).finally(() => {
             this._recent = this._recent === undefined ? [] : this._recent;
         });
     }
@@ -128,7 +128,7 @@ class History<S extends object = object> {
             if (this._recent.length > 10) {
                 this._recent.length = 10;
             }
-            this._store.set(STORE_HISTORY_ID, JSON.stringify(this._recent)).catch(logger.error);
+            this._store.set(STORE_HISTORY_ID, JSON.stringify(this._recent)).catch(err => logger.error(err));
         }
     }
 

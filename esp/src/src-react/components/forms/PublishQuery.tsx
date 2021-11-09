@@ -57,7 +57,7 @@ export const PublishQueryForm: React.FunctionComponent<PublishFormProps> = ({
                 }).then(() => {
                     closeForm();
                     reset(defaultValues);
-                }).catch(logger.error);
+                }).catch(err => logger.error(err));
             },
             logger.info
         )();

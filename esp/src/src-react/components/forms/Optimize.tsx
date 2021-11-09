@@ -50,7 +50,7 @@ export const Optimize: React.FunctionComponent<OptimizeProps> = ({
             (data, evt) => {
                 dpWu.optimize(data.target, data.logicalFile, data.overwrite).then(wu => {
                     pushUrl(`/workunits/${wu.Wuid}`);
-                }).catch(logger.error);
+                }).catch(err => logger.error(err));
             },
             logger.info
         )();

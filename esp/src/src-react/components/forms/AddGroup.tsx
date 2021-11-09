@@ -49,7 +49,7 @@ export const AddGroupForm: React.FunctionComponent<AddGroupFormProps> = ({
                         reset(defaultValues);
                         if (refreshGrid) refreshGrid();
                     })
-                    .catch(logger.error)
+                    .catch(err => logger.error(err))
                     ;
             },
             logger.info

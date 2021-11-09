@@ -32,7 +32,7 @@ export const QuerySummary: React.FunctionComponent<QuerySummaryProps> = ({
             const selection = [{ QuerySetId: querySet, Id: queryId }];
             WsWorkunits.WUQuerysetQueryAction(selection, "Delete")
                 .then(() => pushUrl("/queries"))
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }, [queryId, querySet])
     });
@@ -41,7 +41,7 @@ export const QuerySummary: React.FunctionComponent<QuerySummaryProps> = ({
         title: nlsHPCC.Reset,
         message: nlsHPCC.ResetThisQuery,
         onSubmit: React.useCallback(() => {
-            query?.doReset().catch(logger.error);
+            query?.doReset().catch(err => logger.error(err));
         }, [query])
     });
 
@@ -81,7 +81,7 @@ export const QuerySummary: React.FunctionComponent<QuerySummaryProps> = ({
                 Promise
                     .all(actions)
                     .then(() => query?.refresh())
-                    .catch(logger.error)
+                    .catch(err => logger.error(err))
                     ;
             }
         },
