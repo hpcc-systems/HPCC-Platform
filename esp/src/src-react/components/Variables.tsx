@@ -1,7 +1,5 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, ScrollablePane, Sticky } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
-import { AlphaNumSortMemory } from "src/Memory";
 import nlsHPCC from "src/nlsHPCC";
 import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitVariables } from "../hooks/workunit";
@@ -16,11 +14,13 @@ export const Variables: React.FunctionComponent<VariablesProps> = ({
 }) => {
 
     const [variables, , , refreshData] = useWorkunitVariables(wuid);
+    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const store = useConst(new AlphaNumSortMemory("__hpcc_id", { Name: true, Value: true }));
     const [Grid, _selection, copyButtons] = useFluentGrid({
-        store,
+        data,
+        primaryID: "__hpcc_id",
+        alphaNumColumns: { Name: true, Value: true },
         sort: [{ attribute: "Wuid", "descending": true }],
         filename: "variables",
         columns: {
@@ -31,13 +31,13 @@ export const Variables: React.FunctionComponent<VariablesProps> = ({
     });
 
     React.useEffect(() => {
-        store.setData(variables.map((row, idx) => {
+        setData(variables.map((row, idx) => {
             return {
                 __hpcc_id: idx,
                 ...row
             };
         }));
-    }, [store, variables]);
+    }, [variables]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [

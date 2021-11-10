@@ -1,11 +1,11 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Image, Link, ScrollablePane, Sticky } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, FontIcon, ICommandBarItemProps, Link, ScrollablePane, Sticky } from "@fluentui/react";
 import * as ESPLogicalFile from "src/ESPLogicalFile";
 import * as WsDfu from "src/WsDfu";
 import * as Utility from "src/Utility";
 import { useConfirm } from "../hooks/confirm";
 import { useFile } from "../hooks/file";
-import { useFluentGrid2 } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { ShortVerticalDivider } from "./Common";
 import { selector } from "./DojoGrid";
 import { pushUrl } from "../util/history";
@@ -31,7 +31,7 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
     const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const [Grid, selection, copyButtons] = useFluentGrid2({
+    const [Grid, selection, copyButtons] = useFluentGrid({
         data,
         primaryID: "Name",
         alphaNumColumns: { RecordCount: true, Totalsize: true },
@@ -42,36 +42,33 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
             sel: selector({ width: 27, selectorType: "checkbox" }),
             IsCompressed: {
                 width: 25, sortable: false,
-                renderHeaderCell: function (node) {
-                    node.innerHTML = Utility.getImageHTML("compressed.png", nlsHPCC.Compressed);
-                },
+                headerIcon: "ZipFolder",
+                headerTooltip: nlsHPCC.Compressed,
                 formatter: function (compressed) {
                     if (compressed === true) {
-                        return <Image src={Utility.getImageURL("compressed.png")} />;
+                        return <FontIcon iconName="zipFolder" />;
                     }
                     return <></>;
                 }
             },
             IsKeyFile: {
                 width: 25, sortable: false,
-                renderHeaderCell: function (node) {
-                    node.innerHTML = Utility.getImageHTML("index.png", nlsHPCC.Index);
-                },
+                headerIcon: "Permissions",
+                headerTooltip: nlsHPCC.Index,
                 formatter: function (keyfile, row) {
                     if (row.ContentType === "key") {
-                        return <Image src={Utility.getImageURL("index.png")} />;
+                        return <FontIcon iconName="Permissions" />;
                     }
                     return <></>;
                 }
             },
             isSuperfile: {
                 width: 25, sortable: false,
-                renderHeaderCell: function (node) {
-                    node.innerHTML = Utility.getImageHTML("superfile.png", nlsHPCC.Superfile);
-                },
+                headerIcon: "Folder",
+                headerTooltip: nlsHPCC.Superfile,
                 formatter: function (superfile) {
                     if (superfile === true) {
-                        return <Image src={Utility.getImageURL("superfile.png")} />;
+                        return <FontIcon iconName="Folder" />;
                     }
                     return <></>;
                 }

@@ -1,9 +1,7 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, ScrollablePane, Sticky } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
 import * as domClass from "dojo/dom-class";
 import * as ESPRequest from "src/ESPRequest";
-import { Memory } from "src/Memory";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useFluentGrid } from "../hooks/grid";
@@ -101,11 +99,12 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
 
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [helpers, refreshData] = useWorkunitHelpers(wuid);
+    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const store = useConst(new Memory("id"));
     const [Grid, selection, copyButtons] = useFluentGrid({
-        store,
+        data,
+        primaryID: "id",
         filename: "helpers",
         columns: {
             sel: selector({
@@ -204,8 +203,8 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
     }, [selection]);
 
     React.useEffect(() => {
-        store.setData(helpers);
-    }, [store, helpers]);
+        setData(helpers);
+    }, [helpers]);
 
     return <ScrollablePane>
         <Sticky>

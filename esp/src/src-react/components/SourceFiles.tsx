@@ -1,14 +1,12 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Image, Link, ScrollablePane, Sticky } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
 import * as domClass from "dojo/dom-class";
-import { AlphaNumSortMemory } from "src/Memory";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
 import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitSourceFiles } from "../hooks/workunit";
 import { ShortVerticalDivider } from "./Common";
-import { selector, tree } from "./DojoGrid";
+import { selector } from "./DojoGrid";
 
 const defaultUIState = {
     hasSelection: false
@@ -18,28 +16,19 @@ interface SourceFilesProps {
     wuid: string;
 }
 
-class TreeStore extends AlphaNumSortMemory {
-
-    mayHaveChildren(item) {
-        return item.IsSuperFile;
-    }
-
-    getChildren(parent, options) {
-        return this.query({ __hpcc_parentName: parent.Name }, options);
-    }
-}
-
 export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
     wuid
 }) => {
 
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [sourceFiles, , , refreshData] = useWorkunitSourceFiles(wuid);
+    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const store = useConst(new TreeStore("Name", { Name: true, Value: true }));
     const [Grid, selection, copyButtons] = useFluentGrid({
-        store,
+        data,
+        primaryID: "Name",
+        alphaNumColumns: { Name: true, Value: true },
         sort: [{ attribute: "Name", "descending": false }],
         query: { __hpcc_parentName: "" },
         filename: "sourceFiles",
@@ -48,7 +37,7 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
                 width: 27,
                 selectorType: "checkbox"
             }),
-            Name: tree({
+            Name: {
                 label: "Name", sortable: true,
                 formatter: function (Name, row) {
                     return <>
@@ -57,7 +46,7 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
                         <Link href={`#/files/${row.FileCluster}/${Name}`}>{Name}</Link>
                     </>;
                 }
-            }),
+            },
             FileCluster: { label: nlsHPCC.FileCluster, width: 300, sortable: false },
             Count: {
                 label: nlsHPCC.Usage, width: 72, sortable: true,
@@ -102,8 +91,8 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
     }, [selection]);
 
     React.useEffect(() => {
-        store.setData(sourceFiles);
-    }, [store, sourceFiles]);
+        setData(sourceFiles);
+    }, [sourceFiles]);
 
     return <ScrollablePane>
         <Sticky>
