@@ -198,9 +198,11 @@ export const FileListForm: React.FunctionComponent<FileListFormProps> = ({
                         required={true}
                         placeholder={nlsHPCC.SelectValue}
                         onChange={(evt, option) => {
-                            setMachine(option.key as string);
-                            setOs(option["OS"] as number);
-                            onChange(option.key);
+                            if (option) {
+                                setMachine(option.key as string);
+                                setOs(option["OS"] as number);
+                                onChange(option.key);
+                            }
                         }}
                         setSetDropzone={_ => setDropzone = _}
                         errorMessage={error && error?.message}

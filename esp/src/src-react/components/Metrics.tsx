@@ -7,7 +7,7 @@ import { WUTimelinePatched } from "src/Timings";
 import { useMetricsOptions, useWorkunitMetrics } from "../hooks/metrics";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
-import { DockPanel, DockPanelItems, ReactWidget } from "../layouts/DockPanel";
+import { DockPanel, DockPanelItems, ReactWidget, ResetableDockPanel } from "../layouts/DockPanel";
 import { IScope, MetricGraph, MetricGraphWidget } from "../util/metricGraph";
 import { ShortVerticalDivider } from "./Common";
 import { MetricsOptions } from "./MetricsOptions";
@@ -34,7 +34,8 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const [selectedMetrics, setSelectedMetrics] = React.useState([]);
     const [metrics, _columns, _activities, _properties, _measures, _scopeTypes] = useWorkunitMetrics(wuid);
     const [showMetricOptions, setShowMetricOptions] = React.useState(false);
-    const [options] = useMetricsOptions();
+    const [options, setOptions, saveOptions] = useMetricsOptions();
+    const [dockpanel, setDockpanel] = React.useState<ResetableDockPanel>();
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
@@ -46,10 +47,11 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         {
             key: "options", text: nlsHPCC.Options, iconProps: { iconName: "Settings" },
             onClick: () => {
+                setOptions({ ...options, layout: dockpanel.layout() });
                 setShowMetricOptions(true);
             }
         }
-    ], []);
+    ], [dockpanel, options, setOptions]);
 
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
     ], []);
@@ -329,6 +331,11 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         }
     ], [graphButtons, graphRightButtons, metricGraphWidget, onChangeScopeFilter, propsTable, propsTable2, scopeFilter, scopesTable]);
 
+    const layoutChanged = React.useCallback((layout) => {
+        setOptions({ ...options, layout });
+        saveOptions();
+    }, [options, saveOptions, setOptions]);
+
     return <HolyGrail
         header={<>
             <CommandBar items={buttons} farItems={rightButtons} />
@@ -336,8 +343,8 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         </>}
         main={
             <>
-                <DockPanel storeID="metrics-layout" items={items}></DockPanel>
-                <MetricsOptions show={showMetricOptions} setShow={setShowMetricOptions} layout={undefined/*dockPanel?.layout()*/} />
+                <DockPanel items={items} layout={options?.layout} layoutChanged={layoutChanged} onDockPanelCreate={setDockpanel} />
+                <MetricsOptions show={showMetricOptions} setShow={setShowMetricOptions} />
             </>}
     />;
 };
