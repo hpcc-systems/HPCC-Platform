@@ -7,16 +7,19 @@
   <para><emphasis role="bold">UTF8<indexterm>
       <primary>UTF8</primary>
     </indexterm>[</emphasis><emphasis>_locale</emphasis><emphasis
+  role="bold">][</emphasis><emphasis>_n</emphasis><emphasis
   role="bold">]<indexterm>
       <primary>UTF8 value type</primary>
     </indexterm></emphasis></para>
 
-  <para>Uma string de caracteres Unicode com codificação UTF-8 com o
-  comprimento variável necessário para conter o resultado do parâmetro
-  convertido ou passado. <emphasis>locale </emphasis> é opcional e especifica
-  um código de local Unicode válido, como especificado nos padrões ISO 639 e
-  3166 (não é necessário se LOCALE é especificado na estrutura RECORD que
-  contém a definição do campo).</para>
+  <para>Uma string de caracteres Unicode codificada em UTF-8 de
+  <emphasis>n</emphasis> caracteres, preenchida com espaço da mesma forma que
+  STRING. Se _<emphasis>n</emphasis> for omitido, a string terá comprimento
+  variável até o tamanho necessário para conter o resultado da conversão ou do
+  parâmetro passado. O <emphasis>locale</emphasis> opcional especifica um
+  código de localidade Unicode válido, conforme especificado nos padrões ISO
+  639 e 3166 (não necessário se LOCALE for especificado na estrutura RECORD
+  que contém a definição do campo).</para>
 
   <para>A conversão do tipo UTF8 para UNICODE, VARUNICODE, STRING ou DATA é
   permitida. A conversão para qualquer outro tipo implicará antes em uma
@@ -27,9 +30,12 @@
 
   <para>Exemplo:</para>
 
-  <programlisting>UTF8 FirstName := U8'Noël';
-        // utf-8-encoded string
-UTF8_de MyUnicodeString := U8'abcd\353';
-        // becomes 'abcdë' with a German locale
+  <programlisting>UTF8 FirstName := U8'Noël';                 // utf-8-encoded string
+
+UTF8_de MyUnicodeString := U8'abcd\353';    // becomes 'abcdë' with a German locale
+
+UTF8_4 FirstName4 := U8'Noël';              // 4-character utf-8-encoded string
+
+UTF8_de_5 MyUnicodeString5 := U8'abcd\353'; // becomes 'abcdë' with a German locale
 </programlisting>
 </sect1>

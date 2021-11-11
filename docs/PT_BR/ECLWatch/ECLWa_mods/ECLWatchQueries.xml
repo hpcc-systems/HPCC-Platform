@@ -35,17 +35,6 @@
       <para/>
     </legalnotice>
 
-    <xi:include href="../../common/Version.xml" xpointer="FooterInfo"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
-
-    <xi:include href="../../common/Version.xml" xpointer="DateVer"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
-
-    <corpname>HPCC Systems<superscript>®</superscript></corpname>
-
-    <xi:include href="../../common/Version.xml" xpointer="Copyright"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
-
     <mediaobject role="logo">
       <imageobject>
         <imagedata fileref="../../images/LN_Rightjustified.jpg"/>
@@ -232,74 +221,108 @@ depending on where they wind up.-->
             </varlistentry>
 
             <varlistentry>
-              <?dbfo keep-together="always"?>
-
               <term>Filter</term>
 
               <listitem>
                 <para>Permite filtrar consultas de acordo com os critérios
                 inseridos. Quando o filtro é aplicado, o botão de ação exibe o
-                <emphasis role="bold">Filter Set</emphasis>. Este ícone indica
-                que as consultas publicadas exibidas são filtradas.</para>
-
-                <para><graphic fileref="../../images/ECLWA203.jpg"/>É possível
-                filtrar diversos atributos de uma consulta. A filtragem pode
-                ser feita por:</para>
-
-                <itemizedlist>
-                  <listitem>
-                    <para>ID</para>
-                  </listitem>
-
-                  <listitem>
-                    <para>Name (Name)</para>
-                  </listitem>
-
-                  <listitem>
-                    <para>Publish by (Publicado por)</para>
-                  </listitem>
-
-                  <listitem>
-                    <para>WUID</para>
-                  </listitem>
-
-                  <listitem>
-                    <para>Cluster</para>
-                  </listitem>
-
-                  <listitem>
-                    <para>Logical File Name (Nome de arquivo lógico)</para>
-                  </listitem>
-
-                  <listitem>
-                    <para>Libraries Used (Bibliotecas usadas)</para>
-                  </listitem>
-
-                  <listitem>
-                    <para>Suspend (Consultas suspensas)</para>
-                  </listitem>
-
-                  <listitem>
-                    <para>Active (Consultas ativas).</para>
-                  </listitem>
-                </itemizedlist>
-
-                <para>A função Filter também é compatível com o uso de
-                elementos coringa.</para>
-              </listitem>
-            </varlistentry>
-
-            <varlistentry>
-              <term>Options</term>
-
-              <listitem>
-                <para>Oferece a opção de busca ou exibição de consultas em um
-                único nó ou em todos os nós. Usar esta opção pode melhorar o
-                desempenho se você tiver um cluster maior com múltiplos
-                nós.</para>
+                <emphasis role="bold">Filter Set</emphasis>. O ícone sólido
+                indica que as consultas publicadas exibidas são filtradas.
+                Quando você define um filtro, um link para esse filtro é
+                adicionado ao <emphasis role="bold">Recent Filters</emphasis>.
+                The <emphasis>Clique no botão New Page</emphasis> em seguida,
+                é exibido ao lado de Recent Filters, que abrirá uma nova
+                página com esse conjunto de critérios de filtro.</para>
               </listitem>
             </varlistentry>
           </variablelist></para>
+
+        <para><graphic fileref="../../images/ECLWA203.jpg"/>É possível filtrar
+        diversos atributos de uma consulta. A filtragem pode ser feita
+        por:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>ID</para>
+          </listitem>
+
+          <listitem>
+            <para>Name (Nome)</para>
+          </listitem>
+
+          <listitem>
+            <para>Priority (Prioridade)</para>
+          </listitem>
+
+          <listitem>
+            <para>Publish by (Publicado por)</para>
+          </listitem>
+
+          <listitem>
+            <para>WUID</para>
+          </listitem>
+
+          <listitem>
+            <para>Cluster</para>
+          </listitem>
+
+          <listitem>
+            <para>Logical File Name (Nome de arquivo lógico)</para>
+          </listitem>
+
+          <listitem>
+            <para>Libraries Used (Bibliotecas usadas)</para>
+          </listitem>
+
+          <listitem>
+            <para>Suspend (Consultas suspensas)</para>
+          </listitem>
+
+          <listitem>
+            <para>Active (Consultas ativas).</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>A função Filter também é compatível com o uso de elementos
+        coringa. Alguns atributos têm opções preenchidas que você pode
+        selecionar em uma lista.</para>
+
+        <para><graphic fileref="../../images/ECLWA203-1.jpg"/></para>
+
+        <variablelist>
+          <varlistentry>
+            <term>Options</term>
+
+            <listitem>
+              <para>Oferece a opção de busca ou exibição de consultas em um
+              único nó ou em todos os nós. Usar esta opção pode melhorar o
+              desempenho se você tiver um cluster maior com múltiplos
+              nós.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>Recreate Query</term>
+
+            <listitem>
+              <para>Recompila uma consulta em uma nova unidade de trabalho e
+              publica novamente a nova workunit. Isso é útil ao atualizar para
+              um novo compilador ECL e você deseja recompilar uma consulta da
+              mesma fonte exata. O arquivo ECL deve estar disponível na
+              workunit da consulta.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>Published by me</term>
+
+            <listitem>
+              <para>Você pode checar a caixa <emphasis>Published by
+              me</emphasis> para filtrar rapidamente somente consultas que
+              você publicou.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
       </sect2>
 
       <sect2 id="QueryDetails" role="brk">

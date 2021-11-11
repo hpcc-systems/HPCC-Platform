@@ -427,9 +427,9 @@ Blankline</programlisting></para>
             role="bold">Group</emphasis> .</para>
 
             <para>O endereço IP é preenchido automaticamente e o Caminho local
-            é parcialmente preenchido com o nome da pasta padrão na Zona de
-            entrada de arquivos. Observação: VM e Community Edition
-            normalmente possuem apenas uma zona de entrada de arquivos.</para>
+            é parcialmente preenchido com o nome da pasta padrão na Landing
+            Zone. Observação: Community Edition normalmente possue apenas uma
+            landing zone definida.</para>
           </listitem>
 
           <listitem>

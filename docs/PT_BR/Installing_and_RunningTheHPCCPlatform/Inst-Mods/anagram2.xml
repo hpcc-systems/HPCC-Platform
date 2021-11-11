@@ -1,87 +1,78 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect2 id="ECLRoxieExample_Anagram2">
   <title>Exemplo Roxie: Anagram2</title>
 
-  <para>Neste exemplo, vamos baixar um arquivo de dados de código aberto com palavras do
-  dicionário, fazer o spray (distribuir aos nós) desse arquivo para nosso cluster Thor e validar
-  nossos anagramas em relação a esse arquivo para que possamos determinar quais palavras são válidas. A
-  etapa de validação usa um JOIN da lista de anagramas
-  para o arquivo do dicionário. O uso de um índice e de uma junção com chave seria mais
-  eficiente, mas isso serve apenas como um simples exemplo.</para>
+  <para>Neste exemplo, vamos baixar um arquivo de dados de código aberto com
+  palavras do dicionário, fazer o spray (distribuir aos nós) desse arquivo
+  para nosso cluster Thor e validar nossos anagramas em relação a esse arquivo
+  para que possamos determinar quais palavras são válidas. A etapa de
+  validação usa um JOIN da lista de anagramas para o arquivo do dicionário. O
+  uso de um índice e de uma junção com chave seria mais eficiente, mas isso
+  serve apenas como um simples exemplo.</para>
 
   <sect3 id="RoxieExample_DownloadWordList">
-    
-
     <title>Fazer o download da Lista de Palavras</title>
-
-    
 
     <para>Vamos fazer um download da lista de palavras em <ulink
     url="http://wordlist.aspell.net/12dicts">http://wordlist.aspell.net/12dicts</ulink></para>
 
     <para><orderedlist>
         <listitem>
-          <para>Faça o download o pacote  <emphasis>Official 12 Dicts. </emphasis>.
-          Os arquivos estão disponíveis no formato tar.gz ou
+          <para>Faça o download o pacote <emphasis>Official 12 Dicts.
+          </emphasis>. Os arquivos estão disponíveis no formato tar.gz ou
           ZIP.</para>
         </listitem>
 
         <listitem>
-          <para>Extraia o conteúdo do pacote e salve o  <emphasis
-          role="bold">2of12.txt.</emphasis> (normalmente encontrado na subpasta
-          American) para uma pasta em sua máquina local.</para>
+          <para>Extraia o conteúdo do pacote e salve o <emphasis
+          role="bold">2of12.txt.</emphasis> (normalmente encontrado na
+          subpasta American) para uma pasta em sua máquina local.</para>
         </listitem>
       </orderedlist></para>
   </sect3>
 
   <sect3 id="Load_the_Incoming_Data">
-    
-
-    <title>Carregar o arquivo de dicionário para sua Zona de Entrada de Arquivo</title>
-
-    
+    <title>Carregar o arquivo de dicionário para sua Landing Zone</title>
 
     <para>Nesta etapa, você copiará os arquivos de dados para um local onde
-    eles possam ser distribuídos aos nós de seu cluster HPCC.
-    Uma zona de entrada de arquivos é um local de armazenagem anexado ao seu HPCC.
-    Ela possui um utilitário em execução para facilitar o spraying (processo de distribuir dados aos nós) para um cluster.</para>
+    eles possam ser distribuídos aos nós de seu cluster HPCC. Uma Landing Zone
+    é um local de armazenagem anexado a sua plataforma HPCC Systems. Ela
+    possui um utilitário em execução para facilitar o spraying (processo de
+    distribuir dados aos nós) para um cluster.</para>
 
-    <para>Para arquivos de dados menores, com tamanho máximo de 2GB,
-    você pode usar o utilitário enviar/baixar arquivo no ECL
-    Watch. Este arquivo de dados possui apenas 400 kb (aproximadamente).</para>
+    <para>Para arquivos de dados menores, com tamanho máximo de 2GB, você pode
+    usar o utilitário de upload/download de arquivo no ECL Watch. Este arquivo
+    de dados possui apenas 400 kb (aproximadamente).</para>
 
-    <para>Em seguida, você distribuirá (ou fará o spray) o dataset para todos os nós no
-    cluster do HPCC .  O poder do HPCC
-    vem da sua capacidade de atribuir vários processadores para trabalhar nas diferentes
-    partes do arquivo de dados em paralelo. Até mesmo na VM
-    Edition, que possui apenas um nó único, os dados precisam ser distribuídos aos nós do
-    cluster.</para>
+    <para>Em seguida, você distribuirá (ou fará o spray) o dataset para todos
+    os nós no cluster do HPCC . O poder do HPCC Systems vem da sua capacidade
+    de atribuir vários processadores para trabalhar nas diferentes partes do
+    arquivo de dados em paralelo. Mesmo que sua versão, que possui apenas um
+    nó único, os dados precisam ser distribuídos ao cluster.</para>
 
     <orderedlist>
       <listitem>
         <para>Em seu navegador, acesse a URL do <emphasis role="bold">ECL
-        Watch</emphasis> . Por exemplo,
-        http://nnn.nnn.nnn.nnn:8010, onde nnn.nnn.nnn.nnn é o endereço IP do seu ESP
-        Server.</para>
+        Watch</emphasis> . Por exemplo, http://nnn.nnn.nnn.nnn:8010, onde
+        nnn.nnn.nnn.nnn é o endereço IP do seu ESP Server.</para>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <?dbfo keep-together="always"?>
 
             <tgroup cols="2">
-              <colspec colwidth="49.50pt" />
+              <colspec colwidth="49.50pt"/>
 
-              <colspec />
+              <colspec/>
 
               <tbody>
                 <row>
                   <entry><inlinegraphic
-                  fileref="../../images/caution.png" /></entry>
+                  fileref="../../images/caution.png"/></entry>
 
-                  <entry>Seu endereço IP
-                  poderá ser diferente dos endereços fornecidos nas imagens
-                  de exemplo. Use o endereço IP
+                  <entry>Seu endereço IP poderá ser diferente dos endereços
+                  fornecidos nas imagens de exemplo. Use o endereço IP
                   fornecido pela <emphasis role="bold">sua</emphasis>
                   instalação</entry>
                 </row>
@@ -93,10 +84,9 @@
       <listitem>
         <?dbfo keep-together="always"?>
 
-        <para>No ECL Watch, clique no ícone
-        <emphasis role="bold">Files</emphasis> depois clique no link <emphasis
-        role="bold">Landing Zones</emphasis> no submenu de
-        navegação.</para>
+        <para>No ECL Watch, clique no ícone <emphasis
+        role="bold">Files</emphasis> depois clique no link <emphasis
+        role="bold">Landing Zones</emphasis> no submenu de navegação.</para>
 
         <para>Pressione o botão <emphasis role="bold">Upload </emphasis>
         .</para>
@@ -107,20 +97,20 @@
             <mediaobject>
               <imageobject>
                 <imagedata fileref="../../images/LZimg03-1.jpg"
-                           vendor="eclwatchSS" />
+                           vendor="eclwatchSS"/>
               </imageobject>
             </mediaobject>
           </figure></para>
       </listitem>
 
       <listitem>
-        <para>Uma caixa de diálogo será aberta. <emphasis role="bold">Navegue</emphasis> e
-        selecione o arquivo a ser enviado e pressione o botão  <emphasis
-        role="bold">Open</emphasis> .</para>
+        <para>Uma caixa de diálogo será aberta. <emphasis
+        role="bold">Navegue</emphasis> e selecione o arquivo a ser enviado e
+        pressione o botão <emphasis role="bold">Open</emphasis> .</para>
 
         <para>O arquivo selecionado deve aparecer no campo <emphasis
-        role="bold">File Name</emphasis> . O arquivo de dados possui o seguinte nome:
-        <emphasis role="bold">2of12.txt.</emphasis>.</para>
+        role="bold">File Name</emphasis> . O arquivo de dados possui o
+        seguinte nome: <emphasis role="bold">2of12.txt.</emphasis>.</para>
       </listitem>
 
       <listitem>
@@ -130,66 +120,61 @@
             <mediaobject>
               <imageobject>
                 <imagedata fileref="../../images/LZimg04a.jpg"
-                           vendor="eclwatchSS" />
+                           vendor="eclwatchSS"/>
               </imageobject>
             </mediaobject>
           </figure></para>
 
-        <para>Pressione o botão <emphasis role="bold">Start</emphasis> 
-        para concluir o envio do arquivo.</para>
+        <para>Pressione o botão <emphasis role="bold">Start</emphasis> para
+        concluir o envio do arquivo.</para>
       </listitem>
     </orderedlist>
   </sect3>
 
   <sect3 id="Spray_the_Data_to_THOR">
-    
-
     <title>Faça o spray do arquivo de dados para o seu <emphasis>Cluster da
     Refinaria de Dados (Thor)</emphasis></title>
 
-    
-
-    <para>Para usar o arquivo de dados em seu HPCC
-    System, é preciso fazer o "spray” (distribuir) desse arquivo para todos os nós. O <emphasis>spray</emphasis>
-    ou <emphasis>importação</emphasis> é a transferência de um arquivo de dados de um
-    local (como a zona de entrada de arquivos) para diversas partes do arquivo ou nós em um
-    cluster.</para>
+    <para>Para usar o arquivo de dados em seu HPCC System, é preciso fazer o
+    "spray” (distribuir) desse arquivo para todos os nós. O
+    <emphasis>spray</emphasis> ou <emphasis>importação</emphasis> é a
+    transferência de um arquivo de dados de um local (como a zona de entrada
+    de arquivos) para diversas partes do arquivo ou nós em um cluster.</para>
 
     <para>O arquivo distribuído ou pulverizado(sprayed) passa a ter um
-    <emphasis>logical-file-name</emphasis> da seguinte forma<emphasis role="bold">:
-    ~thor::word_list_csv </emphasis> O sistema mantém uma lista de arquivos
-    lógicos e as localizações do arquivo físico correspondente das partes do
-    arquivo.</para>
+    <emphasis>logical-file-name</emphasis> da seguinte forma<emphasis
+    role="bold">: ~thor::word_list_csv </emphasis> O sistema mantém uma lista
+    de arquivos lógicos e as localizações do arquivo físico correspondente das
+    partes do arquivo.</para>
 
     <orderedlist>
       <listitem>
-        <para>Abra o ECL Watch usando a
-        URL:</para>
+        <para>Abra o ECL Watch usando a URL:</para>
 
         <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (onde
-        nnn.nnn.nnn.nnn é o endereço IP do seu ESP Server
-        e pppp é a porta. A
+        nnn.nnn.nnn.nnn é o endereço IP do seu ESP Server e pppp é a porta. A
         porta padrão é 8010)</emphasis></para>
       </listitem>
 
       <listitem>
-        <para>Clique no link <emphasis role="bold">Files</emphasis> depois clique no
-        link <emphasis role="bold">Landing Zones</emphasis> no submenu de
-        navegação. Selecione a zona de entrada de arquivos apropriada (caso haja mais
-        de uma zona de entrada de arquivos). Clique na seta à esquerda da sua
-        zona de entrada de arquivos para expandir.</para>
+        <para>Clique no link <emphasis role="bold">Files</emphasis> depois
+        clique no link <emphasis role="bold">Landing Zones</emphasis> no
+        submenu de navegação. Selecione a zona de entrada de arquivos
+        apropriada (caso haja mais de uma zona de entrada de arquivos). Clique
+        na seta à esquerda da sua zona de entrada de arquivos para
+        expandir.</para>
       </listitem>
 
       <listitem>
-        <para>Selecione o arquivo na zona de entrada de arquivos marcando a caixa ao lado
-        dele.</para>
+        <para>Selecione o arquivo na zona de entrada de arquivos marcando a
+        caixa ao lado dele.</para>
       </listitem>
 
       <listitem>
         <?dbfo keep-together="always"?>
 
-        <para>Marque a caixa ao lado de 2of12, então pressione o botão <emphasis
-        role="bold">Delimited</emphasis> .</para>
+        <para>Marque a caixa ao lado de 2of12, então pressione o botão
+        <emphasis role="bold">Delimited</emphasis> .</para>
 
         <para><figure>
             <title>Spray delimitado</title>
@@ -197,13 +182,13 @@
             <mediaobject>
               <imageobject>
                 <imagedata fileref="../../images/GSSprayDict.jpg"
-                           vendor="eclwatchSS" />
+                           vendor="eclwatchSS"/>
               </imageobject>
             </mediaobject>
           </figure></para>
 
-        <para>A página <emphasis role="bold">DFU
-        Spray Delimited</emphasis> é exibida.</para>
+        <para>A página <emphasis role="bold">DFU Spray Delimited</emphasis> é
+        exibida.</para>
       </listitem>
 
       <listitem>
@@ -211,7 +196,8 @@
       </listitem>
 
       <listitem>
-        <para>Preencha o Target Scope (Escopo de destino) como<emphasis> thor</emphasis>.</para>
+        <para>Preencha o Target Scope (Escopo de destino) como<emphasis>
+        thor</emphasis>.</para>
       </listitem>
 
       <listitem>
@@ -238,46 +224,43 @@
       </listitem>
 
       <listitem>
-        <para>Preencha o Target Name usando o restante do nome do arquivo lógico
-        desejado: word_list_csv<emphasis role="bold"> </emphasis></para>
+        <para>Preencha o Target Name usando o restante do nome do arquivo
+        lógico desejado: word_list_csv<emphasis role="bold">
+        </emphasis></para>
       </listitem>
 
       <listitem>
         <?dbfo keep-together="always"?>
 
-        <para>Certifique-se de que a caixa <emphasis role="bold">Overwrite</emphasis> esteja
-        selecionada.</para>
+        <para>Certifique-se de que a caixa <emphasis
+        role="bold">Overwrite</emphasis> esteja selecionada.</para>
 
         <para>Se disponível, certifique-se de que a caixa <emphasis
-        role="bold">Replicate</emphasis> esteja selecionada. (A opção Replicate
-        está disponível apenas em sistemas em que a replicação tenha
+        role="bold">Replicate</emphasis> esteja selecionada. (A opção
+        Replicate está disponível apenas em sistemas em que a replicação tenha
         sido ativada.)</para>
       </listitem>
 
       <listitem>
         <?dbfo keep-together="always"?>
 
-        <para>Pressione o botão <emphasis role="bold">Spray</emphasis><emphasis
-        role="bold"> </emphasis>.</para>
+        <para>Pressione o botão <emphasis
+        role="bold">Spray</emphasis><emphasis role="bold"> </emphasis>.</para>
 
-        <para>A guia exibe a workunit DFU
-        onde é possível ver o progresso do spray (distribuição aos nós).</para>
+        <para>A guia exibe a workunit DFU onde é possível ver o progresso do
+        spray (distribuição aos nós).</para>
       </listitem>
     </orderedlist>
   </sect3>
 
   <sect3 id="RunTheQueryOnThor">
-    
-
     <title>Executa a consulta no Thor</title>
-
-    
 
     <para><orderedlist>
         <listitem>
-          <para>Abrir um Nova <emphasis role="bold">Janela do compilador</emphasis>
-          (CTRL+N)
-          e escreva o seguinte código:<programlisting>IMPORT Std;
+          <para>Abrir um Nova <emphasis role="bold">Janela do
+          compilador</emphasis> (CTRL+N) e escreva o seguinte
+          código:<programlisting>IMPORT Std;
 layout_word_list := record
   string word;
 end;
@@ -327,23 +310,25 @@ OUTPUT(ValidWords)
         </listitem>
 
         <listitem>
-          <para>Selecione <emphasis role="bold">thor</emphasis> como seu cluster de
-        destino.</para>
+          <para>Selecione <emphasis role="bold">thor</emphasis> como seu
+          cluster de destino.</para>
         </listitem>
 
         <listitem>
-          <para>Pressione o botão de verificação de sintaxe localizado na barra de ferramentas principal (ou pressione
-        F7)</para>
+          <para>Pressione o botão de verificação de sintaxe localizado na
+          barra de ferramentas principal (ou pressione F7)</para>
         </listitem>
 
         <listitem>
-          <para>Pressione o botão <emphasis role="bold">Submit</emphasis><emphasis
-          role="bold"> </emphasis>.</para>
+          <para>Pressione o botão <emphasis
+          role="bold">Submit</emphasis><emphasis role="bold">
+          </emphasis>.</para>
         </listitem>
 
         <listitem>
-          <para>Quando o envio estiver concluído, selecione a aba Workunit<emphasis role="bold">
-          </emphasis> e em seguida a aba Results.</para>
+          <para>Quando o envio estiver concluído, selecione a aba
+          Workunit<emphasis role="bold"> </emphasis> e em seguida a aba
+          Results.</para>
         </listitem>
 
         <listitem>
@@ -353,18 +338,14 @@ OUTPUT(ValidWords)
   </sect3>
 
   <sect3 id="RoxieExample_CompileAndPublishtheQuery">
-    
-
     <title>Compilar e Publicar a consulta para o Roxie</title>
-
-    
 
     <para><orderedlist>
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Clique com o botão direito na pasta <emphasis role="bold">My Files</emphasis>
-          na janela Repository, e selecione a opção <emphasis
+          <para>Clique com o botão direito na pasta <emphasis role="bold">My
+          Files</emphasis> na janela Repository, e selecione a opção <emphasis
           role="bold">Insert Folder</emphasis> no menu pop-up.</para>
 
           <para><figure>
@@ -372,7 +353,7 @@ OUTPUT(ValidWords)
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="../../images/DTimg04.jpg" />
+                  <imagedata fileref="../../images/DTimg04.jpg"/>
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -389,24 +370,23 @@ OUTPUT(ValidWords)
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="../../images/VM1005.jpg" />
+                  <imagedata fileref="../../images/VM1005.jpg"/>
                 </imageobject>
               </mediaobject>
             </figure></para>
         </listitem>
 
         <listitem>
-          <para>Clique com o botão direito na pasta <emphasis role="bold">Anagram
-          </emphasis>e selecione <emphasis role="bold">Insert
-          File</emphasis> no menu pop-up.</para>
+          <para>Clique com o botão direito na pasta <emphasis
+          role="bold">Anagram </emphasis>e selecione <emphasis
+          role="bold">Insert File</emphasis> no menu pop-up.</para>
         </listitem>
 
         <listitem>
           <?dbfo keep-together="always"?>
 
           <para>Digite <emphasis role="bold">ValidateAnagrams</emphasis> para
-          o rótulo e pressione o botão
-          OK.</para>
+          o rótulo e pressione o botão OK.</para>
 
           <para>Uma janela do compilador será aberta.</para>
 
@@ -415,7 +395,7 @@ OUTPUT(ValidWords)
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="../../images/VM1006.jpg" />
+                  <imagedata fileref="../../images/VM1006.jpg"/>
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -473,33 +453,29 @@ OUTPUT(ValidWords)
         </listitem>
 
         <listitem>
-          <para>Selecione <emphasis role="bold">Roxie</emphasis> como seu cluster de
-        destino.</para>
+          <para>Selecione <emphasis role="bold">Roxie</emphasis> como seu
+          cluster de destino.</para>
         </listitem>
 
         <listitem>
-          <para>Pressione o botão de verificação de sintaxe localizado na barra de ferramentas principal (ou pressione
-        F7)</para>
+          <para>Pressione o botão de verificação de sintaxe localizado na
+          barra de ferramentas principal (ou pressione F7)</para>
         </listitem>
 
         <listitem>
           <?dbfo keep-together="always"?>
 
           <para>Na janela do compilador, no canto superior esquerdo <emphasis
-          role="bold">do botão Submit</emphasis> há uma seta suspensa ao
-          lado. Selecione a seta para exibir a opção <emphasis role="bold">Compilar</emphasis>
-          .</para>
+          role="bold">do botão Submit</emphasis> há uma seta suspensa ao lado.
+          Selecione a seta para exibir a opção <emphasis
+          role="bold">Compilar</emphasis> .</para>
 
           <figure>
-            
-
             <title>Compilar</title>
-
-            
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="../../images/DTimg17.jpg" />
+                <imagedata fileref="../../images/DTimg17.jpg"/>
               </imageobject>
             </mediaobject>
           </figure>
@@ -510,8 +486,9 @@ OUTPUT(ValidWords)
         </listitem>
 
         <listitem>
-          <para>Quando o envio estiver concluído, selecione a aba Workunit<emphasis role="bold">
-          </emphasis> e em seguida a aba Results.</para>
+          <para>Quando o envio estiver concluído, selecione a aba
+          Workunit<emphasis role="bold"> </emphasis> e em seguida a aba
+          Results.</para>
         </listitem>
 
         <listitem>
@@ -525,7 +502,7 @@ OUTPUT(ValidWords)
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="../../images/VM1007.jpg" />
+                  <imagedata fileref="../../images/VM1007.jpg"/>
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -534,23 +511,18 @@ OUTPUT(ValidWords)
   </sect3>
 
   <sect3 id="Deploy_the_Query_to_Roxie">
-    
-
     <title>Publicar uma consulta Roxie</title>
-
-    
 
     <para>Agora vamos publicar a consulta em um cluster Roxie.</para>
 
     <orderedlist>
       <listitem>
-        <para>Selecione a aba workunit para o ValidateAnagrams que você acabou de
-        compilar.</para>
+        <para>Selecione a aba workunit para o ValidateAnagrams que você acabou
+        de compilar.</para>
       </listitem>
 
       <listitem>
-        <para>Selecionar a aba
-        ECLWatch.</para>
+        <para>Selecionar a aba ECLWatch.</para>
       </listitem>
 
       <listitem>
@@ -565,29 +537,24 @@ OUTPUT(ValidWords)
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="../../images/VM1008.jpg" />
+                <imagedata fileref="../../images/VM1008.jpg"/>
               </imageobject>
             </mediaobject>
-          </figure>Uma mensagem de confirmação será exibida quando a consulta for publicada
-        com sucesso.</para>
+          </figure>Uma mensagem de confirmação será exibida quando a consulta
+        for publicada com sucesso.</para>
       </listitem>
     </orderedlist>
   </sect3>
 
   <sect3 id="Run_the_Roxie_Query">
-    
-
     <title>Executar a consulta Roxie no WsECL</title>
 
-    
-
-    <para>Agora que a consulta foi publicada em um cluster Roxie, podemos executá-la
-    usando o serviço WsECL. WsECL é uma interface Web para consultas em uma
-    plataforma do HPCC . Use a seguinte URL:</para>
+    <para>Agora que a consulta foi publicada em um cluster Roxie, podemos
+    executá-la usando o serviço WsECL. WsECL é uma interface Web para
+    consultas em uma plataforma do HPCC . Use a seguinte URL:</para>
 
     <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (onde
-    nnnn.nnn.nnn.nnn é o endereço
-    IP do seu ESP Server e pppp é a porta. A
+    nnnn.nnn.nnn.nnn é o endereço IP do seu ESP Server e pppp é a porta. A
     porta padrão é 8002)</emphasis></para>
 
     <orderedlist>
@@ -599,8 +566,8 @@ OUTPUT(ValidWords)
       <listitem>
         <?dbfo keep-together="always"?>
 
-        <para>Clique no link <emphasis role="bold">ValidateAnagrams.1</emphasis>
-        .</para>
+        <para>Clique no link <emphasis
+        role="bold">ValidateAnagrams.1</emphasis> .</para>
 
         <para>O formulário do serviço será exibido.</para>
 
@@ -609,21 +576,22 @@ OUTPUT(ValidWords)
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="../../images/VM1009.jpg" />
+                <imagedata fileref="../../images/VM1009.jpg"/>
               </imageobject>
             </mediaobject>
           </figure></para>
       </listitem>
 
       <listitem>
-        <para>Selecione Tabelas de resultado (Output Tables) na lista suspensa.</para>
+        <para>Selecione Tabelas de resultado (Output Tables) na lista
+        suspensa.</para>
       </listitem>
 
       <listitem>
         <?dbfo keep-together="always"?>
 
-        <para>Forneça uma palavra para que seja feito o anagrama (p.ex., TEACHER)
-        e pressione o botão Submit.</para>
+        <para>Forneça uma palavra para que seja feito o anagrama (p.ex.,
+        TEACHER) e pressione o botão Submit.</para>
 
         <para>Os resultados serão exibidos.</para>
 
@@ -632,7 +600,7 @@ OUTPUT(ValidWords)
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="../../images/VM1010.jpg" />
+                <imagedata fileref="../../images/VM1010.jpg"/>
               </imageobject>
             </mediaobject>
           </figure></para>

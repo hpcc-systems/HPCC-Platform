@@ -1040,8 +1040,10 @@ OUTPUT(L);</programlisting></para>
       <sect2>
         <title>Fazer o download da Lista de Palavras</title>
 
-        <para>Vamos baixar a lista de palavras em <ulink
-        url="http://wordlist.sourceforge.net/">http://wordlist.sourceforge.net/</ulink></para>
+        <para>Vamos fazer o download da lista de palavras em <ulink
+        url="http://wordlist.sourceforge.net/">http://wordlist.sourceforge.net/</ulink>
+        Look for a link to the <emphasis role="bold">2of12.txt</emphasis> file
+        on that page.</para>
 
         <para><orderedlist>
             <listitem>
@@ -1076,9 +1078,9 @@ OUTPUT(L);</programlisting></para>
         <para>Em seguida, você distribuirá (ou fará o spray) o dataset para
         todos os nós no cluster Thor do HPCC. O poder do HPCC vem da sua
         capacidade de atribuir vários processadores para trabalhar nas
-        diferentes partes do arquivo de dados em paralelo. Até mesmo na VM
-        Edition, que possui apenas um nó único, os dados precisam ser
-        distribuídos aos nós do cluster.</para>
+        diferentes partes do arquivo de dados em paralelo. Até mesmo a versão,
+        que possui apenas um nó único, os dados precisam ser distribuídos aos
+        nós do cluster.</para>
 
         <orderedlist>
           <listitem>

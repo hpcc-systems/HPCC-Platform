@@ -105,8 +105,8 @@
 
       <itemizedlist>
         <listitem>
-          <para>Você tem um HPCC em execução. Ele pode ser a VM Edition ou uma
-          plataforma HPCC com um ou mais nós</para>
+          <para>Você tem um HPCC em execução. Isso pode ser uma implantação de
+          plataforma HPCC Systems de um ou vários nós.</para>
         </listitem>
       </itemizedlist>
 
