@@ -143,9 +143,20 @@ protected:
     virtual void _internalFreeNoDestructor(const void *ptr) = 0;
 
 public:
-    inline bool isAlive() const
+    inline bool isAliveAndLink() const
     {
-        return count.load(std::memory_order_relaxed) < DEAD_PSEUDO_COUNT;        //only safe if Link() is called first
+        unsigned expected = count.load(std::memory_order_acquire);
+        for (;;)
+        {
+            //If count is 0, or count >= DEAD_PSEUDO_COUNT then return false - combine both into a single test
+            if ((expected-1) >= (DEAD_PSEUDO_COUNT-1))
+                return false;
+
+            //Avoid incrementing the link count if xxcount=0, otherwise it introduces a race condition
+            //so use compare and exchange to increment it only if it hasn't changed
+            if (count.compare_exchange_weak(expected, expected+1, std::memory_order_acq_rel))
+                return true;
+        }
     }
 
     static void release(const void *ptr);
@@ -236,14 +247,11 @@ class roxiemem_decl DataBufferBottom : public HeapletBase
 {
 private:
     friend class CDataBufferManager;
-    CDataBufferManager * volatile owner;
-    std::atomic_uint okToFree;      // use uint since it is more efficient on some architectures
+    std::atomic<CDataBufferManager *> owner;
     DataBufferBottom *nextBottom;   // Used when chaining them together in CDataBufferManager 
     DataBufferBottom *prevBottom;   // Used when chaining them together in CDataBufferManager 
     DataBuffer *freeChain;
     CriticalSection crit;
-
-    void released();
 
     virtual void noteReleased(const void *ptr) override;
     virtual void noteReleased(unsigned count, const byte * * rowset) override;
