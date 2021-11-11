@@ -551,7 +551,7 @@ public:
 #endif
         return values[index];
     }
-    inline CRuntimeStatistic * queryOptStatistic(StatisticKind kind)
+    inline CRuntimeStatistic * queryOptStatistic(StatisticKind kind) const
     {
         unsigned index = queryMapping().getIndex(kind);
         if (index == mapping.numStatistics())
@@ -584,7 +584,8 @@ public:
     }
     unsigned __int64 getStatisticValue(StatisticKind kind) const
     {
-        return queryStatistic(kind).get();
+        CRuntimeStatistic * stat = queryOptStatistic(kind);
+        return stat ? stat->get() : 0;
     }
     unsigned __int64 getSerialStatisticValue(StatisticKind kind) const;
     void reset();
