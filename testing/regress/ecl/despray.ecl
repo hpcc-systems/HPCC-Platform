@@ -291,10 +291,10 @@ SEQUENTIAL(
     // Clean-up
     FileServices.DeleteLogicalFile(SourceFile),
     FileServices.DeleteExternalFile('.', DestFile1),
-    FileServices.DeleteExternalFile('.', DestFile4),
-    FileServices.DeleteExternalFile('.', DestFile5),
-    FileServices.DeleteExternalFile('.', DestFile6),
-    FileServices.DeleteExternalFile('.', DestFile7),
-    FileServices.DeleteExternalFile('.', DestFile8),
+    //FileServices.DeleteExternalFile('.', DestFile4),
+    //FileServices.DeleteExternalFile('.', DestFile5),
+    //FileServices.DeleteExternalFile('.', DestFile6),
+    //FileServices.DeleteExternalFile('.', DestFile7),
+    //FileServices.DeleteExternalFile('.', DestFile8),
     FileServices.DeleteExternalFile('.', DestFile9),
 );

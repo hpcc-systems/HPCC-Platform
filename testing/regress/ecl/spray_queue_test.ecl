@@ -378,9 +378,9 @@ sequential (
     sprayFixedOut3,
 
     // Clean-up
-    FileServices.DeleteExternalFile('.', desprayOutFileName+'_CSV'),
-    FileServices.DeleteExternalFile('.', desprayOutFileName+'_XML'),
-    FileServices.DeleteExternalFile('.', desprayOutFileName+'_FIX'),
+    FileServices.DeleteExternalFile('.', FileServices.GetDefaultDropZone() + '/' + desprayOutFileName+'_CSV'),
+    FileServices.DeleteExternalFile('.', FileServices.GetDefaultDropZone() + '/' + desprayOutFileName+'_XML'),
+    FileServices.DeleteExternalFile('.', FileServices.GetDefaultDropZone() + '/' + desprayOutFileName+'_FIX'),
     
     FileServices.DeleteLogicalFile(sprayPrepFileName+'_CSV'),
     FileServices.DeleteLogicalFile(sprayPrepFileName+'_XML'),

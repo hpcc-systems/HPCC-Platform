@@ -2791,11 +2791,29 @@ FILESERVICES_API void  FILESERVICES_CALL fsDeleteExternalFile(ICodeContext * ctx
     RemoteFilename rfn;
     rfn.setPath(ep,path);
     Owned<IFile> file = createIFile(rfn);
-    file->remove();
-    StringBuffer s("DeleteExternalFile ('");
-    s.append(location).append(',').append(path).append(") done");
-    WUmessage(ctx,SeverityInformation,NULL,s.str());
-    AuditMessage(ctx,"DeleteExternalFile",path);
+    if (!file->exists())
+    {
+        throw MakeStringException(-1,"fsDeleteExternalFile: File '%s' not found.", path);
+    }
+    else
+    {
+        if (file->remove())
+        {
+            if (!file->exists())
+            {
+                StringBuffer s("DeleteExternalFile ('");
+                s.append(location).append(',').append(path).append("') done");
+                WUmessage(ctx,SeverityInformation,NULL,s.str());
+                AuditMessage(ctx,"DeleteExternalFile",path);
+            }
+            else
+                throw MakeStringException(-1,"fsDeleteExternalFile: After delete the file '%s' still exists.", path);
+        }
+        else
+        {
+            throw MakeStringException(-1,"fsDeleteExternalFile: Cannot delete %s", path);
+        }
+    }
 }
 
 FILESERVICES_API void  FILESERVICES_CALL fsCreateExternalDirectory(ICodeContext * ctx,const char *location,const char *_path)
