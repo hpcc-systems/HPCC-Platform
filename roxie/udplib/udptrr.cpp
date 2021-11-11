@@ -819,8 +819,18 @@ class CReceiveManager : implements IReceiveManager, public CInterface
     {
         while(running) 
         {
-            DataBuffer *dataBuff = input_queue->pop(true);
-            collatePacket(dataBuff);
+            try
+            {
+                DataBuffer *dataBuff = input_queue->pop(true);
+                collatePacket(dataBuff);
+            }
+            catch (IException * e)
+            {
+                //An interrupted semaphore exception is expected at closedown - anything else should be reported
+                if (!dynamic_cast<InterruptedSemaphoreException *>(e))
+                    EXCLOG(e);
+                e->Release();
+            }
         }
     }
 
