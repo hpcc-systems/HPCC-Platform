@@ -1,13 +1,12 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import * as domClass from "dojo/dom-class";
-import * as Observable from "dojo/store/Observable";
 import * as ESPRequest from "src/ESPRequest";
 import { Memory } from "src/Memory";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { HelperRow, useWorkunitHelpers } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { ShortVerticalDivider } from "./Common";
@@ -105,8 +104,8 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
     const [helpers, refreshData] = useWorkunitHelpers(wuid);
 
     //  Grid ---
-    const store = useConst(new Observable(new Memory("id")));
-    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+    const store = useConst(new Memory("id"));
+    const [Grid, selection, copyButtons] = useFluentGrid({
         store,
         filename: "helpers",
         columns: {
@@ -120,7 +119,7 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
                 formatter: function (Type, row) {
                     const target = getTarget(row.id, row);
                     if (target) {
-                        return `<a href='#/text?mode=${target.sourceMode}&src=${encodeURIComponent(target.url)}'>${Type + (row?.Orig?.Description ? " (" + row.Orig.Description + ")" : "")}</a>`;
+                        return <Link href={`#/text?mode=${target.sourceMode}&src=${encodeURIComponent(target.url)}`}>{Type + (row?.Orig?.Description ? " (" + row.Orig.Description + ")" : "")}</Link>;
                     }
                     return Type;
                 }
@@ -207,8 +206,7 @@ export const Helpers: React.FunctionComponent<HelpersProps> = ({
 
     React.useEffect(() => {
         store.setData(helpers);
-        refreshTable();
-    }, [store, helpers, refreshTable]);
+    }, [store, helpers]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}

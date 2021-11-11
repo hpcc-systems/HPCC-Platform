@@ -2,7 +2,7 @@ import * as Deferred from "dojo/Deferred";
 import * as Observable from "dojo/store/Observable";
 import * as QueryResults from "dojo/store/util/QueryResults";
 import * as SimpleQueryEngine from "dojo/store/util/SimpleQueryEngine";
-import { alphanumSort } from "./Utility";
+import { alphanum } from "./Utility";
 
 export {
     Observable
@@ -36,13 +36,13 @@ export class BaseStore {
         return Promise.resolve([]);
     }
 
-    query(query, options) {
+    query(query, options: { start: number, count: number, sort: { attribute: string, descending: boolean } }): QueryResults<any> {
         const retVal = new Deferred();
         this.fetchData().then(response => {
             const data = this.queryEngine(query, options)(response);
             retVal.resolve(data);
         });
-        return QueryResults(retVal.then(response => response), {
+        return QueryResults(retVal, {
             totalLength: retVal.then(response => response.length)
         });
     }
@@ -92,7 +92,9 @@ export class Memory extends BaseStore {
         }
     }
 
+    dataVersion = 0;
     setData(data) {
+        this.dataVersion++;
         if (data.items) {
             this.idProperty = data.identifier || this.idProperty;
             data = this.data = data.items;
@@ -117,11 +119,17 @@ export class AlphaNumSortMemory extends Memory {
     }
 
     query(query, options) {
-        const retVal = super.query(query, options);
         if (options?.sort && options?.sort.length && this.alphanumSort[options.sort[0].attribute]) {
-            alphanumSort(retVal, options.sort[0].attribute, options.sort[0].descending);
+            const col = options.sort[0].attribute;
+            const reverse = options.sort[0].descending;
+            return super.query(query, {
+                ...options,
+                sort: function (l, r) {
+                    return alphanum(l[col], r[col]) * (reverse ? -1 : 1);
+                }
+            });
         }
-        return retVal;
+        return super.query(query, options);
     }
 }
 

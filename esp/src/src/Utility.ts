@@ -228,18 +228,17 @@ export function espSkew2NumberTests() {
     }, this);
 }
 
-export function formatAsDelim(grid, rows: any, delim = ",") {
-    const headers = grid.columns;
+export function formatAsDelim(columns, rows: any, delim = ",") {
     const container: string[] = [];
     const headerNames: string[] = [];
 
-    for (const key in headers) {
-        if (key !== headers[key].id && headers[key].selectorType !== "checkbox") {
-            if (!headers[key].label) {
-                const str = csvEncode(headers[key].field);
+    for (const key in columns) {
+        if (key !== columns[key].id && columns[key].selectorType !== "checkbox") {
+            if (!columns[key].label) {
+                const str = csvEncode(columns[key].field);
                 headerNames.push(str);
             } else {
-                const str = csvEncode(headers[key].label);
+                const str = csvEncode(columns[key].label);
                 headerNames.push(str);
             }
         }
@@ -248,10 +247,10 @@ export function formatAsDelim(grid, rows: any, delim = ",") {
 
     rows.forEach(row => {
         const cells: any[] = [];
-        for (const key in headers) {
-            if (key !== headers[key].id && headers[key].selectorType !== "checkbox") {
-                const cell = row[headers[key].field];
-                cells.push(csvEncode(cell));
+        for (const key in columns) {
+            if (key !== columns[key].id && columns[key].selectorType !== "checkbox") {
+                const cell = row[columns[key].field ?? key];
+                cells.push(csvEncode(cell ?? ""));
             }
         }
         container.push(cells.join(delim));
