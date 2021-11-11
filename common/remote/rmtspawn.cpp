@@ -153,18 +153,15 @@ ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoin
 #else
     if (SSHusername.isEmpty())
     {
-#if defined(_WIN32)
         //Run the program directly if it is being run on the local machine - so ssh doesn't need to be running...
         //Change once we have solved the problems with ssh etc. on windows?
         if (childEP.isLocal())
         {
             DWORD runcode;
             if (!invoke_program(cmd.str(), runcode, false))
-                return NULL;
+                throw makeStringExceptionV(-1,"Error spawning %s", exe);
         }
         else
-#endif
-
             throw MakeStringException(-1,"SSH user not specified");
     }
     else {
