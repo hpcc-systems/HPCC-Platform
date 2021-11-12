@@ -174,7 +174,7 @@ public:
         if (traceLevel)
             DBGLOG("DelayedReleaserThread %p starting", this);
         unsigned nextTimeout = INFINITE;
-        while (!closing)
+        while (!closing || queue.length())
         {
             sem.wait(nextTimeout);
             CriticalBlock b(lock);
@@ -1330,6 +1330,11 @@ public:
     }
 
 protected:
+    ~CRoxieQueryPackageManagerBase()
+    {
+        if (agentQueryReleaseDelaySeconds)
+            delayedReleaser->delayedRelease(agentManagers.getClear(), agentQueryReleaseDelaySeconds);
+    }
 
     // Derived classes wanting to read serverManager or agentManagers must call this function to safely obtain their current values
 
