@@ -497,7 +497,7 @@ private:
     #ifdef _WIN32
             return ::closesocket(s);
     #else
-            ::shutdown(s, SHUT_WR);
+            ::shutdown(s, SHUT_RDWR);
             return ::close(s);
     #endif
         }
@@ -516,7 +516,7 @@ Semaphore CSocket::receiveblocksem(2);
 #ifdef _WIN32
 class win_socket_library 
 {
-    static bool initdone; // to prevent dependancy probs very early on (e.g. jlog)
+    static bool initdone; // to prevent dependency probs very early on (e.g. jlog)
 public:
     win_socket_library() { init(); }
     bool init()
