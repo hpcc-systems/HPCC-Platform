@@ -1817,8 +1817,13 @@ EintrRetry:
                 rc = 0;
             }
             else if ((err==JSE_INTR)&&(retrycount--!=0)) {
-                LOGERR2(err,1,"EINTR retrying");
-                goto EintrRetry;
+                if (sock==INVALID_SOCKET)
+                    rc = 0;         // convert an EINTR after closed to a graceful close
+                else
+                {
+                    LOGERR2(err,1,"EINTR retrying");
+                    goto EintrRetry;
+                }
             }
             else {
                 VStringBuffer errMsg("readtms(timeoutms=%d)", timeoutms);
