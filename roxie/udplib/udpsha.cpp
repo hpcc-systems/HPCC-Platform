@@ -777,6 +777,8 @@ void CSimulatedReadSocket::readtms(void* buf, size32_t min_size, size32_t max_si
 int CSimulatedReadSocket::wait_read(unsigned timeout)
 {
     bool ret = avail.wait(timeout);
+//    if (me.port==9001)
+  //      MilliSleep(1);
     return ret;
 }
 
@@ -800,6 +802,7 @@ class SimulatedUdpStressTest : public CppUnit::TestFixture
             udpResendLostPackets = true;
             udpRequestToSendTimeout = 1000;
             udpRequestToSendAckTimeout = 1000;
+            udpMaxPendingPermits = 10;
             isUdpTestMode = true;
             roxiemem::setTotalMemoryLimit(false, false, false, 20*1024*1024, 0, NULL, NULL);
             dbm.setown(roxiemem::createDataBufferManager(roxiemem::DATA_ALIGNMENT_SIZE));
@@ -811,7 +814,7 @@ class SimulatedUdpStressTest : public CppUnit::TestFixture
     {
         testInit();
         myNode.setIp(IpAddress("1.2.3.4"));
-        Owned<IReceiveManager> rm = createReceiveManager(CCD_DATA_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, 2, 2, false);
+        Owned<IReceiveManager> rm = createReceiveManager(CCD_DATA_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, 50, 50, false);
         printf("Start test\n");
         asyncFor(20, 20, [](unsigned i)
         {

@@ -202,7 +202,7 @@ public:
 
 class flowType {
 public:
-    enum flowCmd : unsigned short { ok_to_send, request_received, request_to_send, send_completed, request_to_send_more };
+    enum flowCmd : unsigned short { ok_to_send, request_received, request_to_send, send_start, send_completed, request_to_send_more };
     static const char *name(flowCmd m)
     {
         switch (m)
@@ -210,6 +210,7 @@ public:
         case ok_to_send: return "ok_to_send";
         case request_received: return "request_received";
         case request_to_send: return "request_to_send";
+        case send_start: return "send_start";
         case send_completed: return "send_completed";
         case request_to_send_more: return "request_to_send_more";
         default:
@@ -218,11 +219,6 @@ public:
         }
     };
 
-};
-
-class sniffType {
-public:
-    enum sniffCmd : unsigned short { busy, idle };
 };
 
 #pragma pack(push,1)
@@ -238,17 +234,12 @@ struct UdpPermitToSendMsg
 struct UdpRequestToSendMsg
 {
     flowType::flowCmd cmd;
-    unsigned short packets;
+    unsigned short packets;   // Number about to send (send_start), or just sent (request_to_send_more or send_completed). Not used (0) for request_to_send
     sequence_t sendSeq;
     sequence_t flowSeq;
     ServerIdentifier sourceNode;
 };
 
-struct sniff_msg
-{
-    sniffType::sniffCmd cmd;
-    ServerIdentifier nodeIp;
-};
 #pragma pack(pop)
 
 int check_max_socket_read_buffer(int size);

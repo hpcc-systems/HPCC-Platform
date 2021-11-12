@@ -250,6 +250,17 @@ public:
     std::atomic<sequence_t> activeFlowSequence = {0};
     CriticalSection activeCrit;
 
+    void sendStart(unsigned packets)
+    {
+        UdpRequestToSendMsg msg;
+        msg.packets = packets;                      // Note this is how many we sent
+        msg.sendSeq = nextSendSequence;
+        msg.sourceNode = sourceIP;
+        msg.flowSeq = activeFlowSequence;
+        msg.cmd = flowType::send_start;
+        sendRequest(msg);
+    }
+
     void sendDone(unsigned packets)
     {
         //This function has a potential race condition with requestToSendNew:
@@ -402,6 +413,7 @@ public:
 #endif
         }
         MemoryBuffer encryptBuffer;
+        sendStart(toSend.size());
         for (DataBuffer *buffer: toSend)
         {
             UdpPacketHeader *header = (UdpPacketHeader*) buffer->data;
