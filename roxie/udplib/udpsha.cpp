@@ -163,23 +163,23 @@ DataBuffer *queue_t::pop(bool block)
     unsigned signalFreeSlots = 0;
     {
         CriticalBlock b(c_region);
-        if (!count)
+        if (unlikely(!count))
             return nullptr;
         count--;
         ret = head;
-        head = head->msgNext;
+        head = ret->msgNext;
         if (!head)
         {
             assert(!count);
             tail = nullptr;
         }
-        ret->msgNext = nullptr;
         if (count < limit && signal_free_sl)
         {
             signal_free_sl--;
             signalFreeSlots++;
         }
     }
+    ret->msgNext = nullptr;
     if (signalFreeSlots)
         free_sl.signal(signalFreeSlots);
     return ret;
