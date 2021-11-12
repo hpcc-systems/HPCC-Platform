@@ -37,6 +37,8 @@ let rewrite = [
     { from: "/esp/files/esp/reset_session_timeout", to: protocol + "://" + ip + ":" + port + "/esp/reset_session_timeout" },
     { from: "/esp/files/node_modules/@hpcc-js/(.*)/dist/index.min.js", to: "/node_modules/@hpcc-js/$1/dist/index.js" },
     { from: "/esp/files/dist/(.*)", to: "/build/dist/$1" },
+    { from: "/esp/files/img/(.*)", to: "build/esp/files/img/$1" },
+    { from: "/esp/files/(.*/*.css)", to: "/build/esp/files/$1" },
     { from: "/esp/files/(.*)", to: "/$1" },
     { from: "/ws_elk/(.*)", to: protocol + "://" + ip + ":" + port + "/ws_elk/$1" },
     { from: "/FileSpray/(.*)", to: protocol + "://" + ip + ":" + port + "/FileSpray/$1" },

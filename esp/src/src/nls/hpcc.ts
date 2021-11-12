@@ -320,6 +320,7 @@ export = {
         FirstNRows: "First N Rows",
         Fixed: "Fixed",
         Folder: "Folder",
+        Form: "Form",
         Format: "Format",
         Forums: "Forums",
         Forward: "Forward",
