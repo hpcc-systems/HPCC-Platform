@@ -382,6 +382,21 @@ public:
                 fputs(line, stdout);
             }
             fputs("\n", stdout);
+
+            IArrayOf<IConstQuerySuperFile> &superfiles = resp->getSuperFiles();
+            if (superfiles.length())
+            {
+                fputs("SuperFiles used:\n", stdout);
+                ForEachItemIn(sp, superfiles)
+                {
+                    IConstQuerySuperFile &superfile = superfiles.item(sp);
+                    fprintf(stdout, "  %s\n", superfile.getName());
+                    StringArray &subfiles = superfile.getSubFiles();
+                    ForEachItemIn(sb, subfiles)
+                        fprintf(stdout, "    > %s\n", subfiles.item(sb));
+                }
+                fputs("\n", stdout);
+            }
         }
         return ret;
     }

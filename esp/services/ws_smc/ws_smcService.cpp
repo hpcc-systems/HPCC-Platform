@@ -2200,6 +2200,82 @@ inline const char *controlCmdMessage(int cmd)
     return NULL;
 }
 
+bool CWsSMCEx::onRoxieXrefCmd(IEspContext &context, IEspRoxieXrefCmdRequest &req, IEspRoxieXrefCmdResponse &resp)
+{
+    context.ensureFeatureAccess(ROXIE_CONTROL_URL, SecAccess_Full, ECLWATCH_SMC_ACCESS_DENIED, SMC_ACCESS_DENIED);
+
+    StringBuffer controlReq;
+    if (0==req.getQueryIds().length())
+        controlReq.append("<control:getQueryXrefInfo/>");
+    else
+    {
+        controlReq.append("<control:getQueryXrefInfo>");
+        ForEachItemIn(i, req.getQueryIds())
+        {
+            const char *id = req.getQueryIds().item(i);
+            if (!isEmptyString(id))
+                controlReq.appendf("<Query id='%s'/>", id);
+        }
+        controlReq.append("</control:getQueryXrefInfo>");
+    }
+
+#ifndef _CONTAINERIZED
+    const char *process = req.getRoxieCluster();
+    if (isEmptyString(process))
+        throw makeStringException(ECLWATCH_MISSING_PARAMS, "Process cluster not specified.");
+
+    SocketEndpointArray addrs;
+    getRoxieProcessServers(process, addrs);
+    if (!addrs.length())
+        throw makeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Process cluster not found.");
+    Owned<IPropertyTree> controlResp;
+    if (req.getCheckAllNodes())
+        controlResp.setown(sendRoxieControlAllNodes(addrs.item(0), controlReq, true, req.getWait()));
+    else
+        controlResp.setown(sendRoxieControlQuery(addrs.item(0), controlReq, req.getWait()));
+#else
+    const char *target = req.getRoxieCluster();
+    if (isEmptyString(target))
+        throw makeStringException(ECLWATCH_MISSING_PARAMS, "Target cluster not specified.");
+
+    ISmartSocketFactory *conn = roxieConnMap.getValue(target);
+    if (!conn)
+        throw makeStringExceptionV(ECLWATCH_CANNOT_GET_ENV_INFO, "roxie target cluster not mapped: %s", target);
+    if (!isActiveK8sService(target))
+        throw makeStringExceptionV(ECLWATCH_CANNOT_GET_ENV_INFO, "roxie target cluster has no active servers: %s", target);
+    Owned<IPropertyTree> controlResp;
+    if (req.getCheckAllNodes())
+        controlResp.setown(sendRoxieControlAllNodes(conn->nextEndpoint(), controlReq, true, req.getWait()));
+    else
+        controlResp.setown(sendRoxieControlQuery(conn->nextEndpoint(), controlReq, req.getWait()));
+#endif
+
+    if (!controlResp)
+        throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to get control:getQueryXrefInfo response from roxie.");
+
+    //can only rename a ptree in context.  It prevents inconsistencies but in some cases is inconvenient
+    Owned<IPropertyTree> parent = createPTree();
+    const IPropertyTree *resultTree = parent->setPropTree("QueryXrefInfo", controlResp.getLink());
+
+    StringBuffer result;
+    switch (context.getResponseFormat())
+    {
+        case ESPSerializationANY:
+        case ESPSerializationXML:
+            toXML(resultTree, result);
+            break;
+        case ESPSerializationJSON:
+            toJSON(resultTree, result);
+            break;
+        default:
+            throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Unsupported RoxieXref output format requested.");
+            break;
+    }
+    resp.setResult(result);
+
+    return false;
+}
+
 bool CWsSMCEx::onRoxieControlCmd(IEspContext &context, IEspRoxieControlCmdRequest &req, IEspRoxieControlCmdResponse &resp)
 {
     context.ensureFeatureAccess(ROXIE_CONTROL_URL, SecAccess_Full, ECLWATCH_SMC_ACCESS_DENIED, SMC_ACCESS_DENIED);
