@@ -264,6 +264,7 @@ inline bool checkTraceLevel(unsigned category, unsigned level)
     return (udpTraceLevel >= level);
 }
 #define SOCKET_SIMULATION
+#define SOCKET_SIMULATION_UDP
 
 #ifdef SOCKET_SIMULATION
 extern bool isUdpTestMode;
@@ -346,12 +347,12 @@ private:
 
 };
 
-class CSimulatedReadSocket : public CSocketSimulator
+class CSimulatedQueueReadSocket : public CSocketSimulator
 {
-    friend class CSimulatedWriteSocket;
+    friend class CSimulatedQueueWriteSocket;
 
-    CSimulatedReadSocket(const SocketEndpoint &_me);
-    ~CSimulatedReadSocket();
+    CSimulatedQueueReadSocket(const SocketEndpoint &_me);
+    ~CSimulatedQueueReadSocket();
 
     std::queue<unsigned> packetSizes;
     std::queue<const void *> packets;
@@ -362,12 +363,12 @@ class CSimulatedReadSocket : public CSocketSimulator
     Semaphore avail;
 
     void writeSimulatedPacket(void const* buf, size32_t size);
-    static std::map<SocketEndpoint, CSimulatedReadSocket *> allReaders;
+    static std::map<SocketEndpoint, CSimulatedQueueReadSocket *> allReaders;
     static CriticalSection allReadersCrit;
 
 public:
-    static CSimulatedReadSocket* udp_create(const SocketEndpoint &_me);
-    static CSimulatedReadSocket* connectSimulatedSocket(const SocketEndpoint &ep);
+    static CSimulatedQueueReadSocket* udp_create(const SocketEndpoint &_me);
+    static CSimulatedQueueReadSocket* connectSimulatedSocket(const SocketEndpoint &ep);
 
     virtual size32_t get_receive_buffer_size() override { return max; }
     virtual void set_receive_buffer_size(size32_t sz) override { max = sz; }
@@ -380,17 +381,56 @@ public:
 
 };
 
-class CSimulatedWriteSocket : public CSocketSimulator
+class CSimulatedQueueWriteSocket : public CSocketSimulator
 {
-    CSimulatedWriteSocket( const SocketEndpoint &ep) : destEp(ep) {}
+    CSimulatedQueueWriteSocket( const SocketEndpoint &ep) : destEp(ep) {}
     const SocketEndpoint destEp;
 public:
-    static CSimulatedWriteSocket*  udp_connect( const SocketEndpoint &ep);
+    static CSimulatedQueueWriteSocket*  udp_connect( const SocketEndpoint &ep);
     virtual size32_t write(void const* buf, size32_t size) override;
     virtual void set_send_buffer_size(size32_t sz) override {};
     virtual void close() override {};
 };
 
+
+class CSimulatedUdpSocket : public CSocketSimulator
+{
+protected:
+    Owned<ISocket> realSocket;
+};
+class CSimulatedUdpReadSocket : public CSimulatedUdpSocket
+{
+    CSimulatedUdpReadSocket(const SocketEndpoint &_me);
+
+public:
+    static CSimulatedUdpReadSocket* udp_create(const SocketEndpoint &_me);
+
+    virtual size32_t get_receive_buffer_size() override;
+    virtual void set_receive_buffer_size(size32_t sz) override;
+    virtual void read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutsecs = WAIT_FOREVER) override;
+    virtual void readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeout) override;
+    virtual int wait_read(unsigned timeout) override;
+    virtual void close() override;
+
+};
+
+class CSimulatedUdpWriteSocket : public CSimulatedUdpSocket
+{
+    CSimulatedUdpWriteSocket( const SocketEndpoint &ep);
+public:
+    static CSimulatedUdpWriteSocket*  udp_connect( const SocketEndpoint &ep);
+    virtual size32_t write(void const* buf, size32_t size) override;
+    virtual void set_send_buffer_size(size32_t sz) override;
+    virtual void close() override;
+};
+
+#ifdef SOCKET_SIMULATION_UDP
+using CSimulatedWriteSocket = CSimulatedUdpWriteSocket;
+using CSimulatedReadSocket = CSimulatedUdpReadSocket;
+#else
+using CSimulatedWriteSocket = CSimulatedQueueWriteSocket;
+using CSimulatedReadSocket = CSimulatedQueueReadSocket;
+#endif
 
 #endif
 

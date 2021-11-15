@@ -625,6 +625,8 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         
         ~receive_data()
         {
+            DBGLOG("Total data packets seen = %u OOO(%u) Requests(%u) Permits(%u)", dataPacketsReceived.load(), packetsOOO.load(), flowRequestsReceived.load(), flowRequestsSent.load());
+
             running = false;
             if (receive_socket)
                 receive_socket->close();
