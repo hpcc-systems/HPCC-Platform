@@ -146,7 +146,7 @@ storage:
   # For persistent storage:
   #   pvc: <name>                           # The name of the persistant volume claim
   #   forcePermissions: false
-  #   hosts: [ <host-list ]                 # Inline list of hosts
+  #   hosts: [ <host-list> ]                 # Inline list of hosts
   #   hostGroup: <name>                     # Name of the host group for bare metal - must match the name of the storage plane..
   #
   # Other options:
