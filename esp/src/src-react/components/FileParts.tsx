@@ -28,12 +28,12 @@ export const FileParts: React.FunctionComponent<FilePartsProps> = ({
         sort: [{ attribute: "Id", "descending": false }],
         filename: "fileParts",
         columns: {
-            Id: { label: nlsHPCC.Part, sortable: true, },
-            Copy: { label: nlsHPCC.Copy, sortable: true, },
-            Ip: { label: nlsHPCC.IP, sortable: true, },
-            Cluster: { label: nlsHPCC.Cluster, sortable: true, },
-            PartsizeInt64: { label: nlsHPCC.Size, sortable: true, },
-            CompressedSize: { label: nlsHPCC.CompressedSize, sortable: true, },
+            Id: { label: nlsHPCC.Part, sortable: true, width: 80 },
+            Copy: { label: nlsHPCC.Copy, sortable: true, width: 80 },
+            Ip: { label: nlsHPCC.IP, sortable: true, width: 80 },
+            Cluster: { label: nlsHPCC.Cluster, sortable: true, width: 480 },
+            PartsizeInt64: { label: nlsHPCC.Size, sortable: true, width: 120 },
+            CompressedSize: { label: nlsHPCC.CompressedSize, sortable: true, width: 120 },
         }
     });
 

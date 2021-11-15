@@ -54,19 +54,19 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
                     : <></>
                 }
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.Contents} itemKey="Contents" style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.Contents} itemKey="contents" style={pivotItemStyle(size, 0)}>
                 <Result cluster={cluster} logicalFile={logicalFile} />
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.DataPatterns} itemKey="DataPatterns" style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.DataPatterns} itemKey="datapatterns" style={pivotItemStyle(size, 0)}>
                 <DataPatterns cluster={cluster} logicalFile={logicalFile} />
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.ECL} itemKey="ECL" style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.ECL} itemKey="ecl" style={pivotItemStyle(size, 0)}>
                 <ECLSourceEditor text={file?.Ecl} readonly={true} />
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.DEF} itemKey="DEF" style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.DEF} itemKey="def" style={pivotItemStyle(size, 0)}>
                 <XMLSourceEditor text={defFile} readonly={true} />
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.XML} itemKey="XML" style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.XML} itemKey="xml" style={pivotItemStyle(size, 0)}>
                 <XMLSourceEditor text={xmlFile} readonly={true} />
             </PivotItem>
             {file?.isSuperfile
@@ -77,22 +77,22 @@ export const FileDetails: React.FunctionComponent<FileDetailsProps> = ({
                     <SuperFiles cluster={cluster} logicalFile={logicalFile} />
                 </PivotItem>
             }
-            <PivotItem headerText={nlsHPCC.FileParts} itemKey="FileParts" itemCount={file?.fileParts().length ?? 0} style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.FileParts} itemKey="parts" itemCount={file?.fileParts().length ?? 0} style={pivotItemStyle(size, 0)}>
                 <FileParts cluster={cluster} logicalFile={logicalFile} />
             </PivotItem>
             <PivotItem headerText={nlsHPCC.Queries} itemKey="queries" style={pivotItemStyle(size, 0)}>
                 <Queries filter={{ FileName: logicalFile }} />
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.Graphs} itemKey="Graphs" itemCount={file?.Graphs?.ECLGraph?.length} headerButtonProps={{ disabled: isDFUWorkunit }} style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.Graphs} itemKey="graphs" itemCount={file?.Graphs?.ECLGraph?.length} headerButtonProps={{ disabled: isDFUWorkunit }} style={pivotItemStyle(size, 0)}>
                 <FileDetailsGraph cluster={cluster} logicalFile={logicalFile} />
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.History} itemKey="History" style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.History} itemKey="history" style={pivotItemStyle(size, 0)}>
                 <FileHistory cluster={cluster} logicalFile={logicalFile} />
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.Blooms} itemKey="Blooms" itemCount={file?.Blooms?.DFUFileBloom?.length} style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.Blooms} itemKey="blooms" itemCount={file?.Blooms?.DFUFileBloom?.length} style={pivotItemStyle(size, 0)}>
                 <FileBlooms cluster={cluster} logicalFile={logicalFile} />
             </PivotItem>
-            <PivotItem headerText={nlsHPCC.ProtectBy} itemKey="ProtectBy" style={pivotItemStyle(size, 0)}>
+            <PivotItem headerText={nlsHPCC.ProtectBy} itemKey="protectby" style={pivotItemStyle(size, 0)}>
                 <ProtectedBy cluster={cluster} logicalFile={logicalFile} />
             </PivotItem>
         </Pivot>

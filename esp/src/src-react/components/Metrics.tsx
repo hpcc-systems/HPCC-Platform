@@ -18,16 +18,14 @@ const defaultUIState = {
     hasSelection: false
 };
 
-const emptyFilter = {};
-
 interface MetricsProps {
     wuid: string;
-    filter?: object;
+    selection?: string;
 }
 
 export const Metrics: React.FunctionComponent<MetricsProps> = ({
     wuid,
-    filter = emptyFilter
+    selection
 }) => {
     const [_uiState, _setUIState] = React.useState({ ...defaultUIState });
     const [timelineFilter, setTimelineFilter] = React.useState("");
@@ -99,8 +97,6 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     }, [timeline, wuid]);
 
     //  Scopes Table  ---
-    const hasFilter = Object.keys(filter).length > 0;
-
     const [scopeFilter, setScopeFilter] = React.useState("");
     const onChangeScopeFilter = React.useCallback((event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
         setScopeFilter(newValue || "");
@@ -145,11 +141,18 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                     (options.scopeTypes.indexOf(row.type) >= 0);
             }).map((row, idx) => {
                 row.__hpcc_id = row.name;
-                return [idx, row.type, row.name, ...options.properties.map(p => row[p] !== undefined ? row[p] : ""), row];
+                const retVal = [idx, row.type, row.name, ...options.properties.map(p => row[p] !== undefined ? row[p] : ""), row];
+                return retVal;
             }))
-            .lazyRender()
+            .lazyRender(() => {
+                const tableItems = scopesTable.data().filter(tableRow => selection === tableRow[tableRow.length - 1].id);
+                if (tableItems.length) {
+                    scopesTable.selection(tableItems);
+                    setSelectedMetrics(tableItems.map(tableRow => tableRow[tableRow.length - 1]));
+                }
+            })
             ;
-    }, [hasFilter, metrics, scopesTable, timelineFilter, filter, options.properties, options.scopeTypes, scopeFilterFunc]);
+    }, [metrics, scopesTable, timelineFilter, options.properties, options.scopeTypes, scopeFilterFunc, selection]);
 
     //  Graph  ---
     const metricGraph = useConst(() => new MetricGraph());

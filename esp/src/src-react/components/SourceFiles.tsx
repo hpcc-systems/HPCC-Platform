@@ -41,7 +41,7 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
                 label: "Name", sortable: true,
                 formatter: function (Name, row) {
                     return <>
-                        <Image src={Utility.getImageURL(row.IsSuperFile ? "folder_table.png" : "file.png")} className='iconAlign' />
+                        <Image src={Utility.getImageURL(row.IsSuperFile ? "folder_table.png" : "file.png")} />
                         &nbsp;
                         <Link href={`#/files/${row.FileCluster}/${Name}`}>{Name}</Link>
                     </>;

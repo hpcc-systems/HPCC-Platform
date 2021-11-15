@@ -85,6 +85,7 @@ export const routes: RoutesEx = [
             { path: "/:Wuid", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => <_.WorkunitDetails wuid={params.Wuid as string} />) },
             { path: "/:Wuid/:Tab", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => <_.WorkunitDetails wuid={params.Wuid as string} tab={params.Tab as string} />) },
             { path: "/:Wuid/outputs/:Name", action: (ctx, params) => import("./components/Result").then(_ => <_.Result wuid={params.Wuid as string} resultName={params.Name as string} filter={parseSearch(ctx.search) as any} />) },
+            { path: "/:Wuid/metrics/:id", action: (ctx, params) => import("./components/Metrics").then(_ => <_.Metrics wuid={params.Wuid as string} selection={params.id as string} />) },
         ]
     },
     {
