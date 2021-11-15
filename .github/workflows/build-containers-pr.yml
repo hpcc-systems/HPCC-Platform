@@ -44,7 +44,6 @@ jobs:
           echo ::set-output name=cr_user::hpccbuilds
           echo ::set-output name=build_prbase_sha::${{ github.event.pull_request.base.sha }}
           echo ::set-output name=build_prbase_label::${{ github.base_ref }}
-          echo ::set-output name=build_pr_label::pr-${{ github.event.number }}-${{ github.sha }}
           echo ::set-output name=build_user::${{ github.actor }}
           echo ::set-output name=build_type::RelWithDebInfo
           echo ::set-output name=use_cppunit::1
@@ -66,7 +65,6 @@ jobs:
           echo "runner.workspace = ${{ runner.workspace }}"
           echo "github.event.pull_request.head.repo.owner.login = ${{ github.event.pull_request.head.repo.owner.login }}"
           echo "build_prbase_label = ${{ steps.vars.outputs.build_prbase_label }}"
-          echo "build_pr_label = ${{ steps.vars.outputs.build_pr_label }}"
 
       - name: Checkout PR
         uses: actions/checkout@v2
@@ -143,8 +141,6 @@ jobs:
           context: .
           file: ./dockerfiles/platform-build-incremental-container/Dockerfile
           builder: ${{ steps.buildx.outputs.name }}
-          tags: |
-            ${{ steps.vars.outputs.container_registry }}/${{ steps.vars.outputs.build_user }}/${{ steps.vars.outputs.platform_build }}:${{ steps.vars.outputs.build_pr_label }}
           build-args: |
             CR_USER=${{ steps.vars.outputs.cr_user }}
             CR_REPO=${{ steps.vars.outputs.container_registry }}
