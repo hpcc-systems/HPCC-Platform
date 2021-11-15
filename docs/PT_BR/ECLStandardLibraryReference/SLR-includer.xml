@@ -576,9 +576,7 @@
   </chapter>
 
   <chapter id="Logging">
-    <title>
-      <emphasis>Logging</emphasis>
-    </title>
+    <title><emphasis>Logging</emphasis></title>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/dbglog.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
@@ -616,9 +614,6 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/ResolveHostName.xml"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
-
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/CmdProcess.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/GetUniqueInteger.xml"
