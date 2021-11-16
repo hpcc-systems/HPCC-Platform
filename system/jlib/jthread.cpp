@@ -121,7 +121,7 @@ static ICopyArrayOf<Thread> ThreadList;
 static CriticalSection ThreadListSem;
 static size32_t defaultThreadStackSize=0;
 static ICopyArrayOf<Thread> ThreadDestroyList;
-static SpinLock ThreadDestroyListLock;
+static CriticalSection ThreadDestroyListLock;
 
 
 
@@ -157,7 +157,7 @@ void *Thread::_threadmain(void *v)
         // need to ensure joining thread does not race with us to release
         t->Link();  // extra safety link
         {
-            SpinBlock block(ThreadDestroyListLock);
+            CriticalBlock block(ThreadDestroyListLock);
             ThreadDestroyList.append(*t);
         }
         try {
@@ -174,7 +174,7 @@ void *Thread::_threadmain(void *v)
             throw;
         }
         {
-            SpinBlock block(ThreadDestroyListLock);
+            CriticalBlock block(ThreadDestroyListLock);
             ThreadDestroyList.zap(*t);  // hopefully won't get too big (i.e. one entry!)
         }
     }
@@ -486,7 +486,7 @@ bool Thread::join(unsigned timeout)
     for (;;) {                                              // this is to prevent race with destroy
                                                         // (because Thread objects are not always link counted!)
         {
-            SpinBlock block(ThreadDestroyListLock);
+            CriticalBlock block(ThreadDestroyListLock);
             if (ThreadDestroyList.find(*this)==NotFound)
                 break;
         }
