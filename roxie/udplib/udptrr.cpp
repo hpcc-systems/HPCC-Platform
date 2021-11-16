@@ -750,7 +750,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
 
     typedef std::map<ruid_t, CMessageCollator*> uid_map;
     uid_map         collators;
-    SpinLock collatorsLock; // protects access to collators map
+    CriticalSection collatorsLock; // protects access to collators map
 
   public:
     IMPLEMENT_IINTERFACE;
@@ -789,7 +789,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         ruid_t ruid = msgColl->queryRUID();
         if (udpTraceLevel >= 2) DBGLOG("UdpReceiver: detach %p %u", msgColl, ruid);
         {
-            SpinBlock b(collatorsLock);
+            CriticalBlock b(collatorsLock);
             collators.erase(ruid);
         }
         msgColl->Release();
@@ -818,9 +818,9 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         Linked <CMessageCollator> msgColl;
         bool isDefault = false;
         {
-            SpinBlock b(collatorsLock);
             try
             {
+                CriticalBlock b(collatorsLock);
                 msgColl.set(collators[pktHdr->ruid]);
                 if (!msgColl)
                 {
@@ -858,7 +858,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         if (udpTraceLevel > 2)
             DBGLOG("UdpReceiver: createMessageCollator %p %u", msgColl, ruid);
         {
-            SpinBlock b(collatorsLock);
+            CriticalBlock b(collatorsLock);
             collators[ruid] = msgColl;
         }
         msgColl->Link();

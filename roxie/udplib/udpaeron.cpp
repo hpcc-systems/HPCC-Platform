@@ -140,7 +140,7 @@ class CRoxieAeronReceiveManager : public CInterfaceOf<IReceiveManager>
 private:
     typedef std::map<ruid_t, CMessageCollator*> uid_map;
     uid_map         collators;
-    SpinLock collatorsLock; // protects access to collators map
+    CriticalSection collatorsLock; // protects access to collators map
 
     std::shared_ptr<aeron::Aeron> aeron;
     std::shared_ptr<aeron::Subscription> loSub;
@@ -221,7 +221,7 @@ public:
         Linked <CMessageCollator> msgColl;
         bool isDefault = false; // Don't trace inside the spinBlock!
         {
-            SpinBlock b(collatorsLock);
+            CriticalBlock b(collatorsLock);
             try
             {
                 msgColl.set(collators[pktHdr->ruid]);
@@ -261,7 +261,7 @@ public:
         if (udpTraceLevel >= 2)
             DBGLOG("AeronReceiver: createMessageCollator %p %u", msgColl, ruid);
         {
-            SpinBlock b(collatorsLock);
+            CriticalBlock b(collatorsLock);
             collators[ruid] = msgColl;
         }
         msgColl->Link();
@@ -274,7 +274,7 @@ public:
         if (udpTraceLevel >= 2)
             DBGLOG("AeronReceiver: detach %p %u", msgColl, ruid);
         {
-            SpinBlock b(collatorsLock);
+            CriticalBlock b(collatorsLock);
             collators.erase(ruid);
         }
         msgColl->Release();
