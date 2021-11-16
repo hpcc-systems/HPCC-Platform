@@ -68,9 +68,6 @@ CMasterWatchdogBase::CMasterWatchdogBase() : threaded("CMasterWatchdogBase")
     if (watchdogMachineTimeout <= HEARTBEAT_INTERVAL*10)
         watchdogMachineTimeout = HEARTBEAT_INTERVAL*10;
     watchdogMachineTimeout *= 1000;
-#ifdef _WIN32
-    threaded.adjustPriority(+1); // it is critical that watchdog packets get through.
-#endif
 }
 
 CMasterWatchdogBase::~CMasterWatchdogBase()
@@ -90,6 +87,9 @@ void CMasterWatchdogBase::start()
         PROGLOG("Starting watchdog");
         stopped = false;
         threaded.init(this);
+#ifdef _WIN32
+        threaded.adjustPriority(+1); // it is critical that watchdog packets get through.
+#endif
     }
 }
 
@@ -124,14 +124,17 @@ CMachineStatus *CMasterWatchdogBase::findSlave(const SocketEndpoint &ep)
 
 void CMasterWatchdogBase::stop()
 {
-    threaded.adjustPriority(0); // restore to normal before stopping
     {
         synchronized block(mutex);
         if (stopped)
             return;
-        LOG(MCdebugProgress, thorJob, "Stopping watchdog");
         stopped = true;
     }
+
+    LOG(MCdebugProgress, thorJob, "Stopping watchdog");
+#ifdef _WIN32
+    threaded.adjustPriority(0); // restore to normal before stopping
+#endif
     stopReading();
     threaded.join();
     LOG(MCdebugProgress, thorJob, "Stopped watchdog");
