@@ -2,6 +2,7 @@ import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, IIconProps, SearchBox } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { Table } from "@hpcc-js/dgrid";
+import { compare } from "@hpcc-js/util";
 import nlsHPCC from "src/nlsHPCC";
 import { WUTimelinePatched } from "src/Timings";
 import { useMetricsOptions, useWorkunitMetrics } from "../hooks/metrics";
@@ -9,6 +10,7 @@ import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
 import { DockPanel, DockPanelItems, ReactWidget, ResetableDockPanel } from "../layouts/DockPanel";
 import { IScope, MetricGraph, MetricGraphWidget } from "../util/metricGraph";
+import { pushUrl } from "../util/history";
 import { ShortVerticalDivider } from "./Common";
 import { MetricsOptions } from "./MetricsOptions";
 
@@ -18,21 +20,19 @@ const defaultUIState = {
     hasSelection: false
 };
 
-const emptyFilter = {};
-
 interface MetricsProps {
     wuid: string;
-    filter?: object;
+    selection?: string;
 }
 
 export const Metrics: React.FunctionComponent<MetricsProps> = ({
     wuid,
-    filter = emptyFilter
+    selection = ""
 }) => {
     const [_uiState, _setUIState] = React.useState({ ...defaultUIState });
     const [timelineFilter, setTimelineFilter] = React.useState("");
     const [selectedMetrics, setSelectedMetrics] = React.useState([]);
-    const [metrics, _columns, _activities, _properties, _measures, _scopeTypes] = useWorkunitMetrics(wuid);
+    const [metrics, _columns, _activities, _properties, _measures, _scopeTypes, refresh] = useWorkunitMetrics(wuid);
     const [showMetricOptions, setShowMetricOptions] = React.useState(false);
     const [options, setOptions, saveOptions] = useMetricsOptions();
     const [dockpanel, setDockpanel] = React.useState<ResetableDockPanel>();
@@ -41,7 +41,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
         {
             key: "refresh", text: nlsHPCC.Refresh, iconProps: { iconName: "Refresh" },
-            onClick: () => { }
+            onClick: () => refresh()
         },
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
         {
@@ -51,7 +51,7 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 setShowMetricOptions(true);
             }
         }
-    ], [dockpanel, options, setOptions]);
+    ], [dockpanel, options, refresh, setOptions]);
 
     const rightButtons = React.useMemo((): ICommandBarItemProps[] => [
     ], []);
@@ -99,8 +99,6 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
     }, [timeline, wuid]);
 
     //  Scopes Table  ---
-    const hasFilter = Object.keys(filter).length > 0;
-
     const [scopeFilter, setScopeFilter] = React.useState("");
     const onChangeScopeFilter = React.useCallback((event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
         setScopeFilter(newValue || "");
@@ -133,11 +131,13 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         .sortable(true)
         .on("click", (row, col, sel) => {
             const selection = scopesTable.selection();
-            setSelectedMetrics(selection.map(row => row.__lparam));
+            pushUrl(`/workunits/${wuid}/metrics/${selection.map(row => row.__lparam.id).join(",")}`);
         })
     );
 
+    const [tableLoaded, setTableLoaded] = React.useState(false);
     React.useEffect(() => {
+        setTableLoaded(false);
         scopesTable
             .columns(["##", nlsHPCC.Type, nlsHPCC.Scope, ...options.properties])
             .data(metrics.filter(scopeFilterFunc).filter(row => {
@@ -147,23 +147,33 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
                 row.__hpcc_id = row.name;
                 return [idx, row.type, row.name, ...options.properties.map(p => row[p] !== undefined ? row[p] : ""), row];
             }))
-            .lazyRender()
+            .render()
             ;
-    }, [hasFilter, metrics, scopesTable, timelineFilter, filter, options.properties, options.scopeTypes, scopeFilterFunc]);
+        setTableLoaded(true);
+    }, [metrics, options.properties, options.scopeTypes, scopeFilterFunc, scopesTable, timelineFilter]);
+
+    const updateScopesTable = React.useCallback((selection: IScope[]) => {
+        if (tableLoaded) {
+            const prevSelection = scopesTable.selection().map(row => row.__lparam.id);
+            const newSelection = selection.map(row => row.id);
+            const diffs = compare(prevSelection, newSelection);
+            if (diffs.enter.length || diffs.exit.length) {
+                scopesTable.selection(scopesTable.data().filter(row => {
+                    return selection.indexOf(row[row.length - 1]) >= 0;
+                }));
+            }
+        }
+    }, [scopesTable, tableLoaded]);
 
     //  Graph  ---
     const metricGraph = useConst(() => new MetricGraph());
     const metricGraphWidget = useConst(() => new MetricGraphWidget()
         .zoomToFitLimit(1)
         .on("selectionChanged", () => {
-            const items = metricGraphWidget.selection().map(id => {
-                return metricGraph.item(id);
+            const selection = metricGraphWidget.selection().map(id => {
+                return metricGraph.item(id).id;
             });
-            // const item = graph.item(row.id);
-            updatePropsTable(items);
-            updatePropsTable2(items);
-            const tableItems = scopesTable.data().filter(tableRow => items.indexOf(tableRow[tableRow.length - 1]) >= 0);
-            scopesTable.selection(tableItems);
+            pushUrl(`/workunits/${wuid}/metrics/${selection.join(",")}`);
         })
     );
 
@@ -234,15 +244,15 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         .columnWidth("none")
     );
 
-    const updatePropsTable = React.useCallback(items => {
+    const updatePropsTable = React.useCallback((selection: IScope[]) => {
         const props = [];
-        items.forEach((item, idx) => {
+        selection.forEach((item, idx) => {
             for (const key in item) {
                 if (key.indexOf("__") !== 0) {
                     props.push([key, item[key]]);
                 }
             }
-            if (idx < items.length - 1) {
+            if (idx < selection.length - 1) {
                 props.push(["------------------------------", "------------------------------"]);
             }
         });
@@ -258,17 +268,17 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
         .columnWidth("auto")
     );
 
-    const updatePropsTable2 = React.useCallback(items => {
+    const updatePropsTable2 = React.useCallback((selection: IScope[]) => {
         const columns = [];
         const props = [];
-        items.forEach(item => {
+        selection.forEach(item => {
             for (const key in item) {
                 if (key.indexOf("__") !== 0 && columns.indexOf(key) < 0) {
                     columns.push(key);
                 }
             }
         });
-        items.forEach(item => {
+        selection.forEach(item => {
             const row = [];
             columns.forEach(column => {
                 row.push(item[column]);
@@ -292,11 +302,17 @@ export const Metrics: React.FunctionComponent<MetricsProps> = ({
 
     React.useEffect(() => {
         if (selectedMetrics.length) {
+            updateScopesTable(selectedMetrics);
+            updateMetricGraph(selectedMetrics);
             updatePropsTable(selectedMetrics);
             updatePropsTable2(selectedMetrics);
-            updateMetricGraph(selectedMetrics);
         }
-    }, [selectedMetrics, updateMetricGraph, updatePropsTable, updatePropsTable2]);
+    }, [selectedMetrics, updateMetricGraph, updatePropsTable, updatePropsTable2, updateScopesTable]);
+
+    React.useEffect(() => {
+        const selectedIDs = selection.split(",");
+        setSelectedMetrics(metrics.filter(m => selectedIDs.indexOf(m.id) >= 0));
+    }, [metrics, selection]);
 
     const items: DockPanelItems = React.useMemo<DockPanelItems>((): DockPanelItems => [
         {
