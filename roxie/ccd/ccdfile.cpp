@@ -1708,12 +1708,15 @@ public:
             dlfn.set(lfn);
             if (dlfn.isForeign())
                 dlfn.clearForeign();
-#ifdef _CONTAINERIZED
-            const char *defaultDir = defaultPlaneDirPrefix;
-            bool defaultDirPerPart = defaultPlaneDirPerPart;
-#else
-            const char *defaultDir = nullptr;
+
             bool defaultDirPerPart = false;
+            const char *defaultDir = nullptr;
+#ifdef _CONTAINERIZED
+            IFileDescriptor &fileDesc = pdesc->queryOwner();
+            defaultDir = fileDesc.queryDefaultDir();
+            FileDescriptorFlags fileFlags = static_cast<FileDescriptorFlags>(fileDesc.queryProperties().getPropInt("@flags"));
+            if (FileDescriptorFlags::none != (fileFlags & FileDescriptorFlags::dirperpart))
+                defaultDirPerPart = true;
 #endif
             makePhysicalPartName(dlfn.get(), partNo, numParts, localLocation, replicationLevel, DFD_OSdefault, defaultDir, defaultDirPerPart);
         }
