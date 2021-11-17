@@ -2013,42 +2013,48 @@ static IOutputMetaData *_getDaliLayoutInfo(MemoryBuffer &layoutBin, IPropertyTre
         if (props.hasProp("_rtlType"))
         {
             props.getPropBin("_rtlType", layoutBin);
-            try
+            if (layoutBin.length())
             {
-                return createTypeInfoOutputMetaData(layoutBin, isGrouped);
-            }
-            catch (IException *E)
-            {
-                EXCLOG(E);
-                error.setown(E); // Save to throw later if we can't recover via ECL
+                try
+                {
+                    return createTypeInfoOutputMetaData(layoutBin, isGrouped);
+                }
+                catch (IException *E)
+                {
+                    EXCLOG(E);
+                    error.setown(E); // Save to throw later if we can't recover via ECL
+                }
             }
         }
         if (props.hasProp("ECL"))
         {
-            const char *kind = props.queryProp("@kind");
-            bool isIndex = (kind && streq(kind, "key"));
             StringBuffer layoutECL;
             props.getProp("ECL", layoutECL);
-            MultiErrorReceiver errs;
-            Owned<IHqlExpression> expr = parseQuery(layoutECL.str(), &errs);
-            if (expr && (errs.errCount() == 0))
+            if (layoutECL.length())
             {
-                if (props.hasProp("_record_layout"))  // Some old indexes need the payload count patched in from here
+                const char *kind = props.queryProp("@kind");
+                bool isIndex = (kind && streq(kind, "key"));
+                MultiErrorReceiver errs;
+                Owned<IHqlExpression> expr = parseQuery(layoutECL.str(), &errs);
+                if (expr && (errs.errCount() == 0))
                 {
-                    MemoryBuffer mb;
-                    props.getPropBin("_record_layout", mb);
-                    expr.setown(patchEclRecordDefinitionFromRecordLayout(expr, mb));
-                }
-                else if (!expr->hasAttribute(_payload_Atom))
-                {
-                    //Very old records before _record_layout was added to the meta information (November 2006!)
-                    IHqlExpression * lastField = queryLastField(expr);
-                    if (lastField && lastField->queryType()->isInteger())
-                        expr.setown(prependOwnedOperand(expr, createAttribute(_payload_Atom, createConstant(1))));
-                }
+                    if (props.hasProp("_record_layout"))  // Some old indexes need the payload count patched in from here
+                    {
+                        MemoryBuffer mb;
+                        props.getPropBin("_record_layout", mb);
+                        expr.setown(patchEclRecordDefinitionFromRecordLayout(expr, mb));
+                    }
+                    else if (!expr->hasAttribute(_payload_Atom))
+                    {
+                        //Very old records before _record_layout was added to the meta information (November 2006!)
+                        IHqlExpression * lastField = queryLastField(expr);
+                        if (lastField && lastField->queryType()->isInteger())
+                            expr.setown(prependOwnedOperand(expr, createAttribute(_payload_Atom, createConstant(1))));
+                    }
 
-                if (exportBinaryType(layoutBin, expr, isIndex))
-                    return createTypeInfoOutputMetaData(layoutBin, isGrouped);
+                    if (exportBinaryType(layoutBin, expr, isIndex))
+                        return createTypeInfoOutputMetaData(layoutBin, isGrouped);
+                }
             }
         }
         if (error)
