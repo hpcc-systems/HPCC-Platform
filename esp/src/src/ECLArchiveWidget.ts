@@ -646,12 +646,6 @@ export class ECLArchiveWidget {
             return markers;
         }
         function mergeCommonLines(markers) {
-            const timeMapToMs = {
-                "ns": 1000000,
-                "us": 1000,
-                "ms": 1,
-            };
-
             const lineMap = {};
             markers.forEach(n => {
                 if (!lineMap[n.lineNum]) {
@@ -662,7 +656,6 @@ export class ECLArchiveWidget {
             const ret = [];
             Object.keys(lineMap).forEach(key => {
                 let timeSum = 0;
-                const units = "ns";
                 const tableDataArr = [];
                 lineMap[key].forEach(n => {
                     if (n.rawTime) {
@@ -673,13 +666,26 @@ export class ECLArchiveWidget {
                 });
                 const lineMarker = {
                     lineNum: parseInt(key + ""),
-                    label: (timeSum / timeMapToMs[units]).toFixed(3) + "ms",
+                    label: nsToTime(timeSum),
                     timeSum,
                     tableData: tableDataArr
                 };
                 ret.push(lineMarker);
             });
             return ret;
+
+            function nsToTime(nanoseconds) {
+                let subSecond:string|number = Math.floor(nanoseconds % 100000000);
+                let seconds:string|number = Math.floor((nanoseconds / 1000000000) % 60);
+                let minutes:string|number = Math.floor((nanoseconds / (1000000000 * 60)) % 60);
+                let hours:string|number = Math.floor((nanoseconds / (1000000000 * 60 * 60)) % 24);
+                
+                hours = (hours < 10) ? "0" + hours : hours;
+                minutes = (minutes < 10) ? "0" + minutes : minutes;
+                seconds = (seconds < 10) ? "0" + seconds : seconds;
+                
+                return String(hours).padStart(2,"0") + ":" + String(minutes) + ":" + String(seconds) + "." + String(subSecond).padStart(9,"0");
+            }
         }
     }
 }
