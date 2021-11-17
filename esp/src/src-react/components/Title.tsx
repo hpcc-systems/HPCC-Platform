@@ -9,6 +9,9 @@ import * as cookie from "dojo/cookie";
 
 import nlsHPCC from "src/nlsHPCC";
 import { useECLWatchLogger } from "../hooks/logging";
+import { useGlobalStore } from "../hooks/store";
+import * as Utility from "src/Utility";
+import { TitlebarConfig } from "./forms/TitlebarConfig";
 
 const collapseMenuIcon: IIconProps = { iconName: "CollapseMenu" };
 
@@ -21,6 +24,8 @@ const personaStyles = {
     }
 };
 
+const toolbarThemeDefaults = { active: "false", text: "", color: "#2196F3" };
+
 interface DevTitleProps {
 }
 
@@ -31,6 +36,11 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const [showMyAccount, setShowMyAccount] = React.useState(false);
     const [currentUser, setCurrentUser] = React.useState(undefined);
     const [isOpen, { setTrue: openPanel, setFalse: dismissPanel }] = useBoolean(false);
+
+    const [showTitlebarConfig, setShowTitlebarConfig] = React.useState(false);
+    const [showEnvironmentTitle, setShowEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Active", toolbarThemeDefaults.active);
+    const [environmentTitle, setEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", toolbarThemeDefaults.text);
+    const [titlebarColor, setTitlebarColor] = useGlobalStore("HPCCPlatformWidget_Toolbar_Color", toolbarThemeDefaults.color);
 
     const personaProps: IPersonaSharedProps = React.useMemo(() => {
         return {
@@ -59,7 +69,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                 { key: "legacy", text: nlsHPCC.OpenLegacyECLWatch, href: "/esp/files/stub.htm" },
                 { key: "divider_0", itemType: ContextualMenuItemType.Divider },
                 { key: "banner", text: nlsHPCC.SetBanner },
-                { key: "toolbar", text: nlsHPCC.SetToolbar },
+                { key: "toolbar", text: nlsHPCC.SetToolbar, onClick: () => setShowTitlebarConfig(true) },
                 { key: "divider_1", itemType: ContextualMenuItemType.Divider },
                 { key: "docs", href: "https://hpccsystems.com/training/documentation/", text: nlsHPCC.Documentation, target: "_blank" },
                 { key: "downloads", href: "https://hpccsystems.com/download", text: nlsHPCC.Downloads, target: "_blank" },
@@ -127,7 +137,12 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             ;
     }, [setCurrentUser]);
 
-    return <div style={{ backgroundColor: theme.palette.themeLight }}>
+    React.useEffect(() => {
+        if (!environmentTitle) return;
+        document.title = environmentTitle;
+    }, [environmentTitle]);
+
+    return <div style={{ backgroundColor: titlebarColor ?? theme.palette.themeLight }}>
         <Stack horizontal verticalAlign="center" horizontalAlign="space-between">
             <Stack.Item align="center">
                 <Stack horizontal>
@@ -135,7 +150,13 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
                         <IconButton iconProps={waffleIcon} onClick={openPanel} style={{ width: 48, height: 48, color: theme.palette.themeDarker }} />
                     </Stack.Item>
                     <Stack.Item align="center">
-                        <Link href="#/activities"><Text variant="large" nowrap block ><b style={{ color: theme.palette.themeDarker }}>ECL Watch</b></Text></Link>
+                        <Link href="#/activities">
+                            <Text variant="large" nowrap block >
+                                <b style={{ color: (titlebarColor !== toolbarThemeDefaults.color) ? Utility.textColor(titlebarColor) : theme.palette.themeDarker }}>
+                                    ECL Watch{environmentTitle !== "" && showEnvironmentTitle ? ` | ${environmentTitle}` : ""}
+                                </b>
+                            </Text>
+                        </Link>
                     </Stack.Item>
                 </Stack>
             </Stack.Item>
@@ -173,6 +194,12 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
         </Panel>
         <About show={showAbout} onClose={() => setShowAbout(false)} ></About>
         <MyAccount currentUser={currentUser} show={showMyAccount} onClose={() => setShowMyAccount(false)}></MyAccount>
+        <TitlebarConfig
+            showForm={showTitlebarConfig} setShowForm={setShowTitlebarConfig}
+            showEnvironmentTitle={showEnvironmentTitle} setShowEnvironmentTitle={setShowEnvironmentTitle}
+            environmentTitle={environmentTitle} setEnvironmentTitle={setEnvironmentTitle}
+            titlebarColor={titlebarColor} setTitlebarColor={setTitlebarColor}
+        />
     </div>;
 };
 

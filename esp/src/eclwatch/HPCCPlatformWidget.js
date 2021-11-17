@@ -260,15 +260,7 @@ define([
             });
             this.storage.setItem("Status", "Unlocked");
 
-            EnvironmentTheme.checkCurrentState(this.id, this);
-
-            this.environmentTextCB.on("change", function (state) {
-                if (state) {
-                    context.environmentText.set("disabled", false);
-                } else {
-                    context.environmentText.set("value", "");
-                }
-            });
+            this._onUpdateToolbarDom();
         },
 
         _onUpdateFromStorage: function (msg) {
@@ -351,10 +343,6 @@ define([
                 dom.byId("UserDivider").textContent = " / ";
                 dom.byId("Lock").textContent = this.i18n.Lock;
             }
-        },
-
-        setEnvironmentTheme: function () {
-            EnvironmentTheme.setEnvironmentTheme(this.id, this);
         },
 
         //  Hitched actions  ---
@@ -573,16 +561,44 @@ define([
         },
 
         _onSetToolbarOk: function (evt) {
-            this.setEnvironmentTheme();
+            EnvironmentTheme.setEnvironmentTheme({
+                active: this.environmentTextCB.get("checked"),
+                text: this.environmentText.value,
+                color: this.toolbarColor.value
+            });
+            this._onUpdateToolbarDom();
         },
 
         _onSetToolbarCancel: function (evt) {
             this.setToolbarDialog.hide();
         },
 
+        _onUpdateToolbarDom: function (evt) {
+            EnvironmentTheme.getEnvironmentTheme().then(theme => {
+                if (theme === undefined) return;
+                this.environmentTextCB.set("checked", theme.active === "true");
+                this.environmentText.set("value", theme.text);
+                this.toolbarColor.set("value", theme.color);
+
+                domConstruct.destroy(this.id + "BannerInnerText");
+
+                if (theme.text !== "") {
+                    var searchUserMoreComponents = dom.byId(this.id + "searchUserMoreComponents");
+                    var parent = domConstruct.create("div", { id: this.id + "BannerInnerText", class: "envrionmentText" }, searchUserMoreComponents, "before");
+                    domConstruct.create("span", { id: this.id + "BannerContent", style: { color: Utility.textColor(theme.color) }, innerHTML: theme.text }, parent);
+                    document.title = theme.text;
+                } else {
+                    document.title = dojoConfig.pageTitle;
+                }
+
+                domStyle.set(this.id + "Titlebar", { backgroundColor: theme.color });
+            });
+        },
+
         _onSetToolbarReset: function (evt) {
             if (confirm(this.i18n.AreYouSureYouWantToResetTheme)) {
-                EnvironmentTheme._onResetDefaultTheme(this.id, this);
+                EnvironmentTheme._onResetDefaultTheme();
+                this._onUpdateToolbarDom();
                 this._onSetToolbarCancel();
             }
         },

@@ -739,6 +739,7 @@ export = {
         SetTextError: "Failed to display text (too large?).  Use &lsquo;helpers&rsquo; to download.",
         SetToFailed: "Set To Failed",
         SetToolbar: "Set Toolbar",
+        SetToolbarColor: "Set Toolbar Color",
         Severity: "Severity",
         ShareWorkunit: "Share Workunit URL",
         Show: "Show",
