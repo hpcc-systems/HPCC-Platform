@@ -643,7 +643,7 @@ public:
     }
     virtual void createChildMap() { children = isnocase()?new ChildMapNC():new ChildMap(); }
     virtual void setName(const char *name) = 0;
-    void serializeSelf(MemoryBuffer &tgt);
+    virtual void serializeSelf(MemoryBuffer &tgt);
     inline void markNameEncoded() { IptFlagSet(flags, ipt_escaped); }
     inline bool isNameEncoded() const { return IptFlagTst(flags, ipt_escaped); }
     inline bool isAttributeNameEncoded(const char *key) const
