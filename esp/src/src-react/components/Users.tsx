@@ -71,7 +71,8 @@ export const Users: React.FunctionComponent<UsersProps> = ({
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
-        message: nlsHPCC.DeleteSelectedUsers + "\n" + selection.map(user => user.username).join("\n"),
+        message: nlsHPCC.DeleteSelectedUsers,
+        items: selection.map(user => user.username),
         onSubmit: React.useCallback(() => {
             const request = {
                 ActionType: "delete"

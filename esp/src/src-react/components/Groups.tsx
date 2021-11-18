@@ -54,7 +54,8 @@ export const Groups: React.FunctionComponent<GroupsProps> = ({
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
-        message: nlsHPCC.DeleteSelectedGroups + "\n" + selection.map(group => group.name).join("\n"),
+        message: nlsHPCC.DeleteSelectedGroups,
+        items: selection.map(group => group.name),
         onSubmit: React.useCallback(() => {
             const request = { ActionType: "delete" };
             selection.forEach((item, idx) => {

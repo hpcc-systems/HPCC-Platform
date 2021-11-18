@@ -30,7 +30,6 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
 }) => {
 
     const [file, , , refresh] = useFile(cluster, logicalFile);
-    const [selectedFileList, setSelectedFileList] = React.useState("");
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     //  Grid ---
@@ -111,7 +110,8 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
 
     const [DeleteSubfilesConfirm, setShowDeleteSubfilesConfirm] = useConfirm({
         title: nlsHPCC.Delete,
-        message: nlsHPCC.RemoveSubfiles2 + "\n\n" + selectedFileList,
+        message: nlsHPCC.RemoveSubfiles2,
+        items: selection.map(item => item.Name),
         onSubmit: React.useCallback(() => {
             WsDfu.SuperfileAction("remove", file.Name, selection, false).then(() => refresh());
         }, [file, refresh, selection])
@@ -162,7 +162,6 @@ export const SubFiles: React.FunctionComponent<SubFilesProps> = ({
         for (let i = 0; i < selection.length; i++) {
             state.hasSelection = true;
         }
-        setSelectedFileList(selection.map(s => s.Name).join("\n"));
         setUIState(state);
     }, [selection]);
 

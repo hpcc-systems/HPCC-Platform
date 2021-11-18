@@ -162,7 +162,8 @@ export const LandingZone: React.FunctionComponent<LandingZoneProps> = ({
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
-        message: nlsHPCC.DeleteSelectedFiles + "\n" + selection.map(s => s.name).join("\n"),
+        message: nlsHPCC.DeleteSelectedFiles,
+        items: selection.map(s => s.name),
         onSubmit: React.useCallback(() => {
             selection.forEach((item, idx) => {
                 if (item._isUserFile) {
