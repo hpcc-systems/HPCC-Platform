@@ -878,6 +878,12 @@ bool CClientRemoteTree::removeAttribute(const char *attr)
         return false;
 }
 
+void CClientRemoteTree::serializeSelf(MemoryBuffer &tgt)
+{
+    checkExt();
+    PARENT::serializeSelf(tgt);
+}
+
 void CClientRemoteTree::registerRenamed(const char *newName, const char *oldName, unsigned pos, __int64 id)
 {
     mergeState(CPS_Renames);
