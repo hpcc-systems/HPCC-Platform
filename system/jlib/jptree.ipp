@@ -616,7 +616,6 @@ public:
     aindex_t findChild(IPropertyTree *child, bool remove=false);
     inline bool isnocase() const { return IptFlagTst(flags, ipt_caseInsensitive); }
     ipt_flags queryFlags() const { return (ipt_flags) flags; }
-    void serializeSelf(MemoryBuffer &tgt);
     void serializeCutOff(MemoryBuffer &tgt, int cutoff=-1, int depth=0);
     void deserializeSelf(MemoryBuffer &src);
     void serializeAttributes(MemoryBuffer &tgt);
@@ -644,6 +643,7 @@ public:
     }
     virtual void createChildMap() { children = isnocase()?new ChildMapNC():new ChildMap(); }
     virtual void setName(const char *name) = 0;
+    void serializeSelf(MemoryBuffer &tgt);
     inline void markNameEncoded() { IptFlagSet(flags, ipt_escaped); }
     inline bool isNameEncoded() const { return IptFlagTst(flags, ipt_escaped); }
     inline bool isAttributeNameEncoded(const char *key) const
