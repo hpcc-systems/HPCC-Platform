@@ -101,7 +101,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
             .then(({ ResourcesResponse }) => {
                 setScopeScansEnabled(ResourcesResponse?.scopeScansStatus?.isEnabled || false);
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [setScopeScansEnabled]);
 
@@ -139,7 +139,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
                 .then(() => {
                     refreshTable();
                 })
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }, [refreshTable, selection])
     });

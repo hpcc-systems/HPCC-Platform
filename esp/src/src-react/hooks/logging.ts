@@ -56,23 +56,27 @@ export class ECLWatchLogger implements Writer {
         };
     }
 
-    rawWrite(dateTime: string, level: Level, id: string, _msg: string | object): void {
-        let message: string = "";
-        if (_msg instanceof ESPExceptions) {
-            message = _msg.message;
-        } else if (isExceptions(_msg)) {
-            message = "isExceptions";
-        } else if (_msg instanceof Error) {
-            message = _msg.message;
-        } else if (typeof _msg !== "string") {
-            message = JSON.stringify(_msg, undefined, 2);
-        } else if (typeof _msg === "string") {
-            message = _msg;
-        }
+    doWrite(dateTime: string, level: Level, id: string, message: string): void {
         this._origWriter.write(dateTime, level, id, message);
         const row = { dateTime, level, id, message };
         this._log.push(row);
         this._observable.dispatchEvent("added", row);
+    }
+
+    rawWrite(dateTime: string, level: Level, id: string, _msg: string | object): void {
+        if (_msg instanceof ESPExceptions) {
+            this.doWrite(dateTime, level, id, _msg.message);
+        } else if (isExceptions(_msg)) {
+            _msg.Exception?.forEach(ex => {
+                this.doWrite(dateTime, level, "" + ex.Code, ex.Message);
+            });
+        } else if (_msg instanceof Error) {
+            this.doWrite(dateTime, level, id, _msg.message);
+        } else if (typeof _msg !== "string") {
+            this.doWrite(dateTime, level, id, JSON.stringify(_msg, undefined, 2));
+        } else if (typeof _msg === "string") {
+            this.doWrite(dateTime, level, id, _msg);
+        }
     }
 }
 

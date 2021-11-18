@@ -60,7 +60,7 @@ export const QueryLibrariesUsed: React.FunctionComponent<QueryLibrariesUsedProps
                     refreshTable();
                 }
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [store, query, refreshTable]);
 

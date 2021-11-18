@@ -29,7 +29,7 @@ export const ESDLBindingDetails: React.FunctionComponent<ESDLBindingDetailsProps
             .then(({ GetESDLBindingResponse }) => {
                 setBinding(GetESDLBindingResponse);
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [name]);
 

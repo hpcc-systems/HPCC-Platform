@@ -18,17 +18,20 @@ export function useFile(cluster: string, name: string): [LogicalFile, boolean, n
         let active = true;
         let handle;
         const fetchInfo = singletonDebounce(file, "fetchInfo");
-        fetchInfo().then(() => {
-            if (active) {
-                setFile(file);
-                setIsProtected(file.ProtectList?.DFUFileProtect?.length > 0 || false);
-                setLastUpdate(Date.now());
-                handle = file.watch(() => {
+        fetchInfo()
+            .then(() => {
+                if (active) {
+                    setFile(file);
                     setIsProtected(file.ProtectList?.DFUFileProtect?.length > 0 || false);
                     setLastUpdate(Date.now());
-                });
-            }
-        });
+                    handle = file.watch(() => {
+                        setIsProtected(file.ProtectList?.DFUFileProtect?.length > 0 || false);
+                        setLastUpdate(Date.now());
+                    });
+                }
+            })
+            .catch(err => logger.error(err))
+            ;
         return () => {
             active = false;
             handle?.release();
@@ -48,7 +51,7 @@ export function useDefFile(cluster: string, name: string, format: "def" | "xml")
         if (file) {
             file.fetchDefFile(format)
                 .then(setDefFile)
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }
     }, [file, format, count]);
@@ -67,7 +70,7 @@ export function useFileHistory(cluster: string, name: string): [WsDfu.Origin2[],
             .then(response => {
                 setHistory(response);
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [file]);
 
@@ -77,7 +80,7 @@ export function useFileHistory(cluster: string, name: string): [WsDfu.Origin2[],
                 .then(response => {
                     setHistory(response);
                 })
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }
     }, [file, count]);

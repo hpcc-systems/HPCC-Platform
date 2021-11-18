@@ -67,7 +67,7 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
                     grid?.clearSelection();
                 }
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [grid, gridQuery, gridStore, groupname]);
 
@@ -86,7 +86,7 @@ export const GroupMembers: React.FunctionComponent<GroupMembersProps> = ({
             });
             Promise.all(requests)
                 .then(responses => refreshTable())
-                .catch(logger.error);
+                .catch(err => logger.error(err));
         }, [groupname, refreshTable, selection])
     });
 

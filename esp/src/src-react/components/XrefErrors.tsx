@@ -73,7 +73,7 @@ export const XrefErrors: React.FunctionComponent<XrefErrorsProps> = ({
                     refreshTable();
                 }
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [name, refreshTable, store]);
 

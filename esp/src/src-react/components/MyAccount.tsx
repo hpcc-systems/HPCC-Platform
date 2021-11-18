@@ -52,7 +52,7 @@ export const MyAccount: React.FunctionComponent<MyAccountProps> = ({
                         setErrorMessage("");
                     }
                 })
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }
     }, [currentUser, newPassword1, newPassword2, oldPassword, service]);

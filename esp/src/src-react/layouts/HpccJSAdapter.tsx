@@ -69,5 +69,5 @@ export const AutosizeHpccJSComponent: React.FunctionComponent<AutosizeHpccJSComp
             </div>
         </div>;
     }}
-    </SizeMe >;
+    </SizeMe>;
 };

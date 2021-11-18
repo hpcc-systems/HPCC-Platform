@@ -79,7 +79,7 @@ export const UserGroups: React.FunctionComponent<UserGroupsProps> = ({
                     grid?.clearSelection();
                 }
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [grid, gridQuery, gridStore, username]);
 
@@ -98,7 +98,7 @@ export const UserGroups: React.FunctionComponent<UserGroupsProps> = ({
             });
             Promise.all(requests)
                 .then(responses => refreshTable())
-                .catch(logger.error);
+                .catch(err => logger.error(err));
         }, [refreshTable, selection, username])
     });
 

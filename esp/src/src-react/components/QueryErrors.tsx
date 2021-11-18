@@ -64,7 +64,7 @@ export const QueryErrors: React.FunctionComponent<QueryErrorsProps> = ({
                     refreshTable();
                 }
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [store, query, refreshTable]);
 

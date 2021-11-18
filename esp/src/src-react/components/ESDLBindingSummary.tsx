@@ -28,7 +28,7 @@ export const ESDLBindingSummary: React.FunctionComponent<ESDLBindingSummaryProps
                         replaceUrl("/esdl/bindings");
                     }
                 })
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }, [props.bindingName])
     });

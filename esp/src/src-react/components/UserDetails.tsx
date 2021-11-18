@@ -72,7 +72,7 @@ export const UserDetails: React.FunctionComponent<UserDetailsProps> = ({
                                 setErrorMessage("");
                             }
                         })
-                        .catch(logger.error)
+                        .catch(err => logger.error(err))
                         ;
                 }
             }
@@ -92,7 +92,7 @@ export const UserDetails: React.FunctionComponent<UserDetailsProps> = ({
                 setFirstName(UserInfoEditInputResponse.firstname);
                 setLastName(UserInfoEditInputResponse.lastname);
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [username, setUser]);
 

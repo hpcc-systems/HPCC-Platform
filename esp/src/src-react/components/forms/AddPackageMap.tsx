@@ -69,7 +69,7 @@ export const AddPackageMap: React.FunctionComponent<AddPackageMapProps> = ({
                             logger.error(Exceptions.Exception[0].Message);
                         }
                     })
-                    .catch(logger.error)
+                    .catch(err => logger.error(err))
                     ;
             },
             err => {

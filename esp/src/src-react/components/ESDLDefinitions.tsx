@@ -60,7 +60,7 @@ export const ESDLDefinitions: React.FunctionComponent<ESDLDefinitonsProps> = ({
                 .then(({ GetESDLDefinitionResponse }) => {
                     setDefinition(GetESDLDefinitionResponse?.Definition?.Interface);
                 })
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }
     }, [selection]);
@@ -83,7 +83,7 @@ export const ESDLDefinitions: React.FunctionComponent<ESDLDefinitonsProps> = ({
                     refreshTable();
                 }
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [store, refreshTable]);
 
@@ -107,7 +107,7 @@ export const ESDLDefinitions: React.FunctionComponent<ESDLDefinitonsProps> = ({
             Promise
                 .all(requests)
                 .then(() => refreshGrid())
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }, [refreshGrid, selection])
     });

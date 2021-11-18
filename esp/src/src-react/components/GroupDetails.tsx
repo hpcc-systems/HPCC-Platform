@@ -48,7 +48,7 @@ export const GroupDetails: React.FunctionComponent<GroupDetailsProps> = ({
                             setErrorMessage("");
                         }
                     })
-                    .catch(logger.error)
+                    .catch(err => logger.error(err))
                     ;
             }
         }
