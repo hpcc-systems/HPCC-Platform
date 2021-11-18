@@ -2044,31 +2044,28 @@ static IOutputMetaData *_getDaliLayoutInfo(MemoryBuffer &layoutBin, IPropertyTre
             layoutECL = props.queryProp("@ecl");
         if (layoutECL)
         {
-            if (layoutECL.length())
+            const char *kind = props.queryProp("@kind");
+            bool isIndex = (kind && streq(kind, "key"));
+            MultiErrorReceiver errs;
+            Owned<IHqlExpression> expr = parseQuery(layoutECL, &errs);
+            if (expr && (errs.errCount() == 0))
             {
-                const char *kind = props.queryProp("@kind");
-                bool isIndex = (kind && streq(kind, "key"));
-                MultiErrorReceiver errs;
-                Owned<IHqlExpression> expr = parseQuery(layoutECL, &errs);
-                if (expr && (errs.errCount() == 0))
+                if (props.hasProp("_record_layout"))  // Some old indexes need the payload count patched in from here
                 {
-                    if (props.hasProp("_record_layout"))  // Some old indexes need the payload count patched in from here
-                    {
-                        MemoryBuffer mb;
-                        props.getPropBin("_record_layout", mb);
-                        expr.setown(patchEclRecordDefinitionFromRecordLayout(expr, mb));
-                    }
-                    else if (!expr->hasAttribute(_payload_Atom))
-                    {
-                        //Very old records before _record_layout was added to the meta information (November 2006!)
-                        IHqlExpression * lastField = queryLastField(expr);
-                        if (lastField && lastField->queryType()->isInteger())
-                            expr.setown(prependOwnedOperand(expr, createAttribute(_payload_Atom, createConstant(1))));
-                    }
-
-                    if (exportBinaryType(layoutBin, expr, isIndex))
-                        return createTypeInfoOutputMetaData(layoutBin, isGrouped);
+                    MemoryBuffer mb;
+                    props.getPropBin("_record_layout", mb);
+                    expr.setown(patchEclRecordDefinitionFromRecordLayout(expr, mb));
                 }
+                else if (!expr->hasAttribute(_payload_Atom))
+                {
+                    //Very old records before _record_layout was added to the meta information (November 2006!)
+                    IHqlExpression * lastField = queryLastField(expr);
+                    if (lastField && lastField->queryType()->isInteger())
+                        expr.setown(prependOwnedOperand(expr, createAttribute(_payload_Atom, createConstant(1))));
+                }
+
+                if (exportBinaryType(layoutBin, expr, isIndex))
+                    return createTypeInfoOutputMetaData(layoutBin, isGrouped);
             }
         }
         if (error)
