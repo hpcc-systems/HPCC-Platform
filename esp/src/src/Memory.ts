@@ -1,8 +1,71 @@
-import * as Deferred from "dojo/Deferred";
 import * as Observable from "dojo/store/Observable";
 import * as QueryResults from "dojo/store/util/QueryResults";
 import * as SimpleQueryEngine from "dojo/store/util/SimpleQueryEngine";
 import { alphanum } from "./Utility";
+
+//  See ./node_modules/dojo/promise/Promise.js for official API
+class Deferred<T> {
+
+    promise: Promise<T>;
+    resolve: (value: T | PromiseLike<T>) => void;
+    reject: (reason?: any) => void;
+
+    protected _isCanceled = false;
+    protected _canceledReason: string;
+    protected _isResolved = false;
+    protected _isRejected = false;
+
+    constructor() {
+        this.promise = new Promise((resolve, reject) => {
+            this.resolve = resolve;
+            this.reject = reject;
+        });
+    }
+
+    then(onFulfilled?: (value: T) => void, onRejected?: (reason: any) => void): Deferred<T> {
+        this.promise.then((value: T) => {
+            if (this._isCanceled && onRejected) {
+                onRejected(this._canceledReason);
+            } else if (!this._isCanceled && onFulfilled) {
+                this._isResolved = true;
+                onFulfilled(value);
+            }
+        }, (reason: any) => {
+            if (this._isCanceled && onRejected) {
+                onRejected(this._canceledReason);
+            } else if (!this._isCanceled && onRejected) {
+                this._isRejected = true;
+                onRejected(reason);
+            }
+        });
+        return this;
+    }
+
+    cancel(reason?: string) {
+        this._isCanceled = true;
+        this._canceledReason = reason;
+    }
+
+    isResolved() {
+        return this._isResolved;
+    }
+
+    isRejected() {
+        this._isRejected;
+    }
+
+    isFulfilled() {
+        this._isResolved || this._isRejected || this._isCanceled;
+    }
+
+    isCanceled() {
+        this._isCanceled;
+    }
+}
+
+class DeferredList<T> extends Deferred<T[]> {
+    total: Deferred<number>;
+}
 
 export {
     Observable
@@ -37,14 +100,13 @@ export class BaseStore {
     }
 
     query(query, options: { start: number, count: number, sort: { attribute: string, descending: boolean } }): QueryResults<any> {
-        const retVal = new Deferred();
+        const retVal = new DeferredList();
+        retVal.total = new Deferred();
         this.fetchData().then(response => {
-            const data = this.queryEngine(query, options)(response);
-            retVal.resolve(data);
+            retVal.resolve(this.queryEngine(query, options)(response));
+            retVal.total.resolve(response.length);
         });
-        return QueryResults(retVal, {
-            totalLength: retVal.then(response => response.length)
-        });
+        return new QueryResults(retVal);
     }
 }
 
