@@ -798,6 +798,7 @@ class JlibTimingTest : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( JlibTimingTest );
         CPPUNIT_TEST(testMsTick);
+        CPPUNIT_TEST(testNsTick);
         CPPUNIT_TEST(testGetCyclesNow);
         CPPUNIT_TEST(testStdChrono);
         CPPUNIT_TEST(testGetTimeOfDay);
@@ -820,6 +821,14 @@ public:
         for (unsigned i=0; i < iters; i++)
             value += msTick();
         printf("msTick() %uns = %u\n", (msTick()-startTime)/scale, value);
+    }
+    void testNsTick()
+    {
+        unsigned startTime = msTick();
+        unsigned __int64 value = 0;
+        for (unsigned i=0; i < iters; i++)
+            value += nsTick();
+        printf("nsTick() %uns = %" I64F "u\n", (msTick()-startTime)/scale, value);
     }
     void testGetCyclesNow()
     {
