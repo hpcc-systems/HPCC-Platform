@@ -368,6 +368,102 @@ private:
     bool optRetry;
 };
 
+class EclCmdRoxieXref : public EclCmdCommon
+{
+public:
+    EclCmdRoxieXref()
+    {
+    }
+    virtual eclCmdOptionMatchIndicator parseCommandLineOptions(ArgvIterator &iter)
+    {
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (*arg!='-')
+            {
+                if (optCluster.isEmpty())
+                    optCluster.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nunrecognized argument %s\n", arg);
+                    return EclCmdOptionNoMatch;
+                }
+                continue;
+            }
+            if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
+                continue;
+            if (iter.matchOption(optQueryIds, ECLOPT_QUERYIDS))
+                continue;
+            if (iter.matchFlag(optCheckAllNodes, ECLOPT_CHECK_ALL_NODES))
+                continue;
+            eclCmdOptionMatchIndicator ind = EclCmdCommon::matchCommandLineOption(iter, true);
+            if (ind != EclCmdOptionMatch)
+                return ind;
+        }
+        return EclCmdOptionMatch;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        if (optCluster.isEmpty())
+        {
+            fputs("cluster must be specified.\n", stderr);
+            return false;
+        }
+        return true;
+    }
+
+    virtual int processCMD()
+    {
+        Owned<IClientWsSMC> client = createCmdClient(WsSMC, *this);
+        Owned<IClientRoxieXrefCmdRequest> req = client->createRoxieXrefCmdRequest();
+        setCmdRequestTimeouts(req->rpc(), optMsToWait, optWaitConnectMs, optWaitReadSec);
+
+        req->setWait(optMsToWait);
+        req->setRoxieCluster(optCluster);
+        req->setCheckAllNodes(optCheckAllNodes);
+
+        StringArray queryIds;
+        queryIds.appendListUniq(optQueryIds, ",", true);
+        req->setQueryIds(queryIds);
+
+        Owned<IClientRoxieXrefCmdResponse> resp = client->RoxieXrefCmd(req);
+        int ret = outputMultiExceptionsEx(resp->getExceptions());
+
+        const char *result = resp->getResult();
+        if (!isEmptyString(result))
+            fprintf(stdout, "\n%s\n", result);
+        else
+            fputs("\nNo Result\n", stderr);
+        return ret;
+    }
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'roxie xref' command asks Roxie for file information related to the selected queries (defaults to all queries).\n"
+            "\n"
+            "ecl roxie xref <cluster>\n"
+            " Options:\n"
+            "   <cluster>      The roxie cluster to request information from\n",
+            stdout);
+
+        fputs("\n"
+            "   --check-all-nodes      Gets query file information from all nodes (slow)\n"
+            "   --queryids=<csv list>  The queries to get file information for (default is all queries)\n"
+            "   --wait=<ms>            Max time to wait in milliseconds\n"
+            " Common Options:\n",
+            stdout);
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr optCluster;
+    StringAttr optQueryIds;
+    unsigned optMsToWait = 10000;
+    bool optCheckAllNodes = false;
+};
+
 class EclCmdRoxieUnusedFiles : public EclCmdCommon
 {
 public:
@@ -532,6 +628,8 @@ IEclCommand *createEclRoxieCommand(const char *cmdname)
         return new EclCmdRoxieCheckOrReload(true);
     if (strieq(cmdname, "unused-files"))
         return new EclCmdRoxieUnusedFiles();
+    if (strieq(cmdname, "xref"))
+        return new EclCmdRoxieXref();
     return NULL;
 }
 
@@ -555,6 +653,7 @@ public:
             "      check          verify that roxie nodes have matching state\n"
             "      reload         reload queries on roxie process cluster\n"
             "      unused-files   list files found on cluster in DFS but not in use\n"
+            "      xref           get file information for one, more, or all queries\n"
         );
     }
 };

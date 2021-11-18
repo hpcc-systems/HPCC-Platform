@@ -77,6 +77,12 @@ IPropertyTree *sendRoxieControlQuery(ISocket *sock, const char *msg, unsigned wa
     return ret.getClear();
 }
 
+IPropertyTree *sendRoxieControlQuery(const SocketEndpoint &ep, const char *msg, unsigned wait)
+{
+    Owned<ISocket> sock = ISocket::connect_timeout(ep, wait);
+    return sendRoxieControlQuery(sock, msg, wait);
+}
+
 bool sendRoxieControlLock(ISocket *sock, bool allOrNothing, unsigned wait)
 {
     Owned<IPropertyTree> resp = sendRoxieControlQuery(sock, "<control:lock/>", wait);

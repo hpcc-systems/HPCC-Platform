@@ -26,6 +26,7 @@
 //bool sendRoxieControlLock(ISocket *sock, bool allOrNothing, unsigned wait)
 
 IPropertyTree *sendRoxieControlQuery(ISocket *sock, const char *msg, unsigned wait);
+IPropertyTree *sendRoxieControlQuery(const SocketEndpoint &ep, const char *msg, unsigned wait);
 IPropertyTree *sendRoxieControlAllNodes(ISocket *sock, const char *msg, bool allOrNothing, unsigned wait);
 IPropertyTree *sendRoxieControlAllNodes(const SocketEndpoint &ep, const char *msg, bool allOrNothing, unsigned wait);
 
