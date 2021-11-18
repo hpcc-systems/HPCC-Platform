@@ -250,6 +250,10 @@ public:
     std::atomic<sequence_t> activeFlowSequence = {0};
     CriticalSection activeCrit;
 
+    bool hasDataToSend() const
+    {
+        return (packetsQueued.load(std::memory_order_relaxed) || (resendList && resendList->numActive()));
+    }
     void sendDone(unsigned packets)
     {
         //This function has a potential race condition with requestToSendNew:
@@ -310,8 +314,8 @@ public:
         if (udpTraceLevel || udpTraceFlow || udpTraceTimeouts)
         {
             StringBuffer s;
-            EXCLOG(MCoperatorError,"ERROR: UdpSender: timed out %i times (max=%i, timeout=%u, expiryTime=%u) waiting ok_to_send msg from node=%s",
-                   timeouts, udpMaxRetryTimedoutReqs, udpRequestToSendAckTimeout, requestExpiryTime.load(), ip.getIpText(s).str());
+            EXCLOG(MCoperatorError,"ERROR: UdpSender: timed out %i times (flow=%u, max=%i, timeout=%u, expiryTime=%u) waiting ok_to_send msg from node=%s",
+                   timeouts, activeFlowSequence.load(), udpMaxRetryTimedoutReqs, udpRequestToSendAckTimeout, requestExpiryTime.load(), ip.getIpText(s).str());
         }
         // 0 (zero) value of udpMaxRetryTimedoutReqs means NO limit on retries
         CriticalBlock b(activeCrit);
@@ -1012,7 +1016,7 @@ public:
         // Used for some timing tests only
         for (auto&& dest: receiversTable)
         {
-            if (dest.packetsQueued.load(std::memory_order_relaxed))
+            if (dest.hasDataToSend())
                 return false;
         }
         return true;

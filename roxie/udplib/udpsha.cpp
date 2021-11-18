@@ -903,9 +903,11 @@ class SimulatedUdpStressTest : public CppUnit::TestFixture
                     mp->putBuffer(buf, 500, false);
                 }
                 mp->flush();
-                Sleep(100);
+
+                //wait until all the packets have been sent and acknowledged
+                while(!sm->allDone())
+                    Sleep(50);
             });
-            //Ideally we would wait until all the packets have been received, but there isn't a simple way to do that
             printf("End test %u\n", msTick() - begin);
         }
         catch (IException * e)
