@@ -24,7 +24,7 @@ export const PackageMapPartDetails: React.FunctionComponent<PackageMapPartDetail
                 const __package = ListPackagesResponse?.PackageMapList?.PackageListMapData.filter(item => item.Id === name)[0];
                 setPackage(__package);
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [name]);
 
@@ -40,7 +40,7 @@ export const PackageMapPartDetails: React.FunctionComponent<PackageMapPartDetail
             .then(({ GetPartFromPackageMapResponse, Exceptions }) => {
                 setXml(GetPartFromPackageMapResponse?.Content);
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [_package, name, part]);
 

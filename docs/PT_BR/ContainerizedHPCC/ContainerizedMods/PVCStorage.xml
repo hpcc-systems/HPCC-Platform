@@ -34,6 +34,9 @@ mkdir c:\hpccdata\mydropzone</programlisting></para>
         <para>Para macOS, use este comando:</para>
 
         <para><programlisting>mkdir -p /Users/myUser/hpccdata/{dalistorage,queries,sasha,hpcc-data,mydropzone}</programlisting></para>
+
+        <para><emphasis role="bold">Note:</emphasis>Se todos esses diretórios
+        não existirem, o cluster pode não iniciar.</para>
       </listitem>
 
       <listitem>

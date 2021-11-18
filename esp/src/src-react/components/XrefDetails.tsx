@@ -41,7 +41,7 @@ export const XrefDetails: React.FunctionComponent<XrefDetailsProps> = ({
                     });
                 }
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [name]);
 

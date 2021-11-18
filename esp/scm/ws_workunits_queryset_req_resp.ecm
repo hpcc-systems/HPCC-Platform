@@ -249,6 +249,7 @@ ESPrequest [nil_remove] WUQueryFilesRequest
 ESPresponse [exceptions_inline] WUQueryFilesResponse
 {
     ESParray<ESPstruct FileUsedByQuery, File> Files;
+    [min_ver("1.85")] ESParray<ESPstruct QuerySuperFile, SuperFile> SuperFiles;
 };
 
 ESPrequest WUQueryDetailsLightWeightRequest

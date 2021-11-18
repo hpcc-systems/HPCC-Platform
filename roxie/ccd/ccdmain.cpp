@@ -178,8 +178,6 @@ StringBuffer fileNameServiceDali;
 StringBuffer roxieName;
 #ifdef _CONTAINERIZED
 StringBuffer defaultPlane;
-StringBuffer defaultPlaneDirPrefix;
-bool defaultPlaneDirPerPart = false;
 #endif
 bool trapTooManyActiveQueries;
 unsigned maxEmptyLoopIterations;
@@ -721,11 +719,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
             setStatisticsComponentName(SCTroxie, "roxie", true);
 #ifdef _CONTAINERIZED
         getDefaultStoragePlane(defaultPlane);
-        {
-            Owned<IStoragePlane> plane = getDataStoragePlane(defaultPlane, true);
-            defaultPlaneDirPrefix.set(plane->queryPrefix());
-            defaultPlaneDirPerPart = plane->queryDirPerPart();
-        }
 #endif
         installDefaultFileHooks(topology);
 

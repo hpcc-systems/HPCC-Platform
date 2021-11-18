@@ -72,8 +72,10 @@ void setFullNameProp(IPropertyTree * tree, const char * prop, IHqlExpression * e
     IHqlScope * scope = expr->queryScope();
     if (scope && !containsCall(expr, false))
         tree->setProp(prop, scope->queryFullName());
-    else
+    else if (isPublicSymbol(expr))
         setFullNameProp(tree, prop, str(lower(expr->queryFullContainerId())), str(expr->queryName()));
+    else
+        tree->setProp(prop, str(expr->queryName()));
 }
 
 static int compareSymbolsByPosition(IInterface * const * pleft, IInterface * const * pright)
@@ -312,6 +314,9 @@ void expandFunctionMeta(IPropertyTree * meta, IHqlExpression * expr)
 void expandSymbolMeta(IPropertyTree * metaTree, IHqlExpression * expr, InheritType ihType)
 {
     IPropertyTree * def = NULL;
+    IHqlExpression * namedSymbol = queryNamedSymbol(expr);
+    IHqlExpression * alias = nullptr;
+    assertex(namedSymbol);
     if (isImport(expr))
     {
         def = metaTree->addPropTree("Import");
@@ -326,6 +331,7 @@ void expandSymbolMeta(IPropertyTree * metaTree, IHqlExpression * expr, InheritTy
     }
     else
     {
+        alias = queryNamedSymbol(namedSymbol->queryBody(true));
         def = metaTree->addPropTree("Definition");
     }
 
@@ -350,10 +356,15 @@ void expandSymbolMeta(IPropertyTree * metaTree, IHqlExpression * expr, InheritTy
             def->setPropInt("@start", symbol->getStartPos());
             def->setPropInt("@body", symbol->getBodyPos());
             def->setPropInt("@end", symbol->getEndPos());
-            setFullNameProp(def, "@fullname", expr);
+            if (symbol->isPublic())
+                setFullNameProp(def, "@fullname", expr);
         }
 
-        if(expr->isFunction())
+        if (alias)
+        {
+            setFullNameProp(def, "@alias", alias);
+        }
+        else if(expr->isFunction())
         {
             expandFunctionMeta(def, expr);
         }

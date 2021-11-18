@@ -1,10 +1,9 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { AlphaNumSortMemory } from "src/Memory";
-import * as Observable from "dojo/store/Observable";
 import nlsHPCC from "src/nlsHPCC";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitResults } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { ShortVerticalDivider } from "./Common";
@@ -26,8 +25,8 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
     const [results, , , refreshData] = useWorkunitResults(wuid);
 
     //  Grid ---
-    const store = useConst(new Observable(new AlphaNumSortMemory("__hpcc_id", { Name: true, Value: true })));
-    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+    const store = useConst(new AlphaNumSortMemory("__hpcc_id", { Name: true, Value: true }));
+    const [Grid, selection, copyButtons] = useFluentGrid({
         store,
         sort: [{ attribute: "Wuid", "descending": true }],
         filename: "results",
@@ -39,13 +38,13 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
             Name: {
                 label: nlsHPCC.Name, width: 180, sortable: true,
                 formatter: function (Name, row) {
-                    return `<a href='#/workunits/${row.Wuid}/outputs/${Name}' class='dgrid-row-url'>${Name}</a>`;
+                    return <Link href={`#/workunits/${row.Wuid}/outputs/${Name}`}>{Name}</Link>;
                 }
             },
             FileName: {
                 label: nlsHPCC.FileName, sortable: true,
                 formatter: function (FileName, row) {
-                    return `<a href='#/files/${FileName}' class='dgrid-row-url2'>${FileName}</a>`;
+                    return <Link href={`#/files/${FileName}`}>{FileName}</Link>;
                 }
             },
             Value: {
@@ -56,11 +55,9 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
             ResultViews: {
                 label: nlsHPCC.Views, sortable: true,
                 formatter: function (ResultViews, idx) {
-                    let retVal = "";
-                    ResultViews?.forEach((item, idx) => {
-                        retVal += "<a href='#' onClick='return false;' viewName=" + encodeURIComponent(item) + " class='dgrid-row-url3'>" + item + "</a>&nbsp;";
-                    });
-                    return retVal;
+                    return <>
+                        {ResultViews?.map((item, idx) => <Link href='#' viewName={encodeURIComponent(item)}>{item}</Link>)}
+                    </>;
                 }
             }
         }
@@ -123,8 +120,7 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
                 Sequence: row.Sequence
             };
         }));
-        refreshTable();
-    }, [store, refreshTable, results]);
+    }, [store, results]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}

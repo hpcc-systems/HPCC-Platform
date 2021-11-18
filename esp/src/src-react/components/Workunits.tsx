@@ -127,7 +127,8 @@ export const Workunits: React.FunctionComponent<WorkunitsProps> = ({
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
-        message: nlsHPCC.DeleteSelectedWorkunits + "\n" + selection.map(s => s.Wuid).join("\n"),
+        message: nlsHPCC.DeleteSelectedWorkunits,
+        items: selection.map(s => s.Wuid),
         onSubmit: React.useCallback(() => {
             WsWorkunits.WUAction(selection, "Delete").then(() => refreshTable(true));
         }, [refreshTable, selection])

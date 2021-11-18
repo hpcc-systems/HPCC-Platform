@@ -45,7 +45,7 @@
 using roxiemem::DataBuffer;
 using roxiemem::IRowManager;
 
-unsigned udpMaxPendingPermits;
+unsigned udpMaxPendingPermits = 1;
 
 RelaxedAtomic<unsigned> flowPermitsSent = {0};
 RelaxedAtomic<unsigned> flowRequestsReceived = {0};
@@ -130,7 +130,12 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         UdpSenderEntry(const IpAddress &_dest, unsigned port) : dest(_dest)
         {
             SocketEndpoint ep(port, dest);
-            flowSocket = ISocket::udp_connect(ep);
+#ifdef SOCKET_SIMULATION
+            if (isUdpTestMode)
+                flowSocket = CSimulatedWriteSocket::udp_connect(ep);
+            else
+#endif
+                flowSocket = ISocket::udp_connect(ep);
         }
 
         ~UdpSenderEntry()
@@ -401,7 +406,12 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         {
             if (check_max_socket_read_buffer(udpFlowSocketsSize) < 0) 
                 throw MakeStringException(ROXIE_UDP_ERROR, "System Socket max read buffer is less than %i", udpFlowSocketsSize);
-            flow_socket.setown(ISocket::udp_create(flow_port));
+#ifdef SOCKET_SIMULATION
+            if (isUdpTestMode)
+                flow_socket.setown(CSimulatedReadSocket::udp_create(SocketEndpoint(flow_port, myNode.getIpAddress())));
+            else
+#endif
+                flow_socket.setown(ISocket::udp_create(flow_port));
             flow_socket->set_receive_buffer_size(udpFlowSocketsSize);
             size32_t actualSize = flow_socket->get_receive_buffer_size();
             DBGLOG("UdpReceiver: receive_receive_flow created port=%d sockbuffsize=%d actual %d", flow_port, udpFlowSocketsSize, actualSize);
@@ -588,8 +598,18 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             if (ip_buffer < udpFlowSocketsSize) ip_buffer = udpFlowSocketsSize;
             if (check_max_socket_read_buffer(ip_buffer) < 0) 
                 throw MakeStringException(ROXIE_UDP_ERROR, "System socket max read buffer is less than %u", ip_buffer);
-            receive_socket = ISocket::udp_create(parent.data_port);
-            selfFlowSocket = ISocket::udp_connect(SocketEndpoint(parent.receive_flow_port, myNode.getIpAddress()));
+#ifdef SOCKET_SIMULATION
+            if (isUdpTestMode)
+            {
+                receive_socket = CSimulatedReadSocket::udp_create(SocketEndpoint(parent.data_port, myNode.getIpAddress()));
+                selfFlowSocket = CSimulatedWriteSocket::udp_connect(SocketEndpoint(parent.receive_flow_port, myNode.getIpAddress()));
+           }
+            else
+#endif
+            {
+                receive_socket = ISocket::udp_create(parent.data_port);
+                selfFlowSocket = ISocket::udp_connect(SocketEndpoint(parent.receive_flow_port, myNode.getIpAddress()));
+            }
             receive_socket->set_receive_buffer_size(ip_buffer);
             size32_t actualSize = receive_socket->get_receive_buffer_size();
             DBGLOG("UdpReceiver: rcv_data_socket created port=%d requested sockbuffsize=%d actual sockbuffsize=%d", parent.data_port, ip_buffer, actualSize);
@@ -605,6 +625,8 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         
         ~receive_data()
         {
+            DBGLOG("Total data packets seen = %u OOO(%u) Requests(%u) Permits(%u)", dataPacketsReceived.load(), packetsOOO.load(), flowRequestsReceived.load(), flowRequestsSent.load());
+
             running = false;
             if (receive_socket)
                 receive_socket->close();
@@ -799,8 +821,18 @@ class CReceiveManager : implements IReceiveManager, public CInterface
     {
         while(running) 
         {
-            DataBuffer *dataBuff = input_queue->pop(true);
-            collatePacket(dataBuff);
+            try
+            {
+                DataBuffer *dataBuff = input_queue->pop(true);
+                collatePacket(dataBuff);
+            }
+            catch (IException * e)
+            {
+                //An interrupted semaphore exception is expected at closedown - anything else should be reported
+                if (!dynamic_cast<InterruptedSemaphoreException *>(e))
+                    EXCLOG(e);
+                e->Release();
+            }
         }
     }
 
@@ -841,7 +873,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 E->Release();
             }
         }
-        if (udpTraceLevel && isDefault)
+        if (udpTraceLevel && isDefault && !isUdpTestMode)
         {
             StringBuffer s;
             DBGLOG("UdpReceiver: CPacketCollator NO msg collator found - using default - ruid=" RUIDF " id=0x%.8X mseq=%u pkseq=0x%.8X node=%s", pktHdr->ruid, pktHdr->msgId, pktHdr->msgSeq, pktHdr->pktSeq, pktHdr->node.getTraceText(s).str());

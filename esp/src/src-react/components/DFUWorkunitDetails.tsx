@@ -42,7 +42,7 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
         setWorkunit(ESPDFUWorkunit.Get(wuid));
         FileSpray.GetDFUWorkunit({ request: { wuid } }).then(response => {
             setDfuWuData(response?.GetDFUWorkunitResponse?.result);
-        }).catch(logger.error);
+        }).catch(err => logger.error(err));
     }, [wuid]);
 
     React.useEffect(() => {
@@ -55,7 +55,7 @@ export const DFUWorkunitDetails: React.FunctionComponent<DFUWorkunitDetailsProps
         if (!workunit) return;
         workunit?.fetchXML().then(response => {
             setWuXML(response);
-        }).catch(logger.error);
+        }).catch(err => logger.error(err));
     }, [workunit]);
 
     const canSave = dfuWuData && (

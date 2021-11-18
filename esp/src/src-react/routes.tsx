@@ -83,8 +83,10 @@ export const routes: RoutesEx = [
             { path: "", action: (ctx) => import("./components/Workunits").then(_ => <_.Workunits filter={parseSearch(ctx.search) as any} />) },
             { path: "/dashboard", action: (ctx) => import("./components/WorkunitsDashboard").then(_ => <_.WorkunitsDashboard filterProps={parseSearch(ctx.search) as any} />) },
             { path: "/:Wuid", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => <_.WorkunitDetails wuid={params.Wuid as string} />) },
-            { path: "/:Wuid/:Tab", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => <_.WorkunitDetails wuid={params.Wuid as string} tab={params.Tab as string} />) },
             { path: "/:Wuid/outputs/:Name", action: (ctx, params) => import("./components/Result").then(_ => <_.Result wuid={params.Wuid as string} resultName={params.Name as string} filter={parseSearch(ctx.search) as any} />) },
+            { path: "/:Wuid/metrics", action: (ctx, params) => import("./components/Metrics").then(_ => <_.Metrics wuid={params.Wuid as string} />) },
+            { path: "/:Wuid/metrics/:id", action: (ctx, params) => import("./components/Metrics").then(_ => <_.Metrics wuid={params.Wuid as string} selection={(params.id as string)} />) },
+            { path: "/:Wuid/:Tab", action: (ctx, params) => import("./components/WorkunitDetails").then(_ => <_.WorkunitDetails wuid={params.Wuid as string} tab={params.Tab as string} />) },
         ]
     },
     {
@@ -140,7 +142,8 @@ export const routes: RoutesEx = [
             { path: "", action: (context) => import("./components/Queries").then(_ => <_.Queries filter={parseSearch(context.search) as any} />) },
             { path: "/:QuerySetId/:Id", action: (ctx, params) => import("./components/QueryDetails").then(_ => <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} />) },
             { path: "/:QuerySetId/:Id/:Tab", action: (ctx, params) => import("./components/QueryDetails").then(_ => <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} tab={params.Tab as string} />) },
-            { path: "/:QuerySetId/:QueryId/graphs/:Wuid/:GraphName", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="GraphTree7Widget" params={params} />) }
+            { path: "/:QuerySetId/:QueryId/graphs/:Wuid/:GraphName", action: (ctx, params) => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="GraphTree7Widget" params={params} />) },
+            { path: "/:QuerySetId/:Id/testPages/:Tab", action: (ctx, params) => import("./components/QueryDetails").then(_ => <_.QueryDetails querySet={params.QuerySetId as string} queryId={params.Id as string} tab="testPages" testTab={params.Tab as string} />) },
         ]
     },
     {
@@ -196,7 +199,13 @@ export const routes: RoutesEx = [
     },
     {
         mainNav: ["topology"],
-        path: "/esdl", action: () => import("./layouts/DojoAdapter").then(_ => <_.DojoAdapter widgetClassID="DynamicESDLQueryWidget" />)
+        path: "/esdl",
+        children: [
+            { path: "", action: (ctx, params) => import("./components/DynamicESDL").then(_ => <_.DynamicESDL />) },
+            { path: "/:Tab", action: (ctx, params) => import("./components/DynamicESDL").then(_ => <_.DynamicESDL tab={params.Tab as string} />) },
+            { path: "/bindings/:Name", action: (ctx, params) => import("./components/ESDLBindingDetails").then(_ => <_.ESDLBindingDetails name={params.Name as string} />) },
+            { path: "/bindings/:Name/:Tab", action: (ctx, params) => import("./components/ESDLBindingDetails").then(_ => <_.ESDLBindingDetails name={params.Name as string} tab={params.Tab as string} />) },
+        ]
     },
     {
         mainNav: [],

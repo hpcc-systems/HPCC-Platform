@@ -5,10 +5,11 @@ import nlsHPCC from "src/nlsHPCC";
 interface useConfirmProps {
     title: string;
     message: string;
+    items?: string[];
     onSubmit: () => void;
 }
 
-export function useConfirm({ title, message, onSubmit }: useConfirmProps): [React.FunctionComponent, (_: boolean) => void] {
+export function useConfirm({ title, message, items = [], onSubmit }: useConfirmProps): [React.FunctionComponent, (_: boolean) => void] {
 
     const [show, setShow] = React.useState(false);
 
@@ -22,8 +23,9 @@ export function useConfirm({ title, message, onSubmit }: useConfirmProps): [Reac
             maxWidth={500}
         >
             <div>
-                {message.split("\n").map((str, idx) => {
-                    return <span key={idx}>{str} <br /></span>;
+                <p>{message}</p>
+                {items.map((item, idx) => {
+                    return <span key={idx}>{item} <br /></span>;
                 })}
             </div>
             <DialogFooter>
@@ -38,7 +40,7 @@ export function useConfirm({ title, message, onSubmit }: useConfirmProps): [Reac
                 <DefaultButton text={nlsHPCC.Cancel} onClick={() => setShow(false)} />
             </DialogFooter>
         </Dialog>;
-    }, [show, setShow, title, message, onSubmit]);
+    }, [items, message, onSubmit, setShow, show, title]);
 
     return [Confirm, setShow];
 

@@ -129,8 +129,8 @@
 
                   <listitem>
                     <para>WsAttributes (porta padrão é 8145) <emphasis
-                    role="bold">Observação:</emphasis> Não faz parte da VM ou
-                    da Community Edition</para>
+                    role="bold">Observação:</emphasis> Não faz parte da
+                    Community Edition. Apenas para uso legado.</para>
                   </listitem>
 
                   <listitem>

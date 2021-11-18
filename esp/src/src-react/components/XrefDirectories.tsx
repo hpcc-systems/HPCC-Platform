@@ -81,7 +81,7 @@ export const XrefDirectories: React.FunctionComponent<XrefDirectoriesProps> = ({
                     refreshTable();
                 }
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [store, name, refreshTable]);
 
@@ -93,7 +93,7 @@ export const XrefDirectories: React.FunctionComponent<XrefDirectoriesProps> = ({
                 .then(response => {
                     refreshData();
                 })
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }, [name, refreshData])
     });

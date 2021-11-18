@@ -2,9 +2,8 @@ import * as React from "react";
 import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { AlphaNumSortMemory } from "src/Memory";
-import * as Observable from "dojo/store/Observable";
 import nlsHPCC from "src/nlsHPCC";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitWorkflows } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { ShortVerticalDivider } from "./Common";
@@ -20,8 +19,8 @@ export const Workflows: React.FunctionComponent<WorkflowsProps> = ({
     const [workflows, , refreshWorkflow] = useWorkunitWorkflows(wuid);
 
     //  Grid ---
-    const store = useConst(new Observable(new AlphaNumSortMemory("__hpcc_id", { Name: true, Value: true })));
-    const [Grid, _selection, refreshTable, copyButtons] = useGrid({
+    const store = useConst(new AlphaNumSortMemory("__hpcc_id", { Name: true, Value: true }));
+    const [Grid, _selection, copyButtons] = useFluentGrid({
         store,
         sort: [{ attribute: "Wuid", "descending": true }],
         filename: "workflows",
@@ -56,8 +55,7 @@ export const Workflows: React.FunctionComponent<WorkflowsProps> = ({
                 __hpcc_id: row.WFID
             };
         }));
-        refreshTable();
-    }, [store, refreshTable, workflows]);
+    }, [store, workflows]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [

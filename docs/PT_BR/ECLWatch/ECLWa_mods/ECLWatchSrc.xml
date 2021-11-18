@@ -1592,6 +1592,25 @@
                 </imageobject>
               </mediaobject>
             </figure></para>
+
+          <para>A cor do ícone do filtro também tem significado. A cor muda
+          para vermelho exibindo uma mensagem de aviso se houver mais de
+          100.000 arquivos ao passar o mouse sobre o ícone do filtro.</para>
+
+          <para><figure>
+              <title>Ícone de aviso de limite de arquivos lógicos</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA427.jpg"
+                             vendor="eclwatchSS"/>
+                </imageobject>
+              </mediaobject>
+            </figure>O ícone permanecerá vermelho durante a navegação nos
+          arquivos lógicos e mudará para azul quando você reduzir a quantidade
+          de arquivos retornados. O ícone mudará de volta para vermelho se
+          você limpar o filtro em ambientes que excedam o limite de aviso de
+          100.000 arquivos.</para>
         </sect3>
       </sect2>
 

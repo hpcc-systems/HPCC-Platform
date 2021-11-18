@@ -14,6 +14,8 @@ const defaults = {
     layout: undefined
 };
 
+const options = { ...defaults };
+
 export interface MetricsOptions {
     scopeTypes: string[];
     properties: string[];
@@ -21,13 +23,12 @@ export interface MetricsOptions {
     subgraphTpl;
     activityTpl;
     edgeTpl;
-    layout: object
+    layout?: object
 }
 
 export function useMetricsOptions(): [MetricsOptions, (opts: MetricsOptions) => void, () => void, (toDefaults?: boolean) => void] {
 
     const store = useConst(() => userKeyValStore());
-    const options = useConst({ ...defaults });
     const refresh = useForceUpdate();
 
     const setOptions = React.useCallback((opts: MetricsOptions) => {

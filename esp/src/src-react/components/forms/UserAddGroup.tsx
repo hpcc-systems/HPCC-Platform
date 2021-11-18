@@ -60,7 +60,7 @@ export const UserAddGroupForm: React.FunctionComponent<UserAddGroupProps> = ({
                             if (refreshGrid) refreshGrid();
                         }
                     })
-                    .catch(logger.error)
+                    .catch(err => logger.error(err))
                     ;
             },
             logger.info

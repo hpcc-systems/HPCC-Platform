@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ICommandBarItemProps } from "@fluentui/react";
+import { DetailsList, DetailsListLayoutMode, IColumn, ICommandBarItemProps, Selection } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
 import { createCopyDownloadSelection } from "../components/Common";
 import { DojoGrid } from "../components/DojoGrid";
@@ -13,6 +13,7 @@ interface useGridProps {
     getSelected?: () => any[],
     filename: string
 }
+
 export function useGrid({ store, query = {}, sort = [], columns, getSelected, filename }: useGridProps): [React.FunctionComponent, any[], (clearSelection?: boolean) => void, ICommandBarItemProps[]] {
 
     const constStore = useConst(store);
@@ -46,13 +47,104 @@ export function useGrid({ store, query = {}, sort = [], columns, getSelected, fi
     }, [], [query]);
 
     const copyButtons = React.useMemo((): ICommandBarItemProps[] => [
-        ...createCopyDownloadSelection(grid, selection, `${filename}.csv`)
-    ], [filename, grid, selection]);
+        ...createCopyDownloadSelection(constColumns, selection, `${filename}.csv`)
+    ], [constColumns, filename, selection]);
 
     return [Grid, selection, refreshTable, copyButtons];
 }
 
-// export function useMemoryGrid({ query = {}, sort = [], columns, getSelected, filename }: useGridProps): [React.FunctionComponent, any[], (clearSelection?: boolean) => void, ICommandBarItemProps[]] {
-//     const [Grid, selection, refreshTable, copyButtons] = useGrid(params);
-//     return [Grid, selection, refreshTable, copyButtons];
-// };
+interface Sorted {
+    column: string;
+    descending: boolean;
+}
+
+function columnsAdapter(columns, sorted: Sorted): IColumn[] {
+    const retVal: IColumn[] = [];
+    for (const key in columns) {
+        const column = columns[key];
+        if (column?.selectorType === undefined) {
+            retVal.push({
+                key,
+                name: column.label ?? key,
+                fieldName: column.field ?? key,
+                minWidth: column.width,
+                maxWidth: column.width,
+                isResizable: true,
+                isSorted: key == sorted.column,
+                isSortedDescending: key == sorted.column && sorted.descending,
+            } as IColumn);
+        }
+    }
+    return retVal;
+}
+
+export function useFluentGrid({ store, query = {}, sort = [], columns, getSelected, filename }: useGridProps): [React.FunctionComponent, any[], ICommandBarItemProps[]] {
+
+    const constQuery = useConst({ ...query });
+    const constColumns = useConst({ ...columns });
+    const [sorted, setSorted] = React.useState<Sorted>({ column: "", descending: false });
+    const [selection, setSelection] = React.useState([]);
+
+    const fluentColumns: IColumn[] = React.useMemo(() => {
+        return columnsAdapter(constColumns, sorted);
+    }, [constColumns, sorted]);
+
+    const onColumnClick = React.useCallback((event: React.MouseEvent<HTMLElement>, column: IColumn) => {
+        let sorted = column.isSorted;
+        let isSortedDescending: boolean = column.isSortedDescending;
+        if (!sorted) {
+            sorted = true;
+            isSortedDescending = false;
+        } else if (!isSortedDescending) {
+            isSortedDescending = true;
+        } else {
+            sorted = false;
+            isSortedDescending = false;
+        }
+        setSorted({
+            column: sorted ? column.key : "",
+            descending: sorted ? isSortedDescending : false
+        });
+    }, []);
+
+    const [items, setItems] = React.useState<any[]>([]);
+
+    React.useEffect(() => {
+        const sort = sorted.column ? [{ attribute: sorted.column, descending: sorted.descending }] : undefined;
+        store.query(constQuery, { sort }).then(items => {
+            setItems(items);
+        });
+    }, [constQuery, sorted.column, sorted.descending, store, store.dataVersion]);
+
+    const selectionHandler = useConst(new Selection({
+        onSelectionChanged: () => {
+            setSelection(selectionHandler.getSelection());
+        }
+    }));
+
+    const renderItemColumn = React.useCallback((item: any, index: number, column: IColumn) => {
+        if (constColumns[column.key].formatter) {
+            return <span style={{ display: "flex" }}>{constColumns[column.key].formatter(item[column.key], item)}</span>;
+        }
+        return <span>{item[column.key]}</span>;
+    }, [constColumns]);
+
+    const Grid = React.useMemo(() => () => <DetailsList
+        compact={true}
+        items={items}
+        columns={fluentColumns}
+        setKey="set"
+        layoutMode={DetailsListLayoutMode.justified}
+        onRenderItemColumn={renderItemColumn}
+        selection={selectionHandler}
+        selectionPreservedOnEmptyClick={true}
+        onItemInvoked={this._onItemInvoked}
+        onColumnHeaderClick={onColumnClick}
+    />, [fluentColumns, items, onColumnClick, renderItemColumn, selectionHandler]);
+
+    const copyButtons = React.useMemo((): ICommandBarItemProps[] => [
+        ...createCopyDownloadSelection(constColumns, selection, `${filename}.csv`)
+    ], [constColumns, filename, selection]);
+
+    return [Grid, selection, copyButtons];
+}

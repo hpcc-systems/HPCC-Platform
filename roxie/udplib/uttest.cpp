@@ -293,7 +293,7 @@ void testNxN()
     if (useAeron)
         sendMgr.setown(createAeronSendManager(7000, udpNumQs, myNode.getIpAddress(), false));
     else
-        sendMgr.setown(createSendManager(7000, 7001, 7002, 100, udpNumQs, NULL, false));
+        sendMgr.setown(createSendManager(7000, 7001, 7002, 100, udpNumQs, myNode.getIpAddress(), nullptr, false));
     Receiver receiver;
 
     IMessagePacker **packers = new IMessagePacker *[numNodes];

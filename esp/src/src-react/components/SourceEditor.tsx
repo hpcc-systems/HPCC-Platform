@@ -1,7 +1,7 @@
 import * as React from "react";
 import { CommandBar, ContextualMenuItemType, getTheme, ICommandBarItemProps } from "@fluentui/react";
 import { useConst, useOnEvent } from "@fluentui/react-hooks";
-import { Editor, ECLEditor, XMLEditor } from "@hpcc-js/codemirror";
+import { Editor, ECLEditor, XMLEditor, JSONEditor } from "@hpcc-js/codemirror";
 import nlsHPCC from "src/nlsHPCC";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { AutosizeHpccJSComponent } from "../layouts/HpccJSAdapter";
@@ -10,16 +10,34 @@ import { darkTheme } from "../themes";
 import { ShortVerticalDivider } from "./Common";
 import "eclwatch/css/cmDarcula.css";
 
+type ModeT = "ecl" | "xml" | "json" | "text";
+
+function newEditor(mode: ModeT) {
+    switch (mode) {
+        case "ecl":
+            return new ECLEditor();
+        case "xml":
+            return new XMLEditor();
+        case "json":
+            return new JSONEditor();
+        case "text":
+        default:
+            return new Editor();
+    }
+}
+
 interface SourceEditorProps {
+    mode?: ModeT;
     text?: string;
     readonly?: boolean;
-    mode?: "ecl" | "xml" | "text";
+    onChange?: (text: string) => void;
 }
 
 const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
+    mode = "text",
     text = "",
     readonly = false,
-    mode = "text"
+    onChange = (text: string) => { }
 }) => {
 
     const theme = getTheme();
@@ -35,17 +53,25 @@ const SourceEditor: React.FunctionComponent<SourceEditorProps> = ({
         { key: "divider_1", itemType: ContextualMenuItemType.Divider, onRender: () => <ShortVerticalDivider /> },
     ];
 
-    const editor = useConst(mode === "text" ? new Editor() : new XMLEditor());
-    React.useEffect(() => {
-        editor
-            .text(text)
-            .readOnly(readonly)
-            .lazyRender()
-            ;
+    const editor = useConst(newEditor(mode)
+        .on("changes", () => {
+            onChange(editor.text());
+        })
+    );
 
+    React.useEffect(() => {
         if (theme.semanticColors.link === darkTheme.palette.themePrimary) {
             editor.setOption("theme", "darcula");
         }
+
+        if (editor.text() !== text) {
+            editor.text(text);
+        }
+
+        editor
+            .readOnly(readonly)
+            .lazyRender()
+            ;
 
     }, [editor, readonly, text, theme.semanticColors.link]);
 
@@ -92,6 +118,36 @@ export const XMLSourceEditor: React.FunctionComponent<XMLSourceEditorProps> = ({
 }) => {
 
     return <SourceEditor text={text} readonly={readonly} mode="xml"></SourceEditor>;
+};
+
+interface JSONSourceEditorProps {
+    json?: object;
+    readonly?: boolean;
+    onChange?: (obj: object) => void;
+}
+
+export const JSONSourceEditor: React.FunctionComponent<JSONSourceEditorProps> = ({
+    json,
+    readonly = false,
+    onChange = (obj: object) => { }
+}) => {
+
+    const text = React.useMemo(() => {
+        try {
+            return JSON.stringify(json, undefined, 4);
+        } catch (e) {
+            return "";
+        }
+    }, [json]);
+
+    const textChanged = React.useCallback((text) => {
+        try {
+            onChange(JSON.parse(text));
+        } catch (e) {
+        }
+    }, [onChange]);
+
+    return <SourceEditor text={text} readonly={readonly} mode="json" onChange={textChanged}></SourceEditor>;
 };
 
 export interface WUXMLSourceEditorProps {

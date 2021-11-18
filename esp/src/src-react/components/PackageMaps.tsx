@@ -145,7 +145,7 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
                     setActiveMapValidationResult(validateResponseToText(ValidatePackageResponse));
                 }
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [activeMapTarget, activeMapXml, setActiveMapValidationResult, setErrorMessage, setShowError]);
 
@@ -165,7 +165,7 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
                     setContentsValidationResult(validateResponseToText(ValidatePackageResponse));
                 }
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [contentsTarget, contentsXml, setContentsValidationResult, setErrorMessage, setShowError]);
 
@@ -175,7 +175,7 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
                 .then(({ GetPackageResponse }) => {
                     setActiveMapXml(GetPackageResponse.Info);
                 })
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }
     }, [activeMapProcess, activeMapTarget]);
@@ -231,7 +231,7 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
                             setErrorMessage(Exceptions?.Exception[0].Message);
                         }
                     })
-                    .catch(logger.error)
+                    .catch(err => logger.error(err))
                     ;
             });
         }, [refreshTable, selection])
@@ -279,7 +279,7 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
                             refreshTable();
                         }
                     })
-                    .catch(logger.error)
+                    .catch(err => logger.error(err))
                     ;
             }
         },
@@ -301,7 +301,7 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
                             setErrorMessage(Exceptions?.Exception[0].Message);
                         }
                     })
-                    .catch(logger.error)
+                    .catch(err => logger.error(err))
                     ;
             }
         },
@@ -354,7 +354,7 @@ export const PackageMaps: React.FunctionComponent<PackageMapsProps> = ({
                 setTargets(_targets);
                 setProcesses(_processes);
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, []);
 

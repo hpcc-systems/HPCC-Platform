@@ -6335,9 +6335,8 @@ class CDataBufferManager : implements IDataBufferManager, public CInterface
                 // NOTE - do NOT put a CriticalBlock c(finger->crit) here since:
                 // 1. It's not needed - no-one modifies finger->nextBottom chain but me and I hold CDataBufferManager::crit
                 // 2. finger->crit is about to get released back to the pool and it's important that it is not locked at the time!
-                if (finger->okToFree.load(std::memory_order_acquire))
+                if (finger->count.load(std::memory_order_acquire) == 0)
                 {
-                    assert(!finger->isAlive());
                     DataBufferBottom *goer = finger;
                     finger = finger->nextBottom;
                     unlink(goer);
@@ -6437,9 +6436,7 @@ public:
                     CriticalBlock c(finger->crit);
                     if (finger->freeChain)
                     {
-                        finger->Link(); // Link once for the reference we save in curBlock
-                                        // Release (to dec ref count) when no more free blocks in the page
-                        if (finger->isAlive())
+                        if (finger->isAliveAndLink())
                         {
                             curBlock = finger;
                             nextBase = nullptr; // should never be accessed
@@ -6484,7 +6481,7 @@ public:
     }
 };
 
-DataBufferBottom::DataBufferBottom(CDataBufferManager *_owner, DataBufferBottom *ownerFreeChain) : okToFree(false)
+DataBufferBottom::DataBufferBottom(CDataBufferManager *_owner, DataBufferBottom *ownerFreeChain)
 {
     owner = _owner;
     if (ownerFreeChain)
@@ -6511,25 +6508,11 @@ void DataBufferBottom::addToFreeChain(DataBuffer * buffer)
 
 void DataBufferBottom::Release()
 {
+    //Need to save the value of owner because the object can be freed as soon as counter goes to 0
+    CDataBufferManager * savedOwner = owner;
     if (count.fetch_sub(1, std::memory_order_release) == 1)
     {
-        //No acquire fence - released() is assumed not to access the data in this buffer
-        //If it does it should contain an acquire fence
-        released();
-    }
-}
-
-void DataBufferBottom::released()
-{
-    // Not safe to free here as owner may be in the middle of allocating from it
-    // instead, give owner a hint that it's worth thinking about freeing this page next time it is safe
-    unsigned expected = 0;
-    if (count.compare_exchange_strong(expected, DEAD_PSEUDO_COUNT, std::memory_order_release))
-    {
-        //Need to save the value of owner because the object can be freed as soon as okToFree is set
-        CDataBufferManager * savedOwner = owner;
-        //No acquire fence required since the following code doesn't read anything from the object
-        okToFree.store(true, std::memory_order_release);
+        //indicate to the owner that there is now a page that is ready to be freed.
         savedOwner->freePending.store(true, std::memory_order_release);
     }
 }

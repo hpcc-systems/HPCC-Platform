@@ -76,19 +76,20 @@ export const XrefLostFiles: React.FunctionComponent<XrefLostFilesProps> = ({
                     refreshTable();
                 }
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [store, name, refreshTable]);
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
-        message: nlsHPCC.DeleteSelectedFiles + "\n" + selection.map(file => file.name),
+        message: nlsHPCC.DeleteSelectedFiles,
+        items: selection.map(file => file.name),
         onSubmit: React.useCallback(() => {
             WsDFUXref.DFUXRefArrayAction(selection, "DeleteLogical", name, "Lost")
                 .then(response => {
                     refreshData();
                 })
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }, [name, refreshData, selection])
     });

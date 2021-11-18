@@ -34,7 +34,6 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
     const [showAddPermission, setShowAddPermission] = React.useState(false);
     const [scopeScansEnabled, setScopeScansEnabled] = React.useState(false);
     const [modulesDn, setModulesDn] = React.useState("");
-    const [selectedFileList, setSelectedFileList] = React.useState("");
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
 
     //  Grid ---
@@ -88,7 +87,6 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
                 state.workunitScope = true;
             }
         }
-        setSelectedFileList(selection.map(file => file.name).join("\n"));
         setUIState(state);
     }, [selection]);
 
@@ -101,7 +99,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
             .then(({ ResourcesResponse }) => {
                 setScopeScansEnabled(ResourcesResponse?.scopeScansStatus?.isEnabled || false);
             })
-            .catch(logger.error)
+            .catch(err => logger.error(err))
             ;
     }, [setScopeScansEnabled]);
 
@@ -114,7 +112,8 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
 
     const [DeleteConfirm, setShowDeleteConfirm] = useConfirm({
         title: nlsHPCC.Delete,
-        message: nlsHPCC.DeleteSelectedPermissions + "\n\n" + selectedFileList,
+        message: nlsHPCC.DeleteSelectedPermissions,
+        items: selection.map(file => file.name),
         onSubmit: React.useCallback(() => {
             const deleteRequests = {};
             const requests = [];
@@ -139,7 +138,7 @@ export const Permissions: React.FunctionComponent<PermissionsProps> = ({
                 .then(() => {
                     refreshTable();
                 })
-                .catch(logger.error)
+                .catch(err => logger.error(err))
                 ;
         }, [refreshTable, selection])
     });

@@ -349,6 +349,23 @@ RoxieControlCmdResponse
     ESParray<ESPstruct RoxieControlEndpointInfo, Endpoint> Endpoints;
 };
 
+ESPrequest RoxieXrefCmdRequest
+{
+    string RoxieCluster;
+    ESParray<string> QueryIds;
+    bool CheckAllNodes(false);
+    int Wait;
+};
+
+ESPresponse
+[
+    exceptions_inline, nil_remove
+]
+RoxieXrefCmdResponse
+{
+    string Result;
+};
+
 ESPrequest GetStatusServerInfoRequest
 {
     string ServerName;
@@ -442,6 +459,8 @@ ESPservice [auth_feature("DEFERRED"), noforms, version("1.24"), exceptions_inlin
     ESPmethod [resp_xsl_default("/esp/xslt/hpccresourcelist.xslt")] BrowseResources(BrowseResourcesRequest, BrowseResourcesResponse);
 
     ESPmethod RoxieControlCmd(RoxieControlCmdRequest, RoxieControlCmdResponse);
+    ESPmethod RoxieXrefCmd(RoxieXrefCmdRequest, RoxieXrefCmdResponse);
+
 //this one doesn't seem to do any feature level check, Kevin/Tony?
     ESPmethod [auth_feature("NONE")] GetStatusServerInfo(GetStatusServerInfoRequest, GetStatusServerInfoResponse);
 //this one doesn't seem to do any feature level check, Kevin/Tony?

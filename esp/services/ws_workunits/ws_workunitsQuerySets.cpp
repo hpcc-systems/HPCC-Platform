@@ -368,7 +368,7 @@ void QueryFilesInUse::loadTarget(IPropertyTree *t, const char *target, unsigned 
             return;
         StringArray locations;
         locations.append(process.str());
-        wufiles->resolveFiles(locations, NULL, NULL, NULL, true, true, false, false);
+        wufiles->resolveFiles(locations, NULL, NULL, NULL, true, true, true, false);
 
         Owned<IReferencedFileIterator> files = wufiles->getFiles();
         ForEach(*files)
@@ -387,7 +387,14 @@ void QueryFilesInUse::loadTarget(IPropertyTree *t, const char *target, unsigned 
                 IPropertyTree *fileTree = queryTree->addPropTree("File", createPTree("File"));
                 fileTree->setProp("@lfn", lfn);
                 if (rf.getFlags() & RefFileSuper)
+                {
                     fileTree->setPropBool("@super", true);
+                    ForEachItemIn(i, rf.getSubFileNames())
+                    {
+                        IPropertyTree *subfileTree = fileTree->addPropTree("SubFile");
+                        subfileTree->setProp("@lfn", rf.getSubFileNames().item(i));
+                    }
+                }
                 if (rf.getFlags() & RefFileNotFound)
                     fileTree->setPropBool("@notFound", true);
                 const char *fpkgid = rf.queryPackageId();
@@ -1865,19 +1872,31 @@ bool CWsWorkunitsEx::onWUQueryFiles(IEspContext &context, IEspWUQueryFilesReques
        throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query not found in file cache (%s)", xpath.str());
 
     IArrayOf<IEspFileUsedByQuery> referencedFiles;
+    IArrayOf<IEspQuerySuperFile> referencedSuperFiles;
     Owned<IPropertyTreeIterator> files = queryTree->getElements("File");
     ForEach(*files)
     {
         IPropertyTree &file = files->query();
-        if (file.getPropBool("@super", 0))
-            continue;
-        Owned<IEspFileUsedByQuery> respFile = createFileUsedByQuery();
-        respFile->setFileName(file.queryProp("@lfn"));
-        respFile->setFileSize(file.getPropInt64("@size"));
-        respFile->setNumberOfParts(file.getPropInt("@numparts"));
-        referencedFiles.append(*respFile.getClear());
+        if (file.getPropBool("@super"))
+        {
+            Owned<IEspQuerySuperFile> superFile = createQuerySuperFile();
+            superFile->setName(file.queryProp("@lfn"));
+            Owned<IPropertyTreeIterator> subfiles = file.getElements("SubFile");
+            ForEach(*subfiles)
+                superFile->getSubFiles().append(subfiles->query().queryProp("@lfn"));
+            referencedSuperFiles.append(*superFile.getClear());
+        }
+        else
+        {
+            Owned<IEspFileUsedByQuery> respFile = createFileUsedByQuery();
+            respFile->setFileName(file.queryProp("@lfn"));
+            respFile->setFileSize(file.getPropInt64("@size"));
+            respFile->setNumberOfParts(file.getPropInt("@numparts"));
+            referencedFiles.append(*respFile.getClear());
+        }
     }
     resp.setFiles(referencedFiles);
+    resp.setSuperFiles(referencedSuperFiles);
     return true;
 }
 

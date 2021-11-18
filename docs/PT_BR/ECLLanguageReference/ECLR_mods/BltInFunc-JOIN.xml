@@ -419,13 +419,14 @@
           <row>
             <entry><emphasis role="bold">KEEP(n)</emphasis></entry>
 
-            <entry>Especifica o número máximo de registros correspondentes (n)
-            a ser gerado no conjunto de resultados. Se omitido, todas as
-            correspondências são mantidas. Isso é útil nos casos em que possa
-            haver muitos pares correspondentes e caso você precise limitar o
-            número no conjunto de resultados. KEEP não é suportado para RIGHT
-            EXTER, RIGHT ONLY, LEFT ONLY ou FULL ONLY
-            <emphasis>jointypes</emphasis>.</entry>
+            <entry>Especifica o número máximo de registros correspondentes(n)
+            a serem gerados no conjunto de resultados de cada registro
+            <emphasis>leftrecset</emphasis>. Se omitido, todas as
+            correspondências são mantidas. Isso é útil onde pode haver muitos
+            pares correspondentes e você precisa limitar o número no conjunto
+            de resultados. KEEP não é suportado para
+            <emphasis>jointypes</emphasis> RIGHT OUTER, RIGHT ONLY, LEFT ONLY
+            ou FULL ONLY.</entry>
           </row>
 
           <row>

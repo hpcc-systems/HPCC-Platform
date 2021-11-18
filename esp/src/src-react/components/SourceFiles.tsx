@@ -1,12 +1,11 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Image, Link } from "@fluentui/react";
 import { useConst } from "@fluentui/react-hooks";
-import * as Observable from "dojo/store/Observable";
 import * as domClass from "dojo/dom-class";
 import { AlphaNumSortMemory } from "src/Memory";
 import * as Utility from "src/Utility";
 import nlsHPCC from "src/nlsHPCC";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitSourceFiles } from "../hooks/workunit";
 import { HolyGrail } from "../layouts/HolyGrail";
 import { ShortVerticalDivider } from "./Common";
@@ -39,8 +38,8 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
     const [sourceFiles, , , refreshData] = useWorkunitSourceFiles(wuid);
 
     //  Grid ---
-    const store = useConst(new Observable(new TreeStore("Name", { Name: true, Value: true })));
-    const [Grid, selection, refreshTable, copyButtons] = useGrid({
+    const store = useConst(new TreeStore("Name", { Name: true, Value: true }));
+    const [Grid, selection, copyButtons] = useFluentGrid({
         store,
         sort: [{ attribute: "Name", "descending": false }],
         query: { __hpcc_parentName: "" },
@@ -53,7 +52,11 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
             Name: tree({
                 label: "Name", sortable: true,
                 formatter: function (Name, row) {
-                    return `${Utility.getImageHTML(row.IsSuperFile ? "folder_table.png" : "file.png")}&nbsp;<a href='#/files/${row.FileCluster}/${Name}' class='dgrid-row-url2'>${Name}</a>`;
+                    return <>
+                        <Image src={Utility.getImageURL(row.IsSuperFile ? "folder_table.png" : "file.png")} className='iconAlign' />
+                        &nbsp;
+                        <Link href={`#/files/${row.FileCluster}/${Name}`}>{Name}</Link>
+                    </>;
                 }
             }),
             FileCluster: { label: nlsHPCC.FileCluster, width: 300, sortable: false },
@@ -101,8 +104,7 @@ export const SourceFiles: React.FunctionComponent<SourceFilesProps> = ({
 
     React.useEffect(() => {
         store.setData(sourceFiles);
-        refreshTable();
-    }, [store, refreshTable, sourceFiles]);
+    }, [store, sourceFiles]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}

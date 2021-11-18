@@ -5,6 +5,7 @@ import { Topology, TpLogicalClusterQuery } from "@hpcc-js/comms";
 import { scopedLogger } from "@hpcc-js/util";
 import { TpDropZoneQuery, TpGroupQuery, TpServiceQuery } from "src/WsTopology";
 import * as WsAccess from "src/ws_access";
+import * as WsESDLConfig from "src/WsESDLConfig";
 import { States } from "src/WsWorkunits";
 import { FileList, States as DFUStates } from "src/FileSpray";
 import nlsHPCC from "src/nlsHPCC";
@@ -126,7 +127,8 @@ export type FieldType = "string" | "password" | "number" | "checkbox" | "choiceg
     "queries-priority" | "queries-suspend-state" | "queries-active-state" |
     "target-cluster" | "target-dropzone" | "target-server" | "target-group" |
     "target-dfuqueue" | "user-groups" | "group-members" | "permission-type" |
-    "logicalfile-type" | "dfuworkunit-state";
+    "logicalfile-type" | "dfuworkunit-state" |
+    "esdl-esp-processes" | "esdl-definitions";
 
 export type Values = { [name: string]: string | number | boolean | (string | number | boolean)[] };
 
@@ -255,6 +257,16 @@ interface PermissionTypeField extends BaseField {
     value?: string;
 }
 
+interface EsdlEspProcessesField extends BaseField {
+    type: "esdl-esp-processes";
+    value?: string;
+}
+
+interface EsdlDefinitionsField extends BaseField {
+    type: "esdl-definitions";
+    value?: string;
+}
+
 interface LinkField extends BaseField {
     type: "link";
     href: string;
@@ -279,7 +291,8 @@ type Field = StringField | NumericField | CheckboxField | ChoiceGroupField | Dat
     QueriesPriorityField | QueriesSuspendStateField | QueriesActiveStateField |
     TargetClusterField | TargetDropzoneField | TargetServerField | TargetGroupField |
     TargetDfuSprayQueueField | UserGroupsField | GroupMembersField | PermissionTypeField |
-    LogicalFileType | DFUWorkunitStateField;
+    LogicalFileType | DFUWorkunitStateField |
+    EsdlEspProcessesField | EsdlDefinitionsField;
 
 export type Fields = { [id: string]: Field };
 
@@ -438,6 +451,51 @@ export const TargetDfuSprayQueueTextField: React.FunctionComponent<TargetDfuSpra
     return <AsyncDropdown {...props} options={dfuSprayQueues} />;
 };
 
+export interface EsdlEspProcessesTextFieldProps extends AsyncDropdownProps {
+}
+
+export const EsdlEspProcessesTextField: React.FunctionComponent<EsdlEspProcessesTextFieldProps> = (props) => {
+
+    const [espProcesses, setEspProcesses] = React.useState<IDropdownOption[]>([]);
+
+    React.useEffect(() => {
+        WsESDLConfig.ListESDLBindings({}).then(({ ListESDLBindingsResponse }) => {
+            setEspProcesses(
+                ListESDLBindingsResponse.EspProcesses.EspProcess.map(proc => {
+                    return {
+                        key: proc.Name,
+                        text: proc.Name
+                    };
+                })
+            );
+        });
+    }, []);
+
+    return <AsyncDropdown {...props} options={espProcesses} />;
+};
+export interface EsdlDefinitionsTextFieldProps extends AsyncDropdownProps {
+}
+
+export const EsdlDefinitionsTextField: React.FunctionComponent<EsdlDefinitionsTextFieldProps> = (props) => {
+
+    const [definitions, setDefinitions] = React.useState<IDropdownOption[]>([]);
+
+    React.useEffect(() => {
+        WsESDLConfig.ListESDLDefinitions({}).then(({ ListESDLDefinitionsResponse }) => {
+            setDefinitions(
+                ListESDLDefinitionsResponse.Definitions.Definition.map(defn => {
+                    return {
+                        key: defn.Id,
+                        text: defn.Id
+                    };
+                })
+            );
+        });
+    }, []);
+
+    return <AsyncDropdown {...props} options={definitions} />;
+};
+
 export interface TargetFolderTextFieldProps extends AsyncDropdownProps {
     pathSepChar?: string;
     machineAddress?: string;
@@ -525,7 +583,7 @@ export const UserGroupsField: React.FunctionComponent<UserGroupsProps> = (props)
                         };
                     }) || [];
                 setGroups(groups || []);
-            }).catch(logger.error);
+            }).catch(err => logger.error(err));
     }, [props.username]);
 
     return <AsyncDropdown {...props} options={groups} />;
@@ -550,7 +608,7 @@ export const GroupMembersField: React.FunctionComponent<GroupMembersProps> = (pr
                     };
                 }) || [];
             setUsers(_users);
-        }).catch(logger.error);
+        }).catch(err => logger.error(err));
     }, [props.groupname]);
 
     return <AsyncDropdown {...props} options={users} />;
@@ -573,7 +631,7 @@ export const PermissionTypeField: React.FunctionComponent<PermissionTypeProps> =
                     };
                 }) || [];
             setBaseDns(_basedns);
-        }).catch(logger.error);
+        }).catch(err => logger.error(err));
     }, []);
 
     return <AsyncDropdown {...props} options={baseDns} />;
@@ -951,6 +1009,32 @@ export function createInputs(fields: Fields, onChange?: (id: string, newValue: a
                     id: fieldID,
                     label: field.label,
                     field: <TargetDfuSprayQueueTextField
+                        key={fieldID}
+                        selectedKey={field.value}
+                        onChange={(ev, row) => onChange(fieldID, row.key)}
+                        placeholder={field.placeholder}
+                    />
+                });
+                break;
+            case "esdl-esp-processes":
+                field.value = field.value !== undefined ? field.value : "";
+                retVal.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: <EsdlEspProcessesTextField
+                        key={fieldID}
+                        selectedKey={field.value}
+                        onChange={(ev, row) => onChange(fieldID, row.key)}
+                        placeholder={field.placeholder}
+                    />
+                });
+                break;
+            case "esdl-definitions":
+                field.value = field.value !== undefined ? field.value : "";
+                retVal.push({
+                    id: fieldID,
+                    label: field.label,
+                    field: <EsdlDefinitionsTextField
                         key={fieldID}
                         selectedKey={field.value}
                         onChange={(ev, row) => onChange(fieldID, row.key)}

@@ -358,8 +358,6 @@ extern StringBuffer fileNameServiceDali;
 extern StringBuffer roxieName;
 #ifdef _CONTAINERIZED
 extern StringBuffer defaultPlane;
-extern StringBuffer defaultPlaneDirPrefix;
-extern bool defaultPlaneDirPerPart;
 #endif
 extern bool trapTooManyActiveQueries;
 extern unsigned maxEmptyLoopIterations;

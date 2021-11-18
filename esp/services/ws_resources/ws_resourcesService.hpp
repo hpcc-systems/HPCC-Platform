@@ -34,6 +34,7 @@ public:
     virtual void init(IPropertyTree* cfg, const char* process, const char* service) override {};
 
     virtual bool onServiceQuery(IEspContext& context, IEspServiceQueryRequest& req, IEspServiceQueryResponse& resp) override;
+    virtual bool onWebLinksQuery(IEspContext& context, IEspWebLinksQueryRequest& req, IEspWebLinksQueryResponse& resp) override;
 };
 
 #endif //_ESPWIZ_ws_resources_HPP__

@@ -60,7 +60,7 @@ export const AddPermissionForm: React.FunctionComponent<AddPermissionFormProps> 
                             if (refreshGrid) refreshGrid();
                         }
                     })
-                    .catch(logger.error)
+                    .catch(err => logger.error(err))
                     ;
             },
             logger.info

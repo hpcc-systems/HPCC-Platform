@@ -61,13 +61,13 @@ export const DojoGrid: React.FunctionComponent<DojoGridProps> = ({
     const params = React.useMemo(() => {
         const retVal: any = {
             deselectOnRefresh: true,
-            columns: { ...columns }
+            columns: {}
         };
         if (getSelected !== undefined) retVal.getSelected = getSelected;
         if (store !== undefined) retVal.store = store;
         if (query !== undefined) retVal.query = query;
         if (sort !== undefined) retVal.sort = sort;
-        if (columns !== undefined) retVal.columns = columns;
+        if (columns !== undefined) retVal.columns = { ...columns };
         return retVal;
     }, [columns, getSelected, query, sort, store]);
 
