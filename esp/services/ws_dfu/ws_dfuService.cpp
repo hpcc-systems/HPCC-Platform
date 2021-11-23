@@ -3678,6 +3678,8 @@ void CWsDfuEx::setDFUQuerySortOrder(IEspDFUQueryRequest& req, StringBuffer& sort
         sortOrder[0] = DFUQRFaccessed;
     else if (strieq(sortByPtr, "ContentType"))
         sortOrder[0] = DFUQRFkind;
+    else if (strieq(sortByPtr, "Cost"))
+        sortOrder[0] = (DFUQResultField) (DFUQRFcost | DFUQRFfloat);
     else
         sortOrder[0] = DFUQRFname;
 

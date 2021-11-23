@@ -1879,6 +1879,7 @@ void filterParts(IPropertyTree *file,UnsignedArray &partslist)
 #define SORT_REVERSE 1
 #define SORT_NOCASE  2
 #define SORT_NUMERIC 4
+#define SORT_FLOAT   8
 
 void ensureSDSPath(const char * sdsPath)
 {
@@ -1958,6 +1959,8 @@ public:
                 mod |= SORT_NOCASE;
             else if ((*s=='#')&&(sk.length()==0))
                 mod |= SORT_NUMERIC;
+            else if ((*s=='~')&&(sk.length()==0))
+                mod |= SORT_FLOAT;
             else
                 sk.append(*s);
             s++;
@@ -2030,6 +2033,16 @@ public:
                 if (mod&SORT_NUMERIC)
                 {
                     __int64 ret0 = _atoi64(v1)-_atoi64(v2);
+                    if (ret0 > 0)
+                        ret = 1;
+                    else if (ret0 < 0)
+                        ret = -1;
+                    else
+                        ret = 0;
+                }
+                else if (mod&SORT_FLOAT)
+                {
+                    double ret0 = atof(v1) - atof(v2);
                     if (ret0 > 0)
                         ret = 1;
                     else if (ret0 < 0)

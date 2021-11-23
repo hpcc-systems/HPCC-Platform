@@ -52,4 +52,5 @@ ESPStruct DFULogicalFile
     [min_ver("1.41")] string KeyType;
     [min_ver("1.52")] int NumOfSubfiles;
     [min_ver("1.55")] string Accessed;
+    [min_ver("1.61")] double Cost;
 };
