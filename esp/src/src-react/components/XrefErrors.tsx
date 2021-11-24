@@ -1,12 +1,9 @@
 import * as React from "react";
 import { CommandBar, ICommandBarItemProps } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
 import { scopedLogger } from "@hpcc-js/util";
 import { HolyGrail } from "../layouts/HolyGrail";
 import * as WsDFUXref from "src/WsDFUXref";
-import * as Observable from "dojo/store/Observable";
-import { Memory } from "src/Memory";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import nlsHPCC from "src/nlsHPCC";
 
 const logger = scopedLogger("src-react/components/XrefErrors.tsx");
@@ -19,10 +16,12 @@ export const XrefErrors: React.FunctionComponent<XrefErrorsProps> = ({
     name
 }) => {
 
+    const [data, setData] = React.useState<any[]>([]);
+
     //  Grid ---
-    const store = useConst(new Observable(new Memory("name")));
-    const [Grid, _selection, refreshTable, copyButtons] = useGrid({
-        store,
+    const [Grid, _selection, copyButtons] = useFluentGrid({
+        data,
+        primaryID: "name",
         query: {},
         sort: [{ attribute: "name", "descending": false }],
         filename: "xrefsErrorsWarnings",
@@ -69,13 +68,12 @@ export const XrefErrors: React.FunctionComponent<XrefErrorsProps> = ({
                     });
                 });
                 if (rows.length > 0) {
-                    store.setData(rows);
-                    refreshTable();
+                    setData(rows);
                 }
             })
             .catch(err => logger.error(err))
             ;
-    }, [name, refreshTable, store]);
+    }, [name]);
 
     React.useEffect(() => {
         refreshData();
@@ -88,9 +86,6 @@ export const XrefErrors: React.FunctionComponent<XrefErrorsProps> = ({
             onClick: () => refreshData()
         },
     ], [refreshData]);
-
-    React.useEffect(() => {
-    }, [store, name, refreshTable]);
 
     return <HolyGrail
         header={<CommandBar items={buttons} farItems={copyButtons} />}
