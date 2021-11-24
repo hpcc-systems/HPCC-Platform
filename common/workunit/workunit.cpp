@@ -3659,6 +3659,21 @@ public:
         appvalues.loadBranch(&p,"Application");
         totalThorTime = (unsigned)nanoToMilli(extractTimeCollatable(p.queryProp("@totalThorTime"), nullptr));
         _isProtected = p.getPropBool("@protected", false);
+
+        Owned<IPropertyTreeIterator> iterCostExecute = p.getElements("./Statistics/Statistic[@kind='CostExecute'][@scope='']");
+        costExecute = 0;
+        ForEach(*iterCostExecute)
+        {
+            IPropertyTree &stat = iterCostExecute->query();
+            costExecute += stat.getPropInt64("@value");
+        }
+        Owned<IPropertyTreeIterator> iterFileAccess = p.getElements("./Statistics/Statistic[@kind='CostFileAccess'][@scope='']");
+        costFileAccess = 0;
+        ForEach(*iterFileAccess)
+        {
+            IPropertyTree &stat = iterFileAccess->query();
+            costFileAccess += stat.getPropInt64("@value");
+        }
     }
     virtual const char *queryWuid() const { return wuid.str(); }
     virtual const char *queryUser() const { return user.str(); }
@@ -3673,6 +3688,8 @@ public:
     virtual const char *queryPriorityDesc() const { return getEnumText(priority, priorityClasses); }
     virtual int getPriorityLevel() const { return priorityLevel; }
     virtual bool isProtected() const { return _isProtected; }
+    virtual unsigned __int64 getExecuteCost() const { return costExecute; }
+    virtual unsigned __int64 getFileAccessCost() const { return costFileAccess; }
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime & val) const
     {
         if (timeScheduled.length())
@@ -3691,6 +3708,8 @@ protected:
     WUPriorityClass priority;
     int priorityLevel;
     bool _isProtected;
+    unsigned __int64 costExecute;
+    unsigned __int64 costFileAccess;
 };
 
 extern IConstWorkUnitInfo *createConstWorkUnitInfo(IPropertyTree &p)
@@ -8187,6 +8206,8 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool a
     p->setProp("@eclVersion", fromP->queryProp("@eclVersion"));
     p->setProp("@totalThorTime", fromP->queryProp("@totalThorTime"));
     p->setProp("@hash", fromP->queryProp("@hash"));
+    p->setProp("@executeCost", fromP->queryProp("@executeCost"));
+    p->setProp("@fileAccessCost", fromP->queryProp("@fileAccessCost"));
     p->setPropBool("@cloneable", true);
     p->setPropBool("@isClone", true);
     resetWorkflow();  // the source Workflow section may have had some parts already executed...

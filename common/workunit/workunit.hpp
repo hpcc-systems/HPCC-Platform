@@ -1191,6 +1191,8 @@ interface IConstWorkUnitInfo : extends IInterface
     virtual const char *queryPriorityDesc() const = 0;
     virtual int getPriorityLevel() const = 0;
     virtual bool isProtected() const = 0;
+    virtual unsigned __int64 getExecuteCost() const = 0;
+    virtual unsigned __int64 getFileAccessCost() const = 0;
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime & val) const = 0;
 
     virtual unsigned getTotalThorTime() const = 0;

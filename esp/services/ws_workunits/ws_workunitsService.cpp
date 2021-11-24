@@ -1983,6 +1983,10 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
             }
             info->setApplicationValues(av);
         }
+        if (version>=1.84)
+            info->setExecuteCost(cost_type2money(cw.getExecuteCost()));
+        if (version>=1.85)
+            info->setFileAccessCost(cost_type2money(cw.getFileAccessCost()));
         results.append(*info.getClear());
     }
 
