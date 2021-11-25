@@ -1191,8 +1191,8 @@ interface IConstWorkUnitInfo : extends IInterface
     virtual const char *queryPriorityDesc() const = 0;
     virtual int getPriorityLevel() const = 0;
     virtual bool isProtected() const = 0;
-    virtual unsigned __int64 getExecuteCost() const = 0;
-    virtual unsigned __int64 getFileAccessCost() const = 0;
+    virtual cost_type getExecuteCost() const = 0;
+    virtual cost_type getFileAccessCost() const = 0;
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime & val) const = 0;
 
     virtual unsigned getTotalThorTime() const = 0;
@@ -1302,8 +1302,8 @@ interface IConstWorkUnit : extends IConstWorkUnitInfo
     virtual void clearGraphProgress() const = 0;
     virtual IStringVal & getAbortBy(IStringVal & str) const = 0;
     virtual unsigned __int64 getAbortTimeStamp() const = 0;
-    virtual unsigned __int64 getExecuteCost() const = 0;
-    virtual unsigned __int64 getFileAccessCost() const = 0;
+    virtual cost_type getExecuteCost() const = 0;
+    virtual cost_type getFileAccessCost() const = 0;
 };
 
 

@@ -3660,20 +3660,8 @@ public:
         totalThorTime = (unsigned)nanoToMilli(extractTimeCollatable(p.queryProp("@totalThorTime"), nullptr));
         _isProtected = p.getPropBool("@protected", false);
 
-        Owned<IPropertyTreeIterator> iterCostExecute = p.getElements("./Statistics/Statistic[@kind='CostExecute'][@scope='']");
-        costExecute = 0;
-        ForEach(*iterCostExecute)
-        {
-            IPropertyTree &stat = iterCostExecute->query();
-            costExecute += stat.getPropInt64("@value");
-        }
-        Owned<IPropertyTreeIterator> iterFileAccess = p.getElements("./Statistics/Statistic[@kind='CostFileAccess'][@scope='']");
-        costFileAccess = 0;
-        ForEach(*iterFileAccess)
-        {
-            IPropertyTree &stat = iterFileAccess->query();
-            costFileAccess += stat.getPropInt64("@value");
-        }
+        costExecute = p.getPropInt64("@costExecute");
+        costFileAccess = p.getPropInt64("@costFileAccess");
     }
     virtual const char *queryWuid() const { return wuid.str(); }
     virtual const char *queryUser() const { return user.str(); }
@@ -3688,8 +3676,8 @@ public:
     virtual const char *queryPriorityDesc() const { return getEnumText(priority, priorityClasses); }
     virtual int getPriorityLevel() const { return priorityLevel; }
     virtual bool isProtected() const { return _isProtected; }
-    virtual unsigned __int64 getExecuteCost() const { return costExecute; }
-    virtual unsigned __int64 getFileAccessCost() const { return costFileAccess; }
+    virtual cost_type getExecuteCost() const { return costExecute; }
+    virtual cost_type getFileAccessCost() const { return costFileAccess; }
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime & val) const
     {
         if (timeScheduled.length())
@@ -4361,9 +4349,9 @@ public:
             { return c->getAbortBy(str); }
     virtual unsigned __int64 getAbortTimeStamp() const
             { return c->getAbortTimeStamp(); }
-    virtual unsigned __int64 getExecuteCost() const
+    virtual cost_type getExecuteCost() const
             { return c->getExecuteCost(); }
-    virtual unsigned __int64 getFileAccessCost() const
+    virtual cost_type getFileAccessCost() const
             { return c->getFileAccessCost(); }
     virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree)
             { return c->import(wuTree, graphProgressTree); }
@@ -8674,6 +8662,13 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
         formatTimeCollatable(t, totalTime, false);
         p->setProp("@totalThorTime", t);
     }
+    if (scopeType == SSTglobal)
+    {
+        if (kind == StCostExecute)
+            p->setPropInt64("@costExecute", value);
+        else if (kind == StCostFileAccess)
+            p->setPropInt64("@costFileAccess", value);
+    }
 }
 
 void CLocalWorkUnit::_loadStatistics() const
@@ -12323,30 +12318,16 @@ unsigned __int64 CLocalWorkUnit::getAbortTimeStamp() const
     return p->getPropInt64("Tracing/AbortTimeStamp", 0);
 }
 
-unsigned __int64 CLocalWorkUnit::getExecuteCost() const
+cost_type CLocalWorkUnit::getExecuteCost() const
 {
     CriticalBlock block(crit);
-    Owned<IPropertyTreeIterator> iter = p->getElements("./Statistics/Statistic[@kind='CostExecute'][@scope='']");
-    cost_type totalCost = 0;
-    ForEach(*iter)
-    {
-        IPropertyTree &stat = iter->query();
-        totalCost += stat.getPropInt64("@value");
-    }
-    return totalCost;
+    return p->getPropInt64("@costExecute");
 }
 
-unsigned __int64 CLocalWorkUnit::getFileAccessCost() const
+cost_type CLocalWorkUnit::getFileAccessCost() const
 {
     CriticalBlock block(crit);
-    Owned<IPropertyTreeIterator> iter = p->getElements("./Statistics/Statistic[@kind='CostFileAccess'][@scope='']");
-    cost_type totalCost = 0;
-    ForEach(*iter)
-    {
-        IPropertyTree &stat = iter->query();
-        totalCost += stat.getPropInt64("@value");
-    }
-    return totalCost;
+    return p->getPropInt64("@costFileAccess");
 }
 
 #if 0
