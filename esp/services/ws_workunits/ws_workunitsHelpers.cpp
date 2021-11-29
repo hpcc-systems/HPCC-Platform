@@ -994,6 +994,10 @@ void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned long flags)
     cw->getTimeScheduled(dt);
     if(dt.isValid())
         info.setDateTimeScheduled(dt.getString(s).str());
+    if (version>=1.84)
+        info.setExecuteCost(cost_type2money(cw->getExecuteCost()));
+    if (version>=1.85)
+        info.setFileAccessCost(cost_type2money(cw->getFileAccessCost()));
 }
 
 void WsWuInfo::setWUAbortTime(IEspECLWorkunit &info, unsigned __int64 abortTS)

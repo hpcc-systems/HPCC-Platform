@@ -306,8 +306,8 @@ public:
     virtual unsigned getTotalThorTime() const;
     virtual IStringVal & getAbortBy(IStringVal & str) const;
     virtual unsigned __int64 getAbortTimeStamp() const;
-    virtual unsigned __int64 getExecuteCost() const;
-    virtual unsigned __int64 getFileAccessCost() const;
+    virtual cost_type getExecuteCost() const;
+    virtual cost_type getFileAccessCost() const;
     void clearExceptions(const char *source=nullptr);
     void commit();
     IWUException *createException();

@@ -3659,6 +3659,9 @@ public:
         appvalues.loadBranch(&p,"Application");
         totalThorTime = (unsigned)nanoToMilli(extractTimeCollatable(p.queryProp("@totalThorTime"), nullptr));
         _isProtected = p.getPropBool("@protected", false);
+
+        costExecute = p.getPropInt64("@costExecute");
+        costFileAccess = p.getPropInt64("@costFileAccess");
     }
     virtual const char *queryWuid() const { return wuid.str(); }
     virtual const char *queryUser() const { return user.str(); }
@@ -3673,6 +3676,8 @@ public:
     virtual const char *queryPriorityDesc() const { return getEnumText(priority, priorityClasses); }
     virtual int getPriorityLevel() const { return priorityLevel; }
     virtual bool isProtected() const { return _isProtected; }
+    virtual cost_type getExecuteCost() const { return costExecute; }
+    virtual cost_type getFileAccessCost() const { return costFileAccess; }
     virtual IJlibDateTime & getTimeScheduled(IJlibDateTime & val) const
     {
         if (timeScheduled.length())
@@ -3691,6 +3696,8 @@ protected:
     WUPriorityClass priority;
     int priorityLevel;
     bool _isProtected;
+    unsigned __int64 costExecute;
+    unsigned __int64 costFileAccess;
 };
 
 extern IConstWorkUnitInfo *createConstWorkUnitInfo(IPropertyTree &p)
@@ -4342,9 +4349,9 @@ public:
             { return c->getAbortBy(str); }
     virtual unsigned __int64 getAbortTimeStamp() const
             { return c->getAbortTimeStamp(); }
-    virtual unsigned __int64 getExecuteCost() const
+    virtual cost_type getExecuteCost() const
             { return c->getExecuteCost(); }
-    virtual unsigned __int64 getFileAccessCost() const
+    virtual cost_type getFileAccessCost() const
             { return c->getFileAccessCost(); }
     virtual void import(IPropertyTree *wuTree, IPropertyTree *graphProgressTree)
             { return c->import(wuTree, graphProgressTree); }
@@ -8187,6 +8194,8 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool copyStats, bool a
     p->setProp("@eclVersion", fromP->queryProp("@eclVersion"));
     p->setProp("@totalThorTime", fromP->queryProp("@totalThorTime"));
     p->setProp("@hash", fromP->queryProp("@hash"));
+    p->setProp("@executeCost", fromP->queryProp("@executeCost"));
+    p->setProp("@fileAccessCost", fromP->queryProp("@fileAccessCost"));
     p->setPropBool("@cloneable", true);
     p->setPropBool("@isClone", true);
     resetWorkflow();  // the source Workflow section may have had some parts already executed...
@@ -8652,6 +8661,13 @@ void CLocalWorkUnit::setStatistic(StatisticCreatorType creatorType, const char *
         StringBuffer t;
         formatTimeCollatable(t, totalTime, false);
         p->setProp("@totalThorTime", t);
+    }
+    if (scopeType == SSTglobal)
+    {
+        if (kind == StCostExecute)
+            p->setPropInt64("@costExecute", value);
+        else if (kind == StCostFileAccess)
+            p->setPropInt64("@costFileAccess", value);
     }
 }
 
@@ -12302,30 +12318,16 @@ unsigned __int64 CLocalWorkUnit::getAbortTimeStamp() const
     return p->getPropInt64("Tracing/AbortTimeStamp", 0);
 }
 
-unsigned __int64 CLocalWorkUnit::getExecuteCost() const
+cost_type CLocalWorkUnit::getExecuteCost() const
 {
     CriticalBlock block(crit);
-    Owned<IPropertyTreeIterator> iter = p->getElements("./Statistics/Statistic[@kind='CostExecute'][@scope='']");
-    cost_type totalCost = 0;
-    ForEach(*iter)
-    {
-        IPropertyTree &stat = iter->query();
-        totalCost += stat.getPropInt64("@value");
-    }
-    return totalCost;
+    return p->getPropInt64("@costExecute");
 }
 
-unsigned __int64 CLocalWorkUnit::getFileAccessCost() const
+cost_type CLocalWorkUnit::getFileAccessCost() const
 {
     CriticalBlock block(crit);
-    Owned<IPropertyTreeIterator> iter = p->getElements("./Statistics/Statistic[@kind='CostFileAccess'][@scope='']");
-    cost_type totalCost = 0;
-    ForEach(*iter)
-    {
-        IPropertyTree &stat = iter->query();
-        totalCost += stat.getPropInt64("@value");
-    }
-    return totalCost;
+    return p->getPropInt64("@costFileAccess");
 }
 
 #if 0
