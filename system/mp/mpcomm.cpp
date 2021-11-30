@@ -2081,7 +2081,7 @@ void CMPConnectThread::checkSelfDestruct(void *p,size32_t sz)
     PROGLOG("MP Self destruct invoked");
     try {
         if (listensock) {
-            listensock->close();
+            shutdownAndCloseNoThrow(listensock);
             listensock->Release();
             listensock=NULL;
         }

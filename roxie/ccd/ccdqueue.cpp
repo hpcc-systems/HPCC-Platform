@@ -2824,7 +2824,7 @@ public:
         if (running)
         {
             running = false;
-            multicastSocket->close();
+            shutdownAndCloseNoThrow(multicastSocket);
         }
         RoxieReceiverBase::stop();
     }

@@ -142,7 +142,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         {
             if (flowSocket)
             {
-                flowSocket->close();
+                shutdownAndCloseNoThrow(flowSocket);
                 flowSocket->Release();
             }
         }
@@ -438,8 +438,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         ~receive_receive_flow() 
         {
             running = false;
-            if (flow_socket) 
-                flow_socket->close();
+            shutdownAndCloseNoThrow(flow_socket);
             join();
         }
 
@@ -646,10 +645,8 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             DBGLOG("Total data packets seen = %u OOO(%u) Requests(%u) Permits(%u)", dataPacketsReceived.load(), packetsOOO.load(), flowRequestsReceived.load(), flowRequestsSent.load());
 
             running = false;
-            if (receive_socket)
-                receive_socket->close();
-            if (selfFlowSocket)
-                selfFlowSocket->close();
+            shutdownAndCloseNoThrow(receive_socket);
+            shutdownAndCloseNoThrow(selfFlowSocket);
             join();
             ::Release(receive_socket);
             ::Release(selfFlowSocket);

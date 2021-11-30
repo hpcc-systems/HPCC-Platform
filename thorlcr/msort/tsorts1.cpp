@@ -420,17 +420,7 @@ public:
             }
             e->Release();
         }
-        try {
-            server->close();
-        }
-        catch (IJSOCK_Exception *e)
-        {
-            if (e->errorCode()!=JSOCKERR_cancel_accept) {
-                PrintExceptionLog(e,"CSortTransferServerThread closing");
-                // Ignore for now
-            }
-            e->Release();
-        }
+        shutdownAndCloseNoThrow(server);
         subjoin();
         DBGLOG("CSortTransferServerThread finished");
         return 0;

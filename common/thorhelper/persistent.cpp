@@ -218,8 +218,7 @@ public:
             if(m_doNotReuseList.getValue(epstr.str()) != nullptr)
             {
                 PERSILOG(PersistentLogLevel::PLogNormal, "PERSISTENT: socket %d's target endpoint %s is in DoNotReuseList, will not add it.", sock->OShandle(), epstr.str());
-                sock->shutdown();
-                sock->close();
+                shutdownAndCloseNoThrow(sock);
                 return;
             }
         }
