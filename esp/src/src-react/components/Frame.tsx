@@ -8,6 +8,8 @@ import { hashHistory } from "../util/history";
 import { router } from "../routes";
 import { DevTitle } from "./Title";
 import { MainNavigation, SubNavigation } from "./Menu";
+import { CookieConsent } from "./forms/CookieConsent";
+import { userKeyValStore } from "../../src/KeyValStore";
 
 const logger = scopedLogger("../components/Frame.tsx");
 
@@ -16,6 +18,7 @@ interface DevFrameProps {
 
 export const DevFrame: React.FunctionComponent<DevFrameProps> = () => {
 
+    const [showCookieConsent, setShowCookieConsent] = React.useState(false);
     const [location, setLocation] = React.useState<string>(window.location.hash.split("#").join(""));
     const [body, setBody] = React.useState(<h1>...loading...</h1>);
     const [theme, , isDark] = useUserTheme();
@@ -31,6 +34,12 @@ export const DevFrame: React.FunctionComponent<DevFrameProps> = () => {
 
         router.resolve(hashHistory.location).then(setBody);
 
+        userKeyValStore().get("user_cookie_consent")
+            .then((resp)=>{
+                setShowCookieConsent(resp === "1");
+            })
+            ;
+            
         return () => unlisten();
     }, []);
 
@@ -49,5 +58,8 @@ export const DevFrame: React.FunctionComponent<DevFrameProps> = () => {
                 main={body}
             />}
         />
+        <CookieConsent showCookieConsent={showCookieConsent} onApply={(n: boolean) => {
+            userKeyValStore().set("user_cookie_consent", n ? "1" : "0");
+        }}/>
     </ThemeProvider >;
 };
