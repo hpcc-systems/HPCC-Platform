@@ -202,7 +202,7 @@ public:
 
 class flowType {
 public:
-    enum flowCmd : unsigned short { ok_to_send, request_received, request_to_send, send_completed, request_to_send_more };
+    enum flowCmd : unsigned short { ok_to_send, request_received, request_to_send, send_completed, request_to_send_more, max_flow_cmd };
     static const char *name(flowCmd m)
     {
         switch (m)
@@ -267,7 +267,17 @@ inline bool checkTraceLevel(unsigned category, unsigned level)
 #define SOCKET_SIMULATION_UDP
 
 #ifdef SOCKET_SIMULATION
-extern bool isUdpTestMode;
+#ifdef _DEBUG
+#define TEST_DROPPED_PACKETS
+#endif
+
+#ifdef TEST_DROPPED_PACKETS
+extern UDPLIB_API bool udpDropDataPackets;
+extern UDPLIB_API unsigned udpDropFlowPackets[flowType::max_flow_cmd];
+extern unsigned flowPacketsSent[flowType::max_flow_cmd];
+#endif
+
+extern UDPLIB_API bool isUdpTestMode;
 
 class CSocketSimulator : public CInterfaceOf<ISocket>
 {
