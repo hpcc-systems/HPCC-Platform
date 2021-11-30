@@ -1,11 +1,8 @@
 import * as React from "react";
 import { ICommandBarItemProps, CommandBar } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
 import { format as d3Format } from "@hpcc-js/common";
-import * as Observable from "dojo/store/Observable";
-import { Memory } from "src/Memory";
 import nlsHPCC from "src/nlsHPCC";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { useFile } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
 
@@ -22,26 +19,27 @@ export const FileParts: React.FunctionComponent<FilePartsProps> = ({
 }) => {
 
     const [file, , , refreshData] = useFile(cluster, logicalFile);
+    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const store = useConst(new Observable(new Memory("Id")));
-    const [Grid, _selection, refreshTable, copyButtons] = useGrid({
-        store,
+    const [Grid, _selection, copyButtons] = useFluentGrid({
+        data,
+        primaryID: "Id",
         sort: [{ attribute: "Id", "descending": false }],
         filename: "fileParts",
         columns: {
-            Id: { label: nlsHPCC.Part, sortable: true, },
-            Copy: { label: nlsHPCC.Copy, sortable: true, },
-            Ip: { label: nlsHPCC.IP, sortable: true, },
-            Cluster: { label: nlsHPCC.Cluster, sortable: true, },
-            PartsizeInt64: { label: nlsHPCC.Size, sortable: true, },
-            CompressedSize: { label: nlsHPCC.CompressedSize, sortable: true, },
+            Id: { label: nlsHPCC.Part, sortable: true, width: 80 },
+            Copy: { label: nlsHPCC.Copy, sortable: true, width: 80 },
+            Ip: { label: nlsHPCC.IP, sortable: true, width: 80 },
+            Cluster: { label: nlsHPCC.Cluster, sortable: true, width: 480 },
+            PartsizeInt64: { label: nlsHPCC.Size, sortable: true, width: 120 },
+            CompressedSize: { label: nlsHPCC.CompressedSize, sortable: true, width: 120 },
         }
     });
 
     React.useEffect(() => {
         const fileParts = file?.fileParts() ?? [];
-        store.setData(fileParts.map(part => {
+        setData(fileParts.map(part => {
             return {
                 Id: part.Id,
                 Copy: part.Copy,
@@ -51,8 +49,7 @@ export const FileParts: React.FunctionComponent<FilePartsProps> = ({
                 CompressedSize: part.CompressedSize ? formatNum(part.CompressedSize) : ""
             };
         }));
-        refreshTable();
-    }, [cluster, file, refreshTable, store]);
+    }, [cluster, file]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [
