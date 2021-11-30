@@ -298,8 +298,9 @@ private:
     virtual bool set_nonblock(bool on) override { UNIMPLEMENTED; }
     virtual bool set_nagle(bool on) override { UNIMPLEMENTED; }
     virtual void set_linger(int lingersecs) override { UNIMPLEMENTED; }
-    virtual void  cancel_accept() override { UNIMPLEMENTED; }
-    virtual void  shutdown(unsigned mode=SHUTDOWN_READWRITE) override { UNIMPLEMENTED; }
+    virtual void cancel_accept() override { UNIMPLEMENTED; }
+    virtual void shutdown(unsigned mode) override { UNIMPLEMENTED; }
+    virtual void shutdownNoThrow(unsigned mode) override { UNIMPLEMENTED; }
     virtual int name(char *name,size32_t namemax) override { UNIMPLEMENTED; }
     virtual int peer_name(char *name,size32_t namemax) override { UNIMPLEMENTED; }
     virtual SocketEndpoint &getPeerEndpoint(SocketEndpoint &ep) override { UNIMPLEMENTED; }
@@ -388,7 +389,8 @@ public:
                          unsigned timeout) override;
     virtual int wait_read(unsigned timeout) override;
     virtual void close() override {}
-
+    virtual void  shutdown(unsigned mode) override { }
+    virtual void  shutdownNoThrow(unsigned mode) override{ }
 };
 
 class CSimulatedQueueWriteSocket : public CSocketSimulator
@@ -405,6 +407,8 @@ public:
 
 class CSimulatedUdpSocket : public CSocketSimulator
 {
+    virtual void  shutdown(unsigned mode) override { realSocket->shutdown(mode); }
+    virtual void  shutdownNoThrow(unsigned mode) override{ realSocket->shutdownNoThrow(mode); }
 protected:
     Owned<ISocket> realSocket;
 };

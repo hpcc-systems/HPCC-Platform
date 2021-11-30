@@ -420,6 +420,7 @@ public:
     void        errclose();
     bool        connectionless() { return (sockmode!=sm_tcp)&&(sockmode!=sm_tcp_server); }
     void        shutdown(unsigned mode=SHUTDOWN_READWRITE);
+    void        shutdownNoThrow(unsigned mode);
 
     ISocket*    accept(bool allowcancel, SocketEndpoint *peerEp=nullptr);
     int         wait_read(unsigned timeout);
@@ -2518,6 +2519,17 @@ void CSocket::shutdown(unsigned mode)
             }
             THROWJSOCKEXCEPTION(err);
         }
+    }
+}
+
+void CSocket::shutdownNoThrow(unsigned mode)
+{
+    if (state == ss_open) {
+        state = ss_shutdown;
+#ifdef SOCKTRACE
+        PROGLOG("SOCKTRACE: shutdown(%d) socket %x %d (%p)", mode, sock, sock, this);
+#endif
+        ::shutdown(sock, mode);
     }
 }
 
