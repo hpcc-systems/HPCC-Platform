@@ -715,8 +715,8 @@ bool CWsDfuXRefEx::onDFUXRefUnusedFiles(IEspContext &context, IEspDFUXRefUnusedF
     if (!servers.length())
         throw MakeStringExceptionDirect(ECLWATCH_INVALID_CLUSTER_INFO, "process cluster, not found.");
 
-    Owned<ISocket> sock = ISocket::connect_timeout(servers.item(0), 5000);
-    Owned<IPropertyTree> controlXrefInfo = sendRoxieControlQuery(sock, "<control:getQueryXrefInfo/>", 5000);
+    Owned<ISocket> sock = ISocket::connect_timeout(servers.item(0), ROXIECONNECTIONTIMEOUT);
+    Owned<IPropertyTree> controlXrefInfo = sendRoxieControlQuery(sock, "<control:getQueryXrefInfo/>", ROXIECONTROLXREFTIMEOUT);
     if (!controlXrefInfo)
         throw MakeStringExceptionDirect(ECLWATCH_INTERNAL_ERROR, "roxie cluster, not responding.");
     MapStringTo<bool> usedFileMap;

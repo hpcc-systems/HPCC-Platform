@@ -63,8 +63,6 @@
 
 static JSocketStatistics *SSTATS;
 
-bool accept_selfsigned = false;
-
 #define CHK_NULL(x) if((x)==NULL) exit(1)
 #define CHK_ERR(err, s) if((err)==-1){perror(s);exit(1);}
 #define CHK_SSL(err) if((err) ==-1){ERR_print_errors_fp(stderr); exit(2);}
@@ -1085,7 +1083,7 @@ bool CSecureSocket::send_block(const void *blk, size32_t sz)
 
 // ----------------------------
 
-int verify_callback(int ok, X509_STORE_CTX *store)
+int verify_callback(int ok, X509_STORE_CTX *store, bool accept_selfsigned)
 {
     if(!ok)
     {
@@ -1105,6 +1103,16 @@ int verify_callback(int ok, X509_STORE_CTX *store)
             DBGLOG("Error with certificate: issuer=%s,subject=%s,err %d - %s", issuer, subject,err,X509_verify_cert_error_string(err));
     }
     return ok;
+}
+
+int verify_callback_allow_selfSigned(int ok, X509_STORE_CTX *store)
+{
+    return verify_callback(ok, store, true);
+}
+
+int verify_callback_reject_selfSigned(int ok, X509_STORE_CTX *store)
+{
+    return verify_callback(ok, store, false);
 }
 
 const char* strtok__(const char* s, const char* d, StringBuffer& tok)
@@ -1127,15 +1135,15 @@ const char* strtok__(const char* s, const char* d, StringBuffer& tok)
 class CSecureSocketContext : implements ISecureSocketContext, public CInterface
 {
 private:
-    SSL_CTX*    m_ctx;
+    SSL_CTX*    m_ctx = nullptr;
 #if (OPENSSL_VERSION_NUMBER > 0x00909000L) 
-    const SSL_METHOD* m_meth;
+    const SSL_METHOD* m_meth = nullptr;
 #else
     SSL_METHOD* m_meth;
 #endif 
 
-    bool m_verify;
-    bool m_address_match;
+    bool m_verify = false;
+    bool m_address_match = false;
     Owned<CStringSet> m_peers;
     StringAttr password;
 
@@ -1215,7 +1223,7 @@ public:
         SSL_CTX_set_mode(m_ctx, SSL_CTX_get_mode(m_ctx) | SSL_MODE_AUTO_RETRY);
     }
 
-    CSecureSocketContext(IPropertyTree* config, SecureSocketType sockettype)
+    CSecureSocketContext(const IPropertyTree* config, SecureSocketType sockettype)
     {
         assertex(config);
         m_verify = false;
@@ -1281,7 +1289,6 @@ public:
 
         m_verify = config->getPropBool("verify/@enable");
         m_address_match = config->getPropBool("verify/@address_match");
-        accept_selfsigned = config->getPropBool("verify/@accept_selfsigned");
 
         if(m_verify)
         {
@@ -1294,7 +1301,8 @@ public:
                 }
             }
 
-            SSL_CTX_set_verify(m_ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE, verify_callback);
+            bool acceptSelfSigned = config->getPropBool("verify/@accept_selfsigned");
+            SSL_CTX_set_verify(m_ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE, (acceptSelfSigned) ? verify_callback_allow_selfSigned : verify_callback_reject_selfSigned);
 
             m_peers.setown(new CStringSet());
             const char* peersstr = config->queryProp("verify/trusted_peers");
@@ -1836,13 +1844,21 @@ SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx(const char* c
     return new securesocket::CSecureSocketContext(certfile, privkeyfile, passphrase, sockettype);
 }
 
-SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx2(IPropertyTree* config, SecureSocketType sockettype)
+SECURESOCKET_API ISecureSocketContext* createSecureSocketContextEx2(const IPropertyTree* config, SecureSocketType sockettype)
 {
     if (config == NULL)
         return createSecureSocketContext(sockettype);
 
     return new securesocket::CSecureSocketContext(config, sockettype);
 }       
+
+SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSSF(ISmartSocketFactory* ssf)
+{
+    if (ssf == nullptr || !ssf->queryTlsConfig())
+        return createSecureSocketContext(ClientSocket);
+
+    return new securesocket::CSecureSocketContext(ssf->queryTlsConfig(), ClientSocket);
+}
 
 SECURESOCKET_API ISecureSocketContext* createSecureSocketContextSecret(const char *mtlsSecretName, SecureSocketType sockettype)
 {
@@ -1974,6 +1990,11 @@ public:
         secureContext.setown(createSecureSocketContext(ClientSocket));
     }
 
+    CSecureSmartSocketFactory(IPropertyTree &service, bool _retry, unsigned _retryInterval, unsigned _dnsInterval) : CSmartSocketFactory(service, _retry, _retryInterval, _dnsInterval)
+    {
+        secureContext.setown(createSecureSocketContextEx2(queryTlsConfig(), ClientSocket));
+    }
+
     virtual ISmartSocket *connect_timeout(unsigned timeoutms) override
     {
         SocketEndpoint ep;
@@ -2000,6 +2021,11 @@ public:
 ISmartSocketFactory *createSecureSmartSocketFactory(const char *_socklist, bool _retry, unsigned _retryInterval, unsigned _dnsInterval)
 {
     return new CSecureSmartSocketFactory(_socklist, _retry, _retryInterval, _dnsInterval);
+}
+
+ISmartSocketFactory *createSecureSmartSocketFactory(IPropertyTree &service, bool _retry, unsigned _retryInterval, unsigned _dnsInterval)
+{
+    return new CSecureSmartSocketFactory(service, _retry, _retryInterval, _dnsInterval);
 }
 
 class CSingletonSecureSocketConnection: public CSingletonSocketConnection

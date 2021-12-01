@@ -214,6 +214,8 @@ unsigned leafCacheMB = 50;
 unsigned blobCacheMB = 0;
 
 unsigned roxiePort = 0;
+IPropertyTree *roxiePortTlsClientConfig = nullptr;
+
 #ifndef _CONTAINERIZED
 Owned<IPerfMonHook> perfMonHook;
 #endif
@@ -221,12 +223,14 @@ Owned<IPerfMonHook> perfMonHook;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     topology = NULL;
+    roxiePortTlsClientConfig = nullptr;
 
     return true;
 }
 
 MODULE_EXIT()
 {
+    ::Release(roxiePortTlsClientConfig);
     ::Release(topology);
 }
 
@@ -1348,6 +1352,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     if (!roxiePort)
                     {
                         roxiePort = port;
+                        if (roxieFarm.getPropBool("@tls"))
+                            roxiePortTlsClientConfig = createTlsClientSecretInfo(roxieFarm.queryProp("@issuer"), !roxieFarm.getPropBool("@public"), roxieFarm.getPropBool("@selfSigned"));
                         debugEndpoint.set(roxiePort, ip);
                     }
                     bool suspended = roxieFarm.getPropBool("@suspended", false);
@@ -1355,12 +1361,23 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                     if (port)
                     {
                         const char *protocol = roxieFarm.queryProp("@protocol");
+                        bool serviceTLS  = roxieFarm.getPropBool("@tls") || (protocol && streq(protocol, "ssl"));
                         StringBuffer certFileName;
                         StringBuffer keyFileName;
                         StringBuffer passPhraseStr;
-                        if (protocol && streq(protocol, "ssl"))
+                        if (serviceTLS)
                         {
-    #ifdef _USE_OPENSSL
+                            protocol = "ssl";
+#ifdef _USE_OPENSSL
+    #ifdef _CONTAINERIZED
+                            const char *certIssuer = roxieFarm.getPropBool("@public", true) ? "public" : "local";
+                            certFileName.setf("/opt/HPCCSystems/secrets/certificates/%s/tls.crt", certIssuer);
+                            keyFileName.setf("/opt/HPCCSystems/secrets/certificates/%s/tls.key", certIssuer);
+    #else
+                            const char *passPhrase = roxieFarm.queryProp("@passphrase");
+                            if (!isEmptyString(passPhrase))
+                                decrypt(passPhraseStr, passPhrase);
+
                             const char *certFile = roxieFarm.queryProp("@certificateFileName");
                             if (!certFile)
                                 throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing certificateFileName tag", port);
@@ -1368,8 +1385,6 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                                 certFileName.append(certFile);
                             else
                                 certFileName.append(codeDirectory.str()).append(certFile);
-                            if (!checkFileExists(certFileName.str()))
-                                throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing certificateFile (%s)", port, certFileName.str());
 
                             const char *keyFile = roxieFarm.queryProp("@privateKeyFileName");
                             if (!keyFile)
@@ -1378,16 +1393,17 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                                 keyFileName.append(keyFile);
                             else
                                 keyFileName.append(codeDirectory.str()).append(keyFile);
+    #endif
+                            if (!checkFileExists(certFileName.str()))
+                                throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing certificateFile (%s)", port, certFileName.str());
+
                             if (!checkFileExists(keyFileName.str()))
                                 throw MakeStringException(ROXIE_FILE_ERROR, "Roxie SSL Farm Listener on port %d missing privateKeyFile (%s)", port, keyFileName.str());
 
-                            const char *passPhrase = roxieFarm.queryProp("@passphrase");
-                            if (!isEmptyString(passPhrase))
-                                decrypt(passPhraseStr, passPhrase);
-    #else
+#else
                             OWARNLOG("Skipping Roxie SSL Farm Listener on port %d : OpenSSL disabled in build", port);
                             continue;
-    #endif
+#endif
                         }
                         const char *soname =  roxieFarm.queryProp("@so");
                         const char *config  = roxieFarm.queryProp("@config");

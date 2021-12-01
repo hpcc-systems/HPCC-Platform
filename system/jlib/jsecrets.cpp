@@ -764,6 +764,47 @@ const MemoryAttr &getSecretUdpKey(bool required)
     return udpKey;
 }
 
+IPropertyTree *createTlsClientSecretInfo(const char *issuer, bool mutual, bool acceptSelfSigned, bool addCACert)
+{
+    if (isEmptyString(issuer))
+        return nullptr;
+
+    StringBuffer filepath;
+    StringBuffer secretpath;
+    buildSecretPath(secretpath, "certificates", issuer);
+
+    Owned<IPropertyTree> info = createPTree();
+
+    if (mutual)
+    {
+        filepath.set(secretpath).append("tls.crt");
+        if (!checkFileExists(filepath))
+            return nullptr;
+
+        info->setProp("certificate", filepath.str());
+        filepath.set(secretpath).append("tls.key");
+        if (checkFileExists(filepath))
+            info->setProp("privatekey", filepath.str());
+    }
+
+    IPropertyTree *verify = ensurePTree(info, "verify");
+    if (addCACert)
+    {
+        filepath.set(secretpath).append("ca.crt");
+        if (checkFileExists(filepath))
+        {
+            IPropertyTree *ca = ensurePTree(verify, "ca_certificates");
+            ca->setProp("@path", filepath.str());
+        }
+    }
+    verify->setPropBool("@enable", true);
+    verify->setPropBool("@address_match", false);
+    verify->setPropBool("@accept_selfsigned", acceptSelfSigned);
+    verify->setProp("trusted_peers", "anyone");
+
+    return info.getClear();
+}
+
 IPropertyTree *queryTlsSecretInfo(const char *name)
 {
     if (isEmptyString(name))
