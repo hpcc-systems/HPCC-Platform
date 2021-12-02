@@ -30,8 +30,8 @@ rm -f ${SENTINEL}
 
 killed()
 {
-    log "calling dalistop ."
-    dalistop .
+    log "calling dalistop"
+    dalistop
     log "Attempting to kill $component"
     dali_kill_process ${PID_NAME} daserver 3 ${SENTINEL}
     if [[ $? -eq 1 ]]; then

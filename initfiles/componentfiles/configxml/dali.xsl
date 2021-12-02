@@ -65,6 +65,7 @@
 
 
   <xsl:variable name="daliServerNode" select="/Environment/Software/DaliServerProcess[@name=$process]"/>
+  <xsl:variable name="daliServerPort" select="/Environment/Software/DaliServerProcess[@name=$process]/Instance[1]/@port"/>
 
 
   <xsl:template match="/">
@@ -81,6 +82,9 @@
     <DALI>
       <xsl:attribute name="name">
         <xsl:value-of select="@name"/>
+      </xsl:attribute>
+      <xsl:attribute name="port">
+        <xsl:value-of select="$daliServerPort"/>
       </xsl:attribute>
       <xsl:if test="string(@LogDir)!=''">
         <xsl:attribute name="log_dir">
