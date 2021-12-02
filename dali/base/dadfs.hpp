@@ -279,10 +279,14 @@ enum DFUQResultField
     DFUQRFpersistent = 21,
     DFUQRFprotect = 22,
     DFUQRFiscompressed = 23,
-    DFUQRFterm = 24,
+    DFUQRFcost = 24,
+    DFUQRFnumDiskReads = 25,
+    DFUQRFnumDiskWrites = 26,
+    DFUQRFterm = 27,
     DFUQRFreverse = 256,
     DFUQRFnocase = 512,
-    DFUQRFnumeric = 1024
+    DFUQRFnumeric = 1024,
+    DFUQRFfloat = 2048
 };
 
 extern da_decl const char* getDFUQFilterFieldName(DFUQFilterField feild);

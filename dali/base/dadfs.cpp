@@ -12785,7 +12785,8 @@ IDFProtectedIterator *CDistributedFileDirectory::lookupProtectedFiles(const char
 
 const char* DFUQResultFieldNames[] = { "@name", "@description", "@group", "@kind", "@modified", "@job", "@owner",
     "@DFUSFrecordCount", "@recordCount", "@recordSize", "@DFUSFsize", "@size", "@workunit", "@DFUSFcluster", "@numsubfiles",
-    "@accessed", "@numparts", "@compressedSize", "@directory", "@partmask", "@superowners", "@persistent", "@protect", "@compressed" };
+    "@accessed", "@numparts", "@compressedSize", "@directory", "@partmask", "@superowners", "@persistent", "@protect", "@compressed",
+    "@cost", "@numDiskReads", "@numDiskWrites" };
 
 extern da_decl const char* getDFUQResultFieldName(DFUQResultField feild)
 {
@@ -12854,6 +12855,28 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned nu
                 file->setPropBool(getDFUQResultFieldName(DFUQRFiscompressed), true);
         }
 
+        void setCost(IPropertyTree* file, const char *nodeGroup)
+        {
+            StringBuffer str;
+            double fileAgeDays = 0.0;
+            if (file->getProp(getDFUQResultFieldName(DFUQRFtimemodified), str))
+            {
+                CDateTime dt;
+                dt.setString(str.str());
+                fileAgeDays = difftime(time(nullptr), dt.getSimple())/(24*60*60);
+            }
+            __int64 sizeDiskSize = 0;
+            if (isCompressed(*file))
+                sizeDiskSize = file->getPropInt64(getDFUQResultFieldName(DFUQRFcompressedsize), 0);
+            else
+                sizeDiskSize = file->getPropInt64(getDFUQResultFieldName(DFUQRForigsize), 0);
+            double sizeGB = sizeDiskSize / ((double)1024 * 1024 * 1024);
+            __int64 numDiskWrites = file->getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskReads), 0);
+            __int64 numDiskReads = file->getPropInt64(getDFUQResultFieldName(DFUQRFnumDiskWrites), 0);
+            double totalCost = calcFileCost(nodeGroup, sizeGB, fileAgeDays, numDiskWrites, numDiskReads);
+            file->setPropReal(getDFUQResultFieldName(DFUQRFcost), totalCost);
+        }
+
         IPropertyTree *deserializeFileAttr(MemoryBuffer &mb, StringArray& nodeGroupFilter)
         {
             IPropertyTree *attr = getEmptyAttr();
@@ -12892,6 +12915,9 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned nu
             attr->setPropInt64(getDFUQResultFieldName(DFUQRFsize), attr->getPropInt64(getDFUQResultFieldName(DFUQRForigsize), -1));//Sort the files with empty size to front
             setRecordCount(attr);
             setIsCompressed(attr);
+            const char *firstNodeGroup = attr->queryProp(getDFUQResultFieldName(DFUQRFnodegroup));
+            if (!isEmptyString(firstNodeGroup))
+                setCost(attr, firstNodeGroup);
             return attr;
         }
 
@@ -12901,7 +12927,9 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, unsigned nu
             Owned<IAttributeIterator> ai = previousAttr->getAttributes();
             ForEach(*ai)
                 attr->setProp(ai->queryName(),ai->queryValue());
-            attr->setProp(getDFUQResultFieldName(DFUQRFnodegroup), fileNodeGroups.item(fileNodeGroups.length()-1));
+            const char * nodeGroup = fileNodeGroups.item(fileNodeGroups.length()-1);
+            attr->setProp(getDFUQResultFieldName(DFUQRFnodegroup), nodeGroup);
+            setCost(attr, nodeGroup);
             fileNodeGroups.pop();
             return attr;
         }
@@ -13064,6 +13092,8 @@ IDFAttributesIterator* CDistributedFileDirectory::getLogicalFiles(
                 so.append('?');
             if (fmt&DFUQRFnumeric)
                 so.append('#');
+            if (fmt&DFUQRFfloat)
+                so.append('~');
             so.append(getDFUQResultFieldName((DFUQResultField) (fmt&0xff)));
         }
     }
