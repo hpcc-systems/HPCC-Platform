@@ -1617,6 +1617,20 @@ unsigned usTick()
         return 0;
     return (unsigned) ((v.QuadPart*1000000)/freq); // hope dividend doesn't overflow though it might
 }
+extern jlib_decl unsigned __int64 nsTick()
+{
+    static __int64 freq=0;
+    LARGE_INTEGER v;
+    if (!freq) {
+        if (QueryPerformanceFrequency(&v))
+            freq=v.QuadPart;
+        if (!freq)
+            return 0;
+    }
+    if (!QueryPerformanceCounter(&v))
+        return 0;
+    return (v.QuadPart*U64C(1000000000))/freq; // This is unlikely to cleanly wrap
+}
 
 #else
 #ifdef CLOCK_MONOTONIC
@@ -1647,7 +1661,25 @@ unsigned usTick()
     gettimeofday(&tm,NULL);
     return tm.tv_sec*1000000+tm.tv_usec;
 }
+unsigned __int64 nsTick()
+{
+    if (!use_gettimeofday) {
+        timespec tm;
+        if (clock_gettime(CLOCK_MONOTONIC, &tm)>=0)
+            return ((unsigned __int64)tm.tv_sec)*U64C(1000000000)+tm.tv_nsec;
+        use_gettimeofday = true;
+        fprintf(stderr,"clock_gettime CLOCK_MONOTONIC returns %d",errno);   // don't use PROGLOG
+    }
+    struct timeval tm;
+    gettimeofday(&tm,NULL);
+    return tm.tv_sec*U64C(1000000000)+tm.tv_usec*1000;
+}
 #elif __APPLE__
+
+unsigned __int64 nsTick()
+{
+    return mach_absolute_time() * (uint64_t)timebase_info.numer / (uint64_t)timebase_info.denom;
+}
 
 unsigned usTick()
 {
@@ -1665,15 +1697,21 @@ unsigned msTick()
 #warning "clock_gettime(CLOCK_MONOTONIC) not supported"
 unsigned msTick()
 {
-  struct timeval tm;
-  gettimeofday(&tm,NULL);
-  return tm.tv_sec*1000+(tm.tv_usec/1000);
+    struct timeval tm;
+    gettimeofday(&tm,NULL);
+    return tm.tv_sec*1000+(tm.tv_usec/1000);
 }
 unsigned usTick()
 {
-  struct timeval tm;
-  gettimeofday(&tm,NULL);
-  return tm.tv_sec*1000000+tm.tv_usec;
+    struct timeval tm;
+    gettimeofday(&tm,NULL);
+    return tm.tv_sec*1000000+tm.tv_usec;
+}
+unsigned __int64 nsTick()
+{
+    struct timeval tm;
+    gettimeofday(&tm,NULL);
+    return tm.tv_sec*U64C(1000000000)+tm.tv_usec*1000;
 }
 #endif
 #endif

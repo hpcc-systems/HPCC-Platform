@@ -293,6 +293,7 @@ public:
 
 extern jlib_decl unsigned msTick();
 extern jlib_decl unsigned usTick();
+extern jlib_decl unsigned __int64 nsTick();
 extern jlib_decl int write_pidfile(const char * instance);
 extern jlib_decl void doStackProbe();
 
