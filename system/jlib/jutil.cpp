@@ -3066,11 +3066,11 @@ int parseCommandLine(const char * cmdline, MemoryBuffer &mb, const char** &argvo
     return 0;
 }
 
-jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * component, IPropertyTree * pTree)
+static StringBuffer &doGetTempFilePath(StringBuffer & target, const char *tempCategory, const char * component, IPropertyTree * pTree)
 {
     StringBuffer dir;
     if (pTree)
-        getConfigurationDirectory(pTree->queryPropTree("Directories"),"temp",component,pTree->queryProp("@name"),dir);
+        getConfigurationDirectory(pTree->queryPropTree("Directories"),tempCategory,component,pTree->queryProp("@name"),dir);
     bool ok = false;
     if (!dir.isEmpty())
     {
@@ -3149,6 +3149,16 @@ jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * comp
         throw MakeStringException(-1, "Unable to create temp directory");
     return target.set(templt);
 #endif
+}
+
+jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * component, IPropertyTree * pTree)
+{
+    return doGetTempFilePath(target, "temp", component, pTree);
+}
+
+jlib_decl StringBuffer &getSpillFilePath(StringBuffer & target, const char * component, IPropertyTree * pTree)
+{
+    return doGetTempFilePath(target, "spill", component, pTree);
 }
 
 const char *getEnumText(int value, const EnumMapping *map)

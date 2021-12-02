@@ -613,7 +613,7 @@ const char *EclAgent::queryTempfilePath()
     if (agentTempDir.isEmpty())
     {
         StringBuffer dir;
-        getTempFilePath(dir, "eclagent", agentTopology);
+        getSpillFilePath(dir, "eclagent", agentTopology);
         agentTempDir.set(dir.str());
     }
     return agentTempDir.str();
