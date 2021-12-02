@@ -202,7 +202,7 @@ public:
 
 class flowType {
 public:
-    enum flowCmd : unsigned short { ok_to_send, request_received, request_to_send, send_completed, request_to_send_more };
+    enum flowCmd : unsigned short { ok_to_send, request_received, request_to_send, send_completed, request_to_send_more, max_flow_cmd };
     static const char *name(flowCmd m)
     {
         switch (m)
@@ -267,7 +267,17 @@ inline bool checkTraceLevel(unsigned category, unsigned level)
 #define SOCKET_SIMULATION_UDP
 
 #ifdef SOCKET_SIMULATION
-extern bool isUdpTestMode;
+#ifdef _DEBUG
+#define TEST_DROPPED_PACKETS
+#endif
+
+#ifdef TEST_DROPPED_PACKETS
+extern UDPLIB_API bool udpDropDataPackets;
+extern UDPLIB_API unsigned udpDropFlowPackets[flowType::max_flow_cmd];
+extern unsigned flowPacketsSent[flowType::max_flow_cmd];
+#endif
+
+extern UDPLIB_API bool isUdpTestMode;
 
 class CSocketSimulator : public CInterfaceOf<ISocket>
 {
@@ -288,8 +298,9 @@ private:
     virtual bool set_nonblock(bool on) override { UNIMPLEMENTED; }
     virtual bool set_nagle(bool on) override { UNIMPLEMENTED; }
     virtual void set_linger(int lingersecs) override { UNIMPLEMENTED; }
-    virtual void  cancel_accept() override { UNIMPLEMENTED; }
-    virtual void  shutdown(unsigned mode=SHUTDOWN_READWRITE) override { UNIMPLEMENTED; }
+    virtual void cancel_accept() override { UNIMPLEMENTED; }
+    virtual void shutdown(unsigned mode) override { UNIMPLEMENTED; }
+    virtual void shutdownNoThrow(unsigned mode) override { UNIMPLEMENTED; }
     virtual int name(char *name,size32_t namemax) override { UNIMPLEMENTED; }
     virtual int peer_name(char *name,size32_t namemax) override { UNIMPLEMENTED; }
     virtual SocketEndpoint &getPeerEndpoint(SocketEndpoint &ep) override { UNIMPLEMENTED; }
@@ -378,7 +389,8 @@ public:
                          unsigned timeout) override;
     virtual int wait_read(unsigned timeout) override;
     virtual void close() override {}
-
+    virtual void  shutdown(unsigned mode) override { }
+    virtual void  shutdownNoThrow(unsigned mode) override{ }
 };
 
 class CSimulatedQueueWriteSocket : public CSocketSimulator
@@ -395,6 +407,8 @@ public:
 
 class CSimulatedUdpSocket : public CSocketSimulator
 {
+    virtual void  shutdown(unsigned mode) override { realSocket->shutdown(mode); }
+    virtual void  shutdownNoThrow(unsigned mode) override{ realSocket->shutdownNoThrow(mode); }
 protected:
     Owned<ISocket> realSocket;
 };

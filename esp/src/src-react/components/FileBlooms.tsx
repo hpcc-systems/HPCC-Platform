@@ -1,10 +1,7 @@
 import * as React from "react";
 import { CommandBar, ICommandBarItemProps } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
-import * as Observable from "dojo/store/Observable";
-import { Memory } from "src/Memory";
 import nlsHPCC from "src/nlsHPCC";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { useFile } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
 
@@ -19,32 +16,32 @@ export const FileBlooms: React.FunctionComponent<FileBloomsProps> = ({
 }) => {
 
     const [file, , , refreshData] = useFile(cluster, logicalFile);
+    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const store = useConst(new Observable(new Memory("FieldNames")));
-    const [Grid, , refreshTable, copyButtons] = useGrid({
-        store,
+    const [Grid, , copyButtons] = useFluentGrid({
+        data,
+        primaryID: "FieldNames",
         sort: [{ attribute: "FieldNames", "descending": false }],
         filename: "fileBlooms",
         columns: {
-            FieldNames: { label: nlsHPCC.FieldNames, sortable: true, },
-            Limit: { label: nlsHPCC.Limit, sortable: true, },
-            Probability: { label: nlsHPCC.Probability, sortable: true, }
+            FieldNames: { label: nlsHPCC.FieldNames, sortable: true, width: 320 },
+            Limit: { label: nlsHPCC.Limit, sortable: true, width: 180 },
+            Probability: { label: nlsHPCC.Probability, sortable: true, width: 180 },
         }
     });
 
     React.useEffect(() => {
         const fileBlooms = file?.Blooms?.DFUFileBloom;
         if (fileBlooms) {
-            store.setData(fileBlooms.map(bloom => {
+            setData(fileBlooms.map(bloom => {
                 return {
                     ...bloom,
                     FieldNames: bloom?.FieldNames?.Item[0] || "",
                 };
             }));
-            refreshTable();
         }
-    }, [file?.Blooms?.DFUFileBloom, refreshTable, store]);
+    }, [file?.Blooms?.DFUFileBloom]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [

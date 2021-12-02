@@ -161,6 +161,7 @@ extern UDPLIB_API RelaxedAtomic<unsigned> unwantedDiscarded;
 
 extern UDPLIB_API bool udpTraceFlow;
 extern UDPLIB_API bool udpTraceTimeouts;
+
 extern UDPLIB_API unsigned udpTraceLevel;
 extern UDPLIB_API unsigned udpOutQsPriority;
 extern UDPLIB_API void queryMemoryPoolStats(StringBuffer &memStats);

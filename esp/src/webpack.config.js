@@ -95,7 +95,11 @@ module.exports = function (env) {
         resolve: {
             alias: {
                 "clipboard": path.resolve(__dirname, "node_modules/clipboard/dist/clipboard")
-            }
+            },
+            // WebPack >= v5
+            // fallback: {
+            //     "@hpcc-js": path.resolve(__dirname, "../../../hpcc-js/packages")
+            // },
         },
         plugins: plugins,
         resolveLoader: {

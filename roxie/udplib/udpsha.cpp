@@ -41,6 +41,12 @@ unsigned udpFlowSocketsSize = 131072;
 unsigned udpLocalWriteSocketSize = 1024000;
 unsigned udpStatsReportInterval = 60000;
 
+#ifdef TEST_DROPPED_PACKETS
+bool udpDropDataPackets = false;
+unsigned udpDropFlowPackets[flowType::max_flow_cmd] = {};
+unsigned flowPacketsSent[flowType::max_flow_cmd] = {};
+#endif
+
 unsigned multicastTTL = 1;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
@@ -673,7 +679,6 @@ fake read socket that
 #ifdef SOCKET_SIMULATION
 bool isUdpTestMode = false;
 
-
 CSimulatedQueueWriteSocket* CSimulatedQueueWriteSocket::udp_connect(const SocketEndpoint &ep)
 {
     return new CSimulatedQueueWriteSocket(ep);
@@ -844,83 +849,4 @@ void CSimulatedUdpWriteSocket::close()
     realSocket->close();
 }
 
-
-
-//-----------------------------------------------------------------------------------------------------
-
-#ifdef _USE_CPPUNIT
-
-class SimulatedUdpStressTest : public CppUnit::TestFixture
-{
-    CPPUNIT_TEST_SUITE(SimulatedUdpStressTest);
-    CPPUNIT_TEST(simulateTraffic);
-    CPPUNIT_TEST_SUITE_END();
-
-    Owned<IDataBufferManager> dbm;
-    bool initialized = false;
-
-    void testInit()
-    {
-        if (!initialized)
-        {
-            udpTraceLevel = 1;
-            udpTraceTimeouts = true;
-            udpResendLostPackets = true;
-            udpRequestToSendTimeout = 10000;
-            udpRequestToSendAckTimeout = 10000;
-            udpMaxPendingPermits = 1;
-            udpTraceFlow = 0;
-            isUdpTestMode = true;
-            roxiemem::setTotalMemoryLimit(false, false, false, 20*1024*1024, 0, NULL, NULL);
-            dbm.setown(roxiemem::createDataBufferManager(roxiemem::DATA_ALIGNMENT_SIZE));
-            initialized = true;
-        }
-    }
-
-    void simulateTraffic()
-    {
-        constexpr unsigned numReceiveSlots = 100;
-        constexpr unsigned maxSlotsPerClient = 100;
-        constexpr unsigned maxSendQueueSize = 100;
-        try
-        {
-            testInit();
-            myNode.setIp(IpAddress("1.2.3.4"));
-            Owned<IReceiveManager> rm = createReceiveManager(CCD_SERVER_FLOW_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, numReceiveSlots, maxSlotsPerClient, false);
-            unsigned begin = msTick();
-            printf("Start test\n");
-            asyncFor(20, 20, [](unsigned i)
-            {
-                unsigned header = 0;
-                IpAddress pretendIP(VStringBuffer("8.8.8.%d", i));
-                // Note - this is assuming we send flow on the data port (that option defaults true in roxie too)
-                Owned<ISendManager> sm = createSendManager(CCD_DATA_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, maxSendQueueSize, 3, pretendIP, nullptr, false);
-                Owned<IMessagePacker> mp = sm->createMessagePacker(0, 0, &header, sizeof(header), myNode, 0);
-                for (unsigned i = 0; i < 10000; i++)
-                {
-                    void *buf = mp->getBuffer(500, false);
-                    memset(buf, i, 500);
-                    mp->putBuffer(buf, 500, false);
-                }
-                mp->flush();
-
-                //wait until all the packets have been sent and acknowledged
-                while(!sm->allDone())
-                    Sleep(50);
-            });
-            printf("End test %u\n", msTick() - begin);
-        }
-        catch (IException * e)
-        {
-            StringBuffer msg;
-            printf("Exception: %s\n", e->errorMessage(msg).str());
-            throw;
-        }
-    }
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION( SimulatedUdpStressTest );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( SimulatedUdpStressTest, "SimulatedUdpStressTest" );
-
-#endif
 #endif

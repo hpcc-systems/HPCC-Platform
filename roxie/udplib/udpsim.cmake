@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems®.
+#    HPCC SYSTEMS software Copyright (C) 2021 HPCC Systems®.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -14,19 +14,35 @@
 #    limitations under the License.
 ################################################################################
 
-# component: udplib
+# Component: udptransport 
 
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File udplib
+#    Cmake Input File for udpsim
 #####################################################
 
 
+project( udptransport ) 
 
-project (AllProjects)
+set (    SRCS 
+         udpsim.cpp 
+    )
 
-include ( udplib.cmake)
-include ( udptransport.cmake)
-include ( udpsim.cmake)
+include_directories ( 
+         ./../../roxie/roxiemem 
+         ./../../system/include 
+         ./../../system/jlib 
+         ./../../roxie/ccd 
+    )
 
+HPCC_ADD_EXECUTABLE ( udpsim ${SRCS} )
+
+#We don't currently ship this - it's for developer use only
+#install ( TARGETS udpsim RUNTIME DESTINATION ${EXEC_DIR} )  
+
+target_link_libraries ( udpsim
+         jlib
+         roxiemem
+         udplib 
+    )

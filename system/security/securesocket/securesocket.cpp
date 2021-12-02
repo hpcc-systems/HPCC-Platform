@@ -245,6 +245,12 @@ public:
         m_socket->shutdown(mode);
     }
 
+    // Same as shutdown, but never throws an exception (to call from closedown destructors)
+    virtual void  shutdownNoThrow(unsigned mode)
+    {
+        m_socket->shutdownNoThrow(mode);
+    }
+
     // Get local name of accepted (or connected) socket and returns port
     virtual int name(char *name,size32_t namemax)
     {

@@ -8414,7 +8414,7 @@ void mergeConfiguration(IPropertyTree & target, const IPropertyTree & source, co
         bool first = false;
         bool endprior = false;
         bool sequence = checkInSequence(child, seqname, first, endprior);
-        if (first && (!name || isScalarItem(child))) //arrays of unamed objects or scalars are replaced
+        if (first && (!name || isScalarItem(child))) //arrays of unnamed objects or scalars are replaced
             target.removeProp(tag);
 
         IPropertyTree * match = ensureMergeConfigTarget(target, tag, altname ? altNameAttribute : "@name", name, sequence);
@@ -8565,7 +8565,7 @@ static void applyCommandLineOption(IPropertyTree * config, const char * option, 
     config->setProp(path, value);
 }
 
-static void applyCommandLineOption(IPropertyTree * config, const char * option, std::initializer_list<const char *> ignoreOptions)
+static void applyCommandLineOption(IPropertyTree * config, const char * option, std::initializer_list<const std::string> ignoreOptions)
 {
     const char * eq = strchr(option, '=');
     StringBuffer name;
@@ -8638,7 +8638,7 @@ Owned<IPropertyTree> getGlobalConfigSP()
     return getGlobalConfig();
 }
 
-jlib_decl IPropertyTree * loadArgsIntoConfiguration(IPropertyTree *config, const char * * argv, std::initializer_list<const char *> ignoreOptions)
+jlib_decl IPropertyTree * loadArgsIntoConfiguration(IPropertyTree *config, const char * * argv, std::initializer_list<const std::string> ignoreOptions)
 {
     for (const char * * pArg = argv; *pArg; pArg++)
     {

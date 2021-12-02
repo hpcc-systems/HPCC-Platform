@@ -40,10 +40,6 @@ unsigned udpMaxRetryTimedoutReqs = 0; // 0 means off (keep retrying forever)
 unsigned udpRequestToSendTimeout = 0; // value in milliseconds - 0 means calculate from query timeouts
 unsigned udpRequestToSendAckTimeout = 10; // value in milliseconds
 
-#ifdef _DEBUG
-//#define TEST_DROPPED_PACKETS
-#endif
-
 using roxiemem::DataBuffer;
 /*
  *
@@ -216,6 +212,15 @@ private:
                 StringBuffer s, s2;
                 DBGLOG("UdpSender[%s]: sending flowType::%s msg %" SEQF "u flowSeq %" SEQF "u to node=%s", msg.sourceNode.getTraceText(s2).str(), flowType::name(msg.cmd), msg.sendSeq, msg.flowSeq, ip.getIpText(s).str());
             }
+#ifdef TEST_DROPPED_PACKETS
+            flowPacketsSent[msg.cmd]++;
+            if (udpDropFlowPackets[msg.cmd] && flowPacketsSent[msg.cmd]%udpDropFlowPackets[msg.cmd] == 0)
+            {
+                StringBuffer s, s2;
+                DBGLOG("UdpSender[%s]: deliberately dropping flowType::%s msg %" SEQF "u flowSeq %" SEQF "u to node=%s", msg.sourceNode.getTraceText(s2).str(), flowType::name(msg.cmd), msg.sendSeq, msg.flowSeq, ip.getIpText(s).str());
+            }
+            else
+#endif
             send_flow_socket->write(&msg, sizeof(UdpRequestToSendMsg));
             flowRequestsSent++;
         }
@@ -418,7 +423,7 @@ public:
             try
             {
 #ifdef TEST_DROPPED_PACKETS
-                if (((header->pktSeq & UDP_PACKET_RESENT)==0) && (header->pktSeq==0 || header->pktSeq==10 || ((header->pktSeq&UDP_PACKET_COMPLETE) != 0)))
+                if (udpDropDataPackets && ((header->pktSeq & UDP_PACKET_RESENT)==0) && (header->pktSeq==0 || header->pktSeq==10 || ((header->pktSeq&UDP_PACKET_COMPLETE) != 0)))
                     DBGLOG("Deliberately dropping packet %" SEQF "u", header->sendSeq);
                 else
 #endif
@@ -787,8 +792,8 @@ class CSendManager : implements ISendManager, public CInterface
         ~send_receive_flow() 
         {
             running = false;
-            if (flow_socket) 
-                flow_socket->close();
+            if (flow_socket)
+                flow_socket->shutdownNoThrow();
             join();
         }
         

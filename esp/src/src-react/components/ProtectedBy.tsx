@@ -1,10 +1,7 @@
 import * as React from "react";
 import { CommandBar, ICommandBarItemProps } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
-import * as Observable from "dojo/store/Observable";
-import { Memory } from "src/Memory";
 import nlsHPCC from "src/nlsHPCC";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { useFile } from "../hooks/file";
 import { HolyGrail } from "../layouts/HolyGrail";
 
@@ -19,16 +16,17 @@ export const ProtectedBy: React.FunctionComponent<ProtectedByProps> = ({
 }) => {
 
     const [file, , , refreshData] = useFile(cluster, logicalFile);
+    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const store = useConst(new Observable(new Memory("Owner")));
-    const [Grid, _selection, refreshTable, copyButtons] = useGrid({
-        store,
+    const [Grid, _selection, copyButtons] = useFluentGrid({
+        data,
+        primaryID: "Owner",
         sort: [{ attribute: "Owner", "descending": false }],
         filename: "protectedBy",
         columns: {
-            Owner: { label: nlsHPCC.Owner, sortable: false },
-            Modified: { label: nlsHPCC.Modified, sortable: false },
+            Owner: { label: nlsHPCC.Owner, width: 320 },
+            Modified: { label: nlsHPCC.Modified, width: 320 },
         }
     });
 
@@ -36,15 +34,14 @@ export const ProtectedBy: React.FunctionComponent<ProtectedByProps> = ({
         const results = file?.ProtectList?.DFUFileProtect;
 
         if (results) {
-            store.setData(file?.ProtectList?.DFUFileProtect?.map(row => {
+            setData(file?.ProtectList?.DFUFileProtect?.map(row => {
                 return {
                     Owner: row.Owner,
                     Modified: row.Modified
                 };
             }));
-            refreshTable();
         }
-    }, [store, file?.ProtectList?.DFUFileProtect, refreshTable]);
+    }, [file?.ProtectList?.DFUFileProtect]);
 
     //  Command Bar  ---
     const buttons = React.useMemo((): ICommandBarItemProps[] => [

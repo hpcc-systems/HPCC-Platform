@@ -1,12 +1,8 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
-import * as Observable from "dojo/store/Observable";
-import { Memory } from "src/Memory";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, ScrollablePane, Sticky } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
-import { useGrid } from "../hooks/grid";
+import { useFluentGrid } from "../hooks/grid";
 import { useFile } from "../hooks/file";
-import { HolyGrail } from "../layouts/HolyGrail";
 import { ShortVerticalDivider } from "./Common";
 import { selector } from "./DojoGrid";
 
@@ -26,11 +22,12 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
 
     const [file, , , refreshData] = useFile(cluster, logicalFile);
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
+    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const store = useConst(new Observable(new Memory("Name")));
-    const [Grid, selection, refreshTable, copyButtons] = useGrid({
-        store,
+    const [Grid, selection, copyButtons] = useFluentGrid({
+        data,
+        primaryID: "Name",
         sort: [{ attribute: "Name", "descending": false }],
         filename: "superFiles",
         columns: {
@@ -38,7 +35,13 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
                 width: 27,
                 selectorType: "checkbox"
             }),
-            Name: { label: nlsHPCC.Name, sortable: true, },
+            Name: {
+                label: nlsHPCC.Name,
+                sortable: true,
+                formatter: function (name, row) {
+                    return <Link href={`#/files/${cluster}/${name}`}>{name}</Link>;
+                }
+            },
         }
     });
 
@@ -75,15 +78,14 @@ export const SuperFiles: React.FunctionComponent<SuperFilesProps> = ({
 
     React.useEffect(() => {
         if (file?.Superfiles?.DFULogicalFile) {
-            store?.setData(file?.Superfiles?.DFULogicalFile);
-            refreshTable();
+            setData(file?.Superfiles?.DFULogicalFile);
         }
-    }, [file, store, refreshTable]);
+    }, [file]);
 
-    return <HolyGrail
-        header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={
-            <Grid />
-        }
-    />;
+    return <ScrollablePane>
+        <Sticky>
+            <CommandBar items={buttons} farItems={copyButtons} />
+        </Sticky>
+        <Grid />
+    </ScrollablePane>;
 };

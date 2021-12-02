@@ -1,11 +1,8 @@
 import * as React from "react";
-import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link } from "@fluentui/react";
-import { useConst } from "@fluentui/react-hooks";
-import { AlphaNumSortMemory } from "src/Memory";
+import { CommandBar, ContextualMenuItemType, ICommandBarItemProps, Link, ScrollablePane, Sticky } from "@fluentui/react";
 import nlsHPCC from "src/nlsHPCC";
 import { useFluentGrid } from "../hooks/grid";
 import { useWorkunitResults } from "../hooks/workunit";
-import { HolyGrail } from "../layouts/HolyGrail";
 import { ShortVerticalDivider } from "./Common";
 import { selector } from "./DojoGrid";
 
@@ -23,11 +20,13 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
 
     const [uiState, setUIState] = React.useState({ ...defaultUIState });
     const [results, , , refreshData] = useWorkunitResults(wuid);
+    const [data, setData] = React.useState<any[]>([]);
 
     //  Grid ---
-    const store = useConst(new AlphaNumSortMemory("__hpcc_id", { Name: true, Value: true }));
     const [Grid, selection, copyButtons] = useFluentGrid({
-        store,
+        data,
+        primaryID: "__hpcc_id",
+        alphaNumColumns: { Name: true, Value: true },
         sort: [{ attribute: "Wuid", "descending": true }],
         filename: "results",
         columns: {
@@ -108,7 +107,7 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
     }, [selection]);
 
     React.useEffect(() => {
-        store.setData(results.map(row => {
+        setData(results.map(row => {
             const tmp: any = row.ResultViews;
             return {
                 __hpcc_id: row.Name,
@@ -120,12 +119,12 @@ export const Results: React.FunctionComponent<ResultsProps> = ({
                 Sequence: row.Sequence
             };
         }));
-    }, [store, results]);
+    }, [results]);
 
-    return <HolyGrail
-        header={<CommandBar items={buttons} farItems={copyButtons} />}
-        main={
-            <Grid />
-        }
-    />;
+    return <ScrollablePane>
+        <Sticky>
+            <CommandBar items={buttons} farItems={copyButtons} />
+        </Sticky>
+        <Grid />
+    </ScrollablePane>;
 };

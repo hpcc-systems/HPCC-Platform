@@ -340,6 +340,9 @@ public:
     //
     virtual void  shutdown(unsigned mode=SHUTDOWN_READWRITE) = 0; // not needed for UDP
 
+    // Same as shutdown, but never throws an exception (to call from closedown destructors)
+    virtual void  shutdownNoThrow(unsigned mode=SHUTDOWN_READWRITE) = 0; // not needed for UDP
+
     // Get local name of accepted (or connected) socket and returns port
     virtual int name(char *name,size32_t namemax)=0;
 

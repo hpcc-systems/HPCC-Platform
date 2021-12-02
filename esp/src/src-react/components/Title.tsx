@@ -8,6 +8,7 @@ import * as WsAccount from "src/ws_account";
 import * as cookie from "dojo/cookie";
 
 import nlsHPCC from "src/nlsHPCC";
+import { useBanner } from "../hooks/banner";
 import { useECLWatchLogger } from "../hooks/logging";
 import { useGlobalStore } from "../hooks/store";
 import * as Utility from "src/Utility";
@@ -42,6 +43,9 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     const [environmentTitle, setEnvironmentTitle] = useGlobalStore("HPCCPlatformWidget_Toolbar_Text", toolbarThemeDefaults.text);
     const [titlebarColor, setTitlebarColor] = useGlobalStore("HPCCPlatformWidget_Toolbar_Color", toolbarThemeDefaults.color);
 
+    const [showBannerConfig, setShowBannerConfig] = React.useState(false);
+    const [BannerMessageBar, BannerConfig] = useBanner({ showForm: showBannerConfig, setShowForm: setShowBannerConfig });
+
     const personaProps: IPersonaSharedProps = React.useMemo(() => {
         return {
             text: currentUser?.firstName + " " + currentUser?.lastName,
@@ -68,7 +72,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             items: [
                 { key: "legacy", text: nlsHPCC.OpenLegacyECLWatch, href: "/esp/files/stub.htm" },
                 { key: "divider_0", itemType: ContextualMenuItemType.Divider },
-                { key: "banner", text: nlsHPCC.SetBanner },
+                { key: "banner", text: nlsHPCC.SetBanner, onClick: () => setShowBannerConfig(true) },
                 { key: "toolbar", text: nlsHPCC.SetToolbar, onClick: () => setShowTitlebarConfig(true) },
                 { key: "divider_1", itemType: ContextualMenuItemType.Divider },
                 { key: "docs", href: "https://hpccsystems.com/training/documentation/", text: nlsHPCC.Documentation, target: "_blank" },
@@ -143,6 +147,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
     }, [environmentTitle]);
 
     return <div style={{ backgroundColor: titlebarColor ?? theme.palette.themeLight }}>
+        <BannerMessageBar />
         <Stack horizontal verticalAlign="center" horizontalAlign="space-between">
             <Stack.Item align="center">
                 <Stack horizontal>
@@ -200,6 +205,7 @@ export const DevTitle: React.FunctionComponent<DevTitleProps> = ({
             environmentTitle={environmentTitle} setEnvironmentTitle={setEnvironmentTitle}
             titlebarColor={titlebarColor} setTitlebarColor={setTitlebarColor}
         />
+        <BannerConfig />
     </div>;
 };
 
