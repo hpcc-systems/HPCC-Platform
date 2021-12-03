@@ -71,6 +71,7 @@ class CEspHttpServer : implements IHttpServerService, public CInterface
     bool shouldClose = false;
     CriticalSection critDaliSession;
     ISocketReturner* m_socketReturner = nullptr;
+    StringAttr processName;
 protected:
     ISocket&                m_socket;
     Owned<CHttpRequest>     m_request;
@@ -123,6 +124,8 @@ protected:
     void sendSessionReloadHTMLPage(IEspContext* ctx, EspAuthRequest& authReq, const char* msg);
     bool isServiceMethodReq(EspAuthRequest& authReq, const char* serviceName, const char* methodName);
     IRemoteConnection* getSDSConnection(const char* xpath, unsigned mode, unsigned timeout);
+    void sendCreateESPJobResponse(const char* jobID, const char* error);
+    void sendGetESPJobStatusResponse(const char* jobID, const char* status, const char* error);
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -168,6 +171,8 @@ public:
         m_response->setSocketReturner(returner);
     }
     IEspContext* queryContext() {return m_request->queryContext();}
+    int onCreateESPJob(CHttpRequest* request, CHttpResponse* response);
+    int onGetESPJobStatus(CHttpRequest* request, CHttpResponse* response);
 };
 
 

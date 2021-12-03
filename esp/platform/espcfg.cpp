@@ -598,6 +598,9 @@ void CEspConfig::initDali(const char *servers)
             throw MakeStringException(0, "Could not initialize dali client");
 
         serverstatus = new CSDSServerStatus("ESPserver");
+        serverstatus->queryProperties()->addProp("@appName", m_process);
+        serverstatus->queryProperties()->addPropTree("Jobs", createPTree("Jobs", ipt_caseInsensitive)); //Is this a good place to store ESP job status in dali?
+        serverstatus->commitProperties();
         //When esp is starting, the initDali() is called before m_bindings is set.
         //We should not call ensureSDSSession() at that time.
         if (sdsSessionNeeded && !sdsSessionEnsured && !m_bindings.empty())

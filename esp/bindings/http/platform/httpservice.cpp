@@ -50,6 +50,7 @@ CEspHttpServer::CEspHttpServer(ISocket& sock, CEspApplicationPort* apport, bool 
     if (apport->getDefaultBinding())
         m_defaultBinding.set(apport->getDefaultBinding()->queryBinding());
     m_viewConfig=viewConfig;
+    processName.set(queryEspServer()->getProcName());
 }
 
 CEspHttpServer::~CEspHttpServer()
@@ -312,6 +313,10 @@ int CEspHttpServer::processRequest()
                     return onGetNavEvent(m_request.get(), m_response.get());
                 else if (!stricmp(methodName.str(), "soapreq"))
                     return onGetBuildSoapRequest(m_request.get(), m_response.get());
+                else if (strieq(methodName.str(), "createjob")) //Is this a good place to create a job and get job status?
+                    return onCreateESPJob(m_request.get(), m_response.get());
+                else if (strieq(methodName.str(), "getjobstatus"))
+                    return onGetESPJobStatus(m_request.get(), m_response.get());
             }
         }
 
@@ -2241,9 +2246,9 @@ void CEspHttpServer::authOptionalGroups(EspAuthRequest& authReq)
 
 IRemoteConnection* CEspHttpServer::getSDSConnection(const char* xpath, unsigned mode, unsigned timeout)
 {
-    Owned<IRemoteConnection> globalLock = querySDS().connect(xpath, myProcessSession(), RTM_LOCK_READ, SESSION_SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> globalLock = querySDS().connect(xpath, myProcessSession(), mode, timeout);
     if (!globalLock)
-        throw MakeStringException(-1, "Unable to connect to ESP Session information in dali %s", xpath);
+        throw makeStringExceptionV(-1, "Unable to connect to %s in dali", xpath);
     return globalLock.getClear();
 }
 
@@ -2328,4 +2333,87 @@ bool CEspHttpServer::persistentEligible()
         return m_request->getPersistentEligible() && m_response->getPersistentEligible();
     else
         return false;
+}
+
+int CEspHttpServer::onCreateESPJob(CHttpRequest* request, CHttpResponse* response)
+{
+    StringBuffer description, timeoutSeconds;
+    request->getParameter("Description", description);
+    request->getParameter("TimeoutSeconds", timeoutSeconds);
+
+    StringBuffer jobID, error;
+    createESPJob(processName.get(), description, isEmptyString(timeoutSeconds) ? 3600 : atoi(timeoutSeconds.str()), jobID, error); //Make 3600 configurable?
+    if (error.isEmpty())
+        ESPLOG(LogNormal, "ESP job %s created", jobID.str()); //Do we need to log this?
+    sendCreateESPJobResponse(jobID, error);
+    return 0;
+}
+
+void CEspHttpServer::sendCreateESPJobResponse(const char* jobID, const char* error)
+{
+    StringBuffer resp;
+    ESPSerializationFormat format = m_request->queryContext()->getResponseFormat();
+    if (format == ESPSerializationJSON)
+    {
+        resp.set("{ ");
+        resp.append("\"CreateESPJobResponse\": { ");
+        if (isEmptyString(error))
+            resp.appendf("\"JobID\": \"%s\"", jobID);
+        else
+            resp.appendf("\"Error\": \"%s\"", error);
+        resp.append(" }");
+        resp.append(" }");
+    }
+    else
+    {
+        resp.set("<CreateESPJobResponse>");
+        if (isEmptyString(error))
+            resp.append("<JobID>").append(jobID).append("</JobID>");
+        else
+            resp.append("<Error>").append(error).append("</Error>");
+        resp.append("</CreateESPJobResponse>");
+    }
+    sendMessage(resp, (format == ESPSerializationJSON) ? "application/json" : "text/xml");
+}
+
+int CEspHttpServer::onGetESPJobStatus(CHttpRequest* request, CHttpResponse* response)
+{
+    StringBuffer jobID, status, error;
+    request->getParameter("JobID", jobID);
+    getESPJobStatus(processName.get(), jobID, status, error);
+    sendGetESPJobStatusResponse(jobID, status, error);
+    return 0;
+}
+
+void CEspHttpServer::sendGetESPJobStatusResponse(const char* jobID, const char* status, const char* error)
+{
+    StringBuffer resp;
+    ESPSerializationFormat format = m_request->queryContext()->getResponseFormat();
+    if (format == ESPSerializationJSON)
+    {
+        resp.set("{ ");
+        resp.append("\"GetESPJobStatusResponse\": { ");
+        if (isEmptyString(error))
+        {
+            resp.appendf("\"JobID\": \"%s\"", jobID);
+            resp.appendf("\"Status\": \"%s\"", status);
+        }
+        else
+            resp.appendf("\"Error\": \"%s\"", error);
+        resp.append(" }");
+        resp.append(" }");
+    }
+    else
+    {
+        resp.set("<GetESPJobStatusResponse>");
+        if (isEmptyString(error))
+        {
+            resp.append("<JobID>").append(jobID).append("</JobID>");
+            resp.append("<Status>").append(status).append("</Status>");
+        }
+        else
+            resp.append("<Error>").append(error).append("</Error>");
+        resp.append("</GetESPJobStatusResponse>");
+    }
+    sendMessage(resp, (format == ESPSerializationJSON) ? "application/json" : "text/xml");
 }

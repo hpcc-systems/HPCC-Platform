@@ -1117,3 +1117,108 @@ IRemoteConnection* getSDSConnectionWithRetry(const char* xpath, unsigned mode, u
     }
     return nullptr;
 }
+
+IRemoteConnection* getESPJobSDSConnection(const char* processName, const char* jobID, unsigned mode, unsigned timeoutMs, StringBuffer& error)
+{
+    if (isEmptyString(processName))
+    {
+        error.set("Failed to get application name.");
+        return nullptr;
+    }
+
+    VStringBuffer xpath("/Status/Servers/Server[@name='ESPserver'][@appName='%s']/Jobs", processName);
+    if (!isEmptyString(jobID))
+        xpath.append("/").append(jobID);
+
+    Owned<IRemoteConnection> conn = getSDSConnectionWithRetry(xpath, mode, timeoutMs);
+    if (!conn)
+    {
+        error.setf("Cannot access %s.", xpath.str());
+        return nullptr;
+    }
+    return conn.getClear();
+}
+
+void cleanOldESPJob(const char* processName, StringBuffer& error)
+{
+    //Removing ESPJob if timed out
+    Owned<IRemoteConnection> conn = getESPJobSDSConnection(processName, nullptr, RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT, error);
+    if (!conn)
+        return;
+
+    CDateTime now;
+    now.setNow();
+    time_t timeNow = now.getSimple();
+
+    ICopyArrayOf<IPropertyTree> toRemove;
+    IPropertyTree* espJobs = conn->queryRoot();
+    Owned<IPropertyTreeIterator> iter = espJobs->getElements("*");
+    ForEach(*iter)
+    {
+        IPropertyTree& item = iter->query();
+        if (timeNow >= item.getPropInt64("@timeoutAt", 0))
+            toRemove.append(item);
+    }
+    ForEachItemIn(i, toRemove)
+        espJobs->removeTree(&toRemove.item(i));
+}
+
+void createESPJob(const char* processName, const char* description, unsigned timeoutSeconds, StringBuffer& jobID, StringBuffer& error)
+{
+    cleanOldESPJob(processName, error);
+
+    if (timeoutSeconds == 0)
+        timeoutSeconds = 3600; //Make it configurable?
+
+    CDateTime now;
+    now.setNow();
+    time_t createTime = now.getSimple();
+    time_t timeoutAt = createTime + timeoutSeconds;
+
+    //Create a new job ID
+    struct tm localTime;
+    localtime_r(&createTime, &localTime);
+    char result[32];
+    strftime(result, sizeof(result), "%Y%m%d-%H%M%S", &localTime);
+    StringBuffer newJobID("E");
+    newJobID.append(result);
+
+    Owned<IRemoteConnection> conn = getESPJobSDSConnection(processName, newJobID, RTM_LOCK_WRITE|RTM_CREATE_UNIQUE, SESSION_SDS_LOCK_TIMEOUT, error);
+    if (!conn)
+        return;
+
+    IPropertyTree* espJob = conn->queryRoot();
+    espJob->setProp("@status", "Created");
+    espJob->setPropInt64("@createdAt", createTime);
+    espJob->setPropInt64("@timeoutAt", timeoutAt);
+    if (!isEmptyString(description))
+        espJob->setProp("description", description);
+    jobID.set(conn->queryRoot()->queryName()); //Report unique job ID which is created by Dali based on the newJobID. It may be different from the newJobID.
+}
+
+//Call this function in ESP to set the job status by specifying an ESP name and a job ID.
+void setESPJobStatus(const char* processName, const char* jobID, const char* status, StringBuffer& error)
+{
+    if (isEmptyString(jobID))
+    {
+        error.set("Job ID not specified.");
+        return;
+    }
+
+    Owned<IRemoteConnection> conn = getESPJobSDSConnection(processName, jobID, RTM_LOCK_WRITE, SESSION_SDS_LOCK_TIMEOUT, error);
+    if (conn)
+        conn->queryRoot()->setProp("@status", status);
+}
+
+void getESPJobStatus(const char* processName, const char* jobID, StringBuffer& status, StringBuffer& error)
+{
+    if (isEmptyString(jobID))
+    {
+        error.set("Job ID not specified.");
+        return;
+    }
+
+    Owned<IRemoteConnection> conn = getESPJobSDSConnection(processName, jobID, RTM_LOCK_READ, SESSION_SDS_LOCK_TIMEOUT, error);
+    if (conn)
+        status.set(conn->queryRoot()->queryProp("@status"));
+}

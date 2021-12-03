@@ -154,5 +154,8 @@ esp_http_decl IEspServer* queryEspServer();
 #define SDSSESSION_CONNECT_TIMEOUTMS (180*1000)
 interface IRemoteConnection;
 esp_http_decl IRemoteConnection* getSDSConnectionWithRetry(const char* xpath, unsigned mode, unsigned timeoutMs);
+void createESPJob(const char* processName, const char* description, unsigned timeoutSeconds, StringBuffer& jobID, StringBuffer& error);
+void setESPJobStatus(const char* processName, const char* jobID, const char* status, StringBuffer& error);
+void getESPJobStatus(const char* processName, const char* jobID, StringBuffer& status, StringBuffer& error);
 #endif
 
