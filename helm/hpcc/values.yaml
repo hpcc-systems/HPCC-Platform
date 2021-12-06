@@ -428,6 +428,9 @@ eclccserver:
   replicas: 1
   ## Set to false if you want to launch each workunit compile in its own container, true to run as child processes in eclccserver pod.
   useChildProcesses: false
+  ## If non-zero, and useChildProcesses is false, try spending up to this number of seconds compiling using a child process before switching to 
+  ## a separate container. Speeds up throughput of small jobs.
+  childProcessTimeLimit: 10
   ## maxActive controls how many workunit compiles may be active at once (per replica)
   maxActive: 4
   ## Specify a list of queues to listen on if you don't want this eclccserver listening on all queues. If empty or missing, listens on all queues

@@ -906,6 +906,11 @@
           "type": "boolean",
           "description": "Launch each workunit compile as a child process rather than in its own container"
         },
+        "childProcessTimeLimit": {
+          "type": "integer",
+          "description": "Time limit (in seconds) for child process compilation before aborting and using separate container, when useChildProcesses is false",
+          "default": 10
+        },
         "image": {
           "$ref": "#/definitions/image"
         },

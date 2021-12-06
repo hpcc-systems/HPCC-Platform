@@ -2082,7 +2082,8 @@ public:
         int inpipe[2];
         int outpipe[2];
         int errpipe[2];
-        if ((hasinput && (::pipe(inpipe)==-1)) ||
+        if (aborted ||
+            (hasinput && (::pipe(inpipe)==-1)) ||
             (hasoutput && (::pipe(outpipe)==-1)) ||
             (haserror && (::pipe(errpipe)==-1)))
         {
@@ -2443,10 +2444,10 @@ public:
     void abort()
     {
         CriticalBlock block(sect);
+        aborted = true;
         if (pipeProcess != (HANDLE)-1) {
             if (title.length())
                 PROGLOG("%s: Pipe Aborting",title.get());
-            aborted = true;
             closeInput();
             if (forkthread)
             {
