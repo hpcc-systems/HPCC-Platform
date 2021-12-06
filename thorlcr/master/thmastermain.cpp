@@ -859,7 +859,7 @@ int main( int argc, const char *argv[]  )
 #endif
 
         StringBuffer tempDirStr;
-        if (!getConfigurationDirectory(globals->queryPropTree("Directories"),"temp","thor",globals->queryProp("@name"), tempDirStr))
+        if (!getConfigurationDirectory(globals->queryPropTree("Directories"),"spill","thor",globals->queryProp("@name"), tempDirStr))
         {
             tempDirStr.append(globals->queryProp("@thorTempDirectory"));
             if (0 == tempDirStr.length())

@@ -1190,7 +1190,7 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
                 queryDirectory.append(codeDirectory).append("queries");
         }
         addNonEmptyPathSepChar(queryDirectory);
-        getTempFilePath(tempDirectory, "roxie", topology);
+        getSpillFilePath(tempDirectory, "roxie", topology);
 
 #ifdef _WIN32
         topology->addPropBool("@linuxOS", false);

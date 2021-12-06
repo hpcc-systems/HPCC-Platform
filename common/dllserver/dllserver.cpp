@@ -757,6 +757,7 @@ IDllServer & queryDllServer()
         StringBuffer dir;
         if(dllserver_root == NULL)
         {
+            // NB: category logically should be "query", but kept as "temp" for backward compatibility/legacy reasons
             if (getConfigurationDirectory(nullptr, "temp","dllserver","dllserver",dir)) // not sure if different instance might be better but never separated in past
                 dllserver_root = dir.str();
             else
