@@ -222,12 +222,24 @@ void CEspConfig::readSessionDomainsSetting()
         sdsSessionNeeded = true;
 }
 
-void CEspConfig::ensureSDSSession()
+void CEspConfig::ensureBindingsInSDSSession()
 {
+    if (!m_sessionCleaner) //No session needed or no dali
+        return;
+
+    CriticalBlock block(bindingPortCrit);
     Owned<IRemoteConnection> conn = getSDSConnectionWithRetry(PathSessionRoot, RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDSSESSION_CONNECT_TIMEOUTMS);
     if (!conn)
         throw makeStringExceptionV(-1, "Failed to connect to %s.", PathSessionRoot);
 
+    IPropertyTree* appSessionTree = querySDSSessionTree(conn);
+    for (const auto port: bindingPortsNotInSDSSession)
+        ensureSDSSessionApplications(appSessionTree, port);
+    bindingPortsNotInSDSSession.clear();
+}
+
+IPropertyTree* CEspConfig::querySDSSessionTree(IRemoteConnection* conn)
+{
     IPropertyTree* sessionRoot = conn->queryRoot();
     VStringBuffer xpath("%s[@name=\"%s\"]", PathSessionProcess, m_process.str());
     IPropertyTree* processSessionTree = sessionRoot->queryBranch(xpath);
@@ -236,44 +248,58 @@ void CEspConfig::ensureSDSSession()
         processSessionTree = sessionRoot->addPropTree(PathSessionProcess);
         processSessionTree->setProp("@name", m_process);
     }
+    return processSessionTree;
+}
 
-    ensureSDSSessionApplications(processSessionTree);
-    sdsSessionEnsured = true;
+void CEspConfig::initSDSSessionCleaner(bool detachedFromDali)
+{
+    if (m_sessionCleaner)
+        return;
 
     if (serverSessionTimeoutSeconds != ESP_SESSION_NEVER_TIMEOUT)
     {
         VStringBuffer espSessionSDSPath("%s/%s[@name=\"%s\"]", PathSessionRoot, PathSessionProcess, m_process.str());
         Owned<IPropertyTree> proc_cfg = getProcessConfig(m_envpt, m_process);
-        m_sessionCleaner.setown(new CSessionCleaner(espSessionSDSPath.str(), proc_cfg->getPropInt("@checkSessionTimeoutSeconds",
-            ESP_CHECK_SESSION_TIMEOUT)));
+        m_sessionCleaner.setown(new CSessionCleaner(espSessionSDSPath.str(), detachedFromDali,
+            proc_cfg->getPropInt("@checkSessionTimeoutSeconds", ESP_CHECK_SESSION_TIMEOUT)));
         m_sessionCleaner->start();
     }
 }
 
-void CEspConfig::ensureSDSSessionApplications(IPropertyTree* espSession)
+void CEspConfig::ensureSDSSessionApplications(IPropertyTree* espSession, unsigned short port)
 {
-    std::list<int> bindingPorts;
-
-    for (const auto pbfg: m_bindings)
+    VStringBuffer appStr("%s[@port=\"%d\"]", PathSessionApplication, port);
+    IPropertyTree* appSessionTree = espSession->queryBranch(appStr.str());
+    if (!appSessionTree)
     {
-        auto it = std::find(bindingPorts.begin(), bindingPorts.end(), pbfg->port);
-        if (it == bindingPorts.end())
-            bindingPorts.push_back(pbfg->port);
+        IPropertyTree* newAppSessionTree = espSession->addPropTree(PathSessionApplication);
+        newAppSessionTree->setPropInt("@port", port);
+    }
+}
+
+void CEspConfig::addBindingForSDSSession(unsigned short port)
+{
+    if (!m_sessionCleaner) //No session needed or no dali
+        return;
+
+    CriticalBlock block(bindingPortCrit);
+    auto it = std::find(bindingPorts.begin(), bindingPorts.end(), port);
+    if (it != bindingPorts.end())
+        return;
+
+    bindingPorts.push_back(port);
+
+    if (isDetachedFromDali())
+    {
+        bindingPortsNotInSDSSession.push_back(port);
+        return;
     }
 
-    if (bindingPorts.empty())
-        throw makeStringException(-1, "No binding port.");
+    Owned<IRemoteConnection> conn = getSDSConnectionWithRetry(PathSessionRoot, RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDSSESSION_CONNECT_TIMEOUTMS);
+    if (!conn)
+        throw makeStringExceptionV(-1, "Failed to connect to %s.", PathSessionRoot);
 
-    for (const auto port: bindingPorts)
-    {
-        VStringBuffer appStr("%s[@port=\"%d\"]", PathSessionApplication, port);
-        IPropertyTree* appSessionTree = espSession->queryBranch(appStr.str());
-        if (!appSessionTree)
-        {
-            IPropertyTree* newAppSessionTree = espSession->addPropTree(PathSessionApplication);
-            newAppSessionTree->setPropInt("@port", port);
-        }
-    }
+    ensureSDSSessionApplications(querySDSSessionTree(conn), port);
 }
 
 CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree* procpt, bool isDali)
@@ -360,6 +386,10 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
         StringBuffer daliservers;
         if (m_cfg->getProp("@daliServers", daliservers))
             initDali(daliservers.str()); //won't init if detached
+
+        readSessionDomainsSetting();
+        if (sdsSessionNeeded && !daliservers.isEmpty())
+            initSDSSessionCleaner(isDetachedFromDali());
 
 #ifndef _CONTAINERIZED
         // Copy the 'cost' tree as provided in environment.xml to the globalConfiguration IPropertyTree,
@@ -565,12 +595,6 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
             pt_iter->Release();
             pt_iter=NULL;
         }
-
-        readSessionDomainsSetting();
-        if (sdsSessionNeeded && !daliservers.isEmpty() && !isDetachedFromDali() && !m_bindings.empty())
-        {
-            ensureSDSSession();
-        }
     }
 }
 
@@ -598,10 +622,6 @@ void CEspConfig::initDali(const char *servers)
             throw MakeStringException(0, "Could not initialize dali client");
 
         serverstatus = new CSDSServerStatus("ESPserver");
-        //When esp is starting, the initDali() is called before m_bindings is set.
-        //We should not call ensureSDSSession() at that time.
-        if (sdsSessionNeeded && !sdsSessionEnsured && !m_bindings.empty())
-            ensureSDSSession();
 
         // for auditing
         startLogMsgParentReceiver();
@@ -1195,6 +1215,8 @@ bool CEspConfig::attachESPToDali()
             }
             iter++;
         }
+
+        ensureBindingsInSDSSession();
 
         reSubscribeESPToDali();
 

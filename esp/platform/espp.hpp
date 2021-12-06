@@ -239,6 +239,8 @@ public:
             LOG(MCprogress, "  Socket(%d) listening.", socket->OShandle());
         }
 
+        m_config->addBindingForSDSSession(port);
+
         if (socket)
         {
             protocol.addBindingMap(socket, &binding, isdefault);

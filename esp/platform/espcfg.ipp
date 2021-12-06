@@ -114,8 +114,8 @@ class CSessionCleaner : public Thread
     bool       m_isDetached;
 
 public:
-    CSessionCleaner(const char* _espSessionSDSPath, int _checkSessionTimeoutSeconds) : Thread("CSessionCleaner"),
-        espSessionSDSPath(_espSessionSDSPath), checkSessionTimeoutSeconds(_checkSessionTimeoutSeconds) , m_isDetached(false){ }
+    CSessionCleaner(const char* _espSessionSDSPath, bool detachedFromDali, int _checkSessionTimeoutSeconds) : Thread("CSessionCleaner"),
+        espSessionSDSPath(_espSessionSDSPath), checkSessionTimeoutSeconds(_checkSessionTimeoutSeconds) , m_isDetached(detachedFromDali){ }
 
     virtual ~CSessionCleaner()
     {
@@ -160,12 +160,16 @@ private:
     bool m_detachedFromDali = false;
     bool m_subscribedToDali = false;
     StringBuffer m_daliAttachStateFileName;
-    bool sdsSessionEnsured = false;
     bool sdsSessionNeeded = false;
     int  serverSessionTimeoutSeconds = 120 * ESP_SESSION_TIMEOUT;//2 x clientSessionTimeoutSeconds
+    std::list<int> bindingPorts;
+    std::list<int> bindingPortsNotInSDSSession;
+    CriticalSection bindingPortCrit;
 
 private:
     CEspConfig(CEspConfig &);
+    IPropertyTree* querySDSSessionTree(IRemoteConnection* conn);
+    void ensureSDSSessionApplications(IPropertyTree* espSession, unsigned short port);
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -240,8 +244,9 @@ public:
     const SocketEndpoint &getLocalEndpoint(){return m_address;}
 
     void readSessionDomainsSetting();
-    void ensureSDSSessionApplications(IPropertyTree* espSession);
-    void ensureSDSSession();
+    void initSDSSessionCleaner(bool detachedFromDali);
+    void addBindingForSDSSession(unsigned short port);
+    void ensureBindingsInSDSSession();
 
     void loadProtocols();
     void loadServices();
