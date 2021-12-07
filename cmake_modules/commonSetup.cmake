@@ -133,6 +133,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(INCLUDE_EE_PLUGINS "Install EE Plugins in Clienttool" OFF)
   option(INCLUDE_TREEVIEW "Build legacy treeview" OFF)
   option(INCLUDE_CONFIG_MANAGER "Build config manager" ON)
+  option(USE_ELASTICSTACK_CLIENT "Configure use of Elastic Stack client" ON)
   set(CUSTOM_PACKAGE_SUFFIX "" CACHE STRING "Custom package suffix to differentiate development builds")
 
      MACRO(SET_PLUGIN_PACKAGE plugin)

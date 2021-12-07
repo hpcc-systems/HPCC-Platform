@@ -60,8 +60,6 @@ enum
     MSGFILTER_regex
     };
 
-
-
 // Implementations of filter which pass all or no messages
 
 //MORE: This would benefit from more code moved into this base class
@@ -252,7 +250,6 @@ private:
     LogMsgSessionId           session;
     bool                      localFlag;
 };
-
 
 // Implementation of filter using component
 
@@ -835,6 +832,109 @@ private:
     int                       dataLogFile;
     CriticalSection           dataLogLock;
 #endif
+};
+
+class CLogAccessFilter : public CInterfaceOf<ILogAccessFilter> {};
+
+class FieldLogAccessFilter : public CLogAccessFilter
+{
+public:
+    FieldLogAccessFilter(const char * _value, LogAccessFilterType _filterType) : value(_value), type(_filterType) {}
+    FieldLogAccessFilter(IPropertyTree * tree, LogAccessFilterType _filterType)
+    {
+        type = _filterType;
+        VStringBuffer xpath("@%s", logAccessFilterTypeToString(type));
+        value.set(tree->queryProp(xpath.str()));
+    }
+
+    void addToPTree(IPropertyTree * tree) const
+    {
+        IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
+        filterTree->setProp("@type", logAccessFilterTypeToString(type));
+        filterTree->setProp("@value", value);
+        tree->addPropTree("filter", filterTree);
+    }
+
+    void toString(StringBuffer & out) const
+    {
+        out.set(value);
+    }
+
+    LogAccessFilterType filterType() const
+    {
+        return type;
+    }
+
+protected:
+    StringAttr value;
+    LogAccessFilterType type;
+};
+
+class BinaryLogAccessFilter : public CLogAccessFilter
+{
+public:
+    BinaryLogAccessFilter(ILogAccessFilter * _arg1, ILogAccessFilter * _arg2, LogAccessFilterType _type) : arg1(_arg1), arg2(_arg2)
+    {
+        setType(_type);
+    }
+
+    BinaryLogAccessFilter(IPropertyTree * tree, LogAccessFilterType _type)
+    {
+        setType(_type);
+        Owned<IPropertyTreeIterator> iter = tree->getElements("filter");
+        ForEach(*iter)
+        {
+            ILogAccessFilter *filter = getLogAccessFilterFromPTree(&(iter->query()));
+            if (!arg1.get())
+                arg1.setown(filter);
+            else if (!arg2.get())
+                arg2.setown(filter);
+            else
+                arg2.setown(getBinaryLogAccessFilterOwn(arg2.getClear(), filter, type));
+        }
+    }
+
+    void addToPTree(IPropertyTree * tree) const
+    {
+        IPropertyTree * filterTree = createPTree(ipt_caseInsensitive);
+        filterTree->setProp("@type", logAccessFilterTypeToString(type));
+        arg1->addToPTree(filterTree);
+        arg2->addToPTree(filterTree);
+        tree->addPropTree("filter", filterTree);
+    }
+
+    void toString(StringBuffer & out) const
+    {
+        StringBuffer tmp;
+        out.set("( ");
+        arg1->toString(tmp);
+        out.appendf(" %s %s ", tmp.str(), logAccessFilterTypeToString(type));
+        arg2->toString(tmp.clear());
+        out.appendf(" %s )", tmp.str());
+    }
+
+    LogAccessFilterType filterType() const
+    {
+        return type;
+    }
+
+private:
+    Linked<ILogAccessFilter> arg1;
+    Linked<ILogAccessFilter> arg2;
+    LogAccessFilterType type;
+
+    void setType(LogAccessFilterType _type)
+    {
+        switch(_type)
+        {
+        case LOGACCESS_FILTER_or:
+        case LOGACCESS_FILTER_and:
+            type = _type;
+            break;
+        default:
+            throwUnexpectedX("BinaryLogAccessFilter : detected invalid BinaryLogAccessFilter type");
+        }
+    }
 };
 
 // Reset logging-related thread-local variables, when a threadpool starts

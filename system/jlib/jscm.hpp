@@ -279,6 +279,8 @@ class StringBuffer;
 
 typedef enum
 {
+    // Unknown target audience
+    MSGAUD_unknown    = 0x00,
     // Target audience: system admins
     // Purpose: Information useful for administering the platform, diagnosing errors and
     //          resolving system issues

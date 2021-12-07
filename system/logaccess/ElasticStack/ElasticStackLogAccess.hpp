@@ -1,0 +1,85 @@
+/*##############################################################################
+    HPCC SYSTEMS software Copyright (C) 2021 HPCC Systems®.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+#pragma once
+
+#include "jlog.hpp"
+#include "jptree.hpp"
+#include "jstring.hpp"
+#include "jfile.ipp"
+
+
+#ifndef ELASTICSTACKLOGACCESS_EXPORTS
+#define ELASTICSTACKLOGACCESS_API DECL_IMPORT
+#else
+#define ELASTICSTACKLOGACCESS_API DECL_EXPORT
+#endif
+
+#define COMPONENT_NAME "ES Log Access"
+
+/* undef verify definitions to avoid collision in cpr submodule */
+#ifdef verify
+    //#pragma message("UNDEFINING 'verify' - Will be redefined by cpr" )
+    #undef verify
+#endif
+
+#include <cpr/response.h>
+#include <elasticlient/client.h>
+
+using namespace elasticlient;
+
+class ELASTICSTACKLOGACCESS_API ElasticStackLogAccess : public CInterfaceOf<IRemoteLogAccess>
+{
+private:
+    static constexpr const char * type = "elasticstack";
+
+    Owned<IPropertyTree> m_pluginCfg;
+
+    StringBuffer m_globalIndexSearchPattern;
+    StringBuffer m_globalSearchColName;
+    StringBuffer m_globalIndexTimestampField;
+
+    StringBuffer m_workunitSearchColName;
+    StringBuffer m_workunitIndexSearchPattern;
+
+    StringBuffer m_componentsSearchColName;
+    StringBuffer m_componentsIndexSearchPattern;
+
+    StringBuffer m_audienceSearchColName;
+    StringBuffer m_audienceIndexSearchPattern;
+
+    StringBuffer m_classSearchColName;
+    StringBuffer m_classIndexSearchPattern;
+
+    StringBuffer m_defaultDocType; //default doc type to query
+
+    elasticlient::Client m_esClient;
+    StringBuffer m_esConnectionStr;
+
+    // Elastic Stack specific
+    cpr::Response performESQuery(const LogAccessConditions & options);
+    const IPropertyTree * getESStatus();
+    const IPropertyTree * getIndexSearchStatus(const char * indexpattern);
+    const IPropertyTree * getTimestampTypeFormat(const char * indexpattern, const char * fieldname);
+    const IPropertyTree * performAndLogESRequest(Client::HTTPMethod httpmethod, const char * url, const char * reqbody, const char * logmessageprefix, LogMsgCategory reqloglevel, LogMsgCategory resploglevel);
+
+public:
+    ElasticStackLogAccess(const std::vector<std::string> &hostUrlList, IPropertyTree & logAccessPluginConfig);
+    virtual ~ElasticStackLogAccess() override = default;
+
+    // IRemoteLogAccess methods
+    virtual bool fetchLog(const LogAccessConditions & options, StringBuffer & returnbuf, LogAccessLogFormat format) override;
+    virtual const char * getRemoteLogAccessType() const override { return type; }
+    virtual IPropertyTree * queryLogMap() const override { return m_pluginCfg->queryPropTree("logmap");}
+    virtual const char * fetchConnectionStr() const override { return m_esConnectionStr.str();}
+};
