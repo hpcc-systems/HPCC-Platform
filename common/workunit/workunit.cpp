@@ -12527,9 +12527,9 @@ extern WUState waitForWorkUnitToComplete(const char * wuid, int timeout, std::li
     return globalFactory->waitForWorkUnit(wuid, (unsigned) timeout, false, expectedStates);
 }
 
-extern WORKUNIT_API WUState secWaitForWorkUnitToComplete(const char * wuid, ISecManager &secmgr, ISecUser &secuser, int timeout, std::list<WUState> expectedStates)
+extern WORKUNIT_API WUState secWaitForWorkUnitToComplete(const char * wuid, ISecManager *secmgr, ISecUser *secuser, int timeout, std::list<WUState> expectedStates)
 {
-    if (checkWuSecAccess(wuid, &secmgr, &secuser, SecAccess_Read, "Wait for Complete", false, true))
+    if (checkWuSecAccess(wuid, secmgr, secuser, SecAccess_Read, "Wait for Complete", false, true))
         return waitForWorkUnitToComplete(wuid, timeout, expectedStates);
     return WUStateUnknown;
 }

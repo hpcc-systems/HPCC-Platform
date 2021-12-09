@@ -17,32 +17,52 @@
 
 #include "platform.h"
 #include "jlib.hpp"
+#include "jfile.hpp"
 #include "jmisc.hpp"
 #include "mpbase.hpp"
 #include "mpcomm.hpp"
 #include "daclient.hpp"
 
 
-int main(int argc, char* argv[])
+int main(int argc, const char* argv[])
 {
     InitModuleObjects();
     int exitCode = 1;
     try
     {
+        unsigned port = 0;
+        const char *server = nullptr;
         if (argc<2)
         {
-            printf("usage: dalistop <server_ip:port> [/nowait]\n");
-            printf("eg:  dalistop .                          -- stop dali server running locally\n");
-            printf("     dalistop eq0001016                  -- stop dali server running remotely\n");
+            // with no args, use port from daliconfig if present (used by init scripts)
+            Owned<IFile> daliConfigFile = createIFile("daliconf.xml");
+            if (daliConfigFile->exists())
+            {
+                Owned<IPropertyTree> daliConfig = createPTree(*daliConfigFile, ipt_caseInsensitive);
+                port = daliConfig->getPropInt("@port", DALI_SERVER_PORT);
+                server = ".";
+            }
+            else
+            {
+                printf("usage: dalistop <server_ip:port> [/nowait]\n");
+                printf("eg:  dalistop .                          -- stop dali server running locally\n");
+                printf("     dalistop eq0001016                  -- stop dali server running remotely\n");
+            }
         }
         else
         {
+            server = argv[1];
+            port = DALI_SERVER_PORT;
+        }
+
+        if (server)
+        {
             SocketEndpoint ep;
-            ep.set(argv[1],DALI_SERVER_PORT);
+            ep.set(server, port);
             bool nowait = false;
             if (argc>=3)
                 nowait = stricmp(argv[2],"/nowait")==0;
-            printf("Stopping Dali Server on %s\n",argv[1]);
+            printf("Stopping Dali Server on %s, port=%u\n", server, port);
 
             Owned<IGroup> group = createIGroup(1,&ep); 
             initClientProcess(group, DCR_DaliStop);

@@ -469,6 +469,7 @@ int main(int argc, const char* argv[])
         serverConfig.setown(loadConfiguration(defaultYaml, argv, "dali", "DALI", DALICONF, nullptr));
         Owned<IFile> sentinelFile = createSentinelTarget();
         removeSentinelFile(sentinelFile);
+        port = serverConfig->getPropInt("@port");
 #ifndef _CONTAINERIZED
         if (!checkCreateDaemon(argc, argv))
             return EXIT_FAILURE;
@@ -681,7 +682,7 @@ int main(int argc, const char* argv[])
         SocketEndpointArray epa;
         if (!server)
         {
-            ep.setLocalHost(DALI_SERVER_PORT);
+            ep.setLocalHost(port ? port : DALI_SERVER_PORT);
             epa.append(ep);
         }
         else

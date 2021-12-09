@@ -1207,7 +1207,7 @@ bool CWsWorkunitsEx::onWUWaitComplete(IEspContext &context, IEspWUWaitRequest &r
         std::list<WUState> expectedStates;
         if (req.getReturnOnWait())
             expectedStates.push_back(WUStateWait);
-        resp.setStateID(secWaitForWorkUnitToComplete(wuid.str(), *context.querySecManager(), *context.queryUser(), req.getWait(), expectedStates));
+        resp.setStateID(secWaitForWorkUnitToComplete(wuid.str(), context.querySecManager(), context.queryUser(), req.getWait(), expectedStates));
     }
     catch(IException* e)
     {
