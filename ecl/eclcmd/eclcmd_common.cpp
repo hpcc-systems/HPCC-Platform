@@ -376,8 +376,10 @@ bool EclCmdCommon::finalizeOptions(IProperties *globals)
     extractEclCmdOption(optServer, globals, ECLOPT_SERVER_ENV, ECLOPT_SERVER_INI, ECLOPT_SERVER_DEFAULT, NULL);
     extractEclCmdOption(optPort, globals, ECLOPT_PORT_ENV, ECLOPT_PORT_INI, ECLOPT_PORT_DEFAULT, NULL);
     extractEclCmdOption(optUsername, globals, ECLOPT_USERNAME_ENV, ECLOPT_USERNAME_INI, NULL, NULL);
-    extractEclCmdOption(optPassword, globals, ECLOPT_PASSWORD_ENV, ECLOPT_PASSWORD_INI, NULL, NULL);
 
+    //if an empty password was explicitly provided, optPasswordProvided would still be set
+    if (!optPasswordProvided)
+        optPasswordProvided = extractEclCmdOption(optPassword, globals, ECLOPT_PASSWORD_ENV, ECLOPT_PASSWORD_INI, NULL, NULL);
     if (!optUsername.isEmpty() && !optPasswordProvided)
     {
         VStringBuffer prompt("%s's password: ", optUsername.get());
