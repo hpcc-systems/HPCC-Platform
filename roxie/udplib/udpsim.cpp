@@ -176,7 +176,6 @@ void initOptions(int argc, const char **argv)
 
 void simulateTraffic()
 {
-    //If a single permit allowed then grant that client all permits, otherwise allocate a share of twice the potential number of slots
     const unsigned numReceiveSlots = 100;
     const unsigned maxSendQueueSize = 100;
     try

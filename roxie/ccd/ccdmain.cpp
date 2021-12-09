@@ -956,33 +956,9 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         fastLaneQueue = topology->getPropBool("@fastLaneQueue", true);
         udpOutQsPriority = topology->getPropInt("@udpOutQsPriority", 0);
 
-        udpPermitTimeout = topology->getPropInt("@udpPermitTimeout", udpPermitTimeout);     // How long to wait before assuming a send_done has been lost
-        udpRequestTimeout = topology->getPropInt("@udpRequestTimeout", udpRequestTimeout);  // How long to wait before assuming an ok_to_send has been lost
-
-    #if 0
-        // I'm not convinced that any of the following makes much sense
-        if (topology->getPropInt("@udpRequestToSendTimeout") && !topology->hasProp("@udpPermitTimeout"))
-        {
-            // Historically, this was specified in seconds. Assume any value <= 10 is a legacy value specified in seconds!
-            unsigned udpRequestToSendTimeout = topology->getPropInt("@udpRequestToSendTimeout", 0);
-            if (udpRequestToSendTimeout<=10)
-                udpRequestToSendTimeout *= 1000;
-            udpPermitTimeout = udpRequestToSendTimeout;
-        }
-
-        if (udpPermitTimeout == 0)
-        {
-            if (slaTimeout)
-            {
-                udpRequestToSendTimeout = (slaTimeout*3) / 4;
-                if (udpRequestToSendTimeout < 10)
-                    udpRequestToSendTimeout = 10;
-            }
-            else
-                udpRequestToSendTimeout = 5000;
-        }
-    #endif
-
+        //See the head of udptrr.cpp for details of the following options
+        udpPermitTimeout = topology->getPropInt("@udpPermitTimeout", udpPermitTimeout);
+        udpRequestTimeout = topology->getPropInt("@udpRequestTimeout", udpRequestTimeout);
         udpFlowAckTimeout = topology->getPropInt("@udpFlowAckTimeout", udpFlowAckTimeout);
         if (!udpFlowAckTimeout)
         {
@@ -1003,7 +979,8 @@ int CCD_API roxie_main(int argc, const char *argv[], const char * defaultYaml)
         }
 
         updDataSendTimeout = topology->getPropInt("@udpDataSendTimeout", updDataSendTimeout);
-        udpResendTimeout = topology->getPropInt("@udpResendTimeout", 0);  // 0 means better to resend missing packets immediately rather than wait to ensure they are missing
+        udpResendTimeout = topology->getPropInt("@udpResendTimeout", udpResendTimeout);
+        udpMaxClientPercent = topology->getPropInt("@udpMaxClientPercent", udpMaxClientPercent);
 
         // MORE: might want to check socket buffer sizes against sys max here instead of udp threads ?
 

@@ -48,22 +48,27 @@
 The UDP transport layer uses the following timeouts:
 
 Timeouts:
-    udpFlowAckTimeout   - the maximum time that it is expected to take to receive an acknowledgement of a flow message (when one is sent) - should be small
+    udpFlowAckTimeout   - the maximum time that it is expected to take to receive an acknowledgement of a flow message (when one is
+                          sent) - should be small
                           => timeout for request to send before re-requesting
-                          [sender] resent the request to send
-    updDataSendTimeout  - the maximum time that is is expected to send the data once a permit has been granted.
+                          [sender] resend the request to send
+    updDataSendTimeout  - the maximum time that is expected to take to send the data once a permit has been granted.
                           => timeout for assuming send_complete has been lost
-                          [sender] after sending a block of data before defines the timeout before re-requesting a request-to-send
+                          [sender] the timeout before re-requesting a request-to-send after sending a block of data
+                                   (unused if permits are asynchronous)
                           [receiver] Used to estimate a timeout if there are active requests and not enough active slots
     udpRequestTimeout   - A reasonable expected time between a request for a permit until the permit is granted
                           => timeout for guarding against an ok_to_send being lost.
                           [sender] if no permit granted within timeout re-request to send
-    udpPermitTimeout    - the maximum time that it is expected to take to grant a permit having received a request.
+    udpPermitTimeout    - the maximum time that it is expected to take to send and receive the data once a permit is granted.
                           => Timeout for a permit before it is assumed lost
-                          [receiver] If rts received while permit is active, permit is resent.  If no done within timeout, revoke the permit.
+                          [receiver] If rts received while permit is active, permit is resent.  If not complete within timeout,
+                                     revoke the permit.
     udpResendTimeout    - the time that should have elapsed before a missing data packet is resent
-                          (I think this only makes sense if a new permit can be granted before all the data has been received, so the request to send more is sent to the flow port)
-                          0 means they are unlikely to be lost, so worth resending as soon as it appears to be missing - trading duplicate packets for delays
+                          (I think this only makes sense if a new permit can be granted before all the data has been received,
+                          so the request to send more is sent to the flow port.)
+                          0 means they are unlikely to be lost, so worth resending as soon as it appears to be missing - trading
+                          duplicate packets for delays
                           [sender] minimum time to elapse from initial send before sending packets that are assumed lost
                           [receiver] minimum time to elapse before receiver assumes that a sender will send missing packets.
 Also:
@@ -80,28 +85,29 @@ On the sender:
   - Send a request to send to the receiver flow port.  Set timeout to ack timeout.
 
 * When receive "request_received"
-  - Set timeout to udpPermitTimeout
+  - Set timeout to udpRequestTimeout
 
 * When receive ok_to_send, add the permit to a permit queue.
   - Mark target as permit pending (to avoid resending requests)
 
 * Periodically:
-  If permit requested, timeout has expired, and permit not received resubmit request (with ack timeout)
+  If permit requested, timeout has expired, and permit not received, then resubmit te request (with ack timeout)
 
 * When a permit is popped from the queue
   - gather packets to resend that are not recorded as received in the header sent by the receiver
   - gather any extra data packets to send up to the permit size.
-  - Send a begin_send [to the ? port]
+  - Send a begin_send [to the <flow> port - so the permit is adjusted early]
   - Send the data packets
-  - if no more data (and nothing in the resend list) send a send_completed to data port
-    else send a request_to_send_more to the data port, and set re-request timeout to udpDataSendTimeout.
+  - if no more data (and nothing in the resend list) send send_completed to data port
+    if async permits:
+        send  send_completed to data port, and request_to_send to the flow port (timeout = udpFlowAckTimeout).
+    else
+        send request_to_send_more to the data port, and set re-request timeout to udpDataSendTimeout.
 
 On the receiver:
 * When receive request_to_send:
-  - if flowId is < prevFlow id (within a small window) ignore the request.  (But be careful if a server has restarted...)
-  - If sender has an active permit, remove from permits list and free up the permit [Alternative suggestion below if flowid matches]
-  - Add to requests list
-  - Send an acknowledgement [ Not always done at the moment ]
+  - If the flowSeq matches an active permit resend the ok_to_send
+  - otherwise add to requests list (if not already present) and send an acknowledgement
   - check to grant new permits
 
 * When receive begin_send
@@ -110,7 +116,7 @@ On the receiver:
 
 * When receive send_completed:
   - remove from permits list (and free up the permit)
-  - grant to grant new permits
+  - check to grant new permits
 
 * When receive request_to_send_more:
   - Treat as send_complete, followed by a request_to_send.
@@ -130,7 +136,7 @@ Behaviour on lost flow messages
 * ok_to_send
   - sender will re-request if not received within a time limit
   - receiver will remove permit after timeout, and grant new permits
-  - if a receiver gets a request to send for an active permit, it should probably reissue the permit rather than requeuing the request
+  - if a receiver gets a request to send for an active permit, it resends the ok_to_send (but retains the original timeout)
   => the available permits will be reduced by the number allocated to the sender until the permit expires.
      If multiple permits are not supported no data will be received by this node.
      if (udpRequestTimeout < udpPermitTimeout) the sender will re-request the permit, and potentially be re-sent ok_to_send
@@ -162,7 +168,9 @@ Reordering problems:
 
 Timeout problems
 ----------------
-For each of the timeouts, what happens if they are set too high, or too low, and what is an estimate for a "good" value?
+For each of the timeouts, what happens if they are set too high, or too low, and what is an estimate for a "good" value?  In general, setting a
+timeout too high will affect the time to recover from lost packets.  Setting a timeout too low may cause catestrophic degredation under load -
+because the extra flow messages or data packets will reduce the overall capacity.
 
 * udpFlowAckTimeout
   Too high: delay in sending data if a request_to_send/request_received is lost
@@ -190,8 +198,8 @@ For each of the timeouts, what happens if they are set too high, or too low, and
 
 * udpResendTimeout
   Too high: Missing packets will take a long time to be resent.
-  Too low: If large proprotion of packets reordered or dropped by the network packets will be sent unnecessarily
-  Suggestion: Set it to 0, I'm not sure we want to run on a network where that many packets are being lost!
+  Too low: If large proportion of packets reordered or dropped by the network packets will be sent unnecessarily
+  Suggestion: Set it to lower than the permit timeout, I'm not sure we want to run on a network where that many packets are being lost!
 
 Timeouts for assuming sender/receiver is dead
 Note: A sender/receiver is never really considered dead - it only affects active requests.  If a new request is
@@ -210,7 +218,7 @@ Note: A sender/receiver is never really considered dead - it only affects active
 Other udp settings
 ------------------
 * udpResendLostPackets
-  Enable the code to support resending missing packets.  On a completelty reliable network, disabling it would
+  Enable the code to support resending missing packets.  On a completely reliable network, disabling it would
   reduce the time that blocks were held onto in the sender, reducing the maximum memory footprint.
 
 * udpMaxPendingPermits
@@ -230,7 +238,9 @@ Other udp settings
   it is best to get all missing packets sent as quickly as possible to avoid the receiver being blocked.
 
 * udpAllowAsyncPermits
-  If set it allows a new permit to be send before the receiver has read all the data for the previous permit.
+  If set it allows a new permit to be send before the receiver has read all the data for the previous permit.  This allows multiple
+  permits to be issued to the same client at the same time (the data could have been sent but not yet received, or the completed
+  message from a pervious permit may have been lost.)
 
 * udpStatsReportInterval
 
@@ -263,17 +273,17 @@ Sender:
 - Each time a request to send is sent the number of timeouts is increased
 - If the number exceeds the timeout threshold all pending data for that target is thrown away and the timeout is reset
 - Timeout count is reset when an acknowledgement or permit is received from the receiver
- (Previously the timeout count was reset when data was sent (why?) - now removed)
 
 Conclusions
 -----------
-Some conclusions from walking through the issues:
+There are a few conclusions that are worth recording
 
-* We need to support multiple permits, otherwise lost send_complete or ok_to_send flow messages will lead to periods when
+* We need to support multiple permits, otherwise lost send_completed or ok_to_send flow messages will lead to periods when
   no data is being received.  (Unless we add acknowledgements for those messages.)
-* We want to retain separate data port and a flow port - otherwise flow requests from other senders will be held up by data.
+* Separate data and flow ports are necessary - otherwise flow requests from other senders will be held up by data.
   send_completed and request_to_send_more should be sent on the data port though (so they don't overtake the data and release the
   permits too early).
+* keep the send_completed message - rather than using the seq bit from the last packet (if only for the case where no data is sent)
 
 Which socket should flow messages go to?
 ----------------------------------------
@@ -288,16 +298,13 @@ send_completed:
   data socket makes sense since it indicates that the sender has finished sending data.  There is no advantage (and
   some disadvantage) to it arriving early.
 
+request_to_send:
+  send to the flow socket - otherwise a sender would need to wait for data from this or other senders before permission
+  could be granted.
+
 request_to_send_more:
-  Really two messages (send_complete and request_to_send) - and should be split in two.  send_complete, see
-  above, but what about the request_to_send
-
-  data: Simplifies the permit logic because (almost) all the data should have been received before the request_to_send
-        is received.  (Assuming the sender timeout isn't set so low that it re-requests a permit too early.)  It
-        allows udpResendTimeout to be set to 0 - which means that dropped packets are likely to be sent sooner.
-
-  flow: This allows requests to send more data to be handled asynchronously - reducing the latency when a single
-        node is sending the data (sender does not need to wait for all the data to arrive before sending the next block)
+  Really two messages (send_complete and request_to_send), and only used if asynchronous permits are disabled.  It needs
+  to go to the data socket for the same reason as send_completed.
 
 Questions/suggestions/future
 ----------------------------
@@ -317,41 +324,36 @@ The algorithm needs to be resilient when flow control messages are lost.
 
 Approach:
 
-* Add a permitsGranted member to the UdpSender class
-* When a permit is granted, set permitsGranted to the number of slots
+* Add a SendPermit member to the UdpSender class, including a numPackets reservation
+* When a permit is granted, set numPackets to the number of slots
 * Before a client sends a sequence of data packets it sends a start_send flow control message with the number of packets it is sending.
-* When the receiver gets that flow control message it sets permitsGranted to the number of packets being sent.
-* When the receiver receives a non-duplicate data packet it decrements maxInFlight.
-* The slots allocated in a permit are limited by the queue space and the sum of all permitsGranted values for the active permits. (Ignore overcommit)
-* Want the future ability for a sender to send all missing packets - even if more than the size of the grant
+* When the receiver gets that flow control message it sets numPackets to the number of packets being sent.
+* When the receiver receives a non-duplicate data packet it decrements numPackets.
+* The slots allocated in a permit are limited by the queue space and the sum of all numPackets values for the active permits. (Ignore overcommit)
 
+This is then further extended to allow multiple permits per sender....
 
-Supporting Asynchronous request_to_send_more
---------------------------------------------
+Supporting Asynchronous request_to_send
+---------------------------------------
 
-The aim is to ensure that there can only be 2 grants outstanding for a given sender - any subsequent request_to_send
-only sends missing packets - to support dropped packets, but not allow the number of permits to get too out of sync.
+Each sender can have up to MaxPermitsPerSender permits active at the same time.  They are revoked when a completed
+message is received (for that permit, or a later permit).  The permits are implemented as an array within the sender
+to avoid any dynamic memory allocation.
 
-* Add previousPermits, grantFlowSeq, requestSendSeq members to the UdpSender class
-* permits granted() = max(previousPermits,0) + max(permitsGranted,0)
-* split request_to_send_more into two messages - one sent to data port, the other to the flow port.
-* on send_completed:
-  if (flowSeq+1 == grantFlowSeq) previousPermits = 0; else if (flowId >= grantFlowSeq && flowSeq <= curFlowId) prevPermits = permitsGranted = 0
-  only set state the state to idle if the flow id matches the current flowid.
-* on data packet:
-  if (sendSeq < activeSendSeq) decrement previousPermits-- else permitsGranted--
-* on request_to_send:
-  save requestSendSeq = msg.sendSeq;
-* When potentially grant a permit
-  if (previousPermits > 0) send ok_to_send(0 packets) (i.e. potential resends only)
-  else
-    previousPermits = permitsGranted
-    grantFlowSeq = flowSeq;
-    activeSendSeq = requestSendSeq
-    permitsGranted = ...
+The main difference for asynchronous requests is that instead of sending request_to_send_more to the data socket, it is split
+into two messages - send_complete sent to the data port, and a request_to_send_more to the flow port.
+
+What is the trade off for asynchronous requests?
+- Synchronous requests are received after the data, so it makes sense for udpResendTimeout to be 0 (i.e. send immediately).
+  This means that missing data packets are likely to be sent much more quickly.
+- Asynchronous requests allow a sender to start sending more data before the previous data has been read.  When
+  there is a single sender this will significantly reduce the latency.
+- Asynchronous requests also ensure that requests to send more are not held up by data being sent by other nodes.
+
+It *might* be possible to treat the permits as a circular buffer, but I don't think it would significantly
+improve the efficiency.  (Minor when allocating a permit.)
 
 * If a sender has a permit for 0 packets it should only send appropriate "missing" packets, possibly none.
-* keep the send_completed message - rather than using the seq bit from the last packet (if only for the case where no data is sent)
 
 Race conditions:
 
@@ -378,7 +380,7 @@ static unsigned lastDataPacketsReceived = 0;
 static_assert(sizeof(UdpRequestToSendMsg) < sizeof(UdpPacketHeader), "Expected UDP rts size to be less than packet header");
 
 
-// The following class is used for the current state of each sender within the udp receiving code
+// The following enum is used for the current state of each sender within the udp receiving code
 enum class ReceiveState {
     idle,           // no activity from the sender - wating for a request to send
     requested,      // permit to be send has been requested but not granted (other permits may have been granted)
@@ -499,21 +501,32 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         SendPermit * prev = nullptr;
         SendPermit * next = nullptr;
         UdpSenderEntry * owner = nullptr;
-        unsigned flowSeq = 0;           // The flow id of the request to send data
-        unsigned sendSeq = 0;           // the send sequence when the request - will be lower than all datapackets sent for that permit
-        unsigned permitTime = 0;        // non null if in the active permit list
-        // Updated by receive_data thread, read atomically by receive_flow
-        std::atomic<unsigned> numPackets{0};
+        std::atomic<unsigned> flowSeq{0};   // The flow id of the request to send data.  Atomic since read from data thead.
+        std::atomic<unsigned> numPackets{0};// Updated by receive_data thread, read atomically by receive_flow
+        std::atomic<unsigned> sendSeq{0};   // the send sequence when the request - will be <= all datapackets sent for that permit
+        unsigned permitTime = 0;            // when was the permit issued?
 
     public:
         bool isActive() const
         {
-            return permitTime != 0;
+            //NOTE: a flowSeq if 0 is not a valid flowSeq (sender ensures that it is never used)
+            return flowSeq.load(std::memory_order_acquire) != 0;
         }
+
+        //How many are reserved - never return < 0 to avoid race condition where permit is being expired when a data packet for that permit
+        //arrives.
         unsigned getNumReserved() const
         {
             int permits = numPackets.load(std::memory_order_acquire);
-            return std::max(permits, 0);
+            return (unsigned)std::max(permits, 0);
+        }
+
+        void grantPermit(unsigned _flowSeq, unsigned _sendSeq, unsigned num, unsigned _permitTime)
+        {
+            flowSeq = _flowSeq;
+            sendSeq = _sendSeq;
+            numPackets.store(num, std::memory_order_release);
+            permitTime = _permitTime;
         }
 
         void revokePermit()
@@ -527,7 +540,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
 
     //Increasing this number, increases the number of concurrent permits a sender may have (and its resilience to lost flow messages),
     //but also increases the processing cost since code often iterates through all the permits.  2..4 likely to be good values.
-    static constexpr unsigned MAX_PERMITS = 2;
+    static constexpr unsigned MaxPermitsPerSender = 4;
 
     class UdpSenderEntry  // one per node in the system
     {
@@ -550,16 +563,18 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         UdpSenderEntry *next = nullptr;  // Used to form list of all senders that have outstanding requests
         ReceiveState state = ReceiveState::idle; // Meaning I'm not on any queue
         sequence_t flowSeq = 0;                // the sender's most recent flow sequence number
-        sequence_t sendSeq = 0;                // the sender's most recent sequence number from request-to-send, representing sequence number of next packet it will send
+        sequence_t sendSeq = 0;                // the sender's most recent sequence number from request-to-send, representing
+                                               // sequence number of next packet it will send
         unsigned timeouts = 0;                 // How many consecutive timeouts have happened on the current request
         unsigned requestTime = 0;              // When we received the active requestToSend
         unsigned lastPermitTime = 0;           // When was the last permit granted?
-        unsigned requestSendSeq = 0;           // data sequence id from the most recent request_to_send
         unsigned numPermits = 0;               // How many permits allocated?
 
-        SendPermit permits[MAX_PERMITS];
         mutable CriticalSection psCrit;
         PacketTracker packetsSeen;
+
+        SendPermit permits[MaxPermitsPerSender];
+        SendPermit * lastDataPermit = permits;   // optimize data packet->permit mapping.  Initialise by pointing at the first permit
 
     public:
 
@@ -573,8 +588,8 @@ class CReceiveManager : implements IReceiveManager, public CInterface
 #endif
                 flowSocket = ISocket::udp_connect(ep);
 
-            for (unsigned permit=0; permit < MAX_PERMITS; permit++)
-                permits[permit].owner = this;
+            for (SendPermit & permit : permits)
+                permit.owner = this;
         }
 
         ~UdpSenderEntry()
@@ -611,7 +626,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     return true;
             }
 
-            //The best approximation to the oldest-inlight packet - because permits may have expired...
+            //The best approximation to the oldest-inflight packet - because permits may have expired...
             return (msTick()-lastPermitTime > udpResendTimeout);
         }
 
@@ -716,21 +731,21 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         // How many permits outstanding for a given flowSeq?
         inline unsigned getNumReserved(unsigned flowSeq) const
         {
-            for (unsigned i=0; i < MAX_PERMITS; i++)
+            for (const SendPermit & permit : permits)
             {
-                if (permits[i].flowSeq == flowSeq)
-                    return permits[i].getNumReserved();
+                if (permit.flowSeq == flowSeq)
+                    return permit.getNumReserved();
             }
             return 0;
         }
 
-        //Total permits outstanding for the sender
+        //Total reservations outstanding for the sender
         inline unsigned getTotalReserved() const
         {
             unsigned total = 0;
-            for (unsigned i=0; i < MAX_PERMITS; i++)
+            for (const SendPermit & permit : permits)
             {
-                total += permits[i].getNumReserved();
+                total += permit.getNumReserved();
             }
             return total;
         }
@@ -742,33 +757,28 @@ class CReceiveManager : implements IReceiveManager, public CInterface
 
         bool hasUnusedPermit() const
         {
-            return (numPermits != MAX_PERMITS);
+            return (numPermits != MaxPermitsPerSender);
         }
 
         inline SendPermit * queryPermit(unsigned flowSeq)
         {
-            for (unsigned i=0; i < MAX_PERMITS; i++)
+            for (SendPermit & permit : permits)
             {
-                if (permits[i].flowSeq == flowSeq)
-                    return &permits[i];
+                if (permit.flowSeq == flowSeq)
+                    return &permit;
             }
             return nullptr;
         }
 
         inline SendPermit & allocatePermit(unsigned permitTime, unsigned num)
         {
-            for (unsigned i=0; i < MAX_PERMITS; i++)
+            for (SendPermit & permit : permits)
             {
-                SendPermit & permit = permits[i];
                 if (!permit.isActive())
                 {
                     numPermits++;
                     lastPermitTime = permitTime;
-
-                    permit.flowSeq = flowSeq;
-                    permit.sendSeq = sendSeq;
-                    permit.numPackets.store(num, std::memory_order_release);
-                    permit.permitTime = permitTime;
+                    permit.grantPermit(flowSeq, sendSeq, num, permitTime);
                     return permit;
                 }
             }
@@ -783,39 +793,51 @@ class CReceiveManager : implements IReceiveManager, public CInterface
 
         inline void updateNumReserved(unsigned flowSeq, unsigned num)
         {
-            for (unsigned i=0; i < MAX_PERMITS; i++)
+            for (SendPermit & permit : permits)
             {
-                if (permits[i].flowSeq == flowSeq)
+                if (permit.flowSeq == flowSeq)
                 {
-                    permits[i].numPackets.store(num, std::memory_order_release);
+                    permit.numPackets.store(num, std::memory_order_release);
                     return;
                 }
             }
         }
         inline void decPermit(unsigned msgSeq)
         {
+            if (lastDataPermit->isActive())
+            {
+                //If the message sequence is still larger than the lastDataPermit sequence, then the permit will not have been reallocated, so ok to decrement
+                if ((int)(msgSeq - lastDataPermit->sendSeq) >= 0)
+                {
+                    lastDataPermit->numPackets.fetch_sub(1, std::memory_order_acq_rel);
+                    return;
+                }
+            }
+
             //Although this is a bit more work than matching by flowSeq it shouldn't be too inefficient.
             SendPermit * bestPermit = nullptr;
             int bestDelta = INT_MAX;
-            for (unsigned i=0; i < MAX_PERMITS; i++)
+            for (SendPermit & permit : permits)
             {
-                SendPermit & cur = permits[i];
-                if (cur.isActive())
+                if (permit.isActive())
                 {
-                    int delta =  (int)msgSeq - cur.sendSeq;
+                    int delta =  (int)msgSeq - permit.sendSeq;
                     //Check if this message sequence could belong to this permit (sequence number is larger)
                     if (delta >= 0)
                     {
                         if (delta < bestDelta)
                         {
-                            bestPermit = &cur;
+                            bestPermit = &permit;
                             bestDelta = delta;
                         }
                     }
                 }
             }
             if (bestPermit)
+            {
                 bestPermit->numPackets.fetch_sub(1, std::memory_order_acq_rel);
+                lastDataPermit = bestPermit;
+            }
         }
     };
 
@@ -833,24 +855,13 @@ class CReceiveManager : implements IReceiveManager, public CInterface
         const unsigned maxPermits;                  // Must be provided in the constructor
         const unsigned minSlotsPerSender = 1;       // Could increase to prevent lots of small permits being granted
         std::atomic<bool> running = { false };
-        SenderList pendingRequests;     // List of people wanting permission to send
+        SenderList pendingRequests;     // List of senders requesting permission to send
         PermitList pendingPermits;      // List of active permits
 
     private:
         void noteRequest(UdpSenderEntry *requester, sequence_t flowSeq, sequence_t sendSeq)
         {
-            //If the flowSeq is lower than the previous flowSeq there could be two causes:
-            //a) The sender has restarted
-            //b) Messages have been received out of order (e.g. request_to_send_more after a request_to_send?)
-            //
-            //If (a) has happened, then in the worse case (with 2 outstanding permits), the sender will be
-            //granted a 0 size permit - that will then results in a send_completed for the flowSeq - which will clear
-            //the permits, and allow future permits to continue.
-            //
-            //I don't think (b) can ever happen.  If it does the permits will get messed up until a send_completed
-            //is received - which will clear the permits and recover.
-
-            //Check for a permit that is still live
+            //Check for a permit that is still live, if found it is likely to ok_to_send was lost.
             SendPermit * permit = requester->queryPermit(flowSeq);
             if (permit)
             {
@@ -860,6 +871,13 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 return;
             }
 
+            //One of
+            //a) A new request has arrived
+            //b) The sender has restarted
+            //   The receiver will eventually time out the old permits, and a new ok_to_send will be sent.
+            //c) Messages have been received out of order (e.g. request_to_send_more after a request_to_send?)
+            //   Almost impossible - it would need to be a very delayed resend.  The sender will ignore, and resend
+            //   a new request_to_send if necessary.
             switch (requester->state)
             {
             case ReceiveState::granted:
@@ -872,7 +890,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 break;
             default:
                 // Unexpected state, should never happen!
-                DBGLOG("ERROR: Unexpected state %s in noteRequest", receiveStateName(requester->state));
+                ERRLOG("ERROR: Unexpected state %s in noteRequest", receiveStateName(requester->state));
                 throwUnexpected();
                 break;
             }
@@ -881,11 +899,11 @@ class CReceiveManager : implements IReceiveManager, public CInterface
 
         void grantPermit(UdpSenderEntry *requester, unsigned slots)
         {
-            //State must be requested if it is on the pendingRequests list
+            //State must be 'requested' if it is on the pendingRequests list
             if (requester->state != ReceiveState::requested)
             {
                 // Unexpected state, should never happen!
-                DBGLOG("ERROR: Unexpected state %s in grantPermit", receiveStateName(requester->state));
+                ERRLOG("ERROR: Unexpected state %s in grantPermit", receiveStateName(requester->state));
                 throwUnexpected();
             }
 
@@ -906,18 +924,17 @@ class CReceiveManager : implements IReceiveManager, public CInterface
 
             //A completed message, on the data flow, may often be received after the next request to send.
             //If so it should not update the state, but it should clear all grants with a flowid <= the new flowid
-            // - all the data will have been sent, (if it has not been received it is either lost or OOO (unlikely))
-            for (unsigned i=0; i < MAX_PERMITS; i++)
+            //since all the data will have been sent. (If it has not been received it is either lost or OOO (unlikely).)
+            for (SendPermit & permit : requester->permits)
             {
-                SendPermit & cur = requester->permits[i];
-                if (cur.isActive() && ((int)(cur.flowSeq - flowSeq) <= 0))
+                if (permit.isActive() && ((int)(permit.flowSeq - flowSeq) <= 0))
                 {
-                    pendingPermits.remove(&cur);
-                    requester->revokePermit(cur);
+                    pendingPermits.remove(&permit);
+                    requester->revokePermit(permit);
                 }
             }
 
-            //If it matches the current flowSeq, then we can assume everything is complete, otherwise ignore leave the state as it is
+            //If it matches the current flowSeq, then we can assume everything is complete, otherwise leave the state as it is
             if (flowSeq != requester->flowSeq)
                 return;
 
@@ -934,7 +951,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 break;
             default:
                 // Unexpected state, should never happen! Ignore.
-                DBGLOG("ERROR: Unexpected state %s in noteDone", receiveStateName(requester->state));
+                ERRLOG("ERROR: Unexpected state %s in noteDone", receiveStateName(requester->state));
                 break;
             }
             requester->state = ReceiveState::idle;
@@ -952,7 +969,10 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             {
                 running = false;
                 if (flow_socket)
+                {
+                    flow_socket->shutdownNoThrow();
                     flow_socket->close();
+                }
                 join();
             }
         }
@@ -991,7 +1011,6 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 break;
 
             case flowType::send_start:
-                // RKC: Feels like this is the right code but works (marginally) better without this code here!
                 // Could potentially go up if the sender sends more missing packets than the receiver granted, or if
                 // the permit has timed out.
                 sender->updateNumReserved(msg.flowSeq, msg.packets);
@@ -1005,7 +1024,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             {
                 noteDone(sender, msg);
                 unsigned nextFlowSeq = std::max(flowSeq+1, 1U); // protect against a flowSeq of 0
-                noteRequest(sender, nextFlowSeq+1, msg.sendSeq);
+                noteRequest(sender, nextFlowSeq, msg.sendSeq);
                 break;
             }
 
@@ -1055,7 +1074,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                         }
                         else if (sender->state != ReceiveState::requested)
                         {
-                            // Put it back on the queue (at the back) - even if there are other active permits
+                            // Put it back on the request queue (at the back) - even if there are other active permits
                             pendingRequests.append(sender);
                             sender->state = ReceiveState::requested;
                         }
@@ -1068,7 +1087,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     }
                 }
 
-                // Sum the number of permits that are allocated to active senders
+                // Sum the number of reserved slots assigned to active permits
                 while (finger)
                 {
                     permitsIssued += finger->getNumReserved();
@@ -1076,8 +1095,8 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                 }
             }
 
-            // Aim is to issue enough permits to use all available the space in the queue.
-            // As data is received the number of slots reduces, but the relevant permit is reduced to match
+            // Aim is to issue enough permits to use all available the space in the queue.  Adjust available by the
+            // number already issued (avoid underflow if over-committed).
             unsigned slots = parent.input_queue->available();
             if (slots >= permitsIssued)
                 slots -= permitsIssued;
@@ -1088,8 +1107,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
             bool anyCannotSend = false;
             for (UdpSenderEntry *finger = pendingRequests; finger != nullptr; finger = finger->next)
             {
-                //MORE: not sure if the permitsIssued test is required
-                if (pendingPermits.length()>=udpMaxPendingPermits || permitsIssued >=maxPermits)
+                if (pendingPermits.length()>=udpMaxPendingPermits)
                     break;
 
                 if (slots < minSlotsPerSender)
@@ -1120,15 +1138,15 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                             requestSlots = maxPermits-permitsIssued;
                         grantPermit(finger, requestSlots);
                         slots -= requestSlots;
-                        //Previously adjusted the timeout - but I can't think of any reason why it would need to.
                         anyCanSend = true;
                         if (timeout > udpPermitTimeout)
                             timeout = udpPermitTimeout;
                     }
                     else
                     {
-                        //Has a request to send, but all permits are active - suggests a previous done has been lost/not received yet
-                        //MORE: Should this set anyCannotSend?
+                        //Sender has a request to send, but all permits are active - suggests a previous done has been lost/not received yet
+                        //Do not set anyCannotSend - because a permit being freed will be triggered by a flow message - so no need to
+                        //adjust the timeout.  (A different situation from waiting for a data packet to allow a sender to proceed.)
                         if (udpTraceFlow)
                         {
                             StringBuffer s;
@@ -1311,7 +1329,7 @@ class CReceiveManager : implements IReceiveManager, public CInterface
                     }
                     else
                     {
-                        //Decrease the number of active permits to balance having received a new data packet (otherwise they will be double counted)
+                        //Decrease the number of active reservations to balance having received a new data packet (otherwise they will be double counted)
                         sender->decPermit(hdr.msgSeq);
                         if (udpTraceLevel > 5) // don't want to interrupt this thread if we can help it
                         {
@@ -1421,8 +1439,8 @@ public:
         input_queue = new queue_t(queue_size);
         data = new receive_data(*this);
 
-        unsigned udpMaxClientPercent = 200; // This should become a configuration variable
-        //NOTE: If all slots are allocated to a single client, then if that server goes down it will prevent any data being received from other senders
+        //NOTE: If all slots are allocated to a single client, then if that server goes down it will prevent any data being received from
+        //any other sender for the udpPermitTimeout period
         unsigned maxSlotsPerClient = (udpMaxPendingPermits == 1) ? queue_size : (udpMaxClientPercent * queue_size) / (udpMaxPendingPermits * 100);
         if (maxSlotsPerClient > queue_size)
             maxSlotsPerClient = queue_size;

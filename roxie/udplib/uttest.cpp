@@ -641,7 +641,6 @@ int main(int argc, char * argv[] )
     DBGLOG("%s",cmdline.str());
 //  queryLogMsgManager()->enterQueueingMode();
 //  queryLogMsgManager()->setQueueDroppingLimit(512, 32);
-    //udpRequestToSendTimeout = 5000;
     for (c = 1; c < argc; c++)
     {
         const char *ip = argv[c];

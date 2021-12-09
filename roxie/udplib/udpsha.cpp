@@ -64,9 +64,9 @@ unsigned udpPermitTimeout = 50;         // [receiver] How long is a grant expect
 unsigned udpResendTimeout = 20;         // [sender+receiver] How long should elapse after a data packet has been sent before we assume it is lost.
                                         // 0 means they are unlikely to be lost, so worth resending as soon as it appears to be missing - trading duplicate packets for delays (good if allowasync=false)
 
-unsigned udpMaxPendingPermits = 10;     // What is a good default?
+unsigned udpMaxPendingPermits = 10;     // This seems like a reasonable compromise - each sender will be able to send up to 20% of the input queue each request.
 unsigned udpMaxClientPercent = 200;     // What percentage of (queueSize/maxPendingPermits) should be granted to each sender.
-bool udpResendAllMissingPackets = true; // Do no limit the number of missing packets sent to the size of the permit.
+bool udpResendAllMissingPackets = true; // If set do not limit the number of missing packets sent to the size of the permit.
 bool udpResendLostPackets = true;
 bool udpAssumeSequential = false;
 bool udpAdjustThreadPriorities = true;

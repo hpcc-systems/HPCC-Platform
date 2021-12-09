@@ -197,7 +197,7 @@ class UdpReceiverEntry : public IUdpReceiverEntry
 private:
     queue_t *output_queue = nullptr;
     bool    initialized = false;
-    bool hadAcknowledgement = false;
+    bool hadAcknowledgement = false;    // only used in tracing to aid spotting missing ack v missing permit
     const bool isLocal = false;
     const bool encrypted = false;
     ISocket *send_flow_socket = nullptr;
@@ -406,11 +406,15 @@ public:
 
     void notePermitReceived(unsigned permitFlowSeq)
     {
-        activePermitSeq = permitFlowSeq; // used to prevent resending a request to send if the permit has already been received
-        timeouts = 0;
+        //Disregard old permits (in case they arrive out of order)
+        if (activePermitSeq == activeFlowSequence)
+        {
+            activePermitSeq = permitFlowSeq; // used to prevent resending a request to send if the permit has already been received
+            timeouts = 0;
 
-        //NOTE:  If all data has been received (and acknowledged), but the last send_done message is lost, the sender may resend another ok_to_send
-        //The sender could then request to send, incrementing activeFlowSequence. and then send data for next the permit id - even though it hasn't been granted
+            //NOTE:  If all data has been received (and acknowledged), but the last send_done message is lost, the sender may resend another ok_to_send
+            //The sender could then request to send, incrementing activeFlowSequence. and then send data for next the permit id - even though it hasn't been granted
+        }
     }
 
     void requestAcknowledged()

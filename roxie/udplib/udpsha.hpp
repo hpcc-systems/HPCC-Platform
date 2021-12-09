@@ -55,7 +55,7 @@ constexpr unsigned TRACKER_BITS=1024;      // Power of two recommended
 constexpr unsigned TRACKER_DWORDS=(TRACKER_BITS+63)/64;
 
 // Some more things we can consider:
-// 1. sendSeq gives us some insight into lost packets that might help is get inflight calcuation right (if it is still needed)
+// 1. sendSeq gives us some insight into lost packets that might help is get inflight calculation right (if it is still needed)
 // 2. If we can definitively declare that a packet is lost, we can fail that messageCollator earlier (and thus get the resend going earlier)
 // 3. Worth seeing why resend doesn't use same collator. We could skip sending (though would still need to calculate) the bit we already had...
 
@@ -206,15 +206,15 @@ class flowType {
 public:
     enum flowCmd : unsigned short
     {
-    //The first items in the flow command are also used as states in the receiver code:  It might be clearer if the states used a differemt enum
-        send_completed,         // all data sent (and no data to potentially be resent).
-        request_to_send,        // request permit to send some data.
+    //Messages sent from receiver to sender
         ok_to_send,             // permit has been granted.
-
-    // The following messages
         request_received,       // acknowledge request to send from the sender
+
+    //messages sent from the sender to the receiver
+        request_to_send,        // request permit to send some data.
         send_start,             // about to send data - indicate how many packets are actually going to be sent
-        request_to_send_more,   // equivalent to send_completed followed by a request_to_send
+        send_completed,         // all data sent (and no data to potentially be resent).
+        request_to_send_more,   // equivalent to send_completed followed by a request_to_send (used if no async permits)
 
     // A marker for the number of flow commands:
         max_flow_cmd
@@ -277,7 +277,6 @@ inline bool checkTraceLevel(unsigned category, unsigned level)
 #ifdef _DEBUG
 #define TEST_DROPPED_PACKETS
 #endif
-#define TEST_DROPPED_PACKETS
 
 #ifdef TEST_DROPPED_PACKETS
 extern UDPLIB_API bool udpDropDataPackets;
