@@ -1632,7 +1632,7 @@ inline bool isWorkunitDAToken(const char * distributedAccessToken)
 //returns a state code.  WUStateUnknown == timeout
 extern WORKUNIT_API WUState waitForWorkUnitToComplete(const char * wuid, int timeout = -1, std::list<WUState> expectedStates = {});
 extern WORKUNIT_API bool waitForWorkUnitToCompile(const char * wuid, int timeout = -1);
-extern WORKUNIT_API WUState secWaitForWorkUnitToComplete(const char * wuid, ISecManager &secmgr, ISecUser &secuser, int timeout = -1, std::list<WUState> expectedStates = {});
+extern WORKUNIT_API WUState secWaitForWorkUnitToComplete(const char * wuid, ISecManager *secmgr, ISecUser *secuser, int timeout = -1, std::list<WUState> expectedStates = {});
 extern WORKUNIT_API bool secWaitForWorkUnitToCompile(const char * wuid, ISecManager &secmgr, ISecUser &secuser, int timeout = -1);
 extern WORKUNIT_API bool secDebugWorkunit(const char * wuid, ISecManager &secmgr, ISecUser &secuser, const char *command, StringBuffer &response);
 extern WORKUNIT_API WUState getWorkUnitState(const char* state);
